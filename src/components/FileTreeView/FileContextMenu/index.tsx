@@ -31,6 +31,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onImportProject,
   onDownloadFileByUrl,
   disabledDelete = false,
+  useRelativePosition = false,
 }) => {
   /**
    * 处理菜单项点击
@@ -142,7 +143,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   // 调整后的菜单位置（必须在条件返回之前）
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
-  // 计算并调整菜单位置，避免超出视口（必须在条件返回之前）
+  // 计算并调整菜单位置，避免超出视口或容器（必须在条件返回之前）
   useLayoutEffect(() => {
     if (!visible || !menuRef.current) {
       // 菜单不可见时，重置为原始位置
@@ -162,30 +163,64 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       return;
     }
 
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
+    if (useRelativePosition) {
+      // 使用相对定位时，相对于父容器调整位置
+      const containerElement = menuElement.offsetParent as HTMLElement;
+      if (containerElement) {
+        const containerHeight = containerElement.clientHeight;
+        const containerWidth = containerElement.clientWidth;
 
-    let adjustedTop = position.y;
-    let adjustedLeft = position.x;
+        let adjustedTop = position.y;
+        let adjustedLeft = position.x;
 
-    // 如果菜单底部超出视口，向上调整位置
-    if (position.y + menuHeight > viewportHeight) {
-      adjustedTop = position.y - menuHeight;
-      // 确保调整后的菜单顶部不会超出视口顶部，且至少距离顶部 8px
-      adjustedTop = Math.max(8, adjustedTop);
-      // 如果菜单高度超过视口高度，确保菜单顶部从视口顶部开始（保留 8px 边距）
-      if (menuHeight > viewportHeight - 16) {
-        adjustedTop = 8;
+        // 如果菜单底部超出容器，向上调整位置
+        if (position.y + menuHeight > containerHeight) {
+          adjustedTop = position.y - menuHeight;
+          // 确保调整后的菜单顶部不会超出容器顶部，且至少距离顶部 8px
+          adjustedTop = Math.max(8, adjustedTop);
+          // 如果菜单高度超过容器高度，确保菜单顶部从容器顶部开始（保留 8px 边距）
+          if (menuHeight > containerHeight - 16) {
+            adjustedTop = 8;
+          }
+        }
+
+        // 如果菜单右侧超出容器，向左调整位置
+        if (position.x + menuWidth > containerWidth) {
+          adjustedLeft = Math.max(8, containerWidth - menuWidth - 8); // 至少距离右侧 8px
+        }
+
+        setAdjustedPosition({ x: adjustedLeft, y: adjustedTop });
+      } else {
+        // 如果找不到容器，使用原始位置
+        setAdjustedPosition(position);
       }
-    }
+    } else {
+      // 使用固定定位时，相对于视口调整位置
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
 
-    // 如果菜单右侧超出视口，向左调整位置
-    if (position.x + menuWidth > viewportWidth) {
-      adjustedLeft = Math.max(8, viewportWidth - menuWidth - 8); // 至少距离右侧 8px
-    }
+      let adjustedTop = position.y;
+      let adjustedLeft = position.x;
 
-    setAdjustedPosition({ x: adjustedLeft, y: adjustedTop });
-  }, [visible, position]);
+      // 如果菜单底部超出视口，向上调整位置
+      if (position.y + menuHeight > viewportHeight) {
+        adjustedTop = position.y - menuHeight;
+        // 确保调整后的菜单顶部不会超出视口顶部，且至少距离顶部 8px
+        adjustedTop = Math.max(8, adjustedTop);
+        // 如果菜单高度超过视口高度，确保菜单顶部从视口顶部开始（保留 8px 边距）
+        if (menuHeight > viewportHeight - 16) {
+          adjustedTop = 8;
+        }
+      }
+
+      // 如果菜单右侧超出视口，向左调整位置
+      if (position.x + menuWidth > viewportWidth) {
+        adjustedLeft = Math.max(8, viewportWidth - menuWidth - 8); // 至少距离右侧 8px
+      }
+
+      setAdjustedPosition({ x: adjustedLeft, y: adjustedTop });
+    }
+  }, [visible, position, useRelativePosition]);
 
   // 如果不显示，返回 null
   if (!visible) {
@@ -349,7 +384,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       ref={menuRef}
       className={styles.contextMenu}
       style={{
-        position: 'fixed',
+        position: useRelativePosition ? 'absolute' : 'fixed',
         left: adjustedPosition.x,
         top: adjustedPosition.y,
         zIndex: 1000,
