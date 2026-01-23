@@ -152,7 +152,7 @@ const RoleManage: React.FC = () => {
       <RoleFormModal
         open={modalOpen}
         isEdit={isEdit}
-        roleData={editingRole}
+        roleInfo={editingRole}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
