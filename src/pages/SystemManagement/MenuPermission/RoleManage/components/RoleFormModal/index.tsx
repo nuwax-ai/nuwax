@@ -31,7 +31,7 @@ interface RoleFormModalProps {
   /** 是否为编辑模式 */
   isEdit?: boolean;
   /** 编辑时的角色数据 */
-  roleData?: RoleInfo;
+  roleInfo?: RoleInfo;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
@@ -45,7 +45,7 @@ interface RoleFormModalProps {
 const RoleFormModal: React.FC<RoleFormModalProps> = ({
   open,
   isEdit = false,
-  roleData,
+  roleInfo,
   onCancel,
   onSuccess,
 }) => {
@@ -71,7 +71,26 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   //   },
   // ];
 
-  // 新增/更新角色
+  // 根据ID查询角色
+  // const { run: runGetRoleById, loading: getRoleByIdLoading } = useRequest(apiGetRoleById, {
+  //   manual: true,
+  //   onSuccess: (data: RoleInfo) => {
+  //     console.log('data3333', data);
+  //     form.setFieldsValue({
+  //       code: data.code,
+  //       name: data.name,
+  //       description: data.description,
+  //       tokenLimit: {
+  //         limitPerDay: data.tokenLimit?.limitPerDay || 0,
+  //       },
+  //       sortIndex: data.sortIndex || 0,
+  //       status: data.status === RoleStatusEnum.Enabled,
+  //     });
+  //     setSelectedModelIds(data.modelIds || []);
+  //   },
+  // });
+
+  // 新增角色
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
     manual: true,
     onSuccess: () => {
@@ -80,6 +99,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   });
 
+  // 更新角色
   const { run: runUpdateRole, loading: updateLoading } = useRequest(
     apiUpdateRole,
     {
@@ -99,47 +119,34 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   );
 
-  useEffect(() => {
-    if (open) {
-      // 查询模型列表
-      runModelList();
-    }
-  }, [open]);
-
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
   useEffect(() => {
     if (open) {
-      if (isEdit && roleData) {
+      // 查询模型列表
+      runModelList();
+      if (isEdit && roleInfo) {
+        // runGetRoleById(roleInfo.id);
         // 编辑模式：填充表单数据
         form.setFieldsValue({
-          code: roleData.code,
-          name: roleData.name,
-          description: roleData.description,
+          code: roleInfo.code,
+          name: roleInfo.name,
+          description: roleInfo.description,
           tokenLimit: {
-            limitPerDay: roleData.tokenLimit?.limitPerDay || 0,
+            limitPerDay: roleInfo.tokenLimit?.limitPerDay || 0,
           },
-          status: roleData.status === RoleStatusEnum.Enabled,
+          sortIndex: roleInfo.sortIndex || 0,
+          status: roleInfo.status === RoleStatusEnum.Enabled,
         });
-        // TODO: 从API获取已选中的数据模型和菜单
-        setSelectedModelIds([]);
-        // setSelectedMenuIds([]);
+        setSelectedModelIds(roleInfo.modelIds || []);
       } else {
         // 新增模式：重置表单
         form.resetFields();
         setSelectedModelIds([]);
-        // setSelectedMenuIds([]);
       }
     }
-  }, [open, isEdit, roleData, form]);
-
-  // 处理取消
-  const handleCancel = () => {
-    form.resetFields();
-    setSelectedModelIds([]);
-    onCancel();
-  };
+  }, [open, isEdit, roleInfo, form]);
 
   // 处理提交
   const handleSubmit = async () => {
@@ -163,9 +170,9 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
         modelIds,
       };
 
-      if (isEdit && roleData) {
+      if (isEdit && roleInfo) {
         await runUpdateRole({
-          id: roleData.id,
+          id: roleInfo.id,
           ...formData,
         });
       } else {
@@ -201,7 +208,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       loading={loading}
       okText={isEdit ? '保存' : '创建'}
       width={800}
-      onCancel={handleCancel}
+      onCancel={onCancel}
       onConfirm={handleSubmit}
       classNames={{
         body: cx(styles.modalBody),
@@ -273,7 +280,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
             <Form.Item
               label="排序"
               name="sortIndex"
-              valuePropName="checked"
               initialValue={0}
               className={cx(styles.fieldItem)}
             >
