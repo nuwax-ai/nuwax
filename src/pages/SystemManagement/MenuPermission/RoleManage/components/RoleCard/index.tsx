@@ -86,15 +86,25 @@ const RoleCard: React.FC<RoleCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>token限制:</span>
             <span className={cx(styles.infoValue)}>
-              {role.tokenLimit?.limitPerDay}
+              {role.tokenLimit?.limitPerDay
+                ? `${role.tokenLimit.limitPerDay}次`
+                : '无限制'}
             </span>
           </div>
 
           {/* 菜单权限 */}
           <div className={cx(styles.infoItem)}>
+            <span className={cx(styles.infoLabel)}>模型:</span>
+            <span className={cx(styles.infoValue)}>
+              {role.modelIds?.length
+                ? `${role.modelIds.length}项`
+                : '暂未配置模型'}
+            </span>
+          </div>
+          <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>菜单权限:</span>
             <span className={cx(styles.infoValue)}>
-              {/* {role.modelIds.length}项 */}
+              {/* {role.menuIds?.length ? `${role.menuIds.length}项` : '暂未设置'} */}
             </span>
           </div>
         </div>
