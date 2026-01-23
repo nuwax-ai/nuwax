@@ -51,6 +51,19 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       return;
     }
 
+    const fileName = file.name || '';
+    const lowerFileName = fileName.toLowerCase();
+    // 校验文件类型，仅支持 .zip 或 .skill 压缩文件，或单个 SKILL.md 文件
+    const isZip = lowerFileName.endsWith('.zip');
+    const isSkill = lowerFileName.endsWith('.skill');
+    // 只允许文件名严格为 SKILL.md，其他任意 md 文件名都不允许
+    const isSkillMd = lowerFileName === 'skill.md';
+
+    if (!isZip && !isSkill && !isSkillMd) {
+      message.error('仅支持 .zip,.skill 压缩文件格式或SKILL.md文件');
+      return false;
+    }
+
     /**
      * 在Upload.Dragger的beforeUpload中已经校验了文件大小，但是即使return false 阻止了自动上传，但是form表单中也存在该文件，所以需要再次校验
      */
@@ -84,7 +97,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
     const isZip = lowerFileName.endsWith('.zip');
     const isSkill = lowerFileName.endsWith('.skill');
     // 只允许文件名严格为 SKILL.md，其他任意 md 文件名都不允许
-    const isSkillMd = fileName === 'SKILL.md';
+    const isSkillMd = lowerFileName === 'skill.md';
 
     if (!isZip && !isSkill && !isSkillMd) {
       message.error('仅支持 .zip,.skill 压缩文件格式或SKILL.md文件');

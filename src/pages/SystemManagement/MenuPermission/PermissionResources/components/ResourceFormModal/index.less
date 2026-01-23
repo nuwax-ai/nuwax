@@ -1,0 +1,61 @@
+@import '@/styles/token.less';
+
+.modalBody {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden; // 禁止水平滚动
+  padding: 0 !important;
+}
+
+.form {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden; // 禁止水平滚动
+
+  .section {
+    margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    color: var(--color-font-primary, #15171f);
+    margin-bottom: 12px;
+  }
+
+  .sectionDesc {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .infoIcon {
+    color: var(--color-font-tertiary, #5e6470);
+    font-size: 14px;
+  }
+}
+
+.modalHeader {
+  :global {
+    .ant-modal-title {
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+    }
+  }
+}
+
+.modalSubtitle {
+  font-size: 12px;
+  color: var(--color-font-tertiary, #5e6470);
+  font-weight: normal;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-02, #e4e6eb);
+}

@@ -26,7 +26,7 @@ export const AGENT_ENGINE_OPTIONS = [
     value: AgentEngineEnum.Default,
     label: (
       <span className={'flex items-center'}>
-        <span>默认引擎</span>
+        <span>默认</span>
         <TooltipIcon
           title="默认引擎比较成熟，效果最佳，仅支持部分指定厂商模型"
           icon={<InfoCircleOutlined />}
@@ -38,7 +38,7 @@ export const AGENT_ENGINE_OPTIONS = [
     value: AgentEngineEnum.NuwaxCli,
     label: (
       <span className={'flex items-center'}>
-        <span>NuwaxCli引擎</span>
+        <span>NuwaxCli</span>
         <TooltipIcon
           title="NuwaxCli引擎在快速迭代阶段，部分场景可能有待提升，但支持几乎所有厂商模型"
           icon={<InfoCircleOutlined />}

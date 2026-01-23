@@ -2,8 +2,9 @@ import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
-import { Button, Modal, Segmented, Tooltip } from 'antd';
+import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -50,6 +51,7 @@ const SystemTipsWord = forwardRef<
     const [valueSegmented, setValueSegmented] = useState<
       'systemPrompt' | 'userPrompt'
     >('systemPrompt');
+    const { token } = theme.useToken();
 
     /**
      * 在光标位置插入文本
@@ -158,7 +160,13 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorSystemRef.current = editor;
               }}
-              style={{ height: '100%', border: 'none' }}
+              style={
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -172,7 +180,13 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorUserRef.current = editor;
               }}
-              style={{ height: '100%', border: 'none' }}
+              style={
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -181,6 +195,7 @@ const SystemTipsWord = forwardRef<
         </div>
       );
     }, [
+      isFullscreen,
       valueSegmented,
       valueSystem,
       valueUser,
@@ -281,8 +296,23 @@ const SystemTipsWord = forwardRef<
           </div>
         </div>
 
-        {/* 提示词输入区域 */}
-        {promptInput}
+        {agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? (
+          <div
+            style={{
+              height: '300px',
+              paddingLeft: token.paddingXS,
+              marginTop: 6,
+            }}
+          >
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </div>
+        ) : (
+          <>
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </>
+        )}
 
         {/* 自动优化弹窗 */}
         <PromptOptimizeModal
@@ -305,28 +335,11 @@ const SystemTipsWord = forwardRef<
           closable={false}
           onCancel={toggleFullscreen}
           width="100vw"
+          className={cx(isFullscreen && styles['fullscreen-modal'])}
           style={{
             top: 0,
             paddingBottom: 0,
             maxWidth: '100vw',
-          }}
-          styles={{
-            body: {
-              height: 'calc(100vh - 57px)',
-              overflow: 'auto',
-              padding: 0,
-            },
-            content: {
-              padding: 0,
-              height: '100vh',
-            },
-            header: {
-              height: '57px',
-              borderRadius: 0,
-              marginBottom: 0,
-              padding: '16px 24px',
-              borderBottom: '1px solid #f0f0f0',
-            },
           }}
         >
           {/* 提示词输入区域 */}

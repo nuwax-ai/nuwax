@@ -3,6 +3,7 @@ import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import { apiDeleteRole, apiGetRoleList } from './api';
 import RoleCard from './components/RoleCard';
 import RoleFormModal from './components/RoleFormModal';
@@ -24,6 +25,9 @@ const RoleManage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleInfo>();
+  const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
+    useState(false);
+  const [menuPermissionRole, setMenuPermissionRole] = useState<RoleInfo>();
 
   // 查询角色列表
   const {
@@ -58,15 +62,32 @@ const RoleManage: React.FC = () => {
   });
 
   // 处理编辑
-  const handleEdit = (role: RoleInfo) => {
-    setEditingRole(role);
+  const handleEdit = (roleInfo: RoleInfo) => {
+    setEditingRole(roleInfo);
     setIsEdit(true);
     setModalOpen(true);
   };
 
   // 处理删除
-  const handleDelete = (role: RoleInfo) => {
-    runDelete(role?.id);
+  const handleDelete = (roleInfo: RoleInfo) => {
+    runDelete(roleInfo.id);
+  };
+
+  // 处理菜单权限
+  const handleMenuPermission = (roleInfo: RoleInfo) => {
+    setMenuPermissionRole(roleInfo);
+    setMenuPermissionDrawerOpen(true);
+  };
+
+  // 处理菜单权限抽屉关闭
+  const handleMenuPermissionDrawerClose = () => {
+    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionRole(undefined);
+  };
+
+  // 处理菜单权限保存成功
+  const handleMenuPermissionSuccess = () => {
+    runGetRoleList();
   };
 
   // 处理新增
@@ -139,6 +160,7 @@ const RoleManage: React.FC = () => {
                   key={role.id}
                   role={role}
                   onEdit={handleEdit}
+                  onMenuPermission={handleMenuPermission}
                   onDelete={handleDelete}
                   deleteLoading={deleteLoadingMap[role.id] || false}
                 />
@@ -152,9 +174,17 @@ const RoleManage: React.FC = () => {
       <RoleFormModal
         open={modalOpen}
         isEdit={isEdit}
-        roleData={editingRole}
+        roleInfo={editingRole}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* 菜单权限配置Drawer */}
+      <MenuPermissionDrawer
+        open={menuPermissionDrawerOpen}
+        roleInfo={menuPermissionRole}
+        onClose={handleMenuPermissionDrawerClose}
+        onSuccess={handleMenuPermissionSuccess}
       />
     </div>
   );
