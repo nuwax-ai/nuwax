@@ -18,6 +18,7 @@ import { useRequest } from 'umi';
 import {
   apiAddResource,
   apiGetResourceById,
+  apiGetResourceList,
   apiUpdateResource,
 } from '../../api';
 import {
@@ -38,7 +39,9 @@ interface ResourceFormModalProps {
   /** 是否为编辑模式 */
   isEdit?: boolean;
   /** 编辑时的资源数据 */
-  resourceInfo?: ResourceInfo;
+  resourceInfo?: ResourceInfo | null;
+  /** 父资源（新增子资源时使用） */
+  parentResource?: ResourceTreeOption | null;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
@@ -53,6 +56,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   open,
   isEdit = false,
   resourceInfo,
+  parentResource,
   onCancel,
   onSuccess,
 }) => {
@@ -90,8 +94,18 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     },
   );
 
+  // 查询资源树列表（用于父节点选择）
+  const { run: runGetResourceList, data: resourceTreeList } = useRequest(
+    apiGetResourceList,
+    {
+      manual: true,
+    },
+  );
+
   useEffect(() => {
     if (open) {
+      // 查询资源树列表
+      runGetResourceList();
       if (isEdit && resourceInfo) {
         // 编辑模式：填充表单数据
         runGetResourceById(resourceInfo.id);
@@ -104,35 +118,34 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   // 将资源树转换为TreeSelect需要的数据格式
   const treeSelectData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeOption[]): any[] => {
-      return resources.map((resource) => ({
+      return resources?.map((resource) => ({
         title: resource.name,
         value: resource.id,
         key: resource.id,
-        resourceBindType: resource.resourceBindType,
         children: resource.children
           ? convertToTreeData(resource.children)
           : undefined,
       }));
     };
-    return resourceInfoResponse ? convertToTreeData(resourceInfoResponse) : [];
-  }, [resourceInfoResponse]);
+    return resourceTreeList ? convertToTreeData(resourceTreeList) : [];
+  }, [resourceTreeList]);
 
   // 初始化表单数据
   useEffect(() => {
     if (open) {
-      if (isEdit && resourceInfo) {
+      if (isEdit && resourceInfoResponse) {
         // 编辑模式：填充表单数据
         form.setFieldsValue({
-          code: resourceInfo.code,
-          name: resourceInfo.name,
-          description: resourceInfo.description,
-          type: resourceInfo.type,
-          parentId: resourceInfo.parentId || undefined,
-          path: resourceInfo.path,
-          icon: resourceInfo.icon,
-          sortIndex: resourceInfo.sortIndex || 0,
-          status: resourceInfo.status === ResourceStatusEnum.Enabled,
-          visible: resourceInfo.visible === ResourceVisibleEnum.Visible,
+          code: resourceInfoResponse.code,
+          name: resourceInfoResponse.name,
+          description: resourceInfoResponse.description,
+          type: resourceInfoResponse.type,
+          parentId: resourceInfoResponse.parentId || undefined,
+          path: resourceInfoResponse.path,
+          icon: resourceInfoResponse.icon,
+          sortIndex: resourceInfoResponse.sortIndex || 0,
+          status: resourceInfoResponse.status === ResourceStatusEnum.Enabled,
+          visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
         });
       } else {
         // 新增模式：重置表单
@@ -140,10 +153,12 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
+          // 如果有父资源，自动设置父节点
+          parentId: parentResource?.id,
         });
       }
     }
-  }, [open, isEdit, resourceInfo, form]);
+  }, [open, isEdit, resourceInfoResponse, parentResource, form]);
 
   // 处理提交
   const handleSubmit = async () => {

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiDeleteResource, apiGetResourceList } from './api';
 import ResourceFormModal from './components/ResourceFormModal';
+import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
 import type { ResourceInfo, ResourceTreeOption } from './type';
 
@@ -17,9 +18,14 @@ const cx = classNames.bind(styles);
 const PermissionResources: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editingResource, setEditingResource] = useState<ResourceInfo>();
+  const [editingResource, setEditingResource] = useState<ResourceInfo | null>();
+  const [parentResource, setParentResource] =
+    useState<ResourceTreeOption | null>();
+  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
 
-  // 查询资源列表
+  // 根据条件查询权限资源列表（树形结构）
   const {
     run: runGetResourceList,
     data: resourceList,
@@ -29,12 +35,17 @@ const PermissionResources: React.FC = () => {
   });
 
   useEffect(() => {
+    // 根据条件查询权限资源列表（树形结构）
     runGetResourceList();
   }, []);
 
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
     manual: true,
+    loadingDelay: 300,
+    onBefore: (resourceId: number) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: true }));
+    },
     onSuccess: () => {
       message.success('删除成功');
       runGetResourceList();
@@ -42,11 +53,29 @@ const PermissionResources: React.FC = () => {
     onError: () => {
       message.error('删除失败');
     },
+    onFinally: (resourceId: number) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: false }));
+    },
   });
 
   // 处理编辑
   const handleEdit = (resource: ResourceTreeOption) => {
-    setEditingResource(resource);
+    // 将 ResourceTreeOption 转换为 ResourceInfo
+    const resourceInfo: ResourceInfo = {
+      id: resource.id,
+      code: resource.code,
+      name: resource.name,
+      description: resource.description,
+      source: resource.source,
+      type: resource.type,
+      parentId: resource.parentId,
+      path: resource.path,
+      icon: resource.icon,
+      sortIndex: resource.sortIndex,
+      status: resource.status,
+      visible: resource.visible,
+    };
+    setEditingResource(resourceInfo);
     setIsEdit(true);
     setModalOpen(true);
   };
@@ -56,11 +85,19 @@ const PermissionResources: React.FC = () => {
     runDelete(resource?.id);
   };
 
-  console.log(handleEdit, handleDelete);
-
   // 处理新增
   const handleAdd = () => {
-    setEditingResource(undefined);
+    setEditingResource(null);
+    setParentResource(null);
+    setIsEdit(false);
+    setModalOpen(true);
+  };
+
+  // 处理新增子资源
+  const handleAddChild = (parentResource: ResourceTreeOption) => {
+    console.log(parentResource, '处理新增子资源');
+    setEditingResource(null);
+    setParentResource(parentResource);
     setIsEdit(false);
     setModalOpen(true);
   };
@@ -68,13 +105,15 @@ const PermissionResources: React.FC = () => {
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
-    setEditingResource(undefined);
+    setEditingResource(null);
+    setParentResource(null);
   };
 
   // 处理Modal成功
   const handleModalSuccess = () => {
     setModalOpen(false);
-    setEditingResource(undefined);
+    setEditingResource(null);
+    setParentResource(null);
     runGetResourceList();
     message.success(isEdit ? '编辑成功' : '创建成功');
   };
@@ -110,8 +149,17 @@ const PermissionResources: React.FC = () => {
             />
           ) : (
             <div className={cx(styles.resourceList)}>
-              {/* TODO: 这里可以添加资源列表的展示，比如树形表格 */}
-              <div>资源列表展示区域（待实现）</div>
+              {resourceList?.map((resource: ResourceTreeOption) => (
+                <ResourceItem
+                  key={resource.id}
+                  resource={resource}
+                  level={0}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onAddChild={handleAddChild}
+                  deleteLoading={deleteLoadingMap[resource.id] || false}
+                />
+              ))}
             </div>
           )}
         </Spin>
@@ -122,6 +170,7 @@ const PermissionResources: React.FC = () => {
         open={modalOpen}
         isEdit={isEdit}
         resourceInfo={editingResource}
+        parentResource={parentResource}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
