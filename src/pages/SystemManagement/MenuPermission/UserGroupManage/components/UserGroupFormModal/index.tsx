@@ -2,7 +2,16 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiSystemModelList } from '@/services/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Col, Form, Input, InputNumber, Row, Switch, Typography } from 'antd';
+import {
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Row,
+  Switch,
+  Typography,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -21,7 +30,7 @@ interface UserGroupFormModalProps {
   /** 是否为编辑模式 */
   isEdit?: boolean;
   /** 编辑时的用户组数据 */
-  userGroupData?: UserGroupInfo;
+  userGroupInfo?: UserGroupInfo | null;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
@@ -35,7 +44,7 @@ interface UserGroupFormModalProps {
 const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   open,
   isEdit = false,
-  userGroupData,
+  userGroupInfo,
   onCancel,
   onSuccess,
 }) => {
@@ -48,6 +57,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
+        message.success('新增用户组成功');
         onSuccess();
       },
     },
@@ -59,6 +69,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
+        message.success('更新用户组成功');
         onSuccess();
       },
     },
@@ -72,36 +83,34 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     },
   );
 
-  useEffect(() => {
-    if (open) {
-      // 查询模型列表
-      runModelList();
-    }
-  }, [open]);
-
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
   useEffect(() => {
     if (open) {
-      if (isEdit && userGroupData) {
+      // 查询模型列表
+      runModelList();
+      if (isEdit && userGroupInfo) {
         // 编辑模式：填充表单数据
         form.setFieldsValue({
-          code: userGroupData.code,
-          name: userGroupData.name,
-          description: userGroupData.description,
-          maxUsers: userGroupData.maxUsers,
-          status: userGroupData.status === UserGroupStatusEnum.Enabled,
+          code: userGroupInfo.code,
+          name: userGroupInfo.name,
+          description: userGroupInfo.description,
+          maxUserCount: userGroupInfo.maxUserCount,
+          tokenLimit: {
+            limitPerDay: userGroupInfo.tokenLimit?.limitPerDay || 0,
+          },
+          sortIndex: userGroupInfo.sortIndex || 0,
+          status: userGroupInfo.status === UserGroupStatusEnum.Enabled,
         });
-        // TODO: 从API获取已选中的数据模型
-        setSelectedModelIds([]);
+        setSelectedModelIds(userGroupInfo.modelIds || []);
       } else {
         // 新增模式：重置表单
         form.resetFields();
         setSelectedModelIds([]);
       }
     }
-  }, [open, isEdit, userGroupData, form]);
+  }, [open, isEdit, userGroupInfo, form]);
 
   // 处理取消
   const handleCancel = () => {
@@ -125,20 +134,16 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       }
 
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        maxUsers: values.maxUsers || 0,
+        ...values,
         modelIds,
         status: values.status
           ? UserGroupStatusEnum.Enabled
           : UserGroupStatusEnum.Disabled,
-        sortIndex: 0,
       };
 
-      if (isEdit && userGroupData) {
+      if (isEdit && userGroupInfo) {
         await runUpdateUserGroup({
-          id: userGroupData.id,
+          id: userGroupInfo.id,
           ...formData,
         });
       } else {
@@ -192,11 +197,21 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
+          <Form.Item label="描述" name="description">
+            <TextArea
+              placeholder="请输入用户组描述"
+              className="dispose-textarea-count"
+              autoSize={{ minRows: 3, maxRows: 5 }}
+              showCount
+              maxLength={200}
+            />
+          </Form.Item>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={6}>
               <Form.Item
                 label="最大用户数"
-                name="maxUsers"
+                name="maxUserCount"
+                initialValue={0}
                 rules={[{ required: true, message: '请输入最大用户数' }]}
                 tooltip={{
                   title: '0表示不限制用户数',
@@ -210,7 +225,35 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={6}>
+              <Form.Item
+                label="token限制"
+                name={['tokenLimit', 'limitPerDay']}
+                initialValue={0}
+                rules={[{ required: true, message: '请输入token限制数量' }]}
+              >
+                <InputNumber
+                  placeholder="请输入token限制"
+                  className={cx('w-full')}
+                  min={0}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item
+                label="排序"
+                name="sortIndex"
+                initialValue={0}
+                className={cx(styles.fieldItem)}
+              >
+                <InputNumber
+                  placeholder="请输入排序"
+                  className={cx('w-full')}
+                  min={0}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item
                 label="状态"
                 name="status"
@@ -225,20 +268,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="描述" name="description">
-            <TextArea
-              placeholder="请输入用户组描述"
-              className="dispose-textarea-count"
-              autoSize={{ minRows: 3, maxRows: 5 }}
-              showCount
-              maxLength={200}
-            />
-          </Form.Item>
-        </div>
-
-        {/* 系统字段配置 */}
-        <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>系统字段配置</h3>
         </div>
 
         {/* 数据权限配置 */}

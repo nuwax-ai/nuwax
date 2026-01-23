@@ -2,7 +2,7 @@ import { DownOutlined } from '@ant-design/icons';
 import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import React, { useMemo } from 'react';
-import type { MenuNodeInfo } from '../../type';
+import type { MenuNodeInfo } from '../../../RoleManage/type';
 import styles from './index.less';
 
 interface MenuPermissionTreeProps {

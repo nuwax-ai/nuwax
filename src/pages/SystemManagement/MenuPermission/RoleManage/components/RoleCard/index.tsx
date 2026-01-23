@@ -92,7 +92,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
             </span>
           </div>
 
-          {/* 菜单权限 */}
+          {/* 模型 */}
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>模型:</span>
             <span className={cx(styles.infoValue)}>
@@ -101,6 +101,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
                 : '暂未配置模型'}
             </span>
           </div>
+          {/* 菜单权限 */}
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>菜单权限:</span>
             <span className={cx(styles.infoValue)}>
