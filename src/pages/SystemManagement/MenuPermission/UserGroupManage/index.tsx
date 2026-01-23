@@ -23,7 +23,8 @@ const UserGroupManage: React.FC = () => {
   >({});
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editingUserGroup, setEditingUserGroup] = useState<UserGroupInfo>();
+  const [editingUserGroup, setEditingUserGroup] =
+    useState<UserGroupInfo | null>();
 
   // 查询用户组列表
   const {
@@ -71,7 +72,7 @@ const UserGroupManage: React.FC = () => {
 
   // 处理新增
   const handleAdd = () => {
-    setEditingUserGroup(undefined);
+    setEditingUserGroup(null);
     setIsEdit(false);
     setModalOpen(true);
   };
@@ -79,13 +80,14 @@ const UserGroupManage: React.FC = () => {
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
-    setEditingUserGroup(undefined);
+    setEditingUserGroup(null);
   };
 
   // 处理Modal成功
   const handleModalSuccess = () => {
+    setModalOpen(false);
+    setEditingUserGroup(null);
     runGetUserGroupList();
-    message.success(isEdit ? '编辑成功' : '创建成功');
   };
 
   // 计算每行显示的列数（响应式）
@@ -152,7 +154,7 @@ const UserGroupManage: React.FC = () => {
       <UserGroupFormModal
         open={modalOpen}
         isEdit={isEdit}
-        userGroupData={editingUserGroup}
+        userGroupInfo={editingUserGroup}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />

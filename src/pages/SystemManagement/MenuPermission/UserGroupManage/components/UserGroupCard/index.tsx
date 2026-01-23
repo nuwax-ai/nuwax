@@ -87,20 +87,31 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
         {/* 信息项 */}
         <div className={cx(styles.infoSection)}>
-          {/* 数据范围 */}
-          {/* <div className={cx(styles.infoItem)}>
-            <DatabaseOutlined className={cx(styles.infoIcon)} />
-            <span className={cx(styles.infoLabel)}>数据范围:</span>
-            <span className={cx(styles.infoValue)}>
-              {getDataScopeText(userGroup.dataScope)}
-            </span>
-          </div> */}
-
           {/* 最大用户数 */}
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>最大用户数:</span>
             <span className={cx(styles.infoValue)}>
-              {userGroup.maxUsers === 0 ? '不限制' : userGroup.maxUsers}
+              {userGroup.maxUserCount ? userGroup.maxUserCount : '不限制'}
+            </span>
+          </div>
+
+          {/* token限制 */}
+          <div className={cx(styles.infoItem)}>
+            <span className={cx(styles.infoLabel)}>token限制:</span>
+            <span className={cx(styles.infoValue)}>
+              {userGroup.tokenLimit?.limitPerDay
+                ? `${userGroup.tokenLimit.limitPerDay}次`
+                : '无限制'}
+            </span>
+          </div>
+
+          {/* 模型 */}
+          <div className={cx(styles.infoItem)}>
+            <span className={cx(styles.infoLabel)}>模型:</span>
+            <span className={cx(styles.infoValue)}>
+              {userGroup.modelIds?.length
+                ? `${userGroup.modelIds.length}项`
+                : '暂未配置模型'}
             </span>
           </div>
 
@@ -108,7 +119,7 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>菜单权限:</span>
             <span className={cx(styles.infoValue)}>
-              {/* {userGroup.menuPermissionCount || 0}项 */}
+              {/* {role.menuIds?.length ? `${role.menuIds.length}项` : '暂未设置'} */}
             </span>
           </div>
         </div>
