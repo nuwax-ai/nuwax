@@ -1,0 +1,163 @@
+@import '@/styles/token.less';
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-bottom: 0;
+  border-radius: 0;
+  background-color: var(--color-background-default, #fff);
+  border: none;
+  border-bottom: 1px solid var(--color-border-02, #e4e6eb);
+  transition: all 0.2s ease-in-out;
+  position: relative;
+
+  &:hover {
+    background-color: var(--color-background-tertiary, #f5f5f5);
+  }
+
+  // 有父级的菜单项，添加左侧连接线
+  &.hasParent {
+    position: relative;
+    border-left: 2px solid var(--color-border-primary, #5147ff);
+    margin-left: 0;
+  }
+}
+
+.leftContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-font-tertiary, #5e6470);
+  cursor: move;
+  flex-shrink: 0;
+  margin-top: 2px;
+
+  &:hover {
+    color: var(--color-font-primary, #15171f);
+  }
+}
+
+.titleSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+  line-height: 20px;
+  color: var(--color-font-primary, #15171f);
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pathRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.pathIcon {
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.path {
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.resourceCodesRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-font-secondary, #5e6470);
+}
+
+.resourceCodesLabel {
+  color: var(--color-font-tertiary, #5e6470);
+  font-weight: @fontWeightStrong;
+}
+
+.resourceCodes {
+  color: var(--color-font-secondary, #5e6470);
+}
+
+.rightContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  min-width: auto;
+}
+
+.children {
+  margin-left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// 响应式布局
+@media (max-width: 768px) {
+  .menuItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .rightContent {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .titleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

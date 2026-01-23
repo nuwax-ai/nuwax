@@ -1,6 +1,6 @@
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
-import { AgentEngineEnum } from '@/types/enums/agent';
+
 import {
   ModelApiProtocolEnum,
   ModelFunctionCallEnum,
@@ -32,9 +32,9 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
 
       if (isTaskAgent) {
         // 默认模型id
-        const agentEngine =
-          agentConfigInfo?.modelComponentConfig?.bindConfig?.agentEngine ||
-          AgentEngineEnum.Default;
+        // const agentEngine =
+        //   agentConfigInfo?.modelComponentConfig?.bindConfig?.agentEngine ||
+        //   AgentEngineEnum.Default;
         // 获取模型组件配置中的 targetId
         const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
 
@@ -49,10 +49,6 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
 
           if (!isBaseSupported) return false;
 
-          // 引擎特定检查
-          if (agentEngine === AgentEngineEnum.Default) {
-            return item.apiProtocol === ModelApiProtocolEnum.Anthropic;
-          }
           // NuwaxCli 支持所有基础模型 (Anthropic + OpenAI)
           return true;
         });
