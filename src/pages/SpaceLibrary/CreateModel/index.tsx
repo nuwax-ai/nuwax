@@ -212,7 +212,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
-        // onValuesChange={handleValuesChange}
         initialValues={{
           networkType: ModelNetworkTypeEnum.Internet,
           apiInfoList: [{ weight: 1 }],
@@ -222,6 +221,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
           strategy: ModelStrategyEnum.RoundRobin,
           type: ModelTypeEnum.Chat,
           maxTokens: 4096,
+          // 最大上下文长度，默认128000
+          maxContextTokens: 128000,
           dimension: 1536,
           enabled: ModelComponentStatusEnum.Enabled, // 启用
         }}
@@ -304,13 +305,24 @@ const CreateModel: React.FC<CreateModelProps> = ({
         </div>
 
         <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
-          <Form.Item
-            name="maxTokens"
-            label="最大输出token数"
-            rules={[{ required: true, message: '请输入最大输出token数' }]}
-          >
-            <InputNumber className={cx('w-full')} min={0} />
-          </Form.Item>
+          <div className={cx('flex', styles['gap-16'])}>
+            <Form.Item
+              name="maxTokens"
+              className={cx('flex-1')}
+              label="最大输出token数"
+              rules={[{ required: true, message: '请输入最大输出token数' }]}
+            >
+              <InputNumber className={cx('w-full')} min={0} />
+            </Form.Item>
+            <Form.Item
+              name="maxContextTokens"
+              className={cx('flex-1')}
+              label="最大上下文长度"
+              rules={[{ required: true, message: '请输入最大上下文长度' }]}
+            >
+              <InputNumber className={cx('w-full')} min={0} />
+            </Form.Item>
+          </div>
           <Form.Item
             name="functionCall"
             label="函数调用支持"
