@@ -1,11 +1,12 @@
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Drawer, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../api';
-import type { MenuNodeInfo, RoleInfo } from '../../type';
-import MenuPermissionTree from '../MenuPermissionTree';
+import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../RoleManage/api';
+import type { MenuNodeInfo, RoleInfo } from '../../RoleManage/type';
+import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,6 +34,9 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
 }) => {
   const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
   const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
+
+  // 使用自定义 Hook 处理抽屉打开时的滚动条
+  useDrawerScroll(open);
 
   // 将MenuTreeNode转换为MenuNodeInfo格式
   const convertMenuTreeToMenuNodeInfo = (menuTree: any[]): MenuNodeInfo[] => {
