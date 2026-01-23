@@ -283,19 +283,19 @@ export interface MenuNodeInfo {
   visible?: ResourceVisibleEnum;
 
   // 创建人
-  creator: string;
+  creator?: string;
 
   // 创建时间
-  created: string;
+  created?: string;
 
   // 修改人ID
-  modifierId: string;
+  modifierId?: string;
 
   // 修改人
-  modifier: string;
+  modifier?: string;
 
   // 修改时间
-  modified: string;
+  modified?: string;
 
   /*	子菜单列表 */
   children?: MenuNodeInfo[];
