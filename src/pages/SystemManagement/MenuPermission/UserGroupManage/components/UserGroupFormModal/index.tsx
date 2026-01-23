@@ -6,7 +6,7 @@ import { Col, Form, Input, InputNumber, Row, Switch, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import DataModelSelector from '../../../RoleManage/components/DataModelSelector';
+import DataModelSelector from '../../../components/DataModelSelector';
 import { apiAddUserGroup, apiUpdateUserGroup } from '../../api';
 import { UserGroupStatusEnum, type UserGroupInfo } from '../../type';
 import styles from './index.less';
