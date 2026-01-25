@@ -1413,29 +1413,45 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 如果是html、md文件，并且处于预览模式
       if (
         (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
-        viewFileType === 'preview' &&
-        fileProxyUrl
+        viewFileType === 'preview'
       ) {
-        // html 文件或无 content 的 markdown：使用 fileProxyUrl
-        // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-        const isHtml = fileName?.includes('.htm');
+        // 使用 content 属性，将其转换为 Blob 以避免触发下载
+        const fileTypeForPreview = fileName?.includes('.htm')
+          ? 'html'
+          : 'markdown';
 
-        // 获取文件预览的 key 和 url
-        const fileTypeForPreview = isHtml ? 'html' : 'markdown';
-        const { key: filePreviewKey, url: filePreviewUrl } =
-          buildFilePreviewProps(
-            fileTypeForPreview,
-            fileProxyUrl,
-            selectedFileId,
+        // 如果有内容，优先使用内存中的内容渲染
+        if (fileContent) {
+          const contentBlob = new Blob([fileContent], {
+            type: fileTypeForPreview === 'html' ? 'text/html' : 'text/markdown',
+          });
+
+          return (
+            <FilePreview
+              key={`${fileTypeForPreview}-${selectedFileId}-${fileRefreshTimestampRef.current}`}
+              src={contentBlob}
+              fileType={fileTypeForPreview}
+            />
           );
+        }
 
-        return (
-          <FilePreview
-            key={filePreviewKey}
-            src={filePreviewUrl}
-            fileType={fileTypeForPreview}
-          />
-        );
+        // 如果没有 content 但有 fileProxyUrl（降级方案，但 handleFileSelectInternal 应该已经获取了 content）
+        if (fileProxyUrl) {
+          const { key: filePreviewKey, url: filePreviewUrl } =
+            buildFilePreviewProps(
+              fileTypeForPreview,
+              fileProxyUrl,
+              selectedFileId,
+            );
+
+          return (
+            <FilePreview
+              key={filePreviewKey}
+              src={filePreviewUrl}
+              fileType={fileTypeForPreview}
+            />
+          );
+        }
       }
 
       // 代码文件：使用代码查看器
