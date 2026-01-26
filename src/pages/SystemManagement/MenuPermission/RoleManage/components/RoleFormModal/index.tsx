@@ -1,6 +1,7 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiSystemModelList } from '@/services/systemManage';
+import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -58,6 +59,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   // const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
   // const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
+  const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
   // const mockMenuTree: MenuNodeInfo[] = [
   //   {
@@ -91,7 +93,14 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           sortIndex: data.sortIndex || 0,
           status: data.status === RoleStatusEnum.Enabled,
         });
-        setSelectedModelIds(data.modelIds || []);
+        if (data?.modelIds && data?.modelIds?.length > 0) {
+          if (data?.modelIds?.length === 1 && data?.modelIds[0] === 0) {
+            // 如果模型ID列表长度为1，且为0，则设置为全部模型
+            setAllModelSelected(true);
+          } else {
+            setSelectedModelIds(data.modelIds || []);
+          }
+        }
       },
     },
   );
@@ -125,6 +134,13 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   );
 
+  useEffect(() => {
+    // 如果模型列表长度大于0，且全部模型已选中，则设置为全部模型ID列表
+    if (modelList?.length > 0 && allModelSelected) {
+      setSelectedModelIds(modelList.map((item: ModelConfigDto) => item.id));
+    }
+  }, [modelList, allModelSelected]);
+
   console.log('getRoleByIdLoading', getRoleByIdLoading);
 
   const loading = addLoading || updateLoading;
@@ -136,23 +152,12 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       runModelList();
       if (isEdit && roleInfo) {
         runGetRoleById(roleInfo.id);
-        // 编辑模式：填充表单数据
-        form.setFieldsValue({
-          code: roleInfo.code,
-          name: roleInfo.name,
-          description: roleInfo.description,
-          tokenLimit: {
-            limitPerDay: roleInfo.tokenLimit?.limitPerDay || 0,
-          },
-          sortIndex: roleInfo.sortIndex || 0,
-          status: roleInfo.status === RoleStatusEnum.Enabled,
-        });
-        setSelectedModelIds(roleInfo.modelIds || []);
-      } else {
-        // 新增模式：重置表单
-        form.resetFields();
-        setSelectedModelIds([]);
       }
+    } else {
+      // 新增模式：重置表单
+      form.resetFields();
+      setAllModelSelected(false);
+      setSelectedModelIds([]);
     }
   }, [open, isEdit, roleInfo, form]);
 
