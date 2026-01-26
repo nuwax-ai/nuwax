@@ -14,14 +14,6 @@ export enum MenuStatusEnum {
   Disabled = 0, // 禁用
 }
 
-/**
- * 菜单类型 1:父级菜单 2:末级菜单
- */
-export enum MenuTypeEnum {
-  Parent = 1, // 父级菜单
-  Leaf = 2, // 末级菜单
-}
-
 // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
 export enum MenuBindTypeEnum {
   Unbound = 0, // 未绑定

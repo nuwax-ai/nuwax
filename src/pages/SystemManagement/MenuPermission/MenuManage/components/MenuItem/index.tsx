@@ -8,7 +8,7 @@ import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
-import { MenuStatusEnum, MenuTypeEnum } from '../../../types/menu-manage';
+import { MenuStatusEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -57,9 +57,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
     onAddChild(menu);
   };
 
-  // 判断是否为末级菜单
-  const isLeafMenu = menu.type === MenuTypeEnum.Leaf;
-
   return (
     <>
       <div
@@ -80,9 +77,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
             <div className={cx(styles.titleRow)}>
               <h3 className={cx(styles.title)}>{menu.name}</h3>
               <div className={cx(styles.tags)}>
-                <Tag color={isLeafMenu ? 'green' : 'orange'}>
-                  {isLeafMenu ? '末级菜单' : '父级菜单'}
-                </Tag>
                 <Tag>{menu.code}</Tag>
                 <Tag
                   color={
@@ -102,18 +96,16 @@ const MenuItem: React.FC<MenuItemProps> = ({
               </div>
             )}
             {/* 关联资源码（仅末级菜单显示） */}
-            {isLeafMenu &&
-              menu.resourceTree &&
-              menu.resourceTree.length > 0 && (
-                <div className={cx(styles.resourceCodesRow)}>
-                  <span className={cx(styles.resourceCodesLabel)}>
-                    关联资源码:
-                  </span>
-                  <span className={cx(styles.resourceCodes)}>
-                    {menu.resourceTree.join(', ')}
-                  </span>
-                </div>
-              )}
+            {menu.resourceTree && menu.resourceTree.length > 0 && (
+              <div className={cx(styles.resourceCodesRow)}>
+                <span className={cx(styles.resourceCodesLabel)}>
+                  关联资源码:
+                </span>
+                <span className={cx(styles.resourceCodes)}>
+                  {menu.resourceTree.join(', ')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
