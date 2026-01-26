@@ -1,6 +1,7 @@
 import { ModelSaveParams } from '@/types/interfaces/model';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
+  AccessStatsResult,
   AddSystemUserParams,
   ModelConfigDto,
   NotifyMessageSendParams,
@@ -29,6 +30,7 @@ import type {
   TenantConfigDto,
   UpdateSystemUserParams,
   UploadResultDto,
+  UserStatsResult,
 } from '@/types/interfaces/systemManage';
 import { request } from 'umi';
 
@@ -341,5 +343,25 @@ export async function apiSystemResourceSkillDelete(data: {
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/skill/delete/${data.id}`, {
     method: 'DELETE',
+  });
+}
+/**
+ * 查询访问统计数据
+ */
+export async function apiGetAccessStats(): Promise<
+  RequestResponse<AccessStatsResult>
+> {
+  return request('/api/system/request/stats', {
+    method: 'GET',
+  });
+}
+/**
+ * 查询用户统计数据
+ */
+export async function apiGetUserStats(): Promise<
+  RequestResponse<UserStatsResult>
+> {
+  return request('/api/system/user/stats', {
+    method: 'GET',
   });
 }

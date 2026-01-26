@@ -527,3 +527,49 @@ export interface SystemSkillListParams extends SystemPaginationParams {
  * 技能列表分页响应
  */
 export type SystemSkillPage = SystemPageResult<SystemSkillInfo>;
+/**
+ * 访问统计返回结果
+ */
+export interface AccessStatsResult {
+  /** 今日访问量 */
+  todayUserCount: number;
+  /** 30日总访问量 */
+  last30DaysUserCount: number;
+  /** 七日访问趋势 */
+  last7DaysTrend: AccessStatsList[];
+}
+
+/**
+ * 访问统计趋势列表项
+ */
+export interface AccessStatsList {
+  /** 日期 */
+  date: string;
+  /** 访问量 */
+  userCount: number;
+}
+/**
+ * 用户统计返回结果
+ */
+export interface UserStatsResult {
+  /** 总用户数 */
+  totalUserCount: number;
+  /** 今日新增用户 */
+  todayNewUserCount: number;
+  /** 七日访问趋势 */
+  last7DaysTrend: UserTrendList[];
+  /** 三十日访问趋势 */
+  last30DaysTrend: UserTrendList[];
+  /** 当月访问趋势 */
+  monthlyTrend: UserTrendList[];
+}
+
+/**
+ * 用户趋势列表项
+ */
+export interface UserTrendList {
+  /** 日期 */
+  date: string;
+  /** 用户数 */
+  userCount: number;
+}
