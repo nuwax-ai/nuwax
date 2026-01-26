@@ -5,11 +5,27 @@ import type {
   ModelConfigDto,
   NotifyMessageSendParams,
   PublishedDto,
+  SystemAgentListParams,
+  SystemAgentPage,
+  SystemDataTableListParams,
+  SystemDataTablePage,
+  SystemKnowledgeListParams,
+  SystemKnowledgePage,
+  SystemMcpListParams,
+  SystemMcpPage,
+  SystemPluginListParams,
+  SystemPluginPage,
+  SystemSkillListParams,
+  SystemSkillPage,
   SystemSpaceListParams,
   SystemSpacePage,
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
+  SystemWebappListParams,
+  SystemWebappPage,
+  SystemWorkflowListParams,
+  SystemWorkflowPage,
   TenantConfigDto,
   UpdateSystemUserParams,
   UploadResultDto,
@@ -164,6 +180,166 @@ export async function apiSystemResourceSpaceDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/space/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询智能体列表
+export async function apiSystemResourceAgentList(
+  data: SystemAgentListParams,
+): Promise<RequestResponse<SystemAgentPage>> {
+  return request('/api/system/resource/agent/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除智能体
+export async function apiSystemResourceAgentDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/agent/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询网页应用列表
+export async function apiSystemResourceWebappList(
+  data: SystemWebappListParams,
+): Promise<RequestResponse<SystemWebappPage>> {
+  return request('/api/system/resource/page/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除网页应用
+export async function apiSystemResourceWebappDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/page/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询知识库列表
+export async function apiSystemResourceKnowledgeList(
+  data: SystemKnowledgeListParams,
+): Promise<RequestResponse<SystemKnowledgePage>> {
+  return request('/api/system/resource/knowledge/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除知识库
+export async function apiSystemResourceKnowledgeDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/knowledge/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询数据表列表
+export async function apiSystemResourceDataTableList(
+  data: SystemDataTableListParams,
+): Promise<RequestResponse<SystemDataTablePage>> {
+  return request('/api/system/resource/table/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除数据表
+export async function apiSystemResourceDataTableDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/table/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询工作流列表
+export async function apiSystemResourceWorkflowList(
+  data: SystemWorkflowListParams,
+): Promise<RequestResponse<SystemWorkflowPage>> {
+  return request('/api/system/resource/workflow/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除工作流
+export async function apiSystemResourceWorkflowDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/workflow/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+// 查询插件列表
+export async function apiSystemResourcePluginList(
+  data: SystemPluginListParams,
+): Promise<RequestResponse<SystemPluginPage>> {
+  return request('/api/system/resource/plugin/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除插件
+export async function apiSystemResourcePluginDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/plugin/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 查询 MCP 列表
+ */
+export async function apiSystemResourceMcpList(
+  data: SystemMcpListParams,
+): Promise<RequestResponse<SystemMcpPage>> {
+  return request('/api/system/resource/mcp/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 删除 MCP
+ */
+export async function apiSystemResourceMcpDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/mcp/delete/${data.id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 查询技能列表
+ */
+export async function apiSystemResourceSkillList(
+  data: SystemSkillListParams,
+): Promise<RequestResponse<SystemSkillPage>> {
+  return request('/api/system/resource/skill/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 删除技能
+ */
+export async function apiSystemResourceSkillDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/skill/delete/${data.id}`, {
     method: 'DELETE',
   });
 }
