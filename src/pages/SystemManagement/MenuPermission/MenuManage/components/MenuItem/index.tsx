@@ -7,7 +7,7 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { MenuTreeOption } from '../../../types/menu-manage';
+import type { MenuNodeInfo } from '../../../types/menu-manage';
 import { MenuStatusEnum, MenuTypeEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
@@ -15,15 +15,15 @@ const cx = classNames.bind(styles);
 
 interface MenuItemProps {
   /** 菜单信息 */
-  menu: MenuTreeOption;
+  menu: MenuNodeInfo;
   /** 层级深度（用于缩进） */
   level?: number;
   /** 编辑回调 */
-  onEdit: (menu: MenuTreeOption) => void;
+  onEdit: (menu: MenuNodeInfo) => void;
   /** 删除回调 */
-  onDelete: (menu: MenuTreeOption) => void;
+  onDelete: (menu: MenuNodeInfo) => void;
   /** 新增子菜单回调 */
-  onAddChild: (parentMenu: MenuTreeOption) => void;
+  onAddChild: (parentMenu: MenuNodeInfo) => void;
   /** 删除加载状态 */
   deleteLoading?: boolean;
 }

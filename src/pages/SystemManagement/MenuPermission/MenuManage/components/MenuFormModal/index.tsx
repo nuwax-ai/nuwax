@@ -27,7 +27,7 @@ import {
   MenuStatusEnum,
   MenuTypeEnum,
   type MenuInfo,
-  type MenuTreeOption,
+  type MenuNodeInfo,
 } from '../../../types/menu-manage';
 import styles from './index.less';
 
@@ -42,7 +42,7 @@ interface MenuFormModalProps {
   /** 编辑时的菜单数据 */
   menuInfo?: MenuInfo | null;
   /** 父菜单（新增子菜单时使用） */
-  parentMenu?: MenuTreeOption | null;
+  parentMenu?: MenuNodeInfo | null;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
