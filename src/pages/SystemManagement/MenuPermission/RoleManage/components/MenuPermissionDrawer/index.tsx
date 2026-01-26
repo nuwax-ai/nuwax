@@ -4,9 +4,9 @@ import { Button, Drawer, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import type { MenuNodeInfo, RoleInfo } from '../../RoleManage';
-import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../RoleManage/api';
-import MenuPermissionTree from './MenuPermissionTree';
+import MenuPermissionTree from '../../../components/MenuPermissionDrawer/MenuPermissionTree';
+import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../api';
+import type { MenuNodeInfo, RoleInfo } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

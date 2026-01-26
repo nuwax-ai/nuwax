@@ -35,9 +35,9 @@ export enum ResourceVisibleEnum {
  * 	资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定
  */
 export enum ResourceBindTypeEnum {
-  None = 0, // 未绑定
-  All = 1, // 全部绑定
-  Part = 2, // 部分绑定
+  Unbound = 0, // 未绑定
+  AllBound = 1, // 全部绑定
+  PartiallyBound = 2, // 部分绑定
 }
 
 // ==================== 接口定义 ====================
@@ -139,35 +139,48 @@ export interface GetResourceListParams {
 }
 
 /**
- * 资源树节点（用于下拉选择）
+ * 资源树节点
  */
-export interface ResourceTreeOption {
-  /** 资源ID */
+export interface ResourceTreeNode {
+  /*资源ID */
   id: number;
-  // 资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定
-  resourceBindType: ResourceBindTypeEnum;
-  /** 编码 */
-  code: string;
-  /** 名称 */
-  name: string;
-  /** 描述 */
+
+  /*资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定 */
+  resourceBindType?: ResourceBindTypeEnum;
+
+  /*子资源列表 */
+  children?: ResourceTreeNode[];
+
+  /*编码 */
+  code?: string;
+
+  /*名称 */
+  name?: string;
+
+  /*描述 */
   description?: string;
-  /** 来源 1:系统内置 2:用户自定义 */
-  source: ResourceSourceEnum;
-  /** 类型 1:模块 2:组件 3:页面 */
-  type: ResourceTypeEnum;
-  /** 父级ID */
+
+  /*来源 1:系统内置 2:用户自定义 */
+  source?: ResourceSourceEnum;
+
+  /*类型 1:模块 2:组件 3:页面 */
+  type?: ResourceTypeEnum;
+
+  /*父级ID */
   parentId?: number;
-  /** 访问路径 */
+
+  /*访问路径 */
   path?: string;
-  /** 图标 */
+
+  /*图标 */
   icon?: string;
-  /** 排序 */
-  sortIndex: number;
-  /** 状态 1:启用 0:禁用 */
-  status: ResourceStatusEnum;
-  /** 是否显示 1:显示 0:隐藏 */
+
+  /*排序 */
+  sortIndex?: number;
+
+  /*状态 1:启用 0:禁用 */
+  status?: ResourceStatusEnum;
+
+  /*是否显示 1:显示 0:隐藏 */
   visible?: ResourceVisibleEnum;
-  /** 子资源列表 */
-  children?: ResourceTreeOption[];
 }

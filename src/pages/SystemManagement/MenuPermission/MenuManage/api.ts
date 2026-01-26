@@ -9,24 +9,24 @@ import type {
 } from './type';
 
 /**
- * 添加菜单
- */
-export async function apiAddMenu(
-  data: AddMenuParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/system/menu/add', {
-    method: 'POST',
-    data,
-  });
-}
-
-/**
  * 更新菜单
  */
 export async function apiUpdateMenu(
   data: UpdateMenuParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/menu/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 添加菜单
+ */
+export async function apiAddMenu(
+  data: AddMenuParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/menu/add', {
     method: 'POST',
     data,
   });
