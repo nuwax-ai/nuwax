@@ -118,11 +118,9 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
   return (
     <>
       <div
-        className={cx(styles.resourceItem, {
-          [styles.hasParent]: level > 0,
-        })}
+        className={cx(styles.resourceItem)}
         style={{
-          marginLeft: level > 0 ? `${level * 32 + 16}px` : '0',
+          marginLeft: level > 0 ? `${level * 24 + 16}px` : '0',
         }}
       >
         {/* 左侧：图标和内容 */}
