@@ -160,6 +160,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       } else {
         // 新增模式：重置表单
         form.resetFields();
+        setImageUrl('');
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
@@ -295,18 +296,36 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item
-            label="状态"
-            name="status"
-            valuePropName="checked"
-            initialValue={true}
-            tooltip={{
-              title: '启用或禁用此资源',
-              icon: <InfoCircleOutlined />,
-            }}
-          >
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                initialValue={true}
+                tooltip={{
+                  title: '启用或禁用此资源',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="是否显示"
+                name="visible"
+                valuePropName="checked"
+                initialValue={true}
+                tooltip={{
+                  title: '是否显示此资源',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item label="描述" name="description">
             <TextArea
               placeholder="请输入描述"

@@ -1,16 +1,16 @@
+import { modalConfirm } from '@/utils/ant-custom';
 import {
-  ApiOutlined,
   AppstoreOutlined,
   DeleteOutlined,
   EditOutlined,
-  MenuOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Popconfirm, Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ResourceTreeNode } from '../../../types/permission-resources';
 import {
+  ResourceSourceEnum,
   ResourceStatusEnum,
   ResourceTypeEnum,
 } from '../../../types/permission-resources';
@@ -39,24 +39,7 @@ interface ResourceItemProps {
  */
 const getResourceTypeInfo = (
   type: ResourceTypeEnum,
-  path?: string,
 ): { text: string; color: string; icon: React.ReactNode } => {
-  // 如果路径以 /api/ 开头，认为是接口
-  if (path?.startsWith('/api/')) {
-    return {
-      text: '接口',
-      color: 'orange',
-      icon: <ApiOutlined />,
-    };
-  }
-  // 如果路径以 /system/ 或 /business/ 等开头，认为是菜单
-  if (path && (path.startsWith('/system/') || path.startsWith('/business/'))) {
-    return {
-      text: '菜单',
-      color: 'default',
-      icon: <MenuOutlined />,
-    };
-  }
   // 根据类型判断
   switch (type) {
     case ResourceTypeEnum.Module:
@@ -106,7 +89,12 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
 
   // 处理删除确认
   const handleDelete = () => {
-    onDelete(resource);
+    modalConfirm('删除资源', `确认删除资源 "${resource.name}" 吗？`, () => {
+      onDelete(resource);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      });
+    });
   };
 
   // 处理新增子资源
@@ -116,7 +104,7 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
   };
 
   // 获取资源类型信息
-  const typeInfo = getResourceTypeInfo(resource.type, resource.path);
+  const typeInfo = getResourceTypeInfo(resource.type as ResourceTypeEnum);
 
   return (
     <>
@@ -143,7 +131,6 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
                 className={cx(styles.defaultIcon, 'overflow-hidden', {
                   [styles.moduleIcon]: typeInfo.text === '模块',
                   [styles.menuIcon]: typeInfo.text === '菜单',
-                  [styles.apiIcon]: typeInfo.text === '接口',
                 })}
               >
                 {typeInfo.icon}
@@ -198,22 +185,17 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
               onClick={handleEdit}
               className={cx(styles.actionButton)}
             />
-            <Popconfirm
-              title="删除资源"
-              description={`确认删除资源 "${resource.name}" 吗？`}
-              onConfirm={handleDelete}
-              okText="确定"
-              cancelText="取消"
-              okButtonProps={{ loading: deleteLoading }}
-            >
+            {resource.source === ResourceSourceEnum.UserDefined && (
               <Button
                 type="text"
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
+                onClick={handleDelete}
+                loading={deleteLoading}
                 className={cx(styles.actionButton)}
               />
-            </Popconfirm>
+            )}
           </div>
         </div>
       </div>
