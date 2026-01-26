@@ -1,3 +1,8 @@
+import { apiGetAccessStats, apiGetUserStats } from '@/services/systemManage';
+import type {
+  AccessStatsResult,
+  UserStatsResult,
+} from '@/types/interfaces/systemManage';
 import {
   AppstoreOutlined,
   BarChartOutlined,
@@ -12,10 +17,11 @@ import {
   TeamOutlined,
   UserAddOutlined,
 } from '@ant-design/icons';
+import { useRequest } from 'ahooks';
 import { Badge, Col, Row, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ResourceGrid, SessionStats, StatCard, TrendChart } from './components';
 import styles from './index.less';
 
@@ -37,63 +43,98 @@ const Clock: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
-  // 模拟数据 - 核心统计
-  const coreStats = [
+  const [hasAccessLoaded, setHasAccessLoaded] = useState(false);
+  const { data: accessStats, loading: accessLoading } = useRequest(
+    apiGetAccessStats,
     {
-      title: '总用户数',
-      value: 128456,
-      trend: { value: 5.2, isUp: true, label: 'vs 上月' },
-      icon: <TeamOutlined />,
-      iconColor: '#1890ff',
-      iconBgColor: '#e6f7ff',
+      onSuccess: () => setHasAccessLoaded(true),
     },
+  );
+  const [userPeriod, setUserPeriod] = useState<'7d' | '30d' | 'month'>('7d');
+  const [hasUserLoaded, setHasUserLoaded] = useState(false);
+  const { data: userStats, loading: userLoading } = useRequest(
+    apiGetUserStats,
     {
-      title: '今日新增用户',
-      value: 1248,
-      trend: { value: 12.5, isUp: true, label: 'vs 昨日' },
-      icon: <UserAddOutlined />,
-      iconColor: '#52c41a',
-      iconBgColor: '#f6ffed',
+      onSuccess: () => setHasUserLoaded(true),
     },
-    {
-      title: '今日访问量',
-      value: 8642,
-      trend: { value: 3.8, isUp: true, label: 'vs 昨日' },
-      icon: <EyeOutlined />,
-      iconColor: '#722ed1',
-      iconBgColor: '#f9f0ff',
-    },
-    {
-      title: '30日总访问量',
-      value: 218563,
-      trend: { value: 8.6, isUp: true, label: 'vs 上月' },
-      icon: <BarChartOutlined />,
-      iconColor: '#fa8c16',
-      iconBgColor: '#fff7e6',
-    },
-  ];
+  );
 
-  // 模拟数据 - 用户新增趋势
-  const userTrendData = [
-    { date: '1月16日', value: 1120 },
-    { date: '1月17日', value: 1180 },
-    { date: '1月18日', value: 844 },
-    { date: '1月19日', value: 856 },
-    { date: '1月20日', value: 1080 },
-    { date: '1月21日', value: 1020 },
-    { date: '1月22日', value: 1150 },
-  ];
+  // 映射核心统计
+  const coreStats = useMemo(() => {
+    // 兼容处理：如果 accessStats 是 RequestResponse 结构，则取 .data；
+    // 如果 api 成功被拦截器解构直接返回了 AccessStatsResult，则直接使用 accessStats。
+    const result = (accessStats as any)?.data || accessStats;
+    const data = result as AccessStatsResult | undefined;
+    const userResult = (userStats as any)?.data || userStats;
+    const userData = userResult as UserStatsResult | undefined;
 
-  // 模拟数据 - 访问趋势
-  const visitTrendData = [
-    { date: '1月16日', value: 5800 },
-    { date: '1月17日', value: 7200 },
-    { date: '1月18日', value: 5657 },
-    { date: '1月19日', value: 5850 },
-    { date: '1月20日', value: 5100 },
-    { date: '1月21日', value: 7800 },
-    { date: '1月22日', value: 5200 },
-  ];
+    return [
+      {
+        title: '总用户数',
+        value: userData?.totalUserCount || 0,
+        icon: <TeamOutlined />,
+        iconColor: '#1890ff',
+        iconBgColor: '#e6f7ff',
+        loading: !hasUserLoaded && userLoading,
+      },
+      {
+        title: '今日新增用户',
+        value: userData?.todayNewUserCount || 0,
+        icon: <UserAddOutlined />,
+        iconColor: '#52c41a',
+        iconBgColor: '#f6ffed',
+        loading: !hasUserLoaded && userLoading,
+      },
+      {
+        title: '今日访问量',
+        value: data?.todayUserCount || 0,
+        icon: <EyeOutlined />,
+        iconColor: '#722ed1',
+        iconBgColor: '#f9f0ff',
+        loading: !hasAccessLoaded && accessLoading,
+      },
+      {
+        title: '30日总访问量',
+        value: data?.last30DaysUserCount || 0,
+        icon: <BarChartOutlined />,
+        iconColor: '#fa8c16',
+        iconBgColor: '#fff7e6',
+        loading: !hasAccessLoaded && accessLoading,
+      },
+    ];
+  }, [accessStats, accessLoading]);
+
+  // 映射用户新增趋势
+  const userTrendData = useMemo(() => {
+    const userResult = (userStats as any)?.data || userStats;
+    const userData = userResult as UserStatsResult | undefined;
+    if (!userData) return [];
+
+    let trendData: any[] = [];
+    if (userPeriod === '7d') {
+      trendData = userData.last7DaysTrend || [];
+    } else if (userPeriod === '30d') {
+      trendData = userData.last30DaysTrend || [];
+    } else if (userPeriod === 'month') {
+      trendData = userData.monthlyTrend || [];
+    }
+
+    return trendData.map((item: any) => ({
+      date: item.date,
+      value: item.userCount,
+    }));
+  }, [userStats, userPeriod]);
+
+  // 映射访问趋势
+  const visitTrendData = useMemo(() => {
+    const result = (accessStats as any)?.data || accessStats;
+    return (
+      (result as AccessStatsResult)?.last7DaysTrend?.map((item) => ({
+        date: item.date,
+        value: item.userCount,
+      })) || []
+    );
+  }, [accessStats]);
 
   // 模拟数据 - 资源概览
   const resources = [
@@ -160,7 +201,6 @@ const Dashboard: React.FC = () => {
     {
       title: '总会话数',
       value: 15678,
-      trend: { value: 18.6, isUp: true, label: 'vs 上月' },
       icon: <CommentOutlined />,
       iconColor: '#722ed1',
       iconBgColor: '#f9f0ff',
@@ -168,7 +208,6 @@ const Dashboard: React.FC = () => {
     {
       title: '今日新增会话',
       value: 892,
-      trend: { value: 15.3, isUp: true, label: 'vs 昨日' },
       icon: <CommentOutlined />,
       iconColor: '#13c2c2',
       iconBgColor: '#e6fffb',
@@ -221,6 +260,9 @@ const Dashboard: React.FC = () => {
             data={userTrendData}
             color="#722ed1"
             tooltipName="新增用户"
+            loading={!hasUserLoaded && userLoading}
+            period={userPeriod}
+            onPeriodChange={setUserPeriod}
           />
         </Col>
         <Col xs={24} sm={24} md={12} lg={12} xl={12}>
@@ -229,6 +271,8 @@ const Dashboard: React.FC = () => {
             data={visitTrendData}
             color="#1890ff"
             tooltipName="访问量"
+            loading={!hasAccessLoaded && accessLoading}
+            periods={[{ label: '7天', value: '7d' }]}
           />
         </Col>
       </Row>

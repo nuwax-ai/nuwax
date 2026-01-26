@@ -1,7 +1,7 @@
 import { Line } from '@ant-design/plots';
-import { Card, Radio } from 'antd';
+import { Card, Radio, Skeleton } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React from 'react';
 import styles from './index.less';
 import type { TrendChartProps } from './type';
 
@@ -13,9 +13,15 @@ const TrendChart: React.FC<TrendChartProps> = ({
   height = 280,
   color = '#1890ff',
   tooltipName = '数据',
+  loading = false,
+  period = '7d',
+  onPeriodChange,
+  periods = [
+    { label: '7天', value: '7d' },
+    { label: '30天', value: '30d' },
+    { label: '按月', value: 'month' },
+  ],
 }) => {
-  const [period, setPeriod] = useState<'7d' | '30d' | 'month'>('7d');
-
   const config = React.useMemo(
     () => ({
       data,
@@ -88,17 +94,25 @@ const TrendChart: React.FC<TrendChartProps> = ({
         <h3 className={cx(styles['trend-chart-title'])}>{title}</h3>
         <Radio.Group
           value={period}
-          onChange={(e) => setPeriod(e.target.value)}
+          onChange={(e) => onPeriodChange?.(e.target.value)}
           size="small"
           className={cx(styles['period-selector'])}
         >
-          <Radio.Button value="7d">7天</Radio.Button>
-          <Radio.Button value="30d">30天</Radio.Button>
-          <Radio.Button value="month">按月</Radio.Button>
+          {periods.map((p) => (
+            <Radio.Button key={p.value} value={p.value}>
+              {p.label}
+            </Radio.Button>
+          ))}
         </Radio.Group>
       </div>
       <div className={cx(styles['trend-chart-content'])}>
-        <Line {...config} />
+        {loading ? (
+          <div style={{ height }}>
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </div>
+        ) : (
+          <Line {...config} />
+        )}
       </div>
     </Card>
   );

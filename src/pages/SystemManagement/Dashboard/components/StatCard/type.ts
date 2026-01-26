@@ -11,4 +11,5 @@ export interface StatCardProps {
   icon: React.ReactNode;
   iconColor?: string;
   iconBgColor?: string;
+  loading?: boolean;
 }
