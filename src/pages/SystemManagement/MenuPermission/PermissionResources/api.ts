@@ -4,7 +4,7 @@ import type {
   AddResourceParams,
   GetResourceListParams,
   ResourceInfo,
-  ResourceTreeOption,
+  ResourceTreeNode,
   UpdateResourceParams,
 } from './type';
 
@@ -59,7 +59,7 @@ export async function apiGetResourceById(
  */
 export async function apiGetResourceList(
   data?: GetResourceListParams,
-): Promise<RequestResponse<ResourceTreeOption[]>> {
+): Promise<RequestResponse<ResourceTreeNode[]>> {
   return request('/api/system/resource/list', {
     method: 'GET',
     params: data,

@@ -20,6 +20,13 @@ export enum MenuTypeEnum {
   Leaf = 2, // 末级菜单
 }
 
+// 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
+export enum MenuBindTypeEnum {
+  Unbound = 0, // 未绑定
+  AllBound = 1, // 全部绑定
+  PartiallyBound = 2, // 部分绑定
+}
+
 // ==================== 接口定义 ====================
 
 /**

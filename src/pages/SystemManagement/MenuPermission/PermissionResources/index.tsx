@@ -7,7 +7,7 @@ import { apiDeleteResource, apiGetResourceList } from './api';
 import ResourceFormModal from './components/ResourceFormModal';
 import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
-import type { ResourceInfo, ResourceTreeOption } from './type';
+import type { ResourceInfo, ResourceTreeNode } from './type';
 
 const cx = classNames.bind(styles);
 
@@ -20,7 +20,7 @@ const PermissionResources: React.FC = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [editingResource, setEditingResource] = useState<ResourceInfo | null>();
   const [parentResource, setParentResource] =
-    useState<ResourceTreeOption | null>();
+    useState<ResourceTreeNode | null>();
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
@@ -59,8 +59,8 @@ const PermissionResources: React.FC = () => {
   });
 
   // 处理编辑
-  const handleEdit = (resource: ResourceTreeOption) => {
-    // 将 ResourceTreeOption 转换为 ResourceInfo
+  const handleEdit = (resource: ResourceTreeNode) => {
+    // 将 ResourceTreeNode 转换为 ResourceInfo
     const resourceInfo: ResourceInfo = {
       id: resource.id,
       code: resource.code,
@@ -81,7 +81,7 @@ const PermissionResources: React.FC = () => {
   };
 
   // 处理删除
-  const handleDelete = (resource: ResourceTreeOption) => {
+  const handleDelete = (resource: ResourceTreeNode) => {
     runDelete(resource?.id);
   };
 
@@ -94,7 +94,7 @@ const PermissionResources: React.FC = () => {
   };
 
   // 处理新增子资源
-  const handleAddChild = (parentResource: ResourceTreeOption) => {
+  const handleAddChild = (parentResource: ResourceTreeNode) => {
     console.log(parentResource, '处理新增子资源');
     setEditingResource(null);
     setParentResource(parentResource);
@@ -149,7 +149,7 @@ const PermissionResources: React.FC = () => {
             />
           ) : (
             <div className={cx(styles.resourceList)}>
-              {resourceList?.map((resource: ResourceTreeOption) => (
+              {resourceList?.map((resource: ResourceTreeNode) => (
                 <ResourceItem
                   key={resource.id}
                   resource={resource}
