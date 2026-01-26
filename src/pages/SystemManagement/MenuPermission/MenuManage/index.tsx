@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiDeleteMenu, apiGetMenuList } from '../services/menu-manage';
-import type { MenuInfo, MenuNodeInfo } from '../types/menu-manage';
+import type { MenuNodeInfo } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import MenuItem from './components/MenuItem';
 import styles from './index.less';
@@ -18,7 +18,7 @@ const cx = classNames.bind(styles);
 const MenuManage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editingMenu, setEditingMenu] = useState<MenuInfo | null>(null);
+  const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
   const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
@@ -59,19 +59,23 @@ const MenuManage: React.FC = () => {
 
   // 处理编辑
   const handleEdit = (menu: MenuNodeInfo) => {
-    // 将 MenuNodeInfo 转换为 MenuInfo
-    const menuInfo: MenuInfo = {
+    // 将 MenuNodeInfo 转换为 MenuNodeInfo
+    const menuInfo: MenuNodeInfo = {
       id: menu.id,
       code: menu.code,
       name: menu.name,
       description: menu.description,
-      type: menu.type,
+      source: menu.source,
+      menuBindType: menu.menuBindType,
+      visible: menu.visible,
+      status: menu.status,
+      resourceTree: menu.resourceTree,
       parentId: menu.parentId,
       path: menu.path,
       icon: menu.icon,
       sortIndex: menu.sortIndex,
-      status: menu.status,
-      resourceCodes: menu.resourceCodes,
+      children: menu?.children,
+      resourceTree: menu.resourceTree,
     };
     setEditingMenu(menuInfo);
     setIsEdit(true);

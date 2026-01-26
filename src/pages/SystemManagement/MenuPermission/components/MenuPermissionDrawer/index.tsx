@@ -8,7 +8,8 @@ import {
   apiGetRoleBoundMenuList,
   apiRoleBindMenu,
 } from '../../services/role-manage';
-import type { MenuNodeInfo, RoleInfo } from '../../types/role-manage';
+import type { MenuNodeInfo } from '../../types/menu-manage';
+import type { RoleInfo } from '../../types/role-manage';
 import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
 
@@ -48,6 +49,12 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
       name: menu.name || `菜单${menu.menuId}`,
       code: menu.code,
       parentId: menu.parentId,
+      source: menu.source,
+      menuBindType: menu.menuBindType,
+      visible: menu.visible,
+      status: menu.status,
+      resourceCodes: menu.resourceCodes,
+      resourceTree: menu.resourceTree,
       children: menu.children
         ? convertMenuTreeToMenuNodeInfo(menu.children)
         : undefined,

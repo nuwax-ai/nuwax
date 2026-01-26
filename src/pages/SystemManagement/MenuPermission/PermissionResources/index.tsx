@@ -7,9 +7,13 @@ import {
   apiDeleteResource,
   apiGetResourceList,
 } from '../services/permission-resources';
-import type {
-  ResourceInfo,
-  ResourceTreeNode,
+import {
+  ResourceSourceEnum,
+  ResourceStatusEnum,
+  ResourceTypeEnum,
+  ResourceVisibleEnum,
+  type ResourceInfo,
+  type ResourceTreeNode,
 } from '../types/permission-resources';
 import ResourceFormModal from './components/ResourceFormModal';
 import ResourceItem from './components/ResourceItem';
@@ -69,17 +73,17 @@ const PermissionResources: React.FC = () => {
     // 将 ResourceTreeNode 转换为 ResourceInfo
     const resourceInfo: ResourceInfo = {
       id: resource.id,
-      code: resource.code,
-      name: resource.name,
+      code: resource.code || '',
+      name: resource.name || '',
       description: resource.description,
-      source: resource.source,
-      type: resource.type,
+      source: resource.source || ResourceSourceEnum.SystemBuiltIn,
+      type: resource.type || ResourceTypeEnum.Module,
       parentId: resource.parentId,
       path: resource.path,
       icon: resource.icon,
-      sortIndex: resource.sortIndex,
-      status: resource.status,
-      visible: resource.visible,
+      sortIndex: resource.sortIndex || 0,
+      status: resource.status || ResourceStatusEnum.Enabled,
+      visible: resource.visible || ResourceVisibleEnum.Visible,
     };
     setEditingResource(resourceInfo);
     setIsEdit(true);
