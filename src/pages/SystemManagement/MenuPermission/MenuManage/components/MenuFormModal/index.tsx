@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import UploadAvatar from '@/components/UploadAvatar';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -23,6 +24,7 @@ import {
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
 import { MenuStatusEnum, type MenuNodeInfo } from '../../../types/menu-manage';
+import { ResourceTreeNode } from '../../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -56,9 +58,12 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  // 选中的资源码
   const [selectedResourceCodes, setSelectedResourceCodes] = useState<
     React.Key[]
   >([]);
+  // 图标
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增菜单
   const { run: runAddMenu, loading: addLoading } = useRequest(apiAddMenu, {
@@ -89,7 +94,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     },
   );
 
-  // 查询菜单树列表（用于父菜单选择）
+  // 根据条件查询菜单列表（树形结构）（用于父菜单选择）
   const { run: runGetMenuTree, data: menuTreeList } = useRequest(
     apiGetMenuList,
     {
@@ -97,7 +102,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     },
   );
 
-  // 查询资源列表（用于关联资源码选择）
+  // 根据条件查询权限资源列表（树形结构）（用于关联资源码选择）
   const { run: runGetResourceList, data: resourceTreeList } = useRequest(
     apiGetResourceList,
     {
@@ -151,6 +156,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   useEffect(() => {
     if (open) {
       if (isEdit && menuInfoResponse) {
+        setImageUrl(menuInfoResponse.icon || '');
         form.setFieldsValue({
           code: menuInfoResponse.code,
           name: menuInfoResponse.name,
@@ -162,8 +168,12 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           status: menuInfoResponse.status === MenuStatusEnum.Enabled,
         });
         // 设置关联资源码
-        if (menuInfoResponse.resourceCodes) {
-          setSelectedResourceCodes(menuInfoResponse.resourceCodes);
+        if (menuInfoResponse.resourceTree) {
+          setSelectedResourceCodes(
+            menuInfoResponse.resourceTree.map(
+              (resource: ResourceTreeNode) => resource.code,
+            ),
+          );
         }
       } else {
         // 新增模式：重置表单
@@ -193,9 +203,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         name: values.name,
         description: values.description || '',
         type: values.type,
-        parentId: values.parentId || undefined,
+        parentId: values.parentId || '',
         path: values.path,
-        icon: values.icon,
+        icon: values.icon || imageUrl,
         sortIndex: values.sortIndex || 0,
         status: values.status
           ? MenuStatusEnum.Enabled
@@ -247,6 +257,13 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
           <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
+          <Form.Item name="icon" label="图标">
+            <UploadAvatar
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              svgIconName="icons-workspace-agent"
+            />
+          </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -284,14 +301,13 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={12}></Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="路由路径" name="path">
                 <Input placeholder="请输入路由路径" />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="排序" name="sortIndex" initialValue={0}>
                 <InputNumber
@@ -301,21 +317,32 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                initialValue={true}
+                tooltip={{
+                  title: '启用或禁用此菜单',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item label="图标" name="icon">
-            <Input placeholder="请输入图标" />
-          </Form.Item>
           <Form.Item
-            label="状态"
-            name="status"
+            label="是否显示"
+            name="visible"
             valuePropName="checked"
             initialValue={true}
             tooltip={{
-              title: '启用或禁用此菜单',
+              title: '启用或禁用此菜单是否显示',
               icon: <InfoCircleOutlined />,
             }}
           >
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+            <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
           </Form.Item>
           <Form.Item label="描述" name="description">
             <TextArea
