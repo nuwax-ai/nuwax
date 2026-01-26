@@ -333,3 +333,41 @@ export interface NotifyMessageSendParams {
   /** 消息接收者 */
   userIds: number[];
 }
+
+// 工作空间信息
+export interface SystemSpaceInfo {
+  /** 空间ID */
+  id: number;
+  /** 名称 */
+  name: string;
+  /** 描述 */
+  description: string;
+  /** 创建人ID */
+  creatorId: number;
+  /** 创建人 */
+  creatorName: string;
+  /** 创建时间 */
+  created: string;
+  /** 操作 */
+  operation: string;
+}
+
+// 查询工作空间列表参数
+export interface SystemSpaceListParams {
+  /** 页码 */
+  pageNo: number;
+  /** 每页条数 */
+  pageSize: number;
+  /** 名称 */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+}
+
+// 空间列表分页响应
+export interface SystemSpacePage {
+  total: number;
+  pageNo: number;
+  pageSize: number;
+  records: SystemSpaceInfo[];
+}
