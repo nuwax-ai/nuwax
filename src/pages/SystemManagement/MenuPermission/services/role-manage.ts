@@ -1,9 +1,9 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import type { MenuNodeInfo } from '../types/menu-manage';
 import type {
   AddRoleParams,
   GetRoleListParams,
-  MenuNodeInfo,
   RoleBindMenuParams,
   RoleBindUserParams,
   RoleInfo,

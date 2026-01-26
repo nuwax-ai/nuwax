@@ -2,9 +2,10 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import type {
   AddMenuParams,
+  BindMenuResourceParams,
   GetMenuListParams,
   MenuInfo,
-  MenuTreeOption,
+  MenuNodeInfo,
   UpdateMenuParams,
 } from '../types/menu-manage';
 
@@ -44,6 +45,18 @@ export async function apiDeleteMenu(
 }
 
 /**
+ * 菜单绑定资源
+ */
+export async function apiMenuBindResource(
+  data: BindMenuResourceParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/menu/bind-resource', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 根据ID查询菜单
  */
 export async function apiGetMenuById(
@@ -59,7 +72,7 @@ export async function apiGetMenuById(
  */
 export async function apiGetMenuList(
   data?: GetMenuListParams,
-): Promise<RequestResponse<MenuTreeOption[]>> {
+): Promise<RequestResponse<MenuNodeInfo[]>> {
   return request('/api/system/menu/list', {
     method: 'GET',
     params: data,
@@ -70,7 +83,7 @@ export async function apiGetMenuList(
  * 查询菜单树（用于下拉选择）
  */
 export async function apiGetMenuTree(): Promise<
-  RequestResponse<MenuTreeOption[]>
+  RequestResponse<MenuNodeInfo[]>
 > {
   return request('/api/system/menu/tree', {
     method: 'GET',

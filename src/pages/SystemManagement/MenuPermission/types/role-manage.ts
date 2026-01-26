@@ -6,9 +6,7 @@ import { MenuBindTypeEnum } from './menu-manage';
 import {
   ResourceBindTypeEnum,
   ResourceSourceEnum,
-  ResourceStatusEnum,
   ResourceTreeNode,
-  ResourceVisibleEnum,
 } from './permission-resources';
 
 // ==================== 枚举定义 ====================
@@ -162,63 +160,4 @@ export interface UserInfo {
   nickName: string;
   // 用户头像
   avatar: string;
-}
-
-/**
- * 菜单节点信息
- */
-export interface MenuNodeInfo {
-  /* 菜单ID */
-  id: number;
-
-  /*资源码 */
-  code?: string;
-
-  /*名称 */
-  name?: string;
-
-  /*描述 */
-  description?: string;
-
-  /*来源 1:系统内置 2:用户自定义 */
-  source?: ResourceSourceEnum;
-
-  /*父级ID */
-  parentId?: number;
-
-  /*访问路径 */
-  path?: string;
-
-  /*图标 */
-  icon?: string;
-
-  /*排序 */
-  sortIndex?: number;
-
-  /*状态 1:启用 0:禁用 */
-  status?: ResourceStatusEnum;
-
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
-
-  // 创建人
-  creator?: string;
-
-  // 创建时间
-  created?: string;
-
-  // 修改人ID
-  modifierId?: string;
-
-  // 修改人
-  modifier?: string;
-
-  // 修改时间
-  modified?: string;
-
-  /*	子菜单列表 */
-  children?: MenuNodeInfo[];
-
-  // 资源树节点
-  resourceTree?: ResourceTreeNode[];
 }

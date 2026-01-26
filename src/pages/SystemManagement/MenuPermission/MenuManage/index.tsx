@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiDeleteMenu, apiGetMenuList } from '../services/menu-manage';
-import type { MenuInfo, MenuTreeOption } from '../types/menu-manage';
+import type { MenuInfo, MenuNodeInfo } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import MenuItem from './components/MenuItem';
 import styles from './index.less';
@@ -19,7 +19,7 @@ const MenuManage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingMenu, setEditingMenu] = useState<MenuInfo | null>(null);
-  const [parentMenu, setParentMenu] = useState<MenuTreeOption | null>(null);
+  const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
@@ -58,8 +58,8 @@ const MenuManage: React.FC = () => {
   });
 
   // 处理编辑
-  const handleEdit = (menu: MenuTreeOption) => {
-    // 将 MenuTreeOption 转换为 MenuInfo
+  const handleEdit = (menu: MenuNodeInfo) => {
+    // 将 MenuNodeInfo 转换为 MenuInfo
     const menuInfo: MenuInfo = {
       id: menu.id,
       code: menu.code,
@@ -79,7 +79,7 @@ const MenuManage: React.FC = () => {
   };
 
   // 处理删除
-  const handleDelete = (menu: MenuTreeOption) => {
+  const handleDelete = (menu: MenuNodeInfo) => {
     runDelete(menu?.id);
   };
 
@@ -92,7 +92,7 @@ const MenuManage: React.FC = () => {
   };
 
   // 处理新增子菜单
-  const handleAddChild = (parentMenu: MenuTreeOption) => {
+  const handleAddChild = (parentMenu: MenuNodeInfo) => {
     setEditingMenu(null);
     setParentMenu(parentMenu);
     setIsEdit(false);
@@ -147,8 +147,8 @@ const MenuManage: React.FC = () => {
           ) : (
             <div className={cx(styles.menuList)}>
               {menuList
-                ?.filter((menu: MenuTreeOption) => !menu.parentId)
-                .map((menu: MenuTreeOption) => (
+                ?.filter((menu: MenuNodeInfo) => !menu.parentId)
+                .map((menu: MenuNodeInfo) => (
                   <MenuItem
                     key={menu.id}
                     menu={menu}
