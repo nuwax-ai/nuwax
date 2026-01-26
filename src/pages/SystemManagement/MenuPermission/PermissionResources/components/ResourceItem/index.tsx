@@ -9,23 +9,26 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { ResourceTreeOption } from '../../type';
-import { ResourceStatusEnum, ResourceTypeEnum } from '../../type';
+import type { ResourceTreeNode } from '../../../types/permission-resources';
+import {
+  ResourceStatusEnum,
+  ResourceTypeEnum,
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface ResourceItemProps {
   /** 资源信息 */
-  resource: ResourceTreeOption;
+  resource: ResourceTreeNode;
   /** 层级深度（用于缩进） */
   level?: number;
   /** 编辑回调 */
-  onEdit: (resource: ResourceTreeOption) => void;
+  onEdit: (resource: ResourceTreeNode) => void;
   /** 删除回调 */
-  onDelete: (resource: ResourceTreeOption) => void;
+  onDelete: (resource: ResourceTreeNode) => void;
   /** 新增子资源回调 */
-  onAddChild: (parentResource: ResourceTreeOption) => void;
+  onAddChild: (parentResource: ResourceTreeNode) => void;
   /** 删除加载状态 */
   deleteLoading?: boolean;
 }

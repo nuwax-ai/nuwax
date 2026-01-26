@@ -2,7 +2,7 @@
  * 用户组管理相关的类型定义和枚举
  */
 
-import { MenuTreeNode } from '../RoleManage/type';
+import { MenuTreeNode } from './role-manage';
 
 // ==================== 枚举定义 ====================
 

@@ -17,8 +17,8 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import DataModelSelector from '../../../components/DataModelSelector';
-import { apiAddRole, apiUpdateRole } from '../../api';
-import { RoleStatusEnum, type RoleInfo } from '../../type';
+import { apiAddRole, apiUpdateRole } from '../../../services/role-manage';
+import { RoleStatusEnum, type RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

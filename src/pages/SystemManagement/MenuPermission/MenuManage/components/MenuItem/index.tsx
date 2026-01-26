@@ -7,23 +7,23 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { MenuTreeOption } from '../../type';
-import { MenuStatusEnum, MenuTypeEnum } from '../../type';
+import type { MenuNodeInfo } from '../../../types/menu-manage';
+import { MenuStatusEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface MenuItemProps {
   /** 菜单信息 */
-  menu: MenuTreeOption;
+  menu: MenuNodeInfo;
   /** 层级深度（用于缩进） */
   level?: number;
   /** 编辑回调 */
-  onEdit: (menu: MenuTreeOption) => void;
+  onEdit: (menu: MenuNodeInfo) => void;
   /** 删除回调 */
-  onDelete: (menu: MenuTreeOption) => void;
+  onDelete: (menu: MenuNodeInfo) => void;
   /** 新增子菜单回调 */
-  onAddChild: (parentMenu: MenuTreeOption) => void;
+  onAddChild: (parentMenu: MenuNodeInfo) => void;
   /** 删除加载状态 */
   deleteLoading?: boolean;
 }
@@ -57,9 +57,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
     onAddChild(menu);
   };
 
-  // 判断是否为末级菜单
-  const isLeafMenu = menu.type === MenuTypeEnum.Leaf;
-
   return (
     <>
       <div
@@ -80,9 +77,6 @@ const MenuItem: React.FC<MenuItemProps> = ({
             <div className={cx(styles.titleRow)}>
               <h3 className={cx(styles.title)}>{menu.name}</h3>
               <div className={cx(styles.tags)}>
-                <Tag color={isLeafMenu ? 'green' : 'orange'}>
-                  {isLeafMenu ? '末级菜单' : '父级菜单'}
-                </Tag>
                 <Tag>{menu.code}</Tag>
                 <Tag
                   color={
@@ -102,18 +96,16 @@ const MenuItem: React.FC<MenuItemProps> = ({
               </div>
             )}
             {/* 关联资源码（仅末级菜单显示） */}
-            {isLeafMenu &&
-              menu.resourceCodes &&
-              menu.resourceCodes.length > 0 && (
-                <div className={cx(styles.resourceCodesRow)}>
-                  <span className={cx(styles.resourceCodesLabel)}>
-                    关联资源码:
-                  </span>
-                  <span className={cx(styles.resourceCodes)}>
-                    {menu.resourceCodes.join(', ')}
-                  </span>
-                </div>
-              )}
+            {menu.resourceTree && menu.resourceTree.length > 0 && (
+              <div className={cx(styles.resourceCodesRow)}>
+                <span className={cx(styles.resourceCodesLabel)}>
+                  关联资源码:
+                </span>
+                <span className={cx(styles.resourceCodes)}>
+                  {menu.resourceTree.join(', ')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

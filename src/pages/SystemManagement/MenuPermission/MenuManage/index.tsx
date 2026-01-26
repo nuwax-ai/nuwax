@@ -3,11 +3,11 @@ import { Button, Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiDeleteMenu, apiGetMenuList } from './api';
+import { apiDeleteMenu, apiGetMenuList } from '../services/menu-manage';
+import type { MenuNodeInfo } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import MenuItem from './components/MenuItem';
 import styles from './index.less';
-import type { MenuInfo, MenuTreeOption } from './type';
 
 const cx = classNames.bind(styles);
 
@@ -18,8 +18,8 @@ const cx = classNames.bind(styles);
 const MenuManage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editingMenu, setEditingMenu] = useState<MenuInfo | null>(null);
-  const [parentMenu, setParentMenu] = useState<MenuTreeOption | null>(null);
+  const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
+  const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
@@ -58,20 +58,24 @@ const MenuManage: React.FC = () => {
   });
 
   // 处理编辑
-  const handleEdit = (menu: MenuTreeOption) => {
-    // 将 MenuTreeOption 转换为 MenuInfo
-    const menuInfo: MenuInfo = {
+  const handleEdit = (menu: MenuNodeInfo) => {
+    // 将 MenuNodeInfo 转换为 MenuNodeInfo
+    const menuInfo: MenuNodeInfo = {
       id: menu.id,
       code: menu.code,
       name: menu.name,
       description: menu.description,
-      type: menu.type,
+      source: menu.source,
+      menuBindType: menu.menuBindType,
+      visible: menu.visible,
+      status: menu.status,
+      resourceTree: menu.resourceTree,
       parentId: menu.parentId,
       path: menu.path,
       icon: menu.icon,
       sortIndex: menu.sortIndex,
-      status: menu.status,
-      resourceCodes: menu.resourceCodes,
+      children: menu?.children,
+      resourceTree: menu.resourceTree,
     };
     setEditingMenu(menuInfo);
     setIsEdit(true);
@@ -79,7 +83,7 @@ const MenuManage: React.FC = () => {
   };
 
   // 处理删除
-  const handleDelete = (menu: MenuTreeOption) => {
+  const handleDelete = (menu: MenuNodeInfo) => {
     runDelete(menu?.id);
   };
 
@@ -92,7 +96,7 @@ const MenuManage: React.FC = () => {
   };
 
   // 处理新增子菜单
-  const handleAddChild = (parentMenu: MenuTreeOption) => {
+  const handleAddChild = (parentMenu: MenuNodeInfo) => {
     setEditingMenu(null);
     setParentMenu(parentMenu);
     setIsEdit(false);
@@ -147,8 +151,8 @@ const MenuManage: React.FC = () => {
           ) : (
             <div className={cx(styles.menuList)}>
               {menuList
-                ?.filter((menu: MenuTreeOption) => !menu.parentId)
-                .map((menu: MenuTreeOption) => (
+                ?.filter((menu: MenuNodeInfo) => !menu.parentId)
+                .map((menu: MenuNodeInfo) => (
                   <MenuItem
                     key={menu.id}
                     menu={menu}

@@ -2,8 +2,10 @@ import { DeleteOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { UserGroupInfo } from '../../type';
-import { UserGroupStatusEnum } from '../../type';
+import {
+  UserGroupStatusEnum,
+  type UserGroupInfo,
+} from '../../../types/user-group-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
