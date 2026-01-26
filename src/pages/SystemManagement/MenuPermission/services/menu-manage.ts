@@ -6,7 +6,7 @@ import type {
   MenuInfo,
   MenuTreeOption,
   UpdateMenuParams,
-} from './type';
+} from '../types/menu-manage';
 
 /**
  * 更新菜单

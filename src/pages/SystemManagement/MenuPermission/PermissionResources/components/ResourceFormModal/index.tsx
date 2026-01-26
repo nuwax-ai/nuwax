@@ -20,14 +20,14 @@ import {
   apiGetResourceById,
   apiGetResourceList,
   apiUpdateResource,
-} from '../../api';
+} from '../../../services/permission-resources';
 import {
   ResourceStatusEnum,
   ResourceTreeNode,
   ResourceTypeEnum,
   ResourceVisibleEnum,
   type ResourceInfo,
-} from '../../type';
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;

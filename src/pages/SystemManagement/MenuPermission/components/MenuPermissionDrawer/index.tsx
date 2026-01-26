@@ -4,8 +4,11 @@ import { Button, Drawer, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import type { MenuNodeInfo, RoleInfo } from '../../RoleManage';
-import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../RoleManage/api';
+import {
+  apiGetRoleBoundMenuList,
+  apiRoleBindMenu,
+} from '../../services/role-manage';
+import type { MenuNodeInfo, RoleInfo } from '../../types/role-manage';
 import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
 

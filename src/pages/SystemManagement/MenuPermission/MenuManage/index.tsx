@@ -3,11 +3,11 @@ import { Button, Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiDeleteMenu, apiGetMenuList } from './api';
+import { apiDeleteMenu, apiGetMenuList } from '../services/menu-manage';
+import type { MenuInfo, MenuTreeOption } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import MenuItem from './components/MenuItem';
 import styles from './index.less';
-import type { MenuInfo, MenuTreeOption } from './type';
 
 const cx = classNames.bind(styles);
 

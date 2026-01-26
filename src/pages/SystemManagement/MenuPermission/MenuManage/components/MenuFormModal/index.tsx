@@ -16,19 +16,19 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiGetResourceList } from '../../../PermissionResources/api';
 import {
   apiAddMenu,
   apiGetMenuById,
   apiGetMenuTree,
   apiUpdateMenu,
-} from '../../api';
+} from '../../../services/menu-manage';
+import { apiGetResourceList } from '../../../services/permission-resources';
 import {
   MenuStatusEnum,
   MenuTypeEnum,
   type MenuInfo,
   type MenuTreeOption,
-} from '../../type';
+} from '../../../types/menu-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

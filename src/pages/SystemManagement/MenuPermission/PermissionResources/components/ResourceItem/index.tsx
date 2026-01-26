@@ -9,8 +9,11 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { ResourceTreeNode } from '../../type';
-import { ResourceStatusEnum, ResourceTypeEnum } from '../../type';
+import type { ResourceTreeNode } from '../../../types/permission-resources';
+import {
+  ResourceStatusEnum,
+  ResourceTypeEnum,
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

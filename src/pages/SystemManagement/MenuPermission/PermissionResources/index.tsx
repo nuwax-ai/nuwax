@@ -3,11 +3,17 @@ import { Button, Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiDeleteResource, apiGetResourceList } from './api';
+import {
+  apiDeleteResource,
+  apiGetResourceList,
+} from '../services/permission-resources';
+import type {
+  ResourceInfo,
+  ResourceTreeNode,
+} from '../types/permission-resources';
 import ResourceFormModal from './components/ResourceFormModal';
 import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
-import type { ResourceInfo, ResourceTreeNode } from './type';
 
 const cx = classNames.bind(styles);
 
