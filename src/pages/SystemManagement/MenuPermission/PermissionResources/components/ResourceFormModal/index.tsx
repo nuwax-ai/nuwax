@@ -235,9 +235,16 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               <Form.Item
                 label="资源码"
                 name="code"
-                rules={[{ required: true, message: '请输入资源码' }]}
+                rules={[
+                  { required: true, message: '请输入资源码' },
+                  {
+                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                    message:
+                      '资源码必须以英文字母开头，只能包含字母、数字和下划线',
+                  },
+                ]}
               >
-                <Input placeholder="请输入资源码" />
+                <Input disabled={isEdit} placeholder="请输入资源码" />
               </Form.Item>
             </Col>
             <Col span={12}>

@@ -187,9 +187,16 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               <Form.Item
                 label="用户组编码"
                 name="code"
-                rules={[{ required: true, message: '请输入用户组编码' }]}
+                rules={[
+                  { required: true, message: '请输入用户组编码' },
+                  {
+                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                    message:
+                      '用户组编码必须以英文字母开头，只能包含字母、数字和下划线',
+                  },
+                ]}
               >
-                <Input placeholder="请输入用户组编码" />
+                <Input disabled={isEdit} placeholder="请输入用户组编码" />
               </Form.Item>
             </Col>
             <Col span={12}>

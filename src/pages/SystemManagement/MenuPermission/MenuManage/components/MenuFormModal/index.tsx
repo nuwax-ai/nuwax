@@ -360,9 +360,16 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               <Form.Item
                 label="菜单编码"
                 name="code"
-                rules={[{ required: true, message: '请输入菜单编码' }]}
+                rules={[
+                  { required: true, message: '请输入菜单编码' },
+                  {
+                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                    message:
+                      '菜单编码必须以英文字母开头，只能包含字母、数字和下划线',
+                  },
+                ]}
               >
-                <Input placeholder="请输入菜单编码" />
+                <Input disabled={isEdit} placeholder="请输入菜单编码" />
               </Form.Item>
             </Col>
             <Col span={12}>
