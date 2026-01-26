@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import UploadAvatar from '@/components/UploadAvatar';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -13,7 +14,7 @@ import {
   TreeSelect,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiAddResource,
@@ -48,6 +49,13 @@ interface ResourceFormModalProps {
   onSuccess: () => void;
 }
 
+// 资源类型选项
+const RESOURCE_TYPE_OPTIONS = [
+  { label: '模块', value: ResourceTypeEnum.Module },
+  { label: '组件', value: ResourceTypeEnum.Component },
+  { label: '页面', value: ResourceTypeEnum.Page },
+];
+
 /**
  * 权限资源表单Modal组件
  * 用于新增或编辑权限资源信息
@@ -61,6 +69,8 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  // 图标
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增资源
   const { run: runAddResource, loading: addLoading } = useRequest(
@@ -134,6 +144,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   useEffect(() => {
     if (open) {
       if (isEdit && resourceInfoResponse) {
+        setImageUrl(resourceInfoResponse.icon || '');
         // 编辑模式：填充表单数据
         form.setFieldsValue({
           code: resourceInfoResponse.code,
@@ -142,7 +153,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           type: resourceInfoResponse.type,
           parentId: resourceInfoResponse.parentId || undefined,
           path: resourceInfoResponse.path,
-          icon: resourceInfoResponse.icon,
           sortIndex: resourceInfoResponse.sortIndex || 0,
           status: resourceInfoResponse.status === ResourceStatusEnum.Enabled,
           visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
@@ -153,6 +163,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
+          visible: true,
           // 如果有父资源，自动设置父节点
           parentId: parentResource?.id,
         });
@@ -165,14 +176,8 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     try {
       const values = await form.validateFields();
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        type: values.type,
-        parentId: values.parentId || undefined,
-        path: values.path,
-        icon: values.icon,
-        sortIndex: values.sortIndex || 0,
+        ...values,
+        icon: imageUrl,
         status: values.status
           ? ResourceStatusEnum.Enabled
           : ResourceStatusEnum.Disabled,
@@ -194,13 +199,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     }
   };
 
-  // 资源类型选项
-  const resourceTypeOptions = [
-    { label: '模块', value: ResourceTypeEnum.Module },
-    { label: '组件', value: ResourceTypeEnum.Component },
-    { label: '页面', value: ResourceTypeEnum.Page },
-  ];
-
   return (
     <CustomFormModal
       form={form}
@@ -216,10 +214,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         header: cx(styles.modalHeader),
       }}
     >
-      {/* 副标题 */}
-      <div className={cx(styles.modalSubtitle)}>
-        {isEdit ? '编辑权限资源信息' : '创建新的权限资源'}
-      </div>
       <Form
         form={form}
         layout="vertical"
@@ -228,7 +222,13 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       >
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
+          <Form.Item name="icon" label="图标">
+            <UploadAvatar
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              svgIconName="icons-workspace-agent"
+            />
+          </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -258,7 +258,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               >
                 <Select
                   placeholder="请选择资源类型"
-                  options={resourceTypeOptions}
+                  options={RESOURCE_TYPE_OPTIONS}
                 />
               </Form.Item>
             </Col>
@@ -295,9 +295,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="图标" name="icon">
-            <Input placeholder="请输入图标" />
-          </Form.Item>
           <Form.Item
             label="状态"
             name="status"
