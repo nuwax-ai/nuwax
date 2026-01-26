@@ -17,7 +17,11 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import DataModelSelector from '../../../components/DataModelSelector';
-import { apiAddRole, apiUpdateRole } from '../../../services/role-manage';
+import {
+  apiAddRole,
+  apiGetRoleById,
+  apiUpdateRole,
+} from '../../../services/role-manage';
 import { RoleStatusEnum, type RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
@@ -72,23 +76,25 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   // ];
 
   // 根据ID查询角色
-  // const { run: runGetRoleById, loading: getRoleByIdLoading } = useRequest(apiGetRoleById, {
-  //   manual: true,
-  //   onSuccess: (data: RoleInfo) => {
-  //     console.log('data3333', data);
-  //     form.setFieldsValue({
-  //       code: data.code,
-  //       name: data.name,
-  //       description: data.description,
-  //       tokenLimit: {
-  //         limitPerDay: data.tokenLimit?.limitPerDay || 0,
-  //       },
-  //       sortIndex: data.sortIndex || 0,
-  //       status: data.status === RoleStatusEnum.Enabled,
-  //     });
-  //     setSelectedModelIds(data.modelIds || []);
-  //   },
-  // });
+  const { run: runGetRoleById, loading: getRoleByIdLoading } = useRequest(
+    apiGetRoleById,
+    {
+      manual: true,
+      onSuccess: (data: RoleInfo) => {
+        form.setFieldsValue({
+          code: data.code,
+          name: data.name,
+          description: data.description,
+          tokenLimit: {
+            limitPerDay: data.tokenLimit?.limitPerDay || 0,
+          },
+          sortIndex: data.sortIndex || 0,
+          status: data.status === RoleStatusEnum.Enabled,
+        });
+        setSelectedModelIds(data.modelIds || []);
+      },
+    },
+  );
 
   // 新增角色
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
@@ -119,6 +125,8 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   );
 
+  console.log('getRoleByIdLoading', getRoleByIdLoading);
+
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
@@ -127,7 +135,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       // 查询模型列表
       runModelList();
       if (isEdit && roleInfo) {
-        // runGetRoleById(roleInfo.id);
+        runGetRoleById(roleInfo.id);
         // 编辑模式：填充表单数据
         form.setFieldsValue({
           code: roleInfo.code,
@@ -222,15 +230,21 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       >
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 label="角色编码"
                 name="code"
-                rules={[{ required: true, message: '请输入角色编码' }]}
+                rules={[
+                  { required: true, message: '请输入角色编码' },
+                  {
+                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                    message:
+                      '角色编码必须以英文字母开头，只能包含字母、数字和下划线',
+                  },
+                ]}
               >
-                <Input placeholder="请输入角色编码" />
+                <Input disabled={isEdit} placeholder="请输入角色编码" />
               </Form.Item>
             </Col>
             <Col span={12}>
