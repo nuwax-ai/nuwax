@@ -172,6 +172,7 @@ const Chat: React.FC = () => {
     isConversationActive,
     // 加载更多消息相关
     isMoreMessage,
+    setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
@@ -521,6 +522,8 @@ const Chat: React.FC = () => {
   const handleClear = () => {
     setClearLoading(true);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 立即清空消息列表,避免跳转时旧数据闪烁
     setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
