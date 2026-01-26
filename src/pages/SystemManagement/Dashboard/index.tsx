@@ -254,7 +254,7 @@ const Dashboard: React.FC = () => {
 
       {/* 趋势分析 */}
       <Row gutter={[16, 16]} className={cx(styles['trend-row'])}>
-        <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+        <Col span={24}>
           <TrendChart
             title="用户新增趋势"
             data={userTrendData}
@@ -265,7 +265,7 @@ const Dashboard: React.FC = () => {
             onPeriodChange={setUserPeriod}
           />
         </Col>
-        <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+        <Col span={24}>
           <TrendChart
             title="七日访问趋势"
             data={visitTrendData}
