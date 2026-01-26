@@ -20,14 +20,14 @@ import {
   apiGetResourceById,
   apiGetResourceList,
   apiUpdateResource,
-} from '../../api';
+} from '../../../services/permission-resources';
 import {
   ResourceStatusEnum,
-  ResourceTreeOption,
+  ResourceTreeNode,
   ResourceTypeEnum,
   ResourceVisibleEnum,
   type ResourceInfo,
-} from '../../type';
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -41,7 +41,7 @@ interface ResourceFormModalProps {
   /** 编辑时的资源数据 */
   resourceInfo?: ResourceInfo | null;
   /** 父资源（新增子资源时使用） */
-  parentResource?: ResourceTreeOption | null;
+  parentResource?: ResourceTreeNode | null;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
@@ -117,7 +117,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
 
   // 将资源树转换为TreeSelect需要的数据格式
   const treeSelectData = useMemo(() => {
-    const convertToTreeData = (resources: ResourceTreeOption[]): any[] => {
+    const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
       return resources?.map((resource) => ({
         title: resource.name,
         value: resource.id,

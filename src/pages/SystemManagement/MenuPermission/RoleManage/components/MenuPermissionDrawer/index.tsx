@@ -4,13 +4,13 @@ import { Button, Drawer, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import MenuPermissionTree from '../../../components/MenuPermissionDrawer/MenuPermissionTree';
 import {
   apiGetRoleBoundMenuList,
   apiRoleBindMenu,
-} from '../../services/role-manage';
-import type { MenuNodeInfo } from '../../types/menu-manage';
-import type { RoleInfo } from '../../types/role-manage';
-import MenuPermissionTree from './MenuPermissionTree';
+} from '../../../services/role-manage';
+import type { MenuNodeInfo } from '../../../types/menu-manage';
+import type { RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -49,12 +49,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
       name: menu.name || `菜单${menu.menuId}`,
       code: menu.code,
       parentId: menu.parentId,
-      source: menu.source,
       menuBindType: menu.menuBindType,
-      visible: menu.visible,
-      status: menu.status,
-      resourceCodes: menu.resourceCodes,
-      resourceTree: menu.resourceTree,
       children: menu.children
         ? convertMenuTreeToMenuNodeInfo(menu.children)
         : undefined,

@@ -1,6 +1,7 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import { MenuNodeInfo, UserInfo } from '../RoleManage/type';
+import { MenuNodeInfo } from '../types/menu-manage';
+import { UserInfo } from '../types/role-manage';
 import type {
   AddUserGroupParams,
   GetUserGroupListParams,
@@ -8,7 +9,7 @@ import type {
   GroupBindUserParams,
   UpdateUserGroupParams,
   UserGroupInfo,
-} from './type';
+} from '../types/user-group-manage';
 
 /**
  * 更新用户组

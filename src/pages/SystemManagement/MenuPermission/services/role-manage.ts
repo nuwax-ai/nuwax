@@ -1,15 +1,15 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import type { MenuNodeInfo } from '../types/menu-manage';
 import type {
   AddRoleParams,
   GetRoleListParams,
-  MenuNodeInfo,
   RoleBindMenuParams,
   RoleBindUserParams,
   RoleInfo,
   UpdateRoleParams,
   UserInfo,
-} from './type';
+} from '../types/role-manage';
 
 /**
  * 更新角色

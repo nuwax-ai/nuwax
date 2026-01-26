@@ -6,8 +6,8 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { RoleInfo } from '../../type';
-import { ResourceSourceEnum, RoleStatusEnum } from '../../type';
+import { ResourceSourceEnum } from '../../../types/permission-resources';
+import { RoleStatusEnum, type RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
