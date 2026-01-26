@@ -125,7 +125,6 @@ const PermissionResources: React.FC = () => {
     setEditingResource(null);
     setParentResource(null);
     runGetResourceList();
-    message.success(isEdit ? '编辑成功' : '创建成功');
   };
 
   return (
