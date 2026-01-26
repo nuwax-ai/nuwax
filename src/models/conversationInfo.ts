@@ -1311,6 +1311,7 @@ export default () => {
     messageViewRef,
     // 是否还有更多消息
     isMoreMessage,
+    setIsMoreMessage,
     // 加载更多消息的状态
     loadingMore,
     // 加载更多消息

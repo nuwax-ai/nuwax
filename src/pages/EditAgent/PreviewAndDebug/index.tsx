@@ -99,6 +99,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     isFileTreeVisible,
     // 加载更多消息相关
     isMoreMessage,
+    setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
@@ -257,6 +258,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 清除调试结果
     setFinalResult(null);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
     setMessageList([]);
