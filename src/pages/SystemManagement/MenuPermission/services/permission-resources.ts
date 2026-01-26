@@ -6,7 +6,7 @@ import type {
   ResourceInfo,
   ResourceTreeNode,
   UpdateResourceParams,
-} from './type';
+} from '../types/permission-resources';
 
 /**
  * 添加权限资源

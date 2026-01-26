@@ -7,8 +7,8 @@ import {
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { MenuTreeOption } from '../../type';
-import { MenuStatusEnum, MenuTypeEnum } from '../../type';
+import type { MenuTreeOption } from '../../../types/menu-manage';
+import { MenuStatusEnum, MenuTypeEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

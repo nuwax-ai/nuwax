@@ -5,8 +5,11 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import MenuPermissionTree from '../../../components/MenuPermissionDrawer/MenuPermissionTree';
-import { apiGetRoleBoundMenuList, apiRoleBindMenu } from '../../api';
-import type { MenuNodeInfo, RoleInfo } from '../../type';
+import {
+  apiGetRoleBoundMenuList,
+  apiRoleBindMenu,
+} from '../../../services/role-manage';
+import type { MenuNodeInfo, RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

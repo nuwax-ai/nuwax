@@ -3,11 +3,14 @@ import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiDeleteUserGroup, apiGetUserGroupList } from './api';
+import {
+  apiDeleteUserGroup,
+  apiGetUserGroupList,
+} from '../services/user-group-manage';
+import type { UserGroupInfo } from '../types/user-group-manage';
 import UserGroupCard from './components/UserGroupCard';
 import UserGroupFormModal from './components/UserGroupFormModal';
 import styles from './index.less';
-import type { UserGroupInfo } from './type';
 
 const { useBreakpoint } = Grid;
 const cx = classNames.bind(styles);

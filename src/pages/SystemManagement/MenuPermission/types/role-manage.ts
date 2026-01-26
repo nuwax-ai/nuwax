@@ -2,14 +2,14 @@
  * 角色管理相关的类型定义和枚举
  */
 
-import { MenuBindTypeEnum } from '../MenuManage';
+import { MenuBindTypeEnum } from './menu-manage';
 import {
   ResourceBindTypeEnum,
   ResourceSourceEnum,
   ResourceStatusEnum,
   ResourceTreeNode,
   ResourceVisibleEnum,
-} from '../PermissionResources/type';
+} from './permission-resources';
 
 // ==================== 枚举定义 ====================
 

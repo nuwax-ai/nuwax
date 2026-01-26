@@ -4,11 +4,11 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
-import { apiDeleteRole, apiGetRoleList } from './api';
+import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
+import type { RoleInfo } from '../types/role-manage';
 import RoleCard from './components/RoleCard';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
-import type { RoleInfo } from './type';
 
 const { useBreakpoint } = Grid;
 const cx = classNames.bind(styles);

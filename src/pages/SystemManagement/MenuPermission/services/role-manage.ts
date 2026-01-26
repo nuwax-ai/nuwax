@@ -9,7 +9,7 @@ import type {
   RoleInfo,
   UpdateRoleParams,
   UserInfo,
-} from './type';
+} from '../types/role-manage';
 
 /**
  * 更新角色
