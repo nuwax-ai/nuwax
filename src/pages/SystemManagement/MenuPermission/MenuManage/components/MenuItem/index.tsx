@@ -8,7 +8,7 @@ import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
-import { MenuStatusEnum } from '../../../types/menu-manage';
+import { MenuSourceEnum, MenuStatusEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -128,22 +128,24 @@ const MenuItem: React.FC<MenuItemProps> = ({
               onClick={handleEdit}
               className={cx(styles.actionButton)}
             />
-            <Popconfirm
-              title="删除菜单"
-              description={`确认删除菜单 "${menu.name}" 吗？`}
-              onConfirm={handleDelete}
-              okText="确定"
-              cancelText="取消"
-              okButtonProps={{ loading: deleteLoading }}
-            >
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                className={cx(styles.actionButton)}
-              />
-            </Popconfirm>
+            {menu?.source === MenuSourceEnum.UserDefined && (
+              <Popconfirm
+                title="删除菜单"
+                description={`确认删除菜单 "${menu.name}" 吗？`}
+                onConfirm={handleDelete}
+                okText="确定"
+                cancelText="取消"
+                okButtonProps={{ loading: deleteLoading }}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  className={cx(styles.actionButton)}
+                />
+              </Popconfirm>
+            )}
           </div>
         </div>
       </div>
