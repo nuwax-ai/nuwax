@@ -74,47 +74,55 @@ const SystemSection: React.FC<{
         history.push('/system/log-query/running-log', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Space:
-        history.push('/system/content/content-space');
+        history.push('/system/content/content-space', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Agent:
-        history.push('/system/content/content-agent');
+        history.push('/system/content/content-agent', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_WebApplication:
-        history.push('/system/content/content-web-application');
+        history.push('/system/content/content-web-application', {
+          _t: Date.now(),
+        });
         break;
       case SystemManageListEnum.Content_KnowledgeBase:
-        history.push('/system/content/content-knowledge-base');
+        history.push('/system/content/content-knowledge-base', {
+          _t: Date.now(),
+        });
         break;
       case SystemManageListEnum.Content_DataTable:
-        history.push('/system/content/content-data-table');
+        history.push('/system/content/content-data-table', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Workflow:
-        history.push('/system/content/content-workflow');
+        history.push('/system/content/content-workflow', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Plugin:
-        history.push('/system/content/content-plugin');
+        history.push('/system/content/content-plugin', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Mcp:
-        history.push('/system/content/content-mcp');
+        history.push('/system/content/content-mcp', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Skill:
-        history.push('/system/content/content-skill');
+        history.push('/system/content/content-skill', { _t: Date.now() });
         break;
       // 权限资源
       case SystemManageListEnum.Permission_Resources:
-        history.push('/system/menu-permission/permission-resources');
+        history.push('/system/menu-permission/permission-resources', {
+          _t: Date.now(),
+        });
         break;
       // 菜单管理
       case SystemManageListEnum.Menu_Manage:
-        history.push('/system/menu-permission/menu-manage');
+        history.push('/system/menu-permission/menu-manage', { _t: Date.now() });
         break;
       // 角色管理
       case SystemManageListEnum.Role_Manage:
-        history.push('/system/menu-permission/role-manage');
+        history.push('/system/menu-permission/role-manage', { _t: Date.now() });
         break;
       // 用户组管理
       case SystemManageListEnum.User_Group_Manage:
-        history.push('/system/menu-permission/user-group-manage');
+        history.push('/system/menu-permission/user-group-manage', {
+          _t: Date.now(),
+        });
         break;
     }
   };
