@@ -94,11 +94,10 @@ const AgentModelSetting: React.FC<
   const getFilteredModels = useCallback(() => {
     if (!originalModelConfigList?.length) return [];
 
-    // 基础过滤：仅支持 API 协议为 Anthropic 或 OpenAI，且支持函数调用的模型
+    // 基础过滤：仅支持 API 协议为 Anthropic，且支持函数调用的模型
     const baseSupportedModels = originalModelConfigList.filter(
       (item) =>
-        (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
-          item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+        item.apiProtocol === ModelApiProtocolEnum.Anthropic &&
         item.functionCall !== ModelFunctionCallEnum.Unsupported,
     );
 
