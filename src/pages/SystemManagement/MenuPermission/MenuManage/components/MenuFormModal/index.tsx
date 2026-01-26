@@ -23,8 +23,15 @@ import {
   apiUpdateMenu,
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
-import { MenuStatusEnum, type MenuNodeInfo } from '../../../types/menu-manage';
-import { ResourceTreeNode } from '../../../types/permission-resources';
+import {
+  MenuStatusEnum,
+  MenuVisibleEnum,
+  type MenuNodeInfo,
+} from '../../../types/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  ResourceTreeNode,
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -163,9 +170,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           description: menuInfoResponse.description,
           parentId: menuInfoResponse.parentId || undefined,
           path: menuInfoResponse.path,
-          icon: menuInfoResponse.icon,
           sortIndex: menuInfoResponse.sortIndex || 0,
           status: menuInfoResponse.status === MenuStatusEnum.Enabled,
+          visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
         });
         // 设置关联资源码
         if (menuInfoResponse.resourceTree) {
@@ -190,29 +197,110 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   }, [open, isEdit, menuInfoResponse, parentMenu, form]);
 
   // 处理关联资源码选择
-  const handleResourceCodesChange = (checkedKeys: React.Key[]) => {
-    setSelectedResourceCodes(checkedKeys);
+  const handleResourceCodesChange = (
+    checkedKeys:
+      | React.Key[]
+      | { checked: React.Key[]; halfChecked: React.Key[] },
+  ) => {
+    // Tree 组件的 onCheck 可能返回数组或对象
+    const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
+    setSelectedResourceCodes(keys);
+  };
+
+  /**
+   * 构建资源树结构
+   * 根据 resourceTreeList 和 selectedResourceCodes 构建完整的 resourceTree
+   */
+  const buildResourceTree = (
+    resources: ResourceTreeNode[],
+    selectedCodes: React.Key[],
+  ): ResourceTreeNode[] => {
+    return resources.map((resource) => {
+      const isSelected = selectedCodes.includes(resource.code || '');
+      const hasChildren = resource.children && resource.children.length > 0;
+
+      let resourceBindType = ResourceBindTypeEnum.Unbound; // 默认未绑定
+      let children: ResourceTreeNode[] | undefined;
+
+      if (hasChildren) {
+        // 递归处理子节点
+        children = buildResourceTree(resource.children!, selectedCodes);
+
+        // 检查子节点的绑定状态
+        const allChildrenBound = children.every(
+          (child) => child.resourceBindType === ResourceBindTypeEnum.AllBound,
+        );
+        const someChildrenBound = children.some(
+          (child) =>
+            child.resourceBindType === ResourceBindTypeEnum.AllBound ||
+            child.resourceBindType === ResourceBindTypeEnum.PartiallyBound,
+        );
+
+        if (isSelected && allChildrenBound) {
+          // 当前节点选中且所有子节点都是全部绑定
+          resourceBindType = ResourceBindTypeEnum.AllBound;
+        } else if (isSelected || someChildrenBound) {
+          // 当前节点选中或部分子节点绑定
+          resourceBindType = ResourceBindTypeEnum.PartiallyBound;
+        } else {
+          // 当前节点未选中且没有子节点绑定
+          resourceBindType = ResourceBindTypeEnum.Unbound;
+        }
+      } else {
+        // 叶子节点：选中则为全部绑定，未选中则为未绑定
+        resourceBindType = isSelected
+          ? ResourceBindTypeEnum.AllBound
+          : ResourceBindTypeEnum.Unbound;
+      }
+
+      return {
+        id: resource.id,
+        // code: resource.code,
+        // name: resource.name,
+        // description: resource.description,
+        // source: resource.source,
+        // type: resource.type,
+        // parentId: resource.parentId,
+        // path: resource.path,
+        // icon: resource.icon,
+        // sortIndex: resource.sortIndex,
+        // status: resource.status,
+        // visible: resource.visible,
+        resourceBindType,
+        children,
+      };
+    });
   };
 
   // 处理提交
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      console.log(values, '处理提交');
+
+      // 构建资源树结构
+      const resourceTree = resourceTreeList
+        ? buildResourceTree(resourceTreeList, selectedResourceCodes)
+        : undefined;
+
+      console.log(resourceTree, '资源树');
+
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        type: values.type,
-        parentId: values.parentId || '',
-        path: values.path,
-        icon: values.icon || imageUrl,
-        sortIndex: values.sortIndex || 0,
+        // code: values.code,
+        // name: values.name,
+        // description: values.description || '',
+        // parentId: values.parentId || '',
+        // path: values.path,
+        ...values,
+        icon: imageUrl,
         status: values.status
           ? MenuStatusEnum.Enabled
           : MenuStatusEnum.Disabled,
-        // 仅末级菜单才传递关联资源码
-        resourceTree:
-          selectedResourceCodes.map((key) => String(key)) || undefined,
+        visible: values.visible
+          ? MenuVisibleEnum.Visible
+          : MenuVisibleEnum.Hidden,
+        // 传递构建好的资源树
+        resourceTree,
       };
 
       if (isEdit && menuInfo) {
