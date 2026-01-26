@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiSystemModelList } from '@/services/systemManage';
+import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -18,6 +19,7 @@ import { useRequest } from 'umi';
 import DataModelSelector from '../../../components/DataModelSelector';
 import {
   apiAddUserGroup,
+  apiGetUserGroupById,
   apiUpdateUserGroup,
 } from '../../../services/user-group-manage';
 import {
@@ -56,6 +58,8 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
+  // 是否全部模型已选中
+  const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
   // 新增
   const { run: runAddUserGroup, loading: addLoading } = useRequest(
@@ -89,6 +93,41 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     },
   );
 
+  // 根据ID查询用户组
+  const { run: runGetUserGroupById } = useRequest(apiGetUserGroupById, {
+    manual: true,
+    onSuccess: (data: UserGroupInfo) => {
+      form.setFieldsValue({
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        maxUserCount: data.maxUserCount || 0,
+        tokenLimit: {
+          limitPerDay: data.tokenLimit?.limitPerDay || 0,
+        },
+        sortIndex: data.sortIndex || 0,
+        status: data.status === UserGroupStatusEnum.Enabled,
+      });
+      // 处理模型ID：如果modelIds只存在一项且为0，则从modelList中设置全部模型id
+      if (data?.modelIds && data?.modelIds?.length > 0) {
+        if (data?.modelIds?.length === 1 && data?.modelIds[0] === 0) {
+          // 如果模型ID列表长度为1，且为0，则设置为全部模型
+          setAllModelSelected(true);
+        } else {
+          setSelectedModelIds(data.modelIds || []);
+        }
+      }
+    },
+  });
+
+  // 当 modelList 加载完成后，处理待处理的 modelIds
+  useEffect(() => {
+    // 如果模型列表长度大于0，且全部模型已选中，则设置为全部模型ID列表
+    if (modelList?.length > 0 && allModelSelected) {
+      setSelectedModelIds(modelList.map((item: ModelConfigDto) => item.id));
+    }
+  }, [modelList, allModelSelected]);
+
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
@@ -97,33 +136,16 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       // 查询模型列表
       runModelList();
       if (isEdit && userGroupInfo) {
-        // 编辑模式：填充表单数据
-        form.setFieldsValue({
-          code: userGroupInfo.code,
-          name: userGroupInfo.name,
-          description: userGroupInfo.description,
-          maxUserCount: userGroupInfo.maxUserCount,
-          tokenLimit: {
-            limitPerDay: userGroupInfo.tokenLimit?.limitPerDay || 0,
-          },
-          sortIndex: userGroupInfo.sortIndex || 0,
-          status: userGroupInfo.status === UserGroupStatusEnum.Enabled,
-        });
-        setSelectedModelIds(userGroupInfo.modelIds || []);
-      } else {
-        // 新增模式：重置表单
-        form.resetFields();
-        setSelectedModelIds([]);
+        // 编辑模式：通过接口查询用户组信息
+        runGetUserGroupById(userGroupInfo.id);
       }
+    } else {
+      // 新增模式：重置表单
+      form.resetFields();
+      setAllModelSelected(false);
+      setSelectedModelIds([]);
     }
   }, [open, isEdit, userGroupInfo, form]);
-
-  // 处理取消
-  const handleCancel = () => {
-    form.resetFields();
-    setSelectedModelIds([]);
-    onCancel();
-  };
 
   // 处理提交
   const handleSubmit = async () => {
@@ -168,7 +190,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       loading={loading}
       okText={isEdit ? '保存' : '创建'}
       width={800}
-      onCancel={handleCancel}
+      onCancel={onCancel}
       onConfirm={handleSubmit}
       classNames={{
         body: cx(styles.modalBody),
