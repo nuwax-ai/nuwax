@@ -5,6 +5,8 @@ import type {
   ModelConfigDto,
   NotifyMessageSendParams,
   PublishedDto,
+  SystemSpaceListParams,
+  SystemSpacePage,
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
@@ -144,5 +146,24 @@ export async function apiSystemNotifyMessageSend(
   return request('/api/system/user/notify/message/send', {
     method: 'POST',
     data,
+  });
+}
+
+// 查询工作空间列表
+export async function apiSystemResourceSpaceList(
+  data: SystemSpaceListParams,
+): Promise<RequestResponse<SystemSpacePage>> {
+  return request('/api/system/resource/space/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除工作空间
+export async function apiSystemResourceSpaceDelete(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/space/delete/${data.id}`, {
+    method: 'DELETE',
   });
 }
