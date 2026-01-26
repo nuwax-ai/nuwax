@@ -186,6 +186,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       } else {
         // 新增模式：重置表单
         form.resetFields();
+        setImageUrl('');
         setSelectedResourceCodes([]);
         form.setFieldsValue({
           sortIndex: 0,
