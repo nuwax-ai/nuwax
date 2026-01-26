@@ -17,7 +17,7 @@ import type {
 export async function apiUpdateRole(
   data: UpdateRoleParams,
 ): Promise<RequestResponse<null>> {
-  return request(`/api/system/role/updateRole`, {
+  return request(`/api/system/role/update`, {
     method: 'POST',
     data,
   });

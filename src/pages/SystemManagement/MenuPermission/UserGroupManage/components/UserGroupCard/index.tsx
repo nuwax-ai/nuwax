@@ -1,8 +1,10 @@
+import { modalConfirm } from '@/utils/ant-custom';
 import { DeleteOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Popconfirm, Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import {
+  UserGroupSourceEnum,
   UserGroupStatusEnum,
   type UserGroupInfo,
 } from '../../../types/user-group-manage';
@@ -39,7 +41,16 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
   // 处理删除确认
   const handleDelete = () => {
-    onDelete(userGroup);
+    modalConfirm(
+      '删除用户组',
+      `确认删除用户组 "${userGroup.name}" 吗？`,
+      () => {
+        onDelete(userGroup);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        });
+      },
+    );
   };
 
   return (
@@ -129,31 +140,28 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
       {/* 底部操作按钮 */}
       <div className={cx(styles.footer)}>
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={handleEdit}
-          className={cx(styles.actionButton)}
-        >
-          编辑
-        </Button>
-        <Popconfirm
-          title="删除用户组"
-          description={`确认删除用户组 "${userGroup.name}" 吗？`}
-          onConfirm={handleDelete}
-          okText="确定"
-          cancelText="取消"
-          okButtonProps={{ loading: deleteLoading }}
-        >
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            className={cx(styles.actionButton)}
-          >
-            删除
-          </Button>
-        </Popconfirm>
+        {userGroup.source === UserGroupSourceEnum.UserDefined && (
+          <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={handleEdit}
+              className={cx(styles.actionButton)}
+            >
+              编辑
+            </Button>
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleDelete}
+              loading={deleteLoading}
+              className={cx(styles.actionButton)}
+            >
+              删除
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

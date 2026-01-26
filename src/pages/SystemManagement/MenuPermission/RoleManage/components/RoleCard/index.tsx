@@ -1,9 +1,10 @@
+import { modalConfirm } from '@/utils/ant-custom';
 import {
   DeleteOutlined,
   EditOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import { Button, Popconfirm, Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { ResourceSourceEnum } from '../../../types/permission-resources';
@@ -50,7 +51,12 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
   // 处理删除确认
   const handleDelete = () => {
-    onDelete(role);
+    modalConfirm('删除角色', `确认删除角色 "${role.name}" 吗？`, () => {
+      onDelete(role);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      });
+    });
   };
 
   return (
@@ -131,23 +137,16 @@ const RoleCard: React.FC<RoleCardProps> = ({
             >
               编辑
             </Button>
-            <Popconfirm
-              title="删除角色"
-              description={`确认删除角色 "${role.name}" 吗？`}
-              onConfirm={handleDelete}
-              okText="确定"
-              cancelText="取消"
-              okButtonProps={{ loading: deleteLoading }}
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleDelete}
+              loading={deleteLoading}
+              className={cx(styles.actionButton)}
             >
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-                className={cx(styles.actionButton)}
-              >
-                删除
-              </Button>
-            </Popconfirm>
+              删除
+            </Button>
           </>
         )}
       </div>

@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import UploadAvatar from '@/components/UploadAvatar';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -22,7 +23,15 @@ import {
   apiUpdateMenu,
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
-import { MenuStatusEnum, type MenuNodeInfo } from '../../../types/menu-manage';
+import {
+  MenuStatusEnum,
+  MenuVisibleEnum,
+  type MenuNodeInfo,
+} from '../../../types/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  ResourceTreeNode,
+} from '../../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -56,9 +65,12 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  // 选中的资源码
   const [selectedResourceCodes, setSelectedResourceCodes] = useState<
     React.Key[]
   >([]);
+  // 图标
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增菜单
   const { run: runAddMenu, loading: addLoading } = useRequest(apiAddMenu, {
@@ -89,7 +101,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     },
   );
 
-  // 查询菜单树列表（用于父菜单选择）
+  // 根据条件查询菜单列表（树形结构）（用于父菜单选择）
   const { run: runGetMenuTree, data: menuTreeList } = useRequest(
     apiGetMenuList,
     {
@@ -97,7 +109,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     },
   );
 
-  // 查询资源列表（用于关联资源码选择）
+  // 根据条件查询权限资源列表（树形结构）（用于关联资源码选择）
   const { run: runGetResourceList, data: resourceTreeList } = useRequest(
     apiGetResourceList,
     {
@@ -109,6 +121,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     if (open) {
       // 查询菜单树列表和资源列表
       runGetMenuTree();
+      // 根据条件查询权限资源列表（树形结构）（用于关联资源码选择）
       runGetResourceList();
       if (isEdit && menuInfo) {
         // 编辑模式：查询菜单详情
@@ -151,27 +164,34 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   useEffect(() => {
     if (open) {
       if (isEdit && menuInfoResponse) {
+        setImageUrl(menuInfoResponse.icon || '');
         form.setFieldsValue({
           code: menuInfoResponse.code,
           name: menuInfoResponse.name,
           description: menuInfoResponse.description,
           parentId: menuInfoResponse.parentId || undefined,
           path: menuInfoResponse.path,
-          icon: menuInfoResponse.icon,
           sortIndex: menuInfoResponse.sortIndex || 0,
           status: menuInfoResponse.status === MenuStatusEnum.Enabled,
+          visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
         });
         // 设置关联资源码
-        if (menuInfoResponse.resourceCodes) {
-          setSelectedResourceCodes(menuInfoResponse.resourceCodes);
+        if (menuInfoResponse.resourceTree) {
+          setSelectedResourceCodes(
+            menuInfoResponse.resourceTree.map(
+              (resource: ResourceTreeNode) => resource.code,
+            ),
+          );
         }
       } else {
         // 新增模式：重置表单
         form.resetFields();
+        setImageUrl('');
         setSelectedResourceCodes([]);
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
+          visible: true,
           // 如果有父菜单，自动设置父节点
           parentId: parentMenu?.id,
         });
@@ -180,29 +200,110 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   }, [open, isEdit, menuInfoResponse, parentMenu, form]);
 
   // 处理关联资源码选择
-  const handleResourceCodesChange = (checkedKeys: React.Key[]) => {
-    setSelectedResourceCodes(checkedKeys);
+  const handleResourceCodesChange = (
+    checkedKeys:
+      | React.Key[]
+      | { checked: React.Key[]; halfChecked: React.Key[] },
+  ) => {
+    // Tree 组件的 onCheck 可能返回数组或对象
+    const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
+    setSelectedResourceCodes(keys);
+  };
+
+  /**
+   * 构建资源树结构
+   * 根据 resourceTreeList 和 selectedResourceCodes 构建完整的 resourceTree
+   */
+  const buildResourceTree = (
+    resources: ResourceTreeNode[],
+    selectedCodes: React.Key[],
+  ): ResourceTreeNode[] => {
+    return resources.map((resource) => {
+      const isSelected = selectedCodes.includes(resource.code || '');
+      const hasChildren = resource.children && resource.children.length > 0;
+
+      let resourceBindType = ResourceBindTypeEnum.Unbound; // 默认未绑定
+      let children: ResourceTreeNode[] | undefined;
+
+      if (hasChildren) {
+        // 递归处理子节点
+        children = buildResourceTree(resource.children!, selectedCodes);
+
+        // 检查子节点的绑定状态
+        const allChildrenBound = children.every(
+          (child) => child.resourceBindType === ResourceBindTypeEnum.AllBound,
+        );
+        const someChildrenBound = children.some(
+          (child) =>
+            child.resourceBindType === ResourceBindTypeEnum.AllBound ||
+            child.resourceBindType === ResourceBindTypeEnum.PartiallyBound,
+        );
+
+        if (isSelected && allChildrenBound) {
+          // 当前节点选中且所有子节点都是全部绑定
+          resourceBindType = ResourceBindTypeEnum.AllBound;
+        } else if (isSelected || someChildrenBound) {
+          // 当前节点选中或部分子节点绑定
+          resourceBindType = ResourceBindTypeEnum.PartiallyBound;
+        } else {
+          // 当前节点未选中且没有子节点绑定
+          resourceBindType = ResourceBindTypeEnum.Unbound;
+        }
+      } else {
+        // 叶子节点：选中则为全部绑定，未选中则为未绑定
+        resourceBindType = isSelected
+          ? ResourceBindTypeEnum.AllBound
+          : ResourceBindTypeEnum.Unbound;
+      }
+
+      return {
+        id: resource.id,
+        // code: resource.code,
+        // name: resource.name,
+        // description: resource.description,
+        // source: resource.source,
+        // type: resource.type,
+        // parentId: resource.parentId,
+        // path: resource.path,
+        // icon: resource.icon,
+        // sortIndex: resource.sortIndex,
+        // status: resource.status,
+        // visible: resource.visible,
+        resourceBindType,
+        children,
+      };
+    });
   };
 
   // 处理提交
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      console.log(values, '处理提交');
+
+      // 构建资源树结构
+      const resourceTree = resourceTreeList
+        ? buildResourceTree(resourceTreeList, selectedResourceCodes)
+        : undefined;
+
+      console.log(resourceTree, '资源树');
+
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        type: values.type,
-        parentId: values.parentId || undefined,
-        path: values.path,
-        icon: values.icon,
-        sortIndex: values.sortIndex || 0,
+        // code: values.code,
+        // name: values.name,
+        // description: values.description || '',
+        // parentId: values.parentId || '',
+        // path: values.path,
+        ...values,
+        icon: imageUrl,
         status: values.status
           ? MenuStatusEnum.Enabled
           : MenuStatusEnum.Disabled,
-        // 仅末级菜单才传递关联资源码
-        resourceTree:
-          selectedResourceCodes.map((key) => String(key)) || undefined,
+        visible: values.visible
+          ? MenuVisibleEnum.Visible
+          : MenuVisibleEnum.Hidden,
+        // 传递构建好的资源树
+        resourceTree,
       };
 
       if (isEdit && menuInfo) {
@@ -247,14 +348,28 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
           <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
+          <Form.Item name="icon" label="图标">
+            <UploadAvatar
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              svgIconName="icons-workspace-agent"
+            />
+          </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 label="菜单编码"
                 name="code"
-                rules={[{ required: true, message: '请输入菜单编码' }]}
+                rules={[
+                  { required: true, message: '请输入菜单编码' },
+                  {
+                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                    message:
+                      '菜单编码必须以英文字母开头，只能包含字母、数字和下划线',
+                  },
+                ]}
               >
-                <Input placeholder="请输入菜单编码" />
+                <Input disabled={isEdit} placeholder="请输入菜单编码" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -284,14 +399,13 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={12}></Col>
-          </Row>
-          <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="路由路径" name="path">
                 <Input placeholder="请输入路由路径" />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="排序" name="sortIndex" initialValue={0}>
                 <InputNumber
@@ -301,21 +415,32 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                initialValue={true}
+                tooltip={{
+                  title: '启用或禁用此菜单',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
           </Row>
-          <Form.Item label="图标" name="icon">
-            <Input placeholder="请输入图标" />
-          </Form.Item>
           <Form.Item
-            label="状态"
-            name="status"
+            label="是否显示"
+            name="visible"
             valuePropName="checked"
             initialValue={true}
             tooltip={{
-              title: '启用或禁用此菜单',
+              title: '启用或禁用此菜单是否显示',
               icon: <InfoCircleOutlined />,
             }}
           >
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+            <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
           </Form.Item>
           <Form.Item label="描述" name="description">
             <TextArea
