@@ -121,6 +121,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     if (open) {
       // 查询菜单树列表和资源列表
       runGetMenuTree();
+      // 根据条件查询权限资源列表（树形结构）（用于关联资源码选择）
       runGetResourceList();
       if (isEdit && menuInfo) {
         // 编辑模式：查询菜单详情
@@ -189,6 +190,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
+          visible: true,
           // 如果有父菜单，自动设置父节点
           parentId: parentMenu?.id,
         });
