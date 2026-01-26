@@ -15,6 +15,14 @@ export enum UserGroupStatusEnum {
   Disabled = 0, // 禁用
 }
 
+/**
+ * 用户组来源枚举
+ * 来源 1:系统内置 2:用户自定义
+ */
+export enum UserGroupSourceEnum {
+  SystemBuiltIn = 1, // 系统内置
+  UserDefined = 2, // 用户自定义
+}
 // ==================== 接口定义 ====================
 
 /**
@@ -30,7 +38,7 @@ export interface UserGroupInfo {
   /** 用户组描述 */
   description: string;
   /** 来源 1:系统内置 2:用户自定义 */
-  source: number;
+  source: UserGroupSourceEnum;
   /** 状态,1:启用 0:禁用 */
   status: UserGroupStatusEnum;
   /** 最大用户数，0表示不限制 */
@@ -120,7 +128,7 @@ export interface GetUserGroupListParams {
   /** 用户组编码 */
   code?: string;
   /** 来源 1:系统内置 2:用户自定义 */
-  source: number;
+  source: UserGroupSourceEnum;
   /** 状态,1:启用 0:禁用 */
   status: UserGroupStatusEnum;
 }

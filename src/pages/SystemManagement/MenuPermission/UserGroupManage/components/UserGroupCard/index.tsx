@@ -4,6 +4,7 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import {
+  UserGroupSourceEnum,
   UserGroupStatusEnum,
   type UserGroupInfo,
 } from '../../../types/user-group-manage';
@@ -139,24 +140,28 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
       {/* 底部操作按钮 */}
       <div className={cx(styles.footer)}>
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={handleEdit}
-          className={cx(styles.actionButton)}
-        >
-          编辑
-        </Button>
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={handleDelete}
-          loading={deleteLoading}
-          className={cx(styles.actionButton)}
-        >
-          删除
-        </Button>
+        {userGroup.source === UserGroupSourceEnum.UserDefined && (
+          <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={handleEdit}
+              className={cx(styles.actionButton)}
+            >
+              编辑
+            </Button>
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleDelete}
+              loading={deleteLoading}
+              className={cx(styles.actionButton)}
+            >
+              删除
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
