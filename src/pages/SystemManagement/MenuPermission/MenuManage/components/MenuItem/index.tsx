@@ -103,14 +103,14 @@ const MenuItem: React.FC<MenuItemProps> = ({
             )}
             {/* 关联资源码（仅末级菜单显示） */}
             {isLeafMenu &&
-              menu.resourceCodes &&
-              menu.resourceCodes.length > 0 && (
+              menu.resourceTree &&
+              menu.resourceTree.length > 0 && (
                 <div className={cx(styles.resourceCodesRow)}>
                   <span className={cx(styles.resourceCodesLabel)}>
                     关联资源码:
                   </span>
                   <span className={cx(styles.resourceCodes)}>
-                    {menu.resourceCodes.join(', ')}
+                    {menu.resourceTree.join(', ')}
                   </span>
                 </div>
               )}

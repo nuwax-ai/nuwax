@@ -2,12 +2,7 @@
  * 菜单管理相关的类型定义和枚举
  */
 
-import {
-  ResourceSourceEnum,
-  ResourceStatusEnum,
-  ResourceTreeNode,
-  ResourceVisibleEnum,
-} from './permission-resources';
+import { ResourceTreeNode } from './permission-resources';
 
 // ==================== 枚举定义 ====================
 
@@ -42,47 +37,13 @@ export enum MenuVisibleEnum {
   Hidden = 0, // 隐藏
 }
 
-// ==================== 接口定义 ====================
-
-/**
- * 菜单信息
- */
-export interface MenuInfo {
-  /** 菜单ID */
-  id: number;
-  /** 编码 */
-  code: string;
-  /** 名称 */
-  name: string;
-  /** 描述 */
-  description?: string;
-  /** 类型 1:父级菜单 2:末级菜单 */
-  type: MenuTypeEnum;
-  /** 父级ID */
-  parentId?: number;
-  /** 访问路径 */
-  path?: string;
-  /** 图标 */
-  icon?: string;
-  /** 排序 */
-  sortIndex: number;
-  /** 状态 1:启用 0:禁用 */
-  status: MenuStatusEnum;
-  /** 关联的资源码列表（仅末级菜单） */
-  resourceCodes?: string[];
-  /** 创建人ID */
-  creatorId?: number;
-  /** 创建人 */
-  creator?: string;
-  /** 创建时间 */
-  created?: string;
-  /** 修改人ID */
-  modifierId?: string;
-  /** 修改人 */
-  modifier?: string;
-  /** 修改时间 */
-  modified?: string;
+/*来源 1:系统内置 2:用户自定义 */
+export enum MenuSourceEnum {
+  SystemBuiltIn = 1, // 系统内置
+  UserDefined = 2, // 用户自定义
 }
+
+// ==================== 接口定义 ====================
 
 /**
  * 新增菜单参数
@@ -136,10 +97,14 @@ export interface GetMenuListParams {
   name?: string;
   /** 菜单编码 */
   code?: string;
-  /** 菜单类型 */
-  type?: MenuTypeEnum;
-  /** 状态 */
+  /** 来源 1:系统内置 2:用户自定义 */
+  source?: MenuSourceEnum;
+  /** 父级ID */
+  parentId?: number;
+  /** 状态 1:启用 0:禁用 */
   status?: MenuStatusEnum;
+  /*是否显示 1:显示 0:隐藏 */
+  visible?: MenuVisibleEnum;
 }
 
 /**
@@ -159,7 +124,7 @@ export interface MenuNodeInfo {
   description?: string;
 
   /*来源 1:系统内置 2:用户自定义 */
-  source?: ResourceSourceEnum;
+  source?: MenuSourceEnum;
 
   /*父级ID */
   parentId?: number;
@@ -174,10 +139,10 @@ export interface MenuNodeInfo {
   sortIndex?: number;
 
   /*状态 1:启用 0:禁用 */
-  status?: ResourceStatusEnum;
+  status?: MenuStatusEnum;
 
   /*是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
+  visible?: MenuVisibleEnum;
 
   // 创建人
   creator?: string;

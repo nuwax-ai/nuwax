@@ -4,10 +4,10 @@ import type {
   AddMenuParams,
   BindMenuResourceParams,
   GetMenuListParams,
-  MenuInfo,
   MenuNodeInfo,
   UpdateMenuParams,
 } from '../types/menu-manage';
+import { ResourceTreeNode } from '../types/permission-resources';
 
 /**
  * 更新菜单
@@ -61,7 +61,7 @@ export async function apiMenuBindResource(
  */
 export async function apiGetMenuById(
   menuId: number,
-): Promise<RequestResponse<MenuInfo>> {
+): Promise<RequestResponse<MenuNodeInfo>> {
   return request(`/api/system/menu/${menuId}`, {
     method: 'GET',
   });
@@ -80,12 +80,23 @@ export async function apiGetMenuList(
 }
 
 /**
- * 查询菜单树（用于下拉选择）
+ * 查询菜单绑定的资源（树形结构）
  */
-export async function apiGetMenuTree(): Promise<
-  RequestResponse<MenuNodeInfo[]>
-> {
-  return request('/api/system/menu/tree', {
+export async function apiGetMenuResourceList(
+  menuId: number,
+): Promise<RequestResponse<ResourceTreeNode>> {
+  return request(`/api/system/menu/list-resource/${menuId}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 根据编码查询菜单
+ */
+export async function apiGetMenuByCode(
+  menuCode: string,
+): Promise<RequestResponse<MenuNodeInfo>> {
+  return request(`/api/system/menu/code/${menuCode}`, {
     method: 'GET',
   });
 }

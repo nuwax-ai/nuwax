@@ -19,14 +19,13 @@ import { useRequest } from 'umi';
 import {
   apiAddMenu,
   apiGetMenuById,
-  apiGetMenuTree,
+  apiGetMenuList,
   apiUpdateMenu,
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
 import {
   MenuStatusEnum,
   MenuTypeEnum,
-  type MenuInfo,
   type MenuNodeInfo,
 } from '../../../types/menu-manage';
 import styles from './index.less';
@@ -40,7 +39,7 @@ interface MenuFormModalProps {
   /** 是否为编辑模式 */
   isEdit?: boolean;
   /** 编辑时的菜单数据 */
-  menuInfo?: MenuInfo | null;
+  menuInfo?: MenuNodeInfo | null;
   /** 父菜单（新增子菜单时使用） */
   parentMenu?: MenuNodeInfo | null;
   /** 取消回调 */
@@ -98,7 +97,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
   // 查询菜单树列表（用于父菜单选择）
   const { run: runGetMenuTree, data: menuTreeList } = useRequest(
-    apiGetMenuTree,
+    apiGetMenuList,
     {
       manual: true,
     },
