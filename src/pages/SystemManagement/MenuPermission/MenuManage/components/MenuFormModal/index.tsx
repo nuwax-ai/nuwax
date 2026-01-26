@@ -8,7 +8,6 @@ import {
   InputNumber,
   message,
   Row,
-  Select,
   Switch,
   Tree,
   TreeSelect,
@@ -23,11 +22,7 @@ import {
   apiUpdateMenu,
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
-import {
-  MenuStatusEnum,
-  MenuTypeEnum,
-  type MenuNodeInfo,
-} from '../../../types/menu-manage';
+import { MenuStatusEnum, type MenuNodeInfo } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -61,7 +56,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  const [menuType, setMenuType] = useState<MenuTypeEnum>(MenuTypeEnum.Parent);
   const [selectedResourceCodes, setSelectedResourceCodes] = useState<
     React.Key[]
   >([]);
@@ -157,14 +151,10 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   useEffect(() => {
     if (open) {
       if (isEdit && menuInfoResponse) {
-        // 编辑模式：填充表单数据
-        const type = menuInfoResponse.type || MenuTypeEnum.Parent;
-        setMenuType(type);
         form.setFieldsValue({
           code: menuInfoResponse.code,
           name: menuInfoResponse.name,
           description: menuInfoResponse.description,
-          type: type,
           parentId: menuInfoResponse.parentId || undefined,
           path: menuInfoResponse.path,
           icon: menuInfoResponse.icon,
@@ -178,27 +168,16 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       } else {
         // 新增模式：重置表单
         form.resetFields();
-        setMenuType(MenuTypeEnum.Parent);
         setSelectedResourceCodes([]);
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
-          type: MenuTypeEnum.Parent,
           // 如果有父菜单，自动设置父节点
           parentId: parentMenu?.id,
         });
       }
     }
   }, [open, isEdit, menuInfoResponse, parentMenu, form]);
-
-  // 处理菜单类型变化
-  const handleMenuTypeChange = (value: MenuTypeEnum) => {
-    setMenuType(value);
-    // 如果不是末级菜单，清空关联资源码
-    if (value !== MenuTypeEnum.Leaf) {
-      setSelectedResourceCodes([]);
-    }
-  };
 
   // 处理关联资源码选择
   const handleResourceCodesChange = (checkedKeys: React.Key[]) => {
@@ -222,10 +201,8 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           ? MenuStatusEnum.Enabled
           : MenuStatusEnum.Disabled,
         // 仅末级菜单才传递关联资源码
-        resourceCodes:
-          values.type === MenuTypeEnum.Leaf
-            ? selectedResourceCodes.map((key) => String(key))
-            : undefined,
+        resourceTree:
+          selectedResourceCodes.map((key) => String(key)) || undefined,
       };
 
       if (isEdit && menuInfo) {
@@ -240,12 +217,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       console.error('表单验证失败:', error);
     }
   };
-
-  // 菜单类型选项
-  const menuTypeOptions = [
-    { label: '父级菜单', value: MenuTypeEnum.Parent },
-    { label: '末级菜单', value: MenuTypeEnum.Leaf },
-  ];
 
   return (
     <CustomFormModal
@@ -313,19 +284,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                label="菜单类型"
-                name="type"
-                rules={[{ required: true, message: '请选择菜单类型' }]}
-              >
-                <Select
-                  placeholder="请选择菜单类型"
-                  options={menuTypeOptions}
-                  onChange={handleMenuTypeChange}
-                />
-              </Form.Item>
-            </Col>
+            <Col span={12}></Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
@@ -370,24 +329,22 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         </div>
 
         {/* 关联资源码（仅末级菜单） */}
-        {menuType === MenuTypeEnum.Leaf && (
-          <div className={cx(styles.section)}>
-            <h3 className={cx(styles.sectionTitle)}>关联资源码</h3>
-            <p className={cx(styles.sectionDesc)}>
-              仅末级菜单可以关联资源码,选择该菜单可以访问的资源权限
-            </p>
-            <Form.Item name="resourceCodes">
-              <Tree
-                checkable
-                defaultExpandAll
-                treeData={resourceTreeData}
-                checkedKeys={selectedResourceCodes}
-                onCheck={handleResourceCodesChange}
-                className={cx(styles.resourceTree)}
-              />
-            </Form.Item>
-          </div>
-        )}
+        <div className={cx(styles.section)}>
+          <h3 className={cx(styles.sectionTitle)}>关联资源码</h3>
+          <p className={cx(styles.sectionDesc)}>
+            仅末级菜单可以关联资源码,选择该菜单可以访问的资源权限
+          </p>
+          <Form.Item name="resourceCodes">
+            <Tree
+              checkable
+              defaultExpandAll
+              treeData={resourceTreeData}
+              checkedKeys={selectedResourceCodes}
+              onCheck={handleResourceCodesChange}
+              className={cx(styles.resourceTree)}
+            />
+          </Form.Item>
+        </div>
       </Form>
     </CustomFormModal>
   );
