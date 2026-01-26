@@ -1408,7 +1408,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 获取文件内容
       const fileContent = selectedFileNode?.content || '';
       // 获取文件名
-      const fileName = selectedFileId?.split('/')?.pop() || '';
+      const fileName = selectedFileNode?.name || '';
 
       // 如果是html、md文件，并且处于预览模式
       if (
