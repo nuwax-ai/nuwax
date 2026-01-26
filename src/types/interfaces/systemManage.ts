@@ -4,10 +4,48 @@ import {
   UserStatusEnum,
 } from '@/types/enums/systemManage';
 
-// 查询用户列表输入参数
-export interface SystemUserListParams {
+/**
+ * 分页参数基础接口
+ */
+export interface SystemPaginationParams {
+  /** 页码 */
   pageNo: number;
+  /** 每页条数 */
   pageSize: number;
+}
+
+/**
+ * 分页返回结果基础接口
+ */
+export interface SystemPageResult<T> extends SystemPaginationParams {
+  /** 总条数 */
+  total: number;
+  /** 条目列表 */
+  records: T[];
+}
+
+/**
+ * 资源信息基础接口
+ */
+export interface SystemResourceInfo {
+  /** ID */
+  id: number;
+  /** 名称 */
+  name: string;
+  /** 描述 */
+  description: string;
+  /** 创建人ID */
+  creatorId: number;
+  /** 创建人 */
+  creatorName: string;
+  /** 创建时间 */
+  created: string;
+  /** 操作 */
+  operation: string;
+}
+
+// 查询用户列表输入参数
+export interface SystemUserListParams extends SystemPaginationParams {
   queryFilter: {
     role?: string;
     userName?: string;
@@ -335,39 +373,157 @@ export interface NotifyMessageSendParams {
 }
 
 // 工作空间信息
-export interface SystemSpaceInfo {
-  /** 空间ID */
-  id: number;
-  /** 名称 */
-  name: string;
-  /** 描述 */
-  description: string;
-  /** 创建人ID */
-  creatorId: number;
-  /** 创建人 */
-  creatorName: string;
-  /** 创建时间 */
-  created: string;
-  /** 操作 */
-  operation: string;
-}
+export type SystemSpaceInfo = SystemResourceInfo;
 
 // 查询工作空间列表参数
-export interface SystemSpaceListParams {
-  /** 页码 */
-  pageNo: number;
-  /** 每页条数 */
-  pageSize: number;
+export interface SystemSpaceListParams extends SystemPaginationParams {
   /** 名称 */
   name?: string;
   /** 创建人ID列表 */
   creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
 }
 
 // 空间列表分页响应
-export interface SystemSpacePage {
-  total: number;
-  pageNo: number;
-  pageSize: number;
-  records: SystemSpaceInfo[];
+export type SystemSpacePage = SystemPageResult<SystemSpaceInfo>;
+
+// 智能体信息
+export type SystemAgentInfo = SystemResourceInfo;
+
+// 查询智能体列表参数
+export interface SystemAgentListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
 }
+
+// 智能体列表分页响应
+export type SystemAgentPage = SystemPageResult<SystemAgentInfo>;
+
+// 网页应用信息
+export type SystemWebappInfo = SystemResourceInfo;
+
+// 查询网页应用列表参数
+export interface SystemWebappListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+// 网页应用列表分页响应
+export type SystemWebappPage = SystemPageResult<SystemWebappInfo>;
+
+// 知识库信息
+export type SystemKnowledgeInfo = SystemResourceInfo;
+
+// 查询知识库列表参数
+export interface SystemKnowledgeListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+// 知识库列表分页响应
+export type SystemKnowledgePage = SystemPageResult<SystemKnowledgeInfo>;
+
+// 数据表信息
+export type SystemDataTableInfo = SystemResourceInfo;
+
+// 查询数据表列表参数
+export interface SystemDataTableListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+// 数据表列表分页响应
+export type SystemDataTablePage = SystemPageResult<SystemDataTableInfo>;
+
+// 工作流信息
+export type SystemWorkflowInfo = SystemResourceInfo;
+
+// 查询工作流列表参数
+export interface SystemWorkflowListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+// 工作流列表分页响应
+export type SystemWorkflowPage = SystemPageResult<SystemWorkflowInfo>;
+
+// 插件信息
+export type SystemPluginInfo = SystemResourceInfo;
+
+// 查询插件列表参数
+export interface SystemPluginListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+// 插件列表分页响应
+export type SystemPluginPage = SystemPageResult<SystemPluginInfo>;
+
+/**
+ * MCP 信息
+ */
+export type SystemMcpInfo = SystemResourceInfo;
+
+/**
+ * 查询 MCP 列表参数
+ */
+export interface SystemMcpListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+/**
+ * MCP 列表分页响应
+ */
+export type SystemMcpPage = SystemPageResult<SystemMcpInfo>;
+
+/**
+ * 技能信息
+ */
+export type SystemSkillInfo = SystemResourceInfo;
+
+/**
+ * 查询技能列表参数
+ */
+export interface SystemSkillListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+}
+
+/**
+ * 技能列表分页响应
+ */
+export type SystemSkillPage = SystemPageResult<SystemSkillInfo>;
