@@ -182,7 +182,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       >
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
