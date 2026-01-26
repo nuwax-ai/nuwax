@@ -431,8 +431,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return (
         <div
           key={message.id}
-          className={`${styles.messageWrapper} ${isUser ? styles.user : styles.assistant
-            }`}
+          className={`${styles.messageWrapper} ${
+            isUser ? styles.user : styles.assistant
+          }`}
         >
           <div className={styles.messageBubble}>
             {/* 消息内容 */}
@@ -450,31 +451,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   {/* 附件渲染 - 包含传统附件和数据源附件 */}
                   {(allAttachments.length > 0 ||
                     dataSourceAttachments.length > 0) && (
-                      <div className={styles.messageAttachments}>
-                        {/* 渲染传统附件（图片、文件等） */}
-                        {allAttachments.map((attachment) => (
-                          <MessageAttachment
-                            key={attachment.content.id}
-                            attachment={attachment.content}
-                            type={attachment.type}
-                            size={60}
-                            showPreview={true}
-                          />
-                        ))}
-                        {/* 渲染数据源附件 */}
-                        {dataSourceAttachments.map((dataSource) => (
-                          <MessageAttachment
-                            key={`${dataSource.dataSourceId}-${dataSource.type}`}
-                            attachment={convertDataSourceSelectionToAttachment(
-                              dataSource,
-                            )}
-                            type="DataSource"
-                            size={60}
-                            showPreview={true}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    <div className={styles.messageAttachments}>
+                      {/* 渲染传统附件（图片、文件等） */}
+                      {allAttachments.map((attachment) => (
+                        <MessageAttachment
+                          key={attachment.content.id}
+                          attachment={attachment.content}
+                          type={attachment.type}
+                          size={60}
+                          showPreview={true}
+                        />
+                      ))}
+                      {/* 渲染数据源附件 */}
+                      {dataSourceAttachments.map((dataSource) => (
+                        <MessageAttachment
+                          key={`${dataSource.dataSourceId}-${dataSource.type}`}
+                          attachment={convertDataSourceSelectionToAttachment(
+                            dataSource,
+                          )}
+                          type="DataSource"
+                          size={60}
+                          showPreview={true}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 // ASSISTANT 消息: 使用 MarkdownCMD 流式渲染
@@ -608,11 +609,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
-
-  // 添加到聊天输入框
-  const handleAddToChat = (content: string) => {
-    chat.setChatInput((prev: string) => prev + content);
-  };
 
   // 添加到聊天输入框
   const handleAddToChat = (content: string) => {
@@ -755,8 +751,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
       >
         <div
-          className={`${styles.scrollToBottomButton} ${showScrollButton ? styles.visible : ''
-            }`}
+          className={`${styles.scrollToBottomButton} ${
+            showScrollButton ? styles.visible : ''
+          }`}
           onClick={handleScrollButtonClick}
         >
           <DownOutlined />
@@ -767,16 +764,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <div className={styles.progressContainer}>
               <div className={styles.progressBar}>
                 <div
-                  className={`${styles.progressBarItem} ${autoErrorRetryCount >= 1 ? styles.active : ''
-                    }`}
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 1 ? styles.active : ''
+                  }`}
                 />
                 <div
-                  className={`${styles.progressBarItem} ${autoErrorRetryCount >= 2 ? styles.active : ''
-                    }`}
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 2 ? styles.active : ''
+                  }`}
                 />
                 <div
-                  className={`${styles.progressBarItem} ${autoErrorRetryCount >= 3 ? styles.active : ''
-                    }`}
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 3 ? styles.active : ''
+                  }`}
                 />
               </div>
             </div>
