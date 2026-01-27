@@ -10,4 +10,5 @@ export interface ResourceItem {
 
 export interface ResourceGridProps {
   resources: ResourceItem[];
+  loading?: boolean;
 }

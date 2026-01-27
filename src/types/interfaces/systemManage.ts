@@ -573,3 +573,55 @@ export interface UserTrendList {
   /** 用户数 */
   userCount: number;
 }
+
+/**
+ * 资源概览统计结果
+ */
+export interface TotalStatsResult {
+  /** 空间数 */
+  spaceCount: number;
+  /** 智能体数 */
+  agentCount: number;
+  /** 工作流数 */
+  workflowCount: number;
+  /** 知识库数 */
+  knowledgeCount: number;
+  /** 数据表数 */
+  tableCount: number;
+  /** MCP数 */
+  mcpCount: number;
+  /** 页面数 */
+  pageCount: number;
+  /** 模型数 */
+  modelCount: number;
+  /** 插件数 */
+  pluginCount: number;
+  /** 技能数 */
+  skillCount: number;
+}
+
+/**
+ * 会话统计返回结果
+ */
+export interface ConversationStatsResult {
+  /** 总会话数 */
+  totalConversations: number;
+  /** 今日新增会话 */
+  todayNewConversations: number;
+  /** 七日趋势 */
+  last7DaysTrend: ConversationTrendList[];
+  /** 三十日趋势 */
+  last30DaysTrend: ConversationTrendList[];
+  /** 月度趋势 */
+  monthlyTrend: ConversationTrendList[];
+}
+
+/**
+ * 会话趋势项
+ */
+export interface ConversationTrendList {
+  /** 日期 */
+  date: string;
+  /** 会话数 */
+  conversationCount: number;
+}

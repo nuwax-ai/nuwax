@@ -3,6 +3,7 @@ import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
   AccessStatsResult,
   AddSystemUserParams,
+  ConversationStatsResult,
   ModelConfigDto,
   NotifyMessageSendParams,
   PublishedDto,
@@ -28,6 +29,7 @@ import type {
   SystemWorkflowListParams,
   SystemWorkflowPage,
   TenantConfigDto,
+  TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
   UserStatsResult,
@@ -345,6 +347,7 @@ export async function apiSystemResourceSkillDelete(data: {
     method: 'DELETE',
   });
 }
+
 /**
  * 查询访问统计数据
  */
@@ -355,6 +358,7 @@ export async function apiGetAccessStats(): Promise<
     method: 'GET',
   });
 }
+
 /**
  * 查询用户统计数据
  */
@@ -362,6 +366,28 @@ export async function apiGetUserStats(): Promise<
   RequestResponse<UserStatsResult>
 > {
   return request('/api/system/user/stats', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 获取资源概览统计数据
+ */
+export async function apiGetTotalStats(): Promise<
+  RequestResponse<TotalStatsResult>
+> {
+  return request('/api/system/stats/resources/total', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 获取会话统计数据
+ */
+export async function apiGetConversationStats(): Promise<
+  RequestResponse<ConversationStatsResult>
+> {
+  return request('/api/system/stats/conversations', {
     method: 'GET',
   });
 }
