@@ -182,7 +182,8 @@ const RoleManage: React.FC = () => {
       {/* 菜单权限配置Drawer */}
       <MenuPermissionDrawer
         open={menuPermissionDrawerOpen}
-        roleInfo={menuPermissionRole}
+        targetId={menuPermissionRole?.id || 0}
+        name={menuPermissionRole?.name || ''}
         onClose={handleMenuPermissionDrawerClose}
         onSuccess={handleMenuPermissionSuccess}
       />

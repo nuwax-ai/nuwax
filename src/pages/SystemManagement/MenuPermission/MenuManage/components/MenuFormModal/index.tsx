@@ -480,15 +480,17 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           <p className={cx(styles.sectionDesc)}>
             仅末级菜单可以关联资源码,选择该菜单可以访问的资源权限
           </p>
-          <Form.Item name="resourceCodes">
-            <Tree
-              checkable
-              defaultExpandAll
-              treeData={resourceTreeData}
-              checkedKeys={selectedResourceIds}
-              onCheck={handleResourceIdsCheck}
-              className={cx(styles.resourceTree)}
-            />
+          <Form.Item>
+            {resourceTreeData && resourceTreeData.length > 0 && (
+              <Tree
+                checkable
+                defaultExpandAll
+                treeData={resourceTreeData}
+                checkedKeys={selectedResourceIds}
+                onCheck={handleResourceIdsCheck}
+                className={cx(styles.resourceTree)}
+              />
+            )}
           </Form.Item>
         </div>
       </Form>
