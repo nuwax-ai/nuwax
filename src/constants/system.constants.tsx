@@ -39,12 +39,12 @@ export const SYSTEM_MANAGE_LIST = [
   },
   {
     type: SystemManageListEnum.Dashboard,
-    icon: <SvgIcon name="icons-nav-palette" />,
+    icon: <SvgIcon name="icons-nav-dashboard" />,
     text: '系统概览',
   },
   {
     type: SystemManageListEnum.MenuPermission,
-    icon: <SvgIcon name="icons-chat-history" />,
+    icon: <SvgIcon name="icons-nav-permission" />,
     text: '菜单权限',
     list: [
       {
@@ -67,22 +67,24 @@ export const SYSTEM_MANAGE_LIST = [
   },
   {
     type: SystemManageListEnum.Log_Query,
-    icon: <SvgIcon name="icons-chat-history" />,
+    icon: <SvgIcon name="icons-nav-log" />,
     text: '日志查询',
     list: [
       {
         text: '操作日志',
         type: SystemManageListEnum.Operation_Log,
+        icon: <SvgIcon name="icons-nav-log-operation" />,
       },
       {
         text: '运行日志',
         type: SystemManageListEnum.Running_Log,
+        icon: <SvgIcon name="icons-nav-log-running" />,
       },
     ],
   },
   {
     type: SystemManageListEnum.Content,
-    icon: <SvgIcon name="icons-chat-history" />,
+    icon: <SvgIcon name="icons-nav-cube" />,
     text: '内容管理',
     list: [
       {
