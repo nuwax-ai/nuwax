@@ -19,6 +19,8 @@ interface UserGroupCardProps {
   onEdit: (userGroup: UserGroupInfo) => void;
   /** 删除回调 */
   onDelete: (userGroup: UserGroupInfo) => void;
+  /** 菜单权限回调 */
+  onMenuPermission: (userGroup: UserGroupInfo) => void;
   /** 删除加载状态 */
   deleteLoading?: boolean;
 }
@@ -31,8 +33,15 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
   userGroup,
   onEdit,
   onDelete,
+  onMenuPermission,
   deleteLoading = false,
 }) => {
+  // 处理菜单权限点击
+  const handleMenuPermission = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMenuPermission(userGroup);
+  };
+
   // 处理编辑点击
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -142,6 +151,14 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
       <div className={cx(styles.footer)}>
         {userGroup.source === UserGroupSourceEnum.UserDefined && (
           <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={handleMenuPermission}
+              className={cx(styles.actionButton)}
+            >
+              菜单权限
+            </Button>
             <Button
               type="text"
               icon={<EditOutlined />}

@@ -9,6 +9,10 @@ import {
   apiGetRoleBoundMenuList,
   apiRoleBindMenu,
 } from '../../services/role-manage';
+import {
+  apiGetGroupMenuList,
+  apiGroupBindMenu,
+} from '../../services/user-group-manage';
 import { MenuBindTypeEnum, type MenuNodeInfo } from '../../types/menu-manage';
 import type { MenuTreeNode } from '../../types/role-manage';
 import MenuPermissionTree from './MenuPermissionTree';
@@ -21,6 +25,8 @@ interface MenuPermissionDrawerProps {
   open: boolean;
   targetId: number;
   name: string;
+  /** 类型：角色、用户组 */
+  type?: 'role' | 'userGroup';
   /** 关闭回调 */
   onClose: () => void;
   /** 成功回调 */
@@ -35,10 +41,17 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
   open,
   targetId,
   name,
+  type = 'role',
   onClose,
   onSuccess,
 }) => {
   const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
+
+  // 根据类型选择不同的API
+  const apiKey =
+    type === 'role' ? apiGetRoleBoundMenuList : apiGetGroupMenuList;
+
+  const bindMenuApi = type === 'role' ? apiRoleBindMenu : apiGroupBindMenu;
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
   useDrawerScroll(open);
@@ -60,21 +73,21 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     return ids;
   };
 
-  // 查询角色已绑定的菜单
+  // 查询目标已绑定的菜单
   const {
-    run: runGetRoleBoundMenuList,
+    run: runGetMenuList,
     data: menuTree,
     loading: getMenuLoading,
-  } = useRequest(apiGetRoleBoundMenuList, {
+  } = useRequest(apiKey, {
     manual: true,
     onSuccess: (data: MenuNodeInfo[]) => {
       setSelectedMenuIds(getSelectedMenuIds(data));
     },
   });
 
-  // 绑定菜单权限
-  const { run: runRoleBindMenu, loading: bindMenuLoading } = useRequest(
-    apiRoleBindMenu,
+  // 目标绑定菜单（全量覆盖）
+  const { run: runBindMenu, loading: bindMenuLoading } = useRequest(
+    bindMenuApi,
     {
       manual: true,
       onSuccess: () => {
@@ -89,8 +102,8 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
 
   useEffect(() => {
     if (open && targetId) {
-      // 查询角色已绑定的菜单
-      runGetRoleBoundMenuList(targetId);
+      // 查询目标已绑定的菜单
+      runGetMenuList(targetId);
     } else {
       // 重置状态
       setSelectedMenuIds([]);
@@ -153,14 +166,17 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     if (!targetId || !menuTree) return;
 
     // 将MenuTreeNode转换为MenuNodeInfo格式，用于构建菜单树
-    // const menuNodeInfoList = convertMenuTreeToMenuNodeInfo(menuTree);
     // 构建资源树结构
     const updatedMenuTree = buildMenuTree(menuTree, selectedMenuIds);
-
-    runRoleBindMenu({
-      roleId: targetId,
+    // 根据类型选择不同的ID
+    const id = type === 'role' ? 'roleId' : 'groupId';
+    // 构建绑定菜单参数
+    const bindMenuParams = {
+      [id]: targetId,
       menuTree: updatedMenuTree,
-    });
+    };
+
+    runBindMenu(bindMenuParams);
   };
 
   // 渲染抽屉头部

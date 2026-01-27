@@ -3,6 +3,7 @@ import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import {
   apiDeleteUserGroup,
   apiGetUserGroupList,
@@ -24,9 +25,13 @@ const UserGroupManage: React.FC = () => {
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [isEdit, setIsEdit] = useState<boolean>(false);
   const [editingUserGroup, setEditingUserGroup] =
+    useState<UserGroupInfo | null>();
+  const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
+    useState<boolean>(false);
+  const [menuPermissionUserGroup, setMenuPermissionUserGroup] =
     useState<UserGroupInfo | null>();
 
   // 查询用户组列表
@@ -93,6 +98,25 @@ const UserGroupManage: React.FC = () => {
     runGetUserGroupList();
   };
 
+  // 处理菜单权限
+  const handleMenuPermission = (userGroup: UserGroupInfo) => {
+    setMenuPermissionUserGroup(userGroup);
+    setMenuPermissionDrawerOpen(true);
+  };
+
+  // 处理菜单权限抽屉关闭
+  const handleMenuPermissionDrawerClose = () => {
+    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionUserGroup(null);
+  };
+
+  // 处理菜单权限保存成功
+  const handleMenuPermissionSuccess = () => {
+    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionUserGroup(null);
+    runGetUserGroupList();
+  };
+
   // 计算每行显示的列数（响应式）
   const getCols = () => {
     if (screens.xxl) return 4;
@@ -145,6 +169,7 @@ const UserGroupManage: React.FC = () => {
                   userGroup={userGroup}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onMenuPermission={handleMenuPermission}
                   deleteLoading={deleteLoadingMap[userGroup.id] || false}
                 />
               ))}
@@ -160,6 +185,16 @@ const UserGroupManage: React.FC = () => {
         userGroupInfo={editingUserGroup}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* 菜单权限配置Drawer */}
+      <MenuPermissionDrawer
+        open={menuPermissionDrawerOpen}
+        type="userGroup"
+        targetId={menuPermissionUserGroup?.id || 0}
+        name={menuPermissionUserGroup?.name || ''}
+        onClose={handleMenuPermissionDrawerClose}
+        onSuccess={handleMenuPermissionSuccess}
       />
     </div>
   );
