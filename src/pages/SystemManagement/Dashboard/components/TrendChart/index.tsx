@@ -1,7 +1,8 @@
 import { Line } from '@ant-design/plots';
+import { useSize } from 'ahooks';
 import { Card, Radio, Skeleton } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import styles from './index.less';
 import type { TrendChartProps } from './type';
 
@@ -22,12 +23,17 @@ const TrendChart: React.FC<TrendChartProps> = ({
     { label: '按月', value: 'month' },
   ],
 }) => {
-  const config = React.useMemo(
+  const containerRef = useRef<HTMLDivElement>(null);
+  const size = useSize(containerRef);
+
+  const config = useMemo(
     () => ({
       data,
       xField: 'date',
       yField: 'value',
+      width: size?.width,
       height,
+      autoFit: false,
       shapeField: 'smooth',
       scale: {
         y: {
@@ -86,7 +92,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
         value: d.value.toLocaleString(),
       }),
     }),
-    [data, height, color, tooltipName],
+    [data, color, tooltipName, size?.width],
   );
   return (
     <Card className={cx(styles['trend-chart'])} bordered={false}>
@@ -105,11 +111,13 @@ const TrendChart: React.FC<TrendChartProps> = ({
           ))}
         </Radio.Group>
       </div>
-      <div className={cx(styles['trend-chart-content'])}>
+      <div
+        className={cx(styles['trend-chart-content'])}
+        style={{ height, position: 'relative' }}
+        ref={containerRef}
+      >
         {loading ? (
-          <div style={{ height }}>
-            <Skeleton active paragraph={{ rows: 6 }} />
-          </div>
+          <Skeleton active paragraph={{ rows: 6 }} />
         ) : (
           <Line {...config} />
         )}

@@ -1,7 +1,3 @@
-.session-stats {
-  // 会话统计容器
-}
-
 .session-chart {
   margin-top: 16px;
   border-radius: 12px;
@@ -11,6 +7,13 @@
   &:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 12%);
     transform: translateY(-2px);
+  }
+
+  :global {
+    .ant-card-body {
+      width: 100%;
+      overflow: hidden;
+    }
   }
 }
 
