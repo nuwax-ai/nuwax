@@ -161,28 +161,45 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   }, [resourceTreeList]);
 
   /**
+   * 将树形结构扁平化为一维数组
+   * @param resources 资源树
+   * @returns 扁平化后的资源数组
+   */
+  const flattenResourceTree = useCallback(
+    (resources: ResourceTreeNode[]): ResourceTreeNode[] => {
+      const result: ResourceTreeNode[] = [];
+      const traverse = (nodes: ResourceTreeNode[]) => {
+        nodes.forEach((node) => {
+          result.push(node);
+          if (node.children && node.children.length > 0) {
+            traverse(node.children);
+          }
+        });
+      };
+      traverse(resources);
+      return result;
+    },
+    [],
+  );
+
+  /**
    * 获取已绑定资源ID列表
    * @param resources 资源树
    * @returns 已绑定资源ID列表
    */
   const getBoundResourceIds = useCallback(
     (resources: ResourceTreeNode[]): number[] => {
-      const ids: number[] = [];
-      resources.forEach((resource) => {
-        // 如果资源是全部绑定或部分绑定，则收集其 id
-        if (resource.resourceBindType === ResourceBindTypeEnum.AllBound) {
-          if (resource.id) {
-            ids.push(resource.id);
-          }
-        }
-        // 递归处理子资源
-        if (resource.children && resource.children.length > 0) {
-          ids.push(...getBoundResourceIds(resource.children));
-        }
-      });
-      return ids;
+      // 先将树形结构扁平化为一维数组
+      const flatResources = flattenResourceTree(resources);
+      // 过滤出已绑定（全部绑定或部分绑定）的资源，并提取 id
+      return flatResources
+        .filter(
+          (resource) =>
+            resource.resourceBindType === ResourceBindTypeEnum.AllBound,
+        )
+        .map((resource) => resource.id);
     },
-    [],
+    [flattenResourceTree],
   );
 
   // 初始化表单数据
@@ -229,7 +246,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   ) => {
     // Tree 组件的 onCheck 可能返回数组或对象
     const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
-    console.log(keys, 'keys', checkedKeys);
     setSelectedResourceIds(keys);
   };
 
