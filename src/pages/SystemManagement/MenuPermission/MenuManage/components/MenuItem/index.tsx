@@ -127,13 +127,18 @@ const MenuItem: React.FC<MenuItemProps> = ({
             >
               新增子菜单
             </Button>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={handleEdit}
-              className={cx(styles.actionButton)}
-            />
+            {
+              // 根节点菜单不能编辑
+              menu?.id !== 0 && (
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                  className={cx(styles.actionButton)}
+                />
+              )
+            }
             {menu?.source === MenuSourceEnum.UserDefined && (
               <Button
                 type="text"
