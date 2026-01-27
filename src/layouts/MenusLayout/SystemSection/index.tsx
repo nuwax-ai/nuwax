@@ -270,6 +270,7 @@ const SystemSection: React.FC<{
                 <SecondMenuItem.SubItem
                   key={item.type}
                   name={item.text}
+                  icon={item.icon}
                   isActive={handleSubActive(item.type)}
                   onClick={() => handlerSubApplication(item.type)}
                 />
