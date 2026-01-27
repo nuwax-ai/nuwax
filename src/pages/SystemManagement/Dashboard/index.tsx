@@ -1,6 +1,13 @@
-import { apiGetAccessStats, apiGetUserStats } from '@/services/systemManage';
+import {
+  apiGetAccessStats,
+  apiGetConversationStats,
+  apiGetTotalStats,
+  apiGetUserStats,
+} from '@/services/systemManage';
 import type {
   AccessStatsResult,
+  ConversationStatsResult,
+  TotalStatsResult,
   UserStatsResult,
 } from '@/types/interfaces/systemManage';
 import {
@@ -22,6 +29,7 @@ import { Badge, Col, Row, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'umi';
 import { ResourceGrid, SessionStats, StatCard, TrendChart } from './components';
 import styles from './index.less';
 
@@ -43,26 +51,69 @@ const Clock: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
+  const location = useLocation();
   const [hasAccessLoaded, setHasAccessLoaded] = useState(false);
-  const { data: accessStats, loading: accessLoading } = useRequest(
-    apiGetAccessStats,
-    {
-      onSuccess: () => setHasAccessLoaded(true),
-    },
-  );
+  const {
+    data: accessStats,
+    loading: accessLoading,
+    refresh: refreshAccess,
+  } = useRequest(apiGetAccessStats, {
+    onSuccess: () => setHasAccessLoaded(true),
+  });
   const [userPeriod, setUserPeriod] = useState<'7d' | '30d' | 'month'>('7d');
   const [hasUserLoaded, setHasUserLoaded] = useState(false);
-  const { data: userStats, loading: userLoading } = useRequest(
-    apiGetUserStats,
-    {
-      onSuccess: () => setHasUserLoaded(true),
-    },
-  );
+  const {
+    data: userStats,
+    loading: userLoading,
+    refresh: refreshUser,
+  } = useRequest(apiGetUserStats, {
+    onSuccess: () => setHasUserLoaded(true),
+  });
+
+  const [hasTotalLoaded, setHasTotalLoaded] = useState(false);
+  const {
+    data: totalStats,
+    loading: totalLoading,
+    refresh: refreshTotal,
+  } = useRequest(apiGetTotalStats, {
+    onSuccess: () => setHasTotalLoaded(true),
+  });
+
+  const [conversationPeriod, setConversationPeriod] = useState<
+    '7d' | '30d' | 'month'
+  >('7d');
+  const [hasConversationLoaded, setHasConversationLoaded] = useState(false);
+  const {
+    data: conversationStats,
+    loading: conversationLoading,
+    refresh: refreshConversation,
+  } = useRequest(apiGetConversationStats, {
+    onSuccess: () => setHasConversationLoaded(true),
+  });
+
+  // 监听 location.state 变化，用于菜单点击刷新
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      // 重置加载标识，使骨架屏显示
+      setHasAccessLoaded(false);
+      setHasUserLoaded(false);
+      setHasTotalLoaded(false);
+      setHasConversationLoaded(false);
+
+      // 刷新所有数据
+      refreshAccess();
+      refreshUser();
+      refreshTotal();
+      refreshConversation();
+      // 重置时间维度
+      setUserPeriod('7d');
+      setConversationPeriod('7d');
+    }
+  }, [location.state]);
 
   // 映射核心统计
   const coreStats = useMemo(() => {
-    // 兼容处理：如果 accessStats 是 RequestResponse 结构，则取 .data；
-    // 如果 api 成功被拦截器解构直接返回了 AccessStatsResult，则直接使用 accessStats。
     const result = (accessStats as any)?.data || accessStats;
     const data = result as AccessStatsResult | undefined;
     const userResult = (userStats as any)?.data || userStats;
@@ -102,7 +153,7 @@ const Dashboard: React.FC = () => {
         loading: !hasAccessLoaded && accessLoading,
       },
     ];
-  }, [accessStats, accessLoading]);
+  }, [accessStats, accessLoading, userLoading]);
 
   // 映射用户新增趋势
   const userTrendData = useMemo(() => {
@@ -136,94 +187,114 @@ const Dashboard: React.FC = () => {
     );
   }, [accessStats]);
 
-  // 模拟数据 - 资源概览
-  const resources = [
-    {
-      name: '工作空间',
-      count: 12,
-      icon: <FolderOutlined />,
-      color: '#597ef7', // 蓝紫色
-      bgColor: '#f0f5ff',
-    },
-    {
-      name: '智能体',
-      count: 24,
-      icon: <DesktopOutlined />,
-      color: '#eb2f96', // 粉色
-      bgColor: '#fff0f6',
-    },
-    {
-      name: '知识库',
-      count: 156,
-      icon: <BookOutlined />,
-      color: '#13c2c2', // 青色
-      bgColor: '#e6fffb',
-    },
-    {
-      name: '工作流',
-      count: 42,
-      icon: <SyncOutlined />,
-      color: '#52c41a', // 绿色
-      bgColor: '#f6ffed',
-    },
-    {
-      name: '数据表',
-      count: 89,
-      icon: <TableOutlined />,
-      color: '#faad14', // 黄色
-      bgColor: '#fffbe6',
-    },
-    {
-      name: 'MCP',
-      count: 18,
-      icon: <CodeOutlined />,
-      color: '#722ed1', // 紫色
-      bgColor: '#f9f0ff',
-    },
-    {
-      name: '网页应用',
-      count: 67,
-      icon: <AppstoreOutlined />,
-      color: '#f5222d', // 红色
-      bgColor: '#fff1f0',
-    },
-    {
-      name: '模型',
-      count: 38,
-      icon: <DesktopOutlined />,
-      color: '#2f54eb', // 深蓝色
-      bgColor: '#f0f5ff',
-    },
-  ];
+  // 映射资源概览
+  const resources = useMemo(() => {
+    const result = (totalStats as any)?.data || totalStats;
+    const data = result as TotalStatsResult | undefined;
 
-  // 模拟数据 - 会话统计
-  const sessionStats = [
-    {
-      title: '总会话数',
-      value: 15678,
-      icon: <CommentOutlined />,
-      iconColor: '#722ed1',
-      iconBgColor: '#f9f0ff',
-    },
-    {
-      title: '今日新增会话',
-      value: 892,
-      icon: <CommentOutlined />,
-      iconColor: '#13c2c2',
-      iconBgColor: '#e6fffb',
-    },
-  ];
+    return [
+      {
+        name: '工作空间',
+        count: data?.spaceCount || 0,
+        icon: <FolderOutlined />,
+        color: '#597ef7',
+        bgColor: '#f0f5ff',
+      },
+      {
+        name: '智能体',
+        count: data?.agentCount || 0,
+        icon: <TeamOutlined />,
+        color: '#1890ff',
+        bgColor: '#e6f7ff',
+      },
+      {
+        name: '知识库',
+        count: data?.knowledgeCount || 0,
+        icon: <BookOutlined />,
+        color: '#13c2c2',
+        bgColor: '#e6fffb',
+      },
+      {
+        name: '工作流',
+        count: data?.workflowCount || 0,
+        icon: <SyncOutlined />,
+        color: '#52c41a',
+        bgColor: '#f6ffed',
+      },
+      {
+        name: '数据表',
+        count: data?.tableCount || 0,
+        icon: <TableOutlined />,
+        color: '#faad14',
+        bgColor: '#fffbe6',
+      },
+      {
+        name: 'MCP',
+        count: data?.mcpCount || 0,
+        icon: <CodeOutlined />,
+        color: '#722ed1',
+        bgColor: '#f9f0ff',
+      },
+      {
+        name: '网页应用',
+        count: data?.pageCount || 0,
+        icon: <AppstoreOutlined />,
+        color: '#f5222d',
+        bgColor: '#fff1f0',
+      },
+      {
+        name: '模型',
+        count: data?.modelCount || 0,
+        icon: <DesktopOutlined />,
+        color: '#2f54eb',
+        bgColor: '#f0f5ff',
+      },
+    ];
+  }, [totalStats]);
 
-  // 模拟数据 - 会话趋势
-  const sessionTrendData = [
-    { date: '1月16日', value: 720 },
-    { date: '1月17日', value: 765 },
-    { date: '1月18日', value: 845 },
-    { date: '1月19日', value: 765 },
-    { date: '1月20日', value: 820 },
-    { date: '1月21日', value: 856 },
-    { date: '1月22日', value: 780 },
-  ];
+  // 映射会话统计
+  const mappedSessionStats = useMemo(() => {
+    const result = (conversationStats as any)?.data || conversationStats;
+    const data = result as ConversationStatsResult | undefined;
+
+    return [
+      {
+        title: '总会话数',
+        value: data?.totalConversations || 0,
+        icon: <CommentOutlined />,
+        iconColor: '#722ed1',
+        iconBgColor: '#f9f0ff',
+      },
+      {
+        title: '今日新增会话',
+        value: data?.todayNewConversations || 0,
+        icon: <CommentOutlined />,
+        iconColor: '#13c2c2',
+        iconBgColor: '#e6fffb',
+      },
+    ];
+  }, [conversationStats]);
+
+  // 映射会话趋势
+  const sessionTrendData = useMemo(() => {
+    const result = (conversationStats as any)?.data || conversationStats;
+    const data = result as ConversationStatsResult | undefined;
+    if (!data) return [];
+
+    let trendData: any[] = [];
+    if (conversationPeriod === '7d') {
+      trendData = data.last7DaysTrend || [];
+    } else if (conversationPeriod === '30d') {
+      trendData = data.last30DaysTrend || [];
+    } else if (conversationPeriod === 'month') {
+      trendData = data.monthlyTrend || [];
+    }
+
+    return trendData.map((item: any) => ({
+      date: item.date,
+      value: item.conversationCount,
+    }));
+  }, [conversationStats, conversationPeriod]);
 
   return (
     <div className={cx(styles['dashboard-container'])}>
@@ -279,12 +350,21 @@ const Dashboard: React.FC = () => {
 
       {/* 资源概览 */}
       <div className={cx(styles['resource-row'])}>
-        <ResourceGrid resources={resources} />
+        <ResourceGrid
+          resources={resources}
+          loading={!hasTotalLoaded && totalLoading}
+        />
       </div>
 
       {/* 会话统计 */}
       <div className={cx(styles['session-row'])}>
-        <SessionStats stats={sessionStats} chartData={sessionTrendData} />
+        <SessionStats
+          stats={mappedSessionStats}
+          chartData={sessionTrendData}
+          loading={!hasConversationLoaded && conversationLoading}
+          period={conversationPeriod}
+          onPeriodChange={setConversationPeriod}
+        />
       </div>
     </div>
   );
