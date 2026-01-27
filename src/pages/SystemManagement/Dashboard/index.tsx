@@ -29,6 +29,7 @@ import { Badge, Col, Row, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'umi';
 import { ResourceGrid, SessionStats, StatCard, TrendChart } from './components';
 import styles from './index.less';
 
@@ -50,40 +51,66 @@ const Clock: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
+  const location = useLocation();
   const [hasAccessLoaded, setHasAccessLoaded] = useState(false);
-  const { data: accessStats, loading: accessLoading } = useRequest(
-    apiGetAccessStats,
-    {
-      onSuccess: () => setHasAccessLoaded(true),
-    },
-  );
+  const {
+    data: accessStats,
+    loading: accessLoading,
+    refresh: refreshAccess,
+  } = useRequest(apiGetAccessStats, {
+    onSuccess: () => setHasAccessLoaded(true),
+  });
   const [userPeriod, setUserPeriod] = useState<'7d' | '30d' | 'month'>('7d');
   const [hasUserLoaded, setHasUserLoaded] = useState(false);
-  const { data: userStats, loading: userLoading } = useRequest(
-    apiGetUserStats,
-    {
-      onSuccess: () => setHasUserLoaded(true),
-    },
-  );
+  const {
+    data: userStats,
+    loading: userLoading,
+    refresh: refreshUser,
+  } = useRequest(apiGetUserStats, {
+    onSuccess: () => setHasUserLoaded(true),
+  });
 
   const [hasTotalLoaded, setHasTotalLoaded] = useState(false);
-  const { data: totalStats, loading: totalLoading } = useRequest(
-    apiGetTotalStats,
-    {
-      onSuccess: () => setHasTotalLoaded(true),
-    },
-  );
+  const {
+    data: totalStats,
+    loading: totalLoading,
+    refresh: refreshTotal,
+  } = useRequest(apiGetTotalStats, {
+    onSuccess: () => setHasTotalLoaded(true),
+  });
 
   const [conversationPeriod, setConversationPeriod] = useState<
     '7d' | '30d' | 'month'
   >('7d');
   const [hasConversationLoaded, setHasConversationLoaded] = useState(false);
-  const { data: conversationStats, loading: conversationLoading } = useRequest(
-    apiGetConversationStats,
-    {
-      onSuccess: () => setHasConversationLoaded(true),
-    },
-  );
+  const {
+    data: conversationStats,
+    loading: conversationLoading,
+    refresh: refreshConversation,
+  } = useRequest(apiGetConversationStats, {
+    onSuccess: () => setHasConversationLoaded(true),
+  });
+
+  // 监听 location.state 变化，用于菜单点击刷新
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      // 重置加载标识，使骨架屏显示
+      setHasAccessLoaded(false);
+      setHasUserLoaded(false);
+      setHasTotalLoaded(false);
+      setHasConversationLoaded(false);
+
+      // 刷新所有数据
+      refreshAccess();
+      refreshUser();
+      refreshTotal();
+      refreshConversation();
+      // 重置时间维度
+      setUserPeriod('7d');
+      setConversationPeriod('7d');
+    }
+  }, [location.state]);
 
   // 映射核心统计
   const coreStats = useMemo(() => {
