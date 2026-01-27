@@ -19,7 +19,20 @@ const StatCard: React.FC<StatCardProps> = ({
   return (
     <Card className={cx(styles['stat-card'])} bordered={false}>
       {loading ? (
-        <Skeleton active paragraph={{ rows: 2 }} title={false} />
+        <div className={cx(styles['stat-card-content'])}>
+          <div className={cx(styles['stat-card-info'])}>
+            <Skeleton
+              active
+              paragraph={{ rows: 1, width: ['60%'] }}
+              title={{ width: '40%' }}
+            />
+          </div>
+          <Skeleton.Button
+            active
+            className={cx(styles['stat-card-icon'])}
+            style={{ width: 56, height: 56, borderRadius: 12 }}
+          />
+        </div>
       ) : (
         <div className={cx(styles['stat-card-content'])}>
           <div className={cx(styles['stat-card-info'])}>

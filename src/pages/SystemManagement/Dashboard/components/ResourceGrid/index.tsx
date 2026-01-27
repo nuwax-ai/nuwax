@@ -19,17 +19,14 @@ const ResourceGrid: React.FC<ResourceGridProps> = ({ resources, loading }) => {
             <Col key={index} xs={12} sm={12} md={6} lg={6} xl={6}>
               {loading ? (
                 <div className={cx(styles['resource-item'])}>
-                  <Skeleton.Avatar
+                  <Skeleton.Button
                     active
-                    size="large"
-                    shape="circle"
-                    style={{ marginRight: 16 }}
+                    style={{ width: 48, height: 48, borderRadius: 10 }}
                   />
-                  <Skeleton
-                    active
-                    paragraph={{ rows: 1 }}
-                    title={{ width: 60 }}
-                  />
+                  <div className={cx(styles['resource-info'])}>
+                    <Skeleton.Input active style={{ width: 60, height: 20 }} />
+                    <Skeleton.Input active style={{ width: 40, height: 24 }} />
+                  </div>
                 </div>
               ) : (
                 <div className={cx(styles['resource-item'])}>
