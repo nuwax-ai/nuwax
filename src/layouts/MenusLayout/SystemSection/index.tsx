@@ -19,12 +19,78 @@ const SystemSection: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
-  // 模板menu显隐，默认打开模板menu
-  const [visibleMenu, setVisibleMenu] = useState<boolean>(true);
+  // Find the key that should be open based on current path
+  const getInitialOpenKey = () => {
+    for (const item of SYSTEM_MANAGE_LIST) {
+      if (item.list && item.list.length > 0) {
+        // Check if any sub-item matches the current path
+        // We can reuse a logic similar to handleSubActive but simplified or just check if pathname includes the parent's context
+        // OR, stick to the `handleSubActive` logic which is item-specific.
+        // A simple check: if any of the sub-items would be active, then this parent is the openKey.
+        const isChildActive = item.list.some((subItem: any) => {
+          return (
+            (subItem.type === SystemManageListEnum.Operation_Log &&
+              pathname.includes('operation-log')) ||
+            (subItem.type === SystemManageListEnum.Running_Log &&
+              pathname.includes('running-log')) ||
+            (subItem.type === SystemManageListEnum.Content_Space &&
+              pathname.includes('content-space')) ||
+            (subItem.type === SystemManageListEnum.Content_Agent &&
+              pathname.includes('content-agent')) ||
+            (subItem.type === SystemManageListEnum.Content_WebApplication &&
+              pathname.includes('content-web-application')) ||
+            (subItem.type === SystemManageListEnum.Content_KnowledgeBase &&
+              pathname.includes('content-knowledge-base')) ||
+            (subItem.type === SystemManageListEnum.Content_DataTable &&
+              pathname.includes('content-data-table')) ||
+            (subItem.type === SystemManageListEnum.Content_Workflow &&
+              pathname.includes('content-workflow')) ||
+            (subItem.type === SystemManageListEnum.Content_Plugin &&
+              pathname.includes('content-plugin')) ||
+            (subItem.type === SystemManageListEnum.Content_Mcp &&
+              pathname.includes('content-mcp')) ||
+            (subItem.type === SystemManageListEnum.Content_Skill &&
+              pathname.includes('content-skill')) ||
+            (subItem.type === SystemManageListEnum.Permission_Resources &&
+              pathname.includes('permission-resources')) ||
+            (subItem.type === SystemManageListEnum.Menu_Manage &&
+              pathname.includes('menu-manage')) ||
+            (subItem.type === SystemManageListEnum.Role_Manage &&
+              pathname.includes('role-manage')) ||
+            (subItem.type === SystemManageListEnum.User_Group_Manage &&
+              pathname.includes('user-group-manage'))
+          );
+        });
+        if (isChildActive) return item.type;
+      }
+    }
+    return null;
+  };
 
-  const handlerApplication = (type: SystemManageListEnum | string) => {
+  // 模板menu显隐，手风琴模式，仅允许一个展开
+  const [openKey, setOpenKey] = useState<SystemManageListEnum | string | null>(
+    getInitialOpenKey,
+  );
+
+  const handleToggle = (key: SystemManageListEnum | string) => {
+    setOpenKey((prev) => (prev === key ? null : key));
+  };
+
+  const handlerApplication = (info: any) => {
+    const type = info.type;
+    const hasChildren = !!info.list?.length;
+
+    // 如果有子菜单，点击标题进行折叠/展开
+    if (hasChildren) {
+      handleToggle(type);
+      return;
+    }
+
     // 关闭移动端菜单
     handleCloseMobileMenu();
+    // 如果点击的是没有子菜单的项目，关闭所有展开项（可选，根据需求，这里保持关闭以突出手风琴效果）
+    setOpenKey(null);
+
     switch (type) {
       // 用户管理
       case SystemManageListEnum.User_Manage:
@@ -187,17 +253,17 @@ const SystemSection: React.FC<{
             name={info.text}
             isDown={!!info.list?.length}
             isActive={handleActive(info.type)}
-            isOpen={visibleMenu}
+            isOpen={openKey === info.type}
             icon={info.icon}
-            onClick={() => handlerApplication(info.type)}
-            onToggle={() => setVisibleMenu(!visibleMenu)}
+            onClick={() => handlerApplication(info)}
+            onToggle={() => handleToggle(info.type)}
             isFirst={index === 0}
           />
           {/* 模板列表项 */}
           <ConditionRender condition={!!info.list?.length}>
             <div
               className={cx(styles['box-hidden'], {
-                [styles.visible]: visibleMenu,
+                [styles.visible]: openKey === info.type,
               })}
             >
               {info.list?.map((item: any) => (
