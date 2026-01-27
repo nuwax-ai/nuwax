@@ -51,21 +51,13 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
         defaultExpandAll
         checkedKeys={selectedKeys}
         // 点击复选框触发
-        onCheck={(checkedKeys, info) => {
-          console.log('onCheck', checkedKeys, info);
+        onCheck={(checkedKeys) => {
           // onCheck返回的是CheckedKeys类型，需要转换为Key[]
           // 当checkStrictly为false时，checkedKeys包含所有选中的节点（包括父节点和子节点）
           const keys = Array.isArray(checkedKeys)
             ? checkedKeys
             : checkedKeys.checked || [];
           handleSelect(keys as React.Key[]);
-        }}
-        // 点击树节点触发
-        onSelect={(selectedKeys, info) => {
-          console.log('onSelect', selectedKeys, info);
-          // 点击节点文本时也触发选择（可选功能）
-          // 注意：这里使用的是onSelect，主要用于点击节点文本时的处理
-          // 实际的多选功能主要通过onCheck实现
         }}
         blockNode
       />

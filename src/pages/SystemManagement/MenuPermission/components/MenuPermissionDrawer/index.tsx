@@ -1,3 +1,4 @@
+import Loading from '@/components/custom/Loading';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Drawer, message } from 'antd';
@@ -180,7 +181,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     </div>
   );
 
-  const loading = getMenuLoading || bindMenuLoading;
+  // const loading = getMenuLoading;
 
   return (
     <Drawer
@@ -199,15 +200,17 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
 
       {/* 抽屉内容 */}
       <div className={cx(styles.content)}>
-        {loading && !menuTree ? (
-          <div className={cx(styles.loading)}>加载中...</div>
+        {getMenuLoading ? (
+          <div
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
+          >
+            <Loading />
+          </div>
         ) : menuTree && menuTree.length > 0 ? (
           <MenuPermissionTree
             menuTree={menuTree}
             selectedKeys={selectedMenuIds}
             onSelect={setSelectedMenuIds}
-            // expandedKeys={expandedMenuKeys}
-            // onExpand={setExpandedMenuKeys}
           />
         ) : (
           <div className={cx(styles.empty)}>暂无菜单数据</div>
