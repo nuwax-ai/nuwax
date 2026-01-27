@@ -56,7 +56,7 @@ const SystemSection: React.FC<{
         break;
       // 系统概览
       case SystemManageListEnum.Dashboard:
-        history.push('/system/dashboard');
+        history.push('/system/dashboard', { _t: Date.now() });
         break;
     }
   };
