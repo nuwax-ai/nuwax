@@ -1,7 +1,8 @@
 import { Line } from '@ant-design/plots';
+import { useSize } from 'ahooks';
 import { Card, Col, Radio, Row } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import StatCard from '../StatCard';
 import styles from './index.less';
 import type { SessionStatsProps } from './type';
@@ -15,12 +16,17 @@ const SessionStats: React.FC<SessionStatsProps> = ({
   period = '7d',
   onPeriodChange,
 }) => {
-  const chartConfig = React.useMemo(
+  const containerRef = useRef<HTMLDivElement>(null);
+  const size = useSize(containerRef);
+
+  const chartConfig = useMemo(
     () => ({
       data: chartData,
       xField: 'date',
       yField: 'value',
+      width: size?.width,
       height: 280,
+      autoFit: false,
       shapeField: 'smooth',
       loading, // Line 组件也支持 loading 属性显示骨架屏（如果版本支持），或者我们可以手动包裹
       scale: {
@@ -80,7 +86,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
         value: (d.value || 0).toLocaleString(),
       }),
     }),
-    [chartData, loading],
+    [chartData, loading, size?.width],
   );
 
   return (
@@ -107,7 +113,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
             <Radio.Button value="month">按月</Radio.Button>
           </Radio.Group>
         </div>
-        <div style={{ height: 280, position: 'relative' }}>
+        <div style={{ height: 280, position: 'relative' }} ref={containerRef}>
           <Line {...chartConfig} />
         </div>
       </Card>
