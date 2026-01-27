@@ -59,6 +59,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   // const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
   // const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
+  // 是否全部模型已选中
   const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
   // const mockMenuTree: MenuNodeInfo[] = [
@@ -134,6 +135,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   );
 
+  // 当 modelList 加载完成后，处理待处理的 modelIds
   useEffect(() => {
     // 如果模型列表长度大于0，且全部模型已选中，则设置为全部模型ID列表
     if (modelList?.length > 0 && allModelSelected) {
