@@ -14,7 +14,7 @@ import {
   TreeSelect,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiAddMenu,
@@ -65,10 +65,10 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  // 选中的资源码
-  const [selectedResourceCodes, setSelectedResourceCodes] = useState<
-    React.Key[]
-  >([]);
+  // 选中的资源码ID
+  const [selectedResourceIds, setSelectedResourceIds] = useState<React.Key[]>(
+    [],
+  );
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
 
@@ -147,11 +147,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
   // 将资源树转换为Tree需要的数据格式（用于关联资源码选择）
   const resourceTreeData = useMemo(() => {
-    const convertToTreeData = (resources: any[]): any[] => {
+    const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
       return resources.map((resource) => ({
-        title: `${resource.name} (${resource.code})`,
-        key: resource.code,
-        value: resource.code,
+        title: `${resource.name}-(${resource.code})`,
+        key: resource.id,
+        value: resource.id,
         children: resource.children
           ? convertToTreeData(resource.children)
           : undefined,
@@ -159,6 +159,31 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     };
     return resourceTreeList ? convertToTreeData(resourceTreeList) : [];
   }, [resourceTreeList]);
+
+  /**
+   * 获取已绑定资源ID列表
+   * @param resources 资源树
+   * @returns 已绑定资源ID列表
+   */
+  const getBoundResourceIds = useCallback(
+    (resources: ResourceTreeNode[]): number[] => {
+      const ids: number[] = [];
+      resources.forEach((resource) => {
+        // 如果资源是全部绑定或部分绑定，则收集其 id
+        if (resource.resourceBindType === ResourceBindTypeEnum.AllBound) {
+          if (resource.id) {
+            ids.push(resource.id);
+          }
+        }
+        // 递归处理子资源
+        if (resource.children && resource.children.length > 0) {
+          ids.push(...getBoundResourceIds(resource.children));
+        }
+      });
+      return ids;
+    },
+    [],
+  );
 
   // 初始化表单数据
   useEffect(() => {
@@ -175,19 +200,16 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           status: menuInfoResponse.status === MenuStatusEnum.Enabled,
           visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
         });
-        // 设置关联资源码
-        if (menuInfoResponse.resourceTree) {
-          setSelectedResourceCodes(
-            menuInfoResponse.resourceTree.map(
-              (resource: ResourceTreeNode) => resource.code,
-            ),
-          );
+        // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
+        const resourceTree = menuInfoResponse.resourceTree;
+        if (resourceTree) {
+          setSelectedResourceIds(getBoundResourceIds(resourceTree));
         }
       } else {
         // 新增模式：重置表单
         form.resetFields();
         setImageUrl('');
-        setSelectedResourceCodes([]);
+        setSelectedResourceIds([]);
         form.setFieldsValue({
           sortIndex: 0,
           status: true,
@@ -199,15 +221,16 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   }, [open, isEdit, menuInfoResponse, parentMenu, form]);
 
-  // 处理关联资源码选择
-  const handleResourceCodesChange = (
+  // 处理关联资源码ID选择
+  const handleResourceIdsChange = (
     checkedKeys:
       | React.Key[]
       | { checked: React.Key[]; halfChecked: React.Key[] },
   ) => {
     // Tree 组件的 onCheck 可能返回数组或对象
     const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
-    setSelectedResourceCodes(keys);
+    console.log(keys, 'keys', checkedKeys);
+    setSelectedResourceIds(keys);
   };
 
   /**
@@ -216,10 +239,10 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
    */
   const buildResourceTree = (
     resources: ResourceTreeNode[],
-    selectedCodes: React.Key[],
+    selectedIds: React.Key[],
   ): ResourceTreeNode[] => {
     return resources.map((resource) => {
-      const isSelected = selectedCodes.includes(resource.code || '');
+      const isSelected = selectedIds.includes(resource.id || '');
       const hasChildren = resource.children && resource.children.length > 0;
 
       let resourceBindType = ResourceBindTypeEnum.Unbound; // 默认未绑定
@@ -227,7 +250,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
       if (hasChildren) {
         // 递归处理子节点
-        children = buildResourceTree(resource.children!, selectedCodes);
+        children = buildResourceTree(resource.children!, selectedIds);
 
         // 检查子节点的绑定状态
         const allChildrenBound = children.every(
@@ -258,17 +281,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
       return {
         id: resource.id,
-        // code: resource.code,
-        // name: resource.name,
-        // description: resource.description,
-        // source: resource.source,
-        // type: resource.type,
-        // parentId: resource.parentId,
-        // path: resource.path,
-        // icon: resource.icon,
-        // sortIndex: resource.sortIndex,
-        // status: resource.status,
-        // visible: resource.visible,
         resourceBindType,
         children,
       };
@@ -279,21 +291,13 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      console.log(values, '处理提交');
 
       // 构建资源树结构
       const resourceTree = resourceTreeList
-        ? buildResourceTree(resourceTreeList, selectedResourceCodes)
+        ? buildResourceTree(resourceTreeList, selectedResourceIds)
         : undefined;
 
-      console.log(resourceTree, '资源树');
-
       const formData = {
-        // code: values.code,
-        // name: values.name,
-        // description: values.description || '',
-        // parentId: values.parentId || '',
-        // path: values.path,
         ...values,
         icon: imageUrl,
         status: values.status
@@ -464,8 +468,8 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               checkable
               defaultExpandAll
               treeData={resourceTreeData}
-              checkedKeys={selectedResourceCodes}
-              onCheck={handleResourceCodesChange}
+              checkedKeys={selectedResourceIds}
+              onCheck={handleResourceIdsChange}
               className={cx(styles.resourceTree)}
             />
           </Form.Item>

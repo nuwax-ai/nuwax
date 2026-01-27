@@ -58,25 +58,7 @@ const MenuManage: React.FC = () => {
   });
 
   // 处理编辑
-  const handleEdit = (menu: MenuNodeInfo) => {
-    // 将 MenuNodeInfo 转换为 MenuNodeInfo
-    const menuInfo: MenuNodeInfo = {
-      id: menu.id,
-      code: menu.code,
-      name: menu.name,
-      description: menu.description,
-      source: menu.source,
-      menuBindType: menu.menuBindType,
-      visible: menu.visible,
-      status: menu.status,
-      resourceTree: menu.resourceTree,
-      parentId: menu.parentId,
-      path: menu.path,
-      icon: menu.icon,
-      sortIndex: menu.sortIndex,
-      children: menu?.children,
-      resourceTree: menu.resourceTree,
-    };
+  const handleEdit = (menuInfo: MenuNodeInfo) => {
     setEditingMenu(menuInfo);
     setIsEdit(true);
     setModalOpen(true);
@@ -116,7 +98,6 @@ const MenuManage: React.FC = () => {
     setEditingMenu(null);
     setParentMenu(null);
     runGetMenuList();
-    message.success(isEdit ? '编辑成功' : '创建成功');
   };
 
   return (
