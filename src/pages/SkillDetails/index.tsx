@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
+import ImportSkillProjectModal from '../SpaceSkillManage/ImportSkillProjectModal';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
@@ -70,6 +71,10 @@ const SkillDetails: React.FC = () => {
   >(0);
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
+
+  // 导入技能项目弹窗
+  const [openImportSkillProject, setOpenImportSkillProject] =
     useState<boolean>(false);
 
   // 检查是否有未保存的文件修改
@@ -184,6 +189,33 @@ const SkillDetails: React.FC = () => {
     setSkillInfo(_skillInfo);
   };
 
+  // 确认导入技能项目
+  const handleImportSkillProjectConfirm = async (file: File) => {
+    try {
+      setIsImportingProject(true);
+      // 调用导入接口
+      const { code, message: errorMessage } = await apiSkillImport({
+        file,
+        targetSkillId: skillId,
+        targetSpaceId: spaceId,
+      });
+
+      setIsImportingProject(false);
+      if (code === SUCCESS_CODE) {
+        message.success('导入成功');
+        setOpenImportSkillProject(false);
+        // 刷新技能信息
+        runSkillInfo(skillId);
+        setImportProjectTrigger(Date.now());
+      } else {
+        message.error(errorMessage || '导入失败');
+      }
+    } catch (error) {
+      setIsImportingProject(false);
+      console.error('导入失败', error);
+    }
+  };
+
   // 导入项目
   const handleImportProject = async () => {
     if (!skillId) {
@@ -196,72 +228,7 @@ const SkillDetails: React.FC = () => {
       return;
     }
 
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    // 支持 .zip、.skill 文件或 SKILL.md 文件
-    input.accept = '.zip,.skill,.md';
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      // 校验文件类型：支持 .zip、.skill 或 SKILL.md 文件
-      const fileName = file.name || '';
-      const fileNameLower = fileName.toLowerCase();
-      const isZip = fileNameLower.endsWith('.zip');
-      const isSkill = fileNameLower.endsWith('.skill');
-      const isSkillMd = fileNameLower === 'skill.md';
-
-      if (!isZip && !isSkill && !isSkillMd) {
-        message.error('仅支持 .zip 压缩文件、.skill 文件或 SKILL.md 文件');
-        document.body.removeChild(input);
-        return;
-      }
-
-      // 校验文件大小，限制为20M
-      if (file.size > SKILL_MAX_FILE_SIZE) {
-        message.error('文件大小不能超过20MB');
-        return;
-      }
-
-      try {
-        setIsImportingProject(true);
-        // 调用导入接口
-        const result = await apiSkillImport({
-          file,
-          targetSkillId: skillId,
-          targetSpaceId: spaceId,
-        });
-
-        setIsImportingProject(false);
-        if (result.code === SUCCESS_CODE) {
-          message.success('导入成功');
-          // 刷新技能信息
-          runSkillInfo(skillId);
-          setImportProjectTrigger(Date.now());
-        }
-      } catch (error) {
-        setIsImportingProject(false);
-        console.error('导入失败', error);
-      } finally {
-        // 清理DOM
-        document.body.removeChild(input);
-      }
-    };
-
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
+    setOpenImportSkillProject(true);
   };
 
   /**
@@ -652,6 +619,13 @@ const SkillDetails: React.FC = () => {
         skillInfo={skillInfo as SkillInfo}
         onCancel={() => setEditSkillModalOpen(false)}
         onConfirm={handleEditSkillConfirm}
+      />
+
+      {/* 导入技能项目弹窗 */}
+      <ImportSkillProjectModal
+        open={openImportSkillProject}
+        onCancel={() => setOpenImportSkillProject(false)}
+        onConfirm={handleImportSkillProjectConfirm}
       />
     </div>
   );

@@ -22,7 +22,7 @@ export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   },
   {
     action: SkillMoreActionEnum.Export_Project,
-    label: '导出项目',
+    label: '导出技能',
     type: ComponentTypeEnum.Skill,
   },
   {

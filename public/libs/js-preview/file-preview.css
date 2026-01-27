@@ -123,6 +123,7 @@ body {
     justify-content: center;
 }
 
+.retry-action-btn,
 .download-action-btn {
     padding: 8px 24px;
     background: #fff;
@@ -134,6 +135,7 @@ body {
     transition: all 0.3s;
 }
 
+.retry-action-btn:hover,
 .download-action-btn:hover {
     background: #f5f5f5;
     border-color: #40a9ff;
@@ -157,12 +159,14 @@ body {
     height: 100%;
     border: none;
     background: #fff;
+    overflow: hidden; /* 禁止容器滚动，由 iframe 内部控制 */
 }
 
 .html-preview-iframe {
     width: 100%;
     height: 100%;
     border: none;
+    display: block;
 }
 
 /* ============================================

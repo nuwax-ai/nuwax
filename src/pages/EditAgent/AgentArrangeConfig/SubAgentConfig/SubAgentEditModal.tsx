@@ -58,6 +58,9 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
 }) => {
   const [prompt, setPrompt] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  // 控制全屏按钮 Tooltip 的显示状态
+  const [fullscreenTooltipOpen, setFullscreenTooltipOpen] =
+    useState<boolean>(false);
 
   // 判断是否为编辑模式
   const isEdit = !!initialValue;
@@ -73,8 +76,50 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
       // 新建模式默认填充模板，编辑模式使用原有内容
       setPrompt(initialPromptValue);
       setIsFullscreen(false);
+      // 重置 Tooltip 状态
+      setFullscreenTooltipOpen(false);
     }
   }, [open, initialPromptValue]);
+
+  /**
+   * 监听全屏状态变化，退出全屏时关闭 Tooltip
+   * 处理按 ESC 键或其他方式退出全屏的情况
+   */
+  useEffect(() => {
+    if (!isFullscreen) {
+      // 当退出全屏时，确保 Tooltip 关闭
+      setFullscreenTooltipOpen(false);
+    }
+  }, [isFullscreen]);
+
+  /**
+   * 处理键盘事件：在全屏模式下按 ESC 键时，只退出全屏而不关闭弹窗
+   */
+  useEffect(() => {
+    if (!open || !isFullscreen) {
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 如果按 ESC 键且当前在全屏模式
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        // 阻止默认行为（关闭 Modal）
+        e.stopPropagation();
+        // 只退出全屏，不关闭弹窗
+        setIsFullscreen(false);
+        // 关闭 Tooltip
+        setFullscreenTooltipOpen(false);
+      }
+    };
+
+    // 添加键盘事件监听
+    document.addEventListener('keydown', handleKeyDown, true);
+
+    return () => {
+      // 清理事件监听
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [open, isFullscreen]);
 
   /**
    * 确认保存
@@ -113,8 +158,12 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
 
   /**
    * 切换全屏模式
+   * 点击时先关闭 Tooltip，避免 Tooltip 残留显示
    */
   const toggleFullscreen = () => {
+    // 先关闭 Tooltip
+    setFullscreenTooltipOpen(false);
+    // 然后切换全屏状态
     setIsFullscreen((prev) => !prev);
   };
 
@@ -139,7 +188,11 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
           />
         </Tooltip>
       </div>
-      <Tooltip title={isFullscreen ? '退出全屏' : '全屏编辑'}>
+      <Tooltip
+        title={isFullscreen ? '退出全屏' : '全屏编辑'}
+        open={fullscreenTooltipOpen}
+        onOpenChange={setFullscreenTooltipOpen}
+      >
         <Button
           type="text"
           size="small"

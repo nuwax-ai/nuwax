@@ -164,13 +164,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
       {
         key: 'experience',
-        label: '对话体验',
+        label: '对话',
         ref: experienceSectionRef,
         show: true,
       },
       {
         key: 'page',
-        label: '界面配置',
+        label: '界面',
         ref: pageSectionRef,
         show: true,
       },
@@ -365,8 +365,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
+    // 开场白 (仅长任务型智能体展示开场白块)
+    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+      keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
+    }
+
     return keyList;
-  }, [agentComponentList]);
+  }, [agentComponentList, agentConfigInfo?.type]);
 
   // 查询智能体配置组件列表
   const { runAsync } = useRequest(apiAgentComponentList, {

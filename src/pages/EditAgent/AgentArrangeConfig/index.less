@@ -6,18 +6,20 @@
   height: 100%;
 
   .anchor-sidebar {
+    margin-top: @margin;
     width: 80px;
-    padding: 2px 0;
+    // padding: 2px 0;
     display: flex;
     flex-direction: column;
+    align-items: center;
   }
 
   .anchor-item {
     display: flex;
     align-items: center;
-    padding: 6px 12px;
+    padding: 8px 12px;
     cursor: pointer;
-    color: @colorTextTertiary;
+    color: @colorText;
     font-size: @fontSizeSm;
     transition: all 0.2s ease;
     position: relative;
@@ -40,6 +42,7 @@
   flex: 1;
   border-left: @lineWidth solid @colorSplit;
   padding: @paddingXs @padding;
+
   //隐藏滚动条
   &::-webkit-scrollbar {
     display: none;
