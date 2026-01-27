@@ -73,12 +73,12 @@ export const SYSTEM_MANAGE_LIST = [
       {
         text: '操作日志',
         type: SystemManageListEnum.Operation_Log,
-        icon: <SvgIcon name="icons-nav-log-operation" />,
+        // icon: <SvgIcon name="icons-nav-log-operation" />,
       },
       {
         text: '运行日志',
         type: SystemManageListEnum.Running_Log,
-        icon: <SvgIcon name="icons-nav-log-running" />,
+        // icon: <SvgIcon name="icons-nav-log-running" />,
       },
     ],
   },
