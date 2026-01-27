@@ -102,7 +102,7 @@ const Dashboard: React.FC = () => {
         loading: !hasAccessLoaded && accessLoading,
       },
     ];
-  }, [accessStats, accessLoading]);
+  }, [accessStats, accessLoading, userLoading]);
 
   // 映射用户新增趋势
   const userTrendData = useMemo(() => {
