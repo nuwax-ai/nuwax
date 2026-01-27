@@ -238,8 +238,8 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   }, [open, isEdit, menuInfoResponse, parentMenu, form]);
 
-  // 处理关联资源码ID选择
-  const handleResourceIdsChange = (
+  // 处理关联资源码ID选择（onCheck 事件）
+  const handleResourceIdsCheck = (
     checkedKeys:
       | React.Key[]
       | { checked: React.Key[]; halfChecked: React.Key[] },
@@ -354,11 +354,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         header: cx(styles.modalHeader),
       }}
     >
-      {/* 副标题 */}
-      <div className={cx(styles.modalSubtitle)}>
-        {isEdit ? '编辑菜单信息' : '创建新的菜单'}
-      </div>
-
       <Form
         form={form}
         layout="vertical"
@@ -367,7 +362,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       >
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>基本信息</h3>
           <Form.Item name="icon" label="图标">
             <UploadAvatar
               onUploadSuccess={setImageUrl}
@@ -436,32 +430,39 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                initialValue={true}
-                tooltip={{
-                  title: '启用或禁用此菜单',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-              </Form.Item>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="状态"
+                    name="status"
+                    valuePropName="checked"
+                    initialValue={true}
+                    tooltip={{
+                      title: '启用或禁用此菜单',
+                      icon: <InfoCircleOutlined />,
+                    }}
+                  >
+                    <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="是否显示"
+                    name="visible"
+                    valuePropName="checked"
+                    initialValue={true}
+                    tooltip={{
+                      title: '显示或隐藏此菜单',
+                      icon: <InfoCircleOutlined />,
+                    }}
+                  >
+                    <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Col>
           </Row>
-          <Form.Item
-            label="是否显示"
-            name="visible"
-            valuePropName="checked"
-            initialValue={true}
-            tooltip={{
-              title: '启用或禁用此菜单是否显示',
-              icon: <InfoCircleOutlined />,
-            }}
-          >
-            <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-          </Form.Item>
+
           <Form.Item label="描述" name="description">
             <TextArea
               placeholder="请输入描述"
@@ -485,7 +486,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               defaultExpandAll
               treeData={resourceTreeData}
               checkedKeys={selectedResourceIds}
-              onCheck={handleResourceIdsChange}
+              onCheck={handleResourceIdsCheck}
               className={cx(styles.resourceTree)}
             />
           </Form.Item>

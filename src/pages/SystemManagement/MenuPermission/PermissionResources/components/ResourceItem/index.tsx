@@ -178,13 +178,18 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
             >
               新增子资源
             </Button>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={handleEdit}
-              className={cx(styles.actionButton)}
-            />
+            {
+              // 根节点资源不能编辑
+              resource.id !== 0 && (
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                  className={cx(styles.actionButton)}
+                />
+              )
+            }
             {resource.source === ResourceSourceEnum.UserDefined && (
               <Button
                 type="text"
