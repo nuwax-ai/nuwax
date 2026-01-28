@@ -1,0 +1,68 @@
+import { DownOutlined } from '@ant-design/icons';
+import { Tree } from 'antd';
+import type { DataNode } from 'antd/es/tree';
+import React, { useMemo } from 'react';
+import type { MenuNodeInfo } from '../../../types/menu-manage';
+import styles from './index.less';
+
+interface MenuPermissionTreeProps {
+  /** 菜单树数据 */
+  menuTree: MenuNodeInfo[];
+  /** 选中的菜单ID列表 */
+  selectedKeys: React.Key[];
+  /** 选择变化回调 */
+  onSelect: (selectedKeys: React.Key[]) => void;
+}
+
+/**
+ * 菜单权限树形选择器组件
+ * 支持多选和父子级联选择
+ */
+const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
+  menuTree,
+  selectedKeys,
+  onSelect,
+}) => {
+  // 将菜单数据转换为Tree组件需要的数据格式
+  const treeData = useMemo(() => {
+    const convertToTreeData = (menus: MenuNodeInfo[]): DataNode[] => {
+      return menus.map((menu) => ({
+        title: menu.name,
+        key: menu.id,
+        value: menu.id,
+        children: menu.children ? convertToTreeData(menu.children) : undefined,
+      }));
+    };
+    return convertToTreeData(menuTree);
+  }, [menuTree]);
+
+  // 处理树节点选择
+  const handleSelect = (selectedKeys: React.Key[]) => {
+    onSelect(selectedKeys);
+  };
+
+  return (
+    <div className={styles.container}>
+      <Tree
+        checkable
+        checkStrictly={false} // 父子节点关联，支持级联选择
+        switcherIcon={<DownOutlined />}
+        treeData={treeData}
+        defaultExpandAll
+        checkedKeys={selectedKeys}
+        // 点击复选框触发
+        onCheck={(checkedKeys) => {
+          // onCheck返回的是CheckedKeys类型，需要转换为Key[]
+          // 当checkStrictly为false时，checkedKeys包含所有选中的节点（包括父节点和子节点）
+          const keys = Array.isArray(checkedKeys)
+            ? checkedKeys
+            : checkedKeys.checked || [];
+          handleSelect(keys as React.Key[]);
+        }}
+        blockNode
+      />
+    </div>
+  );
+};
+
+export default MenuPermissionTree;

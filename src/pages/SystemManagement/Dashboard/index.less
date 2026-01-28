@@ -1,0 +1,84 @@
+.dashboard-container {
+  padding: 24px;
+  background: transparent;
+  min-height: calc(100vh - 64px);
+}
+
+// 页面头部
+.dashboard-header {
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+}
+
+.header-title {
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 85%);
+    margin: 0 0 8px;
+  }
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 45%);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.current-time {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 65%);
+  font-family: Monaco, Menlo, monospace;
+}
+
+// 统计卡片行
+.stats-row {
+  margin-bottom: 16px;
+}
+
+// 趋势图表行
+.trend-row {
+  margin-bottom: 16px;
+}
+
+// 资源概览行
+.resource-row {
+  margin-bottom: 16px;
+}
+
+// 会话统计行
+.session-row {
+  margin-bottom: 16px;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

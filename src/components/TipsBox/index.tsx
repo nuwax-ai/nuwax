@@ -10,6 +10,7 @@ const cx = classNames.bind(styles);
  * 提示框组件 Props
  */
 interface TipsBoxProps {
+  className?: string;
   /** 是否显示 */
   visible: boolean;
   /** 提示文本 */
@@ -20,11 +21,12 @@ interface TipsBoxProps {
  * 提示框组件
  * 用于显示上传、下载、导出等操作的提示信息
  */
-const TipsBox: React.FC<TipsBoxProps> = ({ visible, text }) => {
+const TipsBox: React.FC<TipsBoxProps> = ({ className, visible, text }) => {
   return (
     <div
       className={cx(
         styles['tips-box'],
+        className,
         'flex',
         'content-center',
         'items-center',

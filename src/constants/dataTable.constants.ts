@@ -31,3 +31,37 @@ export const TABLE_TABS_LIST = [
   { key: TableTabsEnum.Structure, label: '表结构' },
   { key: TableTabsEnum.Data, label: '表数据' },
 ];
+
+/**
+ * 通用 ProTable 配置
+ */
+export const COMMON_PRO_TABLE_PROPS = {
+  debounceTime: 300,
+  toolBarRender: false as const,
+  options: false as const,
+  cardProps: { bodyStyle: { padding: 0 } },
+  pagination: {
+    showSizeChanger: true,
+    pageSizeOptions: [10, 20, 50, 100],
+    showTotal: (total: number) => `共 ${total} 条`,
+    defaultPageSize: 10,
+  },
+  search: {
+    span: {
+      xs: 24,
+      sm: 12,
+      md: 8,
+      lg: 6,
+      xl: 6,
+      xxl: 6,
+    },
+    labelWidth: 100,
+    defaultCollapsed: false,
+    style: {
+      paddingTop: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+};

@@ -1,0 +1,56 @@
+@import '@/styles/token.less';
+
+.modalBody {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden; // 禁止水平滚动
+  padding: 0 !important;
+}
+
+.form {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden; // 禁止水平滚动
+
+  .section {
+    margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .sectionTitle {
+    // margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    // line-height: 24px;
+    color: var(--color-font-primary, #15171f);
+  }
+
+  .sectionDesc {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .systemFields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+    width: 100%;
+    box-sizing: border-box;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .fieldItem {
+    margin-bottom: 0;
+  }
+}

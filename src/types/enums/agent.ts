@@ -236,3 +236,10 @@ export enum HomeIndexEnum {
   No = 0,
   Yes = 1,
 }
+
+// 智能体引擎类型
+// 智能体引擎类型
+export enum AgentEngineEnum {
+  Default = 'Default', // 默认引擎 - 仅支持Anthropic协议模型
+  NuwaxCli = 'NuwaxCli', // NuwaxCli引擎 - 支持所有函数调用模型
+}

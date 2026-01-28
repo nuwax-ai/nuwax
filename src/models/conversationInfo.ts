@@ -753,10 +753,6 @@ export default () => {
               const input = processingResult.input;
               // 添加页面类型 后的未返回默认 Page
               input.uri_type = processingResult.input.uri_type ?? 'Page';
-              // if (!input?.uri) {
-              //   message.error('页面路径不存在');
-              //   return;
-              // }
 
               // 显示页面预览
               if (!input.uri_type || input.uri_type === 'Page') {
@@ -835,7 +831,7 @@ export default () => {
             });
           }
 
-          // 长任务型任务处理(打开远程桌面)
+          // 通用型任务处理(打开远程桌面)
           if (
             data.type === AgentComponentTypeEnum.Event &&
             data.subEventType === 'OPEN_DESKTOP' &&
@@ -846,7 +842,7 @@ export default () => {
             openDesktopView(params.conversationId);
           }
 
-          // 长任务型任务处理(刷新文件树)
+          // 通用型任务处理(刷新文件树)
           if (
             data.type === AgentComponentTypeEnum.ToolCall &&
             isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
@@ -923,7 +919,7 @@ export default () => {
           messageIdRef.current = '';
 
           setTimeout(async () => {
-            // 会话结束后，如果是长任务型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+            // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
             if (params.conversationId) {
               // 刷新文件树
               await handleRefreshFileList(params.conversationId);
@@ -1315,6 +1311,7 @@ export default () => {
     messageViewRef,
     // 是否还有更多消息
     isMoreMessage,
+    setIsMoreMessage,
     // 加载更多消息的状态
     loadingMore,
     // 加载更多消息

@@ -21,7 +21,7 @@ const SettingEmail: React.FC = () => {
   const { countDown, setCountDown, onClearTimer, handleCount } = useCountDown();
   const { runSendCode } = useSendCode();
   const [form] = Form.useForm<BindEmailParams>();
-  const { setUserInfo } = useModel('userInfo');
+  const { userInfo, setUserInfo } = useModel('userInfo');
 
   // 获取当前登录方式是否为手机登录,如果是手机登录,则为true,否则为false
   const authType = localStorage.getItem('AUTH_TYPE') === '1';
@@ -35,11 +35,19 @@ const SettingEmail: React.FC = () => {
       form.resetFields();
       setCountDown(0);
       onClearTimer();
+
       // 更新用户信息
-      setUserInfo({
-        ...setUserInfo,
-        email: params[0].email,
-      });
+      if (params[0]?.email) {
+        setUserInfo({
+          ...userInfo,
+          email: params[0].email,
+        });
+      } else if (params[0]?.phone) {
+        setUserInfo({
+          ...userInfo,
+          phone: params[0].phone,
+        });
+      }
     },
     onError: () => {
       setCountDown(0);

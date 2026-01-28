@@ -35,12 +35,12 @@ import FilePreview, { FileType } from '../business-component/FilePreview';
 import VncPreview from '../business-component/VncPreview';
 import type { VncPreviewRef } from '../business-component/VncPreview/type';
 import CodeViewer from '../CodeViewer';
+import TipsBox from '../TipsBox';
 import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
-import TipsBox from './TipsBox';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
 
 const cx = classNames.bind(styles);
@@ -54,6 +54,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       headerClassName,
       taskAgentSelectedFileId,
       taskAgentSelectTrigger,
+      isImportProjectTrigger,
       originalFiles,
       fileTreeDataLoading,
       readOnly = false,
@@ -179,8 +180,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
       undefined,
     );
-    // 用于记录创建成功后需要选择的文件路径
+    // 用于记录创建文件成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
+
+    // 备份文件列表，用于判断文件列表是否发生变化
+    const filesRef = useRef<FileNode[]>([]);
 
     // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
     // 统一使用一个时间戳，适用于 html、office、json 等需要刷新的文件类型
@@ -335,8 +339,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 如果文件节点是链接文件，则不支持预览
-          if (fileNode?.isLink) {
+          // 获取文件内容
+          const fileContent = fileNode?.content || '';
+          // 获取文件代理URL
+          const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+          /**
+           * 如果文件有内容，直接使用缓存 （skill技能页面时，文件有内容，但是没有文件代理URL）
+           * 如果文件节点是链接文件，则不支持预览
+           */
+          if ((fileContent && !fileProxyUrl) || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
@@ -361,8 +373,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是重复点击需要刷新的文件（html、office、json），更新刷新时间戳以强制刷新
           if (isSameFile && (isHtmlFile || isOfficeFile || isJsonFile)) {
             fileRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            await handleRefreshFileList();
             return;
           }
 
@@ -391,19 +401,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是新选中的音频文件，更新刷新时间戳
           if (isAudioFileType) {
             audioRefreshTimestampRef.current = Date.now();
-          }
-
-          // 获取文件内容
-          const fileContent = fileNode?.content || '';
-          // 获取文件代理URL
-          const fileProxyUrl = fileNode?.fileProxyUrl || '';
-
-          // 如果文件有内容，直接使用缓存
-          if (fileContent && !fileProxyUrl) {
-            setSelectedFileId(fileNode?.id || fileId);
-            setViewFileType('preview');
-            setSelectedFileNode(fileNode);
-            return;
           }
 
           // 文件没有内容或需要重新加载
@@ -468,9 +465,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         } else {
           // 所有匹配方式都失败，设置选中文件节点为 null
           setSelectedFileNode(null);
+          setSelectedFileId('');
         }
       },
-      [files, isRenamingFile, selectedFileId, handleRefreshFileList],
+      [files, isRenamingFile, selectedFileId, changeFiles],
     );
 
     // 文件选择（对外接口，用于用户主动选择）
@@ -523,15 +521,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
          *
          * 注意：必须同时检查 !prevTaskAgentSelectedFileIdRef.current，避免在文件ID没有变化时重复执行
          * 如果注释掉这个条件，会导致：
-         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files
+         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files， 此逻辑已删除
          * 2. files 更新导致 useEffect 重新执行
          * 3. 由于 hasTriggerChanged 仍为 false，又会进入这个分支
          * 4. 形成无限循环
+         * 5、（很重要）存在这样一种情况，先更新了taskAgentSelectTrigger，但是此时文件树数据还未更新，导致此处直接return，导致文件树数据更新后，无法自动选择文件
+         * 而且只能通过判断长度来判断文件列表是否发生变化，因为文件列表中的文件节点可能发生变化，但是文件列表的长度不会发生变化
          */
         if (
-          taskAgentSelectedFileId &&
-          !prevTaskAgentSelectedFileIdRef.current
+          (taskAgentSelectedFileId &&
+            !prevTaskAgentSelectedFileIdRef.current) ||
+          filesRef.current?.length !== files?.length
         ) {
+          prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+          filesRef.current = files;
           handleFileSelectInternal(taskAgentSelectedFileId);
         }
         return;
@@ -560,6 +563,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
+
+      // 备份文件列表，用于判断文件列表是否发生变化
+      filesRef.current = files;
 
       // 使用内部函数，不设置用户选择标记
       handleFileSelectInternal(taskAgentSelectedFileId);
@@ -600,6 +606,26 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
     }, [files, handleFileSelectInternal]);
 
+    // 监听 files 变化，同步更新 selectedFileNode 的 content（用于重新导入后更新文件内容）
+    // 特别适用于 SkillDetails 页面，其中 fileProxyUrl 为空，内容直接存储在 content 字段中
+    useEffect(() => {
+      // 如果当前有选中的文件，且 files 已更新，需要同步更新 selectedFileNode 的 content
+      if (
+        files &&
+        files.length > 0 &&
+        isImportProjectTrigger &&
+        taskAgentSelectedFileId
+      ) {
+        // 从新的 files 中查找对应的文件节点
+        const newFileNode = findFileNode(taskAgentSelectedFileId, files);
+
+        if (newFileNode) {
+          setSelectedFileNode(newFileNode);
+          setSelectedFileId(newFileNode?.id);
+        }
+      }
+    }, [files, isImportProjectTrigger, taskAgentSelectedFileId]);
+
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
     useEffect(() => {
@@ -621,7 +647,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       e.stopPropagation();
 
       setContextMenuTarget(node);
-      setContextMenuPosition({ x: e.clientX, y: e.clientY });
+
+      // 计算相对于文件树容器的坐标
+      // 如果文件树容器存在，使用相对于容器的坐标；否则使用视口坐标
+      if (fileTreeContainerRef.current) {
+        const containerRect =
+          fileTreeContainerRef.current.getBoundingClientRect();
+        const relativeX = e.clientX - containerRect.left;
+        const relativeY = e.clientY - containerRect.top;
+        setContextMenuPosition({ x: relativeX, y: relativeY });
+      } else {
+        // 如果容器不存在，使用视口坐标作为后备方案
+        setContextMenuPosition({ x: e.clientX, y: e.clientY });
+      }
+
       setContextMenuVisible(true);
     };
 
@@ -1243,18 +1282,26 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
-      // 如果 taskAgentSelectedFileId 存在，但没有选中文件，则不渲染内容
-      if (taskAgentSelectedFileId && !selectedFileNode) {
-        return null;
-      }
-
       // 如果文件列表为空，则显示空状态
       if (!files?.length) {
         return (
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="当前没有可预览的文件"
+          />
+        );
+      }
+
+      // 如果 taskAgentSelectedFileId 存在，但没有选中文件，则不渲染内容
+      if (taskAgentSelectedFileId && !selectedFileNode && !selectedFileId) {
+        return (
+          <AppDevEmptyState
+            showTitle={false}
+            showIcon={false}
+            showButtons={false}
+            description="没有匹配到对应的文件，请从左侧文件树选择一个文件进行预览"
           />
         );
       }
@@ -1266,6 +1313,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="请从左侧文件树选择一个文件进行预览"
           />
         );
@@ -1351,6 +1399,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             type="error"
             title="无法预览此文件类型"
+            showButtons={false}
             description={`当前不支持预览【${fileExtension}】格式的文件。`}
           />
         );
@@ -1421,7 +1470,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
         } catch (error) {
           console.error('Restart server failed:', error);
-          message.error('重启失败，请重试');
+          // message.error('重启失败，请重试');
         } finally {
           setIsRestarting(false);
         }
@@ -1521,34 +1570,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             [styles['fullscreen-mode']]: isFullscreen,
           })}
         >
-          {/* 右键菜单 */}
-          <FileContextMenu
-            visible={contextMenuVisible}
-            position={contextMenuPosition}
-            // 右键菜单目标节点
-            targetNode={contextMenuTarget}
-            // 是否禁用删除功能(SKILL.md文件不能删除)
-            disabledDelete={
-              !isCanDeleteSkillFile &&
-              contextMenuTarget?.name?.toLowerCase() === 'skill.md'
-            }
-            // 关闭右键菜单
-            onClose={closeContextMenu}
-            // 处理删除操作
-            onDelete={handleDelete}
-            // 处理重命名操作
-            onRename={handleRenameFromMenu}
-            // 处理上传文件操作
-            onUploadFiles={handleUploadFromMenu}
-            // 处理新建文件操作
-            onCreateFile={handleCreateFile}
-            // 处理新建文件夹操作
-            onCreateFolder={handleCreateFolder}
-            // 处理导入项目操作
-            onImportProject={onImportProject}
-            // 处理通过URL下载文件操作
-            onDownloadFileByUrl={handleDownloadFileByUrl}
-          />
           {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
           {viewMode !== 'desktop' && !hideFileTree && (
             <div
@@ -1565,6 +1586,36 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 },
               )}
             >
+              {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
+              <FileContextMenu
+                visible={contextMenuVisible}
+                position={contextMenuPosition}
+                // 右键菜单目标节点
+                targetNode={contextMenuTarget}
+                // 是否禁用删除功能(SKILL.md文件不能删除)
+                disabledDelete={
+                  !isCanDeleteSkillFile &&
+                  contextMenuTarget?.name?.toLowerCase() === 'skill.md'
+                }
+                // 关闭右键菜单
+                onClose={closeContextMenu}
+                // 处理删除操作
+                onDelete={handleDelete}
+                // 处理重命名操作
+                onRename={handleRenameFromMenu}
+                // 处理上传文件操作
+                onUploadFiles={handleUploadFromMenu}
+                // 处理新建文件操作
+                onCreateFile={handleCreateFile}
+                // 处理新建文件夹操作
+                onCreateFolder={handleCreateFolder}
+                // 处理导入项目操作
+                onImportProject={onImportProject}
+                // 处理通过URL下载文件操作
+                onDownloadFileByUrl={handleDownloadFileByUrl}
+                // 使用相对定位（相对于文件树容器）
+                useRelativePosition={true}
+              />
               {/* 操作提示框 */}
               <TipsBox visible={isDownloadingFile} text="正在下载" />
               <TipsBox visible={isUploadingFiles} text="正在上传" />

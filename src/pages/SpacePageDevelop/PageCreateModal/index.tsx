@@ -17,12 +17,9 @@ import {
 import { customizeRequiredMark } from '@/utils/form';
 import { InboxOutlined } from '@ant-design/icons';
 import { Form, FormProps, Input, message, Upload, UploadProps } from 'antd';
-import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 const { Dragger } = Upload;
 
@@ -40,7 +37,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
   // 封面图片
-  const [coverImgUrl, setCoverImgUrl] = useState<string>('');
+  // const [coverImgUrl, setCoverImgUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   // 上传前端项目压缩包并启动开发服务器
@@ -86,7 +83,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     },
   );
 
-  // 创建页面
+  // 创建应用
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
@@ -193,10 +190,10 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   };
 
   // 上传封面图片成功
-  const uploadCoverImgSuccess = (url: string) => {
-    setCoverImgUrl(url);
-    form.setFieldValue('coverImg', url);
-  };
+  // const uploadCoverImgSuccess = (url: string) => {
+  //   setCoverImgUrl(url);
+  //   form.setFieldValue('coverImg', url);
+  // };
 
   const normFile = (e: any) => {
     if (Array.isArray(e)) {
@@ -209,7 +206,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     <CustomFormModal
       form={form}
       open={open}
-      title="创建页面"
+      title="创建应用"
       loading={loading}
       classNames={{
         content: styles['modal-content'],
@@ -244,24 +241,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
           <UploadAvatar
             onUploadSuccess={uploadIconSuccess}
             imageUrl={imageUrl}
-            svgIconName="icons-common-plus"
-          />
-        </Form.Item>
-        <Form.Item
-          name="coverImg"
-          label={
-            <div className={cx('flex', 'gap-10', 'items-center')}>
-              <span>封面图片</span>
-              <span className={cx(styles['text-tip'])}>
-                建议尺寸356px * 200px, 比例16:9
-              </span>
-            </div>
-          }
-        >
-          <UploadAvatar
-            className={cx(styles['upload-avatar'])}
-            onUploadSuccess={uploadCoverImgSuccess}
-            imageUrl={coverImgUrl}
             svgIconName="icons-common-plus"
           />
         </Form.Item>

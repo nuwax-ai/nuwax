@@ -176,6 +176,8 @@ export interface CustomFormModalProps {
   // 确定按钮文本
   okText?: string;
   centered?: boolean;
+  // Modal宽度
+  width?: number | string;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -519,8 +521,6 @@ export interface ChatInputProps extends ManualComponentItemProps {
   showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
   onToggleTaskAgent?: () => void;
-  // 任务停止后的回调函数
-  onTaskStopped?: (conversationId: string) => void;
 }
 
 // 聊天框底部更多操作组件

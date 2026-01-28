@@ -1,0 +1,68 @@
+@import '@/styles/token.less';
+
+.container {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border-02, #e4e6eb);
+  border-radius: 8px;
+  background-color: var(--color-background-default, #fff);
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  :global {
+    .ant-tree {
+      background: transparent;
+    }
+
+    .ant-tree-node-content-wrapper {
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      width: 100%;
+
+      &:hover {
+        background-color: var(--color-background-tertiary, #f5f5f5);
+      }
+
+      // 选中状态的高亮背景
+      &.ant-tree-node-selected {
+        background-color: rgba(81, 71, 255, 10%) !important;
+      }
+    }
+
+    // 选中节点的样式
+    .ant-tree-node-selected {
+      .ant-tree-node-content-wrapper {
+        background-color: rgba(81, 71, 255, 10%) !important;
+      }
+    }
+
+    .ant-tree-checkbox {
+      margin-right: 8px;
+    }
+
+    .ant-tree-title {
+      font-size: 14px;
+      line-height: 22px;
+      color: var(--color-font-primary, #15171f);
+      flex: 1;
+    }
+
+    // 树节点行样式
+    .ant-tree-treenode {
+      padding: 2px 0;
+
+      &:hover {
+        .ant-tree-node-content-wrapper {
+          background-color: var(--color-background-tertiary, #f5f5f5);
+        }
+      }
+    }
+
+    // 确保多选功能正常
+    .ant-tree-checkbox-wrapper {
+      cursor: pointer;
+    }
+  }
+}
