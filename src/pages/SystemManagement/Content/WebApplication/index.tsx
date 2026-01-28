@@ -190,13 +190,13 @@ const WebApplication: React.FC = () => {
   return (
     <WorkspaceLayout title="网页应用管理" hideScroll>
       <ProTable<SystemWebappInfo>
+        {...COMMON_PRO_TABLE_PROPS}
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"
         columns={columns}
         request={request}
         onReset={handleReset}
-        {...COMMON_PRO_TABLE_PROPS}
       />
     </WorkspaceLayout>
   );
