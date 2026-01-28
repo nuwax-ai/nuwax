@@ -1,5 +1,4 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -105,8 +104,10 @@ const RoleCard: React.FC<RoleCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>模型:</span>
             <span className={cx(styles.infoValue)}>
-              {role.modelIds?.length
-                ? `${role.modelIds.length}项`
+              {role.modelIds && role.modelIds.length > 0
+                ? role.modelIds.length === 1 && role.modelIds[0] === 0
+                  ? '已配置所有模型'
+                  : `${role.modelIds.length}项`
                 : '暂未配置模型'}
             </span>
           </div>
@@ -117,7 +118,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
       <div className={cx(styles.footer)}>
         <Button
           type="text"
-          icon={<UserOutlined />}
           onClick={handleBindUser}
           className={cx(styles.actionButton)}
         >
@@ -127,7 +127,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
           <>
             <Button
               type="text"
-              icon={<EditOutlined />}
               onClick={handleMenuPermission}
               className={cx(styles.actionButton)}
             >
@@ -135,7 +134,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
             </Button>
             <Button
               type="text"
-              icon={<EditOutlined />}
               onClick={handleEdit}
               className={cx(styles.actionButton)}
             >
@@ -144,7 +142,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
             <Button
               type="text"
               danger
-              icon={<DeleteOutlined />}
               onClick={handleDelete}
               loading={deleteLoading}
               className={cx(styles.actionButton)}
