@@ -196,6 +196,7 @@ const RoleManage: React.FC = () => {
         onClose={handleMenuPermissionDrawerClose}
         onSuccess={handleMenuPermissionSuccess}
       />
+      {/* 角色绑定用户弹窗 */}
       <BindUser
         targetId={currentRole?.id || 0}
         name={currentRole?.name || ''}
