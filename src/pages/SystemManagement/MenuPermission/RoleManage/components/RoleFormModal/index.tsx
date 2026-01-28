@@ -57,54 +57,33 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const [form] = Form.useForm();
   // 模型ID列表 全部模型传[0],未选中任何模型不传值
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
-  // const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
-  // const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
   // 是否全部模型已选中
   const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
-  // const mockMenuTree: MenuNodeInfo[] = [
-  //   {
-  //     id: 1,
-  //     name: '系统管理',
-  //     children: [
-  //       { id: 11, name: '用户管理', parentId: 1 },
-  //       { id: 12, name: '角色管理', parentId: 1 },
-  //     ],
-  //   },
-  //   {
-  //     id: 2,
-  //     name: '业务管理',
-  //     children: [{ id: 21, name: '订单管理', parentId: 2 }],
-  //   },
-  // ];
-
   // 根据ID查询角色
-  const { run: runGetRoleById, loading: getRoleByIdLoading } = useRequest(
-    apiGetRoleById,
-    {
-      manual: true,
-      onSuccess: (data: RoleInfo) => {
-        form.setFieldsValue({
-          code: data.code,
-          name: data.name,
-          description: data.description,
-          tokenLimit: {
-            limitPerDay: data.tokenLimit?.limitPerDay || 0,
-          },
-          sortIndex: data.sortIndex || 0,
-          status: data.status === RoleStatusEnum.Enabled,
-        });
-        if (data?.modelIds && data?.modelIds?.length > 0) {
-          if (data?.modelIds?.length === 1 && data?.modelIds[0] === 0) {
-            // 如果模型ID列表长度为1，且为0，则设置为全部模型
-            setAllModelSelected(true);
-          } else {
-            setSelectedModelIds(data.modelIds || []);
-          }
+  const { run: runGetRoleById } = useRequest(apiGetRoleById, {
+    manual: true,
+    onSuccess: (data: RoleInfo) => {
+      form.setFieldsValue({
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        tokenLimit: {
+          limitPerDay: data.tokenLimit?.limitPerDay || 0,
+        },
+        sortIndex: data.sortIndex || 0,
+        status: data.status === RoleStatusEnum.Enabled,
+      });
+      if (data?.modelIds && data?.modelIds?.length > 0) {
+        if (data?.modelIds?.length === 1 && data?.modelIds[0] === 0) {
+          // 如果模型ID列表长度为1，且为0，则设置为全部模型
+          setAllModelSelected(true);
+        } else {
+          setSelectedModelIds(data.modelIds || []);
         }
-      },
+      }
     },
-  );
+  });
 
   // 新增角色
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
@@ -142,8 +121,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       setSelectedModelIds(modelList.map((item: ModelConfigDto) => item.id));
     }
   }, [modelList, allModelSelected]);
-
-  console.log('getRoleByIdLoading', getRoleByIdLoading);
 
   const loading = addLoading || updateLoading;
 
@@ -197,23 +174,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       console.error('表单验证失败:', error);
     }
   };
-
-  // 计算菜单树展开的keys（默认展开所有父节点）
-  // const defaultExpandedKeys = useMemo(() => {
-  //   const getParentKeys = (menus: MenuNodeInfo[]): React.Key[] => {
-  //     const keys: React.Key[] = [];
-  //     menus.forEach((menu) => {
-  //       if (menu.children && menu.children.length > 0) {
-  //         keys.push(menu.id);
-  //         keys.push(...getParentKeys(menu.children));
-  //       }
-  //     });
-  //     return keys;
-  //   };
-  //   return expandedMenuKeys.length > 0
-  //     ? expandedMenuKeys
-  //     : getParentKeys(mockMenuTree);
-  // }, [mockMenuTree, expandedMenuKeys]);
 
   return (
     <CustomFormModal
@@ -286,14 +246,18 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           </div>
           <div className={cx(styles.systemFields)}>
             <Form.Item
-              label="token限制"
+              label="每日token限制"
               name={['tokenLimit', 'limitPerDay']}
               initialValue={0}
-              rules={[{ required: true, message: '请输入token限制数量' }]}
+              rules={[{ required: true, message: '请输入每日token限制数量' }]}
+              tooltip={{
+                title: '0表示不限制每日token数量',
+                icon: <InfoCircleOutlined />,
+              }}
               className={cx(styles.fieldItem)}
             >
               <InputNumber
-                placeholder="请输入token限制"
+                placeholder="请输入每日token限制数量"
                 className={cx('w-full')}
                 min={0}
               />
@@ -334,21 +298,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
             onChange={setSelectedModelIds}
           />
         </div>
-
-        {/* 菜单权限 */}
-        {/* <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>菜单权限</h3>
-          <Text type="secondary" className={cx(styles.sectionDesc)}>
-            选择该角色可以访问的菜单,支持多选和父子级联选择
-          </Text>
-          <MenuPermissionTree
-            menuTree={mockMenuTree}
-            selectedKeys={selectedMenuIds}
-            onSelect={setSelectedMenuIds}
-            expandedKeys={defaultExpandedKeys}
-            onExpand={setExpandedMenuKeys}
-          />
-        </div> */}
       </Form>
     </CustomFormModal>
   );

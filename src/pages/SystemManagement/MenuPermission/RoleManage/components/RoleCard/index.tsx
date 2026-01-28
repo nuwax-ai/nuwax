@@ -85,9 +85,9 @@ const RoleCard: React.FC<RoleCardProps> = ({
         <div className={cx(styles.infoSection)}>
           {/* 数据范围 */}
           <div className={cx(styles.infoItem)}>
-            <span className={cx(styles.infoLabel)}>token限制:</span>
+            <span className={cx(styles.infoLabel)}>每日token限制:</span>
             <span className={cx(styles.infoValue)}>
-              {role.tokenLimit?.limitPerDay === 0
+              {role.tokenLimit?.limitPerDay
                 ? `${role.tokenLimit.limitPerDay}次`
                 : '无限制'}
             </span>
