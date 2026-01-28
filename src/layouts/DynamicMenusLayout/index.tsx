@@ -155,7 +155,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    */
   const isShowTitle = useMemo(() => {
     // 工作空间不显示标题（因为有自己的标题组件）
-    return activeTab !== 'space';
+    // 支持静态菜单的 'space' 和 动态菜单的 'workspace'
+    return activeTab !== 'space' && activeTab !== 'workspace';
   }, [activeTab]);
 
   /**
