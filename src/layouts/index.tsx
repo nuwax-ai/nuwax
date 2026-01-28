@@ -66,7 +66,7 @@ const Layout: React.FC = () => {
   } = useModel('layout');
 
   // 动态菜单开关状态
-  const [useDynamicMenu, setUseDynamicMenu] = useState(false);
+  const [useDynamicMenu, setUseDynamicMenu] = useState(true);
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 

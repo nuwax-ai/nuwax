@@ -7,6 +7,7 @@ import { UserService } from '@/services/userService';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { extractAllMenuCodes, extractAllPermissions } from '@/utils/permission';
 import { useModel } from 'umi';
 
@@ -47,7 +48,11 @@ export default function useMenuModel() {
   const loadMenus = useCallback(
     async (force = false) => {
       // 如果已有数据且不强制刷新，直接返回
-      if (initialState?.menus && !force) {
+      if (initialState?.menus?.length && !force) {
+        console.log(
+          '[Debug] Using cached menus from initialState:',
+          initialState.menus,
+        );
         setMenuTree(initialState.menus);
         setPermissionSet(new Set(initialState.permissions || []));
         setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
@@ -62,9 +67,10 @@ export default function useMenuModel() {
           setLoading(false);
           return;
         }
-        const res = await apiQueryMenus(userInfo.id);
-        if (res.code === 0 && res.data) {
+        const res = await apiQueryMenus();
+        if ((res.code === SUCCESS_CODE || res.code === 0) && res.data) {
           const menus = res.data.menus || [];
+          console.log('[Debug] Model setting menus:', menus);
           setMenuTree(menus);
 
           // 提取所有权限码

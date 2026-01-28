@@ -26,6 +26,7 @@ const GlobalEventPolling: React.FC = () => {
 import type { UserInfo } from '@/types/interfaces/login';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { history } from 'umi';
+import { SUCCESS_CODE } from './constants/codes.constants';
 import { apiQueryMenus } from './services/menuService';
 import { UserService } from './services/userService';
 import { extractAllPermissions } from './utils/permission';
@@ -59,8 +60,8 @@ export async function getInitialState(): Promise<{
     // 如果获取到了用户信息，同时获取菜单和权限
     if (currentUser?.id) {
       try {
-        const menuRes = await apiQueryMenus(currentUser.id);
-        if (menuRes.code === 0 && menuRes.data?.menus) {
+        const menuRes = await apiQueryMenus();
+        if (menuRes.code === SUCCESS_CODE && menuRes.data?.menus) {
           menus = menuRes.data.menus as MenuItemDto[];
           permissions = extractAllPermissions(menus);
         }

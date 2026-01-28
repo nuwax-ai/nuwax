@@ -58,6 +58,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   // 初始化加载菜单数据
   useEffect(() => {
+    console.log(
+      '[Debug] DynamicMenusLayout mount. FirstLevelMenus:',
+      firstLevelMenus,
+    );
     loadMenus();
   }, [loadMenus]);
 

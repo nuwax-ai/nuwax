@@ -85,7 +85,7 @@ export interface SysMenuDto {
  */
 export interface MenuQueryResponse {
   /** 菜单树列表 */
-  menus: MenuItemDto[] | SysMenuDto[];
+  menus: MenuItemDto[];
 }
 
 /**
