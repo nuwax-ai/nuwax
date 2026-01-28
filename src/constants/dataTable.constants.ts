@@ -45,6 +45,9 @@ export const COMMON_PRO_TABLE_PROPS = {
     pageSizeOptions: [10, 20, 50, 100],
     showTotal: (total: number) => `共 ${total} 条`,
     defaultPageSize: 10,
+    locale: {
+      items_per_page: '条/页',
+    },
   },
   search: {
     span: {
@@ -57,6 +60,9 @@ export const COMMON_PRO_TABLE_PROPS = {
     },
     labelWidth: 100,
     defaultCollapsed: false,
+    searchText: '查询',
+    resetText: '重置',
+    collapseRender: (collapsed: boolean) => (collapsed ? '展开' : '收起'),
     style: {
       paddingTop: 0,
       paddingBottom: 0,

@@ -190,13 +190,13 @@ const Mcp: React.FC = () => {
   return (
     <WorkspaceLayout title="MCP 管理" hideScroll>
       <ProTable<SystemMcpInfo>
+        {...COMMON_PRO_TABLE_PROPS}
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"
         columns={columns}
         request={request}
         onReset={handleReset}
-        {...COMMON_PRO_TABLE_PROPS}
       />
     </WorkspaceLayout>
   );
