@@ -1,5 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import { ICON_MORE } from '@/constants/images.constants';
 import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
@@ -591,27 +592,8 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         columns={columns}
         request={request}
         params={{ spaceId }}
-        debounceTime={300}
-        toolBarRender={false}
+        {...COMMON_PRO_TABLE_PROPS}
         options={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         // 表单提交前处理：点击查询按钮时设置强制刷新标志
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置后也需要强制刷新
