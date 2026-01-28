@@ -50,9 +50,9 @@ export const COMMON_PRO_TABLE_PROPS = {
     span: {
       xs: 24,
       sm: 12,
-      md: 8,
-      lg: 6,
-      xl: 6,
+      md: 12,
+      lg: 12,
+      xl: 8,
       xxl: 6,
     },
     labelWidth: 100,
