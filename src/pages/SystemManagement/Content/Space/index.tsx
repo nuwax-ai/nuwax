@@ -7,10 +7,10 @@
  * - 支持名称、创建时间、修改时间排序（接口排序）
  * - 操作列：查看、删除（使用 TableActions 组件）
  */
+import { XProTable } from '@/components/ProComponents';
 import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import {
   apiSystemResourceSpaceDelete,
   apiSystemResourceSpaceList,
@@ -20,7 +20,6 @@ import {
   ActionType,
   FormInstance,
   ProColumns,
-  ProTable,
 } from '@ant-design/pro-components';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
@@ -196,8 +195,7 @@ const Space: React.FC = () => {
 
   return (
     <WorkspaceLayout title="空间管理" hideScroll>
-      <ProTable<SystemSpaceInfo>
-        {...COMMON_PRO_TABLE_PROPS}
+      <XProTable<SystemSpaceInfo>
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"
