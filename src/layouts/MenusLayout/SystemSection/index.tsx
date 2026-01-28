@@ -241,7 +241,15 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Content_Mcp &&
         pathname.includes('content-mcp')) ||
       (type === SystemManageListEnum.Content_Skill &&
-        pathname.includes('content-skill'))
+        pathname.includes('content-skill')) ||
+      (type === SystemManageListEnum.Permission_Resources &&
+        pathname.includes('permission-resources')) ||
+      (type === SystemManageListEnum.Menu_Manage &&
+        pathname.includes('menu-manage')) ||
+      (type === SystemManageListEnum.Role_Manage &&
+        pathname.includes('role-manage')) ||
+      (type === SystemManageListEnum.User_Group_Manage &&
+        pathname.includes('user-group-manage'))
     );
   };
 

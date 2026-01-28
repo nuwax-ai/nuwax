@@ -68,7 +68,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
       <div
         className={cx(styles.menuItem)}
         style={{
-          marginLeft: level > 0 ? `${level * 24 + 16}px` : '0',
+          marginLeft: level > 0 ? `${level * 24}px` : '0',
         }}
       >
         {/* 左侧：拖拽手柄、图标和内容 */}
