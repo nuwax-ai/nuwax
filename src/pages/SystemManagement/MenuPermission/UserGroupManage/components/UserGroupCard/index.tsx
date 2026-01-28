@@ -1,5 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DeleteOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -79,33 +79,20 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
       {/* 卡片内容 */}
       <div className={cx(styles.content)}>
-        {/* 头部：图标和用户组名称 */}
+        {/* 头部：用户组名称 */}
         <div className={cx(styles.header)}>
-          <div className={cx(styles.iconWrapper)}>
-            <TeamOutlined className={cx(styles.icon)} />
-          </div>
           <div className={cx(styles.titleSection)}>
-            <h3 className={cx(styles.title)}>{userGroup.name}</h3>
-            <p className={cx(styles.code)}>{userGroup.code}</p>
+            <h3 className={cx(styles.title, 'text-ellipsis')}>
+              {userGroup.name}
+            </h3>
+            <p className={cx(styles.code, 'text-ellipsis')}>{userGroup.code}</p>
           </div>
         </div>
 
         {/* 描述 */}
-        <p className={cx(styles.description)}>{userGroup.description}</p>
-
-        {/* 关联角色 */}
-        {/* {userGroup.roles && userGroup.roles.length > 0 && (
-          <div className={cx(styles.rolesSection)}>
-            <span className={cx(styles.rolesLabel)}>关联角色:</span>
-            <div className={cx(styles.rolesTags)}>
-              {userGroup.roles.map((role) => (
-                <Tag key={role.id} color="blue">
-                  {role.name}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        )} */}
+        <p className={cx(styles.description, 'text-ellipsis-2')}>
+          {userGroup.description}
+        </p>
 
         {/* 信息项 */}
         <div className={cx(styles.infoSection)}>
@@ -124,24 +111,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
               {userGroup.tokenLimit?.limitPerDay
                 ? `${userGroup.tokenLimit.limitPerDay}次`
                 : '无限制'}
-            </span>
-          </div>
-
-          {/* 模型 */}
-          <div className={cx(styles.infoItem)}>
-            <span className={cx(styles.infoLabel)}>模型:</span>
-            <span className={cx(styles.infoValue)}>
-              {userGroup.modelIds?.length
-                ? `${userGroup.modelIds.length}项`
-                : '暂未配置模型'}
-            </span>
-          </div>
-
-          {/* 菜单权限 */}
-          <div className={cx(styles.infoItem)}>
-            <span className={cx(styles.infoLabel)}>菜单权限:</span>
-            <span className={cx(styles.infoValue)}>
-              {/* {role.menuIds?.length ? `${role.menuIds.length}项` : '暂未设置'} */}
             </span>
           </div>
         </div>
