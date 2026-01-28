@@ -1,10 +1,10 @@
 /**
  * 智能体管理页面
  */
+import { XProTable } from '@/components/ProComponents';
 import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import {
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
@@ -14,7 +14,6 @@ import {
   ActionType,
   FormInstance,
   ProColumns,
-  ProTable,
 } from '@ant-design/pro-components';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
@@ -190,8 +189,7 @@ const Agent: React.FC = () => {
 
   return (
     <WorkspaceLayout title="智能体管理" hideScroll>
-      <ProTable<SystemAgentInfo>
-        {...COMMON_PRO_TABLE_PROPS}
+      <XProTable<SystemAgentInfo>
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"

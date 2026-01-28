@@ -1,6 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
+import { XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import { ICON_MORE } from '@/constants/images.constants';
 import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
@@ -20,7 +20,6 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -585,14 +584,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     }, [history.location.state, refreshList]);
 
     return (
-      <ProTable<TaskInfo>
+      <XProTable<TaskInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
         request={request}
         params={{ spaceId }}
-        {...COMMON_PRO_TABLE_PROPS}
         options={false}
         // 表单提交前处理：点击查询按钮时设置强制刷新标志
         beforeSearchSubmit={beforeSearchSubmit}
