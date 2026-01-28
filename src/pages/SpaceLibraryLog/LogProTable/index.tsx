@@ -1,5 +1,5 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
+import { XProTable } from '@/components/ProComponents';
 import { apiSpaceLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -13,7 +13,6 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
@@ -418,8 +417,7 @@ const LogProTable: React.FC = () => {
 
   return (
     <>
-      <ProTable<SpaceLogInfo>
-        {...COMMON_PRO_TABLE_PROPS}
+      <XProTable<SpaceLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
