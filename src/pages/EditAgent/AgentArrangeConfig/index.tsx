@@ -357,7 +357,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
-    // 开场白 (仅长任务型智能体展示开场白块)
+    // 开场白 (仅通用型智能体展示开场白块)
     if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
       keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     }
@@ -1203,7 +1203,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
         {/* 右侧配置内容区域 */}
         <div className={cx('overflow-y', 'flex-1', styles.container)}>
-          {/* 任务型智能体显示系统提示词部分 */}
+          {/* 通用型智能体显示系统提示词部分 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
@@ -1216,7 +1216,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
-          {/* 长任务型智能体显示技能 */}
+          {/* 通用型智能体显示技能 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
               <ConfigOptionsHeader title="技能" />
@@ -1271,7 +1271,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         addComponents={addComponents}
         onAdded={handleAddComponent}
         tabs={CREATED_TABS.filter((item) => {
-          // 如果是任务型智能体，则不显示页面tag
+          // 如果是通用型智能体，则不显示页面tag
           if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
             return (
               item.key !== AgentComponentTypeEnum.Agent &&
