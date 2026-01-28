@@ -1,9 +1,4 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  UserAddOutlined,
-} from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -133,7 +128,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
       <div className={cx(styles.footer)}>
         <Button
           type="text"
-          icon={<UserAddOutlined />}
           onClick={handleBindUser}
           className={cx(styles.actionButton)}
         >
@@ -143,7 +137,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
           <>
             <Button
               type="text"
-              icon={<EditOutlined />}
               onClick={handleMenuPermission}
               className={cx(styles.actionButton)}
             >
@@ -151,7 +144,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
             </Button>
             <Button
               type="text"
-              icon={<EditOutlined />}
               onClick={handleEdit}
               className={cx(styles.actionButton)}
             >
@@ -160,7 +152,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
             <Button
               type="text"
               danger
-              icon={<DeleteOutlined />}
               onClick={handleDelete}
               loading={deleteLoading}
               className={cx(styles.actionButton)}
