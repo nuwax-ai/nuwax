@@ -11,6 +11,10 @@ import {
   apiGetRoleBoundUserList,
   apiRoleBindUser,
 } from '../../services/role-manage';
+import {
+  apiGetGroupUserList,
+  apiGroupBindUser,
+} from '../../services/user-group-manage';
 import { UserInfo } from '../../types/role-manage';
 import styles from './index.less';
 
@@ -19,6 +23,7 @@ const cx = classNames.bind(styles);
 export interface BindUserProps {
   targetId: number;
   name: string;
+  type?: 'role' | 'userGroup';
   open: boolean;
   onCancel: () => void;
   onConfirmBindUser?: () => void;
@@ -35,6 +40,7 @@ export interface BindUserProps {
 const BindUser: React.FC<BindUserProps> = ({
   targetId,
   name,
+  type = 'role',
   open,
   onCancel,
   onConfirmBindUser,
@@ -51,8 +57,15 @@ const BindUser: React.FC<BindUserProps> = ({
     SearchUserInfo[]
   >([]);
 
-  // 查询角色已绑定的用户
-  const { run } = useRequest(apiGetRoleBoundUserList, {
+  // 查询角色已绑定的用户列表 或 查询组已绑定的用户列表
+  const apiBindedUserList =
+    type === 'role' ? apiGetRoleBoundUserList : apiGetGroupUserList;
+
+  // 角色绑定用户（全量覆盖）或 组绑定用户（全量覆盖）
+  const apiBindUser = type === 'role' ? apiRoleBindUser : apiGroupBindUser;
+
+  // 查询角色已绑定的用户或用户组已绑定的用户列表
+  const { run } = useRequest(apiBindedUserList, {
     manual: true,
     onSuccess: (data: UserInfo[]) => {
       if (data?.length) {
@@ -67,8 +80,8 @@ const BindUser: React.FC<BindUserProps> = ({
     },
   });
 
-  // 角色绑定用户（全量覆盖）
-  const { run: runBindUser } = useRequest(apiRoleBindUser, {
+  // 角色绑定用户（全量覆盖）或 组绑定用户（全量覆盖）
+  const { run: runBindUser } = useRequest(apiBindUser, {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
@@ -104,8 +117,10 @@ const BindUser: React.FC<BindUserProps> = ({
       return;
     }
 
+    // 根据类型设置 id 字段名称
+    const id = type === 'role' ? 'roleId' : 'groupId';
     const params = {
-      roleId: targetId,
+      [id]: targetId,
       userIds: rightColumnMembers.map((m) => m.id) || [],
     };
     runBindUser(params);
@@ -118,7 +133,7 @@ const BindUser: React.FC<BindUserProps> = ({
     // 从 searchedAllMembers 中找到要添加到 leftColumnMembers 的成员
     const removedMember = searchedAllMembers.find((m) => m.id === id);
     if (removedMember) {
-      // 复制对象以避免修改 spaceExistMembers
+      // 复制对象以避免修改
       const copiedMember = { ...removedMember };
       // 将复制后的成员添加到 leftColumnMembers
       setLeftColumnMembers((prev) => [...prev, copiedMember]);

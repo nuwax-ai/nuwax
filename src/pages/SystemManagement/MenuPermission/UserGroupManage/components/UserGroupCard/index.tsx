@@ -1,5 +1,9 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -15,6 +19,8 @@ const cx = classNames.bind(styles);
 interface UserGroupCardProps {
   /** 用户组信息 */
   userGroup: UserGroupInfo;
+  /** 绑定用户回调 */
+  onBindUser: (userGroup: UserGroupInfo) => void;
   /** 编辑回调 */
   onEdit: (userGroup: UserGroupInfo) => void;
   /** 删除回调 */
@@ -31,11 +37,18 @@ interface UserGroupCardProps {
  */
 const UserGroupCard: React.FC<UserGroupCardProps> = ({
   userGroup,
+  onBindUser,
   onEdit,
   onDelete,
   onMenuPermission,
   deleteLoading = false,
 }) => {
+  // 处理绑定用户点击
+  const handleBindUser = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBindUser(userGroup);
+  };
+
   // 处理菜单权限点击
   const handleMenuPermission = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -118,6 +131,14 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
 
       {/* 底部操作按钮 */}
       <div className={cx(styles.footer)}>
+        <Button
+          type="text"
+          icon={<UserAddOutlined />}
+          onClick={handleBindUser}
+          className={cx(styles.actionButton)}
+        >
+          绑定用户
+        </Button>
         {userGroup.source === UserGroupSourceEnum.UserDefined && (
           <>
             <Button

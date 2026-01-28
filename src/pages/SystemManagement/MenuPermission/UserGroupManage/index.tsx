@@ -3,6 +3,7 @@ import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import BindUser from '../components/BindUser';
 import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import {
   apiDeleteUserGroup,
@@ -22,16 +23,21 @@ const cx = classNames.bind(styles);
  */
 const UserGroupManage: React.FC = () => {
   const screens = useBreakpoint();
+  // 删除用户组loading map
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  // 新增/编辑用户组Modal是否打开
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  // 是否为编辑用户组
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  const [editingUserGroup, setEditingUserGroup] =
-    useState<UserGroupInfo | null>();
+  // 菜单权限抽屉是否打开
   const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
     useState<boolean>(false);
-  const [menuPermissionUserGroup, setMenuPermissionUserGroup] =
+  // 组绑定用户弹窗是否打开
+  const [groupBindUserOpen, setGroupBindUserOpen] = useState<boolean>(false);
+  // 当前用户组信息
+  const [currentUserGroup, setCurrentUserGroup] =
     useState<UserGroupInfo | null>();
 
   // 查询用户组列表
@@ -66,9 +72,15 @@ const UserGroupManage: React.FC = () => {
     },
   });
 
+  // 处理绑定用户
+  const handleBindUser = (userGroup: UserGroupInfo) => {
+    setCurrentUserGroup(userGroup);
+    setGroupBindUserOpen(true);
+  };
+
   // 处理编辑
   const handleEdit = (userGroup: UserGroupInfo) => {
-    setEditingUserGroup(userGroup);
+    setCurrentUserGroup(userGroup);
     setIsEdit(true);
     setModalOpen(true);
   };
@@ -80,7 +92,7 @@ const UserGroupManage: React.FC = () => {
 
   // 处理新增
   const handleAdd = () => {
-    setEditingUserGroup(null);
+    setCurrentUserGroup(null);
     setIsEdit(false);
     setModalOpen(true);
   };
@@ -88,32 +100,32 @@ const UserGroupManage: React.FC = () => {
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
-    setEditingUserGroup(null);
+    setCurrentUserGroup(null);
   };
 
   // 处理Modal成功
   const handleModalSuccess = () => {
     setModalOpen(false);
-    setEditingUserGroup(null);
+    setCurrentUserGroup(null);
     runGetUserGroupList();
   };
 
   // 处理菜单权限
   const handleMenuPermission = (userGroup: UserGroupInfo) => {
-    setMenuPermissionUserGroup(userGroup);
+    setCurrentUserGroup(userGroup);
     setMenuPermissionDrawerOpen(true);
   };
 
   // 处理菜单权限抽屉关闭
   const handleMenuPermissionDrawerClose = () => {
     setMenuPermissionDrawerOpen(false);
-    setMenuPermissionUserGroup(null);
+    setCurrentUserGroup(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionDrawerOpen(false);
-    setMenuPermissionUserGroup(null);
+    setCurrentUserGroup(null);
     runGetUserGroupList();
   };
 
@@ -162,6 +174,7 @@ const UserGroupManage: React.FC = () => {
                 <UserGroupCard
                   key={userGroup.id}
                   userGroup={userGroup}
+                  onBindUser={handleBindUser}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onMenuPermission={handleMenuPermission}
@@ -177,7 +190,7 @@ const UserGroupManage: React.FC = () => {
       <UserGroupFormModal
         open={modalOpen}
         isEdit={isEdit}
-        userGroupInfo={editingUserGroup}
+        userGroupInfo={currentUserGroup}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
@@ -186,10 +199,23 @@ const UserGroupManage: React.FC = () => {
       <MenuPermissionDrawer
         open={menuPermissionDrawerOpen}
         type="userGroup"
-        targetId={menuPermissionUserGroup?.id || 0}
-        name={menuPermissionUserGroup?.name || ''}
+        targetId={currentUserGroup?.id || 0}
+        name={currentUserGroup?.name || ''}
         onClose={handleMenuPermissionDrawerClose}
         onSuccess={handleMenuPermissionSuccess}
+      />
+
+      {/* 组绑定用户弹窗 */}
+      <BindUser
+        targetId={currentUserGroup?.id || 0}
+        name={currentUserGroup?.name || ''}
+        type="userGroup"
+        open={groupBindUserOpen}
+        onCancel={() => setGroupBindUserOpen(false)}
+        onConfirmBindUser={() => {
+          setGroupBindUserOpen(false);
+          runGetUserGroupList();
+        }}
       />
     </div>
   );
