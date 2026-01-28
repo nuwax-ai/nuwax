@@ -101,7 +101,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         code: data.code,
         name: data.name,
         description: data.description,
-        maxUserCount: data.maxUserCount || 0,
+        maxUserCount: data.maxUserCount,
         tokenLimit: {
           limitPerDay: data.tokenLimit?.limitPerDay || 0,
         },
@@ -247,27 +247,27 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 name="maxUserCount"
                 initialValue={0}
                 rules={[{ required: true, message: '请输入最大用户数' }]}
-                tooltip={{
-                  title: '0表示不限制用户数',
-                  icon: <InfoCircleOutlined />,
-                }}
               >
                 <InputNumber
-                  placeholder="请输入最大用户数，0表示不限制"
+                  placeholder="请输入最大用户数"
                   className={cx('w-full')}
-                  min={0}
+                  min={1}
                 />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item
-                label="token限制"
+                label="每日token限制"
                 name={['tokenLimit', 'limitPerDay']}
                 initialValue={0}
-                rules={[{ required: true, message: '请输入token限制数量' }]}
+                rules={[{ required: true, message: '请输入每日token限制数量' }]}
+                tooltip={{
+                  title: '0表示不限制每日token数量',
+                  icon: <InfoCircleOutlined />,
+                }}
               >
                 <InputNumber
-                  placeholder="请输入token限制"
+                  placeholder="请输入每日token限制数量"
                   className={cx('w-full')}
                   min={0}
                 />
