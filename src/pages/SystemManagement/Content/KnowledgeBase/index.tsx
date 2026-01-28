@@ -1,10 +1,10 @@
 /**
  * 知识库管理页面
  */
+import { XProTable } from '@/components/ProComponents';
 import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import {
   apiSystemResourceKnowledgeDelete,
   apiSystemResourceKnowledgeList,
@@ -14,7 +14,6 @@ import {
   ActionType,
   FormInstance,
   ProColumns,
-  ProTable,
 } from '@ant-design/pro-components';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
@@ -189,8 +188,7 @@ const KnowledgeBase: React.FC = () => {
 
   return (
     <WorkspaceLayout title="知识库管理" hideScroll>
-      <ProTable<SystemKnowledgeInfo>
-        {...COMMON_PRO_TABLE_PROPS}
+      <XProTable<SystemKnowledgeInfo>
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"

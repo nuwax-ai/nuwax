@@ -1,5 +1,5 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
+import { XProTable } from '@/components/ProComponents';
 import {
   apiOperationLogActionTypeOptions,
   apiOperationLogList,
@@ -16,7 +16,6 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
@@ -270,8 +269,7 @@ const LogProTable: React.FC = () => {
 
   return (
     <>
-      <ProTable<OperationLogInfo>
-        {...COMMON_PRO_TABLE_PROPS}
+      <XProTable<OperationLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
