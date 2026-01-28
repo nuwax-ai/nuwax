@@ -36,7 +36,7 @@ interface RoleFormModalProps {
   /** 是否为编辑模式 */
   isEdit?: boolean;
   /** 编辑时的角色数据 */
-  roleInfo?: RoleInfo;
+  roleInfo?: RoleInfo | null;
   /** 取消回调 */
   onCancel: () => void;
   /** 成功回调 */
