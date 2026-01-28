@@ -546,7 +546,7 @@ const AgentDetails: React.FC = () => {
                       onClose={closePreviewView}
                       isCanDeleteSkillFile={true}
                       isOnlyShowDesktop={true}
-                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      // VNC 空闲检测配置（仅通用型智能体启用）
                       idleDetection={{
                         enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
                         onIdleTimeout: closePreviewView,

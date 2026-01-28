@@ -137,12 +137,7 @@ const PermissionResources: React.FC = () => {
             管理系统中的模块、菜单、接口、组件等权限资源
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className={cx(styles.addButton)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增资源
         </Button>
       </div>

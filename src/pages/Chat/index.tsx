@@ -267,7 +267,7 @@ const Chat: React.FC = () => {
 
   useNavigationGuard({
     condition: () => shouldBlockNavigation.current,
-    // 只有任务型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
+    // 只有通用型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
     enabled:
       isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
@@ -1181,7 +1181,7 @@ const Chat: React.FC = () => {
                         isCanDeleteSkillFile={true}
                         // 刷新文件树回调
                         onRefreshFileTree={() => handleRefreshFileList(id)}
-                        // VNC 空闲检测配置（仅任务型智能体启用）
+                        // VNC 空闲检测配置（仅通用型智能体启用）
                         idleDetection={{
                           enabled:
                             agentDetail?.type === AgentTypeEnum.TaskAgent,
