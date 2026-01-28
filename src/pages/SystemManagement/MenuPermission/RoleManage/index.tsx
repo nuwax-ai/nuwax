@@ -22,12 +22,13 @@ const RoleManage: React.FC = () => {
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [isEdit, setIsEdit] = useState<boolean>(false);
   const [editingRole, setEditingRole] = useState<RoleInfo>();
   const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
-    useState(false);
-  const [menuPermissionRole, setMenuPermissionRole] = useState<RoleInfo>();
+    useState<boolean>(false);
+  const [menuPermissionRole, setMenuPermissionRole] =
+    useState<RoleInfo | null>();
 
   // 查询角色列表
   const {
@@ -46,15 +47,13 @@ const RoleManage: React.FC = () => {
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
     loadingDelay: 300,
+    debounceWait: 300,
     onBefore: (params: number[]) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: true }));
     },
     onSuccess: () => {
       message.success('删除成功');
       runGetRoleList();
-    },
-    onError: () => {
-      message.error('删除失败');
     },
     onFinally: (params: number[]) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
@@ -82,11 +81,13 @@ const RoleManage: React.FC = () => {
   // 处理菜单权限抽屉关闭
   const handleMenuPermissionDrawerClose = () => {
     setMenuPermissionDrawerOpen(false);
-    setMenuPermissionRole(undefined);
+    setMenuPermissionRole(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
+    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionRole(null);
     runGetRoleList();
   };
 
@@ -129,12 +130,7 @@ const RoleManage: React.FC = () => {
             管理系统角色,分配菜单权限和数据范围
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className={cx(styles.addButton)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增角色
         </Button>
       </div>
@@ -182,7 +178,8 @@ const RoleManage: React.FC = () => {
       {/* 菜单权限配置Drawer */}
       <MenuPermissionDrawer
         open={menuPermissionDrawerOpen}
-        roleInfo={menuPermissionRole}
+        targetId={menuPermissionRole?.id || 0}
+        name={menuPermissionRole?.name || ''}
         onClose={handleMenuPermissionDrawerClose}
         onSuccess={handleMenuPermissionSuccess}
       />

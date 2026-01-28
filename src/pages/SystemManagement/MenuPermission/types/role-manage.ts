@@ -3,11 +3,7 @@
  */
 
 import { MenuBindTypeEnum } from './menu-manage';
-import {
-  ResourceBindTypeEnum,
-  ResourceSourceEnum,
-  ResourceTreeNode,
-} from './permission-resources';
+import { ResourceSourceEnum, ResourceTreeNode } from './permission-resources';
 
 // ==================== 枚举定义 ====================
 
@@ -118,7 +114,7 @@ export interface MenuTreeNode {
   // 子菜单列表
   children?: MenuTreeNode[];
   // 资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定
-  resourceBindType: ResourceBindTypeEnum;
+  // resourceBindType: ResourceBindTypeEnum;
   // 资源树节点
   resourceTree?: ResourceTreeNode[];
 }

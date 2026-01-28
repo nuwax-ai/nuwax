@@ -11,7 +11,7 @@
   box-shadow: var(--sds-size-depth-0) 1px 2px 0 rgba(12, 12, 13, 4%),
     0 1px 3px 0 rgba(0, 0, 0, 4%);
   transition: all 0.3s ease-in-out;
-  min-height: 280px;
+  overflow: hidden;
 
   &:hover {
     border: 0.5px solid var(--color-border-primary, #5147ff);
@@ -19,133 +19,96 @@
       var(--sds-size-depth-0) 4px 16px -2px rgba(12, 12, 13, 4%),
       0 8px 24px -2px rgba(0, 0, 0, 4%);
   }
-}
 
-.statusTag {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-}
+  .statusTag {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
 
-.content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 
-.header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
 
-.iconWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  flex-shrink: 0;
-}
+    .titleSection {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0; // 允许 flex 子元素收缩
+      padding-right: 60px; // 为右侧的 statusTag 预留空间，避免重叠
 
-.icon {
-  font-size: 24px;
-  color: #fff;
-}
+      .title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: @fontWeightStrong;
+        line-height: 20px;
+        color: var(--color-font-primary, #15171f);
+      }
 
-.titleSection {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+      .code {
+        margin: 0;
+        font-size: 12px;
+        line-height: 16px;
+        color: var(--color-font-tertiary, #5e6470);
+      }
+    }
 
-.title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: @fontWeightStrong;
-  line-height: 20px;
-  color: var(--color-font-primary, #15171f);
-}
+    .description {
+      margin: 0;
+      font-size: 14px;
+      height: 40px;
+      line-height: 20px;
+      color: var(--color-font-secondary, #5e6470);
+    }
 
-.code {
-  margin: 0;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-font-tertiary, #5e6470);
-}
+    .infoSection {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
 
-.description {
-  margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--color-font-secondary, #5e6470);
-  flex: 1;
-}
+      .infoItem {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        line-height: 16px;
+      }
 
-.rolesSection {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 4px;
-}
+      .infoLabel {
+        color: var(--color-font-tertiary, #5e6470);
+      }
 
-.rolesLabel {
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--color-font-tertiary, #5e6470);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+      .infoValue {
+        color: var(--color-font-primary, #15171f);
+        font-weight: @fontWeightStrong;
+      }
+    }
+  }
 
-.rolesTags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 1;
-}
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 45px;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 0.5px solid var(--color-border-02, #e4e6eb);
+    margin-top: 12px;
 
-.infoSection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.infoItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.infoLabel {
-  color: var(--color-font-tertiary, #5e6470);
-}
-
-.infoValue {
-  color: var(--color-font-primary, #15171f);
-  font-weight: @fontWeightStrong;
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 45px;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 0.5px solid var(--color-border-02, #e4e6eb);
-  margin-top: 12px;
-}
-
-.actionButton {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+    .actionButton {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+  }
 }

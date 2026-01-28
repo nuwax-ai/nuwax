@@ -140,7 +140,7 @@ export const FILTER_STATUS_DEV = [
   { value: FilterStatusEnum.Unpublished, label: '未发布' },
 ];
 
-// 智能体开发 - 智能体类型（全部/问答型/任务型）
+// 智能体开发 - 智能体类型（全部/问答型/通用型）
 export const AGENT_TYPE_LIST_DEV = [
   { value: AgentTypeEnum.All, label: '全部' },
   { value: AgentTypeEnum.ChatBot, label: '问答型' },
