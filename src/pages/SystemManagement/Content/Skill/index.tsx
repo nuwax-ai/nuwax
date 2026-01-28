@@ -190,13 +190,13 @@ const SkillPage: React.FC = () => {
   return (
     <WorkspaceLayout title="技能管理" hideScroll>
       <ProTable<SystemSkillInfo>
+        {...COMMON_PRO_TABLE_PROPS}
         actionRef={actionRef}
         formRef={formRef}
         rowKey="id"
         columns={columns}
         request={request}
         onReset={handleReset}
-        {...COMMON_PRO_TABLE_PROPS}
       />
     </WorkspaceLayout>
   );
