@@ -137,12 +137,7 @@ const UserGroupManage: React.FC = () => {
             管理用户组,分配角色和菜单权限
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className={cx(styles.addButton)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增用户组
         </Button>
       </div>

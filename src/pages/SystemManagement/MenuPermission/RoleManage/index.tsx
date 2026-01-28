@@ -130,12 +130,7 @@ const RoleManage: React.FC = () => {
             管理系统角色,分配菜单权限和数据范围
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className={cx(styles.addButton)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增角色
         </Button>
       </div>

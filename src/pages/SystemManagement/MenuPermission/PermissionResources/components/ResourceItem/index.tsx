@@ -145,6 +145,19 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
               <div className={cx(styles.tags)}>
                 <Tag color={typeInfo.color}>{typeInfo.text}</Tag>
                 <Tag>{resource.code}</Tag>
+                {/* 状态标签 */}
+                <Tag
+                  color={
+                    resource.status === ResourceStatusEnum.Enabled
+                      ? 'success'
+                      : 'default'
+                  }
+                  className={cx(styles.statusTag)}
+                >
+                  {resource.status === ResourceStatusEnum.Enabled
+                    ? '启用'
+                    : '禁用'}
+                </Tag>
               </div>
             </div>
             {resource.path && (
@@ -155,18 +168,6 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
 
         {/* 右侧：状态和操作按钮 */}
         <div className={cx(styles.rightContent)}>
-          {/* 状态标签 */}
-          <Tag
-            color={
-              resource.status === ResourceStatusEnum.Enabled
-                ? 'success'
-                : 'default'
-            }
-            className={cx(styles.statusTag)}
-          >
-            {resource.status === ResourceStatusEnum.Enabled ? '启用' : '禁用'}
-          </Tag>
-
           {/* 操作按钮 */}
           <div className={cx(styles.actions)}>
             <Button

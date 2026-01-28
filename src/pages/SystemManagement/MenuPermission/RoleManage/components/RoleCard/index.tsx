@@ -1,9 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  SafetyOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -74,17 +70,16 @@ const RoleCard: React.FC<RoleCardProps> = ({
       <div className={cx(styles.content)}>
         {/* 头部：图标和角色名称 */}
         <div className={cx(styles.header)}>
-          <div className={cx(styles.iconWrapper)}>
-            <SafetyOutlined className={cx(styles.icon)} />
-          </div>
           <div className={cx(styles.titleSection)}>
-            <h3 className={cx(styles.title)}>{role.name}</h3>
-            <p className={cx(styles.code)}>{role.code}</p>
+            <h3 className={cx(styles.title, 'text-ellipsis')}>{role.name}</h3>
+            <p className={cx(styles.code, 'text-ellipsis')}>{role.code}</p>
           </div>
         </div>
 
         {/* 描述 */}
-        <p className={cx(styles.description)}>{role.description}</p>
+        <p className={cx(styles.description, 'text-ellipsis-2')}>
+          {role.description}
+        </p>
 
         {/* 信息项 */}
         <div className={cx(styles.infoSection)}>
@@ -92,7 +87,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>token限制:</span>
             <span className={cx(styles.infoValue)}>
-              {role.tokenLimit?.limitPerDay
+              {role.tokenLimit?.limitPerDay === 0
                 ? `${role.tokenLimit.limitPerDay}次`
                 : '无限制'}
             </span>
@@ -105,13 +100,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
               {role.modelIds?.length
                 ? `${role.modelIds.length}项`
                 : '暂未配置模型'}
-            </span>
-          </div>
-          {/* 菜单权限 */}
-          <div className={cx(styles.infoItem)}>
-            <span className={cx(styles.infoLabel)}>菜单权限:</span>
-            <span className={cx(styles.infoValue)}>
-              {/* {role.menuIds?.length ? `${role.menuIds.length}项` : '暂未设置'} */}
             </span>
           </div>
         </div>
