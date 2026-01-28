@@ -110,12 +110,7 @@ const MenuManage: React.FC = () => {
             管理系统菜单结构,未级菜单可关联资源码
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className={cx(styles.addButton)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增菜单
         </Button>
       </div>
