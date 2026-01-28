@@ -100,13 +100,13 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>最大用户数:</span>
             <span className={cx(styles.infoValue)}>
-              {userGroup.maxUserCount ? userGroup.maxUserCount : '不限制'}
+              {userGroup.maxUserCount ? userGroup.maxUserCount : '--'}
             </span>
           </div>
 
           {/* token限制 */}
           <div className={cx(styles.infoItem)}>
-            <span className={cx(styles.infoLabel)}>token限制:</span>
+            <span className={cx(styles.infoLabel)}>每日token限制:</span>
             <span className={cx(styles.infoValue)}>
               {userGroup.tokenLimit?.limitPerDay
                 ? `${userGroup.tokenLimit.limitPerDay}次`
