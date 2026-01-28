@@ -419,12 +419,12 @@ const LogProTable: React.FC = () => {
   return (
     <>
       <ProTable<SpaceLogInfo>
+        {...COMMON_PRO_TABLE_PROPS}
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
         request={request}
-        {...COMMON_PRO_TABLE_PROPS}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}
