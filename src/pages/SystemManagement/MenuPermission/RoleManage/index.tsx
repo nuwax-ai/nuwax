@@ -3,6 +3,7 @@ import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import BindUser from '../components/BindUser';
 import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
 import type { RoleInfo } from '../types/role-manage';
@@ -19,16 +20,21 @@ const cx = classNames.bind(styles);
  */
 const RoleManage: React.FC = () => {
   const screens = useBreakpoint();
+  // 删除角色loading map
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  // 新增/编辑角色Modal是否打开
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  // 是否为编辑角色
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  const [editingRole, setEditingRole] = useState<RoleInfo>();
+  // 当前角色信息
+  const [currentRole, setCurrentRole] = useState<RoleInfo | null>();
+  // 菜单权限抽屉是否打开
   const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
     useState<boolean>(false);
-  const [menuPermissionRole, setMenuPermissionRole] =
-    useState<RoleInfo | null>();
+  // 角色绑定用户抽屉是否打开
+  const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
 
   // 查询角色列表
   const {
@@ -60,9 +66,15 @@ const RoleManage: React.FC = () => {
     },
   });
 
+  // 处理绑定用户
+  const handleBindUser = (role: RoleInfo) => {
+    setCurrentRole(role);
+    setBindUserDrawerOpen(true);
+  };
+
   // 处理编辑
   const handleEdit = (roleInfo: RoleInfo) => {
-    setEditingRole(roleInfo);
+    setCurrentRole(roleInfo);
     setIsEdit(true);
     setModalOpen(true);
   };
@@ -74,26 +86,26 @@ const RoleManage: React.FC = () => {
 
   // 处理菜单权限
   const handleMenuPermission = (roleInfo: RoleInfo) => {
-    setMenuPermissionRole(roleInfo);
+    setCurrentRole(roleInfo);
     setMenuPermissionDrawerOpen(true);
   };
 
   // 处理菜单权限抽屉关闭
   const handleMenuPermissionDrawerClose = () => {
     setMenuPermissionDrawerOpen(false);
-    setMenuPermissionRole(null);
+    setCurrentRole(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionDrawerOpen(false);
-    setMenuPermissionRole(null);
+    setCurrentRole(null);
     runGetRoleList();
   };
 
   // 处理新增
   const handleAdd = () => {
-    setEditingRole(undefined);
+    setCurrentRole(null);
     setIsEdit(false);
     setModalOpen(true);
   };
@@ -101,7 +113,7 @@ const RoleManage: React.FC = () => {
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
-    setEditingRole(undefined);
+    setCurrentRole(null);
   };
 
   // 处理Modal成功
@@ -155,6 +167,7 @@ const RoleManage: React.FC = () => {
                 <RoleCard
                   key={role.id}
                   role={role}
+                  onBindUser={handleBindUser}
                   onEdit={handleEdit}
                   onMenuPermission={handleMenuPermission}
                   onDelete={handleDelete}
@@ -170,7 +183,7 @@ const RoleManage: React.FC = () => {
       <RoleFormModal
         open={modalOpen}
         isEdit={isEdit}
-        roleInfo={editingRole}
+        roleInfo={currentRole}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
@@ -178,10 +191,20 @@ const RoleManage: React.FC = () => {
       {/* 菜单权限配置Drawer */}
       <MenuPermissionDrawer
         open={menuPermissionDrawerOpen}
-        targetId={menuPermissionRole?.id || 0}
-        name={menuPermissionRole?.name || ''}
+        targetId={currentRole?.id || 0}
+        name={currentRole?.name || ''}
         onClose={handleMenuPermissionDrawerClose}
         onSuccess={handleMenuPermissionSuccess}
+      />
+      <BindUser
+        targetId={currentRole?.id || 0}
+        name={currentRole?.name || ''}
+        open={bindUserDrawerOpen}
+        onCancel={() => setBindUserDrawerOpen(false)}
+        onConfirmBindUser={() => {
+          setBindUserDrawerOpen(false);
+          runGetRoleList();
+        }}
       />
     </div>
   );

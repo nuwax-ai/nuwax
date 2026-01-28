@@ -1,5 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -12,6 +12,8 @@ const cx = classNames.bind(styles);
 interface RoleCardProps {
   /** 角色信息 */
   role: RoleInfo;
+  /** 绑定用户回调 */
+  onBindUser: (role: RoleInfo) => void;
   /** 编辑回调 */
   onEdit: (role: RoleInfo) => void;
   /** 菜单权限回调 */
@@ -28,11 +30,17 @@ interface RoleCardProps {
  */
 const RoleCard: React.FC<RoleCardProps> = ({
   role,
+  onBindUser,
   onEdit,
   onDelete,
   onMenuPermission,
   deleteLoading = false,
 }) => {
+  // 处理绑定用户点击
+  const handleBindUser = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBindUser(role);
+  };
   // 处理编辑点击
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -107,6 +115,14 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
       {/* 底部操作按钮 */}
       <div className={cx(styles.footer)}>
+        <Button
+          type="text"
+          icon={<UserOutlined />}
+          onClick={handleBindUser}
+          className={cx(styles.actionButton)}
+        >
+          绑定用户
+        </Button>
         {role.source === ResourceSourceEnum.UserDefined && (
           <>
             <Button
