@@ -54,12 +54,13 @@ const RoleManage: React.FC = () => {
     manual: true,
     loadingDelay: 300,
     debounceWait: 300,
-    onBefore: (params: number[]) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: true }));
-    },
-    onSuccess: () => {
+    // onBefore: (params: number[]) => {
+    //   setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: true }));
+    // },
+    onSuccess: (_: null, params: number[]) => {
       message.success('删除成功');
       runGetRoleList();
+      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
     },
     onFinally: (params: number[]) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
@@ -81,6 +82,7 @@ const RoleManage: React.FC = () => {
 
   // 处理删除
   const handleDelete = (roleInfo: RoleInfo) => {
+    setDeleteLoadingMap((prev) => ({ ...prev, [roleInfo.id]: true }));
     runDelete(roleInfo.id);
   };
 
