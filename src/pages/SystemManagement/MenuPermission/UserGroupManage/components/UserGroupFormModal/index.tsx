@@ -10,6 +10,7 @@ import {
   InputNumber,
   message,
   Row,
+  Select,
   Switch,
   Typography,
 } from 'antd';
@@ -23,6 +24,7 @@ import {
   apiUpdateUserGroup,
 } from '../../../services/user-group-manage';
 import {
+  UserGroupSourceEnum,
   UserGroupStatusEnum,
   type UserGroupInfo,
 } from '../../../types/user-group-manage';
@@ -44,6 +46,12 @@ interface UserGroupFormModalProps {
   /** 成功回调 */
   onSuccess: () => void;
 }
+
+// 用户组来源选项 来源 1:系统内置 2:用户自定义
+const USER_GROUP_SOURCE_OPTIONS = [
+  { label: '系统内置', value: UserGroupSourceEnum.SystemBuiltIn },
+  { label: '用户自定义', value: UserGroupSourceEnum.UserDefined },
+];
 
 /**
  * 用户组表单Modal组件
@@ -107,6 +115,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         },
         sortIndex: data.sortIndex || 0,
         status: data.status === UserGroupStatusEnum.Enabled,
+        source: data.source || UserGroupSourceEnum.UserDefined,
       });
       // 处理模型ID：如果modelIds只存在一项且为0，则从modelList中设置全部模型id
       if (data?.modelIds && data?.modelIds?.length > 0) {
@@ -142,6 +151,14 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     } else {
       // 新增模式：重置表单
       form.resetFields();
+      form.setFieldsValue({
+        source: UserGroupSourceEnum.UserDefined,
+        sortIndex: 0,
+        status: true,
+        tokenLimit: {
+          limitPerDay: 0,
+        },
+      });
       setAllModelSelected(false);
       setSelectedModelIds([]);
     }
@@ -231,21 +248,12 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="描述" name="description">
-            <TextArea
-              placeholder="请输入用户组描述"
-              className="dispose-textarea-count"
-              autoSize={{ minRows: 3, maxRows: 5 }}
-              showCount
-              maxLength={200}
-            />
-          </Form.Item>
+
           <Row gutter={16}>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item
                 label="最大用户数"
                 name="maxUserCount"
-                initialValue={0}
                 rules={[{ required: true, message: '请输入最大用户数' }]}
               >
                 <InputNumber
@@ -255,11 +263,10 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item
                 label="每日token限制"
                 name={['tokenLimit', 'limitPerDay']}
-                initialValue={0}
                 rules={[{ required: true, message: '请输入每日token限制数量' }]}
                 tooltip={{
                   title: '0表示不限制每日token数量',
@@ -273,11 +280,21 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="来源" name="source">
+                <Select
+                  placeholder="请选择来源"
+                  options={USER_GROUP_SOURCE_OPTIONS}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
               <Form.Item
                 label="排序"
                 name="sortIndex"
-                initialValue={0}
                 className={cx(styles.fieldItem)}
               >
                 <InputNumber
@@ -287,21 +304,29 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                initialValue={true}
-                tooltip={{
-                  title: '启用或禁用此用户组',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-              </Form.Item>
-            </Col>
           </Row>
+
+          <Form.Item
+            label="状态"
+            name="status"
+            valuePropName="checked"
+            tooltip={{
+              title: '启用或禁用此用户组',
+              icon: <InfoCircleOutlined />,
+            }}
+          >
+            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+          </Form.Item>
+
+          <Form.Item label="描述" name="description">
+            <TextArea
+              placeholder="请输入用户组描述"
+              className="dispose-textarea-count"
+              autoSize={{ minRows: 3, maxRows: 5 }}
+              showCount
+              maxLength={200}
+            />
+          </Form.Item>
         </div>
 
         {/* 数据权限配置 */}

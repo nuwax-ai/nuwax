@@ -3,7 +3,6 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import {
-  UserGroupSourceEnum,
   UserGroupStatusEnum,
   type UserGroupInfo,
 } from '../../../types/user-group-manage';
@@ -133,33 +132,34 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
         >
           绑定用户
         </Button>
-        {userGroup.source === UserGroupSourceEnum.UserDefined && (
-          <>
-            <Button
-              type="text"
-              onClick={handleMenuPermission}
-              className={cx(styles.actionButton)}
-            >
-              菜单权限
-            </Button>
-            <Button
-              type="text"
-              onClick={handleEdit}
-              className={cx(styles.actionButton)}
-            >
-              编辑
-            </Button>
-            <Button
-              type="text"
-              danger
-              onClick={handleDelete}
-              loading={deleteLoading}
-              className={cx(styles.actionButton)}
-            >
-              删除
-            </Button>
-          </>
-        )}
+        {/* 用户自定义用户组才能显示菜单权限、编辑、删除按钮 */}
+        {/* {userGroup.source === UserGroupSourceEnum.UserDefined && ( */}
+        <>
+          <Button
+            type="text"
+            onClick={handleMenuPermission}
+            className={cx(styles.actionButton)}
+          >
+            菜单权限
+          </Button>
+          <Button
+            type="text"
+            onClick={handleEdit}
+            className={cx(styles.actionButton)}
+          >
+            编辑
+          </Button>
+          <Button
+            type="text"
+            danger
+            onClick={handleDelete}
+            loading={deleteLoading}
+            className={cx(styles.actionButton)}
+          >
+            删除
+          </Button>
+        </>
+        {/* )} */}
       </div>
     </div>
   );
