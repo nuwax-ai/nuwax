@@ -1,10 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  MenuOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -73,9 +68,15 @@ const MenuItem: React.FC<MenuItemProps> = ({
       >
         {/* 左侧：拖拽手柄、图标和内容 */}
         <div className={cx(styles.leftContent)}>
-          {/* 拖拽手柄 */}
-          <div className={cx(styles.dragHandle)}>
-            <MenuOutlined />
+          {/* 图标 */}
+          <div className={cx(styles.iconWrapper)}>
+            {menu.icon && (
+              <img
+                className={cx('w-full h-full')}
+                src={menu.icon}
+                alt={menu.name}
+              />
+            )}
           </div>
 
           {/* 标题和标签 */}

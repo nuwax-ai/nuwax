@@ -118,13 +118,11 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
           {/* 图标 */}
           <div className={cx(styles.iconWrapper)}>
             {resource.icon ? (
-              <span className={cx(styles.icon, 'overflow-hidden')}>
-                <img
-                  className={cx('w-full h-full')}
-                  src={resource.icon}
-                  alt={resource.name}
-                />
-              </span>
+              <img
+                className={cx('w-full h-full')}
+                src={resource.icon}
+                alt={resource.name}
+              />
             ) : (
               <div
                 className={cx(styles.defaultIcon, 'overflow-hidden', {
