@@ -14,6 +14,10 @@ import {
   apiGroupBindMenu,
 } from '../../services/user-group-manage';
 import { MenuBindTypeEnum, type MenuNodeInfo } from '../../types/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  type ResourceTreeNode,
+} from '../../types/permission-resources';
 import type { MenuTreeNode } from '../../types/role-manage';
 import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
@@ -46,11 +50,16 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
   onSuccess,
 }) => {
   const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
+  // 管理资源码的选中状态：key 为菜单ID，value 为该菜单关联的资源码ID列表
+  const [selectedResourceIds, setSelectedResourceIds] = useState<
+    Map<React.Key, React.Key[]>
+  >(new Map());
 
   // 根据类型选择不同的API
   const apiKey =
     type === 'role' ? apiGetRoleBoundMenuList : apiGetGroupMenuList;
 
+  // 根据类型选择不同的绑定菜单API
   const bindMenuApi = type === 'role' ? apiRoleBindMenu : apiGroupBindMenu;
 
   // 使用自定义 Hook 处理抽屉打开时的滚动条
@@ -107,8 +116,62 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     } else {
       // 重置状态
       setSelectedMenuIds([]);
+      setSelectedResourceIds(new Map());
     }
   }, [open, targetId]);
+
+  /**
+   * 根据资源码选中状态构建资源树
+   */
+  const buildResourceTree = (
+    resources: ResourceTreeNode[],
+    selectedResourceIds: React.Key[],
+  ): ResourceTreeNode[] => {
+    return resources.map((resource) => {
+      const isResourceSelected = selectedResourceIds.includes(resource.id);
+      const hasChildren = resource.children && resource.children.length > 0;
+
+      let resourceBindType = ResourceBindTypeEnum.Unbound; // 未绑定
+      let children: ResourceTreeNode[] | undefined;
+
+      if (hasChildren) {
+        // 递归处理子节点
+        children = buildResourceTree(resource.children!, selectedResourceIds);
+
+        // 检查子节点的绑定状态
+        const allChildrenSelected = children?.every(
+          (child) => child.resourceBindType === ResourceBindTypeEnum.AllBound,
+        );
+        const someChildrenSelected = children?.some(
+          (child) =>
+            child.resourceBindType === ResourceBindTypeEnum.AllBound ||
+            child.resourceBindType === ResourceBindTypeEnum.PartiallyBound,
+        );
+
+        if (isResourceSelected && allChildrenSelected) {
+          // 当前节点选中且所有子节点都是全部绑定
+          resourceBindType = ResourceBindTypeEnum.AllBound; // 全部绑定
+        } else if (isResourceSelected || someChildrenSelected) {
+          // 当前节点选中或部分子节点绑定
+          resourceBindType = ResourceBindTypeEnum.PartiallyBound; // 部分绑定
+        } else {
+          // 当前节点未选中且没有子节点绑定
+          resourceBindType = ResourceBindTypeEnum.Unbound;
+        }
+      } else {
+        // 叶子节点：选中则为全部绑定，未选中则为未绑定
+        resourceBindType = isResourceSelected
+          ? ResourceBindTypeEnum.AllBound
+          : ResourceBindTypeEnum.Unbound;
+      }
+
+      return {
+        ...resource,
+        resourceBindType,
+        children,
+      };
+    });
+  };
 
   // 构建菜单树结构（需要根据选中的菜单ID构建）
   const buildMenuTree = (
@@ -153,10 +216,21 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
           : MenuBindTypeEnum.Unbound;
       }
 
+      // 构建资源树：根据资源码选中状态构建
+      let resourceTree: ResourceTreeNode[] | undefined;
+      if (menu.resourceTree && menu.resourceTree.length > 0) {
+        const menuSelectedResourceIds = selectedResourceIds.get(menu.id) || [];
+        resourceTree = buildResourceTree(
+          menu.resourceTree,
+          menuSelectedResourceIds,
+        );
+      }
+
       return {
         menuId: menu.id,
         menuBindType,
         children,
+        resourceTree,
       };
     });
   };
@@ -168,6 +242,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     // 将MenuTreeNode转换为MenuNodeInfo格式，用于构建菜单树
     // 构建资源树结构
     const updatedMenuTree = buildMenuTree(menuTree, selectedMenuIds);
+
     // 根据类型选择不同的ID
     const id = type === 'role' ? 'roleId' : 'groupId';
     // 构建绑定菜单参数
@@ -227,6 +302,8 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
             menuTree={menuTree}
             selectedKeys={selectedMenuIds}
             onSelect={setSelectedMenuIds}
+            onResourceChange={setSelectedResourceIds}
+            // resetInitialization={!open || !targetId}
           />
         ) : (
           <div className={cx(styles.empty)}>暂无菜单数据</div>
