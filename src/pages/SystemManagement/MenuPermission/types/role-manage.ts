@@ -3,7 +3,7 @@
  */
 
 import { MenuBindTypeEnum } from './menu-manage';
-import { ResourceSourceEnum, ResourceTreeNode } from './permission-resources';
+import { ResourceTreeNode } from './permission-resources';
 
 // ==================== 枚举定义 ====================
 
@@ -25,6 +25,14 @@ export interface RoleBindUserParams {
   userIds: number[];
 }
 
+/**
+ * 角色来源枚举 1:系统内置 2:用户自定义
+ */
+export enum RoleSourceEnum {
+  SystemBuiltIn = 1, // 系统内置
+  UserDefined = 2, // 用户自定义
+}
+
 // ==================== 接口定义 ====================
 
 /**
@@ -40,7 +48,7 @@ export interface RoleInfo {
   /** 角色描述 */
   description: string;
   /** 来源 1:系统内置 2:用户自定义 */
-  source: number;
+  source: RoleSourceEnum;
   /** 状态 */
   status: RoleStatusEnum;
   /** 排序 */
@@ -70,6 +78,8 @@ export interface RoleInfo {
  * 新增角色参数
  */
 export interface AddRoleParams {
+  /*来源 1:系统内置 2:用户自定义 */
+  source?: RoleSourceEnum;
   /*编码 */
   code?: string;
 
@@ -139,7 +149,7 @@ export interface GetRoleListParams {
   // 角色编码
   code?: string;
   // 来源 1:系统内置 2:用户自定义
-  source?: ResourceSourceEnum;
+  source?: RoleSourceEnum;
   // 状态 1:启用 0:禁用
   status?: RoleStatusEnum;
 }

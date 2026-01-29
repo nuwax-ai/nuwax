@@ -2,7 +2,6 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { ResourceSourceEnum } from '../../../types/permission-resources';
 import { RoleStatusEnum, type RoleInfo } from '../../../types/role-manage';
 import styles from './index.less';
 
@@ -123,33 +122,34 @@ const RoleCard: React.FC<RoleCardProps> = ({
         >
           绑定用户
         </Button>
-        {role.source === ResourceSourceEnum.UserDefined && (
-          <>
-            <Button
-              type="text"
-              onClick={handleMenuPermission}
-              className={cx(styles.actionButton)}
-            >
-              菜单权限
-            </Button>
-            <Button
-              type="text"
-              onClick={handleEdit}
-              className={cx(styles.actionButton)}
-            >
-              编辑
-            </Button>
-            <Button
-              type="text"
-              danger
-              onClick={handleDelete}
-              loading={deleteLoading}
-              className={cx(styles.actionButton)}
-            >
-              删除
-            </Button>
-          </>
-        )}
+        {/* 用户自定义角色才能显示菜单权限、编辑、删除按钮 */}
+        {/* {role.source === RoleSourceEnum.UserDefined && ( */}
+        <>
+          <Button
+            type="text"
+            onClick={handleMenuPermission}
+            className={cx(styles.actionButton)}
+          >
+            菜单权限
+          </Button>
+          <Button
+            type="text"
+            onClick={handleEdit}
+            className={cx(styles.actionButton)}
+          >
+            编辑
+          </Button>
+          <Button
+            type="text"
+            danger
+            onClick={handleDelete}
+            loading={deleteLoading}
+            className={cx(styles.actionButton)}
+          >
+            删除
+          </Button>
+        </>
+        {/* )} */}
       </div>
     </div>
   );

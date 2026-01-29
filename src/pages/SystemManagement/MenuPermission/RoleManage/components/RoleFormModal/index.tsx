@@ -1,4 +1,3 @@
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiSystemModelList } from '@/services/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
@@ -11,6 +10,7 @@ import {
   InputNumber,
   message,
   Row,
+  Select,
   Switch,
   Typography,
 } from 'antd';
@@ -23,7 +23,11 @@ import {
   apiGetRoleById,
   apiUpdateRole,
 } from '../../../services/role-manage';
-import { RoleStatusEnum, type RoleInfo } from '../../../types/role-manage';
+import {
+  RoleSourceEnum,
+  RoleStatusEnum,
+  type RoleInfo,
+} from '../../../types/role-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -42,6 +46,12 @@ interface RoleFormModalProps {
   /** 成功回调 */
   onSuccess: () => void;
 }
+
+// 角色来源选项 来源 1:系统内置 2:用户自定义
+const ROLE_SOURCE_OPTIONS = [
+  { label: '系统内置', value: RoleSourceEnum.SystemBuiltIn },
+  { label: '用户自定义', value: RoleSourceEnum.UserDefined },
+];
 
 /**
  * 角色表单Modal组件
@@ -72,6 +82,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           limitPerDay: data.tokenLimit?.limitPerDay || 0,
         },
         sortIndex: data.sortIndex || 0,
+        source: data.source || RoleSourceEnum.UserDefined,
         status: data.status === RoleStatusEnum.Enabled,
       });
       if (data?.modelIds && data?.modelIds?.length > 0) {
@@ -135,6 +146,14 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     } else {
       // 新增模式：重置表单
       form.resetFields();
+      form.setFieldsValue({
+        source: RoleSourceEnum.UserDefined,
+        sortIndex: 0,
+        status: true,
+        tokenLimit: {
+          limitPerDay: 0,
+        },
+      });
       setAllModelSelected(false);
       setSelectedModelIds([]);
     }
@@ -224,6 +243,62 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="来源" name="source">
+                <Select
+                  placeholder="请选择来源"
+                  options={ROLE_SOURCE_OPTIONS}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="每日token限制"
+                name={['tokenLimit', 'limitPerDay']}
+                rules={[{ required: true, message: '请输入每日token限制数量' }]}
+                tooltip={{
+                  title: '0表示不限制每日token数量',
+                  icon: <InfoCircleOutlined />,
+                }}
+                className={cx(styles.fieldItem)}
+              >
+                <InputNumber
+                  placeholder="请输入每日token限制数量"
+                  className={cx('w-full')}
+                  min={0}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="排序"
+                name="sortIndex"
+                className={cx(styles.fieldItem)}
+              >
+                <InputNumber
+                  placeholder="请输入排序"
+                  className={cx('w-full')}
+                  min={0}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                className={cx(styles.fieldItem)}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item label="描述" name="description">
             <TextArea
               placeholder="请输入角色描述"
@@ -233,57 +308,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
               maxLength={200}
             />
           </Form.Item>
-        </div>
-
-        {/* 系统字段配置 */}
-        <div className={cx(styles.section)}>
-          <div className={cx('flex', 'items-center', 'gap-4', 'mb-12')}>
-            <h3 className={cx(styles.sectionTitle)}>系统字段配置</h3>
-            <TooltipIcon
-              title="系统字段配置用于控制角色的token限制和启用状态"
-              icon={<InfoCircleOutlined />}
-            />
-          </div>
-          <div className={cx(styles.systemFields)}>
-            <Form.Item
-              label="每日token限制"
-              name={['tokenLimit', 'limitPerDay']}
-              initialValue={0}
-              rules={[{ required: true, message: '请输入每日token限制数量' }]}
-              tooltip={{
-                title: '0表示不限制每日token数量',
-                icon: <InfoCircleOutlined />,
-              }}
-              className={cx(styles.fieldItem)}
-            >
-              <InputNumber
-                placeholder="请输入每日token限制数量"
-                className={cx('w-full')}
-                min={0}
-              />
-            </Form.Item>
-            <Form.Item
-              label="排序"
-              name="sortIndex"
-              initialValue={0}
-              className={cx(styles.fieldItem)}
-            >
-              <InputNumber
-                placeholder="请输入排序"
-                className={cx('w-full')}
-                min={0}
-              />
-            </Form.Item>
-            <Form.Item
-              label="状态"
-              name="status"
-              valuePropName="checked"
-              initialValue={true}
-              className={cx(styles.fieldItem)}
-            >
-              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-            </Form.Item>
-          </div>
         </div>
 
         {/* 数据权限配置 */}
