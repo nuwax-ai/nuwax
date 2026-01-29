@@ -9,6 +9,7 @@ import {
   InputNumber,
   message,
   Row,
+  Select,
   Switch,
   Tree,
   TreeSelect,
@@ -24,6 +25,7 @@ import {
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
 import {
+  MenuSourceEnum,
   MenuStatusEnum,
   MenuVisibleEnum,
   type MenuNodeInfo,
@@ -51,6 +53,12 @@ interface MenuFormModalProps {
   /** 成功回调 */
   onSuccess: () => void;
 }
+
+// 菜单来源选项 来源 1:系统内置 2:用户自定义
+const MENU_SOURCE_OPTIONS = [
+  { label: '系统内置', value: MenuSourceEnum.SystemBuiltIn },
+  { label: '用户自定义', value: MenuSourceEnum.UserDefined },
+];
 
 /**
  * 菜单表单Modal组件
@@ -216,6 +224,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           sortIndex: menuInfoResponse.sortIndex || 0,
           status: menuInfoResponse.status === MenuStatusEnum.Enabled,
           visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
+          source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
         });
         // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
         const resourceTree = menuInfoResponse.resourceTree;
@@ -231,6 +240,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           sortIndex: 0,
           status: true,
           visible: true,
+          source: MenuSourceEnum.UserDefined,
           // 如果有父菜单，自动设置父节点
           parentId: parentMenu?.id,
         });
@@ -419,9 +429,18 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
+
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="排序" name="sortIndex" initialValue={0}>
+              <Form.Item label="来源" name="source">
+                <Select
+                  placeholder="请选择来源"
+                  options={MENU_SOURCE_OPTIONS}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="排序" name="sortIndex">
                 <InputNumber
                   placeholder="请输入排序"
                   className={cx('w-full')}
@@ -429,37 +448,33 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={16}>
             <Col span={12}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="状态"
-                    name="status"
-                    valuePropName="checked"
-                    initialValue={true}
-                    tooltip={{
-                      title: '启用或禁用此菜单',
-                      icon: <InfoCircleOutlined />,
-                    }}
-                  >
-                    <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="是否显示"
-                    name="visible"
-                    valuePropName="checked"
-                    initialValue={true}
-                    tooltip={{
-                      title: '显示或隐藏此菜单',
-                      icon: <InfoCircleOutlined />,
-                    }}
-                  >
-                    <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                tooltip={{
+                  title: '启用或禁用此菜单',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="是否显示"
+                name="visible"
+                valuePropName="checked"
+                tooltip={{
+                  title: '显示或隐藏此菜单',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+              </Form.Item>
             </Col>
           </Row>
 

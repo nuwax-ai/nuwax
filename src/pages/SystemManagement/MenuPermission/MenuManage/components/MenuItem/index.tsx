@@ -9,7 +9,7 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
-import { MenuSourceEnum, MenuStatusEnum } from '../../../types/menu-manage';
+import { MenuStatusEnum } from '../../../types/menu-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -134,17 +134,18 @@ const MenuItem: React.FC<MenuItemProps> = ({
                 />
               )
             }
-            {menu?.source === MenuSourceEnum.UserDefined && (
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleDelete}
-                loading={deleteLoading}
-                className={cx(styles.actionButton)}
-              />
-            )}
+            {/* 删除图标，用户自定义菜单才能删除 */}
+            {/* {menu?.source === MenuSourceEnum.UserDefined && ( */}
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleDelete}
+              loading={deleteLoading}
+              className={cx(styles.actionButton)}
+            />
+            {/* )} */}
           </div>
         </div>
       </div>

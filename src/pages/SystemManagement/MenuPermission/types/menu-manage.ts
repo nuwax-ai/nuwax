@@ -41,6 +41,8 @@ export enum MenuSourceEnum {
  * 新增菜单参数
  */
 export interface AddMenuParams {
+  /** 来源 1:系统内置 2:用户自定义 */
+  source?: MenuSourceEnum;
   /** 编码 */
   code?: string;
   /** 名称 */
