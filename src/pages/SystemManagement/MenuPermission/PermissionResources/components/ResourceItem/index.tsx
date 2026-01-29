@@ -10,7 +10,6 @@ import classNames from 'classnames';
 import React from 'react';
 import type { ResourceTreeNode } from '../../../types/permission-resources';
 import {
-  ResourceSourceEnum,
   ResourceStatusEnum,
   ResourceTypeEnum,
 } from '../../../types/permission-resources';
@@ -179,6 +178,7 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
             >
               新增子资源
             </Button>
+            {/* 编辑图标，根节点资源不能编辑（根节点是不存在的资源） */}
             {
               // 根节点资源不能编辑
               resource.id !== 0 && (
@@ -191,17 +191,18 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
                 />
               )
             }
-            {resource.source === ResourceSourceEnum.UserDefined && (
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={handleDelete}
-                loading={deleteLoading}
-                className={cx(styles.actionButton)}
-              />
-            )}
+            {/* 删除图标，用户自定义资源才能删除 */}
+            {/* {resource.source === ResourceSourceEnum.UserDefined && ( */}
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleDelete}
+              loading={deleteLoading}
+              className={cx(styles.actionButton)}
+            />
+            {/* )} */}
           </div>
         </div>
       </div>
