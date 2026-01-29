@@ -23,6 +23,7 @@ import {
   apiUpdateResource,
 } from '../../../services/permission-resources';
 import {
+  ResourceSourceEnum,
   ResourceStatusEnum,
   ResourceTreeNode,
   ResourceTypeEnum,
@@ -54,6 +55,12 @@ const RESOURCE_TYPE_OPTIONS = [
   { label: '模块', value: ResourceTypeEnum.Module },
   { label: '组件', value: ResourceTypeEnum.Component },
   { label: '页面', value: ResourceTypeEnum.Page },
+];
+
+// 资源来源选项 来源 1:系统内置 2:用户自定义
+const RESOURCE_SOURCE_OPTIONS = [
+  { label: '系统内置', value: ResourceSourceEnum.SystemBuiltIn },
+  { label: '用户自定义', value: ResourceSourceEnum.UserDefined },
 ];
 
 /**
@@ -156,6 +163,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           sortIndex: resourceInfoResponse.sortIndex || 0,
           status: resourceInfoResponse.status === ResourceStatusEnum.Enabled,
           visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
+          source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
         });
       } else {
         // 新增模式：重置表单
@@ -165,6 +173,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           sortIndex: 0,
           status: true,
           visible: true,
+          source: ResourceSourceEnum.UserDefined,
           // 如果有父资源，自动设置父节点
           parentId: parentResource?.id,
         });
@@ -271,7 +280,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="排序" name="sortIndex" initialValue={0}>
+              <Form.Item label="排序" name="sortIndex">
                 <InputNumber
                   placeholder="请输入排序"
                   className={cx('w-full')}
@@ -305,32 +314,42 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                initialValue={true}
-                tooltip={{
-                  title: '启用或禁用此资源',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              <Form.Item label="来源" name="source">
+                <Select
+                  placeholder="请选择来源"
+                  options={RESOURCE_SOURCE_OPTIONS}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="是否显示"
-                name="visible"
-                valuePropName="checked"
-                initialValue={true}
-                tooltip={{
-                  title: '是否显示此资源',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-              </Form.Item>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="状态"
+                    name="status"
+                    valuePropName="checked"
+                    tooltip={{
+                      title: '启用或禁用此资源',
+                      icon: <InfoCircleOutlined />,
+                    }}
+                  >
+                    <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="是否显示"
+                    name="visible"
+                    valuePropName="checked"
+                    tooltip={{
+                      title: '是否显示此资源',
+                      icon: <InfoCircleOutlined />,
+                    }}
+                  >
+                    <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+                  </Form.Item>
+                </Col>
+              </Row>
             </Col>
           </Row>
           <Form.Item label="描述" name="description">

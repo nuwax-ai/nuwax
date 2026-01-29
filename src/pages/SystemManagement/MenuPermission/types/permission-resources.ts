@@ -88,6 +88,8 @@ export interface ResourceInfo {
  * 新增权限资源参数
  */
 export interface AddResourceParams {
+  /** 来源 1:系统内置 2:用户自定义 */
+  source?: ResourceSourceEnum;
   /** 编码 */
   code?: string;
   /** 名称 */
