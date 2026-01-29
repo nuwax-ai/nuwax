@@ -9,10 +9,13 @@ import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, Input, Select, Table, message } from 'antd';
+import { ColumnType } from 'antd/es/table';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
+import UserBindGroupModal from './components/UserBindGroupModal';
+import UserBindRoleModal from './components/UserBindRoleModal';
 import MessageSendModal from './MessageSendModal';
 
 const cx = classNames.bind(styles);
@@ -23,6 +26,9 @@ const selectOptions = [
   { value: UserRoleEnum.User, label: '成员' },
 ];
 
+/**
+ * 用户管理
+ */
 const UserManage: React.FC = () => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
@@ -36,6 +42,16 @@ const UserManage: React.FC = () => {
   // 消息发送弹窗是否打开
   const [messageSendOpen, setMessageSendOpen] = useState<boolean>(false);
 
+  // 打开绑定角色弹窗
+  const [openBindRoleModal, setOpenBindRoleModal] = useState<boolean>(false);
+  // 打开绑定用户组弹窗
+  const [openBindGroupModal, setOpenBindGroupModal] = useState<boolean>(false);
+
+  // 当前选中的用户信息
+  const [currentUserInfo, setCurrentUserInfo] =
+    useState<SystemUserListInfo | null>(null);
+
+  // 查询用户列表
   const { data, run, refresh, loading } = useRequest(apiSystemUserList, {
     debounceWait: 300,
     defaultParams: [
@@ -127,6 +143,19 @@ const UserManage: React.FC = () => {
     run(params);
   };
 
+  // 绑定角色
+  const handleBindRole = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenBindRoleModal(true);
+  };
+
+  // 绑定用户组
+  const handleBindGroup = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenBindGroupModal(true);
+  };
+
+  // 查询用户绑定的角色列表
   const columns = [
     {
       title: '用户名',
@@ -216,6 +245,20 @@ const UserManage: React.FC = () => {
       align: 'center',
       render: (_: null, record: SystemUserListInfo) => (
         <>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => handleBindRole(record)}
+          >
+            绑定角色
+          </Button>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => handleBindGroup(record)}
+          >
+            绑定用户组
+          </Button>
           {record.status === UserStatusEnum.Enabled ? (
             <Button
               type="link"
@@ -283,8 +326,8 @@ const UserManage: React.FC = () => {
         className={cx('mt-30')}
         rowKey="id"
         loading={loading}
-        columns={columns}
-        dataSource={data?.data.records}
+        columns={columns as ColumnType<SystemUserListInfo>[]}
+        dataSource={data?.data?.records || []}
         scroll={{ x: 'max-content' }}
         pagination={{
           total: data?.data.total,
@@ -296,6 +339,20 @@ const UserManage: React.FC = () => {
       <MessageSendModal
         open={messageSendOpen}
         onCancel={() => setMessageSendOpen(false)}
+      />
+      {/* 绑定角色弹窗 */}
+      <UserBindRoleModal
+        open={openBindRoleModal}
+        targetId={currentUserInfo?.id || 0}
+        onCancel={() => setOpenBindRoleModal(false)}
+        onConfirm={() => setOpenBindRoleModal(false)}
+      />
+      {/* 绑定组弹窗 */}
+      <UserBindGroupModal
+        open={openBindGroupModal}
+        targetId={currentUserInfo?.id || 0}
+        onCancel={() => setOpenBindGroupModal(false)}
+        onConfirm={() => setOpenBindGroupModal(false)}
       />
     </div>
   );
