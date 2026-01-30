@@ -106,6 +106,9 @@ const Dashboard: React.FC = () => {
     const userResult = (userStats as any)?.data || userStats;
     const userData = userResult as UserStatsResult | undefined;
 
+    const isCoreStatsLoading =
+      (!hasUserLoaded && userLoading) || (!hasAccessLoaded && accessLoading);
+
     return [
       {
         title: '总用户数',
@@ -113,7 +116,7 @@ const Dashboard: React.FC = () => {
         icon: <TeamOutlined />,
         iconColor: '#1890ff',
         iconBgColor: '#e6f7ff',
-        loading: !hasUserLoaded && userLoading,
+        loading: isCoreStatsLoading,
       },
       {
         title: '今日新增用户',
@@ -121,7 +124,7 @@ const Dashboard: React.FC = () => {
         icon: <UserAddOutlined />,
         iconColor: '#52c41a',
         iconBgColor: '#f6ffed',
-        loading: !hasUserLoaded && userLoading,
+        loading: isCoreStatsLoading,
       },
       {
         title: '今日访问量',
@@ -129,7 +132,7 @@ const Dashboard: React.FC = () => {
         icon: <EyeOutlined />,
         iconColor: '#722ed1',
         iconBgColor: '#f9f0ff',
-        loading: !hasAccessLoaded && accessLoading,
+        loading: isCoreStatsLoading,
       },
       {
         title: '30日总访问量',
@@ -137,10 +140,10 @@ const Dashboard: React.FC = () => {
         icon: <BarChartOutlined />,
         iconColor: '#fa8c16',
         iconBgColor: '#fff7e6',
-        loading: !hasAccessLoaded && accessLoading,
+        loading: isCoreStatsLoading,
       },
     ];
-  }, [accessStats, accessLoading, userLoading]);
+  }, [accessStats, accessLoading, userLoading, hasUserLoaded, hasAccessLoaded]);
 
   // 映射用户新增趋势
   const userTrendData = useMemo(() => {
