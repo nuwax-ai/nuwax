@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import {
   apiDeleteResource,
   apiGetResourceList,
@@ -26,6 +26,7 @@ const cx = classNames.bind(styles);
  * 管理系统中的模块、菜单、接口、组件等权限资源
  */
 const PermissionResources: React.FC = () => {
+  const location = useLocation();
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingResource, setEditingResource] = useState<ResourceInfo | null>();
@@ -44,10 +45,15 @@ const PermissionResources: React.FC = () => {
     manual: true,
   });
 
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 根据条件查询权限资源列表（树形结构）
-    runGetResourceList();
-  }, []);
+    const state = location.state as any;
+    if (state?._t) {
+      // 根据条件查询权限资源列表（树形结构）
+      runGetResourceList();
+    }
+  }, [location.state]);
 
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
