@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import {
@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
  * 用于管理用户组，分配角色和菜单权限
  */
 const UserGroupManage: React.FC = () => {
+  const location = useLocation();
   const screens = useBreakpoint();
   // 删除用户组loading map
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
@@ -49,9 +50,15 @@ const UserGroupManage: React.FC = () => {
     manual: true,
   });
 
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    runGetUserGroupList();
-  }, []);
+    const state = location.state as any;
+    if (state?._t) {
+      // 查询用户组列表
+      runGetUserGroupList();
+    }
+  }, [location.state]);
 
   // 删除用户组
   const { run: runDelete } = useRequest(apiDeleteUserGroup, {
