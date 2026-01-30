@@ -141,8 +141,15 @@ body {
   }
 }
 
-thead.ant-table-thead > tr > th.ant-table-cell,
-thead.ant-table-thead > tr > th.ant-table-cell.ant-table-cell-fix-left,
-thead.ant-table-thead > tr > th.ant-table-cell.ant-table-cell-fix-right {
+// 表格头部背景色及其分页边框颜色
+.ant-pagination-options .ant-select-selector,
+.ant-table-content thead.ant-table-thead,
+.ant-table-content thead.ant-table-thead .ant-table-cell-fix-left,
+.ant-table-content thead.ant-table-thead .ant-table-cell-fix-right {
   background-color: #f0f2f5 !important;
+}
+
+// 表格分页下拉框边框颜色
+.ant-pagination-options .ant-select-selector {
+  border-color: #f0f2f5 !important;
 }
