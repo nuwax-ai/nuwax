@@ -54,6 +54,10 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
   const [selectedResourceIds, setSelectedResourceIds] = useState<
     Map<React.Key, React.Key[]>
   >(new Map());
+  // 初始资源码选中状态（从接口数据中提取，用于回显）
+  const [initialResourceIds, setInitialResourceIds] = useState<
+    Map<React.Key, React.Key[]>
+  >(new Map());
 
   // 根据类型选择不同的API
   const apiKey =
@@ -82,6 +86,65 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     return ids;
   };
 
+  /**
+   * 从资源树中提取已绑定的资源ID（根据resourceBindType判断）
+   */
+  const extractBoundResourceIds = (
+    resources: ResourceTreeNode[],
+  ): React.Key[] => {
+    const ids: React.Key[] = [];
+    resources.forEach((resource) => {
+      // 如果资源已绑定（AllBound 或 PartiallyBound），则添加到列表
+      if (
+        resource.resourceBindType === ResourceBindTypeEnum.AllBound ||
+        resource.resourceBindType === ResourceBindTypeEnum.PartiallyBound
+      ) {
+        ids.push(resource.id);
+      }
+      // 递归处理子节点
+      if (resource.children && resource.children.length > 0) {
+        ids.push(...extractBoundResourceIds(resource.children));
+      }
+    });
+    return ids;
+  };
+
+  /**
+   * 从菜单树中提取初始资源码选中状态（根据resourceBindType和menuBindType）
+   */
+  const extractInitialResourceIds = (
+    menus: MenuNodeInfo[],
+  ): Map<React.Key, React.Key[]> => {
+    const resourceIdsMap = new Map<React.Key, React.Key[]>();
+
+    const processMenuTree = (menuList: MenuNodeInfo[]) => {
+      menuList.forEach((menu) => {
+        // 如果菜单未绑定，理论上所有资源码都是未绑定的，不设置资源码选中状态
+        if (menu.menuBindType === MenuBindTypeEnum.Unbound) {
+          // 菜单未绑定，资源码也应该是未绑定的，设置为空数组
+          resourceIdsMap.set(menu.id, []);
+        } else if (menu.resourceTree && menu.resourceTree.length > 0) {
+          // 如果菜单已绑定，根据resourceBindType提取已绑定的资源ID
+          const boundResourceIds = extractBoundResourceIds(menu.resourceTree);
+          if (boundResourceIds.length > 0) {
+            resourceIdsMap.set(menu.id, boundResourceIds);
+          } else {
+            // 如果没有已绑定的资源，设置为空数组
+            resourceIdsMap.set(menu.id, []);
+          }
+        }
+
+        // 递归处理子菜单
+        if (menu.children && menu.children.length > 0) {
+          processMenuTree(menu.children);
+        }
+      });
+    };
+
+    processMenuTree(menus);
+    return resourceIdsMap;
+  };
+
   // 查询目标已绑定的菜单
   const {
     run: runGetMenuList,
@@ -91,6 +154,9 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     manual: true,
     onSuccess: (data: MenuNodeInfo[]) => {
       setSelectedMenuIds(getSelectedMenuIds(data));
+      // 从接口数据中提取初始资源码选中状态
+      const initialResourceIdsMap = extractInitialResourceIds(data);
+      setInitialResourceIds(initialResourceIdsMap);
     },
   });
 
@@ -117,6 +183,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
       // 重置状态
       setSelectedMenuIds([]);
       setSelectedResourceIds(new Map());
+      setInitialResourceIds(new Map());
     }
   }, [open, targetId]);
 
@@ -228,6 +295,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
 
       return {
         menuId: menu.id,
+        name: menu.name,
         menuBindType,
         children,
         resourceTree,
@@ -303,7 +371,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
             selectedKeys={selectedMenuIds}
             onSelect={setSelectedMenuIds}
             onResourceChange={setSelectedResourceIds}
-            // resetInitialization={!open || !targetId}
+            initialResourceIds={initialResourceIds}
           />
         ) : (
           <div className={cx(styles.empty)}>暂无菜单数据</div>
