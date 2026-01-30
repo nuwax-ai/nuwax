@@ -21,7 +21,7 @@ const HomeSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
   const { id: chatId } = useParams();
-  const { setOpenHistoryModal } = useModel('layout');
+  // const { setOpenHistoryModal } = useModel('layout');
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
   );
@@ -138,7 +138,10 @@ const HomeSection: React.FC<{
           <ConditionRender condition={conversationList?.length}>
             <span
               className={cx(styles['more-conversation'])}
-              onClick={() => setOpenHistoryModal(true)}
+              // onClick={() => setOpenHistoryModal(true)}
+              onClick={() => {
+                history.push('/history-conversation');
+              }}
             >
               查看全部 <RightOutlined />
             </span>
