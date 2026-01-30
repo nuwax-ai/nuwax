@@ -301,7 +301,7 @@ const Dashboard: React.FC = () => {
   }, [conversationStats, conversationPeriod]);
 
   return (
-    <WorkspaceLayout title="系统概览" hideScroll={true}>
+    <WorkspaceLayout title="系统概览" hideScroll={true} contentPadding="0">
       <div className={cx(styles['dashboard-container'])}>
         {/* 核心统计卡片 */}
         <Row gutter={[16, 16]} className={cx(styles['stats-row'])}>
