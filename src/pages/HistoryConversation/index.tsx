@@ -1,7 +1,7 @@
 import InfiniteList from '@/layouts/InfiniteList';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { SearchOutlined } from '@ant-design/icons';
+import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -71,6 +71,14 @@ const HistoryConversation: React.FC = () => {
 
   return (
     <div className={cx(styles.container)}>
+      <div
+        className={cx(styles['close-icon'])}
+        onClick={() => {
+          history.back();
+        }}
+      >
+        <CloseOutlined />
+      </div>
       <div className={cx(styles['main-content'])}>
         <div className={cx(styles.title)}>历史会话</div>
         <div className={cx(styles['search-input'])}>
