@@ -88,8 +88,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
         </p>
 
         {/* 信息项 */}
-        <div className={cx(styles.infoSection)}>
-          {/* 数据范围 */}
+        {/* <div className={cx(styles.infoSection)}>
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>每日token限制:</span>
             <span className={cx(styles.infoValue)}>
@@ -99,7 +98,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
             </span>
           </div>
 
-          {/* 模型 */}
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>模型:</span>
             <span className={cx(styles.infoValue)}>
@@ -110,7 +108,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
                 : '暂未配置模型'}
             </span>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* 底部操作按钮 */}
