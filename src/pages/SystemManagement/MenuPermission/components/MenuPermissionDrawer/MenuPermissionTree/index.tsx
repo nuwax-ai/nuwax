@@ -191,18 +191,27 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   >(new Map());
   // 跟踪上一次的菜单选中状态，用于检测菜单选中状态变化
   const prevSelectedKeysRef = useRef<React.Key[]>([]);
+  // 标记是否已经使用初始数据初始化过
+  const isInitializedRef = useRef(false);
 
   // 使用初始资源码选中状态初始化（从接口数据中提取）
   useEffect(() => {
-    if (initialResourceIds) {
+    if (initialResourceIds !== undefined) {
       console.log('initialResourceIds', initialResourceIds);
       // 当初始资源码数据变化时，重新初始化（用于切换不同的角色/用户组）
+      // 即使 initialResourceIds 为空 Map，也要设置，确保所有菜单的资源码状态都被正确初始化
       setSelectedResourceIds(initialResourceIds);
+      isInitializedRef.current = true;
     }
   }, [initialResourceIds]);
 
   // 当菜单选中状态变化时，自动管理关联的资源码选中状态
   useEffect(() => {
+    // 如果还未初始化，不处理（等待 initialResourceIds 初始化完成）
+    if (!isInitializedRef.current) {
+      return;
+    }
+
     const prevSelectedKeys = prevSelectedKeysRef.current;
     const newSelectedKeys = selectedKeys;
 
@@ -223,23 +232,30 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
           ) {
             // 如果菜单被选中
             if (!wasMenuSelected) {
-              // 如果菜单从"未选中"变为"选中"
-              // 检查用户是否已经手动选择了资源码
-              if (currentResourceIds.length > 0) {
+              // 如果菜单从"未选中"变为"选中"（用户手动操作）
+              // 检查 initialResourceIds 中是否已经设置了该菜单的资源码
+              const initialResourceIdsForMenu = initialResourceIds?.get(
+                menu.id,
+              );
+
+              if (initialResourceIdsForMenu !== undefined) {
+                // 如果 initialResourceIds 中已经设置了该菜单的资源码（即使是空数组）
+                // 说明这是从接口返回的初始状态，应该保持初始值，不自动全选
+                // 不做任何操作，保持当前状态（已经是 initialResourceIds 中的值）
+              } else if (currentResourceIds.length > 0) {
                 // 如果用户已经手动选择了资源码，保留用户的选择
                 // 不做任何操作，保持当前状态
               } else {
-                // 如果用户没有手动选择资源码，自动选中所有关联的资源码
+                // 如果 initialResourceIds 中没有设置，且用户没有手动选择资源码
+                // 说明这是用户新选中的菜单，自动选中所有关联的资源码
                 const allResourceIds = extractResourceIds(menu.resourceTree);
                 newSelectedResourceIds.set(menu.id, allResourceIds);
               }
             } else {
               // 如果菜单一直是选中状态，保持用户的选择（允许用户手动取消部分资源码）
-              // 但如果当前没有选中的资源码，说明可能是初始化，需要全选
-              if (currentResourceIds.length === 0) {
-                const allResourceIds = extractResourceIds(menu.resourceTree);
-                newSelectedResourceIds.set(menu.id, allResourceIds);
-              }
+              // 如果当前没有选中的资源码，且是初始化后的状态，说明用户可能取消了所有资源码
+              // 这种情况下，保持空数组，不自动全选
+              // 只有在用户手动操作（菜单从未选中变为选中）时，才自动全选
             }
           } else if (!isMenuSelected) {
             // 如果菜单未选中，检查是否有用户手动选择的资源码
@@ -274,7 +290,7 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
 
     // 更新上一次的选中状态
     prevSelectedKeysRef.current = newSelectedKeys;
-  }, [selectedKeys, menuTree, onResourceChange]);
+  }, [selectedKeys, menuTree, onResourceChange, initialResourceIds]);
 
   /**
    * 从 checkedKeys 中提取实际选中的节点（用于保存状态）
@@ -349,6 +365,11 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     resources: ResourceTreeNode[],
     checkedKeys: React.Key[],
   ): React.Key[] => {
+    console.log(
+      '过滤 checkedKeys，用于传递给 Tree 组件filterCheckedKeysForTree',
+      resources,
+      checkedKeys,
+    );
     const processResource = (resourceList: ResourceTreeNode[]): React.Key[] => {
       const filteredKeys: React.Key[] = [];
 
