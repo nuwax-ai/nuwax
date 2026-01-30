@@ -1,4 +1,4 @@
-import { Card, Col, Row, Skeleton } from 'antd';
+import { Card, Skeleton } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -13,10 +13,10 @@ const ResourceGrid: React.FC<ResourceGridProps> = ({ resources, loading }) => {
       bordered={false}
       title="资源概览"
     >
-      <Row gutter={[16, 16]}>
+      <div className={cx(styles['resource-list'])}>
         {(loading ? Array.from({ length: 8 }) : resources).map(
           (resource, index) => (
-            <Col key={index} xs={12} sm={12} md={6} lg={6} xl={6}>
+            <div key={index} className={cx(styles['resource-item-wrapper'])}>
               {loading ? (
                 <div className={cx(styles['resource-item'])}>
                   <Skeleton.Button
@@ -49,10 +49,10 @@ const ResourceGrid: React.FC<ResourceGridProps> = ({ resources, loading }) => {
                   </div>
                 </div>
               )}
-            </Col>
+            </div>
           ),
         )}
-      </Row>
+      </div>
     </Card>
   );
 };
