@@ -125,6 +125,18 @@ export async function apiPageGetProjectInfo(
   });
 }
 
+// 查询项目详情（根据智能体ID）
+export async function apiPageGetProjectInfoByAgent(
+  agentId: number,
+): Promise<RequestResponse<CustomPageDto>> {
+  return request('/api/custom-page/get-project-info-by-agent', {
+    method: 'GET',
+    params: {
+      agentId,
+    },
+  });
+}
+
 // 删除页面项目
 export async function apiPageDeleteProject(
   projectId: number,

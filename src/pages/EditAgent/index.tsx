@@ -963,7 +963,8 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {agentConfigInfo?.type === AgentTypeEnum.ChatBot && (
+            {/* 问答型智能体、应用页面 */}
+            {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
               // 系统提示词/用户提示词
               <SystemUserTipsWord
                 ref={systemUserTipsWordRef}
