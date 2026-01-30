@@ -307,7 +307,6 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
   const handleSave = () => {
     if (!targetId || !menuTree) return;
 
-    // 将MenuTreeNode转换为MenuNodeInfo格式，用于构建菜单树
     // 构建资源树结构
     const updatedMenuTree = buildMenuTree(menuTree, selectedMenuIds);
 

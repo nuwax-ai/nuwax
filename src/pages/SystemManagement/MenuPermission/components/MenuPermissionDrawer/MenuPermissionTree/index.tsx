@@ -191,17 +191,12 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   >(new Map());
   // 跟踪上一次的菜单选中状态，用于检测菜单选中状态变化
   const prevSelectedKeysRef = useRef<React.Key[]>([]);
-  // 标记是否已经使用初始数据初始化过
-  const isInitializedRef = useRef<boolean>(false);
 
   // 使用初始资源码选中状态初始化（从接口数据中提取）
   useEffect(() => {
-    if (initialResourceIds !== undefined) {
+    if (initialResourceIds) {
       // 当初始资源码数据变化时，重新初始化（用于切换不同的角色/用户组）
-      // 使用新的初始数据覆盖当前状态
       setSelectedResourceIds(initialResourceIds);
-      // onResourceChange?.(initialResourceIds);
-      isInitializedRef.current = true;
     }
   }, [initialResourceIds]);
 
@@ -281,6 +276,117 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   }, [selectedKeys, menuTree, onResourceChange]);
 
   /**
+   * 从 checkedKeys 中提取实际选中的节点（用于保存状态）
+   * 策略：
+   * 1. 如果父节点的所有子节点都被选中，且父节点也被选中，则保存父节点和所有子节点
+   * 2. 如果只有部分子节点被选中，则只保存实际选中的子节点
+   * 3. 叶子节点直接保存
+   */
+  const extractActualCheckedKeys = (
+    resources: ResourceTreeNode[],
+    checkedKeys: React.Key[],
+  ): React.Key[] => {
+    const processResource = (resourceList: ResourceTreeNode[]): React.Key[] => {
+      const actualKeys: React.Key[] = [];
+
+      resourceList.forEach((resource) => {
+        if (resource.children && resource.children.length > 0) {
+          // 有子节点，先递归处理子节点
+          const childActualKeys = processResource(resource.children);
+
+          // 检查所有直接子节点是否都被选中
+          const directChildrenIds = resource.children.map((child) => child.id);
+          const allDirectChildrenChecked = directChildrenIds.every((id) =>
+            checkedKeys.includes(id),
+          );
+          const parentChecked = checkedKeys.includes(resource.id);
+
+          if (allDirectChildrenChecked && parentChecked) {
+            // 所有直接子节点都被选中，且父节点也被选中
+            // 保存父节点和所有子节点（包括递归处理得到的子节点的子节点）
+            actualKeys.push(resource.id);
+            // childActualKeys 已经包含了所有实际选中的子节点的子节点
+            // 但我们还需要确保所有直接子节点都被包含（即使它们有子节点）
+            directChildrenIds.forEach((childId) => {
+              if (!actualKeys.includes(childId)) {
+                actualKeys.push(childId);
+              }
+            });
+            // 添加所有子节点的子节点（通过递归处理得到）
+            childActualKeys.forEach((key) => {
+              if (!actualKeys.includes(key)) {
+                actualKeys.push(key);
+              }
+            });
+          } else {
+            // 不是所有直接子节点都被选中，或者父节点未被选中
+            // 只保存实际选中的子节点（通过递归处理得到）
+            actualKeys.push(...childActualKeys);
+          }
+        } else {
+          // 叶子节点，如果在 checkedKeys 中，则保存
+          if (checkedKeys.includes(resource.id)) {
+            actualKeys.push(resource.id);
+          }
+        }
+      });
+
+      return actualKeys;
+    };
+
+    return processResource(resources);
+  };
+
+  /**
+   * 过滤 checkedKeys，用于传递给 Tree 组件
+   * 策略：
+   * 1. 如果父节点的所有子节点都被选中，且父节点也被选中，则只传递父节点（Tree 会自动级联选中所有子节点）
+   * 2. 如果只有部分子节点被选中，则只传递实际选中的子节点（Tree 会自动显示父节点为半选中状态）
+   * 3. 叶子节点直接传递
+   */
+  const filterCheckedKeysForTree = (
+    resources: ResourceTreeNode[],
+    checkedKeys: React.Key[],
+  ): React.Key[] => {
+    const processResource = (resourceList: ResourceTreeNode[]): React.Key[] => {
+      const filteredKeys: React.Key[] = [];
+
+      resourceList.forEach((resource) => {
+        if (resource.children && resource.children.length > 0) {
+          // 有子节点，先递归处理子节点
+          const childFilteredKeys = processResource(resource.children);
+
+          // 检查所有直接子节点是否都被选中
+          const directChildrenIds = resource.children.map((child) => child.id);
+          const allDirectChildrenChecked = directChildrenIds.every((id) =>
+            checkedKeys.includes(id),
+          );
+          const parentChecked = checkedKeys.includes(resource.id);
+
+          if (allDirectChildrenChecked && parentChecked) {
+            // 所有直接子节点都被选中，且父节点也被选中，只传递父节点
+            // Tree 组件会自动级联选中所有子节点
+            filteredKeys.push(resource.id);
+          } else {
+            // 不是所有直接子节点都被选中，或者父节点未被选中
+            // 只传递实际选中的子节点（通过递归处理得到）
+            filteredKeys.push(...childFilteredKeys);
+          }
+        } else {
+          // 叶子节点，如果在 checkedKeys 中，则传递
+          if (checkedKeys.includes(resource.id)) {
+            filteredKeys.push(resource.id);
+          }
+        }
+      });
+
+      return filteredKeys;
+    };
+
+    return processResource(resources);
+  };
+
+  /**
    * 将资源树数据转换为Tree组件需要的数据格式
    */
   const convertResourceTreeToDataNode = (
@@ -309,19 +415,35 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
       const resourceTreeData = convertResourceTreeToDataNode(menu.resourceTree);
       const menuResourceIds = selectedResourceIds.get(menu.id) || [];
 
+      // 过滤 checkedKeys，用于传递给 Tree 组件
+      // 如果所有子节点都被选中，只传递父节点（Tree 会自动级联选中所有子节点）
+      // 如果只有部分子节点被选中，只传递实际选中的子节点（Tree 会自动显示父节点为半选中状态）
+      const filteredCheckedKeys =
+        menu.resourceTree && menu.resourceTree.length > 0
+          ? filterCheckedKeysForTree(menu.resourceTree, menuResourceIds)
+          : menuResourceIds;
+
       // 处理资源码选中状态变化
       const handleResourceCheck = (
         checkedKeys:
           | React.Key[]
           | { checked: React.Key[]; halfChecked: React.Key[] },
       ) => {
-        const keys = Array.isArray(checkedKeys)
+        const allCheckedKeys = Array.isArray(checkedKeys)
           ? checkedKeys
           : checkedKeys.checked || [];
 
+        // 从 Tree 返回的 checkedKeys 中提取实际选中的节点（用于保存状态）
+        // 如果所有子节点都被选中，保存父节点和所有子节点
+        // 如果只有部分子节点被选中，只保存实际选中的子节点
+        const actualCheckedKeys =
+          menu.resourceTree && menu.resourceTree.length > 0
+            ? extractActualCheckedKeys(menu.resourceTree, allCheckedKeys)
+            : allCheckedKeys;
+
         // 检查当前菜单是否被选中
         const isMenuSelected = selectedKeys.includes(menu.id);
-        const hasSelectedResources = keys.length > 0;
+        const hasSelectedResources = actualCheckedKeys.length > 0;
 
         // 如果菜单未选中，但用户选中了资源码，则自动选中该菜单
         if (!isMenuSelected && hasSelectedResources) {
@@ -350,10 +472,10 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
           onSelect(newSelectedKeys);
         }
 
-        // 更新该菜单的资源码选中状态
+        // 更新该菜单的资源码选中状态（只保存实际选中的节点）
         setSelectedResourceIds((prev) => {
           const newMap = new Map(prev);
-          newMap.set(menu.id, keys as React.Key[]);
+          newMap.set(menu.id, actualCheckedKeys as React.Key[]);
           // 通知父组件资源码选中状态变化
           onResourceChange?.(newMap);
           return newMap;
@@ -367,12 +489,12 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
               <div className={styles.resourceTreePopover}>
                 <Tree
                   checkable
-                  checkStrictly={false} // 父子节点关联，支持级联选择
+                  checkStrictly={false} // 父子节点关联，支持级联选择和半选中状态
                   treeData={resourceTreeData}
                   defaultExpandAll
                   showLine={{ showLeafIcon: false }}
                   blockNode
-                  checkedKeys={menuResourceIds}
+                  checkedKeys={filteredCheckedKeys}
                   onCheck={handleResourceCheck}
                 />
               </div>
