@@ -131,6 +131,10 @@ const routes = [
         component: '@/pages/GlobalModelManage',
       },
       {
+        path: '/history-conversation',
+        component: '@/pages/HistoryConversation',
+      },
+      {
         path: '/system/dashboard',
         component: '@/pages/SystemManagement/Dashboard',
       },
