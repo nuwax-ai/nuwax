@@ -1,9 +1,9 @@
 import { CaretDownOutlined, DownOutlined } from '@ant-design/icons';
 import { Popover, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
-import type { ResourceTreeNode } from '../../../types/permission-resources';
+import { type ResourceTreeNode } from '../../../types/permission-resources';
 import styles from './index.less';
 
 interface MenuPermissionTreeProps {
@@ -15,6 +15,8 @@ interface MenuPermissionTreeProps {
   onSelect: (selectedKeys: React.Key[]) => void;
   /** 资源码选中状态变化回调 */
   onResourceChange?: (selectedResourceIds: Map<React.Key, React.Key[]>) => void;
+  /** 初始资源码选中状态（从接口数据中提取） */
+  initialResourceIds?: Map<React.Key, React.Key[]>;
 }
 
 /**
@@ -32,6 +34,147 @@ const extractResourceIds = (resources: ResourceTreeNode[]): React.Key[] => {
 };
 
 /**
+ * 从菜单树中提取指定菜单的所有子菜单ID（递归）
+ */
+const extractAllChildrenMenuIds = (
+  menus: MenuNodeInfo[],
+  targetMenuId: React.Key,
+): React.Key[] => {
+  const childrenIds: React.Key[] = [];
+
+  const findMenuAndExtractChildren = (menuList: MenuNodeInfo[]): boolean => {
+    for (const menu of menuList) {
+      if (menu.id === targetMenuId) {
+        // 找到目标菜单，提取所有子菜单ID
+        if (menu.children && menu.children.length > 0) {
+          const extractChildren = (children: MenuNodeInfo[]) => {
+            children.forEach((child) => {
+              childrenIds.push(child.id);
+              if (child.children && child.children.length > 0) {
+                extractChildren(child.children);
+              }
+            });
+          };
+          extractChildren(menu.children);
+        }
+        return true;
+      }
+      // 递归查找子菜单
+      if (menu.children && menu.children.length > 0) {
+        if (findMenuAndExtractChildren(menu.children)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  findMenuAndExtractChildren(menus);
+  return childrenIds;
+};
+
+/**
+ * 查找菜单的父级菜单ID
+ */
+const findParentMenuId = (
+  menus: MenuNodeInfo[],
+  targetMenuId: React.Key,
+): React.Key | null => {
+  for (const menu of menus) {
+    if (menu.id === targetMenuId) {
+      // 找到目标菜单，返回null（说明是根节点）
+      return null;
+    }
+    // 检查子菜单
+    if (menu.children && menu.children.length > 0) {
+      const childFound = menu.children.find(
+        (child) => child.id === targetMenuId,
+      );
+      if (childFound) {
+        // 找到父级菜单
+        return menu.id;
+      }
+      // 递归查找子菜单
+      const parentId = findParentMenuId(menu.children, targetMenuId);
+      if (parentId !== null) {
+        return parentId;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * 检查父级菜单的所有子菜单是否都被选中
+ */
+const areAllSiblingsSelected = (
+  menus: MenuNodeInfo[],
+  parentMenuId: React.Key,
+  selectedKeys: React.Key[],
+): boolean => {
+  const findParentAndCheckChildren = (menuList: MenuNodeInfo[]): boolean => {
+    for (const menu of menuList) {
+      if (menu.id === parentMenuId) {
+        // 找到父级菜单，检查所有子菜单是否都被选中
+        if (menu.children && menu.children.length > 0) {
+          return menu.children.every((child) =>
+            selectedKeys.includes(child.id),
+          );
+        }
+        return false;
+      }
+      // 递归查找子菜单
+      if (menu.children && menu.children.length > 0) {
+        if (findParentAndCheckChildren(menu.children)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  return findParentAndCheckChildren(menus);
+};
+
+/**
+ * 提取所有应该被选中的父级菜单ID（递归向上查找）
+ */
+const extractAllParentMenuIds = (
+  menus: MenuNodeInfo[],
+  targetMenuId: React.Key,
+  selectedKeys: React.Key[],
+): React.Key[] => {
+  const parentIds: React.Key[] = [];
+  let currentMenuId: React.Key | null = targetMenuId;
+  // 使用动态更新的选中列表（包含已找到的父级菜单）
+  let currentSelectedKeys = [...selectedKeys];
+
+  // 递归向上查找父级菜单
+  while (currentMenuId !== null) {
+    const parentId = findParentMenuId(menus, currentMenuId);
+    if (parentId === null) {
+      // 已经到达根节点
+      break;
+    }
+
+    // 检查父级菜单的所有子菜单是否都被选中（使用当前更新的选中列表）
+    if (areAllSiblingsSelected(menus, parentId, currentSelectedKeys)) {
+      // 所有兄弟菜单都被选中，父级菜单也应该被选中
+      parentIds.push(parentId);
+      // 将父级菜单添加到当前选中列表，用于后续检查
+      currentSelectedKeys.push(parentId);
+      // 继续向上查找
+      currentMenuId = parentId;
+    } else {
+      // 不是所有兄弟菜单都被选中，停止向上查找
+      break;
+    }
+  }
+
+  return parentIds;
+};
+
+/**
  * 菜单权限树形选择器组件
  * 支持多选和父子级联选择
  */
@@ -40,13 +183,27 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   selectedKeys,
   onSelect,
   onResourceChange,
+  initialResourceIds,
 }) => {
   // 管理资源码的选中状态：key 为菜单ID，value 为该菜单关联的资源码ID列表
   const [selectedResourceIds, setSelectedResourceIds] = useState<
     Map<React.Key, React.Key[]>
   >(new Map());
   // 跟踪上一次的菜单选中状态，用于检测菜单选中状态变化
-  const prevSelectedKeysRef = React.useRef<React.Key[]>([]);
+  const prevSelectedKeysRef = useRef<React.Key[]>([]);
+  // 标记是否已经使用初始数据初始化过
+  const isInitializedRef = useRef<boolean>(false);
+
+  // 使用初始资源码选中状态初始化（从接口数据中提取）
+  useEffect(() => {
+    if (initialResourceIds !== undefined) {
+      // 当初始资源码数据变化时，重新初始化（用于切换不同的角色/用户组）
+      // 使用新的初始数据覆盖当前状态
+      setSelectedResourceIds(initialResourceIds);
+      // onResourceChange?.(initialResourceIds);
+      isInitializedRef.current = true;
+    }
+  }, [initialResourceIds]);
 
   // 当菜单选中状态变化时，自动管理关联的资源码选中状态
   useEffect(() => {
@@ -168,8 +325,28 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
 
         // 如果菜单未选中，但用户选中了资源码，则自动选中该菜单
         if (!isMenuSelected && hasSelectedResources) {
-          // 将菜单添加到选中列表
-          const newSelectedKeys = [...selectedKeys, menu.id];
+          // 提取当前菜单的所有子菜单ID
+          const childrenMenuIds = extractAllChildrenMenuIds(menuTree, menu.id);
+          // 先添加当前菜单和子菜单，用于检查父级菜单
+          const tempSelectedKeys = [
+            ...selectedKeys,
+            menu.id,
+            ...childrenMenuIds,
+          ];
+          // 提取所有应该被选中的父级菜单ID（递归向上查找）
+          const parentMenuIds = extractAllParentMenuIds(
+            menuTree,
+            menu.id,
+            tempSelectedKeys,
+          );
+          // 将菜单、所有子菜单和所有父级菜单添加到选中列表（去重）
+          const newSelectedKeysSet = new Set([
+            ...selectedKeys,
+            menu.id,
+            ...childrenMenuIds,
+            ...parentMenuIds,
+          ]);
+          const newSelectedKeys = Array.from(newSelectedKeysSet);
           onSelect(newSelectedKeys);
         }
 
@@ -223,7 +400,7 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
       }));
     };
     return convertToTreeData(menuTree);
-  }, [menuTree, selectedResourceIds]);
+  }, [menuTree, selectedResourceIds, selectedKeys, onSelect, onResourceChange]);
 
   // 处理树节点选择
   const handleSelect = (selectedKeys: React.Key[]) => {
