@@ -10,6 +10,7 @@ import {
   apiSystemResourceMcpList,
 } from '@/services/systemManage';
 import { SystemMcpInfo } from '@/types/interfaces/systemManage';
+import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
@@ -65,7 +66,7 @@ const Mcp: React.FC = () => {
           </p>
           <p>
             <strong>创建时间：</strong>
-            {record.created}
+            {record.created ? getTime(record.created) : '-'}
           </p>
         </div>
       ),
