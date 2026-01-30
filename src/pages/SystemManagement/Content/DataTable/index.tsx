@@ -10,6 +10,7 @@ import {
   apiSystemResourceDataTableList,
 } from '@/services/systemManage';
 import { SystemDataTableInfo } from '@/types/interfaces/systemManage';
+import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
@@ -65,7 +66,7 @@ const DataTable: React.FC = () => {
           </p>
           <p>
             <strong>创建时间：</strong>
-            {record.created}
+            {record.created ? getTime(record.created) : '-'}
           </p>
         </div>
       ),
@@ -133,7 +134,6 @@ const DataTable: React.FC = () => {
       width: 250,
       ellipsis: true,
       hideInSearch: true,
-      render: (_, record) => record.description || '-',
     },
     {
       title: '创建人',

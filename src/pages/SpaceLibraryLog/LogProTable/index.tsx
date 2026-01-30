@@ -132,7 +132,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
-        hideInTable: true,
+        hideInTable: false,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
@@ -140,7 +140,10 @@ const LogProTable: React.FC = () => {
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
-        fieldProps: getIntegerOnlyFieldProps('请输入用户ID，仅支持输入整数'),
+        fieldProps: getIntegerOnlyFieldProps(
+          '请输入用户ID，仅支持输入整数',
+          18,
+        ),
       },
       {
         title: '用户名',

@@ -10,6 +10,7 @@ import {
   apiSystemResourceKnowledgeList,
 } from '@/services/systemManage';
 import { SystemKnowledgeInfo } from '@/types/interfaces/systemManage';
+import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
@@ -65,7 +66,7 @@ const KnowledgeBase: React.FC = () => {
           </p>
           <p>
             <strong>创建时间：</strong>
-            {record.created}
+            {record.created ? getTime(record.created) : '-'}
           </p>
         </div>
       ),
@@ -133,7 +134,6 @@ const KnowledgeBase: React.FC = () => {
       width: 250,
       ellipsis: true,
       hideInSearch: true,
-      render: (_, record) => record.description || '-',
     },
     {
       title: '创建人',
