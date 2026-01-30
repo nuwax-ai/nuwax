@@ -141,7 +141,6 @@ const Space: React.FC = () => {
       width: 250,
       ellipsis: true,
       hideInSearch: true, // 不参与搜索
-      render: (_, record) => record.description || '-',
     },
     {
       title: '创建人',

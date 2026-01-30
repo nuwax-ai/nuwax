@@ -134,7 +134,6 @@ const Plugin: React.FC = () => {
       width: 250,
       ellipsis: true,
       hideInSearch: true,
-      render: (_, record) => record.description || '-',
     },
     {
       title: '创建人',
