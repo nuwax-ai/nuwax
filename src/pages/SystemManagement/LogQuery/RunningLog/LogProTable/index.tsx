@@ -132,7 +132,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
-        hideInTable: true,
+        hideInTable: false,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
