@@ -4,6 +4,23 @@
   background-color: #fff;
   display: flex;
   justify-content: center;
+  overflow: hidden;
+  position: relative;
+
+  .close-icon {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.3s;
+
+    &:hover {
+      color: #333;
+    }
+  }
 
   .main-content {
     width: 100%;
