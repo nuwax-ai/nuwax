@@ -30,10 +30,12 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       </div>
     );
   };
+
   // 耗时
-  const time = node
-    ? `${node?.requestEndTime - node?.requestStartTime}ms`
-    : '--';
+  const time =
+    node?.requestEndTime && node?.requestStartTime
+      ? `${node?.requestEndTime - node?.requestStartTime} ms`
+      : '--';
 
   const nodeTypeName = useMemo(() => {
     switch (node?.targetType) {
