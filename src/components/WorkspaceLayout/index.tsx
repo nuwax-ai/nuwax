@@ -25,11 +25,8 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 }) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div
-        className={cx('flex', 'content-between')}
-        style={{ marginBottom: 5 }}
-      >
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>{title || ''}</h3>
           {/* 左侧区域插槽 */}
           {leftSlot}
@@ -38,7 +35,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {/* 中间区域插槽 */}
           {centerSlot}
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        <div className={cx(styles['header-right'])}>
           {/* 右侧区域插槽 */}
           {rightSlot}
         </div>

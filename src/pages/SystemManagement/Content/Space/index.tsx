@@ -16,6 +16,7 @@ import {
   apiSystemResourceSpaceList,
 } from '@/services/systemManage';
 import { SystemSpaceInfo } from '@/types/interfaces/systemManage';
+import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
@@ -72,7 +73,7 @@ const Space: React.FC = () => {
           </p>
           <p>
             <strong>创建时间：</strong>
-            {record.created}
+            {record.created ? getTime(record.created) : '-'}
           </p>
         </div>
       ),
@@ -140,7 +141,6 @@ const Space: React.FC = () => {
       width: 250,
       ellipsis: true,
       hideInSearch: true, // 不参与搜索
-      render: (_, record) => record.description || '-',
     },
     {
       title: '创建人',
