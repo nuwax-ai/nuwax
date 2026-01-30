@@ -1,3 +1,4 @@
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import {
   apiGetAccessStats,
   apiGetConversationStats,
@@ -11,6 +12,7 @@ import type {
   UserStatsResult,
 } from '@/types/interfaces/systemManage';
 import {
+  ApiOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   BookOutlined,
@@ -22,33 +24,18 @@ import {
   SyncOutlined,
   TableOutlined,
   TeamOutlined,
+  ThunderboltOutlined,
   UserAddOutlined,
 } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Badge, Col, Row, Tag } from 'antd';
+import { Col, Row } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'umi';
 import { ResourceGrid, SessionStats, StatCard, TrendChart } from './components';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-const Clock: React.FC = () => {
-  const [currentTime, setCurrentTime] = useState(
-    dayjs().format('YYYY-MM-DD HH:mm:ss'),
-  );
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(dayjs().format('YYYY-MM-DD HH:mm:ss'));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return <span className={cx(styles['current-time'])}>{currentTime}</span>;
-};
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
@@ -249,6 +236,20 @@ const Dashboard: React.FC = () => {
         color: '#2f54eb',
         bgColor: '#f0f5ff',
       },
+      {
+        name: '插件',
+        count: data?.pluginCount || 0,
+        icon: <ApiOutlined />,
+        color: '#fa541c',
+        bgColor: '#fff2e8',
+      },
+      {
+        name: '技能',
+        count: data?.skillCount || 0,
+        icon: <ThunderboltOutlined />,
+        color: '#ffc53d',
+        bgColor: '#fffbe6',
+      },
     ];
   }, [totalStats]);
 
@@ -297,76 +298,62 @@ const Dashboard: React.FC = () => {
   }, [conversationStats, conversationPeriod]);
 
   return (
-    <div className={cx(styles['dashboard-container'])}>
-      {/* 页面头部 */}
-      <div className={cx(styles['dashboard-header'])}>
-        <div className={cx(styles['header-content'])}>
-          <div className={cx(styles['header-title'])}>
-            <h1>系统概览</h1>
-            <p className={cx(styles['header-subtitle'])}>数据分析与监控平台</p>
-          </div>
-          <div className={cx(styles['header-actions'])}>
-            <Tag color="processing" icon={<Badge status="processing" />}>
-              实时更新
-            </Tag>
-            <Clock />
-          </div>
+    <WorkspaceLayout title="系统概览" hideScroll={true}>
+      <div className={cx(styles['dashboard-container'])}>
+        {/* 核心统计卡片 */}
+        <Row gutter={[16, 16]} className={cx(styles['stats-row'])}>
+          {coreStats.map((stat, index) => (
+            <Col key={index} xs={24} sm={12} md={6} lg={6} xl={6}>
+              <StatCard {...stat} />
+            </Col>
+          ))}
+        </Row>
+
+        {/* 趋势分析 */}
+        <Row gutter={[16, 16]} className={cx(styles['trend-row'])}>
+          <Col span={24}>
+            <TrendChart
+              title="用户新增趋势"
+              data={userTrendData}
+              color="#722ed1"
+              tooltipName="新增用户"
+              loading={!hasUserLoaded && userLoading}
+              period={userPeriod}
+              onPeriodChange={setUserPeriod}
+            />
+          </Col>
+          <Col span={24}>
+            <TrendChart
+              title="七日访问趋势"
+              data={visitTrendData}
+              color="#1890ff"
+              tooltipName="访问量"
+              loading={!hasAccessLoaded && accessLoading}
+              periods={[{ label: '7天', value: '7d' }]}
+            />
+          </Col>
+        </Row>
+
+        {/* 资源概览 */}
+        <div className={cx(styles['resource-row'])}>
+          <ResourceGrid
+            resources={resources}
+            loading={!hasTotalLoaded && totalLoading}
+          />
+        </div>
+
+        {/* 会话统计 */}
+        <div className={cx(styles['session-row'])}>
+          <SessionStats
+            stats={mappedSessionStats}
+            chartData={sessionTrendData}
+            loading={!hasConversationLoaded && conversationLoading}
+            period={conversationPeriod}
+            onPeriodChange={setConversationPeriod}
+          />
         </div>
       </div>
-
-      {/* 核心统计卡片 */}
-      <Row gutter={[16, 16]} className={cx(styles['stats-row'])}>
-        {coreStats.map((stat, index) => (
-          <Col key={index} xs={24} sm={12} md={6} lg={6} xl={6}>
-            <StatCard {...stat} />
-          </Col>
-        ))}
-      </Row>
-
-      {/* 趋势分析 */}
-      <Row gutter={[16, 16]} className={cx(styles['trend-row'])}>
-        <Col span={24}>
-          <TrendChart
-            title="用户新增趋势"
-            data={userTrendData}
-            color="#722ed1"
-            tooltipName="新增用户"
-            loading={!hasUserLoaded && userLoading}
-            period={userPeriod}
-            onPeriodChange={setUserPeriod}
-          />
-        </Col>
-        <Col span={24}>
-          <TrendChart
-            title="七日访问趋势"
-            data={visitTrendData}
-            color="#1890ff"
-            tooltipName="访问量"
-            loading={!hasAccessLoaded && accessLoading}
-            periods={[{ label: '7天', value: '7d' }]}
-          />
-        </Col>
-      </Row>
-
-      {/* 资源概览 */}
-      <div className={cx(styles['resource-row'])}>
-        <ResourceGrid
-          resources={resources}
-          loading={!hasTotalLoaded && totalLoading}
-        />
-      </div>
-
-      {/* 会话统计 */}
-      <div className={cx(styles['session-row'])}>
-        <SessionStats
-          stats={mappedSessionStats}
-          chartData={sessionTrendData}
-          loading={!hasConversationLoaded && conversationLoading}
-          period={conversationPeriod}
-          onPeriodChange={setConversationPeriod}
-        />
-      </div>
-    </div>
+    </WorkspaceLayout>
   );
 };
 
