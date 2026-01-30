@@ -35,7 +35,7 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
+import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
@@ -416,70 +416,48 @@ const SpacePageDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <Row>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={14}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div>
-            <Space>
-              <h3 className={cx(styles.title)}>网页应用开发</h3>
-              <SelectList
-                value={type}
-                options={PAGE_DEVELOP_ALL_TYPE}
-                onChange={handlerChangeType}
-              />
-              {/* 单选模式 */}
-              <ButtonToggle
-                options={FILTER_STATUS_DEV}
-                value={status}
-                onChange={(value) => handlerChangeStatus(value as React.Key)}
-              />
-              <ButtonToggle
-                options={CREATE_LIST}
-                value={create}
-                onChange={(value) => handlerChangeCreate(value as React.Key)}
-              />
-            </Space>
-          </div>
-        </Col>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={10}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div className={cx('flex', 'gap-10', 'justify-content-end')}>
-            <Input
-              rootClassName={cx(styles.input)}
-              placeholder="搜索页面"
-              value={keyword}
-              onChange={handleQueryPage}
-              prefix={<SearchOutlined />}
-              allowClear
-              onClear={handleClearKeyword}
-              style={{ width: 214 }}
-            />
-            {/*添加*/}
-            <CustomPopover
-              list={PAGE_DEVELOP_CREATE_TYPE_LIST}
-              onClick={handleClickPopoverItem}
-            >
-              <Button type="primary" icon={<PlusOutlined />}>
-                创建
-              </Button>
-            </CustomPopover>
-          </div>
-        </Col>
-      </Row>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>网页应用开发</h3>
+          <SelectList
+            value={type}
+            options={PAGE_DEVELOP_ALL_TYPE}
+            onChange={handlerChangeType}
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={FILTER_STATUS_DEV}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="搜索页面"
+            value={keyword}
+            onChange={handleQueryPage}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          {/*添加*/}
+          <CustomPopover
+            list={PAGE_DEVELOP_CREATE_TYPE_LIST}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              创建
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
 
       {loading ? (
         <Loading />
