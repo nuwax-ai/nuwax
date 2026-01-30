@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import { apiDeleteMenu, apiGetMenuList } from '../services/menu-manage';
 import type { MenuNodeInfo } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
@@ -16,6 +16,8 @@ const cx = classNames.bind(styles);
  * 管理系统菜单结构,未级菜单可关联资源码
  */
 const MenuManage: React.FC = () => {
+  const location = useLocation();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
@@ -33,10 +35,15 @@ const MenuManage: React.FC = () => {
     manual: true,
   });
 
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 根据条件查询菜单列表（树形结构）
-    runGetMenuList();
-  }, []);
+    const state = location.state as any;
+    if (state?._t) {
+      // 根据条件查询菜单列表（树形结构）
+      runGetMenuList();
+    }
+  }, [location.state]);
 
   // 删除菜单
   const { run: runDelete } = useRequest(apiDeleteMenu, {

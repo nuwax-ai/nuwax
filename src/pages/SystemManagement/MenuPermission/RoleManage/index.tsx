@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
 import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
@@ -19,6 +19,7 @@ const cx = classNames.bind(styles);
  * 用于管理系统角色，分配菜单权限和数据范围
  */
 const RoleManage: React.FC = () => {
+  const location = useLocation();
   const screens = useBreakpoint();
   // 删除角色loading map
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
@@ -45,9 +46,15 @@ const RoleManage: React.FC = () => {
     manual: true,
   });
 
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    runGetRoleList();
-  }, []);
+    const state = location.state as any;
+    if (state?._t) {
+      // 查询角色列表
+      runGetRoleList();
+    }
+  }, [location.state]);
 
   // 删除角色
   const { run: runDelete } = useRequest(apiDeleteRole, {
