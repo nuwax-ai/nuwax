@@ -195,6 +195,7 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   // 使用初始资源码选中状态初始化（从接口数据中提取）
   useEffect(() => {
     if (initialResourceIds) {
+      console.log('initialResourceIds', initialResourceIds);
       // 当初始资源码数据变化时，重新初始化（用于切换不同的角色/用户组）
       setSelectedResourceIds(initialResourceIds);
     }

@@ -102,8 +102,7 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
         </p>
 
         {/* 信息项 */}
-        <div className={cx(styles.infoSection)}>
-          {/* 最大用户数 */}
+        {/* <div className={cx(styles.infoSection)}>
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>最大用户数:</span>
             <span className={cx(styles.infoValue)}>
@@ -111,7 +110,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
             </span>
           </div>
 
-          {/* token限制 */}
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>每日token限制:</span>
             <span className={cx(styles.infoValue)}>
@@ -120,7 +118,7 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
                 : '无限制'}
             </span>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* 底部操作按钮 */}

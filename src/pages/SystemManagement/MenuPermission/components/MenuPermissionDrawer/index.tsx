@@ -95,10 +95,7 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     const ids: React.Key[] = [];
     resources.forEach((resource) => {
       // 如果资源已绑定（AllBound 或 PartiallyBound），则添加到列表
-      if (
-        resource.resourceBindType === ResourceBindTypeEnum.AllBound ||
-        resource.resourceBindType === ResourceBindTypeEnum.PartiallyBound
-      ) {
+      if (resource.resourceBindType === ResourceBindTypeEnum.AllBound) {
         ids.push(resource.id);
       }
       // 递归处理子节点

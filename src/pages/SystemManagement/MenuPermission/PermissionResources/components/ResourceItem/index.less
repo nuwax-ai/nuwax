@@ -4,27 +4,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  margin-bottom: 6px;
+  padding: 4px 8px;
   border-radius: var(--border-radius-border-radius-3, 6px);
-  box-shadow: var(--sds-size-depth-0) 1px 2px 0 rgba(12, 12, 13, 4%),
-    0 1px 3px 0 rgba(0, 0, 0, 4%);
   transition: all 0.3s ease-in-out;
   position: relative;
-  border: 0.5px solid var(--color-border-02, #e4e6eb);
 
   &:hover {
-    border: 0.5px solid var(--color-border-primary, #5147ff);
-    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
-      var(--sds-size-depth-0) 4px 16px -2px rgba(12, 12, 13, 4%),
-      0 8px 24px -2px rgba(0, 0, 0, 4%);
+    background-color: var(--color-bg-hover, #f5f5f5);
   }
 }
 
 .leftContent {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
@@ -70,7 +63,7 @@
 .titleRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 
   .title {
