@@ -1,5 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
@@ -99,13 +99,6 @@ const UserGroupManage: React.FC = () => {
     setModalOpen(true);
   };
 
-  // 处理新增子用户组
-  const handleAddChild = (parentUserGroup: UserGroupInfo) => {
-    setCurrentUserGroup(parentUserGroup);
-    setIsEdit(false);
-    setModalOpen(true);
-  };
-
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
@@ -154,23 +147,16 @@ const UserGroupManage: React.FC = () => {
 
   // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
   const tableData = useMemo(() => {
+    if (!userGroupList || !userGroupList.length) {
+      return [];
+    }
+
     const transformData = (data: UserGroupInfo[]): any[] => {
       return data.map((item) => ({
         ...item,
         key: item.id,
-        children: item.children?.length
-          ? transformData(item.children)
-          : undefined,
       }));
     };
-    if (!userGroupList || !userGroupList.length) {
-      return [];
-    }
-    // 如果第一个节点是根节点（id为0），则只返回其子节点
-    if (userGroupList.length === 1 && userGroupList[0].id === 0) {
-      const rootNode = userGroupList[0];
-      return rootNode.children?.length ? transformData(rootNode.children) : [];
-    }
     // 否则过滤掉所有 id 为 0 的节点，只保留其他节点
     const filteredList = userGroupList.filter(
       (item: UserGroupInfo) => item.id !== 0,
@@ -237,13 +223,6 @@ const UserGroupManage: React.FC = () => {
           >
             菜单权限
           </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleAddChild(record)}
-          >
-            新增子用户组
-          </Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             编辑
           </Button>
@@ -291,21 +270,6 @@ const UserGroupManage: React.FC = () => {
               pagination={false}
               scroll={{ x: 'max-content' }}
               className={cx(styles.table)}
-              expandable={{
-                expandIcon: ({ expanded, onExpand, record }) =>
-                  record.children ? (
-                    <DownOutlined
-                      className={cx(styles.icon, {
-                        [styles['rotate-0']]: expanded,
-                      })}
-                      onClick={(e) => onExpand(record, e)}
-                    />
-                  ) : (
-                    <DownOutlined
-                      className={cx(styles.icon, styles['icon-hidden'])}
-                    />
-                  ),
-              }}
             />
           )}
         </Spin>

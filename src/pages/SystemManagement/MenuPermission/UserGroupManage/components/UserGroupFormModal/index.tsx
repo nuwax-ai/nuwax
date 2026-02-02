@@ -12,17 +12,15 @@ import {
   Row,
   Select,
   Switch,
-  TreeSelect,
   Typography,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import DataModelSelector from '../../../components/DataModelSelector';
 import {
   apiAddUserGroup,
   apiGetUserGroupById,
-  apiGetUserGroupList,
   apiUpdateUserGroup,
 } from '../../../services/user-group-manage';
 import {
@@ -71,10 +69,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   // 是否全部模型已选中
   const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
-  // 保存查询到的用户组数据，用于后续设置 parentId
-  const [fetchedUserGroupData, setFetchedUserGroupData] =
-    useState<UserGroupInfo | null>(null);
-
   // 新增
   const { run: runAddUserGroup, loading: addLoading } = useRequest(
     apiAddUserGroup,
@@ -111,8 +105,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   const { run: runGetUserGroupById } = useRequest(apiGetUserGroupById, {
     manual: true,
     onSuccess: (data: UserGroupInfo) => {
-      // 保存查询到的数据
-      setFetchedUserGroupData(data);
       form.setFieldsValue({
         code: data.code,
         name: data.name,
@@ -122,7 +114,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
           limitPerDay: data.tokenLimit?.limitPerDay || 0,
         },
         sortIndex: data.sortIndex || 0,
-        // 先不设置 parentId，等 userGroupList 加载完成后再设置
         status: data.status === UserGroupStatusEnum.Enabled,
         source: data.source || UserGroupSourceEnum.UserDefined,
       });
@@ -138,14 +129,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     },
   });
 
-  // 根据条件查询组列表
-  const { run: runGetUserGroupList, data: userGroupList } = useRequest(
-    apiGetUserGroupList,
-    {
-      manual: true,
-    },
-  );
-
   // 当 modelList 加载完成后，处理待处理的 modelIds
   useEffect(() => {
     // 如果模型列表长度大于0，且全部模型已选中，则设置为全部模型ID列表
@@ -154,35 +137,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     }
   }, [modelList, allModelSelected]);
 
-  // 当 userGroupList 和 fetchedUserGroupData 同时存在时，设置 parentId 回显（编辑模式）
-  useEffect(() => {
-    if (
-      userGroupList &&
-      userGroupList.length > 0 &&
-      fetchedUserGroupData?.parentId &&
-      fetchedUserGroupData?.parentId !== 0
-    ) {
-      form.setFieldsValue({
-        parentId: fetchedUserGroupData.parentId,
-      });
-    }
-  }, [userGroupList, fetchedUserGroupData, form]);
-
-  // 当 userGroupList 加载完成且是新增子用户组模式时，确保 parentId 正确设置
-  useEffect(() => {
-    if (
-      !isEdit &&
-      userGroupInfo &&
-      userGroupList &&
-      userGroupList.length > 0 &&
-      open
-    ) {
-      form.setFieldsValue({
-        parentId: userGroupInfo.id,
-      });
-    }
-  }, [userGroupList, userGroupInfo, isEdit, open, form]);
-
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
@@ -190,8 +144,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     if (open) {
       // 查询模型列表
       runModelList();
-      // 查询用户组列表
-      runGetUserGroupList();
       if (isEdit && userGroupInfo) {
         // 编辑模式：通过接口查询用户组信息
         runGetUserGroupById(userGroupInfo.id);
@@ -203,14 +155,12 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         source: UserGroupSourceEnum.UserDefined,
         sortIndex: 0,
         status: true,
-        parentId: null,
         tokenLimit: {
           limitPerDay: 0,
         },
       });
       setAllModelSelected(false);
       setSelectedModelIds([]);
-      setFetchedUserGroupData(null);
     }
   }, [open, isEdit, userGroupInfo, form]);
 
@@ -248,34 +198,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       console.error('表单验证失败:', error);
     }
   };
-
-  // 将用户组树转换为TreeSelect需要的数据格式，并过滤掉根节点（id为0）
-  const userGroupTreeSelectData = useMemo(() => {
-    const convertToTreeData = (userGroups: UserGroupInfo[]): any[] => {
-      return userGroups
-        .filter((userGroup) => userGroup.id !== 0) // 过滤掉根节点
-        .map((userGroup) => ({
-          title: userGroup.name,
-          value: userGroup.id,
-          key: userGroup.id,
-          children: userGroup.children
-            ? convertToTreeData(userGroup.children)
-            : undefined,
-        }));
-    };
-    if (!userGroupList || !userGroupList.length) {
-      return [];
-    }
-    // 如果第一个节点是根节点（id为0），则只返回其子节点
-    if (userGroupList.length === 1 && userGroupList[0].id === 0) {
-      const rootNode = userGroupList[0];
-      return rootNode.children?.length
-        ? convertToTreeData(rootNode.children)
-        : [];
-    }
-    // 否则过滤掉所有 id 为 0 的节点
-    return convertToTreeData(userGroupList);
-  }, [userGroupList]);
 
   return (
     <CustomFormModal
@@ -384,37 +306,17 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="父用户组" name="parentId">
-                <TreeSelect
-                  placeholder="请选择父用户组（无（根用户组））"
-                  treeData={userGroupTreeSelectData}
-                  allowClear
-                  showSearch
-                  treeDefaultExpandAll
-                  filterTreeNode={(inputValue, node) =>
-                    (node.title as string)
-                      ?.toLowerCase()
-                      .includes(inputValue.toLowerCase())
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                tooltip={{
-                  title: '启用或禁用此用户组',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            label="状态"
+            name="status"
+            valuePropName="checked"
+            tooltip={{
+              title: '启用或禁用此用户组',
+              icon: <InfoCircleOutlined />,
+            }}
+          >
+            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+          </Form.Item>
 
           <Form.Item label="描述" name="description">
             <TextArea
