@@ -85,7 +85,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
                 onClick={() => props.onEdit(record)}
               />
               <Popconfirm
-                title="您确定要删除此QA问答吗?"
+                title="你确定要删除此QA问答吗?"
                 description={record.question}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => props.onDelete(record)}

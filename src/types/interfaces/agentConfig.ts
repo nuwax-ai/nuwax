@@ -59,6 +59,7 @@ export interface ArrangeTitleProps {
 export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
+  extraComponent?: React.ReactNode; // 额外组件
   // 修改智能体基础配置信息
   onChangeAgent: (
     value: string | string[] | number | GuidQuestionDto[],
@@ -156,12 +157,18 @@ export interface ParamsSettingProps {
 export interface InvokeTypeSaveParams {
   invokeType: InvokeTypeEnum;
   defaultSelected: DefaultSelectedEnum;
+  // 展示别名
+  alias?: string;
 }
 
 // 调用方式组件属性
 export interface InvokeTypeProps {
   invokeType: InvokeTypeEnum;
   defaultSelected?: DefaultSelectedEnum;
+  // 展示别名
+  defaultAlias?: string;
+  // 是否为技能组件
+  isSkill?: boolean;
   options?: { value: InvokeTypeEnum; label: string }[];
   onSaveSet: (data: InvokeTypeSaveParams) => void;
   // 调用方式 提示信息

@@ -12,31 +12,7 @@
   .scroll-container-inner {
     flex: 1;
     min-height: 0; /* 确保可以收缩 */
-    overflow-y: auto;
-    overflow-x: hidden;
     position: relative;
-
-    /* 自定义滚动条样式 */
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 20%);
-      border-radius: 3px;
-
-      &:hover {
-        background: rgba(0, 0, 0, 30%);
-      }
-    }
-
-    /* 滚动条在 Firefox 中的样式 */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 20%) transparent;
   }
 
   /* 覆盖 react-scroll-to-bottom 的默认样式 */

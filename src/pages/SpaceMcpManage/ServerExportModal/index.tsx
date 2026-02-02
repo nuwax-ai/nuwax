@@ -78,7 +78,7 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
   // 重新生成配置
   const handleRebuildConfig = () => {
     confirm({
-      title: '您确定要重新生成配置吗?',
+      title: '你确定要重新生成配置吗?',
       icon: <ExclamationCircleFilled />,
       content: name,
       okText: '确定',

@@ -129,7 +129,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     }
 
     Modal.confirm({
-      title: `您确定要下架此${componentType}吗?`,
+      title: `你确定要下架此${componentType}吗?`,
       icon: <ExclamationCircleFilled />,
       content: targetName,
       okText: '确定',
@@ -180,7 +180,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
         image={Empty.PRESENTED_IMAGE_SIMPLE}
       >
         <div style={{ color: '#8c8c8c', fontSize: '12px', marginTop: '8px' }}>
-          当您对项目进行修改时，系统会自动保存版本历史
+          当你对项目进行修改时，系统会自动保存版本历史
         </div>
       </Empty>
     </div>

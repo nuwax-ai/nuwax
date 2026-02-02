@@ -1,0 +1,74 @@
+.container {
+  height: 100%;
+  width: 100%;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+
+  .close-icon {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.3s;
+
+    &:hover {
+      color: #333;
+    }
+  }
+
+  .main-content {
+    width: 100%;
+    max-width: 800px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    box-sizing: border-box;
+
+    .title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f1f1f;
+      margin-bottom: 24px;
+      line-height: 28px;
+    }
+
+    .search-input {
+      width: 100%;
+      margin-bottom: 24px;
+
+      :global {
+        .ant-input-affix-wrapper {
+          background-color: #f5f5f5;
+          border: none;
+          box-shadow: none !important;
+          border-radius: 8px;
+          padding: 8px 12px;
+
+          &:hover,
+          &:focus,
+          &-focused {
+            background-color: #f5f5f5;
+            box-shadow: none !important;
+          }
+
+          .ant-input {
+            background-color: transparent !important;
+          }
+        }
+      }
+    }
+
+    .list-wrapper {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+  }
+}

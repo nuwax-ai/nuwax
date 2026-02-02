@@ -1,6 +1,6 @@
 {
   "name": "nuwax-frontend",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -43,7 +43,9 @@
     ]
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
     "@ant-design/icons": "^5.0.1",
+    "@ant-design/plots": "^2.6.8",
     "@ant-design/pro-components": "2.8.10",
     "@ant-design/x": "^1.0.5",
     "@antv/x6": "^2.18.1",

@@ -1,6 +1,7 @@
 import FileTreeView from '@/components/FileTreeView';
 import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
@@ -29,10 +30,15 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
+import ImportSkillProjectModal from '../SpaceSkillManage/ImportSkillProjectModal';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
 const cx = classNames.bind(styles);
+
+// 技能项目文件大小限制
+const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
+
 /**
  * 技能详情页面
  */
@@ -57,12 +63,40 @@ const SkillDetails: React.FC = () => {
   // 是否显示全屏预览
   const [isFullscreenPreview, setIsFullscreenPreview] =
     useState<boolean>(false);
+  // 是否正在导入项目
+  const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
+  // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+  const [importProjectTrigger, setImportProjectTrigger] = useState<
+    number | string
+  >(0);
+  // 导出项目加载状态
+  const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
+
+  // 导入技能项目弹窗
+  const [openImportSkillProject, setOpenImportSkillProject] =
+    useState<boolean>(false);
 
   // 检查是否有未保存的文件修改
   const hasUnsavedChanges = useCallback(() => {
     const changeFiles = fileTreeViewRef.current?.changeFiles;
     return Array.isArray(changeFiles) && changeFiles.length > 0;
   }, []);
+
+  /**
+   * 如果有未保存的文件修改，则提示用户并返回
+   * @param text 操作文本
+   * @returns {boolean} true-可以继续执行，false-有未保存更改，需要阻止执行
+   */
+  const handleCheckUnsavedChanges = (text: string = '发布'): boolean => {
+    // 检查是否有未保存的文件修改
+    const _hasUnsavedChanges = hasUnsavedChanges();
+    if (_hasUnsavedChanges) {
+      message.warning(`你有未保存的文件修改，请先保存后再${text}`);
+      return false; // 有未保存更改，阻止执行
+    }
+    return true; // 没有未保存更改，可以继续执行
+  };
 
   // 保存未保存的文件（用于离开保护）
   const saveUnsavedFiles = useCallback(async () => {
@@ -103,7 +137,7 @@ const SkillDetails: React.FC = () => {
     condition: hasUnsavedChanges,
     onConfirm: saveUnsavedFiles,
     title: '未保存的文件修改',
-    message: '您有未保存的文件修改，是否保存后离开？',
+    message: '你有未保存的文件修改，是否保存后离开？',
     confirmText: '保存并离开',
     discardText: '不保存离开',
   });
@@ -155,6 +189,33 @@ const SkillDetails: React.FC = () => {
     setSkillInfo(_skillInfo);
   };
 
+  // 确认导入技能项目
+  const handleImportSkillProjectConfirm = async (file: File) => {
+    try {
+      setIsImportingProject(true);
+      // 调用导入接口
+      const { code, message: errorMessage } = await apiSkillImport({
+        file,
+        targetSkillId: skillId,
+        targetSpaceId: spaceId,
+      });
+
+      setIsImportingProject(false);
+      if (code === SUCCESS_CODE) {
+        message.success('导入成功');
+        setOpenImportSkillProject(false);
+        // 刷新技能信息
+        runSkillInfo(skillId);
+        setImportProjectTrigger(Date.now());
+      } else {
+        message.error(errorMessage || '导入失败');
+      }
+    } catch (error) {
+      setIsImportingProject(false);
+      console.error('导入失败', error);
+    }
+  };
+
   // 导入项目
   const handleImportProject = async () => {
     if (!skillId) {
@@ -167,122 +228,49 @@ const SkillDetails: React.FC = () => {
       return;
     }
 
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.accept = '.zip'; // 只接受 zip 文件
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      // 校验文件类型
-      const isZip = file.name?.toLowerCase().endsWith('.zip');
-      if (!isZip) {
-        message.error('仅支持 .zip 压缩文件格式');
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 调用导入接口
-        const result = await apiSkillImport({
-          file,
-          targetSkillId: skillId,
-          targetSpaceId: spaceId,
-        });
-
-        if (result.code === SUCCESS_CODE) {
-          message.success('导入成功');
-          // 刷新技能信息
-          runSkillInfo(skillId);
-        }
-      } catch (error) {
-        console.error('导入失败', error);
-      } finally {
-        // 清理DOM
-        document.body.removeChild(input);
-      }
-    };
-
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
+    setOpenImportSkillProject(true);
   };
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!skillId) {
       message.error('技能ID不能为空');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
-      }
+    // 上传文件总大小
+    const totalSize = files?.reduce((acc, file) => acc + file.size, 0);
+
+    // 上传文件总大小限制为20MB
+    if (totalSize > SKILL_MAX_FILE_SIZE) {
+      message.error('上传文件总大小不能超过20MB');
+      return;
     }
 
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.multiple = true;
-    document.body.appendChild(input);
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiSkillUploadFiles({
+        files,
+        skillId,
+        filePaths,
+      });
 
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
+      if (code === SUCCESS_CODE) {
+        message.success('上传成功');
+        // 刷新项目详情
+        runSkillInfo(skillId);
       }
-
-      try {
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiSkillUploadFiles({
-          files,
-          skillId,
-          filePaths,
-        });
-
-        if (code === SUCCESS_CODE) {
-          message.success('上传成功');
-          // 刷新项目详情
-          runSkillInfo(skillId);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        document.body.removeChild(input);
-      }
-    };
-
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
+    } catch (error) {
+      console.error('上传失败', error);
+    }
   };
 
   // 导出项目
@@ -294,19 +282,32 @@ const SkillDetails: React.FC = () => {
     }
 
     try {
+      setLoadingExportProject(true);
       const result = await apiSkillExport(skillId);
-      const filename = `skill-${skillId}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      message.success('导出成功！');
-    } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
 
-      message.error(`导出失败: ${errorMessage}`);
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        setLoadingExportProject(false);
+        return;
+      }
+
+      // 导出成功，处理文件下载
+      if (result.data) {
+        const filename = `skill-${skillId}.zip`;
+        // 导出整个项目压缩包
+        exportWholeProjectZip(result, filename);
+        message.success('导出成功！');
+      } else {
+        message.error('导出数据异常，请重试');
+      }
+    } catch (error) {
+      console.error('导出项目失败:', error);
+      message.error('导出失败，请重试');
+    } finally {
+      setLoadingExportProject(false);
     }
   };
 
@@ -314,24 +315,38 @@ const SkillDetails: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
-            // 找到要删除的文件
-            const currentFile = skillInfo?.files?.find(
-              (item) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              message.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
+            let updatedFilesList: SkillFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = skillInfo?.files?.find(
+                (item) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                message.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
 
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 更新文件列表
-            const updatedFilesList = [currentFile] as SkillFileInfo[];
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile];
+            }
 
             // 更新技能信息
             const newSkillInfo: SkillUpdateParams = {
@@ -426,18 +441,6 @@ const SkillDetails: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      // 这里根据fileNode的name，找到skillInfo对象中files数组中对应的文件，然后更新文件名
-      // const updatedFilesList =
-      //   skillInfo?.files?.map((item) => {
-      //     if (item.name === fileNode.name) {
-      //       item.name = newName;
-      //     }
-      //     return item;
-      //   }) || [];
-      // setSkillInfo({
-      //   ...skillInfo,
-      //   files: updatedFilesList,
-      // } as SkillDetailInfo);
       // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
       runSkillInfo(skillId);
     }
@@ -491,37 +494,60 @@ const SkillDetails: React.FC = () => {
 
   // 发布技能
   const handlePublishSkill = () => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    if (changeFiles && changeFiles.length > 0) {
-      message.warning('请先保存文件后再发布');
+    // 检查是否有未保存的文件修改，如果有则阻止执行
+    if (!handleCheckUnsavedChanges()) {
       return;
     }
     setOpen(true);
   };
 
+  // 编辑技能信息
+  const handleEditSkill = () => {
+    // 检查是否有未保存的文件修改，如果有则阻止执行
+    if (!handleCheckUnsavedChanges('编辑技能')) {
+      return;
+    }
+    setEditSkillModalOpen(true);
+  };
+
   return (
-    <div className={cx('flex', 'h-full', 'flex-col', 'overflow-hide')}>
+    <div
+      className={cx('flex', 'h-full', 'flex-col', 'overflow-hide', 'relative')}
+    >
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
         skillInfo={skillInfo}
         // 编辑技能信息
-        onEditAgent={() => setEditSkillModalOpen(true)}
+        onEditAgent={handleEditSkill}
         onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
         // 导入项目
         onImportProject={handleImportProject}
         // 导出项目
         onExportProject={handleExportProject}
+        // 是否正在导出项目
+        isExportingProject={loadingExportProject}
         // 全屏
         onFullscreen={() => {
           setIsFullscreenPreview(true);
         }}
       />
 
+      {/* 正在导出项目提示 */}
+      <TipsBox
+        className={cx(styles['mt-12'])}
+        visible={loadingExportProject}
+        text="正在导出"
+      />
+
       <div className={cx('flex', 'flex-1', 'overflow-y')}>
         {/* 文件树视图 */}
         <FileTreeView
+          // 任务智能体会话中点击选中的文件ID
+          taskAgentSelectedFileId={'SKILL.md'}
+          // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+          isImportProjectTrigger={importProjectTrigger}
           ref={fileTreeViewRef}
           // 是否显示视图模式切换按钮
           showViewModeButtons={false}
@@ -545,6 +571,8 @@ const SkillDetails: React.FC = () => {
           onDeleteFile={handleDeleteFile}
           // 导入项目
           onImportProject={handleImportProject}
+          // 是否正在导入项目
+          isImportingProject={isImportingProject}
           // 是否显示更多操作菜单
           showMoreActions={false}
           // 是否显示全屏预览
@@ -591,6 +619,13 @@ const SkillDetails: React.FC = () => {
         skillInfo={skillInfo as SkillInfo}
         onCancel={() => setEditSkillModalOpen(false)}
         onConfirm={handleEditSkillConfirm}
+      />
+
+      {/* 导入技能项目弹窗 */}
+      <ImportSkillProjectModal
+        open={openImportSkillProject}
+        onCancel={() => setOpenImportSkillProject(false)}
+        onConfirm={handleImportSkillProjectConfirm}
       />
     </div>
   );

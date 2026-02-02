@@ -138,7 +138,7 @@ const SpaceKnowledge: React.FC = () => {
         name: docName,
       },
       current,
-      pageSize: 20,
+      pageSize: 50,
     });
   };
 
@@ -224,7 +224,7 @@ const SpaceKnowledge: React.FC = () => {
   const handleDocDel = () => {
     const docId = currentDocumentInfo?.id;
     modalConfirm(
-      '您确定要删除此文档吗?',
+      '你确定要删除此文档吗?',
       currentDocumentInfo?.name || '',
       () => {
         runDocDelete(docId);

@@ -1,12 +1,26 @@
-import {
-  ExclamationCircleOutlined,
-  GlobalOutlined,
-  InboxOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
+
+// 空状态 SVG 插图
+import emptyStateConversation from '@/assets/images/empty_state_conversation.svg';
+import emptyStateLaptop from '@/assets/images/empty_state_laptop.svg';
+// 状态指示器图标 - 绿色系（成功/进行中）
+import emptyStateIconCode from '@/assets/images/empty_state_icon_code.svg';
+import emptyStateIconDownload from '@/assets/images/empty_state_icon_download.svg';
+// 状态指示器图标 - 黄色系（警告/重启）
+import emptyStateIndicatorRestart from '@/assets/images/empty_state_indicator_restart.svg';
+// 状态指示器图标 - 红色系（错误）
+import emptyStateIconCloseCircle from '@/assets/images/empty_state_icon_close_circle.svg';
+import emptyStateIconError from '@/assets/images/empty_state_icon_error.svg';
+import emptyStateIconEyeClose from '@/assets/images/empty_state_icon_eye_close.svg';
+import emptyStateIconNetworkError from '@/assets/images/empty_state_icon_network_error.svg';
+import emptyStateIconPermissionDenied from '@/assets/images/empty_state_icon_permission_denied.svg';
+import emptyStateIconPreviewError from '@/assets/images/empty_state_icon_preview_error.svg';
+import emptyStateIconServerError from '@/assets/images/empty_state_icon_server_error.svg';
+// 空数据状态图标
+import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 
 /**
  * 空状态类型枚举
@@ -17,7 +31,18 @@ export type EmptyStateType =
   | 'empty'
   | 'no-data'
   | 'network-error'
-  | 'permission-denied';
+  | 'permission-denied'
+  | 'server-starting'
+  | 'server-restarting'
+  | 'developing'
+  | 'importing-project'
+  | 'server-error'
+  | 'preview-load-failed'
+  | 'server-start-failed'
+  | 'no-preview-url'
+  | 'conversation-empty'
+  | 'add-data'
+  | 'no-file';
 
 /**
  * 按钮配置接口
@@ -117,8 +142,11 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
   const defaultConfigs: Record<EmptyStateType, DefaultStateConfig> = {
     loading: {
       icon: (
-        <div className={styles.loadingIcon}>
-          <LoadingOutlined />
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.blue}>
+            <LoadingOutlined style={{ color: '#1677ff', fontSize: 16 }} />
+          </div>
         </div>
       ),
       title: '加载中...',
@@ -126,8 +154,11 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     error: {
       icon: (
-        <div className={styles.errorIcon}>
-          <ExclamationCircleOutlined />
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconError} alt="" />
+          </div>
         </div>
       ),
       title: '出现错误',
@@ -135,22 +166,36 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     'network-error': {
       icon: (
-        <div className={styles.errorIcon}>
-          <GlobalOutlined />
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconNetworkError} alt="" />
+          </div>
         </div>
       ),
       title: '网络连接失败',
       description: '网络连接异常，请检查网络设置后重试',
     },
     'permission-denied': {
-      icon: <div className={styles.errorIcon}>🔒</div>,
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconPermissionDenied} alt="" />
+          </div>
+        </div>
+      ),
       title: '权限不足',
-      description: '您没有访问此资源的权限，请联系管理员',
+      description: '你没有访问此资源的权限，请联系管理员',
     },
     empty: {
       icon: (
-        <div className={styles.emptyIcon}>
-          <InboxOutlined />
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
         </div>
       ),
       title: '暂无内容',
@@ -158,12 +203,147 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     'no-data': {
       icon: (
-        <div className={styles.emptyIcon}>
-          <GlobalOutlined />
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
         </div>
       ),
       title: '暂无数据',
       description: '当前没有可用的数据',
+    },
+    'server-starting': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.green}>
+            <img src={emptyStateIconCode} alt="" />
+          </div>
+        </div>
+      ),
+      title: '等待开发服务器启动',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'server-restarting': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.yellow}>
+            <img src={emptyStateIndicatorRestart} alt="" />
+          </div>
+        </div>
+      ),
+      title: '重启中',
+      description: '正在重启开发服务器，请稍候⋯',
+    },
+    developing: {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.green}>
+            <img src={emptyStateIconCode} alt="" />
+          </div>
+        </div>
+      ),
+      title: '开发中',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'importing-project': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.green}>
+            <img src={emptyStateIconDownload} alt="" />
+          </div>
+        </div>
+      ),
+      title: '导入项目中',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'server-error': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconServerError} alt="" />
+          </div>
+        </div>
+      ),
+      title: '服务器错误',
+      description: '预览页面加载失败，请检查开发服务器状态或网络连接',
+    },
+    'preview-load-failed': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconPreviewError} alt="" />
+          </div>
+        </div>
+      ),
+      title: '预览加载失败',
+      description: '预览页面加载失败，请检查开发服务器状态或网络连接',
+    },
+    'server-start-failed': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconCloseCircle} alt="" />
+          </div>
+        </div>
+      ),
+      title: '开发服务器启动失败',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'no-preview-url': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.red}>
+            <img src={emptyStateIconEyeClose} alt="" />
+          </div>
+        </div>
+      ),
+      title: '暂无预览地址',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'conversation-empty': {
+      icon: (
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateConversation}
+            alt=""
+            className={styles.conversationImage}
+          />
+        </div>
+      ),
+      title: '开始新对话',
+      description: '向 AI 助手提问，开始你的项目开发',
+    },
+    'add-data': {
+      icon: (
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
+        </div>
+      ),
+      title: '', // Figma 设计中没有标题
+      description: '点击“+“添加数据资源',
+    },
+    'no-file': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+        </div>
+      ),
+      title: '暂无文件',
+      description: '当前目录下暂无文件',
     },
   };
 
@@ -287,7 +467,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
                 allowDescriptionWrap && maxLines > 1
                   ? styles.multiLineTruncate
                   : styles.singleLineTruncate
-              }`}
+              } ${showButtons ? '' : styles['mb-0']}`}
               style={
                 {
                   '--max-lines': maxLines,

@@ -97,7 +97,7 @@ export type ModalSliderCaptchaType = {
 
 // 租户配置信息
 export interface TenantConfigInfo {
-  /** 是否开启沙箱功能（任务型智能体、技能管理） */
+  /** 是否开启沙箱功能（通用型智能体、技能管理） */
   enabledSandbox?: boolean;
   /** 是否支持自定义域名绑定 */
   supportCustomDomain?: boolean;

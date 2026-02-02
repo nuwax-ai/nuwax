@@ -1,6 +1,7 @@
 import type {
   AgentApiKeyTargetEnum,
   AgentComponentTypeEnum,
+  AgentEngineEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
   DevModeEnum,
@@ -93,6 +94,24 @@ export interface GuidQuestionDto {
   args?: BindConfigWithSub[];
   // 参数值，配置更新时不需要传递，用户点击跳转时直接使用，type类型为Page时有效
   params?: any;
+}
+
+// 子代理
+export interface SubAgent {
+  name: string;
+  description?: string;
+  prompt: string;
+}
+
+// 子代理绑定配置
+export interface SubAgentBindConfigDto {
+  subAgents: SubAgent[];
+}
+
+// 更新组件子代理配置
+export interface AgentComponentSubAgentUpdateParams
+  extends AgentComponentBaseInfo {
+  bindConfig: SubAgentBindConfigDto;
 }
 
 // 更新智能体基础配置信息输入参数
@@ -224,6 +243,8 @@ export interface AgentComponentWorkflowUpdateParams
     directOutput?: OutputDirectlyEnum;
     // 是否默认选中，0-否，1-是
     defaultSelected: DefaultSelectedEnum;
+    // 技能展示别名
+    alias?: string;
     // 卡片参数绑定信息
     cardArgsBindConfigs: CardArgsBindConfigInfo[];
   };
@@ -267,6 +288,24 @@ export interface AgentComponentSkillUpdateParams
   toolName: string;
 }
 
+// 子代理
+export interface SubAgent {
+  name: string;
+  description?: string;
+  prompt: string;
+}
+
+// 子代理绑定配置
+export interface SubAgentBindConfigDto {
+  subAgents: SubAgent[];
+}
+
+// 更新组件子代理配置
+export interface AgentComponentSubAgentUpdateParams
+  extends AgentComponentBaseInfo {
+  bindConfig: SubAgentBindConfigDto;
+}
+
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
   // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
@@ -281,6 +320,8 @@ export interface ComponentModelBindConfig {
   contextRounds: number;
   // 推理模型ID
   reasoningModelId: number | null;
+  // 智能体引擎类型
+  agentEngine?: AgentEngineEnum;
 }
 
 // 更新模型组件配置输入参数
@@ -490,6 +531,16 @@ export interface AgentConversationUpdateParams {
   topic?: string;
 }
 
+// 查询会话消息列表输入参数
+export interface ConversationMessageListParams {
+  // 会话ID
+  conversationId: number;
+  // 查询游标
+  index: number;
+  // 查询数量
+  size: number;
+}
+
 // 卡片列表参数
 export interface ArgList {
   key: string;
@@ -574,7 +625,7 @@ export interface AgentDetailDto extends AgentBaseInfo {
   hideChatArea: HideChatAreaEnum;
   // 扩展页面首页
   pageHomeIndex: string;
-  // 智能体类型，ChatBot 问答型；TaskAgent 任务型; PageApp 页面应用智能体
+  // 智能体类型，ChatBot 问答型；TaskAgent 通用型; PageApp 页面应用智能体
   type: AgentTypeEnum;
 }
 
@@ -661,6 +712,26 @@ export interface SpaceLogQueryFilter {
   createTimeLt?: number;
 }
 
+// 日志查询-操作日志
+export interface OperationLogQueryFilter {
+  // 类型
+  systemCode?: string[];
+  // 操作方式
+  action?: string[];
+  // 对象名称
+  object?: string;
+  // 对象子类
+  operateContent?: string;
+  // 请求参数
+  extraContent?: string;
+  // 创建人
+  creator?: string;
+  // 创建时间（开始时间）
+  createTimeGt?: number;
+  // 创建时间（结束时间）
+  createTimeLt?: number;
+}
+
 // 日志查询请求参数-工作空间
 export interface apiSpaceLogListParams {
   /*分页查询过滤条件 */
@@ -735,6 +806,23 @@ export interface SpaceLogInfo {
 
   /** 日志产生时间（时间戳） */
   createTime?: number;
+}
+
+// 日志查询-操作日志
+export interface OperationLogInfo {
+  id: number;
+  operateType?: number;
+  systemCode?: string;
+  systemName?: string;
+  object?: string;
+  action?: string;
+  operateContent?: string;
+  extraContent?: string;
+  orgId?: number;
+  orgName?: string;
+  creatorId?: number;
+  creator?: string;
+  created?: string;
 }
 
 // 日志查询详情响应-工作空间
@@ -928,7 +1016,7 @@ export interface ApiAgentConversationChatPageResultParams {
  */
 export interface AgentConversationShareParams {
   conversationId: number | string;
-  type: string;
+  type: 'CONVERSATION' | 'DESKTOP';
   expireSeconds?: number | null;
   content: string;
 }

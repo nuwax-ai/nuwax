@@ -2,9 +2,10 @@
 @import '@/styles/token';
 
 .container {
-  padding: @paddingXs @padding;
+  flex: 1;
+  padding: @padding;
   border-left: @lineWidth solid @colorSplit;
-  width: 50%;
+
   //隐藏滚动条
   &::-webkit-scrollbar {
     display: none;
@@ -13,6 +14,20 @@
 
 .system-tips-wrapper {
   padding: @paddingXs;
+
+  .border-none {
+    border: none;
+    outline: none;
+    box-shadow: none;
+
+    &:focus,
+    &:focus-visible,
+    &:active {
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+  }
 }
 
 .system-tips {
@@ -22,20 +37,93 @@
 }
 
 .optimize-btn {
-  color: @colorText; /* 修改文本颜色 */
+  color: @colorText;
+
+  /* 修改文本颜色 */
   padding: 6px @paddingSm;
   line-height: 16px;
   height: 16px;
   box-sizing: content-box;
   font-size: @fontSize;
   gap: @paddingXxs;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+
+  // 覆盖 Ant Design 的伪元素边框
+  &::before,
+  &::after {
+    display: none !important;
+  }
+
+  // 覆盖所有状态的边框和阴影
+  &:focus,
+  &:focus-visible,
+  &:active,
+  &:hover,
+  &.ant-btn:focus,
+  &.ant-btn:focus-visible,
+  &.ant-btn:active,
+  &.ant-btn:hover {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
 }
 
 .text-area {
   padding-left: 0;
   padding-right: 0;
+
   //隐藏滚动条
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+// 全屏模式弹窗
+.fullscreen-modal {
+  max-width: 100vw !important;
+  top: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+
+  :global {
+    .ant-modal-content {
+      height: 100vh;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ant-modal-header {
+      flex-shrink: 0;
+    }
+
+    .ant-modal-body {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ant-modal-footer {
+      flex-shrink: 0;
+    }
+  }
+
+  .modal-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .form-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 }

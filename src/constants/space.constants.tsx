@@ -64,7 +64,7 @@ const AGENT_TYPE_LIST_ALL = [
   },
   {
     value: AgentTypeEnum.TaskAgent,
-    label: '任务型',
+    label: '通用型',
     // icon: <ICON_AGENT />,
     tooltip:
       '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
@@ -89,12 +89,10 @@ export const SKILL_ALL_RESOURCE = [
   {
     value: CreateSkillWayEnum.Create,
     label: '创建技能',
-    // icon: <PlusOutlined />,
   },
   {
     value: CreateSkillWayEnum.Import,
     label: '导入技能',
-    // icon: <ImportOutlined />,
   },
 ];
 
@@ -133,6 +131,20 @@ export const TASK_ALL_TYPE = [
 export const FILTER_STATUS = [
   { value: FilterStatusEnum.All, label: '全部' },
   { value: FilterStatusEnum.Published, label: '已发布' },
+];
+
+// 网页应用开发 - 过滤状态
+export const FILTER_STATUS_DEV = [
+  { value: FilterStatusEnum.All, label: '全部' },
+  { value: FilterStatusEnum.Published, label: '已发布' },
+  { value: FilterStatusEnum.Unpublished, label: '未发布' },
+];
+
+// 智能体开发 - 智能体类型（全部/问答型/通用型）
+export const AGENT_TYPE_LIST_DEV = [
+  { value: AgentTypeEnum.All, label: '全部' },
+  { value: AgentTypeEnum.ChatBot, label: '问答型' },
+  { value: AgentTypeEnum.TaskAgent, label: '通用型' },
 ];
 
 // 过滤创建者
@@ -275,6 +287,10 @@ export const COMPONENT_SETTING_ACTIONS = [
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },
+  // {
+  //   type: ComponentSettingEnum.SubAgent,
+  //   label: '子智能体',
+  // },
 ];
 
 // 智能体编排-组件设置列表

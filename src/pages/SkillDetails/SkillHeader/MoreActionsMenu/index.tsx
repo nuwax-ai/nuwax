@@ -11,7 +11,9 @@ interface MoreActionsProps {
   // 导出项目
   onExportProject?: () => void;
   // 是否正在加载
-  isChatLoading?: boolean;
+  isLoading?: boolean;
+  // 是否正在导出项目
+  isExportingProject?: boolean;
 }
 
 /**
@@ -22,7 +24,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onImportProject,
   onFullscreenPreview,
   onExportProject,
-  isChatLoading,
+  isLoading,
+  isExportingProject,
 }) => {
   // 菜单项配置
   const menuItems = useMemo(
@@ -30,9 +33,9 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'import',
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
-        label: '导入项目',
+        label: '导入技能',
         onClick: onImportProject,
-        disabled: isChatLoading,
+        disabled: isLoading,
       },
       {
         type: 'divider' as const,
@@ -44,7 +47,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         ),
         label: '全屏预览',
         onClick: onFullscreenPreview,
-        disabled: isChatLoading,
       },
       {
         type: 'divider' as const,
@@ -52,12 +54,18 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'export',
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
-        label: '导出项目',
+        label: '导出技能',
         onClick: onExportProject,
-        disabled: isChatLoading,
+        disabled: isExportingProject,
       },
     ],
-    [onImportProject, onFullscreenPreview, onExportProject, isChatLoading],
+    [
+      onImportProject,
+      onFullscreenPreview,
+      onExportProject,
+      isLoading,
+      isExportingProject,
+    ],
   );
 
   return (

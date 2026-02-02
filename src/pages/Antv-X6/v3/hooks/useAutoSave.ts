@@ -4,8 +4,11 @@
  * 监听画布变更事件，自动触发防抖保存
  */
 
-import Constant from '@/constants/codes.constants';
+import Constant, {
+  WORKFLOW_VERSION_CONFLICT,
+} from '@/constants/codes.constants';
 import service from '@/services/workflow';
+import { workflowLogger } from '@/utils/logger';
 import { Graph } from '@antv/x6';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -43,44 +46,66 @@ export function useAutoSave(
   const isDirtyRef = useRef(false);
 
   // 核心保存函数
-  const doSave = useCallback(async (): Promise<boolean> => {
-    if (!graph) {
-      console.warn('[useAutoSave] Graph 未初始化');
-      return false;
-    }
-
-    if (!workflowSaveService.hasPendingChanges()) {
-      return true;
-    }
-
-    try {
-      onSaveStart?.();
-
-      const payload = workflowSaveService.buildPayload(graph);
-      if (!payload) {
-        console.error('[useAutoSave] 构建保存数据失败');
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  const doSave = useCallback(
+    async (forceCommit = false): Promise<boolean> => {
+      if (!graph) {
+        workflowLogger.warn('Graph 未初始化');
         return false;
       }
 
-      const result = await service.saveWorkflow(payload);
-
-      if (result.code === Constant.success) {
-        workflowSaveService.clearDirty();
-        isDirtyRef.current = false;
-        onSaveSuccess?.();
-        console.log('[useAutoSave] 保存成功');
+      if (!workflowSaveService.hasPendingChanges()) {
         return true;
-      } else {
-        console.error('[useAutoSave] 保存失败:', result.message);
-        onSaveError?.(new Error(result.message));
+      }
+
+      try {
+        onSaveStart?.();
+
+        const payload = workflowSaveService.buildPayload(graph);
+        if (!payload) {
+          workflowLogger.error('构建保存数据失败');
+          return false;
+        }
+
+        // 构建保存请求参数，版本信息放入 workflowConfig
+        const saveParams = {
+          workflowConfig: {
+            ...payload,
+            editVersion: workflowSaveService.getEditVersion(),
+            forceCommit: forceCommit ? (1 as const) : (0 as const),
+          },
+        };
+
+        const result = await service.saveWorkflow(saveParams);
+
+        if (result.code === Constant.success) {
+          // 保存成功，更新版本号（data 直接是版本号）
+          if (result.data !== null && result.data !== undefined) {
+            workflowSaveService.setEditVersion(result.data);
+          }
+          workflowSaveService.clearDirty();
+          isDirtyRef.current = false;
+          onSaveSuccess?.();
+          workflowLogger.log('useAutoSave 自动保存成功');
+          return true;
+        } else if (result.code === WORKFLOW_VERSION_CONFLICT) {
+          // 自动保存遇到版本冲突时，通知用户但不自动强制提交
+          workflowLogger.warn('useAutoSave 版本冲突，自动保存失败');
+          onSaveError?.(new Error('版本冲突，工作流已在其他窗口修改'));
+          return false;
+        } else {
+          workflowLogger.error('useAutoSave 保存失败:', result.message);
+          onSaveError?.(new Error(result.message));
+          return false;
+        }
+      } catch (error) {
+        workflowLogger.error('useAutoSave 保存异常:', error);
+        onSaveError?.(error);
         return false;
       }
-    } catch (error) {
-      console.error('[useAutoSave] 保存异常:', error);
-      onSaveError?.(error);
-      return false;
-    }
-  }, [graph, onSaveStart, onSaveSuccess, onSaveError]);
+    },
+    [graph, onSaveStart, onSaveSuccess, onSaveError],
+  );
 
   // 防抖保存
   const debouncedSave = useMemo(

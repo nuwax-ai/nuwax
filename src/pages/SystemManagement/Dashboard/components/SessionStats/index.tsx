@@ -1,0 +1,124 @@
+import { Line } from '@ant-design/plots';
+import { useSize } from 'ahooks';
+import { Card, Col, Radio, Row } from 'antd';
+import classNames from 'classnames';
+import React, { useMemo, useRef } from 'react';
+import StatCard from '../StatCard';
+import styles from './index.less';
+import type { SessionStatsProps } from './type';
+
+const cx = classNames.bind(styles);
+
+const SessionStats: React.FC<SessionStatsProps> = ({
+  stats,
+  chartData,
+  loading,
+  period = '7d',
+  onPeriodChange,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const size = useSize(containerRef);
+
+  const chartConfig = useMemo(
+    () => ({
+      data: chartData,
+      xField: 'date',
+      yField: 'value',
+      width: size?.width,
+      height: 280,
+      autoFit: false,
+      shapeField: 'smooth',
+      loading, // Line 组件也支持 loading 属性显示骨架屏（如果版本支持），或者我们可以手动包裹
+      scale: {
+        y: {
+          domainMin: 0,
+        },
+      },
+      style: {
+        lineWidth: 2.5,
+        stroke: '#52c41a',
+      },
+      axis: {
+        x: {
+          label: {
+            style: {
+              fill: 'rgba(0, 0, 0, 0.45)',
+              fontSize: 12,
+            },
+          },
+          line: {
+            style: {
+              stroke: '#d9d9d9',
+            },
+          },
+          tick: {
+            length: 4,
+            style: {
+              stroke: '#d9d9d9',
+            },
+          },
+        },
+        y: {
+          label: {
+            style: {
+              fill: 'rgba(0, 0, 0, 0.45)',
+              fontSize: 12,
+            },
+          },
+          grid: {
+            line: {
+              style: {
+                lineWidth: 1,
+                lineDash: [4, 4],
+                stroke: '#f0f0f0',
+              },
+            },
+          },
+        },
+      },
+      interaction: {
+        tooltip: {
+          marker: false,
+        },
+      },
+      tooltip: (d: { date: string; value: number }) => ({
+        name: '新增会话',
+        value: (d.value || 0).toLocaleString(),
+      }),
+    }),
+    [chartData, loading, size?.width],
+  );
+
+  return (
+    <div className={cx(styles['session-stats'])}>
+      <Row gutter={[16, 16]}>
+        {(loading ? Array.from({ length: 2 }) : stats).map((stat, index) => (
+          <Col key={index} xs={24} sm={12} md={12} lg={12} xl={12}>
+            <StatCard {...(stat as any)} loading={loading} />
+          </Col>
+        ))}
+      </Row>
+      <Card className={cx(styles['session-chart'])} bordered={false}>
+        <div className={cx(styles['chart-header'])}>
+          <h3 className={cx(styles['chart-title'])}>七日新增会话趋势</h3>
+          <Radio.Group
+            value={period}
+            onChange={(e) => onPeriodChange?.(e.target.value)}
+            size="small"
+            className={cx(styles['period-selector'])}
+            disabled={loading}
+          >
+            <Radio.Button value="7d">7天</Radio.Button>
+            <Radio.Button value="30d">30天</Radio.Button>
+            <Radio.Button value="month">按月</Radio.Button>
+          </Radio.Group>
+        </div>
+        <div style={{ height: 280, position: 'relative' }} ref={containerRef}>
+          <Line {...chartConfig} />
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default SessionStats;
