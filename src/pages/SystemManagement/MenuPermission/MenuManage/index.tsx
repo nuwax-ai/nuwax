@@ -61,7 +61,7 @@ const DragHandle: React.FC = () => {
 
 // 可拖拽的行组件
 interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
-  'data-row-key': string;
+  'data-row-key': string | number;
 }
 
 const Row: React.FC<RowProps> = (props) => {
@@ -73,7 +73,7 @@ const Row: React.FC<RowProps> = (props) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props['data-row-key'] });
+  } = useSortable({ id: String(props['data-row-key']) });
 
   const style: React.CSSProperties = {
     ...props.style,
@@ -257,11 +257,13 @@ const MenuManage: React.FC = () => {
   });
 
   // 递归获取所有节点的 key（包括子节点）
+  // 注意：@dnd-kit 的 SortableContext 需要 string[] 类型的 items
   const getAllKeys = (data: (MenuNodeInfo & { key: number })[]): string[] => {
     const keys: string[] = [];
     const traverse = (items: (MenuNodeInfo & { key: number })[]) => {
       items.forEach((item) => {
-        keys.push(item.key.toString());
+        // 确保 key 转换为字符串，与 useSortable 的 id 类型匹配
+        keys.push(String(item.key));
         if (item.children && item.children.length > 0) {
           traverse(item.children as (MenuNodeInfo & { key: number })[]);
         }
