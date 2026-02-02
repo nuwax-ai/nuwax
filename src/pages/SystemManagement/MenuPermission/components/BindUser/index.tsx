@@ -237,8 +237,8 @@ const BindUser: React.FC<BindUserProps> = ({
             dataSource={rightColumnMembers}
             renderItem={(m) => (
               <List.Item
-                style={{ borderBlockEnd: 0 }}
-                className="flex items-center gap-10"
+                style={{ borderBlockEnd: 0, padding: 0 }}
+                className="flex items-center gap-10 mb-12"
               >
                 <Avatar src={m.avatar || personalImage} />
                 <div className="flex-1 text-ellipsis">

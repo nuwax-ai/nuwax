@@ -54,7 +54,6 @@ interface ResourceFormModalProps {
 const RESOURCE_TYPE_OPTIONS = [
   { label: '模块', value: ResourceTypeEnum.Module },
   { label: '组件', value: ResourceTypeEnum.Component },
-  { label: '页面', value: ResourceTypeEnum.Page },
 ];
 
 // 资源来源选项 来源 1:系统内置 2:用户自定义
