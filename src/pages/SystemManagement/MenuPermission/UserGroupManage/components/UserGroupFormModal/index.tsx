@@ -71,6 +71,10 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   // 是否全部模型已选中
   const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
+  // 保存查询到的用户组数据，用于后续设置 parentId
+  const [fetchedUserGroupData, setFetchedUserGroupData] =
+    useState<UserGroupInfo | null>(null);
+
   // 新增
   const { run: runAddUserGroup, loading: addLoading } = useRequest(
     apiAddUserGroup,
@@ -107,6 +111,8 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   const { run: runGetUserGroupById } = useRequest(apiGetUserGroupById, {
     manual: true,
     onSuccess: (data: UserGroupInfo) => {
+      // 保存查询到的数据
+      setFetchedUserGroupData(data);
       form.setFieldsValue({
         code: data.code,
         name: data.name,
@@ -116,7 +122,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
           limitPerDay: data.tokenLimit?.limitPerDay || 0,
         },
         sortIndex: data.sortIndex || 0,
-        parentId: data.parentId || null,
+        // 先不设置 parentId，等 userGroupList 加载完成后再设置
         status: data.status === UserGroupStatusEnum.Enabled,
         source: data.source || UserGroupSourceEnum.UserDefined,
       });
@@ -148,6 +154,20 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     }
   }, [modelList, allModelSelected]);
 
+  // 当 userGroupList 和 fetchedUserGroupData 同时存在时，设置 parentId 回显
+  useEffect(() => {
+    if (
+      userGroupList &&
+      userGroupList.length > 0 &&
+      fetchedUserGroupData?.parentId &&
+      fetchedUserGroupData?.parentId !== 0
+    ) {
+      form.setFieldsValue({
+        parentId: fetchedUserGroupData.parentId,
+      });
+    }
+  }, [userGroupList, fetchedUserGroupData, form]);
+
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
@@ -174,6 +194,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       });
       setAllModelSelected(false);
       setSelectedModelIds([]);
+      setFetchedUserGroupData(null);
     }
   }, [open, isEdit, userGroupInfo, form]);
 
@@ -212,19 +233,32 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     }
   };
 
-  // 将用户组树转换为TreeSelect需要的数据格式
+  // 将用户组树转换为TreeSelect需要的数据格式，并过滤掉根节点（id为0）
   const userGroupTreeSelectData = useMemo(() => {
-    const convertToTreeData = (userGroups: any[]): any[] => {
-      return userGroups.map((userGroup) => ({
-        title: userGroup.name,
-        value: userGroup.id,
-        key: userGroup.id,
-        children: userGroup.children
-          ? convertToTreeData(userGroup.children)
-          : undefined,
-      }));
+    const convertToTreeData = (userGroups: UserGroupInfo[]): any[] => {
+      return userGroups
+        .filter((userGroup) => userGroup.id !== 0) // 过滤掉根节点
+        .map((userGroup) => ({
+          title: userGroup.name,
+          value: userGroup.id,
+          key: userGroup.id,
+          children: userGroup.children
+            ? convertToTreeData(userGroup.children)
+            : undefined,
+        }));
     };
-    return userGroupList ? convertToTreeData(userGroupList) : [];
+    if (!userGroupList || !userGroupList.length) {
+      return [];
+    }
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (userGroupList.length === 1 && userGroupList[0].id === 0) {
+      const rootNode = userGroupList[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return convertToTreeData(userGroupList);
   }, [userGroupList]);
 
   return (
