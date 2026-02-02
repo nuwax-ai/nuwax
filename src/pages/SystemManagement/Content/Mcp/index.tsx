@@ -71,7 +71,7 @@ const Mcp: React.FC = () => {
       {
         key: 'view',
         label: '查看',
-        disabled: () => true,
+        disabled: true,
         onClick: handleView,
       },
       {
