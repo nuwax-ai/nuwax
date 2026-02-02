@@ -8,8 +8,12 @@ import type {
   RawSegmentInfoProps,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
-import { DeleteOutlined, FileSearchOutlined } from '@ant-design/icons';
-import { Empty } from 'antd';
+import {
+  DeleteOutlined,
+  EyeOutlined,
+  FileSearchOutlined,
+} from '@ant-design/icons';
+import { Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -101,6 +105,18 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
     handleRawSegmentList(page);
   };
 
+  const handlePreview = () => {
+    if (!documentInfo?.docUrl) {
+      return;
+    }
+    const docUrl = encodeURIComponent(documentInfo.docUrl);
+
+    // 构建预览地址
+    const previewPageUrl = `/static/file-preview.html?docUrl=${docUrl}`;
+    //在新窗口打开
+    window.open(previewPageUrl, '_blank');
+  };
+
   return (
     <div
       className={cx('flex-1', 'h-full', 'flex', 'flex-col', 'overflow-hide')}
@@ -116,6 +132,17 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
             docName={documentInfo?.name}
             onSuccessUpdateName={onSuccessUpdateName}
           />
+
+          {documentInfo?.docUrl && (
+            <Tooltip title="预览原始文档">
+              <EyeOutlined
+                className={cx(styles.del, 'cursor-pointer', 'mr-8')}
+                style={{ fontSize: '16px' }}
+                onClick={handlePreview}
+              />
+            </Tooltip>
+          )}
+
           <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
             {/*<span className={cx(styles['switch-name'])}>预览原始文档</span>*/}
             {/*<Switch defaultChecked onChange={handleChange} />*/}
