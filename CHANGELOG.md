@@ -1,8 +1,20 @@
 # 更新日志
 
-本项目的所有重要变更都会记录在此文件中。
+### [1.0.8](https://github.com/nuwax-ai/nuwax/compare/v1.0.7...v1.0.8) (2026-02-02)
 
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
+### 🔧 构建/工具
+
+- 更新 .gitignore 文件，添加 .agent 以排除相关文件 ([6699310](https://github.com/nuwax-ai/nuwax/commit/66993108185d21e7549c0cfbaa0fb05207b91d71))
+- 清理测试文件和示例文件 ([44fd1cc](https://github.com/nuwax-ai/nuwax/commit/44fd1ccff1d2156d0f1b7fc8ce38af6157e36cb7))
+
+### 🐛 Bug 修复
+
+- 修复代码规范问题（ESLint） ([989e565](https://github.com/nuwax-ai/nuwax/commit/989e565f15a28cc0cfbea65d25db450c0d26ffd5))
+
+### ♻️ 重构
+
+- 恢复 v1.0.8-alpha 代码版本 ([abc8970](https://github.com/nuwax-ai/nuwax/commit/abc897022483e43870799dbe4d4834a06366206c))
+- 移除 ChatArea 组件中冗余的 handleAddToChat 函数，简化代码结构 ([278cf70](https://github.com/nuwax-ai/nuwax/commit/278cf70b2a6d3368b8e35c1d0a4a5e16e7b9a3db))
 
 ## [1.0.1] - 2025-11-10
 
