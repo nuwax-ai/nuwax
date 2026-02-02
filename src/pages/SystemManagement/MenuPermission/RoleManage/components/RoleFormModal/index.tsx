@@ -262,7 +262,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
                   title: '0表示不限制每日token数量',
                   icon: <InfoCircleOutlined />,
                 }}
-                className={cx(styles.fieldItem)}
               >
                 <InputNumber
                   placeholder="请输入每日token限制数量"
@@ -275,11 +274,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="排序"
-                name="sortIndex"
-                className={cx(styles.fieldItem)}
-              >
+              <Form.Item label="排序" name="sortIndex">
                 <InputNumber
                   placeholder="请输入排序"
                   className={cx('w-full')}
@@ -288,12 +283,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                className={cx(styles.fieldItem)}
-              >
+              <Form.Item label="状态" name="status" valuePropName="checked">
                 <Switch checkedChildren="启用" unCheckedChildren="禁用" />
               </Form.Item>
             </Col>

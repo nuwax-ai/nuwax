@@ -44,9 +44,49 @@
   overflow-y: auto;
 }
 
-.cardList {
-  display: grid;
-  gap: 20px;
+.table {
+  background-color: var(--color-background-default, #fff);
+
+  // 让展开图标和用户组名称在同一行显示
+  :global {
+    .ant-table-row-expand-icon-cell {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    // 确保描述列单元格可以正确显示多行省略
+    .ant-table-tbody > tr > td {
+      .descriptionCell {
+        display: box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        word-break: break-word;
+        word-wrap: break-word;
+        line-height: 1.5;
+        max-height: 3em;
+        white-space: normal;
+      }
+    }
+  }
+}
+
+// 描述列样式：最多显示两行，超出显示省略号
+.descriptionCell {
+  display: box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word;
+  word-wrap: break-word;
+  line-height: 1.5;
+  max-height: 3em; // 2行 * 1.5行高
+  white-space: normal;
   width: 100%;
 }
 
@@ -56,6 +96,22 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
+}
+
+.icon {
+  font-size: 12px;
+  color: var(--color-icon-secondary, #4e5969);
+  margin-right: 8px;
+  transform: rotate(-90deg);
+  transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
+
+  &.rotate-0 {
+    transform: rotate(0deg);
+  }
+
+  &.icon-hidden {
+    visibility: hidden;
+  }
 }
 
 // 响应式布局
