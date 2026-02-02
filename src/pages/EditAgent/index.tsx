@@ -267,7 +267,6 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     setLoadingAgentConfigInfo(true);
     run(agentId);
-    // runComponentList(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -275,14 +274,6 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     addBaseTarget();
   }, []);
-
-  // 绑定的变量信息
-  // const variablesInfo = React.useMemo(() => {
-  //   return agentComponentList?.find(
-  //     (item: AgentComponentInfo) =>
-  //       item.type === AgentComponentTypeEnum.Variable,
-  //   );
-  // }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {

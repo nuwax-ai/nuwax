@@ -26,7 +26,7 @@ import {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
-import { PageDevelopMoreActionEnum } from '@/types/enums/pageDev';
+import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import {
   CodeLangEnum,
   PluginCodeModeEnum,
@@ -71,35 +71,6 @@ export const TASK_CENTER_MORE_ACTION: CustomPopoverItem[] = [
     label: '删除',
     isDel: true,
     type: TaskCenterMoreActionEnum.Delete,
-  },
-];
-
-/**
- * 技能库更多操作
- * 技能：详情
- * 技能：删除
- */
-export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
-  // {
-  //   action: ApplicationMoreActionEnum.Edit,
-  //   label: '编辑',
-  //   type: ComponentTypeEnum.Skill,
-  // },
-  {
-    action: PageDevelopMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
-    type: PageDevelopMoreActionEnum.Copy_To_Space,
-  },
-  {
-    action: ApplicationMoreActionEnum.Detail,
-    label: '详情',
-    type: ComponentTypeEnum.Skill,
-  },
-  {
-    action: ApplicationMoreActionEnum.Del,
-    label: '删除',
-    isDel: true,
-    type: ComponentTypeEnum.Skill,
   },
 ];
 
