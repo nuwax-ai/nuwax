@@ -40,6 +40,8 @@ export interface SystemResourceInfo {
   creatorName: string;
   /** 创建时间 */
   created: string;
+  /** 空间ID */
+  spaceId: number;
   /** 操作 */
   operation: string;
 }
