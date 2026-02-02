@@ -12,15 +12,17 @@ import {
   Row,
   Select,
   Switch,
+  TreeSelect,
   Typography,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import DataModelSelector from '../../../components/DataModelSelector';
 import {
   apiAddUserGroup,
   apiGetUserGroupById,
+  apiGetUserGroupList,
   apiUpdateUserGroup,
 } from '../../../services/user-group-manage';
 import {
@@ -114,6 +116,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
           limitPerDay: data.tokenLimit?.limitPerDay || 0,
         },
         sortIndex: data.sortIndex || 0,
+        parentId: data.parentId || null,
         status: data.status === UserGroupStatusEnum.Enabled,
         source: data.source || UserGroupSourceEnum.UserDefined,
       });
@@ -128,6 +131,14 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       }
     },
   });
+
+  // 根据条件查询组列表
+  const { run: runGetUserGroupList, data: userGroupList } = useRequest(
+    apiGetUserGroupList,
+    {
+      manual: true,
+    },
+  );
 
   // 当 modelList 加载完成后，处理待处理的 modelIds
   useEffect(() => {
@@ -144,6 +155,8 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     if (open) {
       // 查询模型列表
       runModelList();
+      // 查询用户组列表
+      runGetUserGroupList();
       if (isEdit && userGroupInfo) {
         // 编辑模式：通过接口查询用户组信息
         runGetUserGroupById(userGroupInfo.id);
@@ -198,6 +211,21 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       console.error('表单验证失败:', error);
     }
   };
+
+  // 将用户组树转换为TreeSelect需要的数据格式
+  const userGroupTreeSelectData = useMemo(() => {
+    const convertToTreeData = (userGroups: any[]): any[] => {
+      return userGroups.map((userGroup) => ({
+        title: userGroup.name,
+        value: userGroup.id,
+        key: userGroup.id,
+        children: userGroup.children
+          ? convertToTreeData(userGroup.children)
+          : undefined,
+      }));
+    };
+    return userGroupList ? convertToTreeData(userGroupList) : [];
+  }, [userGroupList]);
 
   return (
     <CustomFormModal
@@ -306,17 +334,37 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
             </Col>
           </Row>
 
-          <Form.Item
-            label="状态"
-            name="status"
-            valuePropName="checked"
-            tooltip={{
-              title: '启用或禁用此用户组',
-              icon: <InfoCircleOutlined />,
-            }}
-          >
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="父用户组" name="parentId">
+                <TreeSelect
+                  placeholder="请选择父用户组（无（根用户组））"
+                  treeData={userGroupTreeSelectData}
+                  allowClear
+                  showSearch
+                  treeDefaultExpandAll
+                  filterTreeNode={(inputValue, node) =>
+                    (node.title as string)
+                      ?.toLowerCase()
+                      .includes(inputValue.toLowerCase())
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="状态"
+                name="status"
+                valuePropName="checked"
+                tooltip={{
+                  title: '启用或禁用此用户组',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item label="描述" name="description">
             <TextArea

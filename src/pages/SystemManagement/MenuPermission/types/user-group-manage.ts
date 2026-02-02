@@ -31,6 +31,8 @@ export enum UserGroupSourceEnum {
 export interface UserGroupInfo {
   /** 用户组ID */
   id: number;
+  /** 父用户组ID */
+  parentId: number | null;
   /** 用户组名称 */
   name: string;
   /** 编码 */
