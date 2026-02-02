@@ -6,14 +6,6 @@ import { ResourceTreeNode } from './permission-resources';
 
 // ==================== 枚举定义 ====================
 
-/**
- * 菜单状态 1:启用 0:禁用
- */
-export enum MenuStatusEnum {
-  Enabled = 1, // 启用
-  Disabled = 0, // 禁用
-}
-
 // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
 export enum MenuBindTypeEnum {
   Unbound = 0, // 未绑定
@@ -57,8 +49,6 @@ export interface AddMenuParams {
   icon?: string;
   /** 排序 */
   sortIndex?: number;
-  /** 状态 1:启用 0:禁用 */
-  status?: MenuStatusEnum;
   // 是否显示 1:显示 0:隐藏
   visible?: MenuVisibleEnum;
   /** 资源树 */
@@ -95,8 +85,6 @@ export interface GetMenuListParams {
   source?: MenuSourceEnum;
   /** 父级ID */
   parentId?: number;
-  /** 状态 1:启用 0:禁用 */
-  status?: MenuStatusEnum;
   /*是否显示 1:显示 0:隐藏 */
   visible?: MenuVisibleEnum;
 }
@@ -131,9 +119,6 @@ export interface MenuNodeInfo {
 
   /*排序 */
   sortIndex?: number;
-
-  /*状态 1:启用 0:禁用 */
-  status?: MenuStatusEnum;
 
   /*是否显示 1:显示 0:隐藏 */
   visible?: MenuVisibleEnum;

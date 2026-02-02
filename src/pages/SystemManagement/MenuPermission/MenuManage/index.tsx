@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
+import { Button, Empty, message, Space, Spin, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -30,7 +30,6 @@ import {
   apiUpdateMenu,
 } from '../services/menu-manage';
 import type { MenuNodeInfo } from '../types/menu-manage';
-import { MenuStatusEnum } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import styles from './index.less';
 
@@ -466,17 +465,6 @@ const MenuManage: React.FC = () => {
       width: 200,
       ellipsis: true,
       render: (path: string) => path || '--',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: MenuStatusEnum) => (
-        <Tag color={status === MenuStatusEnum.Enabled ? 'success' : 'default'}>
-          {status === MenuStatusEnum.Enabled ? '启用' : '禁用'}
-        </Tag>
-      ),
     },
     {
       title: '操作',

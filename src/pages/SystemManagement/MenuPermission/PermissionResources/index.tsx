@@ -15,7 +15,6 @@ import {
 } from '../services/permission-resources';
 import {
   ResourceSourceEnum,
-  ResourceStatusEnum,
   ResourceTypeEnum,
   ResourceVisibleEnum,
   type ResourceInfo,
@@ -93,7 +92,6 @@ const PermissionResources: React.FC = () => {
       path: resource.path,
       icon: resource.icon,
       sortIndex: resource.sortIndex || 0,
-      status: resource.status || ResourceStatusEnum.Enabled,
       visible: resource.visible || ResourceVisibleEnum.Visible,
     };
     setEditingResource(resourceInfo);
@@ -233,19 +231,6 @@ const PermissionResources: React.FC = () => {
       width: 200,
       ellipsis: true,
       render: (path: string) => path || '--',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: ResourceStatusEnum) => (
-        <Tag
-          color={status === ResourceStatusEnum.Enabled ? 'success' : 'default'}
-        >
-          {status === ResourceStatusEnum.Enabled ? '启用' : '禁用'}
-        </Tag>
-      ),
     },
     {
       title: '操作',
