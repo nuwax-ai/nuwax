@@ -31,8 +31,6 @@ export enum UserGroupSourceEnum {
 export interface UserGroupInfo {
   /** 用户组ID */
   id: number;
-  /** 父用户组ID */
-  parentId: number | null;
   /** 用户组名称 */
   name: string;
   /** 编码 */
@@ -52,8 +50,6 @@ export interface UserGroupInfo {
     // 每日token限制数量，0表示不限制
     limitPerDay: number;
   };
-  // 子用户组列表
-  children: UserGroupInfo[];
   /** 排序 */
   sortIndex: number;
   /** 创建人ID */
@@ -127,8 +123,6 @@ export interface GroupBindMenuParams {
  * 根据条件查询用户组参数
  */
 export interface GetUserGroupListParams {
-  /** 父用户组ID */
-  parentId?: number | null;
   /** 用户组名称 */
   name?: string;
   /** 用户组编码 */
