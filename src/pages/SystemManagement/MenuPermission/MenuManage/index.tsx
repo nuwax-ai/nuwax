@@ -1,10 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  DeleteOutlined,
-  DownOutlined,
-  EditOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
@@ -208,24 +203,16 @@ const MenuManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            icon={<PlusOutlined />}
             onClick={() => handleAddChild(record)}
           >
             新增子菜单
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
+          <Button type="link" size="small" onClick={() => handleEdit(record)}>
             编辑
           </Button>
           <Button
             type="link"
             size="small"
-            danger
-            icon={<DeleteOutlined />}
             loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >

@@ -8,7 +8,6 @@
 export enum ResourceTypeEnum {
   Module = 1, // 模块
   Component = 2, // 组件
-  Page = 3, // 页面
 }
 
 /*来源 1:系统内置 2:用户自定义 */
@@ -56,7 +55,7 @@ export interface ResourceInfo {
   description?: string;
   /** 来源 1:系统内置 2:用户自定义 */
   source: ResourceSourceEnum;
-  /** 类型 1:模块 2:组件 3:页面 */
+  /** 类型 1:模块 2:组件 */
   type: ResourceTypeEnum;
   /** 父级ID */
   parentId?: number;
@@ -96,7 +95,7 @@ export interface AddResourceParams {
   name?: string;
   /** 描述 */
   description?: string;
-  /** 类型 1:模块 2:组件 3:页面 */
+  /** 类型 1:模块 2:组件 */
   type?: ResourceTypeEnum;
   /** 父级ID */
   parentId?: number;
@@ -130,7 +129,7 @@ export interface GetResourceListParams {
   code?: string;
   /** 来源 1:系统内置 2:用户自定义 */
   source?: ResourceSourceEnum;
-  /** 资源类型 1:模块 2:组件 3:页面 */
+  /** 资源类型 1:模块 2:组件 */
   type?: ResourceTypeEnum;
   /** 父级ID */
   parentId?: number;
@@ -165,7 +164,7 @@ export interface ResourceTreeNode {
   /*来源 1:系统内置 2:用户自定义 */
   source?: ResourceSourceEnum;
 
-  /*类型 1:模块 2:组件 3:页面 */
+  /*类型 1:模块 2:组件 */
   type?: ResourceTypeEnum;
 
   /*父级ID */

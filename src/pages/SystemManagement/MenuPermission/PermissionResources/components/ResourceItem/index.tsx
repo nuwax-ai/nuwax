@@ -51,11 +51,6 @@ const getResourceTypeInfo = (
         text: '组件',
         icon: <AppstoreOutlined />,
       };
-    case ResourceTypeEnum.Page:
-      return {
-        text: '页面',
-        icon: <AppstoreOutlined />,
-      };
     default:
       return {
         text: '未知',

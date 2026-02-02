@@ -1,7 +1,13 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Empty, message, Spin } from 'antd';
+import { modalConfirm } from '@/utils/ant-custom';
+import {
+  AppstoreOutlined,
+  DownOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import type { TableColumnsType } from 'antd';
+import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import {
   apiDeleteResource,
@@ -16,7 +22,6 @@ import {
   type ResourceTreeNode,
 } from '../types/permission-resources';
 import ResourceFormModal from './components/ResourceFormModal';
-import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -96,9 +101,14 @@ const PermissionResources: React.FC = () => {
     setModalOpen(true);
   };
 
-  // 处理删除
-  const handleDelete = (resource: ResourceTreeNode) => {
-    runDelete(resource?.id);
+  // 处理删除确认
+  const handleDeleteConfirm = (resource: ResourceTreeNode) => {
+    modalConfirm('删除资源', `确认删除资源 "${resource.name}" 吗？`, () => {
+      runDelete(resource?.id);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      });
+    });
   };
 
   // 处理新增
@@ -133,6 +143,142 @@ const PermissionResources: React.FC = () => {
     runGetResourceList();
   };
 
+  // 获取资源类型显示文本
+  const getResourceTypeText = (type?: ResourceTypeEnum): string => {
+    switch (type) {
+      case ResourceTypeEnum.Module:
+        return '模块';
+      case ResourceTypeEnum.Component:
+        return '组件';
+      default:
+        return '未知';
+    }
+  };
+
+  // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
+  const tableData = useMemo(() => {
+    const transformData = (data: ResourceTreeNode[]): any[] => {
+      return data
+        .filter((item) => item.id !== 0) // 过滤掉根节点
+        .map((item) => ({
+          ...item,
+          key: item.id,
+          children: item.children?.length
+            ? transformData(item.children)
+            : undefined,
+        }));
+    };
+    if (!resourceList || !resourceList.length) {
+      return [];
+    }
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (resourceList.length === 1 && resourceList[0].id === 0) {
+      const rootNode = resourceList[0];
+      return rootNode.children?.length ? transformData(rootNode.children) : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return transformData(resourceList);
+  }, [resourceList]);
+
+  // 定义表格列
+  const columns: TableColumnsType<ResourceTreeNode & { key: number }> = [
+    {
+      title: '图标',
+      dataIndex: 'icon',
+      key: 'icon',
+      width: 100,
+      render: (icon: string, record: ResourceTreeNode) => (
+        <div className={cx(styles.iconCell)}>
+          {icon ? (
+            <img
+              src={icon}
+              alt={record.name || '资源图标'}
+              className={cx(styles.resourceIcon)}
+            />
+          ) : (
+            <div className={cx(styles.defaultIcon)}>
+              <AppstoreOutlined />
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: '资源名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      ellipsis: true,
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      key: 'type',
+      width: 100,
+      render: (type: ResourceTypeEnum) => (
+        <Tag>{getResourceTypeText(type)}</Tag>
+      ),
+    },
+    {
+      title: '编码',
+      dataIndex: 'code',
+      key: 'code',
+      width: 150,
+      render: (code: string) => code || '--',
+    },
+    {
+      title: '路由路径',
+      dataIndex: 'path',
+      key: 'path',
+      width: 200,
+      ellipsis: true,
+      render: (path: string) => path || '--',
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status: ResourceStatusEnum) => (
+        <Tag
+          color={status === ResourceStatusEnum.Enabled ? 'success' : 'default'}
+        >
+          {status === ResourceStatusEnum.Enabled ? '启用' : '禁用'}
+        </Tag>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 250,
+      fixed: 'right',
+      render: (_: any, record: ResourceTreeNode) => (
+        <Space size="small">
+          {record.type !== ResourceTypeEnum.Component && (
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleAddChild(record)}
+            >
+              新增子资源
+            </Button>
+          )}
+          <Button type="link" size="small" onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            loading={deleteLoadingMap[record.id] || false}
+            onClick={() => handleDeleteConfirm(record)}
+          >
+            删除
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
@@ -151,26 +297,35 @@ const PermissionResources: React.FC = () => {
       {/* 资源列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading}>
-          {!resourceList?.length ? (
+          {!tableData?.length ? (
             <Empty
               description="暂无资源数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className={cx(styles.empty)}
             />
           ) : (
-            <div className={cx(styles.resourceList)}>
-              {resourceList?.map((resource: ResourceTreeNode) => (
-                <ResourceItem
-                  key={resource.id}
-                  resource={resource}
-                  level={0}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onAddChild={handleAddChild}
-                  deleteLoading={deleteLoadingMap[resource.id] || false}
-                />
-              ))}
-            </div>
+            <Table<ResourceTreeNode & { key: number }>
+              columns={columns}
+              dataSource={tableData}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+              expandable={{
+                expandIcon: ({ expanded, onExpand, record }) =>
+                  record.children ? (
+                    <DownOutlined
+                      className={cx(styles.icon, {
+                        [styles['rotate-0']]: expanded,
+                      })}
+                      onClick={(e) => onExpand(record, e)}
+                    />
+                  ) : (
+                    <DownOutlined
+                      className={cx(styles.icon, styles['icon-hidden'])}
+                    />
+                  ),
+              }}
+            />
           )}
         </Spin>
       </div>

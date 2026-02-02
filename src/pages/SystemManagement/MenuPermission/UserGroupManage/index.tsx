@@ -236,7 +236,6 @@ const UserGroupManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            danger
             loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
