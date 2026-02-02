@@ -40,6 +40,8 @@ export interface SystemResourceInfo {
   creatorName: string;
   /** 创建时间 */
   created: string;
+  /** 空间ID */
+  spaceId: number;
   /** 操作 */
   operation: string;
 }
@@ -383,6 +385,8 @@ export interface SystemSpaceListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 空间列表分页响应
@@ -399,6 +403,8 @@ export interface SystemAgentListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 智能体列表分页响应
@@ -415,6 +421,8 @@ export interface SystemWebappListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 网页应用列表分页响应
@@ -431,6 +439,8 @@ export interface SystemKnowledgeListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 知识库列表分页响应
@@ -447,6 +457,8 @@ export interface SystemDataTableListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 数据表列表分页响应
@@ -463,6 +475,8 @@ export interface SystemWorkflowListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 工作流列表分页响应
@@ -479,6 +493,8 @@ export interface SystemPluginListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 // 插件列表分页响应
@@ -499,6 +515,8 @@ export interface SystemMcpListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 /**
@@ -521,6 +539,8 @@ export interface SystemSkillListParams extends SystemPaginationParams {
   creatorIds?: number[];
   /** 空间ID */
   spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
 }
 
 /**
