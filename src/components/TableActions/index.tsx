@@ -32,8 +32,8 @@ export interface ActionItem<T> {
   };
   /** 条件显示函数，返回 false 则隐藏该按钮 */
   visible?: (record: T) => boolean;
-  /** 禁用函数 */
-  disabled?: (record: T) => boolean;
+  /** 禁用函数或布尔值 */
+  disabled?: boolean | ((record: T) => boolean);
   /** 点击回调 */
   onClick: (record: T) => void;
 }
@@ -187,7 +187,10 @@ function TableActions<T>({
 
   // 渲染单个按钮
   const renderButton = (action: ActionItem<T>) => {
-    const isDisabled = action.disabled?.(record) ?? false;
+    const isDisabled =
+      typeof action.disabled === 'function'
+        ? action.disabled(record)
+        : action.disabled ?? false;
 
     const handleClick = () => {
       if (action.confirm && !isDisabled) {
@@ -222,7 +225,10 @@ function TableActions<T>({
 
   // 下拉菜单项
   const dropdownMenuItems = moreActions.map((action) => {
-    const isDisabled = action.disabled?.(record) ?? false;
+    const isDisabled =
+      typeof action.disabled === 'function'
+        ? action.disabled(record)
+        : action.disabled ?? false;
 
     const handleMenuClick = () => {
       if (action.confirm && !isDisabled) {
