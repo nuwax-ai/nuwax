@@ -10,15 +10,14 @@ import {
   apiSystemResourceSkillList,
 } from '@/services/systemManage';
 import { SystemSkillInfo } from '@/types/interfaces/systemManage';
-import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Modal } from 'antd';
+import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 
 const SkillPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -48,29 +47,7 @@ const SkillPage: React.FC = () => {
    * 查看技能详情
    */
   const handleView = useCallback((record: SystemSkillInfo) => {
-    Modal.info({
-      title: '技能详情',
-      content: (
-        <div>
-          <p>
-            <strong>名称：</strong>
-            {record.name}
-          </p>
-          <p>
-            <strong>描述：</strong>
-            {record.description || '-'}
-          </p>
-          <p>
-            <strong>创建人：</strong>
-            {record.creatorName}
-          </p>
-          <p>
-            <strong>创建时间：</strong>
-            {record.created ? getTime(record.created) : '-'}
-          </p>
-        </div>
-      ),
-    });
+    history.push(`/space/${record.spaceId}/skill-details/${record.id}`);
   }, []);
 
   /**
@@ -172,11 +149,13 @@ const SkillPage: React.FC = () => {
     pageSize?: number;
     current?: number;
     name?: string;
+    creatorName?: string;
   }) => {
     const response = await apiSystemResourceSkillList({
       pageNo: params.current || 1,
       pageSize: params.pageSize || 10,
       name: params.name,
+      creatorName: params.creatorName,
     });
 
     return {
