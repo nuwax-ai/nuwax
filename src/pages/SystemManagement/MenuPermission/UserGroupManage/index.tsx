@@ -99,6 +99,13 @@ const UserGroupManage: React.FC = () => {
     setModalOpen(true);
   };
 
+  // 处理新增子用户组
+  const handleAddChild = (parentUserGroup: UserGroupInfo) => {
+    setCurrentUserGroup(parentUserGroup);
+    setIsEdit(false);
+    setModalOpen(true);
+  };
+
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
@@ -229,6 +236,13 @@ const UserGroupManage: React.FC = () => {
             onClick={() => handleMenuPermission(record)}
           >
             菜单权限
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleAddChild(record)}
+          >
+            新增子用户组
           </Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             编辑

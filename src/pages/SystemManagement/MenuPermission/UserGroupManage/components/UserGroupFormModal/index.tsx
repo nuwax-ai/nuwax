@@ -154,7 +154,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     }
   }, [modelList, allModelSelected]);
 
-  // 当 userGroupList 和 fetchedUserGroupData 同时存在时，设置 parentId 回显
+  // 当 userGroupList 和 fetchedUserGroupData 同时存在时，设置 parentId 回显（编辑模式）
   useEffect(() => {
     if (
       userGroupList &&
@@ -167,6 +167,21 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       });
     }
   }, [userGroupList, fetchedUserGroupData, form]);
+
+  // 当 userGroupList 加载完成且是新增子用户组模式时，确保 parentId 正确设置
+  useEffect(() => {
+    if (
+      !isEdit &&
+      userGroupInfo &&
+      userGroupList &&
+      userGroupList.length > 0 &&
+      open
+    ) {
+      form.setFieldsValue({
+        parentId: userGroupInfo.id,
+      });
+    }
+  }, [userGroupList, userGroupInfo, isEdit, open, form]);
 
   const loading = addLoading || updateLoading;
 
@@ -188,6 +203,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         source: UserGroupSourceEnum.UserDefined,
         sortIndex: 0,
         status: true,
+        parentId: null,
         tokenLimit: {
           limitPerDay: 0,
         },
