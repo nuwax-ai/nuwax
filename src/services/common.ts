@@ -109,13 +109,13 @@ const errorHandler = (error: any, opts: any) => {
         // 智能体不存在或已下架
         case AGENT_NOT_EXIST:
           message.warning(errorMessage);
-          break;
+          return Promise.reject();
 
         // 默认错误处理
         default:
           // 只有当请求不在过滤列表中才显示错误消息
           message.warning(errorMessage);
-          break;
+          return Promise.reject();
       }
 
       /**

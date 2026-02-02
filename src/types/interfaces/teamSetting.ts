@@ -35,10 +35,10 @@ export interface SpaceUserInfo {
 // 搜索成员返回数据
 export interface SearchUserInfo {
   id: number;
-  tenantId: number;
+  tenantId?: number;
   userName: string;
   nickName: string;
   avatar: string;
-  created: string;
-  role: TeamStatusEnum;
+  created?: string;
+  role?: TeamStatusEnum;
 }

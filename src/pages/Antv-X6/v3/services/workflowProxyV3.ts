@@ -21,6 +21,7 @@ import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
+import { workflowLogger } from '@/utils/logger';
 import { SpecialPortType } from '../types/enums';
 import type {
   EdgeV3,
@@ -47,7 +48,7 @@ function toNodeId(id: string | number | undefined | null): number {
 
   // 检查是否是有效的数字
   if (isNaN(numId)) {
-    console.warn('[WorkflowProxy] 无效的节点 ID:', id);
+    workflowLogger.warn('[WorkflowProxy] 无效的节点 ID:', id);
     return 0;
   }
 
@@ -55,7 +56,7 @@ function toNodeId(id: string | number | undefined | null): number {
   if (typeof id === 'string') {
     const cleanStr = id.trim();
     if (cleanStr.length >= 16 && !Number.isSafeInteger(Number(cleanStr))) {
-      console.warn(
+      workflowLogger.warn(
         '[WorkflowProxy] 节点 ID 超出安全整数范围，精度丢失:',
         cleanStr,
       );
@@ -111,8 +112,8 @@ class WorkflowProxyV3 {
 
     this.notify('mutation');
 
-    console.log(
-      '[V3 Proxy] 节点数量:',
+    workflowLogger.log(
+      '[Proxy] 节点数量:',
       data.nodes.length,
       '边数量:',
       data.edges.length,
@@ -121,8 +122,8 @@ class WorkflowProxyV3 {
     // 调试：打印节点的 nextNodeIds
     data.nodes.forEach((node) => {
       if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-        console.log(
-          '[V3 Proxy] 节点',
+        workflowLogger.log(
+          '[Proxy] 节点',
           node.id,
           node.name,
           'nextNodeIds:',
@@ -224,13 +225,13 @@ class WorkflowProxyV3 {
       const targetId = parseInt(edge.target, 10);
 
       if (!nodeIds.has(sourceId)) {
-        console.warn(
-          `[WorkflowProxy] 边的源节点不存在: ${edge.source}, 将移除此边`,
+        workflowLogger.warn(
+          `[Proxy] 边的源节点不存在: ${edge.source}, 将移除此边`,
         );
         invalidEdges.push(edge);
       } else if (!nodeIds.has(targetId)) {
-        console.warn(
-          `[WorkflowProxy] 边的目标节点不存在: ${edge.target}, 将移除此边`,
+        workflowLogger.warn(
+          `[Proxy] 边的目标节点不存在: ${edge.target}, 将移除此边`,
         );
         invalidEdges.push(edge);
       }
@@ -239,7 +240,7 @@ class WorkflowProxyV3 {
     // 移除无效的边
     if (invalidEdges.length > 0) {
       this.workflowData.edges = edges.filter((e) => !invalidEdges.includes(e));
-      console.log(`[WorkflowProxy] 已移除 ${invalidEdges.length} 条无效边`);
+      workflowLogger.log(`[Proxy] 已移除 ${invalidEdges.length} 条无效边`);
     }
 
     // 2. 验证 nextNodeIds 与边的一致性（仅警告，不自动修复）
@@ -268,8 +269,8 @@ class WorkflowProxyV3 {
       // 检查画布上有边但 nextNodeIds 没有的情况
       expectedNextIds.forEach((id) => {
         if (!actualNextIds.has(id)) {
-          console.warn(
-            `[WorkflowProxy] 节点 ${node.id} (${node.name}) 画布有边到 ${id}，但 nextNodeIds 缺少此连接，已自动添加`,
+          workflowLogger.warn(
+            `[Proxy] 节点 ${node.id} (${node.name}) 画布有边到 ${id}，但 nextNodeIds 缺少此连接，已自动添加`,
           );
           if (!node.nextNodeIds) node.nextNodeIds = [];
           node.nextNodeIds.push(id);
@@ -279,8 +280,8 @@ class WorkflowProxyV3 {
       // 检查 nextNodeIds 有但画布上没边的情况（可能是历史遗留数据）
       actualNextIds.forEach((id) => {
         if (!expectedNextIds.has(id)) {
-          console.warn(
-            `[WorkflowProxy] 节点 ${node.id} (${node.name}) nextNodeIds 包含 ${id}，但画布无对应边，已自动移除`,
+          workflowLogger.warn(
+            `[Proxy] 节点 ${node.id} (${node.name}) nextNodeIds 包含 ${id}，但画布无对应边，已自动移除`,
           );
           node.nextNodeIds = (node.nextNodeIds || []).filter(
             (nid) => nid !== id,
@@ -356,11 +357,11 @@ class WorkflowProxyV3 {
     );
     if (index >= 0) {
       this.workflowData.nodes[index] = cloneDeep(node);
-      console.log('[V3 Proxy] 节点更新成功:', node.id, node.name);
+      workflowLogger.log('[Proxy] 节点更新成功:', node.id, node.name);
     } else {
       // 节点不存在，作为新增处理
       this.workflowData.nodes.push(cloneDeep(node));
-      console.log('[V3 Proxy] 节点新增（通过更新）:', node.id, node.name);
+      workflowLogger.log('[Proxy] 节点新增（通过更新）:', node.id, node.name);
     }
 
     this.recordUpdate({
@@ -835,8 +836,8 @@ class WorkflowProxyV3 {
           targetNodeId,
           'add',
         );
-        console.log(
-          '[V3 Proxy] 特殊端口连线添加:',
+        workflowLogger.log(
+          '[Proxy] 特殊端口连线添加:',
           portInfo.type,
           'uuid:',
           portInfo.uuid,
@@ -916,8 +917,8 @@ class WorkflowProxyV3 {
           targetNodeId,
           'remove',
         );
-        console.log(
-          '[V3 Proxy] 特殊端口连线删除:',
+        workflowLogger.log(
+          '[Proxy] 特殊端口连线删除:',
           portInfo.type,
           'uuid:',
           portInfo.uuid,

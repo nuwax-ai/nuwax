@@ -26,6 +26,7 @@ export interface TimedTaskProps {
 export interface TaskListProps {
   className?: string;
   loading?: boolean;
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus: TaskStatus;
   taskList: TimedConversationTaskInfo[];
   onCancelTask?: (info: TimedConversationTaskInfo) => void;
@@ -114,7 +115,7 @@ export interface TimedConversationTaskInfo {
   taskCron?: string;
   taskCronDesc?: string;
   taskId?: string;
-  // 任务状态
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus?: TaskStatus;
   tenantId?: number;
   /**
@@ -133,6 +134,7 @@ export interface TimedConversationTaskInfo {
 // 定时会话任务列表请求参数
 export interface TimedConversationTaskParams {
   agentId: number;
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus: TaskStatus;
 }
 

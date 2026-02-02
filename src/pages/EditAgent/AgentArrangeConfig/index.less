@@ -1,10 +1,48 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+.config-layout {
+  display: flex;
+  height: 100%;
+
+  .anchor-sidebar {
+    margin-top: @margin;
+    width: 80px;
+    // padding: 2px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .anchor-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+
+    &:hover {
+      background-color: @colorFillQuaternary;
+      color: @colorText;
+    }
+  }
+
+  .anchor-item-label {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+  }
+}
+
 .container {
+  flex: 1;
   border-left: @lineWidth solid @colorSplit;
   padding: @paddingXs @padding;
-  width: 50%;
+
   //隐藏滚动条
   &::-webkit-scrollbar {
     display: none;

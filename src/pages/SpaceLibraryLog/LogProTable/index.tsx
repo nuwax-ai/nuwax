@@ -1,4 +1,5 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
+import { XProTable } from '@/components/ProComponents';
 import { apiSpaceLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -12,10 +13,15 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
@@ -126,7 +132,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
-        hideInTable: true,
+        hideInTable: false,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
@@ -134,7 +140,10 @@ const LogProTable: React.FC = () => {
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
-        fieldProps: getIntegerOnlyFieldProps('请输入用户ID，仅支持输入整数'),
+        fieldProps: getIntegerOnlyFieldProps(
+          '请输入用户ID，仅支持输入整数',
+          18,
+        ),
       },
       {
         title: '用户名',
@@ -239,23 +248,28 @@ const LogProTable: React.FC = () => {
   const isReset = useRef(false);
 
   const request = useCallback(
-    async (tableParams: Record<string, any>) => {
+    async (_tableParams: Record<string, any>) => {
+      let tableParams = _tableParams;
       // 判断是否是点击重置按钮
       if (isReset.current) {
         isReset.current = false;
-        // 设置表单值为空
+        // 重置表单
+        formRef.current?.resetFields();
+        // 设置表单值为空(需要特殊处理)
         formRef.current?.setFieldsValue({
           targetType: undefined,
           targetId: undefined,
         });
 
-        // 删除查询参数，防止重复查询
+        // 删除查询参数,防止重复查询
         searchParams.delete('targetType');
         searchParams.delete('targetId');
-        searchParams.delete('from');
-        tableParams.targetId = undefined;
-        tableParams.targetType = undefined;
+        searchParams.delete('from'); // 需要特殊处理(只有特殊情况会用到)
         setSearchParams(searchParams);
+        tableParams = {
+          current: tableParams.current,
+          pageSize: tableParams.pageSize,
+        };
       }
       const current = Number(tableParams.current || 1);
       const pageSize = Number(tableParams.pageSize || 10);
@@ -370,36 +384,48 @@ const LogProTable: React.FC = () => {
 
   const handleReset = () => {
     isReset.current = true;
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页10条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
   };
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state]);
+
+  // 记录是否是首次加载，避免在初始加载时清空 URL 参数
+  const isFirstLoad = useRef(true);
+
+  // 监听 spaceId 变化，切换空间时刷新数据
+  useEffect(() => {
+    // 首次加载时不触发重置，保留 URL 参数用于初始化查询
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // 只在 spaceId 变化（非首次加载）时才重置
+    if (spaceId) {
+      handleReset();
+    }
+  }, [spaceId]);
 
   return (
     <>
-      <ProTable<SpaceLogInfo>
+      <XProTable<SpaceLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
         request={request}
-        debounceTime={300}
-        toolBarRender={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}

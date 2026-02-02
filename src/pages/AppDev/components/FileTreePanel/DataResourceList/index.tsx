@@ -1,5 +1,6 @@
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { unbindDataSource } from '@/services/appDev';
@@ -10,7 +11,7 @@ import {
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { DataResource } from '@/types/interfaces/dataResource';
 import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Empty, message, Modal } from 'antd';
+import { message, Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
 /**
@@ -251,17 +252,23 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   return (
     <div
       style={{
-        height: '200px',
+        height: '100%',
         padding: '8px',
         margin: '0 4px',
         overflow: 'auto',
       }}
     >
       {resources.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="点击&ldquo;+&rdquo;添加数据资源"
-        />
+        <div
+          style={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <AppDevEmptyState type="add-data" showButtons={false} />
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {resources.map((resource) => renderResourceItem(resource))}

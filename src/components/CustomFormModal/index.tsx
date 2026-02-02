@@ -20,6 +20,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   okPrefixIcon,
   okText,
   centered = false,
+  width,
   onCancel,
   onConfirm,
   children,
@@ -30,6 +31,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
       open={open}
       centered={centered}
       classNames={classNames}
+      width={width}
       destroyOnHidden
       footer={
         <>

@@ -9,6 +9,7 @@ import { useConversationScrollDetection } from '@/hooks/useConversationScrollDet
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
@@ -19,8 +20,8 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined } from '@ant-design/icons';
-import { Form, message } from 'antd';
+import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
+import { Button, Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -96,6 +97,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setIsLoadingOtherInterface,
     clearFilePanelInfo,
     isFileTreeVisible,
+    // 加载更多消息相关
+    isMoreMessage,
+    setIsMoreMessage,
+    loadingMore,
+    handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -115,6 +121,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   useEffect(() => {
     // 监听form表单值变化
+    // 当表单值为空对象且有必填参数时，应该设置 variableParams 为 null
+    if (
+      values &&
+      Object.keys(values).length === 0 &&
+      requiredNameList?.length > 0
+    ) {
+      setVariableParams(null);
+      return;
+    }
+    // 如果没有必填参数，空对象也是有效的
     if (values && Object.keys(values).length === 0) {
       return;
     }
@@ -122,7 +138,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       .validateFields({ validateOnly: true })
       .then(() => setVariableParams(values))
       .catch(() => setVariableParams(null));
-  }, [form, values]);
+  }, [form, values, requiredNameList]);
 
   useEffect(() => {
     if (!!userFillVariables) {
@@ -211,11 +227,39 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     };
   }, []);
 
+  // 监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
+    const { conversationId } = data;
+    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+    if (conversationId === conversationInfo?.id?.toString()) {
+      // 重新查询会话信息
+      runQueryConversation(conversationId);
+
+      // 取消监听会话状态更新事件
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+  };
+
+  useEffect(() => {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    };
+  }, [conversationInfo?.taskStatus]);
+
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
+    // 重置对话设置表单数据
+    form.resetFields();
     // 清除调试结果
     setFinalResult(null);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
     setMessageList([]);
@@ -253,12 +297,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
           onAgentConfigInfo(_agentConfigInfo);
         }
         // 查询会话
-        runQueryConversation(id);
+        await runQueryConversation(id);
       }
     } finally {
       setIsLoadingOtherInterface(false);
     }
-  }, [agentId, agentConfigInfo]);
+  }, [agentId, agentConfigInfo, form]);
 
   // 消息发送
   const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
@@ -325,7 +369,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             }}
             // 打开文件面板
             onOpenFilePanel={onOpenFilePanel}
-            // 是否显示文件面板: 任务智能体 + 文件树未打开
+            // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={
               !isFileTreeVisible &&
               agentConfigInfo?.type === AgentTypeEnum.TaskAgent
@@ -368,9 +412,26 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 </div>
               ) : messageList?.length > 0 ? (
                 <>
+                  {/* 加载更多按钮 */}
+                  {isMoreMessage && messageList?.length > 0 && (
+                    <div className={cx(styles['load-more-container'])}>
+                      <Button
+                        type="text"
+                        loading={loadingMore}
+                        icon={<RollbackOutlined />}
+                        onClick={() =>
+                          handleLoadMoreMessage(devConversationIdRef.current)
+                        }
+                        className={cx(styles['load-more-btn'])}
+                      >
+                        点击查看更多历史会话
+                      </Button>
+                    </div>
+                  )}
                   {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item?.id}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       mode={'chat'}
@@ -385,6 +446,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
+
+                  {/* 任务执行中容器 */}
+                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                    <div
+                      className={cx(
+                        styles['task-executing-container'],
+                        'flex',
+                        'items-center',
+                      )}
+                    >
+                      <LoadingOutlined />
+                      <span>智能体正在执行，请稍等</span>
+                    </div>
+                  )}
                 </>
               ) : (
                 isLoadingConversation && (

@@ -102,7 +102,7 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
     >
       <>
         <p className={cx(styles['team-setting-modal-description'])}>
-          转让所有权后，您的状态将更改为管理员。
+          转让所有权后，你的状态将更改为管理员。
         </p>
         <Form
           form={form}

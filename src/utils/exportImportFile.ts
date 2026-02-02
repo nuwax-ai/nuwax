@@ -70,8 +70,14 @@ export const exportWholeProjectZip = async (result: any, name: string) => {
     const filenameMatch = contentDisposition.match(
       /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
     );
+
     if (filenameMatch && filenameMatch[1]) {
       filename = filenameMatch[1].replace(/['"]/g, '');
+
+      // 解码文件名
+      if (filename) {
+        filename = decodeURIComponent(filename);
+      }
     }
   }
 

@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="data-spm" content="5176"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+        <script>
+            // 将在获取配置后动态设置
+            window.AliyunCaptchaConfig = {
+                region: 'cn',
+                prefix: '',
+            };
+        </script>
+        <script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+        <script src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+
+    </head>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #captcha-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f5f5f5;
+        }
+
+        #captcha-element {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #loading-message,
+        #error-message {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #error-message {
+            color: #ff4d4f;
+        }
+    </style>
+
+    <body>
+        <div id="captcha-container">
+            <div id="loading-message">正在加载验证码配置...</div>
+            <div id="error-message" style="display: none;"></div>
+            <div id="captcha-element"></div>
+            <div id="captcha-button"></div>
+        </div>
+
+        <script type="text/javascript">
+            var captcha;
+            var captchaConfig = null;
+
+            // 获取验证码配置
+            function fetchCaptchaConfig() {
+                return fetch('/api/tenant/config', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.code === '0000' && result.data) {
+                        return {
+                            prefix: result.data.captchaPrefix,
+                            sceneId: result.data.captchaSceneId,
+                        };
+                    } else {
+                        throw new Error(result.message || '获取配置失败');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('获取验证码配置失败:', error);
+                    throw error;
+                });
+            }
+
+            function initCaptcha(config) {
+                // 更新全局配置
+                window.AliyunCaptchaConfig.prefix = config.prefix;
+
+                window.initAliyunCaptcha({
+                    SceneId: config.sceneId,
+                    mode: 'embed',
+                    element: '#captcha-element',
+                    button: '#captcha-button',
+                    success: success,
+                    fail: fail,
+                    getInstance: getInstance,
+                    slideStyle: {
+                        width: 360,
+                        height: 40,
+                    },
+                    language: 'cn',
+                    timeout: 5000,
+                });  
+            }
+
+            // 初始化流程
+            function init() {
+                var loadingMessage = document.getElementById('loading-message');
+                var errorMessage = document.getElementById('error-message');
+
+                fetchCaptchaConfig()
+                    .then(function(config) {
+                        captchaConfig = config;
+                        loadingMessage.style.display = 'none';
+                        initCaptcha(config);
+                    })
+                    .catch(function(error) {
+                        loadingMessage.style.display = 'none';
+                        errorMessage.textContent = '加载验证码配置失败: ' + error.message;
+                        errorMessage.style.display = 'block';
+                    });
+            }
+
+            // 页面加载完成后初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            function getInstance(instance) {
+                console.log(instance)
+                captcha = instance;
+            }
+
+            function success(captchaVerifyParam) {
+                console.log(captchaVerifyParam);
+                // 通知小程序二次校验参数captchaVerifyParam
+                wx.miniProgram.postMessage({
+                  data: captchaVerifyParam,
+                });
+                wx.miniProgram.navigateBack();
+            }
+
+            function fail(err) {
+                console.error(err);
+            }
+        </script>
+    </body>
+</html>

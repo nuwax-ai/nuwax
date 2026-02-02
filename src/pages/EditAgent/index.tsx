@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import Loading from '@/components/custom/Loading';
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -147,6 +148,10 @@ const EditAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
 
+  // 获取智能体配置信息是否加载中
+  const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
+    useState<boolean>(false);
+
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
     const result = await apiModelList(params);
@@ -162,23 +167,20 @@ const EditAgent: React.FC = () => {
   }, [spaceId]);
 
   // 查询智能体配置信息
-  const { run, loading: loadingAgentConfigInfo } = useRequest(
-    apiAgentConfigInfo,
-    {
-      manual: true,
-      debounceWait: 300,
-      onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-        setAgentConfigInfo(result?.data);
-      },
+  const { run } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      setLoadingAgentConfigInfo(false);
+      setAgentConfigInfo(result?.data);
     },
-  );
+    onError: () => {
+      setLoadingAgentConfigInfo(false);
+    },
+  });
 
   useEffect(() => {
-    if (loadingAgentConfigInfo) {
-      setIsLoadingOtherInterface(true);
-    } else {
-      setIsLoadingOtherInterface(false);
-    }
+    setIsLoadingOtherInterface(loadingAgentConfigInfo);
   }, [loadingAgentConfigInfo]);
 
   // 查询智能体配置信息
@@ -210,7 +212,9 @@ const EditAgent: React.FC = () => {
           (item: AgentComponentInfo) =>
             item.type === AgentComponentTypeEnum.Plugin ||
             item.type === AgentComponentTypeEnum.Workflow ||
-            item.type === AgentComponentTypeEnum.MCP,
+            item.type === AgentComponentTypeEnum.MCP ||
+            item.type === AgentComponentTypeEnum.Skill ||
+            item.type === AgentComponentTypeEnum.SubAgent,
         )
         ?.map((item: AgentComponentInfo) => ({
           ...item,
@@ -242,7 +246,9 @@ const EditAgent: React.FC = () => {
             (item: AgentComponentInfo) =>
               item.type === AgentComponentTypeEnum.Plugin ||
               item.type === AgentComponentTypeEnum.Workflow ||
-              item.type === AgentComponentTypeEnum.MCP,
+              item.type === AgentComponentTypeEnum.MCP ||
+              item.type === AgentComponentTypeEnum.Skill ||
+              item.type === AgentComponentTypeEnum.SubAgent,
           )
           ?.map((item: AgentComponentInfo) => ({
             ...item,
@@ -253,15 +259,14 @@ const EditAgent: React.FC = () => {
     [],
   );
 
-  // 更新智能体基础配置信息
   const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceWait: 600,
   });
 
   useEffect(() => {
+    setLoadingAgentConfigInfo(true);
     run(agentId);
-    // runComponentList(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -286,7 +291,7 @@ const EditAgent: React.FC = () => {
    * @param name: 会话模型名称
    * @param config: 模型配置信息
    */
-  const handleSetModel = (
+  const handleSetModel = async (
     targetId: number | null,
     name: string,
     config: ComponentModelBindConfig,
@@ -574,7 +579,7 @@ const EditAgent: React.FC = () => {
 
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && devConversationId) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
 
     return code === SUCCESS_CODE;
@@ -584,7 +589,7 @@ const EditAgent: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
@@ -594,22 +599,35 @@ const EditAgent: React.FC = () => {
               return;
             }
 
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {
@@ -664,7 +682,7 @@ const EditAgent: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -702,63 +720,34 @@ const EditAgent: React.FC = () => {
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!devConversationId) {
       messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else {
-        relativePath = node.path + '/';
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiUploadFiles({
+        files,
+        cId: devConversationId,
+        filePaths,
+      });
+      if (code === SUCCESS_CODE && devConversationId) {
+        messageAntd.success('上传成功');
+        // 上传成功后，重新查询文件树列表
+        await handleRefreshFileList(devConversationId);
       }
+    } catch (error) {
+      console.error('上传失败', error);
     }
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.style.display = 'none';
-    document.body.appendChild(input);
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiUploadFiles({
-          files,
-          cId: devConversationId,
-          filePaths,
-        });
-        if (code === SUCCESS_CODE && devConversationId) {
-          // 上传成功后，重新查询文件树列表
-          handleRefreshFileList(devConversationId);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        document.body.removeChild(input);
-      }
-    };
-
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-
-    input.click();
   };
 
   // 导出项目
@@ -774,9 +763,9 @@ const EditAgent: React.FC = () => {
       const filename = `agent-${agentId}-${devConversationId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);
+      messageAntd.success('导出成功！');
     } catch (error) {
       console.error('导出项目失败:', error);
-      messageAntd.error('导出项目失败，请重试');
     }
   };
 
@@ -878,6 +867,55 @@ const EditAgent: React.FC = () => {
     closePreviewView();
   };
 
+  useEffect(() => {
+    /**
+     * 设置最小宽度
+     */
+    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
+      if (isFileTreeVisible) {
+        document.documentElement.style.minWidth = '1750px';
+      } else {
+        document.documentElement.style.minWidth = '1240px';
+      }
+    } else {
+      // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
+      if (pagePreviewData) {
+        document.documentElement.style.minWidth = '2000px';
+      } else {
+        // 设置最小宽度-调试详情
+        if (showType === EditAgentShowType.Debug_Details) {
+          document.documentElement.style.minWidth = '1540px';
+        } else {
+          document.documentElement.style.minWidth = '1240px';
+        }
+      }
+    }
+
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [pagePreviewData, isFileTreeVisible, showType, agentConfigInfo?.type]);
+
+  /**
+   * 加载中
+   */
+  if (loadingAgentConfigInfo) {
+    return (
+      <div
+        className={cx(
+          'h-full',
+          'flex',
+          'flex-1',
+          'items-center',
+          'justify-center',
+        )}
+      >
+        <Loading />
+      </div>
+    );
+  }
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -904,7 +942,10 @@ const EditAgent: React.FC = () => {
       >
         {/*编排*/}
         <div
-          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
+          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'], {
+            [styles['chat-bot-edit-info']]:
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+          })}
         >
           {/*编排title*/}
           <ArrangeTitle
@@ -922,22 +963,48 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {/*系统提示词/用户提示词*/}
-            <SystemUserTipsWord
-              ref={systemUserTipsWordRef}
-              agentConfigInfo={agentConfigInfo}
-              valueUser={agentConfigInfo?.userPrompt}
-              valueSystem={agentConfigInfo?.systemPrompt}
-              onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
-              onChangeSystem={(value) =>
-                handleChangeAgent(value, 'systemPrompt')
-              }
-              onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={promptVariables}
-              skills={promptTools}
-            />
+            {/* 问答型智能体、应用页面 */}
+            {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
+              // 系统提示词/用户提示词
+              <SystemUserTipsWord
+                ref={systemUserTipsWordRef}
+                agentConfigInfo={agentConfigInfo}
+                valueUser={agentConfigInfo?.userPrompt}
+                valueSystem={agentConfigInfo?.systemPrompt}
+                onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
+                onChangeSystem={(value) =>
+                  handleChangeAgent(value, 'systemPrompt')
+                }
+                onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
+                variables={promptVariables}
+                skills={promptTools}
+              />
+            )}
+
             {/*配置区域*/}
             <AgentArrangeConfig
+              extraComponent={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                  <SystemUserTipsWord
+                    className={cx(styles['prompt-wrapper'], 'w-full')}
+                    ref={systemUserTipsWordRef}
+                    agentConfigInfo={agentConfigInfo}
+                    valueUser={agentConfigInfo?.userPrompt}
+                    valueSystem={agentConfigInfo?.systemPrompt}
+                    onChangeUser={(value) =>
+                      handleChangeAgent(value, 'userPrompt')
+                    }
+                    onChangeSystem={(value) =>
+                      handleChangeAgent(value, 'systemPrompt')
+                    }
+                    onReplace={(value) =>
+                      handleChangeAgent(value!, 'systemPrompt')
+                    }
+                    variables={promptVariables}
+                    skills={promptTools}
+                  />
+                )
+              }
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
@@ -952,21 +1019,24 @@ const EditAgent: React.FC = () => {
           pagePreviewData ||
           isFileTreeVisible) && (
           <div
-            // className={cx(isFileTreeVisible && 'flex-1')}
             style={{
               flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
               minWidth:
-                pagePreviewData || isFileTreeVisible ? '1050px' : '350px',
+                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
             }}
           >
             {/*预览与调试和预览页面*/}
             <ResizableSplit
-              minRightWidth={700}
+              resetTrigger={
+                pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+              }
+              minRightWidth={530}
               defaultLeftWidth={
                 agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
               }
               left={
                 agentConfigInfo?.hideChatArea ? null : (
+                  // 预览与调试
                   <PreviewAndDebug
                     agentConfigInfo={agentConfigInfo}
                     agentId={agentId}
@@ -996,7 +1066,6 @@ const EditAgent: React.FC = () => {
                       <div
                         className={cx(
                           styles['file-tree-sidebar'],
-                          // styles['flex-2'],
                           'flex',
                           'w-full',
                         )}
@@ -1042,6 +1111,13 @@ const EditAgent: React.FC = () => {
                           onRefreshFileTree={() =>
                             handleRefreshFileList(devConversationId)
                           }
+                          // VNC 空闲检测配置（仅通用型智能体启用）
+                          idleDetection={{
+                            enabled:
+                              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                            onIdleTimeout: () =>
+                              openPreviewView(devConversationId),
+                          }}
                         />
                       </div>
                     )

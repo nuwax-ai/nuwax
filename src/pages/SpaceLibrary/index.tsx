@@ -46,7 +46,7 @@ import {
   jumpToWorkflow,
 } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
+import { Button, Empty, Input, message } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -328,6 +328,18 @@ const SpaceLibrary: React.FC = () => {
     runComponent(spaceId);
   }, [spaceId]);
 
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载组件列表
+      setLoading(true);
+      runComponent(spaceId);
+    }
+  }, [history.location.state]);
+
   // 切换类型
   const handlerChangeType = (value: React.Key) => {
     const _value = value as ComponentTypeEnum;
@@ -425,7 +437,7 @@ const SpaceLibrary: React.FC = () => {
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
-    modalConfirm('您确定要删除此组件吗?', name, () => {
+    modalConfirm('你确定要删除此组件吗?', name, () => {
       switch (type) {
         case ComponentTypeEnum.Plugin:
           runPluginDel(id);
@@ -628,74 +640,52 @@ const SpaceLibrary: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <Row>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={14}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div>
-            <Space>
-              <h3 className={cx(styles.title)}>组件库</h3>
-              <SelectList
-                value={type}
-                options={LIBRARY_ALL_TYPE}
-                onChange={handlerChangeType}
-              />
-              {/* 单选模式 */}
-              <ButtonToggle
-                options={CREATE_LIST}
-                value={create}
-                onChange={(value) => handlerChangeCreate(value as React.Key)}
-              />
-              <ButtonToggle
-                options={FILTER_STATUS}
-                value={status}
-                onChange={(value) => handlerChangeStatus(value as React.Key)}
-              />
-            </Space>
-          </div>
-        </Col>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={10}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div className={cx('flex', 'gap-10', 'justify-content-end')}>
-            <Input
-              rootClassName={cx(styles.input)}
-              placeholder="搜索组件"
-              value={keyword}
-              onChange={handleQueryAgent}
-              prefix={<SearchOutlined />}
-              allowClear
-              onClear={handleClearKeyword}
-              style={{ width: 214 }}
-            />
-            <UploadImportConfig
-              spaceId={spaceId}
-              onUploadSuccess={handleImportConfig}
-            />
-            {/*添加资源*/}
-            <CustomPopover
-              list={LIBRARY_ALL_RESOURCE}
-              onClick={handleClickPopoverItem}
-            >
-              <Button type="primary" icon={<PlusOutlined />}>
-                组件
-              </Button>
-            </CustomPopover>
-          </div>
-        </Col>
-      </Row>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>组件库</h3>
+          <SelectList
+            value={type}
+            options={LIBRARY_ALL_TYPE}
+            onChange={handlerChangeType}
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+          <ButtonToggle
+            options={FILTER_STATUS}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="搜索组件"
+            value={keyword}
+            onChange={handleQueryAgent}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+          />
+          {/*添加资源*/}
+          <CustomPopover
+            list={LIBRARY_ALL_RESOURCE}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              组件
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
 
       {loading ? (
         <Loading />

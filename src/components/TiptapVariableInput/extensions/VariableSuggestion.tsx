@@ -10,7 +10,6 @@ import { ConfigProvider } from 'antd';
 import { createRoot } from 'react-dom/client';
 import VariableList from '../components/VariableList';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
-import { extractTextFromHTML } from '../utils/htmlUtils';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
@@ -84,204 +83,66 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       // 默认值是 [' ']，只允许空格作为前缀
       // 设置为 null 表示允许所有字符作为前缀，这样 "121212{" 也能触发
       allowedPrefixes: null, // null 表示允许所有字符作为前缀
-      allow: ({ state, editor }) => {
+      allow: ({ state }) => {
         // 检查光标位置，避免在特定情况下显示建议框
         // 使用提取的文本内容来判断，因为 {{ 或 }} 可能跨元素
         const { $from } = state.selection;
 
         try {
-          // 获取光标前的文档文本（快速检查）
-          const docTextBefore = state.doc.textBetween(
-            Math.max(0, $from.pos - 10),
+          // 检查光标位置，避免在特定情况下显示建议框
+
+          // 方案：向后扫描查找触发建议的 '{'
+          // 核心逻辑：如果在找到 '{' 之前遇到了 '}'，说明变量已经闭合，不应该触发
+          // 另外，由于配置了 allowSpaces: false，如果遇到空格或换行，说明没找到有效的 trigger，也应该停止
+
+          const maxLookBack = 500; // 向后扫描的最大字符数
+          const startScan = Math.max(0, $from.pos - maxLookBack);
+          // 获取光标前的文本
+          const textBefore = state.doc.textBetween(
+            startScan,
             $from.pos,
             '\n',
             '\n',
           );
-          const docTextAfter = state.doc.textBetween(
-            $from.pos,
-            Math.min(state.doc.content.size, $from.pos + 10),
-            '\n',
-            '\n',
-          );
 
-          // 新增检查：如果光标前一个字符是字母或数字，说明在普通文本中间，不应该触发
-          // 例如：12dsds212| 输入 { 时不应该触发
-          // const charBeforeCursor = docTextBefore.slice(-1);
-          // if (charBeforeCursor && /[a-zA-Z0-9]/.test(charBeforeCursor)) {
-          //   return false;
-          // }
+          let foundOpenBrace = false;
+          let sawClosingBrace = false;
 
-          // 快速检查：如果文档文本末尾是 }}，且距离光标很近（2个字符内），不显示
-          // 但是如果 }} 和光标之间有其他内容，应该允许显示（例如：{{xxx}}{|{{yy}}）
-          const recentBefore = docTextBefore.slice(-2);
-          if (recentBefore.endsWith('}') || recentBefore.endsWith('}}')) {
-            // 检查 }} 是否紧跟在光标前（没有其他内容）
-            // 如果 }} 距离光标超过2个字符，说明中间有其他内容，应该允许显示
-            const lastClosingBrace = docTextBefore.lastIndexOf('}}');
-            if (lastClosingBrace !== -1) {
-              const distanceFromEnd = docTextBefore.length - lastClosingBrace;
-              // 只有当 }} 紧跟在光标前（2个字符内）时，才进一步检查
-              if (distanceFromEnd <= 2) {
-                // 检查 }} 后面是否紧跟 {{（允许在两个紧邻的变量之间插入）
-                // 例如：{{xxx}}{|{{yy}} - 允许
-                // 例如：{{xxx}}|zzz{{yy}} - 不允许（中间有 zzz）
-                const afterClosingBrace = docTextBefore.substring(
-                  lastClosingBrace + 2,
-                );
+          // 从后往前扫描
+          for (let i = textBefore.length - 1; i >= 0; i--) {
+            const char = textBefore[i];
 
-                // 检查光标后面是否紧跟 {{
-                const textAfterCursor = docTextAfter.slice(0, 2);
-
-                if (
-                  afterClosingBrace === '{' &&
-                  textAfterCursor.startsWith('{')
-                ) {
-                  // }}{{{ 模式：两个变量紧邻，允许在中间插入
-                  // 例如：{{xxx}}{|{{yy}}
-                } else {
-                  // 其他情况：阻止触发
-                  // 包括：{{xxx}}| (后面不是 {{)
-                  // 包括：{{xxx}}|zzz{{yy}} (后面不是紧跟 {{)
-                  return false;
-                }
+            if (char === '}') {
+              sawClosingBrace = true;
+            } else if (char === '{') {
+              foundOpenBrace = true;
+              // 找到了最近的一个 {
+              // 如果在此之前（也就是在光标和这个 { 之间）遇到了 }，说明这个 { 已经闭合了
+              if (sawClosingBrace) {
+                return false;
               }
-            } else if (recentBefore.endsWith('}')) {
-              // 单个 } 紧跟在光标前，也阻止显示
-              return false;
-            }
-          }
-
-          // 不检查光标后的文本，允许在 {{xxx}}{|{{yy}} 这种情况下触发建议
-          // 之前的逻辑过于严格，阻止了在两个变量之间插入新变量的场景
-
-          // 如果快速检查通过，使用提取的文本内容进行更精确的检查
-          const fullHtml = editor.getHTML();
-          if (!fullHtml) return true;
-
-          // 提取整个文本内容（将变量节点转换为 {{key}} 格式）
-          const fullExtractedText = extractTextFromHTML(fullHtml);
-          if (!fullExtractedText) return true;
-
-          // 获取光标前的文档文本长度，用于估算光标在提取文本中的位置
-          const docTextBeforeFull = state.doc.textBetween(
-            0,
-            $from.pos,
-            '\n',
-            '\n',
-          );
-          // 由于提取文本和文档文本的长度可能不同，我们使用一个近似方法
-          // 检查提取文本中，是否有 }} 在光标前，且 {{ 在光标后
-
-          // 方法：查找提取文本中所有 }} 和 {{ 的位置
-          // 然后判断光标是否在某个 }} 和 {{ 之间
-          const closingBraces: number[] = [];
-          const openingBraces: number[] = [];
-
-          let pos = 0;
-          while (pos < fullExtractedText.length) {
-            const closingIndex = fullExtractedText.indexOf('}}', pos);
-            if (closingIndex !== -1) {
-              closingBraces.push(closingIndex);
-              pos = closingIndex + 2;
-            } else {
+              // 找到了未闭合的 {
+              // 还需要检查这个 { 前面是不是也是 { (即 {{)
+              // 如果是 {{，且我们已经找到了 {，那么当前这个 { 是第二个
+              // 如果我们是在输入 {{key}}，光标在 key 后面
+              // 扫描顺序：y, e, k, { (found). sawClosing=false. return TRUE.
+              // 逻辑成立。
+              return true;
+            } else if (/\s/.test(char)) {
+              // 遇到了空白字符。由於 allowSpaces: false，说明 cursor 和之前的 { 之间断开了。
+              // 意味着当前的输入并不是属于那个 { 的变量名的一部分
               break;
             }
           }
 
-          pos = 0;
-          while (pos < fullExtractedText.length) {
-            const openingIndex = fullExtractedText.indexOf('{{', pos);
-            if (openingIndex !== -1) {
-              openingBraces.push(openingIndex);
-              pos = openingIndex + 2;
-            } else {
-              break;
-            }
+          // 如果扫描完了都没找到 {，说明没有 trigger，或者 trigger 在更远的地方
+          // 在这种情况下，认为是误触发（长文本）
+          if (!foundOpenBrace) {
+            return false;
           }
 
-          // 估算光标在提取文本中的位置（使用文档文本长度作为近似）
-          // 但是要更宽松，避免误判
-          const estimatedCursorPos = docTextBeforeFull.length;
-
-          // 检查光标是否在某个 }} 和 {{ 之间
-          // 只有当文档文本也确认有 }} 和 {{ 时，才阻止（双重验证，避免误判）
-          if (docTextBefore.includes('}}') && docTextAfter.includes('{{')) {
-            // 如果光标前最后一个字符是 {，说明用户正在输入新的变量引用，应该允许显示
-            // 例如：{{xxx}}{|{{yy}} 这种情况
-            const lastCharBefore = docTextBefore.slice(-1);
-            if (lastCharBefore === '{') {
-              // 光标前是 {，允许显示，不进行阻止检查
-              // 继续后续检查，不在这里返回 false
-            } else {
-              // 光标前不是 {，进行正常的检查
-              for (const closingPos of closingBraces) {
-                if (closingPos < estimatedCursorPos + 20) {
-                  // 放宽范围，避免误判
-                  // 找到了光标前的 }}
-                  // 检查光标后是否有 {{
-                  for (const openingPos of openingBraces) {
-                    if (openingPos > estimatedCursorPos - 20) {
-                      // 放宽范围，避免误判
-                      // 找到了光标后的 {{
-                      // 检查它们之间是否有其他 }} 或 {{
-                      const betweenText = fullExtractedText.substring(
-                        closingPos + 2,
-                        openingPos,
-                      );
-                      // 如果之间没有其他完整的变量引用，说明光标在 }}...{{ 之间
-                      if (
-                        !betweenText.includes('}}') &&
-                        !betweenText.includes('{{')
-                      ) {
-                        return false;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // 检查提取文本中最后一个 }} 的位置
-          // 只有当文档文本也确认时，才阻止（避免误判）
-          const lastClosingBrace = fullExtractedText.lastIndexOf('}}');
-          if (lastClosingBrace !== -1) {
-            // 计算 }} 到提取文本末尾的距离
-            const distanceFromEnd = fullExtractedText.length - lastClosingBrace;
-            // 如果 }} 距离末尾很近（在最后15个字符内），检查它之后是否有 {{
-            if (distanceFromEnd <= 15) {
-              const afterClosingBrace = fullExtractedText.substring(
-                lastClosingBrace + 2,
-              );
-              const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
-              // 如果 }} 之后没有 {{，且文档文本末尾也没有 {{，说明光标在一个已完成的变量引用之后
-              if (!hasUnclosedOpening && !docTextAfter.includes('{{')) {
-                // 只有当文档文本末尾附近也有 }} 时，才阻止（双重验证，避免误判）
-                const lastClosingBraceInDoc = docTextBefore.lastIndexOf('}}');
-                if (lastClosingBraceInDoc !== -1) {
-                  const distanceFromEndInDoc =
-                    docTextBefore.length - lastClosingBraceInDoc;
-                  // 只有当文档文本中的 }} 也距离末尾很近（5个字符内）时，才阻止
-                  if (distanceFromEndInDoc <= 5) {
-                    // 检查 }} 后面是否有 {
-                    // 如果有 {，说明用户正在输入新的变量引用，应该允许显示
-                    const textAfterClosing = docTextBefore.slice(
-                      lastClosingBraceInDoc + 2,
-                    );
-                    if (!textAfterClosing.includes('{')) {
-                      return false;
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // 其他情况都允许显示变量引用框
-          // 默认允许，确保正常输入 { 时能够触发
           return true;
         } catch (error) {
-          // 如果出错，默认允许显示（避免阻止正常使用）
           return true;
         }
       },
@@ -376,10 +237,19 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 if (!node) continue;
 
                 // 所有节点都可以选择（包括非叶子节点）
-                // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
+                // 检查是否是工具：工具的 key 以特定前缀开头，或者 variable.type 是工具类型
+                const variableType = (node.variable as any)?.type;
                 const isTool =
-                  (node.isLeaf && node.key.startsWith('skill-')) ||
-                  (node.isLeaf && (node.variable as any)?.type === 'Tool');
+                  node.isLeaf &&
+                  (node.key.startsWith('skill-') ||
+                    node.key.startsWith('tool-') ||
+                    node.key.startsWith('subagent-') ||
+                    variableType === 'Tool' ||
+                    variableType === 'Skill' ||
+                    variableType === 'SubAgent' ||
+                    variableType === 'Plugin' ||
+                    variableType === 'Workflow' ||
+                    variableType === 'Mcp');
 
                 result.push({
                   key: node.key,
@@ -402,49 +272,87 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               return result;
             };
 
-            // 分离变量和工具
+            // 分离变量、工具和技能
             const separateVariables = (nodes: VariableTreeNode[]) => {
               const regularVars: VariableTreeNode[] = [];
               const toolVars: VariableTreeNode[] = [];
+              const skillVars: VariableTreeNode[] = [];
 
+              // 检查是否有 "category-tools" 节点
+              const toolsCategory = nodes.find(
+                (n) => n.key === 'category-tools',
+              );
               // 检查是否有 "category-skills" 节点
               const skillsCategory = nodes.find(
                 (n) => n.key === 'category-skills',
               );
 
-              if (skillsCategory) {
-                // 如果有技能分类，它的子节点是工具，其他节点是普通变量
-                toolVars.push(...(skillsCategory.children || []));
+              if (toolsCategory || skillsCategory) {
+                // 如果有工具分类，提取其子节点
+                if (toolsCategory) {
+                  toolVars.push(...(toolsCategory.children || []));
+                }
+                // 如果有技能分类，提取其子节点
+                if (skillsCategory) {
+                  skillVars.push(...(skillsCategory.children || []));
+                }
+                // 其他节点是普通变量
                 regularVars.push(
-                  ...nodes.filter((n) => n.key !== 'category-skills'),
+                  ...nodes.filter(
+                    (n) =>
+                      n.key !== 'category-tools' && n.key !== 'category-skills',
+                  ),
                 );
               } else {
-                // 如果没有明确的分类，尝试根据 key 或 type 判断
-                // 检查节点是否是工具（key 以 'skill-' 开头或 type 是 'Tool'）
+                // 如果没有明确的分类，尝试根据 key 判断
                 for (const node of nodes) {
-                  const isTool =
-                    node.key.startsWith('skill-') ||
-                    (node.variable as any)?.type === 'Tool';
-                  if (isTool) {
+                  const varType = (node.variable as any)?.type;
+
+                  // 工具判断：前缀 tool- 或类型为 Tool/Plugin/Workflow/Mcp
+                  if (
+                    node.key.startsWith('tool-') ||
+                    varType === 'Tool' ||
+                    varType === 'Plugin' ||
+                    varType === 'Workflow' ||
+                    varType === 'Mcp'
+                  ) {
                     toolVars.push(node);
-                  } else {
+                  }
+                  // 技能判断：前缀 skill-/subagent- 或类型为 Skill/SubAgent
+                  else if (
+                    node.key.startsWith('skill-') ||
+                    node.key.startsWith('subagent-') ||
+                    varType === 'Skill' ||
+                    varType === 'SubAgent'
+                  ) {
+                    skillVars.push(node);
+                  }
+                  // 其他都归为普通变量
+                  else {
                     regularVars.push(node);
                   }
                 }
               }
 
-              return { regularVars, toolVars };
+              return { regularVars, toolVars, skillVars };
             };
 
-            const { regularVars, toolVars } = separateVariables(items);
+            const { regularVars, toolVars, skillVars } =
+              separateVariables(items);
             const hasRegular = regularVars.length > 0;
             const hasTools = toolVars.length > 0;
-            const showTabs = hasRegular && hasTools;
+            const hasSkills = skillVars.length > 0;
+            // 显示 tabs：当有变量且有工具或技能时，或者同时有工具和技能时
+            const showTabs =
+              (hasRegular && (hasTools || hasSkills)) ||
+              (hasTools && hasSkills);
 
             // 初始 activeTab
             let activeTab = 'variables';
             if (!hasRegular && hasTools) {
               activeTab = 'tools';
+            } else if (!hasRegular && !hasTools && hasSkills) {
+              activeTab = 'skills';
             }
 
             // 根据 activeTab 获取当前显示的树
@@ -452,16 +360,26 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               tab: string,
               rVars: VariableTreeNode[],
               tVars: VariableTreeNode[],
+              sVars: VariableTreeNode[],
             ) => {
               if (showTabs) {
-                return tab === 'variables' ? rVars : tVars;
+                switch (tab) {
+                  case 'variables':
+                    return rVars;
+                  case 'tools':
+                    return tVars;
+                  case 'skills':
+                    return sVars;
+                  default:
+                    return rVars;
+                }
               }
               return items; // 如果不显示 tab，显示所有
             };
 
             // 初始 flatItems
             let flatItems = flattenTree(
-              getCurrentTree(activeTab, regularVars, toolVars),
+              getCurrentTree(activeTab, regularVars, toolVars, skillVars),
             );
 
             // 先定义 handleKeyDown 的引用，稍后定义
@@ -534,6 +452,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               currentActiveTab: string,
               currentRegularVars: VariableTreeNode[],
               currentToolVars: VariableTreeNode[],
+              currentSkillVars: VariableTreeNode[],
               currentShowTabs: boolean,
               currentSearchText: string,
             ) => {
@@ -565,6 +484,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                               key,
                               currentRegularVars,
                               currentToolVars,
+                              currentSkillVars,
                             );
                             popup.flatItems = flattenTree(newTree);
                             popup.selectedIndex = 0;
@@ -576,6 +496,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                               key,
                               currentRegularVars,
                               currentToolVars,
+                              currentSkillVars,
                               currentShowTabs,
                               currentSearchText,
                             );
@@ -583,6 +504,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                         }}
                         regularVariables={currentRegularVars}
                         toolVariables={currentToolVars}
+                        skillVariables={currentSkillVars}
                         onClose={handleClose}
                         excludeElement={editorDom}
                       />
@@ -601,10 +523,11 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             updateRender(
               0,
               flatItems,
-              getCurrentTree(activeTab, regularVars, toolVars),
+              getCurrentTree(activeTab, regularVars, toolVars, skillVars),
               activeTab,
               regularVars,
               toolVars,
+              skillVars,
               showTabs,
               searchText,
             );
@@ -629,6 +552,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               const currentActiveTab = popup.activeTab;
               const currentRegularVars = popup.regularVars;
               const currentToolVars = popup.toolVars;
+              const currentSkillVars = popup.skillVars;
               const currentShowTabs = popup.showTabs;
               // 注意：这里我们需要最新的 searchText，但它不在 popup 状态中
               // 不过键盘导航不改变 searchText，所以可以使用闭包中的 searchText
@@ -648,10 +572,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     currentActiveTab,
                     currentRegularVars,
                     currentToolVars,
+                    currentSkillVars,
                   ),
                   currentActiveTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -670,10 +596,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     currentActiveTab,
                     currentRegularVars,
                     currentToolVars,
+                    currentSkillVars,
                   ),
                   currentActiveTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -700,16 +628,43 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 return;
               }
 
-              // 处理 Tab 键切换
+              // 处理 Tab 键切换（在三个 tab 之间循环：variables -> tools -> skills -> variables）
               if (currentShowTabs && event.key === 'Tab') {
                 event.preventDefault();
-                const newTab =
-                  currentActiveTab === 'variables' ? 'tools' : 'variables';
+                // 计算下一个 tab
+                let newTab: string;
+                if (currentActiveTab === 'variables') {
+                  // 如果有工具，切换到工具；否则如果有技能，切换到技能
+                  newTab =
+                    currentToolVars.length > 0
+                      ? 'tools'
+                      : currentSkillVars.length > 0
+                      ? 'skills'
+                      : 'variables';
+                } else if (currentActiveTab === 'tools') {
+                  // 如果有技能，切换到技能；否则如果有变量，切换到变量
+                  newTab =
+                    currentSkillVars.length > 0
+                      ? 'skills'
+                      : currentRegularVars.length > 0
+                      ? 'variables'
+                      : 'tools';
+                } else {
+                  // skills -> variables (如果有变量) 或 tools (如果有工具)
+                  newTab =
+                    currentRegularVars.length > 0
+                      ? 'variables'
+                      : currentToolVars.length > 0
+                      ? 'tools'
+                      : 'skills';
+                }
+
                 popup.activeTab = newTab;
                 const newTree = getCurrentTree(
                   newTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                 );
                 popup.flatItems = flattenTree(newTree);
                 popup.selectedIndex = 0;
@@ -721,6 +676,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   newTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -877,6 +833,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               activeTab,
               regularVars,
               toolVars,
+              skillVars,
               flatItems,
               showTabs,
               searchText, // 添加 searchText 到状态
@@ -897,28 +854,49 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 重新计算
             const searchText = truncateQuery(query || '');
 
-            const { regularVars, toolVars } = popup.separateVariables(items);
+            const { regularVars, toolVars, skillVars } =
+              popup.separateVariables(items);
             const hasRegular = regularVars.length > 0;
             const hasTools = toolVars.length > 0;
-            const showTabs = hasRegular && hasTools;
+            const hasSkills = skillVars.length > 0;
+            // 显示 tabs：当有变量且有工具或技能时，或者同时有工具和技能时
+            const showTabs =
+              (hasRegular && (hasTools || hasSkills)) ||
+              (hasTools && hasSkills);
 
             // 更新 popup 状态
             popup.regularVars = regularVars;
             popup.toolVars = toolVars;
+            popup.skillVars = skillVars;
             popup.showTabs = showTabs;
             popup.searchText = searchText; // 更新 searchText
 
             // 如果当前 tab 变为空，切换到另一个 tab
-            if (popup.activeTab === 'variables' && !hasRegular && hasTools) {
-              popup.activeTab = 'tools';
-            } else if (popup.activeTab === 'tools' && !hasTools && hasRegular) {
-              popup.activeTab = 'variables';
+            if (popup.activeTab === 'variables' && !hasRegular) {
+              if (hasTools) {
+                popup.activeTab = 'tools';
+              } else if (hasSkills) {
+                popup.activeTab = 'skills';
+              }
+            } else if (popup.activeTab === 'tools' && !hasTools) {
+              if (hasRegular) {
+                popup.activeTab = 'variables';
+              } else if (hasSkills) {
+                popup.activeTab = 'skills';
+              }
+            } else if (popup.activeTab === 'skills' && !hasSkills) {
+              if (hasRegular) {
+                popup.activeTab = 'variables';
+              } else if (hasTools) {
+                popup.activeTab = 'tools';
+              }
             }
 
             const currentTree = popup.getCurrentTree(
               popup.activeTab,
               regularVars,
               toolVars,
+              skillVars,
             );
             popup.flatItems = popup.flattenTree(currentTree);
 
@@ -934,6 +912,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               popup.activeTab,
               regularVars,
               toolVars,
+              skillVars,
               showTabs,
               searchText,
             );

@@ -1,3 +1,5 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiPageGetProjectInfoByAgent } from '@/services/pageDev';
 import { apiPassAudit, apiPublishApplyList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
@@ -129,11 +131,22 @@ const PublishAudit: React.FC = () => {
     setRejectAuditId(id);
     setOpenRejectAuditModal(true);
   };
-  const handleView = (record: PublishApplyListInfo) => {
+  const handleView = async (record: PublishApplyListInfo) => {
     let url = '';
 
+    // 智能体
     if (record.targetType === SquareAgentTypeEnum.Agent) {
-      url = `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`;
+      // 网页应用页面
+      if (record.targetSubType === 'PageApp') {
+        const { code, data: projectInfo } = await apiPageGetProjectInfoByAgent(
+          record.targetId,
+        );
+        if (code === SUCCESS_CODE && projectInfo) {
+          url = `/space/${record.spaceId}/app-dev/${projectInfo.projectId}`;
+        }
+      } else {
+        url = `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`;
+      }
     }
     if (record.targetType === SquareAgentTypeEnum.Plugin) {
       if (record.pluginType === 'CODE') {
