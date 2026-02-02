@@ -1,20 +1,42 @@
 # 更新日志
 
-### [1.0.8](https://github.com/nuwax-ai/nuwax/compare/v1.0.7...v1.0.8) (2026-02-02)
+## [1.0.8] - 2026-02-02
 
-### 🔧 构建/工具
+### ✨ 新功能
 
-- 更新 .gitignore 文件，添加 .agent 以排除相关文件 ([6699310](https://github.com/nuwax-ai/nuwax/commit/66993108185d21e7549c0cfbaa0fb05207b91d71))
-- 清理测试文件和示例文件 ([44fd1cc](https://github.com/nuwax-ai/nuwax/commit/44fd1ccff1d2156d0f1b7fc8ce38af6157e36cb7))
+- feat(Chat, PreviewAndDebug): add setIsMoreMessage to manage message loading state
+- feat(CreateModel): 新增或编辑模型时，新增最大上下文长度字段
+- feat(historyConversation): 添加历史会话页面关闭按钮
 
 ### 🐛 Bug 修复
 
-- 修复代码规范问题（ESLint） ([989e565](https://github.com/nuwax-ai/nuwax/commit/989e565f15a28cc0cfbea65d25db450c0d26ffd5))
+- 修复 SSE 连接关闭逻辑，确保连接关闭时正确标记中止状态
+- 修复会话停止逻辑，确保 requestId 为空时也能停止会话
+- 修复清空会话后对话设置未重置问题
+- 修复页面切换时 SSE 连接未中断问题
+- 修复代码规范问题（ESLint）
 
 ### ♻️ 重构
 
-- 恢复 v1.0.8-alpha 代码版本 ([abc8970](https://github.com/nuwax-ai/nuwax/commit/abc897022483e43870799dbe4d4834a06366206c))
-- 移除 ChatArea 组件中冗余的 handleAddToChat 函数，简化代码结构 ([278cf70](https://github.com/nuwax-ai/nuwax/commit/278cf70b2a6d3368b8e35c1d0a4a5e16e7b9a3db))
+- 恢复 v1.0.8-alpha 代码版本
+- 移除 ChatArea 组件中冗余的 handleAddToChat 函数，简化代码结构
+- 重构 SSE 连接逻辑，分离工作流与会话的 SSE 连接
+
+### 🎨 样式优化
+
+- style(EditAgent): Comment out mask property in PreviewAndDebug for improved visibility in WeChat
+- style: update AgentModelSetting layout and logic
+- style: update SystemTipsWord layout
+- 将"远程桌面"统一更名为"智能体电脑"
+
+### 🔧 构建/工具
+
+- 更新 .gitignore 文件，添加 .agent 以排除相关文件
+- 清理测试文件和示例文件
+
+### 📚 文档
+
+- 更新项目文档
 
 ## [1.0.1] - 2025-11-10
 
