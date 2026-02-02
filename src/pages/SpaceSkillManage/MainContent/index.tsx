@@ -49,12 +49,16 @@ export interface MainContentCardProps {
 const MainContentCard: React.FC<MainContentCardProps> = ({
   loading,
   skillList,
-  onClickItem = () => {},
-  onClickMore = () => {},
+  onClickItem,
+  onClickMore,
 }) => {
   // 加载中
   if (loading) {
-    return <Loading />;
+    return (
+      <div className={cx('flex', 'h-full', 'items-center', 'justify-center')}>
+        <Loading />
+      </div>
+    );
   }
 
   // 没有技能列表
@@ -79,8 +83,8 @@ const MainContentCard: React.FC<MainContentCardProps> = ({
         <ComponentItem
           key={`${info.id}${info.publishStatus}`}
           skillInfo={info}
-          onClick={() => onClickItem(info)}
-          onClickMore={(item) => onClickMore(item, info)}
+          onClick={() => onClickItem?.(info)}
+          onClickMore={(item) => onClickMore?.(item, info)}
         />
       ))}
     </div>
@@ -155,8 +159,12 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       runSkillList({ spaceId });
     };
 
-    // 查询技能列表
+    // 查询技能列表 - 当 spaceId 变化时重新查询
     useEffect(() => {
+      // 清空旧数据，避免显示上一个空间的数据
+      skillListAllRef.current = [];
+      setSkillList([]);
+      // 重新查询
       exposeQueryComponentList();
     }, [spaceId]);
 
@@ -180,14 +188,12 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     }));
 
     return (
-      <>
-        <MainContentCard
-          loading={loading}
-          skillList={skillList ?? []}
-          onClickItem={onClickItem}
-          onClickMore={onClickMore}
-        />
-      </>
+      <MainContentCard
+        loading={loading}
+        skillList={skillList ?? []}
+        onClickItem={onClickItem}
+        onClickMore={onClickMore}
+      />
     );
   },
 );

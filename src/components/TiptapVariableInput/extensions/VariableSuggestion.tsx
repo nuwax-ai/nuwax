@@ -804,24 +804,24 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     currentToolVars.length > 0
                       ? 'tools'
                       : currentSkillVars.length > 0
-                        ? 'skills'
-                        : 'variables';
+                      ? 'skills'
+                      : 'variables';
                 } else if (currentActiveTab === 'tools') {
                   // 如果有技能，切换到技能；否则如果有变量，切换到变量
                   newTab =
                     currentSkillVars.length > 0
                       ? 'skills'
                       : currentRegularVars.length > 0
-                        ? 'variables'
-                        : 'tools';
+                      ? 'variables'
+                      : 'tools';
                 } else {
                   // skills -> variables (如果有变量) 或 tools (如果有工具)
                   newTab =
                     currentRegularVars.length > 0
                       ? 'variables'
                       : currentToolVars.length > 0
-                        ? 'tools'
-                        : 'skills';
+                      ? 'tools'
+                      : 'skills';
                 }
 
                 popup.activeTab = newTab;

@@ -8,6 +8,7 @@ import type {
   apiAgentLogListParams,
   apiSpaceLogListParams,
   logInfo,
+  OperationLogInfo,
   SpaceLogDetailParams,
   SpaceLogInfo,
   SpaceLogInfoDetail,
@@ -165,6 +166,64 @@ export async function apiSpaceLogList(
   return request('/api/requestLogs/list', {
     method: 'POST',
     data,
+  });
+}
+
+// 日志查询-运行日志（列表）
+export async function apiRunningLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/system/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-运行日志（详情）
+export async function apiRunningLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<SpaceLogInfoDetail>> {
+  return request('/api/system/requestLogs/detail', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（列表）
+export async function apiOperationLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/sys/operator/log/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（详情）
+export async function apiOperationLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<OperationLogInfo>> {
+  return request('/api/sys/operator/log/queryById', {
+    method: 'GET',
+    params: data,
+  });
+}
+
+// 日志查询-操作日志系统类型选项
+export async function apiOperationLogSystemCodeOptions(): Promise<
+  RequestResponse<{ value: string; label: string }[]>
+> {
+  return request('/api/sys/operator/log/systemCode/options', {
+    method: 'GET',
+  });
+}
+
+// 日志查询-操作日志操作方式选项
+export async function apiOperationLogActionTypeOptions(): Promise<
+  RequestResponse<{ value: string; label: string }[]>
+> {
+  return request('/api/sys/operator/log/actionType/options', {
+    method: 'GET',
   });
 }
 

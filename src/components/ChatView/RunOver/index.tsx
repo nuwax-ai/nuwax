@@ -56,20 +56,19 @@ const RunOver: React.FC<RunOverProps> = ({
     }
     return null;
   }, [processingList]);
-  console.log('lastProcessInfo', lastProcessInfo);
-
-  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
-  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
-  if (
-    !lastProcessInfo &&
-    (messageInfo?.status === MessageStatusEnum.Complete ||
-      messageInfo?.status === MessageStatusEnum.Error)
-  ) {
-    return null;
-  }
 
   // 计算 Popover content：如果 processingList 为空或没有已完成的项，则不显示 content
   const popoverContent = useMemo(() => {
+    // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
+    // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+    if (
+      !lastProcessInfo &&
+      (messageInfo?.status === MessageStatusEnum.Complete ||
+        messageInfo?.status === MessageStatusEnum.Error)
+    ) {
+      return null;
+    }
+
     // 过滤出已完成的 processing 项（状态不为执行中）
     const completedProcesses =
       processingList?.filter(
@@ -102,10 +101,9 @@ const RunOver: React.FC<RunOverProps> = ({
         )}
       </div>
     );
-  }, [processingList, messageInfo?.status, runTime]);
+  }, [processingList, messageInfo?.status, runTime, lastProcessInfo]);
 
-  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
-  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+  // 如果不需要显示内容，直接返回 null
   if (
     !lastProcessInfo &&
     (messageInfo?.status === MessageStatusEnum.Complete ||
@@ -129,7 +127,7 @@ const RunOver: React.FC<RunOverProps> = ({
       <div className={cx('cursor-pointer', styles['run-success'])}>
         {/* 显示loading状态 */}
         {messageInfo?.status === MessageStatusEnum.Loading ||
-          messageInfo?.status === MessageStatusEnum.Incomplete ? (
+        messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
             {showStatusDesc && lastProcessInfo && (

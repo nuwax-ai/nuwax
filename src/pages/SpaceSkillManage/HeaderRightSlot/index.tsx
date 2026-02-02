@@ -17,8 +17,8 @@ interface HeaderRightSlotProps {
   onImport?: () => void;
 }
 const HeaderRightSlot: React.FC<HeaderRightSlotProps> = ({
-  onCreate = () => { },
-  onImport = () => { },
+  onCreate = () => {},
+  onImport = () => {},
 }) => {
   const { searchParams, setSearchParamsCustom } =
     useSearchParamsCustom<IQuery>();

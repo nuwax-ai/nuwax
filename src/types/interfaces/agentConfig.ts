@@ -59,6 +59,7 @@ export interface ArrangeTitleProps {
 export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
+  extraComponent?: React.ReactNode; // 额外组件
   // 修改智能体基础配置信息
   onChangeAgent: (
     value: string | string[] | number | GuidQuestionDto[],

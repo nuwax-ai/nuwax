@@ -113,8 +113,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                       (childDef.type === NodeTypeEnum.LoopStart
                         ? LOOP_START_NODE_X_OFFSET
                         : childDef.type === NodeTypeEnum.LoopEnd
-                          ? LOOP_END_NODE_X_OFFSET
-                          : 0)
+                        ? LOOP_END_NODE_X_OFFSET
+                        : 0)
                     );
                   })(),
                   // Y 位置：优先使用保存的位置，否则保持在循环节点内部

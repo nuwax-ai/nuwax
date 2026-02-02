@@ -58,6 +58,8 @@ export interface ModelFormData {
   type?: ModelTypeEnum;
   // 最大输出token数, token上限
   maxTokens: number;
+  // 最大上下文长度，默认128000
+  maxContextTokens: number;
 }
 
 // 在空间中添加或更新模型配置输入参数

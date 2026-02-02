@@ -824,8 +824,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   return (
     <div
-      className={`${styles.filePreviewContainer} ${needsScroll ? styles.scrollable : ''
-        } ${className || ''}`}
+      className={`${styles.filePreviewContainer} ${
+        needsScroll ? styles.scrollable : ''
+      } ${className || ''}`}
       style={{ width, height, ...style }}
     >
       {/* 工具栏 */}

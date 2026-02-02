@@ -136,8 +136,8 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
           // 启用时配置快捷键：Ctrl+Z 撤销，Ctrl+Y 或 Ctrl+Shift+Z 重做
           history: enableHistory
             ? {
-              newGroupDelay: 500, // 500ms 内的连续输入合并为一个历史记录
-            }
+                newGroupDelay: 500, // 500ms 内的连续输入合并为一个历史记录
+              }
             : false,
         }),
         !disableMentions ? MentionNode : undefined,
@@ -171,11 +171,11 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         // 只有当 disableMentions 为 false 时才启用 MentionSuggestion
         !disableMentions
           ? MentionSuggestion.configure({
-            items: mentions,
-            onSelect: () => {
-              // Mentions 选择回调
-            },
-          })
+              items: mentions,
+              onSelect: () => {
+                // Mentions 选择回调
+              },
+            })
           : undefined,
       ].filter(Boolean) as any, // 过滤掉 undefined 并强制类型转换
       content: initialContent,
@@ -196,6 +196,34 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
           const { from } = editor.state.selection;
           cursorPositionRef.current = from;
         }
+      },
+      // 当编辑器失焦时，关闭所有变量建议弹窗
+      onBlur: () => {
+        // 使用 setTimeout 确保在其他事件处理完成后执行
+        // 避免在点击弹窗内部元素时误关闭
+        // setTimeout(() => {
+        //   // 检查焦点是否移动到了弹窗内部
+        //   const activeElement = document.activeElement;
+        //   const popups = document.querySelectorAll(
+        //     '.variable-suggestion-popup',
+        //   );
+        //   // 如果焦点在某个弹窗内部，不关闭
+        //   let focusInPopup = false;
+        //   popups.forEach((popup) => {
+        //     if (popup.contains(activeElement)) {
+        //       focusInPopup = true;
+        //     }
+        //   });
+        //   if (focusInPopup) {
+        //     return;
+        //   }
+        //   // 关闭所有不包含焦点的弹窗
+        //   popups.forEach((popup) => {
+        //     if (document.body.contains(popup)) {
+        //       document.body.removeChild(popup);
+        //     }
+        //   });
+        // }, 0);
       },
     },
     [
@@ -492,7 +520,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
             className="tiptap-placeholder"
             style={{
               position: 'absolute',
-              top: 4,
+              top: 10,
               left: 12,
               right: 2,
               color: token.colorTextPlaceholder,

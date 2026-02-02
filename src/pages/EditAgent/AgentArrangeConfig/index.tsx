@@ -28,6 +28,7 @@ import type {
   AgentComponentEventConfig,
   AgentComponentEventUpdateParams,
   AgentComponentInfo,
+  SubAgent,
 } from '@/types/interfaces/agent';
 import type {
   AgentAddComponentBaseInfo,
@@ -49,6 +50,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useModel } from 'umi';
@@ -64,6 +66,7 @@ import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PageSettingModal from './PageSettingModal';
 import SubAgentConfig from './SubAgentConfig';
+import SubAgentEditModal from './SubAgentConfig/SubAgentEditModal';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -74,6 +77,7 @@ const cx = classNames.bind(styles);
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
+  extraComponent,
   onChangeAgent,
   onInsertSystemPrompt,
   onVariablesChange,
@@ -111,6 +115,83 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 点击的当前事件配置
   const [currentEventConfig, setCurrentEventConfig] =
     useState<AgentComponentEventConfig>();
+
+  // 打开子智能体编辑弹窗
+  const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
+
+  // 各配置块 DOM 引用，用于滚动定位
+  const planSectionRef = useRef<HTMLDivElement | null>(null);
+  const toolSectionRef = useRef<HTMLDivElement | null>(null);
+  const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
+  const memorySectionRef = useRef<HTMLDivElement | null>(null);
+  const experienceSectionRef = useRef<HTMLDivElement | null>(null);
+  const pageSectionRef = useRef<HTMLDivElement | null>(null);
+
+  // 左侧锚点菜单配置
+  const anchorItems = useMemo(
+    () => [
+      {
+        key: 'plan',
+        label: '规划',
+        ref: planSectionRef,
+        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+      },
+      {
+        key: 'tool',
+        label: '工具',
+        ref: toolSectionRef,
+        show: true,
+      },
+      {
+        key: 'skill',
+        label: '技能',
+        ref: skillSectionRef,
+        // 仅长任务型智能体展示技能块
+        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+      },
+      {
+        key: 'knowledge',
+        label: '知识',
+        ref: knowledgeSectionRef,
+        show: true,
+      },
+      {
+        key: 'memory',
+        label: '记忆',
+        ref: memorySectionRef,
+        show: true,
+      },
+      {
+        key: 'experience',
+        label: '对话',
+        ref: experienceSectionRef,
+        show: true,
+      },
+      {
+        key: 'page',
+        label: '界面',
+        ref: pageSectionRef,
+        show: true,
+      },
+    ],
+    [agentConfigInfo?.type],
+  );
+
+  /**
+   * 点击左侧锚点，滚动到对应配置块
+   */
+  const handleAnchorClick = (
+    key: string,
+    ref: React.RefObject<HTMLDivElement>,
+  ) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -203,6 +284,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 是否存在组件
   const isExistComponent = (type: AgentComponentTypeEnum) => {
+    // 子智能体组件需要判断是否存在子智能体(因为后台接口无论是否新增了子智能体，都会返回type为SubAgent的组件)
+    if (type === AgentComponentTypeEnum.SubAgent) {
+      return agentComponentList?.some(
+        (item: AgentComponentInfo) =>
+          item.type === type && item.bindConfig?.subAgents?.length,
+      );
+    }
     return agentComponentList?.some(
       (item: AgentComponentInfo) => item.type === type,
     );
@@ -233,9 +321,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 技能 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
-    const keys: AgentArrangeConfigEnum[] = [AgentArrangeConfigEnum.SubAgent];
+    const keys: AgentArrangeConfigEnum[] = [];
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
-      keys.unshift(AgentArrangeConfigEnum.Skill);
+      keys.push(AgentArrangeConfigEnum.Skill);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.SubAgent)) {
+      keys.push(AgentArrangeConfigEnum.SubAgent);
     }
     return keys;
   }, [agentComponentList]);
@@ -274,8 +365,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
+    // 开场白 (仅长任务型智能体展示开场白块)
+    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+      keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
+    }
+
     return keyList;
-  }, [agentComponentList]);
+  }, [agentComponentList, agentConfigInfo?.type]);
 
   // 查询智能体配置组件列表
   const { runAsync } = useRequest(apiAgentComponentList, {
@@ -654,11 +750,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           title="添加子智能体"
           onClick={(e) => {
             e.stopPropagation();
-            // 触发 SubAgentConfig 内部的添加弹窗
-            const addBtn = document.querySelector(
-              '[data-subagent-add]',
-            ) as HTMLElement;
-            addBtn?.click();
+            setOpenSubAgentModel(true);
           }}
         />
       ),
@@ -938,98 +1030,98 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
 
-    // 长任务型智能体不显示 【页面/展开页面区/事件绑定】
+    // 通用型智能体不显示 【页面/展开页面区/事件绑定】
     ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
       ? []
       : [
-        {
-          key: AgentArrangeConfigEnum.Page,
-          label: '页面',
-          children: (
-            <CollapseComponentList
-              textClassName={cx(styles.text)}
-              type={AgentComponentTypeEnum.Page}
-              list={allPageComponentList}
-              deleteList={deleteList}
-              onSet={handlePageSet}
-              onDel={handleAgentComponentDel}
-            />
-          ),
-          extra: (
-            <TooltipIcon
-              title="添加页面"
-              onClick={(e) =>
-                handlerComponentPlus(e, AgentComponentTypeEnum.Page)
-              }
-            />
-          ),
-          classNames: {
-            header: 'collapse-header',
-            body: 'collapse-body',
-          },
-        },
-        {
-          key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
-          label: '展开页面区',
-          children: (
-            // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
-            <p className={cx(styles.text)}>
-              当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
-            </p>
-          ),
-          extra: (
-            <Tooltip
-              title={!allPageComponentList?.length ? '请先添加页面' : ''}
-            >
-              <Switch
-                disabled={!allPageComponentList?.length}
-                value={
-                  agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes
-                }
-                // 阻止冒泡事件
-                onClick={(_, e: any) => {
-                  e.stopPropagation();
-                }}
-                onChange={(value: boolean) =>
-                  onChangeAgent(
-                    value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
-                    'expandPageArea',
-                  )
+          {
+            key: AgentArrangeConfigEnum.Page,
+            label: '页面',
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Page}
+                list={allPageComponentList}
+                deleteList={deleteList}
+                onSet={handlePageSet}
+                onDel={handleAgentComponentDel}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title="添加页面"
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Page)
                 }
               />
-            </Tooltip>
-          ),
-          classNames: {
-            header: 'collapse-header',
-            body: 'collapse-body',
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
           },
-        },
-        {
-          key: AgentArrangeConfigEnum.Page_Event_Binding,
-          label: '事件绑定',
-          children: (
-            // 事件绑定列表
-            <EventList
-              textClassName={cx(styles.text)}
-              list={eventsInfo?.bindConfig?.eventConfigs || []}
-              onClick={handleClickEventBindingItem}
-            />
-          ),
-          extra: (
-            <TooltipIcon
-              title="添加事件绑定"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAddEventBinding();
-              }}
-            />
-          ),
-          classNames: {
-            header: 'collapse-header',
-            body: 'collapse-body',
+          {
+            key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
+            label: '展开页面区',
+            children: (
+              // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
+              <p className={cx(styles.text)}>
+                当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
+              </p>
+            ),
+            extra: (
+              <Tooltip
+                title={!allPageComponentList?.length ? '请先添加页面' : ''}
+              >
+                <Switch
+                  disabled={!allPageComponentList?.length}
+                  value={
+                    agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes
+                  }
+                  // 阻止冒泡事件
+                  onClick={(_, e: any) => {
+                    e.stopPropagation();
+                  }}
+                  onChange={(value: boolean) =>
+                    onChangeAgent(
+                      value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
+                      'expandPageArea',
+                    )
+                  }
+                />
+              </Tooltip>
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
           },
-        },
-      ]),
+          {
+            key: AgentArrangeConfigEnum.Page_Event_Binding,
+            label: '事件绑定',
+            children: (
+              // 事件绑定列表
+              <EventList
+                textClassName={cx(styles.text)}
+                list={eventsInfo?.bindConfig?.eventConfigs || []}
+                onClick={handleClickEventBindingItem}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title="添加事件绑定"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddEventBinding();
+                }}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
@@ -1088,45 +1180,99 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
+  // 确认子智能体
+  const handleConfirmSubAgent = (subAgent: SubAgent) => {
+    const newAgents = [...(subAgentComponentInfo?.bindConfig?.subAgents || [])];
+    // 新建模式
+    newAgents.push(subAgent);
+    handleSubAgentUpdate(newAgents);
+    setOpenSubAgentModel(false);
+  };
+
   return (
-    <div className={classNames('overflow-y', 'flex-1', styles.container)}>
-      <ConfigOptionsHeader title="工具" />
-      <ConfigOptionCollapse items={ToolList} defaultActiveKey={toolActiveKey} />
+    <div className={cx('h-full', 'flex-1', 'overflow-hide')}>
+      <div className={styles['config-layout']}>
+        {/* 左侧锚点菜单 */}
+        {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+          <div className={styles['anchor-sidebar']}>
+            {anchorItems
+              .filter((item) => item.show)
+              .map((item) => (
+                <div
+                  key={item.key}
+                  className={cx(styles['anchor-item'])}
+                  onClick={() => handleAnchorClick(item.key, item.ref)}
+                >
+                  <span className={styles['anchor-item-label']}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
 
-      {/* 长任务型智能体显示技能 */}
-      {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-        <>
-          <ConfigOptionsHeader title="技能" />
-          <ConfigOptionCollapse
-            items={SkillList}
-            defaultActiveKey={skillActiveKey}
-          />
-        </>
-      )}
+        {/* 右侧配置内容区域 */}
+        <div className={cx('overflow-y', 'flex-1', styles.container)}>
+          {/* 任务型智能体显示系统提示词部分 */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+            <div ref={planSectionRef}>{extraComponent}</div>
+          )}
 
-      <ConfigOptionsHeader title="知识" />
-      <ConfigOptionCollapse
-        items={KnowledgeList}
-        defaultActiveKey={knowledgeActiveKey}
-      />
-      <ConfigOptionsHeader title="记忆" />
-      <ConfigOptionCollapse
-        items={MemoryList}
-        defaultActiveKey={memoryActiveKey}
-      />
-      <ConfigOptionsHeader title="对话体验" />
-      <ConfigOptionCollapse
-        items={ConversationalExperienceList}
-        onChangeCollapse={(key) =>
-          setExperienceActiveKey(key as AgentArrangeConfigEnum[])
-        }
-        defaultActiveKey={experienceActiveKey}
-      />
-      <ConfigOptionsHeader title="界面配置" />
-      <ConfigOptionCollapse
-        items={PageConfigList}
-        defaultActiveKey={pageActiveKey}
-      />
+          <div ref={toolSectionRef}>
+            <ConfigOptionsHeader title="工具" />
+            <ConfigOptionCollapse
+              items={ToolList}
+              defaultActiveKey={toolActiveKey}
+            />
+          </div>
+
+          {/* 长任务型智能体显示技能 */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+            <div ref={skillSectionRef}>
+              <ConfigOptionsHeader title="技能" />
+              <ConfigOptionCollapse
+                items={SkillList}
+                defaultActiveKey={skillActiveKey}
+              />
+            </div>
+          )}
+
+          <div ref={knowledgeSectionRef}>
+            <ConfigOptionsHeader title="知识" />
+            <ConfigOptionCollapse
+              items={KnowledgeList}
+              defaultActiveKey={knowledgeActiveKey}
+            />
+          </div>
+
+          <div ref={memorySectionRef}>
+            <ConfigOptionsHeader title="记忆" />
+            <ConfigOptionCollapse
+              items={MemoryList}
+              defaultActiveKey={memoryActiveKey}
+            />
+          </div>
+
+          <div ref={experienceSectionRef}>
+            <ConfigOptionsHeader title="对话体验" />
+            <ConfigOptionCollapse
+              items={ConversationalExperienceList}
+              onChangeCollapse={(key) =>
+                setExperienceActiveKey(key as AgentArrangeConfigEnum[])
+              }
+              defaultActiveKey={experienceActiveKey}
+            />
+          </div>
+
+          <div ref={pageSectionRef}>
+            <ConfigOptionsHeader title="界面配置" />
+            <ConfigOptionCollapse
+              items={PageConfigList}
+              defaultActiveKey={pageActiveKey}
+            />
+          </div>
+        </div>
+      </div>
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
         open={show}
@@ -1180,6 +1326,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         currentComponentInfo={currentComponentInfo}
         allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}
+      />
+      {/* 子智能体编辑弹窗 */}
+      <SubAgentEditModal
+        open={openSubAgentModel}
+        onConfirm={handleConfirmSubAgent}
+        onCancel={() => setOpenSubAgentModel(false)}
       />
     </div>
   );

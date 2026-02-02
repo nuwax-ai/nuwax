@@ -22,11 +22,14 @@ const cx = classNames.bind(styles);
 /**
  * 技能详情
  */
-const SkillDetail: React.FC = ({ }) => {
+const SkillDetail: React.FC = ({}) => {
   const params = useParams();
   const skillId = Number(params.skillId);
   // 复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
+  // 导出项目加载状态
+  const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
 
   // 查询技能信息
   const {
@@ -80,19 +83,33 @@ const SkillDetail: React.FC = ({ }) => {
     }
 
     try {
+      setLoadingExportProject(true);
       const result = await apiSkillExportSquare(skillId);
-      const filename = `skill-${skillId}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      message.success('导出成功！');
-    } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
 
-      message.error(`导出失败: ${errorMessage}`);
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        setLoadingExportProject(false);
+        return;
+      }
+
+      // 导出成功，处理文件下载
+      if (result.data) {
+        const filename = `skill-${skillId}.zip`;
+        // 导出整个项目压缩包
+        exportWholeProjectZip(result, filename);
+        message.success('导出成功！');
+      } else {
+        message.error('导出数据异常，请重试');
+      }
+    } catch (error) {
+      // 处理其他异常
+      console.error('导出项目失败:', error);
+      message.error('导出失败，请重试');
+    } finally {
+      setLoadingExportProject(false);
     }
   };
 
@@ -127,7 +144,12 @@ const SkillDetail: React.FC = ({ }) => {
                   onConfirm={handlerConfirmCopyTemplate}
                 />
               </ConditionRender>
-              <Button onClick={handleExportProject}>下载导出</Button>
+              <Button
+                onClick={handleExportProject}
+                loading={loadingExportProject}
+              >
+                下载导出
+              </Button>
             </>
           }
         />
@@ -135,7 +157,7 @@ const SkillDetail: React.FC = ({ }) => {
 
       {/* 文件树视图 */}
       <FileTreeView
-        // 任务智能体选中文件ID
+        // 通用型智能体选中文件ID
         taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态
         fileTreeDataLoading={loadingSkillInfo}

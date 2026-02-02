@@ -9,6 +9,7 @@ import { useConversationScrollDetection } from '@/hooks/useConversationScrollDet
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
@@ -98,6 +99,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     isFileTreeVisible,
     // 加载更多消息相关
     isMoreMessage,
+    setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
@@ -225,6 +227,30 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     };
   }, []);
 
+  // 监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
+    const { conversationId } = data;
+    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+    if (conversationId === conversationInfo?.id?.toString()) {
+      // 重新查询会话信息
+      runQueryConversation(conversationId);
+
+      // 取消监听会话状态更新事件
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+  };
+
+  useEffect(() => {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    };
+  }, [conversationInfo?.taskStatus]);
+
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
     // 重置对话设置表单数据
@@ -232,6 +258,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 清除调试结果
     setFinalResult(null);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
     setMessageList([]);
@@ -341,7 +369,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             }}
             // 打开文件面板
             onOpenFilePanel={onOpenFilePanel}
-            // 是否显示文件面板: 任务智能体 + 文件树未打开
+            // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={
               !isFileTreeVisible &&
               agentConfigInfo?.type === AgentTypeEnum.TaskAgent
@@ -418,6 +446,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
+
+                  {/* 任务执行中容器 */}
+                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                    <div
+                      className={cx(
+                        styles['task-executing-container'],
+                        'flex',
+                        'items-center',
+                      )}
+                    >
+                      <LoadingOutlined />
+                      <span>智能体正在执行，请稍等</span>
+                    </div>
+                  )}
                 </>
               ) : (
                 isLoadingConversation && (

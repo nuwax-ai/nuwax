@@ -140,9 +140,9 @@ const AppDev: React.FC = () => {
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
   // 空操作函数常量，避免每次渲染创建新函数实例
-  const noop = useCallback(() => { }, []);
+  const noop = useCallback(() => {}, []);
   const asyncNoopFalse = useCallback(async () => false, []);
-  const asyncNoop = useCallback(async () => { }, []);
+  const asyncNoop = useCallback(async () => {}, []);
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
@@ -1213,7 +1213,8 @@ const AppDev: React.FC = () => {
         }
       } catch (error) {
         message.error(
-          `文件上传失败: ${error instanceof Error ? error.message : '未知错误'
+          `文件上传失败: ${
+            error instanceof Error ? error.message : '未知错误'
           }`,
         );
         return false;
@@ -1234,7 +1235,8 @@ const AppDev: React.FC = () => {
 
       if (success) {
         message.success(
-          `成功删除 ${nodeToDelete.type === 'folder' ? '文件夹' : '文件'}: ${nodeToDelete.name
+          `成功删除 ${nodeToDelete.type === 'folder' ? '文件夹' : '文件'}: ${
+            nodeToDelete.name
           }`,
         );
         // 删除文件时不自动切换tab
@@ -1627,8 +1629,8 @@ const AppDev: React.FC = () => {
                             versionCompare.isComparing
                               ? findVersionFileNode(workspace.activeFile)
                               : fileManagement.findFileNode(
-                                fileManagement.fileContentState.selectedFile,
-                              )
+                                  fileManagement.fileContentState.selectedFile,
+                                )
                           }
                           fileContent={
                             fileManagement.fileContentState.fileContent

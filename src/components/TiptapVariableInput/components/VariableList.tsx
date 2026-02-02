@@ -430,8 +430,9 @@ const VariableList: React.FC<VariableListProps> = ({
                 onClick={() => {
                   onSelect(item);
                 }}
-                className={`variable-tool-list-item ${isSelected ? 'selected' : ''
-                  }`}
+                className={`variable-tool-list-item ${
+                  isSelected ? 'selected' : ''
+                }`}
               >
                 <div className="variable-tool-list-item-content">
                   <span className="variable-tool-list-item-label">

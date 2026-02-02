@@ -327,13 +327,13 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       // 确定按钮配置
       let buttons:
         | Array<{
-          text: string;
-          icon: React.ReactNode;
-          onClick: () => void;
-          loading?: boolean;
-          disabled?: boolean;
-          type?: 'primary';
-        }>
+            text: string;
+            icon: React.ReactNode;
+            onClick: () => void;
+            loading?: boolean;
+            disabled?: boolean;
+            type?: 'primary';
+          }>
         | undefined;
 
       const hasError = hasLoadError || hasServerError || hasStartError;
@@ -551,8 +551,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 const result = await response.json();
                 const imageUrl = result.data?.url || result.url || '';
 
-                // console.log('[Preview] 图片上传成功:', imageUrl, result);
-                // 调用编辑页面接口，更新图标
+                // 调用编辑应用接口，更新图标
                 const params = {
                   projectId: projectInfo?.projectId,
                   projectName: projectInfo?.name,
@@ -728,7 +727,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (onWhiteScreenOrIframeError) {
         onWhiteScreenOrIframeError(
           dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
-          ' 预览加载失败，请检查开发服务器状态或网络连接',
+            ' 预览加载失败，请检查开发服务器状态或网络连接',
           'iframe',
         );
       }
@@ -764,8 +763,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           const errorMessages = devMonitorErrorsRef.current
             .slice(-3) // 只取最近3条
             .map((e) => {
-              let msg = `${dayjs(e.timestamp).format('YYYY/MM/DD HH:mm:ss')} ${e.message
-                }`;
+              let msg = `${dayjs(e.timestamp).format('YYYY/MM/DD HH:mm:ss')} ${
+                e.message
+              }`;
               if (e.details) {
                 try {
                   const details = JSON.parse(e.details);
@@ -1203,12 +1203,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       <div className={cx(`relative ${styles.preview} ${className || ''}`)}>
         <div className={styles.previewContainer}>
           {devServerUrl &&
-            !loadError &&
-            !serverMessage &&
-            !isStarting &&
-            !isRestarting &&
-            !isDeveloping &&
-            !isProjectUploading ? (
+          !loadError &&
+          !serverMessage &&
+          !isStarting &&
+          !isRestarting &&
+          !isDeveloping &&
+          !isProjectUploading ? (
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}

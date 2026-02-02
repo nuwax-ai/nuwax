@@ -1,6 +1,10 @@
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
-import { ModelApiProtocolEnum } from '@/types/enums/modelConfig';
+
+import {
+  ModelApiProtocolEnum,
+  ModelFunctionCallEnum,
+} from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
@@ -23,17 +27,31 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
   const [showModelName, setShowModelName] = useState<boolean>(false);
   useEffect(() => {
     if (agentConfigInfo && originalModelConfigList) {
-      // 是否是任务型智能体
+      // 是否是通用型智能体
       const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
 
       if (isTaskAgent) {
         // 默认模型id
+        // const agentEngine =
+        //   agentConfigInfo?.modelComponentConfig?.bindConfig?.agentEngine ||
+        //   AgentEngineEnum.Default;
+        // 获取模型组件配置中的 targetId
         const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
-        const modelInfo = originalModelConfigList.find(
-          (item) =>
-            item.id === targetId &&
-            item.apiProtocol === ModelApiProtocolEnum.Anthropic,
-        );
+
+        const modelInfo = originalModelConfigList.find((item) => {
+          if (item.id !== targetId) return false;
+
+          // 基础检查：必须支持函数调用，且协议为 Anthropic 或 OpenAI
+          const isBaseSupported =
+            (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+              item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+            item.functionCall !== ModelFunctionCallEnum.Unsupported;
+
+          if (!isBaseSupported) return false;
+
+          // NuwaxCli 支持所有基础模型 (Anthropic + OpenAI)
+          return true;
+        });
         if (modelInfo) {
           setShowModelName(true);
         } else {

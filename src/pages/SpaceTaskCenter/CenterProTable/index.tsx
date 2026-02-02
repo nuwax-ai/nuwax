@@ -57,7 +57,7 @@ export interface CenterProTableProps {
  *   - 任务名称：模糊搜索（taskName）
  */
 const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
-  ({ onEdit = () => { } }, ref) => {
+  ({ onEdit = () => {} }, ref) => {
     const params = useParams();
     const spaceId = Number(params.spaceId);
     const actionRef = useRef<ActionType>();
@@ -178,8 +178,8 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
             const list: TaskInfo[] = Array.isArray(resp)
               ? resp
               : Array.isArray(resp?.data)
-                ? resp.data
-                : [];
+              ? resp.data
+              : [];
             cacheRef.current = { spaceId: sid, list };
             return list;
           } catch (e) {
@@ -356,7 +356,8 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           break;
         case TaskCenterMoreActionEnum.Record:
           history.push(
-            `/space/${info.spaceId}/library-log?targetType=${info.targetType
+            `/space/${info.spaceId}/library-log?targetType=${
+              info.targetType
             }&targetId=${info.targetId ?? ''}&from=task_center`,
           );
           break;
@@ -408,8 +409,8 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
               type === AgentComponentTypeEnum.Agent
                 ? '智能体'
                 : type === AgentComponentTypeEnum.Workflow
-                  ? '工作流'
-                  : type || '-';
+                ? '工作流'
+                : type || '-';
             return text;
           },
         },

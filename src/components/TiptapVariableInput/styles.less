@@ -35,12 +35,12 @@
     .ProseMirror {
       height: 100%;
       outline: none;
-      padding: 4px 2px 4px 12px;
+      padding: 10px 2px 10px 12px;
       min-height: 80px;
       font-family: inherit;
       font-size: @fontSize;
       line-height: 1.5715;
-      color: @colorText;
+      color: @colorTextSecondary;
       background-color: @colorBgContainer;
 
       // 段落样式
@@ -162,7 +162,7 @@
   // 变量节点容器中的大括号样式（真实 DOM 元素）
   // 大括号元素是变量节点的兄弟元素
   span:has(+ .variable-block-chip),
-  .variable-block-chip+span {
+  .variable-block-chip + span {
     color: @colorInfo;
     font-family: @fontFamilyCode;
     font-size: @fontSizeSm;
@@ -261,15 +261,17 @@
 }
 
 // Suggestion 弹窗样式
-// .mention-suggestion-popup,
-// .variable-suggestion-popup {
-//   background: @colorBgContainer;
-//   border: @lineWidth solid @colorBorderSecondary;
-//   border-radius: @borderRadius;
-//   width: 300px;
-//   height: calc(@controlHeight * 7.5); // 约 240px，基于 controlHeight
-//   z-index: @zIndexPopupBase;
-// }
+.variable-suggestion-popup {
+  position: fixed;
+  z-index: 2000 !important; // 确保高于工作流面板的 z-index: 99
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  width: 300px;
+  height: calc(@controlHeight * 7.5); // 约 240px，基于 controlHeight
+  box-shadow: @boxShadowSecondary;
+  overflow: hidden;
+}
 
 // 变量建议弹窗样式
 .variable-suggestion-popup .ant-tree-node-selected {

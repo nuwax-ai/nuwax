@@ -467,7 +467,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
                 allowDescriptionWrap && maxLines > 1
                   ? styles.multiLineTruncate
                   : styles.singleLineTruncate
-              }`}
+              } ${showButtons ? '' : styles['mb-0']}`}
               style={
                 {
                   '--max-lines': maxLines,

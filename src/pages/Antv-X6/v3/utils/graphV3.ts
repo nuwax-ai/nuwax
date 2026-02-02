@@ -557,7 +557,7 @@ export const showExceptionPort = (
   return (
     (showExceptionHandle(node) &&
       node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ===
-      ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW &&
+        ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW &&
       protGroup === PortGroupEnum.exception) ||
     false
   );
@@ -907,12 +907,12 @@ export const getEdges = (
   // 过滤目标节点不存在的边（新增过滤逻辑）
   const validEdges = needValidate
     ? allEdges.filter((edge) => {
-      // 检查目标节点是否存在于节点列表中
-      return nodes.some((n) => {
-        const targetId = edge.target.split('-')[0];
-        return targetId === n.id.toString();
-      });
-    })
+        // 检查目标节点是否存在于节点列表中
+        return nodes.some((n) => {
+          const targetId = edge.target.split('-')[0];
+          return targetId === n.id.toString();
+        });
+      })
     : allEdges;
   // 使用 Set 来移除重复的边
   const uniqueEdges = new Set<string>();

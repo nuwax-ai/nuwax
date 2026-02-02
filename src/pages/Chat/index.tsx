@@ -61,13 +61,7 @@ import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
@@ -178,6 +172,7 @@ const Chat: React.FC = () => {
     isConversationActive,
     // 加载更多消息相关
     isMoreMessage,
+    setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
@@ -487,11 +482,6 @@ const Chat: React.FC = () => {
     const { conversationId } = data;
     // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
     if (conversationId === conversationInfo?.id?.toString()) {
-      setConversationInfo({
-        ...conversationInfo,
-        taskStatus: TaskStatus.COMPLETE,
-      });
-
       // 重新查询会话信息
       runAsync(id);
       // 重新查询会话记录
@@ -504,22 +494,6 @@ const Chat: React.FC = () => {
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
   };
-
-  // 处理任务停止后的刷新逻辑
-  const handleTaskStopped = useCallback(
-    (conversationId: string) => {
-      if (Number(conversationId) === Number(id)) {
-        // 重新查询会话信息
-        runAsync(id);
-        // 重新查询会话记录
-        runHistory({
-          agentId: null,
-          limit: 20,
-        });
-      }
-    },
-    [id],
-  );
 
   useEffect(() => {
     if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
@@ -553,6 +527,8 @@ const Chat: React.FC = () => {
   const handleClear = () => {
     setClearLoading(true);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 立即清空消息列表,避免跳转时旧数据闪烁
     setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
@@ -677,22 +653,35 @@ const Chat: React.FC = () => {
         fileNode.name,
         async () => {
           try {
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {
@@ -1116,97 +1105,97 @@ const Chat: React.FC = () => {
             right={
               agentDetail?.type !== AgentTypeEnum.TaskAgent
                 ? // 会话型
-                pagePreviewData && (
-                  <>
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!agentDetail?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                      // 复制模板按钮相关 props
-                      showCopyButton={showCopyButton}
-                      allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                      onCopyClick={() => setOpenCopyModal(true)}
-                      copyButtonText="复制模板"
-                      copyButtonClassName={styles['copy-btn']}
-                    />
-                    {/* 复制模板弹窗 */}
-                    {showCopyButton &&
-                      agentDetail &&
-                      pagePreviewData?.uri && (
-                        <CopyToSpaceComponent
-                          spaceId={agentDetail!.spaceId}
-                          mode={AgentComponentTypeEnum.Page}
-                          componentId={parsePageAppProjectId(
-                            pagePreviewData?.uri,
-                          )}
-                          title={''}
-                          open={openCopyModal}
-                          isTemplate={true}
-                          onSuccess={(_: any, targetSpaceId: number) => {
-                            setOpenCopyModal(false);
-                            // 跳转
-                            jumpToPageDevelop(targetSpaceId);
-                          }}
-                          onCancel={() => setOpenCopyModal(false)}
-                        />
+                  pagePreviewData && (
+                    <>
+                      <PagePreviewIframe
+                        pagePreviewData={pagePreviewData}
+                        showHeader={true}
+                        onClose={hidePagePreview}
+                        showCloseButton={!agentDetail?.hideChatArea}
+                        titleClassName={cx(styles['title-style'])}
+                        // 复制模板按钮相关 props
+                        showCopyButton={showCopyButton}
+                        allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                        onCopyClick={() => setOpenCopyModal(true)}
+                        copyButtonText="复制模板"
+                        copyButtonClassName={styles['copy-btn']}
+                      />
+                      {/* 复制模板弹窗 */}
+                      {showCopyButton &&
+                        agentDetail &&
+                        pagePreviewData?.uri && (
+                          <CopyToSpaceComponent
+                            spaceId={agentDetail!.spaceId}
+                            mode={AgentComponentTypeEnum.Page}
+                            componentId={parsePageAppProjectId(
+                              pagePreviewData?.uri,
+                            )}
+                            title={''}
+                            open={openCopyModal}
+                            isTemplate={true}
+                            onSuccess={(_: any, targetSpaceId: number) => {
+                              setOpenCopyModal(false);
+                              // 跳转
+                              jumpToPageDevelop(targetSpaceId);
+                            }}
+                            onCancel={() => setOpenCopyModal(false)}
+                          />
+                        )}
+                    </>
+                  )
+                : // 通用型
+                  isFileTreeVisible && (
+                    <div
+                      className={cx(
+                        styles['file-tree-sidebar'],
+                        'flex',
+                        'w-full',
                       )}
-                  </>
-                )
-                : // 任务型
-                isFileTreeVisible && (
-                  <div
-                    className={cx(
-                      styles['file-tree-sidebar'],
-                      'flex',
-                      'w-full',
-                    )}
-                  >
-                    <FileTreeView
-                      taskAgentSelectedFileId={taskAgentSelectedFileId}
-                      taskAgentSelectTrigger={taskAgentSelectTrigger}
-                      originalFiles={fileTreeData}
-                      fileTreeDataLoading={fileTreeDataLoading}
-                      targetId={id?.toString() || ''}
-                      viewMode={viewMode}
-                      readOnly={false}
-                      // 切换视图、远程桌面模式
-                      onViewModeChange={onViewModeChange}
-                      // 导出项目
-                      onExportProject={handleExportProject}
-                      // 上传文件
-                      onUploadFiles={handleUploadMultipleFiles}
-                      // 重命名文件
-                      onRenameFile={handleConfirmRenameFile}
-                      // 新建文件、文件夹
-                      onCreateFileNode={handleCreateFileNode}
-                      // 删除文件
-                      onDeleteFile={handleDeleteFile}
-                      // 保存文件
-                      onSaveFiles={handleSaveFiles}
-                      // 重启容器
-                      onRestartServer={() => restartVncPod(id)}
-                      // 重启智能体
-                      onRestartAgent={() => restartAgent(id)}
-                      // 关闭整个面板
-                      onClose={closePreviewView}
-                      // 文件树是否固定（用户点击后固定）
-                      isFileTreePinned={isFileTreePinned}
-                      // 文件树固定状态变化回调
-                      onFileTreePinnedChange={setIsFileTreePinned}
-                      isCanDeleteSkillFile={true}
-                      // 刷新文件树回调
-                      onRefreshFileTree={() => handleRefreshFileList(id)}
-                      // VNC 空闲检测配置（仅任务型智能体启用）
-                      idleDetection={{
-                        enabled:
-                          agentDetail?.type === AgentTypeEnum.TaskAgent,
-                        onIdleTimeout: () => openPreviewView(id),
-                      }}
-                    />
-                  </div>
-                )
+                    >
+                      <FileTreeView
+                        taskAgentSelectedFileId={taskAgentSelectedFileId}
+                        taskAgentSelectTrigger={taskAgentSelectTrigger}
+                        originalFiles={fileTreeData}
+                        fileTreeDataLoading={fileTreeDataLoading}
+                        targetId={id?.toString() || ''}
+                        viewMode={viewMode}
+                        readOnly={false}
+                        // 切换视图、远程桌面模式
+                        onViewModeChange={onViewModeChange}
+                        // 导出项目
+                        onExportProject={handleExportProject}
+                        // 上传文件
+                        onUploadFiles={handleUploadMultipleFiles}
+                        // 重命名文件
+                        onRenameFile={handleConfirmRenameFile}
+                        // 新建文件、文件夹
+                        onCreateFileNode={handleCreateFileNode}
+                        // 删除文件
+                        onDeleteFile={handleDeleteFile}
+                        // 保存文件
+                        onSaveFiles={handleSaveFiles}
+                        // 重启容器
+                        onRestartServer={() => restartVncPod(id)}
+                        // 重启智能体
+                        onRestartAgent={() => restartAgent(id)}
+                        // 关闭整个面板
+                        onClose={closePreviewView}
+                        // 文件树是否固定（用户点击后固定）
+                        isFileTreePinned={isFileTreePinned}
+                        // 文件树固定状态变化回调
+                        onFileTreePinnedChange={setIsFileTreePinned}
+                        isCanDeleteSkillFile={true}
+                        // 刷新文件树回调
+                        onRefreshFileTree={() => handleRefreshFileList(id)}
+                        // VNC 空闲检测配置（仅任务型智能体启用）
+                        idleDetection={{
+                          enabled:
+                            agentDetail?.type === AgentTypeEnum.TaskAgent,
+                          onIdleTimeout: () => openPreviewView(id),
+                        }}
+                      />
+                    </div>
+                  )
             }
           />
         </div>

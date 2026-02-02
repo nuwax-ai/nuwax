@@ -182,6 +182,132 @@ export const findFileNode = (
 };
 
 /**
+ * 从路径中提取文件名（去掉路径部分）
+ * @param path 文件路径或文件名
+ * @returns 文件名
+ */
+const extractFileName = (path: string): string => {
+  // 如果包含路径分隔符，提取最后一部分作为文件名
+  const lastSlashIndex = Math.max(
+    path.lastIndexOf('/'),
+    path.lastIndexOf('\\'),
+  );
+  if (lastSlashIndex !== -1) {
+    return path.substring(lastSlashIndex + 1);
+  }
+  return path;
+};
+
+/**
+ * 提取文件名的基础部分（去掉扩展名）
+ * @param fileName 文件名或文件ID（可能是完整路径）
+ * @returns 文件名基础部分和扩展名
+ */
+const extractFileNameParts = (
+  fileName: string,
+): {
+  baseName: string;
+  extension: string;
+} => {
+  // 先从路径中提取文件名
+  const name = extractFileName(fileName);
+  const lastDotIndex = name.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    return { baseName: name, extension: '' };
+  }
+  return {
+    baseName: name.substring(0, lastDotIndex),
+    extension: name.substring(lastDotIndex + 1),
+  };
+};
+
+/**
+ * 计算两个字符串的相似度（基于包含关系和长度）
+ * @param str1 字符串1
+ * @param str2 字符串2
+ * @returns 相似度分数（0-1之间，1表示完全相同）
+ */
+const calculateSimilarity = (str1: string, str2: string): number => {
+  if (str1 === str2) return 1;
+  if (str1.includes(str2) || str2.includes(str1)) {
+    // 如果互相包含，根据长度比例计算相似度
+    const minLen = Math.min(str1.length, str2.length);
+    const maxLen = Math.max(str1.length, str2.length);
+    return minLen / maxLen;
+  }
+  return 0;
+};
+
+/**
+ * 在文件树中查找最匹配的文件节点（模糊匹配）
+ * 当精确匹配失败时，根据文件名基础部分和扩展名进行模糊匹配
+ * @param fileId 文件ID（可能是文件名）
+ * @param treeData 文件树数据
+ * @returns 最匹配的文件节点，如果没有找到则返回 null
+ */
+export const findBestMatchingFileNode = (
+  fileId: string,
+  treeData: FileNode[],
+): FileNode | null => {
+  // 提取目标文件的基础部分和扩展名
+  const { baseName: targetBaseName, extension: targetExtension } =
+    extractFileNameParts(fileId);
+
+  // 收集所有文件节点（扁平化）
+  const allFiles: FileNode[] = [];
+  const collectFiles = (nodes: FileNode[]) => {
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        allFiles.push(node);
+      }
+      if (node.children) {
+        collectFiles(node.children);
+      }
+    }
+  };
+  collectFiles(treeData);
+
+  // 如果没有文件，直接返回 null
+  if (allFiles.length === 0) {
+    return null;
+  }
+
+  // 计算每个文件的匹配分数
+  const scoredFiles: Array<{ file: FileNode; score: number }> = [];
+
+  for (const file of allFiles) {
+    // 使用文件的 name 或 id 进行匹配
+    const fileName = file.name || file.id;
+    const { baseName, extension } = extractFileNameParts(fileName);
+
+    // 计算基础名称的相似度
+    const baseNameSimilarity = calculateSimilarity(targetBaseName, baseName);
+
+    // 如果基础名称不匹配（相似度为0），跳过该文件
+    if (baseNameSimilarity === 0) {
+      continue;
+    }
+
+    // 计算扩展名的相似度
+    const extensionSimilarity = calculateSimilarity(targetExtension, extension);
+
+    // 综合分数：基础名称权重70%，扩展名权重30%
+    const totalScore = baseNameSimilarity * 0.7 + extensionSimilarity * 0.3;
+
+    scoredFiles.push({ file, score: totalScore });
+  }
+
+  // 如果没有匹配的文件，返回 null
+  if (scoredFiles.length === 0) {
+    return null;
+  }
+
+  // 按分数降序排序，返回分数最高的文件
+  scoredFiles.sort((a, b) => b.score - a.score);
+  return scoredFiles[0].file;
+};
+
+/**
  * 根据文件ID构建完整的文件路径
  */
 export const getFilePath = (

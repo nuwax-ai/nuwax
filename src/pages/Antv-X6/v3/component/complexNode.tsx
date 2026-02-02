@@ -151,7 +151,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       const newSkillComponentConfigs = skillComponentConfigs.map(
         (i: CreatedNodeItem) =>
           i.typeId === item.typeId &&
-            (i.toolName || '') === (item.toolName || '')
+          (i.toolName || '') === (item.toolName || '')
             ? item
             : i,
       );

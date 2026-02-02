@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import Loading from '@/components/custom/Loading';
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -12,7 +13,6 @@ import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
-  apiAgentComponentList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -148,6 +148,10 @@ const EditAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
 
+  // 获取智能体配置信息是否加载中
+  const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
+    useState<boolean>(false);
+
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
     const result = await apiModelList(params);
@@ -163,23 +167,20 @@ const EditAgent: React.FC = () => {
   }, [spaceId]);
 
   // 查询智能体配置信息
-  const { run, loading: loadingAgentConfigInfo } = useRequest(
-    apiAgentConfigInfo,
-    {
-      manual: true,
-      debounceWait: 300,
-      onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-        setAgentConfigInfo(result?.data);
-      },
+  const { run } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      setLoadingAgentConfigInfo(false);
+      setAgentConfigInfo(result?.data);
     },
-  );
+    onError: () => {
+      setLoadingAgentConfigInfo(false);
+    },
+  });
 
   useEffect(() => {
-    if (loadingAgentConfigInfo) {
-      setIsLoadingOtherInterface(true);
-    } else {
-      setIsLoadingOtherInterface(false);
-    }
+    setIsLoadingOtherInterface(loadingAgentConfigInfo);
   }, [loadingAgentConfigInfo]);
 
   // 查询智能体配置信息
@@ -258,13 +259,13 @@ const EditAgent: React.FC = () => {
     [],
   );
 
-  // 更新智能体基础配置信息
   const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceWait: 600,
   });
 
   useEffect(() => {
+    setLoadingAgentConfigInfo(true);
     run(agentId);
     // runComponentList(agentId);
     // 设置页面title
@@ -299,7 +300,7 @@ const EditAgent: React.FC = () => {
    * @param name: 会话模型名称
    * @param config: 模型配置信息
    */
-  const handleSetModel = (
+  const handleSetModel = async (
     targetId: number | null,
     name: string,
     config: ComponentModelBindConfig,
@@ -607,22 +608,35 @@ const EditAgent: React.FC = () => {
               return;
             }
 
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {
@@ -823,7 +837,8 @@ const EditAgent: React.FC = () => {
       // 日志
       case ApplicationMoreActionEnum.Log:
         history.push(
-          `/space/${spaceId}/library-log?targetType=${AgentComponentTypeEnum.Agent
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Agent
           }&targetId=${agentConfigInfo?.id ?? ''}`,
         );
         break;
@@ -862,21 +877,53 @@ const EditAgent: React.FC = () => {
   };
 
   useEffect(() => {
-    // 设置最小宽度-扩展页面/文件树
-    if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2000px';
-    } else {
-      // 设置最小宽度-调试详情
-      if (showType === EditAgentShowType.Debug_Details) {
-        document.documentElement.style.minWidth = '1540px';
+    /**
+     * 设置最小宽度
+     */
+    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1700px
+      if (isFileTreeVisible) {
+        document.documentElement.style.minWidth = '1750px';
       } else {
         document.documentElement.style.minWidth = '1240px';
       }
+    } else {
+      // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
+      if (pagePreviewData) {
+        document.documentElement.style.minWidth = '2000px';
+      } else {
+        // 设置最小宽度-调试详情
+        if (showType === EditAgentShowType.Debug_Details) {
+          document.documentElement.style.minWidth = '1540px';
+        } else {
+          document.documentElement.style.minWidth = '1240px';
+        }
+      }
     }
+
     return () => {
       document.documentElement.style.minWidth = '1200px';
     };
-  }, [pagePreviewData, isFileTreeVisible, showType]);
+  }, [pagePreviewData, isFileTreeVisible, showType, agentConfigInfo?.type]);
+
+  /**
+   * 加载中
+   */
+  if (loadingAgentConfigInfo) {
+    return (
+      <div
+        className={cx(
+          'h-full',
+          'flex',
+          'flex-1',
+          'items-center',
+          'justify-center',
+        )}
+      >
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -904,7 +951,10 @@ const EditAgent: React.FC = () => {
       >
         {/*编排*/}
         <div
-          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
+          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'], {
+            [styles['chat-bot-edit-info']]:
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+          })}
         >
           {/*编排title*/}
           <ArrangeTitle
@@ -922,22 +972,47 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {/*系统提示词/用户提示词*/}
-            <SystemUserTipsWord
-              ref={systemUserTipsWordRef}
-              agentConfigInfo={agentConfigInfo}
-              valueUser={agentConfigInfo?.userPrompt}
-              valueSystem={agentConfigInfo?.systemPrompt}
-              onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
-              onChangeSystem={(value) =>
-                handleChangeAgent(value, 'systemPrompt')
-              }
-              onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={promptVariables}
-              skills={promptTools}
-            />
+            {agentConfigInfo?.type === AgentTypeEnum.ChatBot && (
+              // 系统提示词/用户提示词
+              <SystemUserTipsWord
+                ref={systemUserTipsWordRef}
+                agentConfigInfo={agentConfigInfo}
+                valueUser={agentConfigInfo?.userPrompt}
+                valueSystem={agentConfigInfo?.systemPrompt}
+                onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
+                onChangeSystem={(value) =>
+                  handleChangeAgent(value, 'systemPrompt')
+                }
+                onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
+                variables={promptVariables}
+                skills={promptTools}
+              />
+            )}
+
             {/*配置区域*/}
             <AgentArrangeConfig
+              extraComponent={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                  <SystemUserTipsWord
+                    className={cx(styles['prompt-wrapper'], 'w-full')}
+                    ref={systemUserTipsWordRef}
+                    agentConfigInfo={agentConfigInfo}
+                    valueUser={agentConfigInfo?.userPrompt}
+                    valueSystem={agentConfigInfo?.systemPrompt}
+                    onChangeUser={(value) =>
+                      handleChangeAgent(value, 'userPrompt')
+                    }
+                    onChangeSystem={(value) =>
+                      handleChangeAgent(value, 'systemPrompt')
+                    }
+                    onReplace={(value) =>
+                      handleChangeAgent(value!, 'systemPrompt')
+                    }
+                    variables={promptVariables}
+                    skills={promptTools}
+                  />
+                )
+              }
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
@@ -951,41 +1026,41 @@ const EditAgent: React.FC = () => {
         {(!agentConfigInfo?.hideChatArea ||
           pagePreviewData ||
           isFileTreeVisible) && (
-            <div
-              // className={cx(isFileTreeVisible && 'flex-1')}
-              style={{
-                flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-                minWidth:
-                  pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
-              }}
-            >
-              {/*预览与调试和预览页面*/}
-              <ResizableSplit
-                resetTrigger={
-                  pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-                }
-                minRightWidth={530}
-                defaultLeftWidth={
-                  agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-                }
-                left={
-                  agentConfigInfo?.hideChatArea ? null : (
-                    <PreviewAndDebug
-                      agentConfigInfo={agentConfigInfo}
-                      agentId={agentId}
-                      onPressDebug={() =>
-                        handleClosePreview(EditAgentShowType.Debug_Details)
-                      }
-                      onAgentConfigInfo={setAgentConfigInfo}
-                      onOpenPreview={handleOpenPreview}
-                      // 打开文件面板
-                      onOpenFilePanel={handleFileTreeVisible}
-                    />
-                  )
-                }
-                right={
-                  agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                    ? pagePreviewData && ( // 问答型
+          <div
+            style={{
+              flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+              minWidth:
+                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
+            }}
+          >
+            {/*预览与调试和预览页面*/}
+            <ResizableSplit
+              resetTrigger={
+                pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+              }
+              minRightWidth={530}
+              defaultLeftWidth={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+              }
+              left={
+                agentConfigInfo?.hideChatArea ? null : (
+                  // 预览与调试
+                  <PreviewAndDebug
+                    agentConfigInfo={agentConfigInfo}
+                    agentId={agentId}
+                    onPressDebug={() =>
+                      handleClosePreview(EditAgentShowType.Debug_Details)
+                    }
+                    onAgentConfigInfo={setAgentConfigInfo}
+                    onOpenPreview={handleOpenPreview}
+                    // 打开文件面板
+                    onOpenFilePanel={handleFileTreeVisible}
+                  />
+                )
+              }
+              right={
+                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                  ? pagePreviewData && ( // 问答型
                       <PagePreviewIframe
                         pagePreviewData={pagePreviewData}
                         showHeader={true}
@@ -994,12 +1069,11 @@ const EditAgent: React.FC = () => {
                         titleClassName={cx(styles['title-style'])}
                       />
                     )
-                    : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                  : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
                     devConversationId && (
                       <div
                         className={cx(
                           styles['file-tree-sidebar'],
-                          // styles['flex-2'],
                           'flex',
                           'w-full',
                         )}
@@ -1045,7 +1119,7 @@ const EditAgent: React.FC = () => {
                           onRefreshFileTree={() =>
                             handleRefreshFileList(devConversationId)
                           }
-                          // VNC 空闲检测配置（仅任务型智能体启用）
+                          // VNC 空闲检测配置（仅通用型智能体启用）
                           idleDetection={{
                             enabled:
                               agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
@@ -1055,10 +1129,10 @@ const EditAgent: React.FC = () => {
                         />
                       </div>
                     )
-                }
-              />
-            </div>
-          )}
+              }
+            />
+          </div>
+        )}
 
         {/*调试详情*/}
         <DebugDetails

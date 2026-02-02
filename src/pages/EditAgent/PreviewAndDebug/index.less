@@ -25,7 +25,9 @@
       width: 100%;
       max-width: 800px;
       padding-bottom: 30px;
-      mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+
+      // 此处注释掉是因为在企业微信西财智能体中，智能体内容输出区域的背景色是白色，导致页面看不见打字机效果了，也看不见聊天内容，所以不需要遮罩层
+      // mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
 
       // 加载更多按钮容器
       .load-more-container {
@@ -40,6 +42,14 @@
           padding: 0 @padding;
         }
       }
+
+      // 任务执行中容器
+      .task-executing-container {
+        height: 32px;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        gap: @paddingSm;
+      }
     }
 
     // 会话状态栏样式
@@ -49,27 +59,6 @@
       margin: 0 auto -20px !important;
       animation: slide-in-up 0.3s ease-out;
     }
-
-    // 会话状态栏样式
-    .conversation-status-bar {
-      max-width: 800px;
-      width: 100%;
-      margin: 0 auto -20px !important;
-      animation: slide-in-up 0.3s ease-out;
-    }
-  }
-}
-
-// 状态栏滑入动画
-@keyframes slide-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

@@ -404,10 +404,10 @@ export default () => {
       needUpdateTopicRef.current = false;
       setConversationInfo(
         (info) =>
-        ({
-          ...info,
-          topic: result?.data?.topic,
-        } as ConversationInfo),
+          ({
+            ...info,
+            topic: result?.data?.topic,
+          } as ConversationInfo),
       );
     },
   });
@@ -753,10 +753,6 @@ export default () => {
               const input = processingResult.input;
               // 添加页面类型 后的未返回默认 Page
               input.uri_type = processingResult.input.uri_type ?? 'Page';
-              // if (!input?.uri) {
-              //   message.error('页面路径不存在');
-              //   return;
-              // }
 
               // 显示页面预览
               if (!input.uri_type || input.uri_type === 'Page') {
@@ -886,7 +882,7 @@ export default () => {
               // 问题建议
               setChatSuggestList(
                 ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
-                [],
+                  [],
               );
             }
           } else {
@@ -1331,6 +1327,7 @@ export default () => {
     messageViewRef,
     // 是否还有更多消息
     isMoreMessage,
+    setIsMoreMessage,
     // 加载更多消息的状态
     loadingMore,
     // 加载更多消息
