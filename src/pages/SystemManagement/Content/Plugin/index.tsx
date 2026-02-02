@@ -10,15 +10,14 @@ import {
   apiSystemResourcePluginList,
 } from '@/services/systemManage';
 import { SystemPluginInfo } from '@/types/interfaces/systemManage';
-import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Modal } from 'antd';
+import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 
 const Plugin: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -48,29 +47,7 @@ const Plugin: React.FC = () => {
    * 查看插件详情
    */
   const handleView = useCallback((record: SystemPluginInfo) => {
-    Modal.info({
-      title: '插件详情',
-      content: (
-        <div>
-          <p>
-            <strong>名称：</strong>
-            {record.name}
-          </p>
-          <p>
-            <strong>描述：</strong>
-            {record.description || '-'}
-          </p>
-          <p>
-            <strong>创建人：</strong>
-            {record.creatorName}
-          </p>
-          <p>
-            <strong>创建时间：</strong>
-            {record.created ? getTime(record.created) : '-'}
-          </p>
-        </div>
-      ),
-    });
+    history.push(`/space/${record.spaceId}/plugin/${record.id}/cloud-tool`);
   }, []);
 
   /**

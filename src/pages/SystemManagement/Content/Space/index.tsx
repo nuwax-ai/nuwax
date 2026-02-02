@@ -16,15 +16,14 @@ import {
   apiSystemResourceSpaceList,
 } from '@/services/systemManage';
 import { SystemSpaceInfo } from '@/types/interfaces/systemManage';
-import { getTime } from '@/utils';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Modal } from 'antd';
+import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 
 const Space: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -54,30 +53,7 @@ const Space: React.FC = () => {
    * 查看空间详情
    */
   const handleView = useCallback((record: SystemSpaceInfo) => {
-    // TODO: 跳转到详情页或打开详情弹窗
-    Modal.info({
-      title: '空间详情',
-      content: (
-        <div>
-          <p>
-            <strong>名称：</strong>
-            {record.name}
-          </p>
-          <p>
-            <strong>描述：</strong>
-            {record.description || '-'}
-          </p>
-          <p>
-            <strong>创建人：</strong>
-            {record.creatorName}
-          </p>
-          <p>
-            <strong>创建时间：</strong>
-            {record.created ? getTime(record.created) : '-'}
-          </p>
-        </div>
-      ),
-    });
+    history.push(`/space/${record.id}/team`);
   }, []);
 
   /**
