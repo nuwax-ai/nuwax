@@ -172,11 +172,13 @@ const KnowledgeBase: React.FC = () => {
     pageSize?: number;
     current?: number;
     name?: string;
+    creatorName?: string;
   }) => {
     const response = await apiSystemResourceKnowledgeList({
       pageNo: params.current || 1,
       pageSize: params.pageSize || 10,
       name: params.name,
+      creatorName: params.creatorName,
     });
 
     return {

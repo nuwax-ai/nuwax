@@ -178,6 +178,7 @@ const Agent: React.FC = () => {
       pageNo: params.current || 1,
       pageSize: params.pageSize || 10,
       name: params.name,
+      creatorName: params.creatorName,
     });
 
     return {
