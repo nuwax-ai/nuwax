@@ -2,7 +2,16 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { customizeRequiredMark } from '@/utils/form';
-import { Checkbox, Col, Form, FormProps, message, Row } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Col,
+  Form,
+  FormProps,
+  message,
+  Row,
+  Space,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -103,6 +112,33 @@ const UserBindRoleModal: React.FC<UserBindRoleModalProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
+
+  // 获取当前选中的角色ID
+  const selectedRoleIds = Form.useWatch('roleIds', form) || [];
+
+  // 获取所有角色ID
+  const allRoleIds = roleList?.map((item: RoleInfo) => item.id) || [];
+
+  // 判断是否全部选中
+  const isAllSelected =
+    allRoleIds.length > 0 &&
+    allRoleIds.every((id: number) => selectedRoleIds.includes(id));
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      // 取消全选
+      form.setFieldsValue({
+        roleIds: [],
+      });
+    } else {
+      // 全选
+      form.setFieldsValue({
+        roleIds: allRoleIds,
+      });
+    }
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -122,11 +158,26 @@ const UserBindRoleModal: React.FC<UserBindRoleModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="roleIds" label="角色">
+        <Form.Item
+          name="roleIds"
+          label={
+            <Space>
+              {/* <span>角色</span> */}
+              <Button
+                type="link"
+                size="small"
+                onClick={handleSelectAll}
+                style={{ padding: 0, height: 'auto' }}
+              >
+                {isAllSelected ? '取消全选' : '全选'}
+              </Button>
+            </Space>
+          }
+        >
           <Checkbox.Group className={cx(styles.checkboxGroup)}>
             <Row gutter={[16, 8]}>
               {roleList?.map((item: RoleInfo) => (
-                <Col span={8} key={item.id}>
+                <Col span={24} key={item.id}>
                   <Checkbox value={item.id}>{item.name}</Checkbox>
                 </Col>
               ))}
