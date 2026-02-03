@@ -62,7 +62,11 @@ const SystemSection: React.FC<{
             (subItem.type === SystemManageListEnum.System_Setting &&
               pathname.includes('config/setting')) ||
             (subItem.type === SystemManageListEnum.Theme_Config &&
-              pathname.includes('config/theme'))
+              pathname.includes('config/theme')) ||
+            (subItem.type === SystemManageListEnum.Sandbox_Config &&
+              pathname.includes('config/sandbox')) ||
+            (subItem.type === SystemManageListEnum.Category_Manage &&
+              pathname.includes('config/category'))
           );
         });
         if (isChildActive) return item.type;
@@ -124,6 +128,10 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.Dashboard:
         history.push('/system/dashboard', { _t: Date.now() });
         break;
+      // 任务管理
+      case SystemManageListEnum.Task_Manage:
+        history.push('/system/task-manage', { _t: Date.now() });
+        break;
     }
   };
 
@@ -138,6 +146,12 @@ const SystemSection: React.FC<{
         break;
       case SystemManageListEnum.Theme_Config:
         history.push('/system/config/theme', { _t: Date.now() });
+        break;
+      case SystemManageListEnum.Sandbox_Config:
+        history.push('/system/config/sandbox', { _t: Date.now() });
+        break;
+      case SystemManageListEnum.Category_Manage:
+        history.push('/system/config/category', { _t: Date.now() });
         break;
       case SystemManageListEnum.Operation_Log:
         history.push('/system/log-query/operation-log', { _t: Date.now() });
@@ -216,6 +230,8 @@ const SystemSection: React.FC<{
       (type === 'markdown-test' && pathname.includes('markdown-test')) ||
       (type === SystemManageListEnum.Dashboard &&
         pathname.includes('dashboard')) ||
+      (type === SystemManageListEnum.Task_Manage &&
+        pathname.includes('task-manage')) ||
       (type === SystemManageListEnum.Log_Query &&
         pathname.includes('log-query')) ||
       (type === SystemManageListEnum.Content && pathname.includes('content'))
@@ -257,7 +273,11 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.System_Setting &&
         pathname.includes('config/setting')) ||
       (type === SystemManageListEnum.Theme_Config &&
-        pathname.includes('config/theme'))
+        pathname.includes('config/theme')) ||
+      (type === SystemManageListEnum.Sandbox_Config &&
+        pathname.includes('config/sandbox')) ||
+      (type === SystemManageListEnum.Category_Manage &&
+        pathname.includes('config/category'))
     );
   };
 
