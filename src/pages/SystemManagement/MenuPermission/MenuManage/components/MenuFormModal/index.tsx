@@ -26,7 +26,6 @@ import {
 import { apiGetResourceList } from '../../../services/permission-resources';
 import {
   MenuSourceEnum,
-  MenuStatusEnum,
   MenuVisibleEnum,
   type MenuNodeInfo,
 } from '../../../types/menu-manage';
@@ -222,7 +221,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           parentId: menuInfoResponse.parentId || undefined,
           path: menuInfoResponse.path,
           sortIndex: menuInfoResponse.sortIndex || 0,
-          status: menuInfoResponse.status === MenuStatusEnum.Enabled,
           visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
           source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
         });
@@ -238,7 +236,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         setSelectedResourceIds([]);
         form.setFieldsValue({
           sortIndex: 0,
-          status: true,
           visible: true,
           source: MenuSourceEnum.UserDefined,
           // 如果有父菜单，自动设置父节点
@@ -326,9 +323,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       const formData = {
         ...values,
         icon: imageUrl,
-        status: values.status
-          ? MenuStatusEnum.Enabled
-          : MenuStatusEnum.Disabled,
         visible: values.visible
           ? MenuVisibleEnum.Visible
           : MenuVisibleEnum.Hidden,
@@ -449,34 +443,18 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="状态"
-                name="status"
-                valuePropName="checked"
-                tooltip={{
-                  title: '启用或禁用此菜单',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="是否显示"
-                name="visible"
-                valuePropName="checked"
-                tooltip={{
-                  title: '显示或隐藏此菜单',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-              </Form.Item>
-            </Col>
-          </Row>
+
+          <Form.Item
+            label="是否显示"
+            name="visible"
+            valuePropName="checked"
+            tooltip={{
+              title: '显示或隐藏此菜单',
+              icon: <InfoCircleOutlined />,
+            }}
+          >
+            <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+          </Form.Item>
 
           <Form.Item label="描述" name="description">
             <TextArea

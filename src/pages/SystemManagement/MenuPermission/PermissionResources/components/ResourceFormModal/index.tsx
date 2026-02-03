@@ -24,7 +24,6 @@ import {
 } from '../../../services/permission-resources';
 import {
   ResourceSourceEnum,
-  ResourceStatusEnum,
   ResourceTreeNode,
   ResourceTypeEnum,
   ResourceVisibleEnum,
@@ -160,7 +159,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           parentId: resourceInfoResponse.parentId || undefined,
           path: resourceInfoResponse.path,
           sortIndex: resourceInfoResponse.sortIndex || 0,
-          status: resourceInfoResponse.status === ResourceStatusEnum.Enabled,
           visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
           source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
         });
@@ -170,7 +168,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         setImageUrl('');
         form.setFieldsValue({
           sortIndex: 0,
-          status: true,
           visible: true,
           source: ResourceSourceEnum.UserDefined,
           // 如果有父资源，自动设置父节点
@@ -187,9 +184,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       const formData = {
         ...values,
         icon: imageUrl,
-        status: values.status
-          ? ResourceStatusEnum.Enabled
-          : ResourceStatusEnum.Disabled,
         visible: values.visible
           ? ResourceVisibleEnum.Visible
           : ResourceVisibleEnum.Hidden,
@@ -321,34 +315,17 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="状态"
-                    name="status"
-                    valuePropName="checked"
-                    tooltip={{
-                      title: '启用或禁用此资源',
-                      icon: <InfoCircleOutlined />,
-                    }}
-                  >
-                    <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="是否显示"
-                    name="visible"
-                    valuePropName="checked"
-                    tooltip={{
-                      title: '是否显示此资源',
-                      icon: <InfoCircleOutlined />,
-                    }}
-                  >
-                    <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Form.Item
+                label="是否显示"
+                name="visible"
+                valuePropName="checked"
+                tooltip={{
+                  title: '是否显示此资源',
+                  icon: <InfoCircleOutlined />,
+                }}
+              >
+                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+              </Form.Item>
             </Col>
           </Row>
           <Form.Item label="描述" name="description">
