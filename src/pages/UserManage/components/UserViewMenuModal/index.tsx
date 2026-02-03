@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import Loading from '@/components/custom/Loading';
 import { Form, Tree } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -57,7 +58,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
     >
       <div className={cx(styles.treeContainer)}>
         {loading ? (
-          <div className={cx(styles.loading)}>加载中...</div>
+          <Loading className={cx(styles.loading)} />
         ) : menuList && menuList.length > 0 ? (
           <Tree
             treeData={menuList}
