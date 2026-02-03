@@ -31,11 +31,16 @@ export const SYSTEM_MANAGE_LIST = [
     type: SystemManageListEnum.System_Config,
     icon: <SvgIcon name="icons-nav-settings" />,
     text: '系统配置',
-  },
-  {
-    type: SystemManageListEnum.Theme_Config,
-    icon: <SvgIcon name="icons-nav-palette" />,
-    text: '主题配置',
+    list: [
+      {
+        text: '系统设置',
+        type: SystemManageListEnum.System_Setting,
+      },
+      {
+        text: '主题配置',
+        type: SystemManageListEnum.Theme_Config,
+      },
+    ],
   },
   {
     type: SystemManageListEnum.Dashboard,
@@ -70,11 +75,11 @@ export const SYSTEM_MANAGE_LIST = [
     icon: <SvgIcon name="icons-nav-log" />,
     text: '日志查询',
     list: [
-      {
-        text: '操作日志',
-        type: SystemManageListEnum.Operation_Log,
-        // icon: <SvgIcon name="icons-nav-log-operation" />,
-      },
+      // {
+      //   text: '操作日志',
+      //   type: SystemManageListEnum.Operation_Log,
+      //   // icon: <SvgIcon name="icons-nav-log-operation" />,
+      // },
       {
         text: '运行日志',
         type: SystemManageListEnum.Running_Log,

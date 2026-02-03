@@ -90,7 +90,6 @@ const routes = [
       },
 
       { path: '/square', component: '@/pages/Square' },
-      { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
       // 空间广场-插件详情
       {
         path: '/space/publish/plugin/:pluginId',
@@ -122,37 +121,55 @@ const routes = [
         component: '@/pages/Square/SkillDetail',
       },
       {
-        path: '/system/published/manage',
-        component: '@/pages/PublishedManage',
-      },
-      { path: '/system/config', component: '@/pages/SystemConfig' },
-      { path: '/system/theme/config', component: '@/pages/ThemeConfig' },
-      { path: '/system/user/manage', component: '@/pages/UserManage' },
-      {
-        path: '/system/model/manage',
-        component: '@/pages/GlobalModelManage',
-      },
-      {
         path: '/history-conversation',
         component: '@/pages/HistoryConversation',
       },
-      {
-        path: '/system/dashboard',
-        component: '@/pages/SystemManagement/Dashboard',
-      },
-      {
-        path: '/system/log-query/operation-log',
-        component: '@/pages/SystemManagement/LogQuery/OperationLog',
-      },
-      {
-        path: '/system/log-query/running-log',
-        component: '@/pages/SystemManagement/LogQuery/RunningLog',
-      },
-      // 系统管理
+      // 系统管理统一管理
       {
         path: '/system',
         name: '系统管理',
         routes: [
+          {
+            path: 'dashboard',
+            name: '系统概览',
+            component: '@/pages/SystemManagement/Dashboard',
+          },
+          {
+            path: 'user/manage',
+            name: '用户管理',
+            component: '@/pages/UserManage',
+          },
+          {
+            path: 'publish/audit',
+            name: '发布审核',
+            component: '@/pages/PublishAudit',
+          },
+          {
+            path: 'published/manage',
+            name: '已发布管理',
+            component: '@/pages/PublishedManage',
+          },
+          {
+            path: 'model/manage',
+            name: '全局模型管理',
+            component: '@/pages/GlobalModelManage',
+          },
+          {
+            path: 'config',
+            name: '系统配置',
+            routes: [
+              {
+                path: 'setting',
+                name: '系统设置',
+                component: '@/pages/SystemConfig',
+              },
+              {
+                path: 'theme',
+                name: '主题配置',
+                component: '@/pages/ThemeConfig',
+              },
+            ],
+          },
           {
             path: 'content',
             name: '内容管理',
@@ -229,6 +246,22 @@ const routes = [
                 name: '用户组管理',
                 component:
                   '@/pages/SystemManagement/MenuPermission/UserGroupManage',
+              },
+            ],
+          },
+          {
+            path: 'log-query',
+            name: '日志查询',
+            routes: [
+              // {
+              //   path: 'operation-log',
+              //   name: '操作日志',
+              //   component: '@/pages/SystemManagement/LogQuery/OperationLog',
+              // },
+              {
+                path: 'running-log',
+                name: '运行日志',
+                component: '@/pages/SystemManagement/LogQuery/RunningLog',
               },
             ],
           },

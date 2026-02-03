@@ -58,7 +58,11 @@ const SystemSection: React.FC<{
             (subItem.type === SystemManageListEnum.Role_Manage &&
               pathname.includes('role-manage')) ||
             (subItem.type === SystemManageListEnum.User_Group_Manage &&
-              pathname.includes('user-group-manage'))
+              pathname.includes('user-group-manage')) ||
+            (subItem.type === SystemManageListEnum.System_Setting &&
+              pathname.includes('config/setting')) ||
+            (subItem.type === SystemManageListEnum.Theme_Config &&
+              pathname.includes('config/theme'))
           );
         });
         if (isChildActive) return item.type;
@@ -112,10 +116,6 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.System_Config:
         history.push('/system/config');
         break;
-      // 主题配置
-      case SystemManageListEnum.Theme_Config:
-        history.push('/system/theme/config');
-        break;
       // Markdown 测试
       case 'markdown-test':
         history.push('/markdown-test');
@@ -133,6 +133,12 @@ const SystemSection: React.FC<{
     handleCloseMobileMenu();
 
     switch (type) {
+      case SystemManageListEnum.System_Setting:
+        history.push('/system/config/setting', { _t: Date.now() });
+        break;
+      case SystemManageListEnum.Theme_Config:
+        history.push('/system/config/theme', { _t: Date.now() });
+        break;
       case SystemManageListEnum.Operation_Log:
         history.push('/system/log-query/operation-log', { _t: Date.now() });
         break;
@@ -207,8 +213,6 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.System_Config &&
         pathname.includes('config') &&
         !pathname.includes('theme')) ||
-      (type === SystemManageListEnum.Theme_Config &&
-        pathname.includes('theme/config')) ||
       (type === 'markdown-test' && pathname.includes('markdown-test')) ||
       (type === SystemManageListEnum.Dashboard &&
         pathname.includes('dashboard')) ||
@@ -249,7 +253,11 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Role_Manage &&
         pathname.includes('role-manage')) ||
       (type === SystemManageListEnum.User_Group_Manage &&
-        pathname.includes('user-group-manage'))
+        pathname.includes('user-group-manage')) ||
+      (type === SystemManageListEnum.System_Setting &&
+        pathname.includes('config/setting')) ||
+      (type === SystemManageListEnum.Theme_Config &&
+        pathname.includes('config/theme'))
     );
   };
 
