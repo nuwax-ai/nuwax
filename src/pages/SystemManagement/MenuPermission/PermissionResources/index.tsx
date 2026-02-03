@@ -184,7 +184,7 @@ const PermissionResources: React.FC = () => {
       title: '图标',
       dataIndex: 'icon',
       key: 'icon',
-      width: 100,
+      width: 160,
       render: (icon: string, record: ResourceTreeNode) => (
         <div className={cx(styles.iconCell)}>
           {icon ? (
@@ -205,7 +205,7 @@ const PermissionResources: React.FC = () => {
       title: '资源名称',
       dataIndex: 'name',
       key: 'name',
-      width: 200,
+      width: 160,
       ellipsis: true,
     },
     {
@@ -221,15 +221,13 @@ const PermissionResources: React.FC = () => {
       title: '编码',
       dataIndex: 'code',
       key: 'code',
-      width: 150,
+      width: 200,
       render: (code: string) => code || '--',
     },
     {
       title: '路由路径',
       dataIndex: 'path',
       key: 'path',
-      width: 200,
-      ellipsis: true,
       render: (path: string) => path || '--',
     },
     {
@@ -237,7 +235,8 @@ const PermissionResources: React.FC = () => {
       key: 'action',
       width: 250,
       fixed: 'right',
-      render: (_: any, record: ResourceTreeNode) => (
+      align: 'center',
+      render: (_: null, record: ResourceTreeNode) => (
         <Space size="small">
           {record.type !== ResourceTypeEnum.Component && (
             <Button
@@ -245,7 +244,7 @@ const PermissionResources: React.FC = () => {
               size="small"
               onClick={() => handleAddChild(record)}
             >
-              新增子资源
+              新增
             </Button>
           )}
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
@@ -310,6 +309,8 @@ const PermissionResources: React.FC = () => {
                     />
                   ),
               }}
+              // 防止展开/折叠时 Table 布局变动
+              tableLayout="fixed"
             />
           )}
         </Spin>
