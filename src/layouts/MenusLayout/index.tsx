@@ -150,6 +150,9 @@ const MenusLayout: React.FC<{
       case UserOperatorAreaEnum.Message:
         setOpenMessage(true);
         break;
+      case UserOperatorAreaEnum.Computer:
+        history.push('/my-computer-manage');
+        break;
     }
   }, []);
 
@@ -257,6 +260,8 @@ const MenusLayout: React.FC<{
         <Tabs onClick={handleTabsClick} />
         {/*用户操作区域： 文档、历史会话、消息*/}
         <UserOperateArea onClick={handleUserClick} />
+        {/* 我的电脑管理 */}
+
         {/*用户头像区域*/}
         <User />
       </div>

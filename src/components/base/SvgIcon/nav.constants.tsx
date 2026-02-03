@@ -1,5 +1,6 @@
 import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
+import { ReactComponent as ComputerSvgFile } from '@/assets/icons/nav/computer.svg';
 import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
 import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
@@ -61,6 +62,7 @@ const BackwardSvg = wrapSvg(BackwardSvgFile);
 const PaletteSvg = wrapSvg(PaletteSvgFile);
 const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
+const ComputerSvg = wrapSvg(ComputerSvgFile);
 export default {
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
@@ -92,4 +94,5 @@ export default {
   'icons-nav-log': LogSvg,
   'icons-nav-log-operation': LogOperationSvg,
   'icons-nav-log-running': LogRunningSvg,
+  'icons-nav-computer': ComputerSvg,
 } as Record<string, React.FC>;
