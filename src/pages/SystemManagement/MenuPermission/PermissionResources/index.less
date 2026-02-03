@@ -61,6 +61,18 @@
       flex-direction: row;
       align-items: center;
     }
+
+    // 防止展开/折叠时 Table 布局变动
+    .ant-table {
+      table-layout: fixed;
+    }
+
+    // 确保展开的行内容不会导致 Table 宽度变化
+    .ant-table-expanded-row {
+      > td {
+        padding: 0;
+      }
+    }
   }
 }
 
