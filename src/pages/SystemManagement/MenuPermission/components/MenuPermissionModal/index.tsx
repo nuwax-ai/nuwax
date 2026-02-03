@@ -22,7 +22,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface MenuPermissionDrawerProps {
+interface MenuPermissionModalProps {
   /** 是否打开 */
   open: boolean;
   targetId: number;
@@ -39,7 +39,7 @@ interface MenuPermissionDrawerProps {
  * 菜单权限抽屉组件
  * 用于配置角色的菜单权限
  */
-const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
+const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
   open,
   targetId,
   name,
@@ -348,4 +348,4 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
   );
 };
 
-export default MenuPermissionDrawer;
+export default MenuPermissionModal;

@@ -1,7 +1,7 @@
 import { DownOutlined } from '@ant-design/icons';
 import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
 import { type ResourceTreeNode } from '../../../types/permission-resources';
 import styles from './index.less';
@@ -189,108 +189,15 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
   const [selectedResourceIds, setSelectedResourceIds] = useState<
     Map<React.Key, React.Key[]>
   >(new Map());
-  // 跟踪上一次的菜单选中状态，用于检测菜单选中状态变化
-  const prevSelectedKeysRef = useRef<React.Key[]>([]);
-  // 标记是否已经使用初始数据初始化过
-  const isInitializedRef = useRef(false);
 
   // 使用初始资源码选中状态初始化（从接口数据中提取）
   useEffect(() => {
-    if (initialResourceIds !== undefined) {
-      console.log('initialResourceIds', initialResourceIds);
+    if (initialResourceIds) {
       // 当初始资源码数据变化时，重新初始化（用于切换不同的角色/用户组）
       // 即使 initialResourceIds 为空 Map，也要设置，确保所有菜单的资源码状态都被正确初始化
       setSelectedResourceIds(initialResourceIds);
-      isInitializedRef.current = true;
     }
   }, [initialResourceIds]);
-
-  // 当菜单选中状态变化时，自动管理关联的资源码选中状态
-  useEffect(() => {
-    // 如果还未初始化，不处理（等待 initialResourceIds 初始化完成）
-    if (!isInitializedRef.current) {
-      return;
-    }
-
-    const prevSelectedKeys = prevSelectedKeysRef.current;
-    const newSelectedKeys = selectedKeys;
-
-    setSelectedResourceIds((prev) => {
-      const newSelectedResourceIds = new Map(prev);
-
-      // 遍历菜单树，找到所有选中的菜单及其关联的资源码
-      const processMenuTree = (menus: MenuNodeInfo[]) => {
-        menus.forEach((menu) => {
-          const isMenuSelected = newSelectedKeys.includes(menu.id);
-          const wasMenuSelected = prevSelectedKeys.includes(menu.id);
-          const currentResourceIds = newSelectedResourceIds.get(menu.id) || [];
-
-          if (
-            isMenuSelected &&
-            menu.resourceTree &&
-            menu.resourceTree.length > 0
-          ) {
-            // 如果菜单被选中
-            if (!wasMenuSelected) {
-              // 如果菜单从"未选中"变为"选中"（用户手动操作）
-              // 检查 initialResourceIds 中是否已经设置了该菜单的资源码
-              const initialResourceIdsForMenu = initialResourceIds?.get(
-                menu.id,
-              );
-
-              if (initialResourceIdsForMenu !== undefined) {
-                // 如果 initialResourceIds 中已经设置了该菜单的资源码（即使是空数组）
-                // 说明这是从接口返回的初始状态，应该保持初始值，不自动全选
-                // 不做任何操作，保持当前状态（已经是 initialResourceIds 中的值）
-              } else if (currentResourceIds.length > 0) {
-                // 如果用户已经手动选择了资源码，保留用户的选择
-                // 不做任何操作，保持当前状态
-              } else {
-                // 如果 initialResourceIds 中没有设置，且用户没有手动选择资源码
-                // 说明这是用户新选中的菜单，自动选中所有关联的资源码
-                const allResourceIds = extractResourceIds(menu.resourceTree);
-                newSelectedResourceIds.set(menu.id, allResourceIds);
-              }
-            } else {
-              // 如果菜单一直是选中状态，保持用户的选择（允许用户手动取消部分资源码）
-              // 如果当前没有选中的资源码，且是初始化后的状态，说明用户可能取消了所有资源码
-              // 这种情况下，保持空数组，不自动全选
-              // 只有在用户手动操作（菜单从未选中变为选中）时，才自动全选
-            }
-          } else if (!isMenuSelected) {
-            // 如果菜单未选中，检查是否有用户手动选择的资源码
-            // 如果有用户手动选择的资源码，保留它们（不自动清空）
-            // 只有当菜单从选中变为未选中时，才清空资源码
-            if (!wasMenuSelected) {
-              // 菜单一直是未选中状态，保留用户的选择（如果有）
-              // 不做任何操作，保持当前状态
-            } else {
-              // 菜单从选中变为未选中，清空资源码
-              newSelectedResourceIds.set(menu.id, []);
-            }
-          } else {
-            // 如果菜单已选中但没有资源树，保持空数组
-            newSelectedResourceIds.set(menu.id, []);
-          }
-
-          // 递归处理子菜单
-          if (menu.children && menu.children.length > 0) {
-            processMenuTree(menu.children);
-          }
-        });
-      };
-
-      processMenuTree(menuTree);
-
-      // 通知父组件资源码选中状态变化
-      onResourceChange?.(newSelectedResourceIds);
-
-      return newSelectedResourceIds;
-    });
-
-    // 更新上一次的选中状态
-    prevSelectedKeysRef.current = newSelectedKeys;
-  }, [selectedKeys, menuTree, onResourceChange, initialResourceIds]);
 
   /**
    * 从 checkedKeys 中提取实际选中的节点（用于保存状态）
@@ -365,11 +272,6 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     resources: ResourceTreeNode[],
     checkedKeys: React.Key[],
   ): React.Key[] => {
-    // console.log(
-    //   '过滤 checkedKeys，用于传递给 Tree 组件filterCheckedKeysForTree',
-    //   resources,
-    //   checkedKeys,
-    // );
     const processResource = (resourceList: ResourceTreeNode[]): React.Key[] => {
       const filteredKeys: React.Key[] = [];
 
@@ -547,9 +449,60 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     return convertToTreeData(menuTree);
   }, [menuTree]);
 
-  // 处理树节点选择
-  const handleSelect = (selectedKeys: React.Key[]) => {
-    onSelect(selectedKeys);
+  /**
+   * 处理树节点选择
+   * 当菜单选中状态变化时，自动管理关联的资源码选中状态
+   * 规则：
+   * 1. 选中菜单 → 自动选中该菜单下的所有资源
+   * 2. 取消菜单 → 自动清空该菜单下的所有资源
+   */
+  const handleSelect = (newSelectedKeys: React.Key[]) => {
+    // 先更新菜单选中状态
+    onSelect(newSelectedKeys);
+
+    // 处理资源码的自动管理
+    setSelectedResourceIds((prev) => {
+      const newSelectedResourceIds = new Map(prev);
+      const prevSelectedKeys = selectedKeys;
+
+      // 遍历菜单树，处理所有菜单的资源码状态
+      const processMenuTree = (menus: MenuNodeInfo[]) => {
+        menus.forEach((menu) => {
+          const isMenuSelected = newSelectedKeys.includes(menu.id);
+          const wasMenuSelected = prevSelectedKeys.includes(menu.id);
+
+          // 如果菜单状态发生变化（从选中变为未选中，或从未选中变为选中）
+          if (isMenuSelected !== wasMenuSelected) {
+            if (isMenuSelected) {
+              // 菜单被选中：自动选中该菜单下的所有资源
+              if (menu.resourceTree && menu.resourceTree.length > 0) {
+                const allResourceIds = extractResourceIds(menu.resourceTree);
+                newSelectedResourceIds.set(menu.id, allResourceIds);
+              } else {
+                // 菜单没有资源树，设置为空数组
+                newSelectedResourceIds.set(menu.id, []);
+              }
+            } else {
+              // 菜单被取消选中：清空该菜单下的所有资源
+              newSelectedResourceIds.set(menu.id, []);
+            }
+          }
+          // 如果菜单状态没有变化，保持当前资源选择状态不变
+
+          // 递归处理子菜单
+          if (menu.children && menu.children.length > 0) {
+            processMenuTree(menu.children);
+          }
+        });
+      };
+
+      processMenuTree(menuTree);
+
+      // 通知父组件资源码选中状态变化
+      onResourceChange?.(newSelectedResourceIds);
+
+      return newSelectedResourceIds;
+    });
   };
 
   return (
