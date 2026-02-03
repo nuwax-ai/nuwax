@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
-import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
+import MenuPermissionModal from '../components/MenuPermissionModal';
 import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
 import type { RoleInfo } from '../types/role-manage';
 import RoleCard from './components/RoleCard';
@@ -31,8 +31,8 @@ const RoleManage: React.FC = () => {
   const [isEdit, setIsEdit] = useState<boolean>(false);
   // 当前角色信息
   const [currentRole, setCurrentRole] = useState<RoleInfo | null>();
-  // 菜单权限抽屉是否打开
-  const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
+  // 菜单权限弹窗是否打开
+  const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
     useState<boolean>(false);
   // 角色绑定用户抽屉是否打开
   const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
@@ -96,18 +96,18 @@ const RoleManage: React.FC = () => {
   // 处理菜单权限
   const handleMenuPermission = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
-    setMenuPermissionDrawerOpen(true);
+    setMenuPermissionModalOpen(true);
   };
 
-  // 处理菜单权限抽屉关闭
-  const handleMenuPermissionDrawerClose = () => {
-    setMenuPermissionDrawerOpen(false);
+  // 处理菜单权限弹窗关闭
+  const handleMenuPermissionModalClose = () => {
+    setMenuPermissionModalOpen(false);
     setCurrentRole(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
-    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionModalOpen(false);
     setCurrentRole(null);
     runGetRoleList();
   };
@@ -197,12 +197,12 @@ const RoleManage: React.FC = () => {
         onSuccess={handleModalSuccess}
       />
 
-      {/* 菜单权限配置Drawer */}
-      <MenuPermissionDrawer
-        open={menuPermissionDrawerOpen}
+      {/* 菜单权限配置Modal */}
+      <MenuPermissionModal
+        open={menuPermissionModalOpen}
         targetId={currentRole?.id || 0}
         name={currentRole?.name || ''}
-        onClose={handleMenuPermissionDrawerClose}
+        onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
       />
       {/* 角色绑定用户弹窗 */}
