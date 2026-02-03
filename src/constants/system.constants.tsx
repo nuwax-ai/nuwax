@@ -40,6 +40,14 @@ export const SYSTEM_MANAGE_LIST = [
         text: '主题配置',
         type: SystemManageListEnum.Theme_Config,
       },
+      {
+        text: '沙盒配置',
+        type: SystemManageListEnum.Sandbox_Config,
+      },
+      {
+        text: '分类管理',
+        type: SystemManageListEnum.Category_Manage,
+      },
     ],
   },
   {
