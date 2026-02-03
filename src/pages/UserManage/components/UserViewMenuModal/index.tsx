@@ -51,7 +51,6 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
       open={open}
       onCancel={onCancel}
       onConfirm={onCancel}
-      okText="关闭"
       classNames={{
         body: cx(styles.modalBody),
       }}
@@ -72,7 +71,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
             }}
           />
         ) : (
-          <div className={cx(styles.empty)}>暂无权限数据</div>
+          <div className={cx(styles.empty)}>暂未配置权限</div>
         )}
       </div>
     </CustomFormModal>
