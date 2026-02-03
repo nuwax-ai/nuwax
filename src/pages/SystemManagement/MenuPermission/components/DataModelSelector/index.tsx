@@ -1,4 +1,3 @@
-// import { DatabaseOutlined } from '@ant-design/icons';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { Checkbox } from 'antd';
 import classNames from 'classnames';
@@ -58,9 +57,6 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
         })}
         onClick={() => handleAllModelsToggle(!isAllSelected)}
       >
-        {/* <div className={cx(styles.modelIcon)}>
-          <DatabaseOutlined />
-        </div> */}
         <div className={cx(styles.modelContent)}>
           <div className={cx(styles.modelName)}>全部模型</div>
           <div className={cx(styles.modelDesc)}>拥有所有模型的数据权限</div>
@@ -87,12 +83,13 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
               })}
               onClick={() => handleModelToggle(model.id, !isSelected)}
             >
-              {/* <div className={cx(styles.modelIcon)}>
-                <DatabaseOutlined />
-              </div> */}
               <div className={cx(styles.modelContent)}>
-                <div className={cx(styles.modelName)}>{model.name}</div>
-                <div className={cx(styles.modelDesc)}>{model.description}</div>
+                <div className={cx(styles.modelName, 'text-ellipsis')}>
+                  {model.name}
+                </div>
+                <div className={cx(styles.modelDesc, 'text-ellipsis')}>
+                  {model.description}
+                </div>
               </div>
               <Checkbox
                 checked={isSelected}
