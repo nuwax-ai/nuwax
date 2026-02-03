@@ -143,13 +143,10 @@ const PermissionResources: React.FC = () => {
 
   // 获取资源类型显示文本
   const getResourceTypeText = (type?: ResourceTypeEnum): string => {
-    switch (type) {
-      case ResourceTypeEnum.Module:
-        return '模块';
-      case ResourceTypeEnum.Component:
-        return '组件';
-      default:
-        return '未知';
+    if (type === ResourceTypeEnum.Module) {
+      return '模块';
+    } else {
+      return '组件';
     }
   };
 
