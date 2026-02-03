@@ -197,7 +197,7 @@ const UserManage: React.FC = () => {
       },
     },
     {
-      title: '角色',
+      title: '类型',
       dataIndex: 'role',
       key: 'role',
       width: 100,
