@@ -166,12 +166,24 @@ const routes = [
               {
                 path: 'setting',
                 name: '系统设置',
-                component: '@/pages/SystemConfig',
+                component: '@/pages/SystemManagement/SystemConfig/SystemConfig',
               },
               {
                 path: 'theme',
                 name: '主题配置',
-                component: '@/pages/ThemeConfig',
+                component: '@/pages/SystemManagement/SystemConfig/ThemeConfig',
+              },
+              {
+                path: 'sandbox',
+                name: '沙盒配置',
+                component:
+                  '@/pages/SystemManagement/SystemConfig/SandboxConfig',
+              },
+              {
+                path: 'category',
+                name: '分类管理',
+                component:
+                  '@/pages/SystemManagement/SystemConfig/CategoryManage',
               },
             ],
           },
