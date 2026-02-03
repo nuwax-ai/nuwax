@@ -16,6 +16,7 @@ import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
 import UserBindGroupModal from './components/UserBindGroupModal';
 import UserBindRoleModal from './components/UserBindRoleModal';
+import UserViewMenuModal from './components/UserViewMenuModal';
 import MessageSendModal from './MessageSendModal';
 
 const cx = classNames.bind(styles);
@@ -46,6 +47,8 @@ const UserManage: React.FC = () => {
   const [openBindRoleModal, setOpenBindRoleModal] = useState<boolean>(false);
   // 打开绑定用户组弹窗
   const [openBindGroupModal, setOpenBindGroupModal] = useState<boolean>(false);
+  // 打开查看权限弹窗
+  const [openViewMenuModal, setOpenViewMenuModal] = useState<boolean>(false);
 
   // 当前选中的用户信息
   const [currentUserInfo, setCurrentUserInfo] =
@@ -155,6 +158,12 @@ const UserManage: React.FC = () => {
     setOpenBindGroupModal(true);
   };
 
+  // 查看权限
+  const handleViewMenu = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenViewMenuModal(true);
+  };
+
   // 查询用户绑定的角色列表
   const columns = [
     {
@@ -259,6 +268,13 @@ const UserManage: React.FC = () => {
           >
             绑定用户组
           </Button>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => handleViewMenu(record)}
+          >
+            查看权限
+          </Button>
           {record.status === UserStatusEnum.Enabled ? (
             <Button
               type="link"
@@ -353,6 +369,12 @@ const UserManage: React.FC = () => {
         targetId={currentUserInfo?.id || 0}
         onCancel={() => setOpenBindGroupModal(false)}
         onConfirm={() => setOpenBindGroupModal(false)}
+      />
+      {/* 查看权限弹窗 */}
+      <UserViewMenuModal
+        open={openViewMenuModal}
+        userId={currentUserInfo?.id || 0}
+        onCancel={() => setOpenViewMenuModal(false)}
       />
     </div>
   );

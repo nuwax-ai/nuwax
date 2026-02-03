@@ -21,20 +21,33 @@
   box-sizing: border-box;
   overflow-x: hidden;
 
-  // .section {
-  //   margin-bottom: 24px;
-  //   width: 100%;
-  //   box-sizing: border-box;
-
-  //   &:last-child {
-  //     margin-bottom: 0;
-  //   }
-  // }
-
   .resourceTree {
     padding: 12px;
     background-color: var(--color-background-tertiary, #f5f5f5);
     border-radius: 4px;
     border: 1px solid var(--color-border-02, #e4e6eb);
+    overflow-x: auto; // 允许水平滚动
+
+    :global {
+      // Tree 节点文本不换行，允许水平滚动
+      .ant-tree-node-content-wrapper {
+        white-space: nowrap; // 不换行
+        overflow: visible; // 允许内容溢出
+      }
+
+      .ant-tree-title {
+        white-space: nowrap; // 文本不换行
+        display: inline-block; // 允许水平滚动
+      }
+
+      // 确保 Tree 容器可以水平滚动
+      .ant-tree-list-holder {
+        overflow-x: auto;
+      }
+
+      .ant-tree-list {
+        min-width: fit-content;
+      }
+    }
   }
 }
