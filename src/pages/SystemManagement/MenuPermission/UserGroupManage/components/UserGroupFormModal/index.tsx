@@ -111,7 +111,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         description: data.description,
         maxUserCount: data.maxUserCount,
         tokenLimit: {
-          limitPerDay: data.tokenLimit?.limitPerDay || 0,
+          limitPerDay: data.tokenLimit?.limitPerDay || -1,
         },
         sortIndex: data.sortIndex || 0,
         status: data.status === UserGroupStatusEnum.Enabled,
@@ -156,7 +156,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         sortIndex: 0,
         status: true,
         tokenLimit: {
-          limitPerDay: 0,
+          limitPerDay: -1,
         },
       });
       setAllModelSelected(false);
@@ -235,7 +235,12 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                   },
                 ]}
               >
-                <Input disabled={isEdit} placeholder="请输入用户组编码" />
+                <Input
+                  disabled={isEdit}
+                  placeholder="请输入用户组编码"
+                  maxLength={100}
+                  showCount
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -244,7 +249,11 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 name="name"
                 rules={[{ required: true, message: '请输入用户组名称' }]}
               >
-                <Input placeholder="请输入用户组名称" />
+                <Input
+                  placeholder="请输入用户组名称"
+                  maxLength={50}
+                  showCount
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -260,6 +269,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                   placeholder="请输入最大用户数"
                   className={cx('w-full')}
                   min={1}
+                  max={2147483647}
                 />
               </Form.Item>
             </Col>
@@ -269,14 +279,15 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 name={['tokenLimit', 'limitPerDay']}
                 rules={[{ required: true, message: '请输入每日token限制数量' }]}
                 tooltip={{
-                  title: '0表示不限制每日token数量',
+                  title: '-1表示不限制每日token数量',
                   icon: <InfoCircleOutlined />,
                 }}
               >
                 <InputNumber
                   placeholder="请输入每日token限制数量"
                   className={cx('w-full')}
-                  min={0}
+                  min={-1}
+                  max={1000000000000000}
                 />
               </Form.Item>
             </Col>
@@ -301,6 +312,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                   placeholder="请输入排序"
                   className={cx('w-full')}
                   min={0}
+                  max={10000}
                 />
               </Form.Item>
             </Col>
@@ -324,7 +336,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               className="dispose-textarea-count"
               autoSize={{ minRows: 3, maxRows: 5 }}
               showCount
-              maxLength={200}
+              maxLength={500}
             />
           </Form.Item>
         </div>

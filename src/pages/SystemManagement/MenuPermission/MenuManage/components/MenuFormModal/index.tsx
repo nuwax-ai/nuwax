@@ -414,7 +414,12 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 },
               ]}
             >
-              <Input disabled={isEdit} placeholder="请输入菜单编码" />
+              <Input
+                disabled={isEdit}
+                placeholder="请输入菜单编码"
+                maxLength={100}
+                showCount
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -423,7 +428,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               name="name"
               rules={[{ required: true, message: '请输入菜单名称' }]}
             >
-              <Input placeholder="请输入菜单名称" />
+              <Input placeholder="请输入菜单名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
         </Row>
@@ -431,7 +436,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           <Col span={12}>
             <Form.Item label="父菜单" name="parentId">
               <TreeSelect
-                placeholder="请选择父菜单（无（根菜单））"
+                placeholder="请选择父菜单（无）"
                 treeData={menuTreeSelectData}
                 allowClear
                 showSearch
@@ -446,7 +451,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           </Col>
           <Col span={12}>
             <Form.Item label="路由路径" name="path">
-              <Input placeholder="请输入路由路径" />
+              <Input placeholder="请输入路由路径，例如：/system/menu" />
             </Form.Item>
           </Col>
         </Row>
@@ -463,6 +468,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 placeholder="请输入排序"
                 className={cx('w-full')}
                 min={0}
+                max={10000}
               />
             </Form.Item>
           </Col>
@@ -486,11 +492,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
             className="dispose-textarea-count"
             autoSize={{ minRows: 3, maxRows: 5 }}
             showCount
-            maxLength={200}
+            maxLength={500}
           />
         </Form.Item>
 
-        {/* 关联资源码（仅末级菜单）*/}
+        {/* 关联资源码 */}
         <Form.Item
           label="关联资源码"
           tooltip={{
