@@ -10,6 +10,8 @@ export enum SystemManageListEnum {
   Global_Model_Manage,
   // 系统配置
   System_Config,
+  // 系统设置
+  System_Setting,
   // 主题配置
   Theme_Config,
   // 系统概览
