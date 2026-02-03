@@ -309,7 +309,21 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="路由路径" name="path">
+              <Form.Item
+                label="路由路径"
+                name="path"
+                rules={[
+                  {
+                    pattern: /^\/[a-zA-Z0-9/-]+$/,
+                    message:
+                      '路由路径必须以斜杠开头，只能包含英文字母、数字、中横线和斜杠',
+                  },
+                  {
+                    max: 500,
+                    message: '路由路径长度不能超过500个字符',
+                  },
+                ]}
+              >
                 <Input placeholder="请输入路由路径，例如：/system/menu" />
               </Form.Item>
             </Col>
