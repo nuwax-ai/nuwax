@@ -130,16 +130,31 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   // 将资源树转换为TreeSelect需要的数据格式
   const treeSelectData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
-      return resources?.map((resource) => ({
-        title: resource.name,
-        value: resource.id,
-        key: resource.id,
-        children: resource.children
-          ? convertToTreeData(resource.children)
-          : undefined,
-      }));
+      return (
+        resources
+          ?.filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0）
+          .map((resource) => ({
+            title: resource.name,
+            value: resource.id,
+            key: resource.id,
+            children: resource.children
+              ? convertToTreeData(resource.children)
+              : undefined,
+          })) || []
+      );
     };
-    return resourceTreeList ? convertToTreeData(resourceTreeList) : [];
+    if (!resourceTreeList || !resourceTreeList.length) {
+      return [];
+    }
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (resourceTreeList.length === 1 && resourceTreeList[0].id === 0) {
+      const rootNode = resourceTreeList[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return convertToTreeData(resourceTreeList);
   }, [resourceTreeList]);
 
   // 初始化表单数据
@@ -163,6 +178,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         form.resetFields();
         form.setFieldsValue({
           sortIndex: 0,
+          type: ResourceTypeEnum.Module,
           visible: true,
           source: ResourceSourceEnum.UserDefined,
           // 如果有父资源，自动设置父节点
