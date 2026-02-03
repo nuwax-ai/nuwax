@@ -249,7 +249,12 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                   },
                 ]}
               >
-                <Input disabled={isEdit} placeholder="请输入资源码" />
+                <Input
+                  disabled={isEdit}
+                  placeholder="请输入资源码"
+                  maxLength={100}
+                  showCount
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -258,7 +263,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                 name="name"
                 rules={[{ required: true, message: '请输入资源名称' }]}
               >
-                <Input placeholder="请输入资源名称" />
+                <Input placeholder="请输入资源名称" maxLength={50} showCount />
               </Form.Item>
             </Col>
           </Row>
@@ -281,6 +286,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                   placeholder="请输入排序"
                   className={cx('w-full')}
                   min={0}
+                  max={10000}
                 />
               </Form.Item>
             </Col>
@@ -304,7 +310,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             </Col>
             <Col span={12}>
               <Form.Item label="路由路径" name="path">
-                <Input placeholder="请输入路由路径" />
+                <Input placeholder="请输入路由路径，例如：/system/menu" />
               </Form.Item>
             </Col>
           </Row>
@@ -337,7 +343,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               className="dispose-textarea-count"
               autoSize={{ minRows: 3, maxRows: 5 }}
               showCount
-              maxLength={200}
+              maxLength={500}
             />
           </Form.Item>
         </div>
