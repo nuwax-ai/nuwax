@@ -48,6 +48,11 @@ export const SYSTEM_MANAGE_LIST = [
     text: '系统概览',
   },
   {
+    type: SystemManageListEnum.Task_Manage,
+    icon: <SvgIcon name="icons-nav-task-time" />,
+    text: '任务管理',
+  },
+  {
     type: SystemManageListEnum.MenuPermission,
     icon: <SvgIcon name="icons-nav-permission" />,
     text: '菜单权限',
