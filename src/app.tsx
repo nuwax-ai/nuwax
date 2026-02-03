@@ -9,7 +9,7 @@ import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
 import { unifiedThemeService } from './services/unifiedThemeService';
 /**
- * 全局轮询组件
+ * 全局轮询组件【重要】
  * 在应用运行期间保持活跃，处理全局事件
  */
 const GlobalEventPolling: React.FC = () => {
