@@ -319,6 +319,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           form={form}
           name="taskTarget"
           label="任务对象"
+          mode={mode}
           onChange={handleChangeTarget}
         />
 

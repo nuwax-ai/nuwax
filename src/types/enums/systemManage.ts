@@ -14,8 +14,14 @@ export enum SystemManageListEnum {
   System_Setting,
   // 主题配置
   Theme_Config,
+  // 沙盒配置
+  Sandbox_Config,
+  // 分类管理
+  Category_Manage,
   // 系统概览
   Dashboard,
+  // 任务管理
+  Task_Manage,
   // 日志查询
   Log_Query,
   // 操作日志
