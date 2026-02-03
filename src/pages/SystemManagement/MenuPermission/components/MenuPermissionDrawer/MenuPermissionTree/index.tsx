@@ -1,5 +1,5 @@
-import { CaretDownOutlined, DownOutlined } from '@ant-design/icons';
-import { Popover, Tree } from 'antd';
+import { DownOutlined } from '@ant-design/icons';
+import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { MenuNodeInfo } from '../../../types/menu-manage';
@@ -365,11 +365,11 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     resources: ResourceTreeNode[],
     checkedKeys: React.Key[],
   ): React.Key[] => {
-    console.log(
-      '过滤 checkedKeys，用于传递给 Tree 组件filterCheckedKeysForTree',
-      resources,
-      checkedKeys,
-    );
+    // console.log(
+    //   '过滤 checkedKeys，用于传递给 Tree 组件filterCheckedKeysForTree',
+    //   resources,
+    //   checkedKeys,
+    // );
     const processResource = (resourceList: ResourceTreeNode[]): React.Key[] => {
       const filteredKeys: React.Key[] = [];
 
@@ -424,127 +424,128 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     }));
   };
 
+  /**
+   * 渲染资源树（单独处理，显示在菜单下方）
+   */
+  const renderResourceTree = (menu: MenuNodeInfo) => {
+    if (!menu.resourceTree || menu.resourceTree.length === 0) {
+      return null;
+    }
+
+    const resourceTreeData = convertResourceTreeToDataNode(menu.resourceTree);
+    const menuResourceIds = selectedResourceIds.get(menu.id) || [];
+
+    // 过滤 checkedKeys，用于传递给 Tree 组件
+    const filteredCheckedKeys =
+      menu.resourceTree && menu.resourceTree.length > 0
+        ? filterCheckedKeysForTree(menu.resourceTree, menuResourceIds)
+        : menuResourceIds;
+
+    // 处理资源码选中状态变化
+    const handleResourceCheck = (
+      checkedKeys:
+        | React.Key[]
+        | { checked: React.Key[]; halfChecked: React.Key[] },
+    ) => {
+      const allCheckedKeys = Array.isArray(checkedKeys)
+        ? checkedKeys
+        : checkedKeys.checked || [];
+
+      // 从 Tree 返回的 checkedKeys 中提取实际选中的节点（用于保存状态）
+      const actualCheckedKeys =
+        menu.resourceTree && menu.resourceTree.length > 0
+          ? extractActualCheckedKeys(menu.resourceTree, allCheckedKeys)
+          : allCheckedKeys;
+
+      // 检查当前菜单是否被选中
+      const isMenuSelected = selectedKeys.includes(menu.id);
+      const hasSelectedResources = actualCheckedKeys.length > 0;
+
+      // 如果菜单未选中，但用户选中了资源码，则自动选中该菜单
+      if (!isMenuSelected && hasSelectedResources) {
+        // 提取当前菜单的所有子菜单ID
+        const childrenMenuIds = extractAllChildrenMenuIds(menuTree, menu.id);
+        // 先添加当前菜单和子菜单，用于检查父级菜单
+        const tempSelectedKeys = [...selectedKeys, menu.id, ...childrenMenuIds];
+        // 提取所有应该被选中的父级菜单ID（递归向上查找）
+        const parentMenuIds = extractAllParentMenuIds(
+          menuTree,
+          menu.id,
+          tempSelectedKeys,
+        );
+        // 将菜单、所有子菜单和所有父级菜单添加到选中列表（去重）
+        const newSelectedKeysSet = new Set([
+          ...selectedKeys,
+          menu.id,
+          ...childrenMenuIds,
+          ...parentMenuIds,
+        ]);
+        const newSelectedKeys = Array.from(newSelectedKeysSet);
+        onSelect(newSelectedKeys);
+      }
+
+      // 更新该菜单的资源码选中状态（只保存实际选中的节点）
+      setSelectedResourceIds((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(menu.id, actualCheckedKeys as React.Key[]);
+        // 通知父组件资源码选中状态变化
+        onResourceChange?.(newMap);
+        return newMap;
+      });
+    };
+
+    return (
+      <div className={styles.resourceTreeContainer}>
+        <Tree
+          checkable
+          switcherIcon={<DownOutlined />}
+          checkStrictly={false} // 父子节点关联，支持级联选择和半选中状态
+          treeData={resourceTreeData}
+          showLine={{ showLeafIcon: false }}
+          blockNode
+          checkedKeys={filteredCheckedKeys}
+          onCheck={handleResourceCheck}
+          className={styles.resourceTree}
+        />
+      </div>
+    );
+  };
+
   // 将菜单数据转换为Tree组件需要的数据格式
   const treeData = useMemo(() => {
     /**
-     * 渲染带资源树下拉箭头的标题
+     * 渲染菜单标题（只显示菜单名称，确保选择框和菜单名称在同一行）
      */
-    const renderTitleWithResourceTree = (menu: MenuNodeInfo) => {
-      if (!menu.resourceTree || menu.resourceTree.length === 0) {
-        return <span>{menu.name}</span>;
-      }
-
-      const resourceTreeData = convertResourceTreeToDataNode(menu.resourceTree);
-      const menuResourceIds = selectedResourceIds.get(menu.id) || [];
-
-      // 过滤 checkedKeys，用于传递给 Tree 组件
-      // 如果所有子节点都被选中，只传递父节点（Tree 会自动级联选中所有子节点）
-      // 如果只有部分子节点被选中，只传递实际选中的子节点（Tree 会自动显示父节点为半选中状态）
-      const filteredCheckedKeys =
-        menu.resourceTree && menu.resourceTree.length > 0
-          ? filterCheckedKeysForTree(menu.resourceTree, menuResourceIds)
-          : menuResourceIds;
-
-      // 处理资源码选中状态变化
-      const handleResourceCheck = (
-        checkedKeys:
-          | React.Key[]
-          | { checked: React.Key[]; halfChecked: React.Key[] },
-      ) => {
-        const allCheckedKeys = Array.isArray(checkedKeys)
-          ? checkedKeys
-          : checkedKeys.checked || [];
-
-        // 从 Tree 返回的 checkedKeys 中提取实际选中的节点（用于保存状态）
-        // 如果所有子节点都被选中，保存父节点和所有子节点
-        // 如果只有部分子节点被选中，只保存实际选中的子节点
-        const actualCheckedKeys =
-          menu.resourceTree && menu.resourceTree.length > 0
-            ? extractActualCheckedKeys(menu.resourceTree, allCheckedKeys)
-            : allCheckedKeys;
-
-        // 检查当前菜单是否被选中
-        const isMenuSelected = selectedKeys.includes(menu.id);
-        const hasSelectedResources = actualCheckedKeys.length > 0;
-
-        // 如果菜单未选中，但用户选中了资源码，则自动选中该菜单
-        if (!isMenuSelected && hasSelectedResources) {
-          // 提取当前菜单的所有子菜单ID
-          const childrenMenuIds = extractAllChildrenMenuIds(menuTree, menu.id);
-          // 先添加当前菜单和子菜单，用于检查父级菜单
-          const tempSelectedKeys = [
-            ...selectedKeys,
-            menu.id,
-            ...childrenMenuIds,
-          ];
-          // 提取所有应该被选中的父级菜单ID（递归向上查找）
-          const parentMenuIds = extractAllParentMenuIds(
-            menuTree,
-            menu.id,
-            tempSelectedKeys,
-          );
-          // 将菜单、所有子菜单和所有父级菜单添加到选中列表（去重）
-          const newSelectedKeysSet = new Set([
-            ...selectedKeys,
-            menu.id,
-            ...childrenMenuIds,
-            ...parentMenuIds,
-          ]);
-          const newSelectedKeys = Array.from(newSelectedKeysSet);
-          onSelect(newSelectedKeys);
-        }
-
-        // 更新该菜单的资源码选中状态（只保存实际选中的节点）
-        setSelectedResourceIds((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(menu.id, actualCheckedKeys as React.Key[]);
-          // 通知父组件资源码选中状态变化
-          onResourceChange?.(newMap);
-          return newMap;
-        });
-      };
-
-      return (
-        <div className={styles.titleWithResource}>
-          <Popover
-            content={
-              <div className={styles.resourceTreePopover}>
-                <Tree
-                  checkable
-                  checkStrictly={false} // 父子节点关联，支持级联选择和半选中状态
-                  treeData={resourceTreeData}
-                  defaultExpandAll
-                  showLine={{ showLeafIcon: false }}
-                  blockNode
-                  checkedKeys={filteredCheckedKeys}
-                  onCheck={handleResourceCheck}
-                />
-              </div>
-            }
-            title="关联资源码"
-            placement="rightTop"
-            overlayClassName={styles.resourceTreePopoverOverlay}
-          >
-            <div className="w-full flex items-center content-between">
-              <span className={styles.menuName}>{menu.name}</span>
-              <CaretDownOutlined className={styles.resourceTreeIcon} />
-            </div>
-          </Popover>
-        </div>
-      );
+    const renderMenuTitle = (menu: MenuNodeInfo) => {
+      return <span className={styles.menuName}>{menu.name}</span>;
     };
 
     const convertToTreeData = (menus: MenuNodeInfo[]): DataNode[] => {
-      return menus.map((menu) => ({
-        title: renderTitleWithResourceTree(menu),
-        key: menu.id,
-        value: menu.id,
-        children: menu.children ? convertToTreeData(menu.children) : undefined,
-        resourceTree: menu.resourceTree,
-      }));
+      return menus
+        .filter((menu) => menu.id !== 0) // 过滤掉根节点（id为0）
+        .map((menu) => ({
+          title: renderMenuTitle(menu),
+          key: menu.id,
+          value: menu.id,
+          children: menu.children
+            ? convertToTreeData(menu.children)
+            : undefined,
+          resourceTree: menu.resourceTree,
+          menuData: menu, // 保存菜单原始数据，用于渲染资源树
+        }));
     };
+
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (menuTree.length === 1 && menuTree[0].id === 0) {
+      const rootNode = menuTree[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+
+    // 否则过滤掉所有 id 为 0 的节点
     return convertToTreeData(menuTree);
-  }, [menuTree, selectedResourceIds, selectedKeys, onSelect, onResourceChange]);
+  }, [menuTree]);
 
   // 处理树节点选择
   const handleSelect = (selectedKeys: React.Key[]) => {
@@ -558,7 +559,6 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
         checkStrictly={false} // 父子节点关联，支持级联选择
         switcherIcon={<DownOutlined />}
         treeData={treeData}
-        defaultExpandAll
         checkedKeys={selectedKeys}
         // 点击复选框触发
         onCheck={(checkedKeys) => {
@@ -570,6 +570,15 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
           handleSelect(keys as React.Key[]);
         }}
         blockNode
+        titleRender={(nodeData: any) => {
+          const menuData = nodeData.menuData as MenuNodeInfo | undefined;
+          return (
+            <div className={styles.menuNodeWrapper}>
+              <span className={styles.menuName}>{nodeData.title}</span>
+              {menuData && renderResourceTree(menuData)}
+            </div>
+          );
+        }}
       />
     </div>
   );
