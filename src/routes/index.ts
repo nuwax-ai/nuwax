@@ -135,6 +135,11 @@ const routes = [
             component: '@/pages/SystemManagement/Dashboard',
           },
           {
+            path: 'task-manage',
+            name: '任务管理',
+            component: '@/pages/SystemManagement/TaskManage',
+          },
+          {
             path: 'user/manage',
             name: '用户管理',
             component: '@/pages/UserManage',

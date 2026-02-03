@@ -124,6 +124,10 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.Dashboard:
         history.push('/system/dashboard', { _t: Date.now() });
         break;
+      // 任务管理
+      case SystemManageListEnum.Task_Manage:
+        history.push('/system/task-manage', { _t: Date.now() });
+        break;
     }
   };
 
@@ -216,6 +220,8 @@ const SystemSection: React.FC<{
       (type === 'markdown-test' && pathname.includes('markdown-test')) ||
       (type === SystemManageListEnum.Dashboard &&
         pathname.includes('dashboard')) ||
+      (type === SystemManageListEnum.Task_Manage &&
+        pathname.includes('task-manage')) ||
       (type === SystemManageListEnum.Log_Query &&
         pathname.includes('log-query')) ||
       (type === SystemManageListEnum.Content && pathname.includes('content'))

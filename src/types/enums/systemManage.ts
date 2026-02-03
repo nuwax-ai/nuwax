@@ -16,6 +16,8 @@ export enum SystemManageListEnum {
   Theme_Config,
   // 系统概览
   Dashboard,
+  // 任务管理
+  Task_Manage,
   // 日志查询
   Log_Query,
   // 操作日志
