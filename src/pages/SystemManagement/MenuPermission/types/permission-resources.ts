@@ -53,8 +53,6 @@ export interface ResourceInfo {
   parentId?: number;
   /** 访问路径 */
   path?: string;
-  /** 图标 */
-  icon?: string;
   /** 排序 */
   sortIndex: number;
   /** 是否显示 1:显示 0:隐藏 */

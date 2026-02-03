@@ -1,9 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  AppstoreOutlined,
-  DownOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
@@ -16,7 +12,6 @@ import {
 import {
   ResourceSourceEnum,
   ResourceTypeEnum,
-  ResourceVisibleEnum,
   type ResourceInfo,
   type ResourceTreeNode,
 } from '../types/permission-resources';
@@ -90,9 +85,8 @@ const PermissionResources: React.FC = () => {
       type: resource.type || ResourceTypeEnum.Module,
       parentId: resource.parentId,
       path: resource.path,
-      icon: resource.icon,
       sortIndex: resource.sortIndex || 0,
-      visible: resource.visible || ResourceVisibleEnum.Visible,
+      visible: resource.visible,
     };
     setEditingResource(resourceInfo);
     setIsEdit(true);
@@ -177,27 +171,6 @@ const PermissionResources: React.FC = () => {
 
   // 定义表格列
   const columns: TableColumnsType<ResourceTreeNode & { key: number }> = [
-    {
-      title: '图标',
-      dataIndex: 'icon',
-      key: 'icon',
-      width: 160,
-      render: (icon: string, record: ResourceTreeNode) => (
-        <div className={cx(styles.iconCell)}>
-          {icon ? (
-            <img
-              src={icon}
-              alt={record.name || '资源图标'}
-              className={cx(styles.resourceIcon)}
-            />
-          ) : (
-            <div className={cx(styles.defaultIcon)}>
-              <AppstoreOutlined />
-            </div>
-          )}
-        </div>
-      ),
-    },
     {
       title: '资源名称',
       dataIndex: 'name',

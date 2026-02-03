@@ -365,127 +365,116 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         className={cx(styles.form)}
       >
         {/* 基本信息 */}
-        <div className={cx(styles.section)}>
-          <Form.Item name="icon" label="图标">
-            <UploadAvatar
-              onUploadSuccess={setImageUrl}
-              imageUrl={imageUrl}
-              svgIconName="icons-workspace-agent"
-            />
-          </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="菜单编码"
-                name="code"
-                rules={[
-                  { required: true, message: '请输入菜单编码' },
-                  {
-                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                    message:
-                      '菜单编码必须以英文字母开头，只能包含字母、数字和下划线',
-                  },
-                ]}
-              >
-                <Input disabled={isEdit} placeholder="请输入菜单编码" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="菜单名称"
-                name="name"
-                rules={[{ required: true, message: '请输入菜单名称' }]}
-              >
-                <Input placeholder="请输入菜单名称" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="父菜单" name="parentId">
-                <TreeSelect
-                  placeholder="请选择父菜单（无（根菜单））"
-                  treeData={menuTreeSelectData}
-                  allowClear
-                  showSearch
-                  treeDefaultExpandAll
-                  filterTreeNode={(inputValue, node) =>
-                    (node.title as string)
-                      ?.toLowerCase()
-                      .includes(inputValue.toLowerCase())
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="路由路径" name="path">
-                <Input placeholder="请输入路由路径" />
-              </Form.Item>
-            </Col>
-          </Row>
+        <Form.Item name="icon" label="图标">
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="菜单编码"
+              name="code"
+              rules={[
+                { required: true, message: '请输入菜单编码' },
+                {
+                  pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                  message:
+                    '菜单编码必须以英文字母开头，只能包含字母、数字和下划线',
+                },
+              ]}
+            >
+              <Input disabled={isEdit} placeholder="请输入菜单编码" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="菜单名称"
+              name="name"
+              rules={[{ required: true, message: '请输入菜单名称' }]}
+            >
+              <Input placeholder="请输入菜单名称" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item label="父菜单" name="parentId">
+              <TreeSelect
+                placeholder="请选择父菜单（无（根菜单））"
+                treeData={menuTreeSelectData}
+                allowClear
+                showSearch
+                treeDefaultExpandAll
+                filterTreeNode={(inputValue, node) =>
+                  (node.title as string)
+                    ?.toLowerCase()
+                    .includes(inputValue.toLowerCase())
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="路由路径" name="path">
+              <Input placeholder="请输入路由路径" />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="来源" name="source">
-                <Select
-                  placeholder="请选择来源"
-                  options={MENU_SOURCE_OPTIONS}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="排序" name="sortIndex">
-                <InputNumber
-                  placeholder="请输入排序"
-                  className={cx('w-full')}
-                  min={0}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item label="来源" name="source">
+              <Select placeholder="请选择来源" options={MENU_SOURCE_OPTIONS} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="排序" name="sortIndex">
+              <InputNumber
+                placeholder="请输入排序"
+                className={cx('w-full')}
+                min={0}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
-          <Form.Item
-            label="是否显示"
-            name="visible"
-            valuePropName="checked"
-            tooltip={{
-              title: '显示或隐藏此菜单',
-              icon: <InfoCircleOutlined />,
-            }}
-          >
-            <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-          </Form.Item>
+        <Form.Item
+          label="是否显示"
+          name="visible"
+          valuePropName="checked"
+          tooltip={{
+            title: '显示或隐藏此菜单',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
+          <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+        </Form.Item>
 
-          <Form.Item label="描述" name="description">
-            <TextArea
-              placeholder="请输入描述"
-              className="dispose-textarea-count"
-              autoSize={{ minRows: 3, maxRows: 5 }}
-              showCount
-              maxLength={200}
-            />
-          </Form.Item>
-        </div>
+        <Form.Item label="描述" name="description">
+          <TextArea
+            placeholder="请输入描述"
+            className="dispose-textarea-count"
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            showCount
+            maxLength={200}
+          />
+        </Form.Item>
 
         {/* 关联资源码（仅末级菜单） */}
-        <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>关联资源码</h3>
-          <p className={cx(styles.sectionDesc)}>
-            仅末级菜单可以关联资源码,选择该菜单可以访问的资源权限
-          </p>
-          <Form.Item>
-            {resourceTreeData && resourceTreeData.length > 0 && (
-              <Tree
-                checkable
-                defaultExpandAll
-                treeData={resourceTreeData}
-                checkedKeys={selectedResourceIds}
-                onCheck={handleResourceIdsCheck}
-                className={cx(styles.resourceTree)}
-              />
-            )}
-          </Form.Item>
-        </div>
+        <Form.Item label="关联资源码">
+          {resourceTreeData && resourceTreeData.length > 0 && (
+            <Tree
+              checkable
+              defaultExpandAll
+              treeData={resourceTreeData}
+              checkedKeys={selectedResourceIds}
+              onCheck={handleResourceIdsCheck}
+              className={cx(styles.resourceTree)}
+            />
+          )}
+        </Form.Item>
       </Form>
     </CustomFormModal>
   );
