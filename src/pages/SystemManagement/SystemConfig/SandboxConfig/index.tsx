@@ -11,22 +11,17 @@ import {
 import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
 import { Button, Form, InputNumber, Space, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import SandboxModal, { SandboxItem } from './components/SandboxModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface SandboxItem {
-  id: number;
-  name: string;
-  address: string[];
-  currentUsage: number;
-  totalCapacity: number;
-  status: 'online' | 'offline';
-}
-
 const SandboxConfig: React.FC = () => {
   const tableActionRef = useRef<ActionType>();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [currentRecord, setCurrentRecord] = useState<SandboxItem | null>(null);
 
   // 模拟数据
   const mockData: SandboxItem[] = [
@@ -152,7 +147,14 @@ const SandboxConfig: React.FC = () => {
             </div>
           </Tooltip>
           <Tooltip title="编辑">
-            <div className={styles['action-btn']}>
+            <div
+              className={styles['action-btn']}
+              onClick={() => {
+                setModalMode('edit');
+                setCurrentRecord(record);
+                setModalVisible(true);
+              }}
+            >
               <EditOutlined />
             </div>
           </Tooltip>
@@ -179,7 +181,15 @@ const SandboxConfig: React.FC = () => {
     <WorkspaceLayout
       title="沙盒配置"
       rightSlot={
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setModalMode('add');
+            setCurrentRecord(null);
+            setModalVisible(true);
+          }}
+        >
           添加沙盒
         </Button>
       }
@@ -230,6 +240,18 @@ const SandboxConfig: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <SandboxModal
+        open={modalVisible}
+        mode={modalMode}
+        initialData={currentRecord}
+        onCancel={() => setModalVisible(false)}
+        onFinish={async (values) => {
+          console.log(values);
+          setModalVisible(false);
+          return true;
+        }}
+      />
     </WorkspaceLayout>
   );
 };
