@@ -1,6 +1,7 @@
 import { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+import { MenuNodeInfo } from '../SystemManagement/MenuPermission/types/menu-manage';
 import { UserGroupInfo } from '../SystemManagement/MenuPermission/types/user-group-manage';
 
 interface UserBindRoleParams {
@@ -38,6 +39,15 @@ export async function apiSystemUserListRole(
   userId: number,
 ): Promise<RequestResponse<RoleInfo[]>> {
   return request(`/api/system/user/list-role/${userId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询用户的菜单权限（树形结构）
+export async function apiSystemUserListMenu(
+  userId: number,
+): Promise<RequestResponse<MenuNodeInfo[]>> {
+  return request(`/api/system/user/list-menu/${userId}`, {
     method: 'GET',
   });
 }
