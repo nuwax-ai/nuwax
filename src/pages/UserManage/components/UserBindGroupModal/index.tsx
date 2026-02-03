@@ -2,7 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { customizeRequiredMark } from '@/utils/form';
-import { Checkbox, Col, Form, FormProps, message, Row } from 'antd';
+import { Button, Checkbox, Col, Form, FormProps, message, Row } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -106,6 +106,33 @@ const UserBindGroupModal: React.FC<UserBindGroupModalProps> = ({
   const handlerSubmit = () => {
     form.submit();
   };
+
+  // 获取当前选中的用户组ID
+  const selectedGroupIds = Form.useWatch('groupIds', form) || [];
+
+  // 获取所有用户组ID
+  const allGroupIds = groupList?.map((item: UserGroupInfo) => item.id) || [];
+
+  // 判断是否全部选中
+  const isAllSelected =
+    allGroupIds.length > 0 &&
+    allGroupIds.every((id: number) => selectedGroupIds.includes(id));
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      // 取消全选
+      form.setFieldsValue({
+        groupIds: [],
+      });
+    } else {
+      // 全选
+      form.setFieldsValue({
+        groupIds: allGroupIds,
+      });
+    }
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -125,11 +152,23 @@ const UserBindGroupModal: React.FC<UserBindGroupModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="groupIds" label="用户组">
+        <Form.Item
+          name="groupIds"
+          label={
+            <Button
+              type="link"
+              size="small"
+              onClick={handleSelectAll}
+              style={{ padding: 0, height: 'auto' }}
+            >
+              {isAllSelected ? '取消全选' : '全选'}
+            </Button>
+          }
+        >
           <Checkbox.Group className={cx(styles.checkboxGroup)}>
             <Row gutter={[16, 8]}>
               {groupList?.map((item: UserGroupInfo) => (
-                <Col span={8} key={item.id}>
+                <Col span={24} key={item.id}>
                   <Checkbox value={item.id}>{item.name}</Checkbox>
                 </Col>
               ))}
