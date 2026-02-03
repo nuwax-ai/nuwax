@@ -2,13 +2,17 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { customizeRequiredMark } from '@/utils/form';
-import { Checkbox, Form, FormProps, message } from 'antd';
+import { Checkbox, Col, Form, FormProps, message, Row } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiSystemUserBindRole,
   apiSystemUserListRole,
 } from '../../user-manage';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface UserBindRoleModalProps {
   open: boolean;
@@ -107,6 +111,9 @@ const UserBindRoleModal: React.FC<UserBindRoleModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      classNames={{
+        body: cx(styles.modalBody),
+      }}
     >
       <Form
         form={form}
@@ -116,14 +123,15 @@ const UserBindRoleModal: React.FC<UserBindRoleModalProps> = ({
         autoComplete="off"
       >
         <Form.Item name="roleIds" label="角色">
-          <Checkbox.Group
-            options={
-              roleList?.map((item: RoleInfo) => ({
-                label: item.name,
-                value: item.id,
-              })) || []
-            }
-          />
+          <Checkbox.Group className={cx(styles.checkboxGroup)}>
+            <Row gutter={[16, 8]}>
+              {roleList?.map((item: RoleInfo) => (
+                <Col span={8} key={item.id}>
+                  <Checkbox value={item.id}>{item.name}</Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Checkbox.Group>
         </Form.Item>
       </Form>
     </CustomFormModal>
