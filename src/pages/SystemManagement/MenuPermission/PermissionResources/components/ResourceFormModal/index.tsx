@@ -1,5 +1,4 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import UploadAvatar from '@/components/UploadAvatar';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -14,7 +13,7 @@ import {
   TreeSelect,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
 import {
   apiAddResource,
@@ -74,8 +73,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  // 图标
-  const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增资源
   const { run: runAddResource, loading: addLoading } = useRequest(
@@ -149,7 +146,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   useEffect(() => {
     if (open) {
       if (isEdit && resourceInfoResponse) {
-        setImageUrl(resourceInfoResponse.icon || '');
         // 编辑模式：填充表单数据
         form.setFieldsValue({
           code: resourceInfoResponse.code,
@@ -165,7 +161,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       } else {
         // 新增模式：重置表单
         form.resetFields();
-        setImageUrl('');
         form.setFieldsValue({
           sortIndex: 0,
           visible: true,
@@ -183,7 +178,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       const values = await form.validateFields();
       const formData = {
         ...values,
-        icon: imageUrl,
         visible: values.visible
           ? ResourceVisibleEnum.Visible
           : ResourceVisibleEnum.Hidden,
@@ -225,13 +219,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       >
         {/* 基本信息 */}
         <div className={cx(styles.section)}>
-          <Form.Item name="icon" label="图标">
-            <UploadAvatar
-              onUploadSuccess={setImageUrl}
-              imageUrl={imageUrl}
-              svgIconName="icons-workspace-agent"
-            />
-          </Form.Item>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
