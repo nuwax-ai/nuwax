@@ -6,7 +6,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
-import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
+import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteUserGroup,
   apiGetUserGroupList,
@@ -32,8 +32,8 @@ const UserGroupManage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   // 是否为编辑用户组
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  // 菜单权限抽屉是否打开
-  const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
+  // 菜单权限弹窗是否打开
+  const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
     useState<boolean>(false);
   // 组绑定用户弹窗是否打开
   const [groupBindUserOpen, setGroupBindUserOpen] = useState<boolean>(false);
@@ -115,18 +115,18 @@ const UserGroupManage: React.FC = () => {
   // 处理菜单权限
   const handleMenuPermission = (userGroup: UserGroupInfo) => {
     setCurrentUserGroup(userGroup);
-    setMenuPermissionDrawerOpen(true);
+    setMenuPermissionModalOpen(true);
   };
 
-  // 处理菜单权限抽屉关闭
-  const handleMenuPermissionDrawerClose = () => {
-    setMenuPermissionDrawerOpen(false);
+  // 处理菜单权限弹窗关闭
+  const handleMenuPermissionModalClose = () => {
+    setMenuPermissionModalOpen(false);
     setCurrentUserGroup(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
-    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionModalOpen(false);
     setCurrentUserGroup(null);
     runGetUserGroupList();
   };
@@ -284,13 +284,13 @@ const UserGroupManage: React.FC = () => {
         onSuccess={handleModalSuccess}
       />
 
-      {/* 菜单权限配置Drawer */}
-      <MenuPermissionDrawer
-        open={menuPermissionDrawerOpen}
+      {/* 菜单权限配置Modal */}
+      <MenuPermissionModal
+        open={menuPermissionModalOpen}
         type="userGroup"
         targetId={currentUserGroup?.id || 0}
         name={currentUserGroup?.name || ''}
-        onClose={handleMenuPermissionDrawerClose}
+        onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
       />
 
