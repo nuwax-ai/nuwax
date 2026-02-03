@@ -68,7 +68,7 @@ const MenusLayout: React.FC<{
       agentId: null,
       limit: 20,
     });
-    history.push('/');
+    history.push('/home');
   };
 
   // 点击工作空间

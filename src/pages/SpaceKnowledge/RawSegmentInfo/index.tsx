@@ -264,7 +264,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
                     display: 'none',
                     position: 'absolute',
                     right: '10px',
-                    top: '7px',
+                    top: '5px',
                     cursor: 'pointer',
                     background: '#fff',
                     padding: '4px 8px',
