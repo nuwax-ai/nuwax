@@ -130,16 +130,31 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   // 将资源树转换为TreeSelect需要的数据格式
   const treeSelectData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
-      return resources?.map((resource) => ({
-        title: resource.name,
-        value: resource.id,
-        key: resource.id,
-        children: resource.children
-          ? convertToTreeData(resource.children)
-          : undefined,
-      }));
+      return (
+        resources
+          ?.filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0）
+          .map((resource) => ({
+            title: resource.name,
+            value: resource.id,
+            key: resource.id,
+            children: resource.children
+              ? convertToTreeData(resource.children)
+              : undefined,
+          })) || []
+      );
     };
-    return resourceTreeList ? convertToTreeData(resourceTreeList) : [];
+    if (!resourceTreeList || !resourceTreeList.length) {
+      return [];
+    }
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (resourceTreeList.length === 1 && resourceTreeList[0].id === 0) {
+      const rootNode = resourceTreeList[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return convertToTreeData(resourceTreeList);
   }, [resourceTreeList]);
 
   // 初始化表单数据
@@ -163,6 +178,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         form.resetFields();
         form.setFieldsValue({
           sortIndex: 0,
+          type: ResourceTypeEnum.Module,
           visible: true,
           source: ResourceSourceEnum.UserDefined,
           // 如果有父资源，自动设置父节点
@@ -233,7 +249,12 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                   },
                 ]}
               >
-                <Input disabled={isEdit} placeholder="请输入资源码" />
+                <Input
+                  disabled={isEdit}
+                  placeholder="请输入资源码"
+                  maxLength={100}
+                  showCount
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -242,7 +263,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                 name="name"
                 rules={[{ required: true, message: '请输入资源名称' }]}
               >
-                <Input placeholder="请输入资源名称" />
+                <Input placeholder="请输入资源名称" maxLength={50} showCount />
               </Form.Item>
             </Col>
           </Row>
@@ -265,6 +286,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
                   placeholder="请输入排序"
                   className={cx('w-full')}
                   min={0}
+                  max={10000}
                 />
               </Form.Item>
             </Col>
@@ -288,7 +310,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             </Col>
             <Col span={12}>
               <Form.Item label="路由路径" name="path">
-                <Input placeholder="请输入路由路径" />
+                <Input placeholder="请输入路由路径，例如：/system/menu" />
               </Form.Item>
             </Col>
           </Row>
@@ -321,7 +343,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               className="dispose-textarea-count"
               autoSize={{ minRows: 3, maxRows: 5 }}
               showCount
-              maxLength={200}
+              maxLength={500}
             />
           </Form.Item>
         </div>

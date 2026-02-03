@@ -142,29 +142,57 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   // 将菜单树转换为TreeSelect需要的数据格式
   const menuTreeSelectData = useMemo(() => {
     const convertToTreeData = (menus: any[]): any[] => {
-      return menus.map((menu) => ({
-        title: menu.name,
-        value: menu.id,
-        key: menu.id,
-        children: menu.children ? convertToTreeData(menu.children) : undefined,
-      }));
+      return menus
+        .filter((menu) => menu.id !== 0) // 过滤掉根菜单（id为0）
+        .map((menu) => ({
+          title: menu.name,
+          value: menu.id,
+          key: menu.id,
+          children: menu.children
+            ? convertToTreeData(menu.children)
+            : undefined,
+        }));
     };
-    return menuTreeList ? convertToTreeData(menuTreeList) : [];
+    if (!menuTreeList || !menuTreeList.length) {
+      return [];
+    }
+    // 如果第一个节点是根菜单（id为0），则只返回其子节点
+    if (menuTreeList.length === 1 && menuTreeList[0].id === 0) {
+      const rootNode = menuTreeList[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return convertToTreeData(menuTreeList);
   }, [menuTreeList]);
 
   // 将资源树转换为Tree需要的数据格式（用于关联资源码选择）
   const resourceTreeData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
-      return resources.map((resource) => ({
-        title: `${resource.name}-(${resource.code})`,
-        key: resource.id,
-        value: resource.id,
-        children: resource.children
-          ? convertToTreeData(resource.children)
-          : undefined,
-      }));
+      return resources
+        .filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0）
+        .map((resource) => ({
+          title: `${resource.name}-(${resource.code})`,
+          key: resource.id,
+          value: resource.id,
+          children: resource.children
+            ? convertToTreeData(resource.children)
+            : undefined,
+        }));
     };
-    return resourceTreeList ? convertToTreeData(resourceTreeList) : [];
+    if (!resourceTreeList || !resourceTreeList.length) {
+      return [];
+    }
+    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    if (resourceTreeList.length === 1 && resourceTreeList[0].id === 0) {
+      const rootNode = resourceTreeList[0];
+      return rootNode.children?.length
+        ? convertToTreeData(rootNode.children)
+        : [];
+    }
+    // 否则过滤掉所有 id 为 0 的节点
+    return convertToTreeData(resourceTreeList);
   }, [resourceTreeList]);
 
   /**
@@ -386,7 +414,12 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 },
               ]}
             >
-              <Input disabled={isEdit} placeholder="请输入菜单编码" />
+              <Input
+                disabled={isEdit}
+                placeholder="请输入菜单编码"
+                maxLength={100}
+                showCount
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -395,7 +428,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               name="name"
               rules={[{ required: true, message: '请输入菜单名称' }]}
             >
-              <Input placeholder="请输入菜单名称" />
+              <Input placeholder="请输入菜单名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
         </Row>
@@ -403,7 +436,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           <Col span={12}>
             <Form.Item label="父菜单" name="parentId">
               <TreeSelect
-                placeholder="请选择父菜单（无（根菜单））"
+                placeholder="请选择父菜单（无）"
                 treeData={menuTreeSelectData}
                 allowClear
                 showSearch
@@ -418,7 +451,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           </Col>
           <Col span={12}>
             <Form.Item label="路由路径" name="path">
-              <Input placeholder="请输入路由路径" />
+              <Input placeholder="请输入路由路径，例如：/system/menu" />
             </Form.Item>
           </Col>
         </Row>
@@ -435,6 +468,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 placeholder="请输入排序"
                 className={cx('w-full')}
                 min={0}
+                max={10000}
               />
             </Form.Item>
           </Col>
@@ -458,12 +492,18 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
             className="dispose-textarea-count"
             autoSize={{ minRows: 3, maxRows: 5 }}
             showCount
-            maxLength={200}
+            maxLength={500}
           />
         </Form.Item>
 
-        {/* 关联资源码（仅末级菜单） */}
-        <Form.Item label="关联资源码">
+        {/* 关联资源码 */}
+        <Form.Item
+          label="关联资源码"
+          tooltip={{
+            title: '选择该菜单可以访问的资源权限',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
           {resourceTreeData && resourceTreeData.length > 0 && (
             <Tree
               checkable

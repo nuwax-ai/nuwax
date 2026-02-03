@@ -2,13 +2,17 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { customizeRequiredMark } from '@/utils/form';
-import { Checkbox, Form, FormProps, message } from 'antd';
+import { Checkbox, Col, Form, FormProps, message, Row } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiSystemUserBindGroup,
   apiSystemUserListGroup,
 } from '../../user-manage';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface UserBindGroupModalProps {
   open: boolean;
@@ -110,6 +114,9 @@ const UserBindGroupModal: React.FC<UserBindGroupModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      classNames={{
+        body: cx(styles.modalBody),
+      }}
     >
       <Form
         form={form}
@@ -119,14 +126,15 @@ const UserBindGroupModal: React.FC<UserBindGroupModalProps> = ({
         autoComplete="off"
       >
         <Form.Item name="groupIds" label="用户组">
-          <Checkbox.Group
-            options={
-              groupList?.map((item: UserGroupInfo) => ({
-                label: item.name,
-                value: item.id,
-              })) || []
-            }
-          />
+          <Checkbox.Group className={cx(styles.checkboxGroup)}>
+            <Row gutter={[16, 8]}>
+              {groupList?.map((item: UserGroupInfo) => (
+                <Col span={8} key={item.id}>
+                  <Checkbox value={item.id}>{item.name}</Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Checkbox.Group>
         </Form.Item>
       </Form>
     </CustomFormModal>
