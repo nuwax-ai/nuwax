@@ -23,7 +23,7 @@ import SelectTargetFormItem from './components/SelectTargetFormItem';
 const cx = classNames.bind(styles);
 
 export interface CreateTimedTaskProps {
-  spaceId: number;
+  spaceId?: number;
   info?: TaskInfo | null;
   mode?: CreateUpdateModeEnum;
   open: boolean;
@@ -118,13 +118,16 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
     // 基础数据
     let data: any = {
-      spaceId,
       targetType,
       targetId,
       taskName,
       cron,
       keepConversation: keepConversation ? 1 : 0,
     };
+
+    if (spaceId !== undefined) {
+      data.spaceId = spaceId;
+    }
 
     // 获取参数配置
     const params = getParameterConfig(values);
