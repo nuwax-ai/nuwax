@@ -64,6 +64,28 @@ export interface UpdateMenuParams extends AddMenuParams {
 }
 
 /**
+ * 更新菜单排序项
+ */
+export interface UpdateMenuSortItem {
+  /** 菜单ID，必传 */
+  id: number;
+  /** 菜单名称 */
+  name?: string;
+  /** 父级ID，0表示根节点，不传则不修改（无层级则忽略） */
+  parentId?: number;
+  /** 排序索引，不传则不修改 */
+  sortIndex: number;
+}
+
+/**
+ * 更新菜单排序参数
+ */
+export interface UpdateMenuSortParams {
+  // 待调整的列表
+  items: UpdateMenuSortItem[];
+}
+
+/**
  * 绑定菜单资源参数
  */
 export interface BindMenuResourceParams {
