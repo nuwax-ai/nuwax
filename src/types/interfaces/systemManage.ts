@@ -3,6 +3,7 @@ import {
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
+import { TaskInfo } from './library';
 
 /**
  * 分页参数基础接口
@@ -482,6 +483,20 @@ export interface SystemWorkflowListParams extends SystemPaginationParams {
 // 工作流列表分页响应
 export type SystemWorkflowPage = SystemPageResult<SystemWorkflowInfo>;
 
+// 定时任务信息
+export type SystemTaskInfo = TaskInfo;
+
+// 查询定时任务列表参数
+export interface SystemTaskListParams extends SystemPaginationParams {
+  /** 任务名称 (模糊搜索) */
+  name?: string;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 定时任务列表分页响应
+export type SystemTaskPage = SystemPageResult<SystemTaskInfo>;
+
 // 插件信息
 export type SystemPluginInfo = SystemResourceInfo;
 
@@ -644,4 +659,37 @@ export interface ConversationTrendList {
   date: string;
   /** 会话数 */
   conversationCount: number;
+}
+
+/**
+ * 沙盒配置项
+ */
+export interface SandboxConfigItem {
+  id: number;
+  scope: 'GLOBAL' | 'USER';
+  userId: number;
+  name: string;
+  configKey: string;
+  configValue: {
+    hostWithScheme: string;
+    agentPort: number;
+    vncPort: number;
+    fileServerPort: number;
+    apiKey: string;
+    maxUsers: number;
+  };
+  description: string;
+  isActive: boolean;
+  online: boolean;
+  created: string;
+  modified: string;
+  usingCount?: number;
+}
+
+/**
+ * 沙盒全局配置
+ */
+export interface SandboxGlobalConfig {
+  perUserMemoryGB: number | string;
+  perUserCpuCores: number | string;
 }

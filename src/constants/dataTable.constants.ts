@@ -64,7 +64,7 @@ export const COMMON_PRO_TABLE_PROPS = {
     resetText: '重置',
     collapseRender: (collapsed: boolean) => (collapsed ? '展开' : '收起'),
     style: {
-      paddingTop: 0,
+      paddingTop: 5,
       paddingBottom: 0,
       paddingLeft: 0,
       paddingRight: 0,
