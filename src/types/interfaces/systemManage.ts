@@ -660,3 +660,35 @@ export interface ConversationTrendList {
   /** 会话数 */
   conversationCount: number;
 }
+
+/**
+ * 沙盒配置项
+ */
+export interface SandboxConfigItem {
+  id: number;
+  scope: string;
+  userId: number;
+  name: string;
+  configKey: string;
+  configValue: {
+    hostWithScheme: string;
+    agentPort: number;
+    vncPort: number;
+    fileServerPort: number;
+    apiKey: string;
+    maxUsers: number;
+  };
+  description: string;
+  isActive: boolean;
+  online: boolean;
+  created: string;
+  modified: string;
+}
+
+/**
+ * 沙盒全局配置
+ */
+export interface SandboxGlobalConfig {
+  perUserMemoryGB: number | string;
+  perUserCpuCores: number | string;
+}

@@ -9,6 +9,8 @@ import type {
   ModelConfigDto,
   NotifyMessageSendParams,
   PublishedDto,
+  SandboxConfigItem,
+  SandboxGlobalConfig,
   SystemAgentListParams,
   SystemAgentPage,
   SystemDataTableListParams,
@@ -469,5 +471,62 @@ export async function apiSystemTaskCronList(): Promise<
 > {
   return request('/api/system/task/cron/list', {
     method: 'GET',
+  });
+}
+
+/**
+ * 查询沙盒全局配置
+ */
+export async function apiGetSandboxGlobalConfig(): Promise<
+  RequestResponse<SandboxGlobalConfig>
+> {
+  return request('/api/system/sandbox/config/global', {
+    method: 'POST',
+  });
+}
+
+/**
+ * 更新沙盒全局配置
+ */
+export async function apiUpdateSandboxGlobalConfig(
+  data: SandboxGlobalConfig,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/sandbox/config/global/update', {
+    method: 'POST',
+    data,
+  });
+}
+/**
+ * 查询沙盒列表
+ */
+export async function apiGetSandboxConfigList(): Promise<
+  RequestResponse<SandboxConfigItem[]>
+> {
+  return request('/api/system/sandbox/config/global/list', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 创建沙盒配置
+ */
+export async function apiCreateSandboxConfig(
+  data: Partial<SandboxConfigItem>,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/sandbox/config/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新沙盒配置
+ */
+export async function apiUpdateSandboxConfig(
+  data: Partial<SandboxConfigItem>,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/sandbox/config/update', {
+    method: 'POST',
+    data,
   });
 }
