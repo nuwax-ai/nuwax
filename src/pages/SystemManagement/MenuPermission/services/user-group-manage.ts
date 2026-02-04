@@ -5,6 +5,7 @@ import { UserInfo } from '../types/role-manage';
 import type {
   AddUserGroupParams,
   GetUserGroupListParams,
+  GroupBindDataPermissionParams,
   GroupBindMenuParams,
   GroupBindUserParams,
   UpdateUserGroupParams,
@@ -66,6 +67,18 @@ export async function apiGroupBindMenu(
   data: GroupBindMenuParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/group/bind-menu', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 组绑定菜单权限（全量覆盖）
+ */
+export async function apiGroupBindDataPermission(
+  data: GroupBindDataPermissionParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/group/bind-data-permission', {
     method: 'POST',
     data,
   });

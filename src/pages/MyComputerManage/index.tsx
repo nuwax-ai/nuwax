@@ -1,6 +1,10 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiGetSandboxUserConfigList } from '@/services/systemManage';
+import {
+  apiDeleteSandboxUserConfig,
+  apiGetSandboxUserConfigList,
+  apiToggleSandboxConfig,
+} from '@/services/systemManage';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
@@ -12,6 +16,7 @@ import {
   Button,
   Card,
   Col,
+  Empty,
   Modal,
   Radio,
   Row,
@@ -65,21 +70,11 @@ const MyComputerManage: React.FC = () => {
   const handleToggleStatus = async (id: number, checked: boolean) => {
     setToggleLoadingId(id);
     try {
-      // 模拟接口调用
-      await new Promise((resolve) => {
-        setTimeout(resolve, 800);
-      });
-      // 此处应为实际 API 调用，例如:
-      // await apiUpdateComputerStatus(id, { isOnline: checked });
-
-      // 更新组件状态以触发重绘
-      setList((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, isOnline: checked } : item,
-        ),
-      );
-
-      message.success(`${checked ? '已上线' : '已下线'}`);
+      const res = await apiToggleSandboxConfig(id);
+      if (res.code === SUCCESS_CODE) {
+        message.success(`${checked ? '已启用' : '已禁用'}`);
+        fetchList();
+      }
     } catch (error) {
       message.error('操作失败');
     } finally {
@@ -95,13 +90,12 @@ const MyComputerManage: React.FC = () => {
       okText: '确认',
       okType: 'danger',
       cancelText: '取消',
-      onOk() {
-        // 调用删除接口位置
-        // apiDeleteComputer(id).then(() => {
-        message.success('删除成功');
-        console.log('Deleted computer id:', id);
-        //   run();
-        // });
+      onOk: async () => {
+        const res = await apiDeleteSandboxUserConfig(id);
+        if (res.code === SUCCESS_CODE) {
+          message.success('删除成功');
+          fetchList();
+        }
       },
     });
   };
@@ -122,75 +116,84 @@ const MyComputerManage: React.FC = () => {
       }
     >
       <Spin spinning={loading}>
-        <Row gutter={[24, 24]}>
-          {filteredData.map((item) => (
-            <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
-              <Card
-                className={styles['computer-card']}
-                cover={
-                  <div className={styles['cover-wrapper']}>
-                    {item.online ? (
-                      <div className={styles['placeholder-cover']}>
-                        <DesktopOutlined />
-                      </div>
-                    ) : (
-                      <div className={styles['placeholder-cover']}>
-                        <DesktopOutlined />
-                      </div>
-                    )}
-                  </div>
-                }
-              >
-                <div className={styles['card-body']}>
-                  <div className={styles['card-info']}>
-                    <div className={styles['card-title-line']}>
-                      <Typography.Text strong className={styles['card-name']}>
-                        {item.name}
-                      </Typography.Text>
-                      <Tag color={item.online ? 'success' : 'default'}>
-                        {item.online ? '在线' : '离线'}
-                      </Tag>
+        {filteredData.length > 0 ? (
+          <Row gutter={[24, 24]}>
+            {filteredData.map((item) => (
+              <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
+                <Card
+                  className={styles['computer-card']}
+                  cover={
+                    <div className={styles['cover-wrapper']}>
+                      {item.online ? (
+                        <div className={styles['placeholder-cover']}>
+                          <DesktopOutlined />
+                        </div>
+                      ) : (
+                        <div className={styles['placeholder-cover']}>
+                          <DesktopOutlined />
+                        </div>
+                      )}
                     </div>
-                    <Typography.Text
-                      type="secondary"
-                      className={styles['card-ip']}
-                    >
-                      {item.configValue?.hostWithScheme}
-                    </Typography.Text>
-                  </div>
+                  }
+                >
+                  <div className={styles['card-body']}>
+                    <div className={styles['card-info']}>
+                      <div className={styles['card-title-line']}>
+                        <Typography.Text strong className={styles['card-name']}>
+                          {item.name}
+                        </Typography.Text>
+                        <Tag color={item.online ? 'success' : 'default'}>
+                          {item.online ? '在线' : '离线'}
+                        </Tag>
+                      </div>
+                      <Typography.Text
+                        type="secondary"
+                        className={styles['card-ip']}
+                      >
+                        {item.configValue?.hostWithScheme}
+                      </Typography.Text>
+                    </div>
 
-                  <div className={styles['card-actions']}>
-                    <Button
-                      type="primary"
-                      icon={<DesktopOutlined />}
-                      className={cx(styles['remote-btn'], {
-                        [styles['offline-btn']]: !item.online,
-                      })}
-                    >
-                      远程桌面
-                    </Button>
-                    <Space size={8}>
-                      <Button icon={<MessageOutlined />} />
-                      <Switch
-                        loading={toggleLoadingId === item.id}
-                        checked={item.online}
-                        size="small"
-                        onChange={(checked) =>
-                          handleToggleStatus(item.id, checked)
-                        }
-                      />
+                    <div className={styles['card-actions']}>
                       <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(item.id)}
-                      />
-                    </Space>
+                        type="primary"
+                        icon={<DesktopOutlined />}
+                        disabled={true}
+                        className={cx(styles['remote-btn'], {
+                          [styles['offline-btn']]: !item.online,
+                        })}
+                      >
+                        远程桌面
+                      </Button>
+                      <Space size={8}>
+                        <Button icon={<MessageOutlined />} />
+                        <Switch
+                          loading={toggleLoadingId === item.id}
+                          checked={item.isActive}
+                          size="small"
+                          onChange={(checked) =>
+                            handleToggleStatus(item.id, checked)
+                          }
+                        />
+                        <Button
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleDelete(item.id)}
+                        />
+                      </Space>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        ) : (
+          !loading && (
+            <div style={{ padding: '300px 0' }}>
+              <Empty description="暂无电脑配置" />
+            </div>
+          )
+        )}
       </Spin>
     </WorkspaceLayout>
   );
