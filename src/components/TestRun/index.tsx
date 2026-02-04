@@ -224,7 +224,34 @@ const TestRun: React.FC<TestRunProps> = ({
     storeWorkflow('testRunValues', cloneDeep(values));
     const results: DefaultObjectType = cloneDeep(values);
     if (values && JSON.stringify(values) !== '{}') {
-      if (node.nodeConfig.inputArgs && node.nodeConfig.inputArgs.length) {
+      if (node.type === NodeTypeEnum.HTTPRequest) {
+        // 将body，queries，headers合并到一个对象中
+        const newList = [
+          ...(node.nodeConfig.body || []),
+          ...(node.nodeConfig.queries || []),
+          ...(node.nodeConfig.headers || []),
+        ];
+        // 直接处理表单中的单个元素
+        for (let item in values) {
+          if (Object.prototype.hasOwnProperty.call(values, item)) {
+            const inputArg = newList?.find((arg) => arg.name === item);
+            if (
+              inputArg &&
+              (inputArg.dataType === 'Object' ||
+                inputArg.dataType?.includes('Array'))
+            ) {
+              try {
+                results[item] = JSON.parse(values[item]);
+              } catch (error) {
+                console.error('JSON 解析失败:', error);
+              }
+            }
+          }
+        }
+      } else if (
+        node.nodeConfig.inputArgs &&
+        node.nodeConfig.inputArgs.length
+      ) {
         for (let item in values) {
           if (Object.prototype.hasOwnProperty.call(values, item)) {
             // 过滤原型链属性
@@ -238,30 +265,6 @@ const TestRun: React.FC<TestRunProps> = ({
                 inputArg.dataType,
               );
             } else if (
-              inputArg &&
-              (inputArg.dataType === 'Object' ||
-                inputArg.dataType?.includes('Array'))
-            ) {
-              try {
-                results[item] = JSON.parse(values[item]);
-              } catch (error) {
-                console.error('JSON 解析失败:', error);
-              }
-            }
-          }
-        }
-      } else if (node.type === NodeTypeEnum.HTTPRequest) {
-        // 将body，queries，headers合并到一个对象中
-        const newList = [
-          ...(node.nodeConfig.body || []),
-          ...(node.nodeConfig.queries || []),
-          ...(node.nodeConfig.headers || []),
-        ];
-        // 直接处理表单中的单个元素
-        for (let item in values) {
-          if (Object.prototype.hasOwnProperty.call(values, item)) {
-            const inputArg = newList?.find((arg) => arg.name === item);
-            if (
               inputArg &&
               (inputArg.dataType === 'Object' ||
                 inputArg.dataType?.includes('Array'))
