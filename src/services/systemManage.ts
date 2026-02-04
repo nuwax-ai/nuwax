@@ -541,3 +541,13 @@ export async function apiDeleteSandboxConfig(
     method: 'POST',
   });
 }
+/**
+ * 查询用户沙盒列表
+ */
+export async function apiGetSandboxUserConfigList(): Promise<
+  RequestResponse<SandboxConfigItem[]>
+> {
+  return request('/api/sandbox/config/list', {
+    method: 'GET',
+  });
+}
