@@ -8,7 +8,7 @@ import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
 import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table, message } from 'antd';
+import { Button, Input, Select, Space, Table, message } from 'antd';
 import { ColumnType } from 'antd/es/table';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -250,12 +250,14 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 350,
       align: 'center',
+      fixed: 'right',
       render: (_: null, record: SystemUserListInfo) => (
-        <>
+        <Space size="small" wrap={false}>
           <Button
             type="link"
+            size="small"
             className={cx(styles['table-action-ant-btn-link'])}
             onClick={() => handleBindRole(record)}
           >
@@ -263,6 +265,7 @@ const UserManage: React.FC = () => {
           </Button>
           <Button
             type="link"
+            size="small"
             className={cx(styles['table-action-ant-btn-link'])}
             onClick={() => handleBindGroup(record)}
           >
@@ -270,6 +273,7 @@ const UserManage: React.FC = () => {
           </Button>
           <Button
             type="link"
+            size="small"
             className={cx(styles['table-action-ant-btn-link'])}
             onClick={() => handleViewMenu(record)}
           >
@@ -278,6 +282,7 @@ const UserManage: React.FC = () => {
           {record.status === UserStatusEnum.Enabled ? (
             <Button
               type="link"
+              size="small"
               className={cx(styles['table-action-ant-btn-link'])}
               loading={disableLoadingMap[record.id] || false}
               onClick={() => runDisable({ id: record.id })}
@@ -287,6 +292,7 @@ const UserManage: React.FC = () => {
           ) : (
             <Button
               type="link"
+              size="small"
               className={cx(styles['table-action-ant-btn-link'])}
               loading={enableLoadingMap[record.id] || false}
               onClick={() => runEnable({ id: record.id })}
@@ -299,7 +305,7 @@ const UserManage: React.FC = () => {
             record={record}
             onSuccess={handleSuccess}
           />
-        </>
+        </Space>
       ),
     },
   ];
