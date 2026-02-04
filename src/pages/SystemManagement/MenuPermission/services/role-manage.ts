@@ -8,6 +8,7 @@ import type {
   RoleBindUserParams,
   RoleInfo,
   UpdateRoleParams,
+  UpdateRoleSortParams,
   UserInfo,
 } from '../types/role-manage';
 
@@ -18,6 +19,18 @@ export async function apiUpdateRole(
   data: UpdateRoleParams,
 ): Promise<RequestResponse<null>> {
   return request(`/api/system/role/update`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 调整角色顺序
+ */
+export async function apiUpdateRoleSort(
+  data: UpdateRoleSortParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/role/update-sort', {
     method: 'POST',
     data,
   });
