@@ -1,18 +1,111 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { PlusOutlined } from '@ant-design/icons';
+import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import MenuPermissionModal from '../components/MenuPermissionModal';
-import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
-import { RoleStatusEnum, type RoleInfo } from '../types/role-manage';
+import {
+  apiDeleteRole,
+  apiGetRoleList,
+  apiUpdateRoleSort,
+} from '../services/role-manage';
+import {
+  RoleStatusEnum,
+  type RoleInfo,
+  type UpdateRoleSortItem,
+} from '../types/role-manage';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// Row Context 用于传递拖拽相关的 listeners 和 setActivatorNodeRef
+interface RowContextProps {
+  setActivatorNodeRef?: (element: HTMLElement | null) => void;
+  listeners?: SyntheticListenerMap;
+}
+
+const RowContext = React.createContext<RowContextProps>({});
+
+// 拖拽手柄组件
+const DragHandle: React.FC = () => {
+  const { setActivatorNodeRef, listeners } = useContext(RowContext);
+  return (
+    <Button
+      type="text"
+      size="small"
+      icon={<HolderOutlined />}
+      style={{ cursor: 'move' }}
+      ref={setActivatorNodeRef}
+      {...listeners}
+    />
+  );
+};
+
+// 可拖拽的行组件
+interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  'data-row-key': string | number;
+}
+
+const Row: React.FC<RowProps> = (props) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: String(props['data-row-key']) });
+
+  const style: React.CSSProperties = {
+    ...props.style,
+    ...(isDragging ? { position: 'relative' } : {}),
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  const contextValue = useMemo<RowContextProps>(
+    () => ({ setActivatorNodeRef, listeners }),
+    [setActivatorNodeRef, listeners],
+  );
+
+  return (
+    <RowContext.Provider value={contextValue}>
+      <tr
+        {...props}
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        className={classNames(props.className)}
+      />
+    </RowContext.Provider>
+  );
+};
 
 /**
  * 角色管理页面
@@ -35,6 +128,11 @@ const RoleManage: React.FC = () => {
     useState<boolean>(false);
   // 角色绑定用户抽屉是否打开
   const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
+
+  // 拖拽排序的数据源
+  const [draggableData, setDraggableData] = useState<
+    (RoleInfo & { key: number })[]
+  >([]);
 
   // 查询角色列表
   const {
@@ -65,9 +163,6 @@ const RoleManage: React.FC = () => {
     onSuccess: () => {
       message.success('删除成功');
       runGetRoleList();
-    },
-    onError: () => {
-      message.error('删除失败');
     },
     onFinally: (roleId: number) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [roleId]: false }));
@@ -146,8 +241,83 @@ const RoleManage: React.FC = () => {
     }));
   }, [roleList]);
 
+  // 同步 tableData 到 draggableData
+  useEffect(() => {
+    setDraggableData(tableData);
+  }, [tableData]);
+
+  // 配置拖拽传感器
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // 更新角色排序
+  const { run: runUpdateRoleSort } = useRequest(apiUpdateRoleSort, {
+    manual: true,
+    onSuccess: () => {
+      message.success('排序更新成功');
+      runGetRoleList();
+    },
+    onError: () => {
+      // 恢复原数据
+      setDraggableData(tableData);
+    },
+  });
+
+  // 处理拖拽结束
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    // 如果没有目标位置或拖拽到同一位置，直接返回
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeKey = Number(active.id);
+    const overKey = Number(over.id);
+
+    const activeIndex = draggableData.findIndex(
+      (item) => item.key === activeKey,
+    );
+    const overIndex = draggableData.findIndex((item) => item.key === overKey);
+
+    // 如果找不到对应的索引，说明拖拽到了无效位置
+    if (activeIndex === -1 || overIndex === -1) {
+      return;
+    }
+
+    // 更新数据
+    const newData = arrayMove(draggableData, activeIndex, overIndex);
+    setDraggableData(newData);
+
+    // 收集所有需要更新的角色（只更新受影响的行）
+    const updateItems: UpdateRoleSortItem[] = newData.map((item, index) => ({
+      id: item.id,
+      name: item.name,
+      sortIndex: index + 1,
+    }));
+
+    // 批量更新角色排序
+    if (updateItems.length > 0) {
+      runUpdateRoleSort({
+        items: updateItems,
+      });
+    }
+  };
+
   // 定义表格列
   const columns: TableColumnsType<RoleInfo & { key: number }> = [
+    {
+      title: '排序',
+      key: 'sort',
+      align: 'center',
+      render: () => <DragHandle />,
+    },
     {
       title: '角色名称',
       dataIndex: 'name',
@@ -237,20 +407,37 @@ const RoleManage: React.FC = () => {
       {/* 角色列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading}>
-          {!tableData?.length ? (
+          {!draggableData?.length ? (
             <Empty
               description="暂无角色数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className={cx(styles.empty)}
             />
           ) : (
-            <Table<RoleInfo & { key: number }>
-              columns={columns}
-              dataSource={tableData}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              className={cx(styles.table)}
-            />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <SortableContext
+                items={draggableData.map((item) => String(item.key))}
+                strategy={verticalListSortingStrategy}
+              >
+                <Table<RoleInfo & { key: number }>
+                  columns={columns}
+                  dataSource={draggableData}
+                  pagination={false}
+                  scroll={{ x: 'max-content' }}
+                  className={cx(styles.table)}
+                  components={{
+                    body: {
+                      row: Row,
+                    },
+                  }}
+                />
+              </SortableContext>
+            </DndContext>
           )}
         </Spin>
       </div>

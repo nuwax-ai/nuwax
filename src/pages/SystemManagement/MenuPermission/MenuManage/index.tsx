@@ -95,7 +95,7 @@ const Row: React.FC<RowProps> = (props) => {
         ref={setNodeRef}
         style={style}
         {...attributes}
-        className={classNames(props.className, isDragging && cx('draggingRow'))}
+        className={classNames(props.className)}
       />
     </RowContext.Provider>
   );
