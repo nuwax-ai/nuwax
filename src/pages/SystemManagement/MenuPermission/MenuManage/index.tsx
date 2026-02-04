@@ -27,9 +27,9 @@ import { useLocation, useRequest } from 'umi';
 import {
   apiDeleteMenu,
   apiGetMenuList,
-  apiUpdateMenu,
+  apiUpdateMenuSort,
 } from '../services/menu-manage';
-import type { MenuNodeInfo } from '../types/menu-manage';
+import type { MenuNodeInfo, UpdateMenuSortItem } from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import styles from './index.less';
 
@@ -244,9 +244,10 @@ const MenuManage: React.FC = () => {
   );
 
   // 更新菜单排序
-  const { run: runUpdateMenuSort } = useRequest(apiUpdateMenu, {
+  const { run: runUpdateMenuSort } = useRequest(apiUpdateMenuSort, {
     manual: true,
     onSuccess: () => {
+      message.success('排序更新成功');
       runGetMenuList();
     },
     onError: () => {
@@ -292,49 +293,228 @@ const MenuManage: React.FC = () => {
     return null;
   };
 
-  // 递归更新树形数据
-  const updateTreeData = (
+  // 从树中移除节点（不包含子节点）
+  const removeNodeFromTree = (
+    data: (MenuNodeInfo & { key: number })[],
+    key: number,
+  ): {
+    newData: (MenuNodeInfo & { key: number })[];
+    removedNode: (MenuNodeInfo & { key: number }) | null;
+  } => {
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].key === key) {
+        const removed = { ...data[i] };
+        // 移除子节点，因为移动时只移动当前节点
+        removed.children = undefined;
+        return {
+          newData: [...data.slice(0, i), ...data.slice(i + 1)],
+          removedNode: removed,
+        };
+      }
+      const children = data[i].children as
+        | (MenuNodeInfo & { key: number })[]
+        | undefined;
+      if (children && children.length > 0) {
+        const result = removeNodeFromTree(children, key);
+        if (result.removedNode) {
+          return {
+            newData: [
+              ...data.slice(0, i),
+              {
+                ...data[i],
+                children: result.newData,
+              },
+              ...data.slice(i + 1),
+            ],
+            removedNode: result.removedNode,
+          };
+        }
+      }
+    }
+    return { newData: data, removedNode: null };
+  };
+
+  // 获取目标层级的所有节点（扁平化，统一处理 parentId：0 和 undefined 都表示根层级）
+  const getLevelItems = (
+    data: (MenuNodeInfo & { key: number })[],
+    parentId: number | undefined,
+  ): (MenuNodeInfo & { key: number })[] => {
+    // 统一处理：0 和 undefined 都表示根层级
+    const normalizedParentId = parentId === 0 ? undefined : parentId;
+
+    const result: (MenuNodeInfo & { key: number })[] = [];
+    const traverse = (items: (MenuNodeInfo & { key: number })[]) => {
+      items.forEach((item) => {
+        // 统一比较：将 item.parentId 的 0 也转换为 undefined
+        const itemParentId = item.parentId === 0 ? undefined : item.parentId;
+        if (itemParentId === normalizedParentId) {
+          result.push(item);
+        }
+        if (item.children && item.children.length > 0) {
+          traverse(item.children as (MenuNodeInfo & { key: number })[]);
+        }
+      });
+    };
+    traverse(data);
+    return result;
+  };
+
+  // 在指定层级的末尾插入节点
+  const insertNodeAtLevelEnd = (
+    data: (MenuNodeInfo & { key: number })[],
+    node: MenuNodeInfo & { key: number },
+    parentId: number | undefined,
+  ): (MenuNodeInfo & { key: number })[] => {
+    // 如果是根层级（parentId 为 undefined）
+    if (parentId === undefined) {
+      return [...data, node];
+    }
+
+    // 递归查找父节点
+    return data.map((item) => {
+      if (item.id === parentId) {
+        const children =
+          (item.children as (MenuNodeInfo & { key: number })[]) || [];
+        return {
+          ...item,
+          children: [...children, node],
+        };
+      }
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          children: insertNodeAtLevelEnd(
+            item.children as (MenuNodeInfo & { key: number })[],
+            node,
+            parentId,
+          ),
+        };
+      }
+      return item;
+    });
+  };
+
+  // 在指定层级的指定索引位置插入节点
+  const insertNodeAtLevelIndex = (
+    data: (MenuNodeInfo & { key: number })[],
+    node: MenuNodeInfo & { key: number },
+    parentId: number | undefined,
+    targetIndex: number,
+  ): (MenuNodeInfo & { key: number })[] => {
+    // 如果是根层级（parentId 为 undefined）
+    if (parentId === undefined) {
+      return [...data.slice(0, targetIndex), node, ...data.slice(targetIndex)];
+    }
+
+    // 递归查找父节点
+    return data.map((item) => {
+      if (item.id === parentId) {
+        const children =
+          (item.children as (MenuNodeInfo & { key: number })[]) || [];
+        return {
+          ...item,
+          children: [
+            ...children.slice(0, targetIndex),
+            node,
+            ...children.slice(targetIndex),
+          ],
+        };
+      }
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          children: insertNodeAtLevelIndex(
+            item.children as (MenuNodeInfo & { key: number })[],
+            node,
+            parentId,
+            targetIndex,
+          ),
+        };
+      }
+      return item;
+    });
+  };
+
+  // 在指定层级的目标位置插入节点
+  const insertNodeAtLevel = (
+    data: (MenuNodeInfo & { key: number })[],
+    node: MenuNodeInfo & { key: number },
+    targetKey: number,
+    newParentId: number | undefined,
+  ): (MenuNodeInfo & { key: number })[] => {
+    // 更新节点的 parentId（统一处理：0 转换为 undefined）
+    const normalizedParentId = newParentId === 0 ? undefined : newParentId;
+    const updatedNode = {
+      ...node,
+      parentId: normalizedParentId,
+    };
+
+    // 获取目标层级的所有节点（统一处理 parentId）
+    const levelItems = getLevelItems(data, normalizedParentId);
+    const targetIndex = levelItems.findIndex((item) => item.key === targetKey);
+
+    if (targetIndex === -1) {
+      // 如果找不到目标节点，追加到层级末尾
+      return insertNodeAtLevelEnd(data, updatedNode, normalizedParentId);
+    }
+
+    // 在目标位置插入节点（在目标节点之前插入，这样拖拽到第一个位置时能正确插入）
+    return insertNodeAtLevelIndex(
+      data,
+      updatedNode,
+      normalizedParentId,
+      targetIndex,
+    );
+  };
+
+  // 更新同层级的数据（使用 arrayMove）
+  const updateSameLevelData = (
     data: (MenuNodeInfo & { key: number })[],
     activeKey: number,
     overKey: number,
+    parentId: number | undefined,
   ): (MenuNodeInfo & { key: number })[] => {
-    // 先检查是否在第一层（data 的直接子节点中）
-    const activeIndex = data.findIndex((item) => item.key === activeKey);
-    const overIndex = data.findIndex((item) => item.key === overKey);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-      // 在第一层，直接更新 data 数组
-      return arrayMove(data, activeIndex, overIndex);
+    // 如果是根层级（parentId 为 undefined 或 0）
+    if (parentId === undefined || parentId === 0) {
+      const activeIndex = data.findIndex((item) => item.key === activeKey);
+      const overIndex = data.findIndex((item) => item.key === overKey);
+      if (activeIndex !== -1 && overIndex !== -1) {
+        return arrayMove(data, activeIndex, overIndex);
+      }
+      return data;
     }
 
-    // 不在第一层，递归处理子节点
+    // 递归查找父节点
     return data.map((item) => {
-      if (item.children && item.children.length > 0) {
-        // 检查是否在子节点中
-        const children = item.children as (MenuNodeInfo & { key: number })[];
-        const childActiveIndex = children.findIndex(
+      // 如果当前节点就是父节点
+      if (item.id === parentId) {
+        const children =
+          (item.children as (MenuNodeInfo & { key: number })[]) || [];
+        const activeIndex = children.findIndex(
           (child) => child.key === activeKey,
         );
-        const childOverIndex = children.findIndex(
-          (child) => child.key === overKey,
-        );
-
-        if (childActiveIndex !== -1 && childOverIndex !== -1) {
-          // 在同一父节点下，更新子节点顺序
-          const newChildren = arrayMove(
-            children,
-            childActiveIndex,
-            childOverIndex,
-          );
+        const overIndex = children.findIndex((child) => child.key === overKey);
+        if (activeIndex !== -1 && overIndex !== -1) {
           return {
             ...item,
-            children: newChildren,
+            children: arrayMove(children, activeIndex, overIndex),
           };
-        } else {
-          // 递归处理子节点
+        }
+        return item;
+      }
+      // 递归处理子节点
+      if (item.children && item.children.length > 0) {
+        const updatedChildren = updateSameLevelData(
+          item.children as (MenuNodeInfo & { key: number })[],
+          activeKey,
+          overKey,
+          parentId,
+        );
+        // 只有当子节点发生变化时才更新
+        if (updatedChildren !== item.children) {
           return {
             ...item,
-            children: updateTreeData(children, activeKey, overKey),
+            children: updatedChildren,
           };
         }
       }
@@ -342,15 +522,69 @@ const MenuManage: React.FC = () => {
     });
   };
 
-  // 获取同一层级的所有节点
+  // 递归更新树形数据（支持跨层级移动）
+  const updateTreeData = (
+    data: (MenuNodeInfo & { key: number })[],
+    activeKey: number,
+    overKey: number,
+  ): (MenuNodeInfo & { key: number })[] => {
+    // 找到原始节点和目标节点
+    const activeItem = findNodeInTree(data, activeKey);
+    const overItem = findNodeInTree(data, overKey);
+
+    if (!activeItem || !overItem) {
+      return data;
+    }
+
+    const originalParentId = activeItem.parentId ?? 0;
+    const newParentId = overItem.parentId ?? 0;
+
+    // 如果是同层级拖拽，直接使用 arrayMove
+    if (originalParentId === newParentId) {
+      return updateSameLevelData(
+        data,
+        activeKey,
+        overKey,
+        originalParentId === 0 ? undefined : originalParentId,
+      );
+    }
+
+    // 跨层级拖拽：先移除，再插入
+    const { newData: dataWithoutActive, removedNode } = removeNodeFromTree(
+      data,
+      activeKey,
+    );
+
+    if (!removedNode) {
+      return data;
+    }
+
+    // 统一处理 newParentId：0 转换为 undefined
+    const normalizedNewParentId = newParentId === 0 ? undefined : newParentId;
+
+    // 在目标位置插入节点
+    return insertNodeAtLevel(
+      dataWithoutActive,
+      removedNode,
+      overKey,
+      normalizedNewParentId,
+    );
+  };
+
+  // 获取同一层级的所有节点（统一处理 parentId：0 和 undefined 都表示根层级）
   const getSameLevelItems = (
     data: (MenuNodeInfo & { key: number })[],
     parentId: number | undefined,
   ): (MenuNodeInfo & { key: number })[] => {
+    // 统一处理：0 和 undefined 都表示根层级
+    const normalizedParentId = parentId === 0 ? undefined : parentId;
+
     const result: (MenuNodeInfo & { key: number })[] = [];
     const traverse = (items: (MenuNodeInfo & { key: number })[]) => {
       items.forEach((item) => {
-        if (item.parentId === parentId) {
+        // 统一比较：将 item.parentId 的 0 也转换为 undefined
+        const itemParentId = item.parentId === 0 ? undefined : item.parentId;
+        if (itemParentId === normalizedParentId) {
           result.push(item);
         }
         if (item.children && item.children.length > 0) {
@@ -364,56 +598,94 @@ const MenuManage: React.FC = () => {
 
   // 处理拖拽结束
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (active.id !== over?.id) {
-      const activeKey = Number(active.id);
-      const overKey = Number(over?.id);
+    if (!over || active.id === over.id) {
+      return;
+    }
 
-      const activeItem = findNodeInTree(draggableData, activeKey);
-      const overItem = findNodeInTree(draggableData, overKey);
+    const activeKey = Number(active.id);
+    const overKey = Number(over.id);
 
-      if (!activeItem || !overItem) {
-        return;
+    const activeItem = findNodeInTree(draggableData, activeKey);
+    const overItem = findNodeInTree(draggableData, overKey);
+
+    if (!activeItem || !overItem) {
+      return;
+    }
+
+    // 保存原始 parentId，用于判断是否变更层级
+    // 注意：这里保持原始值，不进行转换，因为 API 需要知道真实的 parentId 值
+    const originalParentId = activeItem.parentId ?? 0;
+    const newParentId = overItem.parentId ?? 0;
+
+    // 更新树形数据
+    const newData = updateTreeData(draggableData, activeKey, overKey);
+
+    // 验证节点是否被正确插入（在更新状态前先验证）
+    const normalizedNewParentId = newParentId === 0 ? undefined : newParentId;
+    const targetLevelItems = getSameLevelItems(newData, normalizedNewParentId);
+    const hasActive = targetLevelItems.some(
+      (item: MenuNodeInfo & { key: number }) => item.key === activeKey,
+    );
+
+    if (!hasActive) {
+      // 如果节点没有被正确插入，恢复原数据并提示错误
+      message.error('拖拽失败，请重试');
+      return;
+    }
+
+    // 节点已正确插入，更新状态
+    setDraggableData(newData);
+
+    // 收集所有需要更新的菜单
+    const updateItems: UpdateMenuSortItem[] = [];
+
+    // 如果层级发生了变化，还需要更新原层级的菜单排序
+    if (originalParentId !== newParentId) {
+      // 获取原层级的菜单（排除被移动的节点）
+      const normalizedOriginalParentId =
+        originalParentId === 0 ? undefined : originalParentId;
+      const originalLevelItems = getSameLevelItems(
+        newData,
+        normalizedOriginalParentId,
+      ).filter((item) => item.key !== activeKey);
+
+      // 更新原层级的菜单排序
+      originalLevelItems.forEach((item, index) => {
+        updateItems.push({
+          id: item.id,
+          name: item.name,
+          // 同一层级内排序，不传递 parentId
+          sortIndex: index + 1,
+        });
+      });
+    }
+
+    // 更新目标层级的菜单排序
+    targetLevelItems.forEach((item, index) => {
+      const updateItem: UpdateMenuSortItem = {
+        id: item.id,
+        name: item.name,
+        sortIndex: index + 1,
+      };
+
+      // 只有被拖拽的菜单且层级发生变化时，才传递 parentId
+      // 根据 API 定义：parentId 为 0 表示根节点，不传则不修改层级
+      if (item.key === activeKey && originalParentId !== newParentId) {
+        // 层级发生变化，需要传递新的 parentId
+        // 直接传递 newParentId（如果原来是 undefined，已经转换为 0）
+        // 如果 newParentId 是 0，传递 0 表示根节点
+        // 如果 newParentId 是其他数字，传递实际的 parentId
+        updateItem.parentId = newParentId;
       }
 
-      // 只允许同一层级的拖拽
-      if (activeItem.parentId !== overItem.parentId) {
-        message.warning('只能在同一层级内拖拽排序');
-        return;
-      }
+      updateItems.push(updateItem);
+    });
 
-      // 更新树形数据
-      const newData = updateTreeData(draggableData, activeKey, overKey);
-      setDraggableData(newData);
-
-      // 获取更新后的同一层级节点（已经交换过位置）
-      const newSameLevelItems = getSameLevelItems(newData, activeItem.parentId);
-
-      // 验证两个节点都在同一层级中
-      const hasActive = newSameLevelItems.some(
-        (item: MenuNodeInfo & { key: number }) => item.key === activeKey,
-      );
-      const hasOver = newSameLevelItems.some(
-        (item: MenuNodeInfo & { key: number }) => item.key === overKey,
-      );
-
-      if (!hasActive || !hasOver) {
-        return;
-      }
-
-      // 更新当前一级菜单的所有菜单的 sortIndex
-      // 根据它们在数组中的新位置来更新 sortIndex（从 1 开始）
-      newSameLevelItems.forEach(
-        (item: MenuNodeInfo & { key: number }, index: number) => {
-          const newSortIndex = index + 1;
-          // 只有当 sortIndex 发生变化时才更新
-          runUpdateMenuSort({
-            id: item.id,
-            name: item.name,
-            parentId: item.parentId,
-            sortIndex: newSortIndex,
-          });
-        },
-      );
+    // 批量更新菜单排序
+    if (updateItems.length > 0) {
+      runUpdateMenuSort({
+        items: updateItems,
+      });
     }
   };
 
@@ -422,7 +694,6 @@ const MenuManage: React.FC = () => {
     {
       key: 'sort',
       align: 'center',
-      width: 60,
       render: () => <DragHandle />,
     },
     {
