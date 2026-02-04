@@ -65,6 +65,10 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
     label: '认证配置',
   },
   {
+    value: PageDevelopMoreActionEnum.Domain_Binding,
+    label: '域名绑定',
+  },
+  {
     value: PageDevelopMoreActionEnum.Page_Preview,
     label: '页面预览',
   },

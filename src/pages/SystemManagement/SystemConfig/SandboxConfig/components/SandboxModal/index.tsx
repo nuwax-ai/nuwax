@@ -6,14 +6,7 @@ import {
 import { Form } from 'antd';
 import React, { useEffect } from 'react';
 
-export interface SandboxItem {
-  id: number;
-  name: string;
-  address: string[];
-  currentUsage: number;
-  totalCapacity: number;
-  status: 'online' | 'offline';
-}
+import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 
 interface SandboxModalProps {
   open: boolean;
@@ -37,14 +30,10 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       if (mode === 'edit' && initialData) {
         form.setFieldsValue({
           name: initialData.name,
-          agentAddress: initialData.address[0],
-          vncAddress: initialData.address[1],
-          maxUsers: initialData.totalCapacity,
-          currentUsers: initialData.currentUsage,
+          configValue: initialData.configValue,
         });
       } else {
         form.resetFields();
-        form.setFieldsValue({ currentUsers: 0 });
       }
     }
   }, [open, mode, initialData, form]);
@@ -76,38 +65,55 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         rules={[{ required: true, message: '请输入沙盒名称' }]}
       />
       <ProFormText
-        name="agentAddress"
-        label="Agent地址"
-        placeholder=":9086"
-        colProps={{ span: 12 }}
-        rules={[{ required: true, message: '请输入Agent地址' }]}
-      />
-      <ProFormText
-        name="vncAddress"
-        label="VNC地址"
-        placeholder=":9088"
-        colProps={{ span: 12 }}
-        rules={[{ required: true, message: '请输入VNC地址' }]}
-      />
-      <ProFormText
-        name="fileServiceAddress"
-        label="文件服务地址"
-        placeholder=":60001"
+        name={['configValue', 'hostWithScheme']}
+        label="沙盒根地址"
+        placeholder="例如：http://192.168.1.21"
         colProps={{ span: 24 }}
-        rules={[{ required: true, message: '请输入文件服务地址' }]}
+        rules={[
+          { required: true, message: '请输入沙盒根地址' },
+          {
+            pattern: /^https?:\/\/.+/,
+            message: '请输入正确的地址格式，需包含 http:// 或 https://',
+          },
+        ]}
       />
       <ProFormDigit
-        name="maxUsers"
-        label="最大用户数"
+        name={['configValue', 'agentPort']}
+        label="Agent端口"
+        placeholder="9086"
+        colProps={{ span: 8 }}
+        fieldProps={{ precision: 0, min: 1, max: 65535 }}
+        rules={[{ required: true, message: '请输入Agent端口' }]}
+      />
+      <ProFormDigit
+        name={['configValue', 'vncPort']}
+        label="VNC端口"
+        placeholder="9088"
+        colProps={{ span: 8 }}
+        fieldProps={{ precision: 0, min: 1, max: 65535 }}
+        rules={[{ required: true, message: '请输入VNC端口' }]}
+      />
+      <ProFormDigit
+        name={['configValue', 'fileServerPort']}
+        label="文件服务端口"
+        placeholder="60001"
+        colProps={{ span: 8 }}
+        fieldProps={{ precision: 0, min: 1, max: 65535 }}
+        rules={[{ required: true, message: '请输入文件服务端口' }]}
+      />
+      <ProFormText
+        name={['configValue', 'apiKey']}
+        label="通信key (可选)"
+        placeholder="留空表示不使用通信密钥"
+        colProps={{ span: 24 }}
+      />
+      <ProFormDigit
+        name={['configValue', 'maxUsers']}
+        label="最大并发用户数"
         placeholder="30"
-        colProps={{ span: 12 }}
-        rules={[{ required: true, message: '请输入最大用户数' }]}
-      />
-      <ProFormDigit
-        name="currentUsers"
-        label="当前使用人数"
-        placeholder="0"
-        colProps={{ span: 12 }}
+        colProps={{ span: 24 }}
+        fieldProps={{ precision: 0, min: 1 }}
+        rules={[{ required: true, message: '请输入最大并发用户数' }]}
       />
     </ModalForm>
   );

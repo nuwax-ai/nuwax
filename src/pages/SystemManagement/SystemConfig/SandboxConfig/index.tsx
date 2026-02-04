@@ -1,18 +1,35 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiCreateSandboxConfig,
+  apiDeleteSandboxConfig,
+  apiGetSandboxConfigList,
+  apiGetSandboxGlobalConfig,
+  apiUpdateSandboxConfig,
+  apiUpdateSandboxGlobalConfig,
+} from '@/services/systemManage';
+import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
   EditOutlined,
-  EyeInvisibleOutlined,
-  EyeOutlined,
   PlusOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
-import { Button, Form, InputNumber, Space, Tooltip } from 'antd';
+import {
+  Button,
+  Form,
+  InputNumber,
+  message,
+  Modal,
+  Space,
+  Spin,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
-import React, { useRef, useState } from 'react';
-import SandboxModal, { SandboxItem } from './components/SandboxModal';
+import React, { useEffect, useRef, useState } from 'react';
+import SandboxModal from './components/SandboxModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -22,34 +39,56 @@ const SandboxConfig: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [currentRecord, setCurrentRecord] = useState<SandboxItem | null>(null);
+  const [globalConfigLoading, setGlobalConfigLoading] = useState(false);
+  const [savingLoading, setSavingLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [sandboxList, setSandboxList] = useState<SandboxItem[]>([]);
+  const [form] = Form.useForm();
 
-  // 模拟数据
-  const mockData: SandboxItem[] = [
-    {
-      id: 1,
-      name: 'AGENT沙箱',
-      address: ['sandbox-inner.nuwax.com:9...', 'sandbox-inner.nuwax.com:9...'],
-      currentUsage: 8,
-      totalCapacity: 30,
-      status: 'offline',
-    },
-    {
-      id: 2,
-      name: '开发测试沙箱',
-      address: ['sandbox-dev.nuwax.com:9086', 'sandbox-dev.nuwax.com:9088'],
-      currentUsage: 15,
-      totalCapacity: 20,
-      status: 'online',
-    },
-    {
-      id: 3,
-      name: '备用沙箱服务器',
-      address: ['sandbox-backup.nuwax.com...', 'sandbox-backup.nuwax.com...'],
-      currentUsage: 3,
-      totalCapacity: 50,
-      status: 'offline',
-    },
-  ];
+  // 获取全局配置
+  const fetchGlobalConfig = async () => {
+    form.resetFields();
+    setGlobalConfigLoading(true);
+    try {
+      const res = await apiGetSandboxGlobalConfig();
+      if (res.code === SUCCESS_CODE && res.data) {
+        form.setFieldsValue(res.data);
+      }
+    } finally {
+      setGlobalConfigLoading(false);
+    }
+  };
+
+  // 获取沙盒列表
+  const fetchSandboxList = async () => {
+    setTableLoading(true);
+    try {
+      const res = await apiGetSandboxConfigList();
+      if (res.code === SUCCESS_CODE) {
+        setSandboxList(res.data || []);
+      }
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGlobalConfig();
+    fetchSandboxList();
+  }, []);
+
+  const handleGlobalSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setSavingLoading(true);
+      const res = await apiUpdateSandboxGlobalConfig(values);
+      if (res.code === SUCCESS_CODE) {
+        message.success('保存成功');
+      }
+    } finally {
+      setSavingLoading(false);
+    }
+  };
 
   const columns: ProColumns<SandboxItem>[] = [
     {
@@ -62,31 +101,10 @@ const SandboxConfig: React.FC = () => {
           </div>
           <div className={styles['sandbox-info']}>
             <div className={styles.name}>{record.name}</div>
-            <div className={styles.id}>ID: {record.id}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: '服务地址',
-      dataIndex: 'address',
-      render: (_, record) => (
-        <div style={{ color: '#999', fontSize: 13 }}>
-          {record.address.map((addr, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#448aff',
-                  marginRight: 8,
-                  opacity: 0.6,
-                }}
-              />
-              {addr}
+            <div className={styles.address}>
+              {record.configValue?.hostWithScheme}
             </div>
-          ))}
+          </div>
         </div>
       ),
     },
@@ -94,22 +112,27 @@ const SandboxConfig: React.FC = () => {
       title: '使用情况',
       dataIndex: 'usage',
       render: (_: any, record: SandboxItem) => {
-        const percent = (record.currentUsage / record.totalCapacity) * 100;
+        // 由于正式结构中没有当前使用人数，这里暂时硬编码一个比例或者显示最大用户数
+        const percent =
+          record.configValue.maxUsers > 0
+            ? ((record.usingCount || 0) / record.configValue.maxUsers) * 100
+            : 0;
         return (
           <div className={styles['usage-cell']}>
             <div className={styles['usage-text']}>
-              <span className={styles.current}>{record.currentUsage}</span>
-              <span className={styles.total}>/ {record.totalCapacity}</span>
+              <span className={styles.current}>{record.usingCount}</span>
+              <span className={styles.total}>
+                / {record.configValue.maxUsers}
+              </span>
             </div>
             <div className={styles['progress-bar']}>
               <div
                 className={cx(styles['progress-inner'], {
-                  [styles.active]: record.status === 'online',
+                  [styles.active]: record.online,
                 })}
                 style={{
                   width: `${percent}%`,
-                  background:
-                    record.status === 'online' ? '#52c41a' : '#f0f2f5',
+                  background: record.online ? '#52c41a' : '#f0f2f5',
                 }}
               />
             </div>
@@ -122,16 +145,16 @@ const SandboxConfig: React.FC = () => {
     },
     {
       title: '状态',
-      dataIndex: 'status',
+      dataIndex: 'online',
       render: (_, record) => (
         <div
           className={cx(styles['status-tag'], {
-            [styles.online]: record.status === 'online',
-            [styles.offline]: record.status === 'offline',
+            [styles.online]: record.online,
+            [styles.offline]: !record.online,
           })}
         >
           <span className={styles.dot} />
-          {record.status === 'online' ? <span>在线</span> : <span>离线</span>}
+          {record.online ? <span>在线</span> : <span>离线</span>}
         </div>
       ),
     },
@@ -158,17 +181,25 @@ const SandboxConfig: React.FC = () => {
               <EditOutlined />
             </div>
           </Tooltip>
-          <Tooltip title={record.status === 'online' ? '下线' : '上线'}>
-            <div className={styles['action-btn']}>
-              {record.status === 'online' ? (
-                <EyeInvisibleOutlined />
-              ) : (
-                <EyeOutlined />
-              )}
-            </div>
-          </Tooltip>
           <Tooltip title="删除">
-            <div className={styles['action-btn']}>
+            <div
+              className={styles['action-btn']}
+              onClick={() => {
+                Modal.confirm({
+                  title: '删除确认',
+                  content: '确定要删除此沙盒吗？',
+                  okText: '确定',
+                  cancelText: '取消',
+                  onOk: async () => {
+                    const res = await apiDeleteSandboxConfig(record.id);
+                    if (res.code === SUCCESS_CODE) {
+                      message.success('删除成功');
+                      fetchSandboxList();
+                    }
+                  },
+                });
+              }}
+            >
               <DeleteOutlined />
             </div>
           </Tooltip>
@@ -197,28 +228,36 @@ const SandboxConfig: React.FC = () => {
       <div className={styles['sandbox-container']}>
         {/* 全局配置区域 */}
         <div className={styles['config-section']}>
-          <div className={styles['config-header']}>
-            <div className={styles['section-title']}>全局配置</div>
-            <Button type="primary">保存</Button>
-          </div>
-          <Form layout="inline">
-            <Form.Item label="每用户内存" initialValue={4}>
-              <Space>
-                <InputNumber min={1} style={{ width: 100 }} />
-                <span style={{ color: '#999' }}>GB</span>
-              </Space>
-            </Form.Item>
-            <Form.Item
-              label="每用户CPU核心"
-              initialValue={2}
-              style={{ marginLeft: 40 }}
-            >
-              <Space>
-                <InputNumber min={1} style={{ width: 100 }} />
-                <span style={{ color: '#999' }}>核</span>
-              </Space>
-            </Form.Item>
-          </Form>
+          <Spin spinning={globalConfigLoading}>
+            <div className={styles['config-header']}>
+              <div className={styles['section-title']}>全局配置</div>
+              <Button
+                type="primary"
+                loading={savingLoading}
+                onClick={handleGlobalSave}
+              >
+                保存
+              </Button>
+            </div>
+            <Form form={form} layout="inline">
+              <Form.Item label="每用户内存">
+                <Space>
+                  <Form.Item name="perUserMemoryGB" noStyle initialValue={4}>
+                    <InputNumber min={1} precision={0} style={{ width: 100 }} />
+                  </Form.Item>
+                  <span style={{ color: '#999' }}>GB</span>
+                </Space>
+              </Form.Item>
+              <Form.Item label="每用户CPU核心" style={{ marginLeft: 40 }}>
+                <Space>
+                  <Form.Item name="perUserCpuCores" noStyle initialValue={2}>
+                    <InputNumber min={1} precision={0} style={{ width: 100 }} />
+                  </Form.Item>
+                  <span style={{ color: '#999' }}>核</span>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Spin>
         </div>
 
         {/* 沙盒列表区域 */}
@@ -226,17 +265,16 @@ const SandboxConfig: React.FC = () => {
           <ProTable<SandboxItem>
             actionRef={tableActionRef}
             columns={columns}
-            dataSource={mockData}
+            dataSource={sandboxList}
+            loading={tableLoading}
             rowKey="id"
             search={false}
             options={false}
             pagination={false}
           />
           <div className={styles['footer-info']}>
-            <span>共 {mockData.length} 个沙盒</span>
-            <span>
-              {mockData.filter((i) => i.status === 'online').length} 个在线
-            </span>
+            <span>共 {sandboxList.length} 个沙盒</span>
+            <span>{sandboxList.filter((i) => i.online).length} 个在线</span>
           </div>
         </div>
       </div>
@@ -247,9 +285,32 @@ const SandboxConfig: React.FC = () => {
         initialData={currentRecord}
         onCancel={() => setModalVisible(false)}
         onFinish={async (values) => {
-          console.log(values);
-          setModalVisible(false);
-          return true;
+          try {
+            const payload =
+              modalMode === 'add'
+                ? {
+                    scope: 'GLOBAL',
+                    ...values,
+                  }
+                : {
+                    ...(currentRecord || {}),
+                    ...values,
+                  };
+            const apiCall =
+              modalMode === 'add'
+                ? apiCreateSandboxConfig
+                : apiUpdateSandboxConfig;
+            const res = await apiCall(payload);
+            if (res.code === SUCCESS_CODE) {
+              message.success(modalMode === 'add' ? '添加成功' : '保存成功');
+              setModalVisible(false);
+              fetchSandboxList();
+              return true;
+            }
+          } catch (error) {
+            console.error(error);
+          }
+          return false;
         }}
       />
     </WorkspaceLayout>
