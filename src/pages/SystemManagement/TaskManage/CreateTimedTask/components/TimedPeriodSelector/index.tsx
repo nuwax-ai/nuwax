@@ -1,5 +1,5 @@
 import SelectList from '@/components/custom/SelectList';
-import { apiTaskCronList } from '@/services/agentTask';
+import { apiSystemTaskCronList } from '@/services/systemManage';
 import { TaskCronInfo, TaskCronItemDto } from '@/types/interfaces/agentTask';
 import { option } from '@/types/interfaces/common';
 import { Form, Space } from 'antd';
@@ -97,7 +97,7 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
   };
 
   // 可选定时范围 - 获取接口数据
-  const { run: runCron } = useRequest(apiTaskCronList, {
+  const { run: runCron } = useRequest(apiSystemTaskCronList, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: TaskCronInfo[]) => {
