@@ -2,6 +2,8 @@
  * 权限资源管理相关的类型定义和枚举
  */
 
+import { UpdateMenuSortItem } from './menu-manage';
+
 // ==================== 枚举定义 ====================
 
 /*类型 1:模块 2:组件 3:页面 */
@@ -103,6 +105,19 @@ export interface AddResourceParams {
 export interface UpdateResourceParams extends AddResourceParams {
   /** 资源ID，必传 */
   id: number;
+}
+
+/**
+ * 更新权限资源排序项
+ */
+export type UpdateResourceSortItem = UpdateMenuSortItem;
+
+/**
+ * 更新权限资源排序参数
+ */
+export interface UpdateResourceSortParams {
+  /** 待调整的列表 */
+  items: UpdateResourceSortItem[];
 }
 
 /**
