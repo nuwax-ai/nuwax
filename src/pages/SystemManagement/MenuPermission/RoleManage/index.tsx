@@ -1,17 +1,17 @@
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Empty, Grid, message, Spin } from 'antd';
+import type { TableColumnsType } from 'antd';
+import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
-import MenuPermissionDrawer from '../components/MenuPermissionDrawer';
+import MenuPermissionModal from '../components/MenuPermissionModal';
 import { apiDeleteRole, apiGetRoleList } from '../services/role-manage';
-import type { RoleInfo } from '../types/role-manage';
-import RoleCard from './components/RoleCard';
+import { RoleStatusEnum, type RoleInfo } from '../types/role-manage';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
 
-const { useBreakpoint } = Grid;
 const cx = classNames.bind(styles);
 
 /**
@@ -20,7 +20,6 @@ const cx = classNames.bind(styles);
  */
 const RoleManage: React.FC = () => {
   const location = useLocation();
-  const screens = useBreakpoint();
   // 删除角色loading map
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
     Record<number, boolean>
@@ -31,8 +30,8 @@ const RoleManage: React.FC = () => {
   const [isEdit, setIsEdit] = useState<boolean>(false);
   // 当前角色信息
   const [currentRole, setCurrentRole] = useState<RoleInfo | null>();
-  // 菜单权限抽屉是否打开
-  const [menuPermissionDrawerOpen, setMenuPermissionDrawerOpen] =
+  // 菜单权限弹窗是否打开
+  const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
     useState<boolean>(false);
   // 角色绑定用户抽屉是否打开
   const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
@@ -60,17 +59,18 @@ const RoleManage: React.FC = () => {
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
     loadingDelay: 300,
-    debounceWait: 300,
-    // onBefore: (params: number[]) => {
-    //   setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: true }));
-    // },
-    onSuccess: (_: null, params: number[]) => {
+    onBefore: (roleId: number) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [roleId]: true }));
+    },
+    onSuccess: () => {
       message.success('删除成功');
       runGetRoleList();
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
     },
-    onFinally: (params: number[]) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
+    onError: () => {
+      message.error('删除失败');
+    },
+    onFinally: (roleId: number) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [roleId]: false }));
     },
   });
 
@@ -87,27 +87,31 @@ const RoleManage: React.FC = () => {
     setModalOpen(true);
   };
 
-  // 处理删除
-  const handleDelete = (roleInfo: RoleInfo) => {
-    setDeleteLoadingMap((prev) => ({ ...prev, [roleInfo.id]: true }));
-    runDelete(roleInfo.id);
+  // 处理删除确认
+  const handleDeleteConfirm = (roleInfo: RoleInfo) => {
+    modalConfirm('删除角色', `确认删除角色 "${roleInfo.name}" 吗？`, () => {
+      runDelete(roleInfo.id);
+      return new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      });
+    });
   };
 
   // 处理菜单权限
   const handleMenuPermission = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
-    setMenuPermissionDrawerOpen(true);
+    setMenuPermissionModalOpen(true);
   };
 
-  // 处理菜单权限抽屉关闭
-  const handleMenuPermissionDrawerClose = () => {
-    setMenuPermissionDrawerOpen(false);
+  // 处理菜单权限弹窗关闭
+  const handleMenuPermissionModalClose = () => {
+    setMenuPermissionModalOpen(false);
     setCurrentRole(null);
   };
 
   // 处理菜单权限保存成功
   const handleMenuPermissionSuccess = () => {
-    setMenuPermissionDrawerOpen(false);
+    setMenuPermissionModalOpen(false);
     setCurrentRole(null);
     runGetRoleList();
   };
@@ -131,15 +135,89 @@ const RoleManage: React.FC = () => {
     runGetRoleList();
   };
 
-  // 计算每行显示的列数（响应式）
-  const getCols = () => {
-    if (screens.xxl) return 4;
-    if (screens.xl) return 3;
-    if (screens.lg) return 3;
-    if (screens.md) return 2;
-    if (screens.sm) return 2;
-    return 1;
-  };
+  // 转换数据格式，为表格数据添加 key 字段
+  const tableData = useMemo(() => {
+    if (!roleList || !roleList.length) {
+      return [];
+    }
+    return roleList.map((item: RoleInfo) => ({
+      ...item,
+      key: item.id,
+    }));
+  }, [roleList]);
+
+  // 定义表格列
+  const columns: TableColumnsType<RoleInfo & { key: number }> = [
+    {
+      title: '角色名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      ellipsis: true,
+    },
+    {
+      title: '编码',
+      dataIndex: 'code',
+      key: 'code',
+      width: 150,
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      render: (description: string) => (
+        <div className={cx(styles.descriptionCell)} title={description}>
+          {description || '--'}
+        </div>
+      ),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status: RoleStatusEnum) => (
+        <Tag color={status === RoleStatusEnum.Enabled ? 'success' : 'default'}>
+          {status === RoleStatusEnum.Enabled ? '启用' : '禁用'}
+        </Tag>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 300,
+      fixed: 'right',
+      render: (_: any, record: RoleInfo) => (
+        <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleBindUser(record)}
+          >
+            绑定用户
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleMenuPermission(record)}
+          >
+            菜单权限
+          </Button>
+          <Button type="link" size="small" onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            loading={deleteLoadingMap[record.id] || false}
+            onClick={() => handleDeleteConfirm(record)}
+          >
+            删除
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div className={cx(styles.container)}>
@@ -159,31 +237,20 @@ const RoleManage: React.FC = () => {
       {/* 角色列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading}>
-          {!roleList?.length ? (
+          {!tableData?.length ? (
             <Empty
               description="暂无角色数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className={cx(styles.empty)}
             />
           ) : (
-            <div
-              className={cx(styles.cardList)}
-              style={{
-                gridTemplateColumns: `repeat(${getCols()}, 1fr)`,
-              }}
-            >
-              {roleList?.map((role: RoleInfo) => (
-                <RoleCard
-                  key={role.id}
-                  role={role}
-                  onBindUser={handleBindUser}
-                  onEdit={handleEdit}
-                  onMenuPermission={handleMenuPermission}
-                  onDelete={handleDelete}
-                  deleteLoading={deleteLoadingMap[role.id] || false}
-                />
-              ))}
-            </div>
+            <Table<RoleInfo & { key: number }>
+              columns={columns}
+              dataSource={tableData}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+            />
           )}
         </Spin>
       </div>
@@ -197,12 +264,12 @@ const RoleManage: React.FC = () => {
         onSuccess={handleModalSuccess}
       />
 
-      {/* 菜单权限配置Drawer */}
-      <MenuPermissionDrawer
-        open={menuPermissionDrawerOpen}
+      {/* 菜单权限配置Modal */}
+      <MenuPermissionModal
+        open={menuPermissionModalOpen}
         targetId={currentRole?.id || 0}
         name={currentRole?.name || ''}
-        onClose={handleMenuPermissionDrawerClose}
+        onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
       />
       {/* 角色绑定用户弹窗 */}

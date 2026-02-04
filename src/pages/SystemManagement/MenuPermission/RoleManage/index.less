@@ -44,9 +44,42 @@
   overflow-y: auto;
 }
 
-.cardList {
-  display: grid;
-  gap: 20px;
+.table {
+  background-color: var(--color-background-default, #fff);
+
+  :global {
+    // 确保描述列单元格可以正确显示多行省略
+    .ant-table-tbody > tr > td {
+      .descriptionCell {
+        display: box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        word-break: break-word;
+        word-wrap: break-word;
+        line-height: 1.5;
+        max-height: 3em;
+        white-space: normal;
+      }
+    }
+  }
+}
+
+// 描述列样式：最多显示两行，超出显示省略号
+.descriptionCell {
+  display: box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word;
+  word-wrap: break-word;
+  line-height: 1.5;
+  max-height: 3em; // 2行 * 1.5行高
+  white-space: normal;
   width: 100%;
 }
 
@@ -71,9 +104,5 @@
 
   .addButton {
     width: 100%;
-  }
-
-  .cardList {
-    grid-template-columns: 1fr !important;
   }
 }
