@@ -1,6 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
-import { apiAddTimedTask, apiUpdateTimedTask } from '@/services/library';
+import { apiAddTimedTask } from '@/services/library';
+import { apiSystemTaskUpdate } from '@/services/systemManage';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
@@ -68,7 +69,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   const runUpdate = async (data: any) => {
     try {
       setLoading(true);
-      const resp = await apiUpdateTimedTask(data);
+      const resp = await apiSystemTaskUpdate(data);
       if (resp?.code === SUCCESS_CODE) {
         message.success('定时任务更新成功');
         onCancel?.();

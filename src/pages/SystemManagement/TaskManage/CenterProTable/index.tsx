@@ -4,12 +4,12 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ICON_MORE } from '@/constants/images.constants';
 import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
-  apiTaskDelete,
-  apiTaskDisable,
-  apiTaskEnable,
-  apiTaskExecute,
-} from '@/services/library';
-import { apiSystemTaskList } from '@/services/systemManage';
+  apiSystemTaskCancel,
+  apiSystemTaskDelete,
+  apiSystemTaskEnable,
+  apiSystemTaskExecute,
+  apiSystemTaskList,
+} from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import { CustomPopoverItem } from '@/types/interfaces/common';
@@ -22,6 +22,7 @@ import type {
 } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
+import qs from 'qs';
 import {
   forwardRef,
   useCallback,
@@ -153,14 +154,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      * 请求参数 spaceId 固定为 0，支持服务端分页与搜索条件透传
      */
     const request = useCallback(async (tableParams: Record<string, any>) => {
-      const { current, pageSize, taskName, targetType } = tableParams;
+      const { current, pageSize, taskName } = tableParams;
 
       try {
         const resp = await apiSystemTaskList({
           pageNo: current || 1,
           pageSize: pageSize || 10,
-          taskName: taskName?.trim(),
-          targetType: targetType,
+          name: taskName?.trim(),
         });
 
         if (resp?.code === SUCCESS_CODE) {
@@ -182,7 +182,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleExecuteTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskExecute(id);
+        const resp = await apiSystemTaskExecute(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('执行任务成功');
           refreshList();
@@ -196,7 +196,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleEnableTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskEnable(id);
+        const resp = await apiSystemTaskEnable(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('启用任务成功');
           refreshList();
@@ -210,7 +210,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleDisableTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskDisable(id);
+        const resp = await apiSystemTaskCancel(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('停用任务成功');
           refreshList();
@@ -225,7 +225,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const handleDeleteTask = useCallback(
       async (id: number) => {
         modalConfirm('提示', '确认删除该任务？', async () => {
-          const resp = await apiTaskDelete(id);
+          const resp = await apiSystemTaskDelete(id);
           if (resp?.code === SUCCESS_CODE) {
             message.success('删除任务成功');
             refreshList();
@@ -244,13 +244,15 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         case TaskCenterMoreActionEnum.Edit:
           onEdit(info);
           break;
-        case TaskCenterMoreActionEnum.Record:
-          history.push(
-            `/space/${info.spaceId}/library-log?targetType=${
-              info.targetType
-            }&targetId=${info.targetId ?? ''}&from=task_center`,
-          );
+        case TaskCenterMoreActionEnum.Record: {
+          const baseUrl = '/system/log-query/running-log';
+          const params = {
+            targetType: info.targetType,
+            targetId: info.targetId,
+          };
+          history.push(`${baseUrl}?${qs.stringify(params)}`);
           break;
+        }
         case TaskCenterMoreActionEnum.Delete:
           handleDeleteTask(info.id);
           break;
@@ -284,6 +286,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           title: '任务类型',
           dataIndex: 'targetType',
           width: 110,
+          hideInSearch: true,
           valueType: 'select',
           valueEnum: {
             [AgentComponentTypeEnum.Agent]: { text: '智能体' },
