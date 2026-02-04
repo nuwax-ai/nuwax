@@ -8,6 +8,7 @@ import type {
   GroupBindMenuParams,
   GroupBindUserParams,
   UpdateUserGroupParams,
+  UpdateUserGroupSortParams,
   UserGroupInfo,
 } from '../types/user-group-manage';
 
@@ -18,6 +19,18 @@ export async function apiUpdateUserGroup(
   data: UpdateUserGroupParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/group/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 调整用户组顺序
+ */
+export async function apiUpdateUserGroupSort(
+  data: UpdateUserGroupSortParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/group/update-sort', {
     method: 'POST',
     data,
   });

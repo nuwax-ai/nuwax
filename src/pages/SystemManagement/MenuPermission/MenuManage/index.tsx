@@ -108,8 +108,8 @@ const Row: React.FC<RowProps> = (props) => {
 const MenuManage: React.FC = () => {
   const location = useLocation();
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [isEdit, setIsEdit] = useState<boolean>(false);
   const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
   const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
