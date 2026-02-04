@@ -6,6 +6,7 @@ import type {
   ResourceInfo,
   ResourceTreeNode,
   UpdateResourceParams,
+  UpdateResourceSortParams,
 } from '../types/permission-resources';
 
 /**
@@ -27,6 +28,18 @@ export async function apiUpdateResource(
   data: UpdateResourceParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/resource/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 调整权限资源顺序
+ */
+export async function apiUpdateResourceSort(
+  data: UpdateResourceSortParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/resource/update-sort', {
     method: 'POST',
     data,
   });
