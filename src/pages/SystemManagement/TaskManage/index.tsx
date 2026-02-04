@@ -6,8 +6,6 @@ import CenterProTable, { CenterProTableRef } from './CenterProTable';
 import CreateTimedTask from './CreateTimedTask';
 
 const TaskManage: React.FC = () => {
-  const spaceId = 836; // 系统管理下固定空间 ID
-
   // 表格区域 ref（用于创建后刷新表格数据）
   const centerProTableRef = useRef<CenterProTableRef>(null);
 
@@ -38,14 +36,9 @@ const TaskManage: React.FC = () => {
   return (
     <WorkspaceLayout title="任务管理" hideScroll={true}>
       {/* 主要内容区域 */}
-      <CenterProTable
-        ref={centerProTableRef}
-        onEdit={handleEditTask}
-        spaceId={spaceId}
-      />
+      <CenterProTable ref={centerProTableRef} onEdit={handleEditTask} />
       {/* 创建任务弹窗 */}
       <CreateTimedTask
-        spaceId={spaceId}
         mode={mode}
         info={taskInfo}
         open={openCreateTask}

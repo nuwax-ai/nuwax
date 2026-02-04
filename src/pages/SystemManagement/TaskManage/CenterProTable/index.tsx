@@ -4,12 +4,12 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ICON_MORE } from '@/constants/images.constants';
 import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
-  apiTaskDelete,
-  apiTaskDisable,
-  apiTaskEnable,
-  apiTaskExecute,
-  apiTaskList,
-} from '@/services/library';
+  apiSystemTaskCancel,
+  apiSystemTaskDelete,
+  apiSystemTaskEnable,
+  apiSystemTaskExecute,
+  apiSystemTaskList,
+} from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import { CustomPopoverItem } from '@/types/interfaces/common';
@@ -22,6 +22,7 @@ import type {
 } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
+import qs from 'qs';
 import {
   forwardRef,
   useCallback,
@@ -30,7 +31,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { history, useParams } from 'umi';
+import { history } from 'umi';
 import EllipsisWithAvatar from './components/EllipsisWithAvatar';
 
 export interface CenterProTableRef {
@@ -43,8 +44,6 @@ export interface CenterProTableRef {
 export interface CenterProTableProps {
   // 编辑
   onEdit?: (info: TaskInfo) => void;
-  // 空间 ID
-  spaceId?: number;
 }
 
 /**
@@ -59,27 +58,9 @@ export interface CenterProTableProps {
  *   - 任务名称：模糊搜索（taskName）
  */
 const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
-  ({ onEdit = () => {}, spaceId: propSpaceId }, ref) => {
-    const params = useParams();
-    const spaceId = Number(propSpaceId ?? params.spaceId);
+  ({ onEdit = () => {} }, ref) => {
     const actionRef = useRef<ActionType>();
 
-    // 数据缓存：存储最近一次请求的完整列表
-    const cacheRef = useRef<{
-      spaceId: number;
-      list: TaskInfo[];
-    } | null>(null);
-
-    // 防止并发请求
-    const fetchingRef = useRef<{
-      spaceId: number;
-      promise: Promise<TaskInfo[]>;
-    } | null>(null);
-
-    // 标记是否需要强制刷新（点击查询按钮时为 true）
-    const forceRefreshRef = useRef<boolean>(false);
-    // 标记是否是菜单切换触发的刷新
-    const isMenuRefreshRef = useRef<boolean>(false);
     // 表单引用
     const formRef = useRef<FormInstance>();
 
@@ -148,75 +129,12 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     }, []);
 
     /**
-     * 获取任务列表（支持强制刷新）
-     * @param sid - 空间 ID
-     * @param forceRefresh - 是否强制刷新（忽略缓存）
-     */
-    const fetchTaskList = useCallback(
-      async (sid: number, forceRefresh = false) => {
-        if (!Number.isFinite(sid) || sid <= 0) {
-          return [];
-        }
-
-        // 强制刷新时清空缓存
-        if (forceRefresh) {
-          cacheRef.current = null;
-          fetchingRef.current = null;
-        }
-
-        // 已缓存且同空间：直接使用
-        if (cacheRef.current?.spaceId === sid && !forceRefresh) {
-          return cacheRef.current.list;
-        }
-
-        // 正在请求且同空间：复用 promise（避免重复请求）
-        if (fetchingRef.current?.spaceId === sid && !forceRefresh) {
-          return fetchingRef.current.promise;
-        }
-
-        const promise = (async () => {
-          try {
-            const resp = (await apiTaskList(sid)) as any;
-            const list: TaskInfo[] = Array.isArray(resp)
-              ? resp
-              : Array.isArray(resp?.data)
-              ? resp.data
-              : [];
-            cacheRef.current = { spaceId: sid, list };
-            return list;
-          } catch (e) {
-            // eslint-disable-next-line no-console
-            console.error('查询任务列表失败', e);
-            message.error('查询任务列表失败');
-            cacheRef.current = { spaceId: sid, list: [] };
-            return [];
-          } finally {
-            if (fetchingRef.current?.spaceId === sid) {
-              fetchingRef.current = null;
-            }
-          }
-        })();
-
-        fetchingRef.current = { spaceId: sid, promise };
-        return promise;
-      },
-      [],
-    );
-
-    /**
-     * 刷新列表：清空缓存并重新请求接口（菜单切换触发）
+     * 刷新列表：重新请求接口（菜单切换或操作后触发）
      */
     const refreshList = useCallback(() => {
-      cacheRef.current = null;
-      fetchingRef.current = null;
-      forceRefreshRef.current = true;
-      isMenuRefreshRef.current = true; // 标记为菜单刷新
       formRef.current?.resetFields();
-      // 重置表格状态
-      actionRef.current?.reset?.();
-      // 设置分页参数:第1页,每页10条
-      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
-      actionRef.current?.reload();
+      // 重置表格状态并回到第一页
+      actionRef.current?.reloadAndRest?.();
     }, []);
 
     /**
@@ -232,69 +150,39 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
 
     /**
      * ProTable request 函数
-     * - 点击查询按钮时：强制刷新，调用后端接口
-     * - 分页切换时：使用本地缓存数据
-     * - 筛选逻辑：在客户端完成（支持任务对象类型、任务名称搜索）
+     * 已对接后端正式接口：/api/system/task/list
+     * 请求参数 spaceId 固定为 0，支持服务端分页与搜索条件透传
      */
-    const request = useCallback(
-      async (tableParams: Record<string, any>) => {
-        const sid = Number(tableParams.spaceId ?? spaceId);
-        const current = Number(tableParams.current || 1);
-        const pageSize = Number(tableParams.pageSize || 10);
+    const request = useCallback(async (tableParams: Record<string, any>) => {
+      const { current, pageSize, taskName } = tableParams;
 
-        // 先保存是否需要强制刷新的标志（点击查询按钮时为 true）
-        const shouldForceRefresh = forceRefreshRef.current;
-        const isMenuRefresh = isMenuRefreshRef.current;
+      try {
+        const resp = await apiSystemTaskList({
+          pageNo: current || 1,
+          pageSize: pageSize || 10,
+          name: taskName?.trim(),
+        });
 
-        if (shouldForceRefresh) {
-          forceRefreshRef.current = false; // 重置标志
+        if (resp?.code === SUCCESS_CODE) {
+          return {
+            data: resp.data?.records || [],
+            total: resp.data?.total || 0,
+            success: true,
+          };
         }
-        if (isMenuRefresh) {
-          isMenuRefreshRef.current = false; // 重置菜单刷新标志
-        }
-
-        // 搜索表单字段
-        // 如果是菜单切换触发的刷新，忽略 tableParams 中的搜索条件，使用空条件
-        // 如果是用户点击查询按钮，使用 tableParams 中的搜索条件
-        const targetType = isMenuRefresh
-          ? undefined
-          : (tableParams.targetType as string | undefined);
-        const taskName = isMenuRefresh
-          ? undefined
-          : (tableParams.taskName as string | undefined)?.trim();
-
-        // 获取任务列表（根据标志决定是否使用缓存）
-        const all = await fetchTaskList(sid, shouldForceRefresh);
-
-        // 本地筛选
-        let filtered = all;
-        if (targetType) {
-          filtered = filtered.filter((item) => item.targetType === targetType);
-        }
-        if (taskName) {
-          const keyword = taskName.toLowerCase();
-          filtered = filtered.filter((item) =>
-            (item.taskName || '').toLowerCase().includes(keyword),
-          );
-        }
-
-        // 本地分页（提升性能，避免每次分页都请求接口）
-        const total = filtered.length;
-        const start = (current - 1) * pageSize;
-        const end = start + pageSize;
-        const pageData = filtered.slice(start, end);
-
-        return { data: pageData, total, success: true };
-      },
-      [fetchTaskList, spaceId],
-    );
+        return { data: [], total: 0, success: false };
+      } catch (e) {
+        console.error('查询任务列表失败', e);
+        return { data: [], total: 0, success: false };
+      }
+    }, []);
 
     /**
      * 执行任务
      */
     const handleExecuteTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskExecute(id);
+        const resp = await apiSystemTaskExecute(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('执行任务成功');
           refreshList();
@@ -308,7 +196,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleEnableTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskEnable(id);
+        const resp = await apiSystemTaskEnable(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('启用任务成功');
           refreshList();
@@ -322,7 +210,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleDisableTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskDisable(id);
+        const resp = await apiSystemTaskCancel(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('停用任务成功');
           refreshList();
@@ -337,7 +225,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const handleDeleteTask = useCallback(
       async (id: number) => {
         modalConfirm('提示', '确认删除该任务？', async () => {
-          const resp = await apiTaskDelete(id);
+          const resp = await apiSystemTaskDelete(id);
           if (resp?.code === SUCCESS_CODE) {
             message.success('删除任务成功');
             refreshList();
@@ -356,13 +244,15 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         case TaskCenterMoreActionEnum.Edit:
           onEdit(info);
           break;
-        case TaskCenterMoreActionEnum.Record:
-          history.push(
-            `/space/${info.spaceId}/library-log?targetType=${
-              info.targetType
-            }&targetId=${info.targetId ?? ''}&from=task_center`,
-          );
+        case TaskCenterMoreActionEnum.Record: {
+          const baseUrl = '/system/log-query/running-log';
+          const params = {
+            targetType: info.targetType,
+            targetId: info.targetId,
+          };
+          history.push(`${baseUrl}?${qs.stringify(params)}`);
           break;
+        }
         case TaskCenterMoreActionEnum.Delete:
           handleDeleteTask(info.id);
           break;
@@ -396,6 +286,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           title: '任务类型',
           dataIndex: 'targetType',
           width: 110,
+          hideInSearch: true,
           valueType: 'select',
           valueEnum: {
             [AgentComponentTypeEnum.Agent]: { text: '智能体' },
@@ -558,28 +449,19 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     );
 
     /**
-     * 表单提交前的处理：设置强制刷新标志
-     * 这样点击查询按钮时会调用后端接口
+     * 表单提交前的处理
      */
     const beforeSearchSubmit = useCallback((params: Record<string, any>) => {
-      forceRefreshRef.current = true;
       return params;
     }, []);
 
-    // 重置后也需要强制刷新
+    // 重置表格
     const handleReset = () => {
-      // isReset.current = true;
-      forceRefreshRef.current = true;
-      // 重置表格状态
-      actionRef.current?.reset?.();
-      // 设置分页参数:第1页,每页10条
-      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
-      // 重新加载数据
-      actionRef.current?.reload();
+      actionRef.current?.reloadAndRest?.();
     };
 
     useEffect(() => {
-      // 当通过菜单切换页面时（history.location.state 变化），触发刷新
+      // 当通过菜单切换页面时，触发刷新
       if (history.location.state) {
         refreshList();
       }
@@ -592,11 +474,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         rowKey="id"
         columns={columns}
         request={request}
-        params={{ spaceId }}
         options={false}
-        // 表单提交前处理：点击查询按钮时设置强制刷新标志
+        // 表单提交前处理
         beforeSearchSubmit={beforeSearchSubmit}
-        // 重置后也需要强制刷新
+        // 重置
         onReset={handleReset}
       />
     );

@@ -2,6 +2,7 @@
  * 用户组管理相关的类型定义和枚举
  */
 
+import { UpdateMenuSortItem } from './menu-manage';
 import { MenuTreeNode } from './role-manage';
 
 // ==================== 枚举定义 ====================
@@ -97,6 +98,19 @@ export interface AddUserGroupParams {
 export interface UpdateUserGroupParams extends AddUserGroupParams {
   /** 用户组ID，必传 */
   id: number;
+}
+
+/**
+ * 更新用户组排序项
+ */
+export type UpdateUserGroupSortItem = UpdateMenuSortItem;
+
+/**
+ * 更新用户组排序参数
+ */
+export interface UpdateUserGroupSortParams {
+  // 待调整的列表
+  items: UpdateUserGroupSortItem[];
 }
 
 /**
