@@ -242,6 +242,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       return;
     }
 
+    // 是否允许API外部调用，1-允许，0-不允许
     const allowApiExternalCall =
       typeof formValues.allowApiExternalCall === 'boolean'
         ? formValues.allowApiExternalCall
@@ -252,22 +253,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     runBindDataPermission({
       roleId,
       dataPermission: {
+        ...formValues,
         modelIds: selectedModelIds,
         agentIds: selectedAgentIds,
         pageIds: selectedPageIds,
-        tokenLimit: formValues.tokenLimit,
-        maxSpaceCount: formValues.maxSpaceCount,
-        maxAgentCount: formValues.maxAgentCount,
-        maxPageAppCount: formValues.maxPageAppCount,
-        maxKnowledgeCount: formValues.maxKnowledgeCount,
-        knowledgeStorageLimitGb: formValues.knowledgeStorageLimitGb,
-        maxDataTableCount: formValues.maxDataTableCount,
-        maxScheduledTaskCount: formValues.maxScheduledTaskCount,
         allowApiExternalCall,
-        agentComputerMemoryGb: formValues.agentComputerMemoryGb,
-        agentComputerCpuCores: formValues.agentComputerCpuCores,
-        agentFileStorageDays: formValues.agentFileStorageDays,
-        agentDailyConversationLimit: formValues.agentDailyConversationLimit,
       },
     });
   };
@@ -405,181 +395,183 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       key: 'dataPermission',
       label: '数据权限',
       children: (
-        <Form
-          form={form}
-          layout="vertical"
-          className={cx(styles.dataPermissionForm)}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="每日 token 限制"
-                name={['tokenLimit', 'limitPerDay']}
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '每日 token 限制，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+        <div className={cx(styles.dataPermissionFormWrapper)}>
+          <Form
+            form={form}
+            layout="vertical"
+            className={cx(styles.dataPermissionForm)}
+          >
+            <Row gutter={[16, 0]}>
+              <Col span={12}>
+                <Form.Item
+                  label="每日 token 限制"
+                  name={['tokenLimit', 'limitPerDay']}
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '每日 token 限制，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建工作空间数量"
-                name="maxSpaceCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建工作空间数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建工作空间数量"
+                  name="maxSpaceCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建工作空间数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建智能体数量"
-                name="maxAgentCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建智能体数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建智能体数量"
+                  name="maxAgentCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建智能体数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建网页应用数量"
-                name="maxPageAppCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建网页应用数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建网页应用数量"
+                  name="maxPageAppCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建网页应用数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建知识库数量"
-                name="maxKnowledgeCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建知识库数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建知识库数量"
+                  name="maxKnowledgeCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建知识库数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="知识库存储空间上限 (GB)"
-                name="knowledgeStorageLimitGb"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '知识库存储空间上限 (GB，-1 表示不限制)',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="知识库存储空间上限 (GB)"
+                  name="knowledgeStorageLimitGb"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '知识库存储空间上限 (GB，-1 表示不限制)',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建数据表数量"
-                name="maxDataTableCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建数据表数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建数据表数量"
+                  name="maxDataTableCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建数据表数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="可创建定时任务数量"
-                name="maxScheduledTaskCount"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '可创建定时任务数量，-1 表示不限制',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="可创建定时任务数量"
+                  name="maxScheduledTaskCount"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '可创建定时任务数量，-1 表示不限制',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="是否允许 API 外部调用"
-                name="allowApiExternalCall"
-                valuePropName="checked"
-              >
-                <Switch checkedChildren="允许" unCheckedChildren="不允许" />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="是否允许 API 外部调用"
+                  name="allowApiExternalCall"
+                  valuePropName="checked"
+                >
+                  <Switch checkedChildren="允许" unCheckedChildren="不允许" />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="智能体电脑内存 (GB)"
-                name="agentComputerMemoryGb"
-                initialValue={4}
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '智能体电脑内存 (GB，留空表示默认)',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={0} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="智能体电脑内存 (GB)"
+                  name="agentComputerMemoryGb"
+                  initialValue={4}
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '智能体电脑内存 (GB，留空表示默认)',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={0} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="智能体电脑 CPU 核心数"
-                name="agentComputerCpuCores"
-                initialValue={2}
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '智能体电脑 CPU 核心数（留空表示默认）',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={0} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="智能体电脑 CPU 核心数"
+                  name="agentComputerCpuCores"
+                  initialValue={2}
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '智能体电脑 CPU 核心数（留空表示默认）',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={0} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="执行结果文件存储天数"
-                name="agentFileStorageDays"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '执行结果文件存储天数（-1 表示不限制）',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="执行结果文件存储天数"
+                  name="agentFileStorageDays"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '执行结果文件存储天数（-1 表示不限制）',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
 
-            <Col span={12}>
-              <Form.Item
-                label="每天对话次数限制"
-                name="agentDailyConversationLimit"
-                tooltip={{
-                  icon: <InfoCircleOutlined />,
-                  title: '每天对话次数限制（-1 表示不限制）',
-                }}
-              >
-                <InputNumber style={{ width: '100%' }} min={-1} />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
+              <Col span={12}>
+                <Form.Item
+                  label="每天对话次数限制"
+                  name="agentDailyConversationLimit"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '每天对话次数限制（-1 表示不限制）',
+                  }}
+                >
+                  <InputNumber style={{ width: '100%' }} min={-1} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </div>
       ),
     },
   ];

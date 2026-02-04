@@ -1,6 +1,15 @@
-.dataPermissionForm {
+@import '@/styles/token';
+
+.dataPermissionFormWrapper {
   max-height: 400px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dataPermissionForm {
+  // 抵消 Row gutter 的负边距
+  margin: 0 -8px;
+  padding: 0 8px;
 }
 
 .scrollContainer {
@@ -17,8 +26,9 @@
 
 .listItem {
   padding: 8px 12px;
-  border-radius: 6px;
-  background-color: #fafafa;
+  padding: @padding 0;
+  box-sizing: content-box;
+  border-bottom: @lineWidth solid @colorSplit;
 }
 
 .itemIcon {
