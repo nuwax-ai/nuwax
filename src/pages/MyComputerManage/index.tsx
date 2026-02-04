@@ -1,4 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiGetSandboxUserConfigList } from '@/services/systemManage';
+import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
   DesktopOutlined,
@@ -13,97 +16,53 @@ import {
   Radio,
   Row,
   Space,
+  Spin,
   Switch,
   Tag,
   Typography,
   message,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const { confirm } = Modal;
 const cx = classNames.bind(styles);
-
-interface ComputerInfo {
-  id: string;
-  name: string;
-  ip: string;
-  isOnline: boolean;
-  cover?: string;
-}
-
-const MOCK_DATA: ComputerInfo[] = [
-  {
-    id: '1',
-    name: 'Windows Workstation',
-    ip: '192.168.1.101',
-    isOnline: true,
-    cover:
-      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-  {
-    id: '2',
-    name: 'Office PC',
-    ip: '192.168.1.102',
-    isOnline: false,
-    cover:
-      'https://images.unsplash.com/photo-1547082299-de196ea013d6?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-  {
-    id: '3',
-    name: 'Dev Machine',
-    ip: '192.168.1.103',
-    isOnline: true,
-    cover:
-      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-  {
-    id: '4',
-    name: 'Linux Server',
-    ip: '192.168.1.104',
-    isOnline: false,
-    cover:
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-  {
-    id: '5',
-    name: 'Test Environment',
-    ip: '192.168.1.105',
-    isOnline: true,
-    cover:
-      'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-  {
-    id: '6',
-    name: 'Data Storage',
-    ip: '192.168.1.106',
-    isOnline: false,
-    cover:
-      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=400&h=200&auto=format&fit=crop',
-  },
-];
 
 /**
  * 我的电脑管理页面
  */
 const MyComputerManage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
-  const [list, setList] = useState<ComputerInfo[]>(MOCK_DATA);
+  const [list, setList] = useState<SandboxItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // 后续接口请求位置
-  // const { data, run, loading } = useRequest(fetchComputerList);
+  const fetchList = async () => {
+    setLoading(true);
+    try {
+      const res = await apiGetSandboxUserConfigList();
+      if (res.code === SUCCESS_CODE) {
+        setList(res.data || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchList();
+  }, []);
 
   const filteredData = useMemo(() => {
-    if (filter === 'online') return list.filter((item) => item.isOnline);
-    if (filter === 'offline') return list.filter((item) => !item.isOnline);
+    if (filter === 'online') return list.filter((item) => item.online);
+    if (filter === 'offline') return list.filter((item) => !item.online);
     return list;
   }, [filter, list]);
 
   // 切换在线/离线状态
-  const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
+  const [toggleLoadingId, setToggleLoadingId] = useState<number | null>(null);
 
-  const handleToggleStatus = async (id: string, checked: boolean) => {
+  const handleToggleStatus = async (id: number, checked: boolean) => {
     setToggleLoadingId(id);
     try {
       // 模拟接口调用
@@ -128,7 +87,7 @@ const MyComputerManage: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => {
     confirm({
       title: '确认删除该电脑？',
       icon: <ExclamationCircleOutlined />,
@@ -162,73 +121,77 @@ const MyComputerManage: React.FC = () => {
         </Radio.Group>
       }
     >
-      <Row gutter={[24, 24]}>
-        {filteredData.map((item) => (
-          <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
-            <Card
-              className={styles['computer-card']}
-              cover={
-                <div className={styles['cover-wrapper']}>
-                  {item.isOnline && item.cover ? (
-                    <img alt={item.name} src={item.cover} />
-                  ) : (
-                    <div className={styles['placeholder-cover']}>
-                      <DesktopOutlined />
-                    </div>
-                  )}
-                </div>
-              }
-            >
-              <div className={styles['card-body']}>
-                <div className={styles['card-info']}>
-                  <div className={styles['card-title-line']}>
-                    <Typography.Text strong className={styles['card-name']}>
-                      {item.name}
-                    </Typography.Text>
-                    <Tag color={item.isOnline ? 'success' : 'default'}>
-                      {item.isOnline ? '在线' : '离线'}
-                    </Tag>
+      <Spin spinning={loading}>
+        <Row gutter={[24, 24]}>
+          {filteredData.map((item) => (
+            <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
+              <Card
+                className={styles['computer-card']}
+                cover={
+                  <div className={styles['cover-wrapper']}>
+                    {item.online ? (
+                      <div className={styles['placeholder-cover']}>
+                        <DesktopOutlined />
+                      </div>
+                    ) : (
+                      <div className={styles['placeholder-cover']}>
+                        <DesktopOutlined />
+                      </div>
+                    )}
                   </div>
-                  <Typography.Text
-                    type="secondary"
-                    className={styles['card-ip']}
-                  >
-                    {item.ip}
-                  </Typography.Text>
-                </div>
+                }
+              >
+                <div className={styles['card-body']}>
+                  <div className={styles['card-info']}>
+                    <div className={styles['card-title-line']}>
+                      <Typography.Text strong className={styles['card-name']}>
+                        {item.name}
+                      </Typography.Text>
+                      <Tag color={item.online ? 'success' : 'default'}>
+                        {item.online ? '在线' : '离线'}
+                      </Tag>
+                    </div>
+                    <Typography.Text
+                      type="secondary"
+                      className={styles['card-ip']}
+                    >
+                      {item.configValue?.hostWithScheme}
+                    </Typography.Text>
+                  </div>
 
-                <div className={styles['card-actions']}>
-                  <Button
-                    type="primary"
-                    icon={<DesktopOutlined />}
-                    className={cx(styles['remote-btn'], {
-                      [styles['offline-btn']]: !item.isOnline,
-                    })}
-                  >
-                    远程桌面
-                  </Button>
-                  <Space size={8}>
-                    <Button icon={<MessageOutlined />} />
-                    <Switch
-                      loading={toggleLoadingId === item.id}
-                      checked={item.isOnline}
-                      size="small"
-                      onChange={(checked) =>
-                        handleToggleStatus(item.id, checked)
-                      }
-                    />
+                  <div className={styles['card-actions']}>
                     <Button
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDelete(item.id)}
-                    />
-                  </Space>
+                      type="primary"
+                      icon={<DesktopOutlined />}
+                      className={cx(styles['remote-btn'], {
+                        [styles['offline-btn']]: !item.online,
+                      })}
+                    >
+                      远程桌面
+                    </Button>
+                    <Space size={8}>
+                      <Button icon={<MessageOutlined />} />
+                      <Switch
+                        loading={toggleLoadingId === item.id}
+                        checked={item.online}
+                        size="small"
+                        onChange={(checked) =>
+                          handleToggleStatus(item.id, checked)
+                        }
+                      />
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(item.id)}
+                      />
+                    </Space>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </Spin>
     </WorkspaceLayout>
   );
 };
