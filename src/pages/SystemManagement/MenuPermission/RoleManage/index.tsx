@@ -1,20 +1,12 @@
 import { modalConfirm } from '@/utils/ant-custom';
 import { HolderOutlined, PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { closestCenter, DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
@@ -246,18 +238,6 @@ const RoleManage: React.FC = () => {
     setDraggableData(tableData);
   }, [tableData]);
 
-  // 配置拖拽传感器
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-
   // 更新角色排序
   const { run: runUpdateRoleSort } = useRequest(apiUpdateRoleSort, {
     manual: true,
@@ -415,7 +395,6 @@ const RoleManage: React.FC = () => {
             />
           ) : (
             <DndContext
-              sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={onDragEnd}
               modifiers={[restrictToVerticalAxis]}

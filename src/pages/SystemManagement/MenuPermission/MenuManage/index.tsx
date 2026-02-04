@@ -1,20 +1,12 @@
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
+import { closestCenter, DndContext } from '@dnd-kit/core';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
@@ -235,13 +227,6 @@ const MenuManage: React.FC = () => {
   useEffect(() => {
     setDraggableData(tableData);
   }, [tableData]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
 
   // 更新菜单排序
   const { run: runUpdateMenuSort } = useRequest(apiUpdateMenuSort, {
@@ -823,7 +808,6 @@ const MenuManage: React.FC = () => {
             />
           ) : (
             <DndContext
-              sensors={sensors}
               modifiers={[restrictToVerticalAxis]}
               collisionDetection={closestCenter}
               onDragEnd={onDragEnd}
