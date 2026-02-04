@@ -1,17 +1,30 @@
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { closestCenter, DndContext } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
+import { DragHandle, Row } from '../components/DraggableTableRow';
 import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteUserGroup,
   apiGetUserGroupList,
+  apiUpdateUserGroupSort,
 } from '../services/user-group-manage';
-import type { UserGroupInfo } from '../types/user-group-manage';
+import type {
+  UpdateUserGroupSortItem,
+  UserGroupInfo,
+} from '../types/user-group-manage';
 import { UserGroupStatusEnum } from '../types/user-group-manage';
 import UserGroupFormModal from './components/UserGroupFormModal';
 import styles from './index.less';
@@ -164,8 +177,78 @@ const UserGroupManage: React.FC = () => {
     return filteredList.length > 0 ? transformData(filteredList) : [];
   }, [userGroupList]);
 
+  // 拖拽排序的数据源
+  const [draggableData, setDraggableData] = useState<
+    (UserGroupInfo & { key: number })[]
+  >([]);
+
+  // 同步 tableData 到 draggableData
+  useEffect(() => {
+    setDraggableData(tableData);
+  }, [tableData]);
+
+  // 更新用户组排序
+  const { run: runUpdateUserGroupSort } = useRequest(apiUpdateUserGroupSort, {
+    manual: true,
+    onSuccess: () => {
+      message.success('排序更新成功');
+      runGetUserGroupList();
+    },
+    onError: () => {
+      // 恢复原数据
+      setDraggableData(tableData);
+    },
+  });
+
+  // 处理拖拽结束
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    // 如果没有目标位置或拖拽到同一位置，直接返回
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeKey = Number(active.id);
+    const overKey = Number(over.id);
+
+    const activeIndex = draggableData.findIndex(
+      (item) => item.key === activeKey,
+    );
+    const overIndex = draggableData.findIndex((item) => item.key === overKey);
+
+    // 如果找不到对应的索引，说明拖拽到了无效位置
+    if (activeIndex === -1 || overIndex === -1) {
+      return;
+    }
+
+    // 更新数据
+    const newData = arrayMove(draggableData, activeIndex, overIndex);
+    setDraggableData(newData);
+
+    // 收集所有需要更新的用户组（只更新受影响的行）
+    const updateItems: UpdateUserGroupSortItem[] = newData.map(
+      (item, index) => ({
+        id: item.id,
+        name: item.name,
+        sortIndex: index + 1,
+      }),
+    );
+
+    // 批量更新用户组排序
+    if (updateItems.length > 0) {
+      runUpdateUserGroupSort({
+        items: updateItems,
+      });
+    }
+  };
+
   // 定义表格列
   const columns: TableColumnsType<UserGroupInfo & { key: number }> = [
+    {
+      title: '排序',
+      key: 'sort',
+      align: 'center',
+      render: () => <DragHandle />,
+    },
     {
       title: '用户组名称',
       dataIndex: 'name',
@@ -206,8 +289,9 @@ const UserGroupManage: React.FC = () => {
       title: '操作',
       key: 'action',
       width: 300,
+      align: 'center',
       fixed: 'right',
-      render: (_: any, record: UserGroupInfo) => (
+      render: (_: null, record: UserGroupInfo) => (
         <Space size="small">
           <Button
             type="link"
@@ -257,20 +341,36 @@ const UserGroupManage: React.FC = () => {
       {/* 用户组列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading}>
-          {!tableData?.length ? (
+          {!draggableData?.length ? (
             <Empty
               description="暂无用户组数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className={cx(styles.empty)}
             />
           ) : (
-            <Table<UserGroupInfo & { key: number }>
-              columns={columns}
-              dataSource={tableData}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              className={cx(styles.table)}
-            />
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <SortableContext
+                items={draggableData.map((item) => String(item.key))}
+                strategy={verticalListSortingStrategy}
+              >
+                <Table<UserGroupInfo & { key: number }>
+                  columns={columns}
+                  dataSource={draggableData}
+                  pagination={false}
+                  scroll={{ x: 'max-content' }}
+                  className={cx(styles.table)}
+                  components={{
+                    body: {
+                      row: Row,
+                    },
+                  }}
+                />
+              </SortableContext>
+            </DndContext>
           )}
         </Spin>
       </div>
