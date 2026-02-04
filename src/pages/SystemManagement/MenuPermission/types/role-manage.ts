@@ -2,7 +2,7 @@
  * 角色管理相关的类型定义和枚举
  */
 
-import { MenuBindTypeEnum } from './menu-manage';
+import { MenuBindTypeEnum, UpdateMenuSortItem } from './menu-manage';
 import { ResourceTreeNode } from './permission-resources';
 
 // ==================== 枚举定义 ====================
@@ -111,6 +111,19 @@ export interface AddRoleParams {
 export interface UpdateRoleParams extends AddRoleParams {
   // 角色ID, 必传
   id: number;
+}
+
+/**
+ * 更新角色排序项
+ */
+export type UpdateRoleSortItem = UpdateMenuSortItem;
+
+/**
+ * 更新角色排序参数
+ */
+export interface UpdateRoleSortParams {
+  // 待调整的列表
+  items: UpdateRoleSortItem[];
 }
 
 /**
