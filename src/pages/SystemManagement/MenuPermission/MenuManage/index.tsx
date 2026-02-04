@@ -441,6 +441,7 @@ const MenuManage: React.FC = () => {
     node: MenuNodeInfo & { key: number },
     targetKey: number,
     newParentId: number | undefined,
+    originalActiveKey?: number, // 原始被拖拽节点的 key，用于判断拖拽方向
   ): (MenuNodeInfo & { key: number })[] => {
     // 更新节点的 parentId（统一处理：0 转换为 undefined）
     const normalizedParentId = newParentId === 0 ? undefined : newParentId;
@@ -458,12 +459,40 @@ const MenuManage: React.FC = () => {
       return insertNodeAtLevelEnd(data, updatedNode, normalizedParentId);
     }
 
-    // 在目标位置插入节点（在目标节点之前插入，这样拖拽到第一个位置时能正确插入）
+    // 判断插入位置：
+    // 1. 如果 originalActiveKey 在目标层级中，根据位置关系判断（同层级拖拽）
+    //    - 如果 originalIndex < targetIndex（向下拖拽），插入到目标节点之后（targetIndex + 1）
+    //    - 如果 originalIndex > targetIndex（向上拖拽），插入到目标节点之前（targetIndex）
+    // 2. 如果 originalActiveKey 不在目标层级（跨层级拖拽），插入到目标节点的位置（targetIndex）
+    let insertIndex = targetIndex;
+    if (originalActiveKey !== undefined) {
+      const originalIndex = levelItems.findIndex(
+        (item) => item.key === originalActiveKey,
+      );
+      if (originalIndex !== -1) {
+        // 原始节点也在目标层级中（同层级拖拽），根据位置关系判断
+        if (originalIndex < targetIndex) {
+          // 向下拖拽，插入到目标节点之后
+          insertIndex = targetIndex + 1;
+        } else {
+          // 向上拖拽，插入到目标节点之前
+          insertIndex = targetIndex;
+        }
+      } else {
+        // 原始节点不在目标层级（跨层级拖拽），插入到目标节点的位置
+        insertIndex = targetIndex;
+      }
+    } else {
+      // 没有原始节点信息，插入到目标节点的位置
+      insertIndex = targetIndex;
+    }
+
+    // 在目标位置插入节点
     return insertNodeAtLevelIndex(
       data,
       updatedNode,
       normalizedParentId,
-      targetIndex,
+      insertIndex,
     );
   };
 
@@ -562,12 +591,13 @@ const MenuManage: React.FC = () => {
     // 统一处理 newParentId：0 转换为 undefined
     const normalizedNewParentId = newParentId === 0 ? undefined : newParentId;
 
-    // 在目标位置插入节点
+    // 在目标位置插入节点（传递原始 activeKey 用于判断拖拽方向）
     return insertNodeAtLevel(
       dataWithoutActive,
       removedNode,
       overKey,
       normalizedNewParentId,
+      activeKey, // 传递原始 activeKey
     );
   };
 
