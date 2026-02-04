@@ -1,3 +1,5 @@
+import { TaskCronInfo } from '@/types/interfaces/agentTask';
+import { UpdateTimedTaskParams } from '@/types/interfaces/library';
 import { ModelSaveParams } from '@/types/interfaces/model';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import type {
@@ -403,5 +405,69 @@ export async function apiSystemTaskList(
   return request('/api/system/task/list', {
     method: 'POST',
     data,
+  });
+}
+/**
+ * 更新任务
+ */
+export async function apiSystemTaskUpdate(
+  data: UpdateTimedTaskParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/task/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 手动执行任务
+ */
+export async function apiSystemTaskExecute(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/task/execute/${id}`, {
+    method: 'POST',
+  });
+}
+/**
+ * 启用任务
+ */
+export async function apiSystemTaskEnable(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/task/enable/${id}`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 停用任务
+ */
+export async function apiSystemTaskCancel(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/task/cancel/${id}`, {
+    method: 'POST',
+  });
+}
+/**
+ * 删除任务
+ */
+export async function apiSystemTaskDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/task/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 可选定时范围 - 系统任务
+ */
+export async function apiSystemTaskCronList(): Promise<
+  RequestResponse<TaskCronInfo[]>
+> {
+  return request('/api/system/task/cron/list', {
+    method: 'GET',
   });
 }

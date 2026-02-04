@@ -489,9 +489,7 @@ export type SystemTaskInfo = TaskInfo;
 // 查询定时任务列表参数
 export interface SystemTaskListParams extends SystemPaginationParams {
   /** 任务名称 (模糊搜索) */
-  taskName?: string;
-  /** 任务类型 */
-  targetType?: string;
+  name?: string;
   /** 创建人名称 */
   creatorName?: string;
 }
