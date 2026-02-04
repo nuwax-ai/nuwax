@@ -2,16 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { customizeRequiredMark } from '@/utils/form';
-import {
-  Button,
-  Checkbox,
-  Col,
-  Form,
-  FormProps,
-  message,
-  Row,
-  Space,
-} from 'antd';
+import { Button, Checkbox, Form, FormProps, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -161,27 +152,24 @@ const UserBindRoleModal: React.FC<UserBindRoleModalProps> = ({
         <Form.Item
           name="roleIds"
           label={
-            <Space>
-              {/* <span>角色</span> */}
-              <Button
-                type="link"
-                size="small"
-                onClick={handleSelectAll}
-                style={{ padding: 0, height: 'auto' }}
-              >
-                {isAllSelected ? '取消全选' : '全选'}
-              </Button>
-            </Space>
+            <Button
+              type="link"
+              size="small"
+              onClick={handleSelectAll}
+              style={{ padding: 0, height: 'auto' }}
+            >
+              {isAllSelected ? '取消全选' : '全选'}
+            </Button>
           }
         >
           <Checkbox.Group className={cx(styles.checkboxGroup)}>
-            <Row gutter={[16, 8]}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
               {roleList?.map((item: RoleInfo) => (
-                <Col span={24} key={item.id}>
-                  <Checkbox value={item.id}>{item.name}</Checkbox>
-                </Col>
+                <Checkbox key={item.id} value={item.id}>
+                  {item.name}
+                </Checkbox>
               ))}
-            </Row>
+            </Space>
           </Checkbox.Group>
         </Form.Item>
       </Form>

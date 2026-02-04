@@ -1,7 +1,5 @@
 import Loading from '@/components/custom/Loading';
-import useDrawerScroll from '@/hooks/useDrawerScroll';
-import { CloseOutlined } from '@ant-design/icons';
-import { Button, Drawer, message } from 'antd';
+import { Modal, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -24,7 +22,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface MenuPermissionDrawerProps {
+interface MenuPermissionModalProps {
   /** 是否打开 */
   open: boolean;
   targetId: number;
@@ -41,7 +39,7 @@ interface MenuPermissionDrawerProps {
  * 菜单权限抽屉组件
  * 用于配置角色的菜单权限
  */
-const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
+const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
   open,
   targetId,
   name,
@@ -65,9 +63,6 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
 
   // 根据类型选择不同的绑定菜单API
   const bindMenuApi = type === 'role' ? apiRoleBindMenu : apiGroupBindMenu;
-
-  // 使用自定义 Hook 处理抽屉打开时的滚动条
-  useDrawerScroll(open);
 
   // 初始化选中的菜单ID
   const getSelectedMenuIds = (menus: MenuNodeInfo[]): React.Key[] => {
@@ -318,42 +313,18 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
     runBindMenu(bindMenuParams);
   };
 
-  // 渲染抽屉头部
-  const renderDrawerHeader = () => (
-    <div className={cx(styles.drawerHeader)}>
-      <div className={cx(styles.titleArea)}>
-        <div className={cx(styles.titleContent)}>
-          <h3 className={cx(styles.title)}>菜单权限配置</h3>
-          <p className={cx(styles.subtitle)}>{name || '菜单权限'}</p>
-        </div>
-      </div>
-      <Button
-        type="text"
-        icon={<CloseOutlined />}
-        onClick={onClose}
-        className={cx(styles.closeButton)}
-      />
-    </div>
-  );
-
-  // const loading = getMenuLoading;
-
   return (
-    <Drawer
-      placement="right"
+    <Modal
       open={open}
-      width={400}
-      closeIcon={false}
-      onClose={onClose}
-      className={cx(styles.menuPermissionDrawer)}
-      maskClassName={cx(styles.resetMask)}
-      rootClassName={cx(styles.resetRoot)}
+      width={600}
+      onCancel={onClose}
+      title={`菜单权限配置-${name}`}
+      onOk={handleSave}
+      okButtonProps={{ loading: bindMenuLoading }}
+      className={cx(styles.menuPermissionModal)}
       destroyOnHidden={true}
     >
-      {/* 抽屉头部 */}
-      {renderDrawerHeader()}
-
-      {/* 抽屉内容 */}
+      {/* 弹窗内容 */}
       <div className={cx(styles.content)}>
         {getMenuLoading ? (
           <div
@@ -373,24 +344,8 @@ const MenuPermissionDrawer: React.FC<MenuPermissionDrawerProps> = ({
           <div className={cx(styles.empty)}>暂无菜单数据</div>
         )}
       </div>
-
-      {/* 操作按钮 */}
-      <div className={cx(styles.actions)}>
-        <Button
-          type="primary"
-          onClick={handleSave}
-          loading={bindMenuLoading}
-          block
-          className={cx(styles.saveButton)}
-        >
-          保存
-        </Button>
-        <Button onClick={onClose} block className={cx(styles.cancelButton)}>
-          取消
-        </Button>
-      </div>
-    </Drawer>
+    </Modal>
   );
 };
 
-export default MenuPermissionDrawer;
+export default MenuPermissionModal;
