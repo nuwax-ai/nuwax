@@ -1,6 +1,5 @@
 import {
   ModalForm,
-  ProForm,
   ProFormDigit,
   ProFormText,
 } from '@ant-design/pro-components';
@@ -55,6 +54,7 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       title={mode === 'add' ? '添加沙盒' : '编辑沙盒'}
       open={open}
       form={form}
+      grid={true}
       autoFocusFirstInput
       modalProps={{
         destroyOnClose: true,
@@ -72,46 +72,43 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         name="name"
         label="沙盒名称"
         placeholder="例如：AGENT沙箱"
+        colProps={{ span: 24 }}
         rules={[{ required: true, message: '请输入沙盒名称' }]}
       />
-      <ProForm.Group>
-        <ProFormText
-          width="md"
-          name="agentAddress"
-          label="Agent地址"
-          placeholder=":9086"
-          rules={[{ required: true, message: '请输入Agent地址' }]}
-        />
-        <ProFormText
-          width="md"
-          name="vncAddress"
-          label="VNC地址"
-          placeholder=":9088"
-          rules={[{ required: true, message: '请输入VNC地址' }]}
-        />
-      </ProForm.Group>
       <ProFormText
-        // width="lg"
+        name="agentAddress"
+        label="Agent地址"
+        placeholder=":9086"
+        colProps={{ span: 12 }}
+        rules={[{ required: true, message: '请输入Agent地址' }]}
+      />
+      <ProFormText
+        name="vncAddress"
+        label="VNC地址"
+        placeholder=":9088"
+        colProps={{ span: 12 }}
+        rules={[{ required: true, message: '请输入VNC地址' }]}
+      />
+      <ProFormText
         name="fileServiceAddress"
         label="文件服务地址"
         placeholder=":60001"
+        colProps={{ span: 24 }}
         rules={[{ required: true, message: '请输入文件服务地址' }]}
       />
-      <ProForm.Group>
-        <ProFormDigit
-          width="md"
-          name="maxUsers"
-          label="最大用户数"
-          placeholder="30"
-          rules={[{ required: true, message: '请输入最大用户数' }]}
-        />
-        <ProFormDigit
-          width="md"
-          name="currentUsers"
-          label="当前使用人数"
-          placeholder="0"
-        />
-      </ProForm.Group>
+      <ProFormDigit
+        name="maxUsers"
+        label="最大用户数"
+        placeholder="30"
+        colProps={{ span: 12 }}
+        rules={[{ required: true, message: '请输入最大用户数' }]}
+      />
+      <ProFormDigit
+        name="currentUsers"
+        label="当前使用人数"
+        placeholder="0"
+        colProps={{ span: 12 }}
+      />
     </ModalForm>
   );
 };
