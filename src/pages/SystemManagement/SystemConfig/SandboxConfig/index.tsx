@@ -3,6 +3,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiCreateSandboxConfig,
+  apiDeleteSandboxConfig,
   apiGetSandboxConfigList,
   apiGetSandboxGlobalConfig,
   apiUpdateSandboxConfig,
@@ -12,13 +13,20 @@ import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManag
 import {
   DeleteOutlined,
   EditOutlined,
-  EyeInvisibleOutlined,
-  EyeOutlined,
   PlusOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
-import { Button, Form, InputNumber, message, Space, Spin, Tooltip } from 'antd';
+import {
+  Button,
+  Form,
+  InputNumber,
+  message,
+  Modal,
+  Space,
+  Spin,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import SandboxModal from './components/SandboxModal';
@@ -93,54 +101,26 @@ const SandboxConfig: React.FC = () => {
           </div>
           <div className={styles['sandbox-info']}>
             <div className={styles.name}>{record.name}</div>
-            <div className={styles.id}>ID: {record.id}</div>
+            <div className={styles.address}>
+              {record.configValue?.hostWithScheme}
+            </div>
           </div>
         </div>
       ),
-    },
-    {
-      title: '服务地址',
-      dataIndex: ['configValue', 'hostWithScheme'],
-      render: (_, record) => {
-        const { hostWithScheme, agentPort, vncPort } = record.configValue;
-        const addresses = [
-          `${hostWithScheme}:${agentPort}`,
-          `${hostWithScheme}:${vncPort}`,
-        ];
-        return (
-          <div style={{ color: '#999', fontSize: 13 }}>
-            {addresses.map((addr, index) => (
-              <div
-                key={index}
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: '#448aff',
-                    marginRight: 8,
-                    opacity: 0.6,
-                  }}
-                />
-                {addr}
-              </div>
-            ))}
-          </div>
-        );
-      },
     },
     {
       title: '使用情况',
       dataIndex: 'usage',
       render: (_: any, record: SandboxItem) => {
         // 由于正式结构中没有当前使用人数，这里暂时硬编码一个比例或者显示最大用户数
-        const percent = 0;
+        const percent =
+          record.configValue.maxUsers > 0
+            ? ((record.usingCount || 0) / record.configValue.maxUsers) * 100
+            : 0;
         return (
           <div className={styles['usage-cell']}>
             <div className={styles['usage-text']}>
-              <span className={styles.current}>0</span>
+              <span className={styles.current}>{record.usingCount}</span>
               <span className={styles.total}>
                 / {record.configValue.maxUsers}
               </span>
@@ -201,13 +181,25 @@ const SandboxConfig: React.FC = () => {
               <EditOutlined />
             </div>
           </Tooltip>
-          <Tooltip title={record.online ? '下线' : '上线'}>
-            <div className={styles['action-btn']}>
-              {record.online ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-            </div>
-          </Tooltip>
           <Tooltip title="删除">
-            <div className={styles['action-btn']}>
+            <div
+              className={styles['action-btn']}
+              onClick={() => {
+                Modal.confirm({
+                  title: '删除确认',
+                  content: '确定要删除此沙盒吗？',
+                  okText: '确定',
+                  cancelText: '取消',
+                  onOk: async () => {
+                    const res = await apiDeleteSandboxConfig(record.id);
+                    if (res.code === SUCCESS_CODE) {
+                      message.success('删除成功');
+                      fetchSandboxList();
+                    }
+                  },
+                });
+              }}
+            >
               <DeleteOutlined />
             </div>
           </Tooltip>
@@ -297,6 +289,7 @@ const SandboxConfig: React.FC = () => {
             const payload =
               modalMode === 'add'
                 ? {
+                    scope: 'GLOBAL',
                     ...values,
                   }
                 : {

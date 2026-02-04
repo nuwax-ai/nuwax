@@ -666,7 +666,7 @@ export interface ConversationTrendList {
  */
 export interface SandboxConfigItem {
   id: number;
-  scope: string;
+  scope: 'GLOBAL' | 'USER';
   userId: number;
   name: string;
   configKey: string;
@@ -683,6 +683,7 @@ export interface SandboxConfigItem {
   online: boolean;
   created: string;
   modified: string;
+  usingCount?: number;
 }
 
 /**
