@@ -9,7 +9,6 @@ import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import {
-  Button,
   Col,
   Form,
   InputNumber,
@@ -24,6 +23,7 @@ import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import ResourceList from './components/ResourceList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -291,46 +291,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
             onScroll={handleAgentScroll}
             showLoader={!agentLoading}
           >
-            <div className={cx(styles.listSection)}>
-              {agentList.map((item) => {
-                const isSelected = selectedAgentIds.includes(item.targetId);
-                return (
-                  <div
-                    key={item.id}
-                    className={cx(styles.listItem, 'flex', 'items-center')}
-                  >
-                    <div className={cx(styles.itemIcon)}>
-                      {item.icon ? (
-                        <img
-                          src={item.icon}
-                          alt="icon"
-                          className={cx(styles.iconImg)}
-                        />
-                      ) : (
-                        <div className={cx(styles.iconPlaceholder)} />
-                      )}
-                    </div>
-                    <div className={cx(styles.itemMain, 'flex-1')}>
-                      <div className={cx(styles.itemTitle, 'text-ellipsis')}>
-                        {item.name}
-                      </div>
-                      <div className={cx(styles.itemDesc, 'text-ellipsis-2')}>
-                        {item.description || '暂无描述'}
-                      </div>
-                    </div>
-                    <div className={cx(styles.itemExtra)}>
-                      <Button
-                        type={isSelected ? 'primary' : 'default'}
-                        size="small"
-                        onClick={() => toggleAgentSelected(item.targetId)}
-                      >
-                        {isSelected ? '已添加' : '添加'}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <ResourceList
+              list={agentList}
+              selectedIds={selectedAgentIds}
+              onToggle={toggleAgentSelected}
+            />
           </InfiniteScrollDiv>
         </div>
       ),
@@ -347,46 +312,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
             onScroll={handlePageScroll}
             showLoader={!pageLoading}
           >
-            <div className={cx(styles.listSection)}>
-              {pageList.map((item) => {
-                const isSelected = selectedPageIds.includes(item.targetId);
-                return (
-                  <div
-                    key={item.id}
-                    className={cx(styles.listItem, 'flex', 'items-center')}
-                  >
-                    <div className={cx(styles.itemIcon)}>
-                      {item.icon ? (
-                        <img
-                          src={item.icon}
-                          alt="icon"
-                          className={cx(styles.iconImg)}
-                        />
-                      ) : (
-                        <div className={cx(styles.iconPlaceholder)} />
-                      )}
-                    </div>
-                    <div className={cx(styles.itemMain, 'flex-1')}>
-                      <div className={cx(styles.itemTitle, 'text-ellipsis')}>
-                        {item.name}
-                      </div>
-                      <div className={cx(styles.itemDesc, 'text-ellipsis-2')}>
-                        {item.description || '暂无描述'}
-                      </div>
-                    </div>
-                    <div className={cx(styles.itemExtra)}>
-                      <Button
-                        type={isSelected ? 'primary' : 'default'}
-                        size="small"
-                        onClick={() => togglePageSelected(item.targetId)}
-                      >
-                        {isSelected ? '已添加' : '添加'}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <ResourceList
+              list={pageList}
+              selectedIds={selectedPageIds}
+              onToggle={togglePageSelected}
+            />
           </InfiniteScrollDiv>
         </div>
       ),
