@@ -6,6 +6,7 @@ import type {
   GetMenuListParams,
   MenuNodeInfo,
   UpdateMenuParams,
+  UpdateMenuSortParams,
 } from '../types/menu-manage';
 import { ResourceTreeNode } from '../types/permission-resources';
 
@@ -16,6 +17,18 @@ export async function apiUpdateMenu(
   data: UpdateMenuParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/menu/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 批量调整菜单顺序
+ */
+export async function apiUpdateMenuSort(
+  data: UpdateMenuSortParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/menu/update-sort', {
     method: 'POST',
     data,
   });
