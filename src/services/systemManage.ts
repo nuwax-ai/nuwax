@@ -21,6 +21,8 @@ import type {
   SystemSkillPage,
   SystemSpaceListParams,
   SystemSpacePage,
+  SystemTaskListParams,
+  SystemTaskPage,
   SystemUserConfig,
   SystemUserListInfo,
   SystemUserListParams,
@@ -389,5 +391,17 @@ export async function apiGetConversationStats(): Promise<
 > {
   return request('/api/system/stats/conversations', {
     method: 'GET',
+  });
+}
+
+/**
+ * 查询任务列表
+ */
+export async function apiSystemTaskList(
+  data: SystemTaskListParams,
+): Promise<RequestResponse<SystemTaskPage>> {
+  return request('/api/system/task/list', {
+    method: 'POST',
+    data,
   });
 }
