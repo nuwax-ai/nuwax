@@ -1,21 +1,19 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DownOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
-  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
+import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteResource,
   apiGetResourceList,
@@ -32,72 +30,6 @@ import ResourceFormModal from './components/ResourceFormModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// Row Context 用于传递拖拽相关的 listeners 和 setActivatorNodeRef
-interface RowContextProps {
-  setActivatorNodeRef?: (element: HTMLElement | null) => void;
-  listeners?: SyntheticListenerMap;
-}
-
-const RowContext = React.createContext<RowContextProps>({});
-
-// 拖拽手柄组件
-const DragHandle: React.FC = () => {
-  const { setActivatorNodeRef, listeners } = useContext(RowContext);
-  return (
-    <Button
-      type="text"
-      size="small"
-      icon={<HolderOutlined />}
-      style={{ cursor: 'move' }}
-      ref={setActivatorNodeRef}
-      {...listeners}
-    />
-  );
-};
-
-// 可拖拽的行组件
-interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
-  'data-row-key': string | number;
-}
-
-const Row: React.FC<RowProps> = (props) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: String(props['data-row-key']) });
-
-  const style: React.CSSProperties = {
-    ...props.style,
-    ...(isDragging ? { position: 'relative' } : {}),
-    transform: CSS.Translate.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.8 : 1,
-  };
-
-  const contextValue = useMemo<RowContextProps>(
-    () => ({ setActivatorNodeRef, listeners }),
-    [setActivatorNodeRef, listeners],
-  );
-
-  return (
-    <RowContext.Provider value={contextValue}>
-      <tr
-        {...props}
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        className={classNames(props.className, isDragging && cx('draggingRow'))}
-      />
-    </RowContext.Provider>
-  );
-};
 
 /**
  * 权限资源管理页面
@@ -774,9 +706,9 @@ const PermissionResources: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 250,
-      fixed: 'right',
+      width: 200,
       align: 'center',
+      fixed: 'right',
       render: (_: null, record: ResourceTreeNode) => (
         <Space size="small">
           {record.type !== ResourceTypeEnum.Component && (
