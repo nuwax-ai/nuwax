@@ -26,6 +26,7 @@ import {
   type RoleInfo,
   type UpdateRoleSortItem,
 } from '../types/role-manage';
+import DataPermissionModal from './components/DataPermissionModal';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
 
@@ -49,6 +50,9 @@ const RoleManage: React.FC = () => {
   const [currentRole, setCurrentRole] = useState<RoleInfo | null>();
   // 菜单权限弹窗是否打开
   const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
+    useState<boolean>(false);
+  // 数据权限弹窗是否打开
+  const [dataPermissionModalOpen, setDataPermissionModalOpen] =
     useState<boolean>(false);
   // 角色绑定用户抽屉是否打开
   const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
@@ -120,6 +124,12 @@ const RoleManage: React.FC = () => {
   const handleMenuPermission = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
     setMenuPermissionModalOpen(true);
+  };
+
+  // 处理数据权限
+  const handleDataPermission = (roleInfo: RoleInfo) => {
+    setCurrentRole(roleInfo);
+    setDataPermissionModalOpen(true);
   };
 
   // 处理菜单权限弹窗关闭
@@ -286,6 +296,13 @@ const RoleManage: React.FC = () => {
           >
             菜单权限
           </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleDataPermission(record)}
+          >
+            数据权限
+          </Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             编辑
           </Button>
@@ -370,6 +387,20 @@ const RoleManage: React.FC = () => {
         name={currentRole?.name || ''}
         onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
+      />
+      {/* 数据权限配置Modal */}
+      <DataPermissionModal
+        open={dataPermissionModalOpen}
+        roleId={currentRole?.id}
+        roleName={currentRole?.name}
+        onCancel={() => {
+          setDataPermissionModalOpen(false);
+          setCurrentRole(null);
+        }}
+        onSuccess={() => {
+          setDataPermissionModalOpen(false);
+          setCurrentRole(null);
+        }}
       />
       {/* 角色绑定用户弹窗 */}
       <BindUser

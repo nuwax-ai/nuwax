@@ -180,3 +180,66 @@ export interface UserInfo {
   // 用户头像
   avatar: string;
 }
+
+/**
+ * 角色绑定数据权限参数
+ * 对应接口：bindDataPermission
+ */
+export interface RoleBindDataPermissionParams {
+  // 角色ID
+  roleId: number;
+
+  /*数据权限绑定 */
+  dataPermission?: {
+    /*模型ID列表，全部模型传[-1]，未选中任何模型不传或传空 */
+    modelIds?: number[];
+
+    /*token限制 */
+    tokenLimit?: {
+      /*每日token限制数量，0表示不限制 */
+      limitPerDay?: number;
+    };
+
+    /*可访问的智能体id列表，null或空表示不限制 */
+    agentIds?: number[];
+
+    /*可访问的应用页面id列表，null或空表示不限制 */
+    pageIds?: number[];
+
+    /*可创建工作空间数量，-1表示不限制 */
+    maxSpaceCount?: number;
+
+    /*可创建智能体数量，-1表示不限制 */
+    maxAgentCount?: number;
+
+    /*可创建网页应用数量，-1表示不限制 */
+    maxPageAppCount?: number;
+
+    /*可创建知识库数量，-1表示不限制 */
+    maxKnowledgeCount?: number;
+
+    /*知识库存储空间上限(GB)，-1表示不限制 */
+    knowledgeStorageLimitGb?: number;
+
+    /*可创建数据表数量，-1表示不限制 */
+    maxDataTableCount?: number;
+
+    /*可创建定时任务数量，-1表示不限制 */
+    maxScheduledTaskCount?: number;
+
+    /*是否允许API外部调用，1-允许，0-不允许 */
+    allowApiExternalCall?: number;
+
+    /*智能体电脑内存(GB)，null表示使用默认值 */
+    agentComputerMemoryGb?: number;
+
+    /*智能体电脑CPU核心数，null表示使用默认值 */
+    agentComputerCpuCores?: number;
+
+    /*通用智能体执行结果文件存储天数，-1表示不限制 */
+    agentFileStorageDays?: number;
+
+    /*通用智能体每天对话次数，-1表示不限制 */
+    agentDailyConversationLimit?: number;
+  };
+}
