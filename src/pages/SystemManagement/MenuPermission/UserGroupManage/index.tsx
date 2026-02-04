@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
+import DataPermissionModal from '../components/DataPermissionModal';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
@@ -47,6 +48,9 @@ const UserGroupManage: React.FC = () => {
   const [isEdit, setIsEdit] = useState<boolean>(false);
   // 菜单权限弹窗是否打开
   const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
+    useState<boolean>(false);
+  // 数据权限弹窗是否打开
+  const [dataPermissionModalOpen, setDataPermissionModalOpen] =
     useState<boolean>(false);
   // 组绑定用户弹窗是否打开
   const [groupBindUserOpen, setGroupBindUserOpen] = useState<boolean>(false);
@@ -142,6 +146,12 @@ const UserGroupManage: React.FC = () => {
     setMenuPermissionModalOpen(false);
     setCurrentUserGroup(null);
     runGetUserGroupList();
+  };
+
+  // 处理数据权限
+  const handleDataPermission = (userGroup: UserGroupInfo) => {
+    setCurrentUserGroup(userGroup);
+    setDataPermissionModalOpen(true);
   };
 
   // 处理删除确认
@@ -307,6 +317,13 @@ const UserGroupManage: React.FC = () => {
           >
             菜单权限
           </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleDataPermission(record)}
+          >
+            数据权限
+          </Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             编辑
           </Button>
@@ -392,6 +409,18 @@ const UserGroupManage: React.FC = () => {
         name={currentUserGroup?.name || ''}
         onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
+      />
+
+      {/* 数据权限配置Modal */}
+      <DataPermissionModal
+        open={dataPermissionModalOpen}
+        targetId={currentUserGroup?.id || 0}
+        type="userGroup"
+        name={currentUserGroup?.name}
+        onCancel={() => {
+          setDataPermissionModalOpen(false);
+          setCurrentUserGroup(null);
+        }}
       />
 
       {/* 组绑定用户弹窗 */}

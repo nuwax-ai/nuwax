@@ -393,12 +393,8 @@ const RoleManage: React.FC = () => {
         open={dataPermissionModalOpen}
         targetId={currentRole?.id || 0}
         type="role"
-        roleName={currentRole?.name}
+        name={currentRole?.name}
         onCancel={() => {
-          setDataPermissionModalOpen(false);
-          setCurrentRole(null);
-        }}
-        onSuccess={() => {
           setDataPermissionModalOpen(false);
           setCurrentRole(null);
         }}

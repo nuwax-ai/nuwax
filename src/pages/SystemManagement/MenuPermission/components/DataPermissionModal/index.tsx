@@ -29,12 +29,10 @@ interface DataPermissionModalProps {
   /** 目标ID */
   targetId: number;
   type: 'role' | 'userGroup';
-  /** 角色名称 */
-  roleName?: string;
+  /** 名称 */
+  name?: string;
   /** 取消回调 */
   onCancel: () => void;
-  /** 成功回调 */
-  onSuccess?: () => void;
 }
 
 type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
@@ -47,9 +45,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   open,
   targetId,
   type = 'role',
-  roleName,
+  name,
   onCancel,
-  onSuccess,
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<TabKey>('model');
@@ -229,7 +226,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       manual: true,
       onSuccess: () => {
         message.success('数据权限保存成功');
-        onSuccess?.();
+        onCancel();
       },
     },
   );
@@ -531,7 +528,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   return (
     <Modal
-      title={`数据权限设置 - ${roleName || ''}`}
+      title={`数据权限设置 - ${name}`}
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
