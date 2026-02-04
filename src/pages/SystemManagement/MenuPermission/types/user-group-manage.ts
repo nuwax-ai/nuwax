@@ -3,7 +3,7 @@
  */
 
 import { UpdateMenuSortItem } from './menu-manage';
-import { MenuTreeNode } from './role-manage';
+import { DataPermission, MenuTreeNode } from './role-manage';
 
 // ==================== 枚举定义 ====================
 
@@ -131,6 +131,13 @@ export interface GroupBindMenuParams {
   groupId: number;
   /** 菜单树节点 */
   menuTree: MenuTreeNode[];
+}
+
+export interface GroupBindDataPermissionParams {
+  /** 用户组ID */
+  groupId: number;
+  /** 数据权限 */
+  dataPermission: DataPermission;
 }
 
 /**

@@ -4,25 +4,20 @@ import { apiPublishedAgentList } from '@/services/square';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { Page } from '@/types/interfaces/request';
-import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import type {
+  SquarePublishedItemInfo,
+  SquarePublishedListParams,
+} from '@/types/interfaces/square';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import {
-  Col,
-  Form,
-  InputNumber,
-  Modal,
-  Row,
-  Switch,
-  Table,
-  Tabs,
-  message,
-} from 'antd';
+import { Col, Form, InputNumber, Modal, Row, Table, Tabs, message } from 'antd';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import { apiGroupBindDataPermission } from '../../services/user-group-manage';
+import { DataPermission } from '../../types/role-manage';
 import ResourceList from './components/ResourceList';
 import styles from './index.less';
 
@@ -31,8 +26,9 @@ const cx = classNames.bind(styles);
 interface DataPermissionModalProps {
   /** 是否打开 */
   open: boolean;
-  /** 角色ID */
-  roleId?: number;
+  /** 目标ID */
+  targetId: number;
+  type: 'role' | 'userGroup';
   /** 角色名称 */
   roleName?: string;
   /** 取消回调 */
@@ -49,7 +45,8 @@ type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
  */
 const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   open,
-  roleId,
+  targetId,
+  type = 'role',
   roleName,
   onCancel,
   onSuccess,
@@ -75,12 +72,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     manual: true,
   });
 
-  // 广场-已发布智能体列表接口 （智能体列表、应用页面列表）
+  // 广场-已发布智能体列表接口（智能体列表）
   const { loading: agentLoading, run: runAgentList } = useRequest(
     apiPublishedAgentList,
     {
       manual: true,
-      onSuccess: (result: Page<SquarePublishedItemInfo>, params?: [any]) => {
+      onSuccess: (
+        result: Page<SquarePublishedItemInfo>,
+        params?: SquarePublishedListParams[],
+      ) => {
         const currentPage = params?.[0]?.page || 1;
         const pageSize = params?.[0]?.pageSize || 30;
         const records = result.records || [];
@@ -92,11 +92,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
   );
 
+  // 广场-已发布应用页面列表接口
   const { loading: pageLoading, run: runAgentPageList } = useRequest(
     apiPublishedAgentList,
     {
       manual: true,
-      onSuccess: (result: Page<SquarePublishedItemInfo>, params?: [any]) => {
+      onSuccess: (
+        result: Page<SquarePublishedItemInfo>,
+        params?: SquarePublishedListParams[],
+      ) => {
         const currentPage = params?.[0]?.page || 1;
         const pageSize = params?.[0]?.pageSize || 30;
         const records = result.records || [];
@@ -214,52 +218,54 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     );
   };
 
+  // 根据类型选择接口
+  const apiUrl =
+    type === 'role' ? apiRoleBindDataPermission : apiGroupBindDataPermission;
+
   // 保存数据权限
   const { run: runBindDataPermission, loading: bindLoading } = useRequest(
-    apiRoleBindDataPermission,
+    apiUrl,
     {
       manual: true,
       onSuccess: () => {
         message.success('数据权限保存成功');
         onSuccess?.();
       },
-      onError: () => {
-        message.error('数据权限保存失败，请稍后重试');
-      },
     },
   );
 
   const handleOk = async () => {
-    if (!roleId) {
-      message.error('角色ID缺失，无法保存数据权限');
+    if (!targetId) {
+      message.error('ID缺失，无法保存数据权限');
       return;
     }
 
-    let formValues: any = {};
-    try {
-      formValues = await form.validateFields();
-    } catch {
-      return;
+    const formValues: DataPermission = (await form.validateFields()) || {};
+
+    // 处理模型ID：全部模型传[-1],未选中任何模型不传值
+    let modelIds: number[] | undefined;
+    if (selectedModelIds.length > 0) {
+      // 检查是否选中了全部模型
+      const isAllSelected =
+        modelList?.length > 0 && selectedModelIds.length === modelList.length;
+      modelIds = isAllSelected ? [-1] : selectedModelIds;
     }
 
-    // 是否允许API外部调用，1-允许，0-不允许
-    const allowApiExternalCall =
-      typeof formValues.allowApiExternalCall === 'boolean'
-        ? formValues.allowApiExternalCall
-          ? 1
-          : 0
-        : formValues.allowApiExternalCall;
-
-    runBindDataPermission({
-      roleId,
+    const idKey = type === 'role' ? 'roleId' : 'groupId';
+    const params = {
+      [idKey]: targetId,
       dataPermission: {
         ...formValues,
-        modelIds: selectedModelIds,
+        tokenLimit: {
+          limitPerDay: formValues?.tokenLimit?.limitPerDay || -1,
+        },
+        modelIds,
         agentIds: selectedAgentIds,
         pageIds: selectedPageIds,
-        allowApiExternalCall,
       },
-    });
+    };
+
+    runBindDataPermission(params);
   };
 
   // Tab 配置
@@ -341,7 +347,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '每日 token 限制，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -354,7 +360,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建工作空间数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -367,7 +373,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建智能体数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -380,7 +386,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建网页应用数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -393,7 +399,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建知识库数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -403,10 +409,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   name="knowledgeStorageLimitGb"
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '知识库存储空间上限 (GB，-1 表示不限制)',
+                    title: '知识库存储空间上限(GB)，-1表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -419,7 +425,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建数据表数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -432,31 +438,35 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     title: '可创建定时任务数量，-1 表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
                 <Form.Item
-                  label="是否允许 API 外部调用"
-                  name="allowApiExternalCall"
-                  valuePropName="checked"
-                >
-                  <Switch checkedChildren="允许" unCheckedChildren="不允许" />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="智能体电脑内存 (GB)"
+                  label="智能体电脑内存(GB)"
                   name="agentComputerMemoryGb"
                   initialValue={4}
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '智能体电脑内存 (GB，留空表示默认)',
+                    title: '智能体电脑内存 (GB，留空表示使用默认值4)',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={0} />
+                  <InputNumber className={cx('w-full')} min={0} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                  label="智能体电脑交换分区(GB)"
+                  name="agentComputerSwapGb"
+                  initialValue={8}
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '智能体电脑交换分区(GB)，null表示使用默认值8',
+                  }}
+                >
+                  <InputNumber className={cx('w-full')} min={0} />
                 </Form.Item>
               </Col>
 
@@ -467,36 +477,49 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   initialValue={2}
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '智能体电脑 CPU 核心数（留空表示默认）',
+                    title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={0} />
+                  <InputNumber className={cx('w-full')} min={0} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
                 <Form.Item
-                  label="执行结果文件存储天数"
+                  label="通用智能体执行结果文件存储天数"
                   name="agentFileStorageDays"
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '执行结果文件存储天数（-1 表示不限制）',
+                    title: '通用智能体执行结果文件存储天数，-1表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
               <Col span={12}>
                 <Form.Item
-                  label="每天对话次数限制"
+                  label="通用智能体每天对话次数限制"
                   name="agentDailyConversationLimit"
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '每天对话次数限制（-1 表示不限制）',
+                    title: '通用智能体每天对话次数，-1表示不限制',
                   }}
                 >
-                  <InputNumber style={{ width: '100%' }} min={-1} />
+                  <InputNumber className={cx('w-full')} min={-1} />
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                  label="应用页面每天对话次数"
+                  name="pageDailyConversationLimit"
+                  tooltip={{
+                    icon: <InfoCircleOutlined />,
+                    title: '应用页面每天对话次数，-1表示不限制',
+                  }}
+                >
+                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
             </Row>

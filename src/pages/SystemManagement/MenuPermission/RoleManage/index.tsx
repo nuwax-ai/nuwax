@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
+import DataPermissionModal from '../components/DataPermissionModal';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
@@ -26,7 +27,6 @@ import {
   type RoleInfo,
   type UpdateRoleSortItem,
 } from '../types/role-manage';
-import DataPermissionModal from './components/DataPermissionModal';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
 
@@ -391,7 +391,8 @@ const RoleManage: React.FC = () => {
       {/* 数据权限配置Modal */}
       <DataPermissionModal
         open={dataPermissionModalOpen}
-        roleId={currentRole?.id}
+        targetId={currentRole?.id || 0}
+        type="role"
         roleName={currentRole?.name}
         onCancel={() => {
           setDataPermissionModalOpen(false);
