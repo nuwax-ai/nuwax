@@ -530,3 +530,14 @@ export async function apiUpdateSandboxConfig(
     data,
   });
 }
+
+/**
+ * 删除沙盒配置
+ */
+export async function apiDeleteSandboxConfig(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/sandbox/config/delete/${id}`, {
+    method: 'POST',
+  });
+}
