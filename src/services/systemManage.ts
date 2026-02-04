@@ -551,3 +551,23 @@ export async function apiGetSandboxUserConfigList(): Promise<
     method: 'GET',
   });
 }
+/**
+ * 启用/禁用沙盒配置
+ */
+export async function apiToggleSandboxConfig(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/sandbox/config/toggle/${id}`, {
+    method: 'POST',
+  });
+}
+/**
+ * 删除用户沙盒配置
+ */
+export async function apiDeleteSandboxUserConfig(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/sandbox/config/delete/${id}`, {
+    method: 'POST',
+  });
+}
