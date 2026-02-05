@@ -32,6 +32,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
   }, [params]);
 
   const updateTreeData = (newData: InputAndOutConfig[]) => {
+    if (_.isEqual(newData, treeData)) return;
     setTreeData(newData);
     form.setFieldValue('inputArgs', newData);
     setIsModified(true);
