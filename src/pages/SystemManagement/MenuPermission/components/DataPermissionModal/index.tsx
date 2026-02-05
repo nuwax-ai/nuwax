@@ -368,6 +368,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       const isAllSelected =
         modelList?.length > 0 && selectedModelIds.length === modelList.length;
       modelIds = isAllSelected ? [-1] : selectedModelIds;
+    } else {
+      modelIds = [0]; // 0表示不选择任何模型(后端约定)
     }
 
     const idKey = type === 'role' ? 'roleId' : 'groupId';
