@@ -1,12 +1,16 @@
-import InfiniteList from '@/layouts/InfiniteList';
-import { apiAgentConversationList } from '@/services/agentConfig';
-import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  apiAgentConversationDelete,
+  apiAgentConversationUpdate,
+} from '@/services/agentConfig';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
-import { Input } from 'antd';
+import { Input, message, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
-import { history, useModel } from 'umi';
+import React, { useRef, useState } from 'react';
+import { history } from 'umi';
+import ConversationList, {
+  ConversationListRef,
+} from './components/ConversationList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,18 +18,18 @@ const cx = classNames.bind(styles);
 const HistoryConversation: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   const [activeKeyword, setActiveKeyword] = useState<string>('');
-  const [conversationList, setConversationList] = useState<
-    ConversationInfo[] | undefined
-  >([]);
-
-  const { runDel } = useModel('conversationHistory');
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [currentRenameId, setCurrentRenameId] = useState<number | null>(null);
+  const [newTopic, setNewTopic] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [currentDeleteId, setCurrentDeleteId] = useState<number | null>(null);
+  const listRef = useRef<ConversationListRef>(null);
 
   // 防抖处理搜索逻辑
   const { run: handleSearch } = useDebounceFn(
     (val: string) => {
       setActiveKeyword(val);
-      // 清空列表触发 key 变化对应的重载逻辑
-      setConversationList([]);
     },
     {
       wait: 500,
@@ -38,34 +42,64 @@ const HistoryConversation: React.FC = () => {
     handleSearch(val);
   };
 
-  const fetchApi = async (lastId: number | null, pageSize: number) => {
-    return apiAgentConversationList({
-      agentId: null,
-      lastId,
-      limit: pageSize,
-      topic: activeKeyword || undefined,
-    }).then((res) => {
-      return {
-        list: res.data ?? [],
-        hasMore: res.data.length >= pageSize,
-      };
-    });
-  };
-
   const handleLink = (id: number, agentId: number) => {
     history.push(`/home/chat/${id}/${agentId}`);
   };
 
-  const handleDelete = async (currentId: number) => {
-    // 调用 model 的删除方法
+  const handleEdit = (id: number, currentTopic: string) => {
+    setCurrentRenameId(id);
+    setNewTopic(currentTopic);
+    setRenameModalVisible(true);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!currentRenameId) return;
+    const trimmedTopic = newTopic.trim();
+    if (!trimmedTopic) {
+      message.warning('标题不能为空');
+      return;
+    }
+    if (trimmedTopic.length > 50) {
+      message.warning('标题长度不能超过 50 个字符');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await runDel(currentId);
-      // 本地移除对应的会话项
-      setConversationList(
-        (prev) => prev?.filter((item) => item.id !== currentId) || [],
-      );
-    } catch (e) {
-      console.error(e);
+      const res = await apiAgentConversationUpdate({
+        id: currentRenameId,
+        topic: trimmedTopic,
+      });
+
+      if (res.success) {
+        listRef.current?.updateItemTopic(currentRenameId, trimmedTopic);
+        message.success('修改成功');
+        setRenameModalVisible(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setCurrentDeleteId(id);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteSubmit = async () => {
+    if (!currentDeleteId) return;
+
+    setSubmitting(true);
+    try {
+      const res = await apiAgentConversationDelete(currentDeleteId);
+
+      if (res.success) {
+        listRef.current?.removeItem(currentDeleteId);
+        message.success('删除成功');
+        setDeleteModalVisible(false);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -93,19 +127,67 @@ const HistoryConversation: React.FC = () => {
           />
         </div>
         <div className={cx(styles['list-wrapper'])}>
-          {/* 使用 activeKeyword 作为 key，确保搜索条件变更时组件重置并重新加载 */}
-          <InfiniteList
-            key={activeKeyword}
-            height={'100%'}
-            pageSize={20}
-            conversationList={conversationList}
-            setConversationList={setConversationList}
-            loadData={fetchApi}
-            handleLink={handleLink}
-            runDel={handleDelete}
+          <ConversationList
+            ref={listRef}
+            keyword={activeKeyword}
+            onItemClick={handleLink}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         </div>
       </div>
+
+      <Modal
+        title="修改名称"
+        open={renameModalVisible}
+        onOk={handleRenameSubmit}
+        onCancel={() => setRenameModalVisible(false)}
+        confirmLoading={submitting}
+        okButtonProps={{ disabled: !newTopic.trim() }}
+        okText="确定"
+        cancelText="取消"
+        destroyOnClose
+        centered
+      >
+        <div style={{ padding: '24px 0 8px' }}>
+          <Input
+            value={newTopic}
+            onChange={(e) => setNewTopic(e.target.value)}
+            placeholder="请输入新名称"
+            maxLength={50}
+            autoFocus
+            onPressEnter={handleRenameSubmit}
+            suffix={
+              <span style={{ color: '#bfbfbf', fontSize: 14 }}>
+                {newTopic.length} / 50
+              </span>
+            }
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        title="永久删除会话"
+        open={deleteModalVisible}
+        onOk={handleDeleteSubmit}
+        onCancel={() => setDeleteModalVisible(false)}
+        confirmLoading={submitting}
+        okText="确定"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+        destroyOnClose
+        centered
+      >
+        <div
+          style={{
+            padding: '24px 0 8px',
+            color: 'rgba(0, 0, 0, 0.45)',
+            fontSize: 14,
+          }}
+        >
+          本条会话数据将被永久删除,不可恢复及撤销。确定要删除吗?
+        </div>
+      </Modal>
     </div>
   );
 };
