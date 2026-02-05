@@ -134,8 +134,20 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         // 编辑模式：查询菜单详情
         runGetMenuById(menuInfo.id);
       }
+    } else {
+      // 新增模式：重置表单
+      form.resetFields();
+      setImageUrl('');
+      setSelectedResourceIds([]);
+      form.setFieldsValue({
+        sortIndex: 1,
+        visible: true,
+        source: MenuSourceEnum.UserDefined,
+        // 如果有父菜单，自动设置父节点
+        parentId: parentMenu?.id,
+      });
     }
-  }, [open]);
+  }, [open, isEdit, menuInfo, parentMenu]);
 
   const loading = addLoading || updateLoading;
 
@@ -239,39 +251,25 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
   // 初始化表单数据
   useEffect(() => {
-    if (open) {
-      if (isEdit && menuInfoResponse) {
-        setImageUrl(menuInfoResponse.icon || '');
-        form.setFieldsValue({
-          code: menuInfoResponse.code,
-          name: menuInfoResponse.name,
-          description: menuInfoResponse.description,
-          parentId: menuInfoResponse.parentId || undefined,
-          path: menuInfoResponse.path,
-          sortIndex: menuInfoResponse.sortIndex || 0,
-          visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
-          source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
-        });
-        // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
-        const resourceTree = menuInfoResponse.resourceTree;
-        if (resourceTree) {
-          setSelectedResourceIds(getBoundResourceIds(resourceTree));
-        }
-      } else {
-        // 新增模式：重置表单
-        form.resetFields();
-        setImageUrl('');
-        setSelectedResourceIds([]);
-        form.setFieldsValue({
-          sortIndex: 0,
-          visible: true,
-          source: MenuSourceEnum.UserDefined,
-          // 如果有父菜单，自动设置父节点
-          parentId: parentMenu?.id,
-        });
+    if (isEdit && menuInfoResponse) {
+      setImageUrl(menuInfoResponse.icon || '');
+      form.setFieldsValue({
+        code: menuInfoResponse.code,
+        name: menuInfoResponse.name,
+        description: menuInfoResponse.description,
+        parentId: menuInfoResponse.parentId || undefined,
+        path: menuInfoResponse.path,
+        sortIndex: menuInfoResponse.sortIndex || 1,
+        visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
+        source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
+      });
+      // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
+      const resourceTree = menuInfoResponse.resourceTree;
+      if (resourceTree) {
+        setSelectedResourceIds(getBoundResourceIds(resourceTree));
       }
     }
-  }, [open, isEdit, menuInfoResponse, parentMenu, form]);
+  }, [isEdit, menuInfoResponse]);
 
   // 处理关联资源码ID选择（onCheck 事件）
   const handleResourceIdsCheck = (
@@ -383,7 +381,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       onConfirm={handleSubmit}
       classNames={{
         body: cx(styles.modalBody),
-        header: cx(styles.modalHeader),
       }}
     >
       <Form
@@ -422,6 +419,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="菜单名称"
@@ -431,8 +429,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               <Input placeholder="请输入菜单名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
-        </Row>
-        <Row gutter={16}>
+
           <Col span={12}>
             <Form.Item label="父菜单" name="parentId">
               <TreeSelect
@@ -449,6 +446,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="路由路径"
@@ -464,24 +462,28 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                   message: '路由路径长度不能超过500个字符',
                 },
               ]}
+              tooltip={{
+                title:
+                  '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+                icon: <InfoCircleOutlined />,
+              }}
             >
               <Input placeholder="请输入路由路径，例如：/system/menu" />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item label="来源" name="source">
               <Select placeholder="请选择来源" options={MENU_SOURCE_OPTIONS} />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item label="排序" name="sortIndex">
               <InputNumber
                 placeholder="请输入排序"
                 className={cx('w-full')}
-                min={0}
+                min={1}
                 max={10000}
               />
             </Form.Item>

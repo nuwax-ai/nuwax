@@ -214,6 +214,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     } else {
       // 重置表单
       form.resetFields();
+      form.setFieldsValue({
+        tokenLimit: {
+          limitPerDay: -1,
+        },
+        maxSpaceCount: -1,
+        maxAgentCount: -1,
+        maxPageAppCount: -1,
+        maxKnowledgeCount: -1,
+        knowledgeStorageLimitGb: -1,
+        maxDataTableCount: -1,
+        maxScheduledTaskCount: -1,
+        agentComputerMemoryGb: 4,
+        agentComputerSwapGb: 8,
+        agentComputerCpuCores: 2,
+        agentFileStorageDays: -1,
+        agentDailyConversationLimit: -1,
+        pageDailyConversationLimit: -1,
+      });
       // 重置已选中的数据
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
@@ -444,14 +462,19 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
             <Row gutter={[16, 0]}>
               <Col span={12}>
                 <Form.Item
-                  label="每日 token 限制"
+                  label="每日token限制"
                   name={['tokenLimit', 'limitPerDay']}
                   tooltip={{
                     icon: <InfoCircleOutlined />,
                     title: '每日 token 限制，-1 表示不限制',
                   }}
                 >
-                  <InputNumber className={cx('w-full')} min={-1} />
+                  <InputNumber
+                    placeholder="请输入每日token限制数量"
+                    className={cx('w-full')}
+                    min={-1}
+                    max={1000000000000000}
+                  />
                 </Form.Item>
               </Col>
 

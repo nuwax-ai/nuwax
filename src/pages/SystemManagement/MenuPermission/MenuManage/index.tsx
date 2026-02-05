@@ -74,9 +74,6 @@ const MenuManage: React.FC = () => {
       message.success('删除成功');
       runGetMenuList();
     },
-    onError: () => {
-      message.error('删除失败');
-    },
     onFinally: (menuId: number) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: false }));
     },
@@ -124,9 +121,7 @@ const MenuManage: React.FC = () => {
 
   // 处理Modal成功
   const handleModalSuccess = () => {
-    setModalOpen(false);
-    setEditingMenu(null);
-    setParentMenu(null);
+    handleModalCancel();
     runGetMenuList();
   };
 
