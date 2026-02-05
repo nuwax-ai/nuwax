@@ -4,6 +4,7 @@ import type { MenuNodeInfo } from '../types/menu-manage';
 import type {
   AddRoleParams,
   GetRoleListParams,
+  RoleBindDataPermissionParams,
   RoleBindMenuParams,
   RoleBindUserParams,
   RoleInfo,
@@ -148,5 +149,18 @@ export async function apiGetRoleCode(
 ): Promise<RequestResponse<RoleInfo>> {
   return request(`/api/system/role/code/${roleCode}`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 角色绑定数据权限（全量覆盖）
+ * 对应文档：权限管理-角色 / bindDataPermission
+ */
+export async function apiRoleBindDataPermission(
+  data: RoleBindDataPermissionParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/role/bind-data-permission', {
+    method: 'POST',
+    data,
   });
 }
