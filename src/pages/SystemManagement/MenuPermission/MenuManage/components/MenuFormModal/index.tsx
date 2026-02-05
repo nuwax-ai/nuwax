@@ -134,8 +134,20 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         // 编辑模式：查询菜单详情
         runGetMenuById(menuInfo.id);
       }
+    } else {
+      // 新增模式：重置表单
+      form.resetFields();
+      setImageUrl('');
+      setSelectedResourceIds([]);
+      form.setFieldsValue({
+        sortIndex: 1,
+        visible: true,
+        source: MenuSourceEnum.UserDefined,
+        // 如果有父菜单，自动设置父节点
+        parentId: parentMenu?.id,
+      });
     }
-  }, [open]);
+  }, [open, isEdit, menuInfo, parentMenu]);
 
   const loading = addLoading || updateLoading;
 
@@ -239,39 +251,25 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
   // 初始化表单数据
   useEffect(() => {
-    if (open) {
-      if (isEdit && menuInfoResponse) {
-        setImageUrl(menuInfoResponse.icon || '');
-        form.setFieldsValue({
-          code: menuInfoResponse.code,
-          name: menuInfoResponse.name,
-          description: menuInfoResponse.description,
-          parentId: menuInfoResponse.parentId || undefined,
-          path: menuInfoResponse.path,
-          sortIndex: menuInfoResponse.sortIndex || 1,
-          visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
-          source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
-        });
-        // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
-        const resourceTree = menuInfoResponse.resourceTree;
-        if (resourceTree) {
-          setSelectedResourceIds(getBoundResourceIds(resourceTree));
-        }
-      } else {
-        // 新增模式：重置表单
-        form.resetFields();
-        setImageUrl('');
-        setSelectedResourceIds([]);
-        form.setFieldsValue({
-          sortIndex: 1,
-          visible: true,
-          source: MenuSourceEnum.UserDefined,
-          // 如果有父菜单，自动设置父节点
-          parentId: parentMenu?.id,
-        });
+    if (isEdit && menuInfoResponse) {
+      setImageUrl(menuInfoResponse.icon || '');
+      form.setFieldsValue({
+        code: menuInfoResponse.code,
+        name: menuInfoResponse.name,
+        description: menuInfoResponse.description,
+        parentId: menuInfoResponse.parentId || undefined,
+        path: menuInfoResponse.path,
+        sortIndex: menuInfoResponse.sortIndex || 1,
+        visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
+        source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
+      });
+      // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
+      const resourceTree = menuInfoResponse.resourceTree;
+      if (resourceTree) {
+        setSelectedResourceIds(getBoundResourceIds(resourceTree));
       }
     }
-  }, [open, isEdit, menuInfoResponse, parentMenu, form]);
+  }, [isEdit, menuInfoResponse]);
 
   // 处理关联资源码ID选择（onCheck 事件）
   const handleResourceIdsCheck = (

@@ -81,9 +81,6 @@ const PermissionResources: React.FC = () => {
       message.success('删除成功');
       runGetResourceList();
     },
-    onError: () => {
-      message.error('删除失败');
-    },
     onFinally: (resourceId: number) => {
       setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: false }));
     },
@@ -145,9 +142,7 @@ const PermissionResources: React.FC = () => {
 
   // 处理Modal成功
   const handleModalSuccess = () => {
-    setModalOpen(false);
-    setEditingResource(null);
-    setParentResource(null);
+    handleModalCancel();
     runGetResourceList();
   };
 

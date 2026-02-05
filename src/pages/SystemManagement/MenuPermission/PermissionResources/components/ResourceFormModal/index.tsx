@@ -122,8 +122,37 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         // 编辑模式：填充表单数据
         runGetResourceById(resourceInfo.id);
       }
+    } else {
+      // 新增模式：重置表单
+      form.resetFields();
+      form.setFieldsValue({
+        sortIndex: 1,
+        type: ResourceTypeEnum.Module,
+        visible: true,
+        source: ResourceSourceEnum.UserDefined,
+        // 如果有父资源，自动设置父节点
+        parentId: parentResource?.id,
+      });
     }
-  }, [open]);
+  }, [open, isEdit, resourceInfo, parentResource]);
+
+  // 初始化表单数据
+  useEffect(() => {
+    if (isEdit && resourceInfoResponse) {
+      // 编辑模式：填充表单数据
+      form.setFieldsValue({
+        code: resourceInfoResponse.code,
+        name: resourceInfoResponse.name,
+        description: resourceInfoResponse.description,
+        type: resourceInfoResponse.type,
+        parentId: resourceInfoResponse.parentId || undefined,
+        path: resourceInfoResponse.path,
+        sortIndex: resourceInfoResponse.sortIndex || 1,
+        visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
+        source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
+      });
+    }
+  }, [isEdit, resourceInfoResponse]);
 
   const loading = addLoading || updateLoading;
 
@@ -156,37 +185,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     // 否则过滤掉所有 id 为 0 的节点
     return convertToTreeData(resourceTreeList);
   }, [resourceTreeList]);
-
-  // 初始化表单数据
-  useEffect(() => {
-    if (open) {
-      if (isEdit && resourceInfoResponse) {
-        // 编辑模式：填充表单数据
-        form.setFieldsValue({
-          code: resourceInfoResponse.code,
-          name: resourceInfoResponse.name,
-          description: resourceInfoResponse.description,
-          type: resourceInfoResponse.type,
-          parentId: resourceInfoResponse.parentId || undefined,
-          path: resourceInfoResponse.path,
-          sortIndex: resourceInfoResponse.sortIndex || 1,
-          visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
-          source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
-        });
-      } else {
-        // 新增模式：重置表单
-        form.resetFields();
-        form.setFieldsValue({
-          sortIndex: 1,
-          type: ResourceTypeEnum.Module,
-          visible: true,
-          source: ResourceSourceEnum.UserDefined,
-          // 如果有父资源，自动设置父节点
-          parentId: parentResource?.id,
-        });
-      }
-    }
-  }, [open, isEdit, resourceInfoResponse, parentResource, form]);
 
   // 处理提交
   const handleSubmit = async () => {
