@@ -303,9 +303,13 @@ export interface AuthConfigModalProps {
  */
 export interface DomainInfo {
   id: number;
+  tenantId: number;
+  projectId: number;
   domain: string;
+  created: string;
+  modified: string;
   /** 状态: active-已激活, pending-待验证 */
-  status: 'active' | 'pending';
+  status?: 'active' | 'pending';
 }
 
 /**

@@ -24,11 +24,11 @@
 }
 
 .ds-markdown {
-  --ds-font-family-code: Menlo, 'Roboto Mono', 'Courier New', Courier, monospace,
-    'Inter', sans-serif;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI,
-    Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Oxygen, Open Sans,
-    sans-serif;
+  --ds-font-family-code: 'ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo',
+    'Consolas', 'Liberation Mono', 'monospace';
+  font-family: 'ui-sans-serif', '-apple-system', 'system-ui', 'Segoe UI',
+    'Helvetica', 'Apple Color Emoji', 'Arial', 'sans-serif', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
 }
 
 .ds-markdown {
@@ -254,8 +254,8 @@
 }
 
 .ds-markdown code {
-  font-size: 0.875em;
-  font-weight: var(--ds-font-weight-strong);
+  font-size: 1em;
+  font-weight: var(--ds-font-weight-normal);
   font-family: var(--ds-font-family-code);
   background-color: var(--ds-md-inline-code-color, #ececec);
   border-radius: 4px;
@@ -513,7 +513,7 @@ ds-markdown-math {
   -ms-hyphens: none;
   hyphens: none;
   background: 0 0;
-  font-family: Consolas, Monaco, Andale Mono, Ubuntu Mono, monospace;
+  font-family: var(--ds-font-family-code);
   line-height: 1.5;
 }
 
@@ -937,8 +937,7 @@ ds-markdown-math {
   hyphens: none;
   direction: ltr;
   background: #fafafa;
-  font-family: Fira Code, Fira Mono, Menlo, Consolas, DejaVu Sans Mono,
-    monospace;
+  font-family: var(--ds-font-family-code);
   line-height: 1.5;
 }
 

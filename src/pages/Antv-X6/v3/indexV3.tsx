@@ -48,7 +48,7 @@ import { useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
 import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 import { calculateNodePosition } from './utils/graphV3';
-import { setFormDefaultValues } from './utils/workflowV3';
+import { checkNodeModified, setFormDefaultValues } from './utils/workflowV3';
 // Components moved to WorkflowLayout
 import './indexV3.less';
 
@@ -683,18 +683,40 @@ const Workflow: React.FC = () => {
 
     // 切换节点时保存当前节点数据（包含触发 blur 和等待状态更新）
     if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
-      workflowLogger.log('[changeDrawer] 切换节点，保存当前节点数据');
+      if (_isModified) {
+        // 获取最新表单值
+        const currentFormValues = form.getFieldsValue(true);
 
-      // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
-      const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(_drawerForm);
+        // 判断是否有实质性修改
+        const hasChanges = checkNodeModified(_drawerForm, currentFormValues);
 
-      setIsModified(false);
-      // 保存到后端，完成后刷新新节点的引用参数
-      onSaveWorkflow(updatedDrawerForm).then(() => {
+        if (hasChanges) {
+          workflowLogger.log('[changeDrawer] 切换节点，保存当前节点数据');
+
+          // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
+          const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(
+            _drawerForm,
+          );
+
+          setIsModified(false);
+          // 保存到后端，完成后刷新新节点的引用参数
+          onSaveWorkflow(updatedDrawerForm).then(() => {
+            if (child && child.id !== 0) {
+              getReference(child.id);
+            }
+          });
+        } else {
+          // 如果没有实质性修改，但 flagged 为 modified，则清除 flag
+          setIsModified(false);
+          if (child && child.id !== 0) {
+            getReference(child.id);
+          }
+        }
+      } else {
         if (child && child.id !== 0) {
           getReference(child.id);
         }
-      });
+      }
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -980,13 +1002,16 @@ const Workflow: React.FC = () => {
   useModifiedSaveUpdateV3({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
-      // console.log(
-      //   'useModifiedSaveUpdateV3: run: onSaveWorkflow',
-      //   _drawerForm.id,
-      //   JSON.stringify(_drawerForm.nodeConfig),
-      // );
+      const currentFormValues = form.getFieldsValue(true);
+
+      // 深度比较，如果没有实质变化则不保存
+      if (!checkNodeModified(_drawerForm, currentFormValues)) {
+        // console.log('[useModifiedSaveUpdateV3] 即将保存但检测到无实质变化，跳过');
+        return true;
+      }
+
       return await onSaveWorkflow(_drawerForm);
-    }, []),
+    }, [form, onSaveWorkflow]),
     doNext: useCallback(() => {
       setIsModified(false);
     }, [setIsModified]),

@@ -1,6 +1,7 @@
 import type {
   CreateCustomPageInfo,
   CustomPageDto,
+  DomainInfo,
   PageAddPathParams,
   PageBatchConfigProxyParams,
   PageCopyParams,
@@ -158,32 +159,42 @@ export async function apiPageUpdateProject(
 }
 
 // 查询项目绑定的域名列表
-export async function apiPageGetDomains(
+export async function apiCustomPageGetDomainList(
   projectId: number,
-): Promise<RequestResponse<any[]>> {
-  return request('/api/custom-page/get-domains', {
+): Promise<RequestResponse<DomainInfo[]>> {
+  return request('/api/custom-page/domain/list', {
     method: 'GET',
     params: { projectId },
   });
 }
 
 // 添加域名绑定
-export async function apiPageAddDomain(data: {
+export async function apiCustomPageCreateDomain(data: {
   projectId: number;
   domain: string;
-}): Promise<RequestResponse<null>> {
-  return request('/api/custom-page/add-domain', {
+}): Promise<RequestResponse<DomainInfo>> {
+  return request('/api/custom-page/domain/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 修改域名绑定
+export async function apiCustomPageUpdateDomain(data: {
+  id: number;
+  domain: string;
+}): Promise<RequestResponse<DomainInfo>> {
+  return request('/api/custom-page/domain/update', {
     method: 'POST',
     data,
   });
 }
 
 // 删除域名绑定
-export async function apiPageDeleteDomain(data: {
-  projectId: number;
-  domainId: number;
+export async function apiCustomPageDeleteDomain(data: {
+  id: number;
 }): Promise<RequestResponse<null>> {
-  return request('/api/custom-page/delete-domain', {
+  return request('/api/custom-page/domain/delete', {
     method: 'POST',
     data,
   });
