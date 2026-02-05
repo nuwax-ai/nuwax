@@ -145,7 +145,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
 
   // 初始化表单数据（编辑模式）
   useEffect(() => {
-    if (open && isEdit && resourceInfoResponse) {
+    if (isEdit && resourceInfoResponse) {
       // 编辑模式：填充表单数据
       form.setFieldsValue({
         code: resourceInfoResponse.code,
@@ -159,7 +159,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
       });
     }
-  }, [open, isEdit, resourceInfoResponse]);
+  }, [isEdit, resourceInfoResponse]);
 
   // 初始化表单数据（新增模式）
   useEffect(() => {
