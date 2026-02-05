@@ -1,5 +1,8 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
-import { apiRoleBindDataPermission } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
+import {
+  apiGetRoleBoundDataPermissionList,
+  apiRoleBindDataPermission,
+} from '@/pages/SystemManagement/MenuPermission/services/role-manage';
 import { apiPublishedAgentList } from '@/services/square';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -16,7 +19,10 @@ import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiGroupBindDataPermission } from '../../services/user-group-manage';
+import {
+  apiGetGroupBoundDataPermissionList,
+  apiGroupBindDataPermission,
+} from '../../services/user-group-manage';
 import { DataPermission } from '../../types/role-manage';
 import ResourceList from './components/ResourceList';
 import styles from './index.less';
@@ -26,6 +32,8 @@ const cx = classNames.bind(styles);
 interface DataPermissionModalProps {
   /** 是否打开 */
   open: boolean;
+  /** 是否为编辑模式 */
+  isEdit?: boolean;
   /** 目标ID */
   targetId: number;
   type: 'role' | 'userGroup';
@@ -43,6 +51,7 @@ type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
  */
 const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   open,
+  isEdit,
   targetId,
   type = 'role',
   name,
@@ -59,6 +68,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [agentHasMore, setAgentHasMore] = useState<boolean>(true);
   const [pagePage, setPagePage] = useState<number>(1);
   const [pageHasMore, setPageHasMore] = useState<boolean>(true);
+  // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
+  const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
   // 模型列表
   const {
@@ -68,6 +79,64 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   } = useRequest(apiSystemModelList, {
     manual: true,
   });
+
+  // 根据类型选择查询接口
+  const getDataPermissionApi =
+    type === 'role'
+      ? apiGetRoleBoundDataPermissionList
+      : apiGetGroupBoundDataPermissionList;
+
+  // 查询数据权限（用于编辑回显）
+  const { run: runGetDataPermission, loading: getDataPermissionLoading } =
+    useRequest(getDataPermissionApi, {
+      manual: true,
+      onSuccess: (result: DataPermission) => {
+        if (!result) return;
+
+        // 回显表单数据
+        form.setFieldsValue({
+          tokenLimit: {
+            limitPerDay: result.tokenLimit?.limitPerDay ?? -1,
+          },
+          maxSpaceCount: result.maxSpaceCount ?? -1,
+          maxAgentCount: result.maxAgentCount ?? -1,
+          maxPageAppCount: result.maxPageAppCount ?? -1,
+          maxKnowledgeCount: result.maxKnowledgeCount ?? -1,
+          knowledgeStorageLimitGb: result.knowledgeStorageLimitGb ?? -1,
+          maxDataTableCount: result.maxDataTableCount ?? -1,
+          maxScheduledTaskCount: result.maxScheduledTaskCount ?? -1,
+          agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
+          agentComputerSwapGb: result.agentComputerSwapGb ?? 8,
+          agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
+          agentFileStorageDays: result.agentFileStorageDays ?? -1,
+          agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
+          pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
+        });
+
+        // 存储查询到的 modelIds，用于后续处理
+        if (result.modelIds && result.modelIds.length > 0) {
+          setFetchedModelIds(result.modelIds);
+          // 如果返回的不是 [-1]，直接设置选中状态
+          if (!(result.modelIds.length === 1 && result.modelIds[0] === -1)) {
+            setSelectedModelIds(result.modelIds);
+          }
+        } else {
+          setFetchedModelIds(null);
+        }
+
+        // 回显智能体选择
+        if (result.agentIds && result.agentIds.length > 0) {
+          setSelectedAgentIds(result.agentIds);
+        }
+
+        // 回显应用页面选择
+        if (result.pageIds && result.pageIds.length > 0) {
+          setSelectedPageIds(result.pageIds);
+        }
+      },
+    });
+
+  console.log('getDataPermissionLoading', getDataPermissionLoading);
 
   // 广场-已发布智能体列表接口（智能体列表）
   const { loading: agentLoading, run: runAgentList } = useRequest(
@@ -118,6 +187,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
       setSelectedPageIds([]);
+      setFetchedModelIds(null);
       setAgentPage(1);
       setPagePage(1);
       setAgentHasMore(true);
@@ -143,8 +213,38 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         targetType: AgentComponentTypeEnum.Agent,
         targetSubType: 'PageApp',
       });
+
+      // 如果是编辑模式，查询数据权限用于回显
+      if (isEdit && targetId) {
+        runGetDataPermission(targetId);
+      }
     }
-  }, [open, runModelList, runAgentList, runAgentPageList, form]);
+  }, [
+    open,
+    isEdit,
+    targetId,
+    runModelList,
+    runAgentList,
+    runAgentPageList,
+    runGetDataPermission,
+    form,
+  ]);
+
+  // 当 modelList 加载完成且需要回显所有模型时，设置选中状态
+  useEffect(() => {
+    if (
+      modelList &&
+      modelList.length > 0 &&
+      fetchedModelIds &&
+      fetchedModelIds.length === 1 &&
+      fetchedModelIds[0] === -1
+    ) {
+      // 如果查询到的 modelIds 是 [-1]，代表选择的是所有模型
+      // 将 modelList 中所有项的 id 都添加到 selectedModelIds
+      const allModelIds = modelList.map((model: ModelConfigDto) => model.id);
+      setSelectedModelIds(allModelIds);
+    }
+  }, [modelList, fetchedModelIds]);
 
   // 智能体滚动加载
   const handleAgentScroll = () => {
