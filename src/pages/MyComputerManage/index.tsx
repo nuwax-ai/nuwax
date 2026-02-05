@@ -158,7 +158,7 @@ const MyComputerManage: React.FC = () => {
                       <Button
                         type="primary"
                         icon={<DesktopOutlined />}
-                        disabled={true}
+                        disabled={!(item.online && item.isActive) || true}
                         className={cx(styles['remote-btn'], {
                           [styles['offline-btn']]: !item.online,
                         })}
