@@ -32,8 +32,6 @@ const cx = classNames.bind(styles);
 interface DataPermissionModalProps {
   /** 是否打开 */
   open: boolean;
-  /** 是否为编辑模式 */
-  isEdit?: boolean;
   /** 目标ID */
   targetId: number;
   type: 'role' | 'userGroup';
@@ -51,22 +49,31 @@ type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
  */
 const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   open,
-  isEdit,
   targetId,
   type = 'role',
   name,
   onCancel,
 }) => {
   const [form] = Form.useForm();
+  // 当前激活的tab
   const [activeTab, setActiveTab] = useState<TabKey>('model');
+  // 智能体列表
   const [agentList, setAgentList] = useState<SquarePublishedItemInfo[]>([]);
+  // 应用页面列表
   const [pageList, setPageList] = useState<SquarePublishedItemInfo[]>([]);
+  // 选中的模型ID列表
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
+  // 选中的智能体ID列表
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+  // 选中的应用页面ID列表
   const [selectedPageIds, setSelectedPageIds] = useState<number[]>([]);
+  // 智能体分页
   const [agentPage, setAgentPage] = useState<number>(1);
+  // 智能体是否还有更多
   const [agentHasMore, setAgentHasMore] = useState<boolean>(true);
+  // 应用页面分页
   const [pagePage, setPagePage] = useState<number>(1);
+  // 应用页面是否还有更多
   const [pageHasMore, setPageHasMore] = useState<boolean>(true);
   // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
   const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
@@ -181,20 +188,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   // 当弹窗打开时，加载数据
   useEffect(() => {
     if (open) {
-      // 重置表单
-      form.resetFields();
-      // 重置已选中的数据
-      setSelectedModelIds([]);
-      setSelectedAgentIds([]);
-      setSelectedPageIds([]);
-      setFetchedModelIds(null);
-      setAgentPage(1);
-      setPagePage(1);
-      setAgentHasMore(true);
-      setPageHasMore(true);
-      setAgentList([]);
-      setPageList([]);
-
       // 加载模型列表
       runModelList();
 
@@ -215,13 +208,27 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       });
 
       // 如果是编辑模式，查询数据权限用于回显
-      if (isEdit && targetId) {
+      if (targetId) {
         runGetDataPermission(targetId);
       }
+    } else {
+      // 重置表单
+      form.resetFields();
+      // 重置已选中的数据
+      setSelectedModelIds([]);
+      setSelectedAgentIds([]);
+      setSelectedPageIds([]);
+      setFetchedModelIds(null);
+      setAgentPage(1);
+      setPagePage(1);
+      setAgentHasMore(true);
+      setPageHasMore(true);
+      setAgentList([]);
+      setPageList([]);
+      setActiveTab('model');
     }
   }, [
     open,
-    isEdit,
     targetId,
     runModelList,
     runAgentList,
