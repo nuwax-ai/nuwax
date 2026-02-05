@@ -16,7 +16,6 @@ import {
   ResourceBindTypeEnum,
   type ResourceTreeNode,
 } from '../../types/permission-resources';
-import type { MenuTreeNode } from '../../types/role-manage';
 import MenuPermissionTree from './MenuPermissionTree';
 import styles from './index.less';
 
@@ -236,13 +235,13 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
   const buildMenuTree = (
     menus: MenuNodeInfo[],
     selectedIds: React.Key[],
-  ): MenuTreeNode[] => {
+  ): MenuNodeInfo[] => {
     return menus.map((menu) => {
       const isSelected = selectedIds.includes(menu.id);
       const hasChildren = menu.children && menu.children.length > 0;
 
       let menuBindType = MenuBindTypeEnum.Unbound; // 未绑定
-      let children: MenuTreeNode[] | undefined;
+      let children: MenuNodeInfo[] | undefined;
 
       if (hasChildren) {
         // 递归处理子节点
@@ -286,7 +285,7 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       }
 
       return {
-        menuId: menu.id,
+        id: menu.id,
         name: menu.name,
         menuBindType,
         children,

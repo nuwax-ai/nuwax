@@ -2,8 +2,7 @@
  * 角色管理相关的类型定义和枚举
  */
 
-import { MenuBindTypeEnum, UpdateMenuSortItem } from './menu-manage';
-import { ResourceTreeNode } from './permission-resources';
+import { MenuNodeInfo, UpdateMenuSortItem } from './menu-manage';
 
 // ==================== 枚举定义 ====================
 
@@ -127,22 +126,6 @@ export interface UpdateRoleSortParams {
 }
 
 /**
- * 菜单树节点
- */
-export interface MenuTreeNode {
-  // 菜单ID
-  menuId: number;
-  // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
-  menuBindType: MenuBindTypeEnum;
-  // 子菜单列表
-  children?: MenuTreeNode[];
-  // 资源绑定类型 0:未绑定 1:全部绑定 2:部分绑定
-  // resourceBindType: ResourceBindTypeEnum;
-  // 资源树节点
-  resourceTree?: ResourceTreeNode[];
-}
-
-/**
  * 角色绑定菜单参数
  */
 export interface RoleBindMenuParams {
@@ -150,7 +133,7 @@ export interface RoleBindMenuParams {
   roleId: number;
 
   /*菜单树节点 */
-  menuTree: MenuTreeNode[];
+  menuTree: MenuNodeInfo[];
 }
 
 /**
