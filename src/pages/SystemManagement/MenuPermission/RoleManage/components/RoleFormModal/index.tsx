@@ -1,6 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { customizeRequiredMark } from '@/utils/form';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Col,
   Form,
@@ -69,10 +68,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
         code: data.code,
         name: data.name,
         description: data.description,
-        tokenLimit: {
-          limitPerDay: data.tokenLimit?.limitPerDay || -1,
-        },
-        sortIndex: data.sortIndex || 0,
+        sortIndex: data.sortIndex || 1,
         source: data.source || RoleSourceEnum.UserDefined,
         status: data.status === RoleStatusEnum.Enabled,
       });
@@ -113,11 +109,8 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       form.resetFields();
       form.setFieldsValue({
         source: RoleSourceEnum.UserDefined,
-        sortIndex: 0,
+        sortIndex: 1,
         status: true,
-        tokenLimit: {
-          limitPerDay: -1,
-        },
       });
     }
   }, [open, isEdit, roleInfo, form]);
@@ -199,52 +192,30 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
               <Input placeholder="请输入角色名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item label="来源" name="source">
               <Select placeholder="请选择来源" options={ROLE_SOURCE_OPTIONS} />
             </Form.Item>
           </Col>
-          <Col span={12}>
-            <Form.Item
-              label="每日token限制"
-              name={['tokenLimit', 'limitPerDay']}
-              rules={[{ required: true, message: '请输入每日token限制数量' }]}
-              tooltip={{
-                title: '-1表示不限制每日token数量',
-                icon: <InfoCircleOutlined />,
-              }}
-            >
-              <InputNumber
-                placeholder="请输入每日token限制数量"
-                className={cx('w-full')}
-                min={-1}
-                max={1000000000000000}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item label="排序" name="sortIndex">
               <InputNumber
                 placeholder="请输入排序"
                 className={cx('w-full')}
-                min={0}
+                min={1}
                 max={10000}
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item label="状态" name="status" valuePropName="checked">
               <Switch checkedChildren="启用" unCheckedChildren="禁用" />
             </Form.Item>
           </Col>
         </Row>
-
         <Form.Item label="描述" name="description">
           <TextArea
             placeholder="请输入角色描述"
