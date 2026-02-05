@@ -248,7 +248,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           description: menuInfoResponse.description,
           parentId: menuInfoResponse.parentId || undefined,
           path: menuInfoResponse.path,
-          sortIndex: menuInfoResponse.sortIndex || 0,
+          sortIndex: menuInfoResponse.sortIndex || 1,
           visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
           source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
         });
@@ -263,7 +263,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         setImageUrl('');
         setSelectedResourceIds([]);
         form.setFieldsValue({
-          sortIndex: 0,
+          sortIndex: 1,
           visible: true,
           source: MenuSourceEnum.UserDefined,
           // 如果有父菜单，自动设置父节点
@@ -383,7 +383,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       onConfirm={handleSubmit}
       classNames={{
         body: cx(styles.modalBody),
-        header: cx(styles.modalHeader),
       }}
     >
       <Form
@@ -422,6 +421,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="菜单名称"
@@ -431,8 +431,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               <Input placeholder="请输入菜单名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
-        </Row>
-        <Row gutter={16}>
+
           <Col span={12}>
             <Form.Item label="父菜单" name="parentId">
               <TreeSelect
@@ -449,6 +448,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="路由路径"
@@ -464,24 +464,28 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                   message: '路由路径长度不能超过500个字符',
                 },
               ]}
+              tooltip={{
+                title:
+                  '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+                icon: <InfoCircleOutlined />,
+              }}
             >
               <Input placeholder="请输入路由路径，例如：/system/menu" />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item label="来源" name="source">
               <Select placeholder="请选择来源" options={MENU_SOURCE_OPTIONS} />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item label="排序" name="sortIndex">
               <InputNumber
                 placeholder="请输入排序"
                 className={cx('w-full')}
-                min={0}
+                min={1}
                 max={10000}
               />
             </Form.Item>
