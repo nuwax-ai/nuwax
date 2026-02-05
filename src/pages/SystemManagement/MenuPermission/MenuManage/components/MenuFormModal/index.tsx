@@ -45,6 +45,8 @@ interface MenuFormModalProps {
   isEdit?: boolean;
   /** 编辑时的菜单数据 */
   menuInfo?: MenuNodeInfo | null;
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex?: number;
   /** 父菜单（新增子菜单时使用） */
   parentMenu?: MenuNodeInfo | null;
   /** 取消回调 */
@@ -66,9 +68,15 @@ const MENU_SOURCE_OPTIONS = [
 const MenuFormModal: React.FC<MenuFormModalProps> = ({
   open,
   isEdit = false,
+  /** 编辑时的菜单数据 */
   menuInfo,
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex = 1,
+  /** 父菜单（新增子菜单时使用） */
   parentMenu,
+  /** 取消回调 */
   onCancel,
+  /** 成功回调 */
   onSuccess,
 }) => {
   const [form] = Form.useForm();
@@ -143,11 +151,10 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         sortIndex: 1,
         visible: true,
         source: MenuSourceEnum.UserDefined,
-        // 如果有父菜单，自动设置父节点
-        parentId: parentMenu?.id,
+        parentId: undefined,
       });
     }
-  }, [open, isEdit, menuInfo, parentMenu]);
+  }, [open, isEdit, menuInfo]);
 
   const loading = addLoading || updateLoading;
 
@@ -155,7 +162,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   const menuTreeSelectData = useMemo(() => {
     const convertToTreeData = (menus: any[]): any[] => {
       return menus
-        .filter((menu) => menu.id !== 0) // 过滤掉根菜单（id为0）
+        .filter(
+          (menu) => menu.id !== 0 && (isEdit ? menu.id !== menuInfo?.id : true),
+        ) // 过滤掉根菜单（id为0） 编辑模式下过滤掉当前菜单
         .map((menu) => ({
           title: menu.name,
           value: menu.id,
@@ -177,13 +186,13 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
     // 否则过滤掉所有 id 为 0 的节点
     return convertToTreeData(menuTreeList);
-  }, [menuTreeList]);
+  }, [menuTreeList, isEdit, menuInfo]);
 
   // 将资源树转换为Tree需要的数据格式（用于关联资源码选择）
   const resourceTreeData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
       return resources
-        .filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0）
+        .filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0） 编辑模式下过滤掉当前菜单
         .map((resource) => ({
           title: `${resource.name}-(${resource.code})`,
           key: resource.id,
@@ -270,6 +279,16 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       }
     }
   }, [isEdit, menuInfoResponse]);
+
+  // 初始化表单数据（新增模式）
+  useEffect(() => {
+    if (parentMenu && resourceTreeList && resourceTreeList.length > 0) {
+      form.setFieldsValue({
+        sortIndex: defaultSortIndex,
+        parentId: parentMenu?.id,
+      });
+    }
+  }, [resourceTreeList, parentMenu, defaultSortIndex]);
 
   // 处理关联资源码ID选择（onCheck 事件）
   const handleResourceIdsCheck = (

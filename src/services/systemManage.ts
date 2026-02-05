@@ -571,3 +571,15 @@ export async function apiDeleteSandboxUserConfig(
     method: 'POST',
   });
 }
+/**
+ * 更新用户沙盒配置
+ */
+export async function apiUpdateSandboxUserConfig(data: {
+  id: number;
+  name: string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/sandbox/config/update', {
+    method: 'POST',
+    data,
+  });
+}
