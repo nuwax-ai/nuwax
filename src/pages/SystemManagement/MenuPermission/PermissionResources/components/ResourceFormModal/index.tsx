@@ -169,7 +169,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           type: resourceInfoResponse.type,
           parentId: resourceInfoResponse.parentId || undefined,
           path: resourceInfoResponse.path,
-          sortIndex: resourceInfoResponse.sortIndex || 0,
+          sortIndex: resourceInfoResponse.sortIndex || 1,
           visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
           source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
         });
@@ -177,7 +177,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         // 新增模式：重置表单
         form.resetFields();
         form.setFieldsValue({
-          sortIndex: 0,
+          sortIndex: 1,
           type: ResourceTypeEnum.Module,
           visible: true,
           source: ResourceSourceEnum.UserDefined,
@@ -224,7 +224,6 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       onConfirm={handleSubmit}
       classNames={{
         body: cx(styles.modalBody),
-        header: cx(styles.modalHeader),
       }}
     >
       <Form
@@ -234,133 +233,130 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         className={cx(styles.form)}
       >
         {/* 基本信息 */}
-        <div className={cx(styles.section)}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="资源码"
-                name="code"
-                rules={[
-                  { required: true, message: '请输入资源码' },
-                  {
-                    pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                    message:
-                      '资源码必须以英文字母开头，只能包含字母、数字和下划线',
-                  },
-                ]}
-              >
-                <Input
-                  disabled={isEdit}
-                  placeholder="请输入资源码"
-                  maxLength={100}
-                  showCount
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="资源名称"
-                name="name"
-                rules={[{ required: true, message: '请输入资源名称' }]}
-              >
-                <Input placeholder="请输入资源名称" maxLength={50} showCount />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="资源类型"
-                name="type"
-                rules={[{ required: true, message: '请选择资源类型' }]}
-              >
-                <Select
-                  placeholder="请选择资源类型"
-                  options={RESOURCE_TYPE_OPTIONS}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="排序" name="sortIndex">
-                <InputNumber
-                  placeholder="请输入排序"
-                  className={cx('w-full')}
-                  min={0}
-                  max={10000}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="父节点" name="parentId">
-                <TreeSelect
-                  placeholder="请选择父节点（无）"
-                  treeData={treeSelectData}
-                  allowClear
-                  showSearch
-                  treeDefaultExpandAll
-                  filterTreeNode={(inputValue, node) =>
-                    (node.title as string)
-                      ?.toLowerCase()
-                      .includes(inputValue.toLowerCase())
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="路由路径"
-                name="path"
-                rules={[
-                  {
-                    pattern: /^\/[a-zA-Z0-9/?#&=._:@%+ -]+$/,
-                    message:
-                      '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
-                  },
-                  {
-                    max: 500,
-                    message: '路由路径长度不能超过500个字符',
-                  },
-                ]}
-              >
-                <Input placeholder="请输入路由路径，例如：/system/menu" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="来源" name="source">
-                <Select
-                  placeholder="请选择来源"
-                  options={RESOURCE_SOURCE_OPTIONS}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="是否显示"
-                name="visible"
-                valuePropName="checked"
-                tooltip={{
-                  title: '是否显示此资源',
-                  icon: <InfoCircleOutlined />,
-                }}
-              >
-                <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="描述" name="description">
-            <TextArea
-              placeholder="请输入描述"
-              className="dispose-textarea-count"
-              autoSize={{ minRows: 3, maxRows: 5 }}
-              showCount
-              maxLength={500}
-            />
-          </Form.Item>
-        </div>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label="资源码"
+              name="code"
+              rules={[
+                { required: true, message: '请输入资源码' },
+                {
+                  pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+                  message:
+                    '资源码必须以英文字母开头，只能包含字母、数字和下划线',
+                },
+              ]}
+            >
+              <Input
+                disabled={isEdit}
+                placeholder="请输入资源码"
+                maxLength={100}
+                showCount
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="资源名称"
+              name="name"
+              rules={[{ required: true, message: '请输入资源名称' }]}
+            >
+              <Input placeholder="请输入资源名称" maxLength={50} showCount />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="资源类型"
+              name="type"
+              rules={[{ required: true, message: '请选择资源类型' }]}
+            >
+              <Select
+                placeholder="请选择资源类型"
+                options={RESOURCE_TYPE_OPTIONS}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="排序" name="sortIndex">
+              <InputNumber
+                placeholder="请输入排序"
+                className={cx('w-full')}
+                min={1}
+                max={10000}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="父节点" name="parentId">
+              <TreeSelect
+                placeholder="请选择父节点（无）"
+                treeData={treeSelectData}
+                allowClear
+                showSearch
+                treeDefaultExpandAll
+                filterTreeNode={(inputValue, node) =>
+                  (node.title as string)
+                    ?.toLowerCase()
+                    .includes(inputValue.toLowerCase())
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="路由路径"
+              name="path"
+              rules={[
+                {
+                  pattern: /^\/[a-zA-Z0-9/?#&=._:@%+ -]+$/,
+                  message:
+                    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
+                },
+                {
+                  max: 500,
+                  message: '路由路径长度不能超过500个字符',
+                },
+              ]}
+              tooltip={{
+                title:
+                  '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+                icon: <InfoCircleOutlined />,
+              }}
+            >
+              <Input placeholder="请输入路由路径，例如：/system/menu" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="来源" name="source">
+              <Select
+                placeholder="请选择来源"
+                options={RESOURCE_SOURCE_OPTIONS}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="是否显示"
+              name="visible"
+              valuePropName="checked"
+              tooltip={{
+                title: '是否显示此资源',
+                icon: <InfoCircleOutlined />,
+              }}
+            >
+              <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Form.Item label="描述" name="description">
+          <TextArea
+            placeholder="请输入描述"
+            className="dispose-textarea-count"
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            showCount
+            maxLength={500}
+          />
+        </Form.Item>
       </Form>
     </CustomFormModal>
   );
