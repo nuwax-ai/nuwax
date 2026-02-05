@@ -51,6 +51,9 @@ const PermissionResources: React.FC = () => {
     (ResourceTreeNode & { key: number })[]
   >([]);
 
+  // 新增时，默认排序索引，默认1
+  const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
   // 根据条件查询权限资源列表（树形结构）
   const {
     run: runGetResourceList,
@@ -122,15 +125,16 @@ const PermissionResources: React.FC = () => {
     setParentResource(null);
     setIsEdit(false);
     setModalOpen(true);
+    setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
   // 处理新增子资源
   const handleAddChild = (parentResource: ResourceTreeNode) => {
-    console.log(parentResource, '处理新增子资源');
     setEditingResource(null);
     setParentResource(parentResource);
     setIsEdit(false);
     setModalOpen(true);
+    setDefaultSortIndex((parentResource?.children?.length || 0) + 1);
   };
 
   // 处理Modal关闭
@@ -138,6 +142,7 @@ const PermissionResources: React.FC = () => {
     setModalOpen(false);
     setEditingResource(null);
     setParentResource(null);
+    setDefaultSortIndex(1);
   };
 
   // 处理Modal成功
@@ -805,8 +810,12 @@ const PermissionResources: React.FC = () => {
       <ResourceFormModal
         open={modalOpen}
         isEdit={isEdit}
+        // 编辑时，资源信息
         resourceInfo={editingResource}
+        // 新增时，父资源信息
         parentResource={parentResource}
+        /** 新增时，默认排序索引，默认1 */
+        defaultSortIndex={defaultSortIndex}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />

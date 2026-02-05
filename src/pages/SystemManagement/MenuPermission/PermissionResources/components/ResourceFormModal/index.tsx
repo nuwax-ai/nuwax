@@ -40,6 +40,8 @@ interface ResourceFormModalProps {
   isEdit?: boolean;
   /** 编辑时的资源数据 */
   resourceInfo?: ResourceInfo | null;
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex?: number;
   /** 父资源（新增子资源时使用） */
   parentResource?: ResourceTreeNode | null;
   /** 取消回调 */
@@ -67,9 +69,15 @@ const RESOURCE_SOURCE_OPTIONS = [
 const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   open,
   isEdit = false,
+  /** 编辑时，资源信息 */
   resourceInfo,
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex = 1,
+  /** 新增时，父资源信息 */
   parentResource,
+  /** 取消回调 */
   onCancel,
+  /** 成功回调 */
   onSuccess,
 }) => {
   const [form] = Form.useForm();
@@ -119,24 +127,23 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       // 查询资源树列表
       runGetResourceList();
       if (isEdit && resourceInfo) {
-        // 编辑模式：填充表单数据
+        // 编辑模式：查询资源详情
         runGetResourceById(resourceInfo.id);
+      } else {
+        // 新增模式：重置表单并设置初始值
+        form.resetFields();
+        form.setFieldsValue({
+          sortIndex: 1,
+          type: ResourceTypeEnum.Module,
+          visible: true,
+          source: ResourceSourceEnum.UserDefined,
+          parentId: undefined,
+        });
       }
-    } else {
-      // 新增模式：重置表单
-      form.resetFields();
-      form.setFieldsValue({
-        sortIndex: 1,
-        type: ResourceTypeEnum.Module,
-        visible: true,
-        source: ResourceSourceEnum.UserDefined,
-        // 如果有父资源，自动设置父节点
-        parentId: parentResource?.id,
-      });
     }
-  }, [open, isEdit, resourceInfo, parentResource]);
+  }, [open, isEdit, resourceInfo]);
 
-  // 初始化表单数据
+  // 初始化表单数据（编辑模式）
   useEffect(() => {
     if (isEdit && resourceInfoResponse) {
       // 编辑模式：填充表单数据
@@ -154,6 +161,16 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     }
   }, [isEdit, resourceInfoResponse]);
 
+  // 初始化表单数据（新增模式）
+  useEffect(() => {
+    if (parentResource && resourceTreeList && resourceTreeList.length > 0) {
+      form.setFieldsValue({
+        sortIndex: defaultSortIndex,
+        parentId: parentResource?.id,
+      });
+    }
+  }, [resourceTreeList, parentResource, defaultSortIndex]);
+
   const loading = addLoading || updateLoading;
 
   // 将资源树转换为TreeSelect需要的数据格式
@@ -161,7 +178,11 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
       return (
         resources
-          ?.filter((resource) => resource.id !== 0) // 过滤掉根节点（id为0）
+          ?.filter(
+            (resource) =>
+              resource.id !== 0 &&
+              (isEdit ? resource.id !== resourceInfo?.id : true),
+          ) // 过滤掉根节点（id为0） 编辑模式下过滤掉当前资源
           .map((resource) => ({
             title: resource.name,
             value: resource.id,
@@ -184,7 +205,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     }
     // 否则过滤掉所有 id 为 0 的节点
     return convertToTreeData(resourceTreeList);
-  }, [resourceTreeList]);
+  }, [resourceTreeList, isEdit && resourceInfo]);
 
   // 处理提交
   const handleSubmit = async () => {

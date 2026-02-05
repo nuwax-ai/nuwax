@@ -44,6 +44,9 @@ const MenuManage: React.FC = () => {
     (MenuNodeInfo & { key: number })[]
   >([]);
 
+  // 新增时，默认排序索引，默认1
+  const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
   // 根据条件查询菜单列表（树形结构）
   const {
     run: runGetMenuList,
@@ -102,6 +105,7 @@ const MenuManage: React.FC = () => {
     setParentMenu(null);
     setIsEdit(false);
     setModalOpen(true);
+    setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
   // 处理新增子菜单
@@ -110,6 +114,7 @@ const MenuManage: React.FC = () => {
     setParentMenu(parentMenu);
     setIsEdit(false);
     setModalOpen(true);
+    setDefaultSortIndex((parentMenu?.children?.length || 0) + 1);
   };
 
   // 处理Modal关闭
@@ -117,6 +122,7 @@ const MenuManage: React.FC = () => {
     setModalOpen(false);
     setEditingMenu(null);
     setParentMenu(null);
+    setDefaultSortIndex(1);
   };
 
   // 处理Modal成功
@@ -782,7 +788,11 @@ const MenuManage: React.FC = () => {
       <MenuFormModal
         open={modalOpen}
         isEdit={isEdit}
+        // 编辑时，菜单信息
         menuInfo={editingMenu}
+        // 新增时，默认排序索引，默认1
+        defaultSortIndex={defaultSortIndex}
+        // 新增时，父菜单信息
         parentMenu={parentMenu}
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
