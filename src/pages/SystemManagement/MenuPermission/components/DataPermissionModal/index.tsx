@@ -576,7 +576,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   initialValue={4}
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '智能体电脑内存 (GB，留空表示使用默认值4)',
+                    title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
                   }}
                 >
                   <InputNumber className={cx('w-full')} min={0} />
@@ -590,7 +590,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   initialValue={8}
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '智能体电脑交换分区(GB)，null表示使用默认值8',
+                    title: '智能体电脑交换分区(GB)，留空表示使用默认值8GB',
                   }}
                 >
                   <InputNumber className={cx('w-full')} min={0} />

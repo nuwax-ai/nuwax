@@ -4,6 +4,7 @@
   max-height: 400px;
   overflow-y: auto;
   overflow-x: hidden;
+  padding-top: @paddingSm;
 }
 
 .dataPermissionForm {
@@ -15,4 +16,10 @@
 .scrollContainer {
   max-height: 400px;
   overflow: auto;
+}
+
+:global {
+  .ant-tabs-top > .ant-tabs-nav {
+    margin-bottom: 0;
+  }
 }
