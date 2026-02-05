@@ -46,7 +46,7 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       grid={true}
       autoFocusFirstInput
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
         onCancel: onCancel,
       }}
       submitter={{
