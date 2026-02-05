@@ -94,56 +94,53 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       : apiGetGroupBoundDataPermissionList;
 
   // 查询数据权限（用于编辑回显）
-  const { run: runGetDataPermission, loading: getDataPermissionLoading } =
-    useRequest(getDataPermissionApi, {
-      manual: true,
-      onSuccess: (result: DataPermission) => {
-        if (!result) return;
+  const { run: runGetDataPermission } = useRequest(getDataPermissionApi, {
+    manual: true,
+    onSuccess: (result: DataPermission) => {
+      if (!result) return;
 
-        // 回显表单数据
-        form.setFieldsValue({
-          tokenLimit: {
-            limitPerDay: result.tokenLimit?.limitPerDay ?? -1,
-          },
-          maxSpaceCount: result.maxSpaceCount ?? -1,
-          maxAgentCount: result.maxAgentCount ?? -1,
-          maxPageAppCount: result.maxPageAppCount ?? -1,
-          maxKnowledgeCount: result.maxKnowledgeCount ?? -1,
-          knowledgeStorageLimitGb: result.knowledgeStorageLimitGb ?? -1,
-          maxDataTableCount: result.maxDataTableCount ?? -1,
-          maxScheduledTaskCount: result.maxScheduledTaskCount ?? -1,
-          agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
-          agentComputerSwapGb: result.agentComputerSwapGb ?? 8,
-          agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
-          agentFileStorageDays: result.agentFileStorageDays ?? -1,
-          agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
-          pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
-        });
+      // 回显表单数据
+      form.setFieldsValue({
+        tokenLimit: {
+          limitPerDay: result.tokenLimit?.limitPerDay ?? -1,
+        },
+        maxSpaceCount: result.maxSpaceCount ?? -1,
+        maxAgentCount: result.maxAgentCount ?? -1,
+        maxPageAppCount: result.maxPageAppCount ?? -1,
+        maxKnowledgeCount: result.maxKnowledgeCount ?? -1,
+        knowledgeStorageLimitGb: result.knowledgeStorageLimitGb ?? -1,
+        maxDataTableCount: result.maxDataTableCount ?? -1,
+        maxScheduledTaskCount: result.maxScheduledTaskCount ?? -1,
+        agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
+        agentComputerSwapGb: result.agentComputerSwapGb ?? 8,
+        agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
+        agentFileStorageDays: result.agentFileStorageDays ?? -1,
+        agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
+        pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
+      });
 
-        // 存储查询到的 modelIds，用于后续处理
-        if (result.modelIds && result.modelIds.length > 0) {
-          setFetchedModelIds(result.modelIds);
-          // 如果返回的不是 [-1]，直接设置选中状态
-          if (!(result.modelIds.length === 1 && result.modelIds[0] === -1)) {
-            setSelectedModelIds(result.modelIds);
-          }
-        } else {
-          setFetchedModelIds(null);
+      // 存储查询到的 modelIds，用于后续处理
+      if (result.modelIds && result.modelIds.length > 0) {
+        setFetchedModelIds(result.modelIds);
+        // 如果返回的不是 [-1]，直接设置选中状态
+        if (!(result.modelIds.length === 1 && result.modelIds[0] === -1)) {
+          setSelectedModelIds(result.modelIds);
         }
+      } else {
+        setFetchedModelIds(null);
+      }
 
-        // 回显智能体选择
-        if (result.agentIds && result.agentIds.length > 0) {
-          setSelectedAgentIds(result.agentIds);
-        }
+      // 回显智能体选择
+      if (result.agentIds && result.agentIds.length > 0) {
+        setSelectedAgentIds(result.agentIds);
+      }
 
-        // 回显应用页面选择
-        if (result.pageIds && result.pageIds.length > 0) {
-          setSelectedPageIds(result.pageIds);
-        }
-      },
-    });
-
-  console.log('getDataPermissionLoading', getDataPermissionLoading);
+      // 回显应用页面选择
+      if (result.pageIds && result.pageIds.length > 0) {
+        setSelectedPageIds(result.pageIds);
+      }
+    },
+  });
 
   // 广场-已发布智能体列表接口（智能体列表）
   const { loading: agentLoading, run: runAgentList } = useRequest(
