@@ -33,6 +33,8 @@ interface RoleFormModalProps {
   open: boolean;
   /** 是否为编辑模式 */
   isEdit?: boolean;
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex?: number;
   /** 编辑时的角色数据 */
   roleInfo?: RoleInfo | null;
   /** 取消回调 */
@@ -54,6 +56,9 @@ const ROLE_SOURCE_OPTIONS = [
 const RoleFormModal: React.FC<RoleFormModalProps> = ({
   open,
   isEdit = false,
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex = 1,
+  /** 编辑时的角色数据 */
   roleInfo,
   onCancel,
   onSuccess,
@@ -103,17 +108,17 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     if (open) {
       if (isEdit && roleInfo) {
         runGetRoleById(roleInfo.id);
+      } else {
+        // 新增模式：重置表单
+        form.resetFields();
+        form.setFieldsValue({
+          source: RoleSourceEnum.UserDefined,
+          sortIndex: defaultSortIndex || 1,
+          status: true,
+        });
       }
-    } else {
-      // 新增模式：重置表单
-      form.resetFields();
-      form.setFieldsValue({
-        source: RoleSourceEnum.UserDefined,
-        sortIndex: 1,
-        status: true,
-      });
     }
-  }, [open, isEdit, roleInfo, form]);
+  }, [open, isEdit, roleInfo, defaultSortIndex]);
 
   // 处理提交
   const handleSubmit = async () => {

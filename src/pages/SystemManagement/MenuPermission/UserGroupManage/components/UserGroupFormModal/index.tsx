@@ -34,6 +34,8 @@ interface UserGroupFormModalProps {
   open: boolean;
   /** 是否为编辑模式 */
   isEdit?: boolean;
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex?: number;
   /** 编辑时的用户组数据 */
   userGroupInfo?: UserGroupInfo | null;
   /** 取消回调 */
@@ -55,6 +57,9 @@ const USER_GROUP_SOURCE_OPTIONS = [
 const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   open,
   isEdit = false,
+  /** 新增时，默认排序索引，默认1 */
+  defaultSortIndex = 1,
+  /** 编辑时的用户组数据 */
   userGroupInfo,
   onCancel,
   onSuccess,
@@ -109,18 +114,18 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       if (isEdit && userGroupInfo) {
         // 编辑模式：通过接口查询用户组信息
         runGetUserGroupById(userGroupInfo.id);
+      } else {
+        // 新增模式：重置表单
+        form.resetFields();
+        form.setFieldsValue({
+          source: UserGroupSourceEnum.UserDefined,
+          sortIndex: defaultSortIndex || 1,
+          status: true,
+          maxUserCount: -1,
+        });
       }
-    } else {
-      // 新增模式：重置表单
-      form.resetFields();
-      form.setFieldsValue({
-        source: UserGroupSourceEnum.UserDefined,
-        sortIndex: 1,
-        status: true,
-        maxUserCount: -1,
-      });
     }
-  }, [open, isEdit, userGroupInfo, form]);
+  }, [open, isEdit, userGroupInfo, defaultSortIndex]);
 
   // 处理提交
   const handleSubmit = async () => {

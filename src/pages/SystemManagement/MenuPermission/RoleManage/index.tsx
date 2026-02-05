@@ -62,6 +62,9 @@ const RoleManage: React.FC = () => {
     (RoleInfo & { key: number })[]
   >([]);
 
+  // 新增时，默认排序索引，默认1
+  const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
   // 查询角色列表
   const {
     run: runGetRoleList,
@@ -150,12 +153,15 @@ const RoleManage: React.FC = () => {
     setCurrentRole(null);
     setIsEdit(false);
     setModalOpen(true);
+    // 新增时，默认排序索引，默认1
+    setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
     setCurrentRole(null);
+    setDefaultSortIndex(1);
   };
 
   // 处理Modal成功
@@ -375,7 +381,11 @@ const RoleManage: React.FC = () => {
       <RoleFormModal
         open={modalOpen}
         isEdit={isEdit}
+        /** 编辑时的角色数据 */
         roleInfo={currentRole}
+        /** 新增时，默认排序索引，默认1 */
+        defaultSortIndex={defaultSortIndex}
+        /** 取消回调 */
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />

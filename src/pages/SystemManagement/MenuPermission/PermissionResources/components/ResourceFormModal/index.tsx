@@ -133,7 +133,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         // 新增模式：重置表单并设置初始值
         form.resetFields();
         form.setFieldsValue({
-          sortIndex: 1,
+          sortIndex: defaultSortIndex || 1,
           type: ResourceTypeEnum.Module,
           visible: true,
           source: ResourceSourceEnum.UserDefined,
@@ -141,7 +141,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         });
       }
     }
-  }, [open, isEdit, resourceInfo]);
+  }, [open, isEdit, resourceInfo, defaultSortIndex]);
 
   // 初始化表单数据（编辑模式）
   useEffect(() => {
