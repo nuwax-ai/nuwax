@@ -3,7 +3,9 @@ import { request } from 'umi';
 import type { MenuNodeInfo } from '../types/menu-manage';
 import type {
   AddRoleParams,
+  DataPermission,
   GetRoleListParams,
+  RoleBindDataPermissionParams,
   RoleBindMenuParams,
   RoleBindUserParams,
   RoleInfo,
@@ -72,6 +74,19 @@ export async function apiRoleBindMenu(
 }
 
 /**
+ * 角色绑定数据权限（全量覆盖）
+ * 对应文档：权限管理-角色 / bindDataPermission
+ */
+export async function apiRoleBindDataPermission(
+  data: RoleBindDataPermissionParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/role/bind-data-permission', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 添加角色
  * @param data
  * @returns Promise<RequestResponse<null>>
@@ -101,7 +116,7 @@ export async function apiGetRoleById(
 /**
  * 根据条件查询角色
  * @param data 查询条件
- * @returns Promise<RequestResponse<RoleInfo>>
+ * @returns Promise<RequestResponse<RoleInfo[]>>
  */
 export async function apiGetRoleList(
   data?: GetRoleListParams,
@@ -115,7 +130,7 @@ export async function apiGetRoleList(
 /**
  * 查询角色已绑定的用户
  * @param roleId 角色ID
- * @returns Promise<RequestResponse<UserInfo>>
+ * @returns Promise<RequestResponse<UserInfo[]>>
  */
 export async function apiGetRoleBoundUserList(
   roleId: number,
@@ -134,6 +149,19 @@ export async function apiGetRoleBoundMenuList(
   roleId: number,
 ): Promise<RequestResponse<MenuNodeInfo[]>> {
   return request(`/api/system/role/list-menu/${roleId}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 查询角色数据权限
+ * @param roleId 角色ID
+ * @returns Promise<RequestResponse<DataPermission>>
+ */
+export async function apiGetRoleBoundDataPermissionList(
+  roleId: number,
+): Promise<RequestResponse<DataPermission>> {
+  return request(`/api/system/role/data-permission/${roleId}`, {
     method: 'GET',
   });
 }

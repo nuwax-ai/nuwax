@@ -1,10 +1,11 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import { MenuNodeInfo } from '../types/menu-manage';
-import { UserInfo } from '../types/role-manage';
+import { DataPermission, UserInfo } from '../types/role-manage';
 import type {
   AddUserGroupParams,
   GetUserGroupListParams,
+  GroupBindDataPermissionParams,
   GroupBindMenuParams,
   GroupBindUserParams,
   UpdateUserGroupParams,
@@ -60,12 +61,24 @@ export async function apiGroupBindUser(
 }
 
 /**
- * 组绑定菜单权限（全量覆盖）
+ * 组绑定菜单（全量覆盖）
  */
 export async function apiGroupBindMenu(
   data: GroupBindMenuParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/group/bind-menu', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 组绑定数据权限（全量覆盖）
+ */
+export async function apiGroupBindDataPermission(
+  data: GroupBindDataPermissionParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/group/bind-data-permission', {
     method: 'POST',
     data,
   });
@@ -110,7 +123,7 @@ export async function apiGetUserGroupList(
  * 查询组已绑定的用户列表
  */
 export async function apiGetGroupUserList(
-  groupId?: number,
+  groupId: number,
 ): Promise<RequestResponse<UserInfo[]>> {
   return request(`/api/system/group/list-user/${groupId}`, {
     method: 'GET',
@@ -121,9 +134,20 @@ export async function apiGetGroupUserList(
  * 查询组已绑定的菜单权限（树形结构）
  */
 export async function apiGetGroupMenuList(
-  groupId?: number,
+  groupId: number,
 ): Promise<RequestResponse<MenuNodeInfo[]>> {
   return request(`/api/system/group/list-menu/${groupId}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 查询用户组数据权限
+ */
+export async function apiGetGroupBoundDataPermissionList(
+  groupId: number,
+): Promise<RequestResponse<DataPermission>> {
+  return request(`/api/system/group/data-permission/${groupId}`, {
     method: 'GET',
   });
 }
@@ -132,7 +156,7 @@ export async function apiGetGroupMenuList(
  * 根据编码查询组
  */
 export async function apiGetGroupByCode(
-  groupCode?: string,
+  groupCode: string,
 ): Promise<RequestResponse<UserGroupInfo>> {
   return request(`/api/system/group/code/${groupCode}`, {
     method: 'GET',

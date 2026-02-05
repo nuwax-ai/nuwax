@@ -219,7 +219,7 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Publish_Audit &&
         pathname.includes('audit')) ||
       (type === SystemManageListEnum.User_Manage &&
-        pathname.includes('user')) ||
+        pathname.includes('/user/manage')) ||
       (type === SystemManageListEnum.Published_Manage &&
         pathname.includes('published')) ||
       (type === SystemManageListEnum.Global_Model_Manage &&
