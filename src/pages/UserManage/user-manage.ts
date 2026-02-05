@@ -1,7 +1,10 @@
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { RoleInfo } from '@/types/interfaces/conversationInfo';
+import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import { MenuNodeInfo } from '../SystemManagement/MenuPermission/types/menu-manage';
+import { DataPermission } from '../SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '../SystemManagement/MenuPermission/types/user-group-manage';
 
 interface UserBindRoleParams {
@@ -58,5 +61,40 @@ export async function apiSystemUserListGroup(
 ): Promise<RequestResponse<UserGroupInfo[]>> {
   return request(`/api/system/user/list-group/${userId}`, {
     method: 'GET',
+  });
+}
+
+// 用户数据权限
+export interface UserDataPermission extends DataPermission {
+  // 用户ID
+  userId: number;
+}
+
+// 查询用户数据权限
+export async function apiSystemUserDataPermission(
+  userId: number,
+): Promise<RequestResponse<UserDataPermission>> {
+  return request(`/api/system/user/data-permission/${userId}`, {
+    method: 'GET',
+  });
+}
+
+// 根据id列表查询智能体列表
+export async function apiSystemResourceAgentListByIds(data: {
+  ids: number[];
+}): Promise<RequestResponse<AgentConfigInfo[]>> {
+  return request('/api/system/resource/agent/list-by-ids', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 根据id列表查询应用列表
+export async function apiSystemResourcePageListByIds(data: {
+  ids: number[];
+}): Promise<RequestResponse<CustomPageDto[]>> {
+  return request('/api/system/resource/page/list-by-ids', {
+    method: 'POST',
+    data,
   });
 }

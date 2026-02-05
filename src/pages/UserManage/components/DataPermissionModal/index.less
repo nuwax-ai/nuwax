@@ -1,0 +1,32 @@
+@import '@/styles/token';
+
+.dataPermissionFormWrapper {
+  height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: @paddingSm;
+}
+
+.dataPermissionForm {
+  // 抵消 Row gutter 的负边距
+  margin: 0 -8px;
+  padding: 0 8px;
+}
+
+.scrollContainer {
+  max-height: 400px;
+  overflow: auto;
+}
+
+:global {
+  .ant-tabs-top > .ant-tabs-nav {
+    margin-bottom: 0;
+  }
+
+  .ant-modal-title {
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
