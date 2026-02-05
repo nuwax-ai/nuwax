@@ -59,6 +59,26 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
+  gap: 16px; /* 增大间距 */
+}
+
+.name-space {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+
+  :global {
+    .ant-space-item {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      align-items: center;
+
+      &:last-child {
+        flex: none;
+      }
+    }
+  }
 }
 
 .card-name {
@@ -66,7 +86,24 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 8px;
+  width: 100%;
+}
+
+.status-tag {
+  flex-shrink: 0;
+  margin-right: 0 !important;
+}
+
+.edit-icon {
+  font-size: 14px;
+  color: var(--ant-color-text-secondary);
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--ant-color-primary);
+  }
 }
 
 .card-ip {
