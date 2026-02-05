@@ -154,13 +154,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      * 请求参数 spaceId 固定为 0，支持服务端分页与搜索条件透传
      */
     const request = useCallback(async (tableParams: Record<string, any>) => {
-      const { current, pageSize, taskName } = tableParams;
+      const { current, pageSize, taskName, creatorName } = tableParams;
 
       try {
         const resp = await apiSystemTaskList({
           pageNo: current || 1,
           pageSize: pageSize || 10,
           name: taskName?.trim(),
+          creatorName: creatorName?.trim(),
         });
 
         if (resp?.code === SUCCESS_CODE) {
@@ -364,11 +365,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         },
         {
           title: '创建人',
-          dataIndex: ['creator', 'userName'],
+          dataIndex: 'creatorName',
           ellipsis: true,
           width: 170,
-          hideInSearch: true,
-          // render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
+          render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
+          fieldProps: {
+            placeholder: '请输入创建人',
+            allowClear: true,
+          },
         },
         {
           title: '创建时间',
