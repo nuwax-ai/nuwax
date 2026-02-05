@@ -52,7 +52,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
       width={520}
       autoFocusFirstInput
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
         onCancel: onCancel,
       }}
       submitter={{
