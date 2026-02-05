@@ -58,6 +58,14 @@ const UserGroupManage: React.FC = () => {
   const [currentUserGroup, setCurrentUserGroup] =
     useState<UserGroupInfo | null>();
 
+  // 拖拽排序的数据源
+  const [draggableData, setDraggableData] = useState<
+    (UserGroupInfo & { key: number })[]
+  >([]);
+
+  // 新增时，默认排序索引，默认1
+  const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
   // 查询用户组列表
   const {
     run: runGetUserGroupList,
@@ -114,12 +122,14 @@ const UserGroupManage: React.FC = () => {
     setCurrentUserGroup(null);
     setIsEdit(false);
     setModalOpen(true);
+    setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
   // 处理Modal关闭
   const handleModalCancel = () => {
     setModalOpen(false);
     setCurrentUserGroup(null);
+    setDefaultSortIndex(1);
   };
 
   // 处理Modal成功
@@ -186,11 +196,6 @@ const UserGroupManage: React.FC = () => {
     );
     return filteredList.length > 0 ? transformData(filteredList) : [];
   }, [userGroupList]);
-
-  // 拖拽排序的数据源
-  const [draggableData, setDraggableData] = useState<
-    (UserGroupInfo & { key: number })[]
-  >([]);
 
   // 同步 tableData 到 draggableData
   useEffect(() => {
@@ -396,8 +401,13 @@ const UserGroupManage: React.FC = () => {
       <UserGroupFormModal
         open={modalOpen}
         isEdit={isEdit}
+        /** 新增时，默认排序索引，默认1 */
+        defaultSortIndex={defaultSortIndex}
+        /** 编辑时的用户组数据 */
         userGroupInfo={currentUserGroup}
+        /** 取消回调 */
         onCancel={handleModalCancel}
+        /** 成功回调 */
         onSuccess={handleModalSuccess}
       />
 
