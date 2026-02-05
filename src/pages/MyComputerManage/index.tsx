@@ -4,11 +4,13 @@ import {
   apiDeleteSandboxUserConfig,
   apiGetSandboxUserConfigList,
   apiToggleSandboxConfig,
+  apiUpdateSandboxUserConfig,
 } from '@/services/systemManage';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
   DesktopOutlined,
+  EditOutlined,
   ExclamationCircleOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
@@ -17,6 +19,7 @@ import {
   Card,
   Col,
   Empty,
+  Input,
   Modal,
   Radio,
   Row,
@@ -100,6 +103,41 @@ const MyComputerManage: React.FC = () => {
     });
   };
 
+  // 处理重命名
+  const handleRename = (item: SandboxItem) => {
+    let newName = item.name;
+    confirm({
+      title: '修改电脑名称',
+      content: (
+        <div style={{ marginTop: 16 }}>
+          <Input
+            defaultValue={item.name}
+            placeholder="请输入新名称"
+            onChange={(e) => (newName = e.target.value)}
+          />
+        </div>
+      ),
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        if (!newName?.trim()) {
+          message.warning('名称不能为空');
+          return Promise.reject();
+        }
+        const res = await apiUpdateSandboxUserConfig({
+          id: item.id,
+          name: newName.trim(),
+        });
+        if (res.code === SUCCESS_CODE) {
+          message.success('修改成功');
+          fetchList();
+        } else {
+          return Promise.reject();
+        }
+      },
+    });
+  };
+
   return (
     <WorkspaceLayout
       title="我的电脑管理"
@@ -139,10 +177,22 @@ const MyComputerManage: React.FC = () => {
                   <div className={styles['card-body']}>
                     <div className={styles['card-info']}>
                       <div className={styles['card-title-line']}>
-                        <Typography.Text strong className={styles['card-name']}>
-                          {item.name}
-                        </Typography.Text>
-                        <Tag color={item.online ? 'success' : 'default'}>
+                        <Space className={styles['name-space']}>
+                          <Typography.Text
+                            strong
+                            className={styles['card-name']}
+                          >
+                            {item.name}
+                          </Typography.Text>
+                          <EditOutlined
+                            className={styles['edit-icon']}
+                            onClick={() => handleRename(item)}
+                          />
+                        </Space>
+                        <Tag
+                          color={item.online ? 'success' : 'default'}
+                          className={styles['status-tag']}
+                        >
                           {item.online ? '在线' : '离线'}
                         </Tag>
                       </div>
