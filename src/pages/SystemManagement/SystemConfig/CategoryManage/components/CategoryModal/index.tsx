@@ -11,6 +11,7 @@ export interface CategoryItem {
   name: string;
   code: string;
   description: string;
+  created?: string;
 }
 
 interface CategoryModalProps {

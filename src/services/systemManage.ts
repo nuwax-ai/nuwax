@@ -1,3 +1,4 @@
+import { CategoryTypeEnum } from '@/types/enums/agent';
 import { TaskCronInfo } from '@/types/interfaces/agentTask';
 import { UpdateTimedTaskParams } from '@/types/interfaces/library';
 import { ModelSaveParams } from '@/types/interfaces/model';
@@ -579,6 +580,61 @@ export async function apiUpdateSandboxUserConfig(data: {
   name: string;
 }): Promise<RequestResponse<null>> {
   return request('/api/sandbox/config/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 查询分类列表
+ */
+export async function apiSystemCategoryList(params: {
+  type: CategoryTypeEnum;
+}): Promise<RequestResponse<any[]>> {
+  return request('/api/system/category/list', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 创建分类
+ */
+export async function apiSystemCategoryCreate(data: {
+  name: string;
+  code: string;
+  description: string;
+  type: CategoryTypeEnum | string;
+}): Promise<RequestResponse<any>> {
+  return request('/api/system/category/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新分类
+ */
+export async function apiSystemCategoryUpdate(data: {
+  id: string | number;
+  name: string;
+  code: string;
+  description: string;
+  type: CategoryTypeEnum | string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/category/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 删除分类
+ */
+export async function apiSystemCategoryDelete(data: {
+  id: string | number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/category/delete', {
     method: 'POST',
     data,
   });

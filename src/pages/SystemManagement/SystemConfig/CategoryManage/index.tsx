@@ -1,80 +1,60 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import {
+  apiSystemCategoryCreate,
+  apiSystemCategoryDelete,
+  apiSystemCategoryList,
+  apiSystemCategoryUpdate,
+} from '@/services/systemManage';
+import { CategoryTypeEnum } from '@/types/enums/agent';
+import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { ProList } from '@ant-design/pro-components';
-import { Button, Modal, Segmented, Space, message } from 'antd';
+import { App, Button, Segmented, Space } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useRequest } from 'umi';
 import CategoryModal, { CategoryItem } from './components/CategoryModal';
 import styles from './index.less';
 
-const { confirm } = Modal;
-
 const CategoryManage: React.FC = () => {
-  const [activeKey, setActiveKey] = useState<string>('agent');
-  const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState<CategoryItem[]>([]);
+  const { modal, message } = App.useApp();
+  const { confirm } = modal;
+  const [activeKey, setActiveKey] = useState<string>(CategoryTypeEnum.Agent);
 
   // 弹窗状态
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingData, setEditingData] = useState<CategoryItem | null>(null);
 
-  // 模拟数据加载
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      const mockData: CategoryItem[] = [
-        {
-          id: '1',
-          name: '对话助手',
-          code: 'dialogue_assistant',
-          description: '智能对话与问答类智能体',
-        },
-        {
-          id: '2',
-          name: '数据分析',
-          code: 'data_analysis',
-          description: '数据处理与分析类智能体',
-        },
-        {
-          id: '3',
-          name: '内容创作',
-          code: 'content_creation',
-          description: '文本生成与创作类智能体',
-        },
-        {
-          id: '4',
-          name: '代码助手',
-          code: 'code_assistant',
-          description: '编程辅助与代码生成类智能体',
-        },
-        {
-          id: '5',
-          name: '翻译助手',
-          code: 'translation_assistant',
-          description: '多语言翻译与本地化类智能体',
-        },
-      ];
-      setDataSource(mockData);
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [activeKey]);
+  // 获取分类列表
+  const {
+    data: dataSource = [],
+    loading,
+    run: refreshList,
+  } = useRequest(
+    () => apiSystemCategoryList({ type: activeKey as CategoryTypeEnum }),
+    {
+      refreshDeps: [activeKey],
+    },
+  );
 
   const segmentedOptions = [
-    { label: '智能体', value: 'agent' },
-    { label: '组件', value: 'component' },
-    { label: '应用', value: 'application' },
+    { label: '智能体', value: CategoryTypeEnum.Agent },
+    { label: '组件', value: CategoryTypeEnum.Component },
+    { label: '应用', value: CategoryTypeEnum.PageApp },
   ];
 
+  // 获取当前分类标签
+  const getCurrentCategoryLabel = () => {
+    return segmentedOptions.find((t) => t.value === activeKey)?.label || '';
+  };
+
   const getHeaderTitle = () => {
-    const label =
-      segmentedOptions.find((t) => t.value === activeKey)?.label || '';
+    const label = getCurrentCategoryLabel();
     return (
       <Space align="baseline">
         <span>{label}分类</span>
@@ -102,60 +82,52 @@ const CategoryManage: React.FC = () => {
   // 删除分类
   const handleDelete = (record: CategoryItem) => {
     confirm({
-      title: '确认删除该分类？',
+      title: '确认删除',
       icon: <ExclamationCircleOutlined />,
-      content: `将会永久删除分类 "${record.name}"，请确认操作。`,
+      content: `确定要删除此分类吗？此操作无法撤销。`,
       okText: '确认',
       cancelText: '取消',
       onOk: async () => {
-        // 模拟接口调用
-        await new Promise((resolve) => {
-          setTimeout(resolve, 500);
-        });
-        setDataSource((prev) => prev.filter((item) => item.id !== record.id));
-        message.success('分类已删除');
+        try {
+          const res = await apiSystemCategoryDelete({ id: record.id });
+          if (res.success) {
+            message.success('分类已删除');
+            refreshList();
+          }
+        } catch (error) {
+          console.error('删除分类失败:', error);
+        }
       },
     });
   };
 
   // 提交分类
   const handleModalFinish = async (values: any) => {
-    // 模拟接口调用
-    await new Promise((resolve) => {
-      setTimeout(resolve, 800);
-    });
-
-    if (modalMode === 'add') {
-      const newItem: CategoryItem = {
-        id: Date.now().toString(),
-        name: values.name,
-        code: values.code,
-        description: values.description,
+    try {
+      const params = {
+        ...values,
+        id: modalMode === 'edit' ? editingData?.id : undefined,
+        type: activeKey as CategoryTypeEnum,
       };
-      setDataSource((prev) => [newItem, ...prev]);
-      message.success('分类添加成功');
-    } else {
-      setDataSource((prev) =>
-        prev.map((item) =>
-          item.id === editingData?.id
-            ? {
-                ...item,
-                name: values.name,
-                code: values.code,
-                description: values.description,
-              }
-            : item,
-        ),
-      );
-      message.success('分类修改成功');
-    }
-    setModalOpen(false);
-    return true;
-  };
 
-  // 获取当前分类标签
-  const getCurrentCategoryLabel = () => {
-    return segmentedOptions.find((t) => t.value === activeKey)?.label || '';
+      const apiFunc =
+        modalMode === 'add' ? apiSystemCategoryCreate : apiSystemCategoryUpdate;
+      const res = await apiFunc(params);
+
+      if (res.success) {
+        message.success(
+          `${getCurrentCategoryLabel()}分类${
+            modalMode === 'add' ? '添加' : '修改'
+          }成功`,
+        );
+        refreshList();
+        setModalOpen(false);
+        return true;
+      }
+    } catch (error) {
+      console.error('保存分类失败:', error);
+    }
+    return false;
   };
 
   return (
