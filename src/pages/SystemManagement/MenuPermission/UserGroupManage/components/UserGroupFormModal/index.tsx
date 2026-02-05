@@ -60,9 +60,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  // const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
-  // 是否全部模型已选中
-  // const [allModelSelected, setAllModelSelected] = useState<boolean>(false);
 
   // 新增
   const { run: runAddUserGroup, loading: addLoading } = useRequest(
@@ -88,14 +85,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     },
   );
 
-  // 查询模型列表
-  // const { run: runModelList, data: modelList } = useRequest(
-  //   apiSystemModelList,
-  //   {
-  //     manual: true,
-  //   },
-  // );
-
   // 根据ID查询用户组
   const { run: runGetUserGroupById } = useRequest(apiGetUserGroupById, {
     manual: true,
@@ -105,40 +94,18 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
         name: data.name,
         description: data.description,
         maxUserCount: data.maxUserCount,
-        tokenLimit: {
-          limitPerDay: data.tokenLimit?.limitPerDay || -1,
-        },
-        sortIndex: data.sortIndex || 0,
+        sortIndex: data.sortIndex || 1,
         status: data.status === UserGroupStatusEnum.Enabled,
         source: data.source || UserGroupSourceEnum.UserDefined,
       });
-      // 处理模型ID：如果modelIds只存在一项且为0，则从modelList中设置全部模型id
-      // if (data?.modelIds && data?.modelIds?.length > 0) {
-      //   if (data?.modelIds?.length === 1 && data?.modelIds[0] === 0) {
-      //     // 如果模型ID列表长度为1，且为0，则设置为全部模型
-      //     setAllModelSelected(true);
-      //   } else {
-      //     setSelectedModelIds(data.modelIds || []);
-      //   }
-      // }
     },
   });
-
-  // 当 modelList 加载完成后，处理待处理的 modelIds
-  // useEffect(() => {
-  //   // 如果模型列表长度大于0，且全部模型已选中，则设置为全部模型ID列表
-  //   if (modelList?.length > 0 && allModelSelected) {
-  //     setSelectedModelIds(modelList.map((item: ModelConfigDto) => item.id));
-  //   }
-  // }, [modelList, allModelSelected]);
 
   const loading = addLoading || updateLoading;
 
   // 初始化表单数据
   useEffect(() => {
     if (open) {
-      // 查询模型列表
-      // runModelList();
       if (isEdit && userGroupInfo) {
         // 编辑模式：通过接口查询用户组信息
         runGetUserGroupById(userGroupInfo.id);
@@ -148,14 +115,10 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       form.resetFields();
       form.setFieldsValue({
         source: UserGroupSourceEnum.UserDefined,
-        sortIndex: 0,
+        sortIndex: 1,
         status: true,
-        tokenLimit: {
-          limitPerDay: -1,
-        },
+        maxUserCount: -1,
       });
-      // setAllModelSelected(false);
-      // setSelectedModelIds([]);
     }
   }, [open, isEdit, userGroupInfo, form]);
 
@@ -164,18 +127,8 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     try {
       const values = await form.validateFields();
 
-      // 处理模型ID：全部模型传[0],未选中任何模型不传值
-      // let modelIds: number[] | undefined;
-      // if (selectedModelIds.length > 0) {
-      //   // 检查是否选中了全部模型
-      //   const isAllSelected =
-      //     modelList?.length > 0 && selectedModelIds.length === modelList.length;
-      //   modelIds = isAllSelected ? [0] : selectedModelIds;
-      // }
-
       const formData = {
         ...values,
-        // modelIds,
         status: values.status
           ? UserGroupStatusEnum.Enabled
           : UserGroupStatusEnum.Disabled,
@@ -237,6 +190,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="用户组名称"
@@ -246,44 +200,26 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               <Input placeholder="请输入用户组名称" maxLength={50} showCount />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               label="最大用户数"
               name="maxUserCount"
               rules={[{ required: true, message: '请输入最大用户数' }]}
-            >
-              <InputNumber
-                placeholder="请输入最大用户数"
-                className={cx('w-full')}
-                min={1}
-                max={2147483647}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="每日token限制"
-              name={['tokenLimit', 'limitPerDay']}
-              rules={[{ required: true, message: '请输入每日token限制数量' }]}
               tooltip={{
-                title: '-1表示不限制每日token数量',
+                title: '-1 表示不限制, 最大值为2147483647',
                 icon: <InfoCircleOutlined />,
               }}
             >
               <InputNumber
-                placeholder="请输入每日token限制数量"
+                placeholder="请输入最大用户数"
                 className={cx('w-full')}
                 min={-1}
-                max={1000000000000000}
+                max={2147483647}
               />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Row gutter={16}>
           <Col span={12}>
             <Form.Item label="来源" name="source">
               <Select
@@ -292,6 +228,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item
               label="排序"
@@ -301,24 +238,26 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               <InputNumber
                 placeholder="请输入排序"
                 className={cx('w-full')}
-                min={0}
+                min={1}
                 max={10000}
               />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Form.Item
-          label="状态"
-          name="status"
-          valuePropName="checked"
-          tooltip={{
-            title: '启用或禁用此用户组',
-            icon: <InfoCircleOutlined />,
-          }}
-        >
-          <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              label="状态"
+              name="status"
+              valuePropName="checked"
+              tooltip={{
+                title: '启用或禁用此用户组',
+                icon: <InfoCircleOutlined />,
+              }}
+            >
+              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item label="描述" name="description">
           <TextArea
@@ -329,19 +268,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
             maxLength={500}
           />
         </Form.Item>
-
-        {/* 数据权限配置 */}
-        {/* <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>数据权限配置</h3>
-          <Text type="secondary" className={cx(styles.sectionDesc)}>
-            选择该用户组可以访问的数据模型,支持选择&ldquo;全部&rdquo;或具体模型
-          </Text>
-          <DataModelSelector
-            models={modelList || []}
-            selectedIds={selectedModelIds}
-            onChange={setSelectedModelIds}
-          />
-        </div> */}
       </Form>
     </CustomFormModal>
   );
