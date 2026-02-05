@@ -125,6 +125,7 @@ const PermissionResources: React.FC = () => {
     setParentResource(null);
     setIsEdit(false);
     setModalOpen(true);
+    console.log(draggableData, 'draggableData6666666666');
     setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 

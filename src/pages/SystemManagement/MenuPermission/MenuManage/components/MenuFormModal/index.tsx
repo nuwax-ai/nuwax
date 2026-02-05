@@ -141,20 +141,20 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       if (isEdit && menuInfo) {
         // 编辑模式：查询菜单详情
         runGetMenuById(menuInfo.id);
+      } else {
+        // 新增模式：重置表单
+        form.resetFields();
+        setImageUrl('');
+        setSelectedResourceIds([]);
+        form.setFieldsValue({
+          sortIndex: defaultSortIndex || 1,
+          visible: true,
+          source: MenuSourceEnum.UserDefined,
+          parentId: undefined,
+        });
       }
-    } else {
-      // 新增模式：重置表单
-      form.resetFields();
-      setImageUrl('');
-      setSelectedResourceIds([]);
-      form.setFieldsValue({
-        sortIndex: 1,
-        visible: true,
-        source: MenuSourceEnum.UserDefined,
-        parentId: undefined,
-      });
     }
-  }, [open, isEdit, menuInfo]);
+  }, [open, isEdit, menuInfo, defaultSortIndex]);
 
   const loading = addLoading || updateLoading;
 
@@ -280,11 +280,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   }, [isEdit, menuInfoResponse]);
 
-  // 初始化表单数据（新增模式）
+  // 初始化表单数据（新增子菜单模式）
   useEffect(() => {
     if (parentMenu && resourceTreeList && resourceTreeList.length > 0) {
       form.setFieldsValue({
-        sortIndex: defaultSortIndex,
+        sortIndex: defaultSortIndex || 1,
         parentId: parentMenu?.id,
       });
     }
