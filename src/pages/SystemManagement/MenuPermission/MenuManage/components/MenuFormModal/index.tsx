@@ -455,9 +455,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               name="path"
               rules={[
                 {
-                  pattern: /^\/[a-zA-Z0-9/?#&=._-]+$/,
+                  pattern: /^\/[a-zA-Z0-9/?#&=._:@%+ -]+$/,
                   message:
-                    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-）',
+                    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
                 },
                 {
                   max: 500,
