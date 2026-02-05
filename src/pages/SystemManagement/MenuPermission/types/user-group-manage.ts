@@ -2,8 +2,8 @@
  * 用户组管理相关的类型定义和枚举
  */
 
-import { UpdateMenuSortItem } from './menu-manage';
-import { DataPermission, MenuTreeNode } from './role-manage';
+import { MenuNodeInfo, UpdateMenuSortItem } from './menu-manage';
+import { DataPermission } from './role-manage';
 
 // ==================== 枚举定义 ====================
 
@@ -130,7 +130,7 @@ export interface GroupBindMenuParams {
   /** 用户组ID */
   groupId: number;
   /** 菜单树节点 */
-  menuTree: MenuTreeNode[];
+  menuTree: MenuNodeInfo[];
 }
 
 export interface GroupBindDataPermissionParams {
