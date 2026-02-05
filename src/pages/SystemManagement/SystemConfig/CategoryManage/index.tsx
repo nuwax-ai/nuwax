@@ -32,26 +32,31 @@ const CategoryManage: React.FC = () => {
         {
           id: '1',
           name: '对话助手',
+          code: 'dialogue_assistant',
           description: '智能对话与问答类智能体',
         },
         {
           id: '2',
           name: '数据分析',
+          code: 'data_analysis',
           description: '数据处理与分析类智能体',
         },
         {
           id: '3',
           name: '内容创作',
+          code: 'content_creation',
           description: '文本生成与创作类智能体',
         },
         {
           id: '4',
           name: '代码助手',
+          code: 'code_assistant',
           description: '编程辅助与代码生成类智能体',
         },
         {
           id: '5',
           name: '翻译助手',
+          code: 'translation_assistant',
           description: '多语言翻译与本地化类智能体',
         },
       ];
@@ -124,6 +129,7 @@ const CategoryManage: React.FC = () => {
       const newItem: CategoryItem = {
         id: Date.now().toString(),
         name: values.name,
+        code: values.code,
         description: values.description,
       };
       setDataSource((prev) => [newItem, ...prev]);
@@ -132,7 +138,12 @@ const CategoryManage: React.FC = () => {
       setDataSource((prev) =>
         prev.map((item) =>
           item.id === editingData?.id
-            ? { ...item, name: values.name, description: values.description }
+            ? {
+                ...item,
+                name: values.name,
+                code: values.code,
+                description: values.description,
+              }
             : item,
         ),
       );
