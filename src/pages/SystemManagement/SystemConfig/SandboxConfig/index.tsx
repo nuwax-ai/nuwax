@@ -147,6 +147,7 @@ const SandboxConfig: React.FC = () => {
     {
       title: '状态',
       dataIndex: 'online',
+      minWidth: 120,
       render: (_, record) => (
         <div
           className={cx(styles['status-tag'], {
