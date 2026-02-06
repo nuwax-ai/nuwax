@@ -112,16 +112,11 @@ const BindUser: React.FC<BindUserProps> = ({
   });
 
   const handlerSubmit = () => {
-    if (rightColumnMembers.length === 0) {
-      message.warning('请选择要添加的成员');
-      return;
-    }
-
     // 根据类型设置 id 字段名称
     const id = type === 'role' ? 'roleId' : 'groupId';
     const params = {
       [id]: targetId,
-      userIds: rightColumnMembers.map((m) => m.id) || [],
+      userIds: rightColumnMembers?.map((m) => m.id) || [],
     };
     runBindUser(params);
   };

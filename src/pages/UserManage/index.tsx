@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
+import DataPermissionModal from './components/DataPermissionModal';
 import UserBindGroupModal from './components/UserBindGroupModal';
 import UserBindRoleModal from './components/UserBindRoleModal';
 import UserViewMenuModal from './components/UserViewMenuModal';
@@ -49,6 +50,9 @@ const UserManage: React.FC = () => {
   const [openBindGroupModal, setOpenBindGroupModal] = useState<boolean>(false);
   // 打开查看权限弹窗
   const [openViewMenuModal, setOpenViewMenuModal] = useState<boolean>(false);
+  // 打开数据权限弹窗
+  const [openDataPermissionModal, setOpenDataPermissionModal] =
+    useState<boolean>(false);
 
   // 当前选中的用户信息
   const [currentUserInfo, setCurrentUserInfo] =
@@ -162,6 +166,12 @@ const UserManage: React.FC = () => {
   const handleViewMenu = (userInfo: SystemUserListInfo) => {
     setCurrentUserInfo(userInfo);
     setOpenViewMenuModal(true);
+  };
+
+  // 查看数据权限
+  const handleViewDataPermission = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenDataPermissionModal(true);
   };
 
   // 查询用户绑定的角色列表
@@ -279,6 +289,14 @@ const UserManage: React.FC = () => {
           >
             查看权限
           </Button>
+          <Button
+            type="link"
+            size="small"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => handleViewDataPermission(record)}
+          >
+            数据权限
+          </Button>
           {record.status === UserStatusEnum.Enabled ? (
             <Button
               type="link"
@@ -381,6 +399,13 @@ const UserManage: React.FC = () => {
         open={openViewMenuModal}
         userId={currentUserInfo?.id || 0}
         onCancel={() => setOpenViewMenuModal(false)}
+      />
+      {/* 数据权限弹窗 */}
+      <DataPermissionModal
+        open={openDataPermissionModal}
+        userId={currentUserInfo?.id || 0}
+        userName={currentUserInfo?.userName || ''}
+        onCancel={() => setOpenDataPermissionModal(false)}
       />
     </div>
   );
