@@ -99,15 +99,16 @@ const Dashboard: React.FC = () => {
     }
   }, [location.state]);
 
+  // 统一核心统计与趋势图的加载状态
+  const isCoreStatsLoading =
+    userLoading || accessLoading || !hasUserLoaded || !hasAccessLoaded;
+
   // 映射核心统计
   const coreStats = useMemo(() => {
     const result = (accessStats as any)?.data || accessStats;
     const data = result as AccessStatsResult | undefined;
     const userResult = (userStats as any)?.data || userStats;
     const userData = userResult as UserStatsResult | undefined;
-
-    const isCoreStatsLoading =
-      (!hasUserLoaded && userLoading) || (!hasAccessLoaded && accessLoading);
 
     return [
       {
@@ -320,7 +321,7 @@ const Dashboard: React.FC = () => {
               data={userTrendData}
               color="#722ed1"
               tooltipName="新增用户"
-              loading={!hasUserLoaded && userLoading}
+              loading={isCoreStatsLoading}
               period={userPeriod}
               onPeriodChange={setUserPeriod}
             />
