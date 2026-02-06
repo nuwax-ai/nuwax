@@ -225,8 +225,7 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Global_Model_Manage &&
         pathname.includes('model')) ||
       (type === SystemManageListEnum.System_Config &&
-        pathname.includes('config') &&
-        !pathname.includes('theme')) ||
+        pathname.includes('config')) ||
       (type === 'markdown-test' && pathname.includes('markdown-test')) ||
       (type === SystemManageListEnum.Dashboard &&
         pathname.includes('dashboard')) ||
