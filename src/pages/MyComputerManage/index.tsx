@@ -31,7 +31,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 import styles from './index.less';
 
 const { confirm } = Modal;
@@ -247,7 +247,15 @@ const MyComputerManage: React.FC = () => {
                       远程桌面
                     </Button>
                     <Space size={8}>
-                      <Button icon={<MessageOutlined />} />
+                      <Button
+                        icon={<MessageOutlined />}
+                        disabled={!item.agentId}
+                        onClick={() => {
+                          if (item.agentId) {
+                            history.push(`/agent/${item.agentId}`);
+                          }
+                        }}
+                      />
                       <Switch
                         loading={toggleLoadingId === item.id}
                         checked={item.isActive}
