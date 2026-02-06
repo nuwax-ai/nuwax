@@ -80,11 +80,11 @@ export interface AddUserGroupParams {
   /* 状态,1:启用 0:禁用 */
   status?: UserGroupStatusEnum;
   /** 最大用户数，0表示不限制 */
-  maxUserCount: number;
+  maxUserCount?: number;
   /** 数据模型ID列表，全部模型传[0],未选中任何模型不传值 */
-  modelIds: number[];
+  modelIds?: number[];
   // token限制
-  tokenLimit: {
+  tokenLimit?: {
     // 每日token限制数量，0表示不限制
     limitPerDay: number;
   };

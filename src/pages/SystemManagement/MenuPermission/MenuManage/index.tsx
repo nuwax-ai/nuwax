@@ -42,9 +42,6 @@ const MenuManage: React.FC = () => {
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
   const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
   const [updateVisibleLoadingMap, setUpdateVisibleLoadingMap] = useState<
     Record<number, boolean>
   >({});
@@ -84,16 +81,6 @@ const MenuManage: React.FC = () => {
     },
   });
 
-  // 处理删除菜单（手动管理 loading 状态）
-  const handleDelete = async (menuId: number) => {
-    setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: true }));
-    try {
-      await runDelete(menuId);
-    } finally {
-      setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: false }));
-    }
-  };
-
   // 更新菜单是否显示
   const { run: runUpdateMenu } = useRequest(apiUpdateMenu, {
     manual: true,
@@ -124,7 +111,7 @@ const MenuManage: React.FC = () => {
   // 处理删除确认
   const handleDeleteConfirm = (menu: MenuNodeInfo) => {
     modalConfirm('删除菜单', `确认删除菜单 "${menu.name}" 吗？`, () => {
-      handleDelete(menu?.id);
+      runDelete(menu?.id);
       return new Promise((resolve) => {
         setTimeout(resolve, 300);
       });
@@ -759,7 +746,6 @@ const MenuManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
             删除
