@@ -115,6 +115,7 @@ const errorHandler = (error: any, opts: any) => {
         default:
           // 只有当请求不在过滤列表中才显示错误消息
           message.warning(errorMessage);
+          // 返回 rejected Promise，但不传递 errorInfo，避免被后续错误处理逻辑误判
           return Promise.reject();
       }
 
