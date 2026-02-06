@@ -36,6 +36,10 @@ const Home: React.FC = () => {
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   // 通用型智能体模式状态
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
+  // 选中的电脑 ID，null 表示远程电脑（默认）
+  const [selectedComputerId, setSelectedComputerId] = useState<number | null>(
+    null,
+  );
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   // 会话输入框已选择组件
@@ -145,6 +149,11 @@ const Home: React.FC = () => {
     tenantConfigInfo.defaultTaskAgentId > 0
   );
 
+  // 处理电脑选择
+  const handleComputerSelect = (id: number | null) => {
+    setSelectedComputerId(id);
+  };
+
   // 处理标签点击 - 只更新activeTab状态
   const handleTabClick = (type: string) => {
     console.log(`🏠 Home Tab点击事件: ${type}, 当前activeTab: ${activeTab}`);
@@ -224,6 +233,8 @@ const Home: React.FC = () => {
           showTaskAgentToggle={showTaskAgentToggle}
           isTaskAgentActive={isTaskAgentMode}
           onToggleTaskAgent={handleToggleTaskAgent}
+          selectedComputerId={selectedComputerId}
+          onComputerSelect={handleComputerSelect}
         />
         <div
           className={cx(

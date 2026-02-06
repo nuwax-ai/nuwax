@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
+import ComputerTypeSelector from '@/components/ComputerTypeSelector';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -51,6 +52,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showTaskAgentToggle = false,
   isTaskAgentActive = false,
   onToggleTaskAgent,
+  selectedComputerId,
+  onComputerSelect,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -507,28 +510,41 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             </Tooltip>
           ) : (
             // 会话未进行中，显示发送按钮
-            <Tooltip title={getButtonTooltip()}>
-              <span
-                onClick={handleSendMessage}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['send-box'],
-                  {
-                    [styles.disabled]:
-                      disabledSend ||
-                      wholeDisabled ||
-                      loadingConversation ||
-                      isLoadingOtherInterface,
-                  },
-                )}
-              >
-                <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />
-              </span>
-            </Tooltip>
+            <>
+              <Tooltip title={getButtonTooltip()}>
+                <span
+                  onClick={handleSendMessage}
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'cursor-pointer',
+                    styles.box,
+                    styles['send-box'],
+                    {
+                      [styles.disabled]:
+                        disabledSend ||
+                        wholeDisabled ||
+                        loadingConversation ||
+                        isLoadingOtherInterface,
+                    },
+                  )}
+                >
+                  <SvgIcon
+                    name="icons-chat-send"
+                    style={{ fontSize: '14px' }}
+                  />
+                </span>
+              </Tooltip>
+              {/* 智能体电脑模式下显示电脑类型选择器 */}
+              {isTaskAgentActive && (
+                <ComputerTypeSelector
+                  value={selectedComputerId}
+                  onChange={(id) => onComputerSelect?.(id)}
+                  disabled={wholeDisabled}
+                />
+              )}
+            </>
           )}
         </footer>
       </div>
