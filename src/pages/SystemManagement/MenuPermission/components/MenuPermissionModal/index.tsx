@@ -148,6 +148,8 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       // 从接口数据中提取初始资源码选中状态
       const initialResourceIdsMap = extractInitialResourceIds(data);
       setInitialResourceIds(initialResourceIdsMap);
+      // 设置初始资源码选中状态
+      setSelectedResourceIds(initialResourceIdsMap);
     },
   });
 
@@ -159,9 +161,6 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       onSuccess: () => {
         message.success('菜单权限保存成功');
         onSuccess?.();
-      },
-      onError: () => {
-        message.error('菜单权限保存失败');
       },
     },
   );

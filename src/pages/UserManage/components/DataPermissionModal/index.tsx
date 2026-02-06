@@ -309,7 +309,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
     {
       key: 'dataPermission',
-      label: '数据权限',
+      label: '数据',
       children: (
         <div className={cx(styles.dataPermissionFormWrapper)}>
           <Form
