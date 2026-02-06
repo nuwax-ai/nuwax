@@ -19,7 +19,6 @@ import {
   Card,
   Col,
   Empty,
-  Input,
   Modal,
   Radio,
   Row,
@@ -37,6 +36,8 @@ import styles from './index.less';
 
 const { confirm } = Modal;
 const cx = classNames.bind(styles);
+
+import EditComputerModal from './components/EditComputerModal';
 
 /**
  * 我的电脑管理页面
@@ -106,38 +107,36 @@ const MyComputerManage: React.FC = () => {
   };
 
   // 处理重命名
-  const handleRename = (item: SandboxItem) => {
-    let newName = item.name;
-    confirm({
-      title: '修改电脑名称',
-      content: (
-        <div style={{ marginTop: 16 }}>
-          <Input
-            defaultValue={item.name}
-            placeholder="请输入新名称"
-            onChange={(e) => (newName = e.target.value)}
-          />
-        </div>
-      ),
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        if (!newName?.trim()) {
-          message.warning('名称不能为空');
-          return Promise.reject();
-        }
-        const res = await apiUpdateSandboxUserConfig({
-          id: item.id,
-          name: newName.trim(),
-        });
-        if (res.code === SUCCESS_CODE) {
-          message.success('修改成功');
-          fetchList();
-        } else {
-          return Promise.reject();
-        }
-      },
-    });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentEditItem, setCurrentEditItem] = useState<SandboxItem | null>(
+    null,
+  );
+
+  const handleEdit = (item: SandboxItem) => {
+    setCurrentEditItem(item);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (values: {
+    name: string;
+    description: string;
+  }) => {
+    if (!currentEditItem) return;
+    try {
+      const res = await apiUpdateSandboxUserConfig({
+        id: currentEditItem.id,
+        name: values.name,
+        description: values.description,
+      });
+      if (res.code === SUCCESS_CODE) {
+        message.success('修改成功');
+        setEditModalOpen(false);
+        fetchList();
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('修改失败');
+    }
   };
 
   return (
@@ -218,7 +217,7 @@ const MyComputerManage: React.FC = () => {
                         </Typography.Text>
                         <EditOutlined
                           className={styles['edit-icon']}
-                          onClick={() => handleRename(item)}
+                          onClick={() => handleEdit(item)}
                         />
                       </Space>
                       <Tag
@@ -276,6 +275,12 @@ const MyComputerManage: React.FC = () => {
           </div>
         )
       )}
+      <EditComputerModal
+        open={editModalOpen}
+        initialData={currentEditItem}
+        onOpenChange={setEditModalOpen}
+        onFinish={handleEditSubmit}
+      />
     </WorkspaceLayout>
   );
 };
