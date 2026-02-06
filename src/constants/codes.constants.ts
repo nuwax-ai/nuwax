@@ -15,6 +15,8 @@ export const USER_NO_LOGIN = '4010';
 export const REDIRECT_LOGIN = '4011';
 // 智能体不存在或已下架
 export const AGENT_NOT_EXIST = '0001';
+// 沙箱测试异常
+export const SANDBOX_TEST_ERROR = '0007';
 
 /**
  * 智能体页面开发聊天服务错误状态码 --start

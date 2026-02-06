@@ -2,6 +2,7 @@ import {
   AGENT_NOT_EXIST,
   AGENT_SERVICE_RUNNING,
   REDIRECT_LOGIN,
+  SANDBOX_TEST_ERROR,
   SUCCESS_CODE,
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
@@ -9,7 +10,8 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
+import React from 'react';
 import { clearLoginStatusCache } from './userService';
 
 /**
@@ -109,6 +111,16 @@ const errorHandler = (error: any, opts: any) => {
         // 智能体不存在或已下架
         case AGENT_NOT_EXIST:
           message.warning(errorMessage);
+          return Promise.reject();
+
+        // 沙箱测试异常
+        case SANDBOX_TEST_ERROR:
+          Modal.warning({
+            content: React.createElement('div', {
+              dangerouslySetInnerHTML: { __html: errorMessage },
+            }),
+          });
+
           return Promise.reject();
 
         // 默认错误处理
