@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -16,7 +17,7 @@ import {
   PlusOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   Button,
   Form,
@@ -243,7 +244,12 @@ const SandboxConfig: React.FC = () => {
               <Form.Item label="每用户内存">
                 <Space>
                   <Form.Item name="perUserMemoryGB" noStyle initialValue={4}>
-                    <InputNumber min={1} precision={0} style={{ width: 100 }} />
+                    <InputNumber
+                      min={1}
+                      max={999999}
+                      precision={0}
+                      style={{ width: 100 }}
+                    />
                   </Form.Item>
                   <span style={{ color: '#999' }}>GB</span>
                 </Space>
@@ -251,7 +257,12 @@ const SandboxConfig: React.FC = () => {
               <Form.Item label="每用户CPU核心" style={{ marginLeft: 40 }}>
                 <Space>
                   <Form.Item name="perUserCpuCores" noStyle initialValue={2}>
-                    <InputNumber min={1} precision={0} style={{ width: 100 }} />
+                    <InputNumber
+                      min={1}
+                      max={999999}
+                      precision={0}
+                      style={{ width: 100 }}
+                    />
                   </Form.Item>
                   <span style={{ color: '#999' }}>核</span>
                 </Space>
@@ -260,16 +271,14 @@ const SandboxConfig: React.FC = () => {
           </Spin>
         </div>
 
-        {/* 沙盒列表区域 */}
         <div className={styles['table-card']}>
-          <ProTable<SandboxItem>
+          <XProTable<SandboxItem>
             actionRef={tableActionRef}
             columns={columns}
             dataSource={sandboxList}
             loading={tableLoading}
             rowKey="id"
             search={false}
-            options={false}
             pagination={false}
           />
           <div className={styles['footer-info']}>
