@@ -578,6 +578,7 @@ export async function apiDeleteSandboxUserConfig(
 export async function apiUpdateSandboxUserConfig(data: {
   id: number;
   name: string;
+  description?: string;
 }): Promise<RequestResponse<null>> {
   return request('/api/sandbox/config/update', {
     method: 'POST',
