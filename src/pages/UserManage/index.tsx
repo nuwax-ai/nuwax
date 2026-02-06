@@ -75,7 +75,6 @@ const UserManage: React.FC = () => {
 
   const { run: runEnable } = useRequest(apiEnableSystemUser, {
     manual: true,
-    loadingDelay: 300,
     onBefore: (params) => {
       setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
     },
@@ -90,7 +89,6 @@ const UserManage: React.FC = () => {
 
   const { run: runDisable } = useRequest(apiDisableSystemUser, {
     manual: true,
-    loadingDelay: 300,
     onBefore: (params) => {
       setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
     },
@@ -260,11 +258,11 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 350,
+      width: 300,
       align: 'center',
       fixed: 'right',
       render: (_: null, record: SystemUserListInfo) => (
-        <Space size="small" wrap={false}>
+        <Space size={0} wrap={false}>
           <Button
             type="link"
             size="small"
