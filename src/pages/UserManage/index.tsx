@@ -6,9 +6,14 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  EllipsisOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Space, Table, message } from 'antd';
+import type { MenuProps } from 'antd';
+import { Button, Dropdown, Input, Select, Space, Table, message } from 'antd';
 import { ColumnType } from 'antd/es/table';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -258,71 +263,77 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 300,
       align: 'center',
       fixed: 'right',
-      render: (_: null, record: SystemUserListInfo) => (
-        <Space size={0} wrap={false}>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleBindRole(record)}
-          >
-            绑定角色
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleBindGroup(record)}
-          >
-            绑定用户组
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleViewMenu(record)}
-          >
-            查看权限
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleViewDataPermission(record)}
-          >
-            数据权限
-          </Button>
-          {record.status === UserStatusEnum.Enabled ? (
-            <Button
-              type="link"
-              size="small"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={disableLoadingMap[record.id] || false}
-              onClick={() => runDisable({ id: record.id })}
+      render: (_: null, record: SystemUserListInfo) => {
+        // 下拉菜单项
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'bindRole',
+            label: '绑定角色',
+            onClick: () => handleBindRole(record),
+          },
+          {
+            key: 'bindGroup',
+            label: '绑定用户组',
+            onClick: () => handleBindGroup(record),
+          },
+          {
+            key: 'viewMenu',
+            label: '查看权限',
+            onClick: () => handleViewMenu(record),
+          },
+          {
+            key: 'dataPermission',
+            label: '数据权限',
+            onClick: () => handleViewDataPermission(record),
+          },
+        ];
+
+        return (
+          <Space size={0} wrap={false}>
+            {record.status === UserStatusEnum.Enabled ? (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={disableLoadingMap[record.id] || false}
+                onClick={() => runDisable({ id: record.id })}
+              >
+                禁用
+              </Button>
+            ) : (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={enableLoadingMap[record.id] || false}
+                onClick={() => runEnable({ id: record.id })}
+              >
+                启用
+              </Button>
+            )}
+            <CreateModifyUser
+              isEdit={true}
+              record={record}
+              onSuccess={handleSuccess}
+            />
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['hover']}
+              placement="bottomRight"
             >
-              禁用
-            </Button>
-          ) : (
-            <Button
-              type="link"
-              size="small"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={enableLoadingMap[record.id] || false}
-              onClick={() => runEnable({ id: record.id })}
-            >
-              启用
-            </Button>
-          )}
-          <CreateModifyUser
-            isEdit={true}
-            record={record}
-            onSuccess={handleSuccess}
-          />
-        </Space>
-      ),
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                icon={<EllipsisOutlined />}
+                style={{ padding: '0 4px' }}
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 

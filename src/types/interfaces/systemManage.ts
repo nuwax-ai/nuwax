@@ -679,6 +679,7 @@ export interface SandboxConfigItem {
     maxUsers: number;
   };
   description: string;
+  agentId?: number;
   isActive: boolean;
   online: boolean;
   created: string;

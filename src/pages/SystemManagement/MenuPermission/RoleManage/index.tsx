@@ -1,5 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { PlusOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -8,8 +8,17 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
+import type { MenuProps, TableColumnsType } from 'antd';
+import {
+  Button,
+  Dropdown,
+  Empty,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Table,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -310,41 +319,53 @@ const RoleManage: React.FC = () => {
       key: 'action',
       align: 'center',
       fixed: 'right',
-      render: (_: null, record: RoleInfo) => (
-        <Space size={0}>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleBindUser(record)}
-          >
-            绑定用户
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleMenuPermission(record)}
-          >
-            菜单权限
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleDataPermission(record)}
-          >
-            数据权限
-          </Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleDeleteConfirm(record)}
-          >
-            删除
-          </Button>
-        </Space>
-      ),
+      render: (_: null, record: RoleInfo) => {
+        // 下拉菜单项
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'bindUser',
+            label: '绑定用户',
+            onClick: () => handleBindUser(record),
+          },
+          {
+            key: 'menuPermission',
+            label: '菜单权限',
+            onClick: () => handleMenuPermission(record),
+          },
+          {
+            key: 'dataPermission',
+            label: '数据权限',
+            onClick: () => handleDataPermission(record),
+          },
+        ];
+
+        return (
+          <Space size={0}>
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>
+              编辑
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleDeleteConfirm(record)}
+            >
+              删除
+            </Button>
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['hover']}
+              placement="bottomRight"
+            >
+              <Button
+                type="link"
+                size="small"
+                icon={<EllipsisOutlined />}
+                style={{ padding: '0 4px' }}
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 

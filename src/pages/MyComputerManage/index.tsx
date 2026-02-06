@@ -19,12 +19,11 @@ import {
   Card,
   Col,
   Empty,
-  Input,
   Modal,
   Radio,
   Row,
+  Skeleton,
   Space,
-  Spin,
   Switch,
   Tag,
   Typography,
@@ -32,10 +31,13 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
+import { history, useLocation } from 'umi';
 import styles from './index.less';
 
 const { confirm } = Modal;
 const cx = classNames.bind(styles);
+
+import EditComputerModal from './components/EditComputerModal';
 
 /**
  * 我的电脑管理页面
@@ -44,6 +46,7 @@ const MyComputerManage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [list, setList] = useState<SandboxItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
 
   const fetchList = async () => {
     setLoading(true);
@@ -59,7 +62,7 @@ const MyComputerManage: React.FC = () => {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [location]);
 
   const filteredData = useMemo(() => {
     if (filter === 'online') return list.filter((item) => item.online);
@@ -104,38 +107,36 @@ const MyComputerManage: React.FC = () => {
   };
 
   // 处理重命名
-  const handleRename = (item: SandboxItem) => {
-    let newName = item.name;
-    confirm({
-      title: '修改电脑名称',
-      content: (
-        <div style={{ marginTop: 16 }}>
-          <Input
-            defaultValue={item.name}
-            placeholder="请输入新名称"
-            onChange={(e) => (newName = e.target.value)}
-          />
-        </div>
-      ),
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        if (!newName?.trim()) {
-          message.warning('名称不能为空');
-          return Promise.reject();
-        }
-        const res = await apiUpdateSandboxUserConfig({
-          id: item.id,
-          name: newName.trim(),
-        });
-        if (res.code === SUCCESS_CODE) {
-          message.success('修改成功');
-          fetchList();
-        } else {
-          return Promise.reject();
-        }
-      },
-    });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentEditItem, setCurrentEditItem] = useState<SandboxItem | null>(
+    null,
+  );
+
+  const handleEdit = (item: SandboxItem) => {
+    setCurrentEditItem(item);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (values: {
+    name: string;
+    description: string;
+  }) => {
+    if (!currentEditItem) return;
+    try {
+      const res = await apiUpdateSandboxUserConfig({
+        id: currentEditItem.id,
+        name: values.name,
+        description: values.description,
+      });
+      if (res.code === SUCCESS_CODE) {
+        message.success('修改成功');
+        setEditModalOpen(false);
+        fetchList();
+      }
+    } catch (error) {
+      console.error(error);
+      message.error('修改失败');
+    }
   };
 
   return (
@@ -153,98 +154,146 @@ const MyComputerManage: React.FC = () => {
         </Radio.Group>
       }
     >
-      <Spin spinning={loading}>
-        {filteredData.length > 0 ? (
-          <Row gutter={[24, 24]}>
-            {filteredData.map((item) => (
-              <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
-                <Card
-                  className={styles['computer-card']}
-                  cover={
-                    <div className={styles['cover-wrapper']}>
-                      {item.online ? (
-                        <div className={styles['placeholder-cover']}>
-                          <DesktopOutlined />
-                        </div>
-                      ) : (
-                        <div className={styles['placeholder-cover']}>
-                          <DesktopOutlined />
-                        </div>
-                      )}
-                    </div>
-                  }
+      {loading ? (
+        <Row gutter={[24, 24]}>
+          {[1, 2, 3, 4].map((item) => (
+            <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item}>
+              <Card className={styles['computer-card']}>
+                <div
+                  className={styles['cover-wrapper']}
+                  style={{ backgroundColor: '#fff' }}
                 >
-                  <div className={styles['card-body']}>
-                    <div className={styles['card-info']}>
-                      <div className={styles['card-title-line']}>
-                        <Space className={styles['name-space']}>
-                          <Typography.Text
-                            strong
-                            className={styles['card-name']}
-                          >
-                            {item.name}
-                          </Typography.Text>
-                          <EditOutlined
-                            className={styles['edit-icon']}
-                            onClick={() => handleRename(item)}
-                          />
-                        </Space>
-                        <Tag
-                          color={item.online ? 'success' : 'default'}
-                          className={styles['status-tag']}
-                        >
-                          {item.online ? '在线' : '离线'}
-                        </Tag>
+                  <Skeleton.Image
+                    active
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                </div>
+                <div className={styles['card-body']} style={{ marginTop: 24 }}>
+                  <div className={styles['card-info']}>
+                    <Skeleton
+                      active
+                      paragraph={{ rows: 1 }}
+                      title={{ width: '60%' }}
+                    />
+                  </div>
+                  <div className={styles['card-actions']}>
+                    <Skeleton.Button
+                      active
+                      block
+                      style={{ height: 32, marginBottom: 0 }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      ) : filteredData.length > 0 ? (
+        <Row gutter={[24, 24]}>
+          {filteredData.map((item) => (
+            <Col xs={24} sm={12} md={8} lg={8} xl={8} xxl={6} key={item.id}>
+              <Card
+                className={styles['computer-card']}
+                cover={
+                  <div className={styles['cover-wrapper']}>
+                    {item.online ? (
+                      <div className={styles['placeholder-cover']}>
+                        <DesktopOutlined />
                       </div>
-                      <Typography.Text
-                        type="secondary"
-                        className={styles['card-ip']}
-                      >
-                        {item.configValue?.hostWithScheme}
-                      </Typography.Text>
-                    </div>
-
-                    <div className={styles['card-actions']}>
-                      <Button
-                        type="primary"
-                        icon={<DesktopOutlined />}
-                        disabled={!(item.online && item.isActive) || true}
-                        className={cx(styles['remote-btn'], {
-                          [styles['offline-btn']]: !item.online,
-                        })}
-                      >
-                        远程桌面
-                      </Button>
-                      <Space size={8}>
-                        <Button icon={<MessageOutlined />} />
-                        <Switch
-                          loading={toggleLoadingId === item.id}
-                          checked={item.isActive}
-                          size="small"
-                          onChange={(checked) =>
-                            handleToggleStatus(item.id, checked)
-                          }
-                        />
-                        <Button
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => handleDelete(item.id)}
+                    ) : (
+                      <div className={styles['placeholder-cover']}>
+                        <DesktopOutlined />
+                      </div>
+                    )}
+                  </div>
+                }
+              >
+                <div className={styles['card-body']}>
+                  <div className={styles['card-info']}>
+                    <div className={styles['card-title-line']}>
+                      <Space className={styles['name-space']}>
+                        <Typography.Text
+                          strong
+                          className={styles['card-name']}
+                          ellipsis={{ tooltip: item.name }}
+                        >
+                          {item.name}
+                        </Typography.Text>
+                        <EditOutlined
+                          className={styles['edit-icon']}
+                          onClick={() => handleEdit(item)}
                         />
                       </Space>
+                      <Tag
+                        color={item.online ? 'success' : 'default'}
+                        className={styles['status-tag']}
+                      >
+                        {item.online ? '在线' : '离线'}
+                      </Tag>
                     </div>
+                    <Typography.Text
+                      type="secondary"
+                      className={styles['card-desc']}
+                      ellipsis={{ tooltip: item.description }}
+                    >
+                      {item.description}
+                    </Typography.Text>
                   </div>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        ) : (
-          !loading && (
-            <div style={{ padding: '300px 0' }}>
-              <Empty description="暂无电脑配置" />
-            </div>
-          )
-        )}
-      </Spin>
+
+                  <div className={styles['card-actions']}>
+                    <Button
+                      type="primary"
+                      icon={<DesktopOutlined />}
+                      disabled={!(item.online && item.isActive) || true}
+                      className={cx(styles['remote-btn'], {
+                        [styles['offline-btn']]: !item.online,
+                      })}
+                    >
+                      远程桌面
+                    </Button>
+                    <Space size={8}>
+                      <Button
+                        icon={<MessageOutlined />}
+                        disabled={!item.agentId}
+                        onClick={() => {
+                          if (item.agentId) {
+                            history.push(`/agent/${item.agentId}`);
+                          }
+                        }}
+                      />
+                      <Switch
+                        loading={toggleLoadingId === item.id}
+                        checked={item.isActive}
+                        size="small"
+                        onChange={(checked) =>
+                          handleToggleStatus(item.id, checked)
+                        }
+                      />
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(item.id)}
+                      />
+                    </Space>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      ) : (
+        !loading && (
+          <div style={{ padding: '300px 0' }}>
+            <Empty description="暂无电脑配置" />
+          </div>
+        )
+      )}
+      <EditComputerModal
+        open={editModalOpen}
+        initialData={currentEditItem}
+        onOpenChange={setEditModalOpen}
+        onFinish={handleEditSubmit}
+      />
     </WorkspaceLayout>
   );
 };

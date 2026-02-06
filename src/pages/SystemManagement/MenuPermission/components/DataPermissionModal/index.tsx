@@ -535,10 +535,31 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   name="knowledgeStorageLimitGb"
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '知识库存储空间上限(GB)，-1表示不限制',
+                    title:
+                      '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
                   }}
                 >
-                  <InputNumber className={cx('w-full')} min={-1} />
+                  <InputNumber
+                    className={cx('w-full')}
+                    min={-1}
+                    step={0.001}
+                    precision={3}
+                    formatter={(value) => {
+                      if (value === undefined || value === null) return '';
+                      const num = Number(value);
+                      // 如果是整数，不显示小数部分
+                      if (Number.isInteger(num)) {
+                        return String(num);
+                      }
+                      // 如果有小数，保留最多3位小数，并去除末尾的0
+                      return num.toFixed(3).replace(/\.?0+$/, '');
+                    }}
+                    parser={(value) => {
+                      if (!value) return value as any;
+                      const num = parseFloat(value);
+                      return isNaN(num) ? (value as any) : num;
+                    }}
+                  />
                 </Form.Item>
               </Col>
 
