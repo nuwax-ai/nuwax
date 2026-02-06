@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -16,7 +17,7 @@ import {
   PlusOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { ActionType, ProColumns, ProTable } from '@ant-design/pro-components';
+import { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   Button,
   Form,
@@ -260,16 +261,14 @@ const SandboxConfig: React.FC = () => {
           </Spin>
         </div>
 
-        {/* 沙盒列表区域 */}
         <div className={styles['table-card']}>
-          <ProTable<SandboxItem>
+          <XProTable<SandboxItem>
             actionRef={tableActionRef}
             columns={columns}
             dataSource={sandboxList}
             loading={tableLoading}
             rowKey="id"
             search={false}
-            options={false}
             pagination={false}
           />
           <div className={styles['footer-info']}>
