@@ -721,7 +721,6 @@ const MenuManage: React.FC = () => {
       title: '是否显示',
       dataIndex: 'visible',
       key: 'visible',
-      width: 100,
       align: 'center',
       fixed: 'right',
       render: (visible: MenuVisibleEnum | undefined, record: MenuNodeInfo) => (
@@ -743,11 +742,10 @@ const MenuManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 200,
       align: 'center',
       fixed: 'right',
       render: (_: null, record: MenuNodeInfo) => (
-        <Space size="small">
+        <Space size={0}>
           <Button
             type="link"
             size="small"

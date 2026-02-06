@@ -291,7 +291,8 @@ const UserGroupManage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      align: 'center',
+      fixed: 'right',
       render: (status: UserGroupStatusEnum) => (
         <Tag
           color={status === UserGroupStatusEnum.Enabled ? 'success' : 'default'}
@@ -303,11 +304,10 @@ const UserGroupManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 300,
       align: 'center',
       fixed: 'right',
       render: (_: null, record: UserGroupInfo) => (
-        <Space size="small">
+        <Space size={0}>
           <Button
             type="link"
             size="small"
