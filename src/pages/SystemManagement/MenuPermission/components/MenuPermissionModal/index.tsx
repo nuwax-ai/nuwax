@@ -1,5 +1,5 @@
 import Loading from '@/components/custom/Loading';
-import { Modal, message } from 'antd';
+import { Button, Modal, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -312,6 +312,9 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
     runBindMenu(bindMenuParams);
   };
 
+  // 判断是否没有菜单数据
+  const hasNoMenuData = !getMenuLoading && (!menuTree || menuTree.length === 0);
+
   return (
     <Modal
       open={open}
@@ -322,6 +325,15 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       okButtonProps={{ loading: bindMenuLoading }}
       className={cx(styles.menuPermissionModal)}
       destroyOnHidden={true}
+      footer={
+        hasNoMenuData
+          ? [
+              <Button key="cancel" onClick={onClose}>
+                取消
+              </Button>,
+            ]
+          : undefined // 使用默认 footer（包含确认和取消按钮）
+      }
     >
       {/* 弹窗内容 */}
       <div className={cx(styles.content)}>
