@@ -89,9 +89,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           maxDataTableCount: result.maxDataTableCount ?? -1,
           maxScheduledTaskCount: result.maxScheduledTaskCount ?? -1,
           agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
-          agentComputerSwapGb: result.agentComputerSwapGb ?? 8,
           agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
-          agentFileStorageDays: result.agentFileStorageDays ?? -1,
           agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
           pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
         });
@@ -146,9 +144,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         maxDataTableCount: -1,
         maxScheduledTaskCount: -1,
         agentComputerMemoryGb: 4,
-        agentComputerSwapGb: 8,
         agentComputerCpuCores: 2,
-        agentFileStorageDays: -1,
         agentDailyConversationLimit: -1,
         pageDailyConversationLimit: -1,
       });
@@ -287,7 +283,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
     {
       key: 'page',
-      label: '应用页面',
+      label: '网页应用',
       children: pageLoading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>加载中...</div>
       ) : hasPageData ? (
@@ -309,7 +305,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
     {
       key: 'dataPermission',
-      label: '数据权限',
+      label: '数据',
       children: (
         <div className={cx(styles.dataPermissionFormWrapper)}>
           <Form
@@ -444,20 +440,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
               <Col span={12}>
                 <Form.Item
-                  label="智能体电脑交换分区(GB)"
-                  name="agentComputerSwapGb"
-                  initialValue={8}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '智能体电脑交换分区(GB)，留空表示使用默认值8GB',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
                   label="智能体电脑 CPU 核心数"
                   name="agentComputerCpuCores"
                   initialValue={2}
@@ -467,19 +449,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   }}
                 >
                   <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="通用智能体执行结果文件存储天数"
-                  name="agentFileStorageDays"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '通用智能体执行结果文件存储天数，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
                 </Form.Item>
               </Col>
 
@@ -498,11 +467,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
               <Col span={12}>
                 <Form.Item
-                  label="应用页面每天对话次数"
+                  label="网页应用每天对话次数"
                   name="pageDailyConversationLimit"
                   tooltip={{
                     icon: <InfoCircleOutlined />,
-                    title: '应用页面每天对话次数，-1表示不限制',
+                    title: '网页应用每天对话次数，-1表示不限制',
                   }}
                 >
                   <InputNumber className={cx('w-full')} min={-1} />

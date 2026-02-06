@@ -388,12 +388,10 @@ const SpaceKnowledge: React.FC = () => {
         // 添加成功后，查询文档列表
         handleQaList();
         setQaOpen(false);
-      } else {
-        message.error(values.id ? 'QA问答更新失败' : '添加QA问答失败');
       }
     } catch (error) {
       console.error(error);
-      message.error(values.id ? 'QA问答更新失败' : '添加QA问答失败');
+      // message.error(values.id ? 'QA问答更新失败' : '添加QA问答失败');
     }
     return null;
   };

@@ -1,13 +1,13 @@
-import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { CustomPageDto } from '@/types/interfaces/pageDev';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
 interface ResourceListProps {
   /** 资源列表数据 */
-  list: SquarePublishedItemInfo[];
+  list: CustomPageDto[] | AgentConfigInfo[];
 }
 
 /**
@@ -17,10 +17,10 @@ interface ResourceListProps {
 const ResourceList: React.FC<ResourceListProps> = ({ list }) => {
   return (
     <div className={cx(styles.listSection)}>
-      {list.map((item) => {
+      {list.map((item, index) => {
         return (
           <div
-            key={item.id}
+            key={index}
             className={cx(styles.listItem, 'flex', 'items-center')}
           >
             <div className={cx(styles.itemIcon)}>
