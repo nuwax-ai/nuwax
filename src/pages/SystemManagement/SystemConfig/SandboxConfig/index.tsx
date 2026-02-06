@@ -102,8 +102,6 @@ const SandboxConfig: React.FC = () => {
       } else {
         message.error(`测试失败：${res.message || '连接异常'}`);
       }
-    } catch (error) {
-      message.error('测试异常，请检查网络或配置');
     } finally {
       setTestingIds((prev) => {
         const next = new Set(prev);
