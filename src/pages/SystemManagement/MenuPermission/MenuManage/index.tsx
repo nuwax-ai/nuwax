@@ -9,7 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table } from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -17,9 +17,15 @@ import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteMenu,
   apiGetMenuList,
+  apiUpdateMenu,
   apiUpdateMenuSort,
 } from '../services/menu-manage';
-import type { MenuNodeInfo, UpdateMenuSortItem } from '../types/menu-manage';
+import {
+  MenuVisibleEnum,
+  type MenuNodeInfo,
+  type UpdateMenuParams,
+  type UpdateMenuSortItem,
+} from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import styles from './index.less';
 
@@ -37,6 +43,9 @@ const MenuManage: React.FC = () => {
   const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
   const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+  const [updateVisibleLoadingMap, setUpdateVisibleLoadingMap] = useState<
     Record<number, boolean>
   >({});
   // 拖拽排序的数据源
@@ -70,17 +79,41 @@ const MenuManage: React.FC = () => {
   const { run: runDelete } = useRequest(apiDeleteMenu, {
     manual: true,
     loadingDelay: 300,
-    onBefore: (menuId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: true }));
-    },
     onSuccess: () => {
       message.success('删除成功');
       runGetMenuList();
     },
-    onFinally: (menuId: number) => {
+  });
+
+  // 处理删除菜单（手动管理 loading 状态）
+  const handleDelete = async (menuId: number) => {
+    setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: true }));
+    try {
+      await runDelete(menuId);
+    } finally {
       setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: false }));
+    }
+  };
+
+  // 更新菜单是否显示
+  const { run: runUpdateMenu } = useRequest(apiUpdateMenu, {
+    manual: true,
+    loadingDelay: 300,
+    onSuccess: () => {
+      message.success('更新成功');
+      runGetMenuList();
     },
   });
+
+  // 处理更新菜单是否显示（手动管理 loading 状态）
+  const handleUpdateVisible = async (params: UpdateMenuParams) => {
+    setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: true }));
+    try {
+      await runUpdateMenu(params);
+    } finally {
+      setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+    }
+  };
 
   // 处理编辑
   const handleEdit = (menuInfo: MenuNodeInfo) => {
@@ -92,7 +125,7 @@ const MenuManage: React.FC = () => {
   // 处理删除确认
   const handleDeleteConfirm = (menu: MenuNodeInfo) => {
     modalConfirm('删除菜单', `确认删除菜单 "${menu.name}" 吗？`, () => {
-      runDelete(menu?.id);
+      handleDelete(menu?.id);
       return new Promise((resolve) => {
         setTimeout(resolve, 300);
       });
@@ -684,6 +717,29 @@ const MenuManage: React.FC = () => {
       width: 200,
       ellipsis: true,
       render: (path: string) => path || '--',
+    },
+    {
+      title: '是否显示',
+      dataIndex: 'visible',
+      key: 'visible',
+      width: 100,
+      align: 'center',
+      fixed: 'right',
+      render: (visible: MenuVisibleEnum | undefined, record: MenuNodeInfo) => (
+        <Switch
+          checked={visible === MenuVisibleEnum.Visible}
+          loading={updateVisibleLoadingMap[record.id] || false}
+          onChange={(checked) => {
+            const newVisible = checked
+              ? MenuVisibleEnum.Visible
+              : MenuVisibleEnum.Hidden;
+            handleUpdateVisible({
+              id: record.id,
+              visible: newVisible,
+            });
+          }}
+        />
+      ),
     },
     {
       title: '操作',

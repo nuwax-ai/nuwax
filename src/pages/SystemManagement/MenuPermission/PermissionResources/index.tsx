@@ -9,7 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Table, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -17,13 +17,16 @@ import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteResource,
   apiGetResourceList,
+  apiUpdateResource,
   apiUpdateResourceSort,
 } from '../services/permission-resources';
 import {
   ResourceSourceEnum,
   ResourceTypeEnum,
+  ResourceVisibleEnum,
   type ResourceInfo,
   type ResourceTreeNode,
+  type UpdateResourceParams,
   type UpdateResourceSortItem,
 } from '../types/permission-resources';
 import ResourceFormModal from './components/ResourceFormModal';
@@ -43,6 +46,9 @@ const PermissionResources: React.FC = () => {
   const [parentResource, setParentResource] =
     useState<ResourceTreeNode | null>();
   const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+  const [updateVisibleLoadingMap, setUpdateVisibleLoadingMap] = useState<
     Record<number, boolean>
   >({});
 
@@ -77,17 +83,40 @@ const PermissionResources: React.FC = () => {
   const { run: runDelete } = useRequest(apiDeleteResource, {
     manual: true,
     loadingDelay: 300,
-    onBefore: (resourceId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: true }));
-    },
     onSuccess: () => {
       message.success('删除成功');
       runGetResourceList();
     },
-    onFinally: (resourceId: number) => {
+  });
+
+  // 处理删除资源（手动管理 loading 状态）
+  const handleDelete = async (resourceId: number) => {
+    setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: true }));
+    try {
+      await runDelete(resourceId);
+    } finally {
       setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: false }));
+    }
+  };
+
+  // 更新资源是否显示
+  const { run: runUpdateResource } = useRequest(apiUpdateResource, {
+    manual: true,
+    loadingDelay: 300,
+    onSuccess: () => {
+      runGetResourceList();
     },
   });
+
+  // 处理更新资源是否显示（手动管理 loading 状态）
+  const handleUpdateVisible = async (params: UpdateResourceParams) => {
+    setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: true }));
+    try {
+      await runUpdateResource(params);
+    } finally {
+      setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+    }
+  };
 
   // 处理编辑
   const handleEdit = (resource: ResourceTreeNode) => {
@@ -112,7 +141,7 @@ const PermissionResources: React.FC = () => {
   // 处理删除确认
   const handleDeleteConfirm = (resource: ResourceTreeNode) => {
     modalConfirm('删除资源', `确认删除资源 "${resource.name}" 吗？`, () => {
-      runDelete(resource?.id);
+      handleDelete(resource?.id);
       return new Promise((resolve) => {
         setTimeout(resolve, 300);
       });
@@ -125,7 +154,6 @@ const PermissionResources: React.FC = () => {
     setParentResource(null);
     setIsEdit(false);
     setModalOpen(true);
-    console.log(draggableData, 'draggableData6666666666');
     setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
@@ -703,6 +731,32 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'path',
       key: 'path',
       render: (path: string) => path || '--',
+    },
+    {
+      title: '是否显示',
+      dataIndex: 'visible',
+      key: 'visible',
+      width: 100,
+      align: 'center',
+      fixed: 'right',
+      render: (
+        visible: ResourceVisibleEnum | undefined,
+        record: ResourceTreeNode,
+      ) => (
+        <Switch
+          checked={visible === ResourceVisibleEnum.Visible}
+          loading={updateVisibleLoadingMap[record.id] || false}
+          onChange={(checked) => {
+            const newVisible = checked
+              ? ResourceVisibleEnum.Visible
+              : ResourceVisibleEnum.Hidden;
+            handleUpdateVisible({
+              id: record.id,
+              visible: newVisible,
+            });
+          }}
+        />
+      ),
     },
     {
       title: '操作',
