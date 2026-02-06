@@ -263,7 +263,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     if (isEdit && menuInfoResponse) {
       setImageUrl(menuInfoResponse.icon || '');
       form.setFieldsValue({
-        code: menuInfoResponse.code,
+        // code: menuInfoResponse.code,
         name: menuInfoResponse.name,
         description: menuInfoResponse.description,
         parentId: menuInfoResponse.parentId || undefined,
@@ -417,7 +417,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           />
         </Form.Item>
         <Row gutter={16}>
-          <Col span={12}>
+          {/* <Col span={12}>
             <Form.Item
               label="菜单编码"
               name="code"
@@ -437,7 +437,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 showCount
               />
             </Form.Item>
-          </Col>
+          </Col> */}
 
           <Col span={12}>
             <Form.Item
@@ -507,19 +507,21 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               />
             </Form.Item>
           </Col>
-        </Row>
 
-        <Form.Item
-          label="是否显示"
-          name="visible"
-          valuePropName="checked"
-          tooltip={{
-            title: '显示或隐藏此菜单',
-            icon: <InfoCircleOutlined />,
-          }}
-        >
-          <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
-        </Form.Item>
+          <Col span={12}>
+            <Form.Item
+              label="是否显示"
+              name="visible"
+              valuePropName="checked"
+              tooltip={{
+                title: '显示或隐藏此菜单',
+                icon: <InfoCircleOutlined />,
+              }}
+            >
+              <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item label="描述" name="description">
           <TextArea

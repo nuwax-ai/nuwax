@@ -70,7 +70,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     manual: true,
     onSuccess: (data: RoleInfo) => {
       form.setFieldsValue({
-        code: data.code,
+        // code: data.code,
         name: data.name,
         description: data.description,
         sortIndex: data.sortIndex || 1,
@@ -167,7 +167,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       >
         {/* 基本信息 */}
         <Row gutter={16}>
-          <Col span={12}>
+          {/* <Col span={12}>
             <Form.Item
               label="角色编码"
               name="code"
@@ -187,7 +187,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
                 showCount
               />
             </Form.Item>
-          </Col>
+          </Col> */}
           <Col span={12}>
             <Form.Item
               label="角色名称"

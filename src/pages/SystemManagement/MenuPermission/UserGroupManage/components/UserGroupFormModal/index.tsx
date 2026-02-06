@@ -95,7 +95,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     manual: true,
     onSuccess: (data: UserGroupInfo) => {
       form.setFieldsValue({
-        code: data.code,
+        // code: data.code,
         name: data.name,
         description: data.description,
         maxUserCount: data.maxUserCount,
@@ -174,7 +174,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       >
         {/* 基本信息 */}
         <Row gutter={16}>
-          <Col span={12}>
+          {/* <Col span={12}>
             <Form.Item
               label="用户组编码"
               name="code"
@@ -194,7 +194,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
                 showCount
               />
             </Form.Item>
-          </Col>
+          </Col> */}
 
           <Col span={12}>
             <Form.Item
