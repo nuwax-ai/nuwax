@@ -151,7 +151,7 @@ const MenusLayout: React.FC<{
         setOpenMessage(true);
         break;
       case UserOperatorAreaEnum.Computer:
-        history.push('/my-computer-manage');
+        history.push('/my-computer-manage', { _t: Date.now() });
         break;
     }
   }, []);
