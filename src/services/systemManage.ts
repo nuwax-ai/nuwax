@@ -638,3 +638,13 @@ export async function apiSystemCategoryDelete(data: {
     method: 'POST',
   });
 }
+/**
+ * 沙盒连通性测试
+ */
+export async function apiTestSandboxConnectivity(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/sandbox/config/test/${id}`, {
+    method: 'GET',
+  });
+}
