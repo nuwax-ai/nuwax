@@ -57,8 +57,11 @@ const CategoryManage: React.FC = () => {
     const label = getCurrentCategoryLabel();
     return (
       <Space align="baseline">
-        <span>{label}分类</span>
-        <span className="ant-pro-list-header-sub-title">
+        <span style={{ fontSize: 14 }}>{label}分类</span>
+        <span
+          className="ant-pro-list-header-sub-title"
+          style={{ fontSize: 14 }}
+        >
           {dataSource.length} 项
         </span>
       </Space>
@@ -162,9 +165,15 @@ const CategoryManage: React.FC = () => {
             metas={{
               title: {
                 dataIndex: 'name',
+                render: (_, record) => (
+                  <span style={{ fontSize: 14 }}>{record.name}</span>
+                ),
               },
               description: {
                 dataIndex: 'description',
+                render: (_, record) => (
+                  <span style={{ fontSize: 12 }}>{record.description}</span>
+                ),
               },
               actions: {
                 render: (_, record) => [
