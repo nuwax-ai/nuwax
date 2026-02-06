@@ -634,8 +634,7 @@ export async function apiSystemCategoryUpdate(data: {
 export async function apiSystemCategoryDelete(data: {
   id: string | number;
 }): Promise<RequestResponse<null>> {
-  return request('/api/system/category/delete', {
+  return request(`/api/system/category/delete/${data.id}`, {
     method: 'POST',
-    data,
   });
 }
