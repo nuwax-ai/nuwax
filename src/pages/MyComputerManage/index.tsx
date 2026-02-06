@@ -212,7 +212,11 @@ const MyComputerManage: React.FC = () => {
                   <div className={styles['card-info']}>
                     <div className={styles['card-title-line']}>
                       <Space className={styles['name-space']}>
-                        <Typography.Text strong className={styles['card-name']}>
+                        <Typography.Text
+                          strong
+                          className={styles['card-name']}
+                          ellipsis={{ tooltip: item.name }}
+                        >
                           {item.name}
                         </Typography.Text>
                         <EditOutlined
@@ -230,6 +234,7 @@ const MyComputerManage: React.FC = () => {
                     <Typography.Text
                       type="secondary"
                       className={styles['card-desc']}
+                      ellipsis={{ tooltip: item.description }}
                     >
                       {item.description}
                     </Typography.Text>
