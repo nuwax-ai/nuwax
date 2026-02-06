@@ -181,6 +181,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           ?.filter(
             (resource) =>
               resource.id !== 0 &&
+              resource.type === ResourceTypeEnum.Module &&
               (isEdit ? resource.id !== resourceInfo?.id : true),
           ) // 过滤掉根节点（id为0） 编辑模式下过滤掉当前资源
           .map((resource) => ({
@@ -290,6 +291,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               rules={[{ required: true, message: '请选择资源类型' }]}
             >
               <Select
+                disabled={isEdit}
                 placeholder="请选择资源类型"
                 options={RESOURCE_TYPE_OPTIONS}
               />
