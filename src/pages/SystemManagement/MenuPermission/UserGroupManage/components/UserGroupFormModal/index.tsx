@@ -121,7 +121,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
           source: UserGroupSourceEnum.UserDefined,
           sortIndex: defaultSortIndex || 1,
           status: true,
-          maxUserCount: -1,
+          maxUserCount: 100,
         });
       }
     }
@@ -212,14 +212,14 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               name="maxUserCount"
               rules={[{ required: true, message: '请输入最大用户数' }]}
               tooltip={{
-                title: '-1 表示不限制, 最大值为2147483647',
+                title: '最大值为2147483647',
                 icon: <InfoCircleOutlined />,
               }}
             >
               <InputNumber
                 placeholder="请输入最大用户数"
                 className={cx('w-full')}
-                min={-1}
+                min={1}
                 max={2147483647}
               />
             </Form.Item>

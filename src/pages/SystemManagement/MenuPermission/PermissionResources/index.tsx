@@ -45,9 +45,6 @@ const PermissionResources: React.FC = () => {
   const [editingResource, setEditingResource] = useState<ResourceInfo | null>();
   const [parentResource, setParentResource] =
     useState<ResourceTreeNode | null>();
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
   const [updateVisibleLoadingMap, setUpdateVisibleLoadingMap] = useState<
     Record<number, boolean>
   >({});
@@ -87,16 +84,6 @@ const PermissionResources: React.FC = () => {
       runGetResourceList();
     },
   });
-
-  // 处理删除资源（手动管理 loading 状态）
-  const handleDelete = async (resourceId: number) => {
-    setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: true }));
-    try {
-      await runDelete(resourceId);
-    } finally {
-      setDeleteLoadingMap((prev) => ({ ...prev, [resourceId]: false }));
-    }
-  };
 
   // 更新资源是否显示
   const { run: runUpdateResource } = useRequest(apiUpdateResource, {
@@ -141,7 +128,7 @@ const PermissionResources: React.FC = () => {
   // 处理删除确认
   const handleDeleteConfirm = (resource: ResourceTreeNode) => {
     modalConfirm('删除资源', `确认删除资源 "${resource.name}" 吗？`, () => {
-      handleDelete(resource?.id);
+      runDelete(resource?.id);
       return new Promise((resolve) => {
         setTimeout(resolve, 300);
       });
@@ -779,7 +766,6 @@ const PermissionResources: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
             删除

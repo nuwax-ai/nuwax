@@ -9,7 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -20,11 +20,13 @@ import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteRole,
   apiGetRoleList,
+  apiUpdateRole,
   apiUpdateRoleSort,
 } from '../services/role-manage';
 import {
   RoleStatusEnum,
   type RoleInfo,
+  type UpdateRoleParams,
   type UpdateRoleSortItem,
 } from '../types/role-manage';
 import RoleFormModal from './components/RoleFormModal';
@@ -38,8 +40,8 @@ const cx = classNames.bind(styles);
  */
 const RoleManage: React.FC = () => {
   const location = useLocation();
-  // 删除角色loading map
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+  // 更新状态loading map
+  const [updateStatusLoadingMap, setUpdateStatusLoadingMap] = useState<
     Record<number, boolean>
   >({});
   // 新增/编辑角色Modal是否打开
@@ -87,18 +89,38 @@ const RoleManage: React.FC = () => {
   // 删除角色
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
-    loadingDelay: 300,
-    onBefore: (roleId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [roleId]: true }));
-    },
     onSuccess: () => {
       message.success('删除成功');
       runGetRoleList();
     },
-    onFinally: (roleId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [roleId]: false }));
+  });
+
+  // 更新角色状态
+  const { run: runUpdateRole } = useRequest(apiUpdateRole, {
+    manual: true,
+    onSuccess: () => {
+      runGetRoleList();
     },
   });
+
+  // 处理状态更新
+  const handleUpdateStatus = async (record: RoleInfo, checked: boolean) => {
+    const newStatus = checked
+      ? RoleStatusEnum.Enabled
+      : RoleStatusEnum.Disabled;
+    const params: UpdateRoleParams = {
+      id: record.id,
+      status: newStatus,
+    };
+    try {
+      setUpdateStatusLoadingMap((prev) => ({ ...prev, [record.id]: true }));
+      await runUpdateRole(params);
+    } finally {
+      setTimeout(() => {
+        setUpdateStatusLoadingMap((prev) => ({ ...prev, [record.id]: false }));
+      }, 300);
+    }
+  };
 
   // 处理绑定用户
   const handleBindUser = (role: RoleInfo) => {
@@ -275,10 +297,12 @@ const RoleManage: React.FC = () => {
       key: 'status',
       align: 'center',
       fixed: 'right',
-      render: (status: RoleStatusEnum) => (
-        <Tag color={status === RoleStatusEnum.Enabled ? 'success' : 'default'}>
-          {status === RoleStatusEnum.Enabled ? '启用' : '禁用'}
-        </Tag>
+      render: (status: RoleStatusEnum, record: RoleInfo) => (
+        <Switch
+          checked={status === RoleStatusEnum.Enabled}
+          loading={updateStatusLoadingMap[record.id] || false}
+          onChange={(checked) => handleUpdateStatus(record, checked)}
+        />
       ),
     },
     {
@@ -315,7 +339,6 @@ const RoleManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
             删除
@@ -342,7 +365,7 @@ const RoleManage: React.FC = () => {
 
       {/* 角色列表 */}
       <div className={cx(styles.content)}>
-        <Spin spinning={loading}>
+        <Spin spinning={loading && !draggableData?.length}>
           {!draggableData?.length ? (
             <Empty
               description="暂无角色数据"
