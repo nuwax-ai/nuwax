@@ -1,21 +1,17 @@
 @import '@/styles/token';
 
 .dataPermissionFormWrapper {
-  max-height: 400px;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   padding-top: @paddingSm;
+  box-sizing: border-box;
 }
 
 .dataPermissionForm {
   // 抵消 Row gutter 的负边距
   margin: 0 -8px;
   padding: 0 8px;
-}
-
-.scrollContainer {
-  max-height: 400px;
-  overflow: auto;
 }
 
 :global {
@@ -28,5 +24,37 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+.tabsContentWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+
+  .tabContent {
+    flex: 1;
+    overflow-y: hidden;
+    height: 100%;
+  }
+
+  .rightSeparator {
+    margin: 0 12px;
+    border-right: @lineWidth solid @colorBorderSecondary;
+  }
+
+  .rightList {
+    display: flex !important;
+    flex-direction: column;
+    height: 100% !important;
+    overflow-y: auto;
+  }
+
+  .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: rgba(0, 0, 0, 45%);
   }
 }

@@ -80,25 +80,23 @@ export async function apiSystemUserDataPermission(
 }
 
 // 根据id列表查询智能体列表
-export async function apiSystemResourceAgentListByIds(
-  ids: number[],
-): Promise<RequestResponse<AgentConfigInfo[]>> {
+export async function apiSystemResourceAgentListByIds(data: {
+  pageIds: number[];
+  agentIds: number[];
+}): Promise<RequestResponse<AgentConfigInfo[]>> {
   return request(`/api/system/resource/agent/list-by-ids`, {
     method: 'POST',
-    data: {
-      ids,
-    },
+    data,
   });
 }
 
 // 根据id列表查询应用列表
-export async function apiSystemResourcePageListByIds(
-  ids: number[],
-): Promise<RequestResponse<CustomPageDto[]>> {
+export async function apiSystemResourcePageListByIds(data: {
+  pageIds: number[];
+  agentIds: number[];
+}): Promise<RequestResponse<CustomPageDto[]>> {
   return request(`/api/system/resource/page/list-by-ids`, {
     method: 'POST',
-    data: {
-      ids,
-    },
+    data,
   });
 }

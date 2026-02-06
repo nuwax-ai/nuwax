@@ -188,7 +188,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     if (tabKey === 'agent') {
       if (selectedAgentIds.length > 0) {
         // 切换到智能体 tab 时，根据权限 ID 列表查询智能体数据
-        runGetAgentList(selectedAgentIds);
+        runGetAgentList({
+          agentIds: selectedAgentIds,
+        });
       } else {
         // 如果没有权限，清空列表
         setAgentList([]);
@@ -196,7 +198,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     } else if (tabKey === 'page') {
       if (selectedPageIds.length > 0) {
         // 切换到应用页面 tab 时，根据权限 ID 列表查询应用页面数据
-        runGetPageList(selectedPageIds);
+        runGetPageList({
+          pageIds: selectedPageIds,
+        });
       } else {
         // 如果没有权限，清空列表
         setPageList([]);

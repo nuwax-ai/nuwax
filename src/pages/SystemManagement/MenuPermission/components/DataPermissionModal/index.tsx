@@ -1,11 +1,17 @@
-import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import {
   apiGetRoleBoundDataPermissionList,
   apiRoleBindDataPermission,
 } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
+import {
+  apiSystemResourceAgentListByIds,
+  apiSystemResourcePageListByIds,
+} from '@/pages/UserManage/user-manage';
 import { apiPublishedAgentList } from '@/services/square';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { Page } from '@/types/interfaces/request';
 import type {
   SquarePublishedItemInfo,
@@ -14,7 +20,17 @@ import type {
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Col, Form, InputNumber, Modal, Row, Table, Tabs, message } from 'antd';
+import {
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Table,
+  Tabs,
+  message,
+} from 'antd';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -24,7 +40,7 @@ import {
   apiGroupBindDataPermission,
 } from '../../services/user-group-manage';
 import { DataPermission } from '../../types/role-manage';
-import ResourceList from './components/ResourceList';
+import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -42,6 +58,43 @@ interface DataPermissionModalProps {
 }
 
 type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
+
+// 模型列表表格列
+const modelColumns: TableColumnsType<ModelConfigDto> = [
+  {
+    title: '模型名称',
+    dataIndex: 'name',
+    key: 'name',
+    width: 200,
+    ellipsis: true,
+  },
+  {
+    title: '描述',
+    dataIndex: 'description',
+    key: 'description',
+    ellipsis: true,
+  },
+];
+
+// Tab 配置（只包含标签名称）
+const tabItems = [
+  {
+    key: 'model',
+    label: '模型',
+  },
+  {
+    key: 'agent',
+    label: '智能体',
+  },
+  {
+    key: 'page',
+    label: '网页应用',
+  },
+  {
+    key: 'dataPermission',
+    label: '数据',
+  },
+];
 
 /**
  * 数据权限设置弹窗组件
@@ -65,16 +118,18 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   // 选中的智能体ID列表
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
-  // 选中的应用页面ID列表
+  // 选中的应用页面ID列表（此处应该是projectId列表）
   const [selectedPageIds, setSelectedPageIds] = useState<number[]>([]);
-  // 智能体分页
-  const [agentPage, setAgentPage] = useState<number>(1);
-  // 智能体是否还有更多
-  const [agentHasMore, setAgentHasMore] = useState<boolean>(true);
-  // 应用页面分页
-  const [pagePage, setPagePage] = useState<number>(1);
-  // 应用页面是否还有更多
-  const [pageHasMore, setPageHasMore] = useState<boolean>(true);
+  // 已选中的智能体详情列表（通过ID列表查询）
+  const [selectedAgentList, setSelectedAgentList] = useState<AgentConfigInfo[]>(
+    [],
+  );
+  // 已选中的应用页面详情列表（通过ID列表查询）
+  const [selectedPageList, setSelectedPageList] = useState<CustomPageDto[]>([]);
+  // 智能体搜索关键字
+  const [agentSearchKw, setAgentSearchKw] = useState<string>('');
+  // 网页应用搜索关键字
+  const [pageSearchKw, setPageSearchKw] = useState<string>('');
   // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
   const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
@@ -141,6 +196,28 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
   });
 
+  // 根据ID列表查询智能体详情（已选中的智能体）
+  const { run: runGetAgentListByIds } = useRequest(
+    apiSystemResourceAgentListByIds,
+    {
+      manual: true,
+      onSuccess: (result: AgentConfigInfo[]) => {
+        setSelectedAgentList(result || []);
+      },
+    },
+  );
+
+  // 根据ID列表查询网页应用详情（已选中的网页应用）
+  const { run: runGetPageListByIds } = useRequest(
+    apiSystemResourcePageListByIds,
+    {
+      manual: true,
+      onSuccess: (result: CustomPageDto[]) => {
+        setSelectedPageList(result || []);
+      },
+    },
+  );
+
   // 广场-已发布智能体列表接口（智能体列表）
   const { loading: agentLoading, run: runAgentList } = useRequest(
     apiPublishedAgentList,
@@ -150,13 +227,36 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         result: Page<SquarePublishedItemInfo>,
         params?: SquarePublishedListParams[],
       ) => {
-        const currentPage = params?.[0]?.page || 1;
-        const pageSize = params?.[0]?.pageSize || 30;
         const records = result.records || [];
-        setAgentList((prev) =>
-          currentPage === 1 ? records : [...prev, ...records],
-        );
-        setAgentHasMore(records.length >= pageSize);
+        // 如果是搜索操作（有搜索关键字），直接替换列表
+        // 如果是删除后重新加载，需要合并并过滤
+        const isSearch = params?.[0]?.kw !== undefined;
+        if (isSearch) {
+          // 搜索时，过滤掉已经在右侧列表中的项
+          setSelectedAgentIds((currentSelectedIds) => {
+            const filtered = records.filter(
+              (item) => !currentSelectedIds.includes(item.targetId),
+            );
+            setAgentList(filtered);
+            return currentSelectedIds;
+          });
+        } else {
+          // 删除后重新加载，合并新数据
+          setSelectedAgentIds((currentSelectedIds) => {
+            setAgentList((prev) => {
+              const filtered = records.filter(
+                (item) => !currentSelectedIds.includes(item.targetId),
+              );
+              // 合并新数据和已有数据，去重
+              const existingIds = new Set(prev.map((item) => item.targetId));
+              const newItems = filtered.filter(
+                (item) => !existingIds.has(item.targetId),
+              );
+              return [...prev, ...newItems];
+            });
+            return currentSelectedIds;
+          });
+        }
       },
     },
   );
@@ -170,13 +270,36 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         result: Page<SquarePublishedItemInfo>,
         params?: SquarePublishedListParams[],
       ) => {
-        const currentPage = params?.[0]?.page || 1;
-        const pageSize = params?.[0]?.pageSize || 30;
         const records = result.records || [];
-        setPageList((prev) =>
-          currentPage === 1 ? records : [...prev, ...records],
-        );
-        setPageHasMore(records.length >= pageSize);
+        // 如果是搜索操作（有搜索关键字），直接替换列表
+        // 如果是删除后重新加载，需要合并并过滤
+        const isSearch = params?.[0]?.kw !== undefined;
+        if (isSearch) {
+          // 搜索时，过滤掉已经在右侧列表中的项
+          setSelectedPageIds((currentSelectedIds) => {
+            const filtered = records.filter(
+              (item) => !currentSelectedIds.includes(item.targetId),
+            );
+            setPageList(filtered);
+            return currentSelectedIds;
+          });
+        } else {
+          // 删除后重新加载，合并新数据
+          setSelectedPageIds((currentSelectedIds) => {
+            setPageList((prev) => {
+              const filtered = records.filter(
+                (item) => !currentSelectedIds.includes(item.targetId),
+              );
+              // 合并新数据和已有数据，去重
+              const existingIds = new Set(prev.map((item) => item.targetId));
+              const newItems = filtered.filter(
+                (item) => !existingIds.has(item.targetId),
+              );
+              return [...prev, ...newItems];
+            });
+            return currentSelectedIds;
+          });
+        }
       },
     },
   );
@@ -186,22 +309,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     if (open) {
       // 加载模型列表
       runModelList();
-
-      // 加载智能体列表
-      runAgentList({
-        page: 1,
-        pageSize: 30,
-        targetType: AgentComponentTypeEnum.Agent,
-        targetSubType: 'ChatBot',
-      });
-
-      // 加载应用页面列表
-      runAgentPageList({
-        page: 1,
-        pageSize: 30,
-        targetType: AgentComponentTypeEnum.Agent,
-        targetSubType: 'PageApp',
-      });
 
       // 如果是编辑模式，查询数据权限用于回显
       if (targetId) {
@@ -232,23 +339,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedAgentIds([]);
       setSelectedPageIds([]);
       setFetchedModelIds(null);
-      setAgentPage(1);
-      setPagePage(1);
-      setAgentHasMore(true);
-      setPageHasMore(true);
       setAgentList([]);
       setPageList([]);
       setActiveTab('model');
+      setSelectedAgentList([]);
+      setSelectedPageList([]);
+      setAgentSearchKw('');
+      setPageSearchKw('');
     }
-  }, [
-    open,
-    targetId,
-    runModelList,
-    runAgentList,
-    runAgentPageList,
-    runGetDataPermission,
-    form,
-  ]);
+  }, [open, targetId]);
 
   // 当 modelList 加载完成且需要回显所有模型时，设置选中状态
   useEffect(() => {
@@ -266,49 +365,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     }
   }, [modelList, fetchedModelIds]);
 
-  // 智能体滚动加载
-  const handleAgentScroll = () => {
-    if (agentLoading || !agentHasMore) return;
-    const nextPage = agentPage + 1;
-    setAgentPage(nextPage);
-    runAgentList({
-      page: nextPage,
-      pageSize: 30,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'ChatBot',
-    });
-  };
-
-  // 应用页面滚动加载
-  const handlePageScroll = () => {
-    if (pageLoading || !pageHasMore) return;
-    const nextPage = pagePage + 1;
-    setPagePage(nextPage);
-    runAgentPageList({
-      page: nextPage,
-      pageSize: 30,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'PageApp',
-    });
-  };
-
-  // 模型列表表格列
-  const modelColumns: TableColumnsType<ModelConfigDto> = [
-    {
-      title: '模型名称',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      ellipsis: true,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-    },
-  ];
-
   // 模型行选择配置
   const modelRowSelection: TableRowSelection<ModelConfigDto> = {
     selectedRowKeys: selectedModelIds,
@@ -319,20 +375,87 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 智能体行选择配置（使用 targetId 作为选中 ID）
   const toggleAgentSelected = (targetId: number) => {
-    setSelectedAgentIds((prev) =>
-      prev.includes(targetId)
-        ? prev.filter((id) => id !== targetId)
-        : [...prev, targetId],
+    console.log('toggleAgentSelected', targetId, agentList);
+    // 从左侧列表移除
+    setAgentList((prev) => prev.filter((item) => item.targetId !== targetId));
+
+    // 添加到右侧列表并更新详情
+    setSelectedAgentIds((prev) => {
+      if (prev.includes(targetId)) {
+        return prev;
+      }
+      const newIds = [...prev, targetId];
+      if (newIds.length > 0) {
+        runGetAgentListByIds({
+          agentIds: newIds,
+        });
+      }
+      return newIds;
+    });
+  };
+
+  // 从右侧删除智能体，添加回左侧
+  const removeAgentFromSelected = (agentId: number) => {
+    console.log(
+      'removeAgentFromSelected',
+      agentId,
+      selectedAgentIds,
+      selectedAgentList,
     );
+    // 从右侧ID列表移除
+    setSelectedAgentIds((prev) => prev.filter((id) => id !== agentId));
+
+    // 从右侧列表移除
+    setSelectedAgentList((prev) => prev.filter((item) => item.id !== agentId));
+
+    // 重新搜索以获取该项并添加回左侧列表
+    runAgentList({
+      page: 1,
+      pageSize: 1000,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'ChatBot',
+      kw: agentSearchKw,
+    });
   };
 
   // 应用页面行选择配置（使用 targetId 作为选中 ID）
   const togglePageSelected = (targetId: number) => {
-    setSelectedPageIds((prev) =>
-      prev.includes(targetId)
-        ? prev.filter((id) => id !== targetId)
-        : [...prev, targetId],
+    // 从左侧列表移除
+    setPageList((prev) => prev.filter((item) => item.targetId !== targetId));
+
+    // 添加到右侧列表并更新详情
+    setSelectedPageIds((prev) => {
+      if (prev.includes(targetId)) {
+        return prev;
+      }
+      const newIds = [...prev, targetId];
+      if (newIds.length > 0) {
+        runGetPageListByIds({
+          pageIds: newIds,
+        });
+      }
+      return newIds;
+    });
+  };
+
+  // 从右侧删除网页应用，添加回左侧
+  const removePageFromSelected = (pageId: number) => {
+    // 从右侧ID列表移除
+    setSelectedPageIds((prev) => prev.filter((id) => id !== pageId));
+
+    // 从右侧列表移除
+    setSelectedPageList((prev) =>
+      prev.filter((item) => item.projectId !== pageId),
     );
+
+    // 重新搜索以获取该项并添加回左侧列表
+    runAgentPageList({
+      page: 1,
+      pageSize: 1000,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'PageApp',
+      kw: pageSearchKw,
+    });
   };
 
   // 根据类型选择接口
@@ -387,265 +510,392 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     runBindDataPermission(params);
   };
 
-  // Tab 配置
-  const tabItems = [
-    {
-      key: 'model',
-      label: '模型',
-      children: (
-        <Table<ModelConfigDto>
-          columns={modelColumns}
-          dataSource={modelList || []}
-          loading={modelLoading}
-          rowKey="id"
-          rowSelection={modelRowSelection}
-          pagination={false}
-          scroll={{ y: 400 }}
-        />
-      ),
-    },
-    {
-      key: 'agent',
-      label: '智能体',
-      children: (
-        <div id="agentScrollDiv" className={cx(styles.scrollContainer)}>
-          <InfiniteScrollDiv
-            scrollableTarget="agentScrollDiv"
-            list={agentList}
-            hasMore={agentHasMore}
-            onScroll={handleAgentScroll}
-            showLoader={!agentLoading}
-          >
-            <ResourceList
-              list={agentList}
-              selectedIds={selectedAgentIds}
-              onToggle={toggleAgentSelected}
-            />
-          </InfiniteScrollDiv>
-        </div>
-      ),
-    },
-    {
-      key: 'page',
-      label: '网页应用',
-      children: (
-        <div id="pageScrollDiv" className={cx(styles.scrollContainer)}>
-          <InfiniteScrollDiv
-            scrollableTarget="pageScrollDiv"
-            list={pageList}
-            hasMore={pageHasMore}
-            onScroll={handlePageScroll}
-            showLoader={!pageLoading}
-          >
-            <ResourceList
-              list={pageList}
-              selectedIds={selectedPageIds}
-              onToggle={togglePageSelected}
-            />
-          </InfiniteScrollDiv>
-        </div>
-      ),
-    },
-    {
-      key: 'dataPermission',
-      label: '数据',
-      children: (
-        <div className={cx(styles.dataPermissionFormWrapper)}>
-          <Form
-            form={form}
-            layout="vertical"
-            className={cx(styles.dataPermissionForm)}
-          >
-            <Row gutter={[16, 0]}>
-              <Col span={12}>
-                <Form.Item
-                  label="每日token限制"
-                  name={['tokenLimit', 'limitPerDay']}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '每日 token 限制，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber
-                    placeholder="请输入每日token限制数量"
-                    className={cx('w-full')}
-                    min={-1}
-                    max={1000000000000000}
+  // 处理 Tab 切换
+  const handleTabChange = (key: string) => {
+    const tabKey = key as TabKey;
+    setActiveTab(tabKey);
+
+    // 只针对智能体和网页应用 tab 做额外处理
+    if (tabKey === 'agent') {
+      // 右侧：根据选中的ID列表查询已选择的智能体
+      if (selectedAgentIds.length > 0) {
+        runGetAgentListByIds({
+          agentIds: selectedAgentIds,
+        });
+      } else {
+        setSelectedAgentList([]);
+      }
+    } else if (tabKey === 'page') {
+      // 右侧：根据选中的ID列表查询已选择的网页应用
+      if (selectedPageIds.length > 0) {
+        runGetPageListByIds({
+          pageIds: selectedPageIds,
+        });
+      } else {
+        setSelectedPageList([]);
+      }
+    }
+  };
+
+  // 渲染 Tab 内容
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'model':
+        return (
+          <Table<ModelConfigDto>
+            columns={modelColumns}
+            dataSource={modelList || []}
+            loading={modelLoading}
+            rowKey="id"
+            rowSelection={modelRowSelection}
+            pagination={false}
+            scroll={{ y: 400 }}
+          />
+        );
+      case 'agent':
+        return (
+          <div className={cx('flex', 'h-full', 'py-16', 'overflow-hide')}>
+            {/* 左侧：搜索 + 可选智能体列表（支持滚动加载） */}
+            <div
+              className={cx(
+                'flex',
+                'flex-col',
+                'h-full',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
+              <Input.Search
+                placeholder="搜索智能体"
+                allowClear
+                className={cx(styles.searchInput)}
+                onSearch={(value) => {
+                  setAgentSearchKw(value);
+                  runAgentList({
+                    page: 1,
+                    pageSize: 1000,
+                    targetType: AgentComponentTypeEnum.Agent,
+                    targetSubType: 'ChatBot',
+                    kw: value,
+                  });
+                }}
+              />
+              <div className={cx('flex-1', 'overflow-y')}>
+                {agentLoading && !agentList?.length ? (
+                  <div
+                    className={cx(
+                      'h-full',
+                      'flex',
+                      'items-center',
+                      'content-center',
+                    )}
+                  >
+                    <Loading />
+                  </div>
+                ) : (
+                  agentList?.map((item) => (
+                    <ResourceItem
+                      key={item.targetId}
+                      icon={item.icon}
+                      name={item.name}
+                      description={item.description}
+                      targetId={item.targetId}
+                      onAdd={toggleAgentSelected}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            {/* 分割线 */}
+            <div className={cx(styles.rightSeparator)} />
+            {/* 右侧：已选择的智能体列表（通过ID列表查询） */}
+            <div className={cx(styles.rightList, 'flex-1')}>
+              {selectedAgentList.length ? (
+                selectedAgentList.map((item) => (
+                  <ResourceItem
+                    key={item.id}
+                    icon={item.icon}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.id}
+                    onDelete={removeAgentFromSelected}
                   />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="可创建工作空间数量"
-                  name="maxSpaceCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建工作空间数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="可创建智能体数量"
-                  name="maxAgentCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建智能体数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="可创建网页应用数量"
-                  name="maxPageAppCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建网页应用数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="可创建知识库数量"
-                  name="maxKnowledgeCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建知识库数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-
-              <Col span={12}>
-                <Form.Item
-                  label="知识库存储空间上限 (GB)"
-                  name="knowledgeStorageLimitGb"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title:
-                      '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
-                  }}
-                >
-                  <InputNumber
-                    className={cx('w-full')}
-                    min={-1}
-                    step={0.001}
-                    precision={3}
-                    formatter={(value) => {
-                      if (value === undefined || value === null) return '';
-                      const num = Number(value);
-                      // 如果是整数，不显示小数部分
-                      if (Number.isInteger(num)) {
-                        return String(num);
-                      }
-                      // 如果有小数，保留最多3位小数，并去除末尾的0
-                      return num.toFixed(3).replace(/\.?0+$/, '');
-                    }}
-                    parser={(value) => {
-                      if (!value) return value as any;
-                      const num = parseFloat(value);
-                      return isNaN(num) ? (value as any) : num;
-                    }}
+                ))
+              ) : (
+                <div className={cx(styles.empty)}>暂无已选智能体</div>
+              )}
+            </div>
+          </div>
+        );
+      case 'page':
+        return (
+          <div className={cx('flex', 'h-full', 'py-16', 'overflow-hide')}>
+            {/* 左侧：搜索 + 可选网页应用列表（支持滚动加载） */}
+            <div className={cx('flex', 'flex-col', 'h-full', 'flex-1')}>
+              <Input.Search
+                placeholder="搜索网页应用"
+                allowClear
+                className={cx(styles.searchInput)}
+                onSearch={(value) => {
+                  setPageSearchKw(value);
+                  runAgentPageList({
+                    page: 1,
+                    pageSize: 1000,
+                    targetType: AgentComponentTypeEnum.Agent,
+                    targetSubType: 'PageApp',
+                    kw: value || undefined,
+                    category: '',
+                  });
+                }}
+              />
+              <div className={cx('flex-1', 'overflow-y')}>
+                {pageLoading && !pageList?.length ? (
+                  <div
+                    className={cx(
+                      'h-full',
+                      'flex',
+                      'items-center',
+                      'content-center',
+                    )}
+                  >
+                    <Loading />
+                  </div>
+                ) : (
+                  pageList?.map((item) => (
+                    <ResourceItem
+                      key={item.targetId}
+                      icon={item.icon}
+                      name={item.name}
+                      description={item.description}
+                      targetId={item.targetId}
+                      onAdd={togglePageSelected}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            <div className={cx(styles.rightSeparator)} />
+            {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
+            <div
+              className={cx(styles.rightList, 'flex-1', 'overflow-y', 'h-full')}
+            >
+              {selectedPageList.length ? (
+                selectedPageList.map((item) => (
+                  <ResourceItem
+                    key={item.projectId}
+                    icon={item.icon}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.projectId}
+                    onDelete={removePageFromSelected}
                   />
-                </Form.Item>
-              </Col>
+                ))
+              ) : (
+                <div className={cx(styles.empty)}>暂无已选网页应用</div>
+              )}
+            </div>
+          </div>
+        );
+      case 'dataPermission':
+        return (
+          <div className={cx(styles.dataPermissionFormWrapper)}>
+            <Form
+              form={form}
+              layout="vertical"
+              className={cx(styles.dataPermissionForm)}
+            >
+              <Row gutter={[16, 0]}>
+                <Col span={12}>
+                  <Form.Item
+                    label="每日token限制"
+                    name={['tokenLimit', 'limitPerDay']}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '每日 token 限制，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber
+                      placeholder="请输入每日token限制数量"
+                      className={cx('w-full')}
+                      min={-1}
+                      max={1000000000000000}
+                    />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建数据表数量"
-                  name="maxDataTableCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建数据表数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建工作空间数量"
+                    name="maxSpaceCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建工作空间数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建定时任务数量"
-                  name="maxScheduledTaskCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建定时任务数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建智能体数量"
+                    name="maxAgentCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建智能体数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="智能体电脑内存(GB)"
-                  name="agentComputerMemoryGb"
-                  initialValue={4}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建网页应用数量"
+                    name="maxPageAppCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建网页应用数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="智能体电脑 CPU 核心数"
-                  name="agentComputerCpuCores"
-                  initialValue={2}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建知识库数量"
+                    name="maxKnowledgeCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建知识库数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="通用智能体每天对话次数限制"
-                  name="agentDailyConversationLimit"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '通用智能体每天对话次数，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="知识库存储空间上限 (GB)"
+                    name="knowledgeStorageLimitGb"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title:
+                        '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
+                    }}
+                  >
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      step={0.001}
+                      precision={3}
+                      formatter={(value) => {
+                        if (value === undefined || value === null) return '';
+                        const num = Number(value);
+                        // 如果是整数，不显示小数部分
+                        if (Number.isInteger(num)) {
+                          return String(num);
+                        }
+                        // 如果有小数，保留最多3位小数，并去除末尾的0
+                        return num.toFixed(3).replace(/\.?0+$/, '');
+                      }}
+                      parser={(value) => {
+                        if (!value) return value as any;
+                        const num = parseFloat(value);
+                        return isNaN(num) ? (value as any) : num;
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="网页应用每天对话次数"
-                  name="pageDailyConversationLimit"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '网页应用每天对话次数，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
-        </div>
-      ),
-    },
-  ];
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建数据表数量"
+                    name="maxDataTableCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建数据表数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建定时任务数量"
+                    name="maxScheduledTaskCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建定时任务数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="智能体电脑内存(GB)"
+                    name="agentComputerMemoryGb"
+                    initialValue={4}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={0} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="智能体电脑 CPU 核心数"
+                    name="agentComputerCpuCores"
+                    initialValue={2}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={0} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="通用智能体每天对话次数限制"
+                    name="agentDailyConversationLimit"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '通用智能体每天对话次数，-1表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label="网页应用每天对话次数"
+                    name="pageDailyConversationLimit"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '网页应用每天对话次数，-1表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Modal
@@ -658,11 +908,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       confirmLoading={bindLoading}
       width={700}
     >
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as TabKey)}
-        items={tabItems}
-      />
+      <div className={cx(styles.tabsContentWrapper)}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+        />
+        <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
+      </div>
     </Modal>
   );
 };
