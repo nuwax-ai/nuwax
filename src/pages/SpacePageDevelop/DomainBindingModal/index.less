@@ -119,12 +119,17 @@
 
       .domain-info {
         flex: 1;
+        overflow: hidden;
+        min-width: 0;
 
         .domain-name {
           font-size: 14px;
           font-weight: 500;
           color: var(--ant-color-text);
           margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
 

@@ -76,6 +76,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
         ]}
         fieldProps={{
           maxLength: 100,
+          showCount: true,
         }}
       />
       <ProFormText
@@ -93,6 +94,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
         ]}
         fieldProps={{
           maxLength: 100,
+          showCount: true,
         }}
       />
       <ProFormTextArea
@@ -103,6 +105,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
         fieldProps={{
           autoSize: { minRows: 4, maxRows: 6 },
           maxLength: 100,
+          showCount: true,
         }}
       />
     </ModalForm>

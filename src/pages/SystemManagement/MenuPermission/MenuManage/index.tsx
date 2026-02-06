@@ -9,7 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table } from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -17,9 +17,15 @@ import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteMenu,
   apiGetMenuList,
+  apiUpdateMenu,
   apiUpdateMenuSort,
 } from '../services/menu-manage';
-import type { MenuNodeInfo, UpdateMenuSortItem } from '../types/menu-manage';
+import {
+  MenuVisibleEnum,
+  type MenuNodeInfo,
+  type UpdateMenuParams,
+  type UpdateMenuSortItem,
+} from '../types/menu-manage';
 import MenuFormModal from './components/MenuFormModal';
 import styles from './index.less';
 
@@ -36,7 +42,7 @@ const MenuManage: React.FC = () => {
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [editingMenu, setEditingMenu] = useState<MenuNodeInfo | null>(null);
   const [parentMenu, setParentMenu] = useState<MenuNodeInfo | null>(null);
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+  const [updateVisibleLoadingMap, setUpdateVisibleLoadingMap] = useState<
     Record<number, boolean>
   >({});
   // 拖拽排序的数据源
@@ -69,18 +75,31 @@ const MenuManage: React.FC = () => {
   // 删除菜单
   const { run: runDelete } = useRequest(apiDeleteMenu, {
     manual: true,
-    loadingDelay: 300,
-    onBefore: (menuId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: true }));
-    },
     onSuccess: () => {
       message.success('删除成功');
       runGetMenuList();
     },
-    onFinally: (menuId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [menuId]: false }));
+  });
+
+  // 更新菜单是否显示
+  const { run: runUpdateMenu } = useRequest(apiUpdateMenu, {
+    manual: true,
+    onSuccess: () => {
+      runGetMenuList();
     },
   });
+
+  // 处理更新菜单是否显示（手动管理 loading 状态）
+  const handleUpdateVisible = async (params: UpdateMenuParams) => {
+    setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: true }));
+    try {
+      await runUpdateMenu(params);
+    } finally {
+      setTimeout(() => {
+        setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+      }, 300);
+    }
+  };
 
   // 处理编辑
   const handleEdit = (menuInfo: MenuNodeInfo) => {
@@ -686,13 +705,34 @@ const MenuManage: React.FC = () => {
       render: (path: string) => path || '--',
     },
     {
+      title: '是否显示',
+      dataIndex: 'visible',
+      key: 'visible',
+      align: 'center',
+      fixed: 'right',
+      render: (visible: MenuVisibleEnum | undefined, record: MenuNodeInfo) => (
+        <Switch
+          checked={visible === MenuVisibleEnum.Visible}
+          loading={updateVisibleLoadingMap[record.id] || false}
+          onChange={(checked) => {
+            const newVisible = checked
+              ? MenuVisibleEnum.Visible
+              : MenuVisibleEnum.Hidden;
+            handleUpdateVisible({
+              id: record.id,
+              visible: newVisible,
+            });
+          }}
+        />
+      ),
+    },
+    {
       title: '操作',
       key: 'action',
-      width: 200,
       align: 'center',
       fixed: 'right',
       render: (_: null, record: MenuNodeInfo) => (
-        <Space size="small">
+        <Space size={0}>
           <Button
             type="link"
             size="small"
@@ -706,7 +746,6 @@ const MenuManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
             删除
@@ -733,7 +772,7 @@ const MenuManage: React.FC = () => {
 
       {/* 菜单列表 */}
       <div className={cx(styles.content)}>
-        <Spin spinning={loading}>
+        <Spin spinning={loading && !tableData?.length}>
           {!tableData?.length ? (
             <Empty
               description="暂无菜单数据"

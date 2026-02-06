@@ -9,7 +9,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Table, Tag } from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
@@ -20,9 +20,11 @@ import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteUserGroup,
   apiGetUserGroupList,
+  apiUpdateUserGroup,
   apiUpdateUserGroupSort,
 } from '../services/user-group-manage';
 import type {
+  UpdateUserGroupParams,
   UpdateUserGroupSortItem,
   UserGroupInfo,
 } from '../types/user-group-manage';
@@ -38,8 +40,8 @@ const cx = classNames.bind(styles);
  */
 const UserGroupManage: React.FC = () => {
   const location = useLocation();
-  // 删除用户组loading map
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState<
+  // 更新状态loading map
+  const [updateStatusLoadingMap, setUpdateStatusLoadingMap] = useState<
     Record<number, boolean>
   >({});
   // 新增/编辑用户组Modal是否打开
@@ -88,21 +90,42 @@ const UserGroupManage: React.FC = () => {
   // 删除用户组
   const { run: runDelete } = useRequest(apiDeleteUserGroup, {
     manual: true,
-    loadingDelay: 300,
-    onBefore: (userGroupId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [userGroupId]: true }));
-    },
     onSuccess: () => {
       message.success('删除成功');
       runGetUserGroupList();
     },
-    onError: () => {
-      message.error('删除失败');
-    },
-    onFinally: (userGroupId: number) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [userGroupId]: false }));
+  });
+
+  // 更新用户组状态
+  const { run: runUpdateUserGroup } = useRequest(apiUpdateUserGroup, {
+    manual: true,
+    onSuccess: () => {
+      runGetUserGroupList();
     },
   });
+
+  // 处理状态更新
+  const handleUpdateStatus = async (
+    record: UserGroupInfo,
+    checked: boolean,
+  ) => {
+    const newStatus = checked
+      ? UserGroupStatusEnum.Enabled
+      : UserGroupStatusEnum.Disabled;
+    const params: UpdateUserGroupParams = {
+      id: record.id,
+      status: newStatus,
+      maxUserCount: record.maxUserCount,
+    };
+    try {
+      setUpdateStatusLoadingMap((prev) => ({ ...prev, [record.id]: true }));
+      await runUpdateUserGroup(params);
+    } finally {
+      setTimeout(() => {
+        setUpdateStatusLoadingMap((prev) => ({ ...prev, [record.id]: false }));
+      }, 300);
+    }
+  };
 
   // 处理绑定用户
   const handleBindUser = (userGroup: UserGroupInfo) => {
@@ -291,23 +314,23 @@ const UserGroupManage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
-      render: (status: UserGroupStatusEnum) => (
-        <Tag
-          color={status === UserGroupStatusEnum.Enabled ? 'success' : 'default'}
-        >
-          {status === UserGroupStatusEnum.Enabled ? '启用' : '禁用'}
-        </Tag>
+      align: 'center',
+      fixed: 'right',
+      render: (status: UserGroupStatusEnum, record: UserGroupInfo) => (
+        <Switch
+          checked={status === UserGroupStatusEnum.Enabled}
+          loading={updateStatusLoadingMap[record.id] || false}
+          onChange={(checked) => handleUpdateStatus(record, checked)}
+        />
       ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 300,
       align: 'center',
       fixed: 'right',
       render: (_: null, record: UserGroupInfo) => (
-        <Space size="small">
+        <Space size={0}>
           <Button
             type="link"
             size="small"
@@ -335,7 +358,6 @@ const UserGroupManage: React.FC = () => {
           <Button
             type="link"
             size="small"
-            loading={deleteLoadingMap[record.id] || false}
             onClick={() => handleDeleteConfirm(record)}
           >
             删除
@@ -362,7 +384,7 @@ const UserGroupManage: React.FC = () => {
 
       {/* 用户组列表 */}
       <div className={cx(styles.content)}>
-        <Spin spinning={loading}>
+        <Spin spinning={loading && !draggableData?.length}>
           {!draggableData?.length ? (
             <Empty
               description="暂无用户组数据"
