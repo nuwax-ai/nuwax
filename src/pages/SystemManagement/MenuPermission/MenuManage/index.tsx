@@ -78,7 +78,6 @@ const MenuManage: React.FC = () => {
   // 删除菜单
   const { run: runDelete } = useRequest(apiDeleteMenu, {
     manual: true,
-    loadingDelay: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetMenuList();
@@ -98,9 +97,7 @@ const MenuManage: React.FC = () => {
   // 更新菜单是否显示
   const { run: runUpdateMenu } = useRequest(apiUpdateMenu, {
     manual: true,
-    loadingDelay: 300,
     onSuccess: () => {
-      message.success('更新成功');
       runGetMenuList();
     },
   });
@@ -111,7 +108,9 @@ const MenuManage: React.FC = () => {
     try {
       await runUpdateMenu(params);
     } finally {
-      setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+      setTimeout(() => {
+        setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+      }, 300);
     }
   };
 
@@ -789,7 +788,7 @@ const MenuManage: React.FC = () => {
 
       {/* 菜单列表 */}
       <div className={cx(styles.content)}>
-        <Spin spinning={loading}>
+        <Spin spinning={loading && !tableData?.length}>
           {!tableData?.length ? (
             <Empty
               description="暂无菜单数据"

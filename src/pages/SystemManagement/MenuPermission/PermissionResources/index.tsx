@@ -82,7 +82,6 @@ const PermissionResources: React.FC = () => {
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
     manual: true,
-    loadingDelay: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetResourceList();
@@ -102,7 +101,6 @@ const PermissionResources: React.FC = () => {
   // 更新资源是否显示
   const { run: runUpdateResource } = useRequest(apiUpdateResource, {
     manual: true,
-    loadingDelay: 300,
     onSuccess: () => {
       runGetResourceList();
     },
@@ -114,7 +112,9 @@ const PermissionResources: React.FC = () => {
     try {
       await runUpdateResource(params);
     } finally {
-      setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+      setTimeout(() => {
+        setUpdateVisibleLoadingMap((prev) => ({ ...prev, [params.id]: false }));
+      }, 300);
     }
   };
 
@@ -808,7 +808,7 @@ const PermissionResources: React.FC = () => {
 
       {/* 资源列表 */}
       <div className={cx(styles.content)}>
-        <Spin spinning={loading}>
+        <Spin spinning={loading && !draggableData?.length}>
           {!draggableData?.length ? (
             <Empty
               description="暂无资源数据"
