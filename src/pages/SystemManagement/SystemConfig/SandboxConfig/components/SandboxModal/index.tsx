@@ -62,7 +62,14 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         label="沙盒名称"
         placeholder="例如：AGENT沙箱"
         colProps={{ span: 24 }}
-        rules={[{ required: true, message: '请输入沙盒名称' }]}
+        rules={[
+          { required: true, message: '请输入沙盒名称' },
+          { max: 100, message: '沙盒名称不能超过 100 个字符' },
+        ]}
+        fieldProps={{
+          maxLength: 100,
+          showCount: true,
+        }}
       />
       <ProFormText
         name={['configValue', 'hostWithScheme']}
@@ -71,11 +78,16 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         colProps={{ span: 24 }}
         rules={[
           { required: true, message: '请输入沙盒根地址' },
+          { max: 255, message: '地址长度不能超过 255 个字符' },
           {
             pattern: /^https?:\/\/.+/,
             message: '请输入正确的地址格式，需包含 http:// 或 https://',
           },
         ]}
+        fieldProps={{
+          maxLength: 255,
+          showCount: true,
+        }}
       />
       <ProFormDigit
         name={['configValue', 'agentPort']}
@@ -106,14 +118,21 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         label="通信key (可选)"
         placeholder="留空表示不使用通信密钥"
         colProps={{ span: 24 }}
+        fieldProps={{
+          maxLength: 128,
+          showCount: true,
+        }}
       />
       <ProFormDigit
         name={['configValue', 'maxUsers']}
         label="最大并发用户数"
         placeholder="30"
-        colProps={{ span: 24 }}
-        fieldProps={{ precision: 0, min: 1 }}
-        rules={[{ required: true, message: '请输入最大并发用户数' }]}
+        colProps={{ span: 8 }}
+        fieldProps={{ precision: 0, min: 1, max: 9999 }}
+        rules={[
+          { required: true, message: '请输入最大并发用户数' },
+          { type: 'number', max: 9999, message: '最大并发用户数不能超过 9999' },
+        ]}
       />
     </ModalForm>
   );
