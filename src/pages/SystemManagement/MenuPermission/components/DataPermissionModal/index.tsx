@@ -19,7 +19,7 @@ import type {
   SquarePublishedListParams,
 } from '@/types/interfaces/square';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
-import { InfoCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Col,
   Form,
@@ -58,7 +58,6 @@ interface DataPermissionModalProps {
 
 type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
 
-// 模型列表表格列
 // Tab 配置（只包含标签名称）
 const tabItems = [
   {
@@ -67,7 +66,7 @@ const tabItems = [
       <span>
         模型
         <Tooltip title="未给用户组或角色授权过的模型（智能体、网页应用）将不受数据权限管控，所有用户均有权限">
-          <QuestionCircleOutlined
+          <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
         </Tooltip>

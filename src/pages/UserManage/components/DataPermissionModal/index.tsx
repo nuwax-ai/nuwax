@@ -1,10 +1,10 @@
+import Loading from '@/components/custom/Loading';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
-import { Col, Empty, Form, InputNumber, Modal, Row, Table, Tabs } from 'antd';
+import { Col, Empty, Form, InputNumber, Modal, Row, Tabs, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -14,7 +14,7 @@ import {
   apiSystemUserDataPermission,
   UserDataPermission,
 } from '../../user-manage';
-import ResourceList from './components/ResourceList';
+import ResourceItem from './components/ResourceItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,6 +31,35 @@ interface DataPermissionModalProps {
 }
 
 type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
+
+// Tab 配置（只包含标签名称）
+const tabItems = [
+  {
+    key: 'model',
+    label: (
+      <span>
+        模型
+        <Tooltip title="未给用户组或角色授权过的模型（智能体、网页应用）将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
+  },
+  {
+    key: 'agent',
+    label: '智能体',
+  },
+  {
+    key: 'page',
+    label: '网页应用',
+  },
+  {
+    key: 'dataPermission',
+    label: '数据',
+  },
+];
 
 /**
  * 用户数据权限查看弹窗组件
@@ -210,23 +239,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     }
   };
 
-  // 模型列表表格列
-  const modelColumns: TableColumnsType<ModelConfigDto> = [
-    {
-      title: '模型名称',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      ellipsis: true,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-    },
-  ];
-
   // 智能体列表（直接使用查询结果，因为接口已经根据 ID 列表过滤）
   const filteredAgentList = agentList;
 
@@ -238,257 +250,277 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const hasAgentData = filteredAgentList.length > 0;
   const hasPageData = filteredPageList.length > 0;
 
-  // Tab 配置
-  const tabItems = [
-    {
-      key: 'model',
-      label: '模型',
-      children: hasModelData ? (
-        <Table<ModelConfigDto>
-          columns={modelColumns}
-          dataSource={filteredModelList}
-          loading={modelLoading || dataPermissionLoading}
-          rowKey="id"
-          pagination={false}
-          scroll={{ y: 400 }}
-        />
-      ) : (
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            styles.dataPermissionFormWrapper,
-          )}
-        >
-          <Empty description="暂无权限" />
-        </div>
-      ),
-    },
-    {
-      key: 'agent',
-      label: '智能体',
-      children: agentLoading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>加载中...</div>
-      ) : hasAgentData ? (
-        <div className={cx(styles.scrollContainer)}>
-          <ResourceList list={filteredAgentList} />
-        </div>
-      ) : (
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            styles.dataPermissionFormWrapper,
-          )}
-        >
-          <Empty description="暂无权限" />
-        </div>
-      ),
-    },
-    {
-      key: 'page',
-      label: '网页应用',
-      children: pageLoading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>加载中...</div>
-      ) : hasPageData ? (
-        <div className={cx(styles.scrollContainer)}>
-          <ResourceList list={filteredPageList} />
-        </div>
-      ) : (
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            styles.dataPermissionFormWrapper,
-          )}
-        >
-          <Empty description="暂无权限" />
-        </div>
-      ),
-    },
-    {
-      key: 'dataPermission',
-      label: '数据',
-      children: (
-        <div className={cx(styles.dataPermissionFormWrapper)}>
-          <Form
-            form={form}
-            layout="vertical"
-            className={cx(styles.dataPermissionForm)}
-            disabled={true}
+  // 渲染 Tab 内容
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'model':
+        return hasModelData ? (
+          <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+            {(modelLoading || dataPermissionLoading) &&
+            !filteredModelList?.length ? (
+              <div
+                className={cx(
+                  'h-full',
+                  'flex',
+                  'items-center',
+                  'content-center',
+                )}
+              >
+                <Loading />
+              </div>
+            ) : (
+              filteredModelList?.map((item: ModelConfigDto) => (
+                <ResourceItem
+                  key={item.id}
+                  showIcon={false}
+                  name={item.name}
+                  description={item.description}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            <Row gutter={[16, 0]}>
-              <Col span={12}>
-                <Form.Item
-                  label="每日token限制"
-                  name={['tokenLimit', 'limitPerDay']}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '每日 token 限制，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber
-                    placeholder="请输入每日token限制数量"
-                    className={cx('w-full')}
-                    min={-1}
-                    max={1000000000000000}
-                  />
-                </Form.Item>
-              </Col>
+            <Empty description="暂无数据" />
+          </div>
+        );
+      case 'agent':
+        return agentLoading && !filteredAgentList?.length ? (
+          <div
+            className={cx('h-full', 'flex', 'items-center', 'content-center')}
+          >
+            <Loading />
+          </div>
+        ) : hasAgentData ? (
+          <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+            {filteredAgentList.map((item) => (
+              <ResourceItem
+                key={item.id}
+                icon={item.icon}
+                name={item.name}
+                description={item.description}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'content-center',
+              styles.dataPermissionFormWrapper,
+            )}
+          >
+            <Empty description="暂无数据" />
+          </div>
+        );
+      case 'page':
+        return pageLoading && !filteredPageList?.length ? (
+          <div
+            className={cx('h-full', 'flex', 'items-center', 'content-center')}
+          >
+            <Loading />
+          </div>
+        ) : hasPageData ? (
+          <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+            {filteredPageList.map((item) => (
+              <ResourceItem
+                key={item.devAgentId}
+                icon={item.coverImg || item.icon}
+                name={item.name}
+                description={item.description}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
+          >
+            <Empty description="暂无数据" />
+          </div>
+        );
+      case 'dataPermission':
+        return (
+          <div className={cx(styles.dataPermissionFormWrapper)}>
+            <Form
+              form={form}
+              layout="vertical"
+              className={cx(styles.dataPermissionForm)}
+              disabled={true}
+            >
+              <Row gutter={[16, 0]}>
+                <Col span={12}>
+                  <Form.Item
+                    label="每日token限制"
+                    name={['tokenLimit', 'limitPerDay']}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '每日 token 限制，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber
+                      placeholder="请输入每日token限制数量"
+                      className={cx('w-full')}
+                      min={-1}
+                      max={1000000000000000}
+                    />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建工作空间数量"
-                  name="maxSpaceCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建工作空间数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建工作空间数量"
+                    name="maxSpaceCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建工作空间数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建智能体数量"
-                  name="maxAgentCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建智能体数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建智能体数量"
+                    name="maxAgentCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建智能体数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建网页应用数量"
-                  name="maxPageAppCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建网页应用数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建网页应用数量"
+                    name="maxPageAppCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建网页应用数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建知识库数量"
-                  name="maxKnowledgeCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建知识库数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建知识库数量"
+                    name="maxKnowledgeCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建知识库数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="知识库存储空间上限 (GB)"
-                  name="knowledgeStorageLimitGb"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '知识库存储空间上限(GB)，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="知识库存储空间上限 (GB)"
+                    name="knowledgeStorageLimitGb"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '知识库存储空间上限(GB)，-1表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建数据表数量"
-                  name="maxDataTableCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建数据表数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建数据表数量"
+                    name="maxDataTableCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建数据表数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="可创建定时任务数量"
-                  name="maxScheduledTaskCount"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '可创建定时任务数量，-1 表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="可创建定时任务数量"
+                    name="maxScheduledTaskCount"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '可创建定时任务数量，-1 表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="智能体电脑内存(GB)"
-                  name="agentComputerMemoryGb"
-                  initialValue={4}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="智能体电脑内存(GB)"
+                    name="agentComputerMemoryGb"
+                    initialValue={4}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={0} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="智能体电脑 CPU 核心数"
-                  name="agentComputerCpuCores"
-                  initialValue={2}
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={0} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="智能体电脑 CPU 核心数"
+                    name="agentComputerCpuCores"
+                    initialValue={2}
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={0} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="通用智能体每天对话次数限制"
-                  name="agentDailyConversationLimit"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '通用智能体每天对话次数，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="通用智能体每天对话次数限制"
+                    name="agentDailyConversationLimit"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '通用智能体每天对话次数，-1表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
 
-              <Col span={12}>
-                <Form.Item
-                  label="网页应用每天对话次数"
-                  name="pageDailyConversationLimit"
-                  tooltip={{
-                    icon: <InfoCircleOutlined />,
-                    title: '网页应用每天对话次数，-1表示不限制',
-                  }}
-                >
-                  <InputNumber className={cx('w-full')} min={-1} />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
-        </div>
-      ),
-    },
-  ];
+                <Col span={12}>
+                  <Form.Item
+                    label="网页应用开发每天对话次数"
+                    name="pageDailyConversationLimit"
+                    tooltip={{
+                      icon: <InfoCircleOutlined />,
+                      title: '网页应用开发每天对话次数，-1表示不限制',
+                    }}
+                  >
+                    <InputNumber className={cx('w-full')} min={-1} />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Modal
@@ -497,8 +529,21 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       onCancel={onCancel}
       width={700}
       footer={null}
+      // styles={{
+      //   body: {
+      //     maxHeight: '70vh',
+      //     overflow: 'hidden',
+      //   },
+      // }}
     >
-      <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
+      <div className={cx(styles.tabsContentWrapper)}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+        />
+        <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
+      </div>
     </Modal>
   );
 };
