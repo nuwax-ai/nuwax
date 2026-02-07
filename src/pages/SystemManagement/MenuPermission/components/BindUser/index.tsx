@@ -1,8 +1,9 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiSearchUser } from '@/services/teamSetting';
+import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
-import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@ant-design/icons';
 import { Avatar, Button, Checkbox, Form, Input, List, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -104,8 +105,18 @@ const BindUser: React.FC<BindUserProps> = ({
       // 保留一份搜索结果全数据
       setSearchedAllMembers(data);
       // 排除 rightColumnMembers 中的数据
+      // 当 type 为 role 时，还需要过滤掉不是 admin 的用户
       const newLeftColumnMembers = data.filter((m: SearchUserInfo) => {
-        return !rightColumnMembers.some((r) => r.id === m.id);
+        // 排除已选中的用户
+        if (rightColumnMembers.some((r) => r.id === m.id)) {
+          return false;
+        }
+        // 当 type 为 role 时，只保留 admin 用户
+        if (type === 'role') {
+          return m.role === TeamStatusEnum.Admin;
+        }
+        // 其他情况保留所有用户
+        return true;
       });
       setLeftColumnMembers(newLeftColumnMembers);
     },
@@ -188,16 +199,11 @@ const BindUser: React.FC<BindUserProps> = ({
     >
       <div style={{ display: 'flex', gap: 20 }}>
         <div className={cx(styles['add-member-left-column'], 'flex-1')}>
-          <Input
+          <Input.Search
             placeholder="输入用户名、邮箱或手机号码，回车搜索"
-            prefix={<SearchOutlined />}
             allowClear
-            onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                handleInputChange(
-                  (event.currentTarget as HTMLInputElement).value,
-                );
-              }
+            onSearch={(value) => {
+              handleInputChange(value);
             }}
           />
           <Checkbox
