@@ -20,19 +20,7 @@ import type {
 } from '@/types/interfaces/square';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
-import {
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Table,
-  Tabs,
-  message,
-} from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
+import { Col, Form, Input, InputNumber, Modal, Row, Tabs, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -61,22 +49,6 @@ interface DataPermissionModalProps {
 type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
 
 // 模型列表表格列
-const modelColumns: TableColumnsType<ModelConfigDto> = [
-  {
-    title: '模型名称',
-    dataIndex: 'name',
-    key: 'name',
-    width: 200,
-    ellipsis: true,
-  },
-  {
-    title: '描述',
-    dataIndex: 'description',
-    key: 'description',
-    ellipsis: true,
-  },
-];
-
 // Tab 配置（只包含标签名称）
 const tabItems = [
   {
@@ -129,6 +101,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   );
   // 已选中的应用页面详情列表（通过ID列表查询）
   const [selectedPageList, setSelectedPageList] = useState<CustomPageDto[]>([]);
+  // 已选中的模型列表（通过ID列表过滤）
+  const [selectedModelList, setSelectedModelList] = useState<ModelConfigDto[]>(
+    [],
+  );
   // 智能体搜索关键字
   const [agentSearchKw, setAgentSearchKw] = useState<string>('');
   // 网页应用搜索关键字
@@ -363,12 +339,33 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     }
   }, [modelList, fetchedModelIds]);
 
-  // 模型行选择配置
-  const modelRowSelection: TableRowSelection<ModelConfigDto> = {
-    selectedRowKeys: selectedModelIds,
-    onChange: (keys) => {
-      setSelectedModelIds(keys as number[]);
-    },
+  // 根据 selectedModelIds 更新 selectedModelList
+  useEffect(() => {
+    if (modelList && modelList.length > 0 && selectedModelIds.length > 0) {
+      const selected = modelList.filter((model: ModelConfigDto) =>
+        selectedModelIds.includes(model.id),
+      );
+      setSelectedModelList(selected);
+    } else {
+      setSelectedModelList([]);
+    }
+  }, [modelList, selectedModelIds]);
+
+  // 模型选择配置（使用 id 作为选中 ID）
+  const toggleModelSelected = (modelId: number) => {
+    // 添加到右侧列表（不从左侧列表移除）
+    setSelectedModelIds((prev) => {
+      if (prev.includes(modelId)) {
+        return prev;
+      }
+      return [...prev, modelId];
+    });
+  };
+
+  // 从右侧删除模型
+  const removeModelFromSelected = (modelId: number) => {
+    // 从右侧ID列表移除
+    setSelectedModelIds((prev) => prev.filter((id) => id !== modelId));
   };
 
   // 智能体行选择配置（使用 targetId 作为选中 ID）
@@ -432,7 +429,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setSelectedPageList((prev) =>
       prev.filter((item) => item.devAgentId !== agentId),
     );
-    // 注意：不再需要重新搜索，因为左侧列表已经保留了该项
   };
 
   // 根据类型选择接口
@@ -542,16 +538,64 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     switch (activeTab) {
       case 'model':
         return (
-          <Table<ModelConfigDto>
-            className={cx(styles.modelTable)}
-            columns={modelColumns}
-            dataSource={modelList || []}
-            loading={modelLoading}
-            rowKey="id"
-            rowSelection={modelRowSelection}
-            pagination={false}
-            scroll={{ y: 400 }}
-          />
+          <div className={cx('flex', 'h-full')}>
+            {/* 左侧：可选模型列表 */}
+            <div
+              className={cx(
+                'flex',
+                'flex-col',
+                'h-full',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
+              <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+                {modelLoading && !modelList?.length ? (
+                  <div
+                    className={cx(
+                      'h-full',
+                      'flex',
+                      'items-center',
+                      'content-center',
+                    )}
+                  >
+                    <Loading />
+                  </div>
+                ) : (
+                  modelList?.map((item: ModelConfigDto) => (
+                    <ResourceItem
+                      key={item.id}
+                      showIcon={false}
+                      name={item.name}
+                      description={item.description}
+                      targetId={item.id}
+                      onAdd={toggleModelSelected}
+                      isAdded={selectedModelIds.includes(item.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            {/* 分割线 */}
+            <div className={cx(styles.rightSeparator)} />
+            {/* 右侧：已选择的模型列表 */}
+            <div className={cx(styles.rightList, 'flex-1')}>
+              {selectedModelList.length ? (
+                selectedModelList.map((item: ModelConfigDto) => (
+                  <ResourceItem
+                    key={item.id}
+                    showIcon={false}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.id}
+                    onDelete={removeModelFromSelected}
+                  />
+                ))
+              ) : (
+                <div className={cx(styles.empty)}>暂无已选模型</div>
+              )}
+            </div>
+          </div>
         );
       case 'agent':
         return (

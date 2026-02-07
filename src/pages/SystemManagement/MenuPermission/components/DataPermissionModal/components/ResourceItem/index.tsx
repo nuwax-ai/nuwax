@@ -10,6 +10,8 @@ const cx = classNames.bind(styles);
 interface ResourceItemProps {
   /** 资源图标 */
   icon?: string;
+  /** 是否显示图标 */
+  showIcon?: boolean;
   /** 资源名称 */
   name: string;
   /** 资源描述 */
@@ -29,6 +31,7 @@ interface ResourceItemProps {
  */
 const ResourceItem: React.FC<ResourceItemProps> = ({
   icon,
+  showIcon = true,
   name,
   description,
   targetId,
@@ -38,17 +41,19 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
 }) => {
   return (
     <div className={cx(styles.listItem, 'flex', 'items-center')}>
-      <div className={cx(styles['img-box'], 'radius-6')}>
-        <img
-          src={icon || AgentImage}
-          alt="icon"
-          className={cx(styles.iconImg)}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = AgentImage;
-          }}
-        />
-      </div>
+      <ConditionRender condition={showIcon}>
+        <div className={cx(styles['img-box'], 'radius-6')}>
+          <img
+            src={icon || AgentImage}
+            alt="icon"
+            className={cx(styles.iconImg)}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = AgentImage;
+            }}
+          />
+        </div>
+      </ConditionRender>
       <div className={cx(styles.itemMain, 'flex-1')}>
         <div className={cx(styles.itemTitle, 'text-ellipsis')}>{name}</div>
         <ConditionRender condition={description}>
