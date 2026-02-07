@@ -79,11 +79,11 @@ const WebApplication: React.FC = () => {
         : AccessControlEnum.NoFilter;
       setAccessControlLoadingMap((prev) => ({
         ...prev,
-        [record.id]: true,
+        [record.agentId]: true,
       }));
       try {
         const response = await apiSystemResourceAgentAccess(
-          record.id,
+          record.agentId,
           newStatus,
         );
         if (response.code === SUCCESS_CODE) {
@@ -92,7 +92,7 @@ const WebApplication: React.FC = () => {
       } finally {
         setAccessControlLoadingMap((prev) => ({
           ...prev,
-          [record.id]: false,
+          [record.agentId]: false,
         }));
       }
     },
@@ -172,7 +172,7 @@ const WebApplication: React.FC = () => {
       render: (_, record: SystemWebappInfo) => (
         <Switch
           checked={record.accessControl === AccessControlEnum.Filter}
-          loading={accessControlLoadingMap[record.id] || false}
+          loading={accessControlLoadingMap[record.agentId] || false}
           onChange={(checked) => handleAccessControlChange(record, checked)}
         />
       ),

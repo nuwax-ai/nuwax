@@ -33,6 +33,8 @@ export interface SystemPageResult<T> extends SystemPaginationParams {
 export interface SystemResourceInfo {
   /** ID */
   id: number;
+  /** 智能体ID */
+  agentId: number;
   /** 名称 */
   name: string;
   /** 描述 */
