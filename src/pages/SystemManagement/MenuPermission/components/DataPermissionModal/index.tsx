@@ -549,7 +549,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         );
       case 'agent':
         return (
-          <div className={cx('flex', 'h-full', 'py-16', 'overflow-hide')}>
+          <div className={cx('flex', 'h-full')}>
             {/* 左侧：搜索 + 可选智能体列表（支持滚动加载） */}
             <div
               className={cx(
@@ -624,9 +624,17 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         );
       case 'page':
         return (
-          <div className={cx('flex', 'h-full', 'py-16', 'overflow-hide')}>
+          <div className={cx('flex', 'h-full')}>
             {/* 左侧：搜索 + 可选网页应用列表（支持滚动加载） */}
-            <div className={cx('flex', 'flex-col', 'h-full', 'flex-1')}>
+            <div
+              className={cx(
+                'flex',
+                'flex-col',
+                'h-full',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
               <Input.Search
                 placeholder="搜索网页应用"
                 allowClear

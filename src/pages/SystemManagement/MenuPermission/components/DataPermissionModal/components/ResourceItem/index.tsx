@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -42,9 +43,11 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
       </div>
       <div className={cx(styles.itemMain, 'flex-1')}>
         <div className={cx(styles.itemTitle, 'text-ellipsis')}>{name}</div>
-        <div className={cx(styles.itemDesc, 'text-ellipsis-2')}>
-          {description}
-        </div>
+        <ConditionRender condition={description}>
+          <div className={cx(styles.itemDesc, 'text-ellipsis')}>
+            {description}
+          </div>
+        </ConditionRender>
       </div>
       <div className={cx(styles.itemExtra)}>
         {onAdd && (
