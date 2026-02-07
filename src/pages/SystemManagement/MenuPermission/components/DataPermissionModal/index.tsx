@@ -19,8 +19,18 @@ import type {
   SquarePublishedListParams,
 } from '@/types/interfaces/square';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
-import { InfoCircleOutlined } from '@ant-design/icons';
-import { Col, Form, Input, InputNumber, Modal, Row, Tabs, message } from 'antd';
+import { InfoCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import {
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Tabs,
+  Tooltip,
+  message,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -53,7 +63,16 @@ type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
 const tabItems = [
   {
     key: 'model',
-    label: '模型',
+    label: (
+      <span>
+        模型
+        <Tooltip title="未给用户组或角色授权过的模型（智能体、网页应用）将不受数据权限管控，所有用户均有权限">
+          <QuestionCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'agent',
@@ -806,9 +825,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
             </div>
             <div className={cx(styles.rightSeparator)} />
             {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
-            <div
-              className={cx(styles.rightList, 'flex-1', 'overflow-y', 'h-full')}
-            >
+            <div className={cx(styles.rightList, 'flex-1')}>
               {selectedPageList.length ? (
                 selectedPageList.map((item) => (
                   <ResourceItem
@@ -1008,11 +1025,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="网页应用每天对话次数"
+                    label="网页应用开发每天对话次数"
                     name="pageDailyConversationLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '网页应用每天对话次数，-1表示不限制',
+                      title: '网页应用开发每天对话次数，-1表示不限制',
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -1036,7 +1053,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       okText="确定"
       cancelText="取消"
       confirmLoading={bindLoading}
-      width={700}
+      width={1000}
     >
       <div className={cx(styles.tabsContentWrapper)}>
         <Tabs
