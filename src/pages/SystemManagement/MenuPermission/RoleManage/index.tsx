@@ -323,33 +323,39 @@ const RoleManage: React.FC = () => {
         // 下拉菜单项
         const menuItems: MenuProps['items'] = [
           {
-            key: 'bindUser',
-            label: '绑定用户',
-            onClick: () => handleBindUser(record),
+            key: 'edit',
+            label: '编辑',
+            onClick: () => handleEdit(record),
           },
           {
-            key: 'menuPermission',
-            label: '菜单权限',
-            onClick: () => handleMenuPermission(record),
-          },
-          {
-            key: 'dataPermission',
-            label: '数据权限',
-            onClick: () => handleDataPermission(record),
+            key: 'delete',
+            label: '删除',
+            onClick: () => handleDeleteConfirm(record),
           },
         ];
 
         return (
           <Space size={0}>
-            <Button type="link" size="small" onClick={() => handleEdit(record)}>
-              编辑
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleBindUser(record)}
+            >
+              绑定用户
             </Button>
             <Button
               type="link"
               size="small"
-              onClick={() => handleDeleteConfirm(record)}
+              onClick={() => handleMenuPermission(record)}
             >
-              删除
+              菜单权限
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleDataPermission(record)}
+            >
+              数据权限
             </Button>
             <Dropdown
               menu={{ items: menuItems }}
