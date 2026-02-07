@@ -3,6 +3,7 @@ import {
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
+import { PublishStatusEnum } from '../enums/common';
 import { TaskInfo } from './library';
 
 /**
@@ -44,7 +45,11 @@ export interface SystemResourceInfo {
   /** 空间ID */
   spaceId: number;
   /** 操作 */
-  operation: string;
+  operation: 'agent' | 'page';
+  // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  accessControl: number;
+  /** 发布状态 */
+  publishStatus: PublishStatusEnum;
 }
 
 // 查询用户列表输入参数

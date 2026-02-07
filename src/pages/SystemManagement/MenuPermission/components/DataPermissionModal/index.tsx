@@ -403,6 +403,30 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     });
   };
 
+  // 查询智能体列表
+  const queryAgentList = (page = 1, kw = agentSearchKw) => {
+    runAgentList({
+      page,
+      pageSize: 20,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'ChatBot',
+      kw,
+      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+    });
+  };
+
+  // 查询网页应用列表
+  const queryPageList = (page = 1, kw = pageSearchKw) => {
+    runAgentPageList({
+      page,
+      pageSize: 20,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'PageApp',
+      kw,
+      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+    });
+  };
+
   // 从右侧删除智能体，添加回左侧
   const removeAgentFromSelected = (agentId: number) => {
     // 从右侧ID列表移除
@@ -412,13 +436,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setSelectedAgentList((prev) => prev.filter((item) => item.id !== agentId));
 
     // 重新搜索以获取该项并添加回左侧列表
-    runAgentList({
-      page: 1,
-      pageSize: 1000,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'ChatBot',
-      kw: agentSearchKw,
-    });
+    queryAgentList();
   };
 
   // 应用页面行选择配置（使用 targetId 作为选中 ID）
@@ -519,13 +537,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       // 首次切换到智能体 tab 时，加载第一页数据
       if (agentList.length === 0 && !agentLoading) {
         setAgentPage(1);
-        runAgentList({
-          page: 1,
-          pageSize: 20,
-          targetType: AgentComponentTypeEnum.Agent,
-          targetSubType: 'ChatBot',
-          kw: agentSearchKw || undefined,
-        });
+        // 查询智能体列表
+        queryAgentList();
       }
     } else if (tabKey === 'page') {
       // 右侧：根据选中的ID列表查询已选择的网页应用
@@ -539,14 +552,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       // 首次切换到网页应用 tab 时，加载第一页数据
       if (pageList.length === 0 && !pageLoading) {
         setPagePage(1);
-        runAgentPageList({
-          page: 1,
-          pageSize: 20,
-          targetType: AgentComponentTypeEnum.Agent,
-          targetSubType: 'PageApp',
-          kw: pageSearchKw || undefined,
-          category: '',
-        });
+        // 查询网页应用列表
+        queryPageList();
       }
     }
   };
@@ -647,13 +654,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       behavior: 'smooth',
                     });
                   }
-                  runAgentList({
-                    page: 1,
-                    pageSize: 20,
-                    targetType: AgentComponentTypeEnum.Agent,
-                    targetSubType: 'ChatBot',
-                    kw: value,
-                  });
+                  // 查询智能体列表
+                  queryAgentList(1, value);
                 }}
               />
               <div
@@ -682,13 +684,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       if (!agentLoading && agentHasMore) {
                         const nextPage = agentPage + 1;
                         setAgentPage(nextPage);
-                        runAgentList({
-                          page: nextPage,
-                          pageSize: 20,
-                          targetType: AgentComponentTypeEnum.Agent,
-                          targetSubType: 'ChatBot',
-                          kw: agentSearchKw || undefined,
-                        });
+                        // 查询智能体列表
+                        queryAgentList(nextPage);
                       }
                     }}
                   >
@@ -760,14 +757,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       behavior: 'smooth',
                     });
                   }
-                  runAgentPageList({
-                    page: 1,
-                    pageSize: 20,
-                    targetType: AgentComponentTypeEnum.Agent,
-                    targetSubType: 'PageApp',
-                    kw: value || undefined,
-                    category: '',
-                  });
+                  // 查询网页应用列表
+                  queryPageList(1, value);
                 }}
               />
               <div
@@ -796,14 +787,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       if (!pageLoading && pageHasMore) {
                         const nextPage = pagePage + 1;
                         setPagePage(nextPage);
-                        runAgentPageList({
-                          page: nextPage,
-                          pageSize: 20,
-                          targetType: AgentComponentTypeEnum.Agent,
-                          targetSubType: 'PageApp',
-                          kw: pageSearchKw || undefined,
-                          category: '',
-                        });
+                        // 查询网页应用列表
+                        queryPageList(nextPage);
                       }
                     }}
                   >
