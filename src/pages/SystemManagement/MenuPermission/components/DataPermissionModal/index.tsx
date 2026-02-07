@@ -136,8 +136,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   // 滚动容器引用
   const agentListScrollRef = useRef<HTMLDivElement>(null);
   const pageListScrollRef = useRef<HTMLDivElement>(null);
-  // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
-  const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
   // 模型列表
   const {
@@ -181,13 +179,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
       // 存储查询到的 modelIds，用于后续处理
       if (result.modelIds && result.modelIds.length > 0) {
-        setFetchedModelIds(result.modelIds);
-        // 如果返回的不是 [-1]，直接设置选中状态
-        if (!(result.modelIds.length === 1 && result.modelIds[0] === -1)) {
-          setSelectedModelIds(result.modelIds);
-        }
+        // 直接设置选中状态
+        setSelectedModelIds(result.modelIds);
       } else {
-        setFetchedModelIds(null);
+        setSelectedModelIds([]);
       }
 
       // 回显智能体选择
@@ -326,7 +321,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
       setSelectedPageAgentIds([]);
-      setFetchedModelIds(null);
       setAgentList([]);
       setPageList([]);
       setActiveTab('model');
@@ -340,22 +334,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setPageHasMore(false);
     }
   }, [open, targetId]);
-
-  // 当 modelList 加载完成且需要回显所有模型时，设置选中状态
-  useEffect(() => {
-    if (
-      modelList &&
-      modelList.length > 0 &&
-      fetchedModelIds &&
-      fetchedModelIds.length === 1 &&
-      fetchedModelIds[0] === -1
-    ) {
-      // 如果查询到的 modelIds 是 [-1]，代表选择的是所有模型
-      // 将 modelList 中所有项的 id 都添加到 selectedModelIds
-      const allModelIds = modelList.map((model: ModelConfigDto) => model.id);
-      setSelectedModelIds(allModelIds);
-    }
-  }, [modelList, fetchedModelIds]);
 
   // 根据 selectedModelIds 更新 selectedModelList
   useEffect(() => {
@@ -491,16 +469,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
     const formValues: DataPermission = (await form.validateFields()) || {};
 
-    // 处理模型ID：全部模型传[-1],未选中任何模型不传值
-    let modelIds: number[] | undefined;
-    if (selectedModelIds.length > 0) {
-      // 检查是否选中了全部模型
-      const isAllSelected =
-        modelList?.length > 0 && selectedModelIds.length === modelList.length;
-      modelIds = isAllSelected ? [-1] : selectedModelIds;
-    } else {
-      modelIds = [0]; // 0表示不选择任何模型(后端约定)
-    }
+    // 直接使用选中的模型ID数组
+    const modelIds = selectedModelIds.length > 0 ? selectedModelIds : [];
 
     const idKey = type === 'role' ? 'roleId' : 'groupId';
     const params = {

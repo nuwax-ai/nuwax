@@ -198,15 +198,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       fetchedModelIds &&
       fetchedModelIds.length > 0
     ) {
-      // 如果查询到的 modelIds 是 [-1]，代表选择的是所有模型
-      if (fetchedModelIds.length === 1 && fetchedModelIds[0] === -1) {
-        setFilteredModelList(modelList);
-      } else {
-        const _list = modelList.filter((model: ModelConfigDto) =>
-          fetchedModelIds?.includes(model.id),
-        );
-        setFilteredModelList(_list || []);
-      }
+      const _list = modelList.filter((model: ModelConfigDto) =>
+        fetchedModelIds.includes(model.id),
+      );
+      setFilteredModelList(_list || []);
     }
   }, [modelList, fetchedModelIds]);
 
@@ -529,12 +524,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       onCancel={onCancel}
       width={700}
       footer={null}
-      // styles={{
-      //   body: {
-      //     maxHeight: '70vh',
-      //     overflow: 'hidden',
-      //   },
-      // }}
     >
       <div className={cx(styles.tabsContentWrapper)}>
         <Tabs
