@@ -6,23 +6,29 @@ import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiSystemResourceAgentAccess,
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
-import { useCallback, useEffect, useRef } from 'react';
+import { message, Switch } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
 
 const Agent: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const location = useLocation();
+  // 管控状态切换 loading 状态
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -62,6 +68,34 @@ const Agent: React.FC = () => {
       message.error(response.message || '删除失败');
     }
   }, []);
+
+  /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: SystemAgentInfo, checked: boolean) => {
+      const newStatus = checked ? 1 : 0;
+      setAccessControlLoadingMap((prev) => ({
+        ...prev,
+        [record.id]: true,
+      }));
+      try {
+        const response = await apiSystemResourceAgentAccess(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({
+          ...prev,
+          [record.id]: false,
+        }));
+      }
+    },
+    [],
+  );
 
   /**
    * 操作列配置
@@ -126,6 +160,21 @@ const Agent: React.FC = () => {
       width: 170,
       hideInSearch: true,
       valueType: 'dateTime',
+    },
+    {
+      title: '管控',
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      // hideInSearch: true,
+      render: (_, record: SystemAgentInfo) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
     },
     {
       title: '操作',

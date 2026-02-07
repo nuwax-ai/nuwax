@@ -205,6 +205,16 @@ export async function apiSystemResourceAgentList(
   });
 }
 
+// 访问受限设置 (智能体、网页应用)
+export async function apiSystemResourceAgentAccess(
+  id: number,
+  status: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/agent/access/${id}/${status}`, {
+    method: 'POST',
+  });
+}
+
 // 删除智能体
 export async function apiSystemResourceAgentDelete(data: {
   id: number;

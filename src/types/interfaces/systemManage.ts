@@ -1,4 +1,5 @@
 import {
+  AccessControlEnum,
   MessageScopeEnum,
   UserRoleEnum,
   UserStatusEnum,
@@ -47,7 +48,7 @@ export interface SystemResourceInfo {
   /** 操作 */
   operation: 'agent' | 'page';
   // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
-  accessControl: number;
+  accessControl: AccessControlEnum;
   /** 发布状态 */
   publishStatus: PublishStatusEnum;
 }
