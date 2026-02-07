@@ -1,4 +1,3 @@
-import ConditionRender from '@/components/ConditionRender';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,8 +10,6 @@ interface ResourceItemProps {
   icon?: string;
   /** 资源名称 */
   name: string;
-  /** 资源描述 */
-  description?: string;
   /** 资源ID */
   targetId: number;
   /** 点击添加按钮的回调函数 */
@@ -27,7 +24,6 @@ interface ResourceItemProps {
 const ResourceItem: React.FC<ResourceItemProps> = ({
   icon,
   name,
-  description,
   targetId,
   onAdd,
   onDelete,
@@ -43,11 +39,6 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
       </div>
       <div className={cx(styles.itemMain, 'flex-1')}>
         <div className={cx(styles.itemTitle, 'text-ellipsis')}>{name}</div>
-        <ConditionRender condition={description}>
-          <div className={cx(styles.itemDesc, 'text-ellipsis')}>
-            {description}
-          </div>
-        </ConditionRender>
       </div>
       <div className={cx(styles.itemExtra)}>
         {onAdd && (

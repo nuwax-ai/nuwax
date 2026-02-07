@@ -538,6 +538,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       case 'model':
         return (
           <Table<ModelConfigDto>
+            className={cx(styles.modelTable)}
             columns={modelColumns}
             dataSource={modelList || []}
             loading={modelLoading}
@@ -561,9 +562,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               )}
             >
               <Input.Search
+                key="agentSearch"
                 placeholder="搜索智能体"
                 allowClear
                 className={cx(styles.searchInput)}
+                value={agentSearchKw}
+                onChange={(e) => {
+                  setAgentSearchKw(e.target.value);
+                }}
                 onSearch={(value) => {
                   setAgentSearchKw(value);
                   runAgentList({
@@ -593,7 +599,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       key={item.targetId}
                       icon={item.icon}
                       name={item.name}
-                      description={item.description}
                       targetId={item.targetId}
                       onAdd={toggleAgentSelected}
                     />
@@ -611,7 +616,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     key={item.id}
                     icon={item.icon}
                     name={item.name}
-                    description={item.description}
                     targetId={item.id}
                     onDelete={removeAgentFromSelected}
                   />
@@ -636,9 +640,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               )}
             >
               <Input.Search
+                key="pageSearch"
                 placeholder="搜索网页应用"
                 allowClear
                 className={cx(styles.searchInput)}
+                value={pageSearchKw}
+                onChange={(e) => {
+                  setPageSearchKw(e.target.value);
+                }}
                 onSearch={(value) => {
                   setPageSearchKw(value);
                   runAgentPageList({
@@ -669,7 +678,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       key={item.targetId}
                       icon={item.coverImg || item.icon}
                       name={item.name}
-                      description={item.description}
                       targetId={item.targetId}
                       onAdd={togglePageSelected}
                     />
@@ -688,7 +696,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     key={item.devAgentId}
                     icon={item.coverImg || item.icon}
                     name={item.name}
-                    description={item.description}
                     targetId={item.devAgentId}
                     onDelete={removePageFromSelected}
                   />
