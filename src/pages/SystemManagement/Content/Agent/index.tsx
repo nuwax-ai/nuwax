@@ -10,6 +10,7 @@ import {
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
+import { PublishStatusEnum } from '@/types/enums/common';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
 import {
@@ -57,6 +58,14 @@ const Agent: React.FC = () => {
   }, []);
 
   /**
+   * 处理授权
+   */
+  const handleAuth = useCallback((record: SystemAgentInfo) => {
+    // TODO: 打开授权弹窗
+    message.info('授权功能待实现', record.id);
+  }, []);
+
+  /**
    * 删除智能体
    */
   const handleDelete = useCallback(async (record: SystemAgentInfo) => {
@@ -101,13 +110,28 @@ const Agent: React.FC = () => {
    * 操作列配置
    */
   const getActions = useCallback(
-    (record: SystemAgentInfo): ActionItem<SystemAgentInfo>[] => [
-      {
-        key: 'view',
-        label: '查看',
-        onClick: handleView,
-      },
-      {
+    (record: SystemAgentInfo): ActionItem<SystemAgentInfo>[] => {
+      const actions: ActionItem<SystemAgentInfo>[] = [
+        {
+          key: 'view',
+          label: '查看',
+          onClick: handleView,
+        },
+      ];
+
+      // 当 accessControl 为 1 并且发布状态为已发布时，显示授权项
+      if (
+        record.accessControl === AccessControlEnum.Filter &&
+        record.publishStatus === PublishStatusEnum.Published
+      ) {
+        actions.push({
+          key: 'auth',
+          label: '授权',
+          onClick: handleAuth,
+        });
+      }
+
+      actions.push({
         key: 'delete',
         label: '删除',
         type: 'danger',
@@ -120,9 +144,11 @@ const Agent: React.FC = () => {
           description: '此操作无法撤销，所有相关数据将被永久删除。',
         },
         onClick: handleDelete,
-      },
-    ],
-    [handleView, handleDelete],
+      });
+
+      return actions;
+    },
+    [handleView, handleAuth, handleDelete],
   );
 
   /**
