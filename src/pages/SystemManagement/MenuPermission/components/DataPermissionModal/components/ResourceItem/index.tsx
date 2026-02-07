@@ -1,3 +1,5 @@
+import AgentImage from '@/assets/images/agent_image.png';
+import ConditionRender from '@/components/ConditionRender';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -10,6 +12,8 @@ interface ResourceItemProps {
   icon?: string;
   /** 资源名称 */
   name: string;
+  /** 资源描述 */
+  description: string;
   /** 资源ID */
   targetId: number;
   /** 点击添加按钮的回调函数 */
@@ -26,6 +30,7 @@ interface ResourceItemProps {
 const ResourceItem: React.FC<ResourceItemProps> = ({
   icon,
   name,
+  description,
   targetId,
   onAdd,
   onDelete,
@@ -33,22 +38,32 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
 }) => {
   return (
     <div className={cx(styles.listItem, 'flex', 'items-center')}>
-      <div className={cx(styles.itemIcon)}>
-        {icon ? (
-          <img src={icon} alt="icon" className={cx(styles.iconImg)} />
-        ) : (
-          <div className={cx(styles.iconPlaceholder)} />
-        )}
+      <div className={cx(styles['img-box'], 'radius-6')}>
+        <img
+          src={icon || AgentImage}
+          alt="icon"
+          className={cx(styles.iconImg)}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = AgentImage;
+          }}
+        />
       </div>
       <div className={cx(styles.itemMain, 'flex-1')}>
         <div className={cx(styles.itemTitle, 'text-ellipsis')}>{name}</div>
+        <ConditionRender condition={description}>
+          <div className={cx(styles.itemDescription, 'text-ellipsis')}>
+            {description}
+          </div>
+        </ConditionRender>
       </div>
       <div className={cx(styles.itemExtra)}>
         {onAdd && (
           <Button
-            type={'default'}
+            type="default"
             size="small"
             disabled={isAdded}
+            className={cx(styles.btn)}
             onClick={() => onAdd(targetId)}
           >
             {isAdded ? '已添加' : '添加'}
@@ -56,11 +71,12 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
         )}
         {onDelete && (
           <Button
-            type={'default'}
+            type="default"
             size="small"
+            className={cx(styles.btn)}
             onClick={() => onDelete(targetId)}
           >
-            删除
+            移除
           </Button>
         )}
       </div>
