@@ -280,7 +280,7 @@ const UserManage: React.FC = () => {
           },
           {
             key: 'viewMenu',
-            label: '查看菜单与资源码权限',
+            label: '查看菜单资源权限',
             onClick: () => handleViewMenu(record),
           },
           {
