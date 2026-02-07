@@ -1,3 +1,4 @@
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import {
   apiGetRoleBoundDataPermissionList,
@@ -33,7 +34,7 @@ import {
 } from 'antd';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetGroupBoundDataPermissionList,
@@ -132,6 +133,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [agentSearchKw, setAgentSearchKw] = useState<string>('');
   // 网页应用搜索关键字
   const [pageSearchKw, setPageSearchKw] = useState<string>('');
+  // 智能体分页状态
+  const [agentPage, setAgentPage] = useState<number>(1);
+  const [agentHasMore, setAgentHasMore] = useState<boolean>(false);
+  // 网页应用分页状态
+  const [pagePage, setPagePage] = useState<number>(1);
+  const [pageHasMore, setPageHasMore] = useState<boolean>(false);
+  // 滚动容器引用
+  const agentListScrollRef = useRef<HTMLDivElement>(null);
+  const pageListScrollRef = useRef<HTMLDivElement>(null);
   // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
   const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
@@ -230,33 +240,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         params?: SquarePublishedListParams[],
       ) => {
         const records = result.records || [];
-        // 如果是搜索操作（有搜索关键字），直接替换列表
-        // 如果是删除后重新加载，需要合并并过滤
-        const isSearch = params?.[0]?.kw !== undefined;
-        if (isSearch) {
-          // 搜索时，过滤掉已经在右侧列表中的项
-          setSelectedAgentIds((currentSelectedIds) => {
-            const filtered = records.filter(
-              (item) => !currentSelectedIds.includes(item.targetId),
-            );
-            setAgentList(filtered);
-            return currentSelectedIds;
-          });
+        const currentPage = params?.[0]?.page || 1;
+        const totalPages = result.pages || 0;
+
+        // 判断是否还有更多数据
+        setAgentHasMore(currentPage < totalPages);
+
+        // 如果是第一页（搜索或首次加载），直接替换列表
+        if (currentPage === 1) {
+          setAgentList(records);
         } else {
-          // 删除后重新加载，合并新数据
-          setSelectedAgentIds((currentSelectedIds) => {
-            setAgentList((prev) => {
-              const filtered = records.filter(
-                (item) => !currentSelectedIds.includes(item.targetId),
-              );
-              // 合并新数据和已有数据，去重
-              const existingIds = new Set(prev.map((item) => item.targetId));
-              const newItems = filtered.filter(
-                (item) => !existingIds.has(item.targetId),
-              );
-              return [...prev, ...newItems];
-            });
-            return currentSelectedIds;
+          // 加载更多时，合并新数据
+          setAgentList((prev) => {
+            // 合并新数据和已有数据，去重
+            const existingIds = new Set(prev.map((item) => item.targetId));
+            const newItems = records.filter(
+              (item) => !existingIds.has(item.targetId),
+            );
+            return [...prev, ...newItems];
           });
         }
       },
@@ -273,33 +274,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         params?: SquarePublishedListParams[],
       ) => {
         const records = result.records || [];
-        // 如果是搜索操作（有搜索关键字），直接替换列表
-        // 如果是删除后重新加载，需要合并并过滤
-        const isSearch = params?.[0]?.kw !== undefined;
-        if (isSearch) {
-          // 搜索时，过滤掉已经在右侧列表中的项
-          setSelectedPageAgentIds((currentSelectedIds) => {
-            const filtered = records.filter(
-              (item) => !currentSelectedIds.includes(item.targetId),
-            );
-            setPageList(filtered);
-            return currentSelectedIds;
-          });
+        const currentPage = params?.[0]?.page || 1;
+        const totalPages = result.pages || 0;
+
+        // 判断是否还有更多数据
+        setPageHasMore(currentPage < totalPages);
+
+        // 如果是第一页（搜索或首次加载），直接替换列表
+        if (currentPage === 1) {
+          setPageList(records);
         } else {
-          // 删除后重新加载，合并新数据
-          setSelectedPageAgentIds((currentSelectedIds) => {
-            setPageList((prev) => {
-              const filtered = records.filter(
-                (item) => !currentSelectedIds.includes(item.targetId),
-              );
-              // 合并新数据和已有数据，去重
-              const existingIds = new Set(prev.map((item) => item.targetId));
-              const newItems = filtered.filter(
-                (item) => !existingIds.has(item.targetId),
-              );
-              return [...prev, ...newItems];
-            });
-            return currentSelectedIds;
+          // 加载更多时，合并新数据
+          setPageList((prev) => {
+            // 合并新数据和已有数据，去重
+            const existingIds = new Set(prev.map((item) => item.targetId));
+            const newItems = records.filter(
+              (item) => !existingIds.has(item.targetId),
+            );
+            return [...prev, ...newItems];
           });
         }
       },
@@ -348,6 +340,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedPageList([]);
       setAgentSearchKw('');
       setPageSearchKw('');
+      setAgentPage(1);
+      setPagePage(1);
+      setAgentHasMore(false);
+      setPageHasMore(false);
     }
   }, [open, targetId]);
 
@@ -377,10 +373,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 智能体行选择配置（使用 targetId 作为选中 ID）
   const toggleAgentSelected = (targetId: number) => {
-    // 从左侧列表移除
-    setAgentList((prev) => prev.filter((item) => item.targetId !== targetId));
-
-    // 添加到右侧列表并更新详情
+    // 添加到右侧列表并更新详情（不从左侧列表移除）
     setSelectedAgentIds((prev) => {
       if (prev.includes(targetId)) {
         return prev;
@@ -415,10 +408,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 应用页面行选择配置（使用 targetId 作为选中 ID）
   const togglePageSelected = (targetId: number) => {
-    // 从左侧列表移除
-    setPageList((prev) => prev.filter((item) => item.targetId !== targetId));
-
-    // 添加到右侧列表并更新详情
+    // 添加到右侧列表并更新详情（不从左侧列表移除）
     setSelectedPageAgentIds((prev) => {
       if (prev.includes(targetId)) {
         return prev;
@@ -433,7 +423,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     });
   };
 
-  // 从右侧删除网页应用，添加回左侧
+  // 从右侧删除网页应用
   const removePageFromSelected = (agentId: number) => {
     // 从右侧ID列表移除
     setSelectedPageAgentIds((prev) => prev.filter((id) => id !== agentId));
@@ -442,15 +432,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setSelectedPageList((prev) =>
       prev.filter((item) => item.devAgentId !== agentId),
     );
-
-    // 重新搜索以获取该项并添加回左侧列表
-    runAgentPageList({
-      page: 1,
-      pageSize: 1000,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'PageApp',
-      kw: pageSearchKw,
-    });
+    // 注意：不再需要重新搜索，因为左侧列表已经保留了该项
   };
 
   // 根据类型选择接口
@@ -520,6 +502,17 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       } else {
         setSelectedAgentList([]);
       }
+      // 首次切换到智能体 tab 时，加载第一页数据
+      if (agentList.length === 0 && !agentLoading) {
+        setAgentPage(1);
+        runAgentList({
+          page: 1,
+          pageSize: 20,
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'ChatBot',
+          kw: agentSearchKw || undefined,
+        });
+      }
     } else if (tabKey === 'page') {
       // 右侧：根据选中的ID列表查询已选择的网页应用
       if (selectedPageAgentIds.length > 0) {
@@ -528,6 +521,18 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         });
       } else {
         setSelectedPageList([]);
+      }
+      // 首次切换到网页应用 tab 时，加载第一页数据
+      if (pageList.length === 0 && !pageLoading) {
+        setPagePage(1);
+        runAgentPageList({
+          page: 1,
+          pageSize: 20,
+          targetType: AgentComponentTypeEnum.Agent,
+          targetSubType: 'PageApp',
+          kw: pageSearchKw || undefined,
+          category: '',
+        });
       }
     }
   };
@@ -572,16 +577,29 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setAgentSearchKw(value);
+                  setAgentPage(1);
+                  // 平滑滚动到顶部
+                  if (agentListScrollRef.current) {
+                    agentListScrollRef.current.scrollTo({
+                      top: 0,
+                      behavior: 'smooth',
+                    });
+                  }
                   runAgentList({
                     page: 1,
-                    pageSize: 1000,
+                    pageSize: 20,
                     targetType: AgentComponentTypeEnum.Agent,
                     targetSubType: 'ChatBot',
                     kw: value,
                   });
                 }}
               />
-              <div className={cx('flex-1', 'overflow-y')}>
+              <div
+                ref={agentListScrollRef}
+                id="agent-list-scroll"
+                className={cx('flex-1', 'overflow-y')}
+                style={{ height: '100%', overflowY: 'auto' }}
+              >
                 {agentLoading && !agentList?.length ? (
                   <div
                     className={cx(
@@ -594,15 +612,35 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     <Loading />
                   </div>
                 ) : (
-                  agentList?.map((item) => (
-                    <ResourceItem
-                      key={item.targetId}
-                      icon={item.icon}
-                      name={item.name}
-                      targetId={item.targetId}
-                      onAdd={toggleAgentSelected}
-                    />
-                  ))
+                  <InfiniteScrollDiv
+                    scrollableTarget="agent-list-scroll"
+                    list={agentList}
+                    hasMore={agentHasMore}
+                    onScroll={() => {
+                      if (!agentLoading && agentHasMore) {
+                        const nextPage = agentPage + 1;
+                        setAgentPage(nextPage);
+                        runAgentList({
+                          page: nextPage,
+                          pageSize: 20,
+                          targetType: AgentComponentTypeEnum.Agent,
+                          targetSubType: 'ChatBot',
+                          kw: agentSearchKw || undefined,
+                        });
+                      }
+                    }}
+                  >
+                    {agentList?.map((item) => (
+                      <ResourceItem
+                        key={item.targetId}
+                        icon={item.icon}
+                        name={item.name}
+                        targetId={item.targetId}
+                        onAdd={toggleAgentSelected}
+                        isAdded={selectedAgentIds.includes(item.targetId)}
+                      />
+                    ))}
+                  </InfiniteScrollDiv>
                 )}
               </div>
             </div>
@@ -650,9 +688,17 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setPageSearchKw(value);
+                  setPagePage(1);
+                  // 平滑滚动到顶部
+                  if (pageListScrollRef.current) {
+                    pageListScrollRef.current.scrollTo({
+                      top: 0,
+                      behavior: 'smooth',
+                    });
+                  }
                   runAgentPageList({
                     page: 1,
-                    pageSize: 1000,
+                    pageSize: 20,
                     targetType: AgentComponentTypeEnum.Agent,
                     targetSubType: 'PageApp',
                     kw: value || undefined,
@@ -660,7 +706,12 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   });
                 }}
               />
-              <div className={cx('flex-1', 'overflow-y')}>
+              <div
+                ref={pageListScrollRef}
+                id="page-list-scroll"
+                className={cx('flex-1', 'overflow-y')}
+                style={{ height: '100%', overflowY: 'auto' }}
+              >
                 {pageLoading && !pageList?.length ? (
                   <div
                     className={cx(
@@ -673,15 +724,36 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     <Loading />
                   </div>
                 ) : (
-                  pageList?.map((item) => (
-                    <ResourceItem
-                      key={item.targetId}
-                      icon={item.coverImg || item.icon}
-                      name={item.name}
-                      targetId={item.targetId}
-                      onAdd={togglePageSelected}
-                    />
-                  ))
+                  <InfiniteScrollDiv
+                    scrollableTarget="page-list-scroll"
+                    list={pageList}
+                    hasMore={pageHasMore}
+                    onScroll={() => {
+                      if (!pageLoading && pageHasMore) {
+                        const nextPage = pagePage + 1;
+                        setPagePage(nextPage);
+                        runAgentPageList({
+                          page: nextPage,
+                          pageSize: 20,
+                          targetType: AgentComponentTypeEnum.Agent,
+                          targetSubType: 'PageApp',
+                          kw: pageSearchKw || undefined,
+                          category: '',
+                        });
+                      }
+                    }}
+                  >
+                    {pageList?.map((item) => (
+                      <ResourceItem
+                        key={item.targetId}
+                        icon={item.coverImg || item.icon}
+                        name={item.name}
+                        targetId={item.targetId}
+                        onAdd={togglePageSelected}
+                        isAdded={selectedPageAgentIds.includes(item.targetId)}
+                      />
+                    ))}
+                  </InfiniteScrollDiv>
                 )}
               </div>
             </div>

@@ -15,6 +15,8 @@ interface ResourceItemProps {
   /** 点击添加按钮的回调函数 */
   onAdd?: (targetId: number) => void;
   onDelete?: (targetId: number) => void;
+  /** 是否已添加（用于显示已添加状态） */
+  isAdded?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
   targetId,
   onAdd,
   onDelete,
+  isAdded = false,
 }) => {
   return (
     <div className={cx(styles.listItem, 'flex', 'items-center')}>
@@ -42,8 +45,13 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
       </div>
       <div className={cx(styles.itemExtra)}>
         {onAdd && (
-          <Button type={'default'} size="small" onClick={() => onAdd(targetId)}>
-            添加
+          <Button
+            type={'default'}
+            size="small"
+            disabled={isAdded}
+            onClick={() => onAdd(targetId)}
+          >
+            {isAdded ? '已添加' : '添加'}
           </Button>
         )}
         {onDelete && (
