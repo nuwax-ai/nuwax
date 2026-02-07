@@ -51,8 +51,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 选中的智能体ID列表
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
-  // 选中的应用页面ID列表
-  const [selectedPageIds, setSelectedPageIds] = useState<number[]>([]);
+  // 选中的应用页面关联的agentId列表（此处应该是页面的devAgentId字段值列表）
+  const [selectedPageAgentIds, setSelectedPageAgentIds] = useState<number[]>(
+    [],
+  );
   // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
   const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
@@ -96,12 +98,12 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
         setFetchedModelIds(result.modelIds || null);
         setSelectedAgentIds(result.agentIds || []);
-        setSelectedPageIds(result.pageIds || []);
+        setSelectedPageAgentIds(result.pageAgentIds || []);
       },
     });
 
   // 根据ID列表查询智能体
-  const { loading: agentLoading, run: runGetAgentList } = useRequest(
+  const { loading: agentLoading, run: runGetAgentListByIds } = useRequest(
     apiSystemResourceAgentListByIds,
     {
       manual: true,
@@ -112,7 +114,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   );
 
   // 根据ID列表查询应用页面列表
-  const { loading: pageLoading, run: runGetPageList } = useRequest(
+  const { loading: pageLoading, run: runGetPageListByIds } = useRequest(
     apiSystemResourcePageListByIds,
     {
       manual: true,
@@ -151,7 +153,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       // 重置已选中的数据
       setFilteredModelList([]);
       setSelectedAgentIds([]);
-      setSelectedPageIds([]);
+      setSelectedPageAgentIds([]);
       setFetchedModelIds(null);
       setAgentList([]);
       setPageList([]);
@@ -188,7 +190,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     if (tabKey === 'agent') {
       if (selectedAgentIds.length > 0) {
         // 切换到智能体 tab 时，根据权限 ID 列表查询智能体数据
-        runGetAgentList({
+        runGetAgentListByIds({
           agentIds: selectedAgentIds,
         });
       } else {
@@ -196,10 +198,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         setAgentList([]);
       }
     } else if (tabKey === 'page') {
-      if (selectedPageIds.length > 0) {
+      if (selectedPageAgentIds.length > 0) {
         // 切换到应用页面 tab 时，根据权限 ID 列表查询应用页面数据
-        runGetPageList({
-          pageIds: selectedPageIds,
+        runGetPageListByIds({
+          agentIds: selectedPageAgentIds,
         });
       } else {
         // 如果没有权限，清空列表

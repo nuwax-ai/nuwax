@@ -118,8 +118,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   // 选中的智能体ID列表
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
-  // 选中的应用页面ID列表（此处应该是projectId列表）
-  const [selectedPageIds, setSelectedPageIds] = useState<number[]>([]);
+  // 选中的应用页面关联的agentId列表（此处应该是页面的devAgentId字段值列表）
+  const [selectedPageAgentIds, setSelectedPageAgentIds] = useState<number[]>(
+    [],
+  );
   // 已选中的智能体详情列表（通过ID列表查询）
   const [selectedAgentList, setSelectedAgentList] = useState<AgentConfigInfo[]>(
     [],
@@ -190,8 +192,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       }
 
       // 回显应用页面选择
-      if (result.pageIds && result.pageIds.length > 0) {
-        setSelectedPageIds(result.pageIds);
+      if (result.pageAgentIds && result.pageAgentIds.length > 0) {
+        setSelectedPageAgentIds(result.pageAgentIds);
       }
     },
   });
@@ -276,7 +278,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         const isSearch = params?.[0]?.kw !== undefined;
         if (isSearch) {
           // 搜索时，过滤掉已经在右侧列表中的项
-          setSelectedPageIds((currentSelectedIds) => {
+          setSelectedPageAgentIds((currentSelectedIds) => {
             const filtered = records.filter(
               (item) => !currentSelectedIds.includes(item.targetId),
             );
@@ -285,7 +287,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           });
         } else {
           // 删除后重新加载，合并新数据
-          setSelectedPageIds((currentSelectedIds) => {
+          setSelectedPageAgentIds((currentSelectedIds) => {
             setPageList((prev) => {
               const filtered = records.filter(
                 (item) => !currentSelectedIds.includes(item.targetId),
@@ -337,7 +339,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       // 重置已选中的数据
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
-      setSelectedPageIds([]);
+      setSelectedPageAgentIds([]);
       setFetchedModelIds(null);
       setAgentList([]);
       setPageList([]);
@@ -375,7 +377,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 智能体行选择配置（使用 targetId 作为选中 ID）
   const toggleAgentSelected = (targetId: number) => {
-    console.log('toggleAgentSelected', targetId, agentList);
     // 从左侧列表移除
     setAgentList((prev) => prev.filter((item) => item.targetId !== targetId));
 
@@ -396,12 +397,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 从右侧删除智能体，添加回左侧
   const removeAgentFromSelected = (agentId: number) => {
-    console.log(
-      'removeAgentFromSelected',
-      agentId,
-      selectedAgentIds,
-      selectedAgentList,
-    );
     // 从右侧ID列表移除
     setSelectedAgentIds((prev) => prev.filter((id) => id !== agentId));
 
@@ -424,14 +419,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setPageList((prev) => prev.filter((item) => item.targetId !== targetId));
 
     // 添加到右侧列表并更新详情
-    setSelectedPageIds((prev) => {
+    setSelectedPageAgentIds((prev) => {
       if (prev.includes(targetId)) {
         return prev;
       }
       const newIds = [...prev, targetId];
       if (newIds.length > 0) {
         runGetPageListByIds({
-          pageIds: newIds,
+          agentIds: newIds,
         });
       }
       return newIds;
@@ -439,13 +434,13 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   };
 
   // 从右侧删除网页应用，添加回左侧
-  const removePageFromSelected = (pageId: number) => {
+  const removePageFromSelected = (agentId: number) => {
     // 从右侧ID列表移除
-    setSelectedPageIds((prev) => prev.filter((id) => id !== pageId));
+    setSelectedPageAgentIds((prev) => prev.filter((id) => id !== agentId));
 
     // 从右侧列表移除
     setSelectedPageList((prev) =>
-      prev.filter((item) => item.projectId !== pageId),
+      prev.filter((item) => item.devAgentId !== agentId),
     );
 
     // 重新搜索以获取该项并添加回左侧列表
@@ -503,7 +498,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         },
         modelIds,
         agentIds: selectedAgentIds,
-        pageIds: selectedPageIds,
+        pageAgentIds: selectedPageAgentIds,
       },
     };
 
@@ -527,9 +522,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       }
     } else if (tabKey === 'page') {
       // 右侧：根据选中的ID列表查询已选择的网页应用
-      if (selectedPageIds.length > 0) {
+      if (selectedPageAgentIds.length > 0) {
         runGetPageListByIds({
-          pageIds: selectedPageIds,
+          agentIds: selectedPageAgentIds,
         });
       } else {
         setSelectedPageList([]);
@@ -664,7 +659,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                   pageList?.map((item) => (
                     <ResourceItem
                       key={item.targetId}
-                      icon={item.icon}
+                      icon={item.coverImg || item.icon}
                       name={item.name}
                       description={item.description}
                       targetId={item.targetId}
@@ -682,11 +677,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               {selectedPageList.length ? (
                 selectedPageList.map((item) => (
                   <ResourceItem
-                    key={item.projectId}
-                    icon={item.icon}
+                    key={item.devAgentId}
+                    icon={item.coverImg || item.icon}
                     name={item.name}
                     description={item.description}
-                    targetId={item.projectId}
+                    targetId={item.devAgentId}
                     onDelete={removePageFromSelected}
                   />
                 ))
