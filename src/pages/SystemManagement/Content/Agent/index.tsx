@@ -20,8 +20,8 @@ import {
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
-import AgentAuthModal from './components/AgentAuthModal';
 
 const Agent: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -255,9 +255,10 @@ const Agent: React.FC = () => {
         onReset={handleReset}
       />
       {/* 授权弹窗 */}
-      <AgentAuthModal
+      <TargetAuthModal
         open={authModalOpen}
-        agentId={currentAgentId || 0}
+        targetId={currentAgentId || 0}
+        targetType="agent"
         onCancel={() => {
           setAuthModalOpen(false);
           setCurrentAgentId(null);

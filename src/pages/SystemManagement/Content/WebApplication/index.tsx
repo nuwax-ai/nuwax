@@ -20,6 +20,7 @@ import {
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
 const WebApplication: React.FC = () => {
@@ -30,6 +31,11 @@ const WebApplication: React.FC = () => {
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentPageAgentId, setCurrentPageAgentId] = useState<number | null>(
+    null,
+  );
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -61,8 +67,8 @@ const WebApplication: React.FC = () => {
    * 处理授权
    */
   const handleAuth = useCallback((record: SystemWebappInfo) => {
-    // TODO: 打开授权弹窗
-    message.info('授权功能待实现', record.agentId);
+    setCurrentPageAgentId(record.agentId);
+    setAuthModalOpen(true);
   }, []);
 
   /**
@@ -250,6 +256,16 @@ const WebApplication: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+      />
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentPageAgentId || 0}
+        targetType="page"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentPageAgentId(null);
+        }}
       />
     </WorkspaceLayout>
   );

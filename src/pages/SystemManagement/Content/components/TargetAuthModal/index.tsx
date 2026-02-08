@@ -7,16 +7,20 @@ import {
   AccessibleUserGroupInfo,
   apiAgentBindRestrictionTargets,
   apiAgentRestrictionTargets,
-} from '../../../content-manage';
+  apiPageAgentBindRestrictionTargets,
+  apiPageAgentRestrictionTargets,
+} from '../../content-manage';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface AgentAuthModalProps {
+interface TargetAuthModalProps {
   /** 是否打开 */
   open: boolean;
-  /** 智能体ID */
-  agentId: number;
+  /** 智能体ID、网页应用ID、模型ID */
+  targetId: number;
+  /** 目标类型 */
+  targetType: 'agent' | 'page' | 'model';
   /** 取消回调 */
   onCancel: () => void;
 }
@@ -24,15 +28,17 @@ interface AgentAuthModalProps {
 type TabKey = 'role' | 'group';
 
 /**
- * 智能体授权弹窗
+ * 目标对象授权弹窗
  * @param open 是否打开
- * @param agentId 智能体ID
+ * @param targetId 目标对象ID
+ * @param targetType 目标类型
  * @param onCancel 取消回调
  * @returns
  */
-const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
+const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   open,
-  agentId,
+  targetId,
+  targetType,
   onCancel,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('role');
@@ -42,9 +48,19 @@ const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // 查询可访问的角色和用户组列表接口
+  const apiQueryRestrictionTargets =
+    targetType === 'agent'
+      ? apiAgentRestrictionTargets
+      : apiPageAgentRestrictionTargets;
+  const apiBindRestrictionTargets =
+    targetType === 'agent'
+      ? apiAgentBindRestrictionTargets
+      : apiPageAgentBindRestrictionTargets;
+
   // 查询可访问的角色和用户组列表
   const { run: runGetRestrictionTargets } = useRequest(
-    apiAgentRestrictionTargets,
+    apiQueryRestrictionTargets,
     {
       manual: true,
       onSuccess: (data: {
@@ -59,7 +75,7 @@ const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
 
   // 绑定限制访问对象
   const { run: runBindRestrictionTargets } = useRequest(
-    apiAgentBindRestrictionTargets,
+    apiBindRestrictionTargets,
     {
       manual: true,
       onSuccess: () => {
@@ -75,8 +91,8 @@ const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
 
   // 打开弹窗时加载数据
   useEffect(() => {
-    if (open && agentId) {
-      runGetRestrictionTargets(agentId);
+    if (open && targetId) {
+      runGetRestrictionTargets(targetId);
     } else {
       setRoleList([]);
       setGroupList([]);
@@ -84,13 +100,13 @@ const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
       setSelectedGroupIds([]);
       setActiveTab('role');
     }
-  }, [open, agentId]);
+  }, [open, targetId]);
 
   // 提交数据
   const handleSubmit = () => {
     setLoading(true);
     runBindRestrictionTargets({
-      subjectId: agentId,
+      subjectId: targetId,
       roleIds: selectedRoleIds,
       groupIds: selectedGroupIds,
     });
@@ -274,4 +290,4 @@ const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
   );
 };
 
-export default AgentAuthModal;
+export default TargetAuthModal;
