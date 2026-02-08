@@ -1,6 +1,3 @@
-/**
- * 智能体管理页面
- */
 import { XProTable } from '@/components/ProComponents';
 import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
@@ -23,6 +20,9 @@ import { history, useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
+/**
+ * 智能体管理页面
+ */
 const Agent: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
@@ -184,6 +184,22 @@ const Agent: React.FC = () => {
       hideInSearch: false,
     },
     {
+      title: '发布状态',
+      dataIndex: 'publishStatus',
+      align: 'center',
+      width: 100,
+      hideInSearch: true,
+      render: (_, record: SystemAgentInfo) => {
+        const statusMap: Record<PublishStatusEnum, string> = {
+          [PublishStatusEnum.Developing]: '待发布',
+          [PublishStatusEnum.Applying]: '待审核',
+          [PublishStatusEnum.Published]: '已发布',
+          [PublishStatusEnum.Rejected]: '已拒绝',
+        };
+        return statusMap[record.publishStatus] || '--';
+      },
+    },
+    {
       title: '创建时间',
       dataIndex: 'created',
       align: 'center',
@@ -197,7 +213,7 @@ const Agent: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      // hideInSearch: true,
+      hideInSearch: true,
       render: (_, record: SystemAgentInfo) => (
         <Switch
           checked={record.accessControl === AccessControlEnum.Filter}
