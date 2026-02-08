@@ -38,6 +38,7 @@ import {
   apiUpdateRoleSort,
 } from '../services/role-manage';
 import {
+  RoleSourceEnum,
   RoleStatusEnum,
   type RoleInfo,
   type UpdateRoleParams,
@@ -319,6 +320,7 @@ const RoleManage: React.FC = () => {
       fixed: 'right',
       render: (status: RoleStatusEnum, record: RoleInfo) => (
         <Switch
+          disabled={record.source === RoleSourceEnum.SystemBuiltIn}
           checked={status === RoleStatusEnum.Enabled}
           checkedChildren="启用"
           unCheckedChildren="禁用"
