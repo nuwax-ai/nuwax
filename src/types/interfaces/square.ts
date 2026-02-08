@@ -30,6 +30,8 @@ export interface SquarePublishedListParams {
   authSpaceIds?: number[];
   // 允许复制过滤（模板），1 允许
   allowCopy?: AllowCopyEnum;
+  // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  accessControl?: number;
 }
 
 // 广场-已发布的组件单项信息

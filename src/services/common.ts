@@ -15,6 +15,53 @@ import React from 'react';
 import { clearLoginStatusCache } from './userService';
 
 /**
+ * 错误消息去重缓存
+ * 用于避免短时间内重复显示相同的错误消息
+ * key 为错误消息内容，value 为时间戳
+ */
+const errorMessageCache = new Map<string, number>();
+
+// 错误消息去重的时间窗口（毫秒），默认 2 秒
+const ERROR_MESSAGE_DEBOUNCE_TIME = 2000;
+
+/**
+ * 检查错误消息是否应该显示
+ * 如果相同的错误消息在短时间内已经显示过，则返回 false
+ * @param errorMessage 错误消息内容
+ * @returns 是否应该显示错误消息
+ */
+const shouldShowErrorMessage = (errorMessage: string): boolean => {
+  const now = Date.now();
+  const cachedTimestamp = errorMessageCache.get(errorMessage);
+
+  // 如果缓存中没有该消息，或者缓存已过期，则应该显示
+  if (!cachedTimestamp || now - cachedTimestamp > ERROR_MESSAGE_DEBOUNCE_TIME) {
+    // 更新缓存
+    errorMessageCache.set(errorMessage, now);
+    return true;
+  }
+
+  // 在时间窗口内已经显示过相同的错误消息，不重复显示
+  return false;
+};
+
+/**
+ * 清理过期的错误消息缓存
+ * 定期清理，避免内存泄漏
+ */
+const cleanExpiredErrorCache = () => {
+  const now = Date.now();
+  for (const [message, timestamp] of errorMessageCache.entries()) {
+    if (now - timestamp > ERROR_MESSAGE_DEBOUNCE_TIME) {
+      errorMessageCache.delete(message);
+    }
+  }
+};
+
+// 每 5 秒清理一次过期缓存
+setInterval(cleanExpiredErrorCache, 5000);
+
+/**
  * 判断请求是否为不需要显示错误消息的API
  * @param url 请求URL
  * @returns 是否应该隐藏错误提示
@@ -110,23 +157,31 @@ const errorHandler = (error: any, opts: any) => {
 
         // 智能体不存在或已下架
         case AGENT_NOT_EXIST:
-          message.warning(errorMessage);
+          if (shouldShowErrorMessage(errorMessage)) {
+            message.warning(errorMessage);
+          }
           return Promise.reject();
 
         // 沙箱测试异常
         case SANDBOX_TEST_ERROR:
-          Modal.warning({
-            content: React.createElement('div', {
-              dangerouslySetInnerHTML: { __html: errorMessage },
-            }),
-          });
+          // Modal 类型的错误提示通常需要显示，但也可以加入去重逻辑
+          if (shouldShowErrorMessage(errorMessage)) {
+            Modal.warning({
+              content: React.createElement('div', {
+                dangerouslySetInnerHTML: { __html: errorMessage },
+              }),
+            });
+          }
 
           return Promise.reject();
 
         // 默认错误处理
         default:
           // 只有当请求不在过滤列表中才显示错误消息
-          message.warning(errorMessage);
+          // 使用去重机制避免短时间内重复显示相同的错误消息
+          if (shouldShowErrorMessage(errorMessage)) {
+            message.warning(errorMessage);
+          }
           // 返回 rejected Promise，但不传递 errorInfo，避免被后续错误处理逻辑误判
           return Promise.reject();
       }
@@ -140,15 +195,24 @@ const errorHandler = (error: any, opts: any) => {
   } else if (error.response) {
     // 处理HTTP错误
     // message.error(`请求错误 ${error.response.status}`);
-    message.error(`网络异常`);
+    const networkErrorMsg = '网络异常';
+    if (shouldShowErrorMessage(networkErrorMsg)) {
+      message.error(networkErrorMsg);
+    }
     return Promise.reject();
   } else if (error.request) {
     // 处理请求超时
-    message.error('服务器无响应，请重试');
+    const timeoutErrorMsg = '服务器无响应，请重试';
+    if (shouldShowErrorMessage(timeoutErrorMsg)) {
+      message.error(timeoutErrorMsg);
+    }
     return Promise.reject();
   } else {
     // 处理网络错误
-    message.error('网络异常，无法连接服务器');
+    const networkErrorMsg = '网络异常，无法连接服务器';
+    if (shouldShowErrorMessage(networkErrorMsg)) {
+      message.error(networkErrorMsg);
+    }
     return Promise.reject();
   }
 };

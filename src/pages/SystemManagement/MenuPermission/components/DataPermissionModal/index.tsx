@@ -1,3 +1,4 @@
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import {
   apiGetRoleBoundDataPermissionList,
@@ -19,7 +20,6 @@ import type {
 } from '@/types/interfaces/square';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
 import {
   Col,
   Form,
@@ -27,13 +27,13 @@ import {
   InputNumber,
   Modal,
   Row,
-  Table,
   Tabs,
+  TabsProps,
+  Tooltip,
   message,
 } from 'antd';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetGroupBoundDataPermissionList,
@@ -57,38 +57,52 @@ interface DataPermissionModalProps {
   onCancel: () => void;
 }
 
-type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
+export type DataPermissionTabKey =
+  | 'model'
+  | 'agent'
+  | 'page'
+  | 'dataPermission';
 
-// 模型列表表格列
-const modelColumns: TableColumnsType<ModelConfigDto> = [
-  {
-    title: '模型名称',
-    dataIndex: 'name',
-    key: 'name',
-    width: 200,
-    ellipsis: true,
-  },
-  {
-    title: '描述',
-    dataIndex: 'description',
-    key: 'description',
-    ellipsis: true,
-  },
-];
-
-// Tab 配置（只包含标签名称）
-const tabItems = [
+// 数据权限标签页配置（只包含标签名称）
+export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
   {
     key: 'model',
-    label: '模型',
+    label: (
+      <span>
+        模型
+        <Tooltip title="未给用户组或角色授权过的模型将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'agent',
-    label: '智能体',
+    label: (
+      <span>
+        智能体
+        <Tooltip title="未给用户组或角色授权过的智能体将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'page',
-    label: '网页应用',
+    label: (
+      <span>
+        网页应用
+        <Tooltip title="未给用户组或角色授权过的网页应用将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'dataPermission',
@@ -109,7 +123,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   // 当前激活的tab
-  const [activeTab, setActiveTab] = useState<TabKey>('model');
+  const [activeTab, setActiveTab] = useState<DataPermissionTabKey>('model');
   // 智能体列表
   const [agentList, setAgentList] = useState<SquarePublishedItemInfo[]>([]);
   // 应用页面列表
@@ -128,12 +142,23 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   );
   // 已选中的应用页面详情列表（通过ID列表查询）
   const [selectedPageList, setSelectedPageList] = useState<CustomPageDto[]>([]);
+  // 已选中的模型列表（通过ID列表过滤）
+  const [selectedModelList, setSelectedModelList] = useState<ModelConfigDto[]>(
+    [],
+  );
   // 智能体搜索关键字
   const [agentSearchKw, setAgentSearchKw] = useState<string>('');
   // 网页应用搜索关键字
   const [pageSearchKw, setPageSearchKw] = useState<string>('');
-  // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
-  const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
+  // 智能体分页状态
+  const [agentPage, setAgentPage] = useState<number>(1);
+  const [agentHasMore, setAgentHasMore] = useState<boolean>(false);
+  // 网页应用分页状态
+  const [pagePage, setPagePage] = useState<number>(1);
+  const [pageHasMore, setPageHasMore] = useState<boolean>(false);
+  // 滚动容器引用
+  const agentListScrollRef = useRef<HTMLDivElement>(null);
+  const pageListScrollRef = useRef<HTMLDivElement>(null);
 
   // 模型列表
   const {
@@ -177,13 +202,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
       // 存储查询到的 modelIds，用于后续处理
       if (result.modelIds && result.modelIds.length > 0) {
-        setFetchedModelIds(result.modelIds);
-        // 如果返回的不是 [-1]，直接设置选中状态
-        if (!(result.modelIds.length === 1 && result.modelIds[0] === -1)) {
-          setSelectedModelIds(result.modelIds);
-        }
+        // 直接设置选中状态
+        setSelectedModelIds(result.modelIds);
       } else {
-        setFetchedModelIds(null);
+        setSelectedModelIds([]);
       }
 
       // 回显智能体选择
@@ -230,33 +252,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         params?: SquarePublishedListParams[],
       ) => {
         const records = result.records || [];
-        // 如果是搜索操作（有搜索关键字），直接替换列表
-        // 如果是删除后重新加载，需要合并并过滤
-        const isSearch = params?.[0]?.kw !== undefined;
-        if (isSearch) {
-          // 搜索时，过滤掉已经在右侧列表中的项
-          setSelectedAgentIds((currentSelectedIds) => {
-            const filtered = records.filter(
-              (item) => !currentSelectedIds.includes(item.targetId),
-            );
-            setAgentList(filtered);
-            return currentSelectedIds;
-          });
+        const currentPage = params?.[0]?.page || 1;
+        const totalPages = result.pages || 0;
+
+        // 判断是否还有更多数据
+        setAgentHasMore(currentPage < totalPages);
+
+        // 如果是第一页（搜索或首次加载），直接替换列表
+        if (currentPage === 1) {
+          setAgentList(records);
         } else {
-          // 删除后重新加载，合并新数据
-          setSelectedAgentIds((currentSelectedIds) => {
-            setAgentList((prev) => {
-              const filtered = records.filter(
-                (item) => !currentSelectedIds.includes(item.targetId),
-              );
-              // 合并新数据和已有数据，去重
-              const existingIds = new Set(prev.map((item) => item.targetId));
-              const newItems = filtered.filter(
-                (item) => !existingIds.has(item.targetId),
-              );
-              return [...prev, ...newItems];
-            });
-            return currentSelectedIds;
+          // 加载更多时，合并新数据
+          setAgentList((prev) => {
+            // 合并新数据和已有数据，去重
+            const existingIds = new Set(prev.map((item) => item.targetId));
+            const newItems = records.filter(
+              (item) => !existingIds.has(item.targetId),
+            );
+            return [...prev, ...newItems];
           });
         }
       },
@@ -273,33 +286,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         params?: SquarePublishedListParams[],
       ) => {
         const records = result.records || [];
-        // 如果是搜索操作（有搜索关键字），直接替换列表
-        // 如果是删除后重新加载，需要合并并过滤
-        const isSearch = params?.[0]?.kw !== undefined;
-        if (isSearch) {
-          // 搜索时，过滤掉已经在右侧列表中的项
-          setSelectedPageAgentIds((currentSelectedIds) => {
-            const filtered = records.filter(
-              (item) => !currentSelectedIds.includes(item.targetId),
-            );
-            setPageList(filtered);
-            return currentSelectedIds;
-          });
+        const currentPage = params?.[0]?.page || 1;
+        const totalPages = result.pages || 0;
+
+        // 判断是否还有更多数据
+        setPageHasMore(currentPage < totalPages);
+
+        // 如果是第一页（搜索或首次加载），直接替换列表
+        if (currentPage === 1) {
+          setPageList(records);
         } else {
-          // 删除后重新加载，合并新数据
-          setSelectedPageAgentIds((currentSelectedIds) => {
-            setPageList((prev) => {
-              const filtered = records.filter(
-                (item) => !currentSelectedIds.includes(item.targetId),
-              );
-              // 合并新数据和已有数据，去重
-              const existingIds = new Set(prev.map((item) => item.targetId));
-              const newItems = filtered.filter(
-                (item) => !existingIds.has(item.targetId),
-              );
-              return [...prev, ...newItems];
-            });
-            return currentSelectedIds;
+          // 加载更多时，合并新数据
+          setPageList((prev) => {
+            // 合并新数据和已有数据，去重
+            const existingIds = new Set(prev.map((item) => item.targetId));
+            const newItems = records.filter(
+              (item) => !existingIds.has(item.targetId),
+            );
+            return [...prev, ...newItems];
           });
         }
       },
@@ -340,7 +344,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
       setSelectedPageAgentIds([]);
-      setFetchedModelIds(null);
       setAgentList([]);
       setPageList([]);
       setActiveTab('model');
@@ -348,39 +351,45 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setSelectedPageList([]);
       setAgentSearchKw('');
       setPageSearchKw('');
+      setAgentPage(1);
+      setPagePage(1);
+      setAgentHasMore(false);
+      setPageHasMore(false);
     }
   }, [open, targetId]);
 
-  // 当 modelList 加载完成且需要回显所有模型时，设置选中状态
+  // 根据 selectedModelIds 更新 selectedModelList
   useEffect(() => {
-    if (
-      modelList &&
-      modelList.length > 0 &&
-      fetchedModelIds &&
-      fetchedModelIds.length === 1 &&
-      fetchedModelIds[0] === -1
-    ) {
-      // 如果查询到的 modelIds 是 [-1]，代表选择的是所有模型
-      // 将 modelList 中所有项的 id 都添加到 selectedModelIds
-      const allModelIds = modelList.map((model: ModelConfigDto) => model.id);
-      setSelectedModelIds(allModelIds);
+    if (modelList && modelList.length > 0 && selectedModelIds.length > 0) {
+      const selected = modelList.filter((model: ModelConfigDto) =>
+        selectedModelIds.includes(model.id),
+      );
+      setSelectedModelList(selected);
+    } else {
+      setSelectedModelList([]);
     }
-  }, [modelList, fetchedModelIds]);
+  }, [modelList, selectedModelIds]);
 
-  // 模型行选择配置
-  const modelRowSelection: TableRowSelection<ModelConfigDto> = {
-    selectedRowKeys: selectedModelIds,
-    onChange: (keys) => {
-      setSelectedModelIds(keys as number[]);
-    },
+  // 模型选择配置（使用 id 作为选中 ID）
+  const toggleModelSelected = (modelId: number) => {
+    // 添加到右侧列表（不从左侧列表移除）
+    setSelectedModelIds((prev) => {
+      if (prev.includes(modelId)) {
+        return prev;
+      }
+      return [...prev, modelId];
+    });
+  };
+
+  // 从右侧删除模型
+  const removeModelFromSelected = (modelId: number) => {
+    // 从右侧ID列表移除
+    setSelectedModelIds((prev) => prev.filter((id) => id !== modelId));
   };
 
   // 智能体行选择配置（使用 targetId 作为选中 ID）
   const toggleAgentSelected = (targetId: number) => {
-    // 从左侧列表移除
-    setAgentList((prev) => prev.filter((item) => item.targetId !== targetId));
-
-    // 添加到右侧列表并更新详情
+    // 添加到右侧列表并更新详情（不从左侧列表移除）
     setSelectedAgentIds((prev) => {
       if (prev.includes(targetId)) {
         return prev;
@@ -395,6 +404,30 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     });
   };
 
+  // 查询智能体列表
+  const queryAgentList = (page = 1, kw = agentSearchKw) => {
+    runAgentList({
+      page,
+      pageSize: 20,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'ChatBot',
+      kw,
+      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+    });
+  };
+
+  // 查询网页应用列表
+  const queryPageList = (page = 1, kw = pageSearchKw) => {
+    runAgentPageList({
+      page,
+      pageSize: 20,
+      targetType: AgentComponentTypeEnum.Agent,
+      targetSubType: 'PageApp',
+      kw,
+      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+    });
+  };
+
   // 从右侧删除智能体，添加回左侧
   const removeAgentFromSelected = (agentId: number) => {
     // 从右侧ID列表移除
@@ -404,21 +437,12 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setSelectedAgentList((prev) => prev.filter((item) => item.id !== agentId));
 
     // 重新搜索以获取该项并添加回左侧列表
-    runAgentList({
-      page: 1,
-      pageSize: 1000,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'ChatBot',
-      kw: agentSearchKw,
-    });
+    queryAgentList();
   };
 
   // 应用页面行选择配置（使用 targetId 作为选中 ID）
   const togglePageSelected = (targetId: number) => {
-    // 从左侧列表移除
-    setPageList((prev) => prev.filter((item) => item.targetId !== targetId));
-
-    // 添加到右侧列表并更新详情
+    // 添加到右侧列表并更新详情（不从左侧列表移除）
     setSelectedPageAgentIds((prev) => {
       if (prev.includes(targetId)) {
         return prev;
@@ -433,7 +457,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     });
   };
 
-  // 从右侧删除网页应用，添加回左侧
+  // 从右侧删除网页应用
   const removePageFromSelected = (agentId: number) => {
     // 从右侧ID列表移除
     setSelectedPageAgentIds((prev) => prev.filter((id) => id !== agentId));
@@ -442,15 +466,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     setSelectedPageList((prev) =>
       prev.filter((item) => item.devAgentId !== agentId),
     );
-
-    // 重新搜索以获取该项并添加回左侧列表
-    runAgentPageList({
-      page: 1,
-      pageSize: 1000,
-      targetType: AgentComponentTypeEnum.Agent,
-      targetSubType: 'PageApp',
-      kw: pageSearchKw,
-    });
   };
 
   // 根据类型选择接口
@@ -477,16 +492,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
     const formValues: DataPermission = (await form.validateFields()) || {};
 
-    // 处理模型ID：全部模型传[-1],未选中任何模型不传值
-    let modelIds: number[] | undefined;
-    if (selectedModelIds.length > 0) {
-      // 检查是否选中了全部模型
-      const isAllSelected =
-        modelList?.length > 0 && selectedModelIds.length === modelList.length;
-      modelIds = isAllSelected ? [-1] : selectedModelIds;
-    } else {
-      modelIds = [0]; // 0表示不选择任何模型(后端约定)
-    }
+    // 直接使用选中的模型ID数组
+    const modelIds = selectedModelIds.length > 0 ? selectedModelIds : [];
 
     const idKey = type === 'role' ? 'roleId' : 'groupId';
     const params = {
@@ -507,7 +514,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 处理 Tab 切换
   const handleTabChange = (key: string) => {
-    const tabKey = key as TabKey;
+    const tabKey = key as DataPermissionTabKey;
     setActiveTab(tabKey);
 
     // 只针对智能体和网页应用 tab 做额外处理
@@ -520,6 +527,12 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       } else {
         setSelectedAgentList([]);
       }
+      // 首次切换到智能体 tab 时，加载第一页数据
+      if (agentList.length === 0 && !agentLoading) {
+        setAgentPage(1);
+        // 查询智能体列表
+        queryAgentList();
+      }
     } else if (tabKey === 'page') {
       // 右侧：根据选中的ID列表查询已选择的网页应用
       if (selectedPageAgentIds.length > 0) {
@@ -529,6 +542,12 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       } else {
         setSelectedPageList([]);
       }
+      // 首次切换到网页应用 tab 时，加载第一页数据
+      if (pageList.length === 0 && !pageLoading) {
+        setPagePage(1);
+        // 查询网页应用列表
+        queryPageList();
+      }
     }
   };
 
@@ -537,16 +556,64 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     switch (activeTab) {
       case 'model':
         return (
-          <Table<ModelConfigDto>
-            className={cx(styles.modelTable)}
-            columns={modelColumns}
-            dataSource={modelList || []}
-            loading={modelLoading}
-            rowKey="id"
-            rowSelection={modelRowSelection}
-            pagination={false}
-            scroll={{ y: 400 }}
-          />
+          <div className={cx('flex', 'h-full')}>
+            {/* 左侧：可选模型列表 */}
+            <div
+              className={cx(
+                'flex',
+                'flex-col',
+                'h-full',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
+              <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+                {modelLoading && !modelList?.length ? (
+                  <div
+                    className={cx(
+                      'h-full',
+                      'flex',
+                      'items-center',
+                      'content-center',
+                    )}
+                  >
+                    <Loading />
+                  </div>
+                ) : (
+                  modelList?.map((item: ModelConfigDto) => (
+                    <ResourceItem
+                      key={item.id}
+                      showIcon={false}
+                      name={item.name}
+                      description={item.description}
+                      targetId={item.id}
+                      onAdd={toggleModelSelected}
+                      isAdded={selectedModelIds.includes(item.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            {/* 分割线 */}
+            <div className={cx(styles.rightSeparator)} />
+            {/* 右侧：已选择的模型列表 */}
+            <div className={cx(styles.rightList, 'flex-1')}>
+              {selectedModelList.length ? (
+                selectedModelList.map((item: ModelConfigDto) => (
+                  <ResourceItem
+                    key={item.id}
+                    showIcon={false}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.id}
+                    onDelete={removeModelFromSelected}
+                  />
+                ))
+              ) : (
+                <div className={cx(styles.empty)}>暂无已选模型</div>
+              )}
+            </div>
+          </div>
         );
       case 'agent':
         return (
@@ -572,16 +639,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setAgentSearchKw(value);
-                  runAgentList({
-                    page: 1,
-                    pageSize: 1000,
-                    targetType: AgentComponentTypeEnum.Agent,
-                    targetSubType: 'ChatBot',
-                    kw: value,
-                  });
+                  setAgentPage(1);
+                  // 平滑滚动到顶部
+                  if (agentListScrollRef.current) {
+                    agentListScrollRef.current.scrollTo({
+                      top: 0,
+                      behavior: 'smooth',
+                    });
+                  }
+                  // 查询智能体列表
+                  queryAgentList(1, value);
                 }}
               />
-              <div className={cx('flex-1', 'overflow-y')}>
+              <div
+                ref={agentListScrollRef}
+                id="agent-list-scroll"
+                className={cx('flex-1', 'overflow-y')}
+                style={{ height: '100%', overflowY: 'auto' }}
+              >
                 {agentLoading && !agentList?.length ? (
                   <div
                     className={cx(
@@ -594,15 +669,31 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     <Loading />
                   </div>
                 ) : (
-                  agentList?.map((item) => (
-                    <ResourceItem
-                      key={item.targetId}
-                      icon={item.icon}
-                      name={item.name}
-                      targetId={item.targetId}
-                      onAdd={toggleAgentSelected}
-                    />
-                  ))
+                  <InfiniteScrollDiv
+                    scrollableTarget="agent-list-scroll"
+                    list={agentList}
+                    hasMore={agentHasMore}
+                    onScroll={() => {
+                      if (!agentLoading && agentHasMore) {
+                        const nextPage = agentPage + 1;
+                        setAgentPage(nextPage);
+                        // 查询智能体列表
+                        queryAgentList(nextPage);
+                      }
+                    }}
+                  >
+                    {agentList?.map((item) => (
+                      <ResourceItem
+                        key={item.targetId}
+                        icon={item.icon}
+                        name={item.name}
+                        description={item.description}
+                        targetId={item.targetId}
+                        onAdd={toggleAgentSelected}
+                        isAdded={selectedAgentIds.includes(item.targetId)}
+                      />
+                    ))}
+                  </InfiniteScrollDiv>
                 )}
               </div>
             </div>
@@ -616,6 +707,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     key={item.id}
                     icon={item.icon}
                     name={item.name}
+                    description={item.description}
                     targetId={item.id}
                     onDelete={removeAgentFromSelected}
                   />
@@ -650,17 +742,24 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setPageSearchKw(value);
-                  runAgentPageList({
-                    page: 1,
-                    pageSize: 1000,
-                    targetType: AgentComponentTypeEnum.Agent,
-                    targetSubType: 'PageApp',
-                    kw: value || undefined,
-                    category: '',
-                  });
+                  setPagePage(1);
+                  // 平滑滚动到顶部
+                  if (pageListScrollRef.current) {
+                    pageListScrollRef.current.scrollTo({
+                      top: 0,
+                      behavior: 'smooth',
+                    });
+                  }
+                  // 查询网页应用列表
+                  queryPageList(1, value);
                 }}
               />
-              <div className={cx('flex-1', 'overflow-y')}>
+              <div
+                ref={pageListScrollRef}
+                id="page-list-scroll"
+                className={cx('flex-1', 'overflow-y')}
+                style={{ height: '100%', overflowY: 'auto' }}
+              >
                 {pageLoading && !pageList?.length ? (
                   <div
                     className={cx(
@@ -673,29 +772,44 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     <Loading />
                   </div>
                 ) : (
-                  pageList?.map((item) => (
-                    <ResourceItem
-                      key={item.targetId}
-                      icon={item.coverImg || item.icon}
-                      name={item.name}
-                      targetId={item.targetId}
-                      onAdd={togglePageSelected}
-                    />
-                  ))
+                  <InfiniteScrollDiv
+                    scrollableTarget="page-list-scroll"
+                    list={pageList}
+                    hasMore={pageHasMore}
+                    onScroll={() => {
+                      if (!pageLoading && pageHasMore) {
+                        const nextPage = pagePage + 1;
+                        setPagePage(nextPage);
+                        // 查询网页应用列表
+                        queryPageList(nextPage);
+                      }
+                    }}
+                  >
+                    {pageList?.map((item) => (
+                      <ResourceItem
+                        key={item.targetId}
+                        icon={item.coverImg || item.icon}
+                        name={item.name}
+                        description={item.description}
+                        targetId={item.targetId}
+                        onAdd={togglePageSelected}
+                        isAdded={selectedPageAgentIds.includes(item.targetId)}
+                      />
+                    ))}
+                  </InfiniteScrollDiv>
                 )}
               </div>
             </div>
             <div className={cx(styles.rightSeparator)} />
             {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
-            <div
-              className={cx(styles.rightList, 'flex-1', 'overflow-y', 'h-full')}
-            >
+            <div className={cx(styles.rightList, 'flex-1')}>
               {selectedPageList.length ? (
                 selectedPageList.map((item) => (
                   <ResourceItem
                     key={item.devAgentId}
                     icon={item.coverImg || item.icon}
                     name={item.name}
+                    description={item.description}
                     targetId={item.devAgentId}
                     onDelete={removePageFromSelected}
                   />
@@ -888,11 +1002,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="网页应用每天对话次数"
+                    label="网页应用开发每天对话次数"
                     name="pageDailyConversationLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '网页应用每天对话次数，-1表示不限制',
+                      title: '网页应用开发每天对话次数，-1表示不限制',
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -916,13 +1030,13 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       okText="确定"
       cancelText="取消"
       confirmLoading={bindLoading}
-      width={700}
+      width={1000}
     >
       <div className={cx(styles.tabsContentWrapper)}>
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          items={tabItems}
+          items={DATA_PERMISSION_TAB_ITEMS}
         />
         <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
       </div>

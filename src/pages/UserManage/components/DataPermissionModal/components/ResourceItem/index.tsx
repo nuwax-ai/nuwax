@@ -1,6 +1,5 @@
 import AgentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -16,13 +15,6 @@ interface ResourceItemProps {
   name: string;
   /** 资源描述 */
   description: string;
-  /** 资源ID */
-  targetId: number;
-  /** 点击添加按钮的回调函数 */
-  onAdd?: (targetId: number) => void;
-  onDelete?: (targetId: number) => void;
-  /** 是否已添加（用于显示已添加状态） */
-  isAdded?: boolean;
 }
 
 /**
@@ -34,10 +26,6 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
   showIcon = true,
   name,
   description,
-  targetId,
-  onAdd,
-  onDelete,
-  isAdded = false,
 }) => {
   return (
     <div className={cx(styles.listItem, 'flex', 'items-center')}>
@@ -61,29 +49,6 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
             {description}
           </div>
         </ConditionRender>
-      </div>
-      <div className={cx(styles.itemExtra)}>
-        {onAdd && (
-          <Button
-            type="default"
-            size="small"
-            disabled={isAdded}
-            className={cx(styles.btn)}
-            onClick={() => onAdd(targetId)}
-          >
-            {isAdded ? '已添加' : '添加'}
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            type="default"
-            size="small"
-            className={cx(styles.btn)}
-            onClick={() => onDelete(targetId)}
-          >
-            移除
-          </Button>
-        )}
       </div>
     </div>
   );

@@ -30,7 +30,7 @@
 .tabsContentWrapper {
   display: flex;
   flex-direction: column;
-  height: 400px;
+  height: 500px;
 
   .tabContent {
     flex: 1;
@@ -60,31 +60,5 @@
     justify-content: center;
     flex: 1;
     color: rgba(0, 0, 0, 45%);
-  }
-
-  .modelTable {
-    :global {
-      .ant-table {
-        border-top-left-radius: 0 !important;
-        border-top-right-radius: 0 !important;
-      }
-
-      .ant-table-container {
-        border-top-left-radius: 0 !important;
-        border-top-right-radius: 0 !important;
-      }
-
-      .ant-table-thead > tr > th {
-        background: transparent !important;
-      }
-
-      .ant-table-thead > tr > th:first-child {
-        border-top-left-radius: 0 !important;
-      }
-
-      .ant-table-thead > tr > th:last-child {
-        border-top-right-radius: 0 !important;
-      }
-    }
   }
 }

@@ -1,5 +1,9 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  EllipsisOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -18,6 +22,7 @@ import {
   Spin,
   Switch,
   Table,
+  Tooltip,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -89,11 +94,8 @@ const UserGroupManage: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      // 查询用户组列表
-      runGetUserGroupList();
-    }
+    // 查询用户组列表
+    runGetUserGroupList();
   }, [location.state]);
 
   // 删除用户组
@@ -320,7 +322,16 @@ const UserGroupManage: React.FC = () => {
       ),
     },
     {
-      title: '状态',
+      title: (
+        <span>
+          状态
+          <Tooltip title="启用或禁用此用户组">
+            <InfoCircleOutlined
+              style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+            />
+          </Tooltip>
+        </span>
+      ),
       dataIndex: 'status',
       key: 'status',
       align: 'center',
@@ -328,6 +339,8 @@ const UserGroupManage: React.FC = () => {
       render: (status: UserGroupStatusEnum, record: UserGroupInfo) => (
         <Switch
           checked={status === UserGroupStatusEnum.Enabled}
+          checkedChildren="启用"
+          unCheckedChildren="禁用"
           loading={updateStatusLoadingMap[record.id] || false}
           onChange={(checked) => handleUpdateStatus(record, checked)}
         />
@@ -342,33 +355,39 @@ const UserGroupManage: React.FC = () => {
         // 下拉菜单项
         const menuItems: MenuProps['items'] = [
           {
-            key: 'bindUser',
-            label: '绑定用户',
-            onClick: () => handleBindUser(record),
+            key: 'edit',
+            label: '编辑',
+            onClick: () => handleEdit(record),
           },
           {
-            key: 'menuPermission',
-            label: '菜单权限',
-            onClick: () => handleMenuPermission(record),
-          },
-          {
-            key: 'dataPermission',
-            label: '数据权限',
-            onClick: () => handleDataPermission(record),
+            key: 'delete',
+            label: '删除',
+            onClick: () => handleDeleteConfirm(record),
           },
         ];
 
         return (
           <Space size={0}>
-            <Button type="link" size="small" onClick={() => handleEdit(record)}>
-              编辑
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleBindUser(record)}
+            >
+              绑定用户
             </Button>
             <Button
               type="link"
               size="small"
-              onClick={() => handleDeleteConfirm(record)}
+              onClick={() => handleMenuPermission(record)}
             >
-              删除
+              菜单权限
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => handleDataPermission(record)}
+            >
+              数据权限
             </Button>
             <Dropdown
               menu={{ items: menuItems }}
