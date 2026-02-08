@@ -207,6 +207,25 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   // 获取当前加载状态
   const loading = roleLoading || groupLoading;
 
+  // 根据当前 tab 获取对应的全选状态和操作函数
+  const getSelectAllConfig = () => {
+    if (activeTab === 'role') {
+      return {
+        isAllSelected: isAllRoleSelected,
+        hasData: roleList && roleList.length > 0,
+        onSelectAll: handleRoleSelectAll,
+      };
+    } else {
+      return {
+        isAllSelected: isAllGroupSelected,
+        hasData: groupList && groupList.length > 0,
+        onSelectAll: handleGroupSelectAll,
+      };
+    }
+  };
+
+  const selectAllConfig = getSelectAllConfig();
+
   const tabItems = [
     {
       key: 'role',
@@ -219,19 +238,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
             onFinish={onRoleFinish}
             autoComplete="off"
           >
-            <Form.Item
-              name="roleIds"
-              label={
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={handleRoleSelectAll}
-                  style={{ padding: 0, height: 'auto' }}
-                >
-                  {isAllRoleSelected ? '取消全选' : '全选'}
-                </Button>
-              }
-            >
+            <Form.Item name="roleIds">
               <Checkbox.Group className={cx(styles.checkboxGroup)}>
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   {roleList?.map((item: RoleInfo) => (
@@ -257,19 +264,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
             onFinish={onGroupFinish}
             autoComplete="off"
           >
-            <Form.Item
-              name="groupIds"
-              label={
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={handleGroupSelectAll}
-                  style={{ padding: 0, height: 'auto' }}
-                >
-                  {isAllGroupSelected ? '取消全选' : '全选'}
-                </Button>
-              }
-            >
+            <Form.Item name="groupIds">
               <Checkbox.Group className={cx(styles.checkboxGroup)}>
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   {groupList?.map((item: UserGroupInfo) => (
@@ -299,22 +294,35 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
         body: cx(styles.modalBody),
       }}
     >
-      <Tabs
-        activeKey={activeTab}
-        items={tabItems}
-        onChange={(key) => {
-          setActiveTab(key as TabKey);
-          // 切换到用户组tab时，如果是第一次点击，则加载数据
-          if (key === 'group' && !groupListLoaded) {
-            // 根据条件查询组列表
-            runGetGroupList();
-            // 查询用户绑定的组列表
-            runBindedGroupList(targetId);
-            // 标记为已加载
-            setGroupListLoaded(true);
-          }
-        }}
-      />
+      <div className={cx(styles.tabsContainer)}>
+        <Tabs
+          activeKey={activeTab}
+          items={tabItems}
+          onChange={(key) => {
+            setActiveTab(key as TabKey);
+            // 切换到用户组tab时，如果是第一次点击，则加载数据
+            if (key === 'group' && !groupListLoaded) {
+              // 根据条件查询组列表
+              runGetGroupList();
+              // 查询用户绑定的组列表
+              runBindedGroupList(targetId);
+              // 标记为已加载
+              setGroupListLoaded(true);
+            }
+          }}
+          className={cx(styles.tabs)}
+        />
+        {selectAllConfig.hasData && (
+          <Button
+            className={cx(styles.selectAllButtonInHeader)}
+            type="link"
+            size="small"
+            onClick={selectAllConfig.onSelectAll}
+          >
+            {selectAllConfig.isAllSelected ? '取消全选' : '全选'}
+          </Button>
+        )}
+      </div>
     </CustomFormModal>
   );
 };

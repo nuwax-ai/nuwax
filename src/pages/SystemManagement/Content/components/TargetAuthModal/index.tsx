@@ -174,29 +174,19 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       children: (
         <div className={cx(styles.tabContent)}>
           {roleList && roleList.length > 0 ? (
-            <>
-              <Button
-                className={cx(styles.selectAllButton)}
-                type="link"
-                size="small"
-                onClick={handleRoleSelectAll}
-              >
-                {isAllRoleSelected ? '取消全选' : '全选'}
-              </Button>
-              <Checkbox.Group
-                className={cx(styles.checkboxGroup)}
-                value={selectedRoleIds}
-                onChange={handleRoleChange}
-              >
-                <Space direction="vertical" size={8} className={cx('w-full')}>
-                  {roleList.map((item: AccessibleRoleInfo) => (
-                    <Checkbox key={item.id} value={item.id}>
-                      {item.name}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
-            </>
+            <Checkbox.Group
+              className={cx(styles.checkboxGroup)}
+              value={selectedRoleIds}
+              onChange={handleRoleChange}
+            >
+              <Space direction="vertical" size={8} className={cx('w-full')}>
+                {roleList.map((item: AccessibleRoleInfo) => (
+                  <Checkbox key={item.id} value={item.id}>
+                    {item.name}
+                  </Checkbox>
+                ))}
+              </Space>
+            </Checkbox.Group>
           ) : (
             <div className={cx('py-16')}>
               <Empty
@@ -229,29 +219,19 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       children: (
         <div className={cx(styles.tabContent)}>
           {groupList && groupList.length > 0 ? (
-            <>
-              <Button
-                className={cx(styles.selectAllButton)}
-                type="link"
-                size="small"
-                onClick={handleGroupSelectAll}
-              >
-                {isAllGroupSelected ? '取消全选' : '全选'}
-              </Button>
-              <Checkbox.Group
-                className={cx(styles.checkboxGroup)}
-                value={selectedGroupIds}
-                onChange={handleGroupChange}
-              >
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {groupList.map((item: AccessibleUserGroupInfo) => (
-                    <Checkbox key={item.id} value={item.id}>
-                      {item.name}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
-            </>
+            <Checkbox.Group
+              className={cx(styles.checkboxGroup)}
+              value={selectedGroupIds}
+              onChange={handleGroupChange}
+            >
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {groupList.map((item: AccessibleUserGroupInfo) => (
+                  <Checkbox key={item.id} value={item.id}>
+                    {item.name}
+                  </Checkbox>
+                ))}
+              </Space>
+            </Checkbox.Group>
           ) : (
             <div className={cx('py-16')}>
               <Empty
@@ -282,6 +262,25 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
   ];
 
+  // 根据当前 tab 获取对应的全选状态和操作函数
+  const getSelectAllConfig = () => {
+    if (activeTab === 'role') {
+      return {
+        isAllSelected: isAllRoleSelected,
+        hasData: roleList && roleList.length > 0,
+        onSelectAll: handleRoleSelectAll,
+      };
+    } else {
+      return {
+        isAllSelected: isAllGroupSelected,
+        hasData: groupList && groupList.length > 0,
+        onSelectAll: handleGroupSelectAll,
+      };
+    }
+  };
+
+  const selectAllConfig = getSelectAllConfig();
+
   return (
     <Modal
       title="授权"
@@ -294,11 +293,24 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
         body: cx(styles.modalBody),
       }}
     >
-      <Tabs
-        activeKey={activeTab}
-        items={tabItems}
-        onChange={(key) => setActiveTab(key as TabKey)}
-      />
+      <div className={cx(styles.tabsContainer)}>
+        <Tabs
+          activeKey={activeTab}
+          items={tabItems}
+          onChange={(key) => setActiveTab(key as TabKey)}
+          className={cx(styles.tabs)}
+        />
+        {selectAllConfig.hasData && (
+          <Button
+            className={cx(styles.selectAllButtonInHeader)}
+            type="link"
+            size="small"
+            onClick={selectAllConfig.onSelectAll}
+          >
+            {selectAllConfig.isAllSelected ? '取消全选' : '全选'}
+          </Button>
+        )}
+      </div>
     </Modal>
   );
 };
