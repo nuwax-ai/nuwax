@@ -28,6 +28,13 @@
       font-size: 14px;
       color: var(--color-text-primary, #333);
     }
+
+    // 隐藏虚拟资源节点
+    .ant-tree-treenode {
+      &[data-key^='resource-'] {
+        display: none !important;
+      }
+    }
   }
 }
 
