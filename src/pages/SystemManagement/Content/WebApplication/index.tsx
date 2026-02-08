@@ -6,7 +6,6 @@ import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  apiSystemResourceAgentAccess,
   apiSystemResourceWebappDelete,
   apiSystemResourceWebappList,
 } from '@/services/systemManage';
@@ -21,6 +20,7 @@ import {
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
+import { apiSystemResourceAgentAccess } from '../content-manage';
 
 const WebApplication: React.FC = () => {
   const actionRef = useRef<ActionType>();

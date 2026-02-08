@@ -65,11 +65,8 @@ const MenuManage: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      // 根据条件查询菜单列表（树形结构）
-      runGetMenuList();
-    }
+    // 根据条件查询菜单列表（树形结构）
+    runGetMenuList();
   }, [location.state]);
 
   // 删除菜单

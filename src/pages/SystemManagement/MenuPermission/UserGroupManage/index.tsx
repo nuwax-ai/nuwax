@@ -89,11 +89,8 @@ const UserGroupManage: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      // 查询用户组列表
-      runGetUserGroupList();
-    }
+    // 查询用户组列表
+    runGetUserGroupList();
   }, [location.state]);
 
   // 删除用户组

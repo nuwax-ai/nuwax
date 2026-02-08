@@ -301,12 +301,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           </div>
         ) : (
           <div
-            className={cx(
-              'flex',
-              'items-center',
-              'content-center',
-              styles.dataPermissionFormWrapper,
-            )}
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
             <Empty description="暂无数据" />
           </div>

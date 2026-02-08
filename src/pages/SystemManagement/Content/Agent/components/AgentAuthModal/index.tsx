@@ -1,0 +1,277 @@
+import { Button, Checkbox, Empty, message, Modal, Space, Tabs } from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { history, useRequest } from 'umi';
+import {
+  AccessibleRoleInfo,
+  AccessibleUserGroupInfo,
+  apiAgentBindRestrictionTargets,
+  apiAgentRestrictionTargets,
+} from '../../../content-manage';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+interface AgentAuthModalProps {
+  /** 是否打开 */
+  open: boolean;
+  /** 智能体ID */
+  agentId: number;
+  /** 取消回调 */
+  onCancel: () => void;
+}
+
+type TabKey = 'role' | 'group';
+
+/**
+ * 智能体授权弹窗
+ * @param open 是否打开
+ * @param agentId 智能体ID
+ * @param onCancel 取消回调
+ * @returns
+ */
+const AgentAuthModal: React.FC<AgentAuthModalProps> = ({
+  open,
+  agentId,
+  onCancel,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabKey>('role');
+  const [roleList, setRoleList] = useState<AccessibleRoleInfo[]>([]);
+  const [groupList, setGroupList] = useState<AccessibleUserGroupInfo[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // 查询可访问的角色和用户组列表
+  const { run: runGetRestrictionTargets } = useRequest(
+    apiAgentRestrictionTargets,
+    {
+      manual: true,
+      onSuccess: (data: {
+        roles: AccessibleRoleInfo[];
+        groups: AccessibleUserGroupInfo[];
+      }) => {
+        setRoleList(data.roles || []);
+        setGroupList(data.groups || []);
+      },
+    },
+  );
+
+  // 绑定限制访问对象
+  const { run: runBindRestrictionTargets } = useRequest(
+    apiAgentBindRestrictionTargets,
+    {
+      manual: true,
+      onSuccess: () => {
+        message.success('授权成功');
+        setLoading(false);
+        onCancel();
+      },
+      onError: () => {
+        setLoading(false);
+      },
+    },
+  );
+
+  // 打开弹窗时加载数据
+  useEffect(() => {
+    if (open && agentId) {
+      runGetRestrictionTargets(agentId);
+    } else {
+      setRoleList([]);
+      setGroupList([]);
+      setSelectedRoleIds([]);
+      setSelectedGroupIds([]);
+      setActiveTab('role');
+    }
+  }, [open, agentId]);
+
+  // 提交数据
+  const handleSubmit = () => {
+    setLoading(true);
+    runBindRestrictionTargets({
+      subjectId: agentId,
+      roleIds: selectedRoleIds,
+      groupIds: selectedGroupIds,
+    });
+  };
+
+  // 处理角色选择变化
+  const handleRoleChange = (checkedValues: number[]) => {
+    setSelectedRoleIds(checkedValues);
+  };
+
+  // 处理用户组选择变化
+  const handleGroupChange = (checkedValues: number[]) => {
+    setSelectedGroupIds(checkedValues);
+  };
+
+  // 获取所有角色ID
+  const allRoleIds = roleList?.map((item) => item.id) || [];
+  // 判断是否全部选中
+  const isAllRoleSelected =
+    allRoleIds.length > 0 &&
+    allRoleIds.every((id: number) => selectedRoleIds.includes(id));
+
+  // 全选/取消全选角色
+  const handleRoleSelectAll = () => {
+    if (isAllRoleSelected) {
+      setSelectedRoleIds([]);
+    } else {
+      setSelectedRoleIds(allRoleIds);
+    }
+  };
+
+  // 获取所有用户组ID
+  const allGroupIds = groupList?.map((item) => item.id) || [];
+  // 判断是否全部选中
+  const isAllGroupSelected =
+    allGroupIds.length > 0 &&
+    allGroupIds.every((id: number) => selectedGroupIds.includes(id));
+
+  // 全选/取消全选用户组
+  const handleGroupSelectAll = () => {
+    if (isAllGroupSelected) {
+      setSelectedGroupIds([]);
+    } else {
+      setSelectedGroupIds(allGroupIds);
+    }
+  };
+
+  const tabItems = [
+    {
+      key: 'role',
+      label: '角色',
+      children: (
+        <div className={cx(styles.tabContent)}>
+          {roleList && roleList.length > 0 ? (
+            <>
+              <Button
+                className={cx(styles.selectAllButton)}
+                type="link"
+                size="small"
+                onClick={handleRoleSelectAll}
+              >
+                {isAllRoleSelected ? '取消全选' : '全选'}
+              </Button>
+              <Checkbox.Group
+                className={cx(styles.checkboxGroup)}
+                value={selectedRoleIds}
+                onChange={handleRoleChange}
+              >
+                <Space direction="vertical" size={8} className={cx('w-full')}>
+                  {roleList.map((item: AccessibleRoleInfo) => (
+                    <Checkbox key={item.id} value={item.id}>
+                      {item.name}
+                    </Checkbox>
+                  ))}
+                </Space>
+              </Checkbox.Group>
+            </>
+          ) : (
+            <div className={cx('py-16')}>
+              <Empty
+                description={
+                  <span>
+                    暂无数据，请前往{' '}
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => {
+                        history.push('/system/menu-permission/role-manage');
+                        onCancel();
+                      }}
+                    >
+                      角色管理
+                    </Button>{' '}
+                    进行数据授权
+                  </span>
+                }
+              />
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'group',
+      label: '用户组',
+      children: (
+        <div className={cx(styles.tabContent)}>
+          {groupList && groupList.length > 0 ? (
+            <>
+              <Button
+                className={cx(styles.selectAllButton)}
+                type="link"
+                size="small"
+                onClick={handleGroupSelectAll}
+              >
+                {isAllGroupSelected ? '取消全选' : '全选'}
+              </Button>
+              <Checkbox.Group
+                className={cx(styles.checkboxGroup)}
+                value={selectedGroupIds}
+                onChange={handleGroupChange}
+              >
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  {groupList.map((item: AccessibleUserGroupInfo) => (
+                    <Checkbox key={item.id} value={item.id}>
+                      {item.name}
+                    </Checkbox>
+                  ))}
+                </Space>
+              </Checkbox.Group>
+            </>
+          ) : (
+            <div className={cx('py-16')}>
+              <Empty
+                description={
+                  <span>
+                    暂无数据，请前往{' '}
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => {
+                        history.push(
+                          '/system/menu-permission/user-group-manage',
+                        );
+                        onCancel();
+                      }}
+                    >
+                      用户组管理
+                    </Button>{' '}
+                    进行数据授权
+                  </span>
+                }
+              />
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <Modal
+      title="授权"
+      open={open}
+      confirmLoading={loading}
+      onCancel={onCancel}
+      onOk={handleSubmit}
+      width={500}
+      classNames={{
+        body: cx(styles.modalBody),
+      }}
+    >
+      <Tabs
+        activeKey={activeTab}
+        items={tabItems}
+        onChange={(key) => setActiveTab(key as TabKey)}
+      />
+    </Modal>
+  );
+};
+
+export default AgentAuthModal;

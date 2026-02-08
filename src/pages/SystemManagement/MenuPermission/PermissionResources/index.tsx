@@ -69,11 +69,8 @@ const PermissionResources: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      // 根据条件查询权限资源列表（树形结构）
-      runGetResourceList();
-    }
+    // 根据条件查询权限资源列表（树形结构）
+    runGetResourceList();
   }, [location.state]);
 
   // 删除资源

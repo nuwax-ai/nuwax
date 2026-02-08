@@ -6,7 +6,6 @@ import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  apiSystemResourceAgentAccess,
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
@@ -21,6 +20,8 @@ import {
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
+import { apiSystemResourceAgentAccess } from '../content-manage';
+import AgentAuthModal from './components/AgentAuthModal';
 
 const Agent: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -30,6 +31,9 @@ const Agent: React.FC = () => {
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentAgentId, setCurrentAgentId] = useState<number | null>(null);
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -61,8 +65,8 @@ const Agent: React.FC = () => {
    * 处理授权
    */
   const handleAuth = useCallback((record: SystemAgentInfo) => {
-    // TODO: 打开授权弹窗
-    message.info('授权功能待实现', record.id);
+    setCurrentAgentId(record.id);
+    setAuthModalOpen(true);
   }, []);
 
   /**
@@ -249,6 +253,15 @@ const Agent: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+      />
+      {/* 授权弹窗 */}
+      <AgentAuthModal
+        open={authModalOpen}
+        agentId={currentAgentId || 0}
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentAgentId(null);
+        }}
       />
     </WorkspaceLayout>
   );
