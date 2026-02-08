@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { customizeRequiredMark } from '@/utils/form';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Col,
   Form,
@@ -70,7 +71,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     manual: true,
     onSuccess: (data: RoleInfo) => {
       form.setFieldsValue({
-        // code: data.code,
         name: data.name,
         description: data.description,
         sortIndex: data.sortIndex || 1,
@@ -167,27 +167,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       >
         {/* 基本信息 */}
         <Row gutter={16}>
-          {/* <Col span={12}>
-            <Form.Item
-              label="角色编码"
-              name="code"
-              rules={[
-                { required: true, message: '请输入角色编码' },
-                {
-                  pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                  message:
-                    '角色编码必须以英文字母开头，只能包含字母、数字和下划线',
-                },
-              ]}
-            >
-              <Input
-                disabled={isEdit}
-                placeholder="请输入角色编码"
-                maxLength={100}
-                showCount
-              />
-            </Form.Item>
-          </Col> */}
           <Col span={12}>
             <Form.Item
               label="角色名称"
@@ -216,7 +195,15 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           </Col>
 
           <Col span={12}>
-            <Form.Item label="状态" name="status" valuePropName="checked">
+            <Form.Item
+              label="状态"
+              name="status"
+              valuePropName="checked"
+              tooltip={{
+                title: '启用或禁用此角色',
+                icon: <InfoCircleOutlined />,
+              }}
+            >
               <Switch checkedChildren="启用" unCheckedChildren="禁用" />
             </Form.Item>
           </Col>

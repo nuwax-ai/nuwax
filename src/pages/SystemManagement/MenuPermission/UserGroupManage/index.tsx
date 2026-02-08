@@ -1,5 +1,9 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  EllipsisOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -18,6 +22,7 @@ import {
   Spin,
   Switch,
   Table,
+  Tooltip,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -317,7 +322,16 @@ const UserGroupManage: React.FC = () => {
       ),
     },
     {
-      title: '状态',
+      title: (
+        <span>
+          状态
+          <Tooltip title="启用或禁用此用户组">
+            <InfoCircleOutlined
+              style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+            />
+          </Tooltip>
+        </span>
+      ),
       dataIndex: 'status',
       key: 'status',
       align: 'center',
@@ -325,6 +339,8 @@ const UserGroupManage: React.FC = () => {
       render: (status: UserGroupStatusEnum, record: UserGroupInfo) => (
         <Switch
           checked={status === UserGroupStatusEnum.Enabled}
+          checkedChildren="启用"
+          unCheckedChildren="禁用"
           loading={updateStatusLoadingMap[record.id] || false}
           onChange={(checked) => handleUpdateStatus(record, checked)}
         />

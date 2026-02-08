@@ -95,7 +95,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     manual: true,
     onSuccess: (data: UserGroupInfo) => {
       form.setFieldsValue({
-        // code: data.code,
         name: data.name,
         description: data.description,
         maxUserCount: data.maxUserCount,
@@ -174,28 +173,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       >
         {/* 基本信息 */}
         <Row gutter={16}>
-          {/* <Col span={12}>
-            <Form.Item
-              label="用户组编码"
-              name="code"
-              rules={[
-                { required: true, message: '请输入用户组编码' },
-                {
-                  pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                  message:
-                    '用户组编码必须以英文字母开头，只能包含字母、数字和下划线',
-                },
-              ]}
-            >
-              <Input
-                disabled={isEdit}
-                placeholder="请输入用户组编码"
-                maxLength={100}
-                showCount
-              />
-            </Form.Item>
-          </Col> */}
-
           <Col span={12}>
             <Form.Item
               label="用户组名称"
