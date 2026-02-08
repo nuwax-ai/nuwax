@@ -7,6 +7,8 @@ import {
   AccessibleUserGroupInfo,
   apiAgentBindRestrictionTargets,
   apiAgentRestrictionTargets,
+  apiModelBindRestrictionTargets,
+  apiModelRestrictionTargets,
   apiPageAgentBindRestrictionTargets,
   apiPageAgentRestrictionTargets,
 } from '../../content-manage';
@@ -52,11 +54,17 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   const apiQueryRestrictionTargets =
     targetType === 'agent'
       ? apiAgentRestrictionTargets
-      : apiPageAgentRestrictionTargets;
+      : targetType === 'page'
+      ? apiPageAgentRestrictionTargets
+      : apiModelRestrictionTargets;
+
+  // 绑定限制访问对象接口
   const apiBindRestrictionTargets =
     targetType === 'agent'
       ? apiAgentBindRestrictionTargets
-      : apiPageAgentBindRestrictionTargets;
+      : targetType === 'page'
+      ? apiPageAgentBindRestrictionTargets
+      : apiModelBindRestrictionTargets;
 
   // 查询可访问的角色和用户组列表
   const { run: runGetRestrictionTargets } = useRequest(
@@ -67,8 +75,13 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
         roles: AccessibleRoleInfo[];
         groups: AccessibleUserGroupInfo[];
       }) => {
-        setRoleList(data.roles || []);
-        setGroupList(data.groups || []);
+        const roles = data.roles || [];
+        const groups = data.groups || [];
+        setRoleList(roles);
+        setGroupList(groups);
+        // 将返回的角色和用户组ID设置为已选中状态（接口返回的就是已授权的列表）
+        // setSelectedRoleIds(roles.map((role) => role.id));
+        // setSelectedGroupIds(groups.map((group) => group.id));
       },
     },
   );

@@ -79,8 +79,8 @@ export interface AccessibleUserGroupInfo {
   modified: string;
 }
 
-/** 智能体限制访问的对象 */
-export interface AgentRestrictionTargets {
+/** 限制访问的对象 */
+export interface RestrictionTargets {
   // 可访问的角色列表
   roles: AccessibleRoleInfo[];
   // 可访问的用户组列表
@@ -88,7 +88,7 @@ export interface AgentRestrictionTargets {
 }
 
 /** 绑定智能体限制访问对象参数 */
-export interface AgentBindRestrictionTargetsParams {
+export interface BindRestrictionTargetsParams {
   // 主体ID（如模型ID、智能体ID、网页应用ID）
   subjectId: number;
   // 可访问的角色ID列表
@@ -100,7 +100,7 @@ export interface AgentBindRestrictionTargetsParams {
 // 查询智能体限制访问的对象
 export async function apiAgentRestrictionTargets(
   agentId: number,
-): Promise<RequestResponse<AgentRestrictionTargets>> {
+): Promise<RequestResponse<RestrictionTargets>> {
   return request(`/api/system/resource/agent/restriction-targets/${agentId}`, {
     method: 'GET',
   });
@@ -108,7 +108,7 @@ export async function apiAgentRestrictionTargets(
 
 // 绑定智能体限制访问对象（全量覆盖）
 export async function apiAgentBindRestrictionTargets(
-  data: AgentBindRestrictionTargetsParams,
+  data: BindRestrictionTargetsParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/resource/agent/bind-restriction-targets', {
     method: 'POST',
@@ -119,7 +119,7 @@ export async function apiAgentBindRestrictionTargets(
 // 查询网页应用限制访问的对象
 export async function apiPageAgentRestrictionTargets(
   pageAgentId: number,
-): Promise<RequestResponse<AgentRestrictionTargets>> {
+): Promise<RequestResponse<RestrictionTargets>> {
   return request(
     `/api/system/resource/page/restriction-targets/${pageAgentId}`,
     {
@@ -130,9 +130,28 @@ export async function apiPageAgentRestrictionTargets(
 
 // 绑定网页应用限制访问对象（全量覆盖）
 export async function apiPageAgentBindRestrictionTargets(
-  data: AgentBindRestrictionTargetsParams,
-): Promise<RequestResponse<AgentRestrictionTargets>> {
+  data: BindRestrictionTargetsParams,
+): Promise<RequestResponse<RestrictionTargets>> {
   return request('/api/system/resource/page/bind-restriction-targets', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 查询模型限制访问的对象
+export async function apiModelRestrictionTargets(
+  modelId: number,
+): Promise<RequestResponse<RestrictionTargets>> {
+  return request(`/api/system/model/restriction-targets/${modelId}`, {
+    method: 'GET',
+  });
+}
+
+// 绑定模型限制访问对象（全量覆盖）
+export async function apiModelBindRestrictionTargets(
+  data: BindRestrictionTargetsParams,
+): Promise<RequestResponse<RestrictionTargets>> {
+  return request('/api/system/model/bind-restriction-targets', {
     method: 'POST',
     data,
   });
