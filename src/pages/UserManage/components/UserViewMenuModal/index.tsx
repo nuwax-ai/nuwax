@@ -267,7 +267,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
             }}
           />
         ) : (
-          <div className={cx(styles.empty)}>暂未配置权限</div>
+          <div className={cx(styles.empty)}>没有数据</div>
         )}
       </div>
     </CustomFormModal>
