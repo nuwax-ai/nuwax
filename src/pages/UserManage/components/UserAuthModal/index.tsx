@@ -3,6 +3,7 @@ import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services
 import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
+import { UserRoleEnum } from '@/types/enums/systemManage';
 import { Button, Checkbox, Form, FormProps, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +21,8 @@ const cx = classNames.bind(styles);
 interface UserAuthModalProps {
   open: boolean;
   targetId: number;
+  /** 用户角色，用于判断是否显示角色 tab */
+  role?: UserRoleEnum;
   onCancel: () => void;
 }
 
@@ -35,13 +38,13 @@ type TabKey = 'role' | 'group';
 const UserAuthModal: React.FC<UserAuthModalProps> = ({
   open,
   targetId,
+  role,
   onCancel,
 }) => {
+  // 如果是普通用户，默认显示用户组 tab；否则显示角色 tab
   const [activeTab, setActiveTab] = useState<TabKey>('role');
   const [roleForm] = Form.useForm();
   const [groupForm] = Form.useForm();
-  // 标记用户组列表是否已加载
-  const [groupListLoaded, setGroupListLoaded] = useState<boolean>(false);
 
   const [roleLoading, setRoleLoading] = useState<boolean>(false);
   const [groupLoading, setGroupLoading] = useState<boolean>(false);
@@ -96,21 +99,29 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      // 查询角色列表
-      runGetRoleList();
-      // 查询用户绑定的角色列表
-      runBindedRoleList(targetId);
+      setActiveTab(role === UserRoleEnum.User ? 'group' : 'role');
+      // 如果不是普通用户，才查询角色列表
+      if (role !== UserRoleEnum.User) {
+        // 查询角色列表
+        runGetRoleList();
+        // 查询用户绑定的角色列表
+        runBindedRoleList(targetId);
+      }
+
+      // 根据条件查询组列表
+      runGetGroupList();
+      // 查询用户绑定的组列表
+      runBindedGroupList(targetId);
     } else {
       roleForm.resetFields();
       groupForm.resetFields();
       setBindedRoleIds([]);
       setBindedGroupIds([]);
       setActiveTab('role');
-      setGroupListLoaded(false);
       setGroupLoading(false);
       setRoleLoading(false);
     }
-  }, [open, targetId]);
+  }, [open, targetId, role]);
 
   useEffect(() => {
     // 回显角色列表
@@ -156,7 +167,10 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
 
   // 提交表单
   const handlerSubmit = () => {
-    roleForm.submit();
+    // 如果不是普通用户，才提交角色表单
+    if (role !== UserRoleEnum.User) {
+      roleForm.submit();
+    }
     groupForm.submit();
   };
 
@@ -209,7 +223,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
 
   // 根据当前 tab 获取对应的全选状态和操作函数
   const getSelectAllConfig = () => {
-    if (activeTab === 'role') {
+    if (activeTab === 'role' && role !== UserRoleEnum.User) {
       return {
         isAllSelected: isAllRoleSelected,
         hasData: roleList && roleList.length > 0,
@@ -227,32 +241,41 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   const selectAllConfig = getSelectAllConfig();
 
   const tabItems = [
-    {
-      key: 'role',
-      label: '角色',
-      children: (
-        <div className={cx(styles.tabContent)}>
-          <Form
-            form={roleForm}
-            layout="vertical"
-            onFinish={onRoleFinish}
-            autoComplete="off"
-          >
-            <Form.Item name="roleIds">
-              <Checkbox.Group className={cx(styles.checkboxGroup)}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {roleList?.map((item: RoleInfo) => (
-                    <Checkbox key={item.id} value={item.id}>
-                      {item.name}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
-            </Form.Item>
-          </Form>
-        </div>
-      ),
-    },
+    // 如果是普通用户，不显示角色 tab
+    ...(role !== UserRoleEnum.User
+      ? [
+          {
+            key: 'role',
+            label: '角色',
+            children: (
+              <div className={cx(styles.tabContent)}>
+                <Form
+                  form={roleForm}
+                  layout="vertical"
+                  onFinish={onRoleFinish}
+                  autoComplete="off"
+                >
+                  <Form.Item name="roleIds">
+                    <Checkbox.Group className={cx(styles.checkboxGroup)}>
+                      <Space
+                        direction="vertical"
+                        size={8}
+                        style={{ width: '100%' }}
+                      >
+                        {roleList?.map((item: RoleInfo) => (
+                          <Checkbox key={item.id} value={item.id}>
+                            {item.name}
+                          </Checkbox>
+                        ))}
+                      </Space>
+                    </Checkbox.Group>
+                  </Form.Item>
+                </Form>
+              </div>
+            ),
+          },
+        ]
+      : []),
     {
       key: 'group',
       label: '用户组',
@@ -283,7 +306,11 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
 
   return (
     <CustomFormModal
-      form={activeTab === 'role' ? roleForm : groupForm}
+      form={
+        activeTab === 'role' && role !== UserRoleEnum.User
+          ? roleForm
+          : groupForm
+      }
       title="授权"
       open={open}
       loading={loading}
@@ -300,15 +327,6 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
           items={tabItems}
           onChange={(key) => {
             setActiveTab(key as TabKey);
-            // 切换到用户组tab时，如果是第一次点击，则加载数据
-            if (key === 'group' && !groupListLoaded) {
-              // 根据条件查询组列表
-              runGetGroupList();
-              // 查询用户绑定的组列表
-              runBindedGroupList(targetId);
-              // 标记为已加载
-              setGroupListLoaded(true);
-            }
           }}
           className={cx(styles.tabs)}
         />

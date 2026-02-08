@@ -383,9 +383,10 @@ const UserManage: React.FC = () => {
       <UserAuthModal
         open={openAuthModal}
         targetId={currentUserInfo?.id || 0}
+        role={currentUserInfo?.role}
         onCancel={() => setOpenAuthModal(false)}
       />
-      {/* 查看权限弹窗 */}
+      {/* 查看菜单资源权限弹窗 */}
       <UserViewMenuModal
         open={openViewMenuModal}
         userId={currentUserInfo?.id || 0}
