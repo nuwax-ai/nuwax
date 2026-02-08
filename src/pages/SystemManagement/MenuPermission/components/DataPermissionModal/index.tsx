@@ -28,6 +28,7 @@ import {
   Modal,
   Row,
   Tabs,
+  TabsProps,
   Tooltip,
   message,
 } from 'antd';
@@ -56,16 +57,20 @@ interface DataPermissionModalProps {
   onCancel: () => void;
 }
 
-type TabKey = 'model' | 'agent' | 'page' | 'dataPermission';
+export type DataPermissionTabKey =
+  | 'model'
+  | 'agent'
+  | 'page'
+  | 'dataPermission';
 
-// Tab 配置（只包含标签名称）
-const tabItems = [
+// 数据权限标签页配置（只包含标签名称）
+export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
   {
     key: 'model',
     label: (
       <span>
         模型
-        <Tooltip title="未给用户组或角色授权过的模型（智能体、网页应用）将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="未给用户组或角色授权过的模型将不受数据权限管控，所有用户均有权限">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -75,11 +80,29 @@ const tabItems = [
   },
   {
     key: 'agent',
-    label: '智能体',
+    label: (
+      <span>
+        智能体
+        <Tooltip title="未给用户组或角色授权过的智能体将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'page',
-    label: '网页应用',
+    label: (
+      <span>
+        网页应用
+        <Tooltip title="未给用户组或角色授权过的网页应用将不受数据权限管控，所有用户均有权限">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
   {
     key: 'dataPermission',
@@ -100,7 +123,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   // 当前激活的tab
-  const [activeTab, setActiveTab] = useState<TabKey>('model');
+  const [activeTab, setActiveTab] = useState<DataPermissionTabKey>('model');
   // 智能体列表
   const [agentList, setAgentList] = useState<SquarePublishedItemInfo[]>([]);
   // 应用页面列表
@@ -491,7 +514,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   // 处理 Tab 切换
   const handleTabChange = (key: string) => {
-    const tabKey = key as TabKey;
+    const tabKey = key as DataPermissionTabKey;
     setActiveTab(tabKey);
 
     // 只针对智能体和网页应用 tab 做额外处理
@@ -1013,7 +1036,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          items={tabItems}
+          items={DATA_PERMISSION_TAB_ITEMS}
         />
         <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
       </div>
