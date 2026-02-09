@@ -317,6 +317,7 @@ const RoleManage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
+      width: 100,
       fixed: 'right',
       render: (status: RoleStatusEnum, record: RoleInfo) => (
         <Switch
@@ -333,6 +334,7 @@ const RoleManage: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: 260,
       fixed: 'right',
       render: (_: null, record: RoleInfo) => {
         // 下拉菜单项
