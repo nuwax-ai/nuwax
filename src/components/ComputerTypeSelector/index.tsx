@@ -56,6 +56,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   const [initialized, setInitialized] = useState(false);
   const initializedRef = useRef(false);
 
+  const [agentSelectedMap, setAgentSelectedMap] = useState<
+    Record<string, string>
+  >({});
+
   // 获取用户电脑列表
   const fetchComputerList = useCallback(async () => {
     if (initializedRef.current) return;
@@ -72,39 +76,50 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
           raw: item,
         }));
         setComputerList(options);
+        if (selectedMap) {
+          setAgentSelectedMap(selectedMap);
+        }
         setInitialized(true);
         initializedRef.current = true;
-
-        // 确定要选择的值
-        let selectedId: string | null = null;
-
-        // 1. 如果有agentId，检查是否有已保存的选择
-        if (agentId && selectedMap && Object.keys(selectedMap).length > 0) {
-          const savedSelection = selectedMap[String(agentId)];
-          if (savedSelection) {
-            selectedId = savedSelection;
-          }
-        }
-
-        // 2. 如果没有已保存的选择，默认选中列表中的第一个
-        if (!selectedId && options.length > 0) {
-          selectedId = options[0].id;
-        }
-
-        // 如果确定了选择且与当前值不同，触发onChange
-        if (selectedId && selectedId !== value) {
-          const option = options.find((opt) => opt.id === selectedId);
-          if (option) {
-            onChange?.(selectedId, option);
-          }
-        }
       }
     } catch (error) {
       console.error('获取电脑列表失败:', error);
     } finally {
       setLoading(false);
     }
-  }, [agentId, value, onChange]);
+  }, []);
+
+  // 监听 agentId 和 agentSelectedMap 变化，自动应用选择
+  useEffect(() => {
+    if (!initialized || computerList.length === 0) return;
+
+    let selectedId: string | null = null;
+
+    // 1. 如果有agentId，检查是否有已保存的选择
+    if (
+      agentId &&
+      agentSelectedMap &&
+      Object.keys(agentSelectedMap).length > 0
+    ) {
+      const savedSelection = agentSelectedMap[String(agentId)];
+      if (savedSelection) {
+        selectedId = savedSelection;
+      }
+    }
+
+    // 2. 如果没有已保存的选择，且当前没有值，默认选中列表中的第一个
+    if (!selectedId && !value && computerList.length > 0) {
+      selectedId = computerList[0].id;
+    }
+
+    // 如果确定了选择且与当前值不同，触发onChange
+    if (selectedId && selectedId !== value) {
+      const option = computerList.find((opt) => opt.id === selectedId);
+      if (option) {
+        onChange?.(selectedId, option);
+      }
+    }
+  }, [agentId, agentSelectedMap, initialized, computerList, value, onChange]);
 
   // 挂载时加载数据
   useEffect(() => {
