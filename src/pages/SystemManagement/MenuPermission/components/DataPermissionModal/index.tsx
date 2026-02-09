@@ -70,7 +70,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         模型
-        <Tooltip title="未给用户组或角色授权过的模型将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="模型需要授权后才可用">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -83,7 +83,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         智能体
-        <Tooltip title="未给用户组或角色授权过的智能体将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -96,7 +96,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         网页应用
-        <Tooltip title="未给用户组或角色授权过的网页应用将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
