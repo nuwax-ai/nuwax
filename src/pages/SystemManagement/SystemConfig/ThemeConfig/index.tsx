@@ -223,7 +223,6 @@ const ThemeConfig: React.FC = () => {
       }, 1000);
     } catch (error) {
       console.error('Save theme config error:', error);
-      message.error('保存失败，请重试');
     }
   };
 
