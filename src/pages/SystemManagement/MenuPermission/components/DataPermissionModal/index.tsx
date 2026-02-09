@@ -196,8 +196,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
         agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
         agentFileStorageDays: result.agentFileStorageDays ?? -1,
-        agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
-        pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
+        agentDailyPromptLimit: result.agentDailyPromptLimit ?? -1,
+        pageDailyPromptLimit: result.pageDailyPromptLimit ?? -1,
       });
 
       // 存储查询到的 modelIds，用于后续处理
@@ -337,8 +337,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentComputerMemoryGb: 4,
         agentComputerCpuCores: 2,
         agentFileStorageDays: -1,
-        agentDailyConversationLimit: -1,
-        pageDailyConversationLimit: -1,
+        agentDailyPromptLimit: -1,
+        pageDailyPromptLimit: -1,
       });
       // 重置已选中的数据
       setSelectedModelIds([]);
@@ -990,7 +990,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     label="通用智能体每天对话次数限制"
-                    name="agentDailyConversationLimit"
+                    name="agentDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
                       title: '通用智能体每天对话次数，-1表示不限制',
@@ -1003,7 +1003,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     label="网页应用开发每天对话次数"
-                    name="pageDailyConversationLimit"
+                    name="pageDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
                       title: '网页应用开发每天对话次数，-1表示不限制',
