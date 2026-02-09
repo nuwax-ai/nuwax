@@ -21,7 +21,7 @@ import {
   apiUpdateMenuSort,
 } from '../services/menu-manage';
 import {
-  MenuVisibleEnum,
+  MenuEnabledEnum,
   type MenuNodeInfo,
   type UpdateMenuParams,
   type UpdateMenuSortItem,
@@ -702,22 +702,22 @@ const MenuManage: React.FC = () => {
       render: (path: string) => path || '--',
     },
     {
-      title: '是否显示',
-      dataIndex: 'visible',
-      key: 'visible',
+      title: '是否启用',
+      dataIndex: 'status',
+      key: 'status',
       align: 'center',
       fixed: 'right',
-      render: (visible: MenuVisibleEnum | undefined, record: MenuNodeInfo) => (
+      render: (status: MenuEnabledEnum, record: MenuNodeInfo) => (
         <Switch
-          checked={visible === MenuVisibleEnum.Visible}
+          checked={status === MenuEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
           onChange={(checked) => {
-            const newVisible = checked
-              ? MenuVisibleEnum.Visible
-              : MenuVisibleEnum.Hidden;
+            const newStatus = checked
+              ? MenuEnabledEnum.Enabled
+              : MenuEnabledEnum.Disabled;
             handleUpdateVisible({
               id: record.id,
-              visible: newVisible,
+              status: newStatus,
             });
           }}
         />
