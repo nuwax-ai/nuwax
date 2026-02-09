@@ -61,10 +61,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   // 初始化加载菜单数据
   useEffect(() => {
-    // console.log(
-    //   '[Debug] DynamicMenusLayout mount. FirstLevelMenus:',
-    //   firstLevelMenus,
-    // );
     loadMenus();
   }, [loadMenus]);
 
@@ -141,8 +137,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       if (menu.path) {
         history.push(menu.path);
-      } else if (menu.children?.length && menu.children[0].path) {
-        history.push(menu.children[0].path);
+      } else if (menu.children?.length) {
+        // 查找第一个存在 path 的子菜单
+        const firstChildWithPath = menu.children.find((child) => child.path);
+        if (firstChildWithPath?.path) {
+          history.push(firstChildWithPath.path);
+        }
       }
     },
     [handleCloseMobileMenu],

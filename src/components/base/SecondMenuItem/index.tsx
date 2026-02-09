@@ -15,6 +15,7 @@ export interface SecondMenuItemProps {
   name: string;
   isActive?: boolean;
   isDown?: boolean;
+  style?: React.CSSProperties;
   onClick: () => void;
   onToggle?: () => void;
 }
@@ -29,6 +30,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   isOpen = false,
   onClick,
   onToggle,
+  style,
 }) => {
   return (
     <div
@@ -38,6 +40,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         [styles.open]: isOpen,
       })}
       onClick={onClick}
+      style={style}
     >
       <span
         className={cx(
