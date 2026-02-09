@@ -1,31 +1,35 @@
-import { SandboxConfigItem } from '@/types/interfaces/systemManage';
+import { SandboxSelectDto } from '@/types/interfaces/systemManage';
 
 /**
  * 电脑选项类型
  */
 export interface ComputerOption {
-  /** 电脑 ID，null 表示远程电脑（默认） */
-  id: number | null;
+  /** 电脑 ID，空字符串或'remote'表示远程电脑（默认） */
+  id: string;
   /** 电脑名称 */
   name: string;
-  /** 是否在线 */
-  online?: boolean;
-  /** 是否启用 */
-  isActive?: boolean;
+  /** 电脑描述 */
+  description?: string;
   /** 原始配置数据 */
-  raw?: SandboxConfigItem;
+  raw?: SandboxSelectDto;
 }
 
 /**
  * ComputerTypeSelector 组件 Props
  */
 export interface ComputerTypeSelectorProps {
-  /** 当前选中的电脑 ID，null 表示远程电脑 */
-  value?: number | null;
+  /** 当前选中的电脑 ID，空字符串或'remote'表示远程电脑 */
+  value?: string;
   /** 选择变化回调 */
-  onChange?: (id: number | null, option: ComputerOption) => void;
+  onChange?: (id: string, option: ComputerOption) => void;
   /** 是否禁用 */
   disabled?: boolean;
   /** 自定义类名 */
   className?: string;
+  /** 智能体ID，用于保存/读取用户对每个智能体的选择 */
+  agentId?: number;
+  /** 是否为固定选择模式（sandboxServerId或sandboxId存在时） */
+  fixedSelection?: boolean;
+  /** 选中的电脑是否不可用（不在列表中） */
+  unavailable?: boolean;
 }

@@ -106,6 +106,9 @@ const Chat: React.FC = () => {
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+  // 选中的电脑ID（用于任务智能体模式）
+  const [selectedComputerId, setSelectedComputerId] =
+    useState<string>('remote');
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -1039,6 +1042,9 @@ const Chat: React.FC = () => {
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
             showAnnouncement={true}
+            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+            selectedComputerId={selectedComputerId}
+            onComputerSelect={setSelectedComputerId}
           />
         </div>
       </div>

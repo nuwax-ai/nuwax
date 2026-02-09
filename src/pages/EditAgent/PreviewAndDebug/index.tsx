@@ -67,6 +67,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     string,
     string | number
   > | null>(null);
+  // 选中的电脑ID（用于任务智能体模式）
+  const [selectedComputerId, setSelectedComputerId] =
+    useState<string>('remote');
 
   const {
     conversationInfo,
@@ -508,6 +511,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
               onScrollBottom={onScrollBottom}
+              isTaskAgentActive={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+              }
+              selectedComputerId={selectedComputerId}
+              onComputerSelect={setSelectedComputerId}
             />
           </div>
         </div>

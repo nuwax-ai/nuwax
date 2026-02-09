@@ -474,6 +474,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             selectedComponentList={selectedComponentList}
             onSelectComponent={onSelectComponent}
           />
+          {/* 智能体电脑模式下显示电脑类型选择器 */}
+          {isTaskAgentActive && (
+            <ComputerTypeSelector
+              value={selectedComputerId}
+              onChange={(id) => onComputerSelect?.(id)}
+              disabled={
+                wholeDisabled ||
+                isConversationActive ||
+                conversationInfo?.taskStatus === TaskStatus.EXECUTING
+              }
+            />
+          )}
           {/* 根据会话状态显示发送或停止按钮 */}
           {isConversationActive ||
           conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
@@ -536,14 +548,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   />
                 </span>
               </Tooltip>
-              {/* 智能体电脑模式下显示电脑类型选择器 */}
-              {isTaskAgentActive && (
-                <ComputerTypeSelector
-                  value={selectedComputerId}
-                  onChange={(id) => onComputerSelect?.(id)}
-                  disabled={wholeDisabled}
-                />
-              )}
             </>
           )}
         </footer>

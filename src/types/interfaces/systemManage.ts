@@ -702,3 +702,25 @@ export interface SandboxGlobalConfig {
   perUserMemoryGB: number | string;
   perUserCpuCores: number | string;
 }
+
+/**
+ * 沙盒选择项（用于电脑选择器下拉）
+ */
+export interface SandboxSelectDto {
+  /** 沙盒ID */
+  sandboxId: string;
+  /** 沙盒名称 */
+  name: string;
+  /** 沙盒描述 */
+  description: string;
+}
+
+/**
+ * 用户可选沙盒列表响应
+ */
+export interface UserSandBoxSelectDto {
+  /** 可选的沙盒列表 */
+  sandboxes: SandboxSelectDto[];
+  /** 已选择的沙盒，key为agentId，value为sandboxId */
+  agentSelected: Record<string, string>;
+}
