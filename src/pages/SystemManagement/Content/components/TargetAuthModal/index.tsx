@@ -1,3 +1,7 @@
+import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
+import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
+import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
+import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { Button, Checkbox, Empty, message, Modal, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -44,8 +48,10 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   onCancel,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('role');
-  const [roleList, setRoleList] = useState<AccessibleRoleInfo[]>([]);
-  const [groupList, setGroupList] = useState<AccessibleUserGroupInfo[]>([]);
+  // 完整的角色列表和用户组列表
+  const [roleList, setRoleList] = useState<RoleInfo[]>([]);
+  const [groupList, setGroupList] = useState<UserGroupInfo[]>([]);
+  // 已授权的角色和用户组ID列表（用于回显）
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -66,7 +72,23 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       ? apiPageAgentBindRestrictionTargets
       : apiModelBindRestrictionTargets;
 
-  // 查询可访问的角色和用户组列表
+  // 查询完整的角色列表
+  const { run: runGetRoleList } = useRequest(apiGetRoleList, {
+    manual: true,
+    onSuccess: (data: RoleInfo[]) => {
+      setRoleList(data || []);
+    },
+  });
+
+  // 查询完整的用户组列表
+  const { run: runGetGroupList } = useRequest(apiGetUserGroupList, {
+    manual: true,
+    onSuccess: (data: UserGroupInfo[]) => {
+      setGroupList(data || []);
+    },
+  });
+
+  // 查询已授权的角色和用户组列表（用于回显选中状态）
   const { run: runGetRestrictionTargets } = useRequest(
     apiQueryRestrictionTargets,
     {
@@ -75,13 +97,11 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
         roles: AccessibleRoleInfo[];
         groups: AccessibleUserGroupInfo[];
       }) => {
-        const roles = data.roles || [];
-        const groups = data.groups || [];
-        setRoleList(roles);
-        setGroupList(groups);
+        const roles = data?.roles || [];
+        const groups = data?.groups || [];
         // 将返回的角色和用户组ID设置为已选中状态（接口返回的就是已授权的列表）
-        // setSelectedRoleIds(roles.map((role) => role.id));
-        // setSelectedGroupIds(groups.map((group) => group.id));
+        setSelectedRoleIds(roles.map((role) => role.id));
+        setSelectedGroupIds(groups.map((group) => group.id));
       },
     },
   );
@@ -105,6 +125,10 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   // 打开弹窗时加载数据
   useEffect(() => {
     if (open && targetId) {
+      // 查询完整的角色列表和用户组列表
+      runGetRoleList();
+      runGetGroupList();
+      // 查询已授权的角色和用户组列表（用于回显）
       runGetRestrictionTargets(targetId);
     } else {
       setRoleList([]);
@@ -180,7 +204,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
               onChange={handleRoleChange}
             >
               <Space direction="vertical" size={8} className={cx('w-full')}>
-                {roleList.map((item: AccessibleRoleInfo) => (
+                {roleList.map((item: RoleInfo) => (
                   <Checkbox key={item.id} value={item.id}>
                     {item.name}
                   </Checkbox>
@@ -204,7 +228,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
                     >
                       角色管理
                     </Button>{' '}
-                    进行数据授权
+                    新建角色
                   </span>
                 }
               />
@@ -225,7 +249,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
               onChange={handleGroupChange}
             >
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                {groupList.map((item: AccessibleUserGroupInfo) => (
+                {groupList.map((item: UserGroupInfo) => (
                   <Checkbox key={item.id} value={item.id}>
                     {item.name}
                   </Checkbox>
@@ -251,7 +275,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
                     >
                       用户组管理
                     </Button>{' '}
-                    进行数据授权
+                    新建用户组
                   </span>
                 }
               />
