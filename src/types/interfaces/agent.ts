@@ -471,6 +471,13 @@ export interface AgentConfigInfo {
   type: AgentTypeEnum;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
+  // 扩展信息
+  extra?: {
+    prodProxyMcpId?: number;
+    private?: boolean;
+    sandboxId?: number;
+    devProxyMcpId?: number;
+  };
 }
 
 // 智能体历史配置信息
