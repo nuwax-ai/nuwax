@@ -14,11 +14,11 @@ export enum MenuBindTypeEnum {
 }
 
 /**
- * 是否显示 1:显示 0:隐藏
+ * 是否启用 1:启用 0:禁用
  */
-export enum MenuVisibleEnum {
-  Visible = 1, // 显示
-  Hidden = 0, // 隐藏
+export enum MenuEnabledEnum {
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 /*来源 1:系统内置 2:用户自定义 */
@@ -49,8 +49,8 @@ export interface AddMenuParams {
   icon?: string;
   /** 排序 */
   sortIndex?: number;
-  // 是否显示 1:显示 0:隐藏
-  visible?: MenuVisibleEnum;
+  // 是否启用 1:启用 0:禁用
+  status?: MenuEnabledEnum;
   /** 资源树 */
   resourceTree?: ResourceTreeNode[];
 }
@@ -107,8 +107,8 @@ export interface GetMenuListParams {
   source?: MenuSourceEnum;
   /** 父级ID */
   parentId?: number;
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: MenuVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: MenuEnabledEnum;
 }
 
 /**
@@ -142,8 +142,8 @@ export interface MenuNodeInfo {
   /*排序 */
   sortIndex?: number;
 
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: MenuVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: MenuEnabledEnum;
 
   // 创建人
   creator?: string;

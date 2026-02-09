@@ -25,8 +25,8 @@ import {
 } from '../../../services/menu-manage';
 import { apiGetResourceList } from '../../../services/permission-resources';
 import {
+  MenuEnabledEnum,
   MenuSourceEnum,
-  MenuVisibleEnum,
   type MenuNodeInfo,
 } from '../../../types/menu-manage';
 import {
@@ -148,7 +148,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         setSelectedResourceIds([]);
         form.setFieldsValue({
           sortIndex: defaultSortIndex || 1,
-          visible: true,
+          status: true,
           source: MenuSourceEnum.UserDefined,
           parentId: undefined,
         });
@@ -269,7 +269,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         parentId: menuInfoResponse.parentId || undefined,
         path: menuInfoResponse.path,
         sortIndex: menuInfoResponse.sortIndex || 1,
-        visible: menuInfoResponse.visible === MenuVisibleEnum.Visible,
+        status: menuInfoResponse.status === MenuEnabledEnum.Enabled,
         source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
       });
       // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
@@ -368,9 +368,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       const formData = {
         ...values,
         icon: imageUrl,
-        visible: values.visible
-          ? MenuVisibleEnum.Visible
-          : MenuVisibleEnum.Hidden,
+        status: values.status
+          ? MenuEnabledEnum.Enabled
+          : MenuEnabledEnum.Disabled,
         // 传递构建好的资源树
         resourceTree,
       };
@@ -510,15 +510,15 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label="是否显示"
-              name="visible"
+              label="是否启用"
+              name="status"
               valuePropName="checked"
               tooltip={{
-                title: '显示或隐藏此菜单',
+                title: '启用或禁用此菜单',
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
             </Form.Item>
           </Col>
         </Row>

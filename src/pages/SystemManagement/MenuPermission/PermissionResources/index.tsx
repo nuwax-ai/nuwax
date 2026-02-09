@@ -21,9 +21,9 @@ import {
   apiUpdateResourceSort,
 } from '../services/permission-resources';
 import {
+  ResourceEnabledEnum,
   ResourceSourceEnum,
   ResourceTypeEnum,
-  ResourceVisibleEnum,
   type ResourceInfo,
   type ResourceTreeNode,
   type UpdateResourceParams,
@@ -115,7 +115,7 @@ const PermissionResources: React.FC = () => {
       parentId: resource.parentId,
       path: resource.path,
       sortIndex: resource.sortIndex || 0,
-      visible: resource.visible,
+      status: resource.status,
     };
     setEditingResource(resourceInfo);
     setIsEdit(true);
@@ -717,25 +717,22 @@ const PermissionResources: React.FC = () => {
       render: (path: string) => path || '--',
     },
     {
-      title: '是否显示',
-      dataIndex: 'visible',
-      key: 'visible',
+      title: '是否启用',
+      dataIndex: 'status',
+      key: 'status',
       align: 'center',
       fixed: 'right',
-      render: (
-        visible: ResourceVisibleEnum | undefined,
-        record: ResourceTreeNode,
-      ) => (
+      render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
         <Switch
-          checked={visible === ResourceVisibleEnum.Visible}
+          checked={status === ResourceEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
           onChange={(checked) => {
-            const newVisible = checked
-              ? ResourceVisibleEnum.Visible
-              : ResourceVisibleEnum.Hidden;
+            const newStatus = checked
+              ? ResourceEnabledEnum.Enabled
+              : ResourceEnabledEnum.Disabled;
             handleUpdateVisible({
               id: record.id,
-              visible: newVisible,
+              status: newStatus,
             });
           }}
         />
