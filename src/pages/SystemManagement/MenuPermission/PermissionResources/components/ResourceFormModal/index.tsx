@@ -22,10 +22,10 @@ import {
   apiUpdateResource,
 } from '../../../services/permission-resources';
 import {
+  ResourceEnabledEnum,
   ResourceSourceEnum,
   ResourceTreeNode,
   ResourceTypeEnum,
-  ResourceVisibleEnum,
   type ResourceInfo,
 } from '../../../types/permission-resources';
 import styles from './index.less';
@@ -135,7 +135,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         form.setFieldsValue({
           sortIndex: defaultSortIndex || 1,
           type: ResourceTypeEnum.Module,
-          visible: true,
+          status: true,
           source: ResourceSourceEnum.UserDefined,
           parentId: undefined,
         });
@@ -155,7 +155,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         parentId: resourceInfoResponse.parentId || undefined,
         path: resourceInfoResponse.path,
         sortIndex: resourceInfoResponse.sortIndex || 1,
-        visible: resourceInfoResponse.visible === ResourceVisibleEnum.Visible,
+        status: resourceInfoResponse.status === ResourceEnabledEnum.Enabled,
         source: resourceInfoResponse.source || ResourceSourceEnum.UserDefined,
       });
     }
@@ -214,9 +214,9 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
       const values = await form.validateFields();
       const formData = {
         ...values,
-        visible: values.visible
-          ? ResourceVisibleEnum.Visible
-          : ResourceVisibleEnum.Hidden,
+        status: values.status
+          ? ResourceEnabledEnum.Enabled
+          : ResourceEnabledEnum.Disabled,
       };
 
       if (isEdit && resourceInfo) {
@@ -361,15 +361,15 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           </Col>
           <Col span={12}>
             <Form.Item
-              label="是否显示"
-              name="visible"
+              label="是否启用"
+              name="status"
               valuePropName="checked"
               tooltip={{
-                title: '是否显示此资源',
+                title: '是否启用此资源',
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Switch checkedChildren="显示" unCheckedChildren="隐藏" />
+              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
             </Form.Item>
           </Col>
         </Row>

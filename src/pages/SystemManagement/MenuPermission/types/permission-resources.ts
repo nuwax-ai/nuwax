@@ -18,10 +18,10 @@ export enum ResourceSourceEnum {
   UserDefined = 2, // 用户自定义
 }
 
-// 是否显示 1:显示 0:隐藏
-export enum ResourceVisibleEnum {
-  Visible = 1, // 显示
-  Hidden = 0, // 隐藏
+// 是否禁用启用 1:启用 0:禁用
+export enum ResourceEnabledEnum {
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 /**
@@ -57,8 +57,8 @@ export interface ResourceInfo {
   path?: string;
   /** 排序 */
   sortIndex: number;
-  /** 是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: ResourceEnabledEnum;
   /** 创建人ID */
   creatorId?: number;
   /** 创建人 */
@@ -95,8 +95,8 @@ export interface AddResourceParams {
   icon?: string;
   /** 排序 */
   sortIndex?: number;
-  /** 是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: ResourceEnabledEnum;
 }
 
 /**
@@ -134,8 +134,8 @@ export interface GetResourceListParams {
   type?: ResourceTypeEnum;
   /** 父级ID */
   parentId?: number;
-  /** 是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: ResourceEnabledEnum;
 }
 
 /**
@@ -178,6 +178,6 @@ export interface ResourceTreeNode {
   /*排序 */
   sortIndex?: number;
 
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: ResourceVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: ResourceEnabledEnum;
 }
