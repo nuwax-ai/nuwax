@@ -28,6 +28,50 @@
       font-size: 14px;
       color: var(--color-text-primary, #333);
     }
+
+    // 隐藏虚拟资源节点
+    .ant-tree-treenode {
+      &[data-key^='resource-'] {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// 菜单节点包装器样式
+.menuNodeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  .menuName {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-font-primary, #15171f);
+    flex-shrink: 0;
+  }
+}
+
+// 资源树容器样式
+.resourceTreeContainer {
+  margin-top: 4px;
+}
+
+// 资源树样式
+.resourceTree {
+  :global {
+    .ant-tree-node-content-wrapper {
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .ant-tree-title {
+      font-size: 12px;
+      line-height: 18px;
+      color: var(--color-font-secondary, #8b8e99); // 文字颜色改淡
+    }
   }
 }
 

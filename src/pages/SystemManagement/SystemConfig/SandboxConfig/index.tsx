@@ -7,6 +7,7 @@ import {
   apiDeleteSandboxConfig,
   apiGetSandboxConfigList,
   apiGetSandboxGlobalConfig,
+  apiTestSandboxConnectivity,
   apiUpdateSandboxConfig,
   apiUpdateSandboxGlobalConfig,
 } from '@/services/systemManage';
@@ -45,6 +46,7 @@ const SandboxConfig: React.FC = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [sandboxList, setSandboxList] = useState<SandboxItem[]>([]);
   const [form] = Form.useForm();
+  const [testingIds, setTestingIds] = useState<Set<number | string>>(new Set());
 
   // 获取全局配置
   const fetchGlobalConfig = async () => {
@@ -88,6 +90,24 @@ const SandboxConfig: React.FC = () => {
       }
     } finally {
       setSavingLoading(false);
+    }
+  };
+
+  const handleTestConnectivity = async (id: number | string) => {
+    setTestingIds((prev) => new Set(prev).add(id));
+    try {
+      const res = await apiTestSandboxConnectivity(id);
+      if (res.code === SUCCESS_CODE) {
+        message.success('测试成功，沙盒连接正常');
+      } else {
+        message.error(`测试失败：${res.message || '连接异常'}`);
+      }
+    } finally {
+      setTestingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -147,6 +167,7 @@ const SandboxConfig: React.FC = () => {
     {
       title: '状态',
       dataIndex: 'online',
+      minWidth: 120,
       render: (_, record) => (
         <div
           className={cx(styles['status-tag'], {
@@ -166,8 +187,19 @@ const SandboxConfig: React.FC = () => {
       render: (_, record) => (
         <div className={styles['action-btns']}>
           <Tooltip title="连通性测试">
-            <div className={styles['action-btn']}>
-              <ThunderboltOutlined />
+            <div
+              className={cx(styles['action-btn'], {
+                [styles['btn-loading']]: testingIds.has(record.id),
+              })}
+              onClick={() =>
+                !testingIds.has(record.id) && handleTestConnectivity(record.id)
+              }
+            >
+              {testingIds.has(record.id) ? (
+                <Spin size="small" />
+              ) : (
+                <ThunderboltOutlined />
+              )}
             </div>
           </Tooltip>
           <Tooltip title="编辑">

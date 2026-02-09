@@ -1,21 +1,27 @@
 @import '@/styles/token';
 
-.dataPermissionFormWrapper {
-  height: 400px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-top: @paddingSm;
-}
+.tabsContentWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
 
-.dataPermissionForm {
-  // 抵消 Row gutter 的负边距
-  margin: 0 -8px;
-  padding: 0 8px;
-}
+  .dataPermissionFormWrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-top: @paddingSm;
 
-.scrollContainer {
-  max-height: 400px;
-  overflow: auto;
+    .dataPermissionForm {
+      // 抵消 Row gutter 的负边距
+      margin: 0 -8px;
+      padding: 0 8px;
+    }
+  }
+
+  .tabContent {
+    flex: 1;
+    height: 400px;
+    overflow-y: auto;
+  }
 }
 
 :global {

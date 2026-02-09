@@ -208,13 +208,13 @@ const LogProTable: React.FC = () => {
       {
         title: '请求时间',
         dataIndex: 'requestStartTime',
-        width: 170,
+        width: 180,
         valueType: 'dateTime',
         search: false,
-        renderText: (text: any) => {
-          if (!text) return '-';
-          return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
-        },
+        // renderText: (text: any) => {
+        //   if (!text) return '-';
+        //   return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
+        // },
       },
       {
         title: '整体耗时',

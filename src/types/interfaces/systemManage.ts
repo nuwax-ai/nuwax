@@ -1,8 +1,10 @@
 import {
+  AccessControlEnum,
   MessageScopeEnum,
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
+import { PublishStatusEnum } from '../enums/common';
 import { TaskInfo } from './library';
 
 /**
@@ -31,6 +33,8 @@ export interface SystemPageResult<T> extends SystemPaginationParams {
 export interface SystemResourceInfo {
   /** ID */
   id: number;
+  /** 智能体ID */
+  agentId: number;
   /** 名称 */
   name: string;
   /** 描述 */
@@ -44,7 +48,11 @@ export interface SystemResourceInfo {
   /** 空间ID */
   spaceId: number;
   /** 操作 */
-  operation: string;
+  operation: 'agent' | 'page';
+  // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  accessControl: AccessControlEnum;
+  /** 发布状态 */
+  publishStatus: PublishStatusEnum;
 }
 
 // 查询用户列表输入参数
@@ -679,6 +687,7 @@ export interface SandboxConfigItem {
     maxUsers: number;
   };
   description: string;
+  agentId?: number;
   isActive: boolean;
   online: boolean;
   created: string;

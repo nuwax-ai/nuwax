@@ -6,17 +6,21 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  EllipsisOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Space, Table, message } from 'antd';
+import type { MenuProps } from 'antd';
+import { Button, Dropdown, Input, Select, Space, Table, message } from 'antd';
 import { ColumnType } from 'antd/es/table';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
 import DataPermissionModal from './components/DataPermissionModal';
-import UserBindGroupModal from './components/UserBindGroupModal';
-import UserBindRoleModal from './components/UserBindRoleModal';
+import UserAuthModal from './components/UserAuthModal';
 import UserViewMenuModal from './components/UserViewMenuModal';
 import MessageSendModal from './MessageSendModal';
 
@@ -44,10 +48,8 @@ const UserManage: React.FC = () => {
   // 消息发送弹窗是否打开
   const [messageSendOpen, setMessageSendOpen] = useState<boolean>(false);
 
-  // 打开绑定角色弹窗
-  const [openBindRoleModal, setOpenBindRoleModal] = useState<boolean>(false);
-  // 打开绑定用户组弹窗
-  const [openBindGroupModal, setOpenBindGroupModal] = useState<boolean>(false);
+  // 打开授权弹窗
+  const [openAuthModal, setOpenAuthModal] = useState<boolean>(false);
   // 打开查看权限弹窗
   const [openViewMenuModal, setOpenViewMenuModal] = useState<boolean>(false);
   // 打开数据权限弹窗
@@ -148,16 +150,10 @@ const UserManage: React.FC = () => {
     run(params);
   };
 
-  // 绑定角色
-  const handleBindRole = (userInfo: SystemUserListInfo) => {
+  // 授权（绑定角色和用户组）
+  const handleAuth = (userInfo: SystemUserListInfo) => {
     setCurrentUserInfo(userInfo);
-    setOpenBindRoleModal(true);
-  };
-
-  // 绑定用户组
-  const handleBindGroup = (userInfo: SystemUserListInfo) => {
-    setCurrentUserInfo(userInfo);
-    setOpenBindGroupModal(true);
+    setOpenAuthModal(true);
   };
 
   // 查看权限
@@ -258,71 +254,76 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 300,
       align: 'center',
       fixed: 'right',
-      render: (_: null, record: SystemUserListInfo) => (
-        <Space size={0} wrap={false}>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleBindRole(record)}
-          >
-            绑定角色
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleBindGroup(record)}
-          >
-            绑定用户组
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleViewMenu(record)}
-          >
-            查看权限
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => handleViewDataPermission(record)}
-          >
-            数据权限
-          </Button>
-          {record.status === UserStatusEnum.Enabled ? (
+      render: (_: null, record: SystemUserListInfo) => {
+        // 下拉菜单项
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'viewMenu',
+            label: '查看菜单资源权限',
+            onClick: () => handleViewMenu(record),
+          },
+          {
+            key: 'dataPermission',
+            label: '查看数据权限',
+            onClick: () => handleViewDataPermission(record),
+          },
+        ];
+
+        return (
+          <Space size={0} wrap={false}>
+            {record.status === UserStatusEnum.Enabled ? (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={disableLoadingMap[record.id] || false}
+                onClick={() => runDisable({ id: record.id })}
+              >
+                禁用
+              </Button>
+            ) : (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={enableLoadingMap[record.id] || false}
+                onClick={() => runEnable({ id: record.id })}
+              >
+                启用
+              </Button>
+            )}
+            <CreateModifyUser
+              isEdit={true}
+              record={record}
+              onSuccess={handleSuccess}
+            />
+
             <Button
               type="link"
               size="small"
               className={cx(styles['table-action-ant-btn-link'])}
-              loading={disableLoadingMap[record.id] || false}
-              onClick={() => runDisable({ id: record.id })}
+              onClick={() => handleAuth(record)}
             >
-              禁用
+              授权
             </Button>
-          ) : (
-            <Button
-              type="link"
-              size="small"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={enableLoadingMap[record.id] || false}
-              onClick={() => runEnable({ id: record.id })}
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['hover']}
+              placement="bottomRight"
             >
-              启用
-            </Button>
-          )}
-          <CreateModifyUser
-            isEdit={true}
-            record={record}
-            onSuccess={handleSuccess}
-          />
-        </Space>
-      ),
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                icon={<EllipsisOutlined />}
+                style={{ padding: '0 4px' }}
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -378,21 +379,14 @@ const UserManage: React.FC = () => {
         open={messageSendOpen}
         onCancel={() => setMessageSendOpen(false)}
       />
-      {/* 绑定角色弹窗 */}
-      <UserBindRoleModal
-        open={openBindRoleModal}
+      {/* 授权弹窗 */}
+      <UserAuthModal
+        open={openAuthModal}
         targetId={currentUserInfo?.id || 0}
-        onCancel={() => setOpenBindRoleModal(false)}
-        onConfirm={() => setOpenBindRoleModal(false)}
+        role={currentUserInfo?.role}
+        onCancel={() => setOpenAuthModal(false)}
       />
-      {/* 绑定组弹窗 */}
-      <UserBindGroupModal
-        open={openBindGroupModal}
-        targetId={currentUserInfo?.id || 0}
-        onCancel={() => setOpenBindGroupModal(false)}
-        onConfirm={() => setOpenBindGroupModal(false)}
-      />
-      {/* 查看权限弹窗 */}
+      {/* 查看菜单资源权限弹窗 */}
       <UserViewMenuModal
         open={openViewMenuModal}
         userId={currentUserInfo?.id || 0}

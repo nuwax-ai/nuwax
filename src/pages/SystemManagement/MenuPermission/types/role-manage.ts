@@ -179,7 +179,7 @@ export interface DataPermission {
   agentIds?: number[];
 
   /*可访问的应用页面id列表，null或空表示不限制 */
-  pageIds?: number[];
+  pageAgentIds?: number[];
 
   /*可创建工作空间数量，-1表示不限制 */
   maxSpaceCount?: number;

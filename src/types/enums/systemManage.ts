@@ -78,3 +78,9 @@ export enum MessageScopeEnum {
   Private = 'Private', // 私信
   System = 'System', // 系统消息
 }
+
+// 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+export enum AccessControlEnum {
+  NoFilter = 0,
+  Filter = 1,
+}

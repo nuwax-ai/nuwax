@@ -578,6 +578,7 @@ export async function apiDeleteSandboxUserConfig(
 export async function apiUpdateSandboxUserConfig(data: {
   id: number;
   name: string;
+  description?: string;
 }): Promise<RequestResponse<null>> {
   return request('/api/sandbox/config/update', {
     method: 'POST',
@@ -636,5 +637,15 @@ export async function apiSystemCategoryDelete(data: {
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/category/delete/${data.id}`, {
     method: 'POST',
+  });
+}
+/**
+ * 沙盒连通性测试
+ */
+export async function apiTestSandboxConnectivity(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/sandbox/config/test/${id}`, {
+    method: 'GET',
   });
 }

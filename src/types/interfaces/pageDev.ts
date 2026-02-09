@@ -53,6 +53,8 @@ export interface CustomPageDto {
   name: string;
   // 项目描述
   description: string;
+  // 调试关联智能体ID
+  devAgentId: number;
   // 项目图标
   icon: string;
   // 项目封面图片

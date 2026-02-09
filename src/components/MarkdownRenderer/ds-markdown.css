@@ -1242,9 +1242,9 @@ ds-markdown-math {
 
 .md-code-block-banner-wrap {
   background-color: var(--ds-md-code-block-banner-wrap-background-color);
-  z-index: 6;
-  position: sticky;
-  top: 0;
+  /* z-index: 1; */
+  /* position: sticky;
+  top: 0; */
 }
 
 .md-code-block-banner {

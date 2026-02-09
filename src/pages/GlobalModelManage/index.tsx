@@ -17,6 +17,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import CreateModel from '../SpaceLibrary/CreateModel';
+import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
 const cx = classNames.bind(styles);
 
@@ -33,6 +34,10 @@ const GlobalModelManage: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();
   const [currentType, setCurrentType] = useState<string>();
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentAuthModelId, setCurrentAuthModelId] = useState<number | null>(
+    null,
+  );
   const handleSelectChange = (e: string) => setCurrentType(e);
   const {
     data: resData,
@@ -102,7 +107,7 @@ const GlobalModelManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 180,
       align: 'center',
       fixed: 'right',
       className: styles['table-column-fixed'],
@@ -117,6 +122,16 @@ const GlobalModelManage: React.FC = () => {
             }}
           >
             编辑
+          </Button>
+          <Button
+            type="link"
+            className={cx(styles['table-action-ant-btn-link'])}
+            onClick={() => {
+              setCurrentAuthModelId(record.id);
+              setAuthModalOpen(true);
+            }}
+          >
+            授权
           </Button>
           <Popconfirm
             title="删除模型"
@@ -191,6 +206,16 @@ const GlobalModelManage: React.FC = () => {
           onConfirm={() => (run(), setVisible(false))}
         />
       </ConditionRender>
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentAuthModelId || 0}
+        targetType="model"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentAuthModelId(null);
+        }}
+      />
     </div>
   );
 };

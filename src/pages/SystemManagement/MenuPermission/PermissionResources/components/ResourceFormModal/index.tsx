@@ -181,6 +181,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           ?.filter(
             (resource) =>
               resource.id !== 0 &&
+              resource.type === ResourceTypeEnum.Module &&
               (isEdit ? resource.id !== resourceInfo?.id : true),
           ) // 过滤掉根节点（id为0） 编辑模式下过滤掉当前资源
           .map((resource) => ({
@@ -258,13 +259,17 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               label="资源码"
               name="code"
               rules={[
-                { required: true, message: '请输入资源码' },
                 {
                   pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
                   message:
                     '资源码必须以英文字母开头，只能包含字母、数字和下划线',
                 },
               ]}
+              tooltip={{
+                title:
+                  '资源码用于标识资源，可以为空，为空时系统默认生成，只能包含字母、数字和下划线',
+                icon: <InfoCircleOutlined />,
+              }}
             >
               <Input
                 disabled={isEdit}
@@ -290,6 +295,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               rules={[{ required: true, message: '请选择资源类型' }]}
             >
               <Select
+                disabled={isEdit}
                 placeholder="请选择资源类型"
                 options={RESOURCE_TYPE_OPTIONS}
               />

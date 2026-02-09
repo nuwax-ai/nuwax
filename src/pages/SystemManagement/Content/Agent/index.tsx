@@ -1,6 +1,3 @@
-/**
- * 智能体管理页面
- */
 import { XProTable } from '@/components/ProComponents';
 import TableActions, { ActionItem } from '@/components/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
@@ -9,20 +6,34 @@ import {
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
+import { PublishStatusEnum } from '@/types/enums/common';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
-import { useCallback, useEffect, useRef } from 'react';
+import { message, Switch } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
+import { apiSystemResourceAgentAccess } from '../content-manage';
 
+/**
+ * 智能体管理页面
+ */
 const Agent: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const location = useLocation();
+  // 管控状态切换 loading 状态
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentAgentId, setCurrentAgentId] = useState<number | null>(null);
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -51,6 +62,14 @@ const Agent: React.FC = () => {
   }, []);
 
   /**
+   * 处理授权
+   */
+  const handleAuth = useCallback((record: SystemAgentInfo) => {
+    setCurrentAgentId(record.id);
+    setAuthModalOpen(true);
+  }, []);
+
+  /**
    * 删除智能体
    */
   const handleDelete = useCallback(async (record: SystemAgentInfo) => {
@@ -64,16 +83,59 @@ const Agent: React.FC = () => {
   }, []);
 
   /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: SystemAgentInfo, checked: boolean) => {
+      const newStatus = checked ? 1 : 0;
+      setAccessControlLoadingMap((prev) => ({
+        ...prev,
+        [record.id]: true,
+      }));
+      try {
+        const response = await apiSystemResourceAgentAccess(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({
+          ...prev,
+          [record.id]: false,
+        }));
+      }
+    },
+    [],
+  );
+
+  /**
    * 操作列配置
    */
   const getActions = useCallback(
-    (record: SystemAgentInfo): ActionItem<SystemAgentInfo>[] => [
-      {
-        key: 'view',
-        label: '查看',
-        onClick: handleView,
-      },
-      {
+    (record: SystemAgentInfo): ActionItem<SystemAgentInfo>[] => {
+      const actions: ActionItem<SystemAgentInfo>[] = [
+        {
+          key: 'view',
+          label: '查看',
+          onClick: handleView,
+        },
+      ];
+
+      // 当 accessControl 为 1 并且发布状态为已发布时，显示授权项
+      if (
+        record.accessControl === AccessControlEnum.Filter &&
+        record.publishStatus === PublishStatusEnum.Published
+      ) {
+        actions.push({
+          key: 'auth',
+          label: '授权',
+          onClick: handleAuth,
+        });
+      }
+
+      actions.push({
         key: 'delete',
         label: '删除',
         type: 'danger',
@@ -86,9 +148,11 @@ const Agent: React.FC = () => {
           description: '此操作无法撤销，所有相关数据将被永久删除。',
         },
         onClick: handleDelete,
-      },
-    ],
-    [handleView, handleDelete],
+      });
+
+      return actions;
+    },
+    [handleView, handleAuth, handleDelete],
   );
 
   /**
@@ -120,12 +184,43 @@ const Agent: React.FC = () => {
       hideInSearch: false,
     },
     {
+      title: '发布状态',
+      dataIndex: 'publishStatus',
+      align: 'center',
+      width: 100,
+      hideInSearch: true,
+      render: (_, record: SystemAgentInfo) => {
+        const statusMap: Record<PublishStatusEnum, string> = {
+          [PublishStatusEnum.Developing]: '待发布',
+          [PublishStatusEnum.Applying]: '待审核',
+          [PublishStatusEnum.Published]: '已发布',
+          [PublishStatusEnum.Rejected]: '已拒绝',
+        };
+        return statusMap[record.publishStatus] || '--';
+      },
+    },
+    {
       title: '创建时间',
       dataIndex: 'created',
       align: 'center',
       width: 170,
       hideInSearch: true,
       valueType: 'dateTime',
+    },
+    {
+      title: '管控',
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      hideInSearch: true,
+      render: (_, record: SystemAgentInfo) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
     },
     {
       title: '操作',
@@ -174,6 +269,16 @@ const Agent: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+      />
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentAgentId || 0}
+        targetType="agent"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentAgentId(null);
+        }}
       />
     </WorkspaceLayout>
   );
