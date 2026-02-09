@@ -1,11 +1,12 @@
-# GitLab 源配置说明
+# GitLab 和 Gitee 源配置说明
 
-本文档说明如何配置和使用 GitLab 作为项目的远程仓库源。
+本文档说明如何配置和使用 GitLab 和 Gitee 作为项目的远程仓库源。
 
 ## 仓库信息
 
-- **GitLab 地址**: `https://git.yichamao.com/agent-platform/nuwax.git`
 - **GitHub 地址** (origin): `https://github.com/nuwax-ai/nuwax`
+- **GitLab 地址**: `https://git.yichamao.com/agent-platform/nuwax.git`
+- **Gitee 地址** (gitee): `https://gitee.com/nuwax/nuwax`
 
 ## 配置步骤
 
@@ -18,7 +19,16 @@
 git remote add gitlab https://git.yichamao.com/agent-platform/nuwax.git
 ```
 
-### 2. 验证远程源配置
+### 2. 添加 Gitee 远程源
+
+如果项目中还没有配置 Gitee 远程源，可以通过以下命令添加：
+
+```bash
+# 添加 Gitee 远程源，命名为 gitee
+git remote add gitee https://gitee.com/nuwax/nuwax.git
+```
+
+### 3. 验证远程源配置
 
 查看所有已配置的远程源：
 
@@ -30,19 +40,24 @@ git remote -v
 预期输出应该包含：
 
 ```
-gitlab    https://git.yichamao.com/agent-platform/nuwax.git (fetch)
-gitlab    https://git.yichamao.com/agent-platform/nuwax.git (push)
 origin    https://github.com/nuwax-ai/nuwax (fetch)
 origin    https://github.com/nuwax-ai/nuwax (push)
+gitlab    https://git.yichamao.com/agent-platform/nuwax.git (fetch)
+gitlab    https://git.yichamao.com/agent-platform/nuwax.git (push)
+gitee     https://gitee.com/nuwax/nuwax (fetch)
+gitee     https://gitee.com/nuwax/nuwax (push)
 ```
 
-### 3. 修改现有 GitLab 远程源
+### 4. 修改现有远程源
 
-如果 GitLab 远程源已存在但需要修改地址：
+如果需要修改已存在的远程源地址：
 
 ```bash
-# 修改 gitlab 远程源的 URL
+# 修改 GitLab 远程源的 URL
 git remote set-url gitlab https://git.yichamao.com/agent-platform/nuwax.git
+
+# 修改 Gitee 远程源的 URL
+git remote set-url gitee https://gitee.com/nuwax/nuwax.git
 ```
 
 ## 常用操作
