@@ -1,7 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { EllipsisOutlined } from '@ant-design/icons';
-import { Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -73,9 +72,7 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
           icon
         )}
       </span>
-      <Typography.Text className={cx('flex-1', styles.name)} ellipsis={true}>
-        {name}
-      </Typography.Text>
+      <div className={cx('flex-1', 'text-ellipsis', styles.name)}>{name}</div>
       {onCancelCollect && (
         <CustomPopover list={[{ label: '取消收藏' }]} onClick={onCancelCollect}>
           <EllipsisOutlined className={cx(styles.collectIcon)} />

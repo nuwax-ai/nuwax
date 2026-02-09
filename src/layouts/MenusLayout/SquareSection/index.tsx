@@ -133,6 +133,7 @@ const SquareSection: React.FC<{
               <SecondMenuItem.SubItem
                 key={item.name}
                 name={item.description}
+                className={cx(styles.subItem)}
                 isActive={activeKey === item.name}
                 onClick={() => handleClick(info.type, item.name)}
               />

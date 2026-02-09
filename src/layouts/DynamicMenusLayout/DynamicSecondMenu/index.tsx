@@ -124,7 +124,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   );
 
   /**
-   * 判断是否有任何子菜单激活
+   * 判断是否有任何子菜单激活（递归）
    */
   const hasActiveChild = useCallback(
     (menu: MenuItemDto): boolean => {
@@ -136,6 +136,83 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       );
     },
     [isActive],
+  );
+
+  /**
+   * 递归渲染菜单项
+   * @param menu 菜单项数据
+   * @param level 菜单层级（从0开始，用于缩进）
+   * @param isFirst 是否是同级第一个
+   * @returns 渲染的菜单项
+   */
+  const renderMenuItem = useCallback(
+    (
+      menu: MenuItemDto,
+      level: number = 0,
+      isFirst: boolean = false,
+    ): React.ReactNode => {
+      const hasChildren = menu.children && menu.children.length > 0;
+      const menuCode = menu.code || '';
+      const isExpanded = expandedMenus.includes(menuCode);
+      const menuActive = isActive(menu.path) || hasActiveChild(menu);
+      // 根据层级计算缩进，每级缩进 16px
+      const indent = level * 16;
+
+      // 如果没有子菜单，使用 SubItem 组件
+      if (!hasChildren) {
+        return (
+          <div key={menuCode} style={{ marginLeft: indent }}>
+            <SecondMenuItem.SubItem
+              icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+              name={menu.name}
+              isFirst={isFirst}
+              isActive={menuActive}
+              onClick={() => {
+                if (menu.path) {
+                  // 处理动态路径
+                  const resolvedPath = resolveDynamicPath(menu.path);
+                  history.push(resolvedPath);
+                }
+              }}
+            />
+          </div>
+        );
+      }
+
+      // 如果有子菜单，使用 SecondMenuItem 组件，并递归渲染子菜单
+      return (
+        <div key={menuCode}>
+          <div style={{ marginLeft: indent }}>
+            <SecondMenuItem
+              icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+              name={menu.name}
+              isFirst={isFirst}
+              isActive={menuActive}
+              isDown={true} // 有子菜单时显示折叠展开图标
+              isOpen={isExpanded}
+              onClick={() => handleMenuClick(menu)}
+              onToggle={() => toggleExpand(menuCode)}
+            />
+          </div>
+          {/* 递归渲染子菜单 */}
+          {isExpanded && (
+            <div>
+              {menu.children?.map((child, childIndex) =>
+                renderMenuItem(child, level + 1, childIndex === 0),
+              )}
+            </div>
+          )}
+        </div>
+      );
+    },
+    [
+      expandedMenus,
+      isActive,
+      hasActiveChild,
+      resolveDynamicPath,
+      handleMenuClick,
+      toggleExpand,
+    ],
   );
 
   /**
@@ -170,51 +247,9 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {secondMenus.map((menu: MenuItemDto, index: number) => {
-        const isExpanded = expandedMenus.includes(menu.code || '');
-        const menuActive = isActive(menu.path) || hasActiveChild(menu);
-        const hasChildren = menu.children && menu.children.length > 0;
-
-        return (
-          <div key={menu.code}>
-            {/* 二级菜单项 */}
-            <SecondMenuItem
-              icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
-              name={menu.name}
-              isFirst={index === 0}
-              isActive={menuActive}
-              isDown={hasChildren}
-              isOpen={isExpanded}
-              onClick={() => handleMenuClick(menu)}
-              onToggle={() => toggleExpand(menu.code || '')}
-            />
-
-            {/* 三级菜单 */}
-            {hasChildren && isExpanded && (
-              <div style={{ marginLeft: 0 }}>
-                {menu.children?.map((child, childIndex) => (
-                  <SecondMenuItem.SubItem
-                    key={child.code}
-                    icon={
-                      child.icon ? <SvgIcon name={child.icon} /> : undefined
-                    }
-                    name={child.name}
-                    isFirst={childIndex === 0}
-                    isActive={isActive(child.path)}
-                    onClick={() => {
-                      if (child.path) {
-                        // 处理动态路径
-                        const resolvedPath = resolveDynamicPath(child.path);
-                        history.push(resolvedPath);
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {secondMenus.map((menu: MenuItemDto, index: number) =>
+        renderMenuItem(menu, 0, index === 0),
+      )}
     </div>
   );
 };
