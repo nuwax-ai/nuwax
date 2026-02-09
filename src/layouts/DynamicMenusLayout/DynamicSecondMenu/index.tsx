@@ -9,8 +9,9 @@ import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 // 导入特殊内容组件
+import EcosystemMarketSection from '@/layouts/MenusLayout/EcosystemMarketSection';
 import HomeSection from '@/layouts/MenusLayout/HomeSection';
-import SpaceSection from '@/layouts/MenusLayout/SpaceSection';
+import SquareSection from '@/layouts/MenusLayout/SquareSection';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -31,7 +32,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   // 获取二级菜单
-  const secondMenus = getSecondLevelMenus(parentCode);
+  const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
 
   /**
    * 切换展开状态
@@ -49,19 +50,11 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
    */
   const handleMenuClick = useCallback(
     (menu: MenuItemDto) => {
-      console.log(
-        '[DynamicSecondMenu] Click:',
-        menu.name,
-        'Path:',
-        menu.path,
-        'Children:',
-        menu.children?.length,
-      );
       const hasChildren = menu.children && menu.children.length > 0;
 
       if (hasChildren) {
         // 有子菜单，仅切换展开状态
-        toggleExpand(menu.code);
+        toggleExpand(menu.code as string);
       } else if (menu.path) {
         // 无子菜单，直接路由跳转
         history.push(menu.path);
@@ -99,24 +92,31 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     [isActive],
   );
 
+  console.log('二级菜单secondMenus:', secondMenus, 'parentCode:', parentCode);
+
   /**
    * 渲染特殊内容区域
-   * - homepage: 最近使用 + 会话记录
-   * - workspace: 最近编辑 + 开发收藏
    */
-  const renderSpecialContent = () => {
+  // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
+  if (
+    parentCode === 'homepage' ||
+    parentCode === 'system_square' ||
+    parentCode === 'eco_market'
+  ) {
+    // 主页 homepage: 最近使用 + 会话记录
     if (parentCode === 'homepage') {
       return <HomeSection />;
     }
-    if (parentCode === 'workspace') {
-      return <SpaceSection />;
-    }
-    return null;
-  };
 
-  // 主页和工作空间特殊处理：直接渲染对应的 Section 组件
-  if (parentCode === 'homepage' || parentCode === 'workspace') {
-    return renderSpecialContent();
+    // 系统广场
+    if (parentCode === 'system_square') {
+      return <SquareSection />;
+    }
+
+    // 生态市场
+    if (parentCode === 'eco_market') {
+      return <EcosystemMarketSection />;
+    }
   }
 
   // 如果没有二级菜单，不渲染
@@ -126,8 +126,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {secondMenus.map((menu, index) => {
-        const isExpanded = expandedMenus.includes(menu.code);
+      {secondMenus.map((menu: MenuItemDto, index: number) => {
+        const isExpanded = expandedMenus.includes(menu.code || '');
         const menuActive = isActive(menu.path) || hasActiveChild(menu);
         const hasChildren = menu.children && menu.children.length > 0;
 
@@ -142,7 +142,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
               isDown={hasChildren}
               isOpen={isExpanded}
               onClick={() => handleMenuClick(menu)}
-              onToggle={() => toggleExpand(menu.code)}
+              onToggle={() => toggleExpand(menu.code || '')}
             />
 
             {/* 三级菜单 */}

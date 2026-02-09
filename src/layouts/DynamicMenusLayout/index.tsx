@@ -53,15 +53,18 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     useModel('layout');
   const { loadMenus, firstLevelMenus } = useModel('menuModel');
 
+  // 工作空间下的最近编辑和开发收藏
+  const { runEdit, runDevCollect } = useModel('devCollectAgent');
+
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
 
   // 初始化加载菜单数据
   useEffect(() => {
-    console.log(
-      '[Debug] DynamicMenusLayout mount. FirstLevelMenus:',
-      firstLevelMenus,
-    );
+    // console.log(
+    //   '[Debug] DynamicMenusLayout mount. FirstLevelMenus:',
+    //   firstLevelMenus,
+    // );
     loadMenus();
   }, [loadMenus]);
 
@@ -92,7 +95,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     };
 
     // 查找匹配当前路径的菜单
-    const matchedMenu = firstLevelMenus.find((menu) =>
+    const matchedMenu = firstLevelMenus.find((menu: MenuItemDto) =>
       isMenuMatch(menu, location.pathname),
     );
 
@@ -101,7 +104,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     } else if (location.pathname === '/' || location.pathname === '') {
       // 默认选中首页
       const homeMenu = firstLevelMenus.find(
-        (m) => m.code === 'home' || m.path === '/',
+        (m: MenuItemDto) => m.code === 'home' || m.path === '/',
       );
       if (homeMenu) {
         setActiveTab(homeMenu.code);
@@ -117,9 +120,29 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 关闭移动端菜单
       handleCloseMobileMenu();
 
-      setActiveTab(menu.code);
+      setActiveTab(menu.code as string);
+
+      console.log('menu:点击一级菜单:', menu);
+      if (menu.code === 'workspace') {
+        // 最近编辑
+        runEdit({
+          size: 8,
+        });
+        // 开发收藏
+        runDevCollect({
+          page: 1,
+          size: 8,
+        });
+
+        // 防止系统设置中工作空间没有设置路径，导致跳转失败
+        const url = menu.path || '/space';
+        history.push(url);
+      }
+
       if (menu.path) {
         history.push(menu.path);
+      } else if (menu.children?.length && menu.children[0].path) {
+        history.push(menu.children[0].path);
       }
     },
     [handleCloseMobileMenu],
@@ -146,8 +169,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
-    const current = firstLevelMenus.find((m) => m.code === activeTab);
-    return current?.name || '';
+    const current = firstLevelMenus.find(
+      (m: MenuItemDto) => m.code === activeTab,
+    );
+    return current?.name;
   }, [activeTab, firstLevelMenus]);
 
   /**

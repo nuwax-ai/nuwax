@@ -61,8 +61,8 @@ export async function getInitialState(): Promise<{
     if (currentUser?.id) {
       try {
         const menuRes = await apiQueryMenus();
-        if (menuRes.code === SUCCESS_CODE && menuRes.data?.menus) {
-          menus = menuRes.data.menus as MenuItemDto[];
+        if (menuRes.code === SUCCESS_CODE && menuRes.data) {
+          menus = menuRes.data as MenuItemDto[];
           permissions = extractAllPermissions(menus);
         }
       } catch (error) {

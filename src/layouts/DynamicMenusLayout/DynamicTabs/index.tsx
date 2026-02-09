@@ -29,6 +29,8 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 }) => {
   const { isSecondMenuCollapsed } = useModel('layout');
 
+  console.log('动态一级菜单组件menus:', menus);
+
   // 将 MenuItemDto 转换为 TabItem 所需的格式
   const tabItems = useMemo(() => {
     return menus.map((menu) => ({

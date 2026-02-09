@@ -122,7 +122,7 @@ export interface MenuNodeInfo {
   code?: string;
 
   /*名称 */
-  name?: string;
+  name: string;
 
   /*描述 */
   description?: string;

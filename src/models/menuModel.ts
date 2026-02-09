@@ -68,9 +68,8 @@ export default function useMenuModel() {
           return;
         }
         const res = await apiQueryMenus();
-        if ((res.code === SUCCESS_CODE || res.code === 0) && res.data) {
-          const menus = res.data.menus || [];
-          console.log('[Debug] Model setting menus:', menus);
+        if (res.code === SUCCESS_CODE && res.data) {
+          const menus = res.data || [];
           setMenuTree(menus);
 
           // 提取所有权限码
@@ -100,7 +99,7 @@ export default function useMenuModel() {
    */
   const getSecondLevelMenus = useCallback(
     (parentCode: string): MenuItemDto[] => {
-      const parent = menuTree.find((m) => m.code === parentCode);
+      const parent = menuTree?.find((m: MenuItemDto) => m.code === parentCode);
       return parent?.children || [];
     },
     [menuTree],
@@ -186,7 +185,7 @@ export default function useMenuModel() {
   const getPagePermissions = useCallback(
     (path: string): string[] => {
       const menu = findMenuByPath(path);
-      return menu?.permissions?.map((p) => p.code) || [];
+      return menu?.resourceTree?.map((r) => r.code || '') || [];
     },
     [findMenuByPath],
   );

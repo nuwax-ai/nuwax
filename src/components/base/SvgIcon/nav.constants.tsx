@@ -6,6 +6,8 @@ import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
+import { ReactComponent as ModelSvgFile } from '@/assets/icons/nav/icons-nav-model.svg';
+import { ReactComponent as PublishManageSvgFile } from '@/assets/icons/nav/icons-nav-published.svg';
 import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
 import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
 import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
@@ -63,6 +65,8 @@ const PaletteSvg = wrapSvg(PaletteSvgFile);
 const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
+const ModelSvg = wrapSvg(ModelSvgFile);
+const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 export default {
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
@@ -95,4 +99,6 @@ export default {
   'icons-nav-log-operation': LogOperationSvg,
   'icons-nav-log-running': LogRunningSvg,
   'icons-nav-computer': ComputerSvg,
+  'icons-nav-model': ModelSvg,
+  'icons-nav-publish_manage': PublishManageSvg,
 } as Record<string, React.FC>;

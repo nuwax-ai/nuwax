@@ -3,6 +3,7 @@ import {
   MOBILE_BREAKPOINT,
   MOBILE_MENU_TOP_PADDING,
 } from '@/constants/layout.constants';
+import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { theme } from 'antd';
 import classNames from 'classnames';
@@ -49,6 +50,8 @@ const Layout: React.FC = () => {
   //   setBackgroundImage,
   // } = useGlobalSettings();
 
+  const { runQueryCategory } = useCategory();
+
   // 导航风格管理（使用统一主题系统）
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
@@ -64,6 +67,9 @@ const Layout: React.FC = () => {
     setFullMobileMenu,
     getCurrentMenuWidth,
   } = useModel('layout');
+
+  const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { asyncSpaceListFun } = useModel('spaceModel');
 
   // 动态菜单开关状态
   const [useDynamicMenu, setUseDynamicMenu] = useState(true);
@@ -106,6 +112,15 @@ const Layout: React.FC = () => {
     },
     [fullMobileMenu],
   );
+
+  useEffect(() => {
+    // 查询广场menus列表
+    runQueryCategory();
+    // 租户配置信息查询接口
+    runTenantConfig();
+    // 工作空间列表查询接口
+    asyncSpaceListFun();
+  }, []);
 
   /**
    * 监听窗口尺寸变化，判断是否为移动端
