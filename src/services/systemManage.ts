@@ -160,7 +160,7 @@ export async function apiSystemUploadFile(
 export async function apiSystemConfigUpdate(
   data: TenantConfigDto,
 ): Promise<RequestResponse<any>> {
-  return request('/api/system/config/add', {
+  return request('/api/system/config/update-theme', {
     method: 'POST',
     data,
   });
