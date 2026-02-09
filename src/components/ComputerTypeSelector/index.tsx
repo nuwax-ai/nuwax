@@ -93,6 +93,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   useEffect(() => {
     if (!initialized || computerList.length === 0) return;
 
+    // 检查当前 value 是否在列表中有效
+    const isValueValid = value && computerList.some((opt) => opt.id === value);
+
     let selectedId: string | null = null;
 
     // 1. 如果有agentId，检查是否有已保存的选择
@@ -107,8 +110,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       }
     }
 
-    // 2. 如果没有已保存的选择，且当前没有值，默认选中列表中的第一个
-    if (!selectedId && !value && computerList.length > 0) {
+    // 2. 如果没有已保存的选择，且当前值无效，默认选中列表中的第一个
+    if (!selectedId && !isValueValid && computerList.length > 0) {
       selectedId = computerList[0].id;
     }
 
@@ -232,7 +235,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
 
     return items;
-  }, [loading, computerList, initialized, handleSelect]);
+  }, [loading, computerList, initialized, handleSelect, value]);
 
   // 计算是否真正禁用
   const isDisabled = disabled || fixedSelection || unavailable;
