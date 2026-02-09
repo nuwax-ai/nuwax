@@ -7,7 +7,7 @@ import SecondMenuItem from '@/components/base/SecondMenuItem';
 import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import EcosystemMarketSection from '@/layouts/MenusLayout/EcosystemMarketSection';
 import HomeSection from '@/layouts/MenusLayout/HomeSection';
@@ -27,6 +27,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   parentCode,
 }) => {
   const location = useLocation();
+  const params = useParams();
   const { getSecondLevelMenus } = useModel('menuModel');
   // 展开的菜单 code 列表
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -44,6 +45,49 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }, []);
 
   /**
+   * 处理动态路径，从当前路由参数中提取值并替换路径中的动态参数
+   * @param path 包含动态参数的路径，如 /space/:spaceId/develop
+   * @returns 替换后的路径，如 /space/123/develop
+   */
+  const resolveDynamicPath = useCallback(
+    (path: string): string => {
+      if (!path.includes(':')) {
+        // 没有动态参数，直接返回
+        return path;
+      }
+
+      let resolvedPath = path;
+
+      // 提取路径中的所有动态参数（如 :spaceId, :agentId）
+      // 使用 match 方法获取所有匹配项
+      const paramMatches = path.matchAll(/:(\w+)/g);
+      const matchesArray = Array.from(paramMatches);
+
+      // 遍历所有匹配的动态参数
+      matchesArray.forEach((match) => {
+        const paramName = match[1]; // 参数名，如 spaceId
+        const paramValue = params[paramName]; // 从当前路由参数中获取值
+
+        if (paramValue) {
+          // 替换路径中的动态参数
+          resolvedPath = resolvedPath.replace(
+            `:${paramName}`,
+            String(paramValue),
+          );
+        } else {
+          // 如果找不到对应的参数值，保持原样或返回原路径
+          console.warn(
+            `[DynamicSecondMenu] 无法从路由参数中找到 ${paramName}，路径: ${path}`,
+          );
+        }
+      });
+
+      return resolvedPath;
+    },
+    [params],
+  );
+
+  /**
    * 点击菜单项
    * - 有子菜单：仅展开/折叠，不导航
    * - 无子菜单：直接路由跳转
@@ -56,11 +100,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         // 有子菜单，仅切换展开状态
         toggleExpand(menu.code as string);
       } else if (menu.path) {
+        // 处理动态路径
+        const resolvedPath = resolveDynamicPath(menu.path);
         // 无子菜单，直接路由跳转
-        history.push(menu.path);
+        history.push(resolvedPath);
       }
     },
-    [toggleExpand],
+    [toggleExpand, resolveDynamicPath],
   );
 
   /**
@@ -91,8 +137,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     },
     [isActive],
   );
-
-  console.log('二级菜单secondMenus:', secondMenus, 'parentCode:', parentCode);
 
   /**
    * 渲染特殊内容区域
@@ -159,7 +203,9 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
                     isActive={isActive(child.path)}
                     onClick={() => {
                       if (child.path) {
-                        history.push(child.path);
+                        // 处理动态路径
+                        const resolvedPath = resolveDynamicPath(child.path);
+                        history.push(resolvedPath);
                       }
                     }}
                   />
