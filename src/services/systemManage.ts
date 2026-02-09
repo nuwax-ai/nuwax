@@ -191,7 +191,7 @@ export async function apiSystemResourceSpaceDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/space/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -210,7 +210,7 @@ export async function apiSystemResourceAgentDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/agent/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -229,7 +229,7 @@ export async function apiSystemResourceWebappDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/page/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -248,7 +248,7 @@ export async function apiSystemResourceKnowledgeDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/knowledge/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -267,7 +267,7 @@ export async function apiSystemResourceDataTableDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/table/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -286,7 +286,7 @@ export async function apiSystemResourceWorkflowDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/workflow/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -305,7 +305,7 @@ export async function apiSystemResourcePluginDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/plugin/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -328,7 +328,7 @@ export async function apiSystemResourceMcpDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/mcp/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -351,7 +351,7 @@ export async function apiSystemResourceSkillDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/skill/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
