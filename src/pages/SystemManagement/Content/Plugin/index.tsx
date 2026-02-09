@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Plugin: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const Plugin: React.FC = () => {
    * 查看插件详情
    */
   const handleView = useCallback((record: SystemPluginInfo) => {
-    history.push(`/space/${record.spaceId}/plugin/${record.id}/cloud-tool`);
+    window.open(`/space/${record.spaceId}/plugin/${record.id}/cloud-tool`);
   }, []);
 
   /**

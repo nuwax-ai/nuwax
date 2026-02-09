@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Mcp: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const Mcp: React.FC = () => {
    * 查看 MCP 详情
    */
   const handleView = useCallback((record: SystemMcpInfo) => {
-    history.push(`/space/${record.spaceId}/mcp/edit/${record.id}`);
+    window.open(`/space/${record.spaceId}/mcp/edit/${record.id}`);
   }, []);
 
   /**

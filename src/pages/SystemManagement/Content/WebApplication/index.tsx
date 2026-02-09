@@ -16,7 +16,7 @@ import {
 } from '@ant-design/pro-components';
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
@@ -60,7 +60,7 @@ const WebApplication: React.FC = () => {
    * 查看网页应用详情
    */
   const handleView = useCallback((record: SystemWebappInfo) => {
-    history.push(`/space/${record.spaceId}/app-dev/${record.id}`);
+    window.open(`/space/${record.spaceId}/app-dev/${record.id}`);
   }, []);
 
   /**

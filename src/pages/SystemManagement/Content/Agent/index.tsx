@@ -16,7 +16,7 @@ import {
 } from '@ant-design/pro-components';
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
@@ -58,7 +58,7 @@ const Agent: React.FC = () => {
    * 查看智能体详情
    */
   const handleView = useCallback((record: SystemAgentInfo) => {
-    history.push(`/space/${record.spaceId}/agent/${record.id}`);
+    window.open(`/space/${record.spaceId}/agent/${record.id}`);
   }, []);
 
   /**

@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Workflow: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const Workflow: React.FC = () => {
    * 查看工作流详情
    */
   const handleView = useCallback((record: SystemWorkflowInfo) => {
-    history.push(`/space/${record.spaceId}/workflow/${record.id}`);
+    window.open(`/space/${record.spaceId}/workflow/${record.id}`);
   }, []);
 
   /**

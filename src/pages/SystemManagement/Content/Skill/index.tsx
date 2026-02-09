@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const SkillPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const SkillPage: React.FC = () => {
    * 查看技能详情
    */
   const handleView = useCallback((record: SystemSkillInfo) => {
-    history.push(`/space/${record.spaceId}/skill-details/${record.id}`);
+    window.open(`/space/${record.spaceId}/skill-details/${record.id}`);
   }, []);
 
   /**

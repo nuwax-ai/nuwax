@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const DataTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const DataTable: React.FC = () => {
    * 查看数据表详情
    */
   const handleView = useCallback((record: SystemDataTableInfo) => {
-    history.push(`/space/${record.spaceId}/table/${record.id}`);
+    window.open(`/space/${record.spaceId}/table/${record.id}`);
   }, []);
 
   /**

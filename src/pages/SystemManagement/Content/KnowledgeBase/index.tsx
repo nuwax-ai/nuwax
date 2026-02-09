@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const KnowledgeBase: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -47,7 +47,7 @@ const KnowledgeBase: React.FC = () => {
    * 查看知识库详情
    */
   const handleView = useCallback((record: SystemKnowledgeInfo) => {
-    history.push(`/space/${record.spaceId}/knowledge/${record.id}`);
+    window.open(`/space/${record.spaceId}/knowledge/${record.id}`);
   }, []);
 
   /**

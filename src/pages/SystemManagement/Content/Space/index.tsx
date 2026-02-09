@@ -23,7 +23,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Space: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -53,7 +53,7 @@ const Space: React.FC = () => {
    * 查看空间详情
    */
   const handleView = useCallback((record: SystemSpaceInfo) => {
-    history.push(`/space/${record.id}/team`);
+    window.open(`/space/${record.id}/team`);
   }, []);
 
   /**
