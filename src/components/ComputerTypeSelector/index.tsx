@@ -159,12 +159,19 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       onChange?.(option.id, option);
       setOpen(false);
 
-      // 如果有 agentId，保存选择
+      // 如果有 agentId，保存选择并更新本地映射
       if (agentId && option.id !== value) {
+        // 立即更新本地映射，防止 useEffect 回退选择
+        setAgentSelectedMap((prev) => ({
+          ...prev,
+          [String(agentId)]: option.id,
+        }));
+
         try {
           await apiSaveSelectedSandbox(agentId, option.id);
         } catch (error) {
           console.error('保存电脑选择失败:', error);
+          // 保存失败时可以考虑回滚本地映射，但暂时不处理
         }
       }
     },
