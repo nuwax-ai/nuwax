@@ -6,6 +6,7 @@ import { useModel, useRequest } from 'umi';
 const useCategory = () => {
   const {
     setAgentInfoList,
+    setPageAppInfoList,
     setPluginInfoList,
     setWorkflowInfoList,
     setTemplateList,
@@ -45,6 +46,7 @@ const useCategory = () => {
       }
     });
     setAgentInfoList(_agentInfoList);
+    setPageAppInfoList(_agentInfoList);
     setPluginInfoList(_pluginInfoList);
     setWorkflowInfoList(_workflowInfoList);
     setTemplateList(_templateList);

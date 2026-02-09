@@ -13,6 +13,7 @@ import {
   apiPublishedWorkflowList,
 } from '@/services/square';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import {
   SquareAgentTypeEnum,
   SquareTemplateTargetTypeEnum,
@@ -114,6 +115,10 @@ const Square: React.FC = () => {
         setTitle('智能体');
         apiUrlRef.current = apiPublishedAgentList;
         break;
+      case SquareAgentTypeEnum.PageApp:
+        setTitle('网页应用');
+        apiUrlRef.current = apiPublishedAgentList;
+        break;
       case SquareAgentTypeEnum.Plugin:
         setTitle('插件');
         apiUrlRef.current = apiPublishedPluginList;
@@ -133,8 +138,8 @@ const Square: React.FC = () => {
   const handleQuery = (
     pageIndex: number = 1,
     kw: string = keyword,
-    targetType?: AgentComponentTypeEnum,
-    targetSubType?: 'ChatBot' | 'PageApp',
+    targetType?: AgentComponentTypeEnum | null,
+    targetSubType?: 'ChatBot' | 'PageApp' | null,
   ) => {
     const data: SquarePublishedListParams = {
       page: pageIndex,
@@ -167,13 +172,13 @@ const Square: React.FC = () => {
   };
 
   // 初始化加载
-  const effectLoadFn = () => {
+  const effectLoadFn = (agentType?: 'ChatBot' | 'PageApp' | null) => {
     setKeyword('');
     setSquareComponentList([]);
     setActiveKey(SquareTemplateTargetTypeEnum.All);
     setLoading(true);
     // 查询列表
-    handleQuery();
+    handleQuery(1, '', null, agentType);
   };
 
   useEffect(() => {
@@ -193,7 +198,14 @@ const Square: React.FC = () => {
       cate_name,
     };
     initValues(params);
-    effectLoadFn();
+    // 智能体类型
+    let agentType: 'ChatBot' | 'PageApp' | null = null;
+    if (cate_type === SquareAgentTypeEnum.Agent) {
+      agentType = AgentTypeEnum.ChatBot;
+    } else if (cate_type === SquareAgentTypeEnum.PageApp) {
+      agentType = AgentTypeEnum.PageApp;
+    }
+    effectLoadFn(agentType);
   }, [location]);
 
   // 点击打开页面

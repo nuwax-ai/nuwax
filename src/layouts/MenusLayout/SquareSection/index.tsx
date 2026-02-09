@@ -20,8 +20,13 @@ const cx = classNames.bind(styles);
 const SquareSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
-  const { agentInfoList, pluginInfoList, workflowInfoList, templateList } =
-    useModel('squareModel');
+  const {
+    agentInfoList,
+    pageAppInfoList,
+    pluginInfoList,
+    workflowInfoList,
+    templateList,
+  } = useModel('squareModel');
   // active项
   const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
@@ -80,6 +85,15 @@ const SquareSection: React.FC<{
         name: SquareAgentTypeEnum.Agent + item.name,
       })),
       type: SquareAgentTypeEnum.Agent,
+    },
+    {
+      name: '网页应用',
+      icon: <SvgIcon name="icons-common-console" />,
+      list: pageAppInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.PageApp + item.name,
+      })),
+      type: SquareAgentTypeEnum.PageApp,
     },
     {
       name: '插件',

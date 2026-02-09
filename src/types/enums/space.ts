@@ -21,6 +21,7 @@ export enum CreateSkillWayEnum {
 export enum AgentTypeEnum {
   All = 'All',
   ChatBot = 'ChatBot',
+  PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
 }
 
