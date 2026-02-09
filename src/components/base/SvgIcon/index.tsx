@@ -27,7 +27,13 @@ const SvgIcon: React.FC<SvgIconProps> = ({ name, style, ...rest }) => {
   };
 
   if (typeof name === 'string' && name.includes('://')) {
-    return <img src={name} alt="" style={mergedStyle} />;
+    return (
+      <img
+        src={name}
+        alt=""
+        style={{ ...mergedStyle, width: '1em', height: '1em' }}
+      />
+    );
   }
 
   const Comp = nameToComponent[name];
