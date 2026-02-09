@@ -106,12 +106,12 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
   }, [agentId, value, onChange]);
 
-  // 首次打开下拉菜单时加载数据
+  // 挂载时加载数据
   useEffect(() => {
-    if (open && !initialized) {
+    if (!initialized) {
       fetchComputerList();
     }
-  }, [open, initialized, fetchComputerList]);
+  }, [initialized, fetchComputerList]);
 
   // 当前选中的选项
   const selectedOption = useMemo(() => {
