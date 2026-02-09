@@ -30,6 +30,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
 
   img {
     width: 100%;
@@ -90,8 +91,33 @@
 }
 
 .status-tag {
-  flex-shrink: 0;
-  margin-right: 0 !important;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin: 0 !important;
+  border: none;
+  font-weight: 500;
+  border-radius: 12px;
+  padding: 2px 12px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+
+  &.online-tag {
+    background-color: #10b981;
+  }
+
+  &.offline-tag {
+    background-color: rgba(0, 0, 0, 40%);
+    backdrop-filter: blur(4px);
+  }
+
+  &.deactivated-tag {
+    background-color: #f59e0b; /* Orange/Amber matching design */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
+  }
 }
 
 .edit-icon {
@@ -119,39 +145,45 @@
   align-items: center;
 }
 
-.remote-btn {
-  flex: 1;
-  margin-right: 12px;
+.action-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  background: #f9fafb;
 
-  &:hover {
-    background-color: #2563eb !important;
-    border-color: #2563eb !important;
-  }
+  // &:hover {
+  //   background: #f3f4f6 !important;
+  //   border-color: #d1d5db !important;
+  //   color: #374151 !important;
+  // }
 
-  &.offline-btn {
-    background-color: #bfdbfe;
-    border-color: #bfdbfe;
-    color: #3b82f6;
+  &.edit-btn {
+    border-color: #dcfce7;
+    background: #f0fdf4;
+    color: #10b981;
 
     &:hover {
-      background-color: #93c5fd !important;
-      border-color: #93c5fd !important;
-      color: #1d4ed8 !important;
+      background: #dcfce7 !important;
+      border-color: #bbf7d0 !important;
+      color: #059669 !important;
     }
   }
-}
 
-.delete-btn {
-  background-color: #fef2f2;
-  border-color: #fef2f2;
-  color: @colorError;
+  &.delete-btn {
+    border-color: #fee2e2;
+    background: #fff1f2;
+    color: #ef4444;
 
-  &:hover {
-    background-color: #fee2e2 !important;
-    border-color: #fee2e2 !important;
-    color: @colorErrorActive !important;
+    &:hover {
+      background: #fee2e2 !important;
+      border-color: #fecaca !important;
+      color: #dc2626 !important;
+    }
   }
 }
