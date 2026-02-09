@@ -46,6 +46,29 @@
   box-sizing: content-box;
   font-size: @fontSize;
   gap: @paddingXxs;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+
+  // 覆盖 Ant Design 的伪元素边框
+  &::before,
+  &::after {
+    display: none !important;
+  }
+
+  // 覆盖所有状态的边框和阴影
+  &:focus,
+  &:focus-visible,
+  &:active,
+  &:hover,
+  &.ant-btn:focus,
+  &.ant-btn:focus-visible,
+  &.ant-btn:active,
+  &.ant-btn:hover {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
 }
 
 .text-area {

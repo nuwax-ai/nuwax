@@ -365,6 +365,8 @@ export interface ConversationListParams {
   lastId?: number | null;
   // 返回会话数量
   limit?: number;
+  // 会话主题模糊查询
+  topic?: string;
 }
 
 // 聊天用户信息

@@ -68,7 +68,7 @@ const Login: React.FC = () => {
       } else if (redirect) {
         history.replace(redirect);
       } else {
-        history.replace('/');
+        history.replace('/home');
       }
     },
     onError: (error: any) => {

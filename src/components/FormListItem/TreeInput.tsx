@@ -32,6 +32,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
   }, [params]);
 
   const updateTreeData = (newData: InputAndOutConfig[]) => {
+    if (_.isEqual(newData, treeData)) return;
     setTreeData(newData);
     form.setFieldValue('inputArgs', newData);
     setIsModified(true);
@@ -46,10 +47,14 @@ const TreeInput: React.FC<TreeInputProps> = ({
         if (node.key === key) {
           return { ...node, bindValue: value, bindValueType: type };
         }
-        if (node.subArgs) {
-          return { ...node, subArgs: updateRecursive(node.subArgs) };
+        const newNode = { ...node };
+        if (newNode.subArgs) {
+          newNode.subArgs = updateRecursive(newNode.subArgs);
         }
-        return node;
+        if (newNode.children) {
+          newNode.children = updateRecursive(newNode.children);
+        }
+        return newNode;
       });
 
     const newData = updateRecursive(treeData);

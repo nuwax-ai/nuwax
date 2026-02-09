@@ -1,4 +1,5 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
+import { XProTable } from '@/components/ProComponents';
 import {
   apiOperationLogActionTypeOptions,
   apiOperationLogList,
@@ -15,7 +16,6 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
@@ -269,32 +269,12 @@ const LogProTable: React.FC = () => {
 
   return (
     <>
-      <ProTable<OperationLogInfo>
+      <XProTable<OperationLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
         request={request}
-        debounceTime={300}
-        toolBarRender={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}

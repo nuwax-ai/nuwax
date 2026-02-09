@@ -1,0 +1,108 @@
+@import '@/styles/token.less';
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background-color: var(--color-background-default, #fff);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.headerLeft {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  line-height: 32px;
+  font-weight: @fontWeightStrong;
+  font-size: 18px;
+  color: var(--color-font-primary, #15171f);
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-font-secondary, #5e6470);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.table {
+  background-color: var(--color-background-default, #fff);
+
+  :global {
+    // 确保描述列单元格可以正确显示多行省略
+    .ant-table-tbody > tr > td {
+      .descriptionCell {
+        display: box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        word-break: break-word;
+        word-wrap: break-word;
+        line-height: 1.5;
+        max-height: 3em;
+        white-space: normal;
+      }
+    }
+  }
+}
+
+// 描述列样式：最多显示两行，超出显示省略号
+.descriptionCell {
+  display: box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word;
+  word-wrap: break-word;
+  line-height: 1.5;
+  max-height: 3em; // 2行 * 1.5行高
+  white-space: normal;
+  width: 100%;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+// 响应式布局
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .addButton {
+    width: 100%;
+  }
+}

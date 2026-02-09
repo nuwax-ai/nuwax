@@ -78,12 +78,30 @@ import PlusIcon from '@/assets/svg/plus_icon.svg';
 // import { getWidthAndHeight } from '@/utils/updateNode';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
+import isEqual from 'lodash/isEqual';
+
 import {
   adjustParentSize,
   generatePortGroupConfig,
   showExceptionHandle,
   showExceptionPort,
 } from './graphV3';
+
+export const checkNodeModified = (
+  currentNode: ChildNode,
+  formValues: any,
+): boolean => {
+  const nextNode = {
+    ...currentNode,
+    ...formValues,
+    name: currentNode.name,
+    nodeConfig: {
+      ...currentNode.nodeConfig,
+      ...formValues,
+    },
+  };
+  return !isEqual(nextNode, currentNode);
+};
 
 // 根据节点动态给予宽高
 export const getWidthAndHeight = (node: ChildNode) => {

@@ -68,7 +68,7 @@ const MenusLayout: React.FC<{
       agentId: null,
       limit: 20,
     });
-    history.push('/');
+    history.push('/home');
   };
 
   // 点击工作空间
@@ -149,6 +149,9 @@ const MenusLayout: React.FC<{
         break;
       case UserOperatorAreaEnum.Message:
         setOpenMessage(true);
+        break;
+      case UserOperatorAreaEnum.Computer:
+        history.push('/my-computer-manage', { _t: Date.now() });
         break;
     }
   }, []);
@@ -257,6 +260,8 @@ const MenusLayout: React.FC<{
         <Tabs onClick={handleTabsClick} />
         {/*用户操作区域： 文档、历史会话、消息*/}
         <UserOperateArea onClick={handleUserClick} />
+        {/* 我的电脑管理 */}
+
         {/*用户头像区域*/}
         <User />
       </div>

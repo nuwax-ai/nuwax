@@ -138,7 +138,7 @@ const Square: React.FC = () => {
   ) => {
     const data: SquarePublishedListParams = {
       page: pageIndex,
-      pageSize: 20,
+      pageSize: 30,
       // 分类名称
       category: categoryNameRef.current,
       kw,

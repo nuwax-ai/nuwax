@@ -5,7 +5,11 @@ import {
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ConditionBranchTypeEnum, PortGroupEnum } from '@/types/enums/node';
-import { BindConfigWithSub, CreatedNodeItem } from '@/types/interfaces/common';
+import {
+  BindConfigWithSub,
+  CreatedNodeItem,
+  VariableSelectConfig,
+} from '@/types/interfaces/common';
 import { Markup } from '@antv/x6';
 
 export interface PortMetadata {
@@ -79,6 +83,8 @@ export interface InputAndOutConfig {
   enable?: boolean;
   // 输入类型
   inputType?: string;
+  // 下拉参数配置
+  selectConfig?: VariableSelectConfig;
 }
 
 // 变量聚合分组

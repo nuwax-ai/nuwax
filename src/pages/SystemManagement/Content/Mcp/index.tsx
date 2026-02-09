@@ -1,5 +1,182 @@
-const MCP = () => {
-  return <div>MCP</div>;
+/**
+ * MCP 管理页面
+ */
+import { XProTable } from '@/components/ProComponents';
+import TableActions, { ActionItem } from '@/components/TableActions';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiSystemResourceMcpDelete,
+  apiSystemResourceMcpList,
+} from '@/services/systemManage';
+import { SystemMcpInfo } from '@/types/interfaces/systemManage';
+import {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { message } from 'antd';
+import { useCallback, useEffect, useRef } from 'react';
+import { history, useLocation } from 'umi';
+
+const Mcp: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页10条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
+
+  useEffect(() => {
+    // 当通过菜单切换页面时（location.state._t 变化），触发刷新
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
+
+  /**
+   * 查看 MCP 详情
+   */
+  const handleView = useCallback((record: SystemMcpInfo) => {
+    history.push(`/space/${record.spaceId}/mcp/edit/${record.id}`);
+  }, []);
+
+  /**
+   * 删除 MCP
+   */
+  const handleDelete = useCallback(async (record: SystemMcpInfo) => {
+    const response = await apiSystemResourceMcpDelete({ id: record.id });
+    if (response.code === SUCCESS_CODE) {
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } else {
+      message.error(response.message || '删除失败');
+    }
+  }, []);
+
+  /**
+   * 操作列配置
+   */
+  const getActions = useCallback(
+    (record: SystemMcpInfo): ActionItem<SystemMcpInfo>[] => [
+      {
+        key: 'view',
+        label: '查看',
+        onClick: handleView,
+      },
+      {
+        key: 'delete',
+        label: '删除',
+        type: 'danger',
+        confirm: {
+          title: (
+            <span>
+              确定要删除 <b>{record.name}</b> 吗？
+            </span>
+          ),
+          description: '此操作无法撤销，所有相关数据将被永久删除。',
+        },
+        onClick: handleDelete,
+      },
+    ],
+    [handleView, handleDelete],
+  );
+
+  /**
+   * 表格列定义
+   */
+  const columns: ProColumns<SystemMcpInfo>[] = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      fieldProps: {
+        placeholder: '请输入 MCP 名称',
+        allowClear: true,
+      },
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      width: 250,
+      ellipsis: true,
+      hideInSearch: true,
+    },
+    {
+      title: '创建人',
+      dataIndex: 'creatorName',
+      width: 120,
+      ellipsis: true,
+      hideInSearch: false,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created',
+      align: 'center',
+      width: 170,
+      hideInSearch: true,
+      valueType: 'dateTime',
+    },
+    {
+      title: '操作',
+      valueType: 'option',
+      fixed: 'right',
+      align: 'center',
+      width: 180,
+      render: (_, record) => (
+        <TableActions<SystemMcpInfo>
+          record={record}
+          actions={getActions(record)}
+        />
+      ),
+    },
+  ];
+
+  /**
+   * ProTable request 函数
+   */
+  const request = async (params: {
+    pageSize?: number;
+    current?: number;
+    name?: string;
+    creatorName?: string;
+  }) => {
+    const response = await apiSystemResourceMcpList({
+      pageNo: params.current || 1,
+      pageSize: params.pageSize || 10,
+      name: params.name,
+      creatorName: params.creatorName,
+    });
+
+    return {
+      data: response.data.records,
+      total: response.data.total,
+      success: response.code === SUCCESS_CODE,
+    };
+  };
+
+  return (
+    <WorkspaceLayout title="MCP 管理" hideScroll>
+      <XProTable<SystemMcpInfo>
+        actionRef={actionRef}
+        formRef={formRef}
+        rowKey="id"
+        columns={columns}
+        request={request}
+        onReset={handleReset}
+      />
+    </WorkspaceLayout>
+  );
 };
 
-export default MCP;
+export default Mcp;

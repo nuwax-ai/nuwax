@@ -7,10 +7,12 @@ import { Modal } from 'antd';
 
 const { confirm } = Modal;
 
+import type { ReactNode } from 'react';
+
 // modal 确认框
 export const modalConfirm = (
-  title: string,
-  content: string,
+  title: ReactNode,
+  content: ReactNode,
   onOk: () => void,
   onCancel?: () => void,
 ) => {
@@ -21,6 +23,7 @@ export const modalConfirm = (
     okText: '确定',
     maskClosable: true,
     cancelText: '取消',
+    centered: true,
     onOk,
     onCancel,
   });

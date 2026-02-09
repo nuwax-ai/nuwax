@@ -53,6 +53,8 @@ export interface CustomPageDto {
   name: string;
   // 项目描述
   description: string;
+  // 调试关联智能体ID
+  devAgentId: number;
   // 项目图标
   icon: string;
   // 项目封面图片
@@ -296,4 +298,28 @@ export interface AuthConfigModalProps {
   pageInfo?: CustomPageDto;
   onCancel: () => void;
   onConfirm: (projectId: number, needLogin: boolean) => void;
+}
+
+/**
+ * 域名信息
+ */
+export interface DomainInfo {
+  id: number;
+  tenantId: number;
+  projectId: number;
+  domain: string;
+  created: string;
+  modified: string;
+  /** 状态: active-已激活, pending-待验证 */
+  status?: 'active' | 'pending';
+}
+
+/**
+ * 域名绑定弹窗Props
+ */
+export interface DomainBindingModalProps {
+  open: boolean;
+  projectId: number;
+  onCancel: () => void;
+  onSuccess?: () => void;
 }

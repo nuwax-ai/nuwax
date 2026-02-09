@@ -1,0 +1,157 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.computer-card {
+  border-radius: 12px;
+  overflow: hidden;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 5%);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+  }
+
+  :global {
+    .ant-card-cover {
+      height: 160px;
+    }
+
+    .ant-card-body {
+      padding: 16px;
+    }
+  }
+}
+
+.cover-wrapper {
+  width: 100%;
+  height: 100%;
+  background-color: #dbe2ea;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: crop;
+  }
+}
+
+.placeholder-cover {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 48px;
+  color: #8c9fb3;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-title-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 16px; /* 增大间距 */
+}
+
+.name-space {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+
+  :global {
+    .ant-space-item {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      align-items: center;
+
+      &:last-child {
+        flex: none;
+      }
+    }
+  }
+}
+
+.card-name {
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.status-tag {
+  flex-shrink: 0;
+  margin-right: 0 !important;
+}
+
+.edit-icon {
+  font-size: 14px;
+  color: var(--ant-color-text-secondary);
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  padding: 8px;
+  border-radius: 8px;
+
+  &:hover {
+    color: var(--ant-color-primary);
+    background-color: rgba(0, 0, 0, 6%);
+  }
+}
+
+.card-desc {
+  font-size: 13px;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remote-btn {
+  flex: 1;
+  margin-right: 12px;
+  border-radius: 8px;
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+
+  &:hover {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+
+  &.offline-btn {
+    background-color: #bfdbfe;
+    border-color: #bfdbfe;
+    color: #3b82f6;
+
+    &:hover {
+      background-color: #93c5fd !important;
+      border-color: #93c5fd !important;
+      color: #1d4ed8 !important;
+    }
+  }
+}
+
+.delete-btn {
+  background-color: #fef2f2;
+  border-color: #fef2f2;
+  color: @colorError;
+
+  &:hover {
+    background-color: #fee2e2 !important;
+    border-color: #fee2e2 !important;
+    color: @colorErrorActive !important;
+  }
+}

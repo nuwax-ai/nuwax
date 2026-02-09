@@ -1,0 +1,103 @@
+.category-manage-container {
+  padding: 0;
+  min-height: 100%;
+
+  .category-manage-container {
+    padding: 0;
+    min-height: 100%;
+  }
+
+  :global {
+    .ant-segmented {
+      margin-left: 24px;
+      background: #f0f2f5;
+      border-radius: 8px;
+      padding: 2px;
+    }
+  }
+
+  .list-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
+    overflow: hidden;
+
+    :global {
+      .ant-pro-list-header {
+        padding: 24px;
+        border-bottom: 1px solid #f0f0f0;
+
+        .ant-pro-list-header-title {
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .ant-pro-list-header-sub-title {
+          font-size: 12px;
+          color: #999;
+          font-weight: normal;
+          margin-left: 8px;
+        }
+      }
+
+      .ant-pro-list-row {
+        padding: 16px 24px;
+        transition: all 0.3s;
+
+        &:hover {
+          background-color: #fafafa;
+        }
+
+        .ant-list-item-meta-title {
+          font-size: 16px;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 8px;
+
+          &,
+          &:hover,
+          a,
+          a:hover,
+          span,
+          span:hover {
+            color: #333 !important;
+            cursor: default !important;
+          }
+        }
+
+        .ant-list-item-meta-description {
+          font-size: 13px;
+          color: #999;
+        }
+      }
+    }
+  }
+
+  .action-icon {
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.3s;
+    padding: 8px;
+    border-radius: 8px;
+
+    &:hover {
+      background-color: #f0f0f0;
+      color: #1890ff;
+    }
+
+    &.delete:hover {
+      color: #ff4d4f;
+    }
+  }
+}
+
+.add-btn {
+  height: 36px;
+  border-radius: 8px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}

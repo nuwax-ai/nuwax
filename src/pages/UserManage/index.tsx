@@ -6,13 +6,22 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  EllipsisOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table, message } from 'antd';
+import type { MenuProps } from 'antd';
+import { Button, Dropdown, Input, Select, Space, Table, message } from 'antd';
+import { ColumnType } from 'antd/es/table';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import CreateModifyUser from './components/createModifyUser';
+import DataPermissionModal from './components/DataPermissionModal';
+import UserAuthModal from './components/UserAuthModal';
+import UserViewMenuModal from './components/UserViewMenuModal';
 import MessageSendModal from './MessageSendModal';
 
 const cx = classNames.bind(styles);
@@ -23,6 +32,9 @@ const selectOptions = [
   { value: UserRoleEnum.User, label: '成员' },
 ];
 
+/**
+ * 用户管理
+ */
 const UserManage: React.FC = () => {
   const [selectedValue, setSelectedValue] = useState('');
   const [inputValue, setInputValue] = useState('');
@@ -36,6 +48,19 @@ const UserManage: React.FC = () => {
   // 消息发送弹窗是否打开
   const [messageSendOpen, setMessageSendOpen] = useState<boolean>(false);
 
+  // 打开授权弹窗
+  const [openAuthModal, setOpenAuthModal] = useState<boolean>(false);
+  // 打开查看权限弹窗
+  const [openViewMenuModal, setOpenViewMenuModal] = useState<boolean>(false);
+  // 打开数据权限弹窗
+  const [openDataPermissionModal, setOpenDataPermissionModal] =
+    useState<boolean>(false);
+
+  // 当前选中的用户信息
+  const [currentUserInfo, setCurrentUserInfo] =
+    useState<SystemUserListInfo | null>(null);
+
+  // 查询用户列表
   const { data, run, refresh, loading } = useRequest(apiSystemUserList, {
     debounceWait: 300,
     defaultParams: [
@@ -52,7 +77,6 @@ const UserManage: React.FC = () => {
 
   const { run: runEnable } = useRequest(apiEnableSystemUser, {
     manual: true,
-    loadingDelay: 300,
     onBefore: (params) => {
       setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
     },
@@ -67,7 +91,6 @@ const UserManage: React.FC = () => {
 
   const { run: runDisable } = useRequest(apiDisableSystemUser, {
     manual: true,
-    loadingDelay: 300,
     onBefore: (params) => {
       setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
     },
@@ -127,6 +150,25 @@ const UserManage: React.FC = () => {
     run(params);
   };
 
+  // 授权（绑定角色和用户组）
+  const handleAuth = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenAuthModal(true);
+  };
+
+  // 查看权限
+  const handleViewMenu = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenViewMenuModal(true);
+  };
+
+  // 查看数据权限
+  const handleViewDataPermission = (userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenDataPermissionModal(true);
+  };
+
+  // 查询用户绑定的角色列表
   const columns = [
     {
       title: '用户名',
@@ -159,7 +201,7 @@ const UserManage: React.FC = () => {
       },
     },
     {
-      title: '角色',
+      title: '类型',
       dataIndex: 'role',
       key: 'role',
       width: 100,
@@ -212,36 +254,76 @@ const UserManage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
       align: 'center',
-      render: (_: null, record: SystemUserListInfo) => (
-        <>
-          {record.status === UserStatusEnum.Enabled ? (
+      fixed: 'right',
+      render: (_: null, record: SystemUserListInfo) => {
+        // 下拉菜单项
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'viewMenu',
+            label: '查看菜单资源权限',
+            onClick: () => handleViewMenu(record),
+          },
+          {
+            key: 'dataPermission',
+            label: '查看数据权限',
+            onClick: () => handleViewDataPermission(record),
+          },
+        ];
+
+        return (
+          <Space size={0} wrap={false}>
+            {record.status === UserStatusEnum.Enabled ? (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={disableLoadingMap[record.id] || false}
+                onClick={() => runDisable({ id: record.id })}
+              >
+                禁用
+              </Button>
+            ) : (
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                loading={enableLoadingMap[record.id] || false}
+                onClick={() => runEnable({ id: record.id })}
+              >
+                启用
+              </Button>
+            )}
+            <CreateModifyUser
+              isEdit={true}
+              record={record}
+              onSuccess={handleSuccess}
+            />
+
             <Button
               type="link"
+              size="small"
               className={cx(styles['table-action-ant-btn-link'])}
-              loading={disableLoadingMap[record.id] || false}
-              onClick={() => runDisable({ id: record.id })}
+              onClick={() => handleAuth(record)}
             >
-              禁用
+              授权
             </Button>
-          ) : (
-            <Button
-              type="link"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={enableLoadingMap[record.id] || false}
-              onClick={() => runEnable({ id: record.id })}
+            <Dropdown
+              menu={{ items: menuItems }}
+              trigger={['hover']}
+              placement="bottomRight"
             >
-              启用
-            </Button>
-          )}
-          <CreateModifyUser
-            isEdit={true}
-            record={record}
-            onSuccess={handleSuccess}
-          />
-        </>
-      ),
+              <Button
+                type="link"
+                size="small"
+                className={cx(styles['table-action-ant-btn-link'])}
+                icon={<EllipsisOutlined />}
+                style={{ padding: '0 4px' }}
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -283,8 +365,8 @@ const UserManage: React.FC = () => {
         className={cx('mt-30')}
         rowKey="id"
         loading={loading}
-        columns={columns}
-        dataSource={data?.data.records}
+        columns={columns as ColumnType<SystemUserListInfo>[]}
+        dataSource={data?.data?.records || []}
         scroll={{ x: 'max-content' }}
         pagination={{
           total: data?.data.total,
@@ -296,6 +378,26 @@ const UserManage: React.FC = () => {
       <MessageSendModal
         open={messageSendOpen}
         onCancel={() => setMessageSendOpen(false)}
+      />
+      {/* 授权弹窗 */}
+      <UserAuthModal
+        open={openAuthModal}
+        targetId={currentUserInfo?.id || 0}
+        role={currentUserInfo?.role}
+        onCancel={() => setOpenAuthModal(false)}
+      />
+      {/* 查看菜单资源权限弹窗 */}
+      <UserViewMenuModal
+        open={openViewMenuModal}
+        userId={currentUserInfo?.id || 0}
+        onCancel={() => setOpenViewMenuModal(false)}
+      />
+      {/* 数据权限弹窗 */}
+      <DataPermissionModal
+        open={openDataPermissionModal}
+        userId={currentUserInfo?.id || 0}
+        userName={currentUserInfo?.userName || ''}
+        onCancel={() => setOpenDataPermissionModal(false)}
       />
     </div>
   );

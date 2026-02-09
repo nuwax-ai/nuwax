@@ -172,6 +172,7 @@ const Chat: React.FC = () => {
     isConversationActive,
     // 加载更多消息相关
     isMoreMessage,
+    setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
@@ -266,7 +267,7 @@ const Chat: React.FC = () => {
 
   useNavigationGuard({
     condition: () => shouldBlockNavigation.current,
-    // 只有任务型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
+    // 只有通用型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
     enabled:
       isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
@@ -521,6 +522,8 @@ const Chat: React.FC = () => {
   const handleClear = () => {
     setClearLoading(true);
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
     // 立即清空消息列表,避免跳转时旧数据闪烁
     setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
@@ -1178,7 +1181,7 @@ const Chat: React.FC = () => {
                         isCanDeleteSkillFile={true}
                         // 刷新文件树回调
                         onRefreshFileTree={() => handleRefreshFileList(id)}
-                        // VNC 空闲检测配置（仅任务型智能体启用）
+                        // VNC 空闲检测配置（仅通用型智能体启用）
                         idleDetection={{
                           enabled:
                             agentDetail?.type === AgentTypeEnum.TaskAgent,
