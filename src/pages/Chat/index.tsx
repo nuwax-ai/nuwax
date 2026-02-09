@@ -1045,6 +1045,7 @@ const Chat: React.FC = () => {
             isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
             selectedComputerId={selectedComputerId}
             onComputerSelect={setSelectedComputerId}
+            agentId={agentDetail?.agentId}
           />
         </div>
       </div>

@@ -234,6 +234,7 @@ const Home: React.FC = () => {
           onToggleTaskAgent={handleToggleTaskAgent}
           selectedComputerId={selectedComputerId}
           onComputerSelect={handleComputerSelect}
+          agentId={agentDetail?.agentId}
         />
         <div
           className={cx(
