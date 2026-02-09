@@ -9,6 +9,7 @@ import type {
   ExpandPageAreaEnum,
   GuidQuestionSetTypeEnum,
   HideChatAreaEnum,
+  HideDesktopEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -139,6 +140,8 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   expandPageArea: ExpandPageAreaEnum;
   // 是否隐藏聊天区域，1 隐藏；0 不隐藏
   hideChatArea: HideChatAreaEnum;
+  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+  hideDesktop: HideDesktopEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -466,6 +469,8 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
+  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+  hideDesktop: HideDesktopEnum;
 }
 
 // 智能体历史配置信息

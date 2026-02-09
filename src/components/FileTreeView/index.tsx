@@ -105,6 +105,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isOnlyShowDesktop = false,
       // VNC 空闲检测配置
       idleDetection,
+      hideDesktop = 0,
     },
     ref,
   ) => {
@@ -1558,7 +1559,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 是否显示刷新按钮
           showRefreshButton={showRefreshButton}
           // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+          // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
           isOnlyShowDesktop={isOnlyShowDesktop}
+          hideDesktop={hideDesktop}
         />
       );
     };

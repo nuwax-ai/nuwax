@@ -136,6 +136,8 @@ export enum AgentArrangeConfigEnum {
   Page_Event_Binding = 'Page_Event_Binding',
   // 子智能体
   SubAgent = 'SubAgent',
+  // 隐藏远程桌面
+  Hide_Remote_Desktop = 'Hide_Remote_Desktop',
 }
 
 // 是否开启问题建议,可用值:Open,Close
