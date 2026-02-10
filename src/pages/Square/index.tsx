@@ -145,7 +145,7 @@ const Square: React.FC = () => {
       targetType?: any;
     } = {
       page: pageIndex,
-      pageSize: 30,
+      pageSize: 48,
       // 分类名称
       category: categoryNameRef.current,
       kw,

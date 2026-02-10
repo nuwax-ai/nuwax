@@ -158,7 +158,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       try {
         const resp = await apiSystemTaskList({
           pageNo: current || 1,
-          pageSize: pageSize || 10,
+          pageSize: pageSize || 15,
           name: taskName?.trim(),
           creatorName: searchCreatorName?.trim(),
         });
@@ -423,7 +423,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       // 重置表格状态
       actionRef.current?.reset?.();
       // 设置分页参数:第1页,每页10条
-      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
       // 延迟一下再重新加载,确保分页参数已设置
       actionRef.current?.reload();
     };

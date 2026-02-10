@@ -63,7 +63,7 @@ const SpaceTable = () => {
   // 当前分页的数据
   const [pagination, setPagination] = useState({
     total: 0,
-    pageSize: 10,
+    pageSize: 15,
     current: 1,
   });
   // 导入的loading
@@ -236,7 +236,7 @@ const SpaceTable = () => {
   // 查询数据表的业务数据
   const getTableBusinessData = async (
     pageNo: number = 1,
-    pageSize: number = 10,
+    pageSize: number = 15,
   ) => {
     setTableDataLoading(true);
     const _params = {
@@ -374,7 +374,7 @@ const SpaceTable = () => {
     await apiClearBusinessData(tableId);
     message.success('清除成功');
     setTableData([]);
-    setPagination({ total: 0, current: 1, pageSize: 10 });
+    setPagination({ total: 0, current: 1, pageSize: 15 });
     setOpenDelete(false);
   };
 

@@ -72,7 +72,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const { Search } = Input;
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 48;
 
 const SPACE_SQUARE_SEGMENTED_LIST =
   TabItems?.map((item) => ({

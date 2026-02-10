@@ -138,7 +138,7 @@ const SpaceKnowledge: React.FC = () => {
         name: docName,
       },
       current,
-      pageSize: 50,
+      pageSize: 48,
     });
   };
 
@@ -321,12 +321,8 @@ const SpaceKnowledge: React.FC = () => {
       if (code === SUCCESS_CODE) {
         message.success('删除QA问答成功');
         handleQaList();
-      } else {
-        message.error('删除QA问答失败');
       }
-    } catch {
-      message.error('删除QA问答失败');
-    }
+    } catch {}
   };
   // 添加问题搜索功能 点击按钮搜索
   const handleSearch = (value: string) => {
@@ -383,7 +379,7 @@ const SpaceKnowledge: React.FC = () => {
     }
     try {
       const res = await doAction;
-      if (res.code === '0000') {
+      if (res.code === SUCCESS_CODE) {
         message.success(values.id ? 'QA问答更新成功' : '添加QA问答成功');
         // 添加成功后，查询文档列表
         handleQaList();
@@ -410,13 +406,12 @@ const SpaceKnowledge: React.FC = () => {
       />
       {/* 根据docType 判断是否显示QA问答 */}
       <div
+        className={cx('flex', 'flex-1')}
         style={{
-          flex: 1,
           height:
             docType === KnowledgeDocTypeEnum.DOC ? 'calc(100% - 88px)' : '100%',
           padding: '0 10px',
           margin: '0',
-          display: 'flex',
           overflowX: 'auto',
         }}
       >
