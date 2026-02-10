@@ -37,7 +37,7 @@ function XProTable<
     scrollYOffset?: number;
   },
 ) {
-  const { fullHeight = true, scrollYOffset, ...restProps } = props;
+  const { fullHeight = true, scrollYOffset, onReset, ...restProps } = props;
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollY = useTableAutoHeight(tableRef, fullHeight, scrollYOffset);
 
@@ -71,8 +71,13 @@ function XProTable<
         <Button
           key="x-reset"
           onClick={() => {
-            // reset() 会重置表单并回到第一页且触发查询
-            actionRef.current?.reset?.();
+            if (onReset) {
+              // 由外部自行处理重置逻辑（参考 LogProTable 模式）
+              onReset();
+            } else {
+              // 默认重置行为
+              actionRef.current?.reset?.();
+            }
           }}
         >
           重置
@@ -86,7 +91,7 @@ function XProTable<
         </Button>,
       ];
     };
-  }, [restProps.toolBarRender, formRef, actionRef]);
+  }, [restProps.toolBarRender, formRef, actionRef, onReset]);
 
   // 合并 search 配置
   const searchConfig = useMemo(() => {
