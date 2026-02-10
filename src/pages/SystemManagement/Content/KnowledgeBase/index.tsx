@@ -29,8 +29,8 @@ const KnowledgeBase: React.FC = () => {
     formRef.current?.resetFields();
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
   }, []);
@@ -153,7 +153,7 @@ const KnowledgeBase: React.FC = () => {
   }) => {
     const response = await apiSystemResourceKnowledgeList({
       pageNo: params.current || 1,
-      pageSize: params.pageSize || 10,
+      pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
     });
