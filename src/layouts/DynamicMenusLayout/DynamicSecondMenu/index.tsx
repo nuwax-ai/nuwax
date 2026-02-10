@@ -18,6 +18,8 @@ import SquareSection from '../SquareSection';
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
   parentCode: string;
+  /** 覆盖容器样式 */
+  overrideContainerStyle?: React.CSSProperties;
 }
 
 /**
@@ -27,6 +29,7 @@ export interface DynamicSecondMenuProps {
  */
 const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   parentCode,
+  overrideContainerStyle,
 }) => {
   const location = useLocation();
   const params = useParams();
@@ -37,6 +40,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   const { getSecondLevelMenus } = useModel('menuModel');
 
   const { currentSpaceInfo } = useModel('spaceModel');
+  // 关闭移动端菜单
+  const { handleCloseMobileMenu } = useModel('layout');
 
   // 获取二级菜单
   const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
@@ -211,6 +216,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
             isActive={menuActive}
             onClick={() => {
               if (menu.path) {
+                // 关闭移动端菜单
+                handleCloseMobileMenu();
                 // 处理动态路径
                 const resolvedPath = resolveDynamicPath(menu.path);
                 history.push(resolvedPath, { _t: Date.now() });
@@ -259,17 +266,17 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   ) {
     // 主页 homepage: 最近使用 + 会话记录
     if (parentCode === 'homepage') {
-      return <HomeSection />;
+      return <HomeSection style={overrideContainerStyle} />;
     }
 
     // 系统广场
     if (parentCode === 'system_square') {
-      return <SquareSection />;
+      return <SquareSection style={overrideContainerStyle} />;
     }
 
     // 生态市场
     if (parentCode === 'eco_market') {
-      return <EcosystemMarketSection />;
+      return <EcosystemMarketSection style={overrideContainerStyle} />;
     }
   }
 

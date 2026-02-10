@@ -13,7 +13,8 @@ const cx = classNames.bind(styles);
 
 const SpaceSection: React.FC<{
   activeTab: string;
-}> = ({ activeTab }) => {
+  style?: React.CSSProperties;
+}> = ({ activeTab, style }) => {
   const { spaceId } = useParams();
 
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo, getSpaceId } =
@@ -207,11 +208,12 @@ const SpaceSection: React.FC<{
     //   <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
     //   <DevCollect />
     // </div>
-    <div className={cx('h-full', 'overflow-y', styles.container)}>
+    <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
       <div style={{ padding: '0 12px 14px' }}>
         <SpaceTitle name={currentSpaceInfo?.name} />
       </div>
 
+      {/* 空间菜单列表 */}
       <DynamicSecondMenu parentCode={activeTab} />
       <ConditionRender condition={editAgentList?.length}>
         <h3 className={cx(styles['collection-title'])}>最近编辑</h3>

@@ -34,7 +34,7 @@ const cx = classNames.bind(styles);
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
-  // overrideContainerStyle?: React.CSSProperties;
+  overrideContainerStyle?: React.CSSProperties;
   /** 是否为移动端 */
   isMobile?: boolean;
 }
@@ -43,7 +43,7 @@ export interface DynamicMenusLayoutProps {
  * 动态菜单布局组件
  */
 const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
-  // overrideContainerStyle: _overrideContainerStyle,
+  overrideContainerStyle,
   isMobile = false,
 }) => {
   const location = useLocation();
@@ -329,32 +329,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                   </ConditionRender>
 
                   {/* 二级/三级菜单 */}
-                  <DynamicSecondMenu parentCode={activeTab} />
+                  <DynamicSecondMenu
+                    parentCode={activeTab}
+                    overrideContainerStyle={overrideContainerStyle}
+                  />
                 </>
               ) : (
-                <SpaceSection activeTab={activeTab} />
-                //   <div className={cx('h-full', 'overflow-y', styles.container)}>
-                //   <div style={{ padding: '14px 12px' }}>
-                //     <SpaceTitle name={currentSpaceInfo?.name} />
-                //   </div>
-
-                //   <DynamicSecondMenu parentCode={activeTab} />
-                //   <ConditionRender condition={editAgentList?.length}>
-                //     <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
-                //     <div className='flex flex-col gap-4'>
-                //       {editAgentList?.map((item: AgentInfo) => (
-                //         <MenuListItem
-                //           key={item.id}
-                //           onClick={() => handleClick(item)}
-                //           icon={item.icon}
-                //           name={item.name}
-                //         />
-                //       ))}
-                //     </div>
-                //   </ConditionRender>
-                //   <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
-                //   <DevCollect />
-                // </div>
+                <SpaceSection
+                  activeTab={activeTab}
+                  style={overrideContainerStyle}
+                />
               )
             }
           </div>

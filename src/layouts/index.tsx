@@ -7,19 +7,12 @@ import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { theme } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import DynamicMenusLayout from './DynamicMenusLayout';
 import HistoryConversation from './HistoryConversation';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
-import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
 import Setting from './Setting';
@@ -72,7 +65,7 @@ const Layout: React.FC = () => {
   const { asyncSpaceListFun } = useModel('spaceModel');
 
   // 动态菜单开关状态
-  const [useDynamicMenu, setUseDynamicMenu] = useState(true);
+  // const [useDynamicMenu, setUseDynamicMenu] = useState(true);
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
@@ -269,7 +262,11 @@ const Layout: React.FC = () => {
         style={sidebarStyle}
       >
         {/* 菜单栏 */}
-        {useDynamicMenu ? (
+        <DynamicMenusLayout
+          overrideContainerStyle={menuOverrideStyle}
+          isMobile={isMobile}
+        />
+        {/* {useDynamicMenu ? (
           <DynamicMenusLayout
             overrideContainerStyle={menuOverrideStyle}
             isMobile={isMobile}
@@ -279,10 +276,10 @@ const Layout: React.FC = () => {
             overrideContainerStyle={menuOverrideStyle}
             isMobile={isMobile}
           />
-        )}
+        )} */}
 
         {/* 动态菜单切换按钮 (仅用于预览) */}
-        <div
+        {/* <div
           style={{
             position: 'fixed',
             bottom: 20,
@@ -311,7 +308,7 @@ const Layout: React.FC = () => {
           onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
         >
           {useDynamicMenu ? '切换回静态菜单' : '预览动态菜单'}
-        </div>
+        </div> */}
 
         {/* 悬浮菜单 */}
         <HoverMenu />

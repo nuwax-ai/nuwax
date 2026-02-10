@@ -8,7 +8,7 @@ import { CheckOutlined } from '@ant-design/icons';
 import { Divider } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +21,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   onClosePopover,
 }) => {
   const location = useLocation();
+  const params = useParams();
+
   const { pathname } = location;
   const { spaceList, currentSpaceInfo } = useModel('spaceModel');
   // 关闭移动端菜单
@@ -99,10 +101,39 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       }
     }
     // 组件库
-    else {
+    else if (
+      pathname.includes('library') &&
+      !pathname.includes('library-log')
+    ) {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'library';
       localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
+    } else {
+      // 其他路径的通用处理：
+      // 如果没有路由参数（params 为空对象），直接跳转到当前路径
+      // 如果有路由参数，则只更新 spaceId，保持当前页面不变
+      const hasParams =
+        params && Object.keys(params as Record<string, unknown>).length > 0;
+
+      if (!hasParams) {
+        // 没有动态参数，直接跳转当前路径（仅更新本地 SPACE_ID）
+        history.push(pathname);
+      } else {
+        const spaceParams = params as Record<string, string | undefined>;
+        const currentSpaceId = spaceParams.spaceId;
+
+        if (currentSpaceId) {
+          // 将当前路径中的 spaceId 替换为新的 spaceId，保持在同一页面
+          const newPathname = pathname.replace(
+            String(currentSpaceId),
+            String(spaceId),
+          );
+          history.push(newPathname);
+        } else {
+          // 没有 spaceId 参数时，退回到当前路径
+          history.push(pathname);
+        }
+      }
     }
   };
 
