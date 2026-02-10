@@ -1,5 +1,4 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { XProTable } from '@/components/ProComponents';
+import { LimitedTooltip, XProTable } from '@/components/ProComponents';
 import {
   apiOperationLogActionTypeOptions,
   apiOperationLogList,
