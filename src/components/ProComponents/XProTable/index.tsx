@@ -58,6 +58,14 @@ function XProTable<
     (restProps.actionRef as React.MutableRefObject<ActionType>) ||
     internalActionRef;
 
+  // 合并 columns 配置，默认加上 ellipsis: true
+  const mergedColumns = useMemo(() => {
+    return restProps.columns?.map((item) => ({
+      ellipsis: true,
+      ...item,
+    }));
+  }, [restProps.columns]);
+
   // 合并 toolBarRender，添加查询/重置按钮
   const mergedToolBarRender = useMemo(() => {
     return (action: any, rows: any) => {
@@ -146,6 +154,7 @@ function XProTable<
         {...restProps}
         formRef={formRef}
         actionRef={actionRef}
+        columns={mergedColumns}
         toolBarRender={mergedToolBarRender}
         search={searchConfig}
         scroll={scroll}
