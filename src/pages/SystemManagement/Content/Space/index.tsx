@@ -7,8 +7,8 @@
  * - 支持名称、创建时间、修改时间排序（接口排序）
  * - 操作列：查看、删除（使用 TableActions 组件）
  */
-import { XProTable } from '@/components/ProComponents';
-import TableActions, { ActionItem } from '@/components/TableActions';
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
