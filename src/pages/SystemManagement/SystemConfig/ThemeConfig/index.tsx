@@ -1,3 +1,4 @@
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
@@ -237,46 +238,45 @@ const ThemeConfig: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles.title)}>主题配置</div>
-      <div className={cx(styles.content, 'scroll-container')}>
-        {/* 垂直布局的主题配置区域 */}
-        <div className={cx(styles.configContainer)}>
-          <div className={cx(styles.configItem)}>
-            <ThemeColorPanel
-              currentColor={previewPrimaryColor}
-              onColorChange={handleColorChange}
-              extraColors={extraColors}
-            />
-          </div>
-          <div className={cx(styles.configItem)}>
-            <NavigationStylePanel
-              isNavigationDarkMode={previewIsNavigationDark}
-              onNavigationThemeToggle={handleNavigationThemeToggle}
-              onNavigationStyleChange={handleNavigationStyleChange}
-              currentNavigationStyle={previewNavigationStyle}
-            />
-          </div>
-          <div className={cx(styles.configItem)}>
-            <BackgroundImagePanel
-              backgroundImages={backgroundImages}
-              currentBackground={previewBackgroundId}
-              onBackgroundChange={handleBackgroundChange}
-              enableCustomUpload={false} //先关闭后期考虑开启
-            />
-          </div>
+    <WorkspaceLayout
+      title="主题配置"
+      extraContent={
+        <div style={{ padding: '12px 6px' }}>
+          <Button type="primary" onClick={handleSave}>
+            保存配置
+          </Button>
+          <Button style={{ marginLeft: 12 }} onClick={handleReset}>
+            重置默认
+          </Button>
+        </div>
+      }
+    >
+      <div className={cx(styles.configContainer)}>
+        <div className={cx(styles.configItem)}>
+          <ThemeColorPanel
+            currentColor={previewPrimaryColor}
+            onColorChange={handleColorChange}
+            extraColors={extraColors}
+          />
+        </div>
+        <div className={cx(styles.configItem)}>
+          <NavigationStylePanel
+            isNavigationDarkMode={previewIsNavigationDark}
+            onNavigationThemeToggle={handleNavigationThemeToggle}
+            onNavigationStyleChange={handleNavigationStyleChange}
+            currentNavigationStyle={previewNavigationStyle}
+          />
+        </div>
+        <div className={cx(styles.configItem)}>
+          <BackgroundImagePanel
+            backgroundImages={backgroundImages}
+            currentBackground={previewBackgroundId}
+            onBackgroundChange={handleBackgroundChange}
+            enableCustomUpload={false} //先关闭后期考虑开启
+          />
         </div>
       </div>
-      {/* 底部操作区域 */}
-      <div className={cx(styles.footer)}>
-        <Button type="primary" size="large" onClick={handleSave}>
-          保存配置
-        </Button>
-        <Button size="large" style={{ marginLeft: 12 }} onClick={handleReset}>
-          重置默认
-        </Button>
-      </div>
-    </div>
+    </WorkspaceLayout>
   );
 };
 
