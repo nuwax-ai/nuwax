@@ -232,7 +232,7 @@ const SpaceSkillManage: React.FC = () => {
         />
       }
       hideScroll={true}
-      extraContent={
+      centerSlot={
         <TipsBox
           className="mt-0"
           visible={loadingExportProject}
