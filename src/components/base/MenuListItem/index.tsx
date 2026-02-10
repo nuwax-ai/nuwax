@@ -10,7 +10,6 @@ const cx = classNames.bind(styles);
 // 二级菜单项组件
 export interface MenuListItemProps {
   icon?: React.ReactNode | string;
-  isFirst?: boolean;
   name: string;
   isActive?: boolean;
   onClick: () => void;
@@ -24,7 +23,6 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
   icon,
   name,
   isActive = false,
-  isFirst = false,
   onClick,
   onCancelCollect,
   className,
@@ -42,7 +40,6 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
         styles.menuItem,
         {
           [styles.active]: isActive,
-          [styles.first]: isFirst,
           [styles['has-icon']]: hasIcon,
         },
         className,

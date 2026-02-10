@@ -216,7 +216,7 @@ const SpaceDevelop: React.FC = () => {
       const id = params[0];
       handleDelAgent();
       runEdit({
-        size: 8,
+        size: 5,
       });
       // 如果智能体开发收藏列表包含此删除智能体, 重新查询
       const index = devCollectAgentList?.findIndex(
@@ -226,7 +226,7 @@ const SpaceDevelop: React.FC = () => {
         // 更新开发智能体收藏列表
         runDevCollect({
           page: 1,
-          size: 8,
+          size: 5,
         });
       }
     },

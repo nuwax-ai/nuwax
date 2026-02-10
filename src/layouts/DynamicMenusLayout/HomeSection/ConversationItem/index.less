@@ -3,21 +3,25 @@
 
 .row {
   padding: @paddingXs;
+  margin-top: @marginXxs;
   cursor: default;
   color: @navSecondMenuTextSecondary;
+
+  &.first {
+    margin-top: 0;
+  }
 
   &.menuItem {
     cursor: pointer;
 
     .name {
       color: @navSecondMenuTextSecondary;
-      font-size: @fontSize;
-      line-height: @fontHeightLg;
     }
 
-    &.has-icon {
-      .name {
-        margin-left: @marginXs;
+    :global {
+      .ant-typography {
+        font-size: @fontSize;
+        line-height: @fontHeightLg;
       }
     }
   }
@@ -28,8 +32,10 @@
     border-radius: @borderRadius;
     box-shadow: @boxShadowTertiary;
 
-    .name {
-      color: @colorPrimary;
+    :global {
+      .ant-typography {
+        color: @colorPrimary;
+      }
     }
   }
 
@@ -39,29 +45,15 @@
     box-shadow: @boxShadowTertiary;
     color: @colorTextSecondary;
 
-    .name {
-      color: @colorTextSecondary;
-    }
-
-    .collectIcon {
-      visibility: visible;
-      color: @colorTextSecondary;
+    :global {
+      .ant-typography {
+        color: @colorTextSecondary;
+      }
     }
   }
 
-  .icon-image {
-    width: 20px;
-    height: 20px;
-    border-radius: @borderRadiusSm;
-  }
-
-  .collectIcon {
-    color: @navSecondMenuTextSecondary;
-    visibility: hidden;
-    transition: background-color ease-in-out 0.2s;
-
-    &:hover {
-      background-color: @colorBgContainer;
-    }
+  .status-text {
+    font-size: @fontSizeSm;
+    color: @colorTextTertiary;
   }
 }

@@ -75,12 +75,12 @@ const MenusLayout: React.FC<{
   const handleClickSpace = async () => {
     // 最近编辑
     runEdit({
-      size: 8,
+      size: 5,
     });
     // 开发收藏
     runDevCollect({
       page: 1,
-      size: 8,
+      size: 5,
     });
     history.push('/space');
   };

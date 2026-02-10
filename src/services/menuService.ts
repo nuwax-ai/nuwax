@@ -65,7 +65,7 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 空间广场
   space_square: 'icons-nav-space_square',
   // 成员与设置
-  chengyuanyushezhi: 'icons-nav-settings',
+  member_setting: 'icons-nav-settings',
 
   // Adding leftovers from logs or standard mapping
   component_dev: 'icons-nav-cube',

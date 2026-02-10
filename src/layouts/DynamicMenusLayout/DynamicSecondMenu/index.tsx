@@ -9,9 +9,11 @@ import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
-import EcosystemMarketSection from '@/layouts/MenusLayout/EcosystemMarketSection';
-import HomeSection from '@/layouts/MenusLayout/HomeSection';
-import SquareSection from '@/layouts/MenusLayout/SquareSection';
+import { RoleEnum } from '@/types/enums/common';
+import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
+import EcosystemMarketSection from '../EcosystemMarketSection';
+import HomeSection from '../HomeSection';
+import SquareSection from '../SquareSection';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -28,9 +30,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 }) => {
   const location = useLocation();
   const params = useParams();
-  const { getSecondLevelMenus } = useModel('menuModel');
+
   // 展开的菜单 code 列表
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  const { getSecondLevelMenus } = useModel('menuModel');
+
+  const { currentSpaceInfo } = useModel('spaceModel');
 
   // 获取二级菜单
   const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
@@ -111,32 +117,54 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   /**
    * 判断菜单是否激活
+   * 支持动态路径匹配，如果路径包含动态参数，会先解析后再比较
    */
   const isActive = useCallback(
     (path?: string) => {
       if (!path) return false;
+
+      let targetPath = path;
+
+      // 如果路径包含动态参数，先解析路径
+      if (targetPath.includes(':')) {
+        const resolvedPath = resolveDynamicPath(targetPath);
+
+        // 如果解析后仍然包含 ':'，说明有参数未找到，使用正则表达式匹配
+        if (resolvedPath.includes(':')) {
+          // 将动态路径转换为正则表达式进行匹配
+          // 例如: /space/:spaceId/develop -> /space/[^/]+/develop
+          const pattern = targetPath.replace(/:(\w+)/g, '[^/]+');
+          const regex = new RegExp(`^${pattern}(/.*)?$`);
+          return regex.test(location.pathname);
+        }
+
+        // 使用解析后的路径进行匹配
+        targetPath = resolvedPath;
+      }
+
       // 精确匹配或前缀匹配
       return (
-        location.pathname === path || location.pathname.startsWith(path + '/')
+        location.pathname === targetPath ||
+        location.pathname.startsWith(targetPath + '/')
       );
     },
-    [location.pathname],
+    [location.pathname, resolveDynamicPath],
   );
 
   /**
    * 判断是否有任何子菜单激活（递归）
    */
-  const hasActiveChild = useCallback(
-    (menu: MenuItemDto): boolean => {
-      if (!menu.children?.length) return false;
-      return menu.children.some(
-        (child) =>
-          isActive(child.path) ||
-          (child.children?.length && hasActiveChild(child)),
-      );
-    },
-    [isActive],
-  );
+  // const hasActiveChild = useCallback(
+  //   (menu: MenuItemDto): boolean => {
+  //     if (!menu.children?.length) return false;
+  //     return menu.children.some(
+  //       (child) =>
+  //         isActive(child.path) ||
+  //         (child.children?.length && hasActiveChild(child)),
+  //     );
+  //   },
+  //   [isActive],
+  // );
 
   /**
    * 递归渲染菜单项
@@ -150,9 +178,27 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       const hasChildren = menu.children && menu.children.length > 0;
       const menuCode = menu.code || '';
       const isExpanded = expandedMenus.includes(menuCode);
-      const menuActive = isActive(menu.path) || hasActiveChild(menu);
+      const menuActive = isActive(menu.path);
       // 根据层级计算缩进，每级缩进 16px
       const indent = level * 16;
+
+      // 个人空间时，不显示"成员与设置"(编码：member_setting) , 普通用户也不显示"成员与设置"
+      if (
+        (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
+          currentSpaceInfo?.currentUserRole === RoleEnum.User) &&
+        menuCode === 'member_setting'
+      ) {
+        return null;
+      }
+
+      // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”(编码：agent_dev, component_lib_dev)，创建者和管理员不受影响】
+      if (
+        currentSpaceInfo?.currentUserRole === RoleEnum.User &&
+        currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
+        (menuCode === 'agent_dev' || menuCode === 'component_lib_dev')
+      ) {
+        return null;
+      }
 
       // 如果没有子菜单，使用 SubItem 组件
       if (!hasChildren) {
@@ -176,7 +222,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
       // 如果有子菜单，使用 SecondMenuItem 组件，并递归渲染子菜单
       return (
-        <div key={menuCode}>
+        <div key={menuCode} className="flex flex-col gap-4">
           <SecondMenuItem
             icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
             name={menu.name}
@@ -188,18 +234,14 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
             onToggle={() => toggleExpand(menuCode)}
           />
           {/* 递归渲染子菜单 */}
-          {isExpanded && (
-            <div>
-              {menu.children?.map((child) => renderMenuItem(child, level + 1))}
-            </div>
-          )}
+          {isExpanded &&
+            menu.children?.map((child) => renderMenuItem(child, level + 1))}
         </div>
       );
     },
     [
       expandedMenus,
       isActive,
-      hasActiveChild,
       resolveDynamicPath,
       handleMenuClick,
       toggleExpand,
@@ -237,7 +279,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div className={'flex flex-col'}>
+    <div className={'flex flex-col gap-4'}>
       {secondMenus.map((menu: MenuItemDto) => renderMenuItem(menu))}
     </div>
   );

@@ -10,7 +10,6 @@ const cx = classNames.bind(styles);
 // 二级菜单项组件
 export interface SecondMenuItemProps {
   icon?: React.ReactNode | string;
-  isFirst?: boolean;
   isOpen?: boolean;
   name: string;
   isActive?: boolean;
@@ -25,7 +24,6 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   icon,
   name,
   isActive = false,
-  isFirst = false,
   isDown,
   isOpen = false,
   onClick,
@@ -36,7 +34,6 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
     <div
       className={cx('flex', 'items-center', styles.row, styles.mainItem, {
         [styles.active]: isActive,
-        [styles.first]: isFirst,
         [styles.open]: isOpen,
       })}
       onClick={onClick}

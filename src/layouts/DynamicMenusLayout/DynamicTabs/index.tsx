@@ -3,7 +3,6 @@
  * @description 直接复用现有 TabItem 组件，保持样式一致
  */
 import SvgIcon from '@/components/base/SvgIcon';
-import type { TabType } from '@/types/interfaces/layouts';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
@@ -29,13 +28,11 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 }) => {
   const { isSecondMenuCollapsed } = useModel('layout');
 
-  console.log('动态一级菜单组件menus:', menus);
-
   // 将 MenuItemDto 转换为 TabItem 所需的格式
   const tabItems = useMemo(() => {
     return menus.map((menu) => ({
       menu,
-      type: menu.code as TabType,
+      type: menu.code,
       icon: menu.icon ? <SvgIcon name={menu.icon} /> : null,
       text: menu.name,
       active: activeTab === menu.code,
@@ -57,7 +54,8 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
       {tabItems.map((item) => (
         <TabItem
           key={item.type}
-          type={item.type}
+          // 动态菜单中这里不需要，待删除
+          type={item.type as any}
           icon={item.icon}
           text={item.text}
           active={item.active}

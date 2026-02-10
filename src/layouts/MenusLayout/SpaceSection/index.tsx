@@ -49,12 +49,12 @@ const SpaceSection: React.FC<{
   useEffect(() => {
     // 最近编辑
     runEdit({
-      size: 8,
+      size: 5,
     });
     // 开发收藏
     runDevCollect({
       page: 1,
-      size: 8,
+      size: 5,
     });
   }, []);
 
@@ -204,15 +204,16 @@ const SpaceSection: React.FC<{
       </div>
       <ConditionRender condition={editAgentList?.length}>
         <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
-        {editAgentList?.slice(0, 5).map((item: AgentInfo, index: number) => (
-          <MenuListItem
-            key={item.id}
-            isFirst={index === 0}
-            onClick={() => handleClick(item)}
-            icon={item.icon}
-            name={item.name}
-          />
-        ))}
+        <div className="flex flex-col gap-4">
+          {editAgentList?.map((item: AgentInfo) => (
+            <MenuListItem
+              key={item.id}
+              onClick={() => handleClick(item)}
+              icon={item.icon}
+              name={item.name}
+            />
+          ))}
+        </div>
       </ConditionRender>
       <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
       <DevCollect />

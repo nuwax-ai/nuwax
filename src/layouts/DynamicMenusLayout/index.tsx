@@ -27,6 +27,10 @@ import Header from '../MenusLayout/Header';
 import User from '../MenusLayout/User';
 import UserOperateArea from '../MenusLayout/UserOperateArea';
 // 复用原有样式
+import MenuListItem from '@/components/base/MenuListItem';
+import { AgentInfo } from '@/types/interfaces/agent';
+import DevCollect from '../MenusLayout/SpaceSection/DevCollect';
+import SpaceTitle from '../MenusLayout/SpaceSection/SpaceTitle';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -52,8 +56,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     useModel('layout');
   const { loadMenus, firstLevelMenus } = useModel('menuModel');
 
+  const { currentSpaceInfo } = useModel('spaceModel');
   // 工作空间下的最近编辑和开发收藏
-  const { runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
 
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
@@ -63,31 +68,44 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     loadMenus();
   }, [loadMenus]);
 
+  /**
+   * 递归检查菜单是否匹配当前路径
+   */
+  const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
+    // 检查当前菜单路径
+    if (menu.path) {
+      // 移除查询参数（? 及后面的部分），因为 pathname 不包含查询参数
+      const menuPathWithoutQuery = menu.path.split('?')[0];
+
+      // 首页特殊处理 homepage 是动态菜单的编码，/home 是前端路由
+      if (menuPathWithoutQuery === '/homepage' || menuPathWithoutQuery === '') {
+        if (pathname === '/home' || pathname === '') return true;
+      }
+      // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
+      else if (
+        menuPathWithoutQuery === '/space' ||
+        menuPathWithoutQuery === '/workspace'
+      ) {
+        return pathname.startsWith(menuPathWithoutQuery);
+      } else if (pathname.includes('ecosystem')) {
+        // 生态市场特殊处理，pathname为/ecosystem/plugin 是前端路由
+        return menuPathWithoutQuery.startsWith('/ecosystem');
+      } else if (menuPathWithoutQuery.startsWith(pathname)) {
+        return true;
+      }
+    }
+
+    // 递归检查子菜单
+    // if (menu.children?.length) {
+    //   return menu.children.some((child) => isMenuMatch(child, pathname));
+    // }
+
+    return false;
+  };
+
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
     if (!firstLevelMenus.length) return;
-
-    /**
-     * 递归检查菜单是否匹配当前路径
-     */
-    const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
-      // 检查当前菜单路径
-      if (menu.path) {
-        // 首页特殊处理
-        if (menu.path === '/' || menu.path === '') {
-          if (pathname === '/' || pathname === '') return true;
-        } else if (pathname.startsWith(menu.path)) {
-          return true;
-        }
-      }
-
-      // 递归检查子菜单
-      if (menu.children?.length) {
-        return menu.children.some((child) => isMenuMatch(child, pathname));
-      }
-
-      return false;
-    };
 
     // 查找匹配当前路径的菜单
     const matchedMenu = firstLevelMenus.find((menu: MenuItemDto) =>
@@ -99,7 +117,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     } else if (location.pathname === '/' || location.pathname === '') {
       // 默认选中首页
       const homeMenu = firstLevelMenus.find(
-        (m: MenuItemDto) => m.code === 'home' || m.path === '/',
+        (m: MenuItemDto) => m.code === 'homepage' || m.path === '/',
       );
       if (homeMenu) {
         setActiveTab(homeMenu.code);
@@ -121,12 +139,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       if (menu.code === 'workspace') {
         // 最近编辑
         runEdit({
-          size: 8,
+          size: 5,
         });
         // 开发收藏
         runDevCollect({
           page: 1,
-          size: 8,
+          size: 5,
         });
 
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
@@ -230,6 +248,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     );
   }, [layoutStyle, navigationStyle, isMobile]);
 
+  // 点击进入"工作空间智能体"
+  const handleClick = (info: AgentInfo) => {
+    const { agentId, spaceId } = info;
+    history.push(`/space/${spaceId}/agent/${agentId}`);
+  };
+
   return (
     <div className={navigationClassName}>
       {/* 一级导航菜单栏 */}
@@ -288,23 +312,86 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
               minHeight: 0,
             }}
           >
-            {/* 标题 */}
-            <ConditionRender condition={isShowTitle && !!currentTitle}>
-              <div style={{ padding: '0 12px 12px' }}>
-                <Typography.Title
-                  level={5}
-                  style={{ marginBottom: 0 }}
-                  className={cx(styles['menu-title'])}
-                >
-                  {currentTitle}
-                </Typography.Title>
-              </div>
-            </ConditionRender>
+            {
+              // 非工作空间一级菜单
+              isShowTitle ? (
+                <>
+                  {/* 标题 */}
+                  <ConditionRender condition={currentTitle}>
+                    <div style={{ padding: '0 12px 12px' }}>
+                      <Typography.Title
+                        level={5}
+                        style={{ marginBottom: 0 }}
+                        className={cx(styles['menu-title'])}
+                      >
+                        {currentTitle}
+                      </Typography.Title>
+                    </div>
+                  </ConditionRender>
 
-            {/* 二级/三级菜单 */}
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <DynamicSecondMenu parentCode={activeTab} />
-            </div>
+                  {/* 二级/三级菜单 */}
+                  <DynamicSecondMenu parentCode={activeTab} />
+                </>
+              ) : (
+                <div className={cx('h-full', 'overflow-y', styles.container)}>
+                  <div style={{ padding: '14px 12px' }}>
+                    <SpaceTitle name={currentSpaceInfo?.name} />
+                  </div>
+
+                  <DynamicSecondMenu parentCode={activeTab} />
+                  {/* <div>
+                  {getSpaceApplicationList(tenantConfigInfo?.enabledSandbox).map(
+                    (item: SpaceApplicationList, index: number) => {
+                      // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
+                      if (
+                        (currentSpaceInfo?.type === SpaceTypeEnum.Personal ||
+                          currentSpaceInfo?.currentUserRole === RoleEnum.User) &&
+                        item.type === SpaceApplicationListEnum.Team_Setting
+                      ) {
+                        return null;
+                      }
+                      // “开发者功能”【tips：关闭后，用户将无法看见“智能体开发”和“组件库”，创建者和管理员不受影响】
+                      if (
+                        currentSpaceInfo?.currentUserRole === RoleEnum.User &&
+                        currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow &&
+                        [
+                          SpaceApplicationListEnum.Application_Develop,
+                          SpaceApplicationListEnum.Component_Library,
+                        ].includes(item.type)
+                      ) {
+                        return null;
+                      }
+                      return (
+                        <SecondMenuItem
+                          key={item.type}
+                          isFirst={index === 0}
+                          name={item.text}
+                          isActive={handleActive(item.type)}
+                          icon={item.icon}
+                          onClick={() => handlerApplication(item.type)}
+                        />
+                      );
+                    },
+                  )}
+                </div> */}
+                  <ConditionRender condition={editAgentList?.length}>
+                    <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
+                    <div className="flex flex-col gap-4">
+                      {editAgentList?.map((item: AgentInfo) => (
+                        <MenuListItem
+                          key={item.id}
+                          onClick={() => handleClick(item)}
+                          icon={item.icon}
+                          name={item.name}
+                        />
+                      ))}
+                    </div>
+                  </ConditionRender>
+                  <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
+                  <DevCollect />
+                </div>
+              )
+            }
           </div>
         </HoverScrollbar>
       </div>
