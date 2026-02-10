@@ -312,6 +312,7 @@ const SandboxConfig: React.FC = () => {
             rowKey="id"
             search={false}
             pagination={false}
+            showQueryButtons={false}
           />
           <div className={styles['footer-info']}>
             <span>共 {sandboxList.length} 个沙盒</span>

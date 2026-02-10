@@ -35,9 +35,17 @@ function XProTable<
   props: ProTableProps<DataType, Params, ValueType> & {
     fullHeight?: boolean;
     scrollYOffset?: number;
+    /** 是否显示工具栏右侧的操作按钮（查询/重置），默认为 true */
+    showQueryButtons?: boolean;
   },
 ) {
-  const { fullHeight = true, scrollYOffset, onReset, ...restProps } = props;
+  const {
+    fullHeight = true,
+    scrollYOffset,
+    onReset,
+    showQueryButtons = true,
+    ...restProps
+  } = props;
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollY = useTableAutoHeight(tableRef, fullHeight, scrollYOffset);
 
@@ -74,6 +82,10 @@ function XProTable<
         : [];
       const userDomArray = Array.isArray(userDom) ? userDom : [userDom];
 
+      if (!showQueryButtons) {
+        return userDomArray;
+      }
+
       return [
         ...userDomArray,
         <Button
@@ -99,7 +111,7 @@ function XProTable<
         </Button>,
       ];
     };
-  }, [restProps.toolBarRender, formRef, actionRef, onReset]);
+  }, [restProps.toolBarRender, formRef, actionRef, onReset, showQueryButtons]);
 
   // 合并 search 配置
   const searchConfig = useMemo(() => {
