@@ -1,5 +1,4 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { XProTable } from '@/components/ProComponents';
+import { LimitedTooltip, XProTable } from '@/components/ProComponents';
 import {
   apiOperationLogActionTypeOptions,
   apiOperationLogList,
@@ -146,7 +145,7 @@ const LogProTable: React.FC = () => {
       };
     }
     const current = Number(tableParams.current || 1);
-    const pageSize = Number(tableParams.pageSize || 10);
+    const pageSize = Number(tableParams.pageSize || 15);
 
     const timeRange = tableParams.createTimeRange as
       | [number, number]
@@ -252,8 +251,8 @@ const LogProTable: React.FC = () => {
     isReset.current = true;
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 延迟一下再重新加载,确保分页参数已设置
     actionRef.current?.reload();
   };

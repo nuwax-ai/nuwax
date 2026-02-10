@@ -26,6 +26,7 @@ import {
   Space,
   Switch,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -43,7 +44,9 @@ import EditComputerModal from './components/EditComputerModal';
  * 我的电脑管理页面
  */
 const MyComputerManage: React.FC = () => {
-  const [filter, setFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [filter, setFilter] = useState<
+    'all' | 'online' | 'offline' | 'deactivated'
+  >('all');
   const [list, setList] = useState<SandboxItem[]>([]);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
@@ -65,8 +68,11 @@ const MyComputerManage: React.FC = () => {
   }, [location]);
 
   const filteredData = useMemo(() => {
-    if (filter === 'online') return list.filter((item) => item.online);
-    if (filter === 'offline') return list.filter((item) => !item.online);
+    if (filter === 'online')
+      return list.filter((item) => item.online && item.isActive);
+    if (filter === 'offline')
+      return list.filter((item) => !item.online && item.isActive);
+    if (filter === 'deactivated') return list.filter((item) => !item.isActive);
     return list;
   }, [filter, list]);
 
@@ -151,6 +157,7 @@ const MyComputerManage: React.FC = () => {
           <Radio.Button value="all">全部</Radio.Button>
           <Radio.Button value="online">在线</Radio.Button>
           <Radio.Button value="offline">离线</Radio.Button>
+          <Radio.Button value="deactivated">已停用</Radio.Button>
         </Radio.Group>
       }
     >
@@ -205,6 +212,19 @@ const MyComputerManage: React.FC = () => {
                         <DesktopOutlined />
                       </div>
                     )}
+                    <Tag
+                      className={cx(styles['status-tag'], {
+                        [styles['deactivated-tag']]: !item.isActive,
+                        [styles['online-tag']]: item.isActive && item.online,
+                        [styles['offline-tag']]: item.isActive && !item.online,
+                      })}
+                    >
+                      {!item.isActive
+                        ? '已停用'
+                        : item.online
+                        ? '在线'
+                        : '离线'}
+                    </Tag>
                   </div>
                 }
               >
@@ -219,17 +239,7 @@ const MyComputerManage: React.FC = () => {
                         >
                           {item.name}
                         </Typography.Text>
-                        <EditOutlined
-                          className={styles['edit-icon']}
-                          onClick={() => handleEdit(item)}
-                        />
                       </Space>
-                      <Tag
-                        color={item.online ? 'success' : 'default'}
-                        className={styles['status-tag']}
-                      >
-                        {item.online ? '在线' : '离线'}
-                      </Tag>
                     </div>
                     <Typography.Text
                       type="secondary"
@@ -241,16 +251,6 @@ const MyComputerManage: React.FC = () => {
                   </div>
 
                   <div className={styles['card-actions']}>
-                    <Button
-                      type="primary"
-                      icon={<DesktopOutlined />}
-                      disabled={!(item.online && item.isActive) || true}
-                      className={cx(styles['remote-btn'], {
-                        [styles['offline-btn']]: !item.online,
-                      })}
-                    >
-                      远程桌面
-                    </Button>
                     <Space size={8}>
                       <Button
                         icon={<MessageOutlined />}
@@ -260,19 +260,42 @@ const MyComputerManage: React.FC = () => {
                             history.push(`/agent/${item.agentId}`);
                           }
                         }}
+                        className={styles['action-btn']}
                       />
-                      <Switch
-                        loading={toggleLoadingId === item.id}
-                        checked={item.isActive}
-                        size="small"
-                        onChange={(checked) =>
-                          handleToggleStatus(item.id, checked)
+                      <Button
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(item)}
+                        className={classNames(
+                          styles['action-btn'],
+                          styles['edit-btn'],
+                        )}
+                      />
+                    </Space>
+                    <Space size={8}>
+                      <Tooltip
+                        title={
+                          item.isActive
+                            ? '停用后将无法再通过智能体操控该电脑'
+                            : ''
                         }
-                      />
+                      >
+                        <Switch
+                          loading={toggleLoadingId === item.id}
+                          checked={item.isActive}
+                          size="small"
+                          onChange={(checked) =>
+                            handleToggleStatus(item.id, checked)
+                          }
+                        />
+                      </Tooltip>
                       <Button
                         danger
                         icon={<DeleteOutlined />}
                         onClick={() => handleDelete(item.id)}
+                        className={classNames(
+                          styles['action-btn'],
+                          styles['delete-btn'],
+                        )}
                       />
                     </Space>
                   </div>

@@ -156,7 +156,7 @@ const routes = [
           },
           {
             path: 'model/manage',
-            name: '全局模型管理',
+            name: '公共模型管理',
             component: '@/pages/GlobalModelManage',
           },
           {

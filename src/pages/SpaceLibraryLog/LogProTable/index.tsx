@@ -1,5 +1,4 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { XProTable } from '@/components/ProComponents';
+import { LimitedTooltip, XProTable } from '@/components/ProComponents';
 import { apiSpaceLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -78,7 +77,8 @@ const LogProTable: React.FC = () => {
   // 当 targetId 变化时，更新 URL 参数
   const handleTargetIdChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleSearchParamChange('targetId', e.target.value);
+      const value = e?.target ? e.target.value : e;
+      handleSearchParamChange('targetId', String(value));
     },
     [handleSearchParamChange],
   );

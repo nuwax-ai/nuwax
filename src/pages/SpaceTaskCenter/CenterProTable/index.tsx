@@ -591,7 +591,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         columns={columns}
         request={request}
         params={{ spaceId }}
-        options={false}
         // 表单提交前处理：点击查询按钮时设置强制刷新标志
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置后也需要强制刷新

@@ -36,38 +36,29 @@ export const TABLE_TABS_LIST = [
  * 通用 ProTable 配置
  */
 export const COMMON_PRO_TABLE_PROPS = {
+  size: 'middle' as const,
   debounceTime: 300,
-  toolBarRender: false as const,
-  options: false as const,
+  toolBarRender: undefined,
+  options: {
+    setting: false,
+    reload: false,
+    density: false,
+    fullScreen: false,
+  },
   cardProps: { bodyStyle: { padding: 0 } },
   pagination: {
     showSizeChanger: true,
-    pageSizeOptions: [10, 20, 50, 100],
+    pageSizeOptions: [15, 30, 50, 100],
     showTotal: (total: number) => `共 ${total} 条`,
-    defaultPageSize: 10,
+    defaultPageSize: 15,
     locale: {
       items_per_page: '条/页',
     },
   },
   search: {
-    span: {
-      xs: 24,
-      sm: 12,
-      md: 12,
-      lg: 12,
-      xl: 8,
-      xxl: 6,
-    },
-    labelWidth: 100,
+    filterType: 'light' as any,
     defaultCollapsed: false,
     searchText: '查询',
     resetText: '重置',
-    collapseRender: (collapsed: boolean) => (collapsed ? '展开' : '收起'),
-    style: {
-      paddingTop: 5,
-      paddingBottom: 0,
-      paddingLeft: 0,
-      paddingRight: 0,
-    },
-  },
+  } as any,
 };

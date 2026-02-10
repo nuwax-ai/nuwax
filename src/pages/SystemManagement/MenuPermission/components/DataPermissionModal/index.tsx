@@ -70,7 +70,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         模型
-        <Tooltip title="未给用户组或角色授权过的模型将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="模型需要授权后才可用">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -83,7 +83,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         智能体
-        <Tooltip title="未给用户组或角色授权过的智能体将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -96,7 +96,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     label: (
       <span>
         网页应用
-        <Tooltip title="未给用户组或角色授权过的网页应用将不受数据权限管控，所有用户均有权限">
+        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -196,8 +196,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentComputerMemoryGb: result.agentComputerMemoryGb ?? 4,
         agentComputerCpuCores: result.agentComputerCpuCores ?? 2,
         agentFileStorageDays: result.agentFileStorageDays ?? -1,
-        agentDailyConversationLimit: result.agentDailyConversationLimit ?? -1,
-        pageDailyConversationLimit: result.pageDailyConversationLimit ?? -1,
+        agentDailyPromptLimit: result.agentDailyPromptLimit ?? -1,
+        pageDailyPromptLimit: result.pageDailyPromptLimit ?? -1,
       });
 
       // 存储查询到的 modelIds，用于后续处理
@@ -337,8 +337,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentComputerMemoryGb: 4,
         agentComputerCpuCores: 2,
         agentFileStorageDays: -1,
-        agentDailyConversationLimit: -1,
-        pageDailyConversationLimit: -1,
+        agentDailyPromptLimit: -1,
+        pageDailyPromptLimit: -1,
       });
       // 重置已选中的数据
       setSelectedModelIds([]);
@@ -990,7 +990,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     label="通用智能体每天对话次数限制"
-                    name="agentDailyConversationLimit"
+                    name="agentDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
                       title: '通用智能体每天对话次数，-1表示不限制',
@@ -1003,7 +1003,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     label="网页应用开发每天对话次数"
-                    name="pageDailyConversationLimit"
+                    name="pageDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
                       title: '网页应用开发每天对话次数，-1表示不限制',

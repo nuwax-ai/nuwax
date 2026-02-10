@@ -721,6 +721,7 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
+      width: 100,
       fixed: 'right',
       render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
         <Switch
@@ -742,6 +743,7 @@ const PermissionResources: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: 200,
       fixed: 'right',
       render: (_: null, record: ResourceTreeNode) => (
         <Space size={0}>
