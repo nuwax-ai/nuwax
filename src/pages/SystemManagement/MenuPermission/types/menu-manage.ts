@@ -27,6 +27,12 @@ export enum MenuSourceEnum {
   UserDefined = 2, // 用户自定义
 }
 
+// 打开方式选项 打开方式 1:当前标签页打开 2:新标签页打开
+export enum OpenTypeEnum {
+  CurrentTab = 1, // 当前标签页打开
+  NewTab = 2, // 新标签页打开
+}
+
 // ==================== 接口定义 ====================
 
 /**
@@ -135,6 +141,9 @@ export interface MenuNodeInfo {
 
   /*访问路径 */
   path?: string;
+
+  /*打开方式 1:当前标签页打开 2:新标签页打开 */
+  openType?: OpenTypeEnum;
 
   /*图标 */
   icon?: string;

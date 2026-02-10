@@ -27,6 +27,7 @@ import { apiGetResourceList } from '../../../services/permission-resources';
 import {
   MenuEnabledEnum,
   MenuSourceEnum,
+  OpenTypeEnum,
   type MenuNodeInfo,
 } from '../../../types/menu-manage';
 import {
@@ -59,6 +60,12 @@ interface MenuFormModalProps {
 const MENU_SOURCE_OPTIONS = [
   { label: '系统内置', value: MenuSourceEnum.SystemBuiltIn },
   { label: '用户自定义', value: MenuSourceEnum.UserDefined },
+];
+
+// 打开方式选项
+const OPEN_TYPE_OPTIONS = [
+  { label: '当前标签页打开', value: OpenTypeEnum.CurrentTab },
+  { label: '新标签页打开', value: OpenTypeEnum.NewTab },
 ];
 
 /**
@@ -150,6 +157,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           sortIndex: defaultSortIndex || 1,
           status: true,
           source: MenuSourceEnum.UserDefined,
+          openType: OpenTypeEnum.CurrentTab,
           parentId: undefined,
         });
       }
@@ -271,6 +279,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         sortIndex: menuInfoResponse.sortIndex || 1,
         status: menuInfoResponse.status === MenuEnabledEnum.Enabled,
         source: menuInfoResponse.source || MenuSourceEnum.UserDefined,
+        openType: menuInfoResponse.openType || OpenTypeEnum.CurrentTab,
       });
       // 设置关联资源码：从 resourceTree 中提取已绑定和部分绑定的资源 id
       const resourceTree = menuInfoResponse.resourceTree;
@@ -472,9 +481,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
               name="path"
               rules={[
                 {
-                  pattern: /^\/[a-zA-Z0-9/?#&=._:@%+ -]+$/,
+                  pattern: /^[a-zA-Z0-9/?#&=._:@%+ -]+$/,
                   message:
-                    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
+                    '路由路径/URL地址只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格），例如 /system/menu 或 https://example.com',
                 },
                 {
                   max: 500,
@@ -482,12 +491,26 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
                 },
               ]}
               tooltip={{
-                title:
-                  '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+                title: (
+                  <>
+                    <div>静态路由，例如：/system/menu</div>
+                    <div>动态路由，例如：/space/:spaceId/develop</div>
+                    <div>外部URL地址，例如：https://example.com</div>
+                  </>
+                ),
                 icon: <InfoCircleOutlined />,
               }}
             >
               <Input placeholder="请输入路由路径，例如：/system/menu" />
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item label="打开方式" name="openType">
+              <Select
+                placeholder="请选择打开方式"
+                options={OPEN_TYPE_OPTIONS}
+              />
             </Form.Item>
           </Col>
 
