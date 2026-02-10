@@ -201,16 +201,6 @@ const MenusLayout: React.FC<{
         ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
         : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 风格2展开模式88px，风格1紧凑模式60px
 
-    // 开发环境下添加日志
-    if (process.env.NODE_ENV === 'development') {
-      // console.log(
-      //   'MenusLayout - 导航风格:',
-      //   navigationStyle,
-      //   '-> 宽度:',
-      //   width,
-      // );
-    }
-
     return width;
   }, [navigationStyle, isMobile]);
 
