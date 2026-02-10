@@ -8,6 +8,7 @@ import type { MenuItemDto } from '@/types/interfaces/menu';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { extractAllMenuCodes, extractAllPermissions } from '@/utils/permission';
 import { useModel } from 'umi';
 
@@ -30,7 +31,7 @@ export default function useMenuModel() {
   );
 
   // 加载状态
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 监听 initialState 变化
   useEffect(() => {
@@ -92,27 +93,43 @@ export default function useMenuModel() {
   /**
    * 一级菜单列表
    */
-  const firstLevelMenus = useMemo(() => menuTree, [menuTree]);
-
-  /**
-   * 根据一级菜单 code 获取二级菜单列表
-   */
-  const getSecondLevelMenus = useCallback(
-    (parentCode: string): MenuItemDto[] => {
-      const parent = menuTree?.find((m: MenuItemDto) => m.code === parentCode);
-      return parent?.children || [];
-    },
+  const firstLevelMenus = useMemo(
+    () =>
+      menuTree?.filter(
+        (menu: MenuItemDto) => menu.status === MenuEnabledEnum.Enabled,
+      ),
     [menuTree],
   );
 
   /**
-   * 根据一级和二级菜单 code 获取三级菜单列表
+   * 根据父级菜单 code 获取其子菜单列表（递归查找）
+   * @description 不再只在一级菜单中查找，而是递归整个菜单树
    */
-  const getThirdLevelMenus = useCallback(
-    (parentCode: string, secondCode: string): MenuItemDto[] => {
-      const parent = menuTree.find((m) => m.code === parentCode);
-      const second = parent?.children?.find((m) => m.code === secondCode);
-      return second?.children || [];
+  const getSecondLevelMenus = useCallback(
+    (parentCode: string): MenuItemDto[] => {
+      if (!menuTree?.length) return [];
+
+      const findParent = (items: MenuItemDto[]): MenuItemDto | undefined => {
+        for (const item of items) {
+          if (item.code === parentCode) {
+            return item;
+          }
+          if (item.children?.length) {
+            const found = findParent(item.children);
+            if (found) {
+              return found;
+            }
+          }
+        }
+        return undefined;
+      };
+
+      const parent = findParent(menuTree);
+      return (
+        parent?.children?.filter(
+          (menu: MenuItemDto) => menu.status === MenuEnabledEnum.Enabled,
+        ) || []
+      );
     },
     [menuTree],
   );
@@ -198,7 +215,6 @@ export default function useMenuModel() {
     loadMenus,
     firstLevelMenus,
     getSecondLevelMenus,
-    getThirdLevelMenus,
     findMenuByPath,
     // 权限检查
     hasPermission,

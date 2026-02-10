@@ -127,7 +127,7 @@ const SquareSection: React.FC<{
             onToggle={() => handleToggle(info)}
           />
           <div
-            className={cx(styles['box-hidden'], {
+            className={cx('flex flex-col gap-4', styles['box-hidden'], {
               [styles.visible]: visibleMenu === info.type,
             })}
           >

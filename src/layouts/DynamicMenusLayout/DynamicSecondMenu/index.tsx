@@ -252,6 +252,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       resolveDynamicPath,
       handleMenuClick,
       toggleExpand,
+      currentSpaceInfo,
     ],
   );
 
@@ -259,25 +260,19 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
    * 渲染特殊内容区域
    */
   // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
-  if (
-    parentCode === 'homepage' ||
-    parentCode === 'system_square' ||
-    parentCode === 'eco_market'
-  ) {
-    // 主页 homepage: 最近使用 + 会话记录
-    if (parentCode === 'homepage') {
-      return <HomeSection style={overrideContainerStyle} />;
-    }
+  // 主页 homepage: 最近使用 + 会话记录
+  if (parentCode === 'homepage') {
+    return <HomeSection style={overrideContainerStyle} />;
+  }
 
-    // 系统广场
-    if (parentCode === 'system_square') {
-      return <SquareSection style={overrideContainerStyle} />;
-    }
+  // 系统广场
+  if (parentCode === 'system_square') {
+    return <SquareSection style={overrideContainerStyle} />;
+  }
 
-    // 生态市场
-    if (parentCode === 'eco_market') {
-      return <EcosystemMarketSection style={overrideContainerStyle} />;
-    }
+  // 生态市场
+  if (parentCode === 'eco_market') {
+    return <EcosystemMarketSection style={overrideContainerStyle} />;
   }
 
   // 如果没有二级菜单，不渲染

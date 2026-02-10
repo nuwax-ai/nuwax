@@ -2,12 +2,15 @@ import Loading from '@/components/custom/Loading';
 import { SPACE_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';
+import { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
 
 const Space: React.FC = () => {
   const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun, getSpaceId } =
     useModel('spaceModel');
+
+  const { getSecondLevelMenus } = useModel('menuModel');
 
   useEffect(() => {
     asyncSpaceListFun();
@@ -22,14 +25,38 @@ const Space: React.FC = () => {
     if (!spaceId) {
       return;
     }
+    const secondMenus = getSecondLevelMenus('workspace');
+
     // 普通用户开发者功能如果关闭，首次进入空间菜单选中“空间广场”；
     const defaultUrl =
       currentSpaceInfo?.currentUserRole === RoleEnum.User &&
       currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow
         ? 'space-square'
         : 'develop';
+
     const spaceUrl = localStorage.getItem(SPACE_URL) ?? defaultUrl;
-    history.push(`/space/${spaceId}/${spaceUrl}`);
+
+    // 从菜单 path 中提取最后一级路径段，例如 /space/:spaceId/develop -> develop
+    const getLastSegment = (path?: string) => {
+      if (!path) return '';
+      const cleanPath = path.split('?')[0];
+      const segments = cleanPath.split('/').filter(Boolean);
+      return segments[segments.length - 1] || '';
+    };
+
+    // 判断当前 spaceUrl 是否在二级菜单 path 中存在
+    const hasSpaceUrlInMenus = secondMenus?.some(
+      (menu: MenuItemDto) => getLastSegment(menu.path) === spaceUrl,
+    );
+
+    let finalUrl = spaceUrl;
+
+    if (!hasSpaceUrlInMenus && secondMenus && secondMenus.length > 0) {
+      // 如果当前 spaceUrl 不在菜单里，则使用第一项菜单 path 的最后一级作为跳转路径
+      finalUrl = getLastSegment(secondMenus[0].path) || spaceUrl;
+    }
+
+    history.push(`/space/${spaceId}/${finalUrl}`);
   }, [currentSpaceInfo]);
 
   return loadingSpaceList && <Loading className="h-full" />;
