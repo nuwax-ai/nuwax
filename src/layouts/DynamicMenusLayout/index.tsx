@@ -27,13 +27,13 @@ import Header from '../MenusLayout/Header';
 import User from '../MenusLayout/User';
 import UserOperateArea from '../MenusLayout/UserOperateArea';
 // 复用原有样式
-import styles from '../MenusLayout/index.less';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
-  overrideContainerStyle?: React.CSSProperties;
+  // overrideContainerStyle?: React.CSSProperties;
   /** 是否为移动端 */
   isMobile?: boolean;
 }
@@ -42,8 +42,7 @@ export interface DynamicMenusLayoutProps {
  * 动态菜单布局组件
  */
 const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  overrideContainerStyle: _overrideContainerStyle,
+  // overrideContainerStyle: _overrideContainerStyle,
   isMobile = false,
 }) => {
   const location = useLocation();
@@ -291,7 +290,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           >
             {/* 标题 */}
             <ConditionRender condition={isShowTitle && !!currentTitle}>
-              <div style={{ padding: '12px 12px' }}>
+              <div style={{ padding: '0 12px 12px' }}>
                 <Typography.Title
                   level={5}
                   style={{ marginBottom: 0 }}

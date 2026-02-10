@@ -103,7 +103,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         // 处理动态路径
         const resolvedPath = resolveDynamicPath(menu.path);
         // 无子菜单，直接路由跳转
-        history.push(resolvedPath);
+        history.push(resolvedPath, { _t: Date.now() });
       }
     },
     [toggleExpand, resolveDynamicPath],
@@ -167,7 +167,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
               if (menu.path) {
                 // 处理动态路径
                 const resolvedPath = resolveDynamicPath(menu.path);
-                history.push(resolvedPath);
+                history.push(resolvedPath, { _t: Date.now() });
               }
             }}
           />
@@ -237,7 +237,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className={'flex flex-col'}>
       {secondMenus.map((menu: MenuItemDto) => renderMenuItem(menu))}
     </div>
   );

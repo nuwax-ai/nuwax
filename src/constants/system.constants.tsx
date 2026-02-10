@@ -19,12 +19,12 @@ export const SYSTEM_MANAGE_LIST = [
   },
   {
     type: SystemManageListEnum.Published_Manage,
-    icon: <SvgIcon name="icons-nav-template" />,
+    icon: <SvgIcon name="icons-nav-publish_manage" />,
     text: '已发布管理',
   },
   {
     type: SystemManageListEnum.Global_Model_Manage,
-    icon: <SvgIcon name="icons-nav-template" />,
+    icon: <SvgIcon name="icons-nav-model" />,
     text: '公共模型管理',
   },
   {
