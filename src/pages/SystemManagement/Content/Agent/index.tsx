@@ -7,14 +7,16 @@ import {
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Switch } from 'antd';
+import { message, Switch, Tooltip } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
@@ -123,10 +125,11 @@ const Agent: React.FC = () => {
         },
       ];
 
-      // 当 accessControl 为 1 并且发布状态为已发布时，显示授权项
+      // 当 accessControl 为 1 并且发布状态为已发布并且发布范围为系统广场时，显示授权项
       if (
         record.accessControl === AccessControlEnum.Filter &&
-        record.publishStatus === PublishStatusEnum.Published
+        record.publishStatus === PublishStatusEnum.Published &&
+        record.publishScope === PluginPublishScopeEnum.Tenant
       ) {
         actions.push({
           key: 'auth',
@@ -208,10 +211,17 @@ const Agent: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '管控',
+      title: (
+        <span>
+          管控
+          <Tooltip title="若开启管控，发布到系统广场的智能体需授权才能使用">
+            <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+          </Tooltip>
+        </span>
+      ),
       dataIndex: 'accessControl',
       align: 'center',
-      width: 100,
+      width: 80,
       fixed: 'right',
       hideInSearch: true,
       render: (_, record: SystemAgentInfo) => (
@@ -227,7 +237,7 @@ const Agent: React.FC = () => {
       valueType: 'option',
       fixed: 'right',
       align: 'center',
-      width: 180,
+      width: 160,
       render: (_, record) => (
         <TableActions<SystemAgentInfo>
           record={record}

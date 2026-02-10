@@ -706,6 +706,7 @@ const MenuManage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       align: 'center',
+      width: 100,
       fixed: 'right',
       render: (status: MenuEnabledEnum, record: MenuNodeInfo) => (
         <Switch
@@ -727,6 +728,7 @@ const MenuManage: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: 180,
       fixed: 'right',
       render: (_: null, record: MenuNodeInfo) => (
         <Space size={0}>

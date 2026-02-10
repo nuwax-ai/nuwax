@@ -5,6 +5,7 @@ import {
   UserStatusEnum,
 } from '@/types/enums/systemManage';
 import { PublishStatusEnum } from '../enums/common';
+import { PluginPublishScopeEnum } from '../enums/plugin';
 import { TaskInfo } from './library';
 
 /**
@@ -49,10 +50,16 @@ export interface SystemResourceInfo {
   spaceId: number;
   /** 操作 */
   operation: 'agent' | 'page';
-  // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  // 是否受后台权限控制，0 不受，1 受 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
   accessControl: AccessControlEnum;
   /** 发布状态 */
   publishStatus: PublishStatusEnum;
+  // 发布范围,可用值:Space,Tenant,Global
+  publishScope: PluginPublishScopeEnum;
+  // 网页应用的发布类型,可用值:AGENT,PAGE
+  publishType: 'AGENT' | 'PAGE';
+  // 网页应用绑定的智能体ID
+  pageAgentId: number;
 }
 
 // 查询用户列表输入参数
