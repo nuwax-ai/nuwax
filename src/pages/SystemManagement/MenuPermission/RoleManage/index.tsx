@@ -396,12 +396,7 @@ const RoleManage: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>角色管理</h1>
-          <p className={cx(styles.description)}>
-            管理系统角色,分配菜单权限和数据范围
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>角色管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增角色
         </Button>

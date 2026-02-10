@@ -413,12 +413,7 @@ const UserGroupManage: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>用户组管理</h1>
-          <p className={cx(styles.description)}>
-            管理用户组,分配角色和菜单权限
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>用户组管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增用户组
         </Button>
