@@ -77,8 +77,9 @@ const LogProTable: React.FC = () => {
 
   // 当 targetId 变化时，更新 URL 参数
   const handleTargetIdChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleSearchParamChange('targetId', e.target.value);
+    (e: any) => {
+      const value = e?.target ? e.target.value : e;
+      handleSearchParamChange('targetId', value);
     },
     [handleSearchParamChange],
   );

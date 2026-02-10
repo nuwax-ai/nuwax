@@ -478,7 +478,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         rowKey="id"
         columns={columns}
         request={request}
-        options={false}
         // 表单提交前处理
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置
