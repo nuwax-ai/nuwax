@@ -208,7 +208,7 @@ const SpaceSection: React.FC<{
     //   <DevCollect />
     // </div>
     <div className={cx('h-full', 'overflow-y', styles.container)}>
-      <div style={{ padding: '14px 12px' }}>
+      <div style={{ padding: '0 12px 14px' }}>
         <SpaceTitle name={currentSpaceInfo?.name} />
       </div>
 
