@@ -20,6 +20,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message, Switch } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
@@ -27,6 +28,7 @@ import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthMo
  * 公共模型管理页面 (原全局模型管理)
  */
 const GlobalModelManage: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();
@@ -96,6 +98,7 @@ const GlobalModelManage: React.FC = () => {
         {
           key: 'edit',
           label: '编辑',
+          disabled: !hasPermission('model_manage_modify'),
           onClick: () => {
             setModelId(record.id);
             setVisible(true);
@@ -104,6 +107,7 @@ const GlobalModelManage: React.FC = () => {
         {
           key: 'auth',
           label: '授权',
+          disabled: !hasPermission('model_manage_access_control'),
           onClick: () => {
             setCurrentAuthModelId(record.id);
             setAuthModalOpen(true);
@@ -122,11 +126,12 @@ const GlobalModelManage: React.FC = () => {
               </div>
             ),
           },
+          disabled: !hasPermission('model_manage_delete'),
           onClick: (r) => handleConfirmDelete(r.id),
         },
       ];
     },
-    [],
+    [hasPermission],
   );
 
   const columns: ProColumns<ModelConfigDto>[] = [
@@ -251,17 +256,19 @@ const GlobalModelManage: React.FC = () => {
       title="公共模型管理"
       hideScroll
       rightSlot={
-        <Button
-          key="add"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setModelId(undefined);
-            setVisible(true);
-          }}
-        >
-          添加模型
-        </Button>
+        hasPermission('model_manage_add') && (
+          <Button
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setModelId(undefined);
+              setVisible(true);
+            }}
+          >
+            添加模型
+          </Button>
+        )
       }
     >
       <XProTable<ModelConfigDto>
@@ -269,6 +276,7 @@ const GlobalModelManage: React.FC = () => {
         rowKey="id"
         columns={columns}
         request={request}
+        showQueryButtons={hasPermission('model_manage_query_list')}
       />
       {visible && (
         <CreateModel
