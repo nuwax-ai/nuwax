@@ -129,12 +129,7 @@ const Login: React.FC = () => {
       areaCode = '86',
       password,
     } = form.getFieldsValue() || {};
-    console.log('[Login] API Request Params:', {
-      phoneOrEmail,
-      areaCode,
-      password: '******',
-      captchaVerifyParam,
-    });
+    console.log('[Login] 密码登录使用验证码参数:', captchaVerifyParam);
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
@@ -142,6 +137,7 @@ const Login: React.FC = () => {
   const handlerCodeLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
+    console.log('[Login] 验证码登录使用验证码参数:', captchaVerifyParam);
     history.push('/verify-code', {
       phoneOrEmail,
       areaCode,
@@ -152,6 +148,7 @@ const Login: React.FC = () => {
 
   // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
   const handlerSuccess = (captchaVerifyParam: string = '') => {
+    console.log('[Login] 验证码验证成功回调:', captchaVerifyParam);
     // 每次调用时都使用最新的 loginType 值
     if (loginTypeRef.current === LoginTypeEnum.Password) {
       handlerPasswordLogin(captchaVerifyParam);
@@ -170,6 +167,7 @@ const Login: React.FC = () => {
       captchaPrefix !== '' &&
       openCaptcha
     );
+    console.log('[Login] 执行登录检查:', { needAliyunCaptcha, openCaptcha });
     // 如果需要阿里云验证码，则点击按钮触发验证码
     if (needAliyunCaptcha) {
       document.getElementById('aliyun-captcha-login')?.click();
