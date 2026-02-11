@@ -13,7 +13,6 @@ import ConditionRender from '@/components/ConditionRender';
 import { SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
-import { UserOperatorAreaEnum } from '@/types/enums/menus';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -23,10 +22,11 @@ import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
 // 复用原有组件
 import CollapseButton from '../MenusLayout/CollapseButton';
-import Header from '../MenusLayout/Header';
-import User from '../MenusLayout/User';
-import UserOperateArea from '../MenusLayout/UserOperateArea';
+import Header from './Header';
+import User from './User';
+import UserOperateArea from './UserOperateArea';
 // 复用原有样式
+import useConversation from '@/hooks/useConversation';
 import styles from './index.less';
 import SpaceSection from './SpaceSection';
 
@@ -51,13 +51,24 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
     useModel('layout');
-  const { loadMenus, firstLevelMenus } = useModel('menuModel');
+  const { loadMenus, firstLevelMenus, otherMenus } = useModel('menuModel');
 
   // 工作空间下的最近编辑和开发收藏
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
 
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
+
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  const handlerClick = async () => {
+    if (tenantConfigInfo) {
+      // 创建智能体会话
+      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+    }
+  };
 
   // 初始化加载菜单数据
   useEffect(() => {
@@ -149,12 +160,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       setActiveTab(menu.code as string);
 
+      // 新对话
+      if (menu.code === 'new_conversation') {
+        handlerClick();
+        return;
+      }
+
       if (menu.code === 'workspace') {
         handleRefreshEditAndCollect();
 
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
         history.push(url);
+
+        return;
       }
 
       if (menu.path) {
@@ -174,13 +193,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 用户区域操作
    */
   const handleUserClick = useCallback(
-    (type: UserOperatorAreaEnum) => {
-      switch (type) {
-        case UserOperatorAreaEnum.Document:
+    (code: string) => {
+      switch (code) {
+        case 'documents':
           window.open(SITE_DOCUMENT_URL);
           break;
-        case UserOperatorAreaEnum.Message:
+        case 'notification':
           setOpenMessage(true);
+          break;
+        case 'my_computer':
+          // history.push('/my-computer-manage', { _t: Date.now() });
           break;
       }
     },
@@ -191,6 +213,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
+    // 新对话后二级菜单显示的是主页菜单的二级菜单
+    if (activeTab === 'new_conversation') {
+      return '主页';
+    }
     const current = firstLevelMenus.find(
       (m: MenuItemDto) => m.code === activeTab,
     );
@@ -276,7 +302,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           onClick={handleTabClick}
         />
         {/* 用户操作区域 */}
-        <UserOperateArea onClick={handleUserClick} />
+        <UserOperateArea onClick={handleUserClick} menus={otherMenus} />
         {/* 用户头像 */}
         <User />
       </div>

@@ -12,6 +12,7 @@ import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
 import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
 import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
 import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
+// 新会话图标
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
 import { ReactComponent as NotificationSvgFile } from '@/assets/icons/nav/notification.svg';
 import { ReactComponent as PaletteSvgFile } from '@/assets/icons/nav/palette.svg';
@@ -31,6 +32,7 @@ import { ReactComponent as TimeSvgFile } from '@/assets/icons/nav/time.svg';
 import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
+
 import React from 'react';
 import { wrapSvg } from './utils';
 

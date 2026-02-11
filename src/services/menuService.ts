@@ -13,7 +13,7 @@ import { request } from 'umi';
  */
 const MENU_ICON_MAP: Record<string, string> = {
   // 一级菜单
-  new_chat: 'icons-nav-new_chat',
+  new_conversation: 'icons-nav-new_chat',
   // 主页
   homepage: 'icons-nav-home',
   // 工作空间
@@ -24,6 +24,11 @@ const MENU_ICON_MAP: Record<string, string> = {
   eco_market: 'icons-nav-ecosystem',
   // 系统管理
   system_manage: 'icons-nav-settings',
+
+  // 用户操作区域
+  documents: 'icons-nav-doc',
+  notification: 'icons-nav-notification',
+  my_computer: 'icons-nav-computer',
 
   // 二级菜单 - 系统管理
   // 用户管理

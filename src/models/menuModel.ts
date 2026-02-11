@@ -50,10 +50,6 @@ export default function useMenuModel() {
     async (force = false) => {
       // 如果已有数据且不强制刷新，直接返回
       if (initialState?.menus?.length && !force) {
-        console.log(
-          '[Debug] Using cached menus from initialState:',
-          initialState.menus,
-        );
         setMenuTree(initialState.menus);
         setPermissionSet(new Set(initialState.permissions || []));
         setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
@@ -91,12 +87,35 @@ export default function useMenuModel() {
   );
 
   /**
-   * 一级菜单列表
+   * 需要单独分离的菜单 code 列表
+   * documents：文档
+   * notification：通知
+   * my_computer：我的电脑
+   */
+  const OTHER_MENU_CODES = ['documents', 'notification', 'my_computer'];
+
+  /**
+   * 一级菜单列表（排除 documents、notification、my_computer）
    */
   const firstLevelMenus = useMemo(
     () =>
       menuTree?.filter(
-        (menu: MenuItemDto) => menu.status === MenuEnabledEnum.Enabled,
+        (menu: MenuItemDto) =>
+          menu.status === MenuEnabledEnum.Enabled &&
+          !OTHER_MENU_CODES.includes(menu.code || ''),
+      ),
+    [menuTree],
+  );
+
+  /**
+   * 其他菜单列表（只包含 documents、notification、my_computer）
+   */
+  const otherMenus = useMemo(
+    () =>
+      menuTree?.filter(
+        (menu: MenuItemDto) =>
+          menu.status === MenuEnabledEnum.Enabled &&
+          OTHER_MENU_CODES.includes(menu.code || ''),
       ),
     [menuTree],
   );
@@ -214,6 +233,7 @@ export default function useMenuModel() {
     // 菜单数据获取
     loadMenus,
     firstLevelMenus,
+    otherMenus,
     getSecondLevelMenus,
     findMenuByPath,
     // 权限检查

@@ -261,7 +261,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
    */
   // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
   // 主页 homepage: 最近使用 + 会话记录
-  if (parentCode === 'homepage') {
+  if (parentCode === 'homepage' || parentCode === 'new_conversation') {
     return <HomeSection style={overrideContainerStyle} />;
   }
 

@@ -5,6 +5,7 @@ import type {
 } from '@/types/enums/menus';
 import type { NotifyMessageInfo } from '@/types/interfaces/message';
 import React from 'react';
+import { MenuItemDto } from './menu';
 
 // 用户相关智能体属性（我的收藏、最近使用、最近编辑）
 export interface UserRelAgentProps {
@@ -65,6 +66,8 @@ export interface UserOperateAreaItemType {
 
 // 菜单栏~用户操作区域类型
 export interface UserOperateAreaType {
+  /** 一级菜单列表 */
+  menus: MenuItemDto[];
   onClick: (type: UserOperatorAreaEnum) => void;
 }
 
