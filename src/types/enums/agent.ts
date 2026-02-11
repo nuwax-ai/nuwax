@@ -18,6 +18,8 @@ export enum AgentComponentTypeEnum {
   Agent = 'Agent',
   MCP = 'Mcp',
   Page = 'Page',
+  // 应用
+  PageApp = 'PageApp',
   // 事件
   Event = 'Event',
   // 技能
