@@ -1,4 +1,4 @@
-import { Tooltip } from 'antd';
+import { Tooltip, TooltipProps } from 'antd';
 import React from 'react';
 
 /**
@@ -17,6 +17,8 @@ export interface LimitedTooltipProps {
   maxHeight?: number;
   emptyText?: string;
   formatJson?: boolean;
+  className?: string;
+  placement?: TooltipProps['placement'];
 }
 
 /**
@@ -42,6 +44,8 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
   maxHeight = 280,
   emptyText = '-',
   formatJson = false,
+  className,
+  placement = 'top',
 }) => {
   const [isOverflow, setIsOverflow] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -69,6 +73,7 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
 
   return (
     <Tooltip
+      placement={placement}
       title={
         isOverflow ? (
           <pre
@@ -89,7 +94,7 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
       <div
         ref={containerRef}
         onMouseEnter={handleMouseEnter}
-        className="text-ellipsis"
+        className={`text-ellipsis ${className || ''}`}
       >
         {displayText}
       </div>
