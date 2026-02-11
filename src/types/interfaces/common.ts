@@ -530,6 +530,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onComputerSelect?: (id: string) => void;
   // 智能体ID，用于保存用户对电脑类型的选择
   agentId?: number;
+  /** 智能体绑定的云电脑ID */
+  agentSandboxId?: string | number;
 }
 
 // 聊天框底部更多操作组件

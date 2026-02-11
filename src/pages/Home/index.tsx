@@ -235,6 +235,7 @@ const Home: React.FC = () => {
           selectedComputerId={selectedComputerId}
           onComputerSelect={handleComputerSelect}
           agentId={agentDetail?.agentId}
+          agentSandboxId={agentDetail?.sandboxId}
         />
         <div
           className={cx(
