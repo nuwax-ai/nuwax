@@ -775,12 +775,7 @@ const PermissionResources: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>权限资源管理</h1>
-          <p className={cx(styles.description)}>
-            管理系统中的模块、菜单、接口、组件等权限资源
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>权限资源管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增资源
         </Button>

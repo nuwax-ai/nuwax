@@ -238,7 +238,7 @@ const UserManage: React.FC = () => {
   }) => {
     const response = await apiSystemUserList({
       pageNo: params.current || 1,
-      pageSize: params.pageSize || 10,
+      pageSize: params.pageSize || 15,
       queryFilter: {
         role: params.role || undefined,
         userName: params.userName,

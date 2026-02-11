@@ -237,7 +237,7 @@ const PublishAudit: React.FC = () => {
     const { current, pageSize, name, targetType, publishStatus } = params;
     const response = await apiPublishApplyList({
       pageNo: current || 1,
-      pageSize: pageSize || 10,
+      pageSize: pageSize || 15,
       queryFilter: {
         targetType: targetType || undefined,
         publishStatus: publishStatus || undefined,
@@ -258,7 +258,7 @@ const PublishAudit: React.FC = () => {
     // 重置表格状态
     actionRef.current?.reset?.();
     // 设置分页参数
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
   };
