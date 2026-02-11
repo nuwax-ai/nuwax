@@ -4,14 +4,15 @@
  * 支持特殊菜单（主页、工作空间）注入默认内容
  */
 import SecondMenuItem from '@/components/base/SecondMenuItem';
-import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import { PATH_URL } from '@/constants/home.constants';
+import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
+import { message } from 'antd';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -34,7 +35,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   const { getSecondLevelMenus } = useModel('menuModel');
 
-  const { currentSpaceInfo } = useModel('spaceModel');
+  const { currentSpaceInfo, spaceList } = useModel('spaceModel');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
@@ -51,18 +52,63 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }, []);
 
   /**
+   * 从路径中提取 spaceId
+   * 例如：从 /space/42/develop 中提取 42
+   */
+  const extractSpaceIdFromPath = useCallback((path: string): string | null => {
+    if (!path) return null;
+    // 去掉查询参数
+    const cleanPath = path.split('?')[0];
+    // 匹配 /space/{spaceId}/... 格式
+    const match = cleanPath.match(/\/space\/([^/]+)/);
+    return match ? match[1] : null;
+  }, []);
+
+  /**
    * 处理动态路径，从当前路由参数中提取值并替换路径中的动态参数
    * @param path 包含动态参数的路径，如 /space/:spaceId/develop
    * @returns 替换后的路径，如 /space/123/develop
    */
   const resolveDynamicPath = useCallback(
     (path: string): string => {
-      if (!path.includes(':')) {
+      if (!path || !path.includes(':')) {
         // 没有动态参数，直接返回
         return path;
       }
 
-      let resolvedPath = path;
+      // 判断 params 是否为空对象
+      const isParamsEmpty = Object.keys(params).length === 0;
+
+      // 如果 params 为空对象，且 path 包含动态参数，且 parentCode 是 workspace
+      if (isParamsEmpty && parentCode === 'workspace') {
+        let spaceId: string | null = null;
+
+        try {
+          // 从缓存中获取 workspace 的路径
+          const pathUrl = localStorage.getItem(PATH_URL);
+          if (pathUrl) {
+            const pathUrlObj = JSON.parse(pathUrl) as Record<string, string>;
+            const workspacePath = pathUrlObj['workspace'];
+            if (workspacePath) {
+              spaceId = extractSpaceIdFromPath(workspacePath);
+            }
+          }
+        } catch {
+          // 忽略缓存解析错误
+        }
+
+        // 如果缓存中没有找到 spaceId，从空间列表中获取第一个空间的 id
+        if (!spaceId && spaceList && spaceList.length > 0) {
+          spaceId = String(spaceList[0].id);
+        }
+
+        // 如果找到了 spaceId，替换 path 中的 :spaceId
+        if (spaceId) {
+          return path.replace(/:spaceId/g, spaceId);
+        }
+      }
+
+      let resolvedPath: string = '';
 
       // 提取路径中的所有动态参数（如 :spaceId, :agentId）
       // 使用 match 方法获取所有匹配项
@@ -76,30 +122,34 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
         if (paramValue) {
           // 替换路径中的动态参数
-          resolvedPath = resolvedPath.replace(
-            `:${paramName}`,
-            String(paramValue),
-          );
-        } else {
-          // 如果找不到对应的参数值，保持原样或返回原路径
-          console.warn(
-            `[DynamicSecondMenu] 无法从路由参数中找到 ${paramName}，路径: ${path}`,
-          );
+          resolvedPath = path.replace(`:${paramName}`, String(paramValue));
         }
       });
 
       return resolvedPath;
     },
-    [params],
+    [params, parentCode, spaceList, extractSpaceIdFromPath],
   );
 
   // 处理路径URL路径跳转
-  const handlePathUrl = (path: string) => {
+  const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
     if (!path) return;
+    // http开头的路径，直接打开
+    if (path?.includes('http')) {
+      const targetOpenType =
+        openType === OpenTypeEnum.NewTab ? '_blank' : '_self';
+      window.open(path, targetOpenType);
+      return;
+    }
     // 关闭移动端菜单
     handleCloseMobileMenu();
     // 处理动态路径
     const resolvedPath = resolveDynamicPath(path);
+
+    if (!resolvedPath) {
+      message.warning('处理路径URL路径跳转失败，请刷新页面重试');
+      return;
+    }
 
     try {
       const pathUrl = localStorage.getItem(PATH_URL);
@@ -135,7 +185,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         toggleExpand(menu.code as string);
       } else {
         // 无子菜单，处理路径URL路径跳转
-        handlePathUrl(menu?.path || '');
+        handlePathUrl(menu?.path || '', menu?.openType);
       }
     },
     [toggleExpand, handlePathUrl],
@@ -160,6 +210,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       // 如果路径包含动态参数，先解析路径
       if (targetPath.includes(':')) {
         const resolvedPath = resolveDynamicPath(targetPath);
+
+        if (!resolvedPath) return false;
 
         // 如果解析后仍然包含 ':'，说明有参数未找到，使用正则表达式匹配
         if (resolvedPath.includes(':')) {
@@ -227,13 +279,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return (
           <SecondMenuItem.SubItem
             key={menuCode}
-            icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+            icon={menu.icon}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}
             onClick={() => {
               // 处理路径URL路径跳转
-              handlePathUrl(menu?.path || '');
+              handlePathUrl(menu?.path || '', menu?.openType);
             }}
           />
         );
@@ -243,7 +295,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return (
         <div key={menuCode} className="flex flex-col gap-4">
           <SecondMenuItem
-            icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+            icon={menu.icon}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}
@@ -274,7 +326,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div className={'flex flex-col gap-4'}>
+    <div className={'flex flex-col gap-4 overflow-auto'}>
       {secondMenus.map((menu: MenuItemDto) => renderMenuItem(menu))}
     </div>
   );

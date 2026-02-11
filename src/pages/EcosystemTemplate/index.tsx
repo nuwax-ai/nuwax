@@ -194,11 +194,16 @@ export default function EcosystemTemplate() {
         const { targetType, categoryCode, shareStatus, targetSubType } =
           selectTargetTypeRef.current;
 
+        let _targetType = targetType;
+        if (_targetType === AgentComponentTypeEnum.PageApp) {
+          _targetType = AgentComponentTypeEnum.Agent;
+        }
+
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型
             subTabType,
-            targetType: targetType === '' ? undefined : targetType,
+            targetType: _targetType === '' ? undefined : _targetType,
             targetSubType: targetSubType === '' ? undefined : targetSubType,
             name: keyword || undefined,
             shareStatus: shareStatus === -1 ? undefined : shareStatus,
@@ -260,9 +265,9 @@ export default function EcosystemTemplate() {
       const searchParamsObj = new URLSearchParams(searchParams);
       const targetType = searchParamsObj.get('targetType');
       // 网页应用
-      if (targetType === AgentComponentTypeEnum.Page) {
+      if (targetType === AgentComponentTypeEnum.PageApp) {
         selectTargetTypeRef.current['targetType'] =
-          AgentComponentTypeEnum.Agent;
+          AgentComponentTypeEnum.PageApp;
         selectTargetTypeRef.current['targetSubType'] = 'PageApp';
       }
       // 智能体

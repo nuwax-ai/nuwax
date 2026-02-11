@@ -248,7 +248,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                 popupMatchSelectWidth={false}
                 open={openBindArray}
                 value={cardKey || null}
-                onDropdownVisibleChange={(open) => {
+                onOpenChange={(open) => {
                   setOpenBindArray(open);
                 }}
                 onClick={() => setOpenBindArray(true)}
@@ -291,7 +291,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   disabled={cardStyle === BindCardStyleEnum.LIST && !cardKey}
                   open={Boolean(info?.open)}
                   value={info?.cardKey || null}
-                  onDropdownVisibleChange={(open) => handleArgList(index, open)}
+                  onOpenChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
                   popupRender={() =>
                     dataSource?.length > 0 ? (
@@ -347,7 +347,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
               popupMatchSelectWidth={false}
               open={urlVisible}
               value={bindLinkUrl || null}
-              onDropdownVisibleChange={(open) => setUrlVisible(open)}
+              onOpenChange={(open) => setUrlVisible(open)}
               onClick={() => setUrlVisible(true)}
               popupRender={() => (
                 <Tree
