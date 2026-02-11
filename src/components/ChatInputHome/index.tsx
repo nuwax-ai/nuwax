@@ -55,6 +55,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   selectedComputerId,
   onComputerSelect,
   agentId,
+  agentSandboxId,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -479,7 +480,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/* 智能体电脑模式下显示电脑类型选择器 */}
             {isTaskAgentActive && (
               <ComputerTypeSelector
-                value={selectedComputerId}
+                value={
+                  conversationInfo?.sandboxServerId !== undefined &&
+                  conversationInfo?.sandboxServerId !== null
+                    ? String(conversationInfo.sandboxServerId)
+                    : agentSandboxId !== undefined && agentSandboxId !== null
+                    ? String(agentSandboxId)
+                    : selectedComputerId
+                }
                 onChange={(id) => onComputerSelect?.(id)}
                 disabled={
                   wholeDisabled ||
@@ -487,6 +495,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   conversationInfo?.taskStatus === TaskStatus.EXECUTING
                 }
                 agentId={agentId}
+                fixedSelection={
+                  (conversationInfo?.sandboxServerId !== undefined &&
+                    conversationInfo?.sandboxServerId !== null) ||
+                  (agentSandboxId !== undefined && agentSandboxId !== null)
+                }
               />
             )}
             {/* 根据会话状态显示发送或停止按钮 */}
