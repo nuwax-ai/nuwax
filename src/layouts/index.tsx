@@ -107,7 +107,7 @@ const Layout: React.FC = () => {
   );
 
   useEffect(() => {
-    // 查询广场menus列表
+    // 查询广场分类列表
     runQueryCategory();
     // 租户配置信息查询接口
     runTenantConfig();
