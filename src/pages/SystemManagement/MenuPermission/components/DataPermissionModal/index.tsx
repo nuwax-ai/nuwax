@@ -565,35 +565,34 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'flex-col',
                 'h-full',
                 'flex-1',
-                'overflow-hide',
+                'overflow-y',
+                styles.leftList,
               )}
             >
-              <div className={cx('flex-1', 'overflow-y', 'h-full')}>
-                {modelLoading && !modelList?.length ? (
-                  <div
-                    className={cx(
-                      'h-full',
-                      'flex',
-                      'items-center',
-                      'content-center',
-                    )}
-                  >
-                    <Loading />
-                  </div>
-                ) : (
-                  modelList?.map((item: ModelConfigDto) => (
-                    <ResourceItem
-                      key={item.id}
-                      showIcon={false}
-                      name={item.name}
-                      description={item.description}
-                      targetId={item.id}
-                      onAdd={toggleModelSelected}
-                      isAdded={selectedModelIds.includes(item.id)}
-                    />
-                  ))
-                )}
-              </div>
+              {modelLoading && !modelList?.length ? (
+                <div
+                  className={cx(
+                    'h-full',
+                    'flex',
+                    'items-center',
+                    'content-center',
+                  )}
+                >
+                  <Loading />
+                </div>
+              ) : (
+                modelList?.map((item: ModelConfigDto) => (
+                  <ResourceItem
+                    key={item.id}
+                    showIcon={false}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.id}
+                    onAdd={toggleModelSelected}
+                    isAdded={selectedModelIds.includes(item.id)}
+                  />
+                ))
+              )}
             </div>
             {/* 分割线 */}
             <div className={cx(styles.rightSeparator)} />
@@ -627,6 +626,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'h-full',
                 'flex-1',
                 'overflow-hide',
+                styles.leftList,
               )}
             >
               <Input.Search
@@ -730,6 +730,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'h-full',
                 'flex-1',
                 'overflow-hide',
+                styles.leftList,
               )}
             >
               <Input.Search
