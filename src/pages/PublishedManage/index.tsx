@@ -90,6 +90,7 @@ const PublishedManage: React.FC = () => {
       valueType: 'select',
       valueEnum: {
         [SquareAgentTypeEnum.Agent]: { text: '智能体' },
+        // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
         [SquareAgentTypeEnum.Plugin]: { text: '插件' },
         [SquareAgentTypeEnum.Workflow]: { text: '工作流' },
         [SquareAgentTypeEnum.Skill]: { text: '技能' },

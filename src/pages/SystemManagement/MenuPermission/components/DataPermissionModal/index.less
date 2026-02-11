@@ -11,7 +11,7 @@
 .dataPermissionForm {
   // 抵消 Row gutter 的负边距
   margin: 0 -8px;
-  padding: 0 8px;
+  padding: 0 12px 0 8px;
 }
 
 :global {
@@ -42,12 +42,16 @@
     }
   }
 
+  .leftList {
+    padding-right: 12px;
+  }
+
   .rightSeparator {
-    margin: 0 12px;
     border-right: @lineWidth solid @colorBorderSecondary;
   }
 
   .rightList {
+    padding: 0 12px;
     display: flex;
     flex-direction: column;
     height: 100%;
