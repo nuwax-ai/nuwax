@@ -1,8 +1,11 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiGetSpaceDetail } from '@/services/teamSetting';
 import type { AgentInfo } from '@/types/interfaces/agent';
+import { SpaceInfo } from '@/types/interfaces/workspace';
 import classNames from 'classnames';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { history, useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import DevCollect from './DevCollect';
@@ -26,6 +29,30 @@ const SpaceSection: React.FC<{
   const finalSpaceId = useMemo(() => {
     return spaceId ?? getSpaceId();
   }, [spaceId, getSpaceId]);
+
+  const [dynamicTitle, setDynamicTitle] = useState<string>('');
+
+  useEffect(() => {
+    const spaceIdStr = String(finalSpaceId);
+    const isInList = spaceList?.some(
+      (item: SpaceInfo) => String(item.id) === spaceIdStr,
+    );
+
+    if (isInList) {
+      setDynamicTitle(currentSpaceInfo?.name || '个人空间');
+    } else {
+      // Fetch details
+      apiGetSpaceDetail(finalSpaceId).then((res) => {
+        if (res.code === SUCCESS_CODE && res.data) {
+          const { creatorName, name } = res.data;
+          const display = creatorName ? `${creatorName}的个人空间` : name;
+          setDynamicTitle(display || '个人空间');
+        } else {
+          setDynamicTitle('个人空间');
+        }
+      });
+    }
+  }, [finalSpaceId, spaceList, currentSpaceInfo]);
 
   useEffect(() => {
     // 根据url地址中的finalSpaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
@@ -55,7 +82,7 @@ const SpaceSection: React.FC<{
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
       <div style={{ padding: '0 12px 14px' }}>
-        <SpaceTitle name={currentSpaceInfo?.name} />
+        <SpaceTitle name={dynamicTitle} />
       </div>
 
       {/* 空间菜单列表 */}
