@@ -521,6 +521,11 @@ export interface ChatInputProps extends ManualComponentItemProps {
   showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
   onToggleTaskAgent?: () => void;
+  // 电脑类型选择相关
+  selectedComputerId?: string;
+  onComputerSelect?: (id: string) => void;
+  // 智能体ID，用于保存用户对电脑类型的选择
+  agentId?: number;
 }
 
 // 聊天框底部更多操作组件

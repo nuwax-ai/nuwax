@@ -9,7 +9,7 @@ import { request } from 'umi';
 
 // 查询指定空间信息
 export async function apiGetSpaceDetail(
-  spaceId: number,
+  spaceId: number | string,
 ): Promise<RequestResponse<TeamDetailInfo>> {
   return request(`/api/space/get/${spaceId}`, {
     method: 'GET',

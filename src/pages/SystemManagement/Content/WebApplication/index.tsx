@@ -10,13 +10,12 @@ import { PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemWebappInfo } from '@/types/interfaces/systemManage';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Switch, Tooltip } from 'antd';
+import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
@@ -215,19 +214,17 @@ const WebApplication: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: (
-        <span>
-          管控
-          <Tooltip title="若开启管控，发布到系统广场的网页应用需授权才能使用">
-            <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
-          </Tooltip>
-        </span>
-      ),
+      title: '管控',
+      tooltip: '若开启管控，发布到系统广场的网页应用需授权才能使用',
       dataIndex: 'accessControl',
       align: 'center',
-      width: 80,
+      width: 100,
       fixed: 'right',
-      hideInSearch: true,
+      valueEnum: {
+        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
+        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+      },
+      valueType: 'select',
       render: (_, record: SystemWebappInfo) => (
         <Switch
           checked={record.accessControl === AccessControlEnum.Filter}
@@ -259,12 +256,14 @@ const WebApplication: React.FC = () => {
     current?: number;
     name?: string;
     creatorName?: string;
+    accessControl?: AccessControlEnum;
   }) => {
     const response = await apiSystemResourceWebappList({
       pageNo: params.current || 1,
       pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
+      accessControl: params.accessControl,
     });
 
     return {

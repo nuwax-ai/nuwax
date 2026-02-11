@@ -6,6 +6,7 @@ import {
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiSystemModelAccessControl,
   apiSystemModelDelete,
   apiSystemModelList,
   apiSystemModelSave,
@@ -13,10 +14,11 @@ import {
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import { ModelComponentStatusEnum } from '@/types/enums/space';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { Button, message, Switch } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
 import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
@@ -32,6 +34,10 @@ const GlobalModelManage: React.FC = () => {
   const [currentAuthModelId, setCurrentAuthModelId] = useState<number | null>(
     null,
   );
+  // 管控状态切换 loading 状态
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
 
   const selectOptions = [
     { label: '全部', value: '' },
@@ -50,6 +56,38 @@ const GlobalModelManage: React.FC = () => {
       message.error(res.message || '删除失败');
     }
   };
+
+  /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: ModelConfigDto, checked: boolean) => {
+      const newStatus = checked
+        ? AccessControlEnum.Filter
+        : AccessControlEnum.NoFilter;
+      setAccessControlLoadingMap((prev) => ({
+        ...prev,
+        [record.id]: true,
+      }));
+      try {
+        const response = await apiSystemModelAccessControl(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        } else {
+          message.error(response.message || '更新管控状态失败');
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({
+          ...prev,
+          [record.id]: false,
+        }));
+      }
+    },
+    [],
+  );
 
   // 操作列配置
   const getActions = useCallback(
@@ -149,6 +187,26 @@ const GlobalModelManage: React.FC = () => {
       valueType: 'dateTime',
     },
     {
+      title: '管控',
+      tooltip: '若开启管控，需授权才能使用',
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      valueEnum: {
+        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
+        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+      },
+      valueType: 'select',
+      render: (_, record: ModelConfigDto) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
+    },
+    {
       title: '操作',
       valueType: 'option',
       width: 180,
@@ -175,6 +233,10 @@ const GlobalModelManage: React.FC = () => {
     let data = res.data || [];
     if (type) {
       data = data.filter((v) => v.type === type);
+    }
+    const { accessControl } = params;
+    if (accessControl !== undefined) {
+      data = data.filter((v) => v.accessControl === Number(accessControl));
     }
 
     return {

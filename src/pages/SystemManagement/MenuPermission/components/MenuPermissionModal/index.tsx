@@ -1,7 +1,7 @@
 import Loading from '@/components/custom/Loading';
 import { Button, Modal, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetRoleBoundMenuList,
@@ -177,6 +177,30 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
     }
   }, [open, targetId]);
 
+  // 用户组需要过滤掉生态市场和系统管理这两个菜单
+  const filterMenuTree = useMemo(() => {
+    if (!menuTree) return [];
+
+    // 角色：不做过滤，直接返回完整菜单树
+    if (type === 'role') {
+      return menuTree;
+    }
+
+    // 用户组：过滤掉 code 为 eco_market 和 system_manage 的菜单
+    const filterMenus = (menus: MenuNodeInfo[]): MenuNodeInfo[] => {
+      return menus
+        .filter(
+          (menu) => menu.code !== 'eco_market' && menu.code !== 'system_manage',
+        )
+        .map((menu) => ({
+          ...menu,
+          children: menu.children ? filterMenus(menu.children) : undefined,
+        }));
+    };
+
+    return filterMenus(menuTree);
+  }, [menuTree, type]);
+
   /**
    * 根据资源码选中状态构建资源树
    */
@@ -295,10 +319,10 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
 
   // 处理保存
   const handleSave = () => {
-    if (!targetId || !menuTree) return;
+    if (!targetId || !filterMenuTree) return;
 
     // 构建资源树结构
-    const updatedMenuTree = buildMenuTree(menuTree, selectedMenuIds);
+    const updatedMenuTree = buildMenuTree(filterMenuTree, selectedMenuIds);
 
     // 根据类型选择不同的ID
     const id = type === 'role' ? 'roleId' : 'groupId';
@@ -312,7 +336,8 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
   };
 
   // 判断是否没有菜单数据
-  const hasNoMenuData = !getMenuLoading && (!menuTree || menuTree.length === 0);
+  const hasNoMenuData =
+    !getMenuLoading && (!filterMenuTree || filterMenuTree.length === 0);
 
   return (
     <Modal
@@ -342,9 +367,9 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
           >
             <Loading />
           </div>
-        ) : menuTree && menuTree.length > 0 ? (
+        ) : filterMenuTree && filterMenuTree.length > 0 ? (
           <MenuPermissionTree
-            menuTree={menuTree}
+            menuTree={filterMenuTree}
             selectedKeys={selectedMenuIds}
             onSelect={setSelectedMenuIds}
             onResourceChange={setSelectedResourceIds}

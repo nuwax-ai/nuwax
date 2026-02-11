@@ -61,10 +61,12 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   const onReadyCalledRef = useRef<boolean>(false);
   // 使用ref保存验证参数，避免闭包问题
   const captchaParamRef = useRef<any>(null);
+  const captchaInstanceRef = useRef<any>(null);
 
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
   const captchaVerifyCallback = (captchaVerifyParam: any) => {
     // 保存验证参数到ref，供业务回调使用
+    console.log('[AliyunCaptcha] 验证参数生成:', captchaVerifyParam);
     captchaParamRef.current = captchaVerifyParam;
     // 只返回验证结果，不在这里执行业务逻辑
     return {
@@ -75,18 +77,52 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   // 业务结果回调 - 在验证成功后执行业务逻辑
   const onBizResultCallback = useCallback(() => {
+    // 检查验证参数是否存在，防止重复使用
+    if (!captchaParamRef.current) {
+      console.warn(
+        '[AliyunCaptcha] Blocked double usage: Token already consumed or invalid.',
+      );
+      return;
+    }
+
     // 在业务回调中执行登录逻辑，从ref中读取验证参数
+    console.log('[AliyunCaptcha] 消费 Token:', captchaParamRef.current);
     doAction(captchaParamRef.current);
+
+    // 消费后刷新实例，确保下次验证生成新的token
+    if (
+      captchaInstanceRef.current &&
+      typeof captchaInstanceRef.current.refresh === 'function'
+    ) {
+      console.log('[AliyunCaptcha] 刷新实例以重置状态');
+      captchaInstanceRef.current.refresh();
+    }
+
+    // 消费后立即置空，防止二次使用
+    captchaParamRef.current = null;
   }, [doAction]);
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
+    console.log('[AliyunCaptcha] 清理资源');
     document.getElementById('aliyunCaptcha-mask')?.remove();
     document.getElementById('aliyunCaptcha-window-popup')?.remove();
+
+    // 尝试销毁实例
+    if (
+      captchaInstanceRef.current &&
+      typeof captchaInstanceRef.current.destroy === 'function'
+    ) {
+      console.log('[AliyunCaptcha] 销毁实例');
+      captchaInstanceRef.current.destroy();
+    }
+    captchaInstanceRef.current = null;
   }, []);
 
   // 获取验证码实例
   const getInstance = useCallback((instance: any) => {
+    console.log('[AliyunCaptcha] 获取实例:', instance);
+    captchaInstanceRef.current = instance;
     if (instance) {
       setCaptchaInited(true);
     }
@@ -94,6 +130,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   // 初始化验证码
   useEffect(() => {
+    console.log('[AliyunCaptcha] 组件挂载');
     // 重置onReady调用状态
     onReadyCalledRef.current = false;
 
@@ -103,6 +140,12 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       config?.captchaPrefix &&
       config?.openCaptcha
     ) {
+      // 防止重复初始化
+      if (captchaInstanceRef.current) {
+        console.log('[AliyunCaptcha] 实例已存在，跳过初始化');
+        return;
+      }
+      console.log('[AliyunCaptcha] 初始化 SDK...');
       window.initAliyunCaptcha({
         SceneId: config.captchaSceneId, // 场景ID
         prefix: config.captchaPrefix, // 身份标

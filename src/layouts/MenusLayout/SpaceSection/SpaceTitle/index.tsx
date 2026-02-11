@@ -37,6 +37,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
           <PersonalSpaceContent
             onCreateTeam={showModal}
             onClosePopover={setOpen}
+            currentSpaceName={name}
           />
         }
       >
@@ -52,7 +53,12 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
             <Typography.Title
               level={5}
               style={{ marginBottom: 0 }}
-              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+              ellipsis={{
+                rows: 1,
+                expandable: false,
+                symbol: '...',
+                tooltip: true,
+              }}
             >
               {name || '个人空间'}
             </Typography.Title>

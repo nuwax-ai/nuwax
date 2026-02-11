@@ -16,6 +16,7 @@ export interface UpdateSpaceTeamParams {
 export interface TeamDetailInfo extends UpdateSpaceTeamParams {
   tenantId: number;
   creatorId: number;
+  creatorName?: string;
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   currentUserRole: TeamStatusEnum;
   created: string;

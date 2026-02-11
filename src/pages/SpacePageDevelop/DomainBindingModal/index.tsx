@@ -192,9 +192,9 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
               请将域名解析到以下 CNAME 地址（二选一）
             </div>
             <div className={cx(styles['cname-item'])}>
-              <span className={cx(styles['cname-tag'], styles['cn-tag'])}>
+              {/* <span className={cx(styles['cname-tag'], styles['cn-tag'])}>
                 中国用户
-              </span>
+              </span> */}
               <div className={cx(styles['cname-info'])}>
                 <div className={cx(styles['cname-value'])}>
                   cn-cname.nuwax.com
@@ -205,9 +205,9 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
               </div>
             </div>
             <div className={cx(styles['cname-item'])}>
-              <span className={cx(styles['cname-tag'], styles['en-tag'])}>
+              {/* <span className={cx(styles['cname-tag'], styles['en-tag'])}>
                 海外用户
-              </span>
+              </span> */}
               <div className={cx(styles['cname-info'])}>
                 <div className={cx(styles['cname-value'])}>
                   en-cname.nuwax.com

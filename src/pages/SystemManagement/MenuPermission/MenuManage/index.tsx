@@ -758,12 +758,7 @@ const MenuManage: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>菜单管理</h1>
-          <p className={cx(styles.description)}>
-            管理系统菜单结构,未级菜单可关联资源码
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>菜单管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增菜单
         </Button>
