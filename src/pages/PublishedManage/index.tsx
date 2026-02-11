@@ -15,12 +15,14 @@ import type {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
 
 /**
  * 已发布管理
  */
 const PublishedManage: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
@@ -61,15 +63,17 @@ const PublishedManage: React.FC = () => {
       {
         key: 'view',
         label: '查看',
+        isShow: hasPermission('published_manage_query_detail'),
         onClick: handleView,
       },
       {
         key: 'offShelf',
         label: '下架',
+        isShow: hasPermission('published_manage_offline'),
         onClick: (r) => handleOffShelf(r.id),
       },
     ];
-  }, [handleView, handleOffShelf]);
+  }, [hasPermission, handleView, handleOffShelf]);
 
   const columns: ProColumns<PublishListInfo>[] = [
     {
@@ -158,6 +162,7 @@ const PublishedManage: React.FC = () => {
         rowKey="id"
         columns={columns}
         request={request}
+        showQueryButtons={hasPermission('published_manage_query_list')}
       />
       <OffshelfModal
         open={openOffshelfModal}
