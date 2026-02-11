@@ -16,7 +16,13 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
@@ -68,6 +74,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否点击菜单
+  const isClickMenu = useRef<boolean>(false);
 
   const handlerClick = async () => {
     if (tenantConfigInfo) {
@@ -125,8 +134,92 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     return false;
   };
 
+  /**
+   * 检查路径是否匹配（用于子菜单的精确匹配）
+   * @param menuPath 菜单路径
+   * @param pathname 当前路径
+   * @returns 是否匹配
+   */
+  const isPathMatch = useCallback(
+    (menuPath: string, pathname: string): boolean => {
+      if (!menuPath) return false;
+
+      // 移除查询参数
+      const menuPathWithoutQuery = menuPath.split('?')[0];
+
+      // 精确匹配
+      if (pathname === menuPathWithoutQuery) {
+        return true;
+      }
+
+      // 前缀匹配（例如 /system/menu 匹配 /system/menu/xxx）
+      if (pathname.startsWith(menuPathWithoutQuery + '/')) {
+        return true;
+      }
+
+      // 处理动态路径（例如 /space/:spaceId/develop）
+      if (menuPathWithoutQuery.includes(':')) {
+        // 将动态路径转换为正则表达式
+        const pattern = menuPathWithoutQuery.replace(/:(\w+)/g, '[^/]+');
+        const regex = new RegExp(`^${pattern}(/.*)?$`);
+        return regex.test(pathname);
+      }
+
+      return false;
+    },
+    [],
+  );
+
+  /**
+   * 递归查找匹配路径的菜单，并返回其第一级父菜单的 code
+   * @param menus 菜单列表
+   * @param pathname 当前路径
+   * @param firstLevelCode 第一级菜单的 code（用于递归时传递）
+   * @returns 匹配菜单的第一级父菜单的 code，如果未找到则返回 null
+   */
+  const findFirstLevelCodeByPath = useCallback(
+    (
+      menus: MenuItemDto[],
+      pathname: string,
+      firstLevelCode?: string,
+    ): string | null => {
+      for (const menu of menus) {
+        // 如果是第一级菜单，记录其 code
+        const currentFirstLevelCode = firstLevelCode || menu.code;
+
+        // 检查当前菜单是否匹配（一级菜单使用 isMenuMatch，子菜单使用 isPathMatch）
+        const isMatch = firstLevelCode
+          ? isPathMatch(menu.path || '', pathname)
+          : isMenuMatch(menu, pathname);
+
+        if (isMatch) {
+          return currentFirstLevelCode || null;
+        }
+
+        // 如果有子菜单，递归查找
+        if (menu.children && menu.children.length > 0) {
+          const foundCode = findFirstLevelCodeByPath(
+            menu.children,
+            pathname,
+            currentFirstLevelCode,
+          );
+          if (foundCode) {
+            return foundCode;
+          }
+        }
+      }
+      return null;
+    },
+    [isMenuMatch, isPathMatch],
+  );
+
+  // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
+    if (isClickMenu.current) {
+      return;
+    }
+
     if (!firstLevelMenus.length) return;
 
     // 查找匹配当前路径的菜单
@@ -143,6 +236,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       );
       if (homeMenu) {
         setActiveTab(homeMenu.code);
+      }
+    } else {
+      // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
+      const firstLevelCode = findFirstLevelCodeByPath(
+        firstLevelMenus,
+        location.pathname,
+      );
+      if (firstLevelCode) {
+        setActiveTab(firstLevelCode);
       }
     }
   }, [location.pathname, firstLevelMenus]);
@@ -189,6 +291,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    */
   const handleTabClick = useCallback(
     (menu: MenuItemDto) => {
+      // 是否点击了一级菜单
+      isClickMenu.current = true;
       // 关闭移动端菜单
       handleCloseMobileMenu();
 
