@@ -202,7 +202,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           setOpenMessage(true);
           break;
         case 'my_computer':
-          // history.push('/my-computer-manage', { _t: Date.now() });
+          history.push('/my-computer-manage', { _t: Date.now() });
           break;
       }
     },
