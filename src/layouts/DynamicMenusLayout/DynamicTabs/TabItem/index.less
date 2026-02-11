@@ -8,13 +8,16 @@
   user-select: none; /* 禁止选中 */
 
   .active-icon-container {
+    font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    border-radius: @borderRadius;
 
-    img {
-      max-width: 100%;
-      max-height: 100%;
+    .icon-image {
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -47,10 +50,9 @@
 
   // 支持导航风格2的文字显示
   .text {
+    width: 100%;
     margin-top: @marginXxs;
     font-size: @navFirstMenuFontSize;
-    // opacity: 0;
-    // transform: translateY(-5px);
     transition: all 0.3s ease;
     text-align: center;
     white-space: nowrap;
