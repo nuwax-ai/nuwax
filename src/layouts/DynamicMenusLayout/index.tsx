@@ -57,6 +57,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     useModel('layout');
   const { loadMenus, firstLevelMenus, otherMenus } = useModel('menuModel');
 
+  const { refreshUserInfo } = useModel('userInfo');
+
   // 工作空间下的最近编辑和开发收藏
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
 
@@ -77,7 +79,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 初始化加载菜单数据
   useEffect(() => {
     loadMenus();
-  }, [loadMenus]);
+
+    // 获取用户信息
+    refreshUserInfo();
+  }, []);
 
   /**
    * 递归检查菜单是否匹配当前路径
