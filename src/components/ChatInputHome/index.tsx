@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
+import ComputerTypeSelector from '@/components/ComputerTypeSelector';
 import ConditionRender from '@/components/ConditionRender';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -51,6 +52,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showTaskAgentToggle = false,
   isTaskAgentActive = false,
   onToggleTaskAgent,
+  selectedComputerId,
+  onComputerSelect,
+  agentId,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -471,65 +475,85 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             selectedComponentList={selectedComponentList}
             onSelectComponent={onSelectComponent}
           />
-          {/* 根据会话状态显示发送或停止按钮 */}
-          {isConversationActive ||
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
-            // 会话进行中，显示停止按钮
-            <Tooltip title={getStopButtonTooltip()}>
-              <span
-                onClick={handleStopConversation}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['send-box'],
-                  styles['stop-box'],
-                  // 当会话进行中且按钮可点击时，使用高亮样式
-                  {
-                    [styles['stop-box-active']]:
-                      // !disabledStop &&
-                      // !wholeDisabled &&
-                      !isStoppingConversation,
-                  },
-                  // { [styles.disabled]: disabledStop || wholeDisabled },
-                )}
-              >
-                {isStoppingConversation ? (
-                  <div className={cx(styles['loading-box'])}>
-                    <LoadingOutlined className={cx(styles['loading-icon'])} />
-                  </div>
-                ) : (
-                  <SvgIcon name="icons-chat-stop" />
-                )}
-              </span>
-            </Tooltip>
-          ) : (
-            // 会话未进行中，显示发送按钮
-            <Tooltip title={getButtonTooltip()}>
-              <span
-                onClick={handleSendMessage}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['send-box'],
-                  {
-                    [styles.disabled]:
-                      disabledSend ||
-                      wholeDisabled ||
-                      loadingConversation ||
-                      isLoadingOtherInterface,
-                  },
-                )}
-              >
-                <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />
-              </span>
-            </Tooltip>
-          )}
+          <div className={cx('flex')} style={{ gap: 4 }}>
+            {/* 智能体电脑模式下显示电脑类型选择器 */}
+            {isTaskAgentActive && (
+              <ComputerTypeSelector
+                value={selectedComputerId}
+                onChange={(id) => onComputerSelect?.(id)}
+                disabled={
+                  wholeDisabled ||
+                  isConversationActive ||
+                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
+                }
+                agentId={agentId}
+              />
+            )}
+            {/* 根据会话状态显示发送或停止按钮 */}
+            {isConversationActive ||
+            conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
+              // 会话进行中，显示停止按钮
+              <Tooltip title={getStopButtonTooltip()}>
+                <span
+                  onClick={handleStopConversation}
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'cursor-pointer',
+                    styles.box,
+                    styles['send-box'],
+                    styles['stop-box'],
+                    // 当会话进行中且按钮可点击时，使用高亮样式
+                    {
+                      [styles['stop-box-active']]:
+                        // !disabledStop &&
+                        // !wholeDisabled &&
+                        !isStoppingConversation,
+                    },
+                    // { [styles.disabled]: disabledStop || wholeDisabled },
+                  )}
+                >
+                  {isStoppingConversation ? (
+                    <div className={cx(styles['loading-box'])}>
+                      <LoadingOutlined className={cx(styles['loading-icon'])} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-stop" />
+                  )}
+                </span>
+              </Tooltip>
+            ) : (
+              // 会话未进行中，显示发送按钮
+              <>
+                <Tooltip title={getButtonTooltip()}>
+                  <span
+                    onClick={handleSendMessage}
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'cursor-pointer',
+                      styles.box,
+                      styles['send-box'],
+                      {
+                        [styles.disabled]:
+                          disabledSend ||
+                          wholeDisabled ||
+                          loadingConversation ||
+                          isLoadingOtherInterface,
+                      },
+                    )}
+                  >
+                    <SvgIcon
+                      name="icons-chat-send"
+                      style={{ fontSize: '14px' }}
+                    />
+                  </span>
+                </Tooltip>
+              </>
+            )}
+          </div>
         </footer>
       </div>
       {showAnnouncement && (
