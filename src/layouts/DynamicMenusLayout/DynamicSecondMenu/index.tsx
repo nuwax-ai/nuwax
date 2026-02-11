@@ -9,6 +9,7 @@ import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
+import { PATH_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 
@@ -92,6 +93,34 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     [params],
   );
 
+  // 处理路径URL路径跳转
+  const handlePathUrl = (path: string) => {
+    if (!path) return;
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
+    // 处理动态路径
+    const resolvedPath = resolveDynamicPath(path);
+
+    try {
+      const pathUrl = localStorage.getItem(PATH_URL);
+      if (pathUrl) {
+        const pathUrlObj = JSON.parse(pathUrl);
+        pathUrlObj[parentCode] = resolvedPath;
+
+        // 存储当前路径
+        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
+      } else {
+        const pathUrlObj = {
+          [parentCode]: resolvedPath,
+        };
+        // 存储当前路径
+        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
+      }
+    } catch {}
+    // 无子菜单，直接路由跳转
+    history.push(resolvedPath, { _t: Date.now() });
+  };
+
   /**
    * 点击菜单项
    * - 有子菜单：仅展开/折叠，不导航
@@ -104,19 +133,23 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       if (hasChildren) {
         // 有子菜单，仅切换展开状态
         toggleExpand(menu.code as string);
-      } else if (menu.path) {
-        // 处理动态路径
-        const resolvedPath = resolveDynamicPath(menu.path);
-        // 无子菜单，直接路由跳转
-        history.push(resolvedPath, { _t: Date.now() });
+      } else {
+        // 无子菜单，处理路径URL路径跳转
+        handlePathUrl(menu?.path || '');
       }
     },
-    [toggleExpand, resolveDynamicPath],
+    [toggleExpand, handlePathUrl],
   );
 
   /**
    * 判断菜单是否激活
-   * 支持动态路径匹配，如果路径包含动态参数，会先解析后再比较
+   * 支持动态路径匹配，如果路径包含动态参数或查询参数，会先解析并去掉查询串再比较
+   *
+   * 例如：
+   * - 配置路径：/space/:spaceId/space-square?activeKey=Agent
+   * - 解析后： /space/42/space-square?activeKey=Agent
+   * - 实际 pathname：/space/42/space-square
+   * 需要在比较前去掉 ? 及其后的查询参数
    */
   const isActive = useCallback(
     (path?: string) => {
@@ -130,9 +163,10 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
         // 如果解析后仍然包含 ':'，说明有参数未找到，使用正则表达式匹配
         if (resolvedPath.includes(':')) {
+          // 只取路径部分（去掉查询参数），例如 /space/:spaceId/develop
+          const rawPattern = targetPath.split('?')[0];
           // 将动态路径转换为正则表达式进行匹配
-          // 例如: /space/:spaceId/develop -> /space/[^/]+/develop
-          const pattern = targetPath.replace(/:(\w+)/g, '[^/]+');
+          const pattern = rawPattern.replace(/:(\w+)/g, '[^/]+');
           const regex = new RegExp(`^${pattern}(/.*)?$`);
           return regex.test(location.pathname);
         }
@@ -141,29 +175,18 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         targetPath = resolvedPath;
       }
 
+      // 去掉查询参数，只保留路径部分
+      const [pathWithoutQuery] = targetPath.split('?');
+      const pathname = location.pathname;
+
       // 精确匹配或前缀匹配
       return (
-        location.pathname === targetPath ||
-        location.pathname.startsWith(targetPath + '/')
+        pathname === pathWithoutQuery ||
+        pathname.startsWith(pathWithoutQuery + '/')
       );
     },
     [location.pathname, resolveDynamicPath],
   );
-
-  /**
-   * 判断是否有任何子菜单激活（递归）
-   */
-  // const hasActiveChild = useCallback(
-  //   (menu: MenuItemDto): boolean => {
-  //     if (!menu.children?.length) return false;
-  //     return menu.children.some(
-  //       (child) =>
-  //         isActive(child.path) ||
-  //         (child.children?.length && hasActiveChild(child)),
-  //     );
-  //   },
-  //   [isActive],
-  // );
 
   /**
    * 递归渲染菜单项
@@ -209,13 +232,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
             style={{ marginLeft: indent }}
             isActive={menuActive}
             onClick={() => {
-              if (menu.path) {
-                // 关闭移动端菜单
-                handleCloseMobileMenu();
-                // 处理动态路径
-                const resolvedPath = resolveDynamicPath(menu.path);
-                history.push(resolvedPath, { _t: Date.now() });
-              }
+              // 处理路径URL路径跳转
+              handlePathUrl(menu?.path || '');
             }}
           />
         );
@@ -243,8 +261,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     [
       expandedMenus,
       isActive,
-      resolveDynamicPath,
       handleMenuClick,
+      handlePathUrl,
       toggleExpand,
       currentSpaceInfo,
     ],

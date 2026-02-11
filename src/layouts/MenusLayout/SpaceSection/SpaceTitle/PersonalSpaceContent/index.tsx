@@ -51,7 +51,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     // 智能体开发页以及子页
     if (pathname.includes('develop') && !pathname.includes('page-develop')) {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
-      localStorage.setItem('SPACE_URL', defaultUrl);
+      // localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
     // 网页应用开发
@@ -83,7 +83,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
       if (info.type === SpaceTypeEnum.Personal) {
         const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
-        localStorage.setItem('SPACE_URL', defaultUrl);
+        // localStorage.setItem('SPACE_URL', defaultUrl);
         history.push(`/space/${spaceId}/${defaultUrl}`);
       } else {
         // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
@@ -101,7 +101,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     // 组件库
     else {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'library';
-      localStorage.setItem('SPACE_URL', defaultUrl);
+      // localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
   };

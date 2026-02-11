@@ -1,5 +1,5 @@
 import Loading from '@/components/custom/Loading';
-import { SPACE_URL } from '@/constants/home.constants';
+import { PATH_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';
 import { MenuItemDto } from '@/types/interfaces/menu';
@@ -27,14 +27,25 @@ const Space: React.FC = () => {
     }
     const secondMenus = getSecondLevelMenus('workspace');
 
+    try {
+      // 从缓存中获取当前路径，如果存在且匹配当前菜单，则直接跳转
+      const pathUrl = localStorage.getItem(PATH_URL);
+      if (pathUrl) {
+        const pathUrlObj = JSON.parse(pathUrl);
+        const pathUrlValue = pathUrlObj['workspace'];
+        if (pathUrlValue && !pathUrlValue.includes(':')) {
+          history.push(pathUrlValue);
+          return;
+        }
+      }
+    } catch {}
+
     // 普通用户开发者功能如果关闭，首次进入空间菜单选中“空间广场”；
     const defaultUrl =
       currentSpaceInfo?.currentUserRole === RoleEnum.User &&
       currentSpaceInfo?.allowDevelop === AllowDevelopEnum.Not_Allow
         ? 'space-square'
         : 'develop';
-
-    const spaceUrl = localStorage.getItem(SPACE_URL) ?? defaultUrl;
 
     // 从菜单 path 中提取最后一级路径段，例如 /space/:spaceId/develop -> develop
     const getLastSegment = (path?: string) => {
@@ -44,16 +55,16 @@ const Space: React.FC = () => {
       return segments[segments.length - 1] || '';
     };
 
-    // 判断当前 spaceUrl 是否在二级菜单 path 中存在
+    // 判断当前 defaultUrl 是否在二级菜单 path 中存在
     const hasSpaceUrlInMenus = secondMenus?.some(
-      (menu: MenuItemDto) => getLastSegment(menu.path) === spaceUrl,
+      (menu: MenuItemDto) => getLastSegment(menu.path) === defaultUrl,
     );
 
-    let finalUrl = spaceUrl;
+    let finalUrl = defaultUrl;
 
     if (!hasSpaceUrlInMenus && secondMenus && secondMenus.length > 0) {
-      // 如果当前 spaceUrl 不在菜单里，则使用第一项菜单 path 的最后一级作为跳转路径
-      finalUrl = getLastSegment(secondMenus[0].path) || spaceUrl;
+      // 如果当前 defaultUrl 不在菜单里，则使用第一项菜单 path 的最后一级作为跳转路径
+      finalUrl = getLastSegment(secondMenus[0].path) || defaultUrl;
     }
 
     history.push(`/space/${spaceId}/${finalUrl}`);

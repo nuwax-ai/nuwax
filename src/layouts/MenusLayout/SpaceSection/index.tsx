@@ -1,7 +1,6 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
-import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { RoleEnum } from '@/types/enums/common';
 import {
@@ -104,7 +103,7 @@ const SpaceSection: React.FC<{
       history.push(`/space/${finalSpaceId}/${url}`, {
         _t: Date.now(),
       });
-      localStorage.setItem(SPACE_URL, url);
+      // localStorage.setItem(SPACE_URL, url);
     },
     [handleCloseMobileMenu, finalSpaceId],
   );

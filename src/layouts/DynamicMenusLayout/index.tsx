@@ -26,6 +26,7 @@ import Header from './Header';
 import User from './User';
 import UserOperateArea from './UserOperateArea';
 // 复用原有样式
+import { PATH_URL } from '@/constants/home.constants';
 import useConversation from '@/hooks/useConversation';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import HomeSection from './HomeSection';
@@ -151,7 +152,32 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       page: 1,
       size: 5,
     });
-  }, []);
+  }, [runEdit, runDevCollect]);
+
+  /**
+   * 递归查找第一个有 path 的子菜单
+   * 如果第一个子菜单没有 path 但有 children，继续递归查找
+   */
+  const findFirstChildWithPath = useCallback(
+    (menu: MenuItemDto): string | null => {
+      // 如果当前菜单有 path，直接返回
+      if (menu.path) {
+        return menu.path;
+      }
+
+      // 如果没有子菜单，返回 null
+      if (!menu.children?.length) {
+        return null;
+      }
+
+      // 获取第一个子菜单
+      const firstChild = menu.children[0];
+
+      // 递归查找第一个子菜单的 path
+      return findFirstChildWithPath(firstChild);
+    },
+    [],
+  );
 
   /**
    * 点击一级菜单
@@ -175,21 +201,38 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
         history.push(url);
-
         return;
       }
+
+      try {
+        // 从缓存中获取当前路径，如果存在且匹配当前菜单，则直接跳转
+        const pathUrl = localStorage.getItem(PATH_URL);
+        if (pathUrl && menu.code) {
+          const pathUrlObj = JSON.parse(pathUrl);
+          const pathUrlValue = pathUrlObj[menu.code];
+          if (pathUrlValue && !pathUrlValue.includes(':')) {
+            history.push(pathUrlValue);
+            return;
+          }
+        }
+      } catch {}
 
       if (menu.path) {
         history.push(menu.path);
       } else if (menu.children?.length) {
-        // 查找第一个存在 path 的子菜单
-        const firstChildWithPath = menu.children.find((child) => child.path);
-        if (firstChildWithPath?.path) {
-          history.push(firstChildWithPath.path);
+        // 递归查找第一个有 path 的子菜单
+        const firstPath = findFirstChildWithPath(menu);
+        if (firstPath) {
+          history.push(firstPath);
         }
       }
     },
-    [handleCloseMobileMenu],
+    [
+      handleCloseMobileMenu,
+      findFirstChildWithPath,
+      handleRefreshEditAndCollect,
+      handlerClick,
+    ],
   );
 
   /**
@@ -300,6 +343,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       return <HomeSection style={overrideContainerStyle} />;
     }
 
+    // 工作空间
+    if (activeTab === 'space' || activeTab === 'workspace') {
+      return (
+        <SpaceSection activeTab={activeTab} style={overrideContainerStyle} />
+      );
+    }
+
     // 系统广场
     if (activeTab === 'system_square') {
       return <SquareSection style={overrideContainerStyle} />;
@@ -370,33 +420,21 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
               minHeight: 0,
             }}
           >
-            {
-              // 非工作空间一级菜单
-              isShowTitle ? (
-                <>
-                  {/* 标题 */}
-                  <ConditionRender condition={currentTitle}>
-                    <div style={{ padding: '0 12px 12px' }}>
-                      <Typography.Title
-                        level={5}
-                        style={{ marginBottom: 0 }}
-                        className={cx(styles['menu-title'])}
-                      >
-                        {currentTitle}
-                      </Typography.Title>
-                    </div>
-                  </ConditionRender>
+            {/* 标题 */}
+            <ConditionRender condition={isShowTitle && currentTitle}>
+              <div style={{ padding: '0 12px 12px' }}>
+                <Typography.Title
+                  level={5}
+                  style={{ marginBottom: 0 }}
+                  className={cx(styles['menu-title'])}
+                >
+                  {currentTitle}
+                </Typography.Title>
+              </div>
+            </ConditionRender>
 
-                  {/* 二级/三级菜单 */}
-                  {renderSecondMenu}
-                </>
-              ) : (
-                <SpaceSection
-                  activeTab={activeTab}
-                  style={overrideContainerStyle}
-                />
-              )
-            }
+            {/* 二级/三级菜单 */}
+            {renderSecondMenu}
           </div>
         </HoverScrollbar>
       </div>
