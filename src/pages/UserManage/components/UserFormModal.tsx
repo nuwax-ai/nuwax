@@ -63,7 +63,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
       open={open}
       onCancel={onCancel}
       title={isEdit ? '修改用户信息' : '新增用户'}
-      destroyOnClose
+      destroyOnHidden
       footer={[
         <Button key="cancel" onClick={onCancel}>
           取消

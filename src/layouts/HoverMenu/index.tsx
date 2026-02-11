@@ -8,12 +8,14 @@ import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
-import EcosystemMarketSection from '../MenusLayout/EcosystemMarketSection';
-import HomeSection from '../MenusLayout/HomeSection';
-import SpaceSection from '../MenusLayout/SpaceSection';
-import SquareSection from '../MenusLayout/SquareSection';
-import SystemSection from '../MenusLayout/SystemSection';
+// import EcosystemMarketSection from '../MenusLayout/EcosystemMarketSection';
+import HomeSection from '../DynamicMenusLayout/HomeSection';
+import SpaceSection from '../DynamicMenusLayout/SpaceSection';
+import SquareSection from '../DynamicMenusLayout/SquareSection';
+// import SystemSection from '../DynamicMenusLayout/SystemSection';
 
+import DynamicSecondMenu from '../DynamicMenusLayout/DynamicSecondMenu';
+import EcosystemMarketSection from '../DynamicMenusLayout/EcosystemMarketSection';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -38,24 +40,39 @@ const HoverMenu: React.FC = () => {
     navigationStyle === ThemeNavigationStyleType.STYLE2
       ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
       : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
-  // 根据菜单类型渲染对应的内容
-  const MenuContent: React.FC = useMemo(() => {
-    const menuStyle = { paddingTop: 0 }; // 去除移动端的 paddingTop
 
-    switch (hoverMenuType) {
-      case TabsEnum.Home:
-        return () => <HomeSection style={menuStyle} />;
-      case TabsEnum.Space:
-        return () => <SpaceSection style={menuStyle} />;
-      case TabsEnum.Square:
-        return () => <SquareSection style={menuStyle} />;
-      case TabsEnum.System_Manage:
-        return () => <SystemSection style={menuStyle} />;
-      case TabsEnum.Ecosystem_Market:
-        return () => <EcosystemMarketSection style={menuStyle} />;
-      default:
-        return () => null;
+  /**
+   * 渲染二级菜单
+   */
+  const renderSecondMenu = useMemo(() => {
+    /**
+     * 渲染特殊内容区域
+     */
+    // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
+    // 主页 homepage: 最近使用 + 会话记录
+    if (
+      hoverMenuType === 'homepage' ||
+      hoverMenuType === 'new_conversation' ||
+      hoverMenuType === 'my_computer'
+    ) {
+      return <HomeSection />;
     }
+
+    // 工作空间
+    if (hoverMenuType === 'space' || hoverMenuType === 'workspace') {
+      return <SpaceSection activeTab={hoverMenuType} />;
+    }
+
+    // 系统广场
+    if (hoverMenuType === 'system_square') {
+      return <SquareSection />;
+    }
+
+    // 生态市场
+    if (hoverMenuType === 'eco_market') {
+      return <EcosystemMarketSection />;
+    }
+    return <DynamicSecondMenu parentCode={hoverMenuType} />;
   }, [hoverMenuType]);
 
   // 获取菜单标题
@@ -141,9 +158,7 @@ const HoverMenu: React.FC = () => {
             </Typography.Title>
           </div>
         </ConditionRender>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <MenuContent />
-        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>{renderSecondMenu}</div>
       </HoverScrollbar>
     </div>
   );
