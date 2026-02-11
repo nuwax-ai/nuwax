@@ -11,15 +11,10 @@ import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
-import EcosystemMarketSection from '../EcosystemMarketSection';
-import HomeSection from '../HomeSection';
-import SquareSection from '../SquareSection';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
   parentCode: string;
-  /** 覆盖容器样式 */
-  overrideContainerStyle?: React.CSSProperties;
 }
 
 /**
@@ -29,7 +24,6 @@ export interface DynamicSecondMenuProps {
  */
 const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   parentCode,
-  overrideContainerStyle,
 }) => {
   const location = useLocation();
   const params = useParams();
@@ -255,25 +249,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       currentSpaceInfo,
     ],
   );
-
-  /**
-   * 渲染特殊内容区域
-   */
-  // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
-  // 主页 homepage: 最近使用 + 会话记录
-  if (parentCode === 'homepage' || parentCode === 'new_conversation') {
-    return <HomeSection style={overrideContainerStyle} />;
-  }
-
-  // 系统广场
-  if (parentCode === 'system_square') {
-    return <SquareSection style={overrideContainerStyle} />;
-  }
-
-  // 生态市场
-  if (parentCode === 'eco_market') {
-    return <EcosystemMarketSection style={overrideContainerStyle} />;
-  }
 
   // 如果没有二级菜单，不渲染
   if (!secondMenus.length) {

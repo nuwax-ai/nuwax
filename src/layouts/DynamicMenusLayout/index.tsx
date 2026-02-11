@@ -27,8 +27,11 @@ import User from './User';
 import UserOperateArea from './UserOperateArea';
 // 复用原有样式
 import useConversation from '@/hooks/useConversation';
+import EcosystemMarketSection from './EcosystemMarketSection';
+import HomeSection from './HomeSection';
 import styles from './index.less';
 import SpaceSection from './SpaceSection';
+import SquareSection from './SquareSection';
 
 const cx = classNames.bind(styles);
 
@@ -194,6 +197,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    */
   const handleUserClick = useCallback(
     (code: string) => {
+      setActiveTab(code);
       switch (code) {
         case 'documents':
           window.open(SITE_DOCUMENT_URL);
@@ -279,6 +283,35 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     );
   }, [layoutStyle, navigationStyle, isMobile]);
 
+  /**
+   * 渲染二级菜单
+   */
+  const renderSecondMenu = useMemo(() => {
+    /**
+     * 渲染特殊内容区域
+     */
+    // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
+    // 主页 homepage: 最近使用 + 会话记录
+    if (
+      activeTab === 'homepage' ||
+      activeTab === 'new_conversation' ||
+      activeTab === 'my_computer'
+    ) {
+      return <HomeSection style={overrideContainerStyle} />;
+    }
+
+    // 系统广场
+    if (activeTab === 'system_square') {
+      return <SquareSection style={overrideContainerStyle} />;
+    }
+
+    // 生态市场
+    if (activeTab === 'eco_market') {
+      return <EcosystemMarketSection style={overrideContainerStyle} />;
+    }
+    return <DynamicSecondMenu parentCode={activeTab} />;
+  }, [activeTab, overrideContainerStyle]);
+
   return (
     <div className={navigationClassName}>
       {/* 一级导航菜单栏 */}
@@ -355,10 +388,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                   </ConditionRender>
 
                   {/* 二级/三级菜单 */}
-                  <DynamicSecondMenu
-                    parentCode={activeTab}
-                    overrideContainerStyle={overrideContainerStyle}
-                  />
+                  {renderSecondMenu}
                 </>
               ) : (
                 <SpaceSection
