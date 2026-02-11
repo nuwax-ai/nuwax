@@ -11,7 +11,7 @@ import {
 import type { TableColumnsType } from 'antd';
 import { Button, Empty, message, Space, Spin, Switch, Table, Tag } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
@@ -202,6 +202,24 @@ const PermissionResources: React.FC = () => {
   useEffect(() => {
     setDraggableData(tableData);
   }, [tableData]);
+
+  // 控制表格行的展开状态，避免使用默认的展开图标列，改为在名称列中自定义展开图标
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+
+  const handleExpand = (
+    expanded: boolean,
+    record: ResourceTreeNode & { key: number },
+  ) => {
+    setExpandedRowKeys((prevKeys) => {
+      const key = record.key;
+      if (expanded) {
+        // 展开：如果不存在则添加
+        return prevKeys.includes(key) ? prevKeys : [...prevKeys, key];
+      }
+      // 收起：移除对应 key
+      return prevKeys.filter((k) => k !== key);
+    });
+  };
 
   // 更新资源排序
   const { run: runUpdateResourceSort } = useRequest(apiUpdateResourceSort, {
@@ -679,20 +697,87 @@ const PermissionResources: React.FC = () => {
     }
   };
 
+  /**
+   * 计算节点在树中的层级深度
+   */
+  const getNodeLevel = useCallback(
+    (
+      data: (ResourceTreeNode & { key: number })[],
+      targetKey: number,
+      currentLevel: number = 0,
+    ): number => {
+      for (const node of data) {
+        if (node.key === targetKey) {
+          return currentLevel;
+        }
+        if (node.children && node.children.length > 0) {
+          const found = getNodeLevel(
+            node.children as (ResourceTreeNode & { key: number })[],
+            targetKey,
+            currentLevel + 1,
+          );
+          if (found !== -1) {
+            return found;
+          }
+        }
+      }
+      return -1;
+    },
+    [],
+  );
+
   // 定义表格列
   const columns: TableColumnsType<ResourceTreeNode & { key: number }> = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
+      width: 80,
       render: () => <DragHandle />,
     },
     {
       title: '资源名称',
       dataIndex: 'name',
       key: 'name',
-      width: 160,
+      width: 200,
       ellipsis: true,
+      render: (
+        text: string,
+        record: ResourceTreeNode & { key: number },
+      ): React.ReactNode => {
+        const hasChildren =
+          Array.isArray(record.children) && record.children.length > 0;
+        const expanded = expandedRowKeys.includes(record.key);
+        // 计算当前节点的层级
+        const level = getNodeLevel(draggableData, record.key);
+        // 根据层级计算缩进（每层 16px）
+        const indent = level > 0 ? level * 16 : 0;
+
+        return (
+          <div
+            className={cx('flex', 'items-center')}
+            style={{ marginLeft: indent }}
+          >
+            {hasChildren ? (
+              <DownOutlined
+                className={cx(styles.icon, {
+                  [styles['rotate-0']]: expanded,
+                })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExpand(!expanded, record);
+                }}
+              />
+            ) : (
+              // 无子节点时使用与箭头相同尺寸的占位元素，保证对齐
+              <span className={cx(styles.icon, styles['icon-hidden'])} />
+            )}
+            <span className="text-ellipsis" title={text}>
+              {text || '--'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       title: '类型',
@@ -807,25 +892,24 @@ const PermissionResources: React.FC = () => {
                     },
                   }}
                   rowKey="key"
+                  expandedRowKeys={expandedRowKeys}
+                  onExpand={(expanded, record) =>
+                    handleExpand(
+                      expanded,
+                      record as ResourceTreeNode & { key: number },
+                    )
+                  }
                   columns={columns}
                   dataSource={draggableData}
                   pagination={false}
                   scroll={{ x: 'max-content' }}
                   className={cx(styles.table)}
+                  // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+                  indentSize={0}
+                  // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
                   expandable={{
-                    expandIcon: ({ expanded, onExpand, record }) =>
-                      record.children ? (
-                        <DownOutlined
-                          className={cx(styles.icon, {
-                            [styles['rotate-0']]: expanded,
-                          })}
-                          onClick={(e) => onExpand(record, e)}
-                        />
-                      ) : (
-                        <DownOutlined
-                          className={cx(styles.icon, styles['icon-hidden'])}
-                        />
-                      ),
+                    expandIcon: () => null,
+                    columnWidth: 0,
                   }}
                   // 防止展开/折叠时 Table 布局变动
                   tableLayout="fixed"
