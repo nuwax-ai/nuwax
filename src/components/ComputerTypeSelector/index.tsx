@@ -263,7 +263,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             })}
           >
             {/* <DesktopOutlined className={cx(styles['selector-icon'])} /> */}
-            <span>{selectedOption.name}</span>
+            <span>{loading || !initialized ? '' : selectedOption.name}</span>
             {!fixedSelection && !unavailable && (
               <SvgIcon
                 name="icons-common-caret_down"
