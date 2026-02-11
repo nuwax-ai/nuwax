@@ -46,7 +46,7 @@ function XProTable<
     scrollYOffset,
     onReset,
     showQueryButtons = true,
-    showIndex = true,
+    showIndex = false,
     ...restProps
   } = props;
   const tableRef = useRef<HTMLDivElement>(null);
