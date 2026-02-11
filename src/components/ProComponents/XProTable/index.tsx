@@ -37,6 +37,8 @@ function XProTable<
     scrollYOffset?: number;
     /** 是否显示工具栏右侧的操作按钮（查询/重置），默认为 true */
     showQueryButtons?: boolean;
+    /** 是否显示序号列（支持自定义），默认为 true。若 columns 中已存在 index 列，以此为准。 */
+    showIndex?: boolean;
   },
 ) {
   const {
@@ -44,6 +46,7 @@ function XProTable<
     scrollYOffset,
     onReset,
     showQueryButtons = true,
+    showIndex = true,
     ...restProps
   } = props;
   const tableRef = useRef<HTMLDivElement>(null);
@@ -66,13 +69,34 @@ function XProTable<
     (restProps.actionRef as React.MutableRefObject<ActionType>) ||
     internalActionRef;
 
-  // 合并 columns 配置，默认加上 ellipsis: true
+  // 合并 columns 配置，默认加上 ellipsis: true，并处理序号列
   const mergedColumns = useMemo(() => {
-    return restProps.columns?.map((item) => ({
-      ellipsis: true,
-      ...item,
-    }));
-  }, [restProps.columns]);
+    const cols =
+      restProps.columns?.map((item) => ({
+        ellipsis: true,
+        ...item,
+      })) || [];
+
+    // 如果开启了 showIndex，且 columns 中没有 index 列，则自动添加
+    if (showIndex) {
+      const hasIndex = cols.some(
+        (col) => col.dataIndex === 'index' || col.valueType === 'index',
+      );
+      if (!hasIndex) {
+        cols.unshift({
+          title: '序号',
+          dataIndex: 'index',
+          valueType: 'index',
+          width: 48,
+          fixed: 'left',
+          align: 'center',
+          ellipsis: true,
+        });
+      }
+    }
+
+    return cols;
+  }, [restProps.columns, showIndex]);
 
   // 合并 toolBarRender，添加查询/重置按钮
   const mergedToolBarRender = useMemo(() => {

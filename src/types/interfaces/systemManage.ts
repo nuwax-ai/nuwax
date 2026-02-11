@@ -211,6 +211,8 @@ export interface ModelConfigDto {
   created: string;
   /** 创建者信息 */
   creator: CreatorDto;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
 }
 
 /**

@@ -1,6 +1,7 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
@@ -176,7 +177,7 @@ const SpaceSection: React.FC<{
     } else {
       // Fetch details
       apiGetSpaceDetail(finalSpaceId).then((res) => {
-        if (res.code === '0000' && res.data) {
+        if (res.code === SUCCESS_CODE && res.data) {
           const { creatorName, name } = res.data;
           const display = creatorName ? `${creatorName}的个人空间` : name;
           setDynamicTitle(display || '个人空间');
