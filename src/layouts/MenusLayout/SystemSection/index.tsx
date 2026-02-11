@@ -282,7 +282,7 @@ const SystemSection: React.FC<{
 
   return (
     <div style={style}>
-      {SYSTEM_MANAGE_LIST.map((info, index) => (
+      {SYSTEM_MANAGE_LIST.map((info) => (
         <React.Fragment key={info.type}>
           <SecondMenuItem
             name={info.text}
@@ -292,7 +292,6 @@ const SystemSection: React.FC<{
             icon={info.icon}
             onClick={() => handlerApplication(info)}
             onToggle={() => handleToggle(info.type)}
-            isFirst={index === 0}
           />
           {/* 模板列表项 */}
           <ConditionRender condition={!!info.list?.length}>

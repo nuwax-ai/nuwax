@@ -34,6 +34,7 @@ import UserOperateArea from './UserOperateArea';
 // 复用原有样式
 import { PATH_URL } from '@/constants/home.constants';
 import useConversation from '@/hooks/useConversation';
+import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import HomeSection from './HomeSection';
 import styles from './index.less';
@@ -59,8 +60,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const location = useLocation();
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
-  const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
-    useModel('layout');
+  const {
+    showHoverMenu,
+    isSecondMenuCollapsed,
+    setOpenMessage,
+    handleCloseMobileMenu,
+  } = useModel('layout');
   const { loadMenus, firstLevelMenus, otherMenus } = useModel('menuModel');
 
   const { refreshUserInfo } = useModel('userInfo');
@@ -216,7 +221,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
-    if (isClickMenu.current) {
+    if (isClickMenu.current && !showHoverMenu) {
       return;
     }
 
@@ -251,7 +256,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         setActiveTab(firstLevelCode);
       }
     }
-  }, [location.pathname, firstLevelMenus]);
+  }, [location.pathname, firstLevelMenus, showHoverMenu]);
 
   const handleRefreshEditAndCollect = useCallback(() => {
     // 最近编辑
@@ -270,10 +275,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 如果第一个子菜单没有 path 但有 children，继续递归查找
    */
   const findFirstChildWithPath = useCallback(
-    (menu: MenuItemDto): string | null => {
+    (menu: MenuItemDto): MenuItemDto | null => {
       // 如果当前菜单有 path，直接返回
       if (menu.path) {
-        return menu.path;
+        return menu;
       }
 
       // 如果没有子菜单，返回 null
@@ -291,10 +296,26 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   );
 
   /**
+   * 打开URL
+   * @param path 路径
+   * @param openType 打开方式
+   */
+  const handleOpenUrl = (path: string, openType: OpenTypeEnum | undefined) => {
+    const targetOpenType =
+      openType === OpenTypeEnum.NewTab ? '_blank' : '_self';
+    window.open(path, targetOpenType);
+  };
+
+  /**
    * 点击一级菜单
    */
   const handleTabClick = useCallback(
     (menu: MenuItemDto) => {
+      if (menu.path?.includes('http')) {
+        handleOpenUrl(menu.path, menu?.openType);
+        return;
+      }
+
       // 是否点击了一级菜单
       isClickMenu.current = true;
       // 关闭移动端菜单
@@ -334,9 +355,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         history.push(menu.path);
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
-        const firstPath = findFirstChildWithPath(menu);
-        if (firstPath) {
-          history.push(firstPath);
+        const firstPathMenu = findFirstChildWithPath(menu);
+        if (firstPathMenu) {
+          // http开头的路径，直接打开
+          if (firstPathMenu.path?.includes('http')) {
+            handleOpenUrl(firstPathMenu.path, firstPathMenu?.openType);
+            return;
+          }
+          // 其他路径，跳转路由
+          history.push(firstPathMenu.path);
         }
       }
     },
