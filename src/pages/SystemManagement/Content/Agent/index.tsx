@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'umi';
+import { useLocation, useModel } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
@@ -25,6 +25,7 @@ import { apiSystemResourceAgentAccess } from '../content-manage';
  * 智能体管理页面
  */
 const Agent: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const location = useLocation();
@@ -120,6 +121,7 @@ const Agent: React.FC = () => {
         {
           key: 'view',
           label: '查看',
+          disabled: !hasPermission('content_agent_query_detail'),
           onClick: handleView,
         },
       ];
@@ -133,6 +135,7 @@ const Agent: React.FC = () => {
         actions.push({
           key: 'auth',
           label: '授权',
+          disabled: !hasPermission('content_agent_access_control'),
           onClick: handleAuth,
         });
       }
@@ -149,12 +152,13 @@ const Agent: React.FC = () => {
           ),
           description: '此操作无法撤销，所有相关数据将被永久删除。',
         },
+        disabled: !hasPermission('content_agent_delete'),
         onClick: handleDelete,
       });
 
       return actions;
     },
-    [handleView, handleAuth, handleDelete],
+    [hasPermission, handleView, handleAuth, handleDelete],
   );
 
   /**
@@ -278,6 +282,7 @@ const Agent: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+        showQueryButtons={hasPermission('content_agent_query_list')}
       />
       {/* 授权弹窗 */}
       <TargetAuthModal
