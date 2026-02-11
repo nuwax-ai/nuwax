@@ -601,6 +601,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   spaceId: number;
   // 智能体ID
   agentId: number;
+  /** 绑定的云电脑ID */
+  sandboxId?: string | number;
   // 发布备注信息
   remark: string;
   // 智能体发布时间
@@ -639,6 +641,13 @@ export interface AgentDetailDto extends AgentBaseInfo {
   pageHomeIndex: string;
   // 智能体类型，ChatBot 问答型；TaskAgent 通用型; PageApp 页面应用智能体
   type: AgentTypeEnum;
+  // 扩展信息
+  extra?: {
+    prodProxyMcpId?: number;
+    private?: boolean;
+    sandboxId?: number;
+    devProxyMcpId?: number;
+  };
 }
 
 // 日志查询过滤条件

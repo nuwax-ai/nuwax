@@ -146,7 +146,7 @@ const HistoryConversation: React.FC = () => {
         okButtonProps={{ disabled: !newTopic.trim() }}
         okText="确定"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
         centered
       >
         <div style={{ padding: '24px 0 8px' }}>
@@ -175,7 +175,7 @@ const HistoryConversation: React.FC = () => {
         okText="确定"
         cancelText="取消"
         okButtonProps={{ danger: true }}
-        destroyOnClose
+        destroyOnHidden
         centered
       >
         <div

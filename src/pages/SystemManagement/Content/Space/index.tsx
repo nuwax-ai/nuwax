@@ -23,9 +23,10 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'umi';
+import { useLocation, useModel } from 'umi';
 
 const Space: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const location = useLocation();
@@ -77,6 +78,7 @@ const Space: React.FC = () => {
       {
         key: 'view',
         label: '查看',
+        disabled: !hasPermission('content_space_query_detail'),
         onClick: handleView,
       },
       {
@@ -91,10 +93,11 @@ const Space: React.FC = () => {
           ),
           description: '此操作无法撤销，所有相关数据将被永久删除。',
         },
+        disabled: !hasPermission('content_space_delete'),
         onClick: handleDelete,
       },
     ],
-    [handleView, handleDelete],
+    [hasPermission, handleView, handleDelete],
   );
 
   /**
@@ -180,6 +183,7 @@ const Space: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+        showQueryButtons={hasPermission('content_space_query_list')}
       />
     </WorkspaceLayout>
   );

@@ -19,6 +19,7 @@ import type {
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
 
 const cx = classNames.bind(styles);
@@ -27,6 +28,7 @@ const cx = classNames.bind(styles);
  * 发布审核
  */
 const PublishAudit: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const [openRejectAuditModal, setOpenRejectAuditModal] = useState(false);
@@ -86,30 +88,30 @@ const PublishAudit: React.FC = () => {
   // 操作列配置
   const getActions = useCallback(
     (record: PublishApplyListInfo): ActionItem<PublishApplyListInfo>[] => {
-      const actions: ActionItem<PublishApplyListInfo>[] = [];
-
-      if (record.publishStatus === PublishStatusEnum.Applying) {
-        actions.push({
+      return [
+        {
           key: 'pass',
           label: '通过',
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          disabled: !hasPermission('publish_audit_pass'),
           onClick: handlePassAudit,
-        });
-        actions.push({
+        },
+        {
           key: 'reject',
           label: '拒绝',
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          disabled: !hasPermission('publish_audit_reject'),
           onClick: (r) => handleRejectAudit(r.id),
-        });
-      }
-
-      actions.push({
-        key: 'view',
-        label: '查看',
-        onClick: handleView,
-      });
-
-      return actions;
+        },
+        {
+          key: 'view',
+          label: '查看',
+          disabled: !hasPermission('publish_audit_query_detail'),
+          onClick: handleView,
+        },
+      ];
     },
-    [handlePassAudit, handleRejectAudit, handleView],
+    [hasPermission, handlePassAudit, handleRejectAudit, handleView],
   );
 
   const columns: ProColumns<PublishApplyListInfo>[] = [
@@ -272,6 +274,7 @@ const PublishAudit: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
+        showQueryButtons={hasPermission('publish_audit_query_list')}
       />
       <RejectAuditModal
         open={openRejectAuditModal}

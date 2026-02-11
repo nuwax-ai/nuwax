@@ -517,6 +517,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               selectedComputerId={selectedComputerId}
               onComputerSelect={setSelectedComputerId}
               agentId={agentId}
+              agentSandboxId={agentConfigInfo?.extra?.sandboxId}
             />
           </div>
         </div>
