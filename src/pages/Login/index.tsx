@@ -132,7 +132,7 @@ const Login: React.FC = () => {
     console.log('[Login] API Request Params:', {
       phoneOrEmail,
       areaCode,
-      password,
+      password: '******',
       captchaVerifyParam,
     });
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
