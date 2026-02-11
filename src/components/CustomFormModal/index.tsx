@@ -23,6 +23,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   width,
   onCancel,
   onConfirm,
+  okDisabled,
   children,
 }) => {
   return (
@@ -44,6 +45,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
             onConfirm={onConfirm}
             form={form}
             okText={okText}
+            disabled={okDisabled}
           />
         </>
       }

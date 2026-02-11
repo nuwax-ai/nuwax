@@ -32,6 +32,8 @@ export interface ActionItem<T> {
   };
   /** 条件显示函数，返回 false 则隐藏该按钮 */
   visible?: (record: T) => boolean;
+  /** 是否显示 */
+  isShow?: boolean | ((record: T) => boolean);
   /** 禁用函数或布尔值 */
   disabled?: boolean | ((record: T) => boolean);
   /** 点击回调 */
@@ -132,9 +134,17 @@ function TableActions<T>({
   }, [maxWidth]);
 
   // 过滤出可见的操作
-  const visibleActions = actions.filter(
-    (action) => action.visible?.(record) !== false,
-  );
+  const visibleActions = actions.filter((action) => {
+    // 优先判断 isShow
+    const isShowValue =
+      typeof action.isShow === 'function'
+        ? action.isShow(record)
+        : action.isShow ?? true;
+    if (!isShowValue) return false;
+
+    // 再判断 visible (向下兼容)
+    return action.visible?.(record) !== false;
+  });
 
   // 计算应该显示多少个按钮
   const calculateVisibleCount = useCallback(() => {

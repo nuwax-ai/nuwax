@@ -12,6 +12,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
   okPrefixIcon,
   okText,
   onConfirm,
+  disabled,
 }) => {
   const [submittable, setSubmittable] = useState<boolean>(false);
 
@@ -32,7 +33,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
       loading={loading}
       onClick={onConfirm}
       className={cx(!submittable && styles['confirm-btn'], styles.btn)}
-      disabled={!submittable}
+      disabled={disabled || !submittable}
     >
       {okText || '确定'}
     </Button>

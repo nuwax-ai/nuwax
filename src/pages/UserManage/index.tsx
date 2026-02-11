@@ -18,6 +18,7 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import DataPermissionModal from './components/DataPermissionModal';
 import UserAuthModal from './components/UserAuthModal';
 import UserFormModal from './components/UserFormModal';
@@ -30,6 +31,8 @@ const cx = classNames.bind(styles);
  * 用户管理
  */
 const UserManage: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
+
   const actionRef = useRef<ActionType>();
   const [currentUserInfo, setCurrentUserInfo] =
     useState<SystemUserListInfo | null>(null);
@@ -97,53 +100,53 @@ const UserManage: React.FC = () => {
   // 操作列配置
   const getActions = useCallback(
     (record: SystemUserListInfo): ActionItem<SystemUserListInfo>[] => {
-      const actions: ActionItem<SystemUserListInfo>[] = [];
-
-      // 修改
-      actions.push({
-        key: 'edit',
-        label: '修改',
-        onClick: handleEditUser,
-      });
-
-      // 启用/禁用按钮
-      if (record.status === UserStatusEnum.Enabled) {
-        actions.push({
+      return [
+        {
+          key: 'edit',
+          label: '修改',
+          isShow: hasPermission('user_manage_modify'),
+          onClick: handleEditUser,
+        },
+        {
           key: 'disable',
           label: '禁用',
+          isShow:
+            hasPermission('user_manage_disable') &&
+            record.status === UserStatusEnum.Enabled,
           onClick: handleDisable,
-        });
-      } else {
-        actions.push({
+        },
+        {
           key: 'enable',
           label: '启用',
+          isShow:
+            hasPermission('user_manage_enable') &&
+            record.status !== UserStatusEnum.Enabled,
           onClick: handleEnable,
-        });
-      }
-
-      // 授权
-      actions.push({
-        key: 'auth',
-        label: '授权',
-        onClick: handleAuth,
-      });
-
-      // 更多操作
-      actions.push({
-        key: 'viewMenu',
-        label: '查看菜单资源权限',
-        onClick: handleViewMenu,
-      });
-
-      actions.push({
-        key: 'dataPermission',
-        label: '查看数据权限',
-        onClick: handleViewDataPermission,
-      });
-
-      return actions;
+        },
+        {
+          key: 'auth',
+          label: '授权',
+          isShow:
+            hasPermission('user_manage_bind_role') ||
+            hasPermission('user_manage_bind_group'),
+          onClick: handleAuth,
+        },
+        {
+          key: 'viewMenu',
+          label: '查看菜单资源权限',
+          isShow: hasPermission('user_manage_query_menu_permission'),
+          onClick: handleViewMenu,
+        },
+        {
+          key: 'dataPermission',
+          label: '查看数据权限',
+          isShow: hasPermission('user_manage_query_data_permission'),
+          onClick: handleViewDataPermission,
+        },
+      ];
     },
     [
+      hasPermission,
       handleEditUser,
       handleEnable,
       handleDisable,
@@ -257,21 +260,25 @@ const UserManage: React.FC = () => {
       title="用户管理"
       hideScroll
       rightSlot={[
-        <Button
-          key="add"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAddUser}
-        >
-          添加用户
-        </Button>,
-        <Button
-          key="message"
-          type="primary"
-          onClick={() => setMessageSendOpen(true)}
-        >
-          消息发送
-        </Button>,
+        hasPermission('user_manage_add') && (
+          <Button
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddUser}
+          >
+            添加用户
+          </Button>
+        ),
+        hasPermission('user_manage_send_message') && (
+          <Button
+            key="message"
+            type="primary"
+            onClick={() => setMessageSendOpen(true)}
+          >
+            消息发送
+          </Button>
+        ),
       ]}
     >
       <XProTable<SystemUserListInfo>
@@ -279,6 +286,7 @@ const UserManage: React.FC = () => {
         rowKey="id"
         columns={columns}
         request={request}
+        showQueryButtons={hasPermission('user_manage_query')}
       />
 
       <UserFormModal
