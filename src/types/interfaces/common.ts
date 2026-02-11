@@ -180,6 +180,8 @@ export interface CustomFormModalProps {
   width?: number | string;
   onCancel: () => void;
   onConfirm: () => void;
+  // 确定按钮是否禁用
+  okDisabled?: boolean;
 }
 
 // Form.Item 验证rule
@@ -439,11 +441,13 @@ export interface UploadImportConfigProps {
 export interface SubmitButtonProps {
   form: FormInstance;
   loading?: boolean;
-  // 确定按钮前缀icon
+  // 确定按钮之前的前缀图标，可选
   okPrefixIcon?: React.ReactNode;
-  // 确定按钮文本
+  // 确定按钮显示的文本，可选
   okText?: string;
   onConfirm: () => void;
+  // 确定按钮是否禁用
+  disabled?: boolean;
 }
 
 // 上传文件信息

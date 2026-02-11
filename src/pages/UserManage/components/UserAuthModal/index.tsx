@@ -7,7 +7,7 @@ import { UserRoleEnum } from '@/types/enums/systemManage';
 import { Button, Checkbox, Form, FormProps, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import {
   apiSystemUserBindGroup,
   apiSystemUserBindRole,
@@ -41,6 +41,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   role,
   onCancel,
 }) => {
+  const { hasPermission } = useModel('menuModel');
   // 如果是普通用户，默认显示用户组 tab；否则显示角色 tab
   const [activeTab, setActiveTab] = useState<TabKey>('role');
   const [roleForm] = Form.useForm();
@@ -316,6 +317,11 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      okDisabled={
+        activeTab === 'role'
+          ? !hasPermission('user_manage_bind_role')
+          : !hasPermission('user_manage_bind_group')
+      }
       width={500}
       classNames={{
         body: cx(styles.modalBody),
