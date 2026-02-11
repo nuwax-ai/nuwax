@@ -265,10 +265,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
-    // 新对话后二级菜单显示的是主页菜单的二级菜单
-    if (activeTab === 'new_conversation') {
-      return '主页';
-    }
     const current = firstLevelMenus.find(
       (m: MenuItemDto) => m.code === activeTab,
     );
