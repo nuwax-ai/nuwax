@@ -25,7 +25,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { history } from 'umi';
+import { history, useModel } from 'umi';
 import EllipsisWithAvatar from './components/EllipsisWithAvatar';
 
 export interface CenterProTableRef {
@@ -53,6 +53,7 @@ export interface CenterProTableProps {
  */
 const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
   ({ onEdit = () => {} }, ref) => {
+    const { hasPermission } = useModel('menuModel');
     const actionRef = useRef<ActionType>();
     // 中间变量用于判断是否是点击重置按钮
     const isReset = useRef(false);
@@ -348,12 +349,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                   {
                     key: 'execute',
                     label: '手动执行',
+                    disabled: !hasPermission('task_manage_execute_manual'),
                     onClick: () => handleExecuteTask(record.id),
                   },
                   {
                     key: 'enable',
                     label: '启用',
                     visible: () => isEnded,
+                    disabled: !hasPermission('task_manage_enable'),
                     confirm: {
                       title: '确认启用该任务？',
                     },
@@ -363,6 +366,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                     key: 'disable',
                     label: '停用',
                     visible: () => !isEnded,
+                    disabled: !hasPermission('task_manage_cancel'),
                     confirm: {
                       title: '确认停用该任务？',
                     },
@@ -371,11 +375,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                   {
                     key: 'edit',
                     label: '编辑',
+                    disabled: !hasPermission('task_manage_modify'),
                     onClick: () => onEdit(record),
                   },
                   {
                     key: 'record',
                     label: '执行记录',
+                    disabled: !hasPermission('task_manage_execute_record'),
                     onClick: () => {
                       const baseUrl = '/system/log-query/running-log';
                       const params = {
@@ -389,6 +395,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                     key: 'delete',
                     label: '删除',
                     type: 'danger',
+                    disabled: !hasPermission('task_manage_delete'),
                     confirm: {
                       title: '确认删除该任务？',
                     },
@@ -446,6 +453,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置
         onReset={handleReset}
+        showQueryButtons={hasPermission('task_manage_query_list')}
       />
     );
   },
