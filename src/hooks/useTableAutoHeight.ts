@@ -13,12 +13,12 @@ function getMarginHeight(el: Element) {
  * 自动计算表格高度 Hook
  * @param tableRef 表格容器的 ref
  * @param enabled 是否启用
- * @param scrollYOffset 修正的高度偏移量 (默认 50，即表格底部预留 50px 空隙)
+ * @param scrollYOffset 修正的高度偏移量 (默认 10，即表格底部预留 10px 空隙)
  */
 export const useTableAutoHeight = (
   tableRef: React.MutableRefObject<HTMLDivElement | null | undefined>,
   enabled: boolean = true,
-  scrollYOffset: number = 50,
+  scrollYOffset: number = 10,
 ) => {
   const [scrollY, setScrollY] = useState<number | string>('100%');
 

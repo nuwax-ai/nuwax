@@ -1,5 +1,5 @@
-import { XProTable } from '@/components/ProComponents';
-import TableActions, { ActionItem } from '@/components/TableActions';
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -7,16 +7,18 @@ import {
   apiSystemResourceAgentList,
 } from '@/services/systemManage';
 import { PublishStatusEnum } from '@/types/enums/common';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Switch } from 'antd';
+import { message, Switch, Tooltip } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';
 import { apiSystemResourceAgentAccess } from '../content-manage';
 
@@ -40,8 +42,8 @@ const Agent: React.FC = () => {
     formRef.current?.resetFields();
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
   }, []);
@@ -58,7 +60,7 @@ const Agent: React.FC = () => {
    * 查看智能体详情
    */
   const handleView = useCallback((record: SystemAgentInfo) => {
-    history.push(`/space/${record.spaceId}/agent/${record.id}`);
+    window.open(`/space/${record.spaceId}/agent/${record.id}`);
   }, []);
 
   /**
@@ -123,10 +125,11 @@ const Agent: React.FC = () => {
         },
       ];
 
-      // 当 accessControl 为 1 并且发布状态为已发布时，显示授权项
+      // 当 accessControl 为 1 并且发布状态为已发布并且发布范围为系统广场时，显示授权项
       if (
         record.accessControl === AccessControlEnum.Filter &&
-        record.publishStatus === PublishStatusEnum.Published
+        record.publishStatus === PublishStatusEnum.Published &&
+        record.publishScope === PluginPublishScopeEnum.Tenant
       ) {
         actions.push({
           key: 'auth',
@@ -208,10 +211,17 @@ const Agent: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '管控',
+      title: (
+        <span>
+          管控
+          <Tooltip title="若开启管控，发布到系统广场的智能体需授权才能使用">
+            <InfoCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+          </Tooltip>
+        </span>
+      ),
       dataIndex: 'accessControl',
       align: 'center',
-      width: 100,
+      width: 80,
       fixed: 'right',
       hideInSearch: true,
       render: (_, record: SystemAgentInfo) => (
@@ -227,7 +237,7 @@ const Agent: React.FC = () => {
       valueType: 'option',
       fixed: 'right',
       align: 'center',
-      width: 180,
+      width: 160,
       render: (_, record) => (
         <TableActions<SystemAgentInfo>
           record={record}
@@ -248,7 +258,7 @@ const Agent: React.FC = () => {
   }) => {
     const response = await apiSystemResourceAgentList({
       pageNo: params.current || 1,
-      pageSize: params.pageSize || 10,
+      pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
     });

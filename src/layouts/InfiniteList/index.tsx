@@ -27,7 +27,7 @@ interface InfiniteListProps {
 }
 
 function InfiniteList({
-  pageSize = 10,
+  pageSize = 20,
   loadData,
   height = 400,
   conversationList = [],

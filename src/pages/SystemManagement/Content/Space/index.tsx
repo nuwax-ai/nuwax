@@ -7,8 +7,8 @@
  * - 支持名称、创建时间、修改时间排序（接口排序）
  * - 操作列：查看、删除（使用 TableActions 组件）
  */
-import { XProTable } from '@/components/ProComponents';
-import TableActions, { ActionItem } from '@/components/TableActions';
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -23,7 +23,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Space: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -35,8 +35,8 @@ const Space: React.FC = () => {
     formRef.current?.resetFields();
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
   }, []);
@@ -53,7 +53,7 @@ const Space: React.FC = () => {
    * 查看空间详情
    */
   const handleView = useCallback((record: SystemSpaceInfo) => {
-    history.push(`/space/${record.id}/team`);
+    window.open(`/space/${record.id}/team`);
   }, []);
 
   /**
@@ -159,7 +159,7 @@ const Space: React.FC = () => {
   }) => {
     const response = await apiSystemResourceSpaceList({
       pageNo: params.current || 1,
-      pageSize: params.pageSize || 10,
+      pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
     });

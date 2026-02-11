@@ -414,6 +414,7 @@ const EditAgent: React.FC = () => {
         openLongMemory,
         expandPageArea,
         guidQuestionDtos,
+        hideDesktop,
       } = _agentConfigInfo;
 
       const params = {
@@ -430,6 +431,7 @@ const EditAgent: React.FC = () => {
         openLongMemory,
         expandPageArea,
         guidQuestionDtos,
+        hideDesktop,
       } as AgentConfigUpdateParams;
 
       // 更新智能体信息
@@ -1118,6 +1120,7 @@ const EditAgent: React.FC = () => {
                             onIdleTimeout: () =>
                               openPreviewView(devConversationId),
                           }}
+                          hideDesktop={agentConfigInfo?.hideDesktop}
                         />
                       </div>
                     )

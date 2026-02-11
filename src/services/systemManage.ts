@@ -39,6 +39,7 @@ import type {
   TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
+  UserSandBoxSelectDto,
   UserStatsResult,
 } from '@/types/interfaces/systemManage';
 import { request } from 'umi';
@@ -160,7 +161,7 @@ export async function apiSystemUploadFile(
 export async function apiSystemConfigUpdate(
   data: TenantConfigDto,
 ): Promise<RequestResponse<any>> {
-  return request('/api/system/config/add', {
+  return request('/api/system/config/update-theme', {
     method: 'POST',
     data,
   });
@@ -191,7 +192,7 @@ export async function apiSystemResourceSpaceDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/space/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -210,7 +211,7 @@ export async function apiSystemResourceAgentDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/agent/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -229,7 +230,7 @@ export async function apiSystemResourceWebappDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/page/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -248,7 +249,7 @@ export async function apiSystemResourceKnowledgeDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/knowledge/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -267,7 +268,7 @@ export async function apiSystemResourceDataTableDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/table/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -286,7 +287,7 @@ export async function apiSystemResourceWorkflowDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/workflow/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -305,7 +306,7 @@ export async function apiSystemResourcePluginDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/plugin/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -328,7 +329,7 @@ export async function apiSystemResourceMcpDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/mcp/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -351,7 +352,7 @@ export async function apiSystemResourceSkillDelete(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/resource/skill/delete/${data.id}`, {
-    method: 'DELETE',
+    method: 'POST',
   });
 }
 
@@ -583,6 +584,32 @@ export async function apiUpdateSandboxUserConfig(data: {
   return request('/api/sandbox/config/update', {
     method: 'POST',
     data,
+  });
+}
+
+/**
+ * 查询用户可选择的沙盒配置列表（用于电脑选择器）
+ * 返回可选沙盒列表及各智能体的已选沙盒信息
+ */
+export async function apiGetUserSelectableSandboxList(): Promise<
+  RequestResponse<UserSandBoxSelectDto>
+> {
+  return request('/api/sandbox/config/select/list', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 保存用户对某个智能体的沙盒选择
+ * @param agentId 智能体ID
+ * @param sandboxId 选择的沙盒配置ID，空字符串或'remote'表示选择远程电脑
+ */
+export async function apiSaveSelectedSandbox(
+  agentId: number,
+  sandboxId: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/sandbox/config/selected/${agentId}/${sandboxId}`, {
+    method: 'POST',
   });
 }
 

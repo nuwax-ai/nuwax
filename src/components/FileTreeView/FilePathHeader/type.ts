@@ -74,4 +74,6 @@ export interface FilePathHeaderProps {
   showRefreshButton?: boolean;
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop?: boolean;
+  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+  hideDesktop?: number;
 }

@@ -21,9 +21,9 @@ import {
   apiUpdateResourceSort,
 } from '../services/permission-resources';
 import {
+  ResourceEnabledEnum,
   ResourceSourceEnum,
   ResourceTypeEnum,
-  ResourceVisibleEnum,
   type ResourceInfo,
   type ResourceTreeNode,
   type UpdateResourceParams,
@@ -115,7 +115,7 @@ const PermissionResources: React.FC = () => {
       parentId: resource.parentId,
       path: resource.path,
       sortIndex: resource.sortIndex || 0,
-      visible: resource.visible,
+      status: resource.status,
     };
     setEditingResource(resourceInfo);
     setIsEdit(true);
@@ -717,25 +717,23 @@ const PermissionResources: React.FC = () => {
       render: (path: string) => path || '--',
     },
     {
-      title: '是否显示',
-      dataIndex: 'visible',
-      key: 'visible',
+      title: '是否启用',
+      dataIndex: 'status',
+      key: 'status',
       align: 'center',
+      width: 100,
       fixed: 'right',
-      render: (
-        visible: ResourceVisibleEnum | undefined,
-        record: ResourceTreeNode,
-      ) => (
+      render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
         <Switch
-          checked={visible === ResourceVisibleEnum.Visible}
+          checked={status === ResourceEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
           onChange={(checked) => {
-            const newVisible = checked
-              ? ResourceVisibleEnum.Visible
-              : ResourceVisibleEnum.Hidden;
+            const newStatus = checked
+              ? ResourceEnabledEnum.Enabled
+              : ResourceEnabledEnum.Disabled;
             handleUpdateVisible({
               id: record.id,
-              visible: newVisible,
+              status: newStatus,
             });
           }}
         />
@@ -745,6 +743,7 @@ const PermissionResources: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: 200,
       fixed: 'right',
       render: (_: null, record: ResourceTreeNode) => (
         <Space size={0}>
@@ -776,12 +775,7 @@ const PermissionResources: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>权限资源管理</h1>
-          <p className={cx(styles.description)}>
-            管理系统中的模块、菜单、接口、组件等权限资源
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>权限资源管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增资源
         </Button>

@@ -218,10 +218,10 @@ export interface DataPermission {
   agentFileStorageDays?: number;
 
   /*通用智能体每天对话次数，-1表示不限制 */
-  agentDailyConversationLimit?: number;
+  agentDailyPromptLimit?: number;
 
   // 页面应用每天对话次数，-1表示不限制
-  pageDailyConversationLimit?: number;
+  pageDailyPromptLimit?: number;
 }
 
 /**

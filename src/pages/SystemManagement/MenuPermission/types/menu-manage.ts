@@ -14,17 +14,23 @@ export enum MenuBindTypeEnum {
 }
 
 /**
- * 是否显示 1:显示 0:隐藏
+ * 是否启用 1:启用 0:禁用
  */
-export enum MenuVisibleEnum {
-  Visible = 1, // 显示
-  Hidden = 0, // 隐藏
+export enum MenuEnabledEnum {
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 /*来源 1:系统内置 2:用户自定义 */
 export enum MenuSourceEnum {
   SystemBuiltIn = 1, // 系统内置
   UserDefined = 2, // 用户自定义
+}
+
+// 打开方式选项 打开方式 1:当前标签页打开 2:新标签页打开
+export enum OpenTypeEnum {
+  CurrentTab = 1, // 当前标签页打开
+  NewTab = 2, // 新标签页打开
 }
 
 // ==================== 接口定义 ====================
@@ -49,8 +55,8 @@ export interface AddMenuParams {
   icon?: string;
   /** 排序 */
   sortIndex?: number;
-  // 是否显示 1:显示 0:隐藏
-  visible?: MenuVisibleEnum;
+  // 是否启用 1:启用 0:禁用
+  status?: MenuEnabledEnum;
   /** 资源树 */
   resourceTree?: ResourceTreeNode[];
 }
@@ -107,8 +113,8 @@ export interface GetMenuListParams {
   source?: MenuSourceEnum;
   /** 父级ID */
   parentId?: number;
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: MenuVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: MenuEnabledEnum;
 }
 
 /**
@@ -136,14 +142,17 @@ export interface MenuNodeInfo {
   /*访问路径 */
   path?: string;
 
+  /*打开方式 1:当前标签页打开 2:新标签页打开 */
+  openType?: OpenTypeEnum;
+
   /*图标 */
   icon?: string;
 
   /*排序 */
   sortIndex?: number;
 
-  /*是否显示 1:显示 0:隐藏 */
-  visible?: MenuVisibleEnum;
+  /** 是否启用 1:启用 0:禁用 */
+  status?: MenuEnabledEnum;
 
   // 创建人
   creator?: string;

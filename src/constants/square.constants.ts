@@ -3,20 +3,16 @@ import { SquareTemplateTargetTypeEnum } from '@/types/enums/square';
 // 广场-模板分类列表
 const SQUARE_TEMPLATE_SEGMENTED_LIST_ALL = [
   {
-    value: SquareTemplateTargetTypeEnum.All,
-    label: '全部',
+    value: SquareTemplateTargetTypeEnum.ChatBot,
+    label: '智能体',
   },
   {
-    value: SquareTemplateTargetTypeEnum.Agent,
-    label: '智能体',
+    value: SquareTemplateTargetTypeEnum.PageApp,
+    label: '网页应用',
   },
   {
     value: SquareTemplateTargetTypeEnum.Workflow,
     label: '工作流',
-  },
-  {
-    value: SquareTemplateTargetTypeEnum.Page,
-    label: '网页应用',
   },
   {
     value: SquareTemplateTargetTypeEnum.Skill,

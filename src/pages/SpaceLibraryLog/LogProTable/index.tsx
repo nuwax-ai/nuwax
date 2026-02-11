@@ -1,5 +1,8 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { XProTable } from '@/components/ProComponents';
+import {
+  LimitedTooltip,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import { apiSpaceLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -13,7 +16,7 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -78,7 +81,8 @@ const LogProTable: React.FC = () => {
   // 当 targetId 变化时，更新 URL 参数
   const handleTargetIdChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleSearchParamChange('targetId', e.target.value);
+      const value = e?.target ? e.target.value : e;
+      handleSearchParamChange('targetId', String(value));
     },
     [handleSearchParamChange],
   );
@@ -272,7 +276,7 @@ const LogProTable: React.FC = () => {
         };
       }
       const current = Number(tableParams.current || 1);
-      const pageSize = Number(tableParams.pageSize || 10);
+      const pageSize = Number(tableParams.pageSize || 15);
 
       const timeRange = tableParams.createTimeRange as
         | [number, number]
@@ -366,16 +370,16 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => {
           // const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
           return (
-            <Button
-              type="link"
-              // disabled={disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetails(record);
-              }}
-            >
-              详情
-            </Button>
+            <TableActions
+              record={record}
+              actions={[
+                {
+                  key: 'detail',
+                  label: '详情',
+                  onClick: () => handleOpenDetails(record),
+                },
+              ]}
+            />
           );
         },
       },
@@ -387,7 +391,7 @@ const LogProTable: React.FC = () => {
     // 重置表格状态
     actionRef.current?.reset?.();
     // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 延迟一下再重新加载,确保分页参数已设置
     actionRef.current?.reload();
   };

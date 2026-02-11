@@ -72,6 +72,9 @@ const AgentDetails: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 会话ID
   const [conversationId, setConversationId] = useState<number | null>(null);
+  // 选中的电脑ID（用于任务智能体模式）
+  const [selectedComputerId, setSelectedComputerId] =
+    useState<string>('remote');
 
   const {
     isFileTreeVisible,
@@ -456,6 +459,10 @@ const AgentDetails: React.FC = () => {
             selectedComponentList={selectedComponentList}
             onSelectComponent={handleSelectComponent}
             showAnnouncement={true}
+            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+            selectedComputerId={selectedComputerId}
+            onComputerSelect={setSelectedComputerId}
+            agentId={agentDetail?.agentId}
           />
         </div>
       </div>

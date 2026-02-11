@@ -147,6 +147,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             ) : (
               <Tag color="green">问答型</Tag>
             )}
+            {/* 个人电脑 */}
+            {agentConfigInfo?.extra?.private && (
+              <Tag color="blue">个人电脑</Tag>
+            )}
           </div>
           <div className={cx('flex', 'items-center', 'gap-10')}>
             <span onClick={handlerCollect}>

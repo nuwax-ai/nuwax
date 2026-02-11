@@ -1,10 +1,8 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
-import ButtonToggle from '@/components/ButtonToggle';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
-import { getSquareTemplateSegmentedList } from '@/constants/square.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
@@ -24,7 +22,7 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
-import { Empty, Input } from 'antd';
+import { Empty, Input, Select } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -39,6 +37,13 @@ const cx = classNames.bind(styles);
  * 广场
  */
 const Square: React.FC = () => {
+  const { templateList } = useModel('squareModel');
+
+  const templateListTabs = templateList?.map((item: any) => ({
+    label: item.description,
+    value: item.name,
+  }));
+
   const location = useLocation();
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
@@ -51,10 +56,10 @@ const Square: React.FC = () => {
   const categoryTypeRef = useRef<SquareAgentTypeEnum>(
     SquareAgentTypeEnum.Agent,
   );
+
   // 模板模式下，目标类型tabs激活的key
-  const [activeKey, setActiveKey] = useState<SquareTemplateTargetTypeEnum>(
-    SquareTemplateTargetTypeEnum.All,
-  );
+  const activeKeyRef = useRef<SquareTemplateTargetTypeEnum>();
+
   // 当前页码
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
@@ -73,7 +78,6 @@ const Square: React.FC = () => {
     handleToggleCollectSuccess,
   } = useSpaceSquare();
   // 获取租户配置信息
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -107,11 +111,16 @@ const Square: React.FC = () => {
     // 分类类型
     categoryTypeRef.current = cate_type as SquareAgentTypeEnum;
     // 分类名称
-    categoryNameRef.current = cate_name ?? cate_type;
+    categoryNameRef.current = cate_name;
+
     // 分类类型
     switch (cate_type) {
-      case SquareAgentTypeEnum.Agent:
+      case SquareAgentTypeEnum.ChatBot:
         setTitle('智能体');
+        apiUrlRef.current = apiPublishedAgentList;
+        break;
+      case SquareAgentTypeEnum.PageApp:
+        setTitle('网页应用');
         apiUrlRef.current = apiPublishedAgentList;
         break;
       case SquareAgentTypeEnum.Plugin:
@@ -130,29 +139,34 @@ const Square: React.FC = () => {
   };
 
   // 查询列表
-  const handleQuery = (
-    pageIndex: number = 1,
-    kw: string = keyword,
-    targetType?: AgentComponentTypeEnum,
-    targetSubType?: 'ChatBot' | 'PageApp',
-  ) => {
-    const data: SquarePublishedListParams = {
+  const handleQuery = (pageIndex: number = 1, kw: string = keyword) => {
+    const data: SquarePublishedListParams & {
+      category?: any;
+      targetType?: any;
+    } = {
       page: pageIndex,
-      pageSize: 30,
+      pageSize: 48,
       // 分类名称
       category: categoryNameRef.current,
       kw,
     };
 
     /**
-     * 模板模式下，需要设置目标类型和目标子类型
+     * 模板模式下，需要设置目标类型和目标子类型【特殊处理】
      */
-    if (targetType) {
-      data.targetType = targetType;
-    }
+    if (categoryTypeRef.current === SquareAgentTypeEnum.Template) {
+      // 智能体和网页应用需要设置目标子类型
+      data.category = activeKeyRef.current;
 
-    if (targetSubType) {
-      data.targetSubType = targetSubType;
+      if (
+        categoryNameRef.current === SquareAgentTypeEnum.ChatBot ||
+        categoryNameRef.current === SquareAgentTypeEnum.PageApp
+      ) {
+        data.targetType = AgentComponentTypeEnum.Agent;
+        data.targetSubType = categoryNameRef.current;
+      } else if (categoryNameRef.current) {
+        data.targetType = categoryNameRef.current;
+      }
     }
 
     runSquareList(data);
@@ -170,10 +184,10 @@ const Square: React.FC = () => {
   const effectLoadFn = () => {
     setKeyword('');
     setSquareComponentList([]);
-    setActiveKey(SquareTemplateTargetTypeEnum.All);
+    activeKeyRef.current = undefined;
     setLoading(true);
     // 查询列表
-    handleQuery();
+    handleQuery(1);
   };
 
   useEffect(() => {
@@ -203,42 +217,11 @@ const Square: React.FC = () => {
     }
   };
 
-  // 处理模板下查询列表
-  const handleTemplateQuery = (
-    currentActiveKey: SquareTemplateTargetTypeEnum,
-    value: string = '',
-  ) => {
-    switch (currentActiveKey) {
-      case SquareTemplateTargetTypeEnum.All:
-        handleQuery(1, value);
-        break;
-      case SquareTemplateTargetTypeEnum.Agent:
-        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'ChatBot');
-        break;
-      case SquareTemplateTargetTypeEnum.Workflow:
-        handleQuery(1, value, AgentComponentTypeEnum.Workflow);
-        break;
-      case SquareTemplateTargetTypeEnum.Page:
-        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'PageApp');
-        break;
-      case SquareTemplateTargetTypeEnum.Skill:
-        handleQuery(1, value, AgentComponentTypeEnum.Skill);
-        break;
-    }
-  };
-
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
     setLoading(true);
     setSquareComponentList([]);
-    // 模板模式下
-    if (categoryTypeRef.current === SquareAgentTypeEnum.Template) {
-      // 处理模板下查询列表
-      handleTemplateQuery(activeKey, value);
-    } else {
-      // 处理非模板下查询列表
-      handleQuery(1, value);
-    }
+    handleQuery(1, value);
   };
 
   // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
@@ -246,9 +229,8 @@ const Square: React.FC = () => {
     setLoading(true);
     setSquareComponentList([]);
     const _activeKey = targetType as SquareTemplateTargetTypeEnum;
-    setActiveKey(_activeKey);
-    // 处理模板下查询列表
-    handleTemplateQuery(_activeKey, keyword);
+    activeKeyRef.current = _activeKey;
+    handleQuery(1, keyword);
   };
 
   return (
@@ -280,15 +262,17 @@ const Square: React.FC = () => {
       >
         <div className={cx('flex', 'items-center', 'gap-10')}>
           <h6 className={cx(styles['theme-title'])}>{title}</h6>
-          {categoryTypeRef.current === SquareAgentTypeEnum.Template && (
-            <ButtonToggle
-              options={getSquareTemplateSegmentedList(
-                tenantConfigInfo?.enabledSandbox,
-              )}
-              value={activeKey}
-              onChange={(value) => handleTabClick(value as React.Key)}
-            />
-          )}
+          {categoryTypeRef.current === SquareAgentTypeEnum.Template &&
+            categoryNameRef.current && (
+              <Select
+                options={templateListTabs}
+                value={activeKeyRef.current}
+                style={{ width: 160, marginLeft: 10 }}
+                placeholder="请选择分类"
+                allowClear
+                onChange={(value) => handleTabClick(value as React.Key)}
+              />
+            )}
         </div>
         <Input.Search
           className={cx(styles['search-input'])}
@@ -328,7 +312,10 @@ const Square: React.FC = () => {
                 } else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Template
                 ) {
-                  if (activeKey === SquareTemplateTargetTypeEnum.Page) {
+                  if (
+                    categoryNameRef.current ===
+                    SquareTemplateTargetTypeEnum.PageApp
+                  ) {
                     return (
                       <PageCard
                         key={index}

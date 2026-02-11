@@ -99,4 +99,6 @@ export interface FileTreeViewProps {
    * 用于在用户长时间无操作时自动断开连接
    */
   idleDetection?: IdleDetectionConfig;
+  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+  hideDesktop?: number;
 }

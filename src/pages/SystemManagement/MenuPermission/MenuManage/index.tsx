@@ -21,7 +21,7 @@ import {
   apiUpdateMenuSort,
 } from '../services/menu-manage';
 import {
-  MenuVisibleEnum,
+  MenuEnabledEnum,
   type MenuNodeInfo,
   type UpdateMenuParams,
   type UpdateMenuSortItem,
@@ -702,22 +702,23 @@ const MenuManage: React.FC = () => {
       render: (path: string) => path || '--',
     },
     {
-      title: '是否显示',
-      dataIndex: 'visible',
-      key: 'visible',
+      title: '是否启用',
+      dataIndex: 'status',
+      key: 'status',
       align: 'center',
+      width: 100,
       fixed: 'right',
-      render: (visible: MenuVisibleEnum | undefined, record: MenuNodeInfo) => (
+      render: (status: MenuEnabledEnum, record: MenuNodeInfo) => (
         <Switch
-          checked={visible === MenuVisibleEnum.Visible}
+          checked={status === MenuEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
           onChange={(checked) => {
-            const newVisible = checked
-              ? MenuVisibleEnum.Visible
-              : MenuVisibleEnum.Hidden;
+            const newStatus = checked
+              ? MenuEnabledEnum.Enabled
+              : MenuEnabledEnum.Disabled;
             handleUpdateVisible({
               id: record.id,
-              visible: newVisible,
+              status: newStatus,
             });
           }}
         />
@@ -727,6 +728,7 @@ const MenuManage: React.FC = () => {
       title: '操作',
       key: 'action',
       align: 'center',
+      width: 180,
       fixed: 'right',
       render: (_: null, record: MenuNodeInfo) => (
         <Space size={0}>
@@ -756,12 +758,7 @@ const MenuManage: React.FC = () => {
     <div className={cx(styles.container)}>
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
-        <div className={cx(styles.headerLeft)}>
-          <h1 className={cx(styles.title)}>菜单管理</h1>
-          <p className={cx(styles.description)}>
-            管理系统菜单结构,未级菜单可关联资源码
-          </p>
-        </div>
+        <h1 className={cx(styles.title)}>菜单管理</h1>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
           新增菜单
         </Button>

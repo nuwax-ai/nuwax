@@ -104,7 +104,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
     const [total, setTotal] = useState(0);
     const [tableParams, setTableParams] = useState<KnowledgeQaListParams>({
       current: 1,
-      pageSize: 20,
+      pageSize: 48,
       queryFilter: {
         spaceId: props.spaceId,
         question: props.question,
@@ -167,7 +167,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
         const newParams = {
           ...prev,
           current: pagination.current || 1,
-          pageSize: pagination.pageSize || 10,
+          pageSize: pagination.pageSize || 15,
         };
 
         // 如果页面大小变化，清空数据

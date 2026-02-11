@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { USER_INFO } from '@/constants/home.constants';
+import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -69,6 +70,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   showRefreshButton = true,
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop = false,
+  hideDesktop = 0,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -342,24 +344,49 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 视图模式切换按钮 */}
-      {showViewModeButtons && !isOnlyShowDesktop && (
-        <div className={styles.viewModeButtons}>
-          <Button
-            type={viewMode === 'preview' ? 'primary' : 'default'}
-            onClick={() => onViewModeChange?.('preview')}
-            className={styles.viewModeButton}
-          >
-            文件预览
-          </Button>
-          <Button
-            type={viewMode === 'desktop' ? 'primary' : 'default'}
-            onClick={() => onViewModeChange?.('desktop')}
-            className={styles.viewModeButton}
-          >
-            智能体电脑
-          </Button>
-        </div>
-      )}
+      {/* {showViewModeButtons &&
+        !isOnlyShowDesktop &&
+        hideDesktop !== HideDesktopEnum.Yes && (
+          <div className={styles.viewModeButtons}>
+            <Button
+              type={viewMode === 'preview' ? 'primary' : 'default'}
+              onClick={() => onViewModeChange?.('preview')}
+              className={styles.viewModeButton}
+            >
+              文件预览
+            </Button>
+            <Button
+              type={viewMode === 'desktop' ? 'primary' : 'default'}
+              onClick={() => onViewModeChange?.('desktop')}
+              className={styles.viewModeButton}
+            >
+              智能体电脑
+            </Button>
+          </div>
+        )} */}
+
+      <div className={styles.viewModeButtons}>
+        {showViewModeButtons &&
+          !isOnlyShowDesktop &&
+          hideDesktop !== HideDesktopEnum.Yes && (
+            <>
+              <Button
+                type={viewMode === 'preview' ? 'primary' : 'default'}
+                onClick={() => onViewModeChange?.('preview')}
+                className={styles.viewModeButton}
+              >
+                文件预览
+              </Button>
+              <Button
+                type={viewMode === 'desktop' ? 'primary' : 'default'}
+                onClick={() => onViewModeChange?.('desktop')}
+                className={styles.viewModeButton}
+              >
+                智能体电脑
+              </Button>
+            </>
+          )}
+      </div>
 
       {/* 右侧：操作按钮 */}
       <div

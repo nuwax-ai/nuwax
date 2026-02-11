@@ -234,6 +234,12 @@ export enum HideChatAreaEnum {
   Yes = 1,
 }
 
+// 是否隐藏远程桌面, 1 隐藏；0 不隐藏
+export enum HideDesktopEnum {
+  No = 0,
+  Yes = 1,
+}
+
 // 页面是否模型可见，1 可见，0 不可见
 export enum VisibleToLLMEnum {
   No = 0,

@@ -1,8 +1,8 @@
 /**
  * MCP 管理页面
  */
-import { XProTable } from '@/components/ProComponents';
-import TableActions, { ActionItem } from '@/components/TableActions';
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 
 const Mcp: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -29,8 +29,8 @@ const Mcp: React.FC = () => {
     formRef.current?.resetFields();
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
   }, []);
@@ -47,7 +47,7 @@ const Mcp: React.FC = () => {
    * 查看 MCP 详情
    */
   const handleView = useCallback((record: SystemMcpInfo) => {
-    history.push(`/space/${record.spaceId}/mcp/edit/${record.id}`);
+    window.open(`/space/${record.spaceId}/mcp/edit/${record.id}`);
   }, []);
 
   /**
@@ -153,7 +153,7 @@ const Mcp: React.FC = () => {
   }) => {
     const response = await apiSystemResourceMcpList({
       pageNo: params.current || 1,
-      pageSize: params.pageSize || 10,
+      pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
     });

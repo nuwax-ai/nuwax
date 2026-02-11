@@ -77,7 +77,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         docId: documentInfo?.id,
       },
       current,
-      pageSize: 20,
+      pageSize: 30,
     });
   };
 

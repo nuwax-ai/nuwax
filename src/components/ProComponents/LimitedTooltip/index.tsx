@@ -43,6 +43,9 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
   emptyText = '-',
   formatJson = false,
 }) => {
+  const [isOverflow, setIsOverflow] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
   if (!children) {
     return <span>{emptyText}</span>;
   }
@@ -56,29 +59,40 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
       ? formatText(children)
       : children;
 
+  const handleMouseEnter = () => {
+    const el = containerRef.current;
+    if (el) {
+      // 这里的逻辑：如果内容实际宽度 > 容器宽度，说明被省略了，需要展示 Tooltip
+      setIsOverflow(el.scrollWidth > el.clientWidth);
+    }
+  };
+
   return (
     <Tooltip
       title={
-        <pre
-          style={{
-            maxWidth,
-            maxHeight,
-            overflowY: 'auto',
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}
-        >
-          {displayText}
-        </pre>
+        isOverflow ? (
+          <pre
+            style={{
+              maxWidth,
+              maxHeight,
+              overflowY: 'auto',
+              margin: 0,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {displayText}
+          </pre>
+        ) : null
       }
-      overlayInnerStyle={{
-        maxWidth,
-        maxHeight,
-        overflow: 'hidden',
-      }}
     >
-      <div className="text-ellipsis">{displayText}</div>
+      <div
+        ref={containerRef}
+        onMouseEnter={handleMouseEnter}
+        className="text-ellipsis"
+      >
+        {displayText}
+      </div>
     </Tooltip>
   );
 };

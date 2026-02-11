@@ -1,10 +1,11 @@
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import Loading from '@/components/custom/Loading';
 import { SYSTEM_SETTING_TABS } from '@/constants/system.constants';
 import { apiSystemConfigList } from '@/services/systemManage';
 import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
-import { Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import BaseTab from './BaseTab';
 import styles from './index.less';
@@ -18,6 +19,8 @@ const SystemConfig: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<ConfigObj>();
   const [tab, setTab] = useState<TabKey>('BaseConfig');
+  const tabRef = useRef<any>();
+
   // 租户配置信息查询接口
   const { runTenantConfig } = useModel('tenantConfigInfo');
 
@@ -46,24 +49,42 @@ const SystemConfig: React.FC = () => {
   const tabConfig = useMemo(() => {
     return config?.[tab] || [];
   }, [config, tab]);
+
+  const handleSave = () => {
+    tabRef.current?.submit?.();
+  };
+
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col')}>
-      <div className={cx(styles.title)}>系统配置页面</div>
-      <Tabs
-        defaultActiveKey="BaseConfig"
-        items={SYSTEM_SETTING_TABS}
-        onChange={(key) => setTab(key as TabKey)}
-      />
-      {loading ? (
-        <Loading />
-      ) : (
-        <BaseTab
-          currentTab={tab}
-          config={tabConfig}
-          refresh={runTenantConfig}
+    <WorkspaceLayout
+      title="系统设置"
+      hideScroll
+      extraContent={
+        <div style={{ padding: '0 24px 24px' }}>
+          <Button type="primary" onClick={handleSave}>
+            保存
+          </Button>
+        </div>
+      }
+    >
+      <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+        <Tabs
+          defaultActiveKey="BaseConfig"
+          items={SYSTEM_SETTING_TABS}
+          onChange={(key) => setTab(key as TabKey)}
         />
-      )}
-    </div>
+        {loading ? (
+          <Loading />
+        ) : (
+          <BaseTab
+            key={tab}
+            ref={tabRef}
+            currentTab={tab}
+            config={tabConfig}
+            refresh={runTenantConfig}
+          />
+        )}
+      </div>
+    </WorkspaceLayout>
   );
 };
 
