@@ -421,6 +421,8 @@ export interface SystemAgentListParams extends SystemPaginationParams {
   spaceId?: number;
   /** 创建人名称 */
   creatorName?: string;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
 }
 
 // 智能体列表分页响应
