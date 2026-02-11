@@ -237,6 +237,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       if (homeMenu) {
         setActiveTab(homeMenu.code);
       }
+    }
+    // 我的电脑管理
+    else if (location.pathname === '/my-computer-manage') {
+      setActiveTab('my_computer');
     } else {
       // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
       const firstLevelCode = findFirstLevelCodeByPath(
@@ -369,6 +373,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
+    if (activeTab === 'my_computer') {
+      return '主页';
+    }
     const current = firstLevelMenus.find(
       (m: MenuItemDto) => m.code === activeTab,
     );
