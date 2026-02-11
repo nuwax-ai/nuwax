@@ -260,6 +260,11 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   // 计算是否真正禁用
   const isDisabled = disabled || fixedSelection || unavailable;
 
+  if (selectedOption === NO_COMPUTER_OPTION) {
+    // 如果没有电脑，不显示选择器
+    return null;
+  }
+
   return (
     <div className={cx(styles['computer-selector-container'], className)}>
       <Dropdown
