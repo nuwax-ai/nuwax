@@ -115,6 +115,8 @@ const SpacePageDevelop: React.FC = () => {
   const [projectId, setProjectId] = useState<number>(0);
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
   // 打开域名绑定弹窗
   const [openDomainBindingModal, setOpenDomainBindingModal] =
     useState<boolean>(false);
@@ -486,10 +488,9 @@ const SpacePageDevelop: React.FC = () => {
                     info.buildRunning === Boolean(BuildRunningEnum.Published))
                 );
               }
-              // TODO: 域名绑定功能暂时默认开启，后续可能需要根据租户配置动态控制
-              // 原始逻辑: return tenantConfigInfo?.supportCustomDomain === true;
+              // 域名绑定功能需要根据租户配置动态控制
               if (item.value === PageDevelopMoreActionEnum.Domain_Binding) {
-                return true;
+                return !!tenantConfigInfo?.supportCustomDomain;
               }
               return true;
             });

@@ -3,6 +3,7 @@ import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
 import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
+import { apiGetSpaceDetail } from '@/services/teamSetting';
 import { RoleEnum } from '@/types/enums/common';
 import {
   AllowDevelopEnum,
@@ -11,8 +12,9 @@ import {
   SpaceTypeEnum,
 } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
+import { SpaceInfo } from '@/types/interfaces/workspace';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';
@@ -160,10 +162,35 @@ const SpaceSection: React.FC<{
     history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
+  // Dynamic Title Logic
+  const [dynamicTitle, setDynamicTitle] = useState<string>('');
+
+  useEffect(() => {
+    const spaceIdStr = String(finalSpaceId);
+    const isInList = spaceList?.some(
+      (item: SpaceInfo) => String(item.id) === spaceIdStr,
+    );
+
+    if (isInList) {
+      setDynamicTitle(currentSpaceInfo?.name || '个人空间');
+    } else {
+      // Fetch details
+      apiGetSpaceDetail(finalSpaceId).then((res) => {
+        if (res.code === '0000' && res.data) {
+          const { creatorName, name } = res.data;
+          const display = creatorName ? `${creatorName}的个人空间` : name;
+          setDynamicTitle(display || '个人空间');
+        } else {
+          setDynamicTitle('个人空间');
+        }
+      });
+    }
+  }, [finalSpaceId, spaceList, currentSpaceInfo]);
+
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
       <div style={{ padding: '14px 12px' }}>
-        <SpaceTitle name={currentSpaceInfo?.name} />
+        <SpaceTitle name={dynamicTitle} />
       </div>
       <div>
         {SPACE_APPLICATION_LIST.map(
