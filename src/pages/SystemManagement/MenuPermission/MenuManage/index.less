@@ -29,19 +29,15 @@
 }
 
 .table {
-  // 让展开图标和图标在同一行显示
   :global {
-    .ant-table-row-expand-icon-cell {
-      display: inline-flex;
-      align-items: center;
-      vertical-align: middle;
+    // 确保第一列（拖拽手柄列）不缩进，固定 padding-left
+    .ant-table-tbody > tr > td:first-child {
+      padding-left: 16px !important;
     }
 
-    // 调整第一列（图标列）的布局，让展开图标和图标内容在同一行
-    .ant-table-tbody > tr > td:first-child {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
+    // 确保第二列（图标列）不缩进
+    .ant-table-tbody > tr > td:nth-child(2) {
+      padding-left: 16px !important;
     }
   }
 }
