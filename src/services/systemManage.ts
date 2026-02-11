@@ -1,4 +1,5 @@
 import { CategoryTypeEnum } from '@/types/enums/agent';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { TaskCronInfo } from '@/types/interfaces/agentTask';
 import { UpdateTimedTaskParams } from '@/types/interfaces/library';
 import { ModelSaveParams } from '@/types/interfaces/model';
@@ -104,11 +105,14 @@ export async function apiSystemConfigList(): Promise<
   });
 }
 // 查询模型列表
-export async function apiSystemModelList(): Promise<
-  RequestResponse<ModelConfigDto[]>
-> {
+export async function apiSystemModelList(
+  accessControl?: AccessControlEnum,
+): Promise<RequestResponse<ModelConfigDto[]>> {
   return request('/api/system/model/list', {
     method: 'GET',
+    params: {
+      accessControl,
+    },
   });
 }
 // 添加或更新模型配置接口

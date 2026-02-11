@@ -11,6 +11,7 @@ import {
 import { apiPublishedAgentList } from '@/services/square';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { Page } from '@/types/interfaces/request';
@@ -314,7 +315,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   useEffect(() => {
     if (open) {
       // 加载模型列表
-      runModelList();
+      runModelList(AccessControlEnum.Filter);
 
       // 如果是编辑模式，查询数据权限用于回显
       if (targetId) {
