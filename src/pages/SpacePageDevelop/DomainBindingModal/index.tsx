@@ -277,7 +277,7 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
         onCancel={handleCancel}
         onOk={handleSubmit}
         confirmLoading={submitLoading}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ padding: '20px 0' }}>
           <Input

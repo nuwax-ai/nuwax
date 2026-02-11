@@ -21,7 +21,7 @@ import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
 // 复用原有组件
-import CollapseButton from '../MenusLayout/CollapseButton';
+import CollapseButton from './CollapseButton';
 import Header from './Header';
 import User from './User';
 import UserOperateArea from './UserOperateArea';

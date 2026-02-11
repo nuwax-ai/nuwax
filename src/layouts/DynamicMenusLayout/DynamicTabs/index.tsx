@@ -6,7 +6,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
-import TabItem from '../../MenusLayout/Tabs/TabItem';
+import TabItem from './TabItem';
 
 export interface DynamicTabsProps {
   /** 一级菜单列表 */
@@ -26,7 +26,8 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
   activeTab,
   onClick,
 }) => {
-  const { isSecondMenuCollapsed } = useModel('layout');
+  const { handleShowHoverMenu, handleHideHoverMenu, isSecondMenuCollapsed } =
+    useModel('layout');
 
   // 将 MenuItemDto 转换为 TabItem 所需的格式
   const tabItems = useMemo(() => {
@@ -41,14 +42,9 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 
   return (
     <div
+      className="flex flex-col items-center flex-1 overflow-y w-full"
       style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        width: '100%',
         padding: '8px 0',
-        overflowY: 'auto',
       }}
     >
       {tabItems.map((item) => (
@@ -60,6 +56,12 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
           text={item.text}
           active={item.active}
           onClick={() => onClick(item.menu)}
+          onMouseEnter={() => {
+            if (item.menu?.code !== 'new_conversation') {
+              handleShowHoverMenu(item.menu?.code || '');
+            }
+          }}
+          onMouseLeave={handleHideHoverMenu}
           isSecondMenuCollapsed={isSecondMenuCollapsed}
         />
       ))}
