@@ -89,6 +89,17 @@
     &.delete:hover {
       color: #ff4d4f;
     }
+
+    &.disabled {
+      cursor: not-allowed;
+      color: #ccc !important;
+      opacity: 0.5;
+
+      &:hover {
+        background-color: transparent;
+        color: #ccc !important;
+      }
+    }
   }
 }
 

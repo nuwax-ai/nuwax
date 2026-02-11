@@ -16,11 +16,12 @@ import { ProList } from '@ant-design/pro-components';
 import { App, Button, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import CategoryModal, { CategoryItem } from './components/CategoryModal';
 import styles from './index.less';
 
 const CategoryManage: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const { modal, message } = App.useApp();
   const { confirm } = modal;
   const [activeKey, setActiveKey] = useState<string>(CategoryTypeEnum.Agent);
@@ -152,15 +153,17 @@ const CategoryManage: React.FC = () => {
             headerTitle={getHeaderTitle()}
             dataSource={dataSource}
             toolBarRender={() => [
-              <Button
-                key="add"
-                type="primary"
-                icon={<PlusOutlined />}
-                className={styles['add-btn']}
-                onClick={handleAdd}
-              >
-                添加
-              </Button>,
+              hasPermission('category_config_add') && (
+                <Button
+                  key="add"
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  className={styles['add-btn']}
+                  onClick={handleAdd}
+                >
+                  添加
+                </Button>
+              ),
             ]}
             metas={{
               title: {
@@ -179,13 +182,31 @@ const CategoryManage: React.FC = () => {
                 render: (_, record) => [
                   <EditOutlined
                     key="edit"
-                    className={styles['action-icon']}
-                    onClick={() => handleEdit(record)}
+                    className={classNames(styles['action-icon'], {
+                      [styles.disabled]: !hasPermission(
+                        'category_config_modify',
+                      ),
+                    })}
+                    onClick={() => {
+                      if (!hasPermission('category_config_modify')) return;
+                      handleEdit(record);
+                    }}
                   />,
                   <DeleteOutlined
                     key="delete"
-                    className={classNames(styles['action-icon'], styles.delete)}
-                    onClick={() => handleDelete(record)}
+                    className={classNames(
+                      styles['action-icon'],
+                      styles.delete,
+                      {
+                        [styles.disabled]: !hasPermission(
+                          'category_config_delete',
+                        ),
+                      },
+                    )}
+                    onClick={() => {
+                      if (!hasPermission('category_config_delete')) return;
+                      handleDelete(record);
+                    }}
                   />,
                 ],
               },
