@@ -463,6 +463,9 @@ const AgentDetails: React.FC = () => {
             selectedComputerId={selectedComputerId}
             onComputerSelect={setSelectedComputerId}
             agentId={agentDetail?.agentId}
+            agentSandboxId={
+              agentDetail?.sandboxId ?? agentDetail?.extra?.sandboxId
+            }
           />
         </div>
       </div>

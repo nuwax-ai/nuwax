@@ -58,6 +58,18 @@
     border-color: @colorErrorBorder;
     color: @colorError;
     cursor: not-allowed;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 50%); // 半透明遮罩
+      border-radius: @borderRadius;
+      z-index: 1;
+    }
   }
 }
 

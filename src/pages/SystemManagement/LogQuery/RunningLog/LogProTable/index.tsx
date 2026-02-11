@@ -1,4 +1,8 @@
-import { LimitedTooltip, XProTable } from '@/components/ProComponents';
+import {
+  LimitedTooltip,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import { apiRunningLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -12,7 +16,7 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -21,7 +25,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useParams, useSearchParams } from 'umi';
+import { useLocation, useModel, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -30,6 +34,7 @@ import LogDetailDrawer from '../LogDetailDrawer';
  * - 数据源：apiSpaceLogList / apiSpaceLogDetail
  */
 const LogProTable: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const params = useParams();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -364,18 +369,18 @@ const LogProTable: React.FC = () => {
         fixed: 'right',
         align: 'center',
         render: (_: any, record: SpaceLogInfo) => {
-          // const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
           return (
-            <Button
-              type="link"
-              // disabled={disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetails(record);
-              }}
-            >
-              详情
-            </Button>
+            <TableActions
+              record={record}
+              actions={[
+                {
+                  key: 'detail',
+                  label: '详情',
+                  disabled: !hasPermission('system_running_log_query_detail'),
+                  onClick: () => handleOpenDetails(record),
+                },
+              ]}
+            />
           );
         },
       },
@@ -429,6 +434,7 @@ const LogProTable: React.FC = () => {
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}
+        showQueryButtons={hasPermission('system_running_log_query_list')}
       />
       <LogDetailDrawer
         open={detailsVisible}

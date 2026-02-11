@@ -14,6 +14,7 @@ import { ThemeConfigData } from '@/types/interfaces/systemManage';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 // 使用统一的存储键名
@@ -32,6 +33,7 @@ const cx = classNames.bind(styles);
  * - 配置优先级：用户设置 > 租户信息设置 > 默认配置
  */
 const ThemeConfig: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   // 使用统一主题管理
   const {
     primaryColor,
@@ -242,7 +244,11 @@ const ThemeConfig: React.FC = () => {
       title="主题配置"
       extraContent={
         <div style={{ padding: '12px 6px' }}>
-          <Button type="primary" onClick={handleSave}>
+          <Button
+            type="primary"
+            disabled={!hasPermission('system_theme_config_save')}
+            onClick={handleSave}
+          >
             保存配置
           </Button>
           <Button style={{ marginLeft: 12 }} onClick={handleReset}>

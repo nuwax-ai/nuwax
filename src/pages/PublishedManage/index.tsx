@@ -63,13 +63,13 @@ const PublishedManage: React.FC = () => {
       {
         key: 'view',
         label: '查看',
-        isShow: hasPermission('published_manage_query_detail'),
+        disabled: !hasPermission('published_manage_query_detail'),
         onClick: handleView,
       },
       {
         key: 'offShelf',
         label: '下架',
-        isShow: hasPermission('published_manage_offline'),
+        disabled: !hasPermission('published_manage_offline'),
         onClick: (r) => handleOffShelf(r.id),
       },
     ];

@@ -98,7 +98,7 @@ const GlobalModelManage: React.FC = () => {
         {
           key: 'edit',
           label: '编辑',
-          isShow: hasPermission('model_manage_modify'),
+          disabled: !hasPermission('model_manage_modify'),
           onClick: () => {
             setModelId(record.id);
             setVisible(true);
@@ -107,7 +107,7 @@ const GlobalModelManage: React.FC = () => {
         {
           key: 'auth',
           label: '授权',
-          isShow: hasPermission('model_manage_access_control'),
+          disabled: !hasPermission('model_manage_access_control'),
           onClick: () => {
             setCurrentAuthModelId(record.id);
             setAuthModalOpen(true);
@@ -126,7 +126,7 @@ const GlobalModelManage: React.FC = () => {
               </div>
             ),
           },
-          isShow: hasPermission('model_manage_delete'),
+          disabled: !hasPermission('model_manage_delete'),
           onClick: (r) => handleConfirmDelete(r.id),
         },
       ];

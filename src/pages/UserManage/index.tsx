@@ -104,43 +104,41 @@ const UserManage: React.FC = () => {
         {
           key: 'edit',
           label: '修改',
-          isShow: hasPermission('user_manage_modify'),
+          disabled: !hasPermission('user_manage_modify'),
           onClick: handleEditUser,
         },
         {
           key: 'disable',
           label: '禁用',
-          isShow:
-            hasPermission('user_manage_disable') &&
-            record.status === UserStatusEnum.Enabled,
+          isShow: record.status === UserStatusEnum.Enabled,
+          disabled: !hasPermission('user_manage_disable'),
           onClick: handleDisable,
         },
         {
           key: 'enable',
           label: '启用',
-          isShow:
-            hasPermission('user_manage_enable') &&
-            record.status !== UserStatusEnum.Enabled,
+          isShow: record.status !== UserStatusEnum.Enabled,
+          disabled: !hasPermission('user_manage_enable'),
           onClick: handleEnable,
         },
         {
           key: 'auth',
           label: '授权',
-          isShow:
-            hasPermission('user_manage_bind_role') ||
-            hasPermission('user_manage_bind_group'),
+          disabled:
+            !hasPermission('user_manage_bind_role') &&
+            !hasPermission('user_manage_bind_group'),
           onClick: handleAuth,
         },
         {
           key: 'viewMenu',
           label: '查看菜单资源权限',
-          isShow: hasPermission('user_manage_query_menu_permission'),
+          disabled: !hasPermission('user_manage_query_menu_permission'),
           onClick: handleViewMenu,
         },
         {
           key: 'dataPermission',
           label: '查看数据权限',
-          isShow: hasPermission('user_manage_query_data_permission'),
+          disabled: !hasPermission('user_manage_query_data_permission'),
           onClick: handleViewDataPermission,
         },
       ];

@@ -31,12 +31,14 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import SandboxModal from './components/SandboxModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const SandboxConfig: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const tableActionRef = useRef<ActionType>();
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -204,8 +206,11 @@ const SandboxConfig: React.FC = () => {
           </Tooltip>
           <Tooltip title="编辑">
             <div
-              className={styles['action-btn']}
+              className={cx(styles['action-btn'], {
+                [styles.disabled]: !hasPermission('sandbox_config_modify'),
+              })}
               onClick={() => {
+                if (!hasPermission('sandbox_config_modify')) return;
                 setModalMode('edit');
                 setCurrentRecord(record);
                 setModalVisible(true);
@@ -216,8 +221,11 @@ const SandboxConfig: React.FC = () => {
           </Tooltip>
           <Tooltip title="删除">
             <div
-              className={styles['action-btn']}
+              className={cx(styles['action-btn'], {
+                [styles.disabled]: !hasPermission('sandbox_config_delete'),
+              })}
               onClick={() => {
+                if (!hasPermission('sandbox_config_delete')) return;
                 Modal.confirm({
                   title: '删除确认',
                   content: '确定要删除此沙盒吗？',
@@ -245,17 +253,19 @@ const SandboxConfig: React.FC = () => {
     <WorkspaceLayout
       title="沙盒配置"
       rightSlot={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setModalMode('add');
-            setCurrentRecord(null);
-            setModalVisible(true);
-          }}
-        >
-          添加沙盒
-        </Button>
+        hasPermission('sandbox_config_add') && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setModalMode('add');
+              setCurrentRecord(null);
+              setModalVisible(true);
+            }}
+          >
+            添加沙盒
+          </Button>
+        )
       }
     >
       <div className={styles['sandbox-container']}>

@@ -23,6 +23,7 @@ const SystemConfig: React.FC = () => {
 
   // 租户配置信息查询接口
   const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { hasPermission } = useModel('menuModel');
 
   const fetchConfig = async () => {
     const res = await apiSystemConfigList();
@@ -60,7 +61,11 @@ const SystemConfig: React.FC = () => {
       hideScroll
       extraContent={
         <div style={{ padding: '0 24px 24px' }}>
-          <Button type="primary" onClick={handleSave}>
+          <Button
+            type="primary"
+            disabled={!hasPermission('system_setting_save')}
+            onClick={handleSave}
+          >
             保存
           </Button>
         </div>
