@@ -47,7 +47,7 @@ export const ECOSYSTEM_MARKET_LIST = [
       },
       {
         text: '网页应用',
-        type: AgentComponentTypeEnum.Page,
+        type: AgentComponentTypeEnum.PageApp,
       },
     ],
   },
