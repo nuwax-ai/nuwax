@@ -6,6 +6,7 @@ import type {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 import type { ConversationChatResponse } from './conversationInfo';
 
@@ -60,6 +61,8 @@ export interface ModelFormData {
   maxTokens: number;
   // 最大上下文长度，默认128000
   maxContextTokens: number;
+  // 管控状态
+  accessControl?: AccessControlEnum;
 }
 
 // 在空间中添加或更新模型配置输入参数

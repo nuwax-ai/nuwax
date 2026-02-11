@@ -128,6 +128,15 @@ export async function apiSystemModelDelete(data: {
     method: 'GET',
   });
 }
+// 开启/关闭模型管控
+export async function apiSystemModelAccessControl(
+  modelId: number,
+  status: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/model/${modelId}/accessControl/${status}`, {
+    method: 'POST',
+  });
+}
 // 查询可选模型列表
 export async function apiUseableModelList(): Promise<
   RequestResponse<ModelConfigDto[]>
