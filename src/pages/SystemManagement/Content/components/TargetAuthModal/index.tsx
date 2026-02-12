@@ -25,6 +25,8 @@ interface TargetAuthModalProps {
   open: boolean;
   /** 智能体ID、网页应用ID、模型ID */
   targetId: number;
+  /** 目标名称 */
+  targetName?: string;
   /** 目标类型 */
   targetType: 'agent' | 'page' | 'model';
   /** 取消回调 */
@@ -44,6 +46,7 @@ type TabKey = 'role' | 'group';
 const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   open,
   targetId,
+  targetName,
   targetType,
   onCancel,
 }) => {
@@ -307,7 +310,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
 
   return (
     <Modal
-      title="授权"
+      title={`授权 - ${targetName}`}
       open={open}
       confirmLoading={loading}
       onCancel={onCancel}
