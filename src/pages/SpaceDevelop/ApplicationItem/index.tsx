@@ -13,7 +13,7 @@ import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { Button, message, Tag } from 'antd';
+import { Button, message, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -150,9 +150,17 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     });
   }, [agentConfigInfo]);
 
+  // 权限检查：如果没有收藏权限
+  const hasCollectPermission = hasPermissionMenu('agent_collect');
+
   // 收藏、取消收藏事件
   const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation();
+
+    // 权限检查：如果没有收藏权限，提示并阻止操作
+    if (!hasCollectPermission) {
+      return;
+    }
 
     const { id, devCollected } = agentConfigInfo;
     if (devCollected) {
@@ -216,13 +224,20 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             )}
           </div>
           <div className={cx('flex', 'items-center', 'gap-10')}>
-            <span onClick={handlerCollect}>
-              {agentConfigInfo.devCollected ? (
-                <ICON_STAR_FILL />
-              ) : (
-                <ICON_STAR />
-              )}
-            </span>
+            <Tooltip title={hasCollectPermission ? '' : '无此资源权限'}>
+              <span
+                onClick={handlerCollect}
+                className={cx({
+                  [styles['collect-disabled']]: !hasCollectPermission,
+                })}
+              >
+                {agentConfigInfo.devCollected ? (
+                  <ICON_STAR_FILL />
+                ) : (
+                  <ICON_STAR />
+                )}
+              </span>
+            </Tooltip>
             {/*更多操作*/}
             <CustomPopover onClick={handlerClickMore} list={actionList}>
               <Button size="small" type="text" icon={<ICON_MORE />}></Button>
