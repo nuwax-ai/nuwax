@@ -1,12 +1,22 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import { Page } from '@/types/interfaces/request';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
 import { CloseOutlined } from '@ant-design/icons';
-import { Avatar, Button, Checkbox, Form, Input, List, message } from 'antd';
+import {
+  Avatar,
+  Button,
+  Checkbox,
+  Empty,
+  Form,
+  Input,
+  List,
+  message,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
@@ -324,7 +334,32 @@ const BindUser: React.FC<BindUserProps> = ({
               overflowX: 'hidden',
             }}
           >
-            {open && isScrollReady ? (
+            {loading && rightColumnMembers.length === 0 ? (
+              // 首次加载时显示 Loading
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <Loading />
+              </div>
+            ) : !loading && rightColumnMembers.length === 0 ? (
+              // 没有数据时显示 Empty，垂直居中
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <Empty description="暂无数据" />
+              </div>
+            ) : open && isScrollReady ? (
+              // 滚动加载时使用 InfiniteScrollDiv，它会自动显示底部的加载动画
               <InfiniteScrollDiv
                 key={`infinite-scroll-${targetId}-${open}`}
                 scrollableTarget="right-member-list-scroll"
@@ -353,6 +388,7 @@ const BindUser: React.FC<BindUserProps> = ({
                 />
               </InfiniteScrollDiv>
             ) : (
+              // 未准备好时显示普通列表
               <List
                 dataSource={rightColumnMembers}
                 renderItem={(m) => (
