@@ -1,4 +1,4 @@
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import { MenuNodeInfo } from '../types/menu-manage';
 import { DataPermission, UserInfo } from '../types/role-manage';
@@ -120,13 +120,19 @@ export async function apiGetUserGroupList(
 }
 
 /**
- * 查询组已绑定的用户列表
+ * 分页查询组已绑定的用户列表，支持按userName模糊筛选
  */
-export async function apiGetGroupUserList(
-  groupId: number,
-): Promise<RequestResponse<UserInfo[]>> {
-  return request(`/api/system/group/list-user/${groupId}`, {
-    method: 'GET',
+export async function apiGetGroupUserList(data: {
+  pageNo: number;
+  pageSize: number;
+  queryFilter: {
+    groupId: number;
+    userName: string;
+  };
+}): Promise<RequestResponse<Page<UserInfo>>> {
+  return request('/api/system/group/list-user', {
+    method: 'POST',
+    data,
   });
 }
 
