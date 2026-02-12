@@ -266,20 +266,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 return;
               }
 
-              // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-              const isHtml = fileName?.includes('.htm');
-              const isJsonFile = fileName?.includes('.json');
-
               // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
-              if (
-                isVideo ||
-                isAudio ||
-                isOfficeDocument ||
-                isImage ||
-                isHtml ||
-                isMarkdownFile(fileName) ||
-                isJsonFile
-              ) {
+              if (isVideo || isAudio || isOfficeDocument || isImage) {
+                // 如果是新选中的文件（office文档），更新刷新时间戳
+                if (isOfficeDocument) {
+                  fileRefreshTimestampRef.current = Date.now();
+                }
+
+                // 如果是新选中的视频文件，更新刷新时间戳
+                if (isVideo) {
+                  videoRefreshTimestampRef.current = Date.now();
+                }
+
+                // 如果是新选中的音频文件，更新刷新时间戳
+                if (isAudio) {
+                  audioRefreshTimestampRef.current = Date.now();
+                }
                 return;
               }
 
@@ -311,6 +313,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     }, [
       isRefreshingFileTree,
       onRefreshFileTree,
+      isPreviewableFile,
       selectedFileId,
       selectedFileNode,
       fetchFileContentUpdateFiles,
@@ -340,68 +343,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 获取文件内容
-          const fileContent = fileNode?.content || '';
           // 获取文件代理URL
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
 
           /**
-           * 如果文件有内容，直接使用缓存 （skill技能页面时，文件有内容，但是没有文件代理URL）
+           * kill技能页面时，文件可能有内容，也可能文件内容为空，但是没有文件代理URL
            * 如果文件节点是链接文件，则不支持预览
            */
-          if ((fileContent && !fileProxyUrl) || fileNode?.isLink) {
+          if (!fileProxyUrl || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
             return;
-          }
-
-          // 检查是否是重复点击同一个文件
-          const isSameFile = selectedFileId === fileId;
-          // 检查是否是 html 文件
-          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
-          // 判断文件是否为文档类型
-          const result = isDocumentFile(fileNode?.name || '');
-          // 判断文件是否为office文档类型
-          const isOfficeFile = result?.isDoc || false;
-          // 检查是否是 json 文件
-          const isJsonFile = fileNode?.name?.includes('.json') || false;
-          // 判断文件是否为视频类型
-          const isVideoFileType = isVideoFile(fileNode?.name || '');
-          // 判断文件是否为音频类型
-          const isAudioFileType = isAudioFile(fileNode?.name || '');
-
-          // 如果是重复点击需要刷新的文件（html、office、json），更新刷新时间戳以强制刷新
-          if (isSameFile && (isHtmlFile || isOfficeFile || isJsonFile)) {
-            fileRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是重复点击视频文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isVideoFileType) {
-            videoRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是重复点击音频文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isAudioFileType) {
-            audioRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是新选中的需要刷新的文件（html、office、json），更新刷新时间戳
-          if (isHtmlFile || isOfficeFile || isJsonFile) {
-            fileRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的视频文件，更新刷新时间戳
-          if (isVideoFileType) {
-            videoRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的音频文件，更新刷新时间戳
-          if (isAudioFileType) {
-            audioRefreshTimestampRef.current = Date.now();
           }
 
           // 文件没有内容或需要重新加载
@@ -419,35 +372,57 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
+          // 检查是否是 html 文件
+          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为office文档类型
+          const isOfficeFile = result?.isDoc || false;
+          // 判断文件是否为视频类型
+          const isVideoFileType = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudioFileType = isAudioFile(fileNode?.name || '');
+          // 判断文件是否为图片类型
+          const isImageFileType = isImageFile(fileNode?.name || '');
+
+          if (isHtmlFile) {
+            fileRefreshTimestampRef.current = Date.now();
+          }
+
           setSelectedFileId(fileNode?.id || fileId);
           setViewFileType('preview');
-          // 判断文件是否为图片类型
-          const isImage = isImageFile(fileNode?.name || '');
-          // 判断文件是否为视频类型
-          const isVideo = isVideoFile(fileNode?.name || '');
-          // 判断文件是否为音频类型
-          const isAudio = isAudioFile(fileNode?.name || '');
-          // 判断文件是否为文档类型（复用之前声明的 result 变量）
-          // 判断文件是否为office文档类型
-          const isOfficeDocument = isOfficeFile;
 
-          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+          // 如果文件为图片、视频、音频、文档类型，则直接设置为选中文件节点
           if (
-            isImage ||
-            isVideo ||
-            isAudio ||
-            isOfficeDocument ||
-            !fileProxyUrl
+            isImageFileType ||
+            isVideoFileType ||
+            isAudioFileType ||
+            isOfficeFile
           ) {
             setSelectedFileNode(fileNode);
+
+            // 如果是新选中的office文档，更新刷新时间戳
+            if (isOfficeFile) {
+              fileRefreshTimestampRef.current = Date.now();
+            }
+
+            // 如果是新选中的视频文件，更新刷新时间戳
+            if (isVideoFileType) {
+              videoRefreshTimestampRef.current = Date.now();
+            }
+
+            // 如果是新选中的音频文件，更新刷新时间戳
+            if (isAudioFileType) {
+              audioRefreshTimestampRef.current = Date.now();
+            }
           }
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
             // 判断文件是否支持预览（白名单方案）
             const isPreviewable = isPreviewableFile(fileNode?.name || '');
-            // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
-            if (!isPreviewable || fileNode?.isLink) {
+            // 如果文件不支持预览，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
+            if (!isPreviewable) {
               setSelectedFileNode(fileNode);
               return;
             }
@@ -1141,14 +1116,100 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       return null;
     };
 
-    // 处理视图模式切换
-    const handleChangeViewMode = (mode: 'preview' | 'desktop') => {
-      // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
-      if (mode === 'desktop') {
-        // 连接 VNC 预览
-        vncPreviewRef.current?.connect();
+    // 处理文件内容刷新
+    const handleRefreshFileContent = async () => {
+      const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+
+      // 仅在存在 fileProxyUrl 时才尝试重新获取内容
+      if (fileProxyUrl) {
+        const fileName = selectedFileNode?.name || '';
+
+        // 判断文件是否支持预览（白名单方案）
+        const previewable = isPreviewableFile(fileName);
+
+        // 以下情况不需要重新获取内容，直接使用当前选中文件节点：
+        // 1）文件不支持预览
+        // 2）软连接文件
+        // 3）office 文档、视频、音频、图片（这些在上方点击文件时已特殊处理）
+        // 是否重新获取文件内容
+        const isNeedRefreshFileContent =
+          !previewable ||
+          selectedFileNode?.isLink ||
+          isOfficeDocument ||
+          isVideo ||
+          isAudio ||
+          isImage;
+
+        if (!isNeedRefreshFileContent) {
+          try {
+            // 获取文件内容并更新文件树
+            const newFileContent = await fetchFileContentUpdateFiles(
+              fileProxyUrl,
+              selectedFileNode?.id || selectedFileId,
+            );
+
+            // 更新选中文件节点的内容
+            setSelectedFileNode((prevNode) =>
+              prevNode
+                ? {
+                    ...prevNode,
+                    content: newFileContent || '',
+                  }
+                : prevNode,
+            );
+          } catch (error) {
+            console.error('切换预览模式时刷新文件内容失败: ', error);
+          }
+        }
       }
-      onViewModeChange?.(mode);
+    };
+
+    /**
+     * 处理视图模式切换
+     * - 切换到 desktop：连接 VNC
+     * - 切换到 preview：
+     *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
+     *     1）存在 fileProxyUrl
+     *     2）不是 office 文档、视频、音频、图片、软连接文件
+     *     3）文件类型支持预览（白名单）
+     */
+    const handleChangeViewMode = useCallback(
+      async (mode: 'preview' | 'desktop') => {
+        // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
+        if (mode === 'desktop') {
+          // 连接 VNC 预览
+          vncPreviewRef.current?.connect();
+        }
+        // 切换到 preview 模式时，如果当前已选中文件，则刷新当前选中的文件内容
+        else if (selectedFileNode) {
+          // 刷新当前选中的文件内容
+          handleRefreshFileContent();
+        }
+
+        onViewModeChange?.(mode);
+      },
+      [
+        selectedFileNode,
+        viewFileType,
+        onViewModeChange,
+        handleRefreshFileContent,
+      ],
+    );
+
+    /**
+     * 处理视图文件类型切换
+     * - 切换到 preview：
+     *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
+     *     1）存在 fileProxyUrl
+     *     2）不是 office 文档、视频、音频、图片、软连接文件
+     *     3）文件类型支持预览（白名单）
+     */
+    const handleViewFileTypeChange = async (type: 'preview' | 'code') => {
+      setViewFileType(type);
+      if (type === 'code' && selectedFileNode) {
+        // 刷新当前选中的文件内容
+        handleRefreshFileContent();
+      }
     };
 
     /**
@@ -1525,7 +1586,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 当前文件类型
           viewFileType={viewFileType}
           // 针对html、md文件，切换预览和代码视图
-          onViewFileTypeChange={setViewFileType}
+          onViewFileTypeChange={handleViewFileTypeChange}
           // 处理通过URL下载文件操作
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
