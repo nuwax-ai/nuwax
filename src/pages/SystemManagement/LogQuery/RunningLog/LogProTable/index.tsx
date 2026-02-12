@@ -37,7 +37,7 @@ const LogProTable: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const params = useParams();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const spaceId = Number(params.spaceId);
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
@@ -56,37 +56,6 @@ const LogProTable: React.FC = () => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('targetId') || undefined;
   }, [location.search]);
-
-  // 通用：更新 URL 查询参数
-  const handleSearchParamChange = useCallback(
-    (key: 'targetType' | 'targetId', value?: string) => {
-      const newParams = new URLSearchParams(searchParams);
-      if (value) {
-        newParams.set(key, value);
-      } else {
-        newParams.delete(key);
-      }
-      setSearchParams(newParams);
-    },
-    [searchParams, setSearchParams],
-  );
-
-  // 当 targetType 变化时，更新 URL 参数
-  const handleTargetTypeChange = useCallback(
-    (value: string) => {
-      handleSearchParamChange('targetType', value);
-    },
-    [handleSearchParamChange],
-  );
-
-  // 当 targetId 变化时，更新 URL 参数
-  const handleTargetIdChange = useCallback(
-    (e: any) => {
-      const value = e?.target ? e.target.value : e;
-      handleSearchParamChange('targetId', value);
-    },
-    [handleSearchParamChange],
-  );
 
   const handleCloseDetails = useCallback(() => {
     setDetailsVisible(false);
@@ -111,7 +80,6 @@ const LogProTable: React.FC = () => {
         fieldProps: {
           placeholder: '请选择类型',
           allowClear: true,
-          onChange: handleTargetTypeChange,
         },
       },
       {
@@ -122,7 +90,6 @@ const LogProTable: React.FC = () => {
         initialValue: targetIdFromUrl,
         fieldProps: {
           placeholder: '请输入对象ID',
-          onChange: handleTargetIdChange,
         },
       },
       {
@@ -241,12 +208,7 @@ const LogProTable: React.FC = () => {
         },
       },
     ],
-    [
-      handleTargetIdChange,
-      handleTargetTypeChange,
-      targetIdFromUrl,
-      targetTypeFromUrl,
-    ],
+    [],
   );
 
   // 中间变量用于判断是否是点击重置按钮
@@ -266,11 +228,6 @@ const LogProTable: React.FC = () => {
           targetId: undefined,
         });
 
-        // 删除查询参数,防止重复查询
-        searchParams.delete('targetType');
-        searchParams.delete('targetId');
-        searchParams.delete('from'); // 需要特殊处理(只有特殊情况会用到)
-        setSearchParams(searchParams);
         tableParams = {
           current: tableParams.current,
           pageSize: tableParams.pageSize,

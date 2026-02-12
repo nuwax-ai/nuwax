@@ -78,7 +78,6 @@ const SkillPage: React.FC = () => {
       {
         key: 'delete',
         label: '删除',
-        type: 'danger',
         confirm: {
           title: (
             <span>

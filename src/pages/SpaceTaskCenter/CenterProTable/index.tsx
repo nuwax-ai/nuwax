@@ -468,7 +468,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
               {
                 key: 'delete',
                 label: '删除',
-                type: 'danger' as const,
                 confirm: { title: '确认删除该任务？' },
                 onClick: (r: TaskInfo) => handleDeleteTask(r.id),
               },

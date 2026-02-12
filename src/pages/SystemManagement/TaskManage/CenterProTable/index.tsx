@@ -394,7 +394,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                   {
                     key: 'delete',
                     label: '删除',
-                    type: 'danger',
                     disabled: !hasPermission('task_manage_delete'),
                     confirm: {
                       title: '确认删除该任务？',

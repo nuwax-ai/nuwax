@@ -137,6 +137,8 @@ export interface ConversationChatParams {
   // 是否调试模式
   debug: boolean;
   selectedComponents: AgentSelectedComponentInfo[];
+  // 沙盒ID
+  sandboxId?: string;
 }
 
 // 临时会话参数
