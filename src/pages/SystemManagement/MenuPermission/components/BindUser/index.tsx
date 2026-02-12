@@ -2,6 +2,7 @@ import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
+import { Page } from '@/types/interfaces/request';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
 import { CloseOutlined } from '@ant-design/icons';
 import { Avatar, Button, Checkbox, Form, Input, List, message } from 'antd';
@@ -65,12 +66,14 @@ const BindUser: React.FC<BindUserProps> = ({
   // 角色绑定用户（全量覆盖）或 组绑定用户（全量覆盖）
   const apiBindUser = type === 'role' ? apiRoleBindUser : apiGroupBindUser;
 
+  const targetIdKey = type === 'role' ? 'roleId' : 'groupId';
+
   // 查询角色已绑定的用户或用户组已绑定的用户列表
   const { run } = useRequest(apiBindedUserList, {
     manual: true,
-    onSuccess: (data: UserInfo[]) => {
-      if (data?.length) {
-        const bindUserInfos = data.map((m) => ({
+    onSuccess: (data: Page<UserInfo>) => {
+      if (data?.records?.length) {
+        const bindUserInfos = data.records.map((m: UserInfo) => ({
           id: m.userId,
           userName: m.userName,
           nickName: m.nickName,
@@ -182,9 +185,16 @@ const BindUser: React.FC<BindUserProps> = ({
     setRightColumnMembers([]);
     setLeftColumnMembers([]);
     setSearchedAllMembers([]);
-    // 查询角色已绑定的用户
-    run(targetId);
-  }, [targetId, open]);
+    // 分页查询已绑定的用户列表
+    run({
+      pageNo: 1,
+      pageSize: 10,
+      queryFilter: {
+        [targetIdKey]: targetId,
+        userName: '',
+      },
+    });
+  }, [targetId, open, targetIdKey]);
 
   return (
     <CustomFormModal
