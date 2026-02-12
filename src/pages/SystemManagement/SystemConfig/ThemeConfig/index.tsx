@@ -277,16 +277,16 @@ const ThemeConfig: React.FC = () => {
       title="主题配置"
       extraContent={
         <div style={{ padding: '12px 6px' }}>
-          <Button
-            type="primary"
-            disabled={!hasPermission('system_theme_config_save')}
-            onClick={handleSave}
-          >
-            保存配置
-          </Button>
-          <Button style={{ marginLeft: 12 }} onClick={handleReset}>
-            重置默认
-          </Button>
+          {hasPermission('system_theme_config_save') && (
+            <>
+              <Button type="primary" onClick={handleSave}>
+                保存配置
+              </Button>
+              <Button style={{ marginLeft: 12 }} onClick={handleReset}>
+                重置默认
+              </Button>
+            </>
+          )}
         </div>
       }
     >
