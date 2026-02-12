@@ -478,6 +478,10 @@ export interface AgentConfigInfo {
     sandboxId?: number;
     devProxyMcpId?: number;
   };
+  /** 是否有权限使用该智能体 */
+  hasPermission?: boolean;
+  /** 会话关联的智能体电脑是否不可用 */
+  isSandboxUnavailable?: boolean;
 }
 
 // 智能体历史配置信息
@@ -648,6 +652,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
     sandboxId?: number;
     devProxyMcpId?: number;
   };
+  /** 是否有权限使用该智能体 */
+  hasPermission?: boolean;
+  /** 会话关联的智能体电脑是否不可用 */
+  isSandboxUnavailable?: boolean;
 }
 
 // 日志查询过滤条件

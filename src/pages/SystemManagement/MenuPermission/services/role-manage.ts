@@ -1,4 +1,4 @@
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import type { MenuNodeInfo } from '../types/menu-manage';
 import type {
@@ -128,15 +128,21 @@ export async function apiGetRoleList(
 }
 
 /**
- * 查询角色已绑定的用户
+ * 分页查询角色已绑定的用户，支持按userName模糊筛选
  * @param roleId 角色ID
- * @returns Promise<RequestResponse<UserInfo[]>>
+ * @returns Promise<RequestResponse<Page<UserInfo>>>
  */
-export async function apiGetRoleBoundUserList(
-  roleId: number,
-): Promise<RequestResponse<UserInfo[]>> {
-  return request(`/api/system/role/list-user/${roleId}`, {
-    method: 'GET',
+export async function apiGetRoleBoundUserList(data: {
+  pageNo: number;
+  pageSize: number;
+  queryFilter: {
+    roleId: number;
+    userName: string;
+  };
+}): Promise<RequestResponse<Page<UserInfo>>> {
+  return request('/api/system/role/list-user', {
+    method: 'POST',
+    data,
   });
 }
 

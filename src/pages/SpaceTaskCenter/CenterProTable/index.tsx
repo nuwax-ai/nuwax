@@ -167,7 +167,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           } catch (e) {
             // eslint-disable-next-line no-console
             console.error('查询任务列表失败', e);
-            message.error('查询任务列表失败');
             cacheRef.current = { spaceId: sid, list: [] };
             return [];
           } finally {

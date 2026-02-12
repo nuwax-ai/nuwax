@@ -401,6 +401,9 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   isChatLoading,
   devServerUrl,
 }) => {
+  // 权限检查
+  const { hasPermission } = useModel('menuModel');
+
   // 刷新预览是否禁用
   const isRefreshDisabled = useMemo(
     () => isChatLoading || !devServerUrl,
@@ -415,7 +418,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
         label: '导入项目',
         onClick: onImportProject,
-        disabled: isChatLoading,
+        disabled: isChatLoading || !hasPermission('page_app_import'),
       },
       // {
       //   key: 'upload',
@@ -432,7 +435,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />,
         label: '重启服务器',
         onClick: onRestartServer,
-        disabled: isChatLoading,
+        disabled: isChatLoading || !hasPermission('page_app_restart_server'),
       },
       {
         key: 'fullscreen',
@@ -451,7 +454,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
         label: '导出项目',
         onClick: onExportProject,
-        disabled: isChatLoading,
+        disabled: isChatLoading || !hasPermission('page_app_export'),
       },
     ],
     [

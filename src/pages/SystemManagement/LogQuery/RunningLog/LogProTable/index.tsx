@@ -295,7 +295,6 @@ const LogProTable: React.FC = () => {
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('查询日志失败', e);
-        message.error('查询日志失败');
         return { data: [], total: 0, success: false };
       }
     },

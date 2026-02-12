@@ -2,6 +2,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ComputerTypeSelector from '@/components/ComputerTypeSelector';
 import ConditionRender from '@/components/ConditionRender';
+import PermissionMask from '@/components/PermissionMask';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
@@ -56,6 +57,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onComputerSelect,
   agentId,
   agentSandboxId,
+  hasPermission = true,
+  isSandboxUnavailable = false,
+  maskText,
+  computerOptions,
+  autoSelectComputer,
+  saveComputerOnSelect,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -356,9 +363,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       setUploadFiles([]);
     };
   }, []);
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
+        <PermissionMask
+          visible={!hasPermission || isSandboxUnavailable}
+          text={
+            maskText ??
+            (!hasPermission ? '无智能体使用权限' : '会话关联的智能体电脑不可用')
+          }
+        />
         {/*文件列表*/}
         <ConditionRender condition={uploadFiles?.length}>
           <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
@@ -500,6 +515,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     conversationInfo?.sandboxServerId !== null) ||
                   (agentSandboxId !== undefined && agentSandboxId !== null)
                 }
+                unavailable={isSandboxUnavailable}
+                options={computerOptions}
+                autoSelect={autoSelectComputer}
+                saveOnSelect={saveComputerOnSelect}
               />
             )}
             {/* 根据会话状态显示发送或停止按钮 */}
