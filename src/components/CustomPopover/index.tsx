@@ -47,8 +47,14 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
                 'flex',
                 'items-center',
                 { [styles.del]: item.isDel },
+                { [styles.disabled]: item.disabled },
               )}
-              onClick={(e) => handleClick(e, item)}
+              onClick={(e) => {
+                if (item.disabled) {
+                  return;
+                }
+                handleClick(e, item);
+              }}
             >
               {item.icon}
               {item.label}
