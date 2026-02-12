@@ -117,7 +117,6 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
             {
               key: 'delete',
               label: '删除',
-              type: 'danger',
               confirm: {
                 title: '确认删除',
                 description: '你确定要删除该用户吗？',

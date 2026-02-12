@@ -144,7 +144,6 @@ const Agent: React.FC = () => {
       actions.push({
         key: 'delete',
         label: '删除',
-        type: 'danger',
         confirm: {
           title: (
             <span>

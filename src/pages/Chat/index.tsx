@@ -107,8 +107,7 @@ const Chat: React.FC = () => {
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
   // 选中的电脑ID（用于任务智能体模式）
-  const [selectedComputerId, setSelectedComputerId] =
-    useState<string>('remote');
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -423,12 +422,22 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
+          const effectiveSandboxId =
+            data?.sandboxServerId !== undefined &&
+            data?.sandboxServerId !== null
+              ? String(data.sandboxServerId)
+              : agentDetail?.extra?.sandboxId !== undefined &&
+                agentDetail?.extra?.sandboxId !== null
+              ? String(agentDetail.extra.sandboxId)
+              : selectedComputerId;
+
           onMessageSend(
             id,
             message,
             files,
             infos,
             firstVariableParams,
+            effectiveSandboxId,
             false,
             true,
             data,
@@ -552,12 +561,22 @@ const Chat: React.FC = () => {
     }
 
     isSendMessageRef.current = true;
+    const effectiveSandboxId =
+      conversationInfo?.sandboxServerId !== undefined &&
+      conversationInfo?.sandboxServerId !== null
+        ? String(conversationInfo.sandboxServerId)
+        : agentDetail?.extra?.sandboxId !== undefined &&
+          agentDetail?.extra?.sandboxId !== null
+        ? String(agentDetail.extra.sandboxId)
+        : selectedComputerId;
+
     onMessageSend(
       id,
       messageInfo,
       files,
       selectedComponentList,
       variableParams,
+      effectiveSandboxId,
     );
   };
 
@@ -1046,6 +1065,7 @@ const Chat: React.FC = () => {
             selectedComputerId={selectedComputerId}
             onComputerSelect={setSelectedComputerId}
             agentId={agentDetail?.agentId}
+            agentSandboxId={agentDetail?.extra?.sandboxId}
           />
         </div>
       </div>
