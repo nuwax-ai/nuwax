@@ -118,7 +118,6 @@ const GlobalModelManage: React.FC = () => {
         {
           key: 'delete',
           label: '删除',
-          type: 'danger',
           confirm: {
             title: '删除模型',
             description: (
