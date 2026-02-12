@@ -6,7 +6,7 @@ import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
 import { Button, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import BaseTab from './BaseTab';
 import styles from './index.less';
 
@@ -20,6 +20,7 @@ const SystemConfig: React.FC = () => {
   const [config, setConfig] = useState<ConfigObj>();
   const [tab, setTab] = useState<TabKey>('BaseConfig');
   const tabRef = useRef<any>();
+  const location = useLocation();
 
   // 租户配置信息查询接口
   const { runTenantConfig } = useModel('tenantConfigInfo');
@@ -47,6 +48,16 @@ const SystemConfig: React.FC = () => {
     fetchConfig();
   }, []);
 
+  // 监听 location.state 变化
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      setTab('BaseConfig');
+      setLoading(true);
+      fetchConfig();
+    }
+  }, [location.state]);
+
   const tabConfig = useMemo(() => {
     return config?.[tab] || [];
   }, [config, tab]);
@@ -73,7 +84,7 @@ const SystemConfig: React.FC = () => {
     >
       <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
         <Tabs
-          defaultActiveKey="BaseConfig"
+          activeKey={tab}
           items={SYSTEM_SETTING_TABS}
           onChange={(key) => setTab(key as TabKey)}
         />
