@@ -14,11 +14,15 @@ import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
 import { PlusOutlined } from '@ant-design/icons';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import DataPermissionModal from './components/DataPermissionModal';
 import UserAuthModal from './components/UserAuthModal';
 import UserFormModal from './components/UserFormModal';
@@ -34,6 +38,8 @@ const UserManage: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
 
   const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
   const [currentUserInfo, setCurrentUserInfo] =
     useState<SystemUserListInfo | null>(null);
 
@@ -96,6 +102,27 @@ const UserManage: React.FC = () => {
     setOpenUserFormModal(false);
     actionRef.current?.reload();
   }, []);
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
+  }, []);
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    console.log('location.state', location.state);
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   // 操作列配置
   const getActions = useCallback(
@@ -281,9 +308,11 @@ const UserManage: React.FC = () => {
     >
       <XProTable<SystemUserListInfo>
         actionRef={actionRef}
+        formRef={formRef}
         rowKey="id"
         columns={columns}
         request={request}
+        onReset={handleReset}
         showQueryButtons={hasPermission('user_manage_query')}
       />
 

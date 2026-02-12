@@ -102,23 +102,23 @@ const SystemSection: React.FC<{
     switch (type) {
       // 用户管理
       case SystemManageListEnum.User_Manage:
-        history.push('/system/user/manage');
+        history.push('/system/user/manage', { _t: Date.now() });
         break;
       // 发布审核
       case SystemManageListEnum.Publish_Audit:
-        history.push('/system/publish/audit');
+        history.push('/system/publish/audit', { _t: Date.now() });
         break;
       // 已发布管理
       case SystemManageListEnum.Published_Manage:
-        history.push('/system/published/manage');
+        history.push('/system/published/manage', { _t: Date.now() });
         break;
       // 全局模型管理
       case SystemManageListEnum.Global_Model_Manage:
-        history.push('/system/model/manage');
+        history.push('/system/model/manage', { _t: Date.now() });
         break;
       // 系统配置
       case SystemManageListEnum.System_Config:
-        history.push('/system/config');
+        history.push('/system/config', { _t: Date.now() });
         break;
       // Markdown 测试
       case 'markdown-test':

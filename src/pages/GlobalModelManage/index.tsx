@@ -17,10 +17,14 @@ import { ModelComponentStatusEnum } from '@/types/enums/space';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { PlusOutlined } from '@ant-design/icons';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { Button, message, Switch } from 'antd';
-import React, { useCallback, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
@@ -30,6 +34,8 @@ import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthMo
 const GlobalModelManage: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
@@ -90,6 +96,26 @@ const GlobalModelManage: React.FC = () => {
     },
     [],
   );
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
+  }, []);
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   // 操作列配置
   const getActions = useCallback(
@@ -274,9 +300,11 @@ const GlobalModelManage: React.FC = () => {
     >
       <XProTable<ModelConfigDto>
         actionRef={actionRef}
+        formRef={formRef}
         rowKey="id"
         columns={columns}
         request={request}
+        onReset={handleReset}
         showQueryButtons={hasPermission('model_manage_query_list')}
       />
       {visible && (

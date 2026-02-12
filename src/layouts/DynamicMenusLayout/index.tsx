@@ -335,7 +335,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
-        history.push(url);
+        history.push(url, { _t: Date.now() });
         return;
       }
 
@@ -346,14 +346,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           const pathUrlObj = JSON.parse(pathUrl);
           const pathUrlValue = pathUrlObj[menu.code];
           if (pathUrlValue && !pathUrlValue.includes(':')) {
-            history.push(pathUrlValue);
+            history.push(pathUrlValue, { _t: Date.now() });
             return;
           }
         }
       } catch {}
 
       if (menu.path) {
-        history.push(menu.path);
+        history.push(menu.path, { _t: Date.now() });
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
@@ -364,7 +364,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             return;
           }
           // 其他路径，跳转路由
-          history.push(firstPathMenu.path);
+          history.push(firstPathMenu.path, { _t: Date.now() });
         }
       }
     },

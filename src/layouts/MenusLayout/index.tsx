@@ -105,7 +105,7 @@ const MenusLayout: React.FC<{
           history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
           break;
         case TabsEnum.System_Manage:
-          history.push('/system/user/manage');
+          history.push('/system/user/manage', { _t: Date.now() });
           break;
         case TabsEnum.Ecosystem_Market:
           history.push('/ecosystem');
