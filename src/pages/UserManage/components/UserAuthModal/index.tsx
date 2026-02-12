@@ -4,7 +4,7 @@ import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/ser
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { UserRoleEnum } from '@/types/enums/systemManage';
-import { Button, Checkbox, Form, FormProps, Space, Tabs } from 'antd';
+import { Button, Checkbox, Empty, Form, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
@@ -47,30 +47,38 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   const { hasPermission } = useModel('menuModel');
   // 如果是普通用户，默认显示用户组 tab；否则显示角色 tab
   const [activeTab, setActiveTab] = useState<TabKey>('role');
-  const [roleForm] = Form.useForm();
-  const [groupForm] = Form.useForm();
+  // 创建一个空的 Form 实例，用于 CustomFormModal（不使用表单功能）
+  const [dummyForm] = Form.useForm();
 
   const [roleLoading, setRoleLoading] = useState<boolean>(false);
   const [groupLoading, setGroupLoading] = useState<boolean>(false);
 
-  // 已绑定的角色ID列表
-  const [bindedRoleIds, setBindedRoleIds] = useState<number[]>([]);
-  // 已绑定的组ID列表
-  const [bindedGroupIds, setBindedGroupIds] = useState<number[]>([]);
+  // 完整的角色列表和用户组列表
+  const [roleList, setRoleList] = useState<RoleInfo[]>([]);
+  const [groupList, setGroupList] = useState<UserGroupInfo[]>([]);
+
+  // 已选中的角色ID列表和用户组ID列表（用于控制 Checkbox.Group）
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
 
   // 查询用户绑定的角色列表
   const { run: runBindedRoleList } = useRequest(apiSystemUserListRole, {
     manual: true,
     onSuccess: (data: RoleInfo[]) => {
       if (data?.length > 0) {
-        setBindedRoleIds(data.map((item) => item.id));
+        setSelectedRoleIds(data.map((item) => item.id));
+      } else {
+        setSelectedRoleIds([]);
       }
     },
   });
 
   // 查询角色列表
-  const { run: runGetRoleList, data: roleList } = useRequest(apiGetRoleList, {
+  const { run: runGetRoleList } = useRequest(apiGetRoleList, {
     manual: true,
+    onSuccess: (data: RoleInfo[]) => {
+      setRoleList(data || []);
+    },
   });
 
   // 绑定角色
@@ -83,18 +91,20 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
     manual: true,
     onSuccess: (data: UserGroupInfo[]) => {
       if (data?.length > 0) {
-        setBindedGroupIds(data.map((item) => item.id));
+        setSelectedGroupIds(data.map((item) => item.id));
+      } else {
+        setSelectedGroupIds([]);
       }
     },
   });
 
-  // 根据条件查询组列表
-  const { run: runGetGroupList, data: groupList } = useRequest(
-    apiGetUserGroupList,
-    {
-      manual: true,
+  // 查询用户组列表
+  const { run: runGetGroupList } = useRequest(apiGetUserGroupList, {
+    manual: true,
+    onSuccess: (data: UserGroupInfo[]) => {
+      setGroupList(data || []);
     },
-  );
+  });
 
   // 绑定组
   const { run: runBindGroup } = useRequest(apiSystemUserBindGroup, {
@@ -112,74 +122,53 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
         runBindedRoleList(targetId);
       }
 
-      // 根据条件查询组列表
+      // 查询用户组列表
       runGetGroupList();
       // 查询用户绑定的组列表
       runBindedGroupList(targetId);
     } else {
-      roleForm.resetFields();
-      groupForm.resetFields();
-      setBindedRoleIds([]);
-      setBindedGroupIds([]);
+      setRoleList([]);
+      setGroupList([]);
+      setSelectedRoleIds([]);
+      setSelectedGroupIds([]);
       setActiveTab('role');
       setGroupLoading(false);
       setRoleLoading(false);
     }
   }, [open, targetId, role]);
 
-  useEffect(() => {
-    // 回显角色列表
-    if (roleList?.length > 0 && bindedRoleIds.length > 0) {
-      roleForm.setFieldsValue({
-        roleIds: bindedRoleIds,
-      });
-    }
-  }, [roleList, bindedRoleIds]);
-
-  useEffect(() => {
-    // 回显组列表
-    if (groupList?.length > 0 && bindedGroupIds.length > 0) {
-      groupForm.setFieldsValue({
-        groupIds: bindedGroupIds,
-      });
-    }
-  }, [groupList, bindedGroupIds]);
-
-  // 绑定角色
-  const onRoleFinish: FormProps<any>['onFinish'] = async (values) => {
-    const roleIds = values.roleIds || [];
-    setRoleLoading(true);
-    await runBindRole({
-      userId: targetId,
-      roleIds,
-    });
-    setRoleLoading(false);
-    onCancel();
+  // 处理角色选择变化
+  const handleRoleChange = (checkedValues: number[]) => {
+    setSelectedRoleIds(checkedValues);
   };
 
-  // 绑定组
-  const onGroupFinish: FormProps<any>['onFinish'] = async (values) => {
-    const groupIds = values.groupIds || [];
+  // 处理用户组选择变化
+  const handleGroupChange = (checkedValues: number[]) => {
+    setSelectedGroupIds(checkedValues);
+  };
+
+  // 提交数据
+  const handlerSubmit = async () => {
+    // 如果不是普通用户，需要同时提交角色和用户组
+    if (role !== UserRoleEnum.User) {
+      setRoleLoading(true);
+      await runBindRole({
+        userId: targetId,
+        roleIds: selectedRoleIds,
+      });
+      setRoleLoading(false);
+    }
+
+    // 用户组总是需要提交
     setGroupLoading(true);
     await runBindGroup({
       userId: targetId,
-      groupIds,
+      groupIds: selectedGroupIds,
     });
     setGroupLoading(false);
     onCancel();
   };
 
-  // 提交表单
-  const handlerSubmit = () => {
-    // 如果不是普通用户，才提交角色表单
-    if (role !== UserRoleEnum.User) {
-      roleForm.submit();
-    }
-    groupForm.submit();
-  };
-
-  // 获取当前选中的角色ID
-  const selectedRoleIds = Form.useWatch('roleIds', roleForm) || [];
   // 获取所有角色ID
   const allRoleIds = roleList?.map((item: RoleInfo) => item.id) || [];
   // 判断是否全部选中
@@ -190,18 +179,12 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   // 全选/取消全选角色
   const handleRoleSelectAll = () => {
     if (isAllRoleSelected) {
-      roleForm.setFieldsValue({
-        roleIds: [],
-      });
+      setSelectedRoleIds([]);
     } else {
-      roleForm.setFieldsValue({
-        roleIds: allRoleIds,
-      });
+      setSelectedRoleIds(allRoleIds);
     }
   };
 
-  // 获取当前选中的用户组ID
-  const selectedGroupIds = Form.useWatch('groupIds', groupForm) || [];
   // 获取所有用户组ID
   const allGroupIds = groupList?.map((item: UserGroupInfo) => item.id) || [];
   // 判断是否全部选中
@@ -212,13 +195,9 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   // 全选/取消全选用户组
   const handleGroupSelectAll = () => {
     if (isAllGroupSelected) {
-      groupForm.setFieldsValue({
-        groupIds: [],
-      });
+      setSelectedGroupIds([]);
     } else {
-      groupForm.setFieldsValue({
-        groupIds: allGroupIds,
-      });
+      setSelectedGroupIds(allGroupIds);
     }
   };
 
@@ -253,28 +232,29 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
             label: '角色',
             children: (
               <div className={cx(styles.tabContent)}>
-                <Form
-                  form={roleForm}
-                  layout="vertical"
-                  onFinish={onRoleFinish}
-                  autoComplete="off"
-                >
-                  <Form.Item name="roleIds">
-                    <Checkbox.Group className={cx(styles.checkboxGroup)}>
-                      <Space
-                        direction="vertical"
-                        size={8}
-                        style={{ width: '100%' }}
-                      >
-                        {roleList?.map((item: RoleInfo) => (
-                          <Checkbox key={item.id} value={item.id}>
-                            {item.name}
-                          </Checkbox>
-                        ))}
-                      </Space>
-                    </Checkbox.Group>
-                  </Form.Item>
-                </Form>
+                {roleList && roleList.length > 0 ? (
+                  <Checkbox.Group
+                    className={cx(styles.checkboxGroup)}
+                    value={selectedRoleIds}
+                    onChange={handleRoleChange}
+                  >
+                    <Space
+                      direction="vertical"
+                      size={8}
+                      style={{ width: '100%' }}
+                    >
+                      {roleList.map((item: RoleInfo) => (
+                        <Checkbox key={item.id} value={item.id}>
+                          {item.name}
+                        </Checkbox>
+                      ))}
+                    </Space>
+                  </Checkbox.Group>
+                ) : (
+                  <div className={cx('py-16')}>
+                    <Empty description="暂无数据" />
+                  </div>
+                )}
               </div>
             ),
           },
@@ -285,24 +265,25 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       label: '用户组',
       children: (
         <div className={cx(styles.tabContent)}>
-          <Form
-            form={groupForm}
-            layout="vertical"
-            onFinish={onGroupFinish}
-            autoComplete="off"
-          >
-            <Form.Item name="groupIds">
-              <Checkbox.Group className={cx(styles.checkboxGroup)}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {groupList?.map((item: UserGroupInfo) => (
-                    <Checkbox key={item.id} value={item.id}>
-                      {item.name}
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
-            </Form.Item>
-          </Form>
+          {groupList && groupList.length > 0 ? (
+            <Checkbox.Group
+              className={cx(styles.checkboxGroup)}
+              value={selectedGroupIds}
+              onChange={handleGroupChange}
+            >
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {groupList.map((item: UserGroupInfo) => (
+                  <Checkbox key={item.id} value={item.id}>
+                    {item.name}
+                  </Checkbox>
+                ))}
+              </Space>
+            </Checkbox.Group>
+          ) : (
+            <div className={cx('py-16')}>
+              <Empty description="暂无数据" />
+            </div>
+          )}
         </div>
       ),
     },
@@ -310,11 +291,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
 
   return (
     <CustomFormModal
-      form={
-        activeTab === 'role' && role !== UserRoleEnum.User
-          ? roleForm
-          : groupForm
-      }
+      form={dummyForm}
       title={`授权 - ${userName}`}
       open={open}
       loading={loading}
