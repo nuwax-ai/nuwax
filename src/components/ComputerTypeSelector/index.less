@@ -60,15 +60,19 @@
     cursor: not-allowed;
 
     &::after {
-      content: '';
+      content: '无智能体使用权限';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(255, 255, 255, 50%); // 半透明遮罩
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 70%); // 半透明遮罩
       border-radius: @borderRadius;
       z-index: 1;
+      font-size: 14px;
     }
   }
 }
