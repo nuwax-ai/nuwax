@@ -31,7 +31,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import SandboxModal from './components/SandboxModal';
 import styles from './index.less';
 
@@ -49,6 +49,7 @@ const SandboxConfig: React.FC = () => {
   const [sandboxList, setSandboxList] = useState<SandboxItem[]>([]);
   const [form] = Form.useForm();
   const [testingIds, setTestingIds] = useState<Set<number | string>>(new Set());
+  const location = useLocation();
 
   // 获取全局配置
   const fetchGlobalConfig = async () => {
@@ -81,6 +82,15 @@ const SandboxConfig: React.FC = () => {
     fetchGlobalConfig();
     fetchSandboxList();
   }, []);
+
+  // 监听 location.state 变化
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      fetchGlobalConfig();
+      fetchSandboxList();
+    }
+  }, [location.state]);
 
   const handleGlobalSave = async () => {
     try {

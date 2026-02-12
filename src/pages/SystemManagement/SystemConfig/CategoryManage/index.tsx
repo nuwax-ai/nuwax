@@ -16,7 +16,7 @@ import { ProList } from '@ant-design/pro-components';
 import { App, Button, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import CategoryModal, { CategoryItem } from './components/CategoryModal';
 import styles from './index.less';
 
@@ -25,6 +25,7 @@ const CategoryManage: React.FC = () => {
   const { modal, message } = App.useApp();
   const { confirm } = modal;
   const [activeKey, setActiveKey] = useState<string>(CategoryTypeEnum.Agent);
+  const location = useLocation();
 
   // 弹窗状态
   const [modalOpen, setModalOpen] = useState(false);
@@ -42,6 +43,15 @@ const CategoryManage: React.FC = () => {
       refreshDeps: [activeKey],
     },
   );
+
+  // 监听 location.state 变化
+  React.useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      setActiveKey(CategoryTypeEnum.Agent);
+      refreshList();
+    }
+  }, [location.state, refreshList]);
 
   const segmentedOptions = [
     { label: '智能体', value: CategoryTypeEnum.Agent },

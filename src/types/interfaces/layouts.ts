@@ -68,7 +68,7 @@ export interface UserOperateAreaItemType {
 // 菜单栏~用户操作区域类型
 export interface UserOperateAreaType {
   /** 一级菜单列表 */
-  menus: MenuItemDto[];
+  menus?: MenuItemDto[];
   onClick: (type: UserOperatorAreaEnum) => void;
 }
 

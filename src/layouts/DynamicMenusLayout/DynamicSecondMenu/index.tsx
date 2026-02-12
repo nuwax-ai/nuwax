@@ -183,7 +183,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       if (hasChildren) {
         // 有子菜单，仅切换展开状态
         toggleExpand(menu.code as string);
-      } else {
+      }
+      if (menu?.path) {
         // 无子菜单，处理路径URL路径跳转
         handlePathUrl(menu?.path || '', menu?.openType);
       }
