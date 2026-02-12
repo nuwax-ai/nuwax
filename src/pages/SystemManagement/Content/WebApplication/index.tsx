@@ -35,9 +35,8 @@ const WebApplication: React.FC = () => {
   >({});
   // 授权弹窗相关状态
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-  const [currentPageAgentId, setCurrentPageAgentId] = useState<number | null>(
-    null,
-  );
+  const [currentPageAppInfo, setCurrentPageAppInfo] =
+    useState<SystemWebappInfo | null>(null);
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -69,7 +68,7 @@ const WebApplication: React.FC = () => {
    * 处理授权
    */
   const handleAuth = useCallback((record: SystemWebappInfo) => {
-    setCurrentPageAgentId(record.agentId);
+    setCurrentPageAppInfo(record);
     setAuthModalOpen(true);
   }, []);
 
@@ -291,11 +290,12 @@ const WebApplication: React.FC = () => {
       {/* 授权弹窗 */}
       <TargetAuthModal
         open={authModalOpen}
-        targetId={currentPageAgentId || 0}
+        targetId={currentPageAppInfo?.agentId || 0}
+        targetName={currentPageAppInfo?.name}
         targetType="page"
         onCancel={() => {
           setAuthModalOpen(false);
-          setCurrentPageAgentId(null);
+          setCurrentPageAppInfo(null);
         }}
       />
     </WorkspaceLayout>

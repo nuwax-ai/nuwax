@@ -301,6 +301,7 @@ const UserManage: React.FC = () => {
       <UserAuthModal
         open={openAuthModal}
         targetId={currentUserInfo?.id || 0}
+        userName={currentUserInfo?.userName || currentUserInfo?.nickName}
         role={currentUserInfo?.role}
         onCancel={() => setOpenAuthModal(false)}
       />
@@ -312,7 +313,7 @@ const UserManage: React.FC = () => {
       <DataPermissionModal
         open={openDataPermissionModal}
         userId={currentUserInfo?.id || 0}
-        userName={currentUserInfo?.userName || ''}
+        userName={currentUserInfo?.userName || currentUserInfo?.nickName}
         onCancel={() => setOpenDataPermissionModal(false)}
       />
     </WorkspaceLayout>

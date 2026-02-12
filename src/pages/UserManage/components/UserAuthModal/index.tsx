@@ -21,6 +21,8 @@ const cx = classNames.bind(styles);
 interface UserAuthModalProps {
   open: boolean;
   targetId: number;
+  /** 用户名称 */
+  userName?: string;
   /** 用户角色，用于判断是否显示角色 tab */
   role?: UserRoleEnum;
   onCancel: () => void;
@@ -38,6 +40,7 @@ type TabKey = 'role' | 'group';
 const UserAuthModal: React.FC<UserAuthModalProps> = ({
   open,
   targetId,
+  userName,
   role,
   onCancel,
 }) => {
@@ -312,7 +315,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
           ? roleForm
           : groupForm
       }
-      title="授权"
+      title={`授权 - ${userName}`}
       open={open}
       loading={loading}
       onCancel={onCancel}
