@@ -7,12 +7,13 @@ import type {
   UserUpdateParams,
 } from '@/types/interfaces/login';
 import { customizeRequiredNoStarMark } from '@/utils/form';
-import { ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
-import { Button, Form, Input, message } from 'antd';
+import { Button, Form, Input, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
@@ -64,6 +65,11 @@ const SettingAccount: React.FC = () => {
   // 刷新验证码
   const handleRefreshCode = () => {
     runGetDynamicCode();
+  };
+
+  // 复制成功回调
+  const handleCopy = () => {
+    message.success('复制成功');
   };
 
   // 格式化过期时间
@@ -153,28 +159,47 @@ const SettingAccount: React.FC = () => {
         </Form.Item>
       </Form>
       <h4 className={cx(styles.name)}>手机号码</h4>
-      <span className={cx(styles.text)}>{userInfo?.phone}</span>
+      <span className={cx(styles.text, styles['mb-30'])}>
+        {userInfo?.phone}
+      </span>
       <h4 className={cx(styles.name)}>邮箱地址</h4>
-      <span className={cx(styles.text)}>{userInfo?.email || '待绑定'}</span>
+      <span className={cx(styles.text, styles['mb-30'])}>
+        {userInfo?.email || '待绑定'}
+      </span>
       <h4 className={cx(styles.name)}>
-        动态验证码
+        动态认证码
         {expireTime && (
           <span className={cx(styles.expireTime)}>
             （{formatExpireTime(expireTime)} 过期）
           </span>
         )}
       </h4>
-      <span className={cx(styles.text)}>{dynamicCode || '--'}</span>
-      <Button
-        size="small"
-        type="link"
-        icon={<ReloadOutlined />}
-        loading={dynamicCodeLoading}
-        onClick={handleRefreshCode}
-        className={cx(styles.refreshButton)}
-      >
-        刷新
-      </Button>
+      <div className={cx('flex', 'items-center')}>
+        <span className={cx(styles.text)}>{dynamicCode || '--'}</span>
+        <CopyToClipboard
+          text={dynamicCode ? String(dynamicCode) : ''}
+          onCopy={handleCopy}
+        >
+          <Tooltip title="复制">
+            <Button
+              size="small"
+              type="link"
+              icon={<CopyOutlined />}
+              className={cx(styles.btn, styles['ml-4'])}
+            />
+          </Tooltip>
+        </CopyToClipboard>
+        <Tooltip title="刷新">
+          <Button
+            size="small"
+            type="link"
+            icon={<ReloadOutlined />}
+            loading={dynamicCodeLoading}
+            onClick={handleRefreshCode}
+            className={cx(styles.btn)}
+          />
+        </Tooltip>
+      </div>
     </div>
   );
 };
