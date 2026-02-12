@@ -8,13 +8,17 @@ import {
 } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { apiSystemConfigUpdate } from '@/services/systemManage';
+import {
+  reloadConfiguration,
+  unifiedThemeService,
+} from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
-import { Button, message } from 'antd';
+import { App, Button } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 // 使用统一的存储键名
@@ -34,6 +38,7 @@ const cx = classNames.bind(styles);
  */
 const ThemeConfig: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
+  const { message } = App.useApp();
   // 使用统一主题管理
   const {
     primaryColor,
@@ -56,6 +61,7 @@ const ThemeConfig: React.FC = () => {
   const [previewLayoutStyle, setPreviewLayoutStyle] = useState(layoutStyle);
   const [previewIsNavigationDark, setPreviewIsNavigationDark] =
     useState(isNavigationDark);
+  const location = useLocation();
 
   // 转换背景配置为组件需要的格式
   const backgroundImages: BackgroundImage[] = useMemo(() => {
@@ -238,6 +244,33 @@ const ThemeConfig: React.FC = () => {
     setPreviewIsNavigationDark(false);
     message.info('已重置为默认配置（预览效果）');
   };
+
+  // 恢复到已保存状态（页面加载状态）
+  const handleRestore = React.useCallback(() => {
+    reloadConfiguration(); // 重新加载存储中的配置
+    const savedData = unifiedThemeService.getCurrentData(); // 获取重新加载后的数据
+
+    setPreviewPrimaryColor(savedData.primaryColor);
+    setPreviewBackgroundId(savedData.backgroundId);
+    setPreviewNavigationStyle(savedData.navigationStyle);
+    setPreviewLayoutStyle(savedData.layoutStyle);
+    setPreviewIsNavigationDark(
+      savedData.layoutStyle === ThemeLayoutColorStyle.DARK,
+    );
+
+    // 使用 setTimeout 确保在 remount 后消息能正常显示
+    // setTimeout(() => {
+    //   message.info('已重置为默认配置（预览效果）');
+    // }, 200);
+  }, [message]);
+
+  // 监听 location.state 变化
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleRestore();
+    }
+  }, [location.state, handleRestore]);
 
   return (
     <WorkspaceLayout

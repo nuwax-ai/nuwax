@@ -25,7 +25,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import EllipsisWithAvatar from './components/EllipsisWithAvatar';
 
 export interface CenterProTableRef {
@@ -60,6 +60,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
 
     // 表单引用
     const formRef = useRef<FormInstance>();
+    const location = useLocation();
 
     /**
      * 状态展示（后端枚举映射）
@@ -436,10 +437,11 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
 
     useEffect(() => {
       // 当通过菜单切换页面时，触发刷新
-      if (history.location.state) {
+      const state = location.state as any;
+      if (state?._t) {
         refreshList();
       }
-    }, [history.location.state, refreshList]);
+    }, [location.state, refreshList]);
 
     return (
       <XProTable<TaskInfo>
