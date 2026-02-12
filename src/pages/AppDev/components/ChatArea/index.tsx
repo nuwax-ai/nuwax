@@ -67,12 +67,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onDeleteDataResource,
   onAddDataResource,
 }) => {
+  // 权限检查
+  const { hasPermission } = useModel('menuModel');
+
+  // 聊天Tab
   const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'design'>(
     'chat',
   );
 
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
-  // ...
 
   // 停止按钮 loading 状态
   const [isStoppingTask, setIsStoppingTask] = useState(false);
@@ -142,7 +145,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
       const sessionId = lastMessage?.sessionId;
 
-      // console.log('aiChatSessionId', aiChatSessionId, sessionId);
       // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
       if (aiChatSessionId && !sessionId) {
         await cancelAiChatAgentTask(projectId, aiChatSessionId);
@@ -208,16 +210,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       selectedMentions?: MentionItem[],
       requestId?: string,
     ) => {
-      // // 验证：prompt（输入内容）是必填的
-      // if (!chat.chatInput.trim()) {
-      //   message.warning('请输入消息内容');
-      //   return;
-      // }
-
-      // 防止重复发送
-      // if (isSendingMessage || chat.isChatLoading) {
-      //   return;
-      // }
+      // 权限检查
+      if (!hasPermission('page_app_ai_chat')) {
+        message.error('您没有权限使用AI聊天功能');
+        return;
+      }
 
       setIsSendingMessage(true);
 

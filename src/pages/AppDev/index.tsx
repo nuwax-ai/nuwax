@@ -677,8 +677,8 @@ const AppDev: React.FC = () => {
         projectInfo.refreshProjectInfo();
       }
     } catch (error) {
-      console.error('[AppDev] 发布失败:', error);
-      // message.error('发布失败,先尝试解决错误后重试');
+      // request请求中设置了skipErrorHandler: true, 跳过了错误处理
+      message.error('发布失败,先尝试解决错误后重试');
     } finally {
       setIsDeploying(false);
     }

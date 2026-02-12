@@ -1,13 +1,24 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import { Page } from '@/types/interfaces/request';
 import type { SearchUserInfo } from '@/types/interfaces/teamSetting';
 import { CloseOutlined } from '@ant-design/icons';
-import { Avatar, Button, Checkbox, Form, Input, List, message } from 'antd';
+import {
+  Avatar,
+  Button,
+  Checkbox,
+  Empty,
+  Form,
+  Input,
+  List,
+  message,
+} from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetRoleBoundUserList,
@@ -58,6 +69,14 @@ const BindUser: React.FC<BindUserProps> = ({
   const [searchedAllMembers, setSearchedAllMembers] = useState<
     SearchUserInfo[]
   >([]);
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  // 控制 InfiniteScrollDiv 的渲染时机
+  const [isScrollReady, setIsScrollReady] = useState<boolean>(false);
+  // 滚动容器引用
+  const rightListScrollRef = useRef<HTMLDivElement>(null);
 
   // 查询角色已绑定的用户列表 或 查询组已绑定的用户列表
   const apiBindedUserList =
@@ -71,7 +90,9 @@ const BindUser: React.FC<BindUserProps> = ({
   // 查询角色已绑定的用户或用户组已绑定的用户列表
   const { run } = useRequest(apiBindedUserList, {
     manual: true,
-    onSuccess: (data: Page<UserInfo>) => {
+    onSuccess: (data: Page<UserInfo>, params: any[]) => {
+      setLoading(false);
+      const pageNo = params?.[0]?.pageNo || 1;
       if (data?.records?.length) {
         const bindUserInfos = data.records.map((m: UserInfo) => ({
           id: m.userId,
@@ -79,8 +100,25 @@ const BindUser: React.FC<BindUserProps> = ({
           nickName: m.nickName,
           avatar: m.avatar,
         }));
-        setRightColumnMembers(bindUserInfos);
+        // 如果是第一页，直接设置；否则追加数据
+        if (pageNo === 1) {
+          setRightColumnMembers(bindUserInfos);
+        } else {
+          setRightColumnMembers((prev) => [...prev, ...bindUserInfos]);
+        }
+        // 判断是否还有更多数据
+        const totalPages = data.pages || 0;
+        setHasMore(pageNo < totalPages);
+      } else {
+        // 没有数据时，如果是第一页则清空列表，否则保持原列表
+        if (pageNo === 1) {
+          setRightColumnMembers([]);
+        }
+        setHasMore(false);
       }
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -177,24 +215,65 @@ const BindUser: React.FC<BindUserProps> = ({
     });
   };
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    setLeftCheckedMembers([]);
-    setRightColumnMembers([]);
-    setLeftColumnMembers([]);
-    setSearchedAllMembers([]);
-    // 分页查询已绑定的用户列表
+  // 加载已绑定用户列表
+  const loadBindedUsers = (pageNo: number = 1, append: boolean = false) => {
+    if (loading && !append) return; // 首次加载时如果正在加载则返回
+    setLoading(true);
+    setCurrentPage(pageNo);
     run({
-      pageNo: 1,
-      pageSize: 10,
+      pageNo,
+      pageSize: 15,
       queryFilter: {
         [targetIdKey]: targetId,
         userName: '',
       },
     });
+  };
+
+  useEffect(() => {
+    if (open) {
+      // 分页查询已绑定的用户列表
+      loadBindedUsers();
+    } else {
+      setLeftCheckedMembers([]);
+      setRightColumnMembers([]);
+      setLeftColumnMembers([]);
+      setSearchedAllMembers([]);
+      setCurrentPage(1);
+      setHasMore(true);
+      setLoading(false);
+    }
   }, [targetId, open, targetIdKey]);
+
+  // 滚动加载更多
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = currentPage + 1;
+      loadBindedUsers(nextPage, true);
+    }
+  };
+
+  // 确保滚动容器在 Modal 打开后正确初始化
+  useEffect(() => {
+    if (open && rightListScrollRef.current) {
+      // 延迟一下，确保 DOM 已经渲染完成
+      const timer = setTimeout(() => {
+        const scrollElement = rightListScrollRef.current;
+        if (scrollElement) {
+          // 确保滚动容器已经存在且有高度后，再渲染 InfiniteScrollDiv
+          if (scrollElement.offsetHeight > 0) {
+            setIsScrollReady(true);
+          }
+        }
+      }, 300);
+      return () => {
+        clearTimeout(timer);
+        setIsScrollReady(false);
+      };
+    } else {
+      setIsScrollReady(false);
+    }
+  }, [open, rightColumnMembers.length]);
 
   return (
     <CustomFormModal
@@ -207,7 +286,7 @@ const BindUser: React.FC<BindUserProps> = ({
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
-      <div style={{ display: 'flex', gap: 20 }}>
+      <div className={cx(styles.contentWrapper)}>
         <div className={cx(styles['add-member-left-column'], 'flex-1')}>
           <Input.Search
             placeholder="输入用户名、邮箱或手机号码，回车搜索"
@@ -240,29 +319,97 @@ const BindUser: React.FC<BindUserProps> = ({
           </Checkbox.Group>
         </div>
 
-        <div className="flex-1">
+        <div className={cx('flex-1', styles.rightColumn)}>
           <h3 style={{ marginBottom: 15 }}>
             已选成员 ({rightColumnMembers.length})
           </h3>
-          <List
-            dataSource={rightColumnMembers}
-            renderItem={(m) => (
-              <List.Item
-                style={{ borderBlockEnd: 0, padding: 0 }}
-                className="flex items-center gap-10 mb-12"
+          <div
+            ref={rightListScrollRef}
+            id="right-member-list-scroll"
+            className={cx(styles.rightListScroll)}
+            style={{
+              height: '400px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+            }}
+          >
+            {loading && rightColumnMembers.length === 0 ? (
+              // 首次加载时显示 Loading
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
               >
-                <Avatar src={m.avatar || personalImage} />
-                <div className="flex-1 text-ellipsis">
-                  {m.nickName || m.userName}
-                </div>
-                <Button
-                  type="text"
-                  icon={<CloseOutlined />}
-                  onClick={() => handleRemoveMember(m.id)}
+                <Loading />
+              </div>
+            ) : !loading && rightColumnMembers.length === 0 ? (
+              // 没有数据时显示 Empty，垂直居中
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <Empty description="暂无数据" />
+              </div>
+            ) : open && isScrollReady ? (
+              // 滚动加载时使用 InfiniteScrollDiv，它会自动显示底部的加载动画
+              <InfiniteScrollDiv
+                key={`infinite-scroll-${targetId}-${open}`}
+                scrollableTarget="right-member-list-scroll"
+                list={rightColumnMembers}
+                hasMore={hasMore}
+                onScroll={handleLoadMore}
+              >
+                <List
+                  dataSource={rightColumnMembers}
+                  renderItem={(m) => (
+                    <List.Item
+                      style={{ borderBlockEnd: 0, padding: 0 }}
+                      className="flex items-center gap-10 mb-12"
+                    >
+                      <Avatar src={m.avatar || personalImage} />
+                      <div className="flex-1 text-ellipsis">
+                        {m.nickName || m.userName}
+                      </div>
+                      <Button
+                        type="text"
+                        icon={<CloseOutlined />}
+                        onClick={() => handleRemoveMember(m.id)}
+                      />
+                    </List.Item>
+                  )}
                 />
-              </List.Item>
+              </InfiniteScrollDiv>
+            ) : (
+              // 未准备好时显示普通列表
+              <List
+                dataSource={rightColumnMembers}
+                renderItem={(m) => (
+                  <List.Item
+                    style={{ borderBlockEnd: 0, padding: 0 }}
+                    className="flex items-center gap-10 mb-12"
+                  >
+                    <Avatar src={m.avatar || personalImage} />
+                    <div className="flex-1 text-ellipsis">
+                      {m.nickName || m.userName}
+                    </div>
+                    <Button
+                      type="text"
+                      icon={<CloseOutlined />}
+                      onClick={() => handleRemoveMember(m.id)}
+                    />
+                  </List.Item>
+                )}
+              />
             )}
-          />
+          </div>
         </div>
       </div>
     </CustomFormModal>

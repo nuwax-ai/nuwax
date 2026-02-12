@@ -316,6 +316,7 @@ const UserManage: React.FC = () => {
         showQueryButtons={hasPermission('user_manage_query')}
       />
 
+      {/* 用户新增/编辑弹窗 */}
       <UserFormModal
         open={openUserFormModal}
         isEdit={isEdit}
@@ -327,6 +328,8 @@ const UserManage: React.FC = () => {
         open={messageSendOpen}
         onCancel={() => setMessageSendOpen(false)}
       />
+
+      {/* 用户授权弹窗（包含角色和用户组） */}
       <UserAuthModal
         open={openAuthModal}
         targetId={currentUserInfo?.id || 0}
