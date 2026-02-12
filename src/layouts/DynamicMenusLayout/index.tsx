@@ -234,14 +234,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
     if (matchedMenu) {
       setActiveTab(matchedMenu.code);
-    } else if (location.pathname === '/home' || location.pathname === '') {
+    }
+    // 首页
+    else if (
+      location.pathname === '/home' ||
+      location.pathname === '' ||
+      location.pathname === '/'
+    ) {
       // 默认选中首页
-      const homeMenu = firstLevelMenus.find(
-        (m: MenuItemDto) => m.code === 'homepage' || m.path === '/',
-      );
-      if (homeMenu) {
-        setActiveTab(homeMenu.code);
-      }
+      setActiveTab('homepage');
     }
     // 我的电脑管理
     else if (location.pathname === '/my-computer-manage') {
