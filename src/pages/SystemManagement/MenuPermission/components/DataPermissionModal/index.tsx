@@ -160,6 +160,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   // 滚动容器引用
   const agentListScrollRef = useRef<HTMLDivElement>(null);
   const pageListScrollRef = useRef<HTMLDivElement>(null);
+  // 保存表单值的状态，用于在组件卸载时保留值
+  const [formValuesCache, setFormValuesCache] = useState<DataPermission>({});
 
   // 模型列表
   const {
@@ -183,7 +185,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       if (!result) return;
 
       // 回显表单数据
-      form.setFieldsValue({
+      const formData = {
         tokenLimit: {
           limitPerDay: result.tokenLimit?.limitPerDay ?? -1,
         },
@@ -199,7 +201,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentFileStorageDays: result.agentFileStorageDays ?? -1,
         agentDailyPromptLimit: result.agentDailyPromptLimit ?? -1,
         pageDailyPromptLimit: result.pageDailyPromptLimit ?? -1,
-      });
+      };
+      form.setFieldsValue(formData);
+      // 同时更新缓存
+      setFormValuesCache(formData as DataPermission);
 
       // 存储查询到的 modelIds，用于后续处理
       if (result.modelIds && result.modelIds.length > 0) {
@@ -324,7 +329,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     } else {
       // 重置表单
       form.resetFields();
-      form.setFieldsValue({
+      const defaultFormValues = {
         tokenLimit: {
           limitPerDay: -1,
         },
@@ -340,7 +345,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentFileStorageDays: -1,
         agentDailyPromptLimit: -1,
         pageDailyPromptLimit: -1,
-      });
+      };
+      form.setFieldsValue(defaultFormValues);
+      // 重置缓存
+      setFormValuesCache(defaultFormValues as DataPermission);
       // 重置已选中的数据
       setSelectedModelIds([]);
       setSelectedAgentIds([]);
@@ -491,7 +499,35 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       return;
     }
 
-    const formValues: DataPermission = (await form.validateFields()) || {};
+    // 优先使用缓存的值（即使字段被卸载，缓存的值仍然存在）
+    let formValues: DataPermission = { ...formValuesCache };
+
+    // 如果当前在数据权限 tab，尝试验证并获取最新值
+    if (activeTab === 'dataPermission') {
+      try {
+        const validatedValues = (await form.validateFields()) || {};
+        // 验证成功，使用验证后的值并更新缓存
+        formValues = validatedValues;
+        setFormValuesCache(validatedValues);
+      } catch (error) {
+        // 验证失败时，尝试从表单获取值，如果获取不到则使用缓存
+        const currentValues = form.getFieldsValue() || {};
+        if (currentValues && Object.keys(currentValues).length > 0) {
+          formValues = currentValues;
+          setFormValuesCache(currentValues);
+        }
+        // 如果表单值也为空，继续使用缓存的值
+      }
+    } else {
+      // 不在数据权限 tab 时，尝试从表单获取最新值（如果字段还在）
+      const currentValues = form.getFieldsValue() || {};
+      if (currentValues && Object.keys(currentValues).length > 0) {
+        // 如果表单有值，使用表单值并更新缓存
+        formValues = currentValues;
+        setFormValuesCache(currentValues);
+      }
+      // 如果表单值为空，使用缓存的值（已经在上面初始化了）
+    }
 
     // 直接使用选中的模型ID数组
     const modelIds = selectedModelIds.length > 0 ? selectedModelIds : [];
@@ -829,6 +865,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               form={form}
               layout="vertical"
               className={cx(styles.dataPermissionForm)}
+              preserve={true}
+              onValuesChange={(changedValues, allValues) => {
+                // 当表单值变化时，更新缓存
+                setFormValuesCache((prev) => ({
+                  ...prev,
+                  ...allValues,
+                }));
+              }}
             >
               <Row gutter={[16, 0]}>
                 <Col span={12}>
