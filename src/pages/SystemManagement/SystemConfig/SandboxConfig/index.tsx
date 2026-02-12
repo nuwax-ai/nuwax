@@ -284,13 +284,15 @@ const SandboxConfig: React.FC = () => {
           <Spin spinning={globalConfigLoading}>
             <div className={styles['config-header']}>
               <div className={styles['section-title']}>全局配置</div>
-              <Button
-                type="primary"
-                loading={savingLoading}
-                onClick={handleGlobalSave}
-              >
-                保存
-              </Button>
+              {hasPermission('sandbox_config_save') && (
+                <Button
+                  type="primary"
+                  loading={savingLoading}
+                  onClick={handleGlobalSave}
+                >
+                  保存
+                </Button>
+              )}
             </div>
             <Form form={form} layout="inline">
               <Form.Item label="每用户内存">

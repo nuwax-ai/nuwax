@@ -27,24 +27,27 @@ const SystemConfig: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
 
   const fetchConfig = async () => {
-    const res = await apiSystemConfigList();
-    setLoading(false);
-    const _config: ConfigObj = {};
-    res.data.forEach((item) => {
-      if (!_config[item.category]) {
-        _config[item.category] = [];
-      }
-      const key = item.category;
-      if (!_config[key]) return;
-      const last = _config[key][_config[key].length - 1];
-      const method = last && last.sort > item.sort ? 'unshift' : 'push';
-      _config[key][method](item);
-    });
-    setConfig(_config);
+    try {
+      setLoading(true);
+      const res = await apiSystemConfigList();
+      const _config: ConfigObj = {};
+      res.data.forEach((item) => {
+        if (!_config[item.category]) {
+          _config[item.category] = [];
+        }
+        const key = item.category;
+        if (!_config[key]) return;
+        const last = _config[key][_config[key].length - 1];
+        const method = last && last.sort > item.sort ? 'unshift' : 'push';
+        _config[key][method](item);
+      });
+      setConfig(_config);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    setLoading(true);
     fetchConfig();
   }, []);
 
@@ -72,13 +75,11 @@ const SystemConfig: React.FC = () => {
       hideScroll
       extraContent={
         <div style={{ padding: '0 24px 24px' }}>
-          <Button
-            type="primary"
-            disabled={!hasPermission('system_setting_save')}
-            onClick={handleSave}
-          >
-            保存
-          </Button>
+          {hasPermission('system_setting_save') && (
+            <Button type="primary" onClick={handleSave}>
+              保存
+            </Button>
+          )}
         </div>
       }
     >
