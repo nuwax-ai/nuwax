@@ -45,7 +45,7 @@ const SpaceSection: React.FC<{
       apiGetSpaceDetail(finalSpaceId).then((res) => {
         if (res.code === SUCCESS_CODE && res.data) {
           const { creatorName, name } = res.data;
-          const display = creatorName ? `${creatorName}的个人空间` : name;
+          const display = creatorName ? `${creatorName} - ${name}` : name;
           setDynamicTitle(display || '个人空间');
         } else {
           setDynamicTitle('个人空间');
