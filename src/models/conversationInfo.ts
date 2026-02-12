@@ -1185,6 +1185,7 @@ export default () => {
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
     variableParams?: Record<string, string | number>,
+    sandboxId?: string,
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
@@ -1262,6 +1263,7 @@ export default () => {
       attachments,
       debug,
       selectedComponents: infos,
+      sandboxId,
     };
     // 处理会话
     handleConversation(params, currentMessageId, isSync, data);

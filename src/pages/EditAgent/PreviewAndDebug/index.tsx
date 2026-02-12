@@ -68,8 +68,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     string | number
   > | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
-  const [selectedComputerId, setSelectedComputerId] =
-    useState<string>('remote');
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
   const {
     conversationInfo,
@@ -321,12 +320,22 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       return;
     }
 
+    const effectiveSandboxId =
+      conversationInfo?.sandboxServerId !== undefined &&
+      conversationInfo?.sandboxServerId !== null
+        ? String(conversationInfo.sandboxServerId)
+        : agentConfigInfo?.extra?.sandboxId !== undefined &&
+          agentConfigInfo?.extra?.sandboxId !== null
+        ? String(agentConfigInfo.extra.sandboxId)
+        : selectedComputerId;
+
     onMessageSend(
       id,
       messageInfo,
       files,
       selectedComponentList,
       variableParams,
+      effectiveSandboxId,
       true,
       false,
     );
