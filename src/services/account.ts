@@ -107,3 +107,12 @@ export async function apiTenantConfig(): Promise<
     method: 'GET',
   });
 }
+
+// 获取当前登录用户的动态认证码
+export async function apiGetUserDynamicCode(): Promise<
+  RequestResponse<number>
+> {
+  return request('/api/user/dynamicCode', {
+    method: 'GET',
+  });
+}
