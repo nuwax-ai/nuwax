@@ -2,7 +2,6 @@ import type {
   CustomPopoverItem,
   CustomPopoverProps,
 } from '@/types/interfaces/common';
-import { InfoCircleOutlined } from '@ant-design/icons';
 import { Popover, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { PropsWithChildren } from 'react';
@@ -38,32 +37,29 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
       content={
         <ul className={cx(styles['popover-list'])}>
           {list.map((item, index) => (
-            <li
-              key={index}
-              className={cx(
-                styles['p-box'],
-                'hover-box',
-                'cursor-pointer',
-                'flex',
-                'items-center',
-                { [styles.del]: item.isDel },
-                { [styles.disabled]: item.disabled },
-              )}
-              onClick={(e) => {
-                if (item.disabled) {
-                  return;
-                }
-                handleClick(e, item);
-              }}
-            >
-              {item.icon}
-              {item.label}
-              {item.tooltip && (
-                <Tooltip title={item.tooltip}>
-                  <InfoCircleOutlined />
-                </Tooltip>
-              )}
-            </li>
+            <Tooltip title={item.tooltip} key={index} placement="right">
+              <li
+                className={cx(
+                  styles['p-box'],
+                  'hover-box',
+                  'cursor-pointer',
+                  'flex',
+                  'items-center',
+                  { [styles.del]: item.isDel },
+                  { [styles.disabled]: item.disabled },
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item.disabled) {
+                    return;
+                  }
+                  handleClick(e, item);
+                }}
+              >
+                {item.icon}
+                {item.label}
+              </li>
+            </Tooltip>
           ))}
         </ul>
       }

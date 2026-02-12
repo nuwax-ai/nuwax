@@ -32,6 +32,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   onClickMore,
 }) => {
   const { runCancelCollect, runDevCollect } = useModel('devCollectAgent');
+  // 权限检查
+  const { hasPermission: hasPermissionMenu } = useModel('menuModel');
 
   // 开发智能体收藏
   const { run: runCollect } = useRequest(apiDevCollectAgent, {
@@ -54,7 +56,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
   // 更多操作列表
   const actionList = useMemo(() => {
-    return APPLICATION_MORE_ACTION.filter((item) => {
+    const list: CustomPopoverItem[] = APPLICATION_MORE_ACTION.filter((item) => {
       const type = item.type as ApplicationMoreActionEnum;
 
       switch (type) {
@@ -83,6 +85,67 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         default:
           // 其他操作默认展示
           return true;
+      }
+    });
+
+    return list.map((item) => {
+      switch (item.type) {
+        // 迁移
+        case ApplicationMoreActionEnum.Move: {
+          const isHasPermission = hasPermissionMenu('agent_migrate');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        // 导出配置
+        case ApplicationMoreActionEnum.Export_Config: {
+          const isHasPermission = hasPermissionMenu('agent_export');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        // API Key
+        case ApplicationMoreActionEnum.API_Key: {
+          const isHasPermission = hasPermissionMenu('agent_api_key');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        // 删除
+        case ApplicationMoreActionEnum.Del: {
+          const isHasPermission = hasPermissionMenu('agent_delete');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        // 复制到空间
+        case ApplicationMoreActionEnum.Copy_To_Space: {
+          const isHasPermission = hasPermissionMenu('agent_copy_to_space');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        // 临时会话
+        case ApplicationMoreActionEnum.Temporary_Session: {
+          const isHasPermission = hasPermissionMenu('agent_temp_conversation');
+          return {
+            ...item,
+            disabled: !isHasPermission,
+            tooltip: isHasPermission ? '' : '无此资源权限',
+          };
+        }
+        default:
+          return item;
       }
     });
   }, [agentConfigInfo]);
