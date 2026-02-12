@@ -902,7 +902,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建工作空间数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -915,7 +919,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建智能体数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -928,7 +936,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建网页应用数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -941,7 +953,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建知识库数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -958,6 +974,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     <InputNumber
                       className={cx('w-full')}
                       min={-1}
+                      max={100000000}
                       step={0.001}
                       precision={3}
                       formatter={(value) => {
@@ -988,7 +1005,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建数据表数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1001,7 +1022,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '可创建定时任务数量，-1 表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1015,7 +1040,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={0} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1029,7 +1058,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={0} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1042,7 +1075,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '通用智能体每天对话次数，-1表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
 
@@ -1055,7 +1092,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                       title: '网页应用开发每天对话次数，-1表示不限制',
                     }}
                   >
-                    <InputNumber className={cx('w-full')} min={-1} />
+                    <InputNumber
+                      className={cx('w-full')}
+                      min={-1}
+                      max={100000000}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
