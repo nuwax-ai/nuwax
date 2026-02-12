@@ -11,6 +11,7 @@ import {
 import { apiPublishedAgentList } from '@/services/square';
 import { apiSystemModelList } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { Page } from '@/types/interfaces/request';
@@ -314,7 +315,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   useEffect(() => {
     if (open) {
       // 加载模型列表
-      runModelList();
+      runModelList(AccessControlEnum.Filter);
 
       // 如果是编辑模式，查询数据权限用于回显
       if (targetId) {
@@ -564,35 +565,34 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'flex-col',
                 'h-full',
                 'flex-1',
-                'overflow-hide',
+                'overflow-y',
+                styles.leftList,
               )}
             >
-              <div className={cx('flex-1', 'overflow-y', 'h-full')}>
-                {modelLoading && !modelList?.length ? (
-                  <div
-                    className={cx(
-                      'h-full',
-                      'flex',
-                      'items-center',
-                      'content-center',
-                    )}
-                  >
-                    <Loading />
-                  </div>
-                ) : (
-                  modelList?.map((item: ModelConfigDto) => (
-                    <ResourceItem
-                      key={item.id}
-                      showIcon={false}
-                      name={item.name}
-                      description={item.description}
-                      targetId={item.id}
-                      onAdd={toggleModelSelected}
-                      isAdded={selectedModelIds.includes(item.id)}
-                    />
-                  ))
-                )}
-              </div>
+              {modelLoading && !modelList?.length ? (
+                <div
+                  className={cx(
+                    'h-full',
+                    'flex',
+                    'items-center',
+                    'content-center',
+                  )}
+                >
+                  <Loading />
+                </div>
+              ) : (
+                modelList?.map((item: ModelConfigDto) => (
+                  <ResourceItem
+                    key={item.id}
+                    showIcon={false}
+                    name={item.name}
+                    description={item.description}
+                    targetId={item.id}
+                    onAdd={toggleModelSelected}
+                    isAdded={selectedModelIds.includes(item.id)}
+                  />
+                ))
+              )}
             </div>
             {/* 分割线 */}
             <div className={cx(styles.rightSeparator)} />
@@ -626,6 +626,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'h-full',
                 'flex-1',
                 'overflow-hide',
+                styles.leftList,
               )}
             >
               <Input.Search
@@ -729,6 +730,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 'h-full',
                 'flex-1',
                 'overflow-hide',
+                styles.leftList,
               )}
             >
               <Input.Search

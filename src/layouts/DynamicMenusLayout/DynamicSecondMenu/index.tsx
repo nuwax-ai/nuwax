@@ -4,12 +4,12 @@
  * 支持特殊菜单（主页、工作空间）注入默认内容
  */
 import SecondMenuItem from '@/components/base/SecondMenuItem';
-import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import { PATH_URL } from '@/constants/home.constants';
+import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
@@ -132,8 +132,15 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   );
 
   // 处理路径URL路径跳转
-  const handlePathUrl = (path: string) => {
+  const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
     if (!path) return;
+    // http开头的路径，直接打开
+    if (path?.includes('http')) {
+      const targetOpenType =
+        openType === OpenTypeEnum.NewTab ? '_blank' : '_self';
+      window.open(path, targetOpenType);
+      return;
+    }
     // 关闭移动端菜单
     handleCloseMobileMenu();
     // 处理动态路径
@@ -178,7 +185,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         toggleExpand(menu.code as string);
       } else {
         // 无子菜单，处理路径URL路径跳转
-        handlePathUrl(menu?.path || '');
+        handlePathUrl(menu?.path || '', menu?.openType);
       }
     },
     [toggleExpand, handlePathUrl],
@@ -272,13 +279,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return (
           <SecondMenuItem.SubItem
             key={menuCode}
-            icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+            icon={menu.icon}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}
             onClick={() => {
               // 处理路径URL路径跳转
-              handlePathUrl(menu?.path || '');
+              handlePathUrl(menu?.path || '', menu?.openType);
             }}
           />
         );
@@ -288,7 +295,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return (
         <div key={menuCode} className="flex flex-col gap-4">
           <SecondMenuItem
-            icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+            icon={menu.icon}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}
@@ -319,7 +326,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div className={'flex flex-col gap-4'}>
+    <div className={'flex flex-col gap-4 overflow-auto'}>
       {secondMenus.map((menu: MenuItemDto) => renderMenuItem(menu))}
     </div>
   );

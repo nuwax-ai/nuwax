@@ -675,11 +675,10 @@ const AppDev: React.FC = () => {
           centered: true,
         });
         projectInfo.refreshProjectInfo();
-      } else {
-        message.error('发布失败,请先尝试解决错误后重试');
       }
     } catch (error) {
-      message.error('发布失败,先尝试解决错误后重试');
+      console.error('[AppDev] 发布失败:', error);
+      // message.error('发布失败,先尝试解决错误后重试');
     } finally {
       setIsDeploying(false);
     }

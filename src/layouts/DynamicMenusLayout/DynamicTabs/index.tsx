@@ -2,7 +2,6 @@
  * 动态一级菜单组件
  * @description 直接复用现有 TabItem 组件，保持样式一致
  */
-import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
@@ -34,7 +33,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
     return menus.map((menu) => ({
       menu,
       type: menu.code,
-      icon: menu.icon ? <SvgIcon name={menu.icon} /> : null,
+      icon: menu.icon,
       text: menu.name,
       active: activeTab === menu.code,
     }));
@@ -50,9 +49,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
       {tabItems.map((item) => (
         <TabItem
           key={item.type}
-          // 动态菜单中这里不需要，待删除
-          type={item.type as any}
-          icon={item.icon}
+          icon={item.icon || ''}
           text={item.text}
           active={item.active}
           onClick={() => onClick(item.menu)}

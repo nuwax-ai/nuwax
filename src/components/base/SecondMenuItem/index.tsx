@@ -48,7 +48,13 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         )}
       >
         {typeof icon === 'string' ? (
-          <img className={cx(styles['icon-image'])} src={icon} alt={name} />
+          icon?.includes('.png') ||
+          icon?.includes('.jpg') ||
+          icon?.includes('.jpeg') ? (
+            <img className={cx(styles['icon-image'])} src={icon} />
+          ) : (
+            <SvgIcon name={icon} />
+          )
         ) : (
           icon
         )}

@@ -9,6 +9,7 @@
   .name {
     color: @navSecondMenuTextSecondary;
     font-size: @fontSize !important;
+    white-space: nowrap;
   }
 
   &.mainItem {
@@ -65,16 +66,16 @@
     font-size: @fontSize;
   }
 
-  .icon-image {
-    width: 20px;
-    height: 20px;
+  .icon-box {
+    font-size: 20px;
     border-radius: @borderRadiusSm;
-  }
+    overflow: hidden;
+    flex-shrink: 0;
 
-  .icon-box img {
-    width: 20px;
-    height: 20px;
-    border-radius: @borderRadiusSm;
+    .icon-image {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .icon-dropdown {

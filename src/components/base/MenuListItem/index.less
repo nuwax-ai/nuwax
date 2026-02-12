@@ -13,6 +13,7 @@
       color: @navSecondMenuTextSecondary;
       font-size: @fontSize;
       line-height: @fontHeightLg;
+      white-space: nowrap;
     }
 
     &.has-icon {
@@ -49,10 +50,16 @@
     }
   }
 
-  .icon-image {
-    width: 20px;
-    height: 20px;
+  .icon-box {
+    font-size: 20px;
     border-radius: @borderRadiusSm;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .icon-image {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .collectIcon {

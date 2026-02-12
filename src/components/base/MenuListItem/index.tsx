@@ -1,8 +1,8 @@
-import agentImage from '@/assets/images/agent_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { EllipsisOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import SvgIcon from '../SvgIcon';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -56,20 +56,26 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
         )}
       >
         {typeof icon === 'string' ? (
-          <img
-            className={cx(styles['icon-image'])}
-            src={icon}
-            alt={name}
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = agentImage;
-            }}
-          />
+          icon?.includes('.png') ||
+          icon?.includes('.jpg') ||
+          icon?.includes('.jpeg') ? (
+            <img
+              className={cx(styles['icon-image'])}
+              src={icon}
+              alt={name}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = icon;
+              }}
+            />
+          ) : (
+            <SvgIcon name={icon} />
+          )
         ) : (
           icon
         )}
       </span>
-      <div className={cx('flex-1', 'text-ellipsis', styles.name)}>{name}</div>
+      <div className={cx('flex-1', styles.name)}>{name}</div>
       {onCancelCollect && (
         <CustomPopover list={[{ label: '取消收藏' }]} onClick={onCancelCollect}>
           <EllipsisOutlined className={cx(styles.collectIcon)} />
