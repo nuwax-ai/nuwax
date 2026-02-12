@@ -1,26 +1,30 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import { ComputerOption } from '@/components/ComputerTypeSelector/types';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
+import {
+  apiGetUserSelectableSandboxList,
+  apiSaveSelectedSandbox,
+} from '@/services/systemManage';
 import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type {
-  MessageInfo,
-  RoleInfo,
-} from '@/types/interfaces/conversationInfo';
+import { MessageInfo, RoleInfo } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
+import { useRequest } from 'ahooks';
 import { Button, Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -109,6 +113,78 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
     useModel('chat');
+
+  // 沙盒列表数据
+  const [sandboxes, setSandboxes] = useState<ComputerOption[]>([]);
+  // 是否已加载沙盒列表
+  const [isSandboxLoaded, setIsSandboxLoaded] = useState<boolean>(false);
+
+  // 获取沙盒列表
+  useRequest(apiGetUserSelectableSandboxList, {
+    onSuccess: (res: any) => {
+      if (res.code === SUCCESS_CODE && res.data) {
+        const options: ComputerOption[] = res.data.sandboxes.map(
+          (item: any) => ({
+            id: item.sandboxId,
+            name: item.name,
+            description: item.description,
+            raw: item,
+          }),
+        );
+        setSandboxes(options);
+        setIsSandboxLoaded(true);
+      }
+    },
+  });
+
+  // 权限判定逻辑
+  const { effectiveHasPermission, effectiveMaskText } = useMemo(() => {
+    const agent = conversationInfo?.agent;
+    const sandboxServerId = conversationInfo?.sandboxServerId;
+
+    // 1. 基础权限检查
+    if (agent?.hasPermission === false) {
+      return {
+        effectiveHasPermission: false,
+        effectiveMaskText: '无智能体使用权限',
+      };
+    }
+
+    // 2. 沙盒关联性检查 (如果绑定了沙盒但沙盒不可用)
+    if (
+      sandboxServerId !== undefined &&
+      sandboxServerId !== null &&
+      isSandboxLoaded
+    ) {
+      const isSandboxExist = sandboxes.some(
+        (s) => String(s.id) === String(sandboxServerId),
+      );
+      if (!isSandboxExist) {
+        return {
+          effectiveHasPermission: false,
+          effectiveMaskText: '无智能体使用权限',
+        };
+      }
+    }
+
+    return {
+      effectiveHasPermission: true,
+      effectiveMaskText: undefined,
+    };
+  }, [conversationInfo, sandboxes, isSandboxLoaded]);
+
+  // 沙盒不可用判定（针对蒙层文案逻辑的微调）
+  const isSandboxUnavailable = useMemo(() => {
+    const sandboxServerId = conversationInfo?.sandboxServerId;
+    if (
+      sandboxServerId !== undefined &&
+      sandboxServerId !== null &&
+      isSandboxLoaded
+    ) {
+      return !sandboxes.some((s) => String(s.id) === String(sandboxServerId));
+    }
+    return false;
+  }, [conversationInfo?.sandboxServerId, sandboxes, isSandboxLoaded]);
 
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -524,9 +600,19 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 agentConfigInfo?.type === AgentTypeEnum.TaskAgent
               }
               selectedComputerId={selectedComputerId}
-              onComputerSelect={setSelectedComputerId}
+              onComputerSelect={(id) => {
+                setSelectedComputerId(id);
+                // 编排模式下，手动选择沙盒后保存记录
+                if (agentId) {
+                  apiSaveSelectedSandbox(agentId, id);
+                }
+              }}
               agentId={agentId}
               agentSandboxId={agentConfigInfo?.extra?.sandboxId}
+              hasPermission={effectiveHasPermission}
+              maskText={effectiveMaskText}
+              isSandboxUnavailable={isSandboxUnavailable}
+              computerOptions={sandboxes}
             />
           </div>
         </div>

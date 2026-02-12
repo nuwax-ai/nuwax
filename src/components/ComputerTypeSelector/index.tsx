@@ -49,6 +49,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   agentId,
   fixedSelection = false,
   unavailable = false,
+  options: externalOptions,
+  autoSelect = true,
+  saveOnSelect = true,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -60,9 +63,20 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     Record<string, string>
   >({});
 
+  // 使用外部或内部电脑列表
+  const effectiveComputerList = useMemo(
+    () => externalOptions || computerList,
+    [externalOptions, computerList],
+  );
+
+  // 是否从外部加载
+  const isExternalLoaded = !!externalOptions;
+  // 综合初始化状态
+  const isFullyInitialized = initialized || isExternalLoaded;
+
   // 获取用户电脑列表
   const fetchComputerList = useCallback(async () => {
-    if (initializedRef.current) return;
+    if (initializedRef.current || isExternalLoaded) return;
 
     setLoading(true);
     try {
@@ -91,11 +105,18 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
 
   // 监听 agentId 和 agentSelectedMap 变化，自动应用选择
   useEffect(() => {
-    if (fixedSelection || !initialized || computerList.length === 0) return;
+    if (
+      !autoSelect ||
+      fixedSelection ||
+      !isFullyInitialized ||
+      effectiveComputerList.length === 0
+    )
+      return;
 
     // 检查当前 value 是否在列表中有效
     const isValueValid =
-      value && computerList.some((opt) => String(opt.id) === String(value));
+      value &&
+      effectiveComputerList.some((opt) => String(opt.id) === String(value));
 
     let selectedId: string | null = null;
 
@@ -112,13 +133,15 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
 
     // 2. 如果没有已保存的选择，且当前值无效，默认选中列表中的第一个
-    if (!selectedId && !isValueValid && computerList.length > 0) {
-      selectedId = computerList[0].id;
+    if (!selectedId && !isValueValid && effectiveComputerList.length > 0) {
+      selectedId = effectiveComputerList[0].id;
     }
 
     // 如果确定了选择且与当前值不同，触发onChange
     if (selectedId && selectedId !== value) {
-      const option = computerList.find((opt) => opt.id === selectedId);
+      const option = effectiveComputerList.find(
+        (opt) => String(opt.id) === String(selectedId),
+      );
       if (option) {
         onChange?.(selectedId, option);
       }
@@ -126,19 +149,20 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   }, [
     agentId,
     agentSelectedMap,
-    initialized,
-    computerList,
+    isFullyInitialized,
+    effectiveComputerList,
     value,
     onChange,
     fixedSelection,
+    autoSelect,
   ]);
 
   // 挂载时加载数据
   useEffect(() => {
-    if (!initialized) {
+    if (!isFullyInitialized) {
       fetchComputerList();
     }
-  }, [initialized, fetchComputerList]);
+  }, [isFullyInitialized, fetchComputerList]);
 
   // 当前选中的选项
   const selectedOption = useMemo(() => {
@@ -148,20 +172,20 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
     // 查找选中的电脑
     if (value) {
-      const found = computerList.find(
+      const found = effectiveComputerList.find(
         (item) => String(item.id) === String(value),
       );
       if (found) {
         return found;
       }
       // 如果是固定选择且在列表中找不到，则显示不可用
-      if (fixedSelection && initialized) {
+      if (fixedSelection && isFullyInitialized) {
         return UNAVAILABLE_OPTION;
       }
     }
     // 如果已初始化且找不到，说明列表为空或选中的电脑不在列表中
-    if (initialized) {
-      if (computerList.length === 0) {
+    if (isFullyInitialized) {
+      if (effectiveComputerList.length === 0) {
         return NO_COMPUTER_OPTION;
       }
       // 如果是固定选择，且没找到（前面已经处理过），这里应该是不可达或者默认
@@ -170,35 +194,49 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         return UNAVAILABLE_OPTION;
       }
       // 返回第一个选项
-      return computerList[0];
+      return effectiveComputerList[0];
     }
     // 未初始化时显示默认文本
     return { id: '', name: '选择电脑', description: '' };
-  }, [value, computerList, unavailable, initialized, fixedSelection]);
+  }, [
+    value,
+    effectiveComputerList,
+    unavailable,
+    isFullyInitialized,
+    fixedSelection,
+  ]);
 
   // 处理选择
   const handleSelect = useCallback(
     async (option: ComputerOption) => {
+      // 如果选中的是当前已选中的，直接返回，不触发接口
+      if (String(option.id) === String(value)) {
+        setOpen(false);
+        return;
+      }
+
       onChange?.(option.id, option);
       setOpen(false);
 
       // 如果有 agentId，保存选择并更新本地映射
-      if (agentId && option.id !== value) {
+      if (agentId) {
         // 立即更新本地映射，防止 useEffect 回退选择
         setAgentSelectedMap((prev) => ({
           ...prev,
           [String(agentId)]: option.id,
         }));
 
-        try {
-          await apiSaveSelectedSandbox(agentId, option.id);
-        } catch (error) {
-          console.error('保存电脑选择失败:', error);
-          // 保存失败时可以考虑回滚本地映射，但暂时不处理
+        if (saveOnSelect) {
+          try {
+            await apiSaveSelectedSandbox(agentId, option.id);
+          } catch (error) {
+            console.error('保存电脑选择失败:', error);
+            // 保存失败时可以考虑回滚本地映射，但暂时不处理
+          }
         }
       }
     },
-    [onChange, agentId, value],
+    [onChange, agentId, value, saveOnSelect],
   );
 
   // 构建菜单项
@@ -216,8 +254,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         ),
         disabled: true,
       });
-    } else if (computerList.length > 0) {
-      computerList.forEach((computer) => {
+    } else if (effectiveComputerList.length > 0) {
+      effectiveComputerList.forEach((computer) => {
         const isSelected = String(computer.id) === String(value);
         items.push({
           key: computer.id,
@@ -239,7 +277,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
           onClick: () => handleSelect(computer),
         });
       });
-    } else if (initialized) {
+    } else if (isFullyInitialized) {
       // 列表为空时显示提示
       items.push({
         key: 'empty',
@@ -255,13 +293,16 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
 
     return items;
-  }, [loading, computerList, initialized, handleSelect, value]);
+  }, [loading, effectiveComputerList, isFullyInitialized, handleSelect, value]);
 
   // 计算是否真正禁用
   const isDisabled = disabled || fixedSelection || unavailable;
 
-  if (selectedOption === NO_COMPUTER_OPTION) {
-    // 如果没有电脑，不显示选择器
+  if (
+    selectedOption === NO_COMPUTER_OPTION ||
+    selectedOption === UNAVAILABLE_OPTION
+  ) {
+    // 如果没有电脑或电脑不可用，不显示选择器
     return null;
   }
 
@@ -289,7 +330,9 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             })}
           >
             {/* <DesktopOutlined className={cx(styles['selector-icon'])} /> */}
-            <span>{loading || !initialized ? '' : selectedOption.name}</span>
+            <span>
+              {loading || !isFullyInitialized ? '' : selectedOption.name}
+            </span>
             {!fixedSelection && !unavailable && (
               <SvgIcon
                 name="icons-common-caret_down"

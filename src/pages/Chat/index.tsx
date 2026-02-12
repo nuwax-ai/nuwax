@@ -19,7 +19,11 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { apiAgentConversationCreate } from '@/services/agentConfig';
+import {
+  apiGetUserSelectableSandboxList,
+  apiSaveSelectedSandbox,
+} from '@/services/systemManage';
 import {
   apiDownloadAllFiles,
   apiUpdateStaticFile,
@@ -32,7 +36,6 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { AgentDetailDto } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
   MessageSourceType,
@@ -62,7 +65,7 @@ import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useLocation, useModel, useParams, useRequest } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
 import styles from './index.less';
@@ -96,7 +99,6 @@ const Chat: React.FC = () => {
     string,
     string | number
   > | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
@@ -108,6 +110,12 @@ const Chat: React.FC = () => {
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 沙盒列表数据
+  const [sandboxes, setSandboxes] = useState<any[]>([]);
+  // 智能体选择记录映射
+  const [agentSelectedMap, setAgentSelectedMap] = useState<
+    Record<string, string>
+  >({});
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -123,6 +131,7 @@ const Chat: React.FC = () => {
 
   const {
     conversationInfo,
+    loadingConversation,
     manualComponents,
     messageList,
     setMessageList,
@@ -179,6 +188,60 @@ const Chat: React.FC = () => {
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
+  // 统一 Agent 数据源：优先使用会话关联的智能体快照，兜底使用详情接口数据
+  const effectiveAgent = useMemo(() => {
+    return conversationInfo?.agent || agentDetail;
+  }, [conversationInfo?.agent, agentDetail]);
+
+  // 获取有效的沙箱ID
+  const getEffectiveSandboxId = (info: any = conversationInfo) => {
+    const sandboxServerId = info?.sandboxServerId;
+    // 检查 sandboxServerId 是否在可选列表中
+    const isSandboxInList =
+      sandboxServerId !== undefined &&
+      sandboxServerId !== null &&
+      sandboxes.some((s) => String(s.sandboxId) === String(sandboxServerId));
+
+    if (isSandboxInList) {
+      return String(sandboxServerId);
+    }
+
+    if (!sandboxServerId) {
+      // 1. 如果没有固定沙箱，优先使用本地选中的映射
+      const savedId = agentSelectedMap[String(agentId)];
+      if (
+        savedId &&
+        sandboxes.some((s) => String(s.sandboxId) === String(savedId))
+      ) {
+        return String(savedId);
+      }
+      // 2. 如果没有本地映射，尝试取智能体配置中默认的沙盒（sandboxId）
+      const configSandboxId = (effectiveAgent as any)?.sandboxId;
+      if (
+        configSandboxId !== undefined &&
+        configSandboxId !== null &&
+        sandboxes.some((s) => String(s.sandboxId) === String(configSandboxId))
+      ) {
+        return String(configSandboxId);
+      }
+      // 3. 其次使用当前手动选中的ID
+      if (
+        selectedComputerId &&
+        sandboxes.some(
+          (s) => String(s.sandboxId) === String(selectedComputerId),
+        )
+      ) {
+        return selectedComputerId;
+      }
+      // 4. 最后使用列表首项
+      if (sandboxes.length > 0) {
+        return String(sandboxes[0].sandboxId);
+      }
+    }
+
+    return selectedComputerId;
+  };
+
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
@@ -217,12 +280,12 @@ const Chat: React.FC = () => {
 
   // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
   const showCopyButton = useMemo(() => {
-    const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
+    const shouldShow = effectiveAgent?.allowCopy === AllowCopyEnum.Yes;
     return shouldShow;
   }, [
     workflowId,
-    agentDetail?.allowCopy,
-    agentDetail?.agentId,
+    effectiveAgent?.allowCopy,
+    effectiveAgent?.agentId,
     pagePreviewData,
   ]);
 
@@ -271,7 +334,7 @@ const Chat: React.FC = () => {
     condition: () => shouldBlockNavigation.current,
     // 只有通用型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
     enabled:
-      isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
+      isConversationActive && effectiveAgent?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
     message: '离开后，执行成功的任务会收到提示消息',
     discardText: '确定离开',
@@ -310,17 +373,13 @@ const Chat: React.FC = () => {
   }, [conversationInfo]);
 
   // 打开扩展页面
-  const handleOpenPreview = (agentDetail: any) => {
+  const handleOpenPreview = (agent: any) => {
     // 判断是否默认展示页面首页
-    if (
-      agentDetail &&
-      agentDetail?.expandPageArea &&
-      agentDetail?.pageHomeIndex
-    ) {
+    if (agent && agent?.expandPageArea && agent?.pageHomeIndex) {
       // 自动触发预览
       showPagePreview({
         name: '页面预览',
-        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
+        uri: process.env.BASE_URL + agent?.pageHomeIndex,
         params: {},
         executeId: '',
       });
@@ -329,56 +388,27 @@ const Chat: React.FC = () => {
     }
   };
 
-  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentDetailDto) => {
-      setAgentDetail(result);
-      handleOpenPreview(result);
-      setLoading(false);
-    },
-    onError: () => {
-      setLoading(false);
-    },
-  });
-
-  const { run: runDetailNew } = useRequest(apiPublishedAgentInfo, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentDetailDto) => {
-      setClearLoading(false);
-      setIsLoadingOtherInterface(false);
-      const { agentId, conversationId } = result;
-      // 默认跳转地址
-      let url = `/home/chat/${conversationId}/${agentId}`;
-      // 如果是任务智能体，则隐藏菜单
-      if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
-      history.replace(url, {
-        message: '',
-        files: [],
-        infos,
-        defaultAgentDetail,
-        firstVariableParams: null, // 清空会话时不保留变量参数,让用户重新填写
-      });
-    },
-    onError: () => {
-      setClearLoading(false);
-      setIsLoadingOtherInterface(false);
-    },
-  });
-
   useEffect(() => {
-    // 查询智能体详情信息
-    if (agentId !== defaultAgentDetail?.agentId) {
-      setLoading(true);
-      runDetail(agentId);
-    } else {
+    // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
+    if (defaultAgentDetail) {
       setAgentDetail(defaultAgentDetail);
       handleOpenPreview(defaultAgentDetail);
     }
-  }, [agentId, defaultAgentDetail]);
+
+    // 获取沙盒可选列表
+    const fetchSandboxList = async () => {
+      try {
+        const res = await apiGetUserSelectableSandboxList();
+        if (res?.code === SUCCESS_CODE && res.data) {
+          setSandboxes(res.data.sandboxes || []);
+          setAgentSelectedMap(res.data.agentSelected || {});
+        }
+      } catch (error) {
+        console.error('获取沙盒列表失败:', error);
+      }
+    };
+    fetchSandboxList();
+  }, [agentId, defaultAgentDetail, effectiveAgent]);
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
@@ -422,14 +452,7 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          const effectiveSandboxId =
-            data?.sandboxServerId !== undefined &&
-            data?.sandboxServerId !== null
-              ? String(data.sandboxServerId)
-              : agentDetail?.extra?.sandboxId !== undefined &&
-                agentDetail?.extra?.sandboxId !== null
-              ? String(agentDetail.extra.sandboxId)
-              : selectedComputerId;
+          const effectiveSandboxId = getEffectiveSandboxId(data);
 
           onMessageSend(
             id,
@@ -530,22 +553,47 @@ const Chat: React.FC = () => {
     };
   }, [id]);
 
-  // 清空会话记录,实际上是跳转到智能体详情页面
-  const handleClear = () => {
+  // 清空会话记录并创建新会话
+  const handleClear = async () => {
     setClearLoading(true);
     handleClearSideEffect();
-    // 重置是否还有更多消息
     setIsMoreMessage(false);
-    // 立即清空消息列表,避免跳转时旧数据闪烁
     setMessageList([]);
-    // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
-    // 重置表单,清空对话设置中的参数
     form.resetFields();
-    // 重置变量参数状态
     setVariableParams(null);
     setIsLoadingOtherInterface(true);
-    runDetailNew(agentId, true);
+
+    try {
+      const res = await apiAgentConversationCreate({
+        agentId,
+        devMode: false,
+      });
+
+      if (res.code === SUCCESS_CODE && res.data) {
+        setClearLoading(false);
+        setIsLoadingOtherInterface(false);
+        const { id: newConversationId, agentId: newAgentId } = res.data;
+
+        let url = `/home/chat/${newConversationId}/${newAgentId}`;
+        if (effectiveAgent?.type === AgentTypeEnum.TaskAgent) {
+          url += '?hideMenu=true';
+        }
+        history.replace(url, {
+          message: '',
+          files: [],
+          infos,
+          defaultAgentDetail: effectiveAgent || defaultAgentDetail,
+          firstVariableParams: null,
+        });
+      } else {
+        throw new Error(res.message || '创建会话失败');
+      }
+    } catch (error: any) {
+      message.error(error.message || '清空并创建会话失败');
+      setClearLoading(false);
+      setIsLoadingOtherInterface(false);
+    }
   };
 
   // 消息发送
@@ -561,14 +609,7 @@ const Chat: React.FC = () => {
     }
 
     isSendMessageRef.current = true;
-    const effectiveSandboxId =
-      conversationInfo?.sandboxServerId !== undefined &&
-      conversationInfo?.sandboxServerId !== null
-        ? String(conversationInfo.sandboxServerId)
-        : agentDetail?.extra?.sandboxId !== undefined &&
-          agentDetail?.extra?.sandboxId !== null
-        ? String(agentDetail.extra.sandboxId)
-        : selectedComputerId;
+    const effectiveSandboxId = getEffectiveSandboxId();
 
     onMessageSend(
       id,
@@ -892,8 +933,8 @@ const Chat: React.FC = () => {
               )}
 
               {/*打开预览页面*/}
-              {!!agentDetail?.expandPageArea &&
-                !!agentDetail?.pageHomeIndex &&
+              {!!effectiveAgent?.expandPageArea &&
+                !!effectiveAgent?.pageHomeIndex &&
                 !pagePreviewData && (
                   <Tooltip title="打开预览页面">
                     <Button
@@ -907,14 +948,14 @@ const Chat: React.FC = () => {
                       onClick={() => {
                         sidebarRef.current?.close();
                         closePreviewView(); // 关闭文件树
-                        handleOpenPreview(agentDetail);
+                        handleOpenPreview(effectiveAgent);
                       }}
                     />
                   </Tooltip>
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {agentDetail?.type === AgentTypeEnum.TaskAgent &&
+              {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
                 !isFileTreeVisible && (
                   <Tooltip title="文件预览或打开智能体电脑">
                     <Button
@@ -974,7 +1015,7 @@ const Chat: React.FC = () => {
                       mode={'home'}
                       conversationId={id}
                       showStatusDesc={
-                        agentDetail?.type !== AgentTypeEnum.TaskAgent
+                        effectiveAgent?.type !== AgentTypeEnum.TaskAgent
                       }
                     />
                   ))}
@@ -1041,32 +1082,89 @@ const Chat: React.FC = () => {
           {/* 会话状态显示 - 有消息时就显示 */}
           {messageList?.length > 0 &&
             conversationInfo &&
-            agentDetail?.type === AgentTypeEnum.TaskAgent && (
+            effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
               <ConversationStatus
                 messageList={messageList}
                 className={cx(styles['conversation-status-bar'])}
               />
             )}
 
-          <ChatInputHome
-            key={`agent-details-${agentId}`}
-            className={cx(styles['chat-input-container'])}
-            onEnter={handleMessageSend}
-            visible={showScrollBtn}
-            wholeDisabled={wholeDisabled}
-            clearLoading={clearLoading}
-            onClear={handleClear}
-            manualComponents={manualComponents}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-            onScrollBottom={onScrollBottom}
-            showAnnouncement={true}
-            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
-            selectedComputerId={selectedComputerId}
-            onComputerSelect={setSelectedComputerId}
-            agentId={agentDetail?.agentId}
-            agentSandboxId={agentDetail?.extra?.sandboxId}
-          />
+          {(() => {
+            const sandboxServerId = conversationInfo?.sandboxServerId;
+            const hasPermission = effectiveAgent?.hasPermission !== false;
+
+            // 检查 sandboxServerId 是否在可选列表中
+            const isSandboxInList =
+              sandboxServerId !== undefined &&
+              sandboxServerId !== null &&
+              sandboxes.some(
+                (s) => String(s.sandboxId) === String(sandboxServerId),
+              );
+
+            // 计算蒙层可见性与文案
+            let maskVisible = !hasPermission;
+            let maskText = '无智能体使用权限';
+
+            if (
+              hasPermission &&
+              sandboxServerId !== undefined &&
+              sandboxServerId !== null &&
+              !isSandboxInList
+            ) {
+              maskVisible = true;
+              maskText = '无智能体使用权限';
+            }
+
+            // 计算最终选中的沙盒ID
+            const finalSelectedId = getEffectiveSandboxId();
+
+            // 转换格式
+            const mappedOptions = sandboxes.map((s) => ({
+              id: String(s.sandboxId),
+              name: s.name,
+              description: s.description,
+              raw: s,
+            }));
+
+            return (
+              <ChatInputHome
+                key={`agent-details-${agentId}`}
+                className={cx(styles['chat-input-container'])}
+                onEnter={handleMessageSend}
+                visible={showScrollBtn}
+                wholeDisabled={wholeDisabled}
+                clearLoading={clearLoading}
+                onClear={handleClear}
+                manualComponents={manualComponents}
+                selectedComponentList={selectedComponentList}
+                onSelectComponent={handleSelectComponent}
+                onScrollBottom={onScrollBottom}
+                showAnnouncement={true}
+                isTaskAgentActive={
+                  effectiveAgent?.type === AgentTypeEnum.TaskAgent
+                }
+                selectedComputerId={finalSelectedId || selectedComputerId}
+                onComputerSelect={async (id) => {
+                  setSelectedComputerId(id);
+                  try {
+                    await apiSaveSelectedSandbox(agentId, id);
+                    setAgentSelectedMap((prev) => ({
+                      ...prev,
+                      [String(agentId)]: id,
+                    }));
+                  } catch (e) {
+                    console.error('保存沙箱选择失败', e);
+                  }
+                }}
+                agentSandboxId={sandboxServerId}
+                hasPermission={!maskVisible}
+                maskText={maskText}
+                computerOptions={mappedOptions}
+                autoSelectComputer={false}
+                saveComputerOnSelect={false}
+              />
+            );
+          })()}
         </div>
       </div>
     );
@@ -1091,7 +1189,7 @@ const Chat: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
-      {loading ? (
+      {loadingConversation ? (
         // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
         <div
           className={cx(
@@ -1118,13 +1216,13 @@ const Chat: React.FC = () => {
             }
             minLeftWidth={430}
             defaultLeftWidth={
-              agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+              effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
             }
             // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
             // className={cx(isFileTreeVisible && 'flex-1')}
-            left={agentDetail?.hideChatArea ? null : LeftContent()}
+            left={effectiveAgent?.hideChatArea ? null : LeftContent()}
             right={
-              agentDetail?.type !== AgentTypeEnum.TaskAgent
+              effectiveAgent?.type !== AgentTypeEnum.TaskAgent
                 ? // 会话型
                   pagePreviewData && (
                     <>
@@ -1132,21 +1230,23 @@ const Chat: React.FC = () => {
                         pagePreviewData={pagePreviewData}
                         showHeader={true}
                         onClose={hidePagePreview}
-                        showCloseButton={!agentDetail?.hideChatArea}
+                        showCloseButton={!effectiveAgent?.hideChatArea}
                         titleClassName={cx(styles['title-style'])}
                         // 复制模板按钮相关 props
                         showCopyButton={showCopyButton}
-                        allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                        allowCopy={
+                          effectiveAgent?.allowCopy === AllowCopyEnum.Yes
+                        }
                         onCopyClick={() => setOpenCopyModal(true)}
                         copyButtonText="复制模板"
                         copyButtonClassName={styles['copy-btn']}
                       />
                       {/* 复制模板弹窗 */}
                       {showCopyButton &&
-                        agentDetail &&
+                        effectiveAgent &&
                         pagePreviewData?.uri && (
                           <CopyToSpaceComponent
-                            spaceId={agentDetail!.spaceId}
+                            spaceId={effectiveAgent!.spaceId}
                             mode={AgentComponentTypeEnum.Page}
                             componentId={parsePageAppProjectId(
                               pagePreviewData?.uri,
@@ -1211,7 +1311,7 @@ const Chat: React.FC = () => {
                         // VNC 空闲检测配置（仅通用型智能体启用）
                         idleDetection={{
                           enabled:
-                            agentDetail?.type === AgentTypeEnum.TaskAgent,
+                            effectiveAgent?.type === AgentTypeEnum.TaskAgent,
                           onIdleTimeout: () => openPreviewView(id),
                         }}
                       />
@@ -1229,8 +1329,8 @@ const Chat: React.FC = () => {
             styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
           )}
           agentId={agentId}
-          loading={loading}
-          agentDetail={agentDetail}
+          loading={loadingConversation}
+          agentDetail={effectiveAgent}
           onToggleCollectSuccess={handleToggleCollectSuccess}
           onVisibleChange={setIsSidebarVisible}
         />
