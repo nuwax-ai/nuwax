@@ -140,38 +140,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 权限判定逻辑
   const { effectiveHasPermission, effectiveMaskText } = useMemo(() => {
     const agent = conversationInfo?.agent;
-    const sandboxServerId = conversationInfo?.sandboxServerId;
 
     // 1. 基础权限检查
     if (agent?.hasPermission === false) {
       return {
         effectiveHasPermission: false,
-        effectiveMaskText: '无智能体使用权限',
+        effectiveMaskText: '您无该智能体权限',
       };
-    }
-
-    // 2. 沙盒关联性检查 (如果绑定了沙盒但沙盒不可用)
-    if (
-      sandboxServerId !== undefined &&
-      sandboxServerId !== null &&
-      isSandboxLoaded
-    ) {
-      const isSandboxExist = sandboxes.some(
-        (s) => String(s.id) === String(sandboxServerId),
-      );
-      if (!isSandboxExist) {
-        return {
-          effectiveHasPermission: false,
-          effectiveMaskText: '无智能体使用权限',
-        };
-      }
     }
 
     return {
       effectiveHasPermission: true,
       effectiveMaskText: undefined,
     };
-  }, [conversationInfo, sandboxes, isSandboxLoaded]);
+  }, [conversationInfo]);
 
   // 沙盒不可用判定（针对蒙层文案逻辑的微调）
   const isSandboxUnavailable = useMemo(() => {

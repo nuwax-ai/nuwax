@@ -8,18 +8,26 @@ import type { FileNode } from '@/types/interfaces/appDev';
 
 /**
  * 将扁平的文件列表转换为树形结构
+ * @param files 文件列表
+ * @param isFilterIgnoredFiles 是否过滤掉系统文件
+ * @returns 树形结构
  */
-export const transformFlatListToTree = (files: any[]): FileNode[] => {
+export const transformFlatListToTree = (
+  files: any[],
+  isFilterIgnoredFiles: boolean = true,
+): FileNode[] => {
   const root: FileNode[] = [];
   const map = new Map<string, FileNode>();
 
   // 过滤掉系统文件
-  const filteredFiles = files.filter((file) => {
-    const fileName = file.name.split('/').pop();
-    return !FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
-      pattern.test(fileName || ''),
-    );
-  });
+  const filteredFiles = isFilterIgnoredFiles
+    ? files.filter((file) => {
+        const fileName = file.name.split('/').pop();
+        return !FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
+          pattern.test(fileName || ''),
+        );
+      })
+    : files;
 
   // 创建所有文件节点和必要的文件夹节点
   filteredFiles.forEach((file) => {
@@ -463,10 +471,23 @@ export const isDocumentFile = (fileName: string) => {
 
 /**
  * 判断文件是否支持预览（白名单方案）
+ * @param fileName 文件名
+ * @param isFilterIgnoredFiles 是否支持系统预览忽略的文件(如.DS_Store、.tmp、.bak、.env等文件)
+ * @returns 是否支持预览
  */
-export const isPreviewableFile = (fileName: string): boolean => {
+export const isPreviewableFile = (
+  fileName: string,
+  isFilterIgnoredFiles: boolean = false,
+): boolean => {
   if (!fileName || typeof fileName !== 'string') {
     return false;
+  }
+
+  // 如果需要过滤掉系统预览忽略的文件，则过滤掉
+  if (isFilterIgnoredFiles && fileName.startsWith('.')) {
+    return FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
+      pattern.test(fileName || ''),
+    );
   }
 
   const ext = fileName.split('.').pop()?.toLowerCase() || '';

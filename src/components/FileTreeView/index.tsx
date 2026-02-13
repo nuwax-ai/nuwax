@@ -235,7 +235,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const isOfficeDocument = result?.isDoc || false;
     const documentFileType = result?.fileType;
     // 判断文件是否支持预览（白名单方案）
-    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
+    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '', true);
 
     // 刷新文件树和文件内容
     const handleRefreshFileList = useCallback(async () => {
@@ -260,7 +260,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               const fileName = selectedFileNode?.name || '';
 
               // 判断文件是否支持预览（白名单方案）
-              const isPreviewable = isPreviewableFile(fileName);
+              const isPreviewable = isPreviewableFile(fileName, true);
               // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
               if (!isPreviewable || selectedFileNode?.isLink) {
                 return;
@@ -420,7 +420,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
             // 判断文件是否支持预览（白名单方案）
-            const isPreviewable = isPreviewableFile(fileNode?.name || '');
+            const isPreviewable = isPreviewableFile(fileNode?.name || '', true);
             // 如果文件不支持预览，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
             if (!isPreviewable) {
               setSelectedFileNode(fileNode);
@@ -559,7 +559,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
       // 如果文件列表不为空，则转换为树形结构
       if (Array.isArray(originalFiles) && originalFiles.length > 0) {
-        const treeData: FileNode[] = transformFlatListToTree(originalFiles);
+        const treeData: FileNode[] = transformFlatListToTree(
+          originalFiles,
+          false,
+        );
         setFiles(treeData);
       }
 
@@ -840,6 +843,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
+      input.accept = '*';
       input.multiple = true;
       document.body.appendChild(input);
 
@@ -1125,7 +1129,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         const fileName = selectedFileNode?.name || '';
 
         // 判断文件是否支持预览（白名单方案）
-        const previewable = isPreviewableFile(fileName);
+        const previewable = isPreviewableFile(fileName, true);
 
         // 以下情况不需要重新获取内容，直接使用当前选中文件节点：
         // 1）文件不支持预览
