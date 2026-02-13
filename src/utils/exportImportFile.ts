@@ -144,7 +144,7 @@ export const exportConfigFile = async (
     if (!res.success) {
       // 导出失败，显示错误信息
       const errorMessage = res.error?.message || '导出失败';
-      message.error(errorMessage);
+      message.warning(errorMessage);
       return;
     }
 
@@ -179,7 +179,7 @@ export const exportTableExcel = async (tableId: number, fileName: string) => {
     if (!res.success) {
       // 导出失败，显示错误信息
       const errorMessage = res.error?.message || '导出失败';
-      message.error(errorMessage);
+      message.warning(errorMessage);
       return;
     }
 
