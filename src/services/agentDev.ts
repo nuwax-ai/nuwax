@@ -17,6 +17,10 @@ import type {
 import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
 import type { ListParams, PageParams } from '@/types/interfaces/common';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
 import { request } from 'umi';
 
 // 取消点赞智能体
@@ -290,17 +294,6 @@ export async function apiAgentAkList(
 export async function apiTemplateExport(
   targetId: number,
   targetType: AgentComponentTypeEnum,
-): Promise<{
-  data: Blob;
-  headers: {
-    'content-disposition': string;
-    'content-length': string;
-    'content-type': string;
-  };
-}> {
-  return request(`/api/template/export/${targetType}/${targetId}`, {
-    method: 'GET',
-    responseType: 'blob', // 指定响应类型为blob
-    getResponse: true, // 获取完整响应对象
-  });
+): Promise<ExportFileBlobResponse> {
+  return apiExportFileBlob(`/api/template/export/${targetType}/${targetId}`);
 }

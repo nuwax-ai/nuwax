@@ -11,6 +11,10 @@ import {
   UpdateTableNameParams,
 } from '@/types/interfaces/dataTable';
 import type { RequestResponse } from '@/types/interfaces/request';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
 import { request } from 'umi';
 
 // 更新表名称和描述信息
@@ -153,12 +157,10 @@ export async function apiGetTableData(
 }
 
 // 导出业务表数据为Excel
-export async function apiExportExcel(tableId: number): Promise<{ data: Blob }> {
-  return request(`/api/compose/db/table/exportExcel/${tableId}`, {
-    method: 'GET',
-    responseType: 'blob', // 指定响应类型为blob
-    getResponse: true, // 获取完整响应对象
-  });
+export async function apiExportExcel(
+  tableId: number,
+): Promise<ExportFileBlobResponse> {
+  return apiExportFileBlob(`/api/compose/db/table/exportExcel/${tableId}`);
 }
 
 // 清空业务数据
