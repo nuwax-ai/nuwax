@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiDevUnCollectAgent,
   apiUserDevCollectAgentList,
@@ -5,6 +6,7 @@ import {
 } from '@/services/agentDev';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import { message } from 'antd';
+import { debounce } from 'lodash';
 import { useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -24,6 +26,21 @@ export default () => {
       setDevCollectAgentList(result);
     },
   });
+
+  // 取消开发智能体收藏（防抖处理）
+  const handleCancelCollect = debounce(
+    async (agentId: number, callback?: () => void) => {
+      const { code } = await apiDevUnCollectAgent(agentId);
+      if (code === SUCCESS_CODE) {
+        setDevCollectAgentList(
+          (prevList) =>
+            prevList?.filter((item) => item.agentId !== agentId) || [],
+        );
+        callback?.();
+      }
+    },
+    300,
+  );
 
   // 取消开发智能体收藏
   const { run: runCancelCollect } = useRequest(apiDevUnCollectAgent, {
@@ -50,6 +67,7 @@ export default () => {
   return {
     runDevCollect,
     runCancelCollect,
+    handleCancelCollect,
     devCollectAgentList,
     editAgentList,
     runEdit,
