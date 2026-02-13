@@ -15,10 +15,6 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
-  apiGetUserSelectableSandboxList,
-  apiSaveSelectedSandbox,
-} from '@/services/systemManage';
-import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   AssistantRoleEnum,
@@ -78,14 +74,6 @@ const AgentDetails: React.FC = () => {
   const [conversationId, setConversationId] = useState<number | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
-  // 用户可选沙盒列表
-  const [sandboxes, setSandboxes] = useState<any[]>([]);
-  // 各智能体已选沙盒映射
-  const [agentSelectedMap, setAgentSelectedMap] = useState<
-    Record<string, string>
-  >({});
-  // 是否已加载沙盒数据
-  const [isSandboxLoaded, setIsSandboxLoaded] = useState<boolean>(false);
 
   const {
     isFileTreeVisible,
@@ -208,15 +196,6 @@ const AgentDetails: React.FC = () => {
       limit: 20,
     });
 
-    // 获取沙盒列表
-    apiGetUserSelectableSandboxList().then((res) => {
-      if (res.code === '0000' && res.data) {
-        setSandboxes(res.data.sandboxes || []);
-        setAgentSelectedMap(res.data.agentSelected || {});
-        setIsSandboxLoaded(true);
-      }
-    });
-
     return () => {
       setIsLoaded(false);
       setMessageList([]);
@@ -226,7 +205,6 @@ const AgentDetails: React.FC = () => {
       setVariables([]);
       // 清除文件面板信息
       clearFilePanelInfo();
-      setIsSandboxLoaded(false);
     };
   }, [agentId]);
 
@@ -474,11 +452,6 @@ const AgentDetails: React.FC = () => {
             const hasDetailPermission = agentDetail?.hasPermission !== false;
             // 严谨判断 sandboxId 是否为空
             const sandboxId = agentDetail?.sandboxId;
-            const isSandboxEmpty =
-              sandboxId === undefined ||
-              sandboxId === null ||
-              sandboxId === '' ||
-              sandboxId === 0;
 
             let maskVisible = false;
             let maskText = '您无该智能体权限';
@@ -488,31 +461,6 @@ const AgentDetails: React.FC = () => {
             } else {
               maskVisible = false;
             }
-
-            // 计算电脑选择器的值
-            const fixedSelection = !isSandboxEmpty;
-            let finalSelectedId = '';
-
-            if (fixedSelection) {
-              finalSelectedId = String(sandboxId);
-            } else if (isSandboxLoaded) {
-              // 如果可以切换，优先从 agentSelectedMap 中获取
-              const savedId = agentSelectedMap[String(agentId)];
-              if (savedId !== undefined && savedId !== null && savedId !== '') {
-                finalSelectedId = String(savedId);
-              } else if (sandboxes.length > 0) {
-                // 默认选中第一个
-                finalSelectedId = String(sandboxes[0].sandboxId);
-              }
-            }
-
-            // 转换沙盒列表格式供选择器使用
-            const mappedOptions = sandboxes.map((s) => ({
-              id: String(s.sandboxId),
-              name: s.name,
-              description: s.description,
-              raw: s,
-            }));
 
             return (
               <ChatInputHome
@@ -528,27 +476,14 @@ const AgentDetails: React.FC = () => {
                 isTaskAgentActive={
                   agentDetail?.type === AgentTypeEnum.TaskAgent
                 }
-                selectedComputerId={finalSelectedId || selectedComputerId}
+                selectedComputerId={selectedComputerId}
                 onComputerSelect={async (id) => {
                   setSelectedComputerId(id);
-                  // 切换后需要调用保存接口
-                  try {
-                    await apiSaveSelectedSandbox(agentId, id);
-                    // 更新本地映射
-                    setAgentSelectedMap((prev) => ({
-                      ...prev,
-                      [String(agentId)]: id,
-                    }));
-                  } catch (e) {
-                    console.error('保存沙箱选择失败', e);
-                  }
                 }}
+                agentId={agentId}
                 agentSandboxId={sandboxId}
                 hasPermission={!maskVisible}
                 maskText={maskText}
-                computerOptions={mappedOptions}
-                autoSelectComputer={false}
-                saveComputerOnSelect={false}
               />
             );
           })()}
