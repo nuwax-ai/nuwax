@@ -9,10 +9,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Switch, Table } from 'antd';
+import {
+  Button,
+  Empty,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Table,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteMenu,
@@ -22,6 +31,7 @@ import {
 } from '../services/menu-manage';
 import {
   MenuEnabledEnum,
+  MenuSourceEnum,
   type MenuNodeInfo,
   type UpdateMenuParams,
   type UpdateMenuSortItem,
@@ -52,6 +62,9 @@ const MenuManage: React.FC = () => {
 
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
+  // 权限检查
+  const { hasPermission } = useModel('menuModel');
 
   // 根据条件查询菜单列表（树形结构）
   const {
@@ -818,23 +831,63 @@ const MenuManage: React.FC = () => {
       fixed: 'right',
       render: (_: null, record: MenuNodeInfo) => (
         <Space size={0}>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleAddChild(record)}
+          <Tooltip
+            title={!hasPermission('menu_manage_add') ? '无此资源权限' : ''}
           >
-            新增
-          </Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleDeleteConfirm(record)}
+            <Button
+              type="link"
+              size="small"
+              disabled={!hasPermission('menu_manage_add')}
+              onClick={() => handleAddChild(record)}
+            >
+              新增
+            </Button>
+          </Tooltip>
+
+          {/* 系统内置的资源不能编辑和删除 */}
+          <Tooltip
+            title={
+              record.source === MenuSourceEnum.SystemBuiltIn
+                ? '系统内置的菜单不能编辑'
+                : !hasPermission('menu_manage_modify')
+                ? '无此资源权限'
+                : ''
+            }
           >
-            删除
-          </Button>
+            <Button
+              type="link"
+              size="small"
+              disabled={
+                record.source === MenuSourceEnum.SystemBuiltIn ||
+                !hasPermission('menu_manage_modify')
+              }
+              onClick={() => handleEdit(record)}
+            >
+              编辑
+            </Button>
+          </Tooltip>
+
+          <Tooltip
+            title={
+              record.source === MenuSourceEnum.SystemBuiltIn
+                ? '系统内置的菜单不能删除'
+                : !hasPermission('menu_manage_delete')
+                ? '无此资源权限'
+                : ''
+            }
+          >
+            <Button
+              type="link"
+              size="small"
+              disabled={
+                record.source === MenuSourceEnum.SystemBuiltIn ||
+                !hasPermission('menu_manage_delete')
+              }
+              onClick={() => handleDeleteConfirm(record)}
+            >
+              删除
+            </Button>
+          </Tooltip>
         </Space>
       ),
     },
@@ -845,9 +898,18 @@ const MenuManage: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>菜单管理</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增菜单
-        </Button>
+        <Tooltip
+          title={!hasPermission('menu_manage_add') ? '无此资源权限' : ''}
+        >
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!hasPermission('menu_manage_add')}
+            onClick={handleAdd}
+          >
+            新增菜单
+          </Button>
+        </Tooltip>
       </div>
 
       {/* 菜单列表 */}

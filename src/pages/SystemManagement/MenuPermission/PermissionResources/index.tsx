@@ -82,13 +82,9 @@ const PermissionResources: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    if (!hasPermission('resource_manage_query')) {
-      message.error('您没有查询资源权限');
-      return;
-    }
     // 根据条件查询权限资源列表（树形结构）
     runGetResourceList();
-  }, [location.state, hasPermission]);
+  }, [location.state]);
 
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
@@ -878,7 +874,10 @@ const PermissionResources: React.FC = () => {
             <Button
               type="link"
               size="small"
-              disabled={record.source === ResourceSourceEnum.SystemBuiltIn}
+              disabled={
+                record.source === ResourceSourceEnum.SystemBuiltIn ||
+                !hasPermission('resource_manage_modify')
+              }
               onClick={() => handleEdit(record)}
             >
               编辑

@@ -536,7 +536,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item label="来源" name="source">
-              <Select placeholder="请选择来源" options={MENU_SOURCE_OPTIONS} />
+              <Select
+                disabled
+                placeholder="请选择来源"
+                options={MENU_SOURCE_OPTIONS}
+              />
             </Form.Item>
           </Col>
 
