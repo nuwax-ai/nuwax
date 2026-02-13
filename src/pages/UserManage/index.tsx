@@ -35,7 +35,7 @@ const cx = classNames.bind(styles);
  * 用户管理
  */
 const UserManage: React.FC = () => {
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
@@ -117,7 +117,6 @@ const UserManage: React.FC = () => {
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    console.log('location.state', location.state);
     const state = location.state as any;
     if (state?._t) {
       handleReset();
@@ -131,47 +130,62 @@ const UserManage: React.FC = () => {
         {
           key: 'edit',
           label: '修改',
-          disabled: !hasPermission('user_manage_modify'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
           onClick: handleEditUser,
         },
         {
           key: 'disable',
           label: '禁用',
           isShow: record.status === UserStatusEnum.Enabled,
-          disabled: !hasPermission('user_manage_disable'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_disable',
+          ),
           onClick: handleDisable,
         },
         {
           key: 'enable',
           label: '启用',
           isShow: record.status !== UserStatusEnum.Enabled,
-          disabled: !hasPermission('user_manage_enable'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_enable',
+          ),
           onClick: handleEnable,
         },
         {
           key: 'auth',
           label: '授权',
           disabled:
-            !hasPermission('user_manage_bind_role') &&
-            !hasPermission('user_manage_bind_group'),
+            !hasPermissionByMenuCode('user_manage', 'user_manage_bind_role') &&
+            !hasPermissionByMenuCode('user_manage', 'user_manage_bind_group'),
           onClick: handleAuth,
         },
         {
           key: 'viewMenu',
           label: '查看菜单资源权限',
-          disabled: !hasPermission('user_manage_query_menu_permission'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_query_menu_permission',
+          ),
           onClick: handleViewMenu,
         },
         {
           key: 'dataPermission',
           label: '查看数据权限',
-          disabled: !hasPermission('user_manage_query_data_permission'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_query_data_permission',
+          ),
           onClick: handleViewDataPermission,
         },
       ];
     },
     [
-      hasPermission,
+      hasPermissionByMenuCode,
       handleEditUser,
       handleEnable,
       handleDisable,
@@ -285,7 +299,7 @@ const UserManage: React.FC = () => {
       title="用户管理"
       hideScroll
       rightSlot={[
-        hasPermission('user_manage_add') && (
+        hasPermissionByMenuCode('user_manage', 'user_manage_add') && (
           <Button
             key="add"
             type="primary"
@@ -295,7 +309,7 @@ const UserManage: React.FC = () => {
             添加用户
           </Button>
         ),
-        hasPermission('user_manage_send_message') && (
+        hasPermissionByMenuCode('user_manage', 'user_manage_send_message') && (
           <Button
             key="message"
             type="primary"
@@ -313,7 +327,10 @@ const UserManage: React.FC = () => {
         columns={columns}
         request={request}
         onReset={handleReset}
-        showQueryButtons={hasPermission('user_manage_query')}
+        showQueryButtons={hasPermissionByMenuCode(
+          'user_manage',
+          'user_manage_query',
+        )}
       />
 
       {/* 用户新增/编辑弹窗 */}

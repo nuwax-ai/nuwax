@@ -87,7 +87,7 @@ const UserGroupManage: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 查询用户组列表
   const {
@@ -376,19 +376,31 @@ const UserGroupManage: React.FC = () => {
 
         // 编辑权限检查
         const canEdit =
-          hasPermission('user_group_manage_modify') && !isSystemBuiltIn;
+          hasPermissionByMenuCode(
+            'user_group_manage',
+            'user_group_manage_modify',
+          ) && !isSystemBuiltIn;
         const editTooltip = isSystemBuiltIn
           ? '系统内置的用户组不能编辑'
-          : !hasPermission('user_group_manage_modify')
+          : !hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_modify',
+            )
           ? '无此资源权限'
           : '';
 
         // 删除权限检查
         const canDelete =
-          hasPermission('user_group_manage_delete') && !isSystemBuiltIn;
+          hasPermissionByMenuCode(
+            'user_group_manage',
+            'user_group_manage_delete',
+          ) && !isSystemBuiltIn;
         const deleteTooltip = isSystemBuiltIn
           ? '系统内置的用户组不能删除'
-          : !hasPermission('user_group_manage_delete')
+          : !hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_delete',
+            )
           ? '无此资源权限'
           : '';
 
@@ -425,7 +437,10 @@ const UserGroupManage: React.FC = () => {
           <Space size={0}>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_user')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_user',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -433,7 +448,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_user')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_user',
+                  )
+                }
                 onClick={() => handleBindUser(record)}
               >
                 绑定用户
@@ -441,7 +461,10 @@ const UserGroupManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_menu')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_menu',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -449,7 +472,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_menu')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_menu',
+                  )
+                }
                 onClick={() => handleMenuPermission(record)}
               >
                 菜单权限
@@ -457,7 +485,10 @@ const UserGroupManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_data')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_data',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -465,7 +496,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_data')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_data',
+                  )
+                }
                 onClick={() => handleDataPermission(record)}
               >
                 数据权限
@@ -489,12 +525,24 @@ const UserGroupManage: React.FC = () => {
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>用户组管理</h1>
         <Tooltip
-          title={!hasPermission('user_group_manage_add') ? '无此资源权限' : ''}
+          title={
+            !hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_add',
+            )
+              ? '无此资源权限'
+              : ''
+          }
         >
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('user_group_manage_add')}
+            disabled={
+              !hasPermissionByMenuCode(
+                'user_group_manage',
+                'user_group_manage_add',
+              )
+            }
             onClick={handleAdd}
           >
             新增用户组

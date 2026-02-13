@@ -68,7 +68,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAddDataResource,
 }) => {
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 聊天Tab
   const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'design'>(
@@ -211,7 +211,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       requestId?: string,
     ) => {
       // 权限检查
-      if (!hasPermission('page_app_ai_chat')) {
+      if (!hasPermissionByMenuCode('page_app_dev', 'page_app_ai_chat')) {
         message.error('您没有权限使用AI聊天功能');
         return;
       }
