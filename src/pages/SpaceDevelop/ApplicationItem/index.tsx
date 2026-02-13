@@ -41,6 +41,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     debounceInterval: 300,
     onSuccess: () => {
       message.success('收藏成功');
+      onCollect(!agentConfigInfo?.devCollected);
       // 更新开发智能体收藏列表
       runDevCollect({
         page: 1,
@@ -170,7 +171,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     } else {
       await runCollect(id);
     }
-    onCollect(!devCollected);
+    // onCollect(!devCollected);
   };
 
   // 点击更多操作
