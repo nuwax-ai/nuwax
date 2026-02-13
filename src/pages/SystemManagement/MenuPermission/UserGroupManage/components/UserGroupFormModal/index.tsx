@@ -206,6 +206,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
             <Form.Item label="来源" name="source">
               <Select
                 placeholder="请选择来源"
+                disabled
                 options={USER_GROUP_SOURCE_OPTIONS}
               />
             </Form.Item>
