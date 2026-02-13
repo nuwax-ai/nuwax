@@ -84,7 +84,7 @@ const RoleManage: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 查询角色列表
   const {
@@ -353,19 +353,22 @@ const RoleManage: React.FC = () => {
         const isSystemBuiltIn = record.source === RoleSourceEnum.SystemBuiltIn;
 
         // 编辑权限检查
-        const canEdit = hasPermission('role_manage_modify') && !isSystemBuiltIn;
+        const canEdit =
+          hasPermissionByMenuCode('role_manage', 'role_manage_modify') &&
+          !isSystemBuiltIn;
         const editTooltip = isSystemBuiltIn
           ? '系统内置的角色不能编辑'
-          : !hasPermission('role_manage_modify')
+          : !hasPermissionByMenuCode('role_manage', 'role_manage_modify')
           ? '无此资源权限'
           : '';
 
         // 删除权限检查
         const canDelete =
-          hasPermission('role_manage_delete') && !isSystemBuiltIn;
+          hasPermissionByMenuCode('role_manage', 'role_manage_delete') &&
+          !isSystemBuiltIn;
         const deleteTooltip = isSystemBuiltIn
           ? '系统内置的角色不能删除'
-          : !hasPermission('role_manage_delete')
+          : !hasPermissionByMenuCode('role_manage', 'role_manage_delete')
           ? '无此资源权限'
           : '';
 
@@ -402,13 +405,20 @@ const RoleManage: React.FC = () => {
           <Space size={0}>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_user') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_user')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_user')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_user',
+                  )
+                }
                 onClick={() => handleBindUser(record)}
               >
                 绑定用户
@@ -416,13 +426,20 @@ const RoleManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_menu') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_menu')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_menu')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_menu',
+                  )
+                }
                 onClick={() => handleMenuPermission(record)}
               >
                 菜单权限
@@ -430,13 +447,20 @@ const RoleManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_data') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_data')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_data')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_data',
+                  )
+                }
                 onClick={() => handleDataPermission(record)}
               >
                 数据权限
@@ -460,12 +484,18 @@ const RoleManage: React.FC = () => {
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>角色管理</h1>
         <Tooltip
-          title={!hasPermission('role_manage_add') ? '无此资源权限' : ''}
+          title={
+            !hasPermissionByMenuCode('role_manage', 'role_manage_add')
+              ? '无此资源权限'
+              : ''
+          }
         >
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('role_manage_add')}
+            disabled={
+              !hasPermissionByMenuCode('role_manage', 'role_manage_add')
+            }
             onClick={handleAdd}
           >
             新增角色

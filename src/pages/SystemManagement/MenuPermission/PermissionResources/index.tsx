@@ -68,7 +68,7 @@ const PermissionResources: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 根据条件查询权限资源列表（树形结构）
   const {
@@ -859,13 +859,23 @@ const PermissionResources: React.FC = () => {
           {record.type !== ResourceTypeEnum.Component && (
             <Tooltip
               title={
-                !hasPermission('resource_manage_add') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode(
+                  'resource_manage',
+                  'resource_manage_add',
+                )
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('resource_manage_add')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'resource_manage',
+                    'resource_manage_add',
+                  )
+                }
                 onClick={() => handleAddChild(record)}
               >
                 新增
@@ -877,7 +887,10 @@ const PermissionResources: React.FC = () => {
             title={
               record.source === ResourceSourceEnum.SystemBuiltIn
                 ? '系统内置的资源不能编辑'
-                : !hasPermission('resource_manage_modify')
+                : !hasPermissionByMenuCode(
+                    'resource_manage',
+                    'resource_manage_modify',
+                  )
                 ? '无此资源权限'
                 : ''
             }
@@ -887,7 +900,10 @@ const PermissionResources: React.FC = () => {
               size="small"
               disabled={
                 record.source === ResourceSourceEnum.SystemBuiltIn ||
-                !hasPermission('resource_manage_modify')
+                !hasPermissionByMenuCode(
+                  'resource_manage',
+                  'resource_manage_modify',
+                )
               }
               onClick={() => handleEdit(record)}
             >
@@ -898,7 +914,10 @@ const PermissionResources: React.FC = () => {
             title={
               record.source === ResourceSourceEnum.SystemBuiltIn
                 ? '系统内置的资源不能删除'
-                : !hasPermission('resource_manage_delete')
+                : !hasPermissionByMenuCode(
+                    'resource_manage',
+                    'resource_manage_delete',
+                  )
                 ? '无此资源权限'
                 : ''
             }
@@ -907,8 +926,10 @@ const PermissionResources: React.FC = () => {
               type="link"
               size="small"
               disabled={
-                !hasPermission('resource_manage_delete') ||
-                record.source === ResourceSourceEnum.SystemBuiltIn
+                !hasPermissionByMenuCode(
+                  'resource_manage',
+                  'resource_manage_delete',
+                ) || record.source === ResourceSourceEnum.SystemBuiltIn
               }
               onClick={() => handleDeleteConfirm(record)}
             >
@@ -926,12 +947,18 @@ const PermissionResources: React.FC = () => {
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>权限资源管理</h1>
         <Tooltip
-          title={!hasPermission('resource_manage_add') ? '无此资源权限' : ''}
+          title={
+            !hasPermissionByMenuCode('resource_manage', 'resource_manage_add')
+              ? '无此资源权限'
+              : ''
+          }
         >
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('resource_manage_add')}
+            disabled={
+              !hasPermissionByMenuCode('resource_manage', 'resource_manage_add')
+            }
             onClick={handleAdd}
           >
             新增资源

@@ -64,7 +64,7 @@ const MenuManage: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 根据条件查询菜单列表（树形结构）
   const {
@@ -835,12 +835,18 @@ const MenuManage: React.FC = () => {
       render: (_: null, record: MenuNodeInfo) => (
         <Space size={0}>
           <Tooltip
-            title={!hasPermission('menu_manage_add') ? '无此资源权限' : ''}
+            title={
+              !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
+                ? '无此资源权限'
+                : ''
+            }
           >
             <Button
               type="link"
               size="small"
-              disabled={!hasPermission('menu_manage_add')}
+              disabled={
+                !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
+              }
               onClick={() => handleAddChild(record)}
             >
               新增
@@ -852,7 +858,7 @@ const MenuManage: React.FC = () => {
             title={
               record.source === MenuSourceEnum.SystemBuiltIn
                 ? '系统内置的菜单不能编辑'
-                : !hasPermission('menu_manage_modify')
+                : !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
                 ? '无此资源权限'
                 : ''
             }
@@ -862,7 +868,7 @@ const MenuManage: React.FC = () => {
               size="small"
               disabled={
                 record.source === MenuSourceEnum.SystemBuiltIn ||
-                !hasPermission('menu_manage_modify')
+                !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
               }
               onClick={() => handleEdit(record)}
             >
@@ -874,7 +880,7 @@ const MenuManage: React.FC = () => {
             title={
               record.source === MenuSourceEnum.SystemBuiltIn
                 ? '系统内置的菜单不能删除'
-                : !hasPermission('menu_manage_delete')
+                : !hasPermissionByMenuCode('menu_manage', 'menu_manage_delete')
                 ? '无此资源权限'
                 : ''
             }
@@ -884,7 +890,7 @@ const MenuManage: React.FC = () => {
               size="small"
               disabled={
                 record.source === MenuSourceEnum.SystemBuiltIn ||
-                !hasPermission('menu_manage_delete')
+                !hasPermissionByMenuCode('menu_manage', 'menu_manage_delete')
               }
               onClick={() => handleDeleteConfirm(record)}
             >
@@ -902,12 +908,18 @@ const MenuManage: React.FC = () => {
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>菜单管理</h1>
         <Tooltip
-          title={!hasPermission('menu_manage_add') ? '无此资源权限' : ''}
+          title={
+            !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
+              ? '无此资源权限'
+              : ''
+          }
         >
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('menu_manage_add')}
+            disabled={
+              !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
+            }
             onClick={handleAdd}
           >
             新增菜单

@@ -122,7 +122,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
    */
   const handleConfirm = debounce(() => {
     if (fileList.length === 0) {
-      message.error('请上传文件');
+      message.warning('请上传文件');
       return;
     }
 
@@ -157,7 +157,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       if (!result.success) {
         // 导出失败，显示错误信息
         const errorMessage = result.error?.message || '导出失败';
-        message.error(errorMessage);
+        message.warning(errorMessage);
         return;
       }
 
