@@ -737,6 +737,14 @@ const AppDev: React.FC = () => {
       // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await exportProject(projectId);
 
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        return;
+      }
+
       // 从响应头中获取文件名
       const contentDisposition = result.headers?.['content-disposition'];
       let filename = `project-${projectId}.zip`;

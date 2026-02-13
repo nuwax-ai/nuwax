@@ -7,6 +7,10 @@ import type {
   RestartPodResponse,
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
 import { request } from 'umi';
 
 // 查询文件列表
@@ -85,22 +89,12 @@ export async function apiUploadFiles(
 }
 
 // 下载全部文件
-export async function apiDownloadAllFiles(cId: number): Promise<{
-  data: Blob;
-  headers: {
-    'content-disposition': string;
-    'content-length': string;
-    'content-type': string;
-  };
-}> {
-  return request(`/api/computer/static/download-all-files`, {
-    method: 'GET',
-    responseType: 'blob', // 指定响应类型为blob
-    getResponse: true, // 获取完整响应对象
-    params: {
-      cId,
-    },
-  });
+export async function apiDownloadAllFiles(
+  cId: number,
+): Promise<ExportFileBlobResponse> {
+  return apiExportFileBlob(
+    `/api/computer/static/download-all-files?cId=${cId}`,
+  );
 }
 
 // 启动容器

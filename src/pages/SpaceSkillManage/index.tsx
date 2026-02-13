@@ -149,8 +149,6 @@ const SpaceSkillManage: React.FC = () => {
         // 导出整个项目压缩包
         exportWholeProjectZip(result, filename);
         message.success('导出成功！');
-      } else {
-        message.error('导出数据异常，请重试');
       }
     } catch (error) {
       console.error('导出项目失败:', error);
