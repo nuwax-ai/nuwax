@@ -1093,26 +1093,12 @@ const Chat: React.FC = () => {
             const sandboxServerId = conversationInfo?.sandboxServerId;
             const hasPermission = effectiveAgent?.hasPermission !== false;
 
-            // 检查 sandboxServerId 是否在可选列表中
-            const isSandboxInList =
-              sandboxServerId !== undefined &&
-              sandboxServerId !== null &&
-              sandboxes.some(
-                (s) => String(s.sandboxId) === String(sandboxServerId),
-              );
-
             // 计算蒙层可见性与文案
             let maskVisible = !hasPermission;
-            let maskText = '无智能体使用权限';
+            let maskText = '您无该智能体权限';
 
-            if (
-              hasPermission &&
-              sandboxServerId !== undefined &&
-              sandboxServerId !== null &&
-              !isSandboxInList
-            ) {
+            if (!hasPermission) {
               maskVisible = true;
-              maskText = '无智能体使用权限';
             }
 
             // 计算最终选中的沙盒ID

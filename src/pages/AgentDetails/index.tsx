@@ -480,26 +480,13 @@ const AgentDetails: React.FC = () => {
               sandboxId === '' ||
               sandboxId === 0;
 
-            // 检查 sandboxId 是否在可选列表中
-            const isInList =
-              !isSandboxEmpty &&
-              sandboxes.some((s) => String(s.sandboxId) === String(sandboxId));
-
             let maskVisible = false;
-            let maskText = '无智能体使用权限';
+            let maskText = '您无该智能体权限';
 
             if (!hasDetailPermission) {
               maskVisible = true;
-              maskText = '无智能体使用权限';
-            } else if (!isSandboxEmpty) {
-              if (!isInList) {
-                // 如果 sandboxId 不为空且列表中不存在，且有权限，则显示电脑不可用
-                maskVisible = true;
-                maskText = '会话关联的智能体电脑不可用';
-              } else {
-                // sandboxId 在列表中，蒙层不显示
-                maskVisible = false;
-              }
+            } else {
+              maskVisible = false;
             }
 
             // 计算电脑选择器的值
