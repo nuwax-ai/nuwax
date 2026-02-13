@@ -675,6 +675,8 @@ const AppDev: React.FC = () => {
           centered: true,
         });
         projectInfo.refreshProjectInfo();
+      } else {
+        message.error(result.message || '发布失败');
       }
     } catch (error) {
       // request请求中设置了skipErrorHandler: true, 跳过了错误处理
@@ -760,7 +762,7 @@ const AppDev: React.FC = () => {
       }
 
       // 创建下载链接
-      const blob = new Blob([result.data], { type: 'application/zip' });
+      const blob = new Blob([result.data || ''], { type: 'application/zip' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
