@@ -324,14 +324,22 @@ const RoleManage: React.FC = () => {
       width: 100,
       fixed: 'right',
       render: (status: RoleStatusEnum, record: RoleInfo) => (
-        <Switch
-          disabled={record.source === RoleSourceEnum.SystemBuiltIn}
-          checked={status === RoleStatusEnum.Enabled}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
-          loading={updateStatusLoadingMap[record.id] || false}
-          onChange={(checked) => handleUpdateStatus(record, checked)}
-        />
+        <Tooltip
+          title={
+            record.source === RoleSourceEnum.SystemBuiltIn
+              ? '系统内置的角色不能修改状态'
+              : ''
+          }
+        >
+          <Switch
+            disabled={record.source === RoleSourceEnum.SystemBuiltIn}
+            checked={status === RoleStatusEnum.Enabled}
+            checkedChildren="启用"
+            unCheckedChildren="禁用"
+            loading={updateStatusLoadingMap[record.id] || false}
+            onChange={(checked) => handleUpdateStatus(record, checked)}
+          />
+        </Tooltip>
       ),
     },
     {
