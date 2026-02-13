@@ -19,7 +19,6 @@ import { Button } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -32,8 +31,8 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 }) => {
   // 更多操作列表
   const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
-  // 权限检查
-  const { hasPermission: hasPermissionMenu } = useModel('menuModel');
+  // // 权限检查
+  // const { hasPermission: hasPermissionMenu } = useModel('menuModel');
 
   // 组件默认信息
   const info = useMemo(() => {
@@ -58,23 +57,23 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       );
     });
 
-    // 根据菜单权限，过滤更多操作
-    const menuList = list.map((item) => {
-      switch (item.action) {
-        // 导出配置
-        case ApplicationMoreActionEnum.Export_Config: {
-          const isHasPermission = hasPermissionMenu('component_lib_export');
-          return {
-            ...item,
-            disabled: !isHasPermission,
-            tooltip: isHasPermission ? '' : '无此资源权限',
-          };
-        }
-        default:
-          return item;
-      }
-    });
-    setActionList(menuList);
+    // // 根据菜单权限，过滤更多操作
+    // const menuList = list.map((item) => {
+    //   switch (item.action) {
+    //     // 导出配置
+    //     case ApplicationMoreActionEnum.Export_Config: {
+    //       const isHasPermission = hasPermissionMenu('component_lib_export');
+    //       return {
+    //         ...item,
+    //         disabled: !isHasPermission,
+    //         tooltip: isHasPermission ? '' : '无此资源权限',
+    //       };
+    //     }
+    //     default:
+    //       return item;
+    //   }
+    // });
+    setActionList(list);
   }, [componentInfo]);
 
   return (

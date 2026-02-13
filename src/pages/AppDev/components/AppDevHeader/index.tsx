@@ -15,7 +15,6 @@ import { Avatar, Button, Popover, Space, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { useModel } from 'umi';
 import { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
@@ -64,8 +63,8 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   // 获取项目名称，优先使用接口数据
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
 
-  // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  // // 权限检查
+  // const { hasPermission } = useModel('menuModel');
 
   // 获取项目图标，优先使用接口数据，为空时使用默认图标
   const projectIcon = projectInfo?.icon;
@@ -200,22 +199,20 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           </Tooltip>
         </ConditionRender>
         {/*添加资源*/}
-        {hasPermission('page_app_publish') ? (
-          <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
-            <div
-              className={cx('flex', 'items-center', styles['action-buttons'])}
+        {/* {hasPermission('page_app_publish') ? ( */}
+        <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
+          <div className={cx('flex', 'items-center', styles['action-buttons'])}>
+            <Button
+              type="primary"
+              loading={isDeploying}
+              className={cx(styles.deployButton)}
+              disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮
             >
-              <Button
-                type="primary"
-                loading={isDeploying}
-                className={cx(styles.deployButton)}
-                disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮
-              >
-                {isDeploying ? '发布中...' : '发布'}
-              </Button>
-            </div>
-          </CustomPopover>
-        ) : (
+              {isDeploying ? '发布中...' : '发布'}
+            </Button>
+          </div>
+        </CustomPopover>
+        {/* ) : (
           <div className={cx('flex', 'items-center', styles['action-buttons'])}>
             <Button
               type="primary"
@@ -226,7 +223,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
               {isDeploying ? '发布中...' : '发布'}
             </Button>
           </div>
-        )}
+        )} */}
       </div>
     </header>
   );
