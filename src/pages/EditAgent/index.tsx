@@ -762,6 +762,14 @@ const EditAgent: React.FC = () => {
 
     try {
       const result = await apiDownloadAllFiles(devConversationId);
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        messageAntd.error(errorMessage);
+        return;
+      }
+
       const filename = `agent-${agentId}-${devConversationId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);

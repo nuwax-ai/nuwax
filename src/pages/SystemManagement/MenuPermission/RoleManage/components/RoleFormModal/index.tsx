@@ -179,7 +179,11 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item label="来源" name="source">
-              <Select placeholder="请选择来源" options={ROLE_SOURCE_OPTIONS} />
+              <Select
+                placeholder="请选择来源"
+                disabled
+                options={ROLE_SOURCE_OPTIONS}
+              />
             </Form.Item>
           </Col>
 

@@ -149,10 +149,19 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
     setFileList([]);
     onCancel();
   };
+
   const handleDownloadQaTemplate = async () => {
-    console.log('下载QA批量excel模板');
     try {
-      const blob = await apiKnowledgeQaDownloadTemplate();
+      const result = await apiKnowledgeQaDownloadTemplate();
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        return;
+      }
+
+      const blob = new Blob([result?.data || '']);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

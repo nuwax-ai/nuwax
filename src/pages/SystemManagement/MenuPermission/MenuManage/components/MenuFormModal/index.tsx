@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
+import type { FileType } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -13,6 +14,7 @@ import {
   Switch,
   Tree,
   TreeSelect,
+  Upload,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -397,6 +399,23 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   };
 
+  const beforeUploadDefault = (file: FileType) => {
+    const { type, size } = file;
+    const isJpgOrPng =
+      type === 'image/jpeg' ||
+      type === 'image/jpg' ||
+      type === 'image/png' ||
+      type === 'image/svg+xml';
+    if (!isJpgOrPng) {
+      message.error('请上传 JPG、JPEG、PNG、SVG 类型图片文件!');
+    }
+    const isLt2M = size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('图片大小不能超过2MB!');
+    }
+    return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -423,6 +442,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             svgIconName="icons-workspace-agent"
+            beforeUpload={beforeUploadDefault}
           />
         </Form.Item>
         <Row gutter={16}>
@@ -516,7 +536,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item label="来源" name="source">
-              <Select placeholder="请选择来源" options={MENU_SOURCE_OPTIONS} />
+              <Select
+                disabled
+                placeholder="请选择来源"
+                options={MENU_SOURCE_OPTIONS}
+              />
             </Form.Item>
           </Col>
 

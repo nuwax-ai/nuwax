@@ -9,10 +9,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { TableColumnsType } from 'antd';
-import { Button, Empty, message, Space, Spin, Switch, Table, Tag } from 'antd';
+import {
+  Button,
+  Empty,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteResource,
@@ -56,6 +66,9 @@ const PermissionResources: React.FC = () => {
 
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
+  // 权限检查
+  const { hasPermission } = useModel('menuModel');
 
   // 根据条件查询权限资源列表（树形结构）
   const {
@@ -809,19 +822,30 @@ const PermissionResources: React.FC = () => {
       width: 100,
       fixed: 'right',
       render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
-        <Switch
-          checked={status === ResourceEnabledEnum.Enabled}
-          loading={updateVisibleLoadingMap[record.id] || false}
-          onChange={(checked) => {
-            const newStatus = checked
-              ? ResourceEnabledEnum.Enabled
-              : ResourceEnabledEnum.Disabled;
-            handleUpdateVisible({
-              id: record.id,
-              status: newStatus,
-            });
-          }}
-        />
+        <Tooltip
+          title={
+            record.source === ResourceSourceEnum.SystemBuiltIn
+              ? '系统内置资源不能禁用'
+              : ''
+          }
+        >
+          <Switch
+            checked={status === ResourceEnabledEnum.Enabled}
+            disabled={record.source === ResourceSourceEnum.SystemBuiltIn}
+            loading={updateVisibleLoadingMap[record.id] || false}
+            checkedChildren="启用"
+            unCheckedChildren="禁用"
+            onChange={(checked) => {
+              const newStatus = checked
+                ? ResourceEnabledEnum.Enabled
+                : ResourceEnabledEnum.Disabled;
+              handleUpdateVisible({
+                id: record.id,
+                status: newStatus,
+              });
+            }}
+          />
+        </Tooltip>
       ),
     },
     {
@@ -833,24 +857,64 @@ const PermissionResources: React.FC = () => {
       render: (_: null, record: ResourceTreeNode) => (
         <Space size={0}>
           {record.type !== ResourceTypeEnum.Component && (
+            <Tooltip
+              title={
+                !hasPermission('resource_manage_add') ? '无此资源权限' : ''
+              }
+            >
+              <Button
+                type="link"
+                size="small"
+                disabled={!hasPermission('resource_manage_add')}
+                onClick={() => handleAddChild(record)}
+              >
+                新增
+              </Button>
+            </Tooltip>
+          )}
+          {/* 系统内置的资源不能编辑和删除 */}
+          <Tooltip
+            title={
+              record.source === ResourceSourceEnum.SystemBuiltIn
+                ? '系统内置的资源不能编辑'
+                : !hasPermission('resource_manage_modify')
+                ? '无此资源权限'
+                : ''
+            }
+          >
             <Button
               type="link"
               size="small"
-              onClick={() => handleAddChild(record)}
+              disabled={
+                record.source === ResourceSourceEnum.SystemBuiltIn ||
+                !hasPermission('resource_manage_modify')
+              }
+              onClick={() => handleEdit(record)}
             >
-              新增
+              编辑
             </Button>
-          )}
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleDeleteConfirm(record)}
+          </Tooltip>
+          <Tooltip
+            title={
+              record.source === ResourceSourceEnum.SystemBuiltIn
+                ? '系统内置的资源不能删除'
+                : !hasPermission('resource_manage_delete')
+                ? '无此资源权限'
+                : ''
+            }
           >
-            删除
-          </Button>
+            <Button
+              type="link"
+              size="small"
+              disabled={
+                !hasPermission('resource_manage_delete') ||
+                record.source === ResourceSourceEnum.SystemBuiltIn
+              }
+              onClick={() => handleDeleteConfirm(record)}
+            >
+              删除
+            </Button>
+          </Tooltip>
         </Space>
       ),
     },
@@ -861,9 +925,18 @@ const PermissionResources: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>权限资源管理</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增资源
-        </Button>
+        <Tooltip
+          title={!hasPermission('resource_manage_add') ? '无此资源权限' : ''}
+        >
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!hasPermission('resource_manage_add')}
+            onClick={handleAdd}
+          >
+            新增资源
+          </Button>
+        </Tooltip>
       </div>
 
       {/* 资源列表 */}
