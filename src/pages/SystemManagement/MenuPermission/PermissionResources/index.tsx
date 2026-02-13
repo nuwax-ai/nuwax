@@ -822,19 +822,30 @@ const PermissionResources: React.FC = () => {
       width: 100,
       fixed: 'right',
       render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
-        <Switch
-          checked={status === ResourceEnabledEnum.Enabled}
-          loading={updateVisibleLoadingMap[record.id] || false}
-          onChange={(checked) => {
-            const newStatus = checked
-              ? ResourceEnabledEnum.Enabled
-              : ResourceEnabledEnum.Disabled;
-            handleUpdateVisible({
-              id: record.id,
-              status: newStatus,
-            });
-          }}
-        />
+        <Tooltip
+          title={
+            record.source === ResourceSourceEnum.SystemBuiltIn
+              ? '系统内置资源不能禁用'
+              : ''
+          }
+        >
+          <Switch
+            checked={status === ResourceEnabledEnum.Enabled}
+            disabled={record.source === ResourceSourceEnum.SystemBuiltIn}
+            loading={updateVisibleLoadingMap[record.id] || false}
+            checkedChildren="启用"
+            unCheckedChildren="禁用"
+            onChange={(checked) => {
+              const newStatus = checked
+                ? ResourceEnabledEnum.Enabled
+                : ResourceEnabledEnum.Disabled;
+              handleUpdateVisible({
+                id: record.id,
+                status: newStatus,
+              });
+            }}
+          />
+        </Tooltip>
       ),
     },
     {

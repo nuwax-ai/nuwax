@@ -348,7 +348,7 @@ const UserGroupManage: React.FC = () => {
         <Tooltip
           title={
             record.source === UserGroupSourceEnum.SystemBuiltIn
-              ? '系统内置的用户组不能修改状态'
+              ? '系统内置的用户组不能禁用'
               : ''
           }
         >

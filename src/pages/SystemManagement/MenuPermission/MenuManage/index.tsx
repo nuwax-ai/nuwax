@@ -808,9 +808,12 @@ const MenuManage: React.FC = () => {
       width: 100,
       fixed: 'right',
       render: (status: MenuEnabledEnum, record: MenuNodeInfo) => (
+        // 针对菜单，系统内置的菜单是可以禁用的
         <Switch
           checked={status === MenuEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
+          checkedChildren="启用"
+          unCheckedChildren="禁用"
           onChange={(checked) => {
             const newStatus = checked
               ? MenuEnabledEnum.Enabled

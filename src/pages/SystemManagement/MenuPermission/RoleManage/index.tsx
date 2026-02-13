@@ -327,7 +327,7 @@ const RoleManage: React.FC = () => {
         <Tooltip
           title={
             record.source === RoleSourceEnum.SystemBuiltIn
-              ? '系统内置的角色不能修改状态'
+              ? '系统内置的角色不能禁用'
               : ''
           }
         >
