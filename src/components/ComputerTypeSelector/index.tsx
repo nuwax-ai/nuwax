@@ -24,7 +24,7 @@ const cx = classNames.bind(styles);
  */
 const NO_COMPUTER_OPTION: ComputerOption = {
   id: '',
-  name: '无可选电脑',
+  name: '无可用电脑',
   description: '',
 };
 
@@ -170,6 +170,12 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     if (unavailable) {
       return UNAVAILABLE_OPTION;
     }
+
+    // 优先检查列表是否为空：如果已初始化且列表为空，直接显示无可用电脑
+    if (isFullyInitialized && effectiveComputerList.length === 0) {
+      return NO_COMPUTER_OPTION;
+    }
+
     // 查找选中的电脑
     if (value) {
       const found = effectiveComputerList.find(
@@ -185,9 +191,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
     // 如果已初始化且找不到，说明列表为空或选中的电脑不在列表中
     if (isFullyInitialized) {
-      if (effectiveComputerList.length === 0) {
-        return NO_COMPUTER_OPTION;
-      }
+      // 列表为空的情况上面已经处理过了
+
       // 如果是固定选择，且没找到（前面已经处理过），这里应该是不可达或者默认
       // 但为了安全起见，如果是固定选择，不应该fallback到第一个
       if (fixedSelection) {
@@ -296,13 +301,14 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   }, [loading, effectiveComputerList, isFullyInitialized, handleSelect, value]);
 
   // 计算是否真正禁用
-  const isDisabled = disabled || fixedSelection || unavailable;
+  const isDisabled =
+    disabled ||
+    fixedSelection ||
+    unavailable ||
+    effectiveComputerList.length === 0;
 
-  if (
-    selectedOption === NO_COMPUTER_OPTION ||
-    selectedOption === UNAVAILABLE_OPTION
-  ) {
-    // 如果没有电脑或电脑不可用，不显示选择器
+  if (selectedOption === UNAVAILABLE_OPTION) {
+    // 如果电脑不可用，不显示选择器
     return null;
   }
 
