@@ -1,3 +1,5 @@
+import CustomPopover from '@/components/CustomPopover';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
   EllipsisOutlined,
@@ -12,10 +14,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { MenuProps, TableColumnsType } from 'antd';
+import type { TableColumnsType } from 'antd';
 import {
   Button,
-  Dropdown,
   Empty,
   message,
   Space,
@@ -26,7 +27,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
 import { DragHandle, Row } from '../components/DraggableTableRow';
@@ -81,6 +82,9 @@ const RoleManage: React.FC = () => {
 
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
+
+  // 权限检查
+  const { hasPermission } = useModel('menuModel');
 
   // 查询角色列表
   const {
@@ -320,14 +324,22 @@ const RoleManage: React.FC = () => {
       width: 100,
       fixed: 'right',
       render: (status: RoleStatusEnum, record: RoleInfo) => (
-        <Switch
-          disabled={record.source === RoleSourceEnum.SystemBuiltIn}
-          checked={status === RoleStatusEnum.Enabled}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
-          loading={updateStatusLoadingMap[record.id] || false}
-          onChange={(checked) => handleUpdateStatus(record, checked)}
-        />
+        <Tooltip
+          title={
+            record.source === RoleSourceEnum.SystemBuiltIn
+              ? '系统内置的角色不能禁用'
+              : ''
+          }
+        >
+          <Switch
+            disabled={record.source === RoleSourceEnum.SystemBuiltIn}
+            checked={status === RoleStatusEnum.Enabled}
+            checkedChildren="启用"
+            unCheckedChildren="禁用"
+            loading={updateStatusLoadingMap[record.id] || false}
+            onChange={(checked) => handleUpdateStatus(record, checked)}
+          />
+        </Tooltip>
       ),
     },
     {
@@ -337,55 +349,105 @@ const RoleManage: React.FC = () => {
       width: 260,
       fixed: 'right',
       render: (_: null, record: RoleInfo) => {
-        // 下拉菜单项
-        const menuItems: MenuProps['items'] = [
+        // 判断是否为系统内置角色
+        const isSystemBuiltIn = record.source === RoleSourceEnum.SystemBuiltIn;
+
+        // 编辑权限检查
+        const canEdit = hasPermission('role_manage_modify') && !isSystemBuiltIn;
+        const editTooltip = isSystemBuiltIn
+          ? '系统内置的角色不能编辑'
+          : !hasPermission('role_manage_modify')
+          ? '无此资源权限'
+          : '';
+
+        // 删除权限检查
+        const canDelete =
+          hasPermission('role_manage_delete') && !isSystemBuiltIn;
+        const deleteTooltip = isSystemBuiltIn
+          ? '系统内置的角色不能删除'
+          : !hasPermission('role_manage_delete')
+          ? '无此资源权限'
+          : '';
+
+        // 构建更多操作菜单项
+        const moreActionList: CustomPopoverItem[] = [
           {
             key: 'edit',
             label: '编辑',
-            onClick: () => handleEdit(record),
+            disabled: !canEdit,
+            tooltip: editTooltip,
           },
           {
             key: 'delete',
             label: '删除',
-            onClick: () => handleDeleteConfirm(record),
+            disabled: !canDelete,
+            tooltip: deleteTooltip,
+            isDel: true,
           },
         ];
 
+        // 处理更多操作点击
+        const handleMoreActionClick = (item: CustomPopoverItem) => {
+          if (item.disabled) {
+            return;
+          }
+          if (item.key === 'edit') {
+            handleEdit(record);
+          } else if (item.key === 'delete') {
+            handleDeleteConfirm(record);
+          }
+        };
+
         return (
           <Space size={0}>
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleBindUser(record)}
-            >
-              绑定用户
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleMenuPermission(record)}
-            >
-              菜单权限
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleDataPermission(record)}
-            >
-              数据权限
-            </Button>
-            <Dropdown
-              menu={{ items: menuItems }}
-              trigger={['hover']}
-              placement="bottomRight"
+            <Tooltip
+              title={
+                !hasPermission('role_manage_bind_user') ? '无此资源权限' : ''
+              }
             >
               <Button
                 type="link"
                 size="small"
-                icon={<EllipsisOutlined />}
-                style={{ padding: '0 4px' }}
-              />
-            </Dropdown>
+                disabled={!hasPermission('role_manage_bind_user')}
+                onClick={() => handleBindUser(record)}
+              >
+                绑定用户
+              </Button>
+            </Tooltip>
+            <Tooltip
+              title={
+                !hasPermission('role_manage_bind_menu') ? '无此资源权限' : ''
+              }
+            >
+              <Button
+                type="link"
+                size="small"
+                disabled={!hasPermission('role_manage_bind_menu')}
+                onClick={() => handleMenuPermission(record)}
+              >
+                菜单权限
+              </Button>
+            </Tooltip>
+            <Tooltip
+              title={
+                !hasPermission('role_manage_bind_data') ? '无此资源权限' : ''
+              }
+            >
+              <Button
+                type="link"
+                size="small"
+                disabled={!hasPermission('role_manage_bind_data')}
+                onClick={() => handleDataPermission(record)}
+              >
+                数据权限
+              </Button>
+            </Tooltip>
+            <CustomPopover
+              list={moreActionList}
+              onClick={handleMoreActionClick}
+            >
+              <Button type="link" size="small" icon={<EllipsisOutlined />} />
+            </CustomPopover>
           </Space>
         );
       },
@@ -397,9 +459,18 @@ const RoleManage: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>角色管理</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增角色
-        </Button>
+        <Tooltip
+          title={!hasPermission('role_manage_add') ? '无此资源权限' : ''}
+        >
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!hasPermission('role_manage_add')}
+            onClick={handleAdd}
+          >
+            新增角色
+          </Button>
+        </Tooltip>
       </div>
 
       {/* 角色列表 */}

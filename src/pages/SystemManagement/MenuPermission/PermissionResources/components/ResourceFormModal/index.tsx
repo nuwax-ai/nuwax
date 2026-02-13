@@ -354,6 +354,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           <Col span={12}>
             <Form.Item label="来源" name="source">
               <Select
+                disabled
                 placeholder="请选择来源"
                 options={RESOURCE_SOURCE_OPTIONS}
               />
