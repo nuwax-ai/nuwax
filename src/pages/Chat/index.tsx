@@ -104,6 +104,14 @@ const Chat: React.FC = () => {
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+  // 仅在从智能体详情页点击"会话"传参进入时，锁定电脑选择
+  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(() => {
+    return history.action === 'PUSH' && !!location.state?.selectedComputerId;
+  });
+
+  // 记录用户是否已发送消息（用于锁定电脑选择）
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+
   // 智能体详情页面带过来的值仅在本次会话使用，当用户刷新页面或点击小刷子新建会话，就不能作为其他判断条件使用。
   // 因此，只有在 history action 为 PUSH 且 state 中有值时才设置
   const [selectedComputerId, setSelectedComputerId] = useState<string>(() => {
@@ -119,14 +127,15 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     const passedDetails = location.state?.selectedComputerId;
-    console.log('PUSH', passedDetails);
     // PUSH: 正常跳转 (AgentDetails -> Chat)
     // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
     // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
     if (history.action === 'PUSH' && passedDetails) {
       setSelectedComputerId(passedDetails);
+      setIsSelectionLocked(true);
     } else {
       setSelectedComputerId('');
+      setIsSelectionLocked(false);
     }
   }, [location.key]);
 
@@ -208,22 +217,28 @@ const Chat: React.FC = () => {
 
   // 获取有效的沙箱ID
   const getEffectiveSandboxId = (info: any = conversationInfo) => {
-    const sandboxServerId = info?.sandboxServerId;
+    // 优先级 1: 个人电脑 (sandboxId)
+    if (effectiveAgent?.sandboxId) {
+      return effectiveAgent.sandboxId;
+    }
 
+    // 优先级 2: 共享电脑 (sandboxServerId)
+    const sandboxServerId = info?.sandboxServerId;
     if (sandboxServerId) {
       return String(sandboxServerId);
     }
 
-    // 优先使用 state 中的值，若状态未更新且为 PUSH 跳转，则尝试从 location.state 获取
-    if (
-      !selectedComputerId &&
-      history.action === 'PUSH' &&
-      location.state?.selectedComputerId
-    ) {
+    // 优先级 3: 手动选择 (selectedComputerId)
+    if (selectedComputerId) {
+      return selectedComputerId;
+    }
+
+    // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
+    if (history.action === 'PUSH' && location.state?.selectedComputerId) {
       return location.state.selectedComputerId;
     }
 
-    return selectedComputerId;
+    return '';
   };
 
   // 页面预览相关状态
@@ -532,6 +547,9 @@ const Chat: React.FC = () => {
     clearFilePanelInfo();
     form.resetFields();
     setVariableParams(null);
+    setSelectedComputerId(''); // 显式重置选中电脑ID
+    setIsSelectionLocked(false); // 显式解除锁定
+    setHasUserSentMessage(false); // 重置发送状态
     setIsLoadingOtherInterface(true);
 
     try {
@@ -555,6 +573,7 @@ const Chat: React.FC = () => {
           infos,
           defaultAgentDetail: effectiveAgent || defaultAgentDetail,
           firstVariableParams: null,
+          selectedComputerId: null, // 显式清除 location.state 中的 selectedComputerId
         });
       } else {
         throw new Error(res.message || '创建会话失败');
@@ -577,6 +596,9 @@ const Chat: React.FC = () => {
       // message.warning('请填写必填参数'); // This line was removed as per the edit hint
       return;
     }
+
+    // 标记用户已发送消息
+    setHasUserSentMessage(true);
 
     isSendMessageRef.current = true;
     const effectiveSandboxId = getEffectiveSandboxId();
@@ -1113,7 +1135,12 @@ const Chat: React.FC = () => {
                 }
                 hasPermission={!maskVisible}
                 maskText={maskText}
-                fixedSelection={!!sandboxId || !!sandboxServerId}
+                fixedSelection={
+                  !!sandboxId ||
+                  !!sandboxServerId ||
+                  isSelectionLocked ||
+                  hasUserSentMessage
+                }
                 isPersonalComputer={!!sandboxId}
               />
             );
