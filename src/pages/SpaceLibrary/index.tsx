@@ -324,6 +324,10 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
     setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
