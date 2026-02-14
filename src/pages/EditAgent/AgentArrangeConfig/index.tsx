@@ -1007,36 +1007,42 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 界面配置列表
   const PageConfigList: CollapseProps['items'] = [
-    {
-      key: AgentArrangeConfigEnum.Hide_Remote_Desktop,
-      label: '隐藏远程桌面',
-      children: (
-        <p className={cx(styles.text)}>
-          {agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
-            ? '在智能体对话框右侧隐藏远程桌面'
-            : '在智能体对话框右侧显示远程桌面'}
-        </p>
-      ),
-      extra: (
-        <Switch
-          // 阻止冒泡事件
-          value={agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes}
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value) =>
-            onChangeAgent(
-              value ? HideDesktopEnum.Yes : HideDesktopEnum.No,
-              'hideDesktop',
-            )
-          }
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    // 任务型智能体 才显示 隐藏远程桌面 按钮
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Hide_Remote_Desktop,
+            label: '隐藏远程桌面',
+            children: (
+              <p className={cx(styles.text)}>
+                {agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+                  ? '在智能体对话框右侧隐藏远程桌面'
+                  : '在智能体对话框右侧显示远程桌面'}
+              </p>
+            ),
+            extra: (
+              <Switch
+                // 阻止冒泡事件
+                value={agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes}
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? HideDesktopEnum.Yes : HideDesktopEnum.No,
+                    'hideDesktop',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
