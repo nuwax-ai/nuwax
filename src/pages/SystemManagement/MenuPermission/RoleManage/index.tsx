@@ -479,14 +479,17 @@ const RoleManage: React.FC = () => {
       title="角色管理"
       hideScroll
       rightSlot={[
-        <Button
-          key="query"
-          icon={<ReloadOutlined />}
-          onClick={() => runGetRoleList()}
-          loading={loading}
-        >
-          查询
-        </Button>,
+        hasPermissionByMenuCode('role_manage', 'role_manage_query') && (
+          <Button
+            key="query"
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={() => runGetRoleList()}
+            loading={loading}
+          >
+            查询
+          </Button>
+        ),
         hasPermissionByMenuCode('role_manage', 'role_manage_add') && (
           <Button
             key="add"

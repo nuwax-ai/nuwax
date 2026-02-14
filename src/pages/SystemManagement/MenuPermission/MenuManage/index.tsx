@@ -901,14 +901,17 @@ const MenuManage: React.FC = () => {
       title="菜单管理"
       hideScroll
       rightSlot={[
-        <Button
-          key="query"
-          icon={<ReloadOutlined />}
-          onClick={() => runGetMenuList()}
-          loading={loading}
-        >
-          查询
-        </Button>,
+        hasPermissionByMenuCode('menu_manage', 'menu_manage_query') && (
+          <Button
+            key="query"
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={() => runGetMenuList()}
+            loading={loading}
+          >
+            查询
+          </Button>
+        ),
         hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
           <Button
             key="add"

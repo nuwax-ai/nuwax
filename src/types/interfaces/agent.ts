@@ -56,6 +56,8 @@ export interface AgentInfo extends AgentBaseInfo {
   created: string;
   // 智能体ID
   agentId: number;
+  // 最后一次会话ID
+  lastConversationId?: number;
   spaceId: number;
   // ChatBot、PageApp
   agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
