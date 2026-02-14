@@ -267,7 +267,7 @@ const AgentModelSetting: React.FC<
   const handleCancel = () => {
     // 更新智能体 - 绑定的模型名称
     const info = modelConfigList?.find((item) => item.value === targetId);
-    const name = String(info?.label) || '';
+    const name = info?.label ? String(info?.label) : '';
     onCancel(targetId, name, {
       ...componentBindConfig,
       // agentEngine,
