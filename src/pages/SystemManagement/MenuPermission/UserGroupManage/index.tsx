@@ -520,14 +520,20 @@ const UserGroupManage: React.FC = () => {
       title="用户组管理"
       hideScroll
       rightSlot={[
-        <Button
-          key="query"
-          icon={<ReloadOutlined />}
-          onClick={() => runGetUserGroupList()}
-          loading={loading}
-        >
-          查询
-        </Button>,
+        hasPermissionByMenuCode(
+          'user_group_manage',
+          'user_group_manage_query',
+        ) && (
+          <Button
+            key="query"
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={() => runGetUserGroupList()}
+            loading={loading}
+          >
+            查询
+          </Button>
+        ),
         hasPermissionByMenuCode(
           'user_group_manage',
           'user_group_manage_add',
