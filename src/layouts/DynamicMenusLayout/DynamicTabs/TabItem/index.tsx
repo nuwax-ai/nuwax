@@ -45,49 +45,47 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
         };
   }, [isStyle2]);
 
-  const RenderComponent: React.FC = () => {
-    return (
-      <div
-        onClick={onClick}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        className={cx(
-          'flex',
-          'flex-col',
-          'items-center',
-          'content-center',
-          'cursor-pointer',
-          styles.box,
-          { [styles.active]: active },
-        )}
-      >
-        <div className={cx(styles['active-box'])} style={navStyle}>
-          <div className={cx(styles['active-icon-container'])}>
-            {icon &&
-            (icon?.includes('.png') ||
-              icon?.includes('.jpg') ||
-              icon?.includes('.jpeg')) ? (
-              <img className={cx(styles['icon-image'])} src={icon} />
-            ) : (
-              <SvgIcon name={icon || 'icons-nav-task-time'} />
-            )}
-          </div>
-          <span
-            className={cx(styles.text)}
-            style={{
-              display: isStyle2 ? 'block' : 'none',
-            }}
-          >
-            {text}
-          </span>
+  const content = (
+    <div
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={cx(
+        'flex',
+        'flex-col',
+        'items-center',
+        'content-center',
+        'cursor-pointer',
+        styles.box,
+        { [styles.active]: active },
+      )}
+    >
+      <div className={cx(styles['active-box'])} style={navStyle}>
+        <div className={cx(styles['active-icon-container'])}>
+          {icon &&
+          (icon?.includes('.png') ||
+            icon?.includes('.jpg') ||
+            icon?.includes('.jpeg')) ? (
+            <img className={cx(styles['icon-image'])} src={icon} />
+          ) : (
+            <SvgIcon name={icon || 'icons-nav-task-time'} />
+          )}
         </div>
+        <span
+          className={cx(styles.text)}
+          style={{
+            display: isStyle2 ? 'block' : 'none',
+          }}
+        >
+          {text}
+        </span>
       </div>
-    );
-  };
+    </div>
+  );
 
   // 当二级菜单收起时，不显示Tooltip，避免与悬浮菜单冲突
   if (isSecondMenuCollapsed || isStyle2) {
-    return <RenderComponent />;
+    return content;
   }
 
   // 二级菜单展开时，正常显示Tooltip
@@ -100,7 +98,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
         body: { color: '#000' },
       }}
     >
-      <RenderComponent />
+      {content}
     </Tooltip>
   );
 };
