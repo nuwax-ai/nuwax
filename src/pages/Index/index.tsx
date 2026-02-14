@@ -1,6 +1,7 @@
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
+import { OpenTypeEnum } from '../SystemManagement/MenuPermission/types/menu-manage';
 
 /*
   根据菜单树重定向到第一个有 path的菜单或它第一个有 path 的子菜单
@@ -31,16 +32,32 @@ const Index: React.FC = () => {
     return findFirstChildWithPath(firstChild);
   };
 
+  /**
+   * 打开URL
+   * @param path 路径
+   * @param openType 打开方式，默认应用内打开
+   */
+  const handleOpenUrl = (
+    path: string,
+    openType: OpenTypeEnum = OpenTypeEnum.CurrentTab,
+  ) => {
+    if (openType === OpenTypeEnum.NewTab) {
+      window.open(path, '_blank');
+      return;
+    }
+    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`);
+  };
+
   const handleMenuPath = (currentMenu: MenuItemDto) => {
     // 如果第一个菜单有 path，直接跳转
     if (currentMenu.path) {
       // http开头的路径，直接打开
       if (currentMenu.path.includes('http')) {
-        window.open(currentMenu.path, '_self');
-        return;
+        handleOpenUrl(currentMenu.path, currentMenu?.openType);
+      } else {
+        // 其他路径，跳转路由
+        history.replace(currentMenu.path);
       }
-      // 其他路径，跳转路由
-      history.replace(currentMenu.path);
       return;
     }
 
@@ -49,11 +66,11 @@ const Index: React.FC = () => {
     if (firstPathMenu?.path) {
       // http开头的路径，直接打开
       if (firstPathMenu.path.includes('http')) {
-        window.open(firstPathMenu.path, '_self');
-        return;
+        handleOpenUrl(firstPathMenu.path, firstPathMenu?.openType);
+      } else {
+        // 其他路径，跳转路由
+        history.replace(firstPathMenu.path);
       }
-      // 其他路径，跳转路由
-      history.replace(firstPathMenu.path);
     } else {
       console.log('第一级菜单以及其子菜单都没有设置path路径');
     }

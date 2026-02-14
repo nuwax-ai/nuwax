@@ -269,12 +269,17 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         firstLevelMenus,
         location.pathname,
       );
+
       if (firstLevelCode && firstLevelCode !== 'new_conversation') {
         setActiveTab(firstLevelCode);
       } else if (firstLevelCode === 'new_conversation') {
         handleNewConversation();
       } else {
-        setActiveTab(firstLevelMenus[0].code);
+        // 如果第一级菜单没有匹配到，则获取除新对话菜单外的第一个菜单
+        const filteredNewConversationFirstLevelMenus = firstLevelMenus.filter(
+          (menu: MenuItemDto) => menu.code !== 'new_conversation',
+        );
+        setActiveTab(filteredNewConversationFirstLevelMenus[0]?.code || '');
       }
     }
   }, [location.pathname, firstLevelMenus, handleNewConversation]);
@@ -349,12 +354,21 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       // 新对话,特殊处理，因为新对话时，不能选中新对话的菜单，需要跳转到下一个菜单
       if (menu.code === 'new_conversation') {
-        handlerClick();
+        // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
+        if (menu.path) {
+          if (menu.path.includes('http')) {
+            handleOpenUrl(menu.path, menu?.openType);
+          } else {
+            history.push(menu.path);
+          }
+        } else {
+          handlerClick();
 
-        setIsClickNewConversation(true);
+          setIsClickNewConversation(true);
 
-        // 新对话菜单特殊处理
-        handleNewConversation();
+          // 新对话菜单特殊处理
+          handleNewConversation();
+        }
         return;
       }
 

@@ -567,7 +567,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
           ? 0
           : level >= 4
           ? 3 * 16 + 10 // 第3级的缩进值：58
-          : level * 16 + 10;
+          : level * 16 + 11;
 
       // 个人空间时，不显示"成员与设置"(编码：member_setting) , 普通用户也不显示"成员与设置"
       if (

@@ -27,9 +27,9 @@ export enum MenuSourceEnum {
   UserDefined = 2, // 用户自定义
 }
 
-// 打开方式选项 打开方式 1:当前标签页打开 2:新标签页打开
+// 打开方式选项 打开方式 1:应用内打开 2:新标签页打开
 export enum OpenTypeEnum {
-  CurrentTab = 1, // 当前标签页打开
+  CurrentTab = 1, // 应用内打开
   NewTab = 2, // 新标签页打开
 }
 
