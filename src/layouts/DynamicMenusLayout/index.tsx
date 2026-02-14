@@ -16,13 +16,7 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
@@ -61,7 +55,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const {
-    showHoverMenu,
+    // showHoverMenu,
     isSecondMenuCollapsed,
     setOpenMessage,
     handleCloseMobileMenu,
@@ -85,7 +79,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 是否点击菜单
-  const isClickMenu = useRef<boolean>(false);
+  // const isClickMenu = useRef<boolean>(false);
 
   const handlerClick = async () => {
     if (tenantConfigInfo) {
@@ -238,9 +232,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
-    if (isClickMenu.current && !showHoverMenu) {
-      return;
-    }
+    // if (isClickMenu.current) {
+    //   return;
+    // }
 
     if (!firstLevelMenus.length) return;
 
@@ -249,7 +243,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       isMenuMatch(menu, location.pathname),
     );
 
-    if (matchedMenu) {
+    if (matchedMenu && matchedMenu.code !== 'new_conversation') {
       setActiveTab(matchedMenu.code);
     }
     // 根路径如果是新对话菜单,新对话菜单不显示
@@ -275,8 +269,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         firstLevelMenus,
         location.pathname,
       );
-      if (firstLevelCode) {
+      if (firstLevelCode && firstLevelCode !== 'new_conversation') {
         setActiveTab(firstLevelCode);
+      } else if (firstLevelCode === 'new_conversation') {
+        handleNewConversation();
       } else {
         setActiveTab(firstLevelMenus[0].code);
       }
@@ -342,7 +338,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       }
 
       // 是否点击了一级菜单
-      isClickMenu.current = true;
+      // isClickMenu.current = true;
       // 关闭移动端菜单
       handleCloseMobileMenu();
 
@@ -413,11 +409,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 用户区域操作
    */
   const handleUserClick = useCallback(
-    (code: string) => {
-      setActiveTab(code);
+    (item: MenuItemDto) => {
+      const code = item.code;
+      setActiveTab(code || '');
       switch (code) {
         case 'documents':
-          window.open(SITE_DOCUMENT_URL);
+          window.open(item.path || SITE_DOCUMENT_URL);
           break;
         case 'notification':
           setOpenMessage(true);

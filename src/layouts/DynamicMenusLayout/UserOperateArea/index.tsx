@@ -19,7 +19,7 @@ const cx = classNames.bind(styles);
 export interface UserOperateAreaType {
   /** 一级菜单列表 */
   menus: MenuItemDto[];
-  onClick: (code: string) => void;
+  onClick: (item: MenuItemDto) => void;
 }
 
 /**
@@ -84,7 +84,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
           'cursor-pointer',
           { [styles.last]: index === dataSource.length - 1 },
         )}
-        onClick={() => onClick(item.code || '')}
+        onClick={() => onClick(item)}
       >
         {item.code === 'notification' && unreadCount > 0 ? (
           <Badge count={unreadCount} size="small">
