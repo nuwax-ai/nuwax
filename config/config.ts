@@ -84,10 +84,17 @@ export default defineConfig({
 				// PC 端访问 M 页面 => 跳转 PC
 				if (!isMobile && href.includes('/m/')) {
 					if (hash && hash.indexOf(agentDetailPathMobile) !== -1) {
-						const match = hash.match(new RegExp('[?&]id=([^&#]+)'));
-						if (match && match[1]) {
-							const agentId = match[1];
-							window.location.replace(baseUrl + '/agent/' + agentId);
+						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						if (matchId && matchId[1]) {
+							const agentId = matchId[1];
+							// 若带 conversationId 则跳转到 PC 会话详情页，否则跳转到智能体详情页
+							if (matchConversationId && matchConversationId[1]) {
+								const conversationId = matchConversationId[1];
+								window.location.replace(baseUrl + '/home/chat/' + conversationId + '/' + agentId);
+							} else {
+								window.location.replace(baseUrl + '/agent/' + agentId);
+							}
 							return;
 						}
 					}
@@ -121,6 +128,16 @@ export default defineConfig({
 						window.location.replace(baseUrl + '/m/#' + newChatTempPathMobile + '?chatKey=' + chatKey);
 						return;
 					}
+
+					// H5 会话详情链接: /home/chat/conversationId/agentId，在移动端打开时跳转到 M 端 agent-detail 并带 id、conversationId
+					const matchHomeChat = href.match(new RegExp('home/chat/([^/]+)/([^/]+)'));
+					if (matchHomeChat) {
+						const conversationId = matchHomeChat[1];
+						const agentId = matchHomeChat[2];
+						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId + '&conversationId=' + conversationId);
+						return;
+					}
+
 					window.location.replace(baseUrl + '/m/');
 					return;
 				}

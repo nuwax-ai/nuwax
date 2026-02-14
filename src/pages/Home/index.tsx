@@ -171,11 +171,23 @@ const Home: React.FC = () => {
 
   // 点击单个智能体
   const handleClick = (agentInfo: CategoryItemInfo) => {
-    const { agentType, targetId } = agentInfo;
+    const { agentType, targetId, lastConversationId } = agentInfo;
+
+    // 如果最后一次会话ID存在，则跳转至最后一次会话
+    if (!!lastConversationId) {
+      const url =
+        agentType === 'PageApp' || agentType === 'TaskAgent'
+          ? `/home/chat/${lastConversationId}/${targetId}?hideMenu=true`
+          : `/home/chat/${lastConversationId}/${targetId}`;
+      history.push(url);
+      return;
+    }
+
     if (agentType === 'PageApp') {
       history.push(`/agent/${targetId}?hideMenu=true`);
       return;
     }
+
     history.push(`/agent/${targetId}`);
   };
 

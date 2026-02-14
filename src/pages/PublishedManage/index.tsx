@@ -14,8 +14,8 @@ import type {
   ProColumns,
 } from '@ant-design/pro-components';
 import { message } from 'antd';
-import React, { useCallback, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import OffshelfModal from './components/OffshelfModal';
 
 /**
@@ -25,8 +25,28 @@ const PublishedManage: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
+  const location = useLocation();
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
   const [offshelfId, setOffshelfId] = useState<number>();
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页10条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
+
+  // 监听 location.state 变化
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   // 查看详情
   const handleView = useCallback((record: PublishListInfo) => {
@@ -80,7 +100,6 @@ const PublishedManage: React.FC = () => {
       title: '发布名称',
       dataIndex: 'name',
       width: 200,
-      fixed: 'left',
       fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
     },
     {
@@ -137,7 +156,7 @@ const PublishedManage: React.FC = () => {
     const { current, pageSize, name, targetType } = params;
     const response = await apiPublishList({
       pageNo: current || 1,
-      pageSize: pageSize || 10,
+      pageSize: pageSize || 15,
       queryFilter: {
         targetType: targetType || undefined,
         kw: (name || '').trim(),
@@ -163,6 +182,7 @@ const PublishedManage: React.FC = () => {
         rowKey="id"
         columns={columns}
         request={request}
+        onReset={handleReset}
         showQueryButtons={hasPermission('published_manage_query_list')}
       />
       <OffshelfModal

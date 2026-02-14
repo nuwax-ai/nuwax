@@ -18,8 +18,8 @@ import type {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useRef, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
 
 const cx = classNames.bind(styles);
@@ -31,6 +31,7 @@ const PublishAudit: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
+  const location = useLocation();
   const [openRejectAuditModal, setOpenRejectAuditModal] = useState(false);
   const [rejectAuditId, setRejectAuditId] = useState<number>();
 
@@ -119,7 +120,6 @@ const PublishAudit: React.FC = () => {
       title: '发布名称',
       dataIndex: 'name',
       width: 200,
-      fixed: 'left',
       fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
       ellipsis: true,
     },
@@ -256,7 +256,7 @@ const PublishAudit: React.FC = () => {
   };
 
   // 重置处理（参考 LogProTable 的 handleReset 模式）
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     isReset.current = true;
     // 重置表格状态
     actionRef.current?.reset?.();
@@ -264,7 +264,16 @@ const PublishAudit: React.FC = () => {
     actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 重新加载
     actionRef.current?.reload();
-  };
+  }, []);
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   return (
     <WorkspaceLayout title="发布审核" hideScroll>

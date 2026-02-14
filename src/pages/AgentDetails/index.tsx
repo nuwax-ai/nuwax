@@ -384,6 +384,7 @@ const AgentDetails: React.FC = () => {
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {agentDetail?.type === AgentTypeEnum.TaskAgent &&
                 agentDetail?.conversationId &&
+                !agentDetail?.hideDesktop &&
                 !isFileTreeVisible && (
                   <Tooltip title="文件预览或打开智能体电脑">
                     <Button

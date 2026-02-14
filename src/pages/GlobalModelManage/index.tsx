@@ -42,6 +42,7 @@ const GlobalModelManage: React.FC = () => {
   const [currentAuthModelId, setCurrentAuthModelId] = useState<number | null>(
     null,
   );
+  const [currentAuthModelName, setCurrentAuthModelName] = useState<string>('');
   // 管控状态切换 loading 状态
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
     Record<number, boolean>
@@ -138,6 +139,7 @@ const GlobalModelManage: React.FC = () => {
           disabled: !hasPermission('model_manage_access_control'),
           onClick: () => {
             setCurrentAuthModelId(record.id);
+            setCurrentAuthModelName(record.name);
             setAuthModalOpen(true);
           },
         },
@@ -326,9 +328,11 @@ const GlobalModelManage: React.FC = () => {
         open={authModalOpen}
         targetId={currentAuthModelId || 0}
         targetType="model"
+        targetName={currentAuthModelName}
         onCancel={() => {
           setAuthModalOpen(false);
           setCurrentAuthModelId(null);
+          setCurrentAuthModelName('');
         }}
       />
     </WorkspaceLayout>

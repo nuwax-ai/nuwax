@@ -242,7 +242,6 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
             treeData={treeData}
             expandedKeys={expandedKeys}
             blockNode
-            showLine={{ showLeafIcon: false }}
             switcherIcon={<DownOutlined />}
             onExpand={handleExpand}
             titleRender={(nodeData: any) => {

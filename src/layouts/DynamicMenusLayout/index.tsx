@@ -76,6 +76,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
 
+  // 是否点击了新对话菜单，特殊处理，用于显示title时使用
+  const [isClickNewConversation, setIsClickNewConversation] =
+    useState<boolean>(false);
+
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -218,6 +222,19 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     refreshUserInfo();
   }, []);
 
+  // 新对话菜单特殊处理
+  const handleNewConversation = useCallback(() => {
+    // 找到新对话菜单在同级别菜单中的位置，然后设置 activeTab 为下一个菜单
+    const currentIndex = firstLevelMenus.findIndex(
+      (m: MenuItemDto) => m.code === 'new_conversation',
+    );
+    if (currentIndex !== -1 && currentIndex < firstLevelMenus.length - 1) {
+      // 如果存在下一个菜单，设置为下一个菜单
+      const nextMenu = firstLevelMenus[currentIndex + 1];
+      setActiveTab(nextMenu.code as string);
+    }
+  }, [firstLevelMenus]);
+
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
@@ -235,9 +252,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     if (matchedMenu) {
       setActiveTab(matchedMenu.code);
     }
-    // 根路径
+    // 根路径如果是新对话菜单,新对话菜单不显示
     else if (location.pathname === '' || location.pathname === '/') {
-      setActiveTab(firstLevelMenus[0].code);
+      if (firstLevelMenus[0].code !== 'new_conversation') {
+        setActiveTab(firstLevelMenus[0].code);
+      } else {
+        // 新对话菜单特殊处理
+        handleNewConversation();
+      }
     }
     // 首页
     else if (location.pathname === '/home') {
@@ -259,7 +281,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         setActiveTab(firstLevelMenus[0].code);
       }
     }
-  }, [location.pathname, firstLevelMenus]);
+  }, [location.pathname, firstLevelMenus, handleNewConversation]);
 
   const handleRefreshEditAndCollect = useCallback(() => {
     // 最近编辑
@@ -324,13 +346,21 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 关闭移动端菜单
       handleCloseMobileMenu();
 
-      setActiveTab(menu.code as string);
-
-      // 新对话
+      // 新对话,特殊处理，因为新对话时，不能选中新对话的菜单，需要跳转到下一个菜单
       if (menu.code === 'new_conversation') {
         handlerClick();
+
+        setIsClickNewConversation(true);
+
+        // 新对话菜单特殊处理
+        handleNewConversation();
         return;
       }
+
+      // 点击其他菜单，则设置为 false
+      setIsClickNewConversation(false);
+
+      setActiveTab(menu.code as string);
 
       if (menu.code === 'workspace') {
         handleRefreshEditAndCollect();
@@ -375,6 +405,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       findFirstChildWithPath,
       handleRefreshEditAndCollect,
       handlerClick,
+      handleNewConversation,
     ],
   );
 
@@ -403,6 +434,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 获取当前一级菜单的标题
    */
   const currentTitle = useMemo(() => {
+    if (isClickNewConversation) {
+      return '新对话';
+    }
     if (activeTab === 'my_computer') {
       return '主页';
     }
@@ -410,7 +444,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       (m: MenuItemDto) => m.code === activeTab,
     );
     return current?.name;
-  }, [activeTab, firstLevelMenus]);
+  }, [activeTab, firstLevelMenus, isClickNewConversation]);
 
   /**
    * 是否显示标题

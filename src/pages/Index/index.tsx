@@ -31,35 +31,48 @@ const Index: React.FC = () => {
     return findFirstChildWithPath(firstChild);
   };
 
+  const handleMenuPath = (currentMenu: MenuItemDto) => {
+    // 如果第一个菜单有 path，直接跳转
+    if (currentMenu.path) {
+      // http开头的路径，直接打开
+      if (currentMenu.path.includes('http')) {
+        window.open(currentMenu.path, '_self');
+        return;
+      }
+      // 其他路径，跳转路由
+      history.replace(currentMenu.path);
+      return;
+    }
+
+    // 如果第一个菜单没有 path，递归查找第一个子菜单的 path
+    const firstPathMenu = findFirstChildWithPath(currentMenu);
+    if (firstPathMenu?.path) {
+      // http开头的路径，直接打开
+      if (firstPathMenu.path.includes('http')) {
+        window.open(firstPathMenu.path, '_self');
+        return;
+      }
+      // 其他路径，跳转路由
+      history.replace(firstPathMenu.path);
+    } else {
+      console.log('第一级菜单以及其子菜单都没有设置path路径');
+    }
+  };
+
   useEffect(() => {
     if (firstLevelMenus.length > 0) {
       const firstLevelMenu = firstLevelMenus[0];
 
-      // 如果第一个菜单有 path，直接跳转
-      if (firstLevelMenu.path) {
-        // http开头的路径，直接打开
-        if (firstLevelMenu.path.includes('http')) {
-          window.open(firstLevelMenu.path, '_self');
-          return;
+      // 新对话,特殊处理，因为新对话时，不能选中新对话的菜单，需要跳转到下一个菜单
+      if (firstLevelMenu.code === 'new_conversation') {
+        // 只有当存在第二项时，才执行跳转逻辑
+        if (firstLevelMenus.length > 1 && firstLevelMenus[1]) {
+          handleMenuPath(firstLevelMenus[1]);
         }
-        // 其他路径，跳转路由
-        history.replace(firstLevelMenu.path);
         return;
       }
 
-      // 如果第一个菜单没有 path，递归查找第一个子菜单的 path
-      const firstPathMenu = findFirstChildWithPath(firstLevelMenu);
-      if (firstPathMenu?.path) {
-        // http开头的路径，直接打开
-        if (firstPathMenu.path.includes('http')) {
-          window.open(firstPathMenu.path, '_self');
-          return;
-        }
-        // 其他路径，跳转路由
-        history.replace(firstPathMenu.path);
-      } else {
-        console.log('第一级菜单以及其子菜单都没有设置path路径');
-      }
+      handleMenuPath(firstLevelMenu);
     }
   }, [firstLevelMenus]);
 

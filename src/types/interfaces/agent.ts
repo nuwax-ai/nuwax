@@ -658,6 +658,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   hasPermission?: boolean;
   /** 会话关联的智能体电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 是否隐藏远程桌面，1 隐藏；0 不隐藏 */
+  hideDesktop: HideDesktopEnum;
 }
 
 // 日志查询过滤条件
