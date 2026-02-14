@@ -330,6 +330,12 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
       let targetPath = path;
 
+      // 如果路径包含 ?url=，则直接比较路径,说明是应用内打开的外部链接
+      if (location.search?.includes('?url=')) {
+        let activePath = location.search.split('?url=')[1];
+        return targetPath === decodeURIComponent(activePath);
+      }
+
       // 如果路径包含动态参数，先解析路径
       if (targetPath.includes(':')) {
         const resolvedPath = resolveDynamicPath(targetPath);
