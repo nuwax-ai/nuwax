@@ -1294,6 +1294,8 @@ const Chat: React.FC = () => {
                             effectiveAgent?.type === AgentTypeEnum.TaskAgent,
                           onIdleTimeout: () => openPreviewView(id),
                         }}
+                        // 是否隐藏远程桌面
+                        hideDesktop={effectiveAgent?.hideDesktop}
                       />
                     </div>
                   )

@@ -21,6 +21,7 @@ import {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
   ConversationEventTypeEnum,
+  HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -836,7 +837,8 @@ export default () => {
             data.type === AgentComponentTypeEnum.Event &&
             data.subEventType === 'OPEN_DESKTOP' &&
             // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
-            params.conversationId
+            params.conversationId &&
+            conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
           ) {
             // 打开远程桌面
             openDesktopView(params.conversationId);

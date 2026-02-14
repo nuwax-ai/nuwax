@@ -3,6 +3,7 @@ import type {
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
   HideChatAreaEnum,
+  HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
   TaskStatus,
@@ -321,6 +322,8 @@ export interface ConversationInfo {
     expandPageArea: ExpandPageAreaEnum;
     // 是否隐藏聊天区域，1 隐藏；0 不隐藏
     hideChatArea: HideChatAreaEnum;
+    // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+    hideDesktop: HideDesktopEnum;
     // 扩展页面首页
     pageHomeIndex: string;
     // 事件绑定配置
