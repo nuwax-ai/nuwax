@@ -418,9 +418,11 @@ export interface CategoryInfo {
 // 智能体分类项详细信息
 export interface CategoryItemInfo {
   // ChatBot、PageApp
-  agentType: 'ChatBot' | 'PageApp';
+  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
   targetType: AgentComponentTypeEnum;
   targetId: number;
+  // 最后一次会话ID
+  lastConversationId?: number;
   name: string;
   description: string;
   icon: string;
