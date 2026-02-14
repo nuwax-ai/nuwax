@@ -965,14 +965,17 @@ const PermissionResources: React.FC = () => {
       title="权限资源管理"
       hideScroll
       rightSlot={[
-        <Button
-          key="query"
-          icon={<ReloadOutlined />}
-          onClick={() => runGetResourceList()}
-          loading={loading}
-        >
-          查询
-        </Button>,
+        hasPermissionByMenuCode('resource_manage', 'resource_manage_query') && (
+          <Button
+            key="query"
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={() => runGetResourceList()}
+            loading={loading}
+          >
+            查询
+          </Button>
+        ),
         hasPermissionByMenuCode('resource_manage', 'resource_manage_add') && (
           <Button
             key="add"
