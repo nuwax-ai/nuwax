@@ -25,6 +25,10 @@ export default function useMenuModel() {
   const [permissionSet, setPermissionSet] = useState<Set<string>>(
     new Set(initialState?.permissions || []),
   );
+  // 权限码集合（用于快速查找）
+  const [permissionsMap, setPermissionsMap] = useState<Map<string, string[]>>(
+    initialState?.permissionsMap || new Map(),
+  );
   // 菜单码集合（用于检查菜单访问权限）
   const [menuCodeSet, setMenuCodeSet] = useState<Set<string>>(
     new Set(initialState?.menus ? extractAllMenuCodes(initialState.menus) : []),
@@ -38,6 +42,7 @@ export default function useMenuModel() {
     if (initialState?.menus) {
       setMenuTree(initialState.menus);
       setPermissionSet(new Set(initialState.permissions || []));
+      setPermissionsMap(initialState.permissionsMap || new Map());
       setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
     }
   }, [initialState?.menus, initialState?.permissions]);
@@ -52,6 +57,7 @@ export default function useMenuModel() {
       if (initialState?.menus?.length && !force) {
         setMenuTree(initialState.menus);
         setPermissionSet(new Set(initialState.permissions || []));
+        setPermissionsMap(initialState.permissionsMap || new Map());
         setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
         return;
       }
@@ -69,9 +75,15 @@ export default function useMenuModel() {
           const menus = res.data || [];
           setMenuTree(menus);
 
-          // 提取所有权限码
-          const permissions = extractAllPermissions(menus);
+          // 提取所有权限码（从 Map 中提取所有值并打平）
+          const permissionsMap: Map<string, string[]> =
+            extractAllPermissions(menus);
+          const permissions: string[] = [];
+          permissionsMap.forEach((codes) => {
+            permissions.push(...codes);
+          });
           setPermissionSet(new Set(permissions));
+          setPermissionsMap(permissionsMap);
 
           // 提取所有菜单码
           const menuCodes = extractAllMenuCodes(menus);
@@ -186,6 +198,16 @@ export default function useMenuModel() {
   );
 
   /**
+   * 检查是否有某个功能权限
+   */
+  const hasPermissionByMenuCode = useCallback(
+    (menuCode: string, permissionCode: string): boolean => {
+      return permissionsMap.get(menuCode)?.includes(permissionCode) || false;
+    },
+    [permissionsMap],
+  );
+
+  /**
    * 检查是否有多个权限中的任意一个
    */
   const hasAnyPermission = useCallback(
@@ -242,5 +264,8 @@ export default function useMenuModel() {
     hasAllPermissions,
     hasMenuAccess,
     getPagePermissions,
+    permissionSet,
+    permissionsMap,
+    hasPermissionByMenuCode,
   };
 }

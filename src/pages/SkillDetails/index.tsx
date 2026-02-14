@@ -277,7 +277,7 @@ const SkillDetails: React.FC = () => {
   const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!skillId) {
-      message.error('技能ID不存在或无效，无法导出');
+      message.warning('技能ID不存在或无效，无法导出');
       return;
     }
 
@@ -289,7 +289,7 @@ const SkillDetails: React.FC = () => {
       if (!result.success) {
         // 导出失败，显示错误信息
         const errorMessage = result.error?.message || '导出失败';
-        message.error(errorMessage);
+        message.warning(errorMessage);
         setLoadingExportProject(false);
         return;
       }
@@ -300,8 +300,6 @@ const SkillDetails: React.FC = () => {
         // 导出整个项目压缩包
         exportWholeProjectZip(result, filename);
         message.success('导出成功！');
-      } else {
-        message.error('导出数据异常，请重试');
       }
     } catch (error) {
       console.error('导出项目失败:', error);

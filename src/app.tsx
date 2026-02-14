@@ -38,6 +38,7 @@ export async function getInitialState(): Promise<{
   currentUser?: UserInfo;
   menus?: MenuItemDto[];
   permissions?: string[];
+  permissionsMap?: Map<string, string[]>;
   loading?: boolean;
   fetchUserInfo?: () => Promise<UserInfo | undefined>;
 }> {
@@ -56,6 +57,7 @@ export async function getInitialState(): Promise<{
     const currentUser = await fetchUserInfo();
     let menus: MenuItemDto[] = [];
     let permissions: string[] = [];
+    let permissionsMap: Map<string, string[]> = new Map();
 
     // 如果获取到了用户信息，同时获取菜单和权限
     if (currentUser?.id) {
@@ -63,7 +65,12 @@ export async function getInitialState(): Promise<{
         const menuRes = await apiQueryMenus();
         if (menuRes.code === SUCCESS_CODE && menuRes.data) {
           menus = menuRes.data as MenuItemDto[];
-          permissions = extractAllPermissions(menus);
+          // 从 Map 中提取所有权限码并打平
+          permissionsMap = extractAllPermissions(menus);
+          permissions = [];
+          permissionsMap.forEach((codes) => {
+            permissions.push(...codes);
+          });
         }
       } catch (error) {
         console.error('Initial menu loading failed:', error);
@@ -75,6 +82,7 @@ export async function getInitialState(): Promise<{
       currentUser,
       menus,
       permissions,
+      permissionsMap,
       loading: false,
     };
   }

@@ -59,7 +59,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
           icon
         )}
       </span>
-      <Typography.Text className={cx('flex-1', styles.name)}>
+      <Typography.Text className={cx('flex-1', 'text-ellipsis', styles.name)}>
         {name}
       </Typography.Text>
       {isDown ? (

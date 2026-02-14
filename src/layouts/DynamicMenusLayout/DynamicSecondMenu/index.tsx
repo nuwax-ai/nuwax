@@ -5,7 +5,7 @@
  */
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import { PATH_URL } from '@/constants/home.constants';
@@ -32,6 +32,16 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   // 展开的菜单 code 列表
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  // 记录用户手动折叠的菜单（用于防止自动展开覆盖用户操作）
+  const manuallyCollapsedRef = useRef<Set<string>>(new Set());
+  // 记录用户手动切换的时间戳，用于防止自动展开立即覆盖手动操作
+  const lastManualToggleRef = useRef<number>(0);
+  // 记录上一次的路径，用于判断路径是否真正变化
+  const lastPathnameRef = useRef<string>('');
+  // 标记是否已经初始化
+  const isInitializedRef = useRef<boolean>(false);
+  // 记录上一次的菜单数据长度，用于判断菜单数据是否加载完成
+  const lastMenusLengthRef = useRef<number>(0);
 
   const { getSecondLevelMenus } = useModel('menuModel');
 
@@ -43,13 +53,109 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
 
   /**
-   * 切换展开状态
+   * 查找菜单的父菜单和同级菜单
+   * @param menus 菜单列表
+   * @param targetCode 目标菜单的 code
+   * @param parentMenu 父菜单（用于递归传递）
+   * @returns 返回父菜单和同级菜单列表，如果没找到返回 null
    */
-  const toggleExpand = useCallback((code: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-    );
+  const findMenuSiblings = useCallback(
+    (
+      menus: MenuItemDto[],
+      targetCode: string,
+      parentMenu: MenuItemDto | null = null,
+    ): { parentMenu: MenuItemDto | null; siblings: MenuItemDto[] } | null => {
+      for (const menu of menus) {
+        if (menu.code === targetCode) {
+          // 找到目标菜单，返回父菜单和同级菜单
+          return {
+            parentMenu,
+            siblings: parentMenu ? parentMenu.children || [] : menus,
+          };
+        }
+        // 递归查找子菜单
+        if (menu.children && menu.children.length > 0) {
+          const found = findMenuSiblings(menu.children, targetCode, menu);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    },
+    [],
+  );
+
+  /**
+   * 递归收集菜单及其所有子菜单的 code
+   */
+  const getAllDescendantCodes = useCallback((menu: MenuItemDto): string[] => {
+    const codes: string[] = [];
+    if (menu.code) {
+      codes.push(menu.code);
+    }
+    if (menu.children && menu.children.length > 0) {
+      menu.children.forEach((child) => {
+        codes.push(...getAllDescendantCodes(child));
+      });
+    }
+    return codes;
   }, []);
+
+  /**
+   * 切换展开状态
+   * 同一层级的菜单只能展开一个（手风琴效果）
+   */
+  const toggleExpand = useCallback(
+    (code: string) => {
+      // 记录手动操作的时间戳
+      lastManualToggleRef.current = Date.now();
+
+      setExpandedMenus((prev) => {
+        const isExpanded = prev.includes(code);
+        if (isExpanded) {
+          // 用户手动折叠，记录到 ref 中
+          manuallyCollapsedRef.current.add(code);
+          return prev.filter((c) => c !== code);
+        } else {
+          // 用户手动展开，从 ref 中移除（允许自动展开）
+          manuallyCollapsedRef.current.delete(code);
+
+          // 查找同一层级的其他菜单
+          const menuInfo = findMenuSiblings(secondMenus, code);
+          if (menuInfo) {
+            // 收集所有同级菜单及其子菜单的 code（不包括当前菜单）
+            const codesToCollapse: string[] = [];
+            menuInfo.siblings.forEach((sibling) => {
+              if (sibling.code !== code) {
+                codesToCollapse.push(...getAllDescendantCodes(sibling));
+              }
+            });
+
+            // 从手动折叠列表中移除所有需要折叠的菜单，允许它们被自动展开
+            // 这样即使这些菜单的子菜单被选中，也能被强制折叠
+            codesToCollapse.forEach((c) => {
+              manuallyCollapsedRef.current.delete(c);
+            });
+
+            // 强制移除所有需要折叠的菜单（包括子菜单），即使它们的子菜单被选中
+            const newExpanded = prev.filter(
+              (c) => !codesToCollapse.includes(c),
+            );
+            // 展开当前菜单
+            if (!newExpanded.includes(code)) {
+              newExpanded.push(code);
+            }
+            return newExpanded;
+          }
+
+          // 如果找不到同级菜单，直接添加
+          return [...prev, code];
+        }
+      });
+    },
+    [secondMenus, findMenuSiblings, getAllDescendantCodes],
+  );
 
   /**
    * 从路径中提取 spaceId
@@ -242,6 +348,190 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   );
 
   /**
+   * 递归查找匹配的菜单及其所有上级菜单的 code
+   * @param menus 菜单列表
+   * @param pathname 当前路径
+   * @param parentCodes 上级菜单的 code 列表（用于递归传递）
+   * @returns 匹配的菜单及其所有上级菜单的 code 列表
+   */
+  const findActiveMenuAndParents = useCallback(
+    (
+      menus: MenuItemDto[],
+      pathname: string,
+      parentCodes: string[] = [],
+    ): string[] | null => {
+      for (const menu of menus) {
+        const currentPath = menu.path;
+        if (!currentPath) {
+          // 如果没有路径，继续检查子菜单
+          if (menu.children && menu.children.length > 0) {
+            const found = findActiveMenuAndParents(menu.children, pathname, [
+              ...parentCodes,
+              menu.code || '',
+            ]);
+            if (found) {
+              return found;
+            }
+          }
+          continue;
+        }
+
+        // 检查当前菜单是否匹配
+        let targetPath = currentPath;
+        if (targetPath.includes(':')) {
+          const resolvedPath = resolveDynamicPath(targetPath);
+          if (resolvedPath && !resolvedPath.includes(':')) {
+            targetPath = resolvedPath;
+          } else if (resolvedPath && resolvedPath.includes(':')) {
+            const rawPattern = targetPath.split('?')[0];
+            const pattern = rawPattern.replace(/:(\w+)/g, '[^/]+');
+            const regex = new RegExp(`^${pattern}(/.*)?$`);
+            if (regex.test(pathname)) {
+              // 匹配成功，返回所有上级菜单的 code
+              return parentCodes;
+            }
+            // 继续检查子菜单
+            if (menu.children && menu.children.length > 0) {
+              const found = findActiveMenuAndParents(menu.children, pathname, [
+                ...parentCodes,
+                menu.code || '',
+              ]);
+              if (found) {
+                return found;
+              }
+            }
+            continue;
+          } else {
+            // 解析失败，继续检查子菜单
+            if (menu.children && menu.children.length > 0) {
+              const found = findActiveMenuAndParents(menu.children, pathname, [
+                ...parentCodes,
+                menu.code || '',
+              ]);
+              if (found) {
+                return found;
+              }
+            }
+            continue;
+          }
+        }
+
+        const [pathWithoutQuery] = targetPath.split('?');
+        if (
+          pathname === pathWithoutQuery ||
+          pathname.startsWith(pathWithoutQuery + '/')
+        ) {
+          // 匹配成功，返回所有上级菜单的 code
+          return parentCodes;
+        }
+
+        // 继续检查子菜单
+        if (menu.children && menu.children.length > 0) {
+          const found = findActiveMenuAndParents(menu.children, pathname, [
+            ...parentCodes,
+            menu.code || '',
+          ]);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    },
+    [resolveDynamicPath],
+  );
+
+  /**
+   * 当路径变化时，自动展开匹配菜单的所有上级菜单
+   * 但不会覆盖用户手动折叠的菜单
+   * 同时遵循同一层级只能展开一个的规则
+   * 只在路径真正变化时才执行，避免频繁执行覆盖用户操作
+   */
+  useEffect(() => {
+    // 如果菜单数据还没有加载完成，不执行自动展开
+    if (!secondMenus || secondMenus.length === 0) {
+      return;
+    }
+
+    // 判断菜单数据是否刚刚加载完成（从空数组变为有数据）
+    const menusJustLoaded =
+      lastMenusLengthRef.current === 0 && secondMenus.length > 0;
+    lastMenusLengthRef.current = secondMenus.length;
+
+    // 首次初始化时，需要执行自动展开
+    const isInitialLoad = !isInitializedRef.current;
+    if (isInitialLoad) {
+      isInitializedRef.current = true;
+    }
+
+    // 只在路径真正变化时才执行自动展开（首次加载和菜单数据刚加载完成除外）
+    if (
+      !isInitialLoad &&
+      !menusJustLoaded &&
+      location.pathname === lastPathnameRef.current
+    ) {
+      return;
+    }
+    lastPathnameRef.current = location.pathname;
+
+    // 如果用户刚刚手动切换了菜单（500ms 内），延迟执行自动展开
+    const timeSinceLastToggle = Date.now() - lastManualToggleRef.current;
+    const delay = timeSinceLastToggle < 500 ? 500 - timeSinceLastToggle : 0;
+
+    const timer = setTimeout(() => {
+      const parentCodes = findActiveMenuAndParents(
+        secondMenus,
+        location.pathname,
+      );
+      if (parentCodes && parentCodes.length > 0) {
+        setExpandedMenus((prev) => {
+          const newExpanded = [...prev];
+          parentCodes.forEach((code) => {
+            // 只有当菜单不在手动折叠列表中时，才自动展开
+            if (
+              !newExpanded.includes(code) &&
+              !manuallyCollapsedRef.current.has(code)
+            ) {
+              // 查找同一层级的其他菜单，先折叠它们
+              const menuInfo = findMenuSiblings(secondMenus, code);
+              if (menuInfo) {
+                // 收集所有同级菜单及其子菜单的 code
+                const siblingsCodesToCollapse: string[] = [];
+                menuInfo.siblings.forEach((sibling) => {
+                  if (sibling.code !== code) {
+                    siblingsCodesToCollapse.push(
+                      ...getAllDescendantCodes(sibling),
+                    );
+                  }
+                });
+
+                // 移除同一层级的其他菜单及其子菜单
+                siblingsCodesToCollapse.forEach((siblingCode) => {
+                  const index = newExpanded.indexOf(siblingCode);
+                  if (index > -1) {
+                    newExpanded.splice(index, 1);
+                  }
+                });
+              }
+              // 展开当前菜单
+              newExpanded.push(code);
+            }
+          });
+          return newExpanded;
+        });
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [
+    location.pathname,
+    secondMenus,
+    findActiveMenuAndParents,
+    findMenuSiblings,
+    getAllDescendantCodes,
+  ]);
+
+  /**
    * 递归渲染菜单项
    * @param menu 菜单项数据
    * @param level 菜单层级（从0开始，用于缩进）
@@ -254,8 +544,16 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       const menuCode = menu.code || '';
       const isExpanded = expandedMenus.includes(menuCode);
       const menuActive = isActive(menu.path);
-      // 根据层级计算缩进，每级缩进 16px
-      const indent = level * 16;
+      // 根据层级计算缩进
+      // 如果没有上级（level === 0），indent 不变
+      // 如果有上级（level > 0 且 level < 4），indent = level * 16 + 10
+      // 如果层级为第4级及以上（level >= 4），不缩进，使用第3级的缩进值
+      const indent =
+        level === 0
+          ? 0
+          : level >= 4
+          ? 3 * 16 + 10 // 第3级的缩进值：58
+          : level * 16 + 10;
 
       // 个人空间时，不显示"成员与设置"(编码：member_setting) , 普通用户也不显示"成员与设置"
       if (
@@ -327,7 +625,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div className={'flex flex-col gap-4 overflow-auto'}>
+    <div className={'flex flex-col gap-4 overflow-hide'}>
       {secondMenus.map((menu: MenuItemDto) => renderMenuItem(menu))}
     </div>
   );

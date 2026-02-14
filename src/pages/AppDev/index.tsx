@@ -675,6 +675,8 @@ const AppDev: React.FC = () => {
           centered: true,
         });
         projectInfo.refreshProjectInfo();
+      } else {
+        message.error(result.message || '发布失败');
       }
     } catch (error) {
       // request请求中设置了skipErrorHandler: true, 跳过了错误处理
@@ -729,7 +731,7 @@ const AppDev: React.FC = () => {
   const handleExportProject = useCallback(async () => {
     // 检查项目ID是否有效
     if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法导出');
+      message.warning('项目ID不存在或无效，无法导出');
       return;
     }
 
@@ -741,7 +743,7 @@ const AppDev: React.FC = () => {
       if (!result.success) {
         // 导出失败，显示错误信息
         const errorMessage = result.error?.message || '导出失败';
-        message.error(errorMessage);
+        message.warning(errorMessage);
         return;
       }
 
@@ -760,7 +762,7 @@ const AppDev: React.FC = () => {
       }
 
       // 创建下载链接
-      const blob = new Blob([result.data], { type: 'application/zip' });
+      const blob = new Blob([result.data || ''], { type: 'application/zip' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

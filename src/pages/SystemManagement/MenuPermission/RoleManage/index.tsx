@@ -1,11 +1,15 @@
 import CustomPopover from '@/components/CustomPopover';
+import { XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
   EllipsisOutlined,
   InfoCircleOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -14,18 +18,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Empty,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
@@ -84,7 +79,7 @@ const RoleManage: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 查询角色列表
   const {
@@ -277,11 +272,13 @@ const RoleManage: React.FC = () => {
   };
 
   // 定义表格列
-  const columns: TableColumnsType<RoleInfo & { key: number }> = [
+  const columns: ProColumns<RoleInfo & { key: number }>[] = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
+      width: 80,
+      fixed: 'left',
       render: () => <DragHandle />,
     },
     {
@@ -301,9 +298,9 @@ const RoleManage: React.FC = () => {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (description: string) => (
-        <div className={cx(styles.descriptionCell)} title={description}>
-          {description || '--'}
+      render: (_: ReactNode, record: RoleInfo & { key: number }) => (
+        <div className={cx(styles.descriptionCell)} title={record.description}>
+          {record.description || '--'}
         </div>
       ),
     },
@@ -323,7 +320,7 @@ const RoleManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      render: (status: RoleStatusEnum, record: RoleInfo) => (
+      render: (_: ReactNode, record: RoleInfo & { key: number }) => (
         <Tooltip
           title={
             record.source === RoleSourceEnum.SystemBuiltIn
@@ -333,7 +330,7 @@ const RoleManage: React.FC = () => {
         >
           <Switch
             disabled={record.source === RoleSourceEnum.SystemBuiltIn}
-            checked={status === RoleStatusEnum.Enabled}
+            checked={record.status === RoleStatusEnum.Enabled}
             checkedChildren="启用"
             unCheckedChildren="禁用"
             loading={updateStatusLoadingMap[record.id] || false}
@@ -348,24 +345,27 @@ const RoleManage: React.FC = () => {
       align: 'center',
       width: 260,
       fixed: 'right',
-      render: (_: null, record: RoleInfo) => {
+      render: (_: ReactNode, record: RoleInfo & { key: number }) => {
         // 判断是否为系统内置角色
         const isSystemBuiltIn = record.source === RoleSourceEnum.SystemBuiltIn;
 
         // 编辑权限检查
-        const canEdit = hasPermission('role_manage_modify') && !isSystemBuiltIn;
+        const canEdit =
+          hasPermissionByMenuCode('role_manage', 'role_manage_modify') &&
+          !isSystemBuiltIn;
         const editTooltip = isSystemBuiltIn
           ? '系统内置的角色不能编辑'
-          : !hasPermission('role_manage_modify')
+          : !hasPermissionByMenuCode('role_manage', 'role_manage_modify')
           ? '无此资源权限'
           : '';
 
         // 删除权限检查
         const canDelete =
-          hasPermission('role_manage_delete') && !isSystemBuiltIn;
+          hasPermissionByMenuCode('role_manage', 'role_manage_delete') &&
+          !isSystemBuiltIn;
         const deleteTooltip = isSystemBuiltIn
           ? '系统内置的角色不能删除'
-          : !hasPermission('role_manage_delete')
+          : !hasPermissionByMenuCode('role_manage', 'role_manage_delete')
           ? '无此资源权限'
           : '';
 
@@ -382,7 +382,6 @@ const RoleManage: React.FC = () => {
             label: '删除',
             disabled: !canDelete,
             tooltip: deleteTooltip,
-            isDel: true,
           },
         ];
 
@@ -402,13 +401,20 @@ const RoleManage: React.FC = () => {
           <Space size={0}>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_user') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_user')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_user')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_user',
+                  )
+                }
                 onClick={() => handleBindUser(record)}
               >
                 绑定用户
@@ -416,13 +422,20 @@ const RoleManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_menu') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_menu')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_menu')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_menu',
+                  )
+                }
                 onClick={() => handleMenuPermission(record)}
               >
                 菜单权限
@@ -430,13 +443,20 @@ const RoleManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('role_manage_bind_data') ? '无此资源权限' : ''
+                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_data')
+                  ? '无此资源权限'
+                  : ''
               }
             >
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('role_manage_bind_data')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'role_manage',
+                    'role_manage_bind_data',
+                  )
+                }
                 onClick={() => handleDataPermission(record)}
               >
                 数据权限
@@ -455,60 +475,71 @@ const RoleManage: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      {/* 页面头部 */}
-      <div className={cx(styles.header)}>
-        <h1 className={cx(styles.title)}>角色管理</h1>
-        <Tooltip
-          title={!hasPermission('role_manage_add') ? '无此资源权限' : ''}
+    <WorkspaceLayout
+      title="角色管理"
+      hideScroll
+      rightSlot={[
+        <Button
+          key="query"
+          icon={<ReloadOutlined />}
+          onClick={() => runGetRoleList()}
+          loading={loading}
         >
+          查询
+        </Button>,
+        hasPermissionByMenuCode('role_manage', 'role_manage_add') && (
           <Button
+            key="add"
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('role_manage_add')}
             onClick={handleAdd}
           >
             新增角色
           </Button>
-        </Tooltip>
-      </div>
-
+        ),
+      ]}
+    >
       {/* 角色列表 */}
-      <div className={cx(styles.content)}>
-        <Spin spinning={loading && !draggableData?.length}>
-          {!draggableData?.length ? (
-            <Empty
-              description="暂无角色数据"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              className={cx(styles.empty)}
+      <Spin spinning={loading && !draggableData?.length}>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={draggableData.map((item) => String(item.key))}
+            strategy={verticalListSortingStrategy}
+          >
+            <XProTable<RoleInfo & { key: number }>
+              rowKey="key"
+              columns={columns}
+              dataSource={draggableData}
+              search={false}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+              showQueryButtons={false}
+              showIndex={false}
+              components={{
+                body: {
+                  row: Row,
+                },
+              }}
+              options={false}
+              toolBarRender={false}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="暂无角色数据"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    className={cx(styles.empty)}
+                  />
+                ),
+              }}
             />
-          ) : (
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext
-                items={draggableData.map((item) => String(item.key))}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table<RoleInfo & { key: number }>
-                  columns={columns}
-                  dataSource={draggableData}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  className={cx(styles.table)}
-                  components={{
-                    body: {
-                      row: Row,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          )}
-        </Spin>
-      </div>
+          </SortableContext>
+        </DndContext>
+      </Spin>
 
       {/* 新增/编辑角色Modal */}
       <RoleFormModal
@@ -553,7 +584,7 @@ const RoleManage: React.FC = () => {
           runGetRoleList();
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 

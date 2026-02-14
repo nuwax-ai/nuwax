@@ -31,7 +31,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   onCollect,
   onClickMore,
 }) => {
-  const { runCancelCollect, runDevCollect } = useModel('devCollectAgent');
+  const { handleCancelCollect, runDevCollect } = useModel('devCollectAgent');
   // // 权限检查
   // const { hasPermission: hasPermissionMenu } = useModel('menuModel');
 
@@ -167,11 +167,12 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
     const { id, devCollected } = agentConfigInfo;
     if (devCollected) {
-      await runCancelCollect(id);
+      await handleCancelCollect(id, () => {
+        onCollect(!devCollected);
+      });
     } else {
       await runCollect(id);
     }
-    // onCollect(!devCollected);
   };
 
   // 点击更多操作

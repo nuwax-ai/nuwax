@@ -1,11 +1,15 @@
 import CustomPopover from '@/components/CustomPopover';
+import { XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
   EllipsisOutlined,
   InfoCircleOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -14,18 +18,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Empty,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
@@ -87,7 +82,7 @@ const UserGroupManage: React.FC = () => {
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
   // 权限检查
-  const { hasPermission } = useModel('menuModel');
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 查询用户组列表
   const {
@@ -298,11 +293,13 @@ const UserGroupManage: React.FC = () => {
   };
 
   // 定义表格列
-  const columns: TableColumnsType<UserGroupInfo & { key: number }> = [
+  const columns: ProColumns<UserGroupInfo & { key: number }>[] = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
+      width: 80,
+      fixed: 'left',
       render: () => <DragHandle />,
     },
     {
@@ -322,9 +319,9 @@ const UserGroupManage: React.FC = () => {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (description: string) => (
-        <div className={cx(styles.descriptionCell)} title={description}>
-          {description || '--'}
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
+        <div className={cx(styles.descriptionCell)} title={record.description}>
+          {record.description || '--'}
         </div>
       ),
     },
@@ -344,7 +341,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      render: (status: UserGroupStatusEnum, record: UserGroupInfo) => (
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
         <Tooltip
           title={
             record.source === UserGroupSourceEnum.SystemBuiltIn
@@ -354,7 +351,7 @@ const UserGroupManage: React.FC = () => {
         >
           <Switch
             disabled={record.source === UserGroupSourceEnum.SystemBuiltIn}
-            checked={status === UserGroupStatusEnum.Enabled}
+            checked={record.status === UserGroupStatusEnum.Enabled}
             checkedChildren="启用"
             unCheckedChildren="禁用"
             loading={updateStatusLoadingMap[record.id] || false}
@@ -369,26 +366,38 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 260,
       fixed: 'right',
-      render: (_: null, record: UserGroupInfo) => {
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => {
         // 判断是否为系统内置用户组
         const isSystemBuiltIn =
           record.source === UserGroupSourceEnum.SystemBuiltIn;
 
         // 编辑权限检查
         const canEdit =
-          hasPermission('user_group_manage_modify') && !isSystemBuiltIn;
+          hasPermissionByMenuCode(
+            'user_group_manage',
+            'user_group_manage_modify',
+          ) && !isSystemBuiltIn;
         const editTooltip = isSystemBuiltIn
           ? '系统内置的用户组不能编辑'
-          : !hasPermission('user_group_manage_modify')
+          : !hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_modify',
+            )
           ? '无此资源权限'
           : '';
 
         // 删除权限检查
         const canDelete =
-          hasPermission('user_group_manage_delete') && !isSystemBuiltIn;
+          hasPermissionByMenuCode(
+            'user_group_manage',
+            'user_group_manage_delete',
+          ) && !isSystemBuiltIn;
         const deleteTooltip = isSystemBuiltIn
           ? '系统内置的用户组不能删除'
-          : !hasPermission('user_group_manage_delete')
+          : !hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_delete',
+            )
           ? '无此资源权限'
           : '';
 
@@ -405,7 +414,6 @@ const UserGroupManage: React.FC = () => {
             label: '删除',
             disabled: !canDelete,
             tooltip: deleteTooltip,
-            isDel: true,
           },
         ];
 
@@ -425,7 +433,10 @@ const UserGroupManage: React.FC = () => {
           <Space size={0}>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_user')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_user',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -433,7 +444,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_user')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_user',
+                  )
+                }
                 onClick={() => handleBindUser(record)}
               >
                 绑定用户
@@ -441,7 +457,10 @@ const UserGroupManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_menu')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_menu',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -449,7 +468,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_menu')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_menu',
+                  )
+                }
                 onClick={() => handleMenuPermission(record)}
               >
                 菜单权限
@@ -457,7 +481,10 @@ const UserGroupManage: React.FC = () => {
             </Tooltip>
             <Tooltip
               title={
-                !hasPermission('user_group_manage_bind_data')
+                !hasPermissionByMenuCode(
+                  'user_group_manage',
+                  'user_group_manage_bind_data',
+                )
                   ? '无此资源权限'
                   : ''
               }
@@ -465,7 +492,12 @@ const UserGroupManage: React.FC = () => {
               <Button
                 type="link"
                 size="small"
-                disabled={!hasPermission('user_group_manage_bind_data')}
+                disabled={
+                  !hasPermissionByMenuCode(
+                    'user_group_manage',
+                    'user_group_manage_bind_data',
+                  )
+                }
                 onClick={() => handleDataPermission(record)}
               >
                 数据权限
@@ -484,60 +516,74 @@ const UserGroupManage: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      {/* 页面头部 */}
-      <div className={cx(styles.header)}>
-        <h1 className={cx(styles.title)}>用户组管理</h1>
-        <Tooltip
-          title={!hasPermission('user_group_manage_add') ? '无此资源权限' : ''}
+    <WorkspaceLayout
+      title="用户组管理"
+      hideScroll
+      rightSlot={[
+        <Button
+          key="query"
+          icon={<ReloadOutlined />}
+          onClick={() => runGetUserGroupList()}
+          loading={loading}
         >
+          查询
+        </Button>,
+        hasPermissionByMenuCode(
+          'user_group_manage',
+          'user_group_manage_add',
+        ) && (
           <Button
+            key="add"
             type="primary"
             icon={<PlusOutlined />}
-            disabled={!hasPermission('user_group_manage_add')}
             onClick={handleAdd}
           >
             新增用户组
           </Button>
-        </Tooltip>
-      </div>
-
+        ),
+      ]}
+    >
       {/* 用户组列表 */}
-      <div className={cx(styles.content)}>
-        <Spin spinning={loading && !draggableData?.length}>
-          {!draggableData?.length ? (
-            <Empty
-              description="暂无用户组数据"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              className={cx(styles.empty)}
+      <Spin spinning={loading && !draggableData?.length}>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={draggableData.map((item) => String(item.key))}
+            strategy={verticalListSortingStrategy}
+          >
+            <XProTable<UserGroupInfo & { key: number }>
+              rowKey="key"
+              columns={columns}
+              dataSource={draggableData}
+              search={false}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+              showQueryButtons={false}
+              showIndex={false}
+              components={{
+                body: {
+                  row: Row,
+                },
+              }}
+              options={false}
+              toolBarRender={false}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="暂无用户组数据"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    className={cx(styles.empty)}
+                  />
+                ),
+              }}
             />
-          ) : (
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
-              <SortableContext
-                items={draggableData.map((item) => String(item.key))}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table<UserGroupInfo & { key: number }>
-                  columns={columns}
-                  dataSource={draggableData}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  className={cx(styles.table)}
-                  components={{
-                    body: {
-                      row: Row,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          )}
-        </Spin>
-      </div>
+          </SortableContext>
+        </DndContext>
+      </Spin>
 
       {/* 新增/编辑用户组Modal */}
       <UserGroupFormModal
@@ -587,7 +633,7 @@ const UserGroupManage: React.FC = () => {
           runGetUserGroupList();
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 

@@ -756,7 +756,7 @@ const EditAgent: React.FC = () => {
   const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在或无效，无法导出');
+      messageAntd.warning('开发会话ID不存在或无效，无法导出');
       return;
     }
 
@@ -766,7 +766,7 @@ const EditAgent: React.FC = () => {
       if (!result.success) {
         // 导出失败，显示错误信息
         const errorMessage = result.error?.message || '导出失败';
-        messageAntd.error(errorMessage);
+        messageAntd.warning(errorMessage);
         return;
       }
 
