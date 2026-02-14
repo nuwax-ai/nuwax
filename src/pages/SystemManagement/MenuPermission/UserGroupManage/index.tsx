@@ -1,4 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
+import { XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
@@ -7,6 +9,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -15,18 +18,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Empty,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
@@ -299,11 +293,13 @@ const UserGroupManage: React.FC = () => {
   };
 
   // 定义表格列
-  const columns: TableColumnsType<UserGroupInfo & { key: number }> = [
+  const columns: ProColumns<UserGroupInfo & { key: number }>[] = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
+      width: 80,
+      fixed: 'left',
       render: () => <DragHandle />,
     },
     {
@@ -323,9 +319,9 @@ const UserGroupManage: React.FC = () => {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (description: string) => (
-        <div className={cx(styles.descriptionCell)} title={description}>
-          {description || '--'}
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
+        <div className={cx(styles.descriptionCell)} title={record.description}>
+          {record.description || '--'}
         </div>
       ),
     },
@@ -345,7 +341,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      render: (status: UserGroupStatusEnum, record: UserGroupInfo) => (
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
         <Tooltip
           title={
             record.source === UserGroupSourceEnum.SystemBuiltIn
@@ -355,7 +351,7 @@ const UserGroupManage: React.FC = () => {
         >
           <Switch
             disabled={record.source === UserGroupSourceEnum.SystemBuiltIn}
-            checked={status === UserGroupStatusEnum.Enabled}
+            checked={record.status === UserGroupStatusEnum.Enabled}
             checkedChildren="启用"
             unCheckedChildren="禁用"
             loading={updateStatusLoadingMap[record.id] || false}
@@ -370,7 +366,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 260,
       fixed: 'right',
-      render: (_: null, record: UserGroupInfo) => {
+      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => {
         // 判断是否为系统内置用户组
         const isSystemBuiltIn =
           record.source === UserGroupSourceEnum.SystemBuiltIn;
@@ -418,7 +414,6 @@ const UserGroupManage: React.FC = () => {
             label: '删除',
             disabled: !canDelete,
             tooltip: deleteTooltip,
-            isDel: true,
           },
         ];
 
@@ -521,66 +516,74 @@ const UserGroupManage: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      {/* 页面头部 */}
-      <div className={cx(styles.header)}>
-        <h1 className={cx(styles.title)}>用户组管理</h1>
-        <Space>
+    <WorkspaceLayout
+      title="用户组管理"
+      hideScroll
+      rightSlot={[
+        <Button
+          key="query"
+          icon={<ReloadOutlined />}
+          onClick={() => runGetUserGroupList()}
+          loading={loading}
+        >
+          查询
+        </Button>,
+        hasPermissionByMenuCode(
+          'user_group_manage',
+          'user_group_manage_add',
+        ) && (
           <Button
-            icon={<ReloadOutlined />}
-            onClick={() => runGetUserGroupList()}
-            loading={loading}
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
           >
-            查询
+            新增用户组
           </Button>
-          {hasPermissionByMenuCode(
-            'user_group_manage',
-            'user_group_manage_add',
-          ) && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              新增用户组
-            </Button>
-          )}
-        </Space>
-      </div>
-
+        ),
+      ]}
+    >
       {/* 用户组列表 */}
-      <div className={cx(styles.content)}>
-        <Spin spinning={loading && !draggableData?.length}>
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
-            modifiers={[restrictToVerticalAxis]}
+      <Spin spinning={loading && !draggableData?.length}>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={draggableData.map((item) => String(item.key))}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={draggableData.map((item) => String(item.key))}
-              strategy={verticalListSortingStrategy}
-            >
-              <Table<UserGroupInfo & { key: number }>
-                columns={columns}
-                dataSource={draggableData}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-                className={cx(styles.table)}
-                components={{
-                  body: {
-                    row: Row,
-                  },
-                }}
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description="暂无用户组数据"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      className={cx(styles.empty)}
-                    />
-                  ),
-                }}
-              />
-            </SortableContext>
-          </DndContext>
-        </Spin>
-      </div>
+            <XProTable<UserGroupInfo & { key: number }>
+              rowKey="key"
+              columns={columns}
+              dataSource={draggableData}
+              search={false}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+              showQueryButtons={false}
+              showIndex={false}
+              components={{
+                body: {
+                  row: Row,
+                },
+              }}
+              options={false}
+              toolBarRender={false}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="暂无用户组数据"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    className={cx(styles.empty)}
+                  />
+                ),
+              }}
+            />
+          </SortableContext>
+        </DndContext>
+      </Spin>
 
       {/* 新增/编辑用户组Modal */}
       <UserGroupFormModal
@@ -630,7 +633,7 @@ const UserGroupManage: React.FC = () => {
           runGetUserGroupList();
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 
