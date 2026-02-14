@@ -577,6 +577,9 @@ const AgentDetails: React.FC = () => {
                       // 关闭整个面板
                       onClose={closePreviewView}
                       isCanDeleteSkillFile={true}
+                      // 是否显示视图模式切换按钮
+                      showViewModeButtons={false}
+                      // 是否仅显示智能体电脑
                       isOnlyShowDesktop={true}
                       // VNC 空闲检测配置（仅通用型智能体启用）
                       idleDetection={{

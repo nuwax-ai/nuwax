@@ -22,7 +22,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -339,6 +339,26 @@ const EditAgent: React.FC = () => {
     return _agentConfigInfo;
   };
 
+  // 获取开发会话ID
+  const devConversationId = agentConfigInfo?.devConversationId;
+
+  // 切换视图模式
+  const onViewModeChange = useCallback(
+    (mode: 'preview' | 'desktop') => {
+      if (!devConversationId) {
+        messageAntd.warning('会话ID不存在，无法切换视图模式');
+        return;
+      }
+
+      if (mode === 'desktop') {
+        openDesktopView(devConversationId);
+      } else {
+        openPreviewView(devConversationId);
+      }
+    },
+    [devConversationId, openPreviewView, openDesktopView],
+  );
+
   // 更新智能体信息
   const handleChangeAgent = useCallback(
     async (
@@ -399,6 +419,11 @@ const EditAgent: React.FC = () => {
       // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
       if (attr === 'expandPageArea') {
         runUpdateAgent(agentId);
+      }
+
+      // 如果隐藏远程桌面，则切换到文件预览模式
+      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
+        onViewModeChange('preview');
       }
 
       const {
@@ -496,9 +521,6 @@ const EditAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // 获取开发会话ID
-  const devConversationId = agentConfigInfo?.devConversationId;
-
   useEffect(() => {
     if (!devConversationId) {
       return;
@@ -526,23 +548,6 @@ const EditAgent: React.FC = () => {
     // 触发文件列表刷新事件
     openPreviewView(devConversationId);
   };
-
-  // 切换视图模式
-  const onViewModeChange = useCallback(
-    (mode: 'preview' | 'desktop') => {
-      if (!devConversationId) {
-        messageAntd.warning('会话ID不存在，无法切换视图模式');
-        return;
-      }
-
-      if (mode === 'desktop') {
-        openDesktopView(devConversationId);
-      } else {
-        openPreviewView(devConversationId);
-      }
-    },
-    [devConversationId, openPreviewView, openDesktopView],
-  );
 
   // 新建文件（空内容）、文件夹
   const handleCreateFileNode = async (
