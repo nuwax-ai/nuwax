@@ -850,9 +850,7 @@ const MenuManage: React.FC = () => {
           {/* 系统内置的资源不能编辑和删除 */}
           <Tooltip
             title={
-              record.source === MenuSourceEnum.SystemBuiltIn
-                ? '系统内置的菜单不能编辑'
-                : !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
+              !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
                 ? '无此资源权限'
                 : ''
             }
@@ -861,7 +859,6 @@ const MenuManage: React.FC = () => {
               type="link"
               size="small"
               disabled={
-                record.source === MenuSourceEnum.SystemBuiltIn ||
                 !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
               }
               onClick={() => handleEdit(record)}

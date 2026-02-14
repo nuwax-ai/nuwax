@@ -66,7 +66,7 @@ const MENU_SOURCE_OPTIONS = [
 
 // 打开方式选项
 const OPEN_TYPE_OPTIONS = [
-  { label: '当前标签页打开', value: OpenTypeEnum.CurrentTab },
+  { label: '应用内打开', value: OpenTypeEnum.CurrentTab },
   { label: '新标签页打开', value: OpenTypeEnum.NewTab },
 ];
 
@@ -399,6 +399,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   };
 
+  // 上传图片默认处理
   const beforeUploadDefault = (file: FileType) => {
     const { type, size } = file;
     const isJpgOrPng =
@@ -446,28 +447,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           />
         </Form.Item>
         <Row gutter={16}>
-          {/* <Col span={12}>
-            <Form.Item
-              label="菜单编码"
-              name="code"
-              rules={[
-                { required: true, message: '请输入菜单编码' },
-                {
-                  pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                  message:
-                    '菜单编码必须以英文字母开头，只能包含字母、数字和下划线',
-                },
-              ]}
-            >
-              <Input
-                disabled={isEdit}
-                placeholder="请输入菜单编码"
-                maxLength={100}
-                showCount
-              />
-            </Form.Item>
-          </Col> */}
-
           <Col span={12}>
             <Form.Item
               label="菜单名称"
@@ -526,7 +505,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           </Col>
 
           <Col span={12}>
-            <Form.Item label="打开方式" name="openType">
+            <Form.Item label="外链打开方式" name="openType">
               <Select
                 placeholder="请选择打开方式"
                 options={OPEN_TYPE_OPTIONS}
@@ -591,6 +570,10 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
           {resourceTreeData && resourceTreeData.length > 0 && (
             <Tree
               checkable
+              // 编辑模式下，系统内置的菜单不能编辑关联资源码
+              disabled={
+                isEdit && menuInfo?.source === MenuSourceEnum.SystemBuiltIn
+              }
               defaultExpandAll
               treeData={resourceTreeData}
               checkedKeys={selectedResourceIds}

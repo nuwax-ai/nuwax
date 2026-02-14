@@ -39,6 +39,21 @@
       .ant-tree-list {
         min-width: fit-content;
       }
+
+      // 禁用状态下选中的 checkbox 颜色加深
+      .ant-tree-checkbox-disabled.ant-tree-checkbox-checked {
+        .ant-tree-checkbox-inner {
+          background-color: #5147ff !important;
+          border-color: #5147ff !important;
+          opacity: 0.8 !important;
+
+          // 勾勾使用白色，与背景色形成对比
+          &::after {
+            border-color: #fff !important;
+            opacity: 1 !important;
+          }
+        }
+      }
     }
   }
 }
