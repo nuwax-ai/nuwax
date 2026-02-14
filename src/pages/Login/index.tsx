@@ -59,7 +59,6 @@ const Login: React.FC = () => {
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-      console.info('login:redirect', redirect, responseRedirectUrl);
       if (isWeakNumber(redirect)) {
         history.go(Number(redirect));
       } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
@@ -68,7 +67,7 @@ const Login: React.FC = () => {
       } else if (redirect) {
         history.replace(redirect);
       } else {
-        history.replace('/home');
+        history.replace('/');
       }
     },
     onError: (error: any) => {
