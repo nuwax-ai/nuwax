@@ -798,9 +798,25 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
-        <Tag>{getResourceTypeText(record.type)}</Tag>
-      ),
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => {
+        const isModule = record.type === ResourceTypeEnum.Module;
+        // 模块：使用绿色系
+        // 组件：使用柔和的橙色系
+        const backgroundColor = isModule ? '#f6ffed' : '#fff7e6';
+        const color = isModule ? '#389e0d' : '#d46b08';
+        const borderColor = isModule ? '#b7eb8f' : '#ffd591';
+        return (
+          <Tag
+            style={{
+              backgroundColor,
+              color,
+              borderColor,
+            }}
+          >
+            {getResourceTypeText(record.type)}
+          </Tag>
+        );
+      },
     },
     {
       title: '编码',
