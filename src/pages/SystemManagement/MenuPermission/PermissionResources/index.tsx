@@ -1,5 +1,8 @@
+import { XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -8,7 +11,6 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
 import {
   Button,
   Empty,
@@ -16,11 +18,11 @@ import {
   Space,
   Spin,
   Switch,
-  Table,
   Tag,
   Tooltip,
 } from 'antd';
 import classNames from 'classnames';
+import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
@@ -741,12 +743,13 @@ const PermissionResources: React.FC = () => {
   );
 
   // 定义表格列
-  const columns: TableColumnsType<ResourceTreeNode & { key: number }> = [
+  const columns: ProColumns<ResourceTreeNode & { key: number }>[] = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
       width: 80,
+      fixed: 'left',
       render: () => <DragHandle />,
     },
     {
@@ -755,10 +758,7 @@ const PermissionResources: React.FC = () => {
       key: 'name',
       width: 200,
       ellipsis: true,
-      render: (
-        text: string,
-        record: ResourceTreeNode & { key: number },
-      ): React.ReactNode => {
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => {
         const hasChildren =
           Array.isArray(record.children) && record.children.length > 0;
         const expanded = expandedRowKeys.includes(record.key);
@@ -786,8 +786,8 @@ const PermissionResources: React.FC = () => {
               // 无子节点时使用与箭头相同尺寸的占位元素，保证对齐
               <span className={cx(styles.icon, styles['icon-hidden'])} />
             )}
-            <span className="text-ellipsis" title={text}>
-              {text || '--'}
+            <span className="text-ellipsis" title={record.name}>
+              {record.name || '--'}
             </span>
           </div>
         );
@@ -798,8 +798,8 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (type: ResourceTypeEnum) => (
-        <Tag>{getResourceTypeText(type)}</Tag>
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
+        <Tag>{getResourceTypeText(record.type)}</Tag>
       ),
     },
     {
@@ -807,13 +807,15 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 200,
-      render: (code: string) => code || '--',
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) =>
+        record.code || '--',
     },
     {
       title: '路由路径',
       dataIndex: 'path',
       key: 'path',
-      render: (path: string) => path || '--',
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) =>
+        record.path || '--',
     },
     {
       title: '是否启用',
@@ -822,7 +824,7 @@ const PermissionResources: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      render: (status: ResourceEnabledEnum, record: ResourceTreeNode) => (
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
         <Tooltip
           title={
             record.source === ResourceSourceEnum.SystemBuiltIn
@@ -831,7 +833,7 @@ const PermissionResources: React.FC = () => {
           }
         >
           <Switch
-            checked={status === ResourceEnabledEnum.Enabled}
+            checked={record.status === ResourceEnabledEnum.Enabled}
             disabled={record.source === ResourceSourceEnum.SystemBuiltIn}
             loading={updateVisibleLoadingMap[record.id] || false}
             checkedChildren="启用"
@@ -855,7 +857,7 @@ const PermissionResources: React.FC = () => {
       align: 'center',
       width: 200,
       fixed: 'right',
-      render: (_: null, record: ResourceTreeNode) => (
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
         <Space size={0}>
           {record.type !== ResourceTypeEnum.Component && (
             <Tooltip
@@ -943,82 +945,85 @@ const PermissionResources: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      {/* 页面头部 */}
-      <div className={cx(styles.header)}>
-        <h1 className={cx(styles.title)}>权限资源管理</h1>
-        <Space>
+    <WorkspaceLayout
+      title="权限资源管理"
+      hideScroll
+      rightSlot={[
+        <Button
+          key="query"
+          icon={<ReloadOutlined />}
+          onClick={() => runGetResourceList()}
+          loading={loading}
+        >
+          查询
+        </Button>,
+        hasPermissionByMenuCode('resource_manage', 'resource_manage_add') && (
           <Button
-            icon={<ReloadOutlined />}
-            onClick={() => runGetResourceList()}
-            loading={loading}
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
           >
-            查询
+            新增资源
           </Button>
-          {hasPermissionByMenuCode(
-            'resource_manage',
-            'resource_manage_add',
-          ) && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              新增资源
-            </Button>
-          )}
-        </Space>
-      </div>
-
+        ),
+      ]}
+    >
       {/* 资源列表 */}
-      <div className={cx(styles.content)}>
-        <Spin spinning={loading && !draggableData?.length}>
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
-            modifiers={[restrictToVerticalAxis]}
+      <Spin spinning={loading && !draggableData?.length}>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext
+            items={getAllKeys(draggableData)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={getAllKeys(draggableData)}
-              strategy={verticalListSortingStrategy}
-            >
-              <Table<ResourceTreeNode & { key: number }>
-                components={{
-                  body: {
-                    row: Row,
-                  },
-                }}
-                rowKey="key"
-                columns={columns}
-                dataSource={draggableData}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-                className={cx(styles.table)}
-                // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
-                indentSize={0}
-                // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
-                expandable={{
-                  expandedRowKeys,
-                  onExpand: (expanded, record) =>
-                    handleExpand(
-                      expanded,
-                      record as ResourceTreeNode & { key: number },
-                    ),
-                  expandIcon: () => null,
-                  columnWidth: 0,
-                }}
-                // 防止展开/折叠时 Table 布局变动
-                tableLayout="fixed"
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description="暂无资源数据"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      className={cx(styles.empty)}
-                    />
+            <XProTable<ResourceTreeNode & { key: number }>
+              rowKey="key"
+              columns={columns}
+              dataSource={draggableData}
+              search={false}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              showQueryButtons={false}
+              showIndex={false}
+              components={{
+                body: {
+                  row: Row,
+                },
+              }}
+              options={false}
+              toolBarRender={false}
+              // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+              indentSize={0}
+              // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
+              expandable={{
+                expandedRowKeys,
+                onExpand: (expanded, record) =>
+                  handleExpand(
+                    expanded,
+                    record as ResourceTreeNode & { key: number },
                   ),
-                }}
-              />
-            </SortableContext>
-          </DndContext>
-        </Spin>
-      </div>
+                expandIcon: () => null,
+                columnWidth: 0,
+              }}
+              // 防止展开/折叠时 Table 布局变动
+              tableLayout="fixed"
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="暂无资源数据"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    className={cx(styles.empty)}
+                  />
+                ),
+              }}
+            />
+          </SortableContext>
+        </DndContext>
+      </Spin>
 
       {/* 新增/编辑资源Modal */}
       <ResourceFormModal
@@ -1033,7 +1038,7 @@ const PermissionResources: React.FC = () => {
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 

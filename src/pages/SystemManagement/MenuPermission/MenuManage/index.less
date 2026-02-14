@@ -1,19 +1,5 @@
 @import '@/styles/token.less';
 
-.table {
-  :global {
-    // 确保第一列（拖拽手柄列）不缩进，固定 padding-left
-    .ant-table-tbody > tr > td:first-child {
-      padding-left: 16px !important;
-    }
-
-    // 确保第二列（图标列）不缩进
-    .ant-table-tbody > tr > td:nth-child(2) {
-      padding-left: 16px !important;
-    }
-  }
-}
-
 // .iconCell {
 //   display: flex;
 //   align-items: center;
@@ -32,21 +18,21 @@
 //   color: var(--color-font-tertiary, #828894);
 // }
 
-// .icon {
-//   font-size: 12px;
-//   color: var(--color-icon-secondary, #4e5969);
-//   margin-right: 8px;
-//   transform: rotate(-90deg);
-//   transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
+.icon {
+  font-size: 12px;
+  color: var(--color-icon-secondary, #4e5969);
+  margin-right: 8px;
+  transform: rotate(-90deg);
+  transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
 
-//   &.rotate-0 {
-//     transform: rotate(0deg);
-//   }
+  &.rotate-0 {
+    transform: rotate(0deg);
+  }
 
-//   &.icon-hidden {
-//     visibility: hidden;
-//   }
-// }
+  &.icon-hidden {
+    visibility: hidden;
+  }
+}
 
 .empty {
   display: flex;

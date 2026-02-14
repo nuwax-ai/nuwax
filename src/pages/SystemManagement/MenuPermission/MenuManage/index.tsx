@@ -939,7 +939,6 @@ const MenuManage: React.FC = () => {
               search={false}
               pagination={false}
               scroll={{ x: 'max-content' }}
-              className={cx(styles.table)}
               showQueryButtons={false}
               showIndex={false}
               components={{
