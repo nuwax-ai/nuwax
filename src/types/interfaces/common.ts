@@ -532,6 +532,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   agentId?: number;
   /** 智能体绑定的云电脑ID */
   agentSandboxId?: string | number;
+  /** 是否固定选择 */
+  fixedSelection?: boolean;
   /** 是否有智能体使用权限 */
   hasPermission?: boolean;
   /** 电脑是否不可用 */
@@ -544,6 +546,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   autoSelectComputer?: boolean;
   /** 是否在选中时自动保存到后端 */
   saveComputerOnSelect?: boolean;
+  /** 是否为个人电脑 */
+  isPersonalComputer?: boolean;
 }
 
 // 聊天框底部更多操作组件

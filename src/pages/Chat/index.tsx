@@ -21,10 +21,6 @@ import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import {
-  apiGetUserSelectableSandboxList,
-  apiSaveSelectedSandbox,
-} from '@/services/systemManage';
-import {
   apiDownloadAllFiles,
   apiUpdateStaticFile,
   apiUploadFiles,
@@ -108,14 +104,31 @@ const Chat: React.FC = () => {
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-  // 选中的电脑ID（用于任务智能体模式）
-  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
-  // 沙盒列表数据
-  const [sandboxes, setSandboxes] = useState<any[]>([]);
-  // 智能体选择记录映射
-  const [agentSelectedMap, setAgentSelectedMap] = useState<
-    Record<string, string>
-  >({});
+  // 智能体详情页面带过来的值仅在本次会话使用，当用户刷新页面或点击小刷子新建会话，就不能作为其他判断条件使用。
+  // 因此，只有在 history action 为 PUSH 且 state 中有值时才设置
+  const [selectedComputerId, setSelectedComputerId] = useState<string>(() => {
+    const passedDetails = location.state?.selectedComputerId;
+    // PUSH: 正常跳转 (AgentDetails -> Chat)
+    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
+    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
+    if (history.action === 'PUSH' && passedDetails) {
+      return passedDetails;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    const passedDetails = location.state?.selectedComputerId;
+    console.log('PUSH', passedDetails);
+    // PUSH: 正常跳转 (AgentDetails -> Chat)
+    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
+    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
+    if (history.action === 'PUSH' && passedDetails) {
+      setSelectedComputerId(passedDetails);
+    } else {
+      setSelectedComputerId('');
+    }
+  }, [location.key]);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -196,47 +209,18 @@ const Chat: React.FC = () => {
   // 获取有效的沙箱ID
   const getEffectiveSandboxId = (info: any = conversationInfo) => {
     const sandboxServerId = info?.sandboxServerId;
-    // 检查 sandboxServerId 是否在可选列表中
-    const isSandboxInList =
-      sandboxServerId !== undefined &&
-      sandboxServerId !== null &&
-      sandboxes.some((s) => String(s.sandboxId) === String(sandboxServerId));
 
-    if (isSandboxInList) {
+    if (sandboxServerId) {
       return String(sandboxServerId);
     }
 
-    if (!sandboxServerId) {
-      // 1. 如果没有固定沙箱，优先使用本地选中的映射
-      const savedId = agentSelectedMap[String(agentId)];
-      if (
-        savedId &&
-        sandboxes.some((s) => String(s.sandboxId) === String(savedId))
-      ) {
-        return String(savedId);
-      }
-      // 2. 如果没有本地映射，尝试取智能体配置中默认的沙盒（sandboxId）
-      const configSandboxId = (effectiveAgent as any)?.sandboxId;
-      if (
-        configSandboxId !== undefined &&
-        configSandboxId !== null &&
-        sandboxes.some((s) => String(s.sandboxId) === String(configSandboxId))
-      ) {
-        return String(configSandboxId);
-      }
-      // 3. 其次使用当前手动选中的ID
-      if (
-        selectedComputerId &&
-        sandboxes.some(
-          (s) => String(s.sandboxId) === String(selectedComputerId),
-        )
-      ) {
-        return selectedComputerId;
-      }
-      // 4. 最后使用列表首项
-      if (sandboxes.length > 0) {
-        return String(sandboxes[0].sandboxId);
-      }
+    // 优先使用 state 中的值，若状态未更新且为 PUSH 跳转，则尝试从 location.state 获取
+    if (
+      !selectedComputerId &&
+      history.action === 'PUSH' &&
+      location.state?.selectedComputerId
+    ) {
+      return location.state.selectedComputerId;
     }
 
     return selectedComputerId;
@@ -394,21 +378,7 @@ const Chat: React.FC = () => {
       setAgentDetail(defaultAgentDetail);
       handleOpenPreview(defaultAgentDetail);
     }
-
-    // 获取沙盒可选列表
-    const fetchSandboxList = async () => {
-      try {
-        const res = await apiGetUserSelectableSandboxList();
-        if (res?.code === SUCCESS_CODE && res.data) {
-          setSandboxes(res.data.sandboxes || []);
-          setAgentSelectedMap(res.data.agentSelected || {});
-        }
-      } catch (error) {
-        console.error('获取沙盒列表失败:', error);
-      }
-    };
-    fetchSandboxList();
-  }, [agentId, defaultAgentDetail, effectiveAgent]);
+  }, [agentId, defaultAgentDetail]);
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
@@ -1098,6 +1068,7 @@ const Chat: React.FC = () => {
             )}
 
           {(() => {
+            const sandboxId = conversationInfo?.agent?.sandboxId;
             const sandboxServerId = conversationInfo?.sandboxServerId;
             const hasPermission = effectiveAgent?.hasPermission !== false;
 
@@ -1111,14 +1082,6 @@ const Chat: React.FC = () => {
 
             // 计算最终选中的沙盒ID
             const finalSelectedId = getEffectiveSandboxId();
-
-            // 转换格式
-            const mappedOptions = sandboxes.map((s) => ({
-              id: String(s.sandboxId),
-              name: s.name,
-              description: s.description,
-              raw: s,
-            }));
 
             return (
               <ChatInputHome
@@ -1140,22 +1103,21 @@ const Chat: React.FC = () => {
                 selectedComputerId={finalSelectedId || selectedComputerId}
                 onComputerSelect={async (id) => {
                   setSelectedComputerId(id);
-                  try {
-                    await apiSaveSelectedSandbox(agentId, id);
-                    setAgentSelectedMap((prev) => ({
-                      ...prev,
-                      [String(agentId)]: id,
-                    }));
-                  } catch (e) {
-                    console.error('保存沙箱选择失败', e);
-                  }
                 }}
-                agentSandboxId={sandboxServerId}
+                agentId={agentId}
+                agentSandboxId={
+                  finalSelectedId || selectedComputerId || sandboxServerId
+                }
                 hasPermission={!maskVisible}
                 maskText={maskText}
-                computerOptions={mappedOptions}
-                autoSelectComputer={false}
-                saveComputerOnSelect={false}
+                fixedSelection={
+                  // (sandboxServerId !== undefined &&
+                  //   sandboxServerId !== null &&
+                  //   sandboxServerId !== '') ||
+                  !!sandboxId || !!sandboxServerId
+                  // !!selectedComputerId ||
+                  // !!finalSelectedId
+                }
               />
             );
           })()}

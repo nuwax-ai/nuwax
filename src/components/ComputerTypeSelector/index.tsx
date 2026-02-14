@@ -24,16 +24,25 @@ const cx = classNames.bind(styles);
  */
 const NO_COMPUTER_OPTION: ComputerOption = {
   id: '',
-  name: '无可选电脑',
+  name: '无可用电脑',
   description: '',
 };
 
 /**
- * 电脑不可用选项
+ * 电脑不可用选项 (通用)
  */
 const UNAVAILABLE_OPTION: ComputerOption = {
   id: '',
   name: '电脑不可用',
+  description: '',
+};
+
+/**
+ * 个人电脑不可用选项 (绑定ID丢失)
+ */
+const PERSONAL_COMPUTER_UNAVAILABLE_OPTION: ComputerOption = {
+  id: '',
+  name: '个人电脑不可用',
   description: '',
 };
 
@@ -52,6 +61,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   options: externalOptions,
   autoSelect = true,
   saveOnSelect = true,
+  isPersonalComputer = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -170,6 +180,12 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     if (unavailable) {
       return UNAVAILABLE_OPTION;
     }
+
+    // 优先检查列表是否为空：如果已初始化且列表为空，直接显示无可用电脑
+    if (isFullyInitialized && effectiveComputerList.length === 0) {
+      return NO_COMPUTER_OPTION;
+    }
+
     // 查找选中的电脑
     if (value) {
       const found = effectiveComputerList.find(
@@ -178,20 +194,23 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       if (found) {
         return found;
       }
-      // 如果是固定选择且在列表中找不到，则显示不可用
+      // 如果是固定选择且在列表中找不到
       if (fixedSelection && isFullyInitialized) {
-        return UNAVAILABLE_OPTION;
+        return isPersonalComputer
+          ? PERSONAL_COMPUTER_UNAVAILABLE_OPTION
+          : UNAVAILABLE_OPTION;
       }
     }
     // 如果已初始化且找不到，说明列表为空或选中的电脑不在列表中
     if (isFullyInitialized) {
-      if (effectiveComputerList.length === 0) {
-        return NO_COMPUTER_OPTION;
-      }
+      // 列表为空的情况上面已经处理过了
+
       // 如果是固定选择，且没找到（前面已经处理过），这里应该是不可达或者默认
       // 但为了安全起见，如果是固定选择，不应该fallback到第一个
       if (fixedSelection) {
-        return UNAVAILABLE_OPTION;
+        return isPersonalComputer
+          ? PERSONAL_COMPUTER_UNAVAILABLE_OPTION
+          : UNAVAILABLE_OPTION;
       }
       // 返回第一个选项
       return effectiveComputerList[0];
@@ -274,6 +293,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
               )}
             </div>
           ),
+          disabled: fixedSelection && !isSelected,
           onClick: () => handleSelect(computer),
         });
       });
@@ -296,15 +316,12 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   }, [loading, effectiveComputerList, isFullyInitialized, handleSelect, value]);
 
   // 计算是否真正禁用
-  const isDisabled = disabled || fixedSelection || unavailable;
-
-  if (
-    selectedOption === NO_COMPUTER_OPTION ||
-    selectedOption === UNAVAILABLE_OPTION
-  ) {
-    // 如果没有电脑或电脑不可用，不显示选择器
-    return null;
-  }
+  const isDisabled =
+    disabled ||
+    unavailable ||
+    effectiveComputerList.length === 0 ||
+    selectedOption === UNAVAILABLE_OPTION ||
+    selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
 
   return (
     <div className={cx(styles['computer-selector-container'], className)}>
@@ -325,7 +342,10 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             className={cx(styles['selector-btn'], {
               [styles['selector-btn-active']]: !!value,
               [styles['selector-btn-unavailable']]:
-                unavailable || selectedOption === UNAVAILABLE_OPTION,
+                unavailable ||
+                selectedOption === UNAVAILABLE_OPTION ||
+                selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION ||
+                selectedOption === NO_COMPUTER_OPTION,
               [styles.open]: open,
             })}
           >
@@ -333,13 +353,16 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             <span>
               {loading || !isFullyInitialized ? '' : selectedOption.name}
             </span>
-            {!fixedSelection && !unavailable && (
-              <SvgIcon
-                name="icons-common-caret_down"
-                style={{ fontSize: 14 }}
-                className={cx(styles['selector-arrow'])}
-              />
-            )}
+            {!unavailable &&
+              selectedOption !== UNAVAILABLE_OPTION &&
+              selectedOption !== PERSONAL_COMPUTER_UNAVAILABLE_OPTION &&
+              selectedOption !== NO_COMPUTER_OPTION && (
+                <SvgIcon
+                  name="icons-common-caret_down"
+                  style={{ fontSize: 14 }}
+                  className={cx(styles['selector-arrow'])}
+                />
+              )}
           </span>
         </span>
       </Dropdown>

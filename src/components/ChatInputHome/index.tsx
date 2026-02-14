@@ -57,12 +57,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onComputerSelect,
   agentId,
   agentSandboxId,
+  fixedSelection,
   hasPermission = true,
   isSandboxUnavailable = false,
   maskText,
   computerOptions,
   autoSelectComputer,
   saveComputerOnSelect,
+  isPersonalComputer,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -504,21 +506,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     : selectedComputerId
                 }
                 onChange={(id) => onComputerSelect?.(id)}
-                disabled={
-                  wholeDisabled ||
-                  isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                }
+                disabled={wholeDisabled}
                 agentId={agentId}
                 fixedSelection={
-                  (conversationInfo?.sandboxServerId !== undefined &&
-                    conversationInfo?.sandboxServerId !== null) ||
-                  (agentSandboxId !== undefined && agentSandboxId !== null)
+                  fixedSelection ||
+                  isConversationActive ||
+                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
                 }
                 unavailable={isSandboxUnavailable}
                 options={computerOptions}
                 autoSelect={autoSelectComputer}
                 saveOnSelect={saveComputerOnSelect}
+                isPersonalComputer={isPersonalComputer}
               />
             )}
             {/* 根据会话状态显示发送或停止按钮 */}
