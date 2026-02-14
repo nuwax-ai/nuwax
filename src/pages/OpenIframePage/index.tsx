@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'umi';
 
 /**
  * 打开iframe页面
  * @description 打开iframe页面，用于打开外部链接
  */
 const OpenIframePage: React.FC = () => {
+  const location = useLocation();
+  // url地址
   const [iframeUrl, setIframeUrl] = useState<string>('');
 
   useEffect(() => {
@@ -13,7 +16,7 @@ const OpenIframePage: React.FC = () => {
     if (iframeUrl) {
       setIframeUrl(decodeURIComponent(iframeUrl));
     }
-  }, []);
+  }, [location.state]);
 
   return (
     <div className="h-full w-full">

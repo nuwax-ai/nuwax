@@ -271,10 +271,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     //   setActiveTab('my_computer');
     // }
     else {
-      console.log(
-        '======location.pathname运行到这里了======',
-        location.pathname,
-      );
       // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
       const firstLevelCode = findFirstLevelCodeByPath(
         firstLevelMenus,
@@ -350,7 +346,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       window.open(path, '_blank');
       return;
     }
-    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`);
+    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`, {
+      _t: Date.now(),
+    });
   };
 
   /**

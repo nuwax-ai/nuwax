@@ -250,7 +250,9 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       window.open(path, '_blank');
       return;
     }
-    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`);
+    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`, {
+      _t: Date.now(),
+    });
   };
 
   // 处理路径URL路径跳转
