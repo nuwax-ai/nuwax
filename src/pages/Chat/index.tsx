@@ -104,8 +104,30 @@ const Chat: React.FC = () => {
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-  // 选中的电脑ID（用于任务智能体模式）
-  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 智能体详情页面带过来的值仅在本次会话使用，当用户刷新页面或点击小刷子新建会话，就不能作为其他判断条件使用。
+  // 因此，只有在 history action 为 PUSH 且 state 中有值时才设置
+  const [selectedComputerId, setSelectedComputerId] = useState<string>(() => {
+    const passedDetails = location.state?.selectedComputerId;
+    // PUSH: 正常跳转 (AgentDetails -> Chat)
+    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
+    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
+    if (history.action === 'PUSH' && passedDetails) {
+      return passedDetails;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    const passedDetails = location.state?.selectedComputerId;
+    // PUSH: 正常跳转 (AgentDetails -> Chat)
+    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
+    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
+    if (history.action === 'PUSH' && passedDetails) {
+      setSelectedComputerId(passedDetails);
+    } else {
+      setSelectedComputerId('');
+    }
+  }, [location.key]);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -189,6 +211,15 @@ const Chat: React.FC = () => {
 
     if (sandboxServerId) {
       return String(sandboxServerId);
+    }
+
+    // 优先使用 state 中的值，若状态未更新且为 PUSH 跳转，则尝试从 location.state 获取
+    if (
+      !selectedComputerId &&
+      history.action === 'PUSH' &&
+      location.state?.selectedComputerId
+    ) {
+      return location.state.selectedComputerId;
     }
 
     return selectedComputerId;
@@ -1072,9 +1103,18 @@ const Chat: React.FC = () => {
                   setSelectedComputerId(id);
                 }}
                 agentId={agentId}
-                agentSandboxId={sandboxServerId}
+                agentSandboxId={
+                  finalSelectedId || selectedComputerId || sandboxServerId
+                }
                 hasPermission={!maskVisible}
                 maskText={maskText}
+                fixedSelection={
+                  (sandboxServerId !== undefined &&
+                    sandboxServerId !== null &&
+                    sandboxServerId !== '') ||
+                  !!selectedComputerId ||
+                  !!finalSelectedId
+                }
               />
             );
           })()}

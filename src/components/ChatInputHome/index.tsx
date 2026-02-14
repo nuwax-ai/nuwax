@@ -57,6 +57,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onComputerSelect,
   agentId,
   agentSandboxId,
+  fixedSelection,
   hasPermission = true,
   isSandboxUnavailable = false,
   maskText,
@@ -504,13 +505,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     : selectedComputerId
                 }
                 onChange={(id) => onComputerSelect?.(id)}
-                disabled={
-                  wholeDisabled ||
-                  isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                }
+                disabled={wholeDisabled}
                 agentId={agentId}
                 fixedSelection={
+                  fixedSelection ||
+                  isConversationActive ||
+                  conversationInfo?.taskStatus === TaskStatus.EXECUTING ||
                   (conversationInfo?.sandboxServerId !== undefined &&
                     conversationInfo?.sandboxServerId !== null) ||
                   (agentSandboxId !== undefined && agentSandboxId !== null)

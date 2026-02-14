@@ -532,6 +532,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   agentId?: number;
   /** 智能体绑定的云电脑ID */
   agentSandboxId?: string | number;
+  /** 是否固定选择 */
+  fixedSelection?: boolean;
   /** 是否有智能体使用权限 */
   hasPermission?: boolean;
   /** 电脑是否不可用 */
