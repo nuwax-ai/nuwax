@@ -350,6 +350,18 @@ const SpacePageDevelop: React.FC = () => {
     }
   }, []);
 
+  // 域名绑定
+  const handleDomainBinding = (info: CustomPageDto) => {
+    const { needLogin, publishType } = info;
+    if (publishType === String(PageDevelopSelectTypeEnum.AGENT) || !needLogin) {
+      message.warning(
+        '域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用',
+      );
+    } else {
+      setOpenDomainBindingModal(true);
+    }
+  };
+
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
     setProjectId(info.projectId);
@@ -370,7 +382,7 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 域名绑定
       case PageDevelopMoreActionEnum.Domain_Binding:
-        setOpenDomainBindingModal(true);
+        handleDomainBinding(info);
         break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
