@@ -55,8 +55,8 @@ const CategoryManage: React.FC = () => {
 
   const segmentedOptions = [
     { label: '智能体', value: CategoryTypeEnum.Agent },
+    { label: '网页应用', value: CategoryTypeEnum.PageApp },
     { label: '组件', value: CategoryTypeEnum.Component },
-    { label: '应用', value: CategoryTypeEnum.PageApp },
   ];
 
   // 获取当前分类标签
