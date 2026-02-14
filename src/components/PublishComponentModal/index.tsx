@@ -213,7 +213,9 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setClassifyList(list);
     // 默认选中第一个分类
     if (list?.length > 0) {
-      const initCategory = category || list[0].value;
+      // 如果回显的数据在列表中不存在，默认选中列表中的第一个
+      const find = list.find((item: any) => item.value === category);
+      const initCategory = find ? find.value : list[0].value;
       form.setFieldValue('category', initCategory);
     }
   }, [
