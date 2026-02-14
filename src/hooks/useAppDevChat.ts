@@ -678,6 +678,7 @@ export const useAppDevChat = ({
         if (response.type === 'error') {
           aIChatAbortConnectionRef.current?.abort();
           setIsChatLoading(false);
+
           // 智能体服务运行中的错误状态
           if (response.code === AGENT_SERVICE_RUNNING) {
             showStopAgentServiceModal(projectId, () => {
@@ -698,6 +699,15 @@ export const useAppDevChat = ({
               ),
             );
           }
+        }
+
+        // 如果输出的是response是{code, message}格式，并且响应码不为0000，则标记消息错误
+        if (response?.code && response?.code !== SUCCESS_CODE) {
+          setIsChatLoading(false);
+          aIChatAbortConnectionRef.current?.abort();
+          setChatMessages((prev) =>
+            markStreamingMessageError(prev, requestId, response?.message),
+          );
         }
       },
       onError: () => {
