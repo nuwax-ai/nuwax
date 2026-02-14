@@ -40,7 +40,7 @@ const HomeSection: React.FC<{
     // 如果最后一次会话ID存在，则跳转至最后一次会话
     if (!!lastConversationId) {
       const url =
-        agentType === 'TaskAgent'
+        agentType === 'PageApp' || agentType === 'TaskAgent'
           ? `/home/chat/${lastConversationId}/${agentId}?hideMenu=true`
           : `/home/chat/${lastConversationId}/${agentId}`;
       history.push(url);
@@ -114,8 +114,6 @@ const HomeSection: React.FC<{
       eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
     };
   }, [limitConversationList]);
-
-  console.log('最近使用usedAgentList', usedAgentList);
 
   return (
     <div style={style}>
