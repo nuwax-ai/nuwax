@@ -80,7 +80,6 @@ const PublishedManage: React.FC = () => {
       title: '发布名称',
       dataIndex: 'name',
       width: 200,
-      fixed: 'left',
       fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
     },
     {
