@@ -486,6 +486,8 @@ const AgentDetails: React.FC = () => {
                 agentSandboxId={sandboxId}
                 hasPermission={!maskVisible}
                 maskText={maskText}
+                fixedSelection={!!sandboxId}
+                isPersonalComputer={!!sandboxId}
               />
             );
           })()}

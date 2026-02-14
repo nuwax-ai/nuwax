@@ -498,11 +498,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {isTaskAgentActive && (
               <ComputerTypeSelector
                 value={
-                  conversationInfo?.sandboxServerId !== undefined &&
-                  conversationInfo?.sandboxServerId !== null
-                    ? String(conversationInfo.sandboxServerId)
-                    : agentSandboxId !== undefined && agentSandboxId !== null
+                  agentSandboxId !== undefined && agentSandboxId !== null
                     ? String(agentSandboxId)
+                    : conversationInfo?.sandboxServerId !== undefined &&
+                      conversationInfo?.sandboxServerId !== null
+                    ? String(conversationInfo.sandboxServerId)
                     : selectedComputerId
                 }
                 onChange={(id) => onComputerSelect?.(id)}
