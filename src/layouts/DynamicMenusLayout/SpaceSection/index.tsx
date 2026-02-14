@@ -33,6 +33,9 @@ const SpaceSection: React.FC<{
   const [dynamicTitle, setDynamicTitle] = useState<string>('');
 
   useEffect(() => {
+    if (!currentSpaceInfo) {
+      return;
+    }
     const spaceIdStr = String(finalSpaceId);
     const isInList = spaceList?.some(
       (item: SpaceInfo) => String(item.id) === spaceIdStr,

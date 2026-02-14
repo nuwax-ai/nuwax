@@ -60,7 +60,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
                 tooltip: true,
               }}
             >
-              {name || '个人空间'}
+              {name}
             </Typography.Title>
           </div>
           <SvgIcon name="icons-common-caret_down" rotate={open ? 180 : 0} />

@@ -310,7 +310,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
 
   return (
     <Modal
-      title={`授权 - ${targetName}`}
+      title={`授权 - ${targetName ?? ''}`}
       open={open}
       confirmLoading={loading}
       onCancel={onCancel}
