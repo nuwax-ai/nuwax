@@ -1,5 +1,8 @@
+import { XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import type { ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -8,18 +11,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import type { TableColumnsType } from 'antd';
-import {
-  Button,
-  Empty,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Table,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
+import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
@@ -714,12 +708,13 @@ const MenuManage: React.FC = () => {
   };
 
   // 定义表格列
-  const columns: TableColumnsType<MenuNodeInfo & { key: number }> = [
+  const columns: ProColumns<MenuNodeInfo & { key: number }>[] = [
     {
       title: '排序',
       key: 'sort',
       align: 'center',
       width: 80,
+      fixed: 'left',
       render: () => <DragHandle />,
     },
     // {
@@ -747,10 +742,7 @@ const MenuManage: React.FC = () => {
       key: 'name',
       width: 200,
       ellipsis: true,
-      render: (
-        text: string,
-        record: MenuNodeInfo & { key: number },
-      ): React.ReactNode => {
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => {
         const hasChildren =
           Array.isArray(record.children) && record.children.length > 0;
         const expanded = expandedRowKeys.includes(record.key);
@@ -778,8 +770,8 @@ const MenuManage: React.FC = () => {
               // 无子节点时使用与箭头相同尺寸的占位元素，保证对齐
               <span className={cx(styles.icon, styles['icon-hidden'])} />
             )}
-            <span className="text-ellipsis" title={text}>
-              {text || '--'}
+            <span className="text-ellipsis" title={record.name}>
+              {record.name || '--'}
             </span>
           </div>
         );
@@ -790,7 +782,8 @@ const MenuManage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 150,
-      render: (code: string) => code || '--',
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
+        record.code || '--',
     },
     {
       title: '路由路径',
@@ -798,7 +791,8 @@ const MenuManage: React.FC = () => {
       key: 'path',
       width: 200,
       ellipsis: true,
-      render: (path: string) => path || '--',
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
+        record.path || '--',
     },
     {
       title: '是否启用',
@@ -807,10 +801,10 @@ const MenuManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
-      render: (status: MenuEnabledEnum, record: MenuNodeInfo) => (
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => (
         // 针对菜单，系统内置的菜单是可以禁用的
         <Switch
-          checked={status === MenuEnabledEnum.Enabled}
+          checked={record.status === MenuEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
           checkedChildren="启用"
           unCheckedChildren="禁用"
@@ -832,7 +826,7 @@ const MenuManage: React.FC = () => {
       align: 'center',
       width: 180,
       fixed: 'right',
-      render: (_: null, record: MenuNodeInfo) => (
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => (
         <Space size={0}>
           <Tooltip
             title={
@@ -903,79 +897,86 @@ const MenuManage: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles.container)}>
-      {/* 页面头部 */}
-      <div className={cx(styles.header)}>
-        <h1 className={cx(styles.title)}>菜单管理</h1>
-        <Space>
+    <WorkspaceLayout
+      title="菜单管理"
+      hideScroll
+      rightSlot={[
+        <Button
+          key="query"
+          icon={<ReloadOutlined />}
+          onClick={() => runGetMenuList()}
+          loading={loading}
+        >
+          查询
+        </Button>,
+        hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
           <Button
-            icon={<ReloadOutlined />}
-            onClick={() => runGetMenuList()}
-            loading={loading}
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
           >
-            查询
+            新增菜单
           </Button>
-          {hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-              新增菜单
-            </Button>
-          )}
-        </Space>
-      </div>
-
+        ),
+      ]}
+    >
       {/* 菜单列表 */}
-      <div className={cx(styles.content)}>
-        <Spin spinning={loading && !tableData?.length}>
-          <DndContext
-            modifiers={[restrictToVerticalAxis]}
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
+      <Spin spinning={loading && !tableData?.length}>
+        <DndContext
+          modifiers={[restrictToVerticalAxis]}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={getAllKeys(draggableData)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={getAllKeys(draggableData)}
-              strategy={verticalListSortingStrategy}
-            >
-              <Table<MenuNodeInfo & { key: number }>
-                components={{
-                  body: {
-                    row: Row,
-                  },
-                }}
-                rowKey="key"
-                columns={columns}
-                dataSource={draggableData}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-                className={cx(styles.table)}
-                // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
-                indentSize={0}
-                // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
-                expandable={{
-                  expandedRowKeys,
-                  onExpand: (expanded, record) =>
-                    handleExpand(
-                      expanded,
-                      record as MenuNodeInfo & { key: number },
-                    ),
-                  expandIcon: () => null,
-                  columnWidth: 0,
-                }}
-                // 防止展开/折叠时 Table 布局变动
-                tableLayout="fixed"
-                locale={{
-                  emptyText: (
-                    <Empty
-                      description="暂无菜单数据"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      className={cx(styles.empty)}
-                    />
+            <XProTable<MenuNodeInfo & { key: number }>
+              rowKey="key"
+              columns={columns}
+              dataSource={draggableData}
+              search={false}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+              className={cx(styles.table)}
+              showQueryButtons={false}
+              showIndex={false}
+              components={{
+                body: {
+                  row: Row,
+                },
+              }}
+              options={false}
+              toolBarRender={false}
+              // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+              indentSize={0}
+              // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
+              expandable={{
+                expandedRowKeys,
+                onExpand: (expanded, record) =>
+                  handleExpand(
+                    expanded,
+                    record as MenuNodeInfo & { key: number },
                   ),
-                }}
-              />
-            </SortableContext>
-          </DndContext>
-        </Spin>
-      </div>
+                expandIcon: () => null,
+                columnWidth: 0,
+              }}
+              // 防止展开/折叠时 Table 布局变动
+              tableLayout="fixed"
+              locale={{
+                emptyText: (
+                  <Empty
+                    description="暂无菜单数据"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    className={cx(styles.empty)}
+                  />
+                ),
+              }}
+            />
+          </SortableContext>
+        </DndContext>
+      </Spin>
 
       {/* 新增/编辑菜单Modal */}
       <MenuFormModal
@@ -990,7 +991,7 @@ const MenuManage: React.FC = () => {
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 
