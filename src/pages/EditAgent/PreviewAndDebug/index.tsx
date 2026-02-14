@@ -107,24 +107,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const { pagePreviewData, hidePagePreview, showPagePreview } =
     useModel('chat');
 
-  // 权限判定逻辑
-  const { effectiveHasPermission, effectiveMaskText } = useMemo(() => {
-    const agent = conversationInfo?.agent;
-
-    // 1. 基础权限检查
-    if (agent?.hasPermission === false) {
-      return {
-        effectiveHasPermission: false,
-        effectiveMaskText: '您无该智能体权限',
-      };
-    }
-
-    return {
-      effectiveHasPermission: true,
-      effectiveMaskText: undefined,
-    };
-  }, [conversationInfo]);
-
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
   // 会话输入框已选择组件
@@ -335,14 +317,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       return;
     }
 
-    const effectiveSandboxId =
-      conversationInfo?.sandboxServerId !== undefined &&
-      conversationInfo?.sandboxServerId !== null
-        ? String(conversationInfo.sandboxServerId)
-        : agentConfigInfo?.extra?.sandboxId !== undefined &&
-          agentConfigInfo?.extra?.sandboxId !== null
-        ? String(agentConfigInfo.extra.sandboxId)
-        : selectedComputerId;
+    const effectiveSandboxId = String(
+      conversationInfo?.sandboxServerId ??
+        conversationInfo?.agent?.sandboxId ??
+        selectedComputerId,
+    );
 
     onMessageSend(
       id,
@@ -540,12 +519,20 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               }
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {
+                console.log('onComputerSelect', id);
                 setSelectedComputerId(id);
               }}
               agentId={agentId}
-              agentSandboxId={agentConfigInfo?.extra?.sandboxId}
-              hasPermission={effectiveHasPermission}
-              maskText={effectiveMaskText}
+              agentSandboxId={conversationInfo?.agent?.sandboxId}
+              hasPermission={conversationInfo?.agent?.hasPermission}
+              maskText={
+                conversationInfo?.agent?.hasPermission ? '' : '您无该智能体权限'
+              }
+              fixedSelection={
+                !!conversationInfo?.agent?.sandboxId ||
+                !!conversationInfo?.sandboxServerId
+              }
+              isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
             />
           </div>
         </div>

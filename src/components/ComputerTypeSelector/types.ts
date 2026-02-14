@@ -38,4 +38,6 @@ export interface ComputerTypeSelectorProps {
   autoSelect?: boolean;
   /** 是否在选中时自动保存到后端（默认：true） */
   saveOnSelect?: boolean;
+  /** 是否为个人电脑（用于区分不可用状态提示） */
+  isPersonalComputer?: boolean;
 }

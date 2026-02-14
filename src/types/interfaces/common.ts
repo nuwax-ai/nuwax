@@ -546,6 +546,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   autoSelectComputer?: boolean;
   /** 是否在选中时自动保存到后端 */
   saveComputerOnSelect?: boolean;
+  /** 是否为个人电脑 */
+  isPersonalComputer?: boolean;
 }
 
 // 聊天框底部更多操作组件
