@@ -321,10 +321,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * @param path 路径
    * @param openType 打开方式
    */
-  const handleOpenUrl = (path: string, openType: OpenTypeEnum | undefined) => {
-    const targetOpenType =
-      openType === OpenTypeEnum.NewTab ? '_blank' : '_self';
-    window.open(path, targetOpenType);
+  const handleOpenUrl = (
+    path: string,
+    openType: OpenTypeEnum = OpenTypeEnum.CurrentTab,
+  ) => {
+    if (openType === OpenTypeEnum.NewTab) {
+      window.open(path, '_blank');
+      return;
+    }
+    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`);
   };
 
   /**
@@ -356,7 +361,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 点击其他菜单，则设置为 false
       setIsClickNewConversation(false);
 
-      setActiveTab(menu.code as string);
+      setActiveTab(menu.code || '');
 
       if (menu.code === 'workspace') {
         handleRefreshEditAndCollect();
@@ -409,18 +414,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 用户区域操作
    */
   const handleUserClick = useCallback(
-    (item: MenuItemDto) => {
-      const code = item.code;
-      setActiveTab(code || '');
+    (menu: MenuItemDto) => {
+      const code = menu.code;
       switch (code) {
         case 'documents':
-          window.open(item.path || SITE_DOCUMENT_URL);
+          handleOpenUrl(menu.path || SITE_DOCUMENT_URL, menu?.openType);
           break;
         case 'notification':
           setOpenMessage(true);
           break;
         case 'my_computer':
-          history.push('/my-computer-manage', { _t: Date.now() });
+          {
+            setActiveTab(code || '');
+            history.push('/my-computer-manage', { _t: Date.now() });
+          }
           break;
       }
     },

@@ -237,14 +237,28 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     [params, parentCode, spaceList, extractSpaceIdFromPath],
   );
 
+  /**
+   * 打开URL
+   * @param path 路径
+   * @param openType 打开方式
+   */
+  const handleOpenUrl = (
+    path: string,
+    openType: OpenTypeEnum = OpenTypeEnum.CurrentTab,
+  ) => {
+    if (openType === OpenTypeEnum.NewTab) {
+      window.open(path, '_blank');
+      return;
+    }
+    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`);
+  };
+
   // 处理路径URL路径跳转
   const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
     if (!path) return;
     // http开头的路径，直接打开
     if (path?.includes('http')) {
-      const targetOpenType =
-        openType === OpenTypeEnum.NewTab ? '_blank' : '_self';
-      window.open(path, targetOpenType);
+      handleOpenUrl(path, openType);
       return;
     }
     // 关闭移动端菜单
