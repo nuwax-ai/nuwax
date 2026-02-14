@@ -318,11 +318,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     selectedOption === UNAVAILABLE_OPTION ||
     selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
 
-  if (selectedOption === NO_COMPUTER_OPTION) {
-    // 如果没有电脑或电脑不可用，不显示选择器
-    return null;
-  }
-
   return (
     <div className={cx(styles['computer-selector-container'], className)}>
       <Dropdown
@@ -344,7 +339,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
               [styles['selector-btn-unavailable']]:
                 unavailable ||
                 selectedOption === UNAVAILABLE_OPTION ||
-                selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION,
+                selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION ||
+                selectedOption === NO_COMPUTER_OPTION,
               [styles.open]: open,
             })}
           >
@@ -354,7 +350,8 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             </span>
             {!unavailable &&
               selectedOption !== UNAVAILABLE_OPTION &&
-              selectedOption !== PERSONAL_COMPUTER_UNAVAILABLE_OPTION && (
+              selectedOption !== PERSONAL_COMPUTER_UNAVAILABLE_OPTION &&
+              selectedOption !== NO_COMPUTER_OPTION && (
                 <SvgIcon
                   name="icons-common-caret_down"
                   style={{ fontSize: 14 }}

@@ -119,6 +119,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     const passedDetails = location.state?.selectedComputerId;
+    console.log('PUSH', passedDetails);
     // PUSH: 正常跳转 (AgentDetails -> Chat)
     // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
     // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
@@ -1109,11 +1110,12 @@ const Chat: React.FC = () => {
                 hasPermission={!maskVisible}
                 maskText={maskText}
                 fixedSelection={
-                  (sandboxServerId !== undefined &&
-                    sandboxServerId !== null &&
-                    sandboxServerId !== '') ||
-                  !!selectedComputerId ||
-                  !!finalSelectedId
+                  // (sandboxServerId !== undefined &&
+                  //   sandboxServerId !== null &&
+                  //   sandboxServerId !== '') ||
+                  !!sandboxServerId
+                  // !!selectedComputerId ||
+                  // !!finalSelectedId
                 }
               />
             );

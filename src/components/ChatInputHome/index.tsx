@@ -510,10 +510,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 fixedSelection={
                   fixedSelection ||
                   isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING ||
-                  (conversationInfo?.sandboxServerId !== undefined &&
-                    conversationInfo?.sandboxServerId !== null) ||
-                  (agentSandboxId !== undefined && agentSandboxId !== null)
+                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
                 }
                 unavailable={isSandboxUnavailable}
                 options={computerOptions}
