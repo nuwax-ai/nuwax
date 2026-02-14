@@ -131,9 +131,28 @@ const Square: React.FC = () => {
         setTitle('工作流');
         apiUrlRef.current = apiPublishedWorkflowList;
         break;
+      // 模板模式下，根据分类名称设置标题
       case SquareAgentTypeEnum.Template:
-        setTitle('模板');
-        apiUrlRef.current = apiPublishedTemplateList;
+        {
+          switch (cate_name) {
+            case SquareTemplateTargetTypeEnum.PageApp:
+              setTitle('网页应用');
+              break;
+            case SquareTemplateTargetTypeEnum.ChatBot:
+              setTitle('智能体');
+              break;
+            case SquareTemplateTargetTypeEnum.Workflow:
+              setTitle('工作流');
+              break;
+            case SquareTemplateTargetTypeEnum.Skill:
+              setTitle('技能');
+              break;
+            default:
+              setTitle('模板');
+              break;
+          }
+          apiUrlRef.current = apiPublishedTemplateList;
+        }
         break;
     }
   };

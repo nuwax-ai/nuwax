@@ -357,7 +357,11 @@ const SpacePageDevelop: React.FC = () => {
   // 域名绑定
   const handleDomainBinding = (info: CustomPageDto) => {
     const { needLogin, publishType } = info;
-    if (publishType === String(PageDevelopSelectTypeEnum.AGENT) || !needLogin) {
+    // 域名绑定在不满足下面条件时，点击直接提示下面这句话
+    // 域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用
+    if (
+      !(publishType === String(PageDevelopSelectTypeEnum.AGENT) && !needLogin)
+    ) {
       message.warning(
         '域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用',
       );
