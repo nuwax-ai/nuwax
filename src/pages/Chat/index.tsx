@@ -1106,18 +1106,15 @@ const Chat: React.FC = () => {
                 }}
                 agentId={agentId}
                 agentSandboxId={
-                  finalSelectedId || selectedComputerId || sandboxServerId
+                  sandboxId ||
+                  finalSelectedId ||
+                  selectedComputerId ||
+                  sandboxServerId
                 }
                 hasPermission={!maskVisible}
                 maskText={maskText}
-                fixedSelection={
-                  // (sandboxServerId !== undefined &&
-                  //   sandboxServerId !== null &&
-                  //   sandboxServerId !== '') ||
-                  !!sandboxId || !!sandboxServerId
-                  // !!selectedComputerId ||
-                  // !!finalSelectedId
-                }
+                fixedSelection={!!sandboxId || !!sandboxServerId}
+                isPersonalComputer={!!sandboxId}
               />
             );
           })()}

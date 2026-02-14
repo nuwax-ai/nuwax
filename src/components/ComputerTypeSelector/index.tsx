@@ -181,11 +181,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       return UNAVAILABLE_OPTION;
     }
 
-    // 优先检查列表是否为空：如果已初始化且列表为空，直接显示无可用电脑
-    if (isFullyInitialized && effectiveComputerList.length === 0) {
-      return NO_COMPUTER_OPTION;
-    }
-
     // 查找选中的电脑
     if (value) {
       const found = effectiveComputerList.find(
@@ -194,23 +189,24 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       if (found) {
         return found;
       }
-      // 如果是固定选择且在列表中找不到
-      if (fixedSelection && isFullyInitialized) {
-        return isPersonalComputer
-          ? PERSONAL_COMPUTER_UNAVAILABLE_OPTION
-          : UNAVAILABLE_OPTION;
+      // 如果是固定选择且在列表中找不到，且是个人电脑（高优先级），直接返回不可用
+      if (fixedSelection && isFullyInitialized && isPersonalComputer) {
+        return PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
       }
     }
+
+    // 优先检查列表是否为空：如果已初始化且列表为空，直接显示无可用电脑
+    if (isFullyInitialized && effectiveComputerList.length === 0) {
+      return NO_COMPUTER_OPTION;
+    }
+
     // 如果已初始化且找不到，说明列表为空或选中的电脑不在列表中
     if (isFullyInitialized) {
       // 列表为空的情况上面已经处理过了
 
-      // 如果是固定选择，且没找到（前面已经处理过），这里应该是不可达或者默认
-      // 但为了安全起见，如果是固定选择，不应该fallback到第一个
+      // 如果是固定选择（非个人电脑，如共享电脑），且没找到，这里返回不可用
       if (fixedSelection) {
-        return isPersonalComputer
-          ? PERSONAL_COMPUTER_UNAVAILABLE_OPTION
-          : UNAVAILABLE_OPTION;
+        return UNAVAILABLE_OPTION;
       }
       // 返回第一个选项
       return effectiveComputerList[0];
