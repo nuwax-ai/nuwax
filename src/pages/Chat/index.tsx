@@ -1068,6 +1068,7 @@ const Chat: React.FC = () => {
             )}
 
           {(() => {
+            const sandboxId = conversationInfo?.agent?.sandboxId;
             const sandboxServerId = conversationInfo?.sandboxServerId;
             const hasPermission = effectiveAgent?.hasPermission !== false;
 
@@ -1113,7 +1114,7 @@ const Chat: React.FC = () => {
                   // (sandboxServerId !== undefined &&
                   //   sandboxServerId !== null &&
                   //   sandboxServerId !== '') ||
-                  !!sandboxServerId
+                  !!sandboxId || !!sandboxServerId
                   // !!selectedComputerId ||
                   // !!finalSelectedId
                 }
