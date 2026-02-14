@@ -302,7 +302,8 @@ const EditAgent: React.FC = () => {
     const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
     _agentConfigInfo.modelComponentConfig.bindConfig = config;
     _agentConfigInfo.modelComponentConfig.targetId = targetId;
-    _agentConfigInfo.modelComponentConfig.name = name;
+    _agentConfigInfo.modelComponentConfig.name =
+      name || _agentConfigInfo.modelComponentConfig.name;
     setAgentConfigInfo(_agentConfigInfo);
   };
 
