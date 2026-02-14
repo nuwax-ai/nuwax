@@ -120,7 +120,6 @@ const AppDev: React.FC = () => {
     setActiveFile,
     updateFileContent,
     updateDevServerUrl,
-    // updateProjectId, // 暂时未使用，保留以备将来使用
     updateWorkspace,
   } = appDevModel;
 
@@ -133,8 +132,6 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  // 左侧面板标签状态: 对话 | 设计 | 数据
-  // const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -388,8 +385,7 @@ const AppDev: React.FC = () => {
         delayBeforeRefresh: 500,
         showMessage: false, // Agent 触发时不显示消息
       });
-    }, // 新增：Agent 触发时不切换页面
-    // hasPermission: projectInfo.hasPermission, // 传递权限状态
+    },
   });
 
   // ⭐ 自动错误处理 Model（用于记录和管理）
