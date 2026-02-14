@@ -90,14 +90,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     }
   };
 
-  // 初始化加载菜单数据
-  useEffect(() => {
-    loadMenus();
-
-    // 获取用户信息
-    refreshUserInfo();
-  }, []);
-
   /**
    * 递归检查菜单是否匹配当前路径
    */
@@ -218,6 +210,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [isMenuMatch, isPathMatch],
   );
 
+  // 初始化加载菜单数据
+  useEffect(() => {
+    loadMenus();
+
+    // 获取用户信息
+    refreshUserInfo();
+  }, []);
+
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
@@ -235,12 +235,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     if (matchedMenu) {
       setActiveTab(matchedMenu.code);
     }
+    // 根路径
+    else if (location.pathname === '' || location.pathname === '/') {
+      setActiveTab(firstLevelMenus[0].code);
+    }
     // 首页
-    else if (
-      location.pathname === '/home' ||
-      location.pathname === '' ||
-      location.pathname === '/'
-    ) {
+    else if (location.pathname === '/home') {
       // 默认选中首页
       setActiveTab('homepage');
     }

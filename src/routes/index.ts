@@ -25,7 +25,7 @@ const routes = [
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
     routes: [
-      { path: '/', component: '@/pages/Home' },
+      { path: '/', component: '@/pages/Index' },
       { path: '/home', component: '@/pages/Home' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
