@@ -227,6 +227,11 @@ const SpaceLibrary: React.FC = () => {
     const currentValue =
       searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom;
     setSegmentedValue(currentValue);
+
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
     setLoading(true);
     if (currentValue === McpManageSegmentedEnum.Custom) {
       runMcpList(spaceId);

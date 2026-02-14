@@ -150,7 +150,7 @@ const EditAgent: React.FC = () => {
 
   // 获取智能体配置信息是否加载中
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {

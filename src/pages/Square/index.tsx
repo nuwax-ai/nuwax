@@ -143,6 +143,7 @@ const Square: React.FC = () => {
     const data: SquarePublishedListParams & {
       category?: any;
       targetType?: any;
+      targetSubType?: any;
     } = {
       page: pageIndex,
       pageSize: 48,
@@ -150,6 +151,17 @@ const Square: React.FC = () => {
       category: categoryNameRef.current,
       kw,
     };
+
+    // 智能体
+    if (categoryTypeRef.current === SquareAgentTypeEnum.ChatBot) {
+      data.targetType = AgentComponentTypeEnum.Agent;
+    }
+
+    // 网页应用
+    if (categoryTypeRef.current === SquareAgentTypeEnum.PageApp) {
+      data.targetType = AgentComponentTypeEnum.Agent;
+      data.targetSubType = AgentComponentTypeEnum.PageApp;
+    }
 
     /**
      * 模板模式下，需要设置目标类型和目标子类型【特殊处理】

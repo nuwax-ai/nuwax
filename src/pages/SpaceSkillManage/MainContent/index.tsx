@@ -15,7 +15,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import ComponentItem from '../ComponentItem';
 import styles from './index.less';
 const cx = classNames.bind(styles);
@@ -161,6 +161,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
 
     // 查询技能列表 - 当 spaceId 变化时重新查询
     useEffect(() => {
+      // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+      if (history.location.state) {
+        return;
+      }
       // 清空旧数据，避免显示上一个空间的数据
       skillListAllRef.current = [];
       setSkillList([]);
