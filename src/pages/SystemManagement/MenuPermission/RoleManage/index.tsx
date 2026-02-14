@@ -5,6 +5,7 @@ import {
   EllipsisOutlined,
   InfoCircleOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -483,60 +484,57 @@ const RoleManage: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>角色管理</h1>
-        <Tooltip
-          title={
-            !hasPermissionByMenuCode('role_manage', 'role_manage_add')
-              ? '无此资源权限'
-              : ''
-          }
-        >
+        <Space>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={
-              !hasPermissionByMenuCode('role_manage', 'role_manage_add')
-            }
-            onClick={handleAdd}
+            icon={<ReloadOutlined />}
+            onClick={() => runGetRoleList()}
+            loading={loading}
           >
-            新增角色
+            查询
           </Button>
-        </Tooltip>
+          {hasPermissionByMenuCode('role_manage', 'role_manage_add') && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增角色
+            </Button>
+          )}
+        </Space>
       </div>
 
       {/* 角色列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading && !draggableData?.length}>
-          {!draggableData?.length ? (
-            <Empty
-              description="暂无角色数据"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              className={cx(styles.empty)}
-            />
-          ) : (
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-              modifiers={[restrictToVerticalAxis]}
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <SortableContext
+              items={draggableData.map((item) => String(item.key))}
+              strategy={verticalListSortingStrategy}
             >
-              <SortableContext
-                items={draggableData.map((item) => String(item.key))}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table<RoleInfo & { key: number }>
-                  columns={columns}
-                  dataSource={draggableData}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  className={cx(styles.table)}
-                  components={{
-                    body: {
-                      row: Row,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          )}
+              <Table<RoleInfo & { key: number }>
+                columns={columns}
+                dataSource={draggableData}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                className={cx(styles.table)}
+                components={{
+                  body: {
+                    row: Row,
+                  },
+                }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="暂无角色数据"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      className={cx(styles.empty)}
+                    />
+                  ),
+                }}
+              />
+            </SortableContext>
+          </DndContext>
         </Spin>
       </div>
 

@@ -5,6 +5,7 @@ import {
   EllipsisOutlined,
   InfoCircleOutlined,
   PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -524,66 +525,60 @@ const UserGroupManage: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>用户组管理</h1>
-        <Tooltip
-          title={
-            !hasPermissionByMenuCode(
-              'user_group_manage',
-              'user_group_manage_add',
-            )
-              ? '无此资源权限'
-              : ''
-          }
-        >
+        <Space>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={
-              !hasPermissionByMenuCode(
-                'user_group_manage',
-                'user_group_manage_add',
-              )
-            }
-            onClick={handleAdd}
+            icon={<ReloadOutlined />}
+            onClick={() => runGetUserGroupList()}
+            loading={loading}
           >
-            新增用户组
+            查询
           </Button>
-        </Tooltip>
+          {hasPermissionByMenuCode(
+            'user_group_manage',
+            'user_group_manage_add',
+          ) && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增用户组
+            </Button>
+          )}
+        </Space>
       </div>
 
       {/* 用户组列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading && !draggableData?.length}>
-          {!draggableData?.length ? (
-            <Empty
-              description="暂无用户组数据"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              className={cx(styles.empty)}
-            />
-          ) : (
-            <DndContext
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-              modifiers={[restrictToVerticalAxis]}
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <SortableContext
+              items={draggableData.map((item) => String(item.key))}
+              strategy={verticalListSortingStrategy}
             >
-              <SortableContext
-                items={draggableData.map((item) => String(item.key))}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table<UserGroupInfo & { key: number }>
-                  columns={columns}
-                  dataSource={draggableData}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  className={cx(styles.table)}
-                  components={{
-                    body: {
-                      row: Row,
-                    },
-                  }}
-                />
-              </SortableContext>
-            </DndContext>
-          )}
+              <Table<UserGroupInfo & { key: number }>
+                columns={columns}
+                dataSource={draggableData}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                className={cx(styles.table)}
+                components={{
+                  body: {
+                    row: Row,
+                  },
+                }}
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="暂无用户组数据"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      className={cx(styles.empty)}
+                    />
+                  ),
+                }}
+              />
+            </SortableContext>
+          </DndContext>
         </Spin>
       </div>
 

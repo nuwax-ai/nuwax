@@ -1,5 +1,5 @@
 import { modalConfirm } from '@/utils/ant-custom';
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -907,77 +907,73 @@ const MenuManage: React.FC = () => {
       {/* 页面头部 */}
       <div className={cx(styles.header)}>
         <h1 className={cx(styles.title)}>菜单管理</h1>
-        <Tooltip
-          title={
-            !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
-              ? '无此资源权限'
-              : ''
-          }
-        >
+        <Space>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={
-              !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
-            }
-            onClick={handleAdd}
+            icon={<ReloadOutlined />}
+            onClick={() => runGetMenuList()}
+            loading={loading}
           >
-            新增菜单
+            查询
           </Button>
-        </Tooltip>
+          {hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增菜单
+            </Button>
+          )}
+        </Space>
       </div>
 
       {/* 菜单列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading && !tableData?.length}>
-          {!tableData?.length ? (
-            <Empty
-              description="暂无菜单数据"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              className={cx(styles.empty)}
-            />
-          ) : (
-            <DndContext
-              modifiers={[restrictToVerticalAxis]}
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
+          <DndContext
+            modifiers={[restrictToVerticalAxis]}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext
+              items={getAllKeys(draggableData)}
+              strategy={verticalListSortingStrategy}
             >
-              <SortableContext
-                items={getAllKeys(draggableData)}
-                strategy={verticalListSortingStrategy}
-              >
-                <Table<MenuNodeInfo & { key: number }>
-                  components={{
-                    body: {
-                      row: Row,
-                    },
-                  }}
-                  rowKey="key"
-                  expandedRowKeys={expandedRowKeys}
-                  onExpand={(expanded, record) =>
+              <Table<MenuNodeInfo & { key: number }>
+                components={{
+                  body: {
+                    row: Row,
+                  },
+                }}
+                rowKey="key"
+                columns={columns}
+                dataSource={draggableData}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                className={cx(styles.table)}
+                // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+                indentSize={0}
+                // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
+                expandable={{
+                  expandedRowKeys,
+                  onExpand: (expanded, record) =>
                     handleExpand(
                       expanded,
                       record as MenuNodeInfo & { key: number },
-                    )
-                  }
-                  columns={columns}
-                  dataSource={draggableData}
-                  pagination={false}
-                  scroll={{ x: 'max-content' }}
-                  className={cx(styles.table)}
-                  // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
-                  indentSize={0}
-                  // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
-                  expandable={{
-                    expandIcon: () => null,
-                    columnWidth: 0,
-                  }}
-                  // 防止展开/折叠时 Table 布局变动
-                  tableLayout="fixed"
-                />
-              </SortableContext>
-            </DndContext>
-          )}
+                    ),
+                  expandIcon: () => null,
+                  columnWidth: 0,
+                }}
+                // 防止展开/折叠时 Table 布局变动
+                tableLayout="fixed"
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="暂无菜单数据"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      className={cx(styles.empty)}
+                    />
+                  ),
+                }}
+              />
+            </SortableContext>
+          </DndContext>
         </Spin>
       </div>
 
