@@ -16,7 +16,13 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
@@ -55,7 +61,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const {
-    // showHoverMenu,
+    showHoverMenu,
     isSecondMenuCollapsed,
     setOpenMessage,
     handleCloseMobileMenu,
@@ -79,7 +85,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 是否点击菜单
-  // const isClickMenu = useRef<boolean>(false);
+  const isClickMenu = useRef<boolean>(false);
 
   const handlerClick = async () => {
     if (tenantConfigInfo) {
@@ -232,9 +238,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
-    // if (isClickMenu.current) {
-    //   return;
-    // }
+    if (isClickMenu.current && !showHoverMenu) {
+      return;
+    }
 
     if (!firstLevelMenus.length) return;
 
@@ -261,9 +267,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       setActiveTab('homepage');
     }
     // 我的电脑管理
-    else if (location.pathname === '/my-computer-manage') {
-      setActiveTab('my_computer');
-    } else {
+    // else if (location.pathname === '/my-computer-manage') {
+    //   setActiveTab('my_computer');
+    // }
+    else {
+      console.log(
+        '======location.pathname运行到这里了======',
+        location.pathname,
+      );
       // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
       const firstLevelCode = findFirstLevelCodeByPath(
         firstLevelMenus,
@@ -282,7 +293,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         setActiveTab(filteredNewConversationFirstLevelMenus[0]?.code || '');
       }
     }
-  }, [location.pathname, firstLevelMenus, handleNewConversation]);
+  }, [
+    location.pathname,
+    firstLevelMenus,
+    handleNewConversation,
+    showHoverMenu,
+  ]);
 
   const handleRefreshEditAndCollect = useCallback(() => {
     // 最近编辑
@@ -342,13 +358,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    */
   const handleTabClick = useCallback(
     (menu: MenuItemDto) => {
-      if (menu.path?.includes('http')) {
-        handleOpenUrl(menu.path, menu?.openType);
-        return;
-      }
-
       // 是否点击了一级菜单
-      // isClickMenu.current = true;
+      isClickMenu.current = true;
       // 关闭移动端菜单
       handleCloseMobileMenu();
 
@@ -372,10 +383,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         return;
       }
 
+      // 设置当前激活的菜单
+      setActiveTab(menu.code || '');
+      // http开头的路径，直接打开
+      if (menu.path?.includes('http')) {
+        handleOpenUrl(menu.path, menu?.openType);
+        return;
+      }
+
       // 点击其他菜单，则设置为 false
       setIsClickNewConversation(false);
-
-      setActiveTab(menu.code || '');
 
       if (menu.code === 'workspace') {
         handleRefreshEditAndCollect();
@@ -430,6 +447,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const handleUserClick = useCallback(
     (menu: MenuItemDto) => {
       const code = menu.code;
+      // 是否点击了一级菜单
+      isClickMenu.current = false;
       switch (code) {
         case 'documents':
           handleOpenUrl(menu.path || SITE_DOCUMENT_URL, menu?.openType);
