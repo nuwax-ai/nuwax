@@ -75,7 +75,7 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
           icon
         )}
       </span>
-      <div className={cx('flex-1', styles.name)}>{name}</div>
+      <div className={cx('flex-1', 'text-ellipsis', styles.name)}>{name}</div>
       {onCancelCollect && (
         <CustomPopover list={[{ label: '取消收藏' }]} onClick={onCancelCollect}>
           <EllipsisOutlined className={cx(styles.collectIcon)} />
