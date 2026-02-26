@@ -52,10 +52,10 @@ export const REVERSE_PROXY_ACTIONS = [
 
 // 页面开发创建类型列表
 export const PAGE_DEVELOP_MORE_ACTIONS = [
-  {
-    value: PageDevelopMoreActionEnum.Reverse_Proxy_Config,
-    label: '反向代理配置',
-  },
+  // {
+  //   value: PageDevelopMoreActionEnum.Reverse_Proxy_Config,
+  //   label: '反向代理配置',
+  // },
   {
     value: PageDevelopMoreActionEnum.Path_Params_Config,
     label: '路径参数配置',
