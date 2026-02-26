@@ -6,6 +6,7 @@ import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
@@ -17,8 +18,8 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { MessageInfo, RoleInfo } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
-import { Button, Form, message } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -183,6 +184,36 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     scrollTimeoutRef,
     setShowScrollBtn,
   );
+
+  // 到顶自动加载更多的侦测 Hook (提前 10px 触发，防止用户觉得过早)
+  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
+    rootMargin: '10px 0px 0px 0px',
+    threshold: 0,
+  });
+
+  // 监听进入视口事件，自动触发加载更多
+  // 使用 useRef 记录上一次的 inView 状态，严格保证只有在【刚进入视口】的那一瞬间才触发请求
+  const prevLoadMoreInViewRef = useRef(false);
+  useEffect(() => {
+    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
+    prevLoadMoreInViewRef.current = loadMoreInView;
+
+    if (
+      isEntering &&
+      isMoreMessage &&
+      !loadingMore &&
+      messageList?.length > 0 &&
+      devConversationIdRef.current
+    ) {
+      handleLoadMoreMessage(devConversationIdRef.current);
+    }
+  }, [
+    loadMoreInView,
+    isMoreMessage,
+    loadingMore,
+    messageList?.length,
+    handleLoadMoreMessage,
+  ]);
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -418,20 +449,23 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 </div>
               ) : messageList?.length > 0 ? (
                 <>
-                  {/* 加载更多按钮 */}
+                  {/* 自动加载更多的触发探测元素 */}
                   {isMoreMessage && messageList?.length > 0 && (
-                    <div className={cx(styles['load-more-container'])}>
-                      <Button
-                        type="text"
-                        loading={loadingMore}
-                        icon={<RollbackOutlined />}
-                        onClick={() =>
-                          handleLoadMoreMessage(devConversationIdRef.current)
-                        }
-                        className={cx(styles['load-more-btn'])}
-                      >
-                        点击查看更多历史会话
-                      </Button>
+                    <div
+                      ref={loadMoreRef}
+                      className={cx(styles['load-more-container'])}
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px 0',
+                        color: '#999',
+                      }}
+                    >
+                      {loadingMore ? (
+                        <span>
+                          <LoadingOutlined style={{ marginRight: 8 }} />
+                          正在加载历史会话
+                        </span>
+                      ) : null}
                     </div>
                   )}
                   {messageList?.map((item: MessageInfo) => (

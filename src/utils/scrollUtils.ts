@@ -32,6 +32,8 @@ export const findFirstVisibleMessageElement = (
 
 /**
  * DOM更新后调整滚动位置
+ * 使 ResizeObserver 在历史数据流式渲染（约 100 - 500 ms）的窗口期内，
+ * 持续补偿不断膨胀的高度，防止内容下坠然后跳回的闪烁现象。
  * @param container 滚动容器元素
  * @param oldScrollTop 原始滚动位置
  * @param oldScrollHeight 原始滚动高度
@@ -43,91 +45,54 @@ export const adjustScrollPositionAfterDOMUpdate = (
 ): void => {
   if (!container) return;
 
-  // 使用MutationObserver监听DOM变化，确保所有消息元素都渲染完成
-  const observer = new MutationObserver((mutations, obs) => {
-    // 检查是否有新增的消息元素
-    const hasNewMessages = mutations.some((mutation) => {
-      return Array.from(mutation.addedNodes).some((node) => {
-        return (
-          node.nodeType === Node.ELEMENT_NODE &&
-          (node as Element).hasAttribute('data-message-id')
-        );
+  // 使用一个活动窗口来记录从加载开始时总共增高了多少
+  let currentBaseScrollHeight = oldScrollHeight;
+  let currentBaseScrollTop = oldScrollTop;
+
+  // ResizeObserver 在 500ms 窗口期内不会被断开，以此来抗衡异步 markdown 的动画撑开高度
+  const resizeObserver = new ResizeObserver(() => {
+    const newScrollHeight = container.scrollHeight;
+    const scrollDiff = newScrollHeight - currentBaseScrollHeight;
+
+    if (scrollDiff > 0) {
+      // 通过每次将差量补进当前的 scrollTop 中，使得视口像被钉子钉住一样不管上方插了多少内容都不会变化
+      const newScrollTop = currentBaseScrollTop + scrollDiff;
+
+      // 使用瞬间滚动
+      (container as any).__isProgrammaticScroll = true;
+      container.scrollTo({
+        top: newScrollTop,
+        behavior: 'instant',
       });
-    });
+      (container as any).__isProgrammaticScroll = false;
 
-    // 如果没有检测到新消息元素，可能是因为消息内容更新
-    // 我们也检查一下是否有文本节点的变化
-    const hasContentChanges = mutations.some((mutation) => {
-      return (
-        mutation.type === 'characterData' ||
-        Array.from(mutation.addedNodes).some(
-          (node) =>
-            node.nodeType === Node.TEXT_NODE || node.nodeName === '#text',
-        )
-      );
-    });
-
-    // 如果有新消息或内容变化，并且有带data-message-id的元素，则调整滚动位置
-    if (
-      (hasNewMessages || hasContentChanges) &&
-      container.querySelectorAll('[data-message-id]').length > 0
-    ) {
-      obs.disconnect(); // 停止观察
-
-      // 使用requestAnimationFrame确保DOM渲染完成
-      requestAnimationFrame(() => {
-        const newScrollHeight = container.scrollHeight;
-        const scrollDiff = newScrollHeight - oldScrollHeight;
-
-        // 尝试获取第一条可见消息的元素
-        const firstVisibleElement = findFirstVisibleMessageElement(container);
-
-        if (firstVisibleElement) {
-          // 计算新的滚动位置，保持这条消息仍在相同视口位置
-          // 新的滚动位置 = 原始滚动位置 + 新增的高度差
-          const newScrollTop = oldScrollTop + scrollDiff;
-
-          // 使用瞬间滚动，且标记为程序触发以防止 hook 误判
-          (container as any).__isProgrammaticScroll = true;
-          container.scrollTo({
-            top: newScrollTop,
-            behavior: 'instant',
-          });
-          (container as any).__isProgrammaticScroll = false;
-        } else {
-          // 回退到原有的计算方式，使用瞬间滚动
-          (container as any).__isProgrammaticScroll = true;
-          container.scrollTo({
-            top: oldScrollTop + scrollDiff,
-            behavior: 'instant',
-          });
-          (container as any).__isProgrammaticScroll = false;
-        }
-      });
+      // 叠加基线
+      currentBaseScrollHeight = newScrollHeight;
+      currentBaseScrollTop = newScrollTop;
     }
   });
 
-  // 配置观察选项
-  const config = {
-    childList: true, // 观察子节点的添加或删除
-    subtree: true, // 观察所有后代节点
-    characterData: true, // 观察文本节点的变化
-  };
+  const firstChild = container.firstElementChild;
+  if (firstChild) {
+    resizeObserver.observe(firstChild);
+  } else {
+    resizeObserver.observe(container);
+  }
 
-  // 开始观察
-  observer.observe(container, config);
-
-  // 设置超时，以防MutationObserver没有触发（例如，如果DOM已经在观察前完成更新）
+  // 给定 600ms 余量让所有被 setTimeout 打断的 markdown 渲染完毕，然后才断开追踪
   setTimeout(() => {
-    observer.disconnect();
-    // 如果观察器被超时断开，仍然尝试调整滚动位置，使用瞬间滚动
-    const newScrollHeight = container.scrollHeight;
-    const scrollDiff = newScrollHeight - oldScrollHeight;
-    (container as any).__isProgrammaticScroll = true;
-    container.scrollTo({
-      top: oldScrollTop + scrollDiff,
-      behavior: 'instant',
-    });
-    (container as any).__isProgrammaticScroll = false;
-  }, 500);
+    resizeObserver.disconnect();
+
+    // 最终的兜底检查
+    const finalScrollHeight = container.scrollHeight;
+    if (finalScrollHeight > currentBaseScrollHeight) {
+      const scrollDiff = finalScrollHeight - currentBaseScrollHeight;
+      (container as any).__isProgrammaticScroll = true;
+      container.scrollTo({
+        top: currentBaseScrollTop + scrollDiff,
+        behavior: 'instant',
+      });
+      (container as any).__isProgrammaticScroll = false;
+    }
+  }, 600);
 };
