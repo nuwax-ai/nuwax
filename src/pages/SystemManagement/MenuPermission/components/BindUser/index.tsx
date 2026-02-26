@@ -216,7 +216,11 @@ const BindUser: React.FC<BindUserProps> = ({
   };
 
   // 加载已绑定用户列表
-  const loadBindedUsers = (pageNo: number = 1, append: boolean = false) => {
+  const loadBindedUsers = (
+    pageNo: number = 1,
+    append: boolean = false,
+    kw: string = '',
+  ) => {
     if (loading && !append) return; // 首次加载时如果正在加载则返回
     setLoading(true);
     setCurrentPage(pageNo);
@@ -225,7 +229,7 @@ const BindUser: React.FC<BindUserProps> = ({
       pageSize: 15,
       queryFilter: {
         [targetIdKey]: targetId,
-        userName: '',
+        userName: kw,
       },
     });
   };
@@ -281,6 +285,7 @@ const BindUser: React.FC<BindUserProps> = ({
       title={`绑定用户 - ${name}`}
       classNames={{
         content: cx(styles['add-member-modal-content']),
+        body: cx(styles['add-member-modal-body']),
       }}
       open={open}
       onCancel={onCancel}
