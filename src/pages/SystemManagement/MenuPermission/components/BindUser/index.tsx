@@ -403,18 +403,18 @@ const BindUser: React.FC<BindUserProps> = ({
 
         {/* 右侧：已选成员列表，支持关键字后端搜索 + 滚动加载更多 */}
         <div className={cx('flex-1', styles.rightColumn)}>
-          <h3 style={{ marginBottom: 15 }}>
-            已选成员 ({rightColumnMembers.length})
-          </h3>
-
           <Input.Search
             placeholder="通过关键字搜索已绑定成员"
             allowClear
             value={rightSearchKeyword}
             onChange={(e) => setRightSearchKeyword(e.target.value)}
             onSearch={handleRightSearch}
-            style={{ marginBottom: 15 }}
+            className={cx(styles['mb-15'])}
           />
+
+          <h3 className={cx(styles['mb-15'])}>
+            已选成员 ({rightColumnMembers.length})
+          </h3>
 
           <div
             ref={rightListScrollRef}
