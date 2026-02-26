@@ -11,6 +11,7 @@ import {
   Avatar,
   Button,
   Checkbox,
+  CheckboxChangeEvent,
   Empty,
   Form,
   Input,
@@ -43,12 +44,13 @@ export interface BindUserProps {
 }
 
 /**
- * 角色绑定用户
- * @param targetId 角色ID
+ * 角色/用户组绑定用户弹窗
+ * @param targetId 角色ID或用户组ID
+ * @param name 角色/用户组名称
+ * @param type 绑定类型：角色/用户组
  * @param open 是否打开
  * @param onCancel 取消回调
  * @param onConfirmBindUser 确认回调
- * @returns
  */
 const BindUser: React.FC<BindUserProps> = ({
   targetId,
@@ -59,23 +61,35 @@ const BindUser: React.FC<BindUserProps> = ({
   onConfirmBindUser,
 }) => {
   const [form] = Form.useForm();
+
+  // 左侧：可选择成员列表
   const [leftColumnMembers, setLeftColumnMembers] = useState<SearchUserInfo[]>(
     [],
   );
   const [leftCheckedMembers, setLeftCheckedMembers] = useState<number[]>([]);
+
+  // 右侧：已选成员列表（后端分页返回）
   const [rightColumnMembers, setRightColumnMembers] = useState<
     SearchUserInfo[]
   >([]);
+
+  // 左侧搜索结果全集（用于从右侧移除时回填到左侧）
   const [searchedAllMembers, setSearchedAllMembers] = useState<
     SearchUserInfo[]
   >([]);
-  // 分页相关状态
+
+  // 右侧已选成员搜索关键字（通过后端接口按 userName 搜索）
+  const [rightSearchKeyword, setRightSearchKeyword] = useState<string>('');
+
+  // 分页相关状态（右侧已选成员列表）
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
+
   // 控制 InfiniteScrollDiv 的渲染时机
   const [isScrollReady, setIsScrollReady] = useState<boolean>(false);
-  // 滚动容器引用
+
+  // 右侧滚动容器引用
   const rightListScrollRef = useRef<HTMLDivElement>(null);
 
   // 查询角色已绑定的用户列表 或 查询组已绑定的用户列表
@@ -87,25 +101,30 @@ const BindUser: React.FC<BindUserProps> = ({
 
   const targetIdKey = type === 'role' ? 'roleId' : 'groupId';
 
-  // 查询角色已绑定的用户或用户组已绑定的用户列表
+  // 查询角色已绑定的用户或用户组已绑定的用户列表（支持分页与关键字 userName）
   const { run } = useRequest(apiBindedUserList, {
     manual: true,
     onSuccess: (data: Page<UserInfo>, params: any[]) => {
       setLoading(false);
       const pageNo = params?.[0]?.pageNo || 1;
+
       if (data?.records?.length) {
-        const bindUserInfos = data.records.map((m: UserInfo) => ({
-          id: m.userId,
-          userName: m.userName,
-          nickName: m.nickName,
-          avatar: m.avatar,
-        }));
+        const bindUserInfos: SearchUserInfo[] = data.records.map(
+          (m: UserInfo) => ({
+            id: m.userId,
+            userName: m.userName,
+            nickName: m.nickName,
+            avatar: m.avatar,
+          }),
+        );
+
         // 如果是第一页，直接设置；否则追加数据
         if (pageNo === 1) {
           setRightColumnMembers(bindUserInfos);
         } else {
           setRightColumnMembers((prev) => [...prev, ...bindUserInfos]);
         }
+
         // 判断是否还有更多数据
         const totalPages = data.pages || 0;
         setHasMore(pageNo < totalPages);
@@ -132,7 +151,7 @@ const BindUser: React.FC<BindUserProps> = ({
     },
   });
 
-  // 根据关键字搜索用户信息
+  // 根据关键字搜索左侧用户信息
   const { run: runSearch } = useRequest(apiSearchUser, {
     manual: true,
     debounceWait: 300,
@@ -145,6 +164,7 @@ const BindUser: React.FC<BindUserProps> = ({
 
       // 保留一份搜索结果全数据
       setSearchedAllMembers(data);
+
       // 排除 rightColumnMembers 中的数据
       // 当 type 为 role 时，还需要过滤掉不是 admin 的用户
       const newLeftColumnMembers = data.filter((m: SearchUserInfo) => {
@@ -159,20 +179,28 @@ const BindUser: React.FC<BindUserProps> = ({
         // 其他情况保留所有用户
         return true;
       });
+
       setLeftColumnMembers(newLeftColumnMembers);
     },
   });
 
+  /**
+   * 确认绑定
+   * 将右侧已选成员的 id 列表提交给后端
+   */
   const handlerSubmit = () => {
-    // 根据类型设置 id 字段名称
-    const id = type === 'role' ? 'roleId' : 'groupId';
+    const idKey = type === 'role' ? 'roleId' : 'groupId';
     const params = {
-      [id]: targetId,
+      [idKey]: targetId,
       userIds: rightColumnMembers?.map((m) => m.id) || [],
     };
     runBindUser(params);
   };
 
+  /**
+   * 从右侧已选列表移除成员
+   * 如果该成员存在于左侧搜索结果全集中，则回填到左侧可选列表
+   */
   const handleRemoveMember = (id: number) => {
     // 从 rightColumnMembers 中移除指定 userId 的成员
     const newRightColumnMembers = rightColumnMembers.filter((m) => m.id !== id);
@@ -186,7 +214,12 @@ const BindUser: React.FC<BindUserProps> = ({
       setLeftColumnMembers((prev) => [...prev, copiedMember]);
     }
   };
-  const handleCheckAllChange = (e: any) => {
+
+  /**
+   * 左侧“全部”复选框勾选
+   * 将左侧全部成员移动到右侧
+   */
+  const handleCheckAllChange = (e: CheckboxChangeEvent) => {
     if (e.target.checked) {
       // 将 leftColumnMembers 全部添加到 rightColumnMembers 中
       setRightColumnMembers([...rightColumnMembers, ...leftColumnMembers]);
@@ -197,7 +230,13 @@ const BindUser: React.FC<BindUserProps> = ({
     }
   };
 
+  /**
+   * 左侧多选勾选变更
+   * 将选中的成员移动到右侧
+   */
   const handleCheckChange = (checkedValues: number[]) => {
+    setLeftCheckedMembers(checkedValues);
+
     const newCheckedMembers = leftColumnMembers.filter((m) =>
       checkedValues.includes(m.id),
     );
@@ -207,69 +246,99 @@ const BindUser: React.FC<BindUserProps> = ({
       (m) => !checkedValues.includes(m.id),
     );
     setLeftColumnMembers(newLeftColumnMembers);
+
+    // 移动完成后清空左侧已选中状态
+    setLeftCheckedMembers([]);
   };
 
-  const handleInputChange = (value: string) => {
+  /**
+   * 左侧搜索输入（用户搜索）
+   */
+  const handleLeftSearch = (value: string) => {
     runSearch({
       kw: value || undefined,
     });
   };
 
-  // 加载已绑定用户列表
+  /**
+   * 加载右侧“已绑定成员”列表
+   * @param pageNo 页码，从 1 开始
+   * @param append 是否追加到已有数据之后
+   * @param kw 用户名关键字（userName）
+   */
   const loadBindedUsers = (
     pageNo: number = 1,
     append: boolean = false,
-    kw: string = '',
+    kw?: string,
   ) => {
-    if (loading && !append) return; // 首次加载时如果正在加载则返回
+    if (loading && !append) return;
     setLoading(true);
     setCurrentPage(pageNo);
+
     run({
       pageNo,
       pageSize: 15,
       queryFilter: {
         [targetIdKey]: targetId,
-        userName: kw,
+        ...(kw ? { userName: kw } : {}),
       },
     });
   };
 
+  /**
+   * 右侧搜索输入（通过关键字搜索已绑定用户，走后端接口 userName 字段）
+   * 每次关键字搜索从第一页开始，并支持后续滚动加载更多
+   */
+  const handleRightSearch = (value: string) => {
+    const kw = value?.trim() || '';
+    setRightSearchKeyword(kw);
+    // 每次搜索从第一页开始
+    loadBindedUsers(1, false, kw);
+  };
+
+  /**
+   * 弹窗打开/关闭时重置状态
+   */
   useEffect(() => {
     if (open) {
-      // 分页查询已绑定的用户列表
-      loadBindedUsers();
+      // 初次打开时加载第一页已绑定用户（不带关键字）
+      loadBindedUsers(1, false);
     } else {
       setLeftCheckedMembers([]);
       setRightColumnMembers([]);
       setLeftColumnMembers([]);
       setSearchedAllMembers([]);
+      setRightSearchKeyword('');
       setCurrentPage(1);
       setHasMore(true);
       setLoading(false);
     }
   }, [targetId, open, targetIdKey]);
 
-  // 滚动加载更多
+  /**
+   * 右侧滚动加载更多（保持当前搜索关键字）
+   */
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       const nextPage = currentPage + 1;
-      loadBindedUsers(nextPage, true);
+      loadBindedUsers(nextPage, true, rightSearchKeyword);
     }
   };
 
-  // 确保滚动容器在 Modal 打开后正确初始化
+  /**
+   * 确保滚动容器在 Modal 打开后正确初始化
+   */
   useEffect(() => {
     if (open && rightListScrollRef.current) {
       // 延迟一下，确保 DOM 已经渲染完成
       const timer = setTimeout(() => {
         const scrollElement = rightListScrollRef.current;
-        if (scrollElement) {
-          // 确保滚动容器已经存在且有高度后，再渲染 InfiniteScrollDiv
-          if (scrollElement.offsetHeight > 0) {
-            setIsScrollReady(true);
-          }
+        // 确保滚动容器有高度
+        if (scrollElement && scrollElement.offsetHeight > 0) {
+          setIsScrollReady(true);
         }
       }, 300);
+
       return () => {
         clearTimeout(timer);
         setIsScrollReady(false);
@@ -292,13 +361,12 @@ const BindUser: React.FC<BindUserProps> = ({
       onConfirm={handlerSubmit}
     >
       <div className={cx(styles.contentWrapper)}>
+        {/* 左侧：搜索并选择成员 */}
         <div className={cx(styles['add-member-left-column'], 'flex-1')}>
           <Input.Search
             placeholder="输入用户名、邮箱或手机号码，回车搜索"
             allowClear
-            onSearch={(value) => {
-              handleInputChange(value);
-            }}
+            onSearch={handleLeftSearch}
           />
           <Checkbox
             onChange={handleCheckAllChange}
@@ -316,7 +384,7 @@ const BindUser: React.FC<BindUserProps> = ({
             value={leftCheckedMembers}
           >
             {leftColumnMembers.map((m) => (
-              <Checkbox key={m.id} value={m.id} className={'flex mb-12'}>
+              <Checkbox key={m.id} value={m.id} className="flex mb-12">
                 <Avatar src={m.avatar || personalImage} />{' '}
                 {m.nickName || m.userName}
               </Checkbox>
@@ -324,10 +392,21 @@ const BindUser: React.FC<BindUserProps> = ({
           </Checkbox.Group>
         </div>
 
+        {/* 右侧：已选成员列表，支持关键字后端搜索 + 滚动加载更多 */}
         <div className={cx('flex-1', styles.rightColumn)}>
           <h3 style={{ marginBottom: 15 }}>
             已选成员 ({rightColumnMembers.length})
           </h3>
+
+          <Input.Search
+            placeholder="通过关键字搜索已绑定成员"
+            allowClear
+            value={rightSearchKeyword}
+            onChange={(e) => setRightSearchKeyword(e.target.value)}
+            onSearch={handleRightSearch}
+            style={{ marginBottom: 15 }}
+          />
+
           <div
             ref={rightListScrollRef}
             id="right-member-list-scroll"
