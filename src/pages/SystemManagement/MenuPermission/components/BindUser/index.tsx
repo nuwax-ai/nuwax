@@ -357,6 +357,29 @@ const BindUser: React.FC<BindUserProps> = ({
     }
   }, [open, rightColumnMembers.length]);
 
+  /**
+   * 渲染右侧已选成员列表（复用 List 渲染逻辑）
+   */
+  const renderRightMemberList = () => (
+    <List
+      dataSource={rightColumnMembers}
+      renderItem={(m) => (
+        <List.Item
+          style={{ borderBlockEnd: 0, padding: 0 }}
+          className="flex items-center gap-10 mb-12"
+        >
+          <Avatar src={m.avatar || personalImage} />
+          <div className="flex-1 text-ellipsis">{m.nickName || m.userName}</div>
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={() => handleRemoveMember(m.id)}
+          />
+        </List.Item>
+      )}
+    />
+  );
+
   return (
     <CustomFormModal
       form={form}
@@ -379,7 +402,7 @@ const BindUser: React.FC<BindUserProps> = ({
           />
           <Checkbox
             onChange={handleCheckAllChange}
-            style={{ marginTop: 20 }}
+            className={cx(styles['mt-20'])}
             checked={
               leftCheckedMembers.length === leftColumnMembers.length &&
               leftColumnMembers.length > 0
@@ -388,7 +411,7 @@ const BindUser: React.FC<BindUserProps> = ({
             全部
           </Checkbox>
           <Checkbox.Group
-            style={{ display: 'block', marginTop: 10 }}
+            className={cx(styles['member-checkbox-group'])}
             onChange={handleCheckChange}
             value={leftCheckedMembers}
           >
@@ -455,47 +478,11 @@ const BindUser: React.FC<BindUserProps> = ({
                 showLoader={isLoadingMore}
                 onScroll={handleLoadMore}
               >
-                <List
-                  dataSource={rightColumnMembers}
-                  renderItem={(m) => (
-                    <List.Item
-                      style={{ borderBlockEnd: 0, padding: 0 }}
-                      className="flex items-center gap-10 mb-12"
-                    >
-                      <Avatar src={m.avatar || personalImage} />
-                      <div className="flex-1 text-ellipsis">
-                        {m.nickName || m.userName}
-                      </div>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={() => handleRemoveMember(m.id)}
-                      />
-                    </List.Item>
-                  )}
-                />
+                {renderRightMemberList()}
               </InfiniteScrollDiv>
             ) : (
               // 未准备好时显示普通列表
-              <List
-                dataSource={rightColumnMembers}
-                renderItem={(m) => (
-                  <List.Item
-                    style={{ borderBlockEnd: 0, padding: 0 }}
-                    className="flex items-center gap-10 mb-12"
-                  >
-                    <Avatar src={m.avatar || personalImage} />
-                    <div className="flex-1 text-ellipsis">
-                      {m.nickName || m.userName}
-                    </div>
-                    <Button
-                      type="text"
-                      icon={<CloseOutlined />}
-                      onClick={() => handleRemoveMember(m.id)}
-                    />
-                  </List.Item>
-                )}
-              />
+              renderRightMemberList()
             )}
           </div>
         </div>
