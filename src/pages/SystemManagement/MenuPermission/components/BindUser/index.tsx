@@ -86,6 +86,9 @@ const BindUser: React.FC<BindUserProps> = ({
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // 是否处于“滚动加载更多”的加载中状态（用于控制底部 loading 的展示）
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+
   // 控制 InfiniteScrollDiv 的渲染时机
   const [isScrollReady, setIsScrollReady] = useState<boolean>(false);
 
@@ -106,6 +109,8 @@ const BindUser: React.FC<BindUserProps> = ({
     manual: true,
     onSuccess: (data: Page<UserInfo>, params: any[]) => {
       setLoading(false);
+      // 接口返回后，无论是首屏还是滚动加载，都结束“加载更多”状态
+      setIsLoadingMore(false);
       const pageNo = params?.[0]?.pageNo || 1;
 
       if (data?.records?.length) {
@@ -138,6 +143,8 @@ const BindUser: React.FC<BindUserProps> = ({
     },
     onError: () => {
       setLoading(false);
+      // 接口异常时也结束“加载更多”状态，防止底部 loading 一直显示
+      setIsLoadingMore(false);
     },
   });
 
@@ -320,6 +327,8 @@ const BindUser: React.FC<BindUserProps> = ({
    */
   const handleLoadMore = () => {
     if (!loading && hasMore) {
+      // 仅在真正触发“加载更多”时，才展示底部 loading
+      setIsLoadingMore(true);
       const nextPage = currentPage + 1;
       loadBindedUsers(nextPage, true, rightSearchKeyword);
     }
@@ -443,6 +452,7 @@ const BindUser: React.FC<BindUserProps> = ({
                 scrollableTarget="right-member-list-scroll"
                 list={rightColumnMembers}
                 hasMore={hasMore}
+                showLoader={isLoadingMore}
                 onScroll={handleLoadMore}
               >
                 <List
