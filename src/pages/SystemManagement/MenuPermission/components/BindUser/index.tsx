@@ -327,34 +327,28 @@ const BindUser: React.FC<BindUserProps> = ({
             ref={rightListScrollRef}
             id="right-member-list-scroll"
             className={cx(styles.rightListScroll)}
-            style={{
-              height: '400px',
-              maxHeight: '400px',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-            }}
           >
             {loading && rightColumnMembers.length === 0 ? (
               // 首次加载时显示 Loading
               <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '100%',
-                }}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'h-full',
+                )}
               >
                 <Loading />
               </div>
             ) : !loading && rightColumnMembers.length === 0 ? (
               // 没有数据时显示 Empty，垂直居中
               <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '100%',
-                }}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'h-full',
+                )}
               >
                 <Empty description="暂无数据" />
               </div>
