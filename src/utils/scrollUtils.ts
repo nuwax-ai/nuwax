@@ -87,17 +87,21 @@ export const adjustScrollPositionAfterDOMUpdate = (
           // 新的滚动位置 = 原始滚动位置 + 新增的高度差
           const newScrollTop = oldScrollTop + scrollDiff;
 
-          // 使用平滑滚动效果
+          // 使用瞬间滚动，且标记为程序触发以防止 hook 误判
+          (container as any).__isProgrammaticScroll = true;
           container.scrollTo({
             top: newScrollTop,
-            behavior: 'smooth',
+            behavior: 'instant',
           });
+          (container as any).__isProgrammaticScroll = false;
         } else {
-          // 回退到原有的计算方式，也使用平滑滚动
+          // 回退到原有的计算方式，使用瞬间滚动
+          (container as any).__isProgrammaticScroll = true;
           container.scrollTo({
             top: oldScrollTop + scrollDiff,
-            behavior: 'smooth',
+            behavior: 'instant',
           });
+          (container as any).__isProgrammaticScroll = false;
         }
       });
     }
@@ -116,12 +120,14 @@ export const adjustScrollPositionAfterDOMUpdate = (
   // 设置超时，以防MutationObserver没有触发（例如，如果DOM已经在观察前完成更新）
   setTimeout(() => {
     observer.disconnect();
-    // 如果观察器被超时断开，仍然尝试调整滚动位置，也使用平滑滚动
+    // 如果观察器被超时断开，仍然尝试调整滚动位置，使用瞬间滚动
     const newScrollHeight = container.scrollHeight;
     const scrollDiff = newScrollHeight - oldScrollHeight;
+    (container as any).__isProgrammaticScroll = true;
     container.scrollTo({
       top: oldScrollTop + scrollDiff,
-      behavior: 'smooth',
+      behavior: 'instant',
     });
+    (container as any).__isProgrammaticScroll = false;
   }, 500);
 };
