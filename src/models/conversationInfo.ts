@@ -367,23 +367,21 @@ export default () => {
   // 滚动到底部
   const messageViewScrollToBottom = () => {
     // 只有在允许自动滚动时才执行滚动
-    if (!allowAutoScrollRef.current) {
-      return;
-    }
+    // if (!allowAutoScrollRef.current) {
+    //   return;
+    // }
     // 滚动到底部
-    const element = messageViewRef.current;
+    const element = messageViewRef?.current;
     if (element) {
       // 标记为程序触发的滚动，避免被误判为用户滚动
       // 通过设置一个临时属性来标记
       (element as any).__isProgrammaticScroll = true;
       element.scrollTo({
         top: element.scrollHeight,
-        behavior: 'smooth',
+        behavior: 'instant',
       });
-      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
-      setTimeout(() => {
-        (element as any).__isProgrammaticScroll = false;
-      }, 600);
+      // instant 滚动是同步的，直接清除标记
+      (element as any).__isProgrammaticScroll = false;
     }
   };
 
@@ -665,13 +663,16 @@ export default () => {
         setChatSuggestList(guidQuestionDtos);
       }
 
-      // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
-      setTimeout(() => {
-        // 只有在允许自动滚动时才滚动到底部
-        if (allowAutoScrollRef.current) {
-          messageViewScrollToBottom();
+      // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
+      // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        messageViewScrollToBottom();
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
         }
-      }, 800);
+      };
+      requestAnimationFrame(forceScrollToBottom);
     },
     onError: () => {
       setIsLoadingConversation(true);
