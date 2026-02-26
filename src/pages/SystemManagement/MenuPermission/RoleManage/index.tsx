@@ -88,6 +88,7 @@ const RoleManage: React.FC = () => {
     loading,
   } = useRequest(apiGetRoleList, {
     manual: true,
+    debounceInterval: 300,
   });
 
   // 监听 location.state 变化
@@ -100,6 +101,7 @@ const RoleManage: React.FC = () => {
   // 删除角色
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetRoleList();
@@ -109,6 +111,7 @@ const RoleManage: React.FC = () => {
   // 更新角色状态
   const { run: runUpdateRole } = useRequest(apiUpdateRole, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       runGetRoleList();
     },
@@ -222,6 +225,7 @@ const RoleManage: React.FC = () => {
   // 更新角色排序
   const { run: runUpdateRoleSort } = useRequest(apiUpdateRoleSort, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
       runGetRoleList();

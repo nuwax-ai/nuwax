@@ -486,6 +486,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     apiUrl,
     {
       manual: true,
+      debounceInterval: 300,
       onSuccess: () => {
         message.success('数据权限保存成功');
         onCancel();

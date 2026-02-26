@@ -107,6 +107,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 查询角色已绑定的用户或用户组已绑定的用户列表（支持分页与关键字 userName）
   const { run } = useRequest(apiBindedUserList, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: (data: Page<UserInfo>, params: any[]) => {
       setLoading(false);
       // 接口返回后，无论是首屏还是滚动加载，都结束“加载更多”状态
@@ -151,7 +152,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 角色绑定用户（全量覆盖）或 组绑定用户（全量覆盖）
   const { run: runBindUser } = useRequest(apiBindUser, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('添加成功');
       onConfirmBindUser?.();
@@ -161,7 +162,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 根据关键字搜索左侧用户信息
   const { run: runSearch } = useRequest(apiSearchUser, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (data: SearchUserInfo[]) => {
       if (!data?.length) {
         message.warning('未搜索到相关用户');

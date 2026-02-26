@@ -79,6 +79,7 @@ const MenuManage: React.FC = () => {
   // 删除菜单
   const { run: runDelete } = useRequest(apiDeleteMenu, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetMenuList();
@@ -88,6 +89,7 @@ const MenuManage: React.FC = () => {
   // 更新菜单是否显示
   const { run: runUpdateMenu } = useRequest(apiUpdateMenu, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       runGetMenuList();
     },
@@ -234,6 +236,7 @@ const MenuManage: React.FC = () => {
   // 更新菜单排序
   const { run: runUpdateMenuSort } = useRequest(apiUpdateMenuSort, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
       runGetMenuList();

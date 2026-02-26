@@ -91,6 +91,7 @@ const UserGroupManage: React.FC = () => {
     loading,
   } = useRequest(apiGetUserGroupList, {
     manual: true,
+    debounceInterval: 300,
   });
 
   // 监听 location.state 变化
@@ -103,6 +104,7 @@ const UserGroupManage: React.FC = () => {
   // 删除用户组
   const { run: runDelete } = useRequest(apiDeleteUserGroup, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetUserGroupList();
@@ -112,6 +114,7 @@ const UserGroupManage: React.FC = () => {
   // 更新用户组状态
   const { run: runUpdateUserGroup } = useRequest(apiUpdateUserGroup, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       runGetUserGroupList();
     },
@@ -241,6 +244,7 @@ const UserGroupManage: React.FC = () => {
   // 更新用户组排序
   const { run: runUpdateUserGroupSort } = useRequest(apiUpdateUserGroupSort, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
       runGetUserGroupList();
