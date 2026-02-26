@@ -80,6 +80,7 @@ const PermissionResources: React.FC = () => {
   } = useRequest(apiGetResourceList, {
     manual: true,
     loadingDelay: 300,
+    debounceInterval: 300,
   });
 
   // 监听 location.state 变化
@@ -92,6 +93,7 @@ const PermissionResources: React.FC = () => {
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
       runGetResourceList();
@@ -101,6 +103,7 @@ const PermissionResources: React.FC = () => {
   // 更新资源是否显示
   const { run: runUpdateResource } = useRequest(apiUpdateResource, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       runGetResourceList();
     },
@@ -240,6 +243,7 @@ const PermissionResources: React.FC = () => {
   // 更新资源排序
   const { run: runUpdateResourceSort } = useRequest(apiUpdateResourceSort, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
       runGetResourceList();

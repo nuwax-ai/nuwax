@@ -99,6 +99,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   // 新增菜单
   const { run: runAddMenu, loading: addLoading } = useRequest(apiAddMenu, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('新增菜单成功');
       onSuccess();
@@ -110,6 +111,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     apiUpdateMenu,
     {
       manual: true,
+      debounceInterval: 300,
       onSuccess: () => {
         message.success('更新菜单成功');
         onSuccess();
@@ -122,6 +124,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     apiGetMenuById,
     {
       manual: true,
+      debounceInterval: 300,
     },
   );
 
@@ -130,6 +133,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     apiGetMenuList,
     {
       manual: true,
+      debounceInterval: 300,
     },
   );
 
@@ -138,6 +142,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     apiGetResourceList,
     {
       manual: true,
+      debounceInterval: 300,
     },
   );
 

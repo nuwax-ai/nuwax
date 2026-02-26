@@ -107,6 +107,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 查询角色已绑定的用户或用户组已绑定的用户列表（支持分页与关键字 userName）
   const { run } = useRequest(apiBindedUserList, {
     manual: true,
+    debounceInterval: 300,
     onSuccess: (data: Page<UserInfo>, params: any[]) => {
       setLoading(false);
       // 接口返回后，无论是首屏还是滚动加载，都结束“加载更多”状态
@@ -151,7 +152,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 角色绑定用户（全量覆盖）或 组绑定用户（全量覆盖）
   const { run: runBindUser } = useRequest(apiBindUser, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: () => {
       message.success('添加成功');
       onConfirmBindUser?.();
@@ -161,7 +162,7 @@ const BindUser: React.FC<BindUserProps> = ({
   // 根据关键字搜索左侧用户信息
   const { run: runSearch } = useRequest(apiSearchUser, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (data: SearchUserInfo[]) => {
       if (!data?.length) {
         message.warning('未搜索到相关用户');
@@ -357,6 +358,29 @@ const BindUser: React.FC<BindUserProps> = ({
     }
   }, [open, rightColumnMembers.length]);
 
+  /**
+   * 渲染右侧已选成员列表（复用 List 渲染逻辑）
+   */
+  const renderRightMemberList = () => (
+    <List
+      dataSource={rightColumnMembers}
+      renderItem={(m) => (
+        <List.Item
+          style={{ borderBlockEnd: 0, padding: 0 }}
+          className="flex items-center gap-10 mb-12"
+        >
+          <Avatar src={m.avatar || personalImage} />
+          <div className="flex-1 text-ellipsis">{m.nickName || m.userName}</div>
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={() => handleRemoveMember(m.id)}
+          />
+        </List.Item>
+      )}
+    />
+  );
+
   return (
     <CustomFormModal
       form={form}
@@ -379,7 +403,7 @@ const BindUser: React.FC<BindUserProps> = ({
           />
           <Checkbox
             onChange={handleCheckAllChange}
-            style={{ marginTop: 20 }}
+            className={cx(styles['mt-20'])}
             checked={
               leftCheckedMembers.length === leftColumnMembers.length &&
               leftColumnMembers.length > 0
@@ -388,7 +412,7 @@ const BindUser: React.FC<BindUserProps> = ({
             全部
           </Checkbox>
           <Checkbox.Group
-            style={{ display: 'block', marginTop: 10 }}
+            className={cx(styles['member-checkbox-group'])}
             onChange={handleCheckChange}
             value={leftCheckedMembers}
           >
@@ -455,47 +479,11 @@ const BindUser: React.FC<BindUserProps> = ({
                 showLoader={isLoadingMore}
                 onScroll={handleLoadMore}
               >
-                <List
-                  dataSource={rightColumnMembers}
-                  renderItem={(m) => (
-                    <List.Item
-                      style={{ borderBlockEnd: 0, padding: 0 }}
-                      className="flex items-center gap-10 mb-12"
-                    >
-                      <Avatar src={m.avatar || personalImage} />
-                      <div className="flex-1 text-ellipsis">
-                        {m.nickName || m.userName}
-                      </div>
-                      <Button
-                        type="text"
-                        icon={<CloseOutlined />}
-                        onClick={() => handleRemoveMember(m.id)}
-                      />
-                    </List.Item>
-                  )}
-                />
+                {renderRightMemberList()}
               </InfiniteScrollDiv>
             ) : (
               // 未准备好时显示普通列表
-              <List
-                dataSource={rightColumnMembers}
-                renderItem={(m) => (
-                  <List.Item
-                    style={{ borderBlockEnd: 0, padding: 0 }}
-                    className="flex items-center gap-10 mb-12"
-                  >
-                    <Avatar src={m.avatar || personalImage} />
-                    <div className="flex-1 text-ellipsis">
-                      {m.nickName || m.userName}
-                    </div>
-                    <Button
-                      type="text"
-                      icon={<CloseOutlined />}
-                      onClick={() => handleRemoveMember(m.id)}
-                    />
-                  </List.Item>
-                )}
-              />
+              renderRightMemberList()
             )}
           </div>
         </div>

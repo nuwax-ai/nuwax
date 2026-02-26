@@ -158,6 +158,7 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
     bindMenuApi,
     {
       manual: true,
+      debounceInterval: 300,
       onSuccess: () => {
         message.success('菜单权限保存成功');
         onSuccess?.();
