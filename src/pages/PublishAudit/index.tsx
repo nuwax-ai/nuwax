@@ -35,8 +35,8 @@ const PublishAudit: React.FC = () => {
   const [openRejectAuditModal, setOpenRejectAuditModal] = useState(false);
   const [rejectAuditId, setRejectAuditId] = useState<number>();
 
-  // 中间变量用于判断是否是点击重置按钮（参考 LogProTable 模式）
-  const isReset = useRef(false);
+  // 标记当前请求是否是初始化或重置请求，用于在 request 中覆盖状态为默认值
+  const isInitializeOrReset = useRef<boolean>(false);
 
   // 查看详情
   const handleView = useCallback(async (record: PublishApplyListInfo) => {
@@ -85,6 +85,8 @@ const PublishAudit: React.FC = () => {
     const res = await apiPassAudit({ id: record.id });
     if (res.code === SUCCESS_CODE) {
       message.success('通过审核成功');
+      // 恢复到初始化状态，便于在request中覆盖状态为默认值：待审核
+      isInitializeOrReset.current = true;
       actionRef.current?.reload();
     }
   }, []);
@@ -170,6 +172,7 @@ const PublishAudit: React.FC = () => {
       dataIndex: 'publishStatus',
       width: 100,
       valueType: 'select',
+      // 默认待审核
       initialValue: PublishStatusEnum.Applying,
       valueEnum: {
         [PublishStatusEnum.Applying]: { text: '待审核' },
@@ -226,27 +229,15 @@ const PublishAudit: React.FC = () => {
     },
   ];
 
+  // 请求处理
   const request = async (_params: Record<string, any>) => {
-    let params = _params;
+    let { current, pageSize, name, targetType, publishStatus } = _params;
 
-    // 判断是否是点击重置按钮（参考 LogProTable 模式）
-    if (isReset.current) {
-      isReset.current = false;
-      // 重置表单
-      formRef.current?.resetFields();
-      // 设置默认值：状态为"待审核"
-      formRef.current?.setFieldsValue({
-        publishStatus: PublishStatusEnum.Applying,
-      });
-      // 覆盖查询参数
-      params = {
-        current: params.current,
-        pageSize: params.pageSize,
-        publishStatus: PublishStatusEnum.Applying,
-      };
+    // 如果是由“重置”触发的请求，则强制将状态重置为“待审核”
+    if (isInitializeOrReset.current) {
+      isInitializeOrReset.current = false;
+      publishStatus = PublishStatusEnum.Applying;
     }
-
-    const { current, pageSize, name, targetType, publishStatus } = params;
     const response = await apiPublishApplyList({
       pageNo: current || 1,
       pageSize: pageSize || 15,
@@ -265,24 +256,19 @@ const PublishAudit: React.FC = () => {
   };
 
   // 重置处理（参考 LogProTable 的 handleReset 模式）
-  const handleReset = useCallback(() => {
-    isReset.current = true;
-    // 重置表格状态
+  const handleReset = () => {
+    // 标记本次为“重置”操作（用于在 request 中强制状态为待审核）
+    isInitializeOrReset.current = true;
+    // 交给 ProTable 自己做表单和分页的 reset，会自动触发一次 request
+    // 重置到默认值，包括表单
     actionRef.current?.reset?.();
-    // 设置分页参数
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
-    // 重新加载
-    actionRef.current?.reload();
-  }, []);
+  };
 
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      handleReset();
-    }
-  }, [location.state, handleReset]);
+    handleReset();
+  }, [location.state]);
 
   return (
     <WorkspaceLayout title="发布审核" hideScroll>
@@ -301,6 +287,8 @@ const PublishAudit: React.FC = () => {
         onCancel={() => setOpenRejectAuditModal(false)}
         onConfirm={() => {
           setOpenRejectAuditModal(false);
+          // 恢复到初始化状态，便于在request中覆盖状态为默认值：待审核
+          isInitializeOrReset.current = true;
           actionRef.current?.reload();
         }}
       />
