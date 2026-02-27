@@ -11,7 +11,16 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
+import {
+  Button,
+  Empty,
+  Input,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,6 +35,7 @@ import {
 import {
   MenuEnabledEnum,
   MenuSourceEnum,
+  type GetMenuListParams,
   type MenuNodeInfo,
   type UpdateMenuParams,
   type UpdateMenuSortItem,
@@ -57,6 +67,10 @@ const MenuManage: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
+  // 查询条件：菜单名称与编码
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchCode, setSearchCode] = useState<string>('');
+
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
@@ -69,11 +83,27 @@ const MenuManage: React.FC = () => {
     manual: true,
   });
 
+  /**
+   * 根据当前查询条件或传入的额外参数查询菜单列表
+   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   */
+  const fetchMenuList = (extraParams?: GetMenuListParams) => {
+    const baseParams: GetMenuListParams = {
+      name: searchName || undefined,
+      code: searchCode || undefined,
+    };
+    const params: GetMenuListParams = extraParams ?? baseParams;
+    runGetMenuList(params);
+  };
+
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 根据条件查询菜单列表（树形结构）
-    runGetMenuList();
+    // 重置查询条件
+    setSearchName('');
+    setSearchCode('');
+    // 根据条件查询菜单列表（树形结构，不带查询条件）
+    fetchMenuList({});
   }, [location.state]);
 
   // 删除菜单
@@ -82,7 +112,7 @@ const MenuManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      runGetMenuList();
+      fetchMenuList();
     },
   });
 
@@ -91,7 +121,7 @@ const MenuManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      runGetMenuList();
+      fetchMenuList();
     },
   });
 
@@ -153,7 +183,7 @@ const MenuManage: React.FC = () => {
   // 处理Modal成功
   const handleModalSuccess = () => {
     handleModalCancel();
-    runGetMenuList();
+    fetchMenuList();
   };
 
   // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
@@ -239,7 +269,7 @@ const MenuManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      runGetMenuList();
+      fetchMenuList();
     },
     onError: () => {
       // 恢复原数据
@@ -901,12 +931,30 @@ const MenuManage: React.FC = () => {
       title="菜单管理"
       hideScroll
       rightSlot={[
+        // 菜单名称搜索
+        <Input
+          key="menu-name"
+          allowClear
+          placeholder="菜单名称"
+          value={searchName}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchName(e.target.value)}
+        />,
+        // 菜单编码搜索
+        <Input
+          key="menu-code"
+          allowClear
+          placeholder="菜单编码"
+          value={searchCode}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />,
         hasPermissionByMenuCode('menu_manage', 'menu_manage_query') && (
           <Button
             key="query"
             type="primary"
             icon={<ReloadOutlined />}
-            onClick={() => runGetMenuList()}
+            onClick={() => fetchMenuList()}
             loading={loading}
           >
             查询

@@ -18,7 +18,16 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
+import {
+  Button,
+  Empty,
+  Input,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -36,6 +45,7 @@ import {
 import {
   RoleSourceEnum,
   RoleStatusEnum,
+  type GetRoleListParams,
   type RoleInfo,
   type UpdateRoleParams,
   type UpdateRoleSortItem,
@@ -78,6 +88,10 @@ const RoleManage: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
+  // 查询条件：角色名称与编码
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchCode, setSearchCode] = useState<string>('');
+
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
@@ -91,11 +105,26 @@ const RoleManage: React.FC = () => {
     debounceInterval: 300,
   });
 
+  /**
+   * 根据当前查询条件或传入的额外参数查询角色列表
+   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   */
+  const fetchRoleList = (extraParams?: GetRoleListParams) => {
+    const params: GetRoleListParams = extraParams ?? {
+      name: searchName || undefined,
+      code: searchCode || undefined,
+    };
+    runGetRoleList(params);
+  };
+
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 查询角色列表
-    runGetRoleList();
+    // 重置查询条件
+    setSearchName('');
+    setSearchCode('');
+    // 查询角色列表（不带查询条件）
+    fetchRoleList({});
   }, [location.state]);
 
   // 删除角色
@@ -104,7 +133,7 @@ const RoleManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      runGetRoleList();
+      fetchRoleList();
     },
   });
 
@@ -113,7 +142,7 @@ const RoleManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      runGetRoleList();
+      fetchRoleList();
     },
   });
 
@@ -181,7 +210,7 @@ const RoleManage: React.FC = () => {
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionModalOpen(false);
     setCurrentRole(null);
-    runGetRoleList();
+    fetchRoleList();
   };
 
   // 处理新增
@@ -203,7 +232,7 @@ const RoleManage: React.FC = () => {
   // 处理Modal成功
   const handleModalSuccess = () => {
     setModalOpen(false);
-    runGetRoleList();
+    fetchRoleList();
   };
 
   // 转换数据格式，为表格数据添加 key 字段
@@ -228,7 +257,7 @@ const RoleManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      runGetRoleList();
+      fetchRoleList();
     },
     onError: () => {
       // 恢复原数据
@@ -483,12 +512,30 @@ const RoleManage: React.FC = () => {
       title="角色管理"
       hideScroll
       rightSlot={[
+        // 角色名称搜索
+        <Input
+          key="role-name"
+          allowClear
+          placeholder="角色名称"
+          value={searchName}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchName(e.target.value)}
+        />,
+        // 角色编码搜索
+        <Input
+          key="role-code"
+          allowClear
+          placeholder="角色编码"
+          value={searchCode}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />,
         hasPermissionByMenuCode('role_manage', 'role_manage_query') && (
           <Button
             key="query"
             type="primary"
             icon={<ReloadOutlined />}
-            onClick={() => runGetRoleList()}
+            onClick={() => fetchRoleList()}
             loading={loading}
           >
             查询
@@ -588,7 +635,7 @@ const RoleManage: React.FC = () => {
         onCancel={() => setBindUserDrawerOpen(false)}
         onConfirmBindUser={() => {
           setBindUserDrawerOpen(false);
-          runGetRoleList();
+          fetchRoleList();
         }}
       />
     </WorkspaceLayout>
