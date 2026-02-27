@@ -686,10 +686,6 @@ const UserGroupManage: React.FC = () => {
         type="userGroup"
         open={groupBindUserOpen}
         onCancel={() => setGroupBindUserOpen(false)}
-        onConfirmBindUser={() => {
-          setGroupBindUserOpen(false);
-          fetchUserGroupList();
-        }}
       />
     </WorkspaceLayout>
   );

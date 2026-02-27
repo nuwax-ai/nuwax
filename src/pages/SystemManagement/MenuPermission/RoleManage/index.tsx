@@ -633,10 +633,6 @@ const RoleManage: React.FC = () => {
         name={currentRole?.name || ''}
         open={bindUserDrawerOpen}
         onCancel={() => setBindUserDrawerOpen(false)}
-        onConfirmBindUser={() => {
-          setBindUserDrawerOpen(false);
-          fetchRoleList();
-        }}
       />
     </WorkspaceLayout>
   );
