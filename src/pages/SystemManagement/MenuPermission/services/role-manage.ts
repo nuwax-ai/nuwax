@@ -39,6 +39,19 @@ export async function apiUpdateRoleSort(
 }
 
 /**
+ * 角色移除用户
+ */
+export async function apiRemoveRoleUser(data: {
+  roleId: number;
+  userId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/role/remove-user', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 删除角色
  */
 export async function apiDeleteRole(
@@ -95,6 +108,21 @@ export async function apiAddRole(
   data: AddRoleParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/role/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 角色添加用户
+ * @param data
+ * @returns Promise<RequestResponse<null>>
+ */
+export async function apiAddRoleUser(data: {
+  roleId: number;
+  userId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/role/add-user', {
     method: 'POST',
     data,
   });

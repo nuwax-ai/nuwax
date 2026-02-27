@@ -38,6 +38,19 @@ export async function apiUpdateUserGroupSort(
 }
 
 /**
+ * 用户组移除用户
+ */
+export async function apiRemoveUserGroupUser(data: {
+  groupId: number;
+  userId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/group/remove-user', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 删除用户组
  */
 export async function apiDeleteUserGroup(
@@ -91,6 +104,19 @@ export async function apiAddUserGroup(
   data: AddUserGroupParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/group/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 用户组添加用户
+ */
+export async function apiAddUserGroupUser(data: {
+  groupId: number;
+  userId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/system/group/add-user', {
     method: 'POST',
     data,
   });
