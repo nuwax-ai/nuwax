@@ -219,7 +219,7 @@ export const useReactScrollToBottom = (
    * 处理滚动按钮点击
    */
   const handleScrollButtonClick = useCallback(() => {
-    scrollToBottom({ behavior: 'smooth' });
+    scrollToBottom({ behavior: 'auto' });
     allowAutoScrollRef.current = true;
     setIsAutoScrollEnabled(true);
     setShowScrollButton(false);
