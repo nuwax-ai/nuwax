@@ -14,6 +14,7 @@ import {
 import {
   Button,
   Empty,
+  Input,
   message,
   Space,
   Spin,
@@ -36,6 +37,7 @@ import {
   ResourceEnabledEnum,
   ResourceSourceEnum,
   ResourceTypeEnum,
+  type GetResourceListParams,
   type ResourceInfo,
   type ResourceTreeNode,
   type UpdateResourceParams,
@@ -69,6 +71,10 @@ const PermissionResources: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
+  // 查询条件：资源名称与编码
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchCode, setSearchCode] = useState<string>('');
+
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
@@ -83,11 +89,27 @@ const PermissionResources: React.FC = () => {
     debounceInterval: 300,
   });
 
+  /**
+   * 根据当前查询条件或传入的额外参数查询资源列表
+   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   */
+  const fetchResourceList = (extraParams?: GetResourceListParams) => {
+    const baseParams: GetResourceListParams = {
+      name: searchName || undefined,
+      code: searchCode || undefined,
+    };
+    const params: GetResourceListParams = extraParams ?? baseParams;
+    runGetResourceList(params);
+  };
+
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 根据条件查询权限资源列表（树形结构）
-    runGetResourceList();
+    // 重置查询条件
+    setSearchName('');
+    setSearchCode('');
+    // 根据条件查询权限资源列表（树形结构，不带查询条件）
+    fetchResourceList({});
   }, [location.state]);
 
   // 删除资源
@@ -96,7 +118,7 @@ const PermissionResources: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      runGetResourceList();
+      fetchResourceList();
     },
   });
 
@@ -105,7 +127,7 @@ const PermissionResources: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      runGetResourceList();
+      fetchResourceList();
     },
   });
 
@@ -180,7 +202,7 @@ const PermissionResources: React.FC = () => {
   // 处理Modal成功
   const handleModalSuccess = () => {
     handleModalCancel();
-    runGetResourceList();
+    fetchResourceList();
   };
 
   // 获取资源类型显示文本
@@ -246,7 +268,7 @@ const PermissionResources: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      runGetResourceList();
+      fetchResourceList();
     },
     onError: () => {
       // 恢复原数据
@@ -969,12 +991,30 @@ const PermissionResources: React.FC = () => {
       title="权限资源管理"
       hideScroll
       rightSlot={[
+        // 资源名称搜索
+        <Input
+          key="resource-name"
+          allowClear
+          placeholder="资源名称"
+          value={searchName}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchName(e.target.value)}
+        />,
+        // 资源编码搜索
+        <Input
+          key="resource-code"
+          allowClear
+          placeholder="资源编码"
+          value={searchCode}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />,
         hasPermissionByMenuCode('resource_manage', 'resource_manage_query') && (
           <Button
             key="query"
             type="primary"
             icon={<ReloadOutlined />}
-            onClick={() => runGetResourceList()}
+            onClick={() => fetchResourceList()}
             loading={loading}
           >
             查询
