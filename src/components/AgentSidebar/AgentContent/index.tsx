@@ -5,20 +5,37 @@ import ConditionRender from '@/components/ConditionRender';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { Typography } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useRef } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 智能体内容
 const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
+  // 控制头像加载失败时只回退到默认图标一次，防止死循环
+  const hasRetriedRef = useRef<boolean>(false);
+
   if (!agentDetail) {
     return null;
   }
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
-      <img className={styles.avatar} src={agentDetail?.icon || agentImage} />
+      <img
+        className={styles.avatar}
+        src={agentDetail?.icon || agentImage}
+        onError={(e) => {
+          const imgEl = e.currentTarget;
+          // 仅在首次失败时回退到默认头像，避免无限重试
+          if (!hasRetriedRef.current) {
+            hasRetriedRef.current = true;
+            imgEl.src = agentImage;
+          } else {
+            // 第二次依旧失败时，移除 onError，防止死循环
+            imgEl.onerror = null;
+          }
+        }}
+      />
       <Typography.Title
         level={5}
         className={styles.title}
