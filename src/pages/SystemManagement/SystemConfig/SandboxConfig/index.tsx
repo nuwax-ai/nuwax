@@ -123,6 +123,28 @@ const SandboxConfig: React.FC = () => {
     }
   };
 
+  // 新增/编辑沙盒提交
+  const handleSandboxSubmit = async (values: any) => {
+    try {
+      const payload =
+        modalMode === 'add'
+          ? { scope: 'GLOBAL', ...values }
+          : { ...(currentRecord || {}), ...values };
+      const apiCall =
+        modalMode === 'add' ? apiCreateSandboxConfig : apiUpdateSandboxConfig;
+      const res = await apiCall(payload);
+      if (res.code === SUCCESS_CODE) {
+        message.success(modalMode === 'add' ? '添加成功' : '保存成功');
+        setModalVisible(false);
+        fetchSandboxList();
+        return true;
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    return false;
+  };
+
   const columns: ProColumns<SandboxItem>[] = [
     {
       title: '沙盒名称',
@@ -348,34 +370,7 @@ const SandboxConfig: React.FC = () => {
         mode={modalMode}
         initialData={currentRecord}
         onCancel={() => setModalVisible(false)}
-        onFinish={async (values) => {
-          try {
-            const payload =
-              modalMode === 'add'
-                ? {
-                    scope: 'GLOBAL',
-                    ...values,
-                  }
-                : {
-                    ...(currentRecord || {}),
-                    ...values,
-                  };
-            const apiCall =
-              modalMode === 'add'
-                ? apiCreateSandboxConfig
-                : apiUpdateSandboxConfig;
-            const res = await apiCall(payload);
-            if (res.code === SUCCESS_CODE) {
-              message.success(modalMode === 'add' ? '添加成功' : '保存成功');
-              setModalVisible(false);
-              fetchSandboxList();
-              return true;
-            }
-          } catch (error) {
-            console.error(error);
-          }
-          return false;
-        }}
+        onFinish={handleSandboxSubmit}
       />
     </WorkspaceLayout>
   );
