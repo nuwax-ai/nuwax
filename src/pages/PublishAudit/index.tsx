@@ -40,30 +40,39 @@ const PublishAudit: React.FC = () => {
 
   // 查看详情
   const handleView = useCallback(async (record: PublishApplyListInfo) => {
+    const {
+      spaceId,
+      targetId,
+      id: applyId,
+      targetType,
+      targetSubType,
+      pluginType,
+    } = record;
+
     let url = '';
 
     // 智能体
-    if (record.targetType === SquareAgentTypeEnum.Agent) {
-      if (record.targetSubType === 'PageApp') {
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      if (targetSubType === 'PageApp') {
         const { code, data: projectInfo } = await apiPageGetProjectInfoByAgent(
-          record.targetId,
+          targetId,
         );
         if (code === SUCCESS_CODE && projectInfo) {
-          url = `/space/${record.spaceId}/app-dev/${projectInfo.projectId}`;
+          url = `/space/${spaceId}/app-dev/${projectInfo.projectId}`;
         }
       } else {
-        url = `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`;
+        url = `/space/${spaceId}/agent/${targetId}?applyId=${applyId}`;
       }
-    } else if (record.targetType === SquareAgentTypeEnum.Plugin) {
-      if (record.pluginType === 'CODE') {
-        url = `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`;
+    } else if (targetType === SquareAgentTypeEnum.Plugin) {
+      if (pluginType === 'CODE') {
+        url = `/space/${spaceId}/plugin/${targetId}/cloud-tool?applyId=${applyId}`;
       } else {
-        url = `/space/${record.spaceId}/plugin/${record.targetId}?applyId=${record.id}`;
+        url = `/space/${spaceId}/plugin/${targetId}?applyId=${applyId}`;
       }
-    } else if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      url = `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`;
-    } else if (record.targetType === SquareAgentTypeEnum.Skill) {
-      url = `/space/${record.spaceId}/skill-details/${record.targetId}?applyId=${record.id}`;
+    } else if (targetType === SquareAgentTypeEnum.Workflow) {
+      url = `/space/${spaceId}/workflow/${targetId}?applyId=${applyId}`;
+    } else if (targetType === SquareAgentTypeEnum.Skill) {
+      url = `/space/${spaceId}/skill-details/${targetId}?applyId=${applyId}`;
     }
 
     if (url) {
