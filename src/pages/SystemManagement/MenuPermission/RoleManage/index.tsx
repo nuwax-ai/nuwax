@@ -111,8 +111,8 @@ const RoleManage: React.FC = () => {
    */
   const fetchRoleList = (extraParams?: GetRoleListParams) => {
     const params: GetRoleListParams = extraParams ?? {
-      name: searchName,
-      code: searchCode,
+      name: searchName || undefined,
+      code: searchCode || undefined,
     };
     runGetRoleList(params);
   };

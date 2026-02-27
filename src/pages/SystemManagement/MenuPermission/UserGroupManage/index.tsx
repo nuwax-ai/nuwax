@@ -114,8 +114,8 @@ const UserGroupManage: React.FC = () => {
    */
   const fetchUserGroupList = (extraParams?: GetUserGroupListParams) => {
     const baseParams: GetUserGroupListParams = {
-      name: searchName,
-      code: searchCode,
+      name: searchName || undefined,
+      code: searchCode || undefined,
     };
     const params: GetUserGroupListParams = extraParams ?? baseParams;
     runGetUserGroupList(params);
