@@ -259,8 +259,13 @@ const SandboxConfig: React.FC = () => {
         <div className={styles['action-btns']}>
           <Tooltip title={record.isActive ? '停用' : '启用'}>
             <div
-              className={styles['action-btn']}
-              onClick={() => handleToggleSandbox(record)}
+              className={cx(styles['action-btn'], {
+                [styles.disabled]: !hasPermission('sandbox_config_modify'),
+              })}
+              onClick={() => {
+                if (!hasPermission('sandbox_config_modify')) return;
+                handleToggleSandbox(record);
+              }}
             >
               {record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
             </div>
