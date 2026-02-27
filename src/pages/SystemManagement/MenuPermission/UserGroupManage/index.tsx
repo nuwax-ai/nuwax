@@ -18,7 +18,16 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Spin, Switch, Tooltip } from 'antd';
+import {
+  Button,
+  Empty,
+  Input,
+  message,
+  Space,
+  Spin,
+  Switch,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -34,6 +43,7 @@ import {
   apiUpdateUserGroupSort,
 } from '../services/user-group-manage';
 import type {
+  GetUserGroupListParams,
   UpdateUserGroupParams,
   UpdateUserGroupSortItem,
   UserGroupInfo,
@@ -81,6 +91,10 @@ const UserGroupManage: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
+  // 查询条件：用户组名称与编码
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchCode, setSearchCode] = useState<string>('');
+
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
@@ -94,11 +108,27 @@ const UserGroupManage: React.FC = () => {
     debounceInterval: 300,
   });
 
+  /**
+   * 根据当前查询条件或传入的额外参数查询用户组列表
+   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   */
+  const fetchUserGroupList = (extraParams?: GetUserGroupListParams) => {
+    const baseParams: GetUserGroupListParams = {
+      name: searchName,
+      code: searchCode,
+    };
+    const params: GetUserGroupListParams = extraParams ?? baseParams;
+    runGetUserGroupList(params);
+  };
+
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 查询用户组列表
-    runGetUserGroupList();
+    // 重置查询条件
+    setSearchName('');
+    setSearchCode('');
+    // 查询用户组列表（不带查询条件）
+    fetchUserGroupList({});
   }, [location.state]);
 
   // 删除用户组
@@ -107,7 +137,7 @@ const UserGroupManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      runGetUserGroupList();
+      fetchUserGroupList();
     },
   });
 
@@ -116,7 +146,7 @@ const UserGroupManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      runGetUserGroupList();
+      fetchUserGroupList();
     },
   });
 
@@ -175,7 +205,7 @@ const UserGroupManage: React.FC = () => {
   const handleModalSuccess = () => {
     setModalOpen(false);
     setCurrentUserGroup(null);
-    runGetUserGroupList();
+    fetchUserGroupList();
   };
 
   // 处理菜单权限
@@ -194,7 +224,7 @@ const UserGroupManage: React.FC = () => {
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionModalOpen(false);
     setCurrentUserGroup(null);
-    runGetUserGroupList();
+    fetchUserGroupList();
   };
 
   // 处理数据权限
@@ -247,7 +277,7 @@ const UserGroupManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      runGetUserGroupList();
+      fetchUserGroupList();
     },
     onError: () => {
       // 恢复原数据
@@ -524,6 +554,24 @@ const UserGroupManage: React.FC = () => {
       title="用户组管理"
       hideScroll
       rightSlot={[
+        // 用户组名称搜索
+        <Input
+          key="group-name"
+          allowClear
+          placeholder="用户组名称"
+          value={searchName}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchName(e.target.value)}
+        />,
+        // 用户组编码搜索
+        <Input
+          key="group-code"
+          allowClear
+          placeholder="用户组编码"
+          value={searchCode}
+          style={{ width: 160 }}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />,
         hasPermissionByMenuCode(
           'user_group_manage',
           'user_group_manage_query',
@@ -532,7 +580,7 @@ const UserGroupManage: React.FC = () => {
             key="query"
             type="primary"
             icon={<ReloadOutlined />}
-            onClick={() => runGetUserGroupList()}
+            onClick={() => fetchUserGroupList()}
             loading={loading}
           >
             查询
@@ -640,7 +688,7 @@ const UserGroupManage: React.FC = () => {
         onCancel={() => setGroupBindUserOpen(false)}
         onConfirmBindUser={() => {
           setGroupBindUserOpen(false);
-          runGetUserGroupList();
+          fetchUserGroupList();
         }}
       />
     </WorkspaceLayout>

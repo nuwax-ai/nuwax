@@ -149,7 +149,7 @@ export interface GetUserGroupListParams {
   /** 用户组编码 */
   code?: string;
   /** 来源 1:系统内置 2:用户自定义 */
-  source: UserGroupSourceEnum;
+  source?: UserGroupSourceEnum;
   /** 状态,1:启用 0:禁用 */
-  status: UserGroupStatusEnum;
+  status?: UserGroupStatusEnum;
 }
