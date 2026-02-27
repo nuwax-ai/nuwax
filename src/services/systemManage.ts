@@ -577,6 +577,16 @@ export async function apiToggleSandboxConfig(
   });
 }
 /**
+ * 启用/停用沙盒配置（系统管理）
+ */
+export async function apiToggleSystemSandboxConfig(
+  id: number | string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/sandbox/config/toggle/${id}`, {
+    method: 'POST',
+  });
+}
+/**
  * 删除用户沙盒配置
  */
 export async function apiDeleteSandboxUserConfig(

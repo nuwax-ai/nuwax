@@ -8,14 +8,17 @@ import {
   apiGetSandboxConfigList,
   apiGetSandboxGlobalConfig,
   apiTestSandboxConnectivity,
+  apiToggleSystemSandboxConfig,
   apiUpdateSandboxConfig,
   apiUpdateSandboxGlobalConfig,
 } from '@/services/systemManage';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
+  CheckCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  StopOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -123,6 +126,24 @@ const SandboxConfig: React.FC = () => {
     }
   };
 
+  // 启用/停用沙盒配置
+  const handleToggleSandbox = (record: SandboxItem) => {
+    const actionText = record.isActive ? '停用' : '启用';
+    Modal.confirm({
+      title: `${actionText}确认`,
+      content: `确定要${actionText}沙盒${record.name}吗？`,
+      okText: '确定',
+      cancelText: '取消',
+      onOk: async () => {
+        const res = await apiToggleSystemSandboxConfig(record.id);
+        if (res.code === SUCCESS_CODE) {
+          message.success(`${actionText}成功`);
+          fetchSandboxList();
+        }
+      },
+    });
+  };
+
   // 新增/编辑沙盒提交
   const handleSandboxSubmit = async (values: any) => {
     try {
@@ -199,7 +220,7 @@ const SandboxConfig: React.FC = () => {
       },
     },
     {
-      title: '状态',
+      title: '在线状态',
       dataIndex: 'online',
       minWidth: 120,
       render: (_, record) => (
@@ -215,11 +236,40 @@ const SandboxConfig: React.FC = () => {
       ),
     },
     {
+      title: '启用状态',
+      dataIndex: 'isActive',
+      minWidth: 120,
+      render: (_, record) => (
+        <div
+          className={cx(styles['status-tag'], {
+            [styles.online]: record.isActive,
+            [styles.offline]: !record.isActive,
+          })}
+        >
+          <span className={styles.dot} />
+          {record.isActive ? <span>已启用</span> : <span>已停用</span>}
+        </div>
+      ),
+    },
+    {
       title: '操作',
       valueType: 'option',
-      width: 150,
+      width: 190,
       render: (_, record) => (
         <div className={styles['action-btns']}>
+          <Tooltip title={record.isActive ? '停用' : '启用'}>
+            <div
+              className={cx(styles['action-btn'], {
+                [styles.disabled]: !hasPermission('sandbox_config_modify'),
+              })}
+              onClick={() => {
+                if (!hasPermission('sandbox_config_modify')) return;
+                handleToggleSandbox(record);
+              }}
+            >
+              {record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
+            </div>
+          </Tooltip>
           <Tooltip title="连通性测试">
             <div
               className={cx(styles['action-btn'], {
