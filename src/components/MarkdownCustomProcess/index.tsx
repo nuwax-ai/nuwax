@@ -350,7 +350,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     >
       <div className={cx(styles['process-header'])}>
         <div className={cx(styles['process-title'])}>
-          {innerProcessing.name || '暂无名称'}
+          {innerProcessing?.name || '暂无名称'}
         </div>
         <div className={cx(styles['process-controls'])}>
           {genStatusDisplay()}
