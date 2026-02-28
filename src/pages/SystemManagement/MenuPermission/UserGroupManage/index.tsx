@@ -1,15 +1,19 @@
 import CustomPopover from '@/components/CustomPopover';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
   EllipsisOutlined,
   InfoCircleOutlined,
   PlusOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -18,19 +22,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  Button,
-  Empty,
-  Input,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
@@ -91,45 +86,87 @@ const UserGroupManage: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
-  // 查询条件：用户组名称与编码
-  const [searchName, setSearchName] = useState<string>('');
-  const [searchCode, setSearchCode] = useState<string>('');
+  // ProTable 的 ref
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+
+  // 标记是否正在拖拽，用于防止 postData 覆盖拖拽后的数据
+  const isDraggingRef = useRef<boolean>(false);
+  // 保存拖拽前的原始数据，用于接口失败时恢复
+  const originalDataRef = useRef<(UserGroupInfo & { key: number })[] | null>(
+    null,
+  );
 
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
-  // 查询用户组列表
-  const {
-    run: runGetUserGroupList,
-    data: userGroupList,
-    loading,
-  } = useRequest(apiGetUserGroupList, {
-    manual: true,
-    debounceInterval: 300,
-  });
+  /**
+   * ProTable 的 request 函数
+   * 根据表单查询条件获取用户组列表
+   */
+  const request = useCallback(async (params: any) => {
+    const { name, code } = params;
+    const queryParams: GetUserGroupListParams = {
+      name: name || undefined,
+      code: code || undefined,
+    };
+    try {
+      const res = await apiGetUserGroupList(queryParams);
+      // 如果请求失败或数据为空/null，返回空数组并清空 draggableData
+      if (res?.code !== SUCCESS_CODE || !res?.data) {
+        // 立即清空 draggableData，确保表格显示空状态
+        setDraggableData([]);
+        return {
+          data: [],
+          total: 0,
+          success: true, // 即使没有数据，也返回 success: true，让 ProTable 正常渲染空状态
+        };
+      }
+      // 过滤掉 id 为 0 的节点
+      const filteredList = res.data.filter(
+        (item: UserGroupInfo) => item.id !== 0,
+      );
+      const data = filteredList.map((item: UserGroupInfo) => ({
+        ...item,
+        key: item.id,
+      }));
+      return {
+        data,
+        total: data.length,
+        success: true,
+      };
+    } catch (error) {
+      console.error('查询用户组列表失败', error);
+      // 发生错误时也清空 draggableData
+      setDraggableData([]);
+      return {
+        data: [],
+        total: 0,
+        success: false,
+      };
+    }
+  }, []);
 
   /**
-   * 根据当前查询条件或传入的额外参数查询用户组列表
-   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   * 重置处理
    */
-  const fetchUserGroupList = (extraParams?: GetUserGroupListParams) => {
-    const baseParams: GetUserGroupListParams = {
-      name: searchName || undefined,
-      code: searchCode || undefined,
-    };
-    const params: GetUserGroupListParams = extraParams ?? baseParams;
-    runGetUserGroupList(params);
-  };
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
 
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 重置查询条件
-    setSearchName('');
-    setSearchCode('');
-    // 查询用户组列表（不带查询条件）
-    fetchUserGroupList({});
-  }, [location.state]);
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   // 删除用户组
   const { run: runDelete } = useRequest(apiDeleteUserGroup, {
@@ -137,7 +174,7 @@ const UserGroupManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      fetchUserGroupList();
+      actionRef.current?.reload();
     },
   });
 
@@ -146,7 +183,7 @@ const UserGroupManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      fetchUserGroupList();
+      actionRef.current?.reload();
     },
   });
 
@@ -205,7 +242,7 @@ const UserGroupManage: React.FC = () => {
   const handleModalSuccess = () => {
     setModalOpen(false);
     setCurrentUserGroup(null);
-    fetchUserGroupList();
+    actionRef.current?.reload();
   };
 
   // 处理菜单权限
@@ -224,7 +261,7 @@ const UserGroupManage: React.FC = () => {
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionModalOpen(false);
     setCurrentUserGroup(null);
-    fetchUserGroupList();
+    actionRef.current?.reload();
   };
 
   // 处理数据权限
@@ -247,41 +284,30 @@ const UserGroupManage: React.FC = () => {
     );
   };
 
-  // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
-  const tableData = useMemo(() => {
-    if (!userGroupList || !userGroupList.length) {
-      return [];
-    }
-
-    const transformData = (data: UserGroupInfo[]): any[] => {
-      return data.map((item) => ({
-        ...item,
-        key: item.id,
-      }));
-    };
-    // 否则过滤掉所有 id 为 0 的节点，只保留其他节点
-    const filteredList = userGroupList.filter(
-      (item: UserGroupInfo) => item.id !== 0,
-    );
-    return filteredList.length > 0 ? transformData(filteredList) : [];
-  }, [userGroupList]);
-
-  // 同步 tableData 到 draggableData
-  useEffect(() => {
-    setDraggableData(tableData);
-  }, [tableData]);
-
   // 更新用户组排序
   const { run: runUpdateUserGroupSort } = useRequest(apiUpdateUserGroupSort, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      fetchUserGroupList();
+      // 标记拖拽完成，允许 postData 正常同步数据
+      isDraggingRef.current = false;
+      // 清空原始数据引用
+      originalDataRef.current = null;
+      // 不调用 reload()，因为 draggableData 已经更新，表格会通过 dataSource 自动更新
+      // 这样可以避免拖拽的行先回到原位置再移动到新位置的问题
     },
     onError: () => {
-      // 恢复原数据
-      setDraggableData(tableData);
+      // 标记拖拽完成
+      isDraggingRef.current = false;
+      // 接口失败时，恢复原始数据
+      if (originalDataRef.current) {
+        setDraggableData(originalDataRef.current);
+        originalDataRef.current = null;
+      } else {
+        // 如果没有保存原始数据，重新从服务器获取
+        actionRef.current?.reload();
+      }
     },
   });
 
@@ -289,6 +315,7 @@ const UserGroupManage: React.FC = () => {
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     // 如果没有目标位置或拖拽到同一位置，直接返回
     if (!over || active.id === over.id) {
+      isDraggingRef.current = false;
       return;
     }
 
@@ -302,8 +329,15 @@ const UserGroupManage: React.FC = () => {
 
     // 如果找不到对应的索引，说明拖拽到了无效位置
     if (activeIndex === -1 || overIndex === -1) {
+      isDraggingRef.current = false;
       return;
     }
+
+    // 标记正在拖拽，防止 postData 覆盖数据
+    isDraggingRef.current = true;
+
+    // 保存原始数据到 ref，用于错误时恢复
+    originalDataRef.current = [...draggableData];
 
     // 更新数据
     const newData = arrayMove(draggableData, activeIndex, overIndex);
@@ -334,6 +368,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 80,
       fixed: 'left',
+      hideInSearch: true,
       render: () => <DragHandle />,
     },
     {
@@ -342,22 +377,22 @@ const UserGroupManage: React.FC = () => {
       key: 'name',
       width: 200,
       ellipsis: true,
+      valueType: 'text',
     },
     {
       title: '编码',
       dataIndex: 'code',
       key: 'code',
       width: 150,
+      valueType: 'text',
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
-        <div className={cx(styles.descriptionCell)} title={record.description}>
-          {record.description || '--'}
-        </div>
-      ),
+      width: 300,
+      hideInSearch: true,
+      ellipsis: true,
     },
     {
       title: (
@@ -375,6 +410,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: UserGroupInfo & { key: number }) => (
         <Tooltip
           title={
@@ -400,6 +436,7 @@ const UserGroupManage: React.FC = () => {
       align: 'center',
       width: 260,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: UserGroupInfo & { key: number }) => {
         // 判断是否为系统内置用户组
         const isSystemBuiltIn =
@@ -553,39 +590,7 @@ const UserGroupManage: React.FC = () => {
     <WorkspaceLayout
       title="用户组管理"
       hideScroll
-      rightSlot={[
-        // 用户组名称搜索
-        <Input
-          key="group-name"
-          allowClear
-          placeholder="用户组名称"
-          value={searchName}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchName(e.target.value)}
-        />,
-        // 用户组编码搜索
-        <Input
-          key="group-code"
-          allowClear
-          placeholder="用户组编码"
-          value={searchCode}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchCode(e.target.value)}
-        />,
-        hasPermissionByMenuCode(
-          'user_group_manage',
-          'user_group_manage_query',
-        ) && (
-          <Button
-            key="query"
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={() => fetchUserGroupList()}
-            loading={loading}
-          >
-            查询
-          </Button>
-        ),
+      rightSlot={
         hasPermissionByMenuCode(
           'user_group_manage',
           'user_group_manage_add',
@@ -598,50 +603,63 @@ const UserGroupManage: React.FC = () => {
           >
             新增用户组
           </Button>
-        ),
-      ]}
+        )
+      }
     >
       {/* 用户组列表 */}
-      <Spin spinning={loading && !draggableData?.length}>
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
-          modifiers={[restrictToVerticalAxis]}
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        modifiers={[restrictToVerticalAxis]}
+      >
+        <SortableContext
+          items={draggableData.map((item) => String(item.key))}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={draggableData.map((item) => String(item.key))}
-            strategy={verticalListSortingStrategy}
-          >
-            <XProTable<UserGroupInfo & { key: number }>
-              rowKey="key"
-              columns={columns}
-              dataSource={draggableData}
-              search={false}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              className={cx(styles.table)}
-              showQueryButtons={false}
-              showIndex={false}
-              components={{
-                body: {
-                  row: Row,
-                },
-              }}
-              options={false}
-              toolBarRender={false}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="暂无用户组数据"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    className={cx(styles.empty)}
-                  />
-                ),
-              }}
-            />
-          </SortableContext>
-        </DndContext>
-      </Spin>
+          <XProTable<UserGroupInfo & { key: number }>
+            actionRef={actionRef}
+            formRef={formRef}
+            rowKey="key"
+            columns={columns}
+            request={request}
+            dataSource={draggableData}
+            pagination={false}
+            scroll={{ x: 1090 }}
+            className={cx(styles.table)}
+            showQueryButtons={hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_query',
+            )}
+            showIndex={false}
+            onReset={handleReset}
+            components={{
+              body: {
+                row: Row,
+              },
+            }}
+            options={false}
+            toolBarRender={false}
+            postData={(data: (UserGroupInfo & { key: number })[]) => {
+              // 同步数据到 draggableData 用于拖拽
+              // 如果正在拖拽，不覆盖数据，保持拖拽后的位置
+              if (!isDraggingRef.current) {
+                setDraggableData(data || []);
+              }
+              // 始终返回数据，让 ProTable 正常渲染
+              return data;
+            }}
+            locale={{
+              emptyText: (
+                <Empty
+                  description="暂无用户组数据"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  className={cx(styles.empty)}
+                />
+              ),
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
       {/* 新增/编辑用户组Modal */}
       <UserGroupFormModal

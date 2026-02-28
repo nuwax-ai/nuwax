@@ -374,14 +374,6 @@ const RoleManage: React.FC = () => {
       ellipsis: true,
       width: 300,
       hideInSearch: true,
-      render: (_: ReactNode, record: RoleInfo & { key: number }) => (
-        <div
-          className={cx('text-ellipsis', 'w-full')}
-          title={record.description}
-        >
-          {record.description || '--'}
-        </div>
-      ),
     },
     {
       title: (
