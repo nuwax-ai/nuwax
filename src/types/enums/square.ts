@@ -1,7 +1,8 @@
 // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE
 export enum SquareAgentTypeEnum {
   Agent = 'Agent',
-  ChatBot = 'ChatBot',
+  // 注释掉，因为ChatBot已经废弃，不再使用
+  // ChatBot = 'ChatBot',
   // 网页应用
   PageApp = 'PageApp',
   Plugin = 'Plugin',

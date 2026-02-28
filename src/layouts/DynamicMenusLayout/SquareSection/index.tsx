@@ -88,9 +88,9 @@ const SquareSection: React.FC<{
       icon: <SvgIcon name="icons-nav-stars" />,
       list: agentInfoList.map((item: any) => ({
         ...item,
-        name: SquareAgentTypeEnum.ChatBot + item.name,
+        name: SquareAgentTypeEnum.Agent + item.name,
       })),
-      type: SquareAgentTypeEnum.ChatBot,
+      type: SquareAgentTypeEnum.Agent,
     },
     {
       name: '网页应用',

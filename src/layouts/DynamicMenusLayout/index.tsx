@@ -248,6 +248,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       return;
     }
 
+    // 广场特殊处理，如果路径是/square?cate_type=Agent，则设置为广场
+    if (
+      location.pathname.startsWith('/square') &&
+      location.search.includes('cate_type=')
+    ) {
+      setActiveTab('system_square');
+      return;
+    }
+
     if (isClickMenu.current && !showHoverMenu) {
       return;
     }

@@ -115,7 +115,7 @@ const Square: React.FC = () => {
 
     // 分类类型
     switch (cate_type) {
-      case SquareAgentTypeEnum.ChatBot:
+      case SquareAgentTypeEnum.Agent:
         setTitle('智能体');
         apiUrlRef.current = apiPublishedAgentList;
         break;
@@ -172,7 +172,7 @@ const Square: React.FC = () => {
     };
 
     // 智能体
-    if (categoryTypeRef.current === SquareAgentTypeEnum.ChatBot) {
+    if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
       data.targetType = AgentComponentTypeEnum.Agent;
     }
 
@@ -190,7 +190,7 @@ const Square: React.FC = () => {
       data.category = activeKeyRef.current;
 
       if (
-        categoryNameRef.current === SquareAgentTypeEnum.ChatBot ||
+        categoryNameRef.current === SquareAgentTypeEnum.Agent ||
         categoryNameRef.current === SquareAgentTypeEnum.PageApp
       ) {
         data.targetType = AgentComponentTypeEnum.Agent;
@@ -329,7 +329,11 @@ const Square: React.FC = () => {
           ) : squareComponentList?.length > 0 ? (
             <div className={cx(styles['list-section'])}>
               {squareComponentList.map((item, index) => {
-                if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
+                // 智能体模式下，显示智能体、网页应用组件
+                if (
+                  categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
+                  categoryTypeRef.current === SquareAgentTypeEnum.PageApp
+                ) {
                   return (
                     <SingleAgent
                       key={index}
@@ -340,9 +344,12 @@ const Square: React.FC = () => {
                       }
                     />
                   );
-                } else if (
+                }
+                // 模板模式下，根据分类名称显示不同的组件
+                else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Template
                 ) {
+                  // 模板下的网页应用
                   if (
                     categoryNameRef.current ===
                     SquareTemplateTargetTypeEnum.PageApp
@@ -364,6 +371,7 @@ const Square: React.FC = () => {
                       />
                     );
                   } else {
+                    // 模板下的智能体、工作流、技能
                     return (
                       <TemplateItem
                         key={index}
@@ -377,6 +385,7 @@ const Square: React.FC = () => {
                 } else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Skill
                 ) {
+                  // 技能
                   return (
                     <PageCard
                       key={index}
@@ -393,6 +402,7 @@ const Square: React.FC = () => {
                     />
                   );
                 } else {
+                  // 插件、工作量
                   return (
                     <SquareComponentInfo
                       key={index}
