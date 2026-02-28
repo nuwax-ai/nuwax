@@ -46,6 +46,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   const { getSecondLevelMenus } = useModel('menuModel');
 
   const { currentSpaceInfo, spaceList } = useModel('spaceModel');
+
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
@@ -183,10 +184,10 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       }
 
       // 判断 params 是否为空对象
-      const isParamsEmpty = Object.keys(params).length === 0;
+      // const isParamsEmpty = Object.keys(params).length === 0;
 
-      // 如果 params 为空对象，且 path 包含动态参数，且 parentCode 是 workspace
-      if (isParamsEmpty && parentCode === 'workspace') {
+      // 如果 parentCode 是 workspace (工作空间)
+      if (parentCode === 'workspace') {
         let spaceId: string | null = null;
 
         try {
@@ -257,6 +258,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   // 处理路径URL路径跳转
   const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
+    console.log(path, '处理路径URL路径跳转handlePathUrl ----- path:', openType);
     if (!path) return;
     // http开头的路径，直接打开
     if (path?.includes('http')) {
