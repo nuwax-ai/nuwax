@@ -67,6 +67,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   > | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 记录用户是否已发送消息（用于锁定电脑选择）
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
   const {
     conversationInfo,
@@ -294,6 +296,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     clearFilePanelInfo();
     setMessageList([]);
     setIsLoadingConversation(false);
+    setHasUserSentMessage(false); // 重置发送状态
+
     try {
       setIsLoadingOtherInterface(true);
       // 创建智能体会话(智能体编排页面devMode为true)
@@ -347,6 +351,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       message.warning('请填写必填参数');
       return;
     }
+    // 标记用户已发送消息
+    setHasUserSentMessage(true);
 
     const effectiveSandboxId = String(
       conversationInfo?.sandboxServerId ??
@@ -553,7 +559,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               }
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {
-                console.log('onComputerSelect', id);
                 setSelectedComputerId(id);
               }}
               agentId={agentId}
@@ -564,7 +569,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               }
               fixedSelection={
                 !!conversationInfo?.agent?.sandboxId ||
-                !!conversationInfo?.sandboxServerId
+                !!conversationInfo?.sandboxServerId ||
+                hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
             />
