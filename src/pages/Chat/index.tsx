@@ -568,6 +568,7 @@ const Chat: React.FC = () => {
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
       setSelectedComponentList([]);
+      hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
     };
   }, [id]);
 
