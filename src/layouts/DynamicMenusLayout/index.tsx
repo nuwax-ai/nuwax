@@ -23,7 +23,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useModel } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
 // 复用原有组件
@@ -58,6 +58,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   isMobile = false,
 }) => {
   const location = useLocation();
+  const params = useParams();
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const {
@@ -238,6 +239,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 刷新的时候触发，如果点击了一级菜单，则不触发
   // 根据路径匹配当前激活的一级菜单
   useEffect(() => {
+    /**
+     * 这里特殊处理，如果路径是/agent/xxx，则设置为首页
+     * 场景：从工作空间-空间广场，点击智能体，跳转至智能体详情页，此时路径为/agent/xxx，但是需要显示为首页，不然二级菜单点击会因为无法匹配动态路径而报错
+     */
+    if (location.pathname.startsWith('/agent/') && params?.agentId) {
+      setActiveTab('homepage');
+      return;
+    }
+
     if (isClickMenu.current && !showHoverMenu) {
       return;
     }
@@ -291,6 +301,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     }
   }, [
     location.pathname,
+    params,
     firstLevelMenus,
     handleNewConversation,
     showHoverMenu,
