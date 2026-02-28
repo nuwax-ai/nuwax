@@ -36,6 +36,8 @@ const SquareSection: React.FC<{
 
   // active项
   const [activeKey, setActiveKey] = useState<string>('');
+  // 第二级active项
+  const [secondActiveKey, setSecondActiveKey] = useState<string>('');
   // menu显隐
   const [visibleMenu, setVisibleMenu] = useState<string>('');
   // 关闭移动端菜单
@@ -49,11 +51,9 @@ const SquareSection: React.FC<{
 
   useEffect(() => {
     const { cate_type, cate_name } = params;
-    if (cate_name) {
-      setActiveKey(cate_type + cate_name);
-    } else {
-      setActiveKey(cate_type);
-    }
+    // 设置active项
+    setActiveKey(cate_type);
+    setSecondActiveKey(cate_name);
     // 控制menu显隐
     setVisibleMenu(cate_type);
   }, []);
@@ -61,14 +61,15 @@ const SquareSection: React.FC<{
   const handleClick = (cateType: string, cateName?: string) => {
     // 关闭移动端菜单
     handleCloseMobileMenu();
-
     // 设置active项
-    setActiveKey(cateName ?? cateType);
+    setActiveKey(cateType);
+    setSecondActiveKey(cateName || '');
+
     // 控制menu显隐
     setVisibleMenu(cateType);
 
     const url = cateName
-      ? `/square?cate_type=${cateType}&cate_name=${cateName.split(cateType)[1]}`
+      ? `/square?cate_type=${cateType}&cate_name=${cateName}`
       : `/square?cate_type=${cateType}`;
     history.push(url);
   };
@@ -86,46 +87,31 @@ const SquareSection: React.FC<{
     {
       name: '智能体',
       icon: <SvgIcon name="icons-nav-stars" />,
-      list: agentInfoList.map((item: any) => ({
-        ...item,
-        name: SquareAgentTypeEnum.Agent + item.name,
-      })),
+      list: agentInfoList,
       type: SquareAgentTypeEnum.Agent,
     },
     {
       name: '网页应用',
       icon: <SvgIcon name="icons-common-console" />,
-      list: pageAppInfoList.map((item: any) => ({
-        ...item,
-        name: SquareAgentTypeEnum.PageApp + item.name,
-      })),
+      list: pageAppInfoList,
       type: SquareAgentTypeEnum.PageApp,
     },
     {
       name: '插件',
       icon: <SvgIcon name="icons-nav-plugins" />,
-      list: pluginInfoList.map((item: any) => ({
-        ...item,
-        name: SquareAgentTypeEnum.Plugin + item.name,
-      })),
+      list: pluginInfoList,
       type: SquareAgentTypeEnum.Plugin,
     },
     {
       name: '工作流',
       icon: <SvgIcon name="icons-nav-workflow" />,
-      list: workflowInfoList.map((item: any) => ({
-        ...item,
-        name: SquareAgentTypeEnum.Workflow + item.name,
-      })),
+      list: workflowInfoList,
       type: SquareAgentTypeEnum.Workflow,
     },
     {
       name: '模板',
       icon: <SvgIcon name="icons-nav-template" />,
-      list: templateListTabs.map((item: any) => ({
-        ...item,
-        name: SquareAgentTypeEnum.Template + item.name,
-      })),
+      list: templateListTabs,
       type: SquareAgentTypeEnum.Template,
     },
   ];
@@ -141,7 +127,7 @@ const SquareSection: React.FC<{
             name={info.name}
             isDown
             icon={info.icon}
-            isActive={activeKey === info.type}
+            isActive={activeKey === info.type && !secondActiveKey}
             isOpen={visibleMenu === info.type}
             onClick={() => handleClick(info.type)}
             onToggle={() => handleToggle(info)}
@@ -156,7 +142,9 @@ const SquareSection: React.FC<{
                 key={item.name}
                 name={item.description}
                 className={cx(styles.subItem)}
-                isActive={activeKey === item.name}
+                isActive={
+                  activeKey === info.type && secondActiveKey === item.name
+                }
                 onClick={() => handleClick(info.type, item.name)}
               />
             ))}

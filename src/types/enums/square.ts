@@ -16,8 +16,6 @@ export enum SquareAgentTypeEnum {
 
 // 自定义广场-模板目标类型（全部、智能体、工作流、页面应用）
 export enum SquareTemplateTargetTypeEnum {
-  // 全部
-  // All = 'All',
   // 智能体
   ChatBot = 'ChatBot',
   // 网页应用

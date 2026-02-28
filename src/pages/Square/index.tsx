@@ -189,13 +189,15 @@ const Square: React.FC = () => {
       // 智能体和网页应用需要设置目标子类型
       data.category = activeKeyRef.current;
 
+      // 如果是模板下的智能体或者网页应用
       if (
-        categoryNameRef.current === SquareAgentTypeEnum.Agent ||
-        categoryNameRef.current === SquareAgentTypeEnum.PageApp
+        categoryNameRef.current === SquareTemplateTargetTypeEnum.ChatBot ||
+        categoryNameRef.current === SquareTemplateTargetTypeEnum.PageApp
       ) {
         data.targetType = AgentComponentTypeEnum.Agent;
         data.targetSubType = categoryNameRef.current;
       } else if (categoryNameRef.current) {
+        // 工作流、技能
         data.targetType = categoryNameRef.current;
       }
     }
