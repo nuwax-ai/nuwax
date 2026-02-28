@@ -856,10 +856,9 @@ const MenuManage: React.FC = () => {
       title: '编码',
       dataIndex: 'code',
       key: 'code',
-      width: 150,
+      width: 200,
       valueType: 'text',
-      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
-        record.code || '--',
+      ellipsis: true,
     },
     {
       title: '路由路径',
@@ -870,6 +869,14 @@ const MenuManage: React.FC = () => {
       hideInSearch: true,
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
         record.path || '--',
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      width: 300,
+      hideInSearch: true,
     },
     {
       title: '是否启用',

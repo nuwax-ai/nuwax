@@ -1,8 +1,13 @@
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { modalConfirm } from '@/utils/ant-custom';
-import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -11,20 +16,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  Button,
-  Empty,
-  Input,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Tag,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Switch, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
@@ -71,46 +66,98 @@ const PermissionResources: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
-  // 查询条件：资源名称与编码
-  const [searchName, setSearchName] = useState<string>('');
-  const [searchCode, setSearchCode] = useState<string>('');
+  // 控制表格行的展开状态，避免使用默认的展开图标列，改为在名称列中自定义展开图标
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+
+  // ProTable 的 ref
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+
+  // 标记是否正在拖拽，用于防止 postData 覆盖拖拽后的数据
+  const isDraggingRef = useRef<boolean>(false);
+  // 保存拖拽前的原始数据，用于接口失败时恢复
+  const originalDataRef = useRef<(ResourceTreeNode & { key: number })[] | null>(
+    null,
+  );
 
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
-  // 根据条件查询权限资源列表（树形结构）
-  const {
-    run: runGetResourceList,
-    data: resourceList,
-    loading,
-  } = useRequest(apiGetResourceList, {
-    manual: true,
-    loadingDelay: 300,
-    debounceInterval: 300,
-  });
+  /**
+   * ProTable 的 request 函数
+   * 根据表单查询条件获取权限资源列表
+   */
+  const request = useCallback(async (params: any) => {
+    const { name, code } = params;
+    const queryParams: GetResourceListParams = {
+      name: name || undefined,
+      code: code || undefined,
+    };
+    try {
+      const res = await apiGetResourceList(queryParams);
+      // 如果请求失败或数据为空/null，返回空数组并清空 draggableData
+      if (res?.code !== SUCCESS_CODE || !res?.data) {
+        // 立即清空 draggableData，确保表格显示空状态
+        setDraggableData([]);
+        return {
+          data: [],
+          total: 0,
+          success: true, // 即使没有数据，也返回 success: true，让 ProTable 正常渲染空状态
+        };
+      }
+      // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
+      const transformData = (data: ResourceTreeNode[]): any[] => {
+        return data
+          .filter((item) => item.id !== 0) // 过滤掉根节点
+          .map((item) => ({
+            ...item,
+            key: item.id,
+            children: item.children?.length
+              ? transformData(item.children)
+              : undefined,
+          }));
+      };
+      let processedData: (ResourceTreeNode & { key: number })[];
+      // 如果第一个节点是根节点（id为0），则只返回其子节点
+      if (res.data.length === 1 && res.data[0].id === 0) {
+        const rootNode = res.data[0];
+        processedData = rootNode.children?.length
+          ? transformData(rootNode.children)
+          : [];
+      } else {
+        // 否则过滤掉所有 id 为 0 的节点
+        processedData = transformData(res.data);
+      }
+      return {
+        data: processedData,
+        total: processedData.length,
+        success: true,
+      };
+    } catch (error) {
+      console.error('查询权限资源列表失败', error);
+      // 发生错误时也清空 draggableData
+      setDraggableData([]);
+      return {
+        data: [],
+        total: 0,
+        success: false,
+      };
+    }
+  }, []);
 
   /**
-   * 根据当前查询条件或传入的额外参数查询资源列表
-   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   * 重置处理
    */
-  const fetchResourceList = (extraParams?: GetResourceListParams) => {
-    const baseParams: GetResourceListParams = {
-      name: searchName || undefined,
-      code: searchCode || undefined,
-    };
-    const params: GetResourceListParams = extraParams ?? baseParams;
-    runGetResourceList(params);
-  };
+  const handleReset = useCallback(() => {
+    // 重置到默认值，包括表单
+    actionRef.current?.reset?.();
+  }, []);
 
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 重置查询条件
-    setSearchName('');
-    setSearchCode('');
-    // 根据条件查询权限资源列表（树形结构，不带查询条件）
-    fetchResourceList({});
-  }, [location.state]);
+    handleReset();
+  }, [location.state, handleReset]);
 
   // 删除资源
   const { run: runDelete } = useRequest(apiDeleteResource, {
@@ -118,7 +165,7 @@ const PermissionResources: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      fetchResourceList();
+      actionRef.current?.reload();
     },
   });
 
@@ -127,7 +174,7 @@ const PermissionResources: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      fetchResourceList();
+      actionRef.current?.reload();
     },
   });
 
@@ -202,7 +249,7 @@ const PermissionResources: React.FC = () => {
   // 处理Modal成功
   const handleModalSuccess = () => {
     handleModalCancel();
-    fetchResourceList();
+    actionRef.current?.reload();
   };
 
   // 获取资源类型显示文本
@@ -213,39 +260,6 @@ const PermissionResources: React.FC = () => {
       return '组件';
     }
   };
-
-  // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
-  const tableData = useMemo(() => {
-    const transformData = (data: ResourceTreeNode[]): any[] => {
-      return data
-        .filter((item) => item.id !== 0) // 过滤掉根节点
-        .map((item) => ({
-          ...item,
-          key: item.id,
-          children: item.children?.length
-            ? transformData(item.children)
-            : undefined,
-        }));
-    };
-    if (!resourceList || !resourceList.length) {
-      return [];
-    }
-    // 如果第一个节点是根节点（id为0），则只返回其子节点
-    if (resourceList.length === 1 && resourceList[0].id === 0) {
-      const rootNode = resourceList[0];
-      return rootNode.children?.length ? transformData(rootNode.children) : [];
-    }
-    // 否则过滤掉所有 id 为 0 的节点
-    return transformData(resourceList);
-  }, [resourceList]);
-
-  // 同步 tableData 到 draggableData
-  useEffect(() => {
-    setDraggableData(tableData);
-  }, [tableData]);
-
-  // 控制表格行的展开状态，避免使用默认的展开图标列，改为在名称列中自定义展开图标
-  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
 
   const handleExpand = (
     expanded: boolean,
@@ -268,11 +282,24 @@ const PermissionResources: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      fetchResourceList();
+      // 标记拖拽完成，允许 postData 正常同步数据
+      isDraggingRef.current = false;
+      // 清空原始数据引用
+      originalDataRef.current = null;
+      // 不调用 reload()，因为 draggableData 已经更新，表格会通过 dataSource 自动更新
+      // 这样可以避免拖拽的行先回到原位置再移动到新位置的问题
     },
     onError: () => {
-      // 恢复原数据
-      setDraggableData(tableData);
+      // 标记拖拽完成
+      isDraggingRef.current = false;
+      // 接口失败时，恢复原始数据
+      if (originalDataRef.current) {
+        setDraggableData(originalDataRef.current);
+        originalDataRef.current = null;
+      } else {
+        // 如果没有保存原始数据，重新从服务器获取
+        actionRef.current?.reload();
+      }
     },
   });
 
@@ -649,6 +676,7 @@ const PermissionResources: React.FC = () => {
   // 处理拖拽结束
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) {
+      isDraggingRef.current = false;
       return;
     }
 
@@ -659,8 +687,15 @@ const PermissionResources: React.FC = () => {
     const overItem = findNodeInTree(draggableData, overKey);
 
     if (!activeItem || !overItem) {
+      isDraggingRef.current = false;
       return;
     }
+
+    // 标记正在拖拽，防止 postData 覆盖数据
+    isDraggingRef.current = true;
+
+    // 保存原始数据到 ref，用于错误时恢复（使用深拷贝，因为树形结构）
+    originalDataRef.current = JSON.parse(JSON.stringify(draggableData));
 
     // 保存原始 parentId，用于判断是否变更层级
     // 注意：这里保持原始值，不进行转换，因为 API 需要知道真实的 parentId 值
@@ -680,6 +715,8 @@ const PermissionResources: React.FC = () => {
     if (!hasActive) {
       // 如果节点没有被正确插入，恢复原数据并提示错误
       message.error('拖拽失败，请重试');
+      isDraggingRef.current = false;
+      originalDataRef.current = null;
       return;
     }
 
@@ -776,6 +813,7 @@ const PermissionResources: React.FC = () => {
       align: 'center',
       width: 80,
       fixed: 'left',
+      hideInSearch: true,
       render: () => <DragHandle />,
     },
     {
@@ -784,6 +822,7 @@ const PermissionResources: React.FC = () => {
       key: 'name',
       width: 200,
       ellipsis: true,
+      valueType: 'text',
       render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => {
         const hasChildren =
           Array.isArray(record.children) && record.children.length > 0;
@@ -824,6 +863,7 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
+      hideInSearch: true,
       render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => {
         const isModule = record.type === ResourceTypeEnum.Module;
         // 模块：使用绿色系
@@ -849,15 +889,24 @@ const PermissionResources: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 200,
-      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) =>
-        record.code || '--',
+      valueType: 'text',
+      ellipsis: true,
     },
     {
       title: '路由路径',
       dataIndex: 'path',
       key: 'path',
+      hideInSearch: true,
       render: (_: ReactNode, record: ResourceTreeNode & { key: number }) =>
         record.path || '--',
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      width: 300,
+      hideInSearch: true,
     },
     {
       title: '是否启用',
@@ -866,6 +915,7 @@ const PermissionResources: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
         <Tooltip
           title={
@@ -899,6 +949,7 @@ const PermissionResources: React.FC = () => {
       align: 'center',
       width: 200,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
         <Space size={0}>
           {record.type !== ResourceTypeEnum.Component && (
@@ -990,36 +1041,7 @@ const PermissionResources: React.FC = () => {
     <WorkspaceLayout
       title="权限资源管理"
       hideScroll
-      rightSlot={[
-        // 资源名称搜索
-        <Input
-          key="resource-name"
-          allowClear
-          placeholder="资源名称"
-          value={searchName}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchName(e.target.value)}
-        />,
-        // 资源编码搜索
-        <Input
-          key="resource-code"
-          allowClear
-          placeholder="资源编码"
-          value={searchCode}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchCode(e.target.value)}
-        />,
-        hasPermissionByMenuCode('resource_manage', 'resource_manage_query') && (
-          <Button
-            key="query"
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={() => fetchResourceList()}
-            loading={loading}
-          >
-            查询
-          </Button>
-        ),
+      rightSlot={
         hasPermissionByMenuCode('resource_manage', 'resource_manage_add') && (
           <Button
             key="add"
@@ -1029,64 +1051,77 @@ const PermissionResources: React.FC = () => {
           >
             新增资源
           </Button>
-        ),
-      ]}
+        )
+      }
     >
       {/* 资源列表 */}
-      <Spin spinning={loading && !draggableData?.length}>
-        <DndContext
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
-          modifiers={[restrictToVerticalAxis]}
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        modifiers={[restrictToVerticalAxis]}
+      >
+        <SortableContext
+          items={getAllKeys(draggableData)}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={getAllKeys(draggableData)}
-            strategy={verticalListSortingStrategy}
-          >
-            <XProTable<ResourceTreeNode & { key: number }>
-              rowKey="key"
-              columns={columns}
-              dataSource={draggableData}
-              search={false}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              showQueryButtons={false}
-              showIndex={false}
-              components={{
-                body: {
-                  row: Row,
-                },
-              }}
-              options={false}
-              toolBarRender={false}
-              // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
-              indentSize={0}
-              // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
-              expandable={{
-                expandedRowKeys,
-                onExpand: (expanded, record) =>
-                  handleExpand(
-                    expanded,
-                    record as ResourceTreeNode & { key: number },
-                  ),
-                expandIcon: () => null,
-                columnWidth: 0,
-              }}
-              // 防止展开/折叠时 Table 布局变动
-              tableLayout="fixed"
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="暂无资源数据"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    className={cx(styles.empty)}
-                  />
+          <XProTable<ResourceTreeNode & { key: number }>
+            actionRef={actionRef}
+            formRef={formRef}
+            rowKey="key"
+            columns={columns}
+            request={request}
+            dataSource={draggableData}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+            showQueryButtons={hasPermissionByMenuCode(
+              'resource_manage',
+              'resource_manage_query',
+            )}
+            showIndex={false}
+            onReset={handleReset}
+            components={{
+              body: {
+                row: Row,
+              },
+            }}
+            options={false}
+            toolBarRender={false}
+            // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+            indentSize={0}
+            // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
+            expandable={{
+              expandedRowKeys,
+              onExpand: (expanded, record) =>
+                handleExpand(
+                  expanded,
+                  record as ResourceTreeNode & { key: number },
                 ),
-              }}
-            />
-          </SortableContext>
-        </DndContext>
-      </Spin>
+              expandIcon: () => null,
+              columnWidth: 0,
+            }}
+            // 防止展开/折叠时 Table 布局变动
+            tableLayout="fixed"
+            postData={(data: (ResourceTreeNode & { key: number })[]) => {
+              // 同步数据到 draggableData 用于拖拽
+              // 如果正在拖拽，不覆盖数据，保持拖拽后的位置
+              if (!isDraggingRef.current) {
+                setDraggableData(data || []);
+              }
+              // 始终返回数据，让 ProTable 正常渲染
+              return data;
+            }}
+            locale={{
+              emptyText: (
+                <Empty
+                  description="暂无资源数据"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  className={cx(styles.empty)}
+                />
+              ),
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
       {/* 新增/编辑资源Modal */}
       <ResourceFormModal
