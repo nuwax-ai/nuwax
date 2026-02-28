@@ -1,8 +1,13 @@
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { modalConfirm } from '@/utils/ant-custom';
-import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -11,19 +16,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import {
-  Button,
-  Empty,
-  Input,
-  message,
-  Space,
-  Spin,
-  Switch,
-  Tooltip,
-} from 'antd';
+import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
@@ -67,44 +63,102 @@ const MenuManage: React.FC = () => {
   // 新增时，默认排序索引，默认1
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
-  // 查询条件：菜单名称与编码
-  const [searchName, setSearchName] = useState<string>('');
-  const [searchCode, setSearchCode] = useState<string>('');
+  // ProTable 的 ref
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+
+  // 标记是否正在拖拽，用于防止 postData 覆盖拖拽后的数据
+  const isDraggingRef = useRef<boolean>(false);
+  // 保存拖拽前的原始数据，用于接口失败时恢复
+  const originalDataRef = useRef<(MenuNodeInfo & { key: number })[] | null>(
+    null,
+  );
 
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
-  // 根据条件查询菜单列表（树形结构）
-  const {
-    run: runGetMenuList,
-    data: menuList,
-    loading,
-  } = useRequest(apiGetMenuList, {
-    manual: true,
-  });
+  /**
+   * ProTable 的 request 函数
+   * 根据表单查询条件获取菜单列表
+   */
+  const request = useCallback(async (params: any) => {
+    const { name, code } = params;
+    const queryParams: GetMenuListParams = {
+      name: name || undefined,
+      code: code || undefined,
+    };
+    try {
+      const res = await apiGetMenuList(queryParams);
+      // 如果请求失败或数据为空/null，返回空数组并清空 draggableData
+      if (res?.code !== SUCCESS_CODE || !res?.data) {
+        // 立即清空 draggableData，确保表格显示空状态
+        setDraggableData([]);
+        return {
+          data: [],
+          total: 0,
+          success: true, // 即使没有数据，也返回 success: true，让 ProTable 正常渲染空状态
+        };
+      }
+      // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
+      const transformData = (data: MenuNodeInfo[]): any[] => {
+        return data
+          .filter((item) => item.id !== 0) // 过滤掉根节点
+          .map((item) => ({
+            ...item,
+            key: item.id,
+            children: item.children?.length
+              ? transformData(item.children)
+              : undefined,
+          }));
+      };
+      let processedData: (MenuNodeInfo & { key: number })[];
+      // 如果第一个节点是根节点（id为0），则只返回其子节点
+      if (res.data.length === 1 && res.data[0].id === 0) {
+        const rootNode = res.data[0];
+        processedData = rootNode.children?.length
+          ? transformData(rootNode.children)
+          : [];
+      } else {
+        // 否则过滤掉所有 id 为 0 的节点
+        processedData = transformData(res.data);
+      }
+      return {
+        data: processedData,
+        total: processedData.length,
+        success: true,
+      };
+    } catch (error) {
+      console.error('查询菜单列表失败', error);
+      // 发生错误时也清空 draggableData
+      setDraggableData([]);
+      return {
+        data: [],
+        total: 0,
+        success: false,
+      };
+    }
+  }, []);
 
   /**
-   * 根据当前查询条件或传入的额外参数查询菜单列表
-   * @param extraParams 额外的查询参数（如果传入则优先生效）
+   * 重置处理
    */
-  const fetchMenuList = (extraParams?: GetMenuListParams) => {
-    const baseParams: GetMenuListParams = {
-      name: searchName || undefined,
-      code: searchCode || undefined,
-    };
-    const params: GetMenuListParams = extraParams ?? baseParams;
-    runGetMenuList(params);
-  };
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
 
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 重置查询条件
-    setSearchName('');
-    setSearchCode('');
-    // 根据条件查询菜单列表（树形结构，不带查询条件）
-    fetchMenuList({});
-  }, [location.state]);
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
 
   // 删除菜单
   const { run: runDelete } = useRequest(apiDeleteMenu, {
@@ -112,7 +166,7 @@ const MenuManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除成功');
-      fetchMenuList();
+      actionRef.current?.reload();
     },
   });
 
@@ -121,7 +175,7 @@ const MenuManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      fetchMenuList();
+      actionRef.current?.reload();
     },
   });
 
@@ -183,38 +237,8 @@ const MenuManage: React.FC = () => {
   // 处理Modal成功
   const handleModalSuccess = () => {
     handleModalCancel();
-    fetchMenuList();
+    actionRef.current?.reload();
   };
-
-  // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
-  const tableData = useMemo(() => {
-    const transformData = (data: MenuNodeInfo[]): any[] => {
-      return data
-        .filter((item) => item.id !== 0) // 过滤掉根节点
-        .map((item) => ({
-          ...item,
-          key: item.id,
-          children: item.children?.length
-            ? transformData(item.children)
-            : undefined,
-        }));
-    };
-    if (!menuList || !menuList.length) {
-      return [];
-    }
-    // 如果第一个节点是根节点（id为0），则只返回其子节点
-    if (menuList.length === 1 && menuList[0].id === 0) {
-      const rootNode = menuList[0];
-      return rootNode.children?.length ? transformData(rootNode.children) : [];
-    }
-    // 否则过滤掉所有 id 为 0 的节点
-    return transformData(menuList);
-  }, [menuList]);
-
-  // 同步 tableData 到 draggableData
-  useEffect(() => {
-    setDraggableData(tableData);
-  }, [tableData]);
 
   // 控制表格行的展开状态，避免使用默认的展开图标列，改为在名称列中自定义展开图标
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
@@ -269,11 +293,24 @@ const MenuManage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('排序更新成功');
-      fetchMenuList();
+      // 标记拖拽完成，允许 postData 正常同步数据
+      isDraggingRef.current = false;
+      // 清空原始数据引用
+      originalDataRef.current = null;
+      // 不调用 reload()，因为 draggableData 已经更新，表格会通过 dataSource 自动更新
+      // 这样可以避免拖拽的行先回到原位置再移动到新位置的问题
     },
     onError: () => {
-      // 恢复原数据
-      setDraggableData(tableData);
+      // 标记拖拽完成
+      isDraggingRef.current = false;
+      // 接口失败时，恢复原始数据
+      if (originalDataRef.current) {
+        setDraggableData(originalDataRef.current);
+        originalDataRef.current = null;
+      } else {
+        // 如果没有保存原始数据，重新从服务器获取
+        actionRef.current?.reload();
+      }
     },
   });
 
@@ -650,6 +687,7 @@ const MenuManage: React.FC = () => {
   // 处理拖拽结束
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) {
+      isDraggingRef.current = false;
       return;
     }
 
@@ -660,8 +698,15 @@ const MenuManage: React.FC = () => {
     const overItem = findNodeInTree(draggableData, overKey);
 
     if (!activeItem || !overItem) {
+      isDraggingRef.current = false;
       return;
     }
+
+    // 标记正在拖拽，防止 postData 覆盖数据
+    isDraggingRef.current = true;
+
+    // 保存原始数据到 ref，用于错误时恢复
+    originalDataRef.current = JSON.parse(JSON.stringify(draggableData));
 
     // 保存原始 parentId，用于判断是否变更层级
     // 注意：这里保持原始值，不进行转换，因为 API 需要知道真实的 parentId 值
@@ -681,6 +726,8 @@ const MenuManage: React.FC = () => {
     if (!hasActive) {
       // 如果节点没有被正确插入，恢复原数据并提示错误
       message.error('拖拽失败，请重试');
+      isDraggingRef.current = false;
+      originalDataRef.current = null;
       return;
     }
 
@@ -748,6 +795,7 @@ const MenuManage: React.FC = () => {
       align: 'center',
       width: 80,
       fixed: 'left',
+      hideInSearch: true,
       render: () => <DragHandle />,
     },
     // {
@@ -775,6 +823,7 @@ const MenuManage: React.FC = () => {
       key: 'name',
       width: 200,
       ellipsis: true,
+      valueType: 'text',
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => {
         const hasChildren =
           Array.isArray(record.children) && record.children.length > 0;
@@ -815,6 +864,7 @@ const MenuManage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 150,
+      valueType: 'text',
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
         record.code || '--',
     },
@@ -824,6 +874,7 @@ const MenuManage: React.FC = () => {
       key: 'path',
       width: 200,
       ellipsis: true,
+      hideInSearch: true,
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) =>
         record.path || '--',
     },
@@ -834,6 +885,7 @@ const MenuManage: React.FC = () => {
       align: 'center',
       width: 100,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => (
         // 针对菜单，系统内置的菜单是可以禁用的
         <Switch
@@ -859,6 +911,7 @@ const MenuManage: React.FC = () => {
       align: 'center',
       width: 180,
       fixed: 'right',
+      hideInSearch: true,
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => (
         <Space size={0}>
           <Tooltip
@@ -930,36 +983,7 @@ const MenuManage: React.FC = () => {
     <WorkspaceLayout
       title="菜单管理"
       hideScroll
-      rightSlot={[
-        // 菜单名称搜索
-        <Input
-          key="menu-name"
-          allowClear
-          placeholder="菜单名称"
-          value={searchName}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchName(e.target.value)}
-        />,
-        // 菜单编码搜索
-        <Input
-          key="menu-code"
-          allowClear
-          placeholder="菜单编码"
-          value={searchCode}
-          style={{ width: 160 }}
-          onChange={(e) => setSearchCode(e.target.value)}
-        />,
-        hasPermissionByMenuCode('menu_manage', 'menu_manage_query') && (
-          <Button
-            key="query"
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={() => fetchMenuList()}
-            loading={loading}
-          >
-            查询
-          </Button>
-        ),
+      rightSlot={
         hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
           <Button
             key="add"
@@ -969,64 +993,77 @@ const MenuManage: React.FC = () => {
           >
             新增菜单
           </Button>
-        ),
-      ]}
+        )
+      }
     >
       {/* 菜单列表 */}
-      <Spin spinning={loading && !tableData?.length}>
-        <DndContext
-          modifiers={[restrictToVerticalAxis]}
-          collisionDetection={closestCenter}
-          onDragEnd={onDragEnd}
+      <DndContext
+        modifiers={[restrictToVerticalAxis]}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={getAllKeys(draggableData)}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={getAllKeys(draggableData)}
-            strategy={verticalListSortingStrategy}
-          >
-            <XProTable<MenuNodeInfo & { key: number }>
-              rowKey="key"
-              columns={columns}
-              dataSource={draggableData}
-              search={false}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              showQueryButtons={false}
-              showIndex={false}
-              components={{
-                body: {
-                  row: Row,
-                },
-              }}
-              options={false}
-              toolBarRender={false}
-              // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
-              indentSize={0}
-              // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
-              expandable={{
-                expandedRowKeys,
-                onExpand: (expanded, record) =>
-                  handleExpand(
-                    expanded,
-                    record as MenuNodeInfo & { key: number },
-                  ),
-                expandIcon: () => null,
-                columnWidth: 0,
-              }}
-              // 防止展开/折叠时 Table 布局变动
-              tableLayout="fixed"
-              locale={{
-                emptyText: (
-                  <Empty
-                    description="暂无菜单数据"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    className={cx(styles.empty)}
-                  />
+          <XProTable<MenuNodeInfo & { key: number }>
+            actionRef={actionRef}
+            formRef={formRef}
+            rowKey="key"
+            columns={columns}
+            request={request}
+            dataSource={draggableData}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+            showQueryButtons={hasPermissionByMenuCode(
+              'menu_manage',
+              'menu_manage_query',
+            )}
+            showIndex={false}
+            onReset={handleReset}
+            components={{
+              body: {
+                row: Row,
+              },
+            }}
+            options={false}
+            toolBarRender={false}
+            // 关闭树形缩进对列宽的影响，保证拖拽手柄始终在同一列不偏移
+            indentSize={0}
+            // 关闭默认的展开图标列，避免影响第一列布局，展开逻辑由名称列中的图标控制
+            expandable={{
+              expandedRowKeys,
+              onExpand: (expanded, record) =>
+                handleExpand(
+                  expanded,
+                  record as MenuNodeInfo & { key: number },
                 ),
-              }}
-            />
-          </SortableContext>
-        </DndContext>
-      </Spin>
+              expandIcon: () => null,
+              columnWidth: 0,
+            }}
+            // 防止展开/折叠时 Table 布局变动
+            tableLayout="fixed"
+            postData={(data: (MenuNodeInfo & { key: number })[]) => {
+              // 同步数据到 draggableData 用于拖拽
+              // 如果正在拖拽，不覆盖数据，保持拖拽后的位置
+              if (!isDraggingRef.current) {
+                setDraggableData(data || []);
+              }
+              // 始终返回数据，让 ProTable 正常渲染
+              return data;
+            }}
+            locale={{
+              emptyText: (
+                <Empty
+                  description="暂无菜单数据"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  className={cx(styles.empty)}
+                />
+              ),
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
       {/* 新增/编辑菜单Modal */}
       <MenuFormModal
