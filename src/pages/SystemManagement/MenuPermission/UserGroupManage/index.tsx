@@ -151,21 +151,14 @@ const UserGroupManage: React.FC = () => {
    * 重置处理
    */
   const handleReset = useCallback(() => {
-    // 重置表单
-    formRef.current?.resetFields();
-    // 重置表格状态
+    // 重置到默认值，包括表单
     actionRef.current?.reset?.();
-    // 重新加载
-    actionRef.current?.reload();
   }, []);
 
   // 监听 location.state 变化
   // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    const state = location.state as any;
-    if (state?._t) {
-      handleReset();
-    }
+    handleReset();
   }, [location.state, handleReset]);
 
   // 删除用户组
