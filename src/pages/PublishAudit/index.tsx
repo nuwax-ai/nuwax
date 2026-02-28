@@ -243,7 +243,7 @@ const PublishAudit: React.FC = () => {
       pageSize: pageSize || 15,
       queryFilter: {
         targetType: targetType || undefined,
-        publishStatus: publishStatus || undefined,
+        publishStatus: publishStatus || PublishStatusEnum.Applying,
         kw: name || '',
       },
     });
