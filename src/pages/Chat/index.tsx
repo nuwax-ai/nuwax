@@ -39,6 +39,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
+  ConversationInfo,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
@@ -111,7 +112,7 @@ const Chat: React.FC = () => {
   });
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
-  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
 
   // 智能体详情页面带过来的值仅在本次会话使用，当用户刷新页面或点击小刷子新建会话，就不能作为其他判断条件使用。
   // 因此，只有在 history action 为 PUSH 且 state 中有值时才设置
@@ -217,29 +218,33 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.agent, agentDetail]);
 
   // 获取有效的沙箱ID
-  const getEffectiveSandboxId = (info: any = conversationInfo) => {
-    // 优先级 1: 个人电脑 (sandboxId)
-    if (effectiveAgent?.sandboxId) {
-      return effectiveAgent.sandboxId;
-    }
+  const getEffectiveSandboxId = (info: ConversationInfo = conversationInfo) => {
+    try {
+      // 优先级 1: 个人电脑 (sandboxId)
+      if (effectiveAgent?.sandboxId) {
+        return effectiveAgent.sandboxId;
+      }
 
-    // 优先级 2: 共享电脑 (sandboxServerId)
-    const sandboxServerId = info?.sandboxServerId;
-    if (sandboxServerId) {
-      return String(sandboxServerId);
-    }
+      // 优先级 2: 共享电脑 (sandboxServerId)
+      const sandboxServerId = info?.sandboxServerId;
+      if (sandboxServerId) {
+        return String(sandboxServerId);
+      }
 
-    // 优先级 3: 手动选择 (selectedComputerId)
-    if (selectedComputerId) {
+      // 优先级 3: 手动选择 (selectedComputerId)
+      if (selectedComputerId) {
+        return selectedComputerId;
+      }
+
+      // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
+      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
+        return location.state.selectedComputerId;
+      }
+
+      return '';
+    } catch {
       return selectedComputerId;
     }
-
-    // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
-    if (history.action === 'PUSH' && location.state?.selectedComputerId) {
-      return location.state.selectedComputerId;
-    }
-
-    return '';
   };
 
   // 页面预览相关状态
@@ -654,6 +659,11 @@ const Chat: React.FC = () => {
     messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
+
+  // 计算最终选中的沙盒ID
+  const finalSelectedId = useMemo(() => {
+    return getEffectiveSandboxId();
+  }, [getEffectiveSandboxId]);
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
@@ -1128,62 +1138,41 @@ const Chat: React.FC = () => {
               />
             )}
 
-          {(() => {
-            const sandboxId = conversationInfo?.agent?.sandboxId;
-            const sandboxServerId = conversationInfo?.sandboxServerId;
-            const hasPermission = effectiveAgent?.hasPermission !== false;
-
-            // 计算蒙层可见性与文案
-            let maskVisible = !hasPermission;
-            let maskText = '您无该智能体权限';
-
-            if (!hasPermission) {
-              maskVisible = true;
+          {/* 聊天输入框 */}
+          <ChatInputHome
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
+            clearLoading={clearLoading}
+            onClear={handleClear}
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            onScrollBottom={onScrollBottom}
+            showAnnouncement={true}
+            isTaskAgentActive={effectiveAgent?.type === AgentTypeEnum.TaskAgent}
+            selectedComputerId={finalSelectedId}
+            onComputerSelect={setSelectedComputerId}
+            agentId={agentId}
+            agentSandboxId={
+              conversationInfo?.agent?.sandboxId ||
+              finalSelectedId ||
+              selectedComputerId ||
+              conversationInfo?.sandboxServerId
             }
-
-            // 计算最终选中的沙盒ID
-            const finalSelectedId = getEffectiveSandboxId();
-
-            return (
-              <ChatInputHome
-                key={`agent-details-${agentId}`}
-                className={cx(styles['chat-input-container'])}
-                onEnter={handleMessageSend}
-                visible={showScrollBtn}
-                wholeDisabled={wholeDisabled}
-                clearLoading={clearLoading}
-                onClear={handleClear}
-                manualComponents={manualComponents}
-                selectedComponentList={selectedComponentList}
-                onSelectComponent={handleSelectComponent}
-                onScrollBottom={onScrollBottom}
-                showAnnouncement={true}
-                isTaskAgentActive={
-                  effectiveAgent?.type === AgentTypeEnum.TaskAgent
-                }
-                selectedComputerId={finalSelectedId || selectedComputerId}
-                onComputerSelect={async (id) => {
-                  setSelectedComputerId(id);
-                }}
-                agentId={agentId}
-                agentSandboxId={
-                  sandboxId ||
-                  finalSelectedId ||
-                  selectedComputerId ||
-                  sandboxServerId
-                }
-                hasPermission={!maskVisible}
-                maskText={maskText}
-                fixedSelection={
-                  !!sandboxId ||
-                  !!sandboxServerId ||
-                  isSelectionLocked ||
-                  hasUserSentMessage
-                }
-                isPersonalComputer={!!sandboxId}
-              />
-            );
-          })()}
+            // 计算蒙层可见性与文案
+            hasPermission={effectiveAgent?.hasPermission}
+            maskText="您无该智能体权限"
+            fixedSelection={
+              !!conversationInfo?.agent?.sandboxId ||
+              !!conversationInfo?.sandboxServerId ||
+              isSelectionLocked ||
+              hasUserSentMessage
+            }
+            isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+          />
         </div>
       </div>
     );

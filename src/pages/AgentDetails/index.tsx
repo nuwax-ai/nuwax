@@ -450,47 +450,26 @@ const AgentDetails: React.FC = () => {
               )}
             </div>
           </div>
-          {(() => {
-            const hasDetailPermission = agentDetail?.hasPermission !== false;
-            // 严谨判断 sandboxId 是否为空
-            const sandboxId = agentDetail?.sandboxId;
-
-            let maskVisible = false;
-            let maskText = '您无该智能体权限';
-
-            if (!hasDetailPermission) {
-              maskVisible = true;
-            } else {
-              maskVisible = false;
-            }
-
-            return (
-              <ChatInputHome
-                key={`agent-details-${agentId}`}
-                className={cx(styles['chat-input-container'])}
-                onEnter={handleMessageSend}
-                isClearInput={false}
-                wholeDisabled={wholeDisabled}
-                manualComponents={agentDetail?.manualComponents || []}
-                selectedComponentList={selectedComponentList}
-                onSelectComponent={handleSelectComponent}
-                showAnnouncement={true}
-                isTaskAgentActive={
-                  agentDetail?.type === AgentTypeEnum.TaskAgent
-                }
-                selectedComputerId={selectedComputerId}
-                onComputerSelect={async (id) => {
-                  setSelectedComputerId(id);
-                }}
-                agentId={agentId}
-                agentSandboxId={sandboxId}
-                hasPermission={!maskVisible}
-                maskText={maskText}
-                fixedSelection={!!sandboxId}
-                isPersonalComputer={!!sandboxId}
-              />
-            );
-          })()}
+          <ChatInputHome
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            isClearInput={false}
+            wholeDisabled={wholeDisabled}
+            manualComponents={agentDetail?.manualComponents || []}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            showAnnouncement={true}
+            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+            selectedComputerId={selectedComputerId}
+            onComputerSelect={setSelectedComputerId}
+            agentId={agentId}
+            agentSandboxId={agentDetail?.sandboxId}
+            hasPermission={agentDetail?.hasPermission}
+            maskText="您无该智能体权限"
+            fixedSelection={!!agentDetail?.sandboxId}
+            isPersonalComputer={!!agentDetail?.sandboxId}
+          />
         </div>
       </div>
     );
