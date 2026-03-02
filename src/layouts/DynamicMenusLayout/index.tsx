@@ -62,7 +62,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const {
-    showHoverMenu,
+    // showHoverMenu,
     isSecondMenuCollapsed,
     setOpenMessage,
     handleCloseMobileMenu,
@@ -257,7 +257,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       return;
     }
 
-    if (isClickMenu.current && !showHoverMenu) {
+    // 如果点击了一级菜单，并且没有悬浮菜单，则不触发刷新
+    // if (isClickMenu.current && !showHoverMenu) {
+    if (isClickMenu.current) {
+      isClickMenu.current = false;
       return;
     }
 
@@ -284,12 +287,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     else if (location.pathname === '/home') {
       // 默认选中首页
       setActiveTab('homepage');
-    }
-    // 我的电脑管理
-    // else if (location.pathname === '/my-computer-manage') {
-    //   setActiveTab('my_computer');
-    // }
-    else {
+    } else {
       // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
       const firstLevelCode = findFirstLevelCodeByPath(
         firstLevelMenus,
@@ -308,13 +306,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         setActiveTab(filteredNewConversationFirstLevelMenus[0]?.code || '');
       }
     }
-  }, [
-    location.pathname,
-    params,
-    firstLevelMenus,
-    handleNewConversation,
-    showHoverMenu,
-  ]);
+  }, [location.pathname, params, firstLevelMenus, handleNewConversation]);
 
   const handleRefreshEditAndCollect = useCallback(() => {
     // 最近编辑
