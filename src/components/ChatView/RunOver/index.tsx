@@ -117,8 +117,12 @@ const RunOver: React.FC<RunOverProps> = ({
     >
       <div className={cx('cursor-pointer', styles['run-success'])}>
         {/* 显示loading状态 */}
-        {messageInfo?.status === MessageStatusEnum.Loading ||
-        messageInfo?.status === MessageStatusEnum.Incomplete ? (
+        {messageInfo?.status === MessageStatusEnum.Loading ? (
+          <>
+            <LoadingOutlined className={cx(styles.successColor)} />
+            <span className={cx(styles['status-name'])}>正在思考中...</span>
+          </>
+        ) : messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
             {showStatusDesc && lastProcessInfo && (
