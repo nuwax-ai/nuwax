@@ -1,4 +1,5 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
+import ButtonToggle from '@/components/ButtonToggle';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
@@ -12,6 +13,7 @@ import {
 } from '@/services/square';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  FilterOfficialEnum,
   SquareAgentTypeEnum,
   SquareTemplateTargetTypeEnum,
 } from '@/types/enums/square';
@@ -50,6 +52,17 @@ const Square: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 标题
   const [title, setTitle] = useState<string>('智能体');
+
+  // 过滤官方标识
+  const [filterOfficial, setFilterOfficial] = useState<FilterOfficialEnum>(
+    FilterOfficialEnum.All,
+  );
+  // 过滤官方标识内容
+  const FILTER_OFFICIAL = [
+    { value: FilterOfficialEnum.All, label: '全部' },
+    { value: FilterOfficialEnum.Official, label: '仅查看官方' + title },
+  ];
+
   // 分类名称
   const categoryNameRef = useRef<string>('');
   // 分类类型，默认智能体
@@ -158,11 +171,16 @@ const Square: React.FC = () => {
   };
 
   // 查询列表
-  const handleQuery = (pageIndex: number = 1, kw: string = keyword) => {
+  const handleQuery = (
+    pageIndex: number = 1,
+    kw: string = keyword,
+    official: FilterOfficialEnum = filterOfficial,
+  ) => {
     const data: SquarePublishedListParams & {
       category?: any;
       targetType?: any;
       targetSubType?: any;
+      official?: boolean;
     } = {
       page: pageIndex,
       pageSize: 48,
@@ -202,6 +220,11 @@ const Square: React.FC = () => {
       }
     }
 
+    // 设置过滤官方标识
+    if (official === FilterOfficialEnum.Official) {
+      data.official = true;
+    }
+
     runSquareList(data);
   };
 
@@ -220,7 +243,7 @@ const Square: React.FC = () => {
     activeKeyRef.current = undefined;
     setLoading(true);
     // 查询列表
-    handleQuery(1);
+    handleQuery(1, '', FilterOfficialEnum.All);
   };
 
   useEffect(() => {
@@ -239,6 +262,8 @@ const Square: React.FC = () => {
       cate_type,
       cate_name,
     };
+    // 设置默认过滤官方标识
+    setFilterOfficial(FilterOfficialEnum.All);
     initValues(params);
     effectLoadFn();
   }, [location]);
@@ -254,6 +279,8 @@ const Square: React.FC = () => {
   const onSearch: SearchProps['onSearch'] = (value) => {
     setLoading(true);
     setSquareComponentList([]);
+    setPage(1);
+    setHasMore(false);
     handleQuery(1, value);
   };
 
@@ -261,6 +288,8 @@ const Square: React.FC = () => {
   const handleTabClick = (targetType: React.Key) => {
     setLoading(true);
     setSquareComponentList([]);
+    setPage(1);
+    setHasMore(false);
     const _activeKey = targetType as SquareTemplateTargetTypeEnum;
     activeKeyRef.current = _activeKey;
     handleQuery(1, keyword);
@@ -306,6 +335,20 @@ const Square: React.FC = () => {
                 onChange={(value) => handleTabClick(value as React.Key)}
               />
             )}
+          <ButtonToggle
+            style={{ marginLeft: 10 }}
+            options={FILTER_OFFICIAL}
+            value={filterOfficial}
+            onChange={(value) => {
+              const val = value as FilterOfficialEnum;
+              setFilterOfficial(val);
+              setLoading(true);
+              setSquareComponentList([]);
+              setPage(1);
+              setHasMore(false);
+              handleQuery(1, keyword, val);
+            }}
+          />
         </div>
         <Input.Search
           className={cx(styles['search-input'])}

@@ -25,3 +25,11 @@ export enum SquareTemplateTargetTypeEnum {
   // 技能
   Skill = 'Skill',
 }
+
+// 过滤官方标识内容
+export enum FilterOfficialEnum {
+  // 全部
+  All = 'all',
+  // 官方
+  Official = 'official',
+}
