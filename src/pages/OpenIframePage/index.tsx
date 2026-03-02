@@ -20,7 +20,12 @@ const OpenIframePage: React.FC = () => {
 
   return (
     <div className="h-full w-full">
-      <iframe src={iframeUrl} width="100%" height="100%" />
+      <iframe
+        src={iframeUrl}
+        width="100%"
+        height="100%"
+        style={{ border: 'none' }}
+      />
     </div>
   );
 };
