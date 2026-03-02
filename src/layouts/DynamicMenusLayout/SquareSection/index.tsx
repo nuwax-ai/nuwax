@@ -7,10 +7,9 @@ import {
   SquareAgentInfo,
   SquareMenuComponentInfo,
 } from '@/types/interfaces/square';
-import { getURLParams } from '@/utils/common';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -21,6 +20,7 @@ const cx = classNames.bind(styles);
 const SquareSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
+  const location = useLocation();
   const { agentInfoList, pageAppInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
   // 获取租户配置信息
@@ -43,20 +43,17 @@ const SquareSection: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
-  // url search参数
-  const params = getURLParams() as {
-    cate_type: string;
-    cate_name: string;
-  };
-
   useEffect(() => {
-    const { cate_type, cate_name } = params;
+    const params = new URLSearchParams(location.search);
+    const cateType = params.get('cate_type') || '';
+    const cateName = params.get('cate_name') || '';
+
     // 设置active项
-    setActiveKey(cate_type);
-    setSecondActiveKey(cate_name);
+    setActiveKey(cateType);
+    setSecondActiveKey(cateName);
     // 控制menu显隐
-    setVisibleMenu(cate_type);
-  }, []);
+    setVisibleMenu(cateType);
+  }, [location]);
 
   const handleClick = (cateType: string, cateName?: string) => {
     // 关闭移动端菜单
