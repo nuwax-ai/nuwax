@@ -170,3 +170,52 @@
     }
   }
 }
+
+.markdown-cmd-container {
+  .thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding-bottom: 8px;
+    user-select: none;
+    color: #999;
+    font-size: 14px;
+    width: fit-content;
+
+    &:hover {
+      color: #666;
+    }
+
+    .thinking-icon {
+      margin-right: 6px;
+      font-size: 16px;
+      color: rgba(0, 0, 0, 45%);
+      display: flex;
+      align-items: center;
+    }
+
+    .thinking-title {
+      line-height: 1;
+    }
+
+    .expand-icon {
+      margin-left: auto;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 45%);
+      transition: transform 0.3s ease;
+
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  &.thinking-collapsed {
+    :global {
+      .ds-markdown-thinking {
+        display: none;
+      }
+    }
+  }
+}
