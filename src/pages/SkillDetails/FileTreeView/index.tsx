@@ -1,3 +1,11 @@
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import FilePreview, {
+  FileType,
+} from '@/components/business-component/FilePreview';
+import VncPreview from '@/components/business-component/VncPreview';
+import type { VncPreviewRef } from '@/components/business-component/VncPreview/type';
+import CodeViewer from '@/components/CodeViewer';
+import TipsBox from '@/components/TipsBox';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -19,8 +27,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, message, Spin, Tooltip } from 'antd';
+import { message, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -31,12 +38,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import AppDevEmptyState from '../business-component/AppDevEmptyState';
-import FilePreview, { FileType } from '../business-component/FilePreview';
-import VncPreview from '../business-component/VncPreview';
-import type { VncPreviewRef } from '../business-component/VncPreview/type';
-import CodeViewer from '../CodeViewer';
-import TipsBox from '../TipsBox';
 import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
@@ -1509,7 +1510,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 代码文件：使用代码查看器
       return (
         <CodeViewer
-          isDynamicTheme={true}
           fileId={selectedFileId}
           fileName={fileName}
           filePath={`app/${selectedFileId}`}
@@ -1621,11 +1621,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
           // 刷新文件树回调
-          // onRefreshFileTree={handleRefreshFileList}
+          onRefreshFileTree={handleRefreshFileList}
           // 是否正在刷新文件树
-          // isRefreshingFileTree={isRefreshingFileTree}
-          // // 是否显示刷新按钮
-          // showRefreshButton={showRefreshButton}
+          isRefreshingFileTree={isRefreshingFileTree}
+          // 是否显示刷新按钮
+          showRefreshButton={showRefreshButton}
           // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
           isOnlyShowDesktop={isOnlyShowDesktop}
           hideDesktop={hideDesktop}
@@ -1646,6 +1646,84 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             className,
           )}
         >
+          {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
+          {viewMode !== 'desktop' && !hideFileTree && (
+            <div
+              ref={fileTreeContainerRef}
+              className={cx(
+                styles['file-tree-view'],
+                'h-full',
+                'flex',
+                'flex-col',
+                'overflow-hide',
+                {
+                  [styles['file-tree-view-visible']]: isFileTreeVisible,
+                  [styles['file-tree-view-hidden']]: !isFileTreeVisible,
+                },
+              )}
+            >
+              {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
+              <FileContextMenu
+                visible={contextMenuVisible}
+                position={contextMenuPosition}
+                // 右键菜单目标节点
+                targetNode={contextMenuTarget}
+                // 是否禁用删除功能(SKILL.md文件不能删除)
+                disabledDelete={
+                  !isCanDeleteSkillFile &&
+                  contextMenuTarget?.name?.toLowerCase() === 'skill.md'
+                }
+                // 关闭右键菜单
+                onClose={closeContextMenu}
+                // 处理删除操作
+                onDelete={handleDelete}
+                // 处理重命名操作
+                onRename={handleRenameFromMenu}
+                // 处理上传文件操作
+                onUploadFiles={handleUploadFromMenu}
+                // 处理新建文件操作
+                onCreateFile={handleCreateFile}
+                // 处理新建文件夹操作
+                onCreateFolder={handleCreateFolder}
+                // 处理导入项目操作
+                onImportProject={onImportProject}
+                // 处理通过URL下载文件操作
+                onDownloadFileByUrl={handleDownloadFileByUrl}
+                // 使用相对定位（相对于文件树容器）
+                useRelativePosition={true}
+              />
+              {/* 操作提示框 */}
+              <TipsBox visible={isDownloadingFile} text="正在下载" />
+              <TipsBox visible={isUploadingFiles} text="正在上传" />
+              <TipsBox visible={isExportingProjecting} text="正在导出" />
+              <TipsBox visible={isImportingProject} text="正在导入" />
+
+              {/* 搜索框 */}
+              <SearchView
+                className={headerClassName}
+                files={files}
+                onFileSelect={handleFileSelect}
+              />
+              {/* 文件树 */}
+              <FileTree
+                fileTreeDataLoading={fileTreeDataLoading}
+                files={files}
+                taskAgentSelectedFileId={taskAgentSelectedFileId}
+                // 当前选中的文件ID
+                selectedFileId={selectedFileId}
+                // 正在重命名的节点
+                renamingNode={renamingNode}
+                // 取消重命名回调
+                onCancelRename={handleCancelRename}
+                // 右键菜单回调
+                onContextMenu={handleContextMenu}
+                // 文件选择回调
+                onFileSelect={handleFileSelect}
+                // 重命名文件回调
+                onConfirmRenameFile={handleRenameFile}
+              />
+            </div>
+          )}
           {/* 右边内容 */}
           <div
             className={cx(
@@ -1662,122 +1740,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             {/* 渲染头部组件 */}
             {renderHeader()}
             {/* 右边内容 */}
-            <div className={cx(styles['content-container'], 'flex')}>
-              {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
-              {viewMode !== 'desktop' && !hideFileTree && (
-                <div
-                  ref={fileTreeContainerRef}
-                  className={cx(
-                    styles['file-tree-view'],
-                    'h-full',
-                    'flex',
-                    'flex-col',
-                    'overflow-hide',
-                    {
-                      [styles['file-tree-view-visible']]: isFileTreeVisible,
-                      [styles['file-tree-view-hidden']]: !isFileTreeVisible,
-                    },
-                  )}
-                >
-                  {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
-                  <FileContextMenu
-                    visible={contextMenuVisible}
-                    position={contextMenuPosition}
-                    // 右键菜单目标节点
-                    targetNode={contextMenuTarget}
-                    // 是否禁用删除功能(SKILL.md文件不能删除)
-                    disabledDelete={
-                      !isCanDeleteSkillFile &&
-                      contextMenuTarget?.name?.toLowerCase() === 'skill.md'
-                    }
-                    // 关闭右键菜单
-                    onClose={closeContextMenu}
-                    // 处理删除操作
-                    onDelete={handleDelete}
-                    // 处理重命名操作
-                    onRename={handleRenameFromMenu}
-                    // 处理上传文件操作
-                    onUploadFiles={handleUploadFromMenu}
-                    // 处理新建文件操作
-                    onCreateFile={handleCreateFile}
-                    // 处理新建文件夹操作
-                    onCreateFolder={handleCreateFolder}
-                    // 处理导入项目操作
-                    onImportProject={onImportProject}
-                    // 处理通过URL下载文件操作
-                    onDownloadFileByUrl={handleDownloadFileByUrl}
-                    // 使用相对定位（相对于文件树容器）
-                    useRelativePosition={true}
-                  />
-                  {/* 操作提示框 */}
-                  <TipsBox visible={isDownloadingFile} text="正在下载" />
-                  <TipsBox visible={isUploadingFiles} text="正在上传" />
-                  <TipsBox visible={isExportingProjecting} text="正在导出" />
-                  <TipsBox visible={isImportingProject} text="正在导入" />
-
-                  <div
-                    className={cx(
-                      'flex',
-                      'content-between',
-                      'items-center',
-                      styles['file-tree-header'],
-                    )}
-                  >
-                    <span>文件</span>
-
-                    {/* 刷新文件树 */}
-                    {/* 是否显示刷新按钮 */}
-                    {viewMode === 'preview' && showRefreshButton && (
-                      // 是否正在刷新文件树
-                      <Tooltip
-                        title={
-                          isRefreshingFileTree ? '刷新中...' : '刷新文件树'
-                        }
-                      >
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<ReloadOutlined style={{ fontSize: 16 }} />}
-                          onClick={handleRefreshFileList}
-                          className={styles.actionButton}
-                          loading={isRefreshingFileTree}
-                          disabled={isRefreshingFileTree}
-                        />
-                      </Tooltip>
-                    )}
-                  </div>
-
-                  {/* 搜索框 */}
-                  <SearchView
-                    className={headerClassName}
-                    files={files}
-                    onFileSelect={handleFileSelect}
-                  />
-                  {/* 文件树 */}
-                  <FileTree
-                    fileTreeDataLoading={fileTreeDataLoading}
-                    files={files}
-                    taskAgentSelectedFileId={taskAgentSelectedFileId}
-                    // 当前选中的文件ID
-                    selectedFileId={selectedFileId}
-                    // 正在重命名的节点
-                    renamingNode={renamingNode}
-                    // 取消重命名回调
-                    onCancelRename={handleCancelRename}
-                    // 右键菜单回调
-                    onContextMenu={handleContextMenu}
-                    // 文件选择回调
-                    onFileSelect={handleFileSelect}
-                    // 重命名文件回调
-                    onConfirmRenameFile={handleRenameFile}
-                  />
-                </div>
-              )}
-              {/* 渲染内容 */}
-              <div className={cx('flex-1', 'px-16', 'py-16')}>
-                {renderContent()}
-              </div>
-              {/* 重启中 */}
+            <div className={cx(styles['content-container'])}>
+              {renderContent()}
               {isRestarting && (
                 <div className={cx(styles['restart-container'])}>
                   {/* 背景占位符（清晰的背景图，按比例显示） */}

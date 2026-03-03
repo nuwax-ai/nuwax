@@ -1,5 +1,3 @@
-import FileTreeView from '@/components/FileTreeView';
-import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
@@ -31,6 +29,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import ImportSkillProjectModal from '../SpaceSkillManage/ImportSkillProjectModal';
+import FileTreeView from './FileTreeView';
+import type { FileTreeViewRef } from './FileTreeView/type';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 

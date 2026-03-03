@@ -1,8 +1,33 @@
 @import '@/styles/token.less';
 
+.file-tree-view {
+  position: relative;
+  width: 260px;
+  min-height: 0;
+  border-right: 1px solid @colorSplit;
+  overflow: auto;
+  transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
+    border-right 0.3s ease-in-out;
+  flex-shrink: 0;
+}
+
+.file-tree-view-hidden {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-right: none;
+}
+
+.file-tree-view-visible {
+  width: 260px;
+  opacity: 1;
+  pointer-events: auto;
+  border-right: 1px solid @colorSplit;
+}
+
 .content-container {
   flex: 1;
-  // background: @colorBgContainer;
+  background: @colorBgContainer;
   // overflow-y: auto;
   position: relative;
   min-height: 0;
@@ -14,41 +39,6 @@
   box-sizing: border-box;
   // 使用 contain 限制布局影响范围，防止内容变化导致父布局重排
   contain: layout style;
-
-  .file-tree-view {
-    position: relative;
-    width: 260px;
-    min-height: 0;
-    border-right: 1px solid rgba(5, 5, 5, 6%);
-    overflow: auto;
-    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
-      border-right 0.3s ease-in-out;
-    flex-shrink: 0;
-
-    .file-tree-header {
-      height: 44px;
-      padding: 8px 16px;
-      gap: 40px;
-      color: rgba(0, 0, 0, 88%);
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 22px;
-    }
-  }
-
-  .file-tree-view-hidden {
-    width: 0;
-    opacity: 0;
-    pointer-events: none;
-    border-right: none;
-  }
-
-  .file-tree-view-visible {
-    width: 260px;
-    opacity: 1;
-    pointer-events: auto;
-    border-right: 1px solid @colorSplit;
-  }
 }
 
 // 全屏 Modal 样式

@@ -6,14 +6,13 @@
   display: flex;
   align-items: center;
   height: 48px;
-  padding: 0 16px;
-  // background: @colorBgContainer;
-  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+  background: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorSplit;
   gap: 10px;
 
-  // &.pl-8 {
-  //   padding-left: 8px;
-  // }
+  &.pl-8 {
+    padding-left: 8px;
+  }
 
   // 左侧：文件信息
   .fileInfo {
@@ -66,8 +65,21 @@
 
   // 文件树展开/折叠按钮
   .fileTreeToggleButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: @borderRadius;
     color: @colorTextTertiary;
+    transition: all 0.2s;
     flex-shrink: 0; // 防止在空间不足时被压缩
+
+    &:hover {
+      color: @colorText;
+      background: @colorFillTertiary;
+    }
 
     &.fileTreeToggleButtonPinned {
       color: @colorPrimary;
@@ -113,28 +125,22 @@
   .actionButtons {
     display: flex;
     align-items: center;
-    // padding: 0 4px;
-    // flex: 0 0 auto;
-    height: 32px;
-    background: @WHITE;
-    // gap: 8px;
-    border-radius: @borderRadius;
+    flex: 0 0 auto;
 
     .actionButton {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 42px;
+      width: 32px;
       height: 32px;
-      // padding: 0;
-      // border-radius: @borderRadius;
+      padding: 0;
+      border-radius: @borderRadius;
       color: @colorTextTertiary;
-      // transition: all 0.2s;
+      transition: all 0.2s;
 
       &:hover {
         color: @colorText;
-        // background: @colorFillTertiary;
-        background: transparent;
+        background: @colorFillTertiary;
       }
     }
   }

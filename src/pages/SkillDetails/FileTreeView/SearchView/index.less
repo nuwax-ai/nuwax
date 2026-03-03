@@ -4,7 +4,9 @@
   width: 100%;
   display: flex;
   align-items: center;
+  height: 48px;
   padding: 0 8px;
+  border-bottom: 1px solid @colorSplit;
 
   // 搜索栏样式
   .search-bar {
@@ -12,39 +14,27 @@
     position: relative;
     z-index: 10;
 
-    .search-input {
-      box-sizing: border-box;
-      border: none;
-      padding: 8px;
-      border-radius: 8px;
-      background: rgba(12, 20, 102, 4%);
-    }
-
     .search-icon {
       color: @colorTextPlaceholder;
-      font-size: 16px;
-    }
-
-    // 输入框聚焦态样式（不改变整体尺寸）
-    :global(.ant-input-outlined:focus-within) {
-      box-shadow: none;
-      outline: 0;
+      font-size: 14px;
     }
   }
 
   // 搜索结果下拉列表样式
   .search-dropdown {
     position: absolute;
+    top: 48px;
     left: 0;
     right: 0;
-    top: 32px;
     margin: 0 8px;
     max-height: 400px;
     overflow-y: auto;
     background: #2d2d2d;
-    border-radius: @borderRadius;
+    border-radius: 0 0 @borderRadius @borderRadius;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 30%);
     z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 10%);
+    border-top: none;
 
     // 自定义滚动条样式
     &::-webkit-scrollbar {

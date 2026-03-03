@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
 interface MonacoEditorProps {
+  isDynamicTheme?: boolean;
   currentFile?: FileNode | null;
   onContentChange?: (fileId: string, content: string) => void;
   readOnly?: boolean; // 只读模式，默认为false
@@ -22,6 +23,7 @@ interface MonacoEditorProps {
  * 直接使用Monaco Editor API，避免CDN加载问题
  */
 const MonacoEditor: React.FC<MonacoEditorProps> = ({
+  isDynamicTheme = false,
   currentFile,
   onContentChange,
   readOnly = false, // 只读模式，默认为false
@@ -289,6 +291,23 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   );
 
   /**
+   * 定义动态主题
+   * 注意：这里只负责 defineTheme，不在这里直接切换主题，
+   * 这样可以在创建 editor 时一次性使用正确主题，避免先用默认主题再切换导致的闪烁。
+   */
+  function defineDynamicTheme(bgColor: string) {
+    monaco.editor.defineTheme('dynamicTheme', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': bgColor,
+        'editorLineNumber.foreground': '#858585', // 行号
+      },
+    });
+  }
+
+  /**
    * 创建编辑器实例
    */
   const createEditor = useCallback(async () => {
@@ -329,8 +348,13 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 创建编辑器实例
       const editor = await safeAsyncOperation(async () => {
-        // 使用浅色主题
-        const theme = 'vs';
+        // 根据 isDynamicTheme 决定使用的主题
+        let theme: string = 'vs';
+        if (isDynamicTheme) {
+          // 在创建编辑器之前先定义动态主题，确保首次渲染就使用目标背景色
+          defineDynamicTheme('#F5f5f5');
+          theme = 'dynamicTheme';
+        }
 
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
@@ -806,7 +830,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     }
   }, []);
 
-  // 设置函数引用
+  // 设置函数引用: 没有第二个参数 - 每次渲染都执行
   useEffect(() => {
     createEditorRef.current = createEditor;
     updateEditorContentRef.current = updateEditorContent;
@@ -815,6 +839,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   // 初始化Monaco Editor
   useEffect(() => {
     initializeMonaco();
+
+    return () => {
+      // 组件卸载时清理编辑器
+      safeDisposeEditor(); // 移除依赖，只在组件卸载时执行
+    };
   }, []); // 只在组件挂载时执行一次
 
   // 创建编辑器实例
@@ -847,8 +876,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             typeof editor.isDisposed === 'function' &&
             !editor.isDisposed()
           ) {
-            // 使用浅色主题
-            const theme = 'vs';
+            // 根据是否启用动态主题，保持与创建时一致的主题，避免在系统主题变化时恢复为默认主题
+            const theme = isDynamicTheme ? 'dynamicTheme' : 'vs';
+            if (isDynamicTheme) {
+              // 确保动态主题在需要时已定义
+              defineDynamicTheme('#F5f5f5');
+            }
             monaco.editor.setTheme(theme);
           }
         } catch (error) {
@@ -868,14 +901,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       observer.disconnect();
     };
   }, []);
-
-  // 清理资源
-  useEffect(() => {
-    return () => {
-      // 组件卸载时清理编辑器
-      safeDisposeEditor();
-    };
-  }, []); // 移除依赖，只在组件卸载时执行
 
   if (!isMonacoReady) {
     return (

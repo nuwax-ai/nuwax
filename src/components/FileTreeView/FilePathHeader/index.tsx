@@ -1,23 +1,19 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { USER_INFO } from '@/constants/home.constants';
-import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
   CloseOutlined,
   CopyOutlined,
-  EyeOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, message, Segmented, Tooltip } from 'antd';
+import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
-import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import { ReactComponent as PcIconSvg } from './pc.svg';
@@ -37,7 +33,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
-  showViewModeButtons = true,
+  // showViewModeButtons = true,
   onRestartServer,
   onRestartAgent,
   onImportProject,
@@ -63,15 +59,15 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreePinned = false,
   onFileTreeToggle,
   // 刷新文件树
-  onRefreshFileTree,
-  // 是否正在刷新文件树
-  isRefreshingFileTree = false,
-  // 是否显示刷新按钮
-  showRefreshButton = true,
+  // onRefreshFileTree,
+  // // 是否正在刷新文件树
+  // isRefreshingFileTree = false,
+  // // 是否显示刷新按钮
+  // showRefreshButton = true,
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop = false,
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
-  hideDesktop = HideDesktopEnum.No,
+  // hideDesktop = HideDesktopEnum.No,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -150,7 +146,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div
       className={cx(
         styles.filePathHeader,
-        { [styles['pl-8']]: !isFullscreen },
+        // { [styles['pl-8']]: !isFullscreen },
         className,
       )}
     >
@@ -159,21 +155,24 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         <Tooltip
           title={isFileTreeVisible ? '点击收起文件树' : '点击展开文件树'}
         >
-          <Button
-            type="text"
-            size="small"
-            icon={
-              isFileTreeVisible ? (
-                <MenuFoldOutlined style={{ fontSize: 16 }} />
-              ) : (
-                <MenuUnfoldOutlined style={{ fontSize: 16 }} />
-              )
-            }
-            onClick={onFileTreeToggle}
-            className={cx(styles.fileTreeToggleButton, {
-              [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
-            })}
-          />
+          <div className={cx('flex', 'items-center', 'gap-4')}>
+            <span>文件预览</span>
+            <Button
+              type="text"
+              size="small"
+              icon={
+                isFileTreeVisible ? (
+                  <MenuFoldOutlined style={{ fontSize: 16 }} />
+                ) : (
+                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+                )
+              }
+              onClick={onFileTreeToggle}
+              className={cx(styles.fileTreeToggleButton, {
+                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+              })}
+            />
+          </div>
         </Tooltip>
       )}
       {/* 左侧：文件信息 */}
@@ -208,30 +207,35 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               {targetNode?.fileProxyUrl &&
                 fileName &&
                 (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
-                  <Segmented
-                    value={viewFileType}
-                    onChange={onViewFileTypeChange}
-                    options={[
-                      {
-                        label: (
-                          <Tooltip title="预览">
-                            <EyeOutlined />
-                          </Tooltip>
-                        ),
-                        value: 'preview',
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Segmented: {
+                          itemSelectedBg: '#fff',
+                          itemSelectedColor: '#5147FF',
+                          itemColor: 'rgba(0, 0, 0, 0.45)',
+                          itemHoverColor: 'rgba(0, 0, 0, 0.65)',
+                          trackBg: 'rgba(12, 20, 102, 0.04)',
+                          trackPadding: 2,
+                        },
                       },
-                      {
-                        label: (
-                          <Tooltip title="源代码">
-                            <span className={styles['svg-box']}>
-                              <CodeIconSvg />
-                            </span>
-                          </Tooltip>
-                        ),
-                        value: 'code',
-                      },
-                    ]}
-                  />
+                    }}
+                  >
+                    <Segmented
+                      value={viewFileType}
+                      onChange={onViewFileTypeChange}
+                      options={[
+                        {
+                          label: '预览',
+                          value: 'preview',
+                        },
+                        {
+                          label: '代码',
+                          value: 'code',
+                        },
+                      ]}
+                    />
+                  </ConfigProvider>
                 )}
             </>
           ) : (
@@ -253,80 +257,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
-      <div className={styles.actionButtons}>
-        {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-        {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-          <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
-            <Button
-              type="text"
-              size="small"
-              icon={
-                <SvgIcon
-                  name="icons-common-download"
-                  style={{ fontSize: 16 }}
-                />
-              }
-              onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-              className={styles.actionButton}
-              loading={isDownloadingFile}
-              disabled={isDownloadingFile}
-            />
-          </Tooltip>
-        )}
-
-        {/* 复制内容 */}
-        {!!targetNode?.content && viewMode === 'preview' && (
-          <Tooltip title="复制">
-            <Button
-              type="text"
-              size="small"
-              icon={<CopyOutlined style={{ fontSize: 16 }} />}
-              onClick={() => {
-                navigator.clipboard.writeText(targetNode?.content || '');
-                message.success('复制成功');
-              }}
-              className={styles.actionButton}
-            />
-          </Tooltip>
-        )}
-
-        {/* 刷新文件树 */}
-        {viewMode === 'preview' && showRefreshButton && (
-          <Tooltip title={isRefreshingFileTree ? '刷新中...' : '刷新文件树'}>
-            <Button
-              type="text"
-              size="small"
-              icon={<ReloadOutlined style={{ fontSize: 16 }} />}
-              onClick={onRefreshFileTree}
-              className={styles.actionButton}
-              loading={isRefreshingFileTree}
-              disabled={isRefreshingFileTree}
-            />
-          </Tooltip>
-        )}
-
-        {/* Markdown 文件显示导出 PDF 按钮 */}
-        {targetNode &&
-          fileName &&
-          (isMarkdownFile(fileName) ||
-            fileName.endsWith('.html') ||
-            fileName.endsWith('.htm')) &&
-          viewMode === 'preview' && (
-            <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
-              <Button
-                type="text"
-                size="small"
-                icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
-                onClick={() => onExportPdf?.(targetNode as FileNode)}
-                className={styles.actionButton}
-                loading={isExportingPdf}
-                disabled={isExportingPdf}
-              />
-            </Tooltip>
-          )}
-      </div>
-
       {/* 底部：保存和取消按钮 */}
       {hasModifiedFiles && (
         <div className="flex items-center content-end gap-4">
@@ -344,110 +274,186 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 视图模式切换按钮 */}
-      {showViewModeButtons && (
-        <div className={styles.viewModeButtons}>
-          {!isOnlyShowDesktop && (
-            <Button
-              type={viewMode === 'preview' ? 'primary' : 'default'}
-              onClick={() => onViewModeChange?.('preview')}
-              className={styles.viewModeButton}
-            >
-              文件预览
-            </Button>
-          )}
-          {hideDesktop !== HideDesktopEnum.Yes && (
-            <Button
-              type={viewMode === 'desktop' ? 'primary' : 'default'}
-              onClick={() => onViewModeChange?.('desktop')}
-              className={styles.viewModeButton}
-            >
-              智能体电脑
-            </Button>
-          )}
-        </div>
-      )}
+      <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
+        {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
+        <div className={styles.actionButtons}>
+          {/* Markdown 文件显示导出 PDF 按钮 */}
+          {targetNode &&
+            fileName &&
+            (isMarkdownFile(fileName) ||
+              fileName.endsWith('.html') ||
+              fileName.endsWith('.htm')) &&
+            viewMode === 'preview' && (
+              <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+                  onClick={() => onExportPdf?.(targetNode as FileNode)}
+                  className={styles.actionButton}
+                  loading={isExportingPdf}
+                  disabled={isExportingPdf}
+                />
+              </Tooltip>
+            )}
 
-      {/* 右侧：操作按钮 */}
-      <div
-        className={cx(styles.actionButtons, { 'ml-auto': isOnlyShowDesktop })}
-      >
-        {/* 分享 */}
-        {isShowShare &&
-          (viewMode === 'desktop' ||
-            (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-            <Tooltip title="分享" placement="bottom">
+          {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
+          {targetNode?.fileProxyUrl && viewMode === 'preview' && (
+            <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
               <Button
                 type="text"
                 size="small"
                 icon={
-                  <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                  <SvgIcon
+                    name="icons-common-download"
+                    style={{ fontSize: 16 }}
+                  />
                 }
-                onClick={() => onShareAction(viewMode)}
+                onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+                className={styles.actionButton}
+                loading={isDownloadingFile}
+                disabled={isDownloadingFile}
+              />
+            </Tooltip>
+          )}
+
+          {/* 复制内容 */}
+          {!!targetNode?.content && viewMode === 'preview' && (
+            <Tooltip title="复制">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined style={{ fontSize: 16 }} />}
+                onClick={() => {
+                  navigator.clipboard.writeText(targetNode?.content || '');
+                  message.success('复制成功');
+                }}
                 className={styles.actionButton}
               />
             </Tooltip>
           )}
 
-        {/* 是否显示全屏图标 */}
-        {(showFullscreenIcon || isFullscreen) && (
-          <Tooltip
-            title={isFullscreen ? '退出全屏' : '全屏'}
-            placement="bottom"
-            key={isFullscreen ? 'exit' : 'enter'}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={
-                isFullscreen ? (
-                  <FullscreenExitOutlined style={{ fontSize: 16 }} />
-                ) : (
-                  <SvgIcon
-                    name="icons-common-fullscreen"
-                    style={{ fontSize: 16 }}
-                  />
-                )
-              }
-              onClick={onFullscreen}
-              className={styles.actionButton}
-            />
-          </Tooltip>
-        )}
-
-        {/* 更多操作菜单 */}
-        {showMoreActions && (
-          <MoreActionsMenu
-            onImportProject={onImportProject}
-            onRestartServer={
-              onRestartServer
-                ? () => {
-                    onRestartServer();
-                    // 切换到智能体电脑 tab
-                    onViewModeChange?.('desktop');
-                  }
-                : undefined
-            }
-            onRestartAgent={onRestartAgent}
-            onExportProject={onExportProject}
-          />
-        )}
-
-        {onClose && !isFullscreen && (
-          <>
-            <div className={styles.divider} />
-            {/* 关闭 */}
-            <Tooltip title="关闭">
+          {/* 刷新文件树 */}
+          {/* {viewMode === 'preview' && showRefreshButton && (
+            <Tooltip title={isRefreshingFileTree ? '刷新中...' : '刷新文件树'}>
               <Button
                 type="text"
                 size="small"
-                icon={<CloseOutlined />}
-                onClick={onClose}
+                icon={<ReloadOutlined style={{ fontSize: 16 }} />}
+                onClick={onRefreshFileTree}
+                className={styles.actionButton}
+                loading={isRefreshingFileTree}
+                disabled={isRefreshingFileTree}
+              />
+            </Tooltip>
+          )} */}
+        </div>
+
+        {/* 视图模式切换按钮 */}
+        {/* {showViewModeButtons && (
+          <div className={styles.viewModeButtons}>
+            {!isOnlyShowDesktop && (
+              <Button
+                type={viewMode === 'preview' ? 'primary' : 'default'}
+                onClick={() => onViewModeChange?.('preview')}
+                className={styles.viewModeButton}
+              >
+                文件预览
+              </Button>
+            )}
+            {hideDesktop !== HideDesktopEnum.Yes && (
+              <Button
+                type={viewMode === 'desktop' ? 'primary' : 'default'}
+                onClick={() => onViewModeChange?.('desktop')}
+                className={styles.viewModeButton}
+              >
+                智能体电脑
+              </Button>
+            )}
+          </div>
+        )} */}
+
+        {/* 右侧：操作按钮 */}
+        <div
+          className={cx(styles.actionButtons, { 'ml-auto': isOnlyShowDesktop })}
+        >
+          {/* 分享 */}
+          {isShowShare &&
+            (viewMode === 'desktop' ||
+              (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+              <Tooltip title="分享" placement="bottom">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                  }
+                  onClick={() => onShareAction(viewMode)}
+                  className={styles.actionButton}
+                />
+              </Tooltip>
+            )}
+
+          {/* 是否显示全屏图标 */}
+          {(showFullscreenIcon || isFullscreen) && (
+            <Tooltip
+              title={isFullscreen ? '退出全屏' : '全屏'}
+              placement="bottom"
+              key={isFullscreen ? 'exit' : 'enter'}
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  isFullscreen ? (
+                    <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                  ) : (
+                    <SvgIcon
+                      name="icons-common-fullscreen"
+                      style={{ fontSize: 16 }}
+                    />
+                  )
+                }
+                onClick={onFullscreen}
                 className={styles.actionButton}
               />
             </Tooltip>
-          </>
-        )}
+          )}
+
+          {/* 更多操作菜单 */}
+          {showMoreActions && (
+            <MoreActionsMenu
+              onImportProject={onImportProject}
+              onRestartServer={
+                onRestartServer
+                  ? () => {
+                      onRestartServer();
+                      // 切换到智能体电脑 tab
+                      onViewModeChange?.('desktop');
+                    }
+                  : undefined
+              }
+              onRestartAgent={onRestartAgent}
+              onExportProject={onExportProject}
+            />
+          )}
+
+          {onClose && !isFullscreen && (
+            <>
+              <div className={styles.divider} />
+              {/* 关闭 */}
+              <Tooltip title="关闭">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={onClose}
+                  className={styles.actionButton}
+                />
+              </Tooltip>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 远程桌面分享弹窗 */}

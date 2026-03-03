@@ -932,7 +932,8 @@ const Chat: React.FC = () => {
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <div className={cx(styles['title-box'])}>
+        {/* 页面顶部: 标题区域 */}
+        <header className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
             {/*<Typography.Title*/}
@@ -999,180 +1000,244 @@ const Chat: React.FC = () => {
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-                !isFileTreeVisible && (
-                  <Tooltip title="文件预览或打开智能体电脑">
-                    <Button
-                      type="text"
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-components"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
-                      onClick={handleFileTreeVisible}
-                    />
-                  </Tooltip>
-                )}
-            </div>
-          </div>
-        </div>
-        <div className={cx(styles['main-content-box'])}>
-          <div
-            className={cx(styles['chat-wrapper-content'])}
-            ref={messageViewRef}
-          >
-            <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-              {/* 新对话设置 */}
-              <NewConversationSet
-                className="mb-16"
-                form={form}
-                variables={variables}
-                userFillVariables={firstVariableParams}
-                // 是否已填写表单
-                isFilled={!!variableParams}
-                disabled={!!firstVariableParams || isSendMessageRef.current}
-              />
-              {/* 自动加载更多的触发探测元素 */}
-              {isMoreMessage && messageList?.length > 0 && (
-                <div
-                  ref={loadMoreRef}
-                  className={cx(styles['load-more-container'])}
-                  style={{
-                    textAlign: 'center',
-                    padding: '16px 0',
-                    color: '#999',
-                  }}
-                >
-                  {loadingMore ? (
-                    <span>
-                      <LoadingOutlined style={{ marginRight: 8 }} />
-                      正在加载历史会话
-                    </span>
-                  ) : null}
-                </div>
-              )}
-              {messageList?.length > 0 ? (
-                <>
-                  {messageList?.map((item: MessageInfo) => (
-                    <ChatView
-                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
-                      key={`${item.id}-${item?.index}`}
-                      messageInfo={item}
-                      roleInfo={roleInfo}
-                      contentClassName={styles['chat-inner']}
-                      mode={'home'}
-                      conversationId={id}
-                      showStatusDesc={
-                        effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-                      }
-                    />
-                  ))}
-                  {/*会话建议*/}
-                  <RecommendList
-                    itemClassName={styles['suggest-item']}
-                    loading={loadingSuggest}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
-                  {/* 任务执行中容器 */}
-                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
-                    <div
-                      className={cx(
-                        styles['task-executing-container'],
-                        'flex',
-                        'items-center',
-                      )}
-                    >
-                      <LoadingOutlined />
-                      <span>智能体正在执行，请稍等</span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                !message &&
-                (conversationInfo ? (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={conversationInfo?.agent?.icon}
-                    name={conversationInfo?.agent?.name}
-                    // 会话建议
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
+              {effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
+                // !isFileTreeVisible &&
+                <Tooltip title="文件预览或打开智能体电脑">
+                  <Button
+                    type="text"
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-components"
+                        className={cx(styles['icons-nav-sidebar'])}
                       />
                     }
+                    onClick={handleFileTreeVisible}
                   />
-                ) : (
-                  <div
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      'content-center',
-                      'flex-1',
-                      'h-full',
-                      'w-full',
-                    )}
-                    style={{
-                      margin: '50px auto',
-                    }}
-                  >
-                    <LoadingOutlined />
-                  </div>
-                ))
+                </Tooltip>
               )}
             </div>
           </div>
+        </header>
 
-          {/* 会话状态显示 - 有消息时就显示 */}
-          {messageList?.length > 0 &&
-            conversationInfo &&
-            effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
-              <ConversationStatus
-                messageList={messageList}
-                className={cx(styles['conversation-status-bar'])}
-              />
+        {/* 页面主体: 内容区域 */}
+        <div className={cx(styles['main-content-box'])}>
+          {/* 聊天内容区域 */}
+          <div
+            className={cx(styles['chat-section'], {
+              [styles['file-tree-visible']]: isFileTreeVisible,
+            })}
+          >
+            <div
+              className={cx(styles['chat-wrapper-content'])}
+              ref={messageViewRef}
+            >
+              <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+                {/* 新对话设置 */}
+                <NewConversationSet
+                  className="mb-16"
+                  form={form}
+                  variables={variables}
+                  userFillVariables={firstVariableParams}
+                  // 是否已填写表单
+                  isFilled={!!variableParams}
+                  disabled={!!firstVariableParams || isSendMessageRef.current}
+                />
+                {/* 自动加载更多的触发探测元素 */}
+                {isMoreMessage && messageList?.length > 0 && (
+                  <div
+                    ref={loadMoreRef}
+                    className={cx(styles['load-more-container'])}
+                    style={{
+                      textAlign: 'center',
+                      padding: '16px 0',
+                      color: '#999',
+                    }}
+                  >
+                    {loadingMore ? (
+                      <span>
+                        <LoadingOutlined style={{ marginRight: 8 }} />
+                        正在加载历史会话
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+                {messageList?.length > 0 ? (
+                  <>
+                    {messageList?.map((item: MessageInfo) => (
+                      <ChatView
+                        // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                        key={`${item.id}-${item?.index}`}
+                        messageInfo={item}
+                        roleInfo={roleInfo}
+                        contentClassName={styles['chat-inner']}
+                        mode={'home'}
+                        conversationId={id}
+                        showStatusDesc={
+                          effectiveAgent?.type !== AgentTypeEnum.TaskAgent
+                        }
+                      />
+                    ))}
+                    {/*会话建议*/}
+                    <RecommendList
+                      itemClassName={styles['suggest-item']}
+                      loading={loadingSuggest}
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                    {/* 任务执行中容器 */}
+                    {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                      <div
+                        className={cx(
+                          styles['task-executing-container'],
+                          'flex',
+                          'items-center',
+                        )}
+                      >
+                        <LoadingOutlined />
+                        <span>智能体正在执行，请稍等</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  !message &&
+                  (conversationInfo ? (
+                    // Chat记录为空
+                    <AgentChatEmpty
+                      className={cx({ 'h-full': !variables?.length })}
+                      icon={conversationInfo?.agent?.icon}
+                      name={conversationInfo?.agent?.name}
+                      // 会话建议
+                      extra={
+                        <RecommendList
+                          className="mt-16"
+                          itemClassName={cx(styles['suggest-item'])}
+                          chatSuggestList={chatSuggestList}
+                          onClick={handleMessageSend}
+                        />
+                      }
+                    />
+                  ) : (
+                    <div
+                      className={cx(
+                        'flex',
+                        'items-center',
+                        'content-center',
+                        'flex-1',
+                        'h-full',
+                        'w-full',
+                      )}
+                      style={{
+                        margin: '50px auto',
+                      }}
+                    >
+                      <LoadingOutlined />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 会话状态显示 - 有消息时就显示 */}
+            {messageList?.length > 0 &&
+              conversationInfo &&
+              effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
+                <ConversationStatus
+                  messageList={messageList}
+                  className={cx(styles['conversation-status-bar'])}
+                />
+              )}
+
+            {/* 聊天输入框 */}
+            <ChatInputHome
+              key={`agent-details-${agentId}`}
+              className={cx(styles['chat-input-container'])}
+              onEnter={handleMessageSend}
+              visible={showScrollBtn}
+              wholeDisabled={wholeDisabled}
+              clearLoading={clearLoading}
+              onClear={handleClear}
+              manualComponents={manualComponents}
+              selectedComponentList={selectedComponentList}
+              onSelectComponent={handleSelectComponent}
+              onScrollBottom={onScrollBottom}
+              showAnnouncement={true}
+              isTaskAgentActive={
+                effectiveAgent?.type === AgentTypeEnum.TaskAgent
+              }
+              selectedComputerId={finalSelectedId}
+              onComputerSelect={setSelectedComputerId}
+              agentId={agentId}
+              agentSandboxId={
+                conversationInfo?.agent?.sandboxId ||
+                finalSelectedId ||
+                selectedComputerId ||
+                conversationInfo?.sandboxServerId
+              }
+              // 计算蒙层可见性与文案
+              hasPermission={effectiveAgent?.hasPermission}
+              maskText="您无该智能体权限"
+              fixedSelection={
+                !!conversationInfo?.agent?.sandboxId ||
+                !!conversationInfo?.sandboxServerId ||
+                isSelectionLocked ||
+                hasUserSentMessage
+              }
+              isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+            />
+          </div>
+
+          {/* 通用型(TaskAgent)智能体专用文件树区域 */}
+          {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+            isFileTreeVisible && (
+              <div
+                className={cx(styles['file-tree-sidebar'], 'flex', 'w-full')}
+              >
+                <FileTreeView
+                  className={cx(styles['file-tree-container'])}
+                  taskAgentSelectedFileId={taskAgentSelectedFileId}
+                  taskAgentSelectTrigger={taskAgentSelectTrigger}
+                  originalFiles={fileTreeData}
+                  fileTreeDataLoading={fileTreeDataLoading}
+                  targetId={id?.toString() || ''}
+                  viewMode={viewMode}
+                  readOnly={false}
+                  // 切换视图、远程桌面模式
+                  onViewModeChange={onViewModeChange}
+                  // 导出项目
+                  onExportProject={handleExportProject}
+                  // 上传文件
+                  onUploadFiles={handleUploadMultipleFiles}
+                  // 重命名文件
+                  onRenameFile={handleConfirmRenameFile}
+                  // 新建文件、文件夹
+                  onCreateFileNode={handleCreateFileNode}
+                  // 删除文件
+                  onDeleteFile={handleDeleteFile}
+                  // 保存文件
+                  onSaveFiles={handleSaveFiles}
+                  // 重启容器
+                  onRestartServer={() => restartVncPod(id)}
+                  // 重启智能体
+                  onRestartAgent={() => restartAgent(id)}
+                  // 关闭整个面板
+                  onClose={closePreviewView}
+                  // 文件树是否固定（用户点击后固定）
+                  isFileTreePinned={isFileTreePinned}
+                  // 文件树固定状态变化回调
+                  onFileTreePinnedChange={setIsFileTreePinned}
+                  isCanDeleteSkillFile={true}
+                  // 刷新文件树回调
+                  onRefreshFileTree={() => handleRefreshFileList(id)}
+                  // VNC 空闲检测配置（仅通用型智能体启用）
+                  idleDetection={{
+                    enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+                    onIdleTimeout: () => openPreviewView(id),
+                  }}
+                  // 是否隐藏远程桌面
+                  hideDesktop={effectiveAgent?.hideDesktop}
+                />
+              </div>
             )}
-
-          {/* 聊天输入框 */}
-          <ChatInputHome
-            key={`agent-details-${agentId}`}
-            className={cx(styles['chat-input-container'])}
-            onEnter={handleMessageSend}
-            visible={showScrollBtn}
-            wholeDisabled={wholeDisabled}
-            clearLoading={clearLoading}
-            onClear={handleClear}
-            manualComponents={manualComponents}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-            onScrollBottom={onScrollBottom}
-            showAnnouncement={true}
-            isTaskAgentActive={effectiveAgent?.type === AgentTypeEnum.TaskAgent}
-            selectedComputerId={finalSelectedId}
-            onComputerSelect={setSelectedComputerId}
-            agentId={agentId}
-            agentSandboxId={
-              conversationInfo?.agent?.sandboxId ||
-              finalSelectedId ||
-              selectedComputerId ||
-              conversationInfo?.sandboxServerId
-            }
-            // 计算蒙层可见性与文案
-            hasPermission={effectiveAgent?.hasPermission}
-            maskText="您无该智能体权限"
-            fixedSelection={
-              !!conversationInfo?.agent?.sandboxId ||
-              !!conversationInfo?.sandboxServerId ||
-              isSelectionLocked ||
-              hasUserSentMessage
-            }
-            isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
-          />
         </div>
       </div>
     );
@@ -1272,61 +1337,62 @@ const Chat: React.FC = () => {
                         )}
                     </>
                   )
-                : // 通用型
-                  isFileTreeVisible && (
-                    <div
-                      className={cx(
-                        styles['file-tree-sidebar'],
-                        'flex',
-                        'w-full',
-                      )}
-                    >
-                      <FileTreeView
-                        taskAgentSelectedFileId={taskAgentSelectedFileId}
-                        taskAgentSelectTrigger={taskAgentSelectTrigger}
-                        originalFiles={fileTreeData}
-                        fileTreeDataLoading={fileTreeDataLoading}
-                        targetId={id?.toString() || ''}
-                        viewMode={viewMode}
-                        readOnly={false}
-                        // 切换视图、远程桌面模式
-                        onViewModeChange={onViewModeChange}
-                        // 导出项目
-                        onExportProject={handleExportProject}
-                        // 上传文件
-                        onUploadFiles={handleUploadMultipleFiles}
-                        // 重命名文件
-                        onRenameFile={handleConfirmRenameFile}
-                        // 新建文件、文件夹
-                        onCreateFileNode={handleCreateFileNode}
-                        // 删除文件
-                        onDeleteFile={handleDeleteFile}
-                        // 保存文件
-                        onSaveFiles={handleSaveFiles}
-                        // 重启容器
-                        onRestartServer={() => restartVncPod(id)}
-                        // 重启智能体
-                        onRestartAgent={() => restartAgent(id)}
-                        // 关闭整个面板
-                        onClose={closePreviewView}
-                        // 文件树是否固定（用户点击后固定）
-                        isFileTreePinned={isFileTreePinned}
-                        // 文件树固定状态变化回调
-                        onFileTreePinnedChange={setIsFileTreePinned}
-                        isCanDeleteSkillFile={true}
-                        // 刷新文件树回调
-                        onRefreshFileTree={() => handleRefreshFileList(id)}
-                        // VNC 空闲检测配置（仅通用型智能体启用）
-                        idleDetection={{
-                          enabled:
-                            effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-                          onIdleTimeout: () => openPreviewView(id),
-                        }}
-                        // 是否隐藏远程桌面
-                        hideDesktop={effectiveAgent?.hideDesktop}
-                      />
-                    </div>
-                  )
+                : null
+              // : // 通用型
+              //   isFileTreeVisible && (
+              //     <div
+              //       className={cx(
+              //         styles['file-tree-sidebar'],
+              //         'flex',
+              //         'w-full',
+              //       )}
+              //     >
+              //       <FileTreeView
+              //         taskAgentSelectedFileId={taskAgentSelectedFileId}
+              //         taskAgentSelectTrigger={taskAgentSelectTrigger}
+              //         originalFiles={fileTreeData}
+              //         fileTreeDataLoading={fileTreeDataLoading}
+              //         targetId={id?.toString() || ''}
+              //         viewMode={viewMode}
+              //         readOnly={false}
+              //         // 切换视图、远程桌面模式
+              //         onViewModeChange={onViewModeChange}
+              //         // 导出项目
+              //         onExportProject={handleExportProject}
+              //         // 上传文件
+              //         onUploadFiles={handleUploadMultipleFiles}
+              //         // 重命名文件
+              //         onRenameFile={handleConfirmRenameFile}
+              //         // 新建文件、文件夹
+              //         onCreateFileNode={handleCreateFileNode}
+              //         // 删除文件
+              //         onDeleteFile={handleDeleteFile}
+              //         // 保存文件
+              //         onSaveFiles={handleSaveFiles}
+              //         // 重启容器
+              //         onRestartServer={() => restartVncPod(id)}
+              //         // 重启智能体
+              //         onRestartAgent={() => restartAgent(id)}
+              //         // 关闭整个面板
+              //         onClose={closePreviewView}
+              //         // 文件树是否固定（用户点击后固定）
+              //         isFileTreePinned={isFileTreePinned}
+              //         // 文件树固定状态变化回调
+              //         onFileTreePinnedChange={setIsFileTreePinned}
+              //         isCanDeleteSkillFile={true}
+              //         // 刷新文件树回调
+              //         onRefreshFileTree={() => handleRefreshFileList(id)}
+              //         // VNC 空闲检测配置（仅通用型智能体启用）
+              //         idleDetection={{
+              //           enabled:
+              //             effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+              //           onIdleTimeout: () => openPreviewView(id),
+              //         }}
+              //         // 是否隐藏远程桌面
+              //         hideDesktop={effectiveAgent?.hideDesktop}
+              //       />
+              //     </div>
+              //   )
             }
           />
         </div>

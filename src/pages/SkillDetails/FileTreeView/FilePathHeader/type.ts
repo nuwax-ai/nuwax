@@ -66,12 +66,12 @@ export interface FilePathHeaderProps {
   isFileTreePinned?: boolean;
   /** 文件树展开/折叠回调 */
   onFileTreeToggle?: () => void;
-  // /** 刷新文件树回调 */
-  // onRefreshFileTree?: () => void;
-  // /** 是否正在刷新文件树 */
-  // isRefreshingFileTree?: boolean;
-  // // 是否显示刷新按钮
-  // showRefreshButton?: boolean;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: () => void;
+  /** 是否正在刷新文件树 */
+  isRefreshingFileTree?: boolean;
+  // 是否显示刷新按钮
+  showRefreshButton?: boolean;
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop?: boolean;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
