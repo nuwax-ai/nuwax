@@ -967,6 +967,7 @@ const Chat: React.FC = () => {
     }
   };
 
+  // 左侧内容
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -985,7 +986,7 @@ const Chat: React.FC = () => {
               {!isSidebarVisible && !isMobile && (
                 <TooltipIcon
                   title="查看智能体详情"
-                  className={cx(styles['icon-nav'])}
+                  className={cx(styles['icon-box'])}
                   icon={<SvgIcon name="icons-nav-sidebar" />}
                   onClick={() => {
                     hidePagePreview();
@@ -1006,7 +1007,7 @@ const Chat: React.FC = () => {
                 !pagePreviewData && (
                   <TooltipIcon
                     title="打开预览页面"
-                    className={cx(styles['icon-nav'])}
+                    className={cx(styles['icon-box'])}
                     icon={<SvgIcon name="icons-nav-ecosystem" />}
                     onClick={() => {
                       sidebarRef.current?.close();
@@ -1026,7 +1027,7 @@ const Chat: React.FC = () => {
                         ? '关闭文件预览'
                         : '打开文件预览'
                     }
-                    className={cx(styles['icon-nav'], {
+                    className={cx(styles['icon-box'], {
                       [styles['active']]:
                         isFileTreeVisible && viewMode === 'preview',
                     })}
@@ -1041,7 +1042,7 @@ const Chat: React.FC = () => {
                         ? '关闭智能体电脑'
                         : '打开智能体电脑'
                     }
-                    className={cx(styles['icon-nav'], {
+                    className={cx(styles['icon-box'], {
                       [styles['active']]:
                         isFileTreeVisible && viewMode === 'desktop',
                     })}
@@ -1270,6 +1271,7 @@ const Chat: React.FC = () => {
       </div>
     );
   };
+
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
@@ -1320,7 +1322,6 @@ const Chat: React.FC = () => {
               effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
             }
             // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-            // className={cx(isFileTreeVisible && 'flex-1')}
             left={effectiveAgent?.hideChatArea ? null : LeftContent()}
             right={
               effectiveAgent?.type !== AgentTypeEnum.TaskAgent

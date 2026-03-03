@@ -32,8 +32,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   conversationId,
   targetNode,
   viewMode = 'preview',
-  // onViewModeChange,
-  // showViewModeButtons = true,
   onRestartServer,
   onRestartAgent,
   onImportProject,
@@ -58,16 +56,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreeVisible = false,
   isFileTreePinned = false,
   onFileTreeToggle,
-  // 刷新文件树
-  // onRefreshFileTree,
-  // // 是否正在刷新文件树
-  // isRefreshingFileTree = false,
-  // // 是否显示刷新按钮
-  // showRefreshButton = true,
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop = false,
-  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
-  // hideDesktop = HideDesktopEnum.No,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -90,37 +80,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   const [shareType, setShareType] = useState<'CONVERSATION' | 'DESKTOP'>(
     'CONVERSATION',
   );
-  // 分享文件
-  // const onSharePreviewFile = async () => {
-  //   const data: AgentConversationShareParams = {
-  //     conversationId,
-  //     type: 'CONVERSATION',
-  //     content: targetNode?.fileProxyUrl || '',
-  //   };
-
-  //   const { data: shareData, code } = await apiAgentConversationShare(data);
-  //   if (code === SUCCESS_CODE) {
-  //     const baseUrl = window?.location?.origin || '';
-  //     const path = '/static/file-preview.html';
-
-  //     const query = new URLSearchParams();
-  //     query.set('sk', shareData?.shareKey);
-  //     query.set(
-  //       'isDev',
-  //       process.env.NODE_ENV === 'development' ? 'true' : 'false',
-  //     );
-  //     const previewUrl = baseUrl + path + '?' + query.toString();
-
-  //     // 复制到剪切板
-  //     copyTextToClipboard(previewUrl);
-  //     message.success('分享成功，链接已复制到剪切板');
-  //   }
-  // };
-
-  // 分享桌面
-  // const onShareDesktop = () => {
-  //   setShareDesktopModalVisible(true);
-  // };
 
   // 分享
   const onShareAction = (mode: 'preview' | 'desktop') => {
@@ -130,33 +89,25 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
     // 分享文件
     if (mode === 'preview') {
-      // onSharePreviewFile();
       setShareType('CONVERSATION');
     }
 
     // 分享桌面
     if (mode === 'desktop') {
-      // onShareDesktop();
       setShareType('DESKTOP');
     }
     setShareDesktopModalVisible(true);
   };
 
   return (
-    <div
-      className={cx(
-        styles.filePathHeader,
-        // { [styles['pl-8']]: !isFullscreen },
-        className,
-      )}
-    >
+    <div className={cx(styles.filePathHeader, className)}>
       {/* 文件树展开/折叠图标 */}
       {viewMode !== 'desktop' && showFileTreeToggleButton && (
-        <Tooltip
-          title={isFileTreeVisible ? '点击收起文件树' : '点击展开文件树'}
-        >
-          <div className={cx('flex', 'items-center', 'gap-4')}>
-            <span>文件预览</span>
+        <div className={cx('flex', 'items-center', 'gap-4')}>
+          <span>文件预览</span>
+          <Tooltip
+            title={isFileTreeVisible ? '点击收起文件树' : '点击展开文件树'}
+          >
             <Button
               type="text"
               size="small"
@@ -172,8 +123,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
               })}
             />
-          </div>
-        </Tooltip>
+          </Tooltip>
+        </div>
       )}
       {/* 左侧：文件信息 */}
       {/* 计算是否有子内容：preview 模式需要检查是否有 fileDetails 或 Segmented，desktop 模式总是有 pc-box */}
