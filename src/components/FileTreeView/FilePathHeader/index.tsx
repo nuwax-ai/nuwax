@@ -32,7 +32,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   conversationId,
   targetNode,
   viewMode = 'preview',
-  onViewModeChange,
+  // onViewModeChange,
   // showViewModeButtons = true,
   onRestartServer,
   onRestartAgent,
@@ -424,15 +424,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           {showMoreActions && (
             <MoreActionsMenu
               onImportProject={onImportProject}
-              onRestartServer={
-                onRestartServer
-                  ? () => {
-                      onRestartServer();
-                      // 切换到智能体电脑 tab
-                      onViewModeChange?.('desktop');
-                    }
-                  : undefined
-              }
+              onRestartServer={onRestartServer}
               onRestartAgent={onRestartAgent}
               onExportProject={onExportProject}
             />

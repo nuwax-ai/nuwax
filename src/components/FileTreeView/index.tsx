@@ -75,7 +75,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 删除文件回调
       onDeleteFile,
       // 切换视图模式回调
-      onViewModeChange,
+      // onViewModeChange,
       // 保存文件回调
       onSaveFiles,
       // 导入项目回调
@@ -1192,15 +1192,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           handleRefreshFileContent();
         }
 
-        onViewModeChange?.(mode);
+        // onViewModeChange?.(mode);
       },
       [
         selectedFileNode,
-        viewFileType,
-        onViewModeChange,
+        // viewFileType,
+        // onViewModeChange,
         handleRefreshFileContent,
       ],
     );
+
+    useEffect(() => {
+      if (viewMode) {
+        // 切换到智能体电脑 tab
+        handleChangeViewMode(viewMode);
+      }
+    }, [viewMode]);
 
     /**
      * 处理视图文件类型切换
@@ -1528,6 +1535,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 1. 调用父组件的重启逻辑
           await onRestartServer();
 
+          // // 切换到智能体电脑 tab
+          // onViewModeChange?.('desktop');
+
           // 2. 刷新 VNC (如果是桌面模式)
           if (viewMode === 'desktop' && vncPreviewRef.current) {
             // 先断开连接
@@ -1537,6 +1547,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               vncPreviewRef.current?.connect();
             }, 0);
           }
+          // else {
+          //   // 切换到智能体电脑 tab
+          //   onViewModeChange?.('desktop');
+          // }
         } catch (error) {
           console.error('Restart server failed:', error);
           // message.error('重启失败，请重试');
@@ -1559,7 +1573,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 当前视图模式
           viewMode={viewMode}
           // 视图模式切换回调
-          onViewModeChange={handleChangeViewMode}
+          // onViewModeChange={handleChangeViewMode}
           // 是否显示视图模式切换按钮
           showViewModeButtons={showViewModeButtons}
           // 是否显示文件树展开/折叠按钮

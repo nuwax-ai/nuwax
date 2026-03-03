@@ -11,7 +11,7 @@ export interface FilePathHeaderProps {
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 视图模式切换回调 */
-  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
+  // onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   // 是否显示视图模式切换按钮
   showViewModeButtons?: boolean;
   /** 重启服务器回调 */

@@ -237,11 +237,6 @@ export default () => {
     },
   });
 
-  // 重启智能体电脑
-  const restartVncPod = useCallback(async (cId: number) => {
-    return await apiRestartPod(cId);
-  }, []);
-
   // 重启智能体
   const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
     apiRestartAgent,
@@ -321,6 +316,18 @@ export default () => {
       console.error('打开远程桌面视图失败', error);
     }
   }, []);
+
+  // 重启智能体电脑
+  const restartVncPod = useCallback(
+    async (cId: number) => {
+      if (viewMode !== 'desktop') {
+        // 切换到智能体电脑 tab
+        openDesktopView(cId);
+      }
+      return await apiRestartPod(cId);
+    },
+    [viewMode],
+  );
 
   // 关闭预览视图
   const closePreviewView = useCallback(() => {

@@ -57,7 +57,7 @@ export interface FileTreeViewProps {
   /** 删除文件回调 */
   onDeleteFile?: (node: FileNode) => Promise<boolean>;
   /** 视图模式切换回调 */
-  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
+  // onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
   // 导入项目

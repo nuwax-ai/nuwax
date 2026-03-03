@@ -391,7 +391,7 @@ const AgentDetails: React.FC = () => {
                       type="text"
                       icon={
                         <SvgIcon
-                          name="icons-nav-components"
+                          name="icons-nav-computer-star"
                           className={cx(styles['icons-nav-sidebar'])}
                         />
                       }

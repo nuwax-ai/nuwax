@@ -59,7 +59,7 @@ import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -681,12 +681,60 @@ const Chat: React.FC = () => {
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  // 显示文件树
+  /**
+   * 切换文件树「预览」视图
+   *
+   * 需求：
+   * 1. 当 isFileTreeVisible 为 false 时：
+   *    - 点击「预览」按钮，打开文件树并展示预览视图。
+   * 2. 当 isFileTreeVisible 为 true 时：
+   *    - 当前为 preview 时，再次点击「预览」按钮，关闭文件树视图。
+   *    - 当前为 desktop 时，点击「预览」按钮，保持文件树显示，仅切换到预览视图。
+   */
   const handleFileTreeVisible = () => {
-    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
-    sidebarRef.current?.close();
-    // 触发文件列表刷新事件
-    openPreviewView(id);
+    if (!isFileTreeVisible) {
+      // 文件树当前未显示：关闭 AgentSidebar，打开预览视图
+      sidebarRef.current?.close();
+      openPreviewView(id);
+      return;
+    }
+
+    // 文件树已显示
+    if (viewMode === 'preview') {
+      // 当前就是预览视图：再次点击关闭视图
+      closePreviewView();
+    } else {
+      // 当前是其他模式（例如 desktop）：切换为预览视图但保持文件树显示
+      openPreviewView(id);
+    }
+  };
+
+  /**
+   * 切换「智能体电脑」视图∂∂∂∂
+   *
+   * 需求：
+   * 1. 当 isFileTreeVisible 为 false 时：
+   *    - 点击「智能体电脑」按钮，打开文件树并展示 desktop 视图。
+   * 2. 当 isFileTreeVisible 为 true 时：
+   *    - 当前为 desktop 时，再次点击按钮，关闭视图。
+   *    - 当前为 preview 时，点击按钮，保持文件树显示，仅切换到 desktop 视图。
+   */
+  const handleOpenDesktopView = () => {
+    if (!isFileTreeVisible) {
+      // 文件树当前未显示：关闭 AgentSidebar，打开智能体电脑视图
+      sidebarRef.current?.close();
+      openDesktopView(id);
+      return;
+    }
+
+    // 文件树已显示
+    if (viewMode === 'desktop') {
+      // 当前就是智能体电脑视图：再次点击关闭视图
+      closePreviewView();
+    } else {
+      // 当前是其他模式（例如 preview）：切换为智能体电脑视图但保持文件树显示
+      openDesktopView(id);
+    }
   };
 
   // 新建文件（空内容）、文件夹
@@ -921,13 +969,13 @@ const Chat: React.FC = () => {
   /**
    * 切换视图、远程桌面模式
    */
-  const onViewModeChange = (mode: 'preview' | 'desktop') => {
-    if (mode === 'desktop') {
-      openDesktopView(id);
-    } else {
-      openPreviewView(id);
-    }
-  };
+  // const onViewModeChange = (mode: 'preview' | 'desktop') => {
+  //   if (mode === 'desktop') {
+  //     openDesktopView(id);
+  //   } else {
+  //     openPreviewView(id);
+  //   }
+  // };
 
   const LeftContent = () => {
     return (
@@ -950,19 +998,15 @@ const Chat: React.FC = () => {
                 setConversationInfo(value);
               }}
             />
-            <div>
+            <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isSidebarVisible && !isMobile && (
                 <Tooltip title="查看智能体详情">
                   <Button
                     type="text"
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
+                    className={cx(styles['icon-nav'])}
+                    icon={<SvgIcon name="icons-nav-sidebar" />}
                     onClick={() => {
                       hidePagePreview();
                       // 先关闭文件树
@@ -984,12 +1028,8 @@ const Chat: React.FC = () => {
                   <Tooltip title="打开预览页面">
                     <Button
                       type="text"
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-ecosystem"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
+                      className={cx(styles['icon-nav'])}
+                      icon={<SvgIcon name="icons-nav-ecosystem" />}
                       onClick={() => {
                         sidebarRef.current?.close();
                         closePreviewView(); // 关闭文件树
@@ -1002,18 +1042,39 @@ const Chat: React.FC = () => {
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
                 // !isFileTreeVisible &&
-                <Tooltip title="文件预览或打开智能体电脑">
-                  <Button
-                    type="text"
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-components"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
+                <>
+                  {/* 文件预览视图 */}
+                  <Tooltip title="文件预览">
+                    <Button
+                      type="text"
+                      className={cx(styles['icon-nav'], {
+                        [styles['active']]:
+                          isFileTreeVisible && viewMode === 'preview',
+                      })}
+                      icon={<MenuUnfoldOutlined />}
+                      onClick={handleFileTreeVisible}
+                    />
+                  </Tooltip>
+
+                  {/* 智能体电脑视图 */}
+                  <Tooltip
+                    title={
+                      isFileTreeVisible && viewMode === 'desktop'
+                        ? '关闭智能体电脑'
+                        : '打开智能体电脑'
                     }
-                    onClick={handleFileTreeVisible}
-                  />
-                </Tooltip>
+                  >
+                    <Button
+                      type="text"
+                      className={cx(styles['icon-nav'], {
+                        [styles['active']]:
+                          isFileTreeVisible && viewMode === 'desktop',
+                      })}
+                      icon={<SvgIcon name="icons-nav-computer-star" />}
+                      onClick={handleOpenDesktopView}
+                    />
+                  </Tooltip>
+                </>
               )}
             </div>
           </div>
@@ -1202,7 +1263,7 @@ const Chat: React.FC = () => {
                   viewMode={viewMode}
                   readOnly={false}
                   // 切换视图、远程桌面模式
-                  onViewModeChange={onViewModeChange}
+                  // onViewModeChange={onViewModeChange}
                   // 导出项目
                   onExportProject={handleExportProject}
                   // 上传文件

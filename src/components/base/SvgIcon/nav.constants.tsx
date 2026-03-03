@@ -33,6 +33,8 @@ import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
 
+import { ReactComponent as IconComputerStarSvgFile } from '@/assets/icons/common/icon_computer_star.svg';
+
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -103,4 +105,5 @@ export default {
   'icons-nav-computer': ComputerSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
+  'icons-nav-computer-star': IconComputerStarSvgFile,
 } as Record<string, React.FC>;

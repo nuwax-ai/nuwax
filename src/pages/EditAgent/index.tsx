@@ -121,7 +121,6 @@ const EditAgent: React.FC = () => {
     // 处理文件列表刷新事件
     handleRefreshFileList,
     openPreviewView,
-    openDesktopView,
     restartVncPod,
     restartAgent,
     taskAgentSelectedFileId,
@@ -343,21 +342,21 @@ const EditAgent: React.FC = () => {
   const devConversationId = agentConfigInfo?.devConversationId;
 
   // 切换视图模式
-  const onViewModeChange = useCallback(
-    (mode: 'preview' | 'desktop') => {
-      if (!devConversationId) {
-        messageAntd.warning('会话ID不存在，无法切换视图模式');
-        return;
-      }
+  // const onViewModeChange = useCallback(
+  //   (mode: 'preview' | 'desktop') => {
+  //     if (!devConversationId) {
+  //       messageAntd.warning('会话ID不存在，无法切换视图模式');
+  //       return;
+  //     }
 
-      if (mode === 'desktop') {
-        openDesktopView(devConversationId);
-      } else {
-        openPreviewView(devConversationId);
-      }
-    },
-    [devConversationId, openPreviewView, openDesktopView],
-  );
+  //     if (mode === 'desktop') {
+  //       openDesktopView(devConversationId);
+  //     } else {
+  //       openPreviewView(devConversationId);
+  //     }
+  //   },
+  //   [devConversationId, openPreviewView, openDesktopView],
+  // );
 
   // 更新智能体信息
   const handleChangeAgent = useCallback(
@@ -423,7 +422,9 @@ const EditAgent: React.FC = () => {
 
       // 如果隐藏远程桌面，则切换到文件预览模式
       if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
-        onViewModeChange('preview');
+        // onViewModeChange('preview');
+        // 打开文件预览模式
+        openPreviewView(devConversationId);
       }
 
       const {
@@ -1088,7 +1089,7 @@ const EditAgent: React.FC = () => {
                       >
                         {/*文件树侧边栏 - 只在文件树可见时显示 */}
                         <FileTreeView
-                          headerClassName={styles['file-tree-header']}
+                          // headerClassName={styles['file-tree-header']}
                           taskAgentSelectedFileId={taskAgentSelectedFileId}
                           taskAgentSelectTrigger={taskAgentSelectTrigger}
                           originalFiles={fileTreeData}
@@ -1096,8 +1097,6 @@ const EditAgent: React.FC = () => {
                           targetId={devConversationId.toString()}
                           viewMode={viewMode}
                           readOnly={false}
-                          // 切换视图、远程桌面模式
-                          onViewModeChange={onViewModeChange}
                           // 导出项目
                           onExportProject={handleExportProject}
                           // 上传文件
