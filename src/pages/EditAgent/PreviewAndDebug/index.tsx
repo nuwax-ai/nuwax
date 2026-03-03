@@ -407,9 +407,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             isShowPreview={
               !pagePreviewData && !!agentConfigInfo?.expandPageArea
             }
-            onShowPreview={() => {
-              onOpenPreview?.();
-            }}
+            onShowPreview={onOpenPreview}
             // 打开文件面板
             onOpenFilePanel={onOpenFilePanel}
             // 是否显示文件面板: 通用型智能体 + 文件树未打开

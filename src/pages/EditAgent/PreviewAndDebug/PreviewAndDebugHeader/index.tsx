@@ -1,6 +1,6 @@
 import { SvgIcon } from '@/components/base';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EditAgentShowType } from '@/types/enums/space';
-import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -18,6 +18,9 @@ interface PreviewAndDebugHeaderProps {
   showFilePanel?: boolean;
 }
 
+/**
+ * 预览与调试头部组件
+ */
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
@@ -37,55 +40,36 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
       )}
     >
       <h3>预览与调试</h3>
-      <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
-        {/*<MessageOutlined className={cx('cursor-pointer')} />*/}
+      <div className={cx('flex', 'items-center')}>
         {(showType === EditAgentShowType.Version_History ||
           showType === EditAgentShowType.Show_Stand ||
           showType === EditAgentShowType.Hide) && (
-          <Button
-            type="text"
-            className={cx(styles.debug)}
-            icon={
-              <SvgIcon name="icons-common-debug" style={{ fontSize: 16 }} />
-            }
+          <TooltipIcon
+            title="调试"
+            className={cx(styles['icon-box'])}
+            icon={<SvgIcon name="icons-common-debug" />}
             onClick={onPressDebug}
-          >
-            调试
-          </Button>
+          />
         )}
 
         {/*打开预览页面*/}
         {isShowPreview && (
-          <Tooltip title="打开预览页面">
-            <Button
-              type="text"
-              className={cx(styles.debug)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-ecosystem"
-                  className={cx(styles.svg)}
-                />
-              }
-              onClick={() => onShowPreview?.()}
-            />
-          </Tooltip>
+          <TooltipIcon
+            title="打开预览页面"
+            className={cx(styles['icon-box'])}
+            icon={<SvgIcon name="icons-nav-ecosystem" />}
+            onClick={onShowPreview}
+          />
         )}
 
-        {/*文件树切换按钮*/}
+        {/*文件预览切换按钮*/}
         {showFilePanel && (
-          <Tooltip title="文件预览或打开智能体电脑">
-            <Button
-              type="text"
-              className={cx(styles.preview)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-components"
-                  className={cx(styles.svg)}
-                />
-              }
-              onClick={onOpenFilePanel}
-            />
-          </Tooltip>
+          <TooltipIcon
+            title="文件预览或打开智能体电脑"
+            className={cx(styles['icon-box'])}
+            icon={<SvgIcon name="icons-nav-components" />}
+            onClick={onOpenFilePanel}
+          />
         )}
       </div>
     </header>
