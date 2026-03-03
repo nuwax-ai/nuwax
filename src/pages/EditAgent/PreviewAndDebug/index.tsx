@@ -42,8 +42,6 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
-  // 打开文件面板
-  onOpenFilePanel?: () => void;
 }
 
 /**
@@ -55,7 +53,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
-  onOpenFilePanel,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -98,6 +95,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setFinalResult,
     setIsLoadingOtherInterface,
     clearFilePanelInfo,
+    viewMode,
+    openPreviewView,
+    openDesktopView,
+    closePreviewView,
     isFileTreeVisible,
     // 加载更多消息相关
     isMoreMessage,
@@ -372,6 +373,58 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     );
   };
 
+  /**
+   * 打开 / 切换 文件预览面板
+   * 行为与聊天页面保持一致：
+   * - 文件树未打开：打开预览视图
+   * - 文件树已打开且当前为 preview：再次点击关闭
+   * - 文件树已打开且当前为 desktop：切换为 preview
+   */
+  const handleOpenPreviewPanel = () => {
+    const convId = devConversationIdRef.current;
+    if (!convId) {
+      message.warning('会话ID不存在，无法打开文件预览');
+      return;
+    }
+
+    if (!isFileTreeVisible) {
+      openPreviewView(convId);
+      return;
+    }
+
+    if (viewMode === 'preview') {
+      closePreviewView();
+    } else {
+      openPreviewView(convId);
+    }
+  };
+
+  /**
+   * 打开 / 切换 智能体电脑面板
+   * 行为与聊天页面保持一致：
+   * - 文件树未打开：打开智能体电脑视图
+   * - 文件树已打开且当前为 desktop：再次点击关闭
+   * - 文件树已打开且当前为 preview：切换为 desktop
+   */
+  const handleOpenDesktopPanel = () => {
+    const convId = devConversationIdRef.current;
+    if (!convId) {
+      message.warning('会话ID不存在，无法打开智能体电脑');
+      return;
+    }
+
+    if (!isFileTreeVisible) {
+      openDesktopView(convId);
+      return;
+    }
+
+    if (viewMode === 'desktop') {
+      closePreviewView();
+    } else {
+      openDesktopView(convId);
+    }
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
@@ -408,13 +461,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               !pagePreviewData && !!agentConfigInfo?.expandPageArea
             }
             onShowPreview={onOpenPreview}
-            // 打开文件面板
-            onOpenFilePanel={onOpenFilePanel}
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={
-              !isFileTreeVisible &&
+              // !isFileTreeVisible &&
               agentConfigInfo?.type === AgentTypeEnum.TaskAgent
             }
+            // 文件预览 / 智能体电脑切换
+            isFileTreeVisible={isFileTreeVisible}
+            viewMode={viewMode}
+            onOpenPreviewPanel={handleOpenPreviewPanel}
+            onOpenDesktopPanel={handleOpenDesktopPanel}
           />
           <div
             className={cx(

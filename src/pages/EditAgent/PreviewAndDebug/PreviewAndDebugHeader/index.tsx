@@ -12,10 +12,16 @@ interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
   onShowPreview?: () => void;
   onPressDebug: () => void;
-  // 打开文件面板
-  onOpenFilePanel?: () => void;
-  // 是否显示文件面板
+  /** 是否显示文件面板相关图标（仅通用型智能体时显示） */
   showFilePanel?: boolean;
+  /** 当前是否已显示文件面板（文件树） */
+  isFileTreeVisible?: boolean;
+  /** 当前文件视图模式：预览 或 智能体电脑 */
+  viewMode?: 'preview' | 'desktop';
+  /** 打开 / 切换到 文件预览 视图 */
+  onOpenPreviewPanel?: () => void;
+  /** 打开 / 切换到 智能体电脑 视图 */
+  onOpenDesktopPanel?: () => void;
 }
 
 /**
@@ -25,8 +31,11 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
   isShowPreview,
-  onOpenFilePanel,
   showFilePanel,
+  isFileTreeVisible,
+  viewMode,
+  onOpenPreviewPanel,
+  onOpenDesktopPanel,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -62,14 +71,37 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
           />
         )}
 
-        {/*文件预览切换按钮*/}
+        {/* 文件预览 / 智能体电脑切换按钮 */}
         {showFilePanel && (
-          <TooltipIcon
-            title="文件预览或打开智能体电脑"
-            className={cx(styles['icon-box'])}
-            icon={<SvgIcon name="icons-nav-components" />}
-            onClick={onOpenFilePanel}
-          />
+          <>
+            {/* 文件预览视图 */}
+            <TooltipIcon
+              title={
+                isFileTreeVisible && viewMode === 'preview'
+                  ? '关闭文件预览'
+                  : '打开文件预览'
+              }
+              className={cx(styles['icon-box'], {
+                [styles['active']]: isFileTreeVisible && viewMode === 'preview',
+              })}
+              icon={<SvgIcon name="icons-nav-components" />}
+              onClick={onOpenPreviewPanel}
+            />
+
+            {/* 智能体电脑视图 */}
+            <TooltipIcon
+              title={
+                isFileTreeVisible && viewMode === 'desktop'
+                  ? '关闭智能体电脑'
+                  : '打开智能体电脑'
+              }
+              className={cx(styles['icon-box'], {
+                [styles['active']]: isFileTreeVisible && viewMode === 'desktop',
+              })}
+              icon={<SvgIcon name="icons-nav-computer-star" />}
+              onClick={onOpenDesktopPanel}
+            />
+          </>
         )}
       </div>
     </header>

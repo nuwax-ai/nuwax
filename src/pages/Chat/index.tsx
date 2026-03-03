@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -59,8 +60,8 @@ import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { Button, Form, message as messageAntd, Tooltip } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
@@ -966,32 +967,12 @@ const Chat: React.FC = () => {
     }
   };
 
-  /**
-   * 切换视图、远程桌面模式
-   */
-  // const onViewModeChange = (mode: 'preview' | 'desktop') => {
-  //   if (mode === 'desktop') {
-  //     openDesktopView(id);
-  //   } else {
-  //     openPreviewView(id);
-  //   }
-  // };
-
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
-            {/* 左侧标题 */}
-            {/*<Typography.Title*/}
-            {/*  level={5}*/}
-            {/*  className={cx(styles.title, 'clip-path-animation')}*/}
-            {/*  ellipsis={{ rows: 1, expandable: false, symbol: '...' }}*/}
-            {/*>*/}
-            {/*  {conversationInfo?.topic}*/}
-            {/*</Typography.Title>*/}
-
             <DropdownChangeName
               conversationInfo={conversationInfo}
               setConversationInfo={(value) => {
@@ -1002,78 +983,71 @@ const Chat: React.FC = () => {
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isSidebarVisible && !isMobile && (
-                <Tooltip title="查看智能体详情">
-                  <Button
-                    type="text"
-                    className={cx(styles['icon-nav'])}
-                    icon={<SvgIcon name="icons-nav-sidebar" />}
-                    onClick={() => {
-                      hidePagePreview();
-                      // 先关闭文件树
-                      closePreviewView();
-                      // 然后打开 AgentSidebar
-                      // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                      setTimeout(() => {
-                        sidebarRef.current?.open();
-                      }, 100);
-                    }}
-                  />
-                </Tooltip>
+                <TooltipIcon
+                  title="查看智能体详情"
+                  className={cx(styles['icon-nav'])}
+                  icon={<SvgIcon name="icons-nav-sidebar" />}
+                  onClick={() => {
+                    hidePagePreview();
+                    // 先关闭文件树
+                    closePreviewView();
+                    // 然后打开 AgentSidebar
+                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
+                    setTimeout(() => {
+                      sidebarRef.current?.open();
+                    }, 100);
+                  }}
+                />
               )}
 
               {/*打开预览页面*/}
               {!!effectiveAgent?.expandPageArea &&
                 !!effectiveAgent?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Tooltip title="打开预览页面">
-                    <Button
-                      type="text"
-                      className={cx(styles['icon-nav'])}
-                      icon={<SvgIcon name="icons-nav-ecosystem" />}
-                      onClick={() => {
-                        sidebarRef.current?.close();
-                        closePreviewView(); // 关闭文件树
-                        handleOpenPreview(effectiveAgent);
-                      }}
-                    />
-                  </Tooltip>
+                  <TooltipIcon
+                    title="打开预览页面"
+                    className={cx(styles['icon-nav'])}
+                    icon={<SvgIcon name="icons-nav-ecosystem" />}
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      closePreviewView(); // 关闭文件树
+                      handleOpenPreview(effectiveAgent);
+                    }}
+                  />
                 )}
 
-              {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
+              {/* 通用智能体，文件预览/智能体电脑切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
-                // !isFileTreeVisible &&
                 <>
                   {/* 文件预览视图 */}
-                  <Tooltip title="文件预览">
-                    <Button
-                      type="text"
-                      className={cx(styles['icon-nav'], {
-                        [styles['active']]:
-                          isFileTreeVisible && viewMode === 'preview',
-                      })}
-                      icon={<MenuUnfoldOutlined />}
-                      onClick={handleFileTreeVisible}
-                    />
-                  </Tooltip>
+                  <TooltipIcon
+                    title={
+                      isFileTreeVisible && viewMode === 'preview'
+                        ? '关闭文件预览'
+                        : '打开文件预览'
+                    }
+                    className={cx(styles['icon-nav'], {
+                      [styles['active']]:
+                        isFileTreeVisible && viewMode === 'preview',
+                    })}
+                    icon={<SvgIcon name="icons-nav-components" />}
+                    onClick={handleFileTreeVisible}
+                  />
 
                   {/* 智能体电脑视图 */}
-                  <Tooltip
+                  <TooltipIcon
                     title={
                       isFileTreeVisible && viewMode === 'desktop'
                         ? '关闭智能体电脑'
                         : '打开智能体电脑'
                     }
-                  >
-                    <Button
-                      type="text"
-                      className={cx(styles['icon-nav'], {
-                        [styles['active']]:
-                          isFileTreeVisible && viewMode === 'desktop',
-                      })}
-                      icon={<SvgIcon name="icons-nav-computer-star" />}
-                      onClick={handleOpenDesktopView}
-                    />
-                  </Tooltip>
+                    className={cx(styles['icon-nav'], {
+                      [styles['active']]:
+                        isFileTreeVisible && viewMode === 'desktop',
+                    })}
+                    icon={<SvgIcon name="icons-nav-computer-star" />}
+                    onClick={handleOpenDesktopView}
+                  />
                 </>
               )}
             </div>
@@ -1108,11 +1082,6 @@ const Chat: React.FC = () => {
                   <div
                     ref={loadMoreRef}
                     className={cx(styles['load-more-container'])}
-                    style={{
-                      textAlign: 'center',
-                      padding: '16px 0',
-                      color: '#999',
-                    }}
                   >
                     {loadingMore ? (
                       <span>
@@ -1262,8 +1231,6 @@ const Chat: React.FC = () => {
                   targetId={id?.toString() || ''}
                   viewMode={viewMode}
                   readOnly={false}
-                  // 切换视图、远程桌面模式
-                  // onViewModeChange={onViewModeChange}
                   // 导出项目
                   onExportProject={handleExportProject}
                   // 上传文件
@@ -1399,61 +1366,6 @@ const Chat: React.FC = () => {
                     </>
                   )
                 : null
-              // : // 通用型
-              //   isFileTreeVisible && (
-              //     <div
-              //       className={cx(
-              //         styles['file-tree-sidebar'],
-              //         'flex',
-              //         'w-full',
-              //       )}
-              //     >
-              //       <FileTreeView
-              //         taskAgentSelectedFileId={taskAgentSelectedFileId}
-              //         taskAgentSelectTrigger={taskAgentSelectTrigger}
-              //         originalFiles={fileTreeData}
-              //         fileTreeDataLoading={fileTreeDataLoading}
-              //         targetId={id?.toString() || ''}
-              //         viewMode={viewMode}
-              //         readOnly={false}
-              //         // 切换视图、远程桌面模式
-              //         onViewModeChange={onViewModeChange}
-              //         // 导出项目
-              //         onExportProject={handleExportProject}
-              //         // 上传文件
-              //         onUploadFiles={handleUploadMultipleFiles}
-              //         // 重命名文件
-              //         onRenameFile={handleConfirmRenameFile}
-              //         // 新建文件、文件夹
-              //         onCreateFileNode={handleCreateFileNode}
-              //         // 删除文件
-              //         onDeleteFile={handleDeleteFile}
-              //         // 保存文件
-              //         onSaveFiles={handleSaveFiles}
-              //         // 重启容器
-              //         onRestartServer={() => restartVncPod(id)}
-              //         // 重启智能体
-              //         onRestartAgent={() => restartAgent(id)}
-              //         // 关闭整个面板
-              //         onClose={closePreviewView}
-              //         // 文件树是否固定（用户点击后固定）
-              //         isFileTreePinned={isFileTreePinned}
-              //         // 文件树固定状态变化回调
-              //         onFileTreePinnedChange={setIsFileTreePinned}
-              //         isCanDeleteSkillFile={true}
-              //         // 刷新文件树回调
-              //         onRefreshFileTree={() => handleRefreshFileList(id)}
-              //         // VNC 空闲检测配置（仅通用型智能体启用）
-              //         idleDetection={{
-              //           enabled:
-              //             effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-              //           onIdleTimeout: () => openPreviewView(id),
-              //         }}
-              //         // 是否隐藏远程桌面
-              //         hideDesktop={effectiveAgent?.hideDesktop}
-              //       />
-              //     </div>
-              //   )
             }
           />
         </div>

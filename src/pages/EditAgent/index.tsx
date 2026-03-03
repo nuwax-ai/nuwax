@@ -341,23 +341,6 @@ const EditAgent: React.FC = () => {
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
 
-  // 切换视图模式
-  // const onViewModeChange = useCallback(
-  //   (mode: 'preview' | 'desktop') => {
-  //     if (!devConversationId) {
-  //       messageAntd.warning('会话ID不存在，无法切换视图模式');
-  //       return;
-  //     }
-
-  //     if (mode === 'desktop') {
-  //       openDesktopView(devConversationId);
-  //     } else {
-  //       openPreviewView(devConversationId);
-  //     }
-  //   },
-  //   [devConversationId, openPreviewView, openDesktopView],
-  // );
-
   // 更新智能体信息
   const handleChangeAgent = useCallback(
     async (
@@ -422,7 +405,6 @@ const EditAgent: React.FC = () => {
 
       // 如果隐藏远程桌面，则切换到文件预览模式
       if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
-        // onViewModeChange('preview');
         // 打开文件预览模式
         openPreviewView(devConversationId);
       }
@@ -538,17 +520,6 @@ const EditAgent: React.FC = () => {
       );
     };
   }, [devConversationId]);
-
-  // 显示文件树
-  const handleFileTreeVisible = () => {
-    if (!devConversationId) {
-      messageAntd.warning('会话ID不存在，无法打开文件树');
-      return;
-    }
-
-    // 触发文件列表刷新事件
-    openPreviewView(devConversationId);
-  };
 
   // 新建文件（空内容）、文件夹
   const handleCreateFileNode = async (
@@ -872,7 +843,7 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     handleOpenPreview();
-  }, [agentConfigInfo?.expandPageArea, agentConfigInfo?.pageHomeIndex]);
+  }, [handleOpenPreview]);
 
   /**
    * 关闭预览
@@ -1062,8 +1033,6 @@ const EditAgent: React.FC = () => {
                     }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
-                    // 打开文件面板
-                    onOpenFilePanel={handleFileTreeVisible}
                   />
                 )
               }
