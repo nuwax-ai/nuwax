@@ -194,11 +194,14 @@ const ChatView: React.FC<ChatViewProps> = memo(
                       messageInfo.status === MessageStatusEnum.Loading,
                   })}
                 >
+                  {/* 思考内容 */}
                   <MarkdownRenderer
                     key={`${messageIdRef.current}`}
                     id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
                     conversationId={conversationId}
+                    answer={messageInfo?.text}
+                    thinking={messageInfo?.think}
                   />
                 </div>
               </div>

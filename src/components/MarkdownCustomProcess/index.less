@@ -5,8 +5,8 @@
   border-radius: 8px;
   margin: 10px 0;
   overflow: hidden;
-  // background: rgba(12, 20, 102, 4%);
-  border: 1px solid rgba(5, 5, 5, 6%);
+  background: rgba(12, 20, 102, 3%);
+  // border: 1px solid rgba(5, 5, 5, 6%);
 
   .process-header {
     display: flex;
@@ -24,7 +24,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       width: calc(100% - 146px);
-      line-height: 14px;
+      line-height: 16px;
     }
 
     .process-controls {
@@ -62,6 +62,10 @@
       }
 
       .status-error {
+        height: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
         color: #ff4d4f;
         font-size: 12px;
       }

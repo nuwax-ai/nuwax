@@ -13,4 +13,8 @@ export interface MarkdownRendererProps {
   headerActions?: boolean;
   // 会话 id
   conversationId?: string | number;
+  /** 答案内容 */
+  answer?: string;
+  /** 思考内容 */
+  thinking?: string;
 }

@@ -102,6 +102,8 @@ const PromptView: React.FC<PromptViewProps> = ({
                   headerActions={false}
                   markdownRef={markdownRef}
                   theme={theme}
+                  answer={messageInfo?.text}
+                  thinking={messageInfo?.think}
                 />
               </div>
             </div>
