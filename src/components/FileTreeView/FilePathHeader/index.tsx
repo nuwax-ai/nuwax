@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { USER_INFO } from '@/constants/home.constants';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
@@ -16,7 +17,6 @@ import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
-import { ReactComponent as PcIconSvg } from './pc.svg';
 import ShareDesktopModal from './ShareDesktopModal';
 import { FilePathHeaderProps } from './type';
 
@@ -97,6 +97,22 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       setShareType('DESKTOP');
     }
     setShareDesktopModalVisible(true);
+  };
+
+  // 获取 VNC 连接状态颜色
+  const getVncConnectStatusColor = (status: ConnectionStatus) => {
+    switch (status) {
+      case 'connected':
+        return '#3BB346';
+      case 'connecting':
+        return '#1890ff';
+      case 'disconnected':
+        return '#f50';
+      case 'error':
+        return '#ff4d4f';
+      default:
+        return 'transparent';
+    }
   };
 
   return (
@@ -190,20 +206,20 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 )}
             </>
           ) : (
-            <>
-              <div className={styles['pc-box']}>
-                <PcIconSvg />
-                <div className={styles.fileName}>
-                  {userInfo?.nickName || userInfo?.userName || '远程'}
-                  的智能体电脑
-                </div>
-              </div>
+            <div className={styles['pc-box']}>
               {vncConnectStatus && (
-                <div className={styles.vncConnectStatus}>
-                  {vncConnectStatus}
-                </div>
+                <div
+                  className={styles.vncConnectStatus}
+                  style={{
+                    backgroundColor: getVncConnectStatusColor(vncConnectStatus),
+                  }}
+                />
               )}
-            </>
+              <div className={styles.fileName}>
+                {userInfo?.nickName || userInfo?.userName || '远程'}
+                的智能体电脑
+              </div>
+            </div>
           )}
         </div>
       )}
