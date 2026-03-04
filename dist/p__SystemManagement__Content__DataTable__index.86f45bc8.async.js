@@ -1,1 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[9796],{59517:function(t,a,n){n.r(a);var e=n(52676),u=function(){return(0,e.jsx)("div",{children:"DataTable"})};a.default=u}}]);})();
