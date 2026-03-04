@@ -127,7 +127,7 @@ const RunOver: React.FC<RunOverProps> = ({
         {isThinking ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
-            <span className={cx(styles['status-name'])}>正在思考中...</span>
+            <span className={cx(styles['status-name'])}>正在思考</span>
           </>
         ) : messageInfo?.status === MessageStatusEnum.Loading ||
           messageInfo?.status === MessageStatusEnum.Incomplete ? (
