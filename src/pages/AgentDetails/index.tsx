@@ -55,7 +55,8 @@ const AgentDetails: React.FC = () => {
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
   // 获取 chat model 中的页面预览状态
-  const { showPagePreview } = useModel('chat');
+  const { pagePreviewData, hidePagePreview, showPagePreview } =
+    useModel('chat');
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -75,6 +76,12 @@ const AgentDetails: React.FC = () => {
   const [conversationId, setConversationId] = useState<number | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const sidebarRef = useRef<AgentSidebarRef>(null);
+
+  // 页面复制弹窗状态
+  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
   const {
     isFileTreeVisible,
@@ -98,7 +105,7 @@ const AgentDetails: React.FC = () => {
 
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
+  useEffect(() => {
     // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
@@ -198,6 +205,8 @@ const AgentDetails: React.FC = () => {
     });
 
     return () => {
+      // 关闭页面预览
+      hidePagePreview();
       setIsLoaded(false);
       setMessageList([]);
       setChatSuggestList([]);
@@ -257,13 +266,6 @@ const AgentDetails: React.FC = () => {
       selectedComputerId,
     });
   };
-  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
-
-  const { pagePreviewData, hidePagePreview } = useModel('chat');
-
-  // 页面复制弹窗状态
-  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -453,14 +455,14 @@ const AgentDetails: React.FC = () => {
       {loading || !isLoaded ? (
         // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-            height: '100%',
-            width: '100%',
-          }}
+          className={cx(
+            'flex',
+            'items-center',
+            'content-center',
+            'flex-1',
+            'w-full',
+            'h-full',
+          )}
         >
           <LoadingOutlined />
         </div>
