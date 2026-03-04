@@ -165,8 +165,6 @@ const SkillDetail: React.FC = ({}) => {
         readOnly={true}
         // 是否显示视图模式切换按钮
         showViewModeButtons={false}
-        // 是否显示文件树展开/折叠按钮
-        showFileTreeToggleButton={false}
         // 是否显示更多操作菜单
         showMoreActions={false}
         // 是否显示全屏图标

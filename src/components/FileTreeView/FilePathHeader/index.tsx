@@ -28,7 +28,6 @@ const cx = classNames.bind(styles);
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
-  showFileTreeToggleButton = true,
   conversationId,
   targetNode,
   viewMode = 'preview',
@@ -118,7 +117,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 文件树展开/折叠图标 */}
-      {viewMode !== 'desktop' && showFileTreeToggleButton && (
+      {viewMode !== 'desktop' && (
         <div className={cx('flex', 'items-center', 'gap-4')}>
           <span>文件预览</span>
           <Tooltip

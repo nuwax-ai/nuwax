@@ -5,8 +5,6 @@ export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
   className?: string;
-  // 是否显示文件树展开/折叠按钮
-  showFileTreeToggleButton?: boolean;
   /** 文件节点 */
   targetNode: FileNode | null;
   /** 当前视图模式 */
