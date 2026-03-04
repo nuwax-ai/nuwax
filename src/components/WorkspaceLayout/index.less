@@ -2,8 +2,6 @@
 @import '@/styles/token';
 
 .container {
-  padding: 16px 16px 16px 24px;
-
   .title {
     line-height: 32px;
     font-size: @fontSizeLg;
@@ -12,10 +10,63 @@
     margin-right: 20px;
   }
 
+  .header-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 15px 15px 10px 24px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header-area {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-left {
+        width: 100%;
+
+        .title {
+          width: 100%;
+          margin-bottom: 4px;
+          margin-right: 0;
+        }
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: flex-start !important;
+        text-align: left !important;
+      }
+    }
+  }
+
   .content {
-    margin-top: 10px;
     overflow-x: hidden;
     overflow-y: auto;
     height: 100%;
+    padding: 0 16px 16px 24px;
+    background-color: #fff;
+  }
+
+  .extra-container {
+    padding: 0 16px 16px 24px;
   }
 }

@@ -1,4 +1,8 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
+import {
+  LimitedTooltip,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import { apiRunningLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -12,8 +16,7 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -22,7 +25,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useParams, useSearchParams } from 'umi';
+import { useLocation, useModel, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -31,9 +34,10 @@ import LogDetailDrawer from '../LogDetailDrawer';
  * - 数据源：apiSpaceLogList / apiSpaceLogDetail
  */
 const LogProTable: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
   const params = useParams();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const spaceId = Number(params.spaceId);
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
@@ -52,36 +56,6 @@ const LogProTable: React.FC = () => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.get('targetId') || undefined;
   }, [location.search]);
-
-  // 通用：更新 URL 查询参数
-  const handleSearchParamChange = useCallback(
-    (key: 'targetType' | 'targetId', value?: string) => {
-      const newParams = new URLSearchParams(searchParams);
-      if (value) {
-        newParams.set(key, value);
-      } else {
-        newParams.delete(key);
-      }
-      setSearchParams(newParams);
-    },
-    [searchParams, setSearchParams],
-  );
-
-  // 当 targetType 变化时，更新 URL 参数
-  const handleTargetTypeChange = useCallback(
-    (value: string) => {
-      handleSearchParamChange('targetType', value);
-    },
-    [handleSearchParamChange],
-  );
-
-  // 当 targetId 变化时，更新 URL 参数
-  const handleTargetIdChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleSearchParamChange('targetId', e.target.value);
-    },
-    [handleSearchParamChange],
-  );
 
   const handleCloseDetails = useCallback(() => {
     setDetailsVisible(false);
@@ -106,7 +80,6 @@ const LogProTable: React.FC = () => {
         fieldProps: {
           placeholder: '请选择类型',
           allowClear: true,
-          onChange: handleTargetTypeChange,
         },
       },
       {
@@ -117,7 +90,6 @@ const LogProTable: React.FC = () => {
         initialValue: targetIdFromUrl,
         fieldProps: {
           placeholder: '请输入对象ID',
-          onChange: handleTargetIdChange,
         },
       },
       {
@@ -132,7 +104,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
-        hideInTable: true,
+        hideInTable: false,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
@@ -140,7 +112,10 @@ const LogProTable: React.FC = () => {
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
-        fieldProps: getIntegerOnlyFieldProps('请输入用户ID，仅支持输入整数'),
+        fieldProps: getIntegerOnlyFieldProps(
+          '请输入用户ID，仅支持输入整数',
+          18,
+        ),
       },
       {
         title: '用户名',
@@ -205,13 +180,13 @@ const LogProTable: React.FC = () => {
       {
         title: '请求时间',
         dataIndex: 'requestStartTime',
-        width: 170,
+        width: 180,
         valueType: 'dateTime',
         search: false,
-        renderText: (text: any) => {
-          if (!text) return '-';
-          return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
-        },
+        // renderText: (text: any) => {
+        //   if (!text) return '-';
+        //   return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
+        // },
       },
       {
         title: '整体耗时',
@@ -233,12 +208,7 @@ const LogProTable: React.FC = () => {
         },
       },
     ],
-    [
-      handleTargetIdChange,
-      handleTargetTypeChange,
-      targetIdFromUrl,
-      targetTypeFromUrl,
-    ],
+    [],
   );
 
   // 中间变量用于判断是否是点击重置按钮
@@ -258,18 +228,13 @@ const LogProTable: React.FC = () => {
           targetId: undefined,
         });
 
-        // 删除查询参数,防止重复查询
-        searchParams.delete('targetType');
-        searchParams.delete('targetId');
-        searchParams.delete('from'); // 需要特殊处理(只有特殊情况会用到)
-        setSearchParams(searchParams);
         tableParams = {
           current: tableParams.current,
           pageSize: tableParams.pageSize,
         };
       }
       const current = Number(tableParams.current || 1);
-      const pageSize = Number(tableParams.pageSize || 10);
+      const pageSize = Number(tableParams.pageSize || 15);
 
       const timeRange = tableParams.createTimeRange as
         | [number, number]
@@ -330,7 +295,6 @@ const LogProTable: React.FC = () => {
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('查询日志失败', e);
-        message.error('查询日志失败');
         return { data: [], total: 0, success: false };
       }
     },
@@ -361,18 +325,18 @@ const LogProTable: React.FC = () => {
         fixed: 'right',
         align: 'center',
         render: (_: any, record: SpaceLogInfo) => {
-          // const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
           return (
-            <Button
-              type="link"
-              // disabled={disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetails(record);
-              }}
-            >
-              详情
-            </Button>
+            <TableActions
+              record={record}
+              actions={[
+                {
+                  key: 'detail',
+                  label: '详情',
+                  disabled: !hasPermission('system_running_log_query_detail'),
+                  onClick: () => handleOpenDetails(record),
+                },
+              ]}
+            />
           );
         },
       },
@@ -383,8 +347,8 @@ const LogProTable: React.FC = () => {
     isReset.current = true;
     // 重置表格状态
     actionRef.current?.reset?.();
-    // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 延迟一下再重新加载,确保分页参数已设置
     actionRef.current?.reload();
   };
@@ -417,35 +381,16 @@ const LogProTable: React.FC = () => {
 
   return (
     <>
-      <ProTable<SpaceLogInfo>
+      <XProTable<SpaceLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
         request={request}
-        debounceTime={300}
-        toolBarRender={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}
+        showQueryButtons={hasPermission('system_running_log_query_list')}
       />
       <LogDetailDrawer
         open={detailsVisible}

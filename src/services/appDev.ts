@@ -20,6 +20,10 @@ import type {
   UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
 import { request } from 'umi';
 
 /**
@@ -447,23 +451,11 @@ export const getProjectContentByVersion = async (
  */
 export const exportProject = async (
   projectId: string,
-): Promise<{
-  data: Blob;
-  headers: {
-    'content-disposition': string;
-    'content-length': string;
-    'content-type': string;
-  };
-}> => {
-  return request(
+): Promise<ExportFileBlobResponse> => {
+  return apiExportFileBlob(
     `/api/custom-page/export-project?projectId=${encodeURIComponent(
       projectId,
     )}`,
-    {
-      method: 'GET',
-      responseType: 'blob', // 指定响应类型为blob
-      getResponse: true, // 获取完整响应对象
-    },
   );
 };
 

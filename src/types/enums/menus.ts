@@ -18,6 +18,7 @@ export enum TabsEnum {
 export enum UserOperatorAreaEnum {
   Document = 'document',
   Message = 'message',
+  Computer = 'computer',
 }
 
 // 菜单栏~用户头像操作列表枚举

@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
 
 // 单个资源组件
 const McpComponentItem: React.FC<McpComponentItemProps> = ({
+  className,
   mcpInfo,
   onClick,
   onClickMore,
@@ -86,6 +87,7 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       content={mcpInfo.description}
       icon={mcpInfo.icon}
       defaultIcon={mcpInfo.icon}
+      className={className}
       onClick={onClick}
       extra={
         <>

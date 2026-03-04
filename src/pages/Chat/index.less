@@ -15,8 +15,7 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      //padding: 12px 4px 12px 18px;
-      padding: @paddingXs @paddingLg;
+      padding: @paddingXs 16px @paddingXs 32px;
       box-sizing: content-box;
     }
 
@@ -26,9 +25,14 @@
       font-size: @fontSize;
     }
 
-    .icons-nav-sidebar {
+    .icon-box {
       color: @colorTextTertiary;
-      margin-top: 3px;
+      font-size: 16px;
+
+      &.active {
+        color: @colorPrimary;
+        background-color: #f3f0ff;
+      }
     }
   }
 
@@ -37,101 +41,133 @@
   }
 
   .main-content-box {
-    min-width: 350px;
-    padding: @padding @padding 0;
+    width: 100%;
+    padding: 0 @padding 0 40px;
     overflow-y: hidden;
     height: 100%;
     flex: 1;
     display: flex;
-    flex-direction: column;
     position: relative;
+    gap: 40px;
 
     //隐藏滚动条
     &::-webkit-scrollbar {
       display: none;
     }
 
-    .chat-wrapper-content {
-      overflow: auto;
-      margin-bottom: 5px;
+    .chat-section {
+      width: 100%;
       display: flex;
       flex-direction: column;
-      flex: 1;
 
-      // 使用滚动条自动隐藏 mixin
-      .scrollbar-auto-hide();
+      &.file-tree-visible {
+        width: 33%;
+      }
 
-      .chat-wrapper {
-        padding-bottom: 40px - 16px;
-        max-width: 800px;
-        width: 100%;
-        margin: 0 auto;
+      .chat-wrapper-content {
+        overflow: auto;
+        margin-bottom: 5px;
+        display: flex;
+        flex-direction: column;
         flex: 1;
 
-        .loading {
-          color: @colorPrimary;
-        }
+        // 使用滚动条自动隐藏 mixin
+        .scrollbar-auto-hide();
 
-        .chat-inner {
-          background-color: transparent;
-          padding: 0 @paddingXs;
-        }
+        .chat-wrapper {
+          padding-bottom: 40px - 16px;
+          max-width: 800px;
+          width: 100%;
+          margin: 0 auto;
+          flex: 1;
 
-        .suggest-item {
-          background-color: @colorBgContainer;
+          .loading {
+            color: @colorPrimary;
+          }
 
-          &:hover {
+          .chat-inner {
+            background-color: transparent;
+            padding: 0 @paddingXs;
+          }
+
+          .suggest-item {
             background-color: @colorBgContainer;
+
+            &:hover {
+              background-color: @colorBgContainer;
+            }
+          }
+
+          // 加载更多按钮容器
+          .load-more-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: @paddingSm;
+            text-align: center;
+            padding: 16px 0;
+            color: #999;
+
+            .load-more-btn {
+              font-size: @fontSize;
+              padding: 0 @padding;
+            }
+          }
+
+          // 任务执行中容器
+          .task-executing-container {
+            height: 32px;
+            color: @colorTextSecondary;
+            font-size: @fontSizeSm;
+            gap: @paddingSm;
           }
         }
+      }
 
-        // 加载更多按钮容器
-        .load-more-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: @paddingSm 0;
-          margin-bottom: @paddingSm;
+      .chat-input-container {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        background-color: transparent;
+        border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+        padding-bottom: @paddingSm;
+        width: 100%;
 
-          .load-more-btn {
-            font-size: @fontSize;
-            padding: 0 @padding;
-          }
+        // 调整滚动按钮位置，让它显示在会话状态栏的上方
+        :global(.chat-action .to-bottom) {
+          bottom: 100px !important;
         }
+      }
 
-        // 任务执行中容器
-        .task-executing-container {
-          height: 32px;
-          color: @colorTextSecondary;
-          font-size: @fontSizeSm;
-          gap: @paddingSm;
-        }
+      // 会话状态栏样式
+      .conversation-status-bar {
+        max-width: 800px;
+        width: 100%;
+        margin: 0 auto 8px;
+        animation: slide-in-up 0.3s ease-out;
       }
     }
 
-    .chat-input-container {
+    /* 文件树侧边栏样式 */
+    .file-tree-sidebar {
+      flex: 1;
       position: sticky;
-      bottom: 0;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      background-color: transparent;
-      border-radius: @borderRadiusLg @borderRadiusLg 0 0;
-      padding-bottom: @paddingSm;
-      width: 100%;
+      height: 100%;
+      padding-bottom: 42px;
+      margin: 0;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
 
-      // 调整滚动按钮位置，让它显示在会话状态栏的上方
-      :global(.chat-action .to-bottom) {
-        bottom: 100px !important;
+      .file-tree-container {
+        border-radius: 16px;
+        border: 1px solid rgba(5, 5, 5, 6%);
+        background: #f5f5f5;
       }
-    }
-
-    // 会话状态栏样式
-    .conversation-status-bar {
-      max-width: 800px;
-      width: 100%;
-      margin: 0 auto 8px;
-      animation: slide-in-up 0.3s ease-out;
     }
   }
 }
@@ -165,34 +201,4 @@
   position: sticky;
   margin: 0;
   min-width: 400px;
-}
-
-// @media (max-width: 768px) {
-//   .agent-sidebar {
-//     display: none;
-//   }
-
-//   .file-tree-sidebar {
-//     display: none;
-//   }
-// }
-
-// /* 当屏幕宽度小于等于 720px 时应用的样式 */
-// @media screen and (max-width: 720px) {
-//   .main-content {
-//     width: 100%;
-//   }
-// }
-
-/* 文件树侧边栏样式 */
-.file-tree-sidebar {
-  position: sticky;
-  height: 100%;
-  margin: 0;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  border-left: @lineWidth @lineType @colorBorderSecondary;
-  visibility: visible;
-  opacity: 1;
-  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
 }

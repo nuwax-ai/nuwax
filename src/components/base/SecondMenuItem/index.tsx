@@ -1,20 +1,20 @@
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import MenuListItem from '../MenuListItem';
 import SvgIcon from '../SvgIcon';
 import styles from './index.less';
-import SubItem from './SubItem';
 
 const cx = classNames.bind(styles);
 
 // 二级菜单项组件
 export interface SecondMenuItemProps {
   icon?: React.ReactNode | string;
-  isFirst?: boolean;
   isOpen?: boolean;
   name: string;
   isActive?: boolean;
   isDown?: boolean;
+  style?: React.CSSProperties;
   onClick: () => void;
   onToggle?: () => void;
 }
@@ -24,20 +24,20 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   icon,
   name,
   isActive = false,
-  isFirst = false,
   isDown,
   isOpen = false,
   onClick,
   onToggle,
+  style,
 }) => {
   return (
     <div
       className={cx('flex', 'items-center', styles.row, styles.mainItem, {
         [styles.active]: isActive,
-        [styles.first]: isFirst,
         [styles.open]: isOpen,
       })}
       onClick={onClick}
+      style={style}
     >
       <span
         className={cx(
@@ -48,12 +48,18 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         )}
       >
         {typeof icon === 'string' ? (
-          <img className={cx(styles['icon-image'])} src={icon} alt={name} />
+          icon?.includes('.png') ||
+          icon?.includes('.jpg') ||
+          icon?.includes('.jpeg') ? (
+            <img className={cx(styles['icon-image'])} src={icon} />
+          ) : (
+            <SvgIcon name={icon} />
+          )
         ) : (
           icon
         )}
       </span>
-      <Typography.Text className={cx('flex-1', styles.name)}>
+      <Typography.Text className={cx('flex-1', 'text-ellipsis', styles.name)}>
         {name}
       </Typography.Text>
       {isDown ? (
@@ -80,7 +86,7 @@ interface SecondMenuItemComponent extends React.FC<SecondMenuItemProps> {
    * SubItem 子菜单项组件
    * 用于在外部通过 SecondMenuItem.SubItem 方式访问
    */
-  SubItem: typeof SubItem;
+  SubItem: typeof MenuListItem;
 }
 
 // 2. 类型断言，将 SecondMenuItem 转为扩展后的类型
@@ -88,7 +94,7 @@ const SecondMenuItemWithSub: SecondMenuItemComponent =
   SecondMenuItem as SecondMenuItemComponent;
 
 // 3. 挂载子组件
-SecondMenuItemWithSub.SubItem = SubItem;
+SecondMenuItemWithSub.SubItem = MenuListItem;
 
 // 4. 导出带有 SubItem 静态属性的组件
 export default SecondMenuItemWithSub;

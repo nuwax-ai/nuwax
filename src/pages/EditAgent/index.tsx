@@ -22,7 +22,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -121,7 +121,6 @@ const EditAgent: React.FC = () => {
     // 处理文件列表刷新事件
     handleRefreshFileList,
     openPreviewView,
-    openDesktopView,
     restartVncPod,
     restartAgent,
     taskAgentSelectedFileId,
@@ -150,7 +149,7 @@ const EditAgent: React.FC = () => {
 
   // 获取智能体配置信息是否加载中
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
@@ -302,7 +301,8 @@ const EditAgent: React.FC = () => {
     const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
     _agentConfigInfo.modelComponentConfig.bindConfig = config;
     _agentConfigInfo.modelComponentConfig.targetId = targetId;
-    _agentConfigInfo.modelComponentConfig.name = name;
+    _agentConfigInfo.modelComponentConfig.name =
+      name || _agentConfigInfo.modelComponentConfig.name;
     setAgentConfigInfo(_agentConfigInfo);
   };
 
@@ -337,6 +337,9 @@ const EditAgent: React.FC = () => {
     // 返回更新后的智能体配置信息
     return _agentConfigInfo;
   };
+
+  // 获取开发会话ID
+  const devConversationId = agentConfigInfo?.devConversationId;
 
   // 更新智能体信息
   const handleChangeAgent = useCallback(
@@ -400,6 +403,12 @@ const EditAgent: React.FC = () => {
         runUpdateAgent(agentId);
       }
 
+      // 如果隐藏远程桌面，则切换到文件预览模式
+      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
+        // 打开文件预览模式
+        openPreviewView(devConversationId);
+      }
+
       const {
         id,
         name,
@@ -414,6 +423,7 @@ const EditAgent: React.FC = () => {
         openLongMemory,
         expandPageArea,
         guidQuestionDtos,
+        hideDesktop,
       } = _agentConfigInfo;
 
       const params = {
@@ -430,6 +440,7 @@ const EditAgent: React.FC = () => {
         openLongMemory,
         expandPageArea,
         guidQuestionDtos,
+        hideDesktop,
       } as AgentConfigUpdateParams;
 
       // 更新智能体信息
@@ -493,9 +504,6 @@ const EditAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // 获取开发会话ID
-  const devConversationId = agentConfigInfo?.devConversationId;
-
   useEffect(() => {
     if (!devConversationId) {
       return;
@@ -512,34 +520,6 @@ const EditAgent: React.FC = () => {
       );
     };
   }, [devConversationId]);
-
-  // 显示文件树
-  const handleFileTreeVisible = () => {
-    if (!devConversationId) {
-      messageAntd.warning('会话ID不存在，无法打开文件树');
-      return;
-    }
-
-    // 触发文件列表刷新事件
-    openPreviewView(devConversationId);
-  };
-
-  // 切换视图模式
-  const onViewModeChange = useCallback(
-    (mode: 'preview' | 'desktop') => {
-      if (!devConversationId) {
-        messageAntd.warning('会话ID不存在，无法切换视图模式');
-        return;
-      }
-
-      if (mode === 'desktop') {
-        openDesktopView(devConversationId);
-      } else {
-        openPreviewView(devConversationId);
-      }
-    },
-    [devConversationId, openPreviewView, openDesktopView],
-  );
 
   // 新建文件（空内容）、文件夹
   const handleCreateFileNode = async (
@@ -754,12 +734,20 @@ const EditAgent: React.FC = () => {
   const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在或无效，无法导出');
+      messageAntd.warning('开发会话ID不存在或无效，无法导出');
       return;
     }
 
     try {
       const result = await apiDownloadAllFiles(devConversationId);
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        messageAntd.warning(errorMessage);
+        return;
+      }
+
       const filename = `agent-${agentId}-${devConversationId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);
@@ -855,7 +843,7 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     handleOpenPreview();
-  }, [agentConfigInfo?.expandPageArea, agentConfigInfo?.pageHomeIndex]);
+  }, [handleOpenPreview]);
 
   /**
    * 关闭预览
@@ -872,7 +860,7 @@ const EditAgent: React.FC = () => {
      * 设置最小宽度
      */
     if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1700px
+      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
       if (isFileTreeVisible) {
         document.documentElement.style.minWidth = '1750px';
       } else {
@@ -963,7 +951,8 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {agentConfigInfo?.type === AgentTypeEnum.ChatBot && (
+            {/* 问答型智能体、应用页面 */}
+            {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
               // 系统提示词/用户提示词
               <SystemUserTipsWord
                 ref={systemUserTipsWordRef}
@@ -1044,8 +1033,6 @@ const EditAgent: React.FC = () => {
                     }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
-                    // 打开文件面板
-                    onOpenFilePanel={handleFileTreeVisible}
                   />
                 )
               }
@@ -1071,7 +1058,7 @@ const EditAgent: React.FC = () => {
                       >
                         {/*文件树侧边栏 - 只在文件树可见时显示 */}
                         <FileTreeView
-                          headerClassName={styles['file-tree-header']}
+                          // headerClassName={styles['file-tree-header']}
                           taskAgentSelectedFileId={taskAgentSelectedFileId}
                           taskAgentSelectTrigger={taskAgentSelectTrigger}
                           originalFiles={fileTreeData}
@@ -1079,8 +1066,6 @@ const EditAgent: React.FC = () => {
                           targetId={devConversationId.toString()}
                           viewMode={viewMode}
                           readOnly={false}
-                          // 切换视图、远程桌面模式
-                          onViewModeChange={onViewModeChange}
                           // 导出项目
                           onExportProject={handleExportProject}
                           // 上传文件
@@ -1117,6 +1102,7 @@ const EditAgent: React.FC = () => {
                             onIdleTimeout: () =>
                               openPreviewView(devConversationId),
                           }}
+                          hideDesktop={agentConfigInfo?.hideDesktop}
                         />
                       </div>
                     )

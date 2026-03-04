@@ -1,7 +1,5 @@
-import CustomPopover from '@/components/CustomPopover';
+import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { ICON_MORE } from '@/constants/images.constants';
-import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
   apiTaskDelete,
   apiTaskDisable,
@@ -10,18 +8,13 @@ import {
   apiTaskList,
 } from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
-import { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
-import { modalConfirm } from '@/utils/ant-custom';
 import type {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
-import { Button, Popconfirm, Space, Tag, message } from 'antd';
-import dayjs from 'dayjs';
+import { Tag, message } from 'antd';
 import {
   forwardRef,
   useCallback,
@@ -80,17 +73,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const isMenuRefreshRef = useRef<boolean>(false);
     // 表单引用
     const formRef = useRef<FormInstance>();
-
-    /**
-     * 安全格式化时间：兼容 number/字符串/空值
-     */
-    const formatDateTime = useCallback((value?: string | number) => {
-      if (value === undefined || value === null || value === '') {
-        return '-';
-      }
-      const d = dayjs(value);
-      return d.isValid() ? d.format('YYYY-MM-DD HH:mm:ss') : String(value);
-    }, []);
 
     /**
      * 状态展示（后端枚举映射）
@@ -185,7 +167,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           } catch (e) {
             // eslint-disable-next-line no-console
             console.error('查询任务列表失败', e);
-            message.error('查询任务列表失败');
             cacheRef.current = { spaceId: sid, list: [] };
             return [];
           } finally {
@@ -213,7 +194,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       // 重置表格状态
       actionRef.current?.reset?.();
       // 设置分页参数:第1页,每页10条
-      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
       actionRef.current?.reload();
     }, []);
 
@@ -238,7 +219,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       async (tableParams: Record<string, any>) => {
         const sid = Number(tableParams.spaceId ?? spaceId);
         const current = Number(tableParams.current || 1);
-        const pageSize = Number(tableParams.pageSize || 10);
+        const pageSize = Number(tableParams.pageSize || 15);
 
         // 先保存是否需要强制刷新的标志（点击查询按钮时为 true）
         const shouldForceRefresh = forceRefreshRef.current;
@@ -334,59 +315,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
      */
     const handleDeleteTask = useCallback(
       async (id: number) => {
-        modalConfirm('提示', '确认删除该任务？', async () => {
-          const resp = await apiTaskDelete(id);
-          if (resp?.code === SUCCESS_CODE) {
-            message.success('删除任务成功');
-            refreshList();
-          }
-        });
+        const resp = await apiTaskDelete(id);
+        if (resp?.code === SUCCESS_CODE) {
+          message.success('删除任务成功');
+          refreshList();
+        }
       },
       [refreshList],
     );
-
-    // 点击更多操作
-    const onClickMore = (item: CustomPopoverItem, info: TaskInfo) => {
-      const { action } = item as unknown as {
-        action: TaskCenterMoreActionEnum;
-      };
-      switch (action) {
-        case TaskCenterMoreActionEnum.Edit:
-          onEdit(info);
-          break;
-        case TaskCenterMoreActionEnum.Record:
-          history.push(
-            `/space/${info.spaceId}/library-log?targetType=${
-              info.targetType
-            }&targetId=${info.targetId ?? ''}&from=task_center`,
-          );
-          break;
-        case TaskCenterMoreActionEnum.Delete:
-          handleDeleteTask(info.id);
-          break;
-        case TaskCenterMoreActionEnum.Enable:
-          handleEnableTask(info.id);
-          break;
-        case TaskCenterMoreActionEnum.Disable:
-          handleDisableTask(info.id);
-          break;
-        case TaskCenterMoreActionEnum.Execute:
-          handleExecuteTask(info.id);
-          break;
-        default:
-          break;
-      }
-    };
-
-    const getMoreActionList = () => {
-      return TASK_CENTER_MORE_ACTION.filter((item) => {
-        return ![
-          TaskCenterMoreActionEnum.Enable,
-          TaskCenterMoreActionEnum.Disable,
-          TaskCenterMoreActionEnum.Execute,
-        ].includes(item.action as TaskCenterMoreActionEnum);
-      });
-    };
 
     const columns: ProColumns<TaskInfo>[] = useMemo(
       () => [
@@ -460,14 +396,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           dataIndex: 'latestExecTime',
           width: 170,
           hideInSearch: true,
-          render: (dom: any) => formatDateTime(dom),
+          valueType: 'dateTime',
         },
         {
           title: '下次执行时间',
           dataIndex: 'lockTime',
           width: 170,
           hideInSearch: true,
-          render: (dom: any) => formatDateTime(dom),
+          valueType: 'dateTime',
         },
         {
           title: '创建人',
@@ -475,14 +411,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           ellipsis: true,
           width: 170,
           hideInSearch: true,
-          // render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
         },
         {
           title: '创建时间',
           dataIndex: 'created',
           width: 170,
           hideInSearch: true,
-          render: (dom: any) => formatDateTime(dom),
+          valueType: 'dateTime',
         },
         {
           title: '操作',
@@ -493,66 +428,55 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           render: (_: any, record: TaskInfo) => {
             const meta = getStatusMeta(record.status);
             const isEnded = meta.isEnded;
-            return (
-              <Space size={0}>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => {
-                    handleExecuteTask(record.id);
-                  }}
-                >
-                  手动执行
-                </Button>
-                {isEnded ? (
-                  <Popconfirm
-                    title="确认启用该任务？"
-                    okText="确认"
-                    cancelText="取消"
-                    onConfirm={(e) => {
-                      e?.stopPropagation();
-                      handleEnableTask(record.id);
-                    }}
-                  >
-                    <Button type="link" size="small">
-                      启用
-                    </Button>
-                  </Popconfirm>
-                ) : (
-                  <Popconfirm
-                    title="确认停用该任务？"
-                    okText="确认"
-                    cancelText="取消"
-                    onConfirm={(e) => {
-                      e?.stopPropagation();
-                      handleDisableTask(record.id);
-                    }}
-                  >
-                    <Button type="link" size="small">
-                      停用
-                    </Button>
-                  </Popconfirm>
-                )}
 
-                {/*更多操作*/}
-                <CustomPopover
-                  list={getMoreActionList()}
-                  onClick={(item) => {
-                    onClickMore(item, record);
-                  }}
-                >
-                  <Button
-                    size="small"
-                    type="link"
-                    icon={<ICON_MORE />}
-                  ></Button>
-                </CustomPopover>
-              </Space>
-            );
+            const actions = [
+              {
+                key: 'execute',
+                label: '手动执行',
+                onClick: (r: TaskInfo) => handleExecuteTask(r.id),
+              },
+              {
+                key: 'enable',
+                label: '启用',
+                visible: () => isEnded,
+                confirm: { title: '确认启用该任务？' },
+                onClick: (r: TaskInfo) => handleEnableTask(r.id),
+              },
+              {
+                key: 'disable',
+                label: '停用',
+                visible: () => !isEnded,
+                confirm: { title: '确认停用该任务？' },
+                onClick: (r: TaskInfo) => handleDisableTask(r.id),
+              },
+              {
+                key: 'record',
+                label: '执行记录',
+                onClick: (r: TaskInfo) =>
+                  history.push(
+                    `/space/${r.spaceId}/library-log?targetType=${
+                      r.targetType
+                    }&targetId=${r.targetId ?? ''}&from=task_center`,
+                  ),
+              },
+              {
+                key: 'edit',
+                label: '编辑',
+                onClick: (r: TaskInfo) => onEdit(r),
+              },
+              {
+                key: 'delete',
+                label: '删除',
+                confirm: { title: '确认删除该任务？' },
+                onClick: (r: TaskInfo) => handleDeleteTask(r.id),
+              },
+            ];
+
+            return <TableActions record={record} actions={actions} />;
           },
         },
       ],
-      [formatDateTime, getStatusMeta],
+      [getStatusMeta],
     );
 
     /**
@@ -570,8 +494,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       forceRefreshRef.current = true;
       // 重置表格状态
       actionRef.current?.reset?.();
-      // 设置分页参数:第1页,每页10条
-      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
       // 重新加载数据
       actionRef.current?.reload();
     };
@@ -584,34 +507,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     }, [history.location.state, refreshList]);
 
     return (
-      <ProTable<TaskInfo>
+      <XProTable<TaskInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
         request={request}
         params={{ spaceId }}
-        debounceTime={300}
-        toolBarRender={false}
-        options={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         // 表单提交前处理：点击查询按钮时设置强制刷新标志
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置后也需要强制刷新

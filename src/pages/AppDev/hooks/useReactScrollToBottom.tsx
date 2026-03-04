@@ -219,7 +219,7 @@ export const useReactScrollToBottom = (
    * 处理滚动按钮点击
    */
   const handleScrollButtonClick = useCallback(() => {
-    scrollToBottom({ behavior: 'smooth' });
+    scrollToBottom({ behavior: 'auto' });
     allowAutoScrollRef.current = true;
     setIsAutoScrollEnabled(true);
     setShowScrollButton(false);
@@ -378,17 +378,22 @@ export const useReactScrollToBottomEffects = (
       if (isInitialLoad) {
         isInitialLoadRef.current = false;
 
-        // 尝试立即滚动
-        scrollToBottom({ behavior: 'smooth' });
+        // // 尝试立即滚动
+        // scrollToBottom({ behavior: 'smooth' });
 
-        // 延迟一点时间确保 DOM 渲染完成，再次尝试滚动
-        setTimeout(() => {
-          scrollToBottom({ behavior: 'smooth' });
-        }, 100);
+        // // 延迟一点时间确保 DOM 渲染完成，再次尝试滚动
+        // setTimeout(() => {
+        //   scrollToBottom({ behavior: 'smooth' });
+        // }, 100);
 
-        // 再次延迟，确保 react-scroll-to-bottom 的 Context 准备好
+        // // 再次延迟，确保 react-scroll-to-bottom 的 Context 准备好
+        // setTimeout(() => {
+        //   scrollToBottom({ behavior: 'smooth' });
+        // }, 300);
+
+        // 延迟确保 DOM 渲染完成和 Context 准备完毕后进行一次统一的瞬间定位
         setTimeout(() => {
-          scrollToBottom({ behavior: 'smooth' });
+          scrollToBottom({ behavior: 'auto' });
         }, 300);
 
         return;

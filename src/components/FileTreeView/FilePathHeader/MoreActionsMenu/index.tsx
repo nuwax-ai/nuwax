@@ -2,7 +2,11 @@ import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Dropdown } from 'antd';
+import classNames from 'classnames';
 import { useMemo } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 // 更多操作相关接口
 interface MoreActionsProps {
@@ -121,12 +125,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     <Dropdown menu={{ items: menuItems }} placement="bottomRight">
       <Button
         type="text"
-        icon={
-          <SvgIcon
-            name="icons-common-more"
-            style={{ fontSize: '16px', color: 'rgba(0,0,0,0.65)' }}
-          />
-        }
+        className={cx(styles['more-button'])}
+        icon={<SvgIcon name="icons-common-more" />}
       />
     </Dropdown>
   );

@@ -1,4 +1,8 @@
-import LimitedTooltip from '@/components/base/LimitedTooltip';
+import {
+  LimitedTooltip,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import { apiSpaceLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
@@ -12,8 +16,7 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -78,7 +81,8 @@ const LogProTable: React.FC = () => {
   // 当 targetId 变化时，更新 URL 参数
   const handleTargetIdChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleSearchParamChange('targetId', e.target.value);
+      const value = e?.target ? e.target.value : e;
+      handleSearchParamChange('targetId', String(value));
     },
     [handleSearchParamChange],
   );
@@ -132,7 +136,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
-        hideInTable: true,
+        hideInTable: false,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
@@ -140,7 +144,10 @@ const LogProTable: React.FC = () => {
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
-        fieldProps: getIntegerOnlyFieldProps('请输入用户ID，仅支持输入整数'),
+        fieldProps: getIntegerOnlyFieldProps(
+          '请输入用户ID，仅支持输入整数',
+          18,
+        ),
       },
       {
         title: '用户名',
@@ -205,13 +212,13 @@ const LogProTable: React.FC = () => {
       {
         title: '请求时间',
         dataIndex: 'requestStartTime',
-        width: 170,
+        width: 180,
         valueType: 'dateTime',
         search: false,
-        renderText: (text: any) => {
-          if (!text) return '-';
-          return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
-        },
+        // renderText: (text: any) => {
+        //   if (!text) return '-';
+        //   return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
+        // },
       },
       {
         title: '整体耗时',
@@ -269,7 +276,7 @@ const LogProTable: React.FC = () => {
         };
       }
       const current = Number(tableParams.current || 1);
-      const pageSize = Number(tableParams.pageSize || 10);
+      const pageSize = Number(tableParams.pageSize || 15);
 
       const timeRange = tableParams.createTimeRange as
         | [number, number]
@@ -330,7 +337,6 @@ const LogProTable: React.FC = () => {
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('查询日志失败', e);
-        message.error('查询日志失败');
         return { data: [], total: 0, success: false };
       }
     },
@@ -363,16 +369,16 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => {
           // const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
           return (
-            <Button
-              type="link"
-              // disabled={disabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetails(record);
-              }}
-            >
-              详情
-            </Button>
+            <TableActions
+              record={record}
+              actions={[
+                {
+                  key: 'detail',
+                  label: '详情',
+                  onClick: () => handleOpenDetails(record),
+                },
+              ]}
+            />
           );
         },
       },
@@ -384,7 +390,7 @@ const LogProTable: React.FC = () => {
     // 重置表格状态
     actionRef.current?.reset?.();
     // 设置分页参数:第1页,每页10条
-    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     // 延迟一下再重新加载,确保分页参数已设置
     actionRef.current?.reload();
   };
@@ -417,32 +423,12 @@ const LogProTable: React.FC = () => {
 
   return (
     <>
-      <ProTable<SpaceLogInfo>
+      <XProTable<SpaceLogInfo>
         formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
         request={request}
-        debounceTime={300}
-        toolBarRender={false}
-        cardProps={{ bodyStyle: { padding: 0 } }}
-        pagination={{
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `共 ${total} 条`,
-          defaultPageSize: 10,
-        }}
-        search={{
-          span: 6,
-          labelWidth: 70,
-          defaultCollapsed: true,
-          style: {
-            paddingTop: 0,
-            paddingBottom: 0,
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
         onReset={handleReset}

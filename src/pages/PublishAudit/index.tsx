@@ -1,250 +1,186 @@
+import {
+  ActionItem,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiPageGetProjectInfoByAgent } from '@/services/pageDev';
 import { apiPassAudit, apiPublishApplyList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table, Tooltip, message } from 'antd';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { message } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import RejectAuditModal from './components/RejectAuditModal';
+
 const cx = classNames.bind(styles);
 
-const selectOptions = [
-  { value: '', label: '全部' },
-  { value: SquareAgentTypeEnum.Agent, label: '智能体' },
-  { value: SquareAgentTypeEnum.Plugin, label: '插件' },
-  { value: SquareAgentTypeEnum.Workflow, label: '工作流' },
-  { value: SquareAgentTypeEnum.Skill, label: '技能' },
-];
-
-const selectPublishOptions = [
-  { value: '', label: '全部' },
-  { value: PublishStatusEnum.Applying, label: '待审核' },
-  { value: PublishStatusEnum.Published, label: '通过' },
-  { value: PublishStatusEnum.Rejected, label: '拒绝' },
-];
-
+/**
+ * 发布审核
+ */
 const PublishAudit: React.FC = () => {
-  const [selectedValue, setSelectedValue] = useState('');
-  const [selectedPublishStatusValue, setSelectedPublishStatusValue] = useState(
-    PublishStatusEnum.Applying,
-  );
-  const [inputValue, setInputValue] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [passLoadingMap, setPassLoadingMap] = useState<Record<number, boolean>>(
-    {},
-  );
-
-  const { data, run, refresh, loading } = useRequest(apiPublishApplyList, {
-    debounceWait: 300,
-    defaultParams: [
-      {
-        pageNo: currentPage,
-        pageSize: 10,
-        queryFilter: {
-          targetType: selectedValue || undefined,
-          publishStatus: selectedPublishStatusValue || undefined,
-          kw: inputValue,
-        },
-      },
-    ],
-  });
-
-  const getParams = (
-    page: number,
-    targetType: string | undefined,
-    publishStatus: string | undefined,
-    kw: string,
-  ) => {
-    return {
-      pageNo: page,
-      pageSize: 10,
-      queryFilter: {
-        targetType: targetType || undefined,
-        publishStatus: publishStatus || undefined,
-        kw,
-      },
-    };
-  };
-
-  const handleSelectChange = (value: string) => {
-    setSelectedValue(value);
-    setCurrentPage(1);
-    const params = getParams(1, value, selectedPublishStatusValue, inputValue);
-    run(params);
-  };
-
-  const handlePublishStatusSelectChange = (value: string) => {
-    setSelectedPublishStatusValue(value as PublishStatusEnum);
-    setCurrentPage(1);
-    const params = getParams(1, selectedValue, value, inputValue);
-    run(params);
-  };
-
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
-    setCurrentPage(1);
-    const params = getParams(
-      1,
-      selectedValue,
-      selectedPublishStatusValue,
-      value,
-    );
-    run(params);
-  };
-
-  const handleTableChange = (page: number) => {
-    setCurrentPage(page);
-    const params = getParams(
-      page,
-      selectedValue,
-      selectedPublishStatusValue,
-      inputValue,
-    );
-    run(params);
-  };
-
-  const { run: runPassAudit } = useRequest(apiPassAudit, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setPassLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
-    },
-    onSuccess: () => {
-      message.success('通过审核成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setPassLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
-    },
-  });
-
+  const { hasPermission } = useModel('menuModel');
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
   const [openRejectAuditModal, setOpenRejectAuditModal] = useState(false);
   const [rejectAuditId, setRejectAuditId] = useState<number>();
 
-  const handleRejectAudit = (id: number) => {
-    setRejectAuditId(id);
-    setOpenRejectAuditModal(true);
-  };
-  const handleView = (record: PublishApplyListInfo) => {
+  // 标记当前请求是否是初始化或重置请求，用于在 request 中覆盖状态为默认值
+  const isInitializeOrReset = useRef<boolean>(false);
+
+  // 查看详情
+  const handleView = useCallback(async (record: PublishApplyListInfo) => {
+    const {
+      spaceId,
+      targetId,
+      id: applyId,
+      targetType,
+      targetSubType,
+      pluginType,
+    } = record;
+
     let url = '';
 
-    if (record.targetType === SquareAgentTypeEnum.Agent) {
-      url = `/space/${record.spaceId}/agent/${record.targetId}?applyId=${record.id}`;
-    }
-    if (record.targetType === SquareAgentTypeEnum.Plugin) {
-      if (record.pluginType === 'CODE') {
-        url = `/space/${record.spaceId}/plugin/${record.targetId}/cloud-tool?applyId=${record.id}`;
+    // 智能体
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      if (targetSubType === 'PageApp') {
+        const { code, data: projectInfo } = await apiPageGetProjectInfoByAgent(
+          targetId,
+        );
+        if (code === SUCCESS_CODE && projectInfo) {
+          url = `/space/${spaceId}/app-dev/${projectInfo.projectId}`;
+        }
       } else {
-        url = `/space/${record.spaceId}/plugin/${record.targetId}?applyId=${record.id}`;
+        url = `/space/${spaceId}/agent/${targetId}?applyId=${applyId}`;
       }
+    } else if (targetType === SquareAgentTypeEnum.Plugin) {
+      if (pluginType === 'CODE') {
+        url = `/space/${spaceId}/plugin/${targetId}/cloud-tool?applyId=${applyId}`;
+      } else {
+        url = `/space/${spaceId}/plugin/${targetId}?applyId=${applyId}`;
+      }
+    } else if (targetType === SquareAgentTypeEnum.Workflow) {
+      url = `/space/${spaceId}/workflow/${targetId}?applyId=${applyId}`;
+    } else if (targetType === SquareAgentTypeEnum.Skill) {
+      url = `/space/${spaceId}/skill-details/${targetId}?applyId=${applyId}`;
     }
-    if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      url = `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`;
-    }
-    if (record.targetType === SquareAgentTypeEnum.Skill) {
-      url = `/space/${record.spaceId}/skill-details/${record.targetId}?applyId=${record.id}`;
-    }
+
     if (url) {
-      // 在新窗口中打开页面
       window.open(url, '_blank', 'noopener,noreferrer');
     }
-  };
+  }, []);
 
-  // 获取类型名称
-  const getTargetTypeName = (targetType: SquareAgentTypeEnum) => {
-    switch (targetType) {
-      case SquareAgentTypeEnum.Agent:
-        return '智能体';
-      case SquareAgentTypeEnum.Plugin:
-        return '插件';
-      case SquareAgentTypeEnum.Workflow:
-        return '工作流';
-      case SquareAgentTypeEnum.Skill:
-        return '技能';
+  // 通过审核
+  const handlePassAudit = useCallback(async (record: PublishApplyListInfo) => {
+    const res = await apiPassAudit({ id: record.id });
+    if (res.code === SUCCESS_CODE) {
+      message.success('通过审核成功');
+      // 恢复到初始化状态，便于在request中覆盖状态为默认值：待审核
+      isInitializeOrReset.current = true;
+      actionRef.current?.reload();
     }
-  };
+  }, []);
 
-  const columns = [
+  // 拒绝审核
+  const handleRejectAudit = useCallback((id: number) => {
+    setRejectAuditId(id);
+    setOpenRejectAuditModal(true);
+  }, []);
+
+  // 操作列配置
+  const getActions = useCallback(
+    (record: PublishApplyListInfo): ActionItem<PublishApplyListInfo>[] => {
+      return [
+        {
+          key: 'pass',
+          label: '通过',
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          disabled: !hasPermission('publish_audit_pass'),
+          onClick: handlePassAudit,
+        },
+        {
+          key: 'reject',
+          label: '拒绝',
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          disabled: !hasPermission('publish_audit_reject'),
+          onClick: (r) => handleRejectAudit(r.id),
+        },
+        {
+          key: 'view',
+          label: '查看',
+          disabled: !hasPermission('publish_audit_query_detail'),
+          onClick: handleView,
+        },
+      ];
+    },
+    [hasPermission, handlePassAudit, handleRejectAudit, handleView],
+  );
+
+  const columns: ProColumns<PublishApplyListInfo>[] = [
     {
       title: '发布名称',
       dataIndex: 'name',
-      key: 'name',
       width: 200,
-      className: styles['table-column-fixed'],
-      render: (value: string) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            <span className={cx('text-ellipsis-2')}>{value}</span>
-          </div>
-        );
-      },
+      fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
+      ellipsis: true,
     },
     {
       title: '类型',
       dataIndex: 'targetType',
-      key: 'targetType',
       width: 100,
-      render: (value: SquareAgentTypeEnum) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            {getTargetTypeName(value)}
-          </div>
-        );
+      valueType: 'select',
+      valueEnum: {
+        [SquareAgentTypeEnum.Agent]: { text: '智能体' },
+        // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
+        [SquareAgentTypeEnum.Plugin]: { text: '插件' },
+        [SquareAgentTypeEnum.Workflow]: { text: '工作流' },
+        [SquareAgentTypeEnum.Skill]: { text: '技能' },
       },
     },
     {
       title: '描述信息',
       dataIndex: 'description',
-      key: 'description',
       width: 200,
-      render: (value: string) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            <Tooltip title={value} placement="topLeft">
-              <div className={cx('text-ellipsis-2')}>{value}</div>
-            </Tooltip>
-          </div>
-        );
-      },
+      hideInSearch: true,
+      ellipsis: true,
     },
     {
       title: '版本信息',
       dataIndex: 'remark',
-      key: 'remark',
       width: 200,
-      render: (value: string) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            <Tooltip title={value} placement="topLeft">
-              <div className={cx('text-ellipsis-2')}>{value}</div>
-            </Tooltip>
-          </div>
-        );
-      },
+      hideInSearch: true,
+      ellipsis: true,
     },
     {
       title: '发布者',
-      dataIndex: 'applyUser',
-      key: 'applyUser',
-      width: 200,
-      render: (value: any) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            {value?.userName ?? '--'}
-          </div>
-        );
-      },
+      dataIndex: ['applyUser', 'userName'],
+      width: 150,
+      hideInSearch: true,
     },
     {
       title: '状态',
       dataIndex: 'publishStatus',
-      key: 'publishStatus',
       width: 100,
-      render: (publishStatus: PublishStatusEnum) => {
+      valueType: 'select',
+      // 默认待审核
+      initialValue: PublishStatusEnum.Applying,
+      valueEnum: {
+        [PublishStatusEnum.Applying]: { text: '待审核' },
+        [PublishStatusEnum.Published]: { text: '通过' },
+        [PublishStatusEnum.Rejected]: { text: '拒绝' },
+      },
+      render: (_, record) => {
+        const publishStatus = record.publishStatus;
         let statusText = '';
         let dotStyle = '';
         switch (publishStatus) {
@@ -260,6 +196,8 @@ const PublishAudit: React.FC = () => {
             statusText = '待审核';
             dotStyle = styles['dot-blue'];
             break;
+          default:
+            statusText = '--';
         }
         return (
           <span>
@@ -272,104 +210,76 @@ const PublishAudit: React.FC = () => {
     {
       title: '发布时间',
       dataIndex: 'created',
-      key: 'created',
       width: 180,
-      render: (value: string) => {
-        return (
-          <div className={cx('flex', 'items-center', 'h-full')}>
-            {dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
-          </div>
-        );
-      },
+      hideInSearch: true,
+      valueType: 'dateTime',
     },
     {
       title: '操作',
-      key: 'action',
-      width: 200,
+      valueType: 'option',
+      width: 150,
       align: 'center',
       fixed: 'right',
-      className: styles['table-column-fixed'],
-      render: (_: null, record: PublishApplyListInfo) => (
-        <>
-          {record.publishStatus === PublishStatusEnum.Applying ? (
-            <>
-              <Button
-                type="link"
-                className={cx(styles['table-action-ant-btn-link'])}
-                loading={passLoadingMap[record.id] || false}
-                onClick={() => runPassAudit({ id: record.id })}
-              >
-                通过
-              </Button>
-              <Button
-                type="link"
-                className={cx(styles['table-action-ant-btn-link'])}
-                onClick={() => handleRejectAudit(record.id)}
-              >
-                拒绝
-              </Button>
-            </>
-          ) : null}
-          <Button type="link" onClick={() => handleView(record)}>
-            查看
-          </Button>
-        </>
+      render: (_, record) => (
+        <TableActions<PublishApplyListInfo>
+          record={record}
+          actions={getActions(record)}
+        />
       ),
     },
   ];
 
-  return (
-    <div className={cx(styles['system-manage-container'], 'scroll-container')}>
-      <h3 className={cx(styles['system-manage-title'])}>发布审核</h3>
-      <section className={cx('flex', 'content-between')}>
-        <div className={cx('flex')}>
-          <Select
-            className={cx(styles['select-132'], 'mr-16')}
-            options={selectOptions}
-            defaultValue=""
-            onChange={handleSelectChange}
-            optionLabelProp="label"
-            popupRender={(menu) => <>{menu}</>}
-            menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
-          />
-          <Select
-            className={cx(styles['select-132'])}
-            options={selectPublishOptions}
-            onChange={handlePublishStatusSelectChange}
-            optionLabelProp="label"
-            popupRender={(menu) => <>{menu}</>}
-            defaultValue={PublishStatusEnum.Applying}
-            menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
-          />
-        </div>
-        <Input
-          className={cx(styles['search-input-255'])}
-          placeholder="请输入插件工作流或智能体名称"
-          prefix={<SearchOutlined />}
-          onPressEnter={(event) => {
-            if (event.key === 'Enter') {
-              handleInputChange(
-                (event.currentTarget as HTMLInputElement).value,
-              );
-            }
-          }}
-        />
-      </section>
+  // 请求处理
+  const request = async (_params: Record<string, any>) => {
+    let { current, pageSize, name, targetType, publishStatus } = _params;
 
-      <Table
-        rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-30')}
+    // 如果是由“重置”触发的请求，则强制将状态重置为“待审核”
+    if (isInitializeOrReset.current) {
+      isInitializeOrReset.current = false;
+      publishStatus = PublishStatusEnum.Applying;
+    }
+    const response = await apiPublishApplyList({
+      pageNo: current || 1,
+      pageSize: pageSize || 15,
+      queryFilter: {
+        targetType: targetType || undefined,
+        publishStatus: publishStatus || PublishStatusEnum.Applying,
+        kw: name || '',
+      },
+    });
+
+    return {
+      data: response.data.records,
+      total: response.data.total,
+      success: response.code === SUCCESS_CODE,
+    };
+  };
+
+  // 重置处理（参考 LogProTable 的 handleReset 模式）
+  const handleReset = () => {
+    // 标记本次为“重置”操作（用于在 request 中强制状态为待审核）
+    isInitializeOrReset.current = true;
+    // 交给 ProTable 自己做表单和分页的 reset，会自动触发一次 request
+    // 重置到默认值，包括表单
+    actionRef.current?.reset?.();
+  };
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    handleReset();
+  }, [location.state]);
+
+  return (
+    <WorkspaceLayout title="发布审核" hideScroll>
+      <XProTable<PublishApplyListInfo>
+        actionRef={actionRef}
+        formRef={formRef}
         rowKey="id"
-        loading={loading}
         columns={columns}
-        dataSource={data?.data.records}
-        scroll={{ x: 'max-content' }}
-        virtual
-        pagination={{
-          total: data?.data.total,
-          onChange: handleTableChange,
-          showTotal: (total) => `共 ${total} 条`,
-        }}
+        request={request}
+        onReset={handleReset}
+        showQueryButtons={hasPermission('publish_audit_query_list')}
       />
       <RejectAuditModal
         open={openRejectAuditModal}
@@ -377,10 +287,12 @@ const PublishAudit: React.FC = () => {
         onCancel={() => setOpenRejectAuditModal(false)}
         onConfirm={() => {
           setOpenRejectAuditModal(false);
-          refresh();
+          // 恢复到初始化状态，便于在request中覆盖状态为默认值：待审核
+          isInitializeOrReset.current = true;
+          actionRef.current?.reload();
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 };
 

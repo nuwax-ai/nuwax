@@ -19,7 +19,8 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { message, Spin } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
+import { Button, message, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -51,6 +52,7 @@ const cx = classNames.bind(styles);
 const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
   (
     {
+      className,
       headerClassName,
       taskAgentSelectedFileId,
       taskAgentSelectTrigger,
@@ -60,8 +62,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       targetId,
       viewMode,
-      showViewModeButtons = true,
-      showFileTreeToggleButton = true,
       onUploadFiles,
       onExportProject,
       // 是否正在导入项目
@@ -73,7 +73,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 删除文件回调
       onDeleteFile,
       // 切换视图模式回调
-      onViewModeChange,
+      // onViewModeChange,
       // 保存文件回调
       onSaveFiles,
       // 导入项目回调
@@ -101,10 +101,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRefreshFileTree,
       // 是否显示刷新按钮
       showRefreshButton = true,
-      // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-      isOnlyShowDesktop = false,
       // VNC 空闲检测配置
       idleDetection,
+      hideDesktop = 0,
+      isDynamicTheme = false,
     },
     ref,
   ) => {
@@ -234,7 +234,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const isOfficeDocument = result?.isDoc || false;
     const documentFileType = result?.fileType;
     // 判断文件是否支持预览（白名单方案）
-    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
+    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '', true);
 
     // 刷新文件树和文件内容
     const handleRefreshFileList = useCallback(async () => {
@@ -259,26 +259,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               const fileName = selectedFileNode?.name || '';
 
               // 判断文件是否支持预览（白名单方案）
-              const isPreviewable = isPreviewableFile(fileName);
+              const isPreviewable = isPreviewableFile(fileName, true);
               // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
               if (!isPreviewable || selectedFileNode?.isLink) {
                 return;
               }
 
-              // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-              const isHtml = fileName?.includes('.htm');
-              const isJsonFile = fileName?.includes('.json');
-
               // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
-              if (
-                isVideo ||
-                isAudio ||
-                isOfficeDocument ||
-                isImage ||
-                isHtml ||
-                isMarkdownFile(fileName) ||
-                isJsonFile
-              ) {
+              if (isVideo || isAudio || isOfficeDocument || isImage) {
+                // 如果是新选中的文件（office文档），更新刷新时间戳
+                if (isOfficeDocument) {
+                  fileRefreshTimestampRef.current = Date.now();
+                }
+
+                // 如果是新选中的视频文件，更新刷新时间戳
+                if (isVideo) {
+                  videoRefreshTimestampRef.current = Date.now();
+                }
+
+                // 如果是新选中的音频文件，更新刷新时间戳
+                if (isAudio) {
+                  audioRefreshTimestampRef.current = Date.now();
+                }
                 return;
               }
 
@@ -310,6 +312,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     }, [
       isRefreshingFileTree,
       onRefreshFileTree,
+      isPreviewableFile,
       selectedFileId,
       selectedFileNode,
       fetchFileContentUpdateFiles,
@@ -339,68 +342,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 获取文件内容
-          const fileContent = fileNode?.content || '';
           // 获取文件代理URL
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
 
           /**
-           * 如果文件有内容，直接使用缓存 （skill技能页面时，文件有内容，但是没有文件代理URL）
+           * kill技能页面时，文件可能有内容，也可能文件内容为空，但是没有文件代理URL
            * 如果文件节点是链接文件，则不支持预览
            */
-          if ((fileContent && !fileProxyUrl) || fileNode?.isLink) {
+          if (!fileProxyUrl || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
             return;
-          }
-
-          // 检查是否是重复点击同一个文件
-          const isSameFile = selectedFileId === fileId;
-          // 检查是否是 html 文件
-          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
-          // 判断文件是否为文档类型
-          const result = isDocumentFile(fileNode?.name || '');
-          // 判断文件是否为office文档类型
-          const isOfficeFile = result?.isDoc || false;
-          // 检查是否是 json 文件
-          const isJsonFile = fileNode?.name?.includes('.json') || false;
-          // 判断文件是否为视频类型
-          const isVideoFileType = isVideoFile(fileNode?.name || '');
-          // 判断文件是否为音频类型
-          const isAudioFileType = isAudioFile(fileNode?.name || '');
-
-          // 如果是重复点击需要刷新的文件（html、office、json），更新刷新时间戳以强制刷新
-          if (isSameFile && (isHtmlFile || isOfficeFile || isJsonFile)) {
-            fileRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是重复点击视频文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isVideoFileType) {
-            videoRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是重复点击音频文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isAudioFileType) {
-            audioRefreshTimestampRef.current = Date.now();
-            return;
-          }
-
-          // 如果是新选中的需要刷新的文件（html、office、json），更新刷新时间戳
-          if (isHtmlFile || isOfficeFile || isJsonFile) {
-            fileRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的视频文件，更新刷新时间戳
-          if (isVideoFileType) {
-            videoRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的音频文件，更新刷新时间戳
-          if (isAudioFileType) {
-            audioRefreshTimestampRef.current = Date.now();
           }
 
           // 文件没有内容或需要重新加载
@@ -418,35 +371,57 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
+          // 检查是否是 html 文件
+          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为office文档类型
+          const isOfficeFile = result?.isDoc || false;
+          // 判断文件是否为视频类型
+          const isVideoFileType = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudioFileType = isAudioFile(fileNode?.name || '');
+          // 判断文件是否为图片类型
+          const isImageFileType = isImageFile(fileNode?.name || '');
+
+          if (isHtmlFile) {
+            fileRefreshTimestampRef.current = Date.now();
+          }
+
           setSelectedFileId(fileNode?.id || fileId);
           setViewFileType('preview');
-          // 判断文件是否为图片类型
-          const isImage = isImageFile(fileNode?.name || '');
-          // 判断文件是否为视频类型
-          const isVideo = isVideoFile(fileNode?.name || '');
-          // 判断文件是否为音频类型
-          const isAudio = isAudioFile(fileNode?.name || '');
-          // 判断文件是否为文档类型（复用之前声明的 result 变量）
-          // 判断文件是否为office文档类型
-          const isOfficeDocument = isOfficeFile;
 
-          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+          // 如果文件为图片、视频、音频、文档类型，则直接设置为选中文件节点
           if (
-            isImage ||
-            isVideo ||
-            isAudio ||
-            isOfficeDocument ||
-            !fileProxyUrl
+            isImageFileType ||
+            isVideoFileType ||
+            isAudioFileType ||
+            isOfficeFile
           ) {
             setSelectedFileNode(fileNode);
+
+            // 如果是新选中的office文档，更新刷新时间戳
+            if (isOfficeFile) {
+              fileRefreshTimestampRef.current = Date.now();
+            }
+
+            // 如果是新选中的视频文件，更新刷新时间戳
+            if (isVideoFileType) {
+              videoRefreshTimestampRef.current = Date.now();
+            }
+
+            // 如果是新选中的音频文件，更新刷新时间戳
+            if (isAudioFileType) {
+              audioRefreshTimestampRef.current = Date.now();
+            }
           }
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
             // 判断文件是否支持预览（白名单方案）
-            const isPreviewable = isPreviewableFile(fileNode?.name || '');
-            // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
-            if (!isPreviewable || fileNode?.isLink) {
+            const isPreviewable = isPreviewableFile(fileNode?.name || '', true);
+            // 如果文件不支持预览，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
+            if (!isPreviewable) {
               setSelectedFileNode(fileNode);
               return;
             }
@@ -583,7 +558,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
       // 如果文件列表不为空，则转换为树形结构
       if (Array.isArray(originalFiles) && originalFiles.length > 0) {
-        const treeData: FileNode[] = transformFlatListToTree(originalFiles);
+        const treeData: FileNode[] = transformFlatListToTree(
+          originalFiles,
+          false,
+        );
         setFiles(treeData);
       }
 
@@ -864,6 +842,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
+      input.accept = '*';
       input.multiple = true;
       document.body.appendChild(input);
 
@@ -1132,22 +1111,115 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setChangeFiles([]);
     };
 
-    // 渲染 VNC 预览状态标签
-    const renderVncPreviewStatusTag = () => {
+    // 渲染 VNC 预览状态
+    const renderVncPreviewStatus = () => {
       if (vncPreviewRef.current) {
-        return vncPreviewRef.current.renderStatusTag();
+        return vncPreviewRef.current.getStatus();
       }
       return null;
     };
 
-    // 处理视图模式切换
-    const handleChangeViewMode = (mode: 'preview' | 'desktop') => {
-      // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
-      if (mode === 'desktop') {
-        // 连接 VNC 预览
-        vncPreviewRef.current?.connect();
+    // 处理文件内容刷新
+    const handleRefreshFileContent = async () => {
+      const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+
+      // 仅在存在 fileProxyUrl 时才尝试重新获取内容
+      if (fileProxyUrl) {
+        const fileName = selectedFileNode?.name || '';
+
+        // 判断文件是否支持预览（白名单方案）
+        const previewable = isPreviewableFile(fileName, true);
+
+        // 以下情况不需要重新获取内容，直接使用当前选中文件节点：
+        // 1）文件不支持预览
+        // 2）软连接文件
+        // 3）office 文档、视频、音频、图片（这些在上方点击文件时已特殊处理）
+        // 是否重新获取文件内容
+        const isNeedRefreshFileContent =
+          !previewable ||
+          selectedFileNode?.isLink ||
+          isOfficeDocument ||
+          isVideo ||
+          isAudio ||
+          isImage;
+
+        if (!isNeedRefreshFileContent) {
+          try {
+            // 获取文件内容并更新文件树
+            const newFileContent = await fetchFileContentUpdateFiles(
+              fileProxyUrl,
+              selectedFileNode?.id || selectedFileId,
+            );
+
+            // 更新选中文件节点的内容
+            setSelectedFileNode((prevNode) =>
+              prevNode
+                ? {
+                    ...prevNode,
+                    content: newFileContent || '',
+                  }
+                : prevNode,
+            );
+          } catch (error) {
+            console.error('切换预览模式时刷新文件内容失败: ', error);
+          }
+        }
       }
-      onViewModeChange?.(mode);
+    };
+
+    /**
+     * 处理视图模式切换
+     * - 切换到 desktop：连接 VNC
+     * - 切换到 preview：
+     *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
+     *     1）存在 fileProxyUrl
+     *     2）不是 office 文档、视频、音频、图片、软连接文件
+     *     3）文件类型支持预览（白名单）
+     */
+    const handleChangeViewMode = useCallback(
+      async (mode: 'preview' | 'desktop') => {
+        // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
+        if (mode === 'desktop') {
+          // 连接 VNC 预览
+          vncPreviewRef.current?.connect();
+        }
+        // 切换到 preview 模式时，如果当前已选中文件，则刷新当前选中的文件内容
+        else if (selectedFileNode) {
+          // 刷新当前选中的文件内容
+          handleRefreshFileContent();
+        }
+
+        // onViewModeChange?.(mode);
+      },
+      [
+        selectedFileNode,
+        // viewFileType,
+        // onViewModeChange,
+        handleRefreshFileContent,
+      ],
+    );
+
+    useEffect(() => {
+      if (viewMode) {
+        // 切换到智能体电脑 tab
+        handleChangeViewMode(viewMode);
+      }
+    }, [viewMode]);
+
+    /**
+     * 处理视图文件类型切换
+     * - 切换到 preview：
+     *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
+     *     1）存在 fileProxyUrl
+     *     2）不是 office 文档、视频、音频、图片、软连接文件
+     *     3）文件类型支持预览（白名单）
+     */
+    const handleViewFileTypeChange = async (type: 'preview' | 'code') => {
+      setViewFileType(type);
+      if (type === 'code' && selectedFileNode) {
+        // 刷新当前选中的文件内容
+        handleRefreshFileContent();
+      }
     };
 
     /**
@@ -1441,6 +1513,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 代码文件：使用代码查看器
       return (
         <CodeViewer
+          isDynamicTheme={isDynamicTheme}
           fileId={selectedFileId}
           fileName={fileName}
           filePath={`app/${selectedFileId}`}
@@ -1470,7 +1543,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
         } catch (error) {
           console.error('Restart server failed:', error);
-          // message.error('重启失败，请重试');
         } finally {
           setIsRestarting(false);
         }
@@ -1489,12 +1561,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           targetNode={selectedFileNode}
           // 当前视图模式
           viewMode={viewMode}
-          // 视图模式切换回调
-          onViewModeChange={handleChangeViewMode}
-          // 是否显示视图模式切换按钮
-          showViewModeButtons={showViewModeButtons}
-          // 是否显示文件树展开/折叠按钮
-          showFileTreeToggleButton={showFileTreeToggleButton}
           // 导出项目回调
           onExportProject={onExportProject ? handleDownloadProject : undefined}
           // 处理导入项目操作
@@ -1524,7 +1590,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 当前文件类型
           viewFileType={viewFileType}
           // 针对html、md文件，切换预览和代码视图
-          onViewFileTypeChange={setViewFileType}
+          onViewFileTypeChange={handleViewFileTypeChange}
           // 处理通过URL下载文件操作
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
@@ -1544,145 +1610,174 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 关闭整个面板
           onClose={onClose}
           // 连接 VNC 预览状态
-          vncConnectStatus={renderVncPreviewStatusTag()}
+          vncConnectStatus={renderVncPreviewStatus()}
           // 文件树是否可见
           isFileTreeVisible={isFileTreeVisible}
           // 文件树是否固定
           isFileTreePinned={isFileTreePinned}
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
-          // 刷新文件树回调
-          onRefreshFileTree={handleRefreshFileList}
-          // 是否正在刷新文件树
-          isRefreshingFileTree={isRefreshingFileTree}
-          // 是否显示刷新按钮
-          showRefreshButton={showRefreshButton}
-          // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-          isOnlyShowDesktop={isOnlyShowDesktop}
+          hideDesktop={hideDesktop}
         />
       );
     };
 
     return (
-      <>
-        <div
-          className={cx('flex', 'flex-1', 'overflow-hide', {
+      <div
+        className={cx(
+          'flex',
+          'flex-1',
+          'overflow-hide',
+          {
             [styles['fullscreen-mode']]: isFullscreen,
-          })}
-        >
-          {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
-          {viewMode !== 'desktop' && !hideFileTree && (
-            <div
-              ref={fileTreeContainerRef}
-              className={cx(
-                styles['file-tree-view'],
-                'h-full',
-                'flex',
-                'flex-col',
-                'overflow-hide',
-                {
-                  [styles['file-tree-view-visible']]: isFileTreeVisible,
-                  [styles['file-tree-view-hidden']]: !isFileTreeVisible,
-                },
-              )}
-            >
-              {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
-              <FileContextMenu
-                visible={contextMenuVisible}
-                position={contextMenuPosition}
-                // 右键菜单目标节点
-                targetNode={contextMenuTarget}
-                // 是否禁用删除功能(SKILL.md文件不能删除)
-                disabledDelete={
-                  !isCanDeleteSkillFile &&
-                  contextMenuTarget?.name?.toLowerCase() === 'skill.md'
-                }
-                // 关闭右键菜单
-                onClose={closeContextMenu}
-                // 处理删除操作
-                onDelete={handleDelete}
-                // 处理重命名操作
-                onRename={handleRenameFromMenu}
-                // 处理上传文件操作
-                onUploadFiles={handleUploadFromMenu}
-                // 处理新建文件操作
-                onCreateFile={handleCreateFile}
-                // 处理新建文件夹操作
-                onCreateFolder={handleCreateFolder}
-                // 处理导入项目操作
-                onImportProject={onImportProject}
-                // 处理通过URL下载文件操作
-                onDownloadFileByUrl={handleDownloadFileByUrl}
-                // 使用相对定位（相对于文件树容器）
-                useRelativePosition={true}
-              />
-              {/* 操作提示框 */}
-              <TipsBox visible={isDownloadingFile} text="正在下载" />
-              <TipsBox visible={isUploadingFiles} text="正在上传" />
-              <TipsBox visible={isExportingProjecting} text="正在导出" />
-              <TipsBox visible={isImportingProject} text="正在导入" />
-
-              {/* 搜索框 */}
-              <SearchView
-                className={headerClassName}
-                files={files}
-                onFileSelect={handleFileSelect}
-              />
-              {/* 文件树 */}
-              <FileTree
-                fileTreeDataLoading={fileTreeDataLoading}
-                files={files}
-                taskAgentSelectedFileId={taskAgentSelectedFileId}
-                // 当前选中的文件ID
-                selectedFileId={selectedFileId}
-                // 正在重命名的节点
-                renamingNode={renamingNode}
-                // 取消重命名回调
-                onCancelRename={handleCancelRename}
-                // 右键菜单回调
-                onContextMenu={handleContextMenu}
-                // 文件选择回调
-                onFileSelect={handleFileSelect}
-                // 重命名文件回调
-                onConfirmRenameFile={handleRenameFile}
-              />
-            </div>
+          },
+          className,
+        )}
+      >
+        {/* 右边内容 */}
+        <div
+          className={cx(
+            'h-full',
+            'flex',
+            'flex-col',
+            'flex-1',
+            'overflow-hide',
+            {
+              [styles['fullscreen-content-wrapper']]: isFullscreen,
+            },
           )}
+        >
+          {/* 渲染头部组件 */}
+          {renderHeader()}
           {/* 右边内容 */}
-          <div
-            className={cx(
-              'h-full',
-              'flex',
-              'flex-col',
-              'flex-1',
-              'overflow-hide',
-              {
-                [styles['fullscreen-content-wrapper']]: isFullscreen,
-              },
-            )}
-          >
-            {/* 渲染头部组件 */}
-            {renderHeader()}
-            {/* 右边内容 */}
-            <div className={cx(styles['content-container'])}>
-              {renderContent()}
-              {isRestarting && (
-                <div className={cx(styles['restart-container'])}>
-                  {/* 背景占位符（清晰的背景图，按比例显示） */}
-                  <div className={cx(styles['background-placeholder'])} />
-                  {/* 遮罩层（半透明遮罩 + Loading + Spin） */}
-                  <div className={cx(styles['loading-overlay'])}>
-                    <Spin size="large" className={cx(styles['loading-spin'])} />
-                    <span className={cx(styles['loading-text'])}>
-                      重启中...
-                    </span>
-                  </div>
+          <div className={cx(styles['content-container'], 'flex')}>
+            {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
+            {viewMode !== 'desktop' && !hideFileTree && (
+              <div
+                ref={fileTreeContainerRef}
+                className={cx(
+                  styles['file-tree-view'],
+                  'h-full',
+                  'flex',
+                  'flex-col',
+                  'overflow-hide',
+                  {
+                    [styles['file-tree-view-visible']]: isFileTreeVisible,
+                    [styles['file-tree-view-hidden']]: !isFileTreeVisible,
+                  },
+                )}
+              >
+                {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
+                <FileContextMenu
+                  visible={contextMenuVisible}
+                  position={contextMenuPosition}
+                  // 右键菜单目标节点
+                  targetNode={contextMenuTarget}
+                  // 是否禁用删除功能(SKILL.md文件不能删除)
+                  disabledDelete={
+                    !isCanDeleteSkillFile &&
+                    contextMenuTarget?.name?.toLowerCase() === 'skill.md'
+                  }
+                  // 关闭右键菜单
+                  onClose={closeContextMenu}
+                  // 处理删除操作
+                  onDelete={handleDelete}
+                  // 处理重命名操作
+                  onRename={handleRenameFromMenu}
+                  // 处理上传文件操作
+                  onUploadFiles={handleUploadFromMenu}
+                  // 处理新建文件操作
+                  onCreateFile={handleCreateFile}
+                  // 处理新建文件夹操作
+                  onCreateFolder={handleCreateFolder}
+                  // 处理导入项目操作
+                  onImportProject={onImportProject}
+                  // 处理通过URL下载文件操作
+                  onDownloadFileByUrl={handleDownloadFileByUrl}
+                  // 使用相对定位（相对于文件树容器）
+                  useRelativePosition={true}
+                />
+                {/* 操作提示框 */}
+                <TipsBox visible={isDownloadingFile} text="正在下载" />
+                <TipsBox visible={isUploadingFiles} text="正在上传" />
+                <TipsBox visible={isExportingProjecting} text="正在导出" />
+                <TipsBox visible={isImportingProject} text="正在导入" />
+
+                <div
+                  className={cx(
+                    'flex',
+                    'content-between',
+                    'items-center',
+                    styles['file-tree-header'],
+                  )}
+                >
+                  <span>文件</span>
+
+                  {/* 刷新文件树 */}
+                  {/* 是否显示刷新按钮 */}
+                  {viewMode === 'preview' && showRefreshButton && (
+                    // 是否正在刷新文件树
+                    <Tooltip
+                      title={isRefreshingFileTree ? '刷新中...' : '刷新文件树'}
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ReloadOutlined style={{ fontSize: 16 }} />}
+                        onClick={handleRefreshFileList}
+                        className={styles.actionButton}
+                        loading={isRefreshingFileTree}
+                        disabled={isRefreshingFileTree}
+                      />
+                    </Tooltip>
+                  )}
                 </div>
-              )}
+
+                {/* 搜索框 */}
+                <SearchView
+                  className={headerClassName}
+                  files={files}
+                  onFileSelect={handleFileSelect}
+                />
+                {/* 文件树 */}
+                <FileTree
+                  fileTreeDataLoading={fileTreeDataLoading}
+                  files={files}
+                  taskAgentSelectedFileId={taskAgentSelectedFileId}
+                  // 当前选中的文件ID
+                  selectedFileId={selectedFileId}
+                  // 正在重命名的节点
+                  renamingNode={renamingNode}
+                  // 取消重命名回调
+                  onCancelRename={handleCancelRename}
+                  // 右键菜单回调
+                  onContextMenu={handleContextMenu}
+                  // 文件选择回调
+                  onFileSelect={handleFileSelect}
+                  // 重命名文件回调
+                  onConfirmRenameFile={handleRenameFile}
+                />
+              </div>
+            )}
+            {/* 渲染内容 */}
+            <div className={cx('flex-1', 'px-16', 'py-16', 'overflow-hide')}>
+              {renderContent()}
             </div>
+            {/* 重启中 */}
+            {isRestarting && (
+              <div className={cx(styles['restart-container'])}>
+                {/* 背景占位符（清晰的背景图，按比例显示） */}
+                <div className={cx(styles['background-placeholder'])} />
+                {/* 遮罩层（半透明遮罩 + Loading + Spin） */}
+                <div className={cx(styles['loading-overlay'])}>
+                  <Spin size="large" className={cx(styles['loading-spin'])} />
+                  <span className={cx(styles['loading-text'])}>重启中...</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </>
+      </div>
     );
   },
 );

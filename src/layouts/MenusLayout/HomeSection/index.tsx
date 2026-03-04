@@ -21,7 +21,7 @@ const HomeSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
   const { id: chatId } = useParams();
-  const { setOpenHistoryModal } = useModel('layout');
+  // const { setOpenHistoryModal } = useModel('layout');
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
   );
@@ -114,15 +114,16 @@ const HomeSection: React.FC<{
           </h3>
         </div>
         {usedAgentList?.length ? (
-          usedAgentList.map((info: AgentInfo, index: number) => (
-            <MenuListItem
-              key={info.id}
-              onClick={() => handleAgentHome(info)}
-              icon={info.icon}
-              name={info.name}
-              isFirst={index === 0}
-            />
-          ))
+          <div className="flex flex-col gap-4">
+            {usedAgentList.map((info: AgentInfo) => (
+              <MenuListItem
+                key={info.id}
+                onClick={() => handleAgentHome(info)}
+                icon={info.icon}
+                name={info.name}
+              />
+            ))}
+          </div>
         ) : (
           <>
             <div className={cx(styles['no-used'])}>你还没有使用任何智能体</div>
@@ -138,7 +139,10 @@ const HomeSection: React.FC<{
           <ConditionRender condition={conversationList?.length}>
             <span
               className={cx(styles['more-conversation'])}
-              onClick={() => setOpenHistoryModal(true)}
+              // onClick={() => setOpenHistoryModal(true)}
+              onClick={() => {
+                history.push('/history-conversation');
+              }}
             >
               查看全部 <RightOutlined />
             </span>

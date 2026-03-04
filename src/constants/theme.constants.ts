@@ -42,7 +42,7 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'ACCESS_TOKEN', // 访问令牌
   USER_INFO: 'USER_INFO', // 用户信息
   SPACE_ID: 'SPACE_ID', // 空间ID
-  SPACE_URL: 'SPACE_URL', // 空间URL
+  PATH_URL: 'PATH_URL', // 路径URL
 } as const;
 
 /**

@@ -2,27 +2,29 @@
 
 .markdown-custom-process {
   //border: 0.5px solid #e5e5e5;
-  border-radius: 6px;
-  margin: 16px 0;
+  border-radius: 8px;
+  margin: 10px 0;
   overflow: hidden;
-  background: rgba(12, 20, 102, 4%);
+  background: rgba(12, 20, 102, 3%);
+  // border: 1px solid rgba(5, 5, 5, 6%);
 
   .process-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 16px;
+    padding: 3px 8px;
 
     .process-title {
       font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
       font-size: 14px;
-      color: #333;
+      color: rgba(0, 0, 0, 45%);
       font-weight: @fontWeightStrong;
       display: block;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       width: calc(100% - 146px);
+      line-height: 16px;
     }
 
     .process-controls {
@@ -60,6 +62,10 @@
       }
 
       .status-error {
+        height: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
         color: #ff4d4f;
         font-size: 12px;
       }
@@ -69,7 +75,7 @@
         border: none;
         padding: 4px;
         cursor: pointer;
-        color: #666;
+        color: rgba(0, 0, 0, 45%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -169,7 +175,7 @@
 
         .plan-task-text {
           flex: 1;
-          color: #262626;
+          color: rgba(0, 0, 0, 45%);
           line-height: 1.5;
         }
       }

@@ -17,6 +17,7 @@ import {
   AgentComponentTypeEnum,
   EventListEnum,
   ExpandPageAreaEnum,
+  HideDesktopEnum,
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
@@ -135,47 +136,39 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         key: 'plan',
         label: '规划',
         ref: planSectionRef,
-        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       },
       {
         key: 'tool',
         label: '工具',
         ref: toolSectionRef,
-        show: true,
       },
       {
         key: 'skill',
         label: '技能',
         ref: skillSectionRef,
-        // 仅长任务型智能体展示技能块
-        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       },
       {
         key: 'knowledge',
         label: '知识',
         ref: knowledgeSectionRef,
-        show: true,
       },
       {
         key: 'memory',
         label: '记忆',
         ref: memorySectionRef,
-        show: true,
       },
       {
         key: 'experience',
         label: '对话',
         ref: experienceSectionRef,
-        show: true,
       },
       {
         key: 'page',
         label: '界面',
         ref: pageSectionRef,
-        show: true,
       },
     ],
-    [agentConfigInfo?.type],
+    [],
   );
 
   /**
@@ -365,7 +358,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
-    // 开场白 (仅长任务型智能体展示开场白块)
+    // 开场白 (仅通用型智能体展示开场白块)
     if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
       keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     }
@@ -1014,6 +1007,42 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 界面配置列表
   const PageConfigList: CollapseProps['items'] = [
+    // 任务型智能体 才显示 隐藏远程桌面 按钮
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Hide_Remote_Desktop,
+            label: '隐藏远程桌面',
+            children: (
+              <p className={cx(styles.text)}>
+                {agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
+                  ? '在智能体对话框右侧隐藏远程桌面'
+                  : '在智能体对话框右侧显示远程桌面'}
+              </p>
+            ),
+            extra: (
+              <Switch
+                // 阻止冒泡事件
+                value={agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes}
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? HideDesktopEnum.Yes : HideDesktopEnum.No,
+                    'hideDesktop',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
       label: '开场白',
@@ -1195,25 +1224,23 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         {/* 左侧锚点菜单 */}
         {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
           <div className={styles['anchor-sidebar']}>
-            {anchorItems
-              .filter((item) => item.show)
-              .map((item) => (
-                <div
-                  key={item.key}
-                  className={cx(styles['anchor-item'])}
-                  onClick={() => handleAnchorClick(item.key, item.ref)}
-                >
-                  <span className={styles['anchor-item-label']}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+            {anchorItems.map((item) => (
+              <div
+                key={item.key}
+                className={cx(styles['anchor-item'])}
+                onClick={() => handleAnchorClick(item.key, item.ref)}
+              >
+                <span className={styles['anchor-item-label']}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
         {/* 右侧配置内容区域 */}
         <div className={cx('overflow-y', 'flex-1', styles.container)}>
-          {/* 任务型智能体显示系统提示词部分 */}
+          {/* 通用型智能体显示系统提示词部分 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
@@ -1226,7 +1253,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
-          {/* 长任务型智能体显示技能 */}
+          {/* 通用型智能体显示技能 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
               <ConfigOptionsHeader title="技能" />
@@ -1281,7 +1308,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         addComponents={addComponents}
         onAdded={handleAddComponent}
         tabs={CREATED_TABS.filter((item) => {
-          // 如果是任务型智能体，则不显示页面tag
+          // 如果是通用型智能体，则不显示页面tag
           if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
             return (
               item.key !== AgentComponentTypeEnum.Agent &&

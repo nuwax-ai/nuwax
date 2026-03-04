@@ -94,6 +94,9 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
     if (open && mcpId) {
       setLoading(true);
       runMcpConfig(mcpId);
+    } else {
+      setLoading(false);
+      setConfig('');
     }
   }, [open, mcpId]);
 

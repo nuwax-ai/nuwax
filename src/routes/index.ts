@@ -25,8 +25,11 @@ const routes = [
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
     routes: [
-      { path: '', component: '@/pages/Home' },
+      { path: '/', component: '@/pages/Index' },
+      { path: '/home', component: '@/pages/Home' },
+      { path: '/open-iframe-page', component: '@/pages/OpenIframePage' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
+      { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
@@ -88,7 +91,6 @@ const routes = [
       },
 
       { path: '/square', component: '@/pages/Square' },
-      { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
       // 空间广场-插件详情
       {
         path: '/space/publish/plugin/:pluginId',
@@ -120,33 +122,72 @@ const routes = [
         component: '@/pages/Square/SkillDetail',
       },
       {
-        path: '/system/published/manage',
-        component: '@/pages/PublishedManage',
+        path: '/history-conversation',
+        component: '@/pages/HistoryConversation',
       },
-      { path: '/system/config', component: '@/pages/SystemConfig' },
-      { path: '/system/theme/config', component: '@/pages/ThemeConfig' },
-      { path: '/system/user/manage', component: '@/pages/UserManage' },
-      {
-        path: '/system/model/manage',
-        component: '@/pages/GlobalModelManage',
-      },
-      {
-        path: '/system/dashboard',
-        component: '@/pages/SystemManagement/Dashboard',
-      },
-      {
-        path: '/system/log-query/operation-log',
-        component: '@/pages/SystemManagement/LogQuery/OperationLog',
-      },
-      {
-        path: '/system/log-query/running-log',
-        component: '@/pages/SystemManagement/LogQuery/RunningLog',
-      },
-      // 系统管理
+      // 系统管理统一管理
       {
         path: '/system',
         name: '系统管理',
         routes: [
+          {
+            path: 'dashboard',
+            name: '系统概览',
+            component: '@/pages/SystemManagement/Dashboard',
+          },
+          {
+            path: 'task-manage',
+            name: '任务管理',
+            component: '@/pages/SystemManagement/TaskManage',
+          },
+          {
+            path: 'user/manage',
+            name: '用户管理',
+            component: '@/pages/UserManage',
+          },
+          {
+            path: 'publish/audit',
+            name: '发布审核',
+            component: '@/pages/PublishAudit',
+          },
+          {
+            path: 'published/manage',
+            name: '已发布管理',
+            component: '@/pages/PublishedManage',
+          },
+          {
+            path: 'model/manage',
+            name: '公共模型管理',
+            component: '@/pages/GlobalModelManage',
+          },
+          {
+            path: 'config',
+            name: '系统配置',
+            routes: [
+              {
+                path: 'setting',
+                name: '系统设置',
+                component: '@/pages/SystemManagement/SystemConfig/SystemConfig',
+              },
+              {
+                path: 'theme',
+                name: '主题配置',
+                component: '@/pages/SystemManagement/SystemConfig/ThemeConfig',
+              },
+              {
+                path: 'sandbox',
+                name: '沙盒配置',
+                component:
+                  '@/pages/SystemManagement/SystemConfig/SandboxConfig',
+              },
+              {
+                path: 'category',
+                name: '分类管理',
+                component:
+                  '@/pages/SystemManagement/SystemConfig/CategoryManage',
+              },
+            ],
+          },
           {
             path: 'content',
             name: '内容管理',
@@ -195,6 +236,50 @@ const routes = [
                 path: 'content-skill',
                 name: '技能',
                 component: '@/pages/SystemManagement/Content/Skill',
+              },
+            ],
+          },
+          {
+            path: 'menu-permission',
+            name: '菜单权限',
+            routes: [
+              {
+                path: 'permission-resources',
+                name: '权限资源',
+                component:
+                  '@/pages/SystemManagement/MenuPermission/PermissionResources',
+              },
+              {
+                path: 'menu-manage',
+                name: '菜单管理',
+                component: '@/pages/SystemManagement/MenuPermission/MenuManage',
+              },
+              {
+                path: 'role-manage',
+                name: '角色管理',
+                component: '@/pages/SystemManagement/MenuPermission/RoleManage',
+              },
+              {
+                path: 'user-group-manage',
+                name: '用户组管理',
+                component:
+                  '@/pages/SystemManagement/MenuPermission/UserGroupManage',
+              },
+            ],
+          },
+          {
+            path: 'log-query',
+            name: '日志查询',
+            routes: [
+              // {
+              //   path: 'operation-log',
+              //   name: '操作日志',
+              //   component: '@/pages/SystemManagement/LogQuery/OperationLog',
+              // },
+              {
+                path: 'running-log',
+                name: '运行日志',
+                component: '@/pages/SystemManagement/LogQuery/RunningLog',
               },
             ],
           },
@@ -293,6 +378,11 @@ const routes = [
   {
     path: '/examples/sse-streaming-test',
     component: '@/examples/SSEStreamingTest',
+    layout: false,
+  },
+  {
+    path: '/examples/menu-permission-demo',
+    component: '@/examples/MenuPermissionDemo',
     layout: false,
   },
 ];

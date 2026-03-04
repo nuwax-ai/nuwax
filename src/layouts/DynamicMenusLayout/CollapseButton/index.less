@@ -1,0 +1,48 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.collapse-button {
+  position: absolute;
+  bottom: 44px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: @colorBgElevated;
+  border: @lineWidth solid @colorSplit;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  z-index: 999;
+  transform: translateX(-50%);
+
+  &:hover {
+    transform: translateX(-50%) scale(1.1);
+  }
+
+  .icon {
+    color: @colorTextSecondary;
+    transition: color 0.2s ease-in-out;
+  }
+
+  //&:hover .icon {
+  //  color: @colorText;
+  //}
+  //
+  //// 收起状态时的样式调整
+  //&.collapsed {
+  //  &:hover {
+  //    .icon {
+  //      color: @colorText;
+  //    }
+  //  }
+  //}
+}
+
+// 移动端隐藏收起按钮
+@media (max-width: 768px) {
+  .collapse-button {
+    display: none !important;
+  }
+}

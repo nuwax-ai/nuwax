@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -34,7 +35,7 @@ import type {
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, message, Tooltip, Typography } from 'antd';
+import { Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -72,6 +73,8 @@ const AgentDetails: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 会话ID
   const [conversationId, setConversationId] = useState<number | null>(null);
+  // 选中的电脑ID（用于任务智能体模式）
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
   const {
     isFileTreeVisible,
@@ -251,6 +254,7 @@ const AgentDetails: React.FC = () => {
       defaultAgentDetail: agentDetail,
       variableParams,
       messageSourceType: 'agent',
+      selectedComputerId,
     });
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
@@ -292,17 +296,6 @@ const AgentDetails: React.FC = () => {
   // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体、工作流或页面模板）
   const showCopyButton = useMemo(() => {
     const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
-    // 调试：输出相关信息
-    // console.log('[AgentDetails] 复制按钮显示条件:', {
-    //   workflowId,
-    //   agentId: agentDetail?.agentId,
-    //   allowCopy: agentDetail?.allowCopy,
-    //   allowCopyEnum: AllowCopyEnum.Yes,
-    //   showCopyButton: shouldShow,
-    //   pagePreviewData: pagePreviewData,
-    //   uri: pagePreviewData?.uri,
-    //   params: pagePreviewData?.params,
-    // });
     return shouldShow;
   }, [
     workflowId,
@@ -335,65 +328,48 @@ const AgentDetails: React.FC = () => {
                   ? `和${agentDetail?.name}开始会话`
                   : '开始会话')}
             </Typography.Title>
-            <div>
+            <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {!isSidebarVisible && !isMobile && (
-                <Tooltip title="查看智能体详情">
-                  <Button
-                    type="text"
-                    className={cx(styles.sidebarButton)}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => {
-                      hidePagePreview();
-                      sidebarRef.current?.open();
-                    }}
-                  />
-                </Tooltip>
+                <TooltipIcon
+                  title="查看智能体详情"
+                  className={cx(styles['icon-box'])}
+                  icon={<SvgIcon name="icons-nav-sidebar" />}
+                  onClick={() => {
+                    hidePagePreview();
+                    // 确保打开智能体详情前关闭文件树视图，只展示一个右侧面板
+                    closePreviewView();
+                    sidebarRef.current?.open();
+                  }}
+                />
               )}
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Tooltip title="打开预览页面">
-                    <Button
-                      type="text"
-                      className={cx(styles.sidebarButton)}
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-ecosystem"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
-                      onClick={() => {
-                        sidebarRef.current?.close();
-                        handleOpenPreview(agentDetail);
-                      }}
-                    />
-                  </Tooltip>
+                  <TooltipIcon
+                    title="打开预览页面"
+                    className={cx(styles['icon-box'])}
+                    icon={<SvgIcon name="icons-nav-ecosystem" />}
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {agentDetail?.type === AgentTypeEnum.TaskAgent &&
                 agentDetail?.conversationId &&
+                !agentDetail?.hideDesktop &&
                 !isFileTreeVisible && (
-                  <Tooltip title="文件预览或打开智能体电脑">
-                    <Button
-                      type="text"
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-components"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
-                      onClick={handleFileTreeVisible}
-                    />
-                  </Tooltip>
+                  <TooltipIcon
+                    title="打开智能体电脑"
+                    className={cx(styles['icon-box'])}
+                    icon={<SvgIcon name="icons-nav-computer-star" />}
+                    onClick={handleFileTreeVisible}
+                  />
                 )}
             </div>
           </div>
@@ -456,6 +432,15 @@ const AgentDetails: React.FC = () => {
             selectedComponentList={selectedComponentList}
             onSelectComponent={handleSelectComponent}
             showAnnouncement={true}
+            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+            selectedComputerId={selectedComputerId}
+            onComputerSelect={setSelectedComputerId}
+            agentId={agentId}
+            agentSandboxId={agentDetail?.sandboxId}
+            hasPermission={agentDetail?.hasPermission}
+            maskText="您无该智能体权限"
+            fixedSelection={!!agentDetail?.sandboxId}
+            isPersonalComputer={!!agentDetail?.sandboxId}
           />
         </div>
       </div>
@@ -545,8 +530,7 @@ const AgentDetails: React.FC = () => {
                       // 关闭整个面板
                       onClose={closePreviewView}
                       isCanDeleteSkillFile={true}
-                      isOnlyShowDesktop={true}
-                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      // VNC 空闲检测配置（仅通用型智能体启用）
                       idleDetection={{
                         enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
                         onIdleTimeout: closePreviewView,

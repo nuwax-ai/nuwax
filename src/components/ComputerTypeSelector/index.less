@@ -1,0 +1,139 @@
+@import '@/styles/token';
+
+.computer-selector-container {
+  display: flex;
+  align-items: flex-start;
+}
+
+.computer-selector {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 3px;
+  height: 28px;
+
+  .selector-btn {
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadius;
+    box-sizing: border-box;
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    transition: background-color ease-in-out 0.3s;
+    word-wrap: normal;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // background: @colorFillQuaternary;
+    // border: @lineWidth solid @colorBorderSecondary;
+    cursor: pointer;
+
+    &:hover {
+      background: @colorFillTertiary;
+      // border-color: @colorBorder;
+    }
+
+    .selector-icon {
+      font-size: @fontSize;
+      margin-right: @marginXxs;
+    }
+
+    .selector-arrow {
+      margin-left: @marginXxs;
+      transition: transform @motionDurationFast ease;
+    }
+
+    &.open .selector-arrow {
+      transform: rotate(180deg);
+    }
+  }
+
+  .selector-btn-active {
+    // background: @colorPrimaryBg;
+    // border-color: @colorPrimaryBorder;
+    color: @colorTextSecondary;
+  }
+
+  .selector-btn-unavailable {
+    // color: @colorTextQuaternary;
+    cursor: not-allowed;
+  }
+}
+
+.computer-menu {
+  // 覆盖 Antd 默认的菜单项样式
+  :global {
+    .ant-dropdown-menu {
+      max-height: 180px; // 约3个菜单项的高度
+      overflow-y: auto;
+    }
+
+    .ant-dropdown-menu-item {
+      background: transparent !important;
+
+      &:hover {
+        background: @colorFillTertiary !important;
+      }
+
+      &.ant-dropdown-menu-item-selected {
+        background: transparent !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+      }
+    }
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 140px;
+
+    .item-content {
+      display: flex;
+      flex-direction: column;
+      // gap: @marginXxs;
+    }
+
+    .item-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: @colorTextSecondary;
+      font-size: @fontSizeSm;
+    }
+
+    .item-desc {
+      font-size: 11px;
+      color: @colorTextQuaternary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .item-check {
+      margin-left: @marginMd;
+      color: @colorPrimary;
+      font-size: @fontSizeSm;
+    }
+
+    .item-status {
+      margin-left: @marginSm;
+      font-size: @fontSizeSm;
+    }
+
+    .status-online {
+      color: @colorSuccess;
+    }
+
+    .status-offline {
+      color: @colorTextQuaternary;
+    }
+  }
+
+  .menu-item-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}

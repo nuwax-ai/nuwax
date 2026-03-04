@@ -1,7 +1,7 @@
 import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
-import { redirectToLogin } from '@/utils/router';
+import { isChatTemp, redirectToLogin } from '@/utils/router';
 import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
 // ===== 缓存管理方法 =====
@@ -80,6 +80,12 @@ export class UserService {
       } else {
         // 服务器返回错误，清除本地存储
         this.clearUserInfo();
+
+        // 如果是临时会话就不跳转
+        if (isChatTemp()) {
+          return null;
+        }
+
         const { code, message: errorMessage } = result;
         // 根据错误码处理不同情况
         switch (code) {

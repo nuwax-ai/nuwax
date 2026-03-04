@@ -1,4 +1,11 @@
 import {
+  ActionItem,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
   apiDisableSystemUser,
   apiEnableSystemUser,
   apiSystemUserList,
@@ -6,196 +13,239 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Button, Input, Select, Table, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { Button, message } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, { useState } from 'react';
-import CreateModifyUser from './components/createModifyUser';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
+import DataPermissionModal from './components/DataPermissionModal';
+import UserAuthModal from './components/UserAuthModal';
+import UserFormModal from './components/UserFormModal';
+import UserViewMenuModal from './components/UserViewMenuModal';
 import MessageSendModal from './MessageSendModal';
 
 const cx = classNames.bind(styles);
 
-const selectOptions = [
-  { value: '', label: '全部' },
-  { value: UserRoleEnum.Admin, label: '管理员' },
-  { value: UserRoleEnum.User, label: '成员' },
-];
-
+/**
+ * 用户管理
+ */
 const UserManage: React.FC = () => {
-  const [selectedValue, setSelectedValue] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [enableLoadingMap, setEnableLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
-  const [disableLoadingMap, setDisableLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
-  // 消息发送弹窗是否打开
-  const [messageSendOpen, setMessageSendOpen] = useState<boolean>(false);
+  const { hasPermissionByMenuCode } = useModel('menuModel');
 
-  const { data, run, refresh, loading } = useRequest(apiSystemUserList, {
-    debounceWait: 300,
-    defaultParams: [
-      {
-        pageNo: currentPage,
-        pageSize: 10,
-        queryFilter: {
-          role: selectedValue || undefined,
-          userName: inputValue,
-        },
-      },
-    ],
-  });
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
+  const [currentUserInfo, setCurrentUserInfo] =
+    useState<SystemUserListInfo | null>(null);
 
-  const { run: runEnable } = useRequest(apiEnableSystemUser, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
+  // 状态弹窗控制
+  const [messageSendOpen, setMessageSendOpen] = useState(false);
+  const [openAuthModal, setOpenAuthModal] = useState(false);
+  const [openViewMenuModal, setOpenViewMenuModal] = useState(false);
+  const [openDataPermissionModal, setOpenDataPermissionModal] = useState(false);
+  const [openUserFormModal, setOpenUserFormModal] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+
+  // 操作处理函数
+  const handleAddUser = useCallback(() => {
+    setIsEdit(false);
+    setCurrentUserInfo(null);
+    setOpenUserFormModal(true);
+  }, []);
+
+  const handleEditUser = useCallback((record: SystemUserListInfo) => {
+    setIsEdit(true);
+    setCurrentUserInfo(record);
+    setOpenUserFormModal(true);
+  }, []);
+
+  const handleAuth = useCallback((userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenAuthModal(true);
+  }, []);
+
+  const handleViewMenu = useCallback((userInfo: SystemUserListInfo) => {
+    setCurrentUserInfo(userInfo);
+    setOpenViewMenuModal(true);
+  }, []);
+
+  const handleViewDataPermission = useCallback(
+    (userInfo: SystemUserListInfo) => {
+      setCurrentUserInfo(userInfo);
+      setOpenDataPermissionModal(true);
     },
-    onSuccess: () => {
+    [],
+  );
+
+  const handleEnable = useCallback(async (record: SystemUserListInfo) => {
+    const res = await apiEnableSystemUser({ id: record.id });
+    if (res.code === SUCCESS_CODE) {
       message.success('启用成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setEnableLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
-    },
-  });
-
-  const { run: runDisable } = useRequest(apiDisableSystemUser, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
-    },
-    onSuccess: () => {
-      message.success('禁用成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setDisableLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
-    },
-  });
-
-  const getParams = (
-    page: number,
-    role: UserRoleEnum | undefined,
-    keyword: string,
-  ) => {
-    return {
-      pageNo: page,
-      pageSize: 10,
-      queryFilter: {
-        role: role || undefined,
-        userName: keyword,
-      },
-    };
-  };
-
-  const handleSelectChange = (value: string) => {
-    setSelectedValue(value);
-    setCurrentPage(1);
-    const params = getParams(1, value as UserRoleEnum, inputValue);
-    run(params);
-  };
-
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
-    setCurrentPage(1);
-    const params = getParams(1, selectedValue as UserRoleEnum, value);
-    run(params);
-  };
-
-  const handleTableChange = (page: number) => {
-    setCurrentPage(page); // 更新当前页码
-    const params = getParams(page, selectedValue as UserRoleEnum, inputValue);
-    run(params);
-  };
-
-  const handleSuccess = (isEdit: boolean) => {
-    if (isEdit) {
-      refresh();
-      return;
+      actionRef.current?.reload();
     }
-    setSelectedValue('');
-    setInputValue('');
-    setCurrentPage(1);
-    const params = getParams(1, selectedValue as UserRoleEnum, inputValue);
-    run(params);
-  };
+  }, []);
 
-  const columns = [
+  const handleDisable = useCallback(async (record: SystemUserListInfo) => {
+    const res = await apiDisableSystemUser({ id: record.id });
+    if (res.code === SUCCESS_CODE) {
+      message.success('禁用成功');
+      actionRef.current?.reload();
+    }
+  }, []);
+
+  const handleSuccess = useCallback(() => {
+    setOpenUserFormModal(false);
+    actionRef.current?.reload();
+  }, []);
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
+  }, []);
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
+
+  // 操作列配置
+  const getActions = useCallback(
+    (record: SystemUserListInfo): ActionItem<SystemUserListInfo>[] => {
+      return [
+        {
+          key: 'edit',
+          label: '修改',
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
+          onClick: handleEditUser,
+        },
+        {
+          key: 'disable',
+          label: '禁用',
+          isShow: record.status === UserStatusEnum.Enabled,
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_disable',
+          ),
+          onClick: handleDisable,
+        },
+        {
+          key: 'enable',
+          label: '启用',
+          isShow: record.status !== UserStatusEnum.Enabled,
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_enable',
+          ),
+          onClick: handleEnable,
+        },
+        {
+          key: 'auth',
+          label: '授权',
+          disabled:
+            !hasPermissionByMenuCode('user_manage', 'user_manage_bind_role') &&
+            !hasPermissionByMenuCode('user_manage', 'user_manage_bind_group'),
+          onClick: handleAuth,
+        },
+        {
+          key: 'viewMenu',
+          label: '查看菜单资源权限',
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_query_menu_permission',
+          ),
+          onClick: handleViewMenu,
+        },
+        {
+          key: 'dataPermission',
+          label: '查看数据权限',
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_query_data_permission',
+          ),
+          onClick: handleViewDataPermission,
+        },
+      ];
+    },
+    [
+      hasPermissionByMenuCode,
+      handleEditUser,
+      handleEnable,
+      handleDisable,
+      handleAuth,
+      handleViewMenu,
+      handleViewDataPermission,
+    ],
+  );
+
+  const columns: ProColumns<SystemUserListInfo>[] = [
     {
       title: '用户名',
       dataIndex: 'userName',
-      key: 'userName',
       width: 160,
-      render: (text: string) => {
-        return text ? text : '--';
-      },
+      fieldProps: { placeholder: '用户姓名' },
     },
     {
       title: '昵称',
       dataIndex: 'nickName',
-      key: 'nickName',
       width: 100,
+      hideInSearch: true,
     },
     {
       title: '手机号码',
       dataIndex: 'phone',
-      key: 'phone',
       width: 140,
+      hideInSearch: true,
     },
     {
       title: '邮箱',
       dataIndex: 'email',
-      key: 'email',
       width: 200,
-      render: (text: string) => {
-        return text ? text : '--';
-      },
+      hideInSearch: true,
     },
     {
-      title: '角色',
+      title: '类型',
       dataIndex: 'role',
-      key: 'role',
       width: 100,
-      render: (role: UserRoleEnum) => {
-        switch (role) {
-          case UserRoleEnum.Admin:
-            return '管理员';
-          case UserRoleEnum.User:
-            return '成员';
-          default:
-            return '--';
-        }
+      valueType: 'select',
+      valueEnum: {
+        [UserRoleEnum.Admin]: { text: '管理员' },
+        [UserRoleEnum.User]: { text: '成员' },
       },
     },
     {
       title: '状态',
       dataIndex: 'status',
-      key: 'status',
       width: 90,
-      render: (status: UserStatusEnum) => {
-        let statusText = '';
-        let dotStyle = '';
-        switch (status) {
-          case UserStatusEnum.Disabled:
-            statusText = '禁用';
-            dotStyle = styles['dot-red'];
-            break;
-          case UserStatusEnum.Enabled:
-            statusText = '正常';
-            dotStyle = styles['dot-green'];
-            break;
-        }
+      hideInSearch: true,
+      render: (_, record: SystemUserListInfo) => {
+        const isEnabled = record.status === UserStatusEnum.Enabled;
         return (
           <span>
-            <span className={cx(styles['dot-circle'], dotStyle)}></span>
-            {statusText}
+            <span
+              className={cx(
+                styles['dot-circle'],
+                isEnabled ? styles['dot-green'] : styles['dot-red'],
+              )}
+            ></span>
+            {isEnabled ? '正常' : '禁用'}
           </span>
         );
       },
@@ -203,101 +253,119 @@ const UserManage: React.FC = () => {
     {
       title: '加入时间',
       dataIndex: 'created',
-      key: 'created',
       width: 180,
-      render: (created: string) => {
-        return dayjs(created).format('YYYY-MM-DD HH:mm:ss');
-      },
+      hideInSearch: true,
+      valueType: 'dateTime',
     },
     {
       title: '操作',
-      key: 'action',
-      width: 150,
+      valueType: 'option',
+      fixed: 'right',
       align: 'center',
-      render: (_: null, record: SystemUserListInfo) => (
-        <>
-          {record.status === UserStatusEnum.Enabled ? (
-            <Button
-              type="link"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={disableLoadingMap[record.id] || false}
-              onClick={() => runDisable({ id: record.id })}
-            >
-              禁用
-            </Button>
-          ) : (
-            <Button
-              type="link"
-              className={cx(styles['table-action-ant-btn-link'])}
-              loading={enableLoadingMap[record.id] || false}
-              onClick={() => runEnable({ id: record.id })}
-            >
-              启用
-            </Button>
-          )}
-          <CreateModifyUser
-            isEdit={true}
-            record={record}
-            onSuccess={handleSuccess}
-          />
-        </>
+      width: 220,
+      render: (_, record) => (
+        <TableActions<SystemUserListInfo>
+          record={record}
+          actions={getActions(record)}
+        />
       ),
     },
   ];
 
+  const request = async (params: {
+    pageSize?: number;
+    current?: number;
+    userName?: string;
+    role?: string;
+  }) => {
+    const response = await apiSystemUserList({
+      pageNo: params.current || 1,
+      pageSize: params.pageSize || 15,
+      queryFilter: {
+        role: params.role || undefined,
+        userName: params.userName,
+      },
+    });
+
+    return {
+      data: response.data.records,
+      total: response.data.total,
+      success: response.code === SUCCESS_CODE,
+    };
+  };
+
   return (
-    <div className={cx(styles['system-manage-container'], 'scroll-container')}>
-      <h3 className={cx(styles['system-manage-title'])}>用户管理</h3>
-      <section className={cx('flex', 'content-between', 'flex-wrap', 'gap-10')}>
-        <Select
-          className={cx(styles['select-132'])}
-          options={selectOptions}
-          defaultValue=""
-          onChange={handleSelectChange}
-          optionLabelProp="label"
-          popupRender={(menu) => <>{menu}</>}
-          menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
-        />
-        <div className={cx('flex', 'gap-10', 'flex-wrap')}>
-          <Input
-            className={cx(styles['search-input-225'])}
-            placeholder="请输入手机号码邮箱或昵称"
-            prefix={<SearchOutlined />}
-            onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                handleInputChange(
-                  (event.currentTarget as HTMLInputElement).value,
-                );
-              }
-            }}
-          />
-          <CreateModifyUser isEdit={false} onSuccess={handleSuccess} />
-          <Button type="primary" onClick={() => setMessageSendOpen(true)}>
+    <WorkspaceLayout
+      title="用户管理"
+      hideScroll
+      rightSlot={[
+        hasPermissionByMenuCode('user_manage', 'user_manage_add') && (
+          <Button
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddUser}
+          >
+            添加用户
+          </Button>
+        ),
+        hasPermissionByMenuCode('user_manage', 'user_manage_send_message') && (
+          <Button
+            key="message"
+            type="primary"
+            onClick={() => setMessageSendOpen(true)}
+          >
             消息发送
           </Button>
-        </div>
-      </section>
-
-      <Table
-        rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-30')}
+        ),
+      ]}
+    >
+      <XProTable<SystemUserListInfo>
+        actionRef={actionRef}
+        formRef={formRef}
         rowKey="id"
-        loading={loading}
         columns={columns}
-        dataSource={data?.data.records}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          total: data?.data.total,
-          showSizeChanger: true,
-          onChange: handleTableChange,
-          showTotal: (total) => `共 ${total} 条`,
-        }}
+        request={request}
+        onReset={handleReset}
+        showQueryButtons={hasPermissionByMenuCode(
+          'user_manage',
+          'user_manage_query',
+        )}
+      />
+
+      {/* 用户新增/编辑弹窗 */}
+      <UserFormModal
+        open={openUserFormModal}
+        isEdit={isEdit}
+        record={currentUserInfo}
+        onCancel={() => setOpenUserFormModal(false)}
+        onSuccess={handleSuccess}
       />
       <MessageSendModal
         open={messageSendOpen}
         onCancel={() => setMessageSendOpen(false)}
       />
-    </div>
+
+      {/* 用户授权弹窗（包含角色和用户组） */}
+      <UserAuthModal
+        open={openAuthModal}
+        targetId={currentUserInfo?.id || 0}
+        userName={currentUserInfo?.userName || currentUserInfo?.nickName}
+        role={currentUserInfo?.role}
+        onCancel={() => setOpenAuthModal(false)}
+      />
+      <UserViewMenuModal
+        open={openViewMenuModal}
+        userId={currentUserInfo?.id || 0}
+        onCancel={() => setOpenViewMenuModal(false)}
+      />
+      <DataPermissionModal
+        open={openDataPermissionModal}
+        userId={currentUserInfo?.id || 0}
+        userName={currentUserInfo?.userName || currentUserInfo?.nickName}
+        onCancel={() => setOpenDataPermissionModal(false)}
+      />
+    </WorkspaceLayout>
   );
 };
 

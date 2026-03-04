@@ -228,15 +228,17 @@ class UnifiedThemeService {
   /**
    * 重新加载配置
    */
-  private reloadConfiguration(needNotify: boolean = true): void {
+  public reloadConfiguration = (needNotify: boolean = true): void => {
     const newData = this.loadConfiguration();
     if (JSON.stringify(newData) !== JSON.stringify(this.currentData)) {
       this.currentData = newData;
+      this.applyToDOM();
       if (needNotify) {
         this.notifyListeners();
+        this.emitGlobalEvent();
       }
     }
-  }
+  };
 
   /**
    * 获取当前配置
@@ -663,6 +665,7 @@ export const {
   updateLanguage,
   addListener,
   removeListener,
+  reloadConfiguration,
   resetToDefault,
   getConfigSource,
   getConfigSourceText,

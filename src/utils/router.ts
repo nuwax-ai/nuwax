@@ -110,3 +110,7 @@ export const redirectToLogin = (redirect: string | number = '/') => {
 export const redirectTo = (url: string) => {
   window.location.replace(url);
 };
+
+export const isChatTemp = () => {
+  return location.pathname.includes('/chat-temp/');
+};

@@ -1,6 +1,7 @@
+import { BulbOutlined, DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
-import React, { memo, useMemo, useRef } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 
 import styles from './index.less';
 
@@ -34,11 +35,17 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     headerActions = true,
     disableTyping = true,
     theme = 'light',
+    answer = '',
+    thinking = '',
   }: MarkdownRendererProps) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const hasThinking = !!thinking && thinking.trim() !== '';
+    const isThinkingFinished = !!answer && answer.trim() !== '';
+
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
       () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
-      [],
+      [conversationId],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
     const mermaidProvider = useMemo(() => mermaidConfig, []);
@@ -53,26 +60,51 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       >
         <ConfigProvider mermaidConfig={mermaidProvider}>
           {/* 用ds-markdown替换react-markdown，传递自定义components插件 */}
-
-          <MarkdownCMD
-            ref={markdownRef}
-            timerType="requestAnimationFrame"
-            interval={30}
-            plugins={plugins}
-            codeBlock={{ headerActions }}
-            theme={theme}
-            math={{
-              splitSymbol: 'bracket',
-              replaceMathBracket,
-            }}
-            disableTyping={disableTyping}
-          />
+          <div
+            className={cx(styles['markdown-cmd-container'], {
+              [styles['thinking-collapsed']]: !isExpanded,
+            })}
+          >
+            {hasThinking && (
+              <div
+                className={styles['thinking-header']}
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <BulbOutlined className={styles['thinking-icon']} />
+                <span className={styles['thinking-title']}>
+                  {!isThinkingFinished ? '正在思考' : '已思考'}
+                </span>
+                <DownOutlined
+                  className={cx(styles['expand-icon'], {
+                    [styles['is-expanded']]: isExpanded,
+                  })}
+                />
+              </div>
+            )}
+            <MarkdownCMD
+              ref={markdownRef}
+              timerType="requestAnimationFrame"
+              interval={30}
+              plugins={plugins}
+              codeBlock={{ headerActions }}
+              theme={theme}
+              math={{
+                splitSymbol: 'bracket',
+                replaceMathBracket,
+              }}
+              disableTyping={disableTyping}
+            />
+          </div>
         </ConfigProvider>
       </div>
     );
   },
   (prevProps, nextProps) => {
-    return prevProps.id === nextProps.id;
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.thinking === nextProps.thinking &&
+      prevProps.answer === nextProps.answer
+    );
   },
 );
 

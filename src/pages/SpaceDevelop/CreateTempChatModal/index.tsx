@@ -83,8 +83,14 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
   const { run: runDel } = useRequest(apiTempChatDel, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: [number, number]) => {
       message.success('删除成功');
+      // 删除成功后，从数据源中过滤掉该项
+      const [id] = params;
+      const _dataSource = dataSource?.filter(
+        (item: AgentTempChatDto) => item.id !== id,
+      );
+      setDataSource(_dataSource || []);
     },
   });
 
@@ -127,11 +133,6 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除会话链接
   const handleDel = (id: number, agentId: number) => {
-    const _dataSource = dataSource?.filter(
-      (item: AgentTempChatDto) => item.id !== id,
-    );
-    setDataSource(_dataSource || []);
-
     runDel(id, agentId);
   };
 

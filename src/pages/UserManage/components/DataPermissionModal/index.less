@@ -1,0 +1,38 @@
+@import '@/styles/token';
+
+.tabsContentWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+
+  .dataPermissionFormWrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-top: @paddingSm;
+
+    .dataPermissionForm {
+      // 抵消 Row gutter 的负边距
+      margin: 0 -8px;
+      padding: 0 8px;
+    }
+  }
+
+  .tabContent {
+    flex: 1;
+    height: 400px;
+    overflow-y: auto;
+  }
+}
+
+:global {
+  .ant-tabs-top > .ant-tabs-nav {
+    margin-bottom: 0;
+  }
+
+  .ant-modal-title {
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

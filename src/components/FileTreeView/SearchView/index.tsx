@@ -148,8 +148,10 @@ const SearchView: React.FC<SearchViewProps> = ({
       <div className={cx(styles['search-bar'])}>
         <Input
           placeholder="搜索文件..."
+          className={cx(styles['search-input'])}
           prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
           value={searchValue}
+          allowClear
           onChange={handleSearchChange}
           onKeyDown={handleKeyDown}
           onFocus={() => {

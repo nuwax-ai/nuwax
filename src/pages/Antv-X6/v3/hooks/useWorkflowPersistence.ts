@@ -41,6 +41,11 @@ export const useWorkflowPersistence = ({
   const isVersionConflictModalVisibleRef = useRef(false);
   const isMountedRef = useRef(true);
 
+  // V3 Fix: 用于存储防抖函数引用，以便在手动保存时取消自动保存
+  const debouncedSaveRef = useRef<any>(null);
+  // V3 Fix: 用于存储当前正在进行的保存 Promise，防止并行保存
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -52,7 +57,11 @@ export const useWorkflowPersistence = ({
   // @param forceCommit 是否强制提交（忽略版本冲突）
   // @param onSuccess 保存成功后的回调
   // @param onCancel 版本冲突时用户点击取消的回调（用于放弃修改直接返回等场景）
-  const saveFullWorkflow = useCallback(
+  // V3: 全量保存工作流配置 (内部实现)
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  // @param onSuccess 保存成功后的回调
+  // @param onCancel 版本冲突时用户点击取消的回调（用于放弃修改直接返回等场景）
+  const _saveFullWorkflowImpl = useCallback(
     async (
       forceCommit = false,
       onSuccess?: () => void,
@@ -137,7 +146,8 @@ export const useWorkflowPersistence = ({
               onOk: () => {
                 // 用户确认强制覆盖
                 isVersionConflictModalVisibleRef.current = false;
-                saveFullWorkflow(true, onSuccess, onCancel);
+                // 强制覆盖时递归调用，产生新的 Promise
+                _saveFullWorkflowImpl(true, onSuccess, onCancel);
               },
               onCancel: () => {
                 isVersionConflictModalVisibleRef.current = false;
@@ -176,20 +186,60 @@ export const useWorkflowPersistence = ({
     ],
   );
 
-  // V3: 防抖保存（自动保存用）
-  const debouncedSaveFullWorkflow = useMemo(
-    () =>
-      debounce(async () => {
-        // 使用新保存服务检查脏数据，同时兼容旧代理层
-        if (
-          workflowSaveService.hasPendingChanges() ||
-          workflowProxy.hasPendingChanges()
-        ) {
-          await saveFullWorkflow();
-        }
-      }, 1500), // 1.5秒防抖
-    [saveFullWorkflow],
+  // V3: 外部调用的保存包装器（处理并发和防抖取消）
+  const saveFullWorkflow = useCallback(
+    (
+      forceCommit = false,
+      onSuccess?: () => void,
+      onCancel?: () => void,
+    ): Promise<boolean> => {
+      // 1. 取消防抖
+      if (debouncedSaveRef.current?.cancel) {
+        debouncedSaveRef.current.cancel();
+      }
+
+      // 2. 复用 Pending Promise
+      if (savePromiseRef.current) {
+        workflowLogger.warn('WorkFlow save pending, reusing existing promise');
+        return savePromiseRef.current;
+      }
+
+      // 3. 执行保存并记录 Promise
+      const promise = _saveFullWorkflowImpl(
+        forceCommit,
+        onSuccess,
+        onCancel,
+      ).finally(() => {
+        savePromiseRef.current = null;
+      });
+
+      savePromiseRef.current = promise;
+      return promise;
+    },
+    [_saveFullWorkflowImpl],
   );
+
+  // V3: 防抖保存（自动保存用）
+  const debouncedSaveFullWorkflow = useMemo(() => {
+    const fn = debounce(async () => {
+      // 使用新保存服务检查脏数据，同时兼容旧代理层
+      if (
+        workflowSaveService.hasPendingChanges() ||
+        workflowProxy.hasPendingChanges()
+      ) {
+        await saveFullWorkflow();
+      }
+    }, 1500); // 1.5秒防抖
+    debouncedSaveRef.current = fn;
+    return fn;
+  }, [saveFullWorkflow]);
+
+  // V3 Fix: 清理防抖函数
+  useEffect(() => {
+    return () => {
+      debouncedSaveFullWorkflow.cancel();
+    };
+  }, [debouncedSaveFullWorkflow]);
 
   // 自动保存节点配置
   const autoSaveNodeConfig = useCallback(

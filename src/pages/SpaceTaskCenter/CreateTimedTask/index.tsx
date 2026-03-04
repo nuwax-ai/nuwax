@@ -299,7 +299,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         autoComplete="off"
         style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}
         initialValues={{
-          keepConversation: true,
+          keepConversation: false,
         }}
       >
         <Form.Item name="cron" label={<LabelStar label="定时周期" />}>
@@ -328,7 +328,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
             <Form.Item
               name="keepConversation"
               label="保持会话"
-              tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
+              tooltip="选择“否”时将为每次任务执行创建一个全新的会话"
               rules={[{ required: true, message: '请选择是否保持会话' }]}
             >
               <Switch checkedChildren="是" unCheckedChildren="否" />

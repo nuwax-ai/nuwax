@@ -17,7 +17,7 @@ interface InfiniteListProps {
     list: ConversationInfo[];
     hasMore: boolean;
   }>;
-  height?: number; // 容器高度，超出滚动
+  height?: number | string; // 容器高度，超出滚动
   conversationList?: ConversationInfo[];
   setConversationList?: React.Dispatch<
     React.SetStateAction<ConversationInfo[] | undefined>
@@ -27,7 +27,7 @@ interface InfiniteListProps {
 }
 
 function InfiniteList({
-  pageSize = 10,
+  pageSize = 20,
   loadData,
   height = 400,
   conversationList = [],
@@ -56,6 +56,13 @@ function InfiniteList({
       setLoading(false);
     }
   };
+
+  // 初始加载
+  useEffect(() => {
+    if (conversationList?.length === 0 && hasMore) {
+      fetchData();
+    }
+  }, []); // 仅挂载时检查
 
   // 滚动监听
   useEffect(() => {

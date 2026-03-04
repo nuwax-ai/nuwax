@@ -4,7 +4,6 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
-import { getSquareTemplateSegmentedList } from '@/constants/square.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
@@ -14,6 +13,7 @@ import {
 } from '@/services/square';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  FilterOfficialEnum,
   SquareAgentTypeEnum,
   SquareTemplateTargetTypeEnum,
 } from '@/types/enums/square';
@@ -24,7 +24,7 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
-import { Empty, Input } from 'antd';
+import { Empty, Input, Select } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -39,22 +39,40 @@ const cx = classNames.bind(styles);
  * 广场
  */
 const Square: React.FC = () => {
+  const { templateList } = useModel('squareModel');
+
+  const templateListTabs = templateList?.map((item: any) => ({
+    label: item.description,
+    value: item.name,
+  }));
+
   const location = useLocation();
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
   const [loading, setLoading] = useState<boolean>(false);
   // 标题
   const [title, setTitle] = useState<string>('智能体');
+
+  // 过滤官方标识
+  const [filterOfficial, setFilterOfficial] = useState<FilterOfficialEnum>(
+    FilterOfficialEnum.All,
+  );
+  // 过滤官方标识内容
+  const FILTER_OFFICIAL = [
+    { value: FilterOfficialEnum.All, label: '全部' },
+    { value: FilterOfficialEnum.Official, label: '仅查看官方' + title },
+  ];
+
   // 分类名称
   const categoryNameRef = useRef<string>('');
   // 分类类型，默认智能体
   const categoryTypeRef = useRef<SquareAgentTypeEnum>(
     SquareAgentTypeEnum.Agent,
   );
+
   // 模板模式下，目标类型tabs激活的key
-  const [activeKey, setActiveKey] = useState<SquareTemplateTargetTypeEnum>(
-    SquareTemplateTargetTypeEnum.All,
-  );
+  const activeKeyRef = useRef<SquareTemplateTargetTypeEnum>();
+
   // 当前页码
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
@@ -73,7 +91,6 @@ const Square: React.FC = () => {
     handleToggleCollectSuccess,
   } = useSpaceSquare();
   // 获取租户配置信息
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -107,11 +124,16 @@ const Square: React.FC = () => {
     // 分类类型
     categoryTypeRef.current = cate_type as SquareAgentTypeEnum;
     // 分类名称
-    categoryNameRef.current = cate_name ?? cate_type;
+    categoryNameRef.current = cate_name;
+
     // 分类类型
     switch (cate_type) {
       case SquareAgentTypeEnum.Agent:
         setTitle('智能体');
+        apiUrlRef.current = apiPublishedAgentList;
+        break;
+      case SquareAgentTypeEnum.PageApp:
+        setTitle('网页应用');
         apiUrlRef.current = apiPublishedAgentList;
         break;
       case SquareAgentTypeEnum.Plugin:
@@ -122,9 +144,28 @@ const Square: React.FC = () => {
         setTitle('工作流');
         apiUrlRef.current = apiPublishedWorkflowList;
         break;
+      // 模板模式下，根据分类名称设置标题
       case SquareAgentTypeEnum.Template:
-        setTitle('模板');
-        apiUrlRef.current = apiPublishedTemplateList;
+        {
+          switch (cate_name) {
+            case SquareTemplateTargetTypeEnum.PageApp:
+              setTitle('网页应用');
+              break;
+            case SquareTemplateTargetTypeEnum.ChatBot:
+              setTitle('智能体');
+              break;
+            case SquareTemplateTargetTypeEnum.Workflow:
+              setTitle('工作流');
+              break;
+            case SquareTemplateTargetTypeEnum.Skill:
+              setTitle('技能');
+              break;
+            default:
+              setTitle('模板');
+              break;
+          }
+          apiUrlRef.current = apiPublishedTemplateList;
+        }
         break;
     }
   };
@@ -133,26 +174,55 @@ const Square: React.FC = () => {
   const handleQuery = (
     pageIndex: number = 1,
     kw: string = keyword,
-    targetType?: AgentComponentTypeEnum,
-    targetSubType?: 'ChatBot' | 'PageApp',
+    official: FilterOfficialEnum = filterOfficial,
   ) => {
-    const data: SquarePublishedListParams = {
+    const data: SquarePublishedListParams & {
+      category?: any;
+      targetType?: any;
+      targetSubType?: any;
+      official?: boolean;
+    } = {
       page: pageIndex,
-      pageSize: 20,
+      pageSize: 48,
       // 分类名称
       category: categoryNameRef.current,
       kw,
     };
 
-    /**
-     * 模板模式下，需要设置目标类型和目标子类型
-     */
-    if (targetType) {
-      data.targetType = targetType;
+    // 智能体
+    if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
+      data.targetType = AgentComponentTypeEnum.Agent;
     }
 
-    if (targetSubType) {
-      data.targetSubType = targetSubType;
+    // 网页应用
+    if (categoryTypeRef.current === SquareAgentTypeEnum.PageApp) {
+      data.targetType = AgentComponentTypeEnum.Agent;
+      data.targetSubType = AgentComponentTypeEnum.PageApp;
+    }
+
+    /**
+     * 模板模式下，需要设置目标类型和目标子类型【特殊处理】
+     */
+    if (categoryTypeRef.current === SquareAgentTypeEnum.Template) {
+      // 智能体和网页应用需要设置目标子类型
+      data.category = activeKeyRef.current;
+
+      // 如果是模板下的智能体或者网页应用
+      if (
+        categoryNameRef.current === SquareTemplateTargetTypeEnum.ChatBot ||
+        categoryNameRef.current === SquareTemplateTargetTypeEnum.PageApp
+      ) {
+        data.targetType = AgentComponentTypeEnum.Agent;
+        data.targetSubType = categoryNameRef.current;
+      } else if (categoryNameRef.current) {
+        // 工作流、技能
+        data.targetType = categoryNameRef.current;
+      }
+    }
+
+    // 设置过滤官方标识
+    if (official === FilterOfficialEnum.Official) {
+      data.official = true;
     }
 
     runSquareList(data);
@@ -170,10 +240,10 @@ const Square: React.FC = () => {
   const effectLoadFn = () => {
     setKeyword('');
     setSquareComponentList([]);
-    setActiveKey(SquareTemplateTargetTypeEnum.All);
+    activeKeyRef.current = undefined;
     setLoading(true);
     // 查询列表
-    handleQuery();
+    handleQuery(1, '', FilterOfficialEnum.All);
   };
 
   useEffect(() => {
@@ -192,6 +262,8 @@ const Square: React.FC = () => {
       cate_type,
       cate_name,
     };
+    // 设置默认过滤官方标识
+    setFilterOfficial(FilterOfficialEnum.All);
     initValues(params);
     effectLoadFn();
   }, [location]);
@@ -203,52 +275,24 @@ const Square: React.FC = () => {
     }
   };
 
-  // 处理模板下查询列表
-  const handleTemplateQuery = (
-    currentActiveKey: SquareTemplateTargetTypeEnum,
-    value: string = '',
-  ) => {
-    switch (currentActiveKey) {
-      case SquareTemplateTargetTypeEnum.All:
-        handleQuery(1, value);
-        break;
-      case SquareTemplateTargetTypeEnum.Agent:
-        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'ChatBot');
-        break;
-      case SquareTemplateTargetTypeEnum.Workflow:
-        handleQuery(1, value, AgentComponentTypeEnum.Workflow);
-        break;
-      case SquareTemplateTargetTypeEnum.Page:
-        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'PageApp');
-        break;
-      case SquareTemplateTargetTypeEnum.Skill:
-        handleQuery(1, value, AgentComponentTypeEnum.Skill);
-        break;
-    }
-  };
-
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
     setLoading(true);
     setSquareComponentList([]);
-    // 模板模式下
-    if (categoryTypeRef.current === SquareAgentTypeEnum.Template) {
-      // 处理模板下查询列表
-      handleTemplateQuery(activeKey, value);
-    } else {
-      // 处理非模板下查询列表
-      handleQuery(1, value);
-    }
+    setPage(1);
+    setHasMore(false);
+    handleQuery(1, value);
   };
 
   // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
   const handleTabClick = (targetType: React.Key) => {
     setLoading(true);
     setSquareComponentList([]);
+    setPage(1);
+    setHasMore(false);
     const _activeKey = targetType as SquareTemplateTargetTypeEnum;
-    setActiveKey(_activeKey);
-    // 处理模板下查询列表
-    handleTemplateQuery(_activeKey, keyword);
+    activeKeyRef.current = _activeKey;
+    handleQuery(1, keyword);
   };
 
   return (
@@ -280,15 +324,31 @@ const Square: React.FC = () => {
       >
         <div className={cx('flex', 'items-center', 'gap-10')}>
           <h6 className={cx(styles['theme-title'])}>{title}</h6>
-          {categoryTypeRef.current === SquareAgentTypeEnum.Template && (
-            <ButtonToggle
-              options={getSquareTemplateSegmentedList(
-                tenantConfigInfo?.enabledSandbox,
-              )}
-              value={activeKey}
-              onChange={(value) => handleTabClick(value as React.Key)}
-            />
-          )}
+          {categoryTypeRef.current === SquareAgentTypeEnum.Template &&
+            categoryNameRef.current && (
+              <Select
+                options={templateListTabs}
+                value={activeKeyRef.current}
+                style={{ width: 160, marginLeft: 10 }}
+                placeholder="请选择分类"
+                allowClear
+                onChange={(value) => handleTabClick(value as React.Key)}
+              />
+            )}
+          <ButtonToggle
+            style={{ marginLeft: 10 }}
+            options={FILTER_OFFICIAL}
+            value={filterOfficial}
+            onChange={(value) => {
+              const val = value as FilterOfficialEnum;
+              setFilterOfficial(val);
+              setLoading(true);
+              setSquareComponentList([]);
+              setPage(1);
+              setHasMore(false);
+              handleQuery(1, keyword, val);
+            }}
+          />
         </div>
         <Input.Search
           className={cx(styles['search-input'])}
@@ -314,7 +374,11 @@ const Square: React.FC = () => {
           ) : squareComponentList?.length > 0 ? (
             <div className={cx(styles['list-section'])}>
               {squareComponentList.map((item, index) => {
-                if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
+                // 智能体模式下，显示智能体、网页应用组件
+                if (
+                  categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
+                  categoryTypeRef.current === SquareAgentTypeEnum.PageApp
+                ) {
                   return (
                     <SingleAgent
                       key={index}
@@ -325,10 +389,16 @@ const Square: React.FC = () => {
                       }
                     />
                   );
-                } else if (
+                }
+                // 模板模式下，根据分类名称显示不同的组件
+                else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Template
                 ) {
-                  if (activeKey === SquareTemplateTargetTypeEnum.Page) {
+                  // 模板下的网页应用
+                  if (
+                    categoryNameRef.current ===
+                    SquareTemplateTargetTypeEnum.PageApp
+                  ) {
                     return (
                       <PageCard
                         key={index}
@@ -346,6 +416,7 @@ const Square: React.FC = () => {
                       />
                     );
                   } else {
+                    // 模板下的智能体、工作流、技能
                     return (
                       <TemplateItem
                         key={index}
@@ -359,6 +430,7 @@ const Square: React.FC = () => {
                 } else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Skill
                 ) {
+                  // 技能
                   return (
                     <PageCard
                       key={index}
@@ -375,6 +447,7 @@ const Square: React.FC = () => {
                     />
                   );
                 } else {
+                  // 插件、工作量
                   return (
                     <SquareComponentInfo
                       key={index}

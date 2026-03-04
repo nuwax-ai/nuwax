@@ -16,6 +16,7 @@ export interface UpdateSpaceTeamParams {
 export interface TeamDetailInfo extends UpdateSpaceTeamParams {
   tenantId: number;
   creatorId: number;
+  creatorName?: string;
   // 当前登录用户在空间的角色,可用值:Owner,Admin,User
   currentUserRole: TeamStatusEnum;
   created: string;
@@ -35,10 +36,10 @@ export interface SpaceUserInfo {
 // 搜索成员返回数据
 export interface SearchUserInfo {
   id: number;
-  tenantId: number;
+  tenantId?: number;
   userName: string;
   nickName: string;
   avatar: string;
-  created: string;
-  role: TeamStatusEnum;
+  created?: string;
+  role?: TeamStatusEnum;
 }

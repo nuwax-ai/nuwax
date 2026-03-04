@@ -67,9 +67,14 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   >([PluginPublishScopeEnum.Space]);
   // 已发布列表
   const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
-  // 智能体、插件、工作流等信息列表
-  const { agentInfoList, pluginInfoList, workflowInfoList, skillInfoList } =
-    useModel('squareModel');
+  // 智能体、页面应用、插件、工作流等信息列表
+  const {
+    agentInfoList,
+    pageAppInfoList,
+    pluginInfoList,
+    workflowInfoList,
+    skillInfoList,
+  } = useModel('squareModel');
   // 查询分类列表信息
   const { runQueryCategory } = useCategory();
 
@@ -184,7 +189,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     let _classifyList: SquareAgentInfo[] = [];
     switch (mode) {
       case AgentComponentTypeEnum.Agent:
-        _classifyList = agentInfoList;
+        _classifyList = currentTitle ? pageAppInfoList : agentInfoList;
         setTitle(currentTitle ?? '智能体');
         break;
       case AgentComponentTypeEnum.Plugin:
@@ -208,7 +213,9 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     setClassifyList(list);
     // 默认选中第一个分类
     if (list?.length > 0) {
-      const initCategory = category || list[0].value;
+      // 如果回显的数据在列表中不存在，默认选中列表中的第一个
+      const find = list.find((item: any) => item.value === category);
+      const initCategory = find ? find.value : list[0].value;
       form.setFieldValue('category', initCategory);
     }
   }, [

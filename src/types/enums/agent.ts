@@ -1,4 +1,13 @@
 // 智能体组件模型类型枚举
+export enum CategoryTypeEnum {
+  // 智能体
+  Agent = 'Agent',
+  // 组件
+  Component = 'Component',
+  // 应用
+  PageApp = 'PageApp',
+}
+
 export enum AgentComponentTypeEnum {
   Plugin = 'Plugin',
   Workflow = 'Workflow',
@@ -9,6 +18,8 @@ export enum AgentComponentTypeEnum {
   Agent = 'Agent',
   MCP = 'Mcp',
   Page = 'Page',
+  // 应用
+  PageApp = 'PageApp',
   // 事件
   Event = 'Event',
   // 技能
@@ -221,6 +232,12 @@ export enum ExpandPageAreaEnum {
 
 // 是否隐藏聊天区域, 1 隐藏；0 不隐藏
 export enum HideChatAreaEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否隐藏远程桌面, 1 隐藏；0 不隐藏
+export enum HideDesktopEnum {
   No = 0,
   Yes = 1,
 }

@@ -140,3 +140,49 @@ body {
     height: 0;
   }
 }
+
+// 表格头部背景色及其分页边框颜色
+.ant-pagination-options .ant-select-selector,
+.ant-table thead.ant-table-thead > tr > th,
+.ant-table thead.ant-table-thead .ant-table-cell-fix-left,
+.ant-table thead.ant-table-thead .ant-table-cell-fix-right,
+.ant-table-container thead.ant-table-thead > tr > th,
+.ant-table-content thead.ant-table-thead > tr > th {
+  background-color: #f0f2f5 !important;
+}
+
+// 表格分页下拉框边框颜色
+.ant-pagination-options .ant-select-selector {
+  border-color: #f0f2f5 !important;
+}
+
+// XProTable 表格滚动条样式：显示滑块，隐藏轨道
+.x-pro-table {
+  .ant-table-body,
+  .ant-table-content {
+    // 针对 Webkit 内核浏览器 (Chrome, Safari, Edge)
+    &::-webkit-scrollbar {
+      width: 8px !important;
+      height: 8px !important;
+    }
+
+    // 隐藏滚动条轨道（透明背景）
+    &::-webkit-scrollbar-track {
+      background: transparent !important;
+    }
+
+    // 显示滚动条滑块
+    &::-webkit-scrollbar-thumb {
+      background: @GRAY19 !important;
+      border-radius: 6px !important;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: @GRAY !important;
+    }
+
+    // 针对 Firefox - 使用 thin 模式保留滑块
+    scrollbar-width: thin !important;
+    scrollbar-color: @GRAY19 transparent !important;
+  }
+}

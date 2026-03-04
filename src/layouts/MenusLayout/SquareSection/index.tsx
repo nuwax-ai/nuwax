@@ -1,6 +1,7 @@
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
+import { getSquareTemplateSegmentedList } from '@/constants/square.constants';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import {
   SquareAgentInfo,
@@ -20,8 +21,19 @@ const cx = classNames.bind(styles);
 const SquareSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
-  const { agentInfoList, pluginInfoList, workflowInfoList, templateList } =
+  const { agentInfoList, pageAppInfoList, pluginInfoList, workflowInfoList } =
     useModel('squareModel');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 模板模式下，目标类型tabs
+  const templateListTabs = getSquareTemplateSegmentedList(
+    tenantConfigInfo?.enabledSandbox,
+  ).map((item) => ({
+    name: item.value,
+    description: item.label,
+  }));
+
   // active项
   const [activeKey, setActiveKey] = useState<string>('');
   // menu显隐
@@ -37,7 +49,6 @@ const SquareSection: React.FC<{
 
   useEffect(() => {
     const { cate_type, cate_name } = params;
-    // setActiveKey(cate_name ?? cate_type);
     if (cate_name) {
       setActiveKey(cate_type + cate_name);
     } else {
@@ -82,6 +93,15 @@ const SquareSection: React.FC<{
       type: SquareAgentTypeEnum.Agent,
     },
     {
+      name: '网页应用',
+      icon: <SvgIcon name="icons-common-console" />,
+      list: pageAppInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.PageApp + item.name,
+      })),
+      type: SquareAgentTypeEnum.PageApp,
+    },
+    {
       name: '插件',
       icon: <SvgIcon name="icons-nav-plugins" />,
       list: pluginInfoList.map((item: any) => ({
@@ -102,7 +122,7 @@ const SquareSection: React.FC<{
     {
       name: '模板',
       icon: <SvgIcon name="icons-nav-template" />,
-      list: templateList.map((item: any) => ({
+      list: templateListTabs.map((item: any) => ({
         ...item,
         name: SquareAgentTypeEnum.Template + item.name,
       })),
@@ -133,6 +153,7 @@ const SquareSection: React.FC<{
               <SecondMenuItem.SubItem
                 key={item.name}
                 name={item.description}
+                className={cx(styles.subItem)}
                 isActive={activeKey === item.name}
                 onClick={() => handleClick(info.type, item.name)}
               />

@@ -120,7 +120,6 @@ const AppDev: React.FC = () => {
     setActiveFile,
     updateFileContent,
     updateDevServerUrl,
-    // updateProjectId, // 暂时未使用，保留以备将来使用
     updateWorkspace,
   } = appDevModel;
 
@@ -133,8 +132,6 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  // 左侧面板标签状态: 对话 | 设计 | 数据
-  // const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -388,8 +385,7 @@ const AppDev: React.FC = () => {
         delayBeforeRefresh: 500,
         showMessage: false, // Agent 触发时不显示消息
       });
-    }, // 新增：Agent 触发时不切换页面
-    // hasPermission: projectInfo.hasPermission, // 传递权限状态
+    },
   });
 
   // ⭐ 自动错误处理 Model（用于记录和管理）
@@ -676,9 +672,10 @@ const AppDev: React.FC = () => {
         });
         projectInfo.refreshProjectInfo();
       } else {
-        message.error('发布失败,请先尝试解决错误后重试');
+        message.error(result.message || '发布失败');
       }
     } catch (error) {
+      // request请求中设置了skipErrorHandler: true, 跳过了错误处理
       message.error('发布失败,先尝试解决错误后重试');
     } finally {
       setIsDeploying(false);
@@ -730,13 +727,21 @@ const AppDev: React.FC = () => {
   const handleExportProject = useCallback(async () => {
     // 检查项目ID是否有效
     if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法导出');
+      message.warning('项目ID不存在或无效，无法导出');
       return;
     }
 
     try {
       // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await exportProject(projectId);
+
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.warning(errorMessage);
+        return;
+      }
 
       // 从响应头中获取文件名
       const contentDisposition = result.headers?.['content-disposition'];
@@ -753,7 +758,7 @@ const AppDev: React.FC = () => {
       }
 
       // 创建下载链接
-      const blob = new Blob([result.data], { type: 'application/zip' });
+      const blob = new Blob([result.data || ''], { type: 'application/zip' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

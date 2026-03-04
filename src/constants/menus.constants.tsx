@@ -66,6 +66,11 @@ export const USER_OPERATE_AREA: UserOperateAreaItemType[] = [
     icon: <SvgIcon name="icons-nav-notification" />,
     type: UserOperatorAreaEnum.Message,
   },
+  {
+    title: '我的电脑管理',
+    icon: <SvgIcon name="icons-nav-computer" />,
+    type: UserOperatorAreaEnum.Computer,
+  },
 ];
 
 // 用户头像操作列表
