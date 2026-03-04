@@ -83,7 +83,7 @@ export const USER_AVATAR_LIST = [
   {
     type: UserAvatarEnum.Setting,
     icon: <SettingOutlined />,
-    text: '设置',
+    text: '个人资料',
   },
   {
     type: UserAvatarEnum.Log_Out,
@@ -121,5 +121,9 @@ export const SETTING_ACTIONS = [
   {
     type: SettingActionEnum.Theme_Switch,
     label: '主题切换',
+  },
+  {
+    type: SettingActionEnum.Usage_Statistics,
+    label: '用量统计',
   },
 ];

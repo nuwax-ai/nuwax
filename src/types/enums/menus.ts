@@ -41,4 +41,6 @@ export enum SettingActionEnum {
   Email_Bind,
   Reset_Password,
   Theme_Switch,
+  // 用量统计
+  Usage_Statistics,
 }
