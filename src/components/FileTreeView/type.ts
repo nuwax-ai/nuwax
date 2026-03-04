@@ -24,10 +24,6 @@ export interface FileTreeViewRef {
  */
 export interface FileTreeViewProps {
   className?: string;
-  // 是否显示视图模式切换按钮
-  showViewModeButtons?: boolean;
-  // 是否显示文件树展开/折叠按钮
-  showFileTreeToggleButton?: boolean;
   // 文件树头部样式
   headerClassName?: string;
   // 通用型智能体会话中点击选中的文件ID
@@ -93,8 +89,6 @@ export interface FileTreeViewProps {
   onRefreshFileTree?: () => Promise<void>;
   // 是否显示刷新按钮, 默认显示
   showRefreshButton?: boolean;
-  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-  isOnlyShowDesktop?: boolean;
   /**
    * VNC 空闲检测配置
    * 用于在用户长时间无操作时自动断开连接

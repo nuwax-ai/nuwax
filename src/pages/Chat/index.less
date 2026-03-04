@@ -15,7 +15,7 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      padding: @paddingXs 16px @paddingXs @paddingLg;
+      padding: @paddingXs 16px @paddingXs 32px;
       box-sizing: content-box;
     }
 
@@ -42,13 +42,13 @@
 
   .main-content-box {
     width: 100%;
-    padding: 0 @padding 0;
+    padding: 0 @padding 0 40px;
     overflow-y: hidden;
     height: 100%;
     flex: 1;
     display: flex;
     position: relative;
-    gap: 16px;
+    gap: 40px;
 
     //隐藏滚动条
     &::-webkit-scrollbar {

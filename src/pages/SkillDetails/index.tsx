@@ -1,3 +1,5 @@
+import FileTreeView from '@/components/FileTreeView';
+import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
@@ -29,8 +31,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import ImportSkillProjectModal from '../SpaceSkillManage/ImportSkillProjectModal';
-import FileTreeView from './FileTreeView';
-import type { FileTreeViewRef } from './FileTreeView/type';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
@@ -547,10 +547,6 @@ const SkillDetails: React.FC = () => {
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}
           ref={fileTreeViewRef}
-          // 是否显示视图模式切换按钮
-          showViewModeButtons={false}
-          // 是否显示文件树展开/折叠按钮
-          showFileTreeToggleButton={false}
           // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表

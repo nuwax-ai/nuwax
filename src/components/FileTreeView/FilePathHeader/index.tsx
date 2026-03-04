@@ -28,7 +28,6 @@ const cx = classNames.bind(styles);
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
-  showFileTreeToggleButton = true,
   conversationId,
   targetNode,
   viewMode = 'preview',
@@ -56,8 +55,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreeVisible = false,
   isFileTreePinned = false,
   onFileTreeToggle,
-  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-  isOnlyShowDesktop = false,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -118,7 +115,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 文件树展开/折叠图标 */}
-      {viewMode !== 'desktop' && showFileTreeToggleButton && (
+      {viewMode !== 'desktop' && (
         <div className={cx('flex', 'items-center', 'gap-4')}>
           <span>文件预览</span>
           <Tooltip
@@ -299,51 +296,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               />
             </Tooltip>
           )}
-
-          {/* 刷新文件树 */}
-          {/* {viewMode === 'preview' && showRefreshButton && (
-            <Tooltip title={isRefreshingFileTree ? '刷新中...' : '刷新文件树'}>
-              <Button
-                type="text"
-                size="small"
-                icon={<ReloadOutlined style={{ fontSize: 16 }} />}
-                onClick={onRefreshFileTree}
-                className={styles.actionButton}
-                loading={isRefreshingFileTree}
-                disabled={isRefreshingFileTree}
-              />
-            </Tooltip>
-          )} */}
         </div>
 
-        {/* 视图模式切换按钮 */}
-        {/* {showViewModeButtons && (
-          <div className={styles.viewModeButtons}>
-            {!isOnlyShowDesktop && (
-              <Button
-                type={viewMode === 'preview' ? 'primary' : 'default'}
-                onClick={() => onViewModeChange?.('preview')}
-                className={styles.viewModeButton}
-              >
-                文件预览
-              </Button>
-            )}
-            {hideDesktop !== HideDesktopEnum.Yes && (
-              <Button
-                type={viewMode === 'desktop' ? 'primary' : 'default'}
-                onClick={() => onViewModeChange?.('desktop')}
-                className={styles.viewModeButton}
-              >
-                智能体电脑
-              </Button>
-            )}
-          </div>
-        )} */}
-
         {/* 右侧：操作按钮 */}
-        <div
-          className={cx(styles.actionButtons, { 'ml-auto': isOnlyShowDesktop })}
-        >
+        <div className={cx(styles.actionButtons)}>
           {/* 分享 */}
           {isShowShare &&
             (viewMode === 'desktop' ||
