@@ -62,7 +62,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       targetId,
       viewMode,
-      showViewModeButtons = true,
       onUploadFiles,
       onExportProject,
       // 是否正在导入项目
@@ -102,8 +101,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRefreshFileTree,
       // 是否显示刷新按钮
       showRefreshButton = true,
-      // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-      isOnlyShowDesktop = false,
       // VNC 空闲检测配置
       idleDetection,
       hideDesktop = 0,
@@ -1564,8 +1561,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           targetNode={selectedFileNode}
           // 当前视图模式
           viewMode={viewMode}
-          // 是否显示视图模式切换按钮
-          showViewModeButtons={showViewModeButtons}
           // 导出项目回调
           onExportProject={onExportProject ? handleDownloadProject : undefined}
           // 处理导入项目操作
@@ -1622,8 +1617,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isFileTreePinned={isFileTreePinned}
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
-          // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-          isOnlyShowDesktop={isOnlyShowDesktop}
           hideDesktop={hideDesktop}
         />
       );

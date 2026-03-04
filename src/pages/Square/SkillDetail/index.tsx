@@ -163,8 +163,6 @@ const SkillDetail: React.FC = ({}) => {
         originalFiles={skillInfo?.files || []}
         // 是否只读
         readOnly={true}
-        // 是否显示视图模式切换按钮
-        showViewModeButtons={false}
         // 是否显示更多操作菜单
         showMoreActions={false}
         // 是否显示全屏图标

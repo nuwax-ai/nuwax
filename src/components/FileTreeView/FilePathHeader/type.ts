@@ -9,8 +9,6 @@ export interface FilePathHeaderProps {
   targetNode: FileNode | null;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
-  // 是否显示视图模式切换按钮
-  showViewModeButtons?: boolean;
   /** 重启服务器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
@@ -63,8 +61,6 @@ export interface FilePathHeaderProps {
   isFileTreePinned?: boolean;
   /** 文件树展开/折叠回调 */
   onFileTreeToggle?: () => void;
-  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-  isOnlyShowDesktop?: boolean;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop?: number;
 }

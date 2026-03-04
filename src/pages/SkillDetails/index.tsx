@@ -547,8 +547,6 @@ const SkillDetails: React.FC = () => {
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}
           ref={fileTreeViewRef}
-          // 是否显示视图模式切换按钮
-          showViewModeButtons={false}
           // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表
