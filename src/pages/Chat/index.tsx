@@ -107,40 +107,31 @@ const Chat: React.FC = () => {
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-  // 仅在从智能体详情页点击"会话"传参进入时，锁定电脑选择
-  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(() => {
-    return history.action === 'PUSH' && !!location.state?.selectedComputerId;
-  });
+  // 是否锁定电脑选择（仅在从 AgentDetails 页面带有 selectedComputerId 且为 PUSH 跳转时生效）
+  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
+
+  // 当前选中的电脑 ID（任务型智能体）
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
 
-  // 智能体详情页面带过来的值仅在本次会话使用，当用户刷新页面或点击小刷子新建会话，就不能作为其他判断条件使用。
-  // 因此，只有在 history action 为 PUSH 且 state 中有值时才设置
-  const [selectedComputerId, setSelectedComputerId] = useState<string>(() => {
-    const passedDetails = location.state?.selectedComputerId;
-    // PUSH: 正常跳转 (AgentDetails -> Chat)
-    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
-    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
-    if (history.action === 'PUSH' && passedDetails) {
-      return passedDetails;
-    }
-    return '';
-  });
-
+  // 仅在本次会话中使用从 AgentDetails 页面带过来的 selectedComputerId；
+  // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
   useEffect(() => {
     const passedDetails = location.state?.selectedComputerId;
+
     // PUSH: 正常跳转 (AgentDetails -> Chat)
-    // POP: 刷新页面/后退 (Refresh -> Chat) -> 清空
-    // REPLACE: 新建会话 (New Chat -> Chat) -> 清空
-    if (history.action === 'PUSH' && passedDetails) {
+    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
+
+    if (isPushWithComputer) {
       setSelectedComputerId(passedDetails);
       setIsSelectionLocked(true);
     } else {
       setSelectedComputerId('');
       setIsSelectionLocked(false);
     }
-  }, [location.key]);
+  }, [history.action, location.key]);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -213,6 +204,14 @@ const Chat: React.FC = () => {
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
+  // 页面预览相关状态
+  const { pagePreviewData, showPagePreview, hidePagePreview } =
+    useModel('chat');
+
+  const { isMobile } = useModel('layout');
+  // 会话记录
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
+
   // 统一 Agent 数据源：优先使用会话关联的智能体快照，兜底使用详情接口数据
   const effectiveAgent = useMemo(() => {
     return conversationInfo?.agent || agentDetail;
@@ -247,14 +246,6 @@ const Chat: React.FC = () => {
       return selectedComputerId;
     }
   };
-
-  // 页面预览相关状态
-  const { pagePreviewData, showPagePreview, hidePagePreview } =
-    useModel('chat');
-
-  const { isMobile } = useModel('layout');
-  // 会话记录
-  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id

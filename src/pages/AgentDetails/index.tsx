@@ -55,7 +55,8 @@ const AgentDetails: React.FC = () => {
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
   // 获取 chat model 中的页面预览状态
-  const { showPagePreview } = useModel('chat');
+  const { pagePreviewData, hidePagePreview, showPagePreview } =
+    useModel('chat');
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -75,6 +76,12 @@ const AgentDetails: React.FC = () => {
   const [conversationId, setConversationId] = useState<number | null>(null);
   // 选中的电脑ID（用于任务智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const sidebarRef = useRef<AgentSidebarRef>(null);
+
+  // 页面复制弹窗状态
+  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
   const {
     isFileTreeVisible,
@@ -98,7 +105,7 @@ const AgentDetails: React.FC = () => {
 
   const values = Form.useWatch([], { form, preserve: true });
 
-  React.useEffect(() => {
+  useEffect(() => {
     // 监听form表单值变化
     if (values && Object.keys(values).length === 0) {
       return;
@@ -198,6 +205,8 @@ const AgentDetails: React.FC = () => {
     });
 
     return () => {
+      // 关闭页面预览
+      hidePagePreview();
       setIsLoaded(false);
       setMessageList([]);
       setChatSuggestList([]);
@@ -257,13 +266,6 @@ const AgentDetails: React.FC = () => {
       selectedComputerId,
     });
   };
-  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
-
-  const { pagePreviewData, hidePagePreview } = useModel('chat');
-
-  // 页面复制弹窗状态
-  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -312,10 +314,12 @@ const AgentDetails: React.FC = () => {
     openDesktopView(agentDetail?.conversationId);
   };
 
+  // 左侧内容
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
-        <div className={cx(styles['title-box'])}>
+        {/* 页面顶部: 标题区域 */}
+        <header className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
             <Typography.Title
@@ -373,75 +377,116 @@ const AgentDetails: React.FC = () => {
                 )}
             </div>
           </div>
-        </div>
+        </header>
+
+        {/* 页面主体: 内容区域 */}
         <div className={cx(styles['main-content-box'])}>
-          <div className={cx(styles['chat-wrapper-content'])}>
-            <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-              {/* 新对话设置 */}
-              <NewConversationSet
-                key={agentId}
-                className="mb-16"
-                form={form}
-                isFilled
-                variables={variables}
-              />
-              {messageList?.length > 0 ? (
-                <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
-                    <ChatView
-                      key={index}
-                      messageInfo={item}
-                      roleInfo={roleInfo}
-                      contentClassName={styles['chat-inner']}
-                      mode={'none'}
-                    />
-                  ))}
-                  {/*会话建议*/}
-                  <RecommendList
-                    itemClassName={styles['suggest-item']}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
-                </>
-              ) : (
-                // Chat记录为空
-                <AgentChatEmpty
-                  className={cx({ 'h-full': !variables?.length })}
-                  icon={agentDetail?.icon}
-                  name={agentDetail?.name || ''}
-                  // 会话建议
-                  extra={
+          {/* 聊天内容区域 */}
+          <div
+            className={cx(styles['chat-section'], {
+              [styles['file-tree-visible']]: isFileTreeVisible,
+            })}
+          >
+            <div className={cx(styles['chat-wrapper-content'])}>
+              <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+                {/* 新对话设置 */}
+                <NewConversationSet
+                  key={agentId}
+                  className="mb-16"
+                  form={form}
+                  isFilled
+                  variables={variables}
+                />
+                {messageList?.length > 0 ? (
+                  <>
+                    {messageList?.map((item: MessageInfo, index: number) => (
+                      <ChatView
+                        key={index}
+                        messageInfo={item}
+                        roleInfo={roleInfo}
+                        contentClassName={styles['chat-inner']}
+                        mode={'none'}
+                      />
+                    ))}
+                    {/*会话建议*/}
                     <RecommendList
-                      className="mt-16"
-                      itemClassName={cx(styles['suggest-item'])}
+                      itemClassName={styles['suggest-item']}
                       chatSuggestList={chatSuggestList}
                       onClick={handleMessageSend}
                     />
-                  }
-                />
-              )}
+                  </>
+                ) : (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={agentDetail?.icon}
+                    name={agentDetail?.name || ''}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                )}
+              </div>
             </div>
+            <ChatInputHome
+              key={`agent-details-${agentId}`}
+              className={cx(styles['chat-input-container'])}
+              onEnter={handleMessageSend}
+              isClearInput={false}
+              wholeDisabled={wholeDisabled}
+              manualComponents={agentDetail?.manualComponents || []}
+              selectedComponentList={selectedComponentList}
+              onSelectComponent={handleSelectComponent}
+              showAnnouncement={true}
+              isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+              selectedComputerId={selectedComputerId}
+              onComputerSelect={setSelectedComputerId}
+              agentId={agentId}
+              agentSandboxId={agentDetail?.sandboxId}
+              hasPermission={agentDetail?.hasPermission}
+              maskText="您无该智能体权限"
+              fixedSelection={!!agentDetail?.sandboxId}
+              isPersonalComputer={!!agentDetail?.sandboxId}
+            />
           </div>
-          <ChatInputHome
-            key={`agent-details-${agentId}`}
-            className={cx(styles['chat-input-container'])}
-            onEnter={handleMessageSend}
-            isClearInput={false}
-            wholeDisabled={wholeDisabled}
-            manualComponents={agentDetail?.manualComponents || []}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-            showAnnouncement={true}
-            isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
-            selectedComputerId={selectedComputerId}
-            onComputerSelect={setSelectedComputerId}
-            agentId={agentId}
-            agentSandboxId={agentDetail?.sandboxId}
-            hasPermission={agentDetail?.hasPermission}
-            maskText="您无该智能体权限"
-            fixedSelection={!!agentDetail?.sandboxId}
-            isPersonalComputer={!!agentDetail?.sandboxId}
-          />
+
+          {/* 通用型(TaskAgent)智能体 - 智能体电脑 */}
+          {isFileTreeVisible && (
+            <div
+              className={cx(
+                styles['file-tree-sidebar'],
+                'flex',
+                'w-full',
+                'overflow-hide',
+              )}
+            >
+              <FileTreeView
+                className={cx(styles['file-tree-container'])}
+                targetId={agentDetail?.conversationId?.toString() || ''}
+                viewMode={'desktop'}
+                // 重启容器
+                onRestartServer={() =>
+                  restartVncPod(agentDetail?.conversationId)
+                }
+                // 重启智能体
+                onRestartAgent={() => restartAgent(agentDetail?.conversationId)}
+                // 关闭整个面板
+                onClose={closePreviewView}
+                isCanDeleteSkillFile={true}
+                // VNC 空闲检测配置（仅通用型智能体启用）
+                idleDetection={{
+                  enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
+                  onIdleTimeout: closePreviewView,
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -453,14 +498,14 @@ const AgentDetails: React.FC = () => {
       {loading || !isLoaded ? (
         // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-            height: '100%',
-            width: '100%',
-          }}
+          className={cx(
+            'flex',
+            'items-center',
+            'content-center',
+            'flex-1',
+            'w-full',
+            'h-full',
+          )}
         >
           <LoadingOutlined />
         </div>
@@ -507,37 +552,7 @@ const AgentDetails: React.FC = () => {
                     )}
                   </>
                 )
-              : // 通用型
-                isFileTreeVisible && (
-                  <div
-                    className={cx(
-                      styles['file-tree-sidebar'],
-                      'flex',
-                      'w-full',
-                    )}
-                  >
-                    <FileTreeView
-                      targetId={agentDetail?.conversationId?.toString() || ''}
-                      viewMode={'desktop'}
-                      // 重启容器
-                      onRestartServer={() =>
-                        restartVncPod(agentDetail?.conversationId)
-                      }
-                      // 重启智能体
-                      onRestartAgent={() =>
-                        restartAgent(agentDetail?.conversationId)
-                      }
-                      // 关闭整个面板
-                      onClose={closePreviewView}
-                      isCanDeleteSkillFile={true}
-                      // VNC 空闲检测配置（仅通用型智能体启用）
-                      idleDetection={{
-                        enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
-                        onIdleTimeout: closePreviewView,
-                      }}
-                    />
-                  </div>
-                )
+              : null
           }
         />
       )}
