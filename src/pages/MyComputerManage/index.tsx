@@ -12,6 +12,7 @@ import {
   DesktopOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
+  KeyOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
 import {
@@ -148,7 +149,7 @@ const MyComputerManage: React.FC = () => {
   return (
     <WorkspaceLayout
       title="我的电脑管理"
-      rightSlot={
+      leftSlot={
         <Radio.Group
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -252,24 +253,43 @@ const MyComputerManage: React.FC = () => {
 
                   <div className={styles['card-actions']}>
                     <Space size={8}>
-                      <Button
-                        icon={<MessageOutlined />}
-                        disabled={!item.agentId}
-                        onClick={() => {
-                          if (item.agentId) {
-                            history.push(`/agent/${item.agentId}`);
-                          }
-                        }}
-                        className={styles['action-btn']}
-                      />
-                      <Button
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(item)}
-                        className={classNames(
-                          styles['action-btn'],
-                          styles['edit-btn'],
-                        )}
-                      />
+                      <Tooltip title="会话">
+                        <Button
+                          icon={<MessageOutlined />}
+                          disabled={!item.agentId}
+                          onClick={() => {
+                            if (item.agentId) {
+                              history.push(`/agent/${item.agentId}`);
+                            }
+                          }}
+                          className={styles['action-btn']}
+                        />
+                      </Tooltip>
+                      <Tooltip title="编辑">
+                        <Button
+                          icon={<EditOutlined />}
+                          onClick={() => handleEdit(item)}
+                          className={classNames(
+                            styles['action-btn'],
+                            styles['edit-btn'],
+                          )}
+                        />
+                      </Tooltip>
+                      <Tooltip title="链接密匙">
+                        <Button
+                          icon={<KeyOutlined />}
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.configKey || '');
+                            message.success(
+                              '客户端连接密钥已复制，可用于独立客户端容器部署',
+                            );
+                          }}
+                          className={classNames(
+                            styles['action-btn'],
+                            styles['link-key-btn'],
+                          )}
+                        />
+                      </Tooltip>
                     </Space>
                     <Space size={8}>
                       <Tooltip
@@ -288,15 +308,17 @@ const MyComputerManage: React.FC = () => {
                           }
                         />
                       </Tooltip>
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(item.id)}
-                        className={classNames(
-                          styles['action-btn'],
-                          styles['delete-btn'],
-                        )}
-                      />
+                      <Tooltip title="删除">
+                        <Button
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleDelete(item.id)}
+                          className={classNames(
+                            styles['action-btn'],
+                            styles['delete-btn'],
+                          )}
+                        />
+                      </Tooltip>
                     </Space>
                   </div>
                 </div>
