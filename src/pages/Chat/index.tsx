@@ -1269,6 +1269,8 @@ const Chat: React.FC = () => {
                   }}
                   // 是否隐藏远程桌面
                   hideDesktop={effectiveAgent?.hideDesktop}
+                  // 是否动态主题
+                  isDynamicTheme={true}
                 />
               </div>
             )}

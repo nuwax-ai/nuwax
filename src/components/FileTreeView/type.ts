@@ -102,4 +102,6 @@ export interface FileTreeViewProps {
   idleDetection?: IdleDetectionConfig;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop?: number;
+  // 是否动态主题，默认不开启
+  isDynamicTheme?: boolean;
 }

@@ -108,6 +108,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // VNC 空闲检测配置
       idleDetection,
       hideDesktop = 0,
+      isDynamicTheme = false,
     },
     ref,
   ) => {
@@ -1516,7 +1517,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 代码文件：使用代码查看器
       return (
         <CodeViewer
-          isDynamicTheme={true}
+          isDynamicTheme={isDynamicTheme}
           fileId={selectedFileId}
           fileName={fileName}
           filePath={`app/${selectedFileId}`}
