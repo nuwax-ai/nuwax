@@ -1221,7 +1221,12 @@ const Chat: React.FC = () => {
           {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
             isFileTreeVisible && (
               <div
-                className={cx(styles['file-tree-sidebar'], 'flex', 'w-full')}
+                className={cx(
+                  styles['file-tree-sidebar'],
+                  'flex',
+                  'w-full',
+                  'overflow-hide',
+                )}
               >
                 <FileTreeView
                   className={cx(styles['file-tree-container'])}

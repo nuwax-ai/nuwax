@@ -1769,7 +1769,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               </div>
             )}
             {/* 渲染内容 */}
-            <div className={cx('flex-1', 'px-16', 'py-16')}>
+            <div className={cx('flex-1', 'px-16', 'py-16', 'overflow-hide')}>
               {renderContent()}
             </div>
             {/* 重启中 */}
