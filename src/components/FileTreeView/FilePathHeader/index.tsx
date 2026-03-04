@@ -6,7 +6,6 @@ import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
   CloseOutlined,
-  CopyOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
   MenuFoldOutlined,
@@ -71,7 +70,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
   // 远程桌面分享弹窗显示状态
   const [shareDesktopModalVisible, setShareDesktopModalVisible] =
-    useState(false);
+    useState<boolean>(false);
 
   // 分享类型
   const [shareType, setShareType] = useState<'CONVERSATION' | 'DESKTOP'>(
@@ -252,7 +251,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 <Button
                   type="text"
                   size="small"
-                  icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+                  icon={<FilePdfOutlined />}
                   onClick={() => onExportPdf?.(targetNode as FileNode)}
                   className={styles.actionButton}
                   loading={isExportingPdf}
@@ -287,7 +286,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               <Button
                 type="text"
                 size="small"
-                icon={<CopyOutlined style={{ fontSize: 16 }} />}
+                icon={
+                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                }
                 onClick={() => {
                   navigator.clipboard.writeText(targetNode?.content || '');
                   message.success('复制成功');
