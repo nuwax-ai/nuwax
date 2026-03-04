@@ -611,6 +611,19 @@ export async function apiUpdateSandboxUserConfig(data: {
 }
 
 /**
+ * 创建个人电脑（客户端配置）
+ */
+export async function apiCreateSandboxUserConfig(data: {
+  name: string;
+  description?: string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/sandbox/config/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 查询用户可选择的沙盒配置列表（用于电脑选择器）
  * 返回可选沙盒列表及各智能体的已选沙盒信息
  */

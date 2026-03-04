@@ -1,6 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiCreateSandboxUserConfig,
   apiDeleteSandboxUserConfig,
   apiGetSandboxUserConfigList,
   apiToggleSandboxConfig,
@@ -14,6 +15,7 @@ import {
   ExclamationCircleOutlined,
   KeyOutlined,
   MessageOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -128,21 +130,32 @@ const MyComputerManage: React.FC = () => {
     name: string;
     description: string;
   }) => {
-    if (!currentEditItem) return;
     try {
-      const res = await apiUpdateSandboxUserConfig({
-        id: currentEditItem.id,
-        name: values.name,
-        description: values.description,
-      });
-      if (res.code === SUCCESS_CODE) {
-        message.success('修改成功');
-        setEditModalOpen(false);
-        fetchList();
+      if (currentEditItem) {
+        const res = await apiUpdateSandboxUserConfig({
+          id: currentEditItem.id,
+          name: values.name,
+          description: values.description,
+        });
+        if (res.code === SUCCESS_CODE) {
+          message.success('修改成功');
+          setEditModalOpen(false);
+          fetchList();
+        }
+      } else {
+        const res = await apiCreateSandboxUserConfig({
+          name: values.name,
+          description: values.description,
+        });
+        if (res.code === SUCCESS_CODE) {
+          message.success('新增成功');
+          setEditModalOpen(false);
+          fetchList();
+        }
       }
     } catch (error) {
       console.error(error);
-      message.error('修改失败');
+      message.error(currentEditItem ? '修改失败' : '新增失败');
     }
   };
 
@@ -160,6 +173,18 @@ const MyComputerManage: React.FC = () => {
           <Radio.Button value="offline">离线</Radio.Button>
           <Radio.Button value="deactivated">已停用</Radio.Button>
         </Radio.Group>
+      }
+      rightSlot={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setCurrentEditItem(null);
+            setEditModalOpen(true);
+          }}
+        >
+          新增电脑
+        </Button>
       }
     >
       {loading ? (
@@ -253,45 +278,6 @@ const MyComputerManage: React.FC = () => {
 
                   <div className={styles['card-actions']}>
                     <Space size={8}>
-                      <Tooltip title="会话">
-                        <Button
-                          icon={<MessageOutlined />}
-                          disabled={!item.agentId}
-                          onClick={() => {
-                            if (item.agentId) {
-                              history.push(`/agent/${item.agentId}`);
-                            }
-                          }}
-                          className={styles['action-btn']}
-                        />
-                      </Tooltip>
-                      <Tooltip title="编辑">
-                        <Button
-                          icon={<EditOutlined />}
-                          onClick={() => handleEdit(item)}
-                          className={classNames(
-                            styles['action-btn'],
-                            styles['edit-btn'],
-                          )}
-                        />
-                      </Tooltip>
-                      <Tooltip title="链接密匙">
-                        <Button
-                          icon={<KeyOutlined />}
-                          onClick={() => {
-                            navigator.clipboard.writeText(item.configKey || '');
-                            message.success(
-                              '客户端连接密钥已复制，可用于独立客户端容器部署',
-                            );
-                          }}
-                          className={classNames(
-                            styles['action-btn'],
-                            styles['link-key-btn'],
-                          )}
-                        />
-                      </Tooltip>
-                    </Space>
-                    <Space size={8}>
                       <Tooltip
                         title={
                           item.isActive
@@ -306,6 +292,46 @@ const MyComputerManage: React.FC = () => {
                           onChange={(checked) =>
                             handleToggleStatus(item.id, checked)
                           }
+                        />
+                      </Tooltip>
+                    </Space>
+                    <Space size={8}>
+                      <Tooltip title="会话">
+                        <Button
+                          icon={<MessageOutlined />}
+                          disabled={!item.agentId}
+                          onClick={() => {
+                            if (item.agentId) {
+                              // history.push(`/agent/${item.agentId}`);
+                              history.push(
+                                `/api/sandbox/config/redirect/${item.id}`,
+                              );
+                            }
+                          }}
+                          className={styles['action-btn']}
+                        />
+                      </Tooltip>
+                      <Tooltip title="连接密钥，用于独立客户端容器部署，点击可复制">
+                        <Button
+                          icon={<KeyOutlined />}
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.configKey || '');
+                            message.success('客户端连接密钥已复制');
+                          }}
+                          className={classNames(
+                            styles['action-btn'],
+                            styles['link-key-btn'],
+                          )}
+                        />
+                      </Tooltip>
+                      <Tooltip title="编辑">
+                        <Button
+                          icon={<EditOutlined />}
+                          onClick={() => handleEdit(item)}
+                          className={classNames(
+                            styles['action-btn'],
+                            styles['edit-btn'],
+                          )}
                         />
                       </Tooltip>
                       <Tooltip title="删除">
