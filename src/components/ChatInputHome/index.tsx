@@ -61,7 +61,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   hasPermission = true,
   isSandboxUnavailable = false,
   maskText,
-  computerOptions,
   autoSelectComputer,
   saveComputerOnSelect,
   isPersonalComputer,
@@ -514,7 +513,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   conversationInfo?.taskStatus === TaskStatus.EXECUTING
                 }
                 unavailable={isSandboxUnavailable}
-                options={computerOptions}
                 autoSelect={autoSelectComputer}
                 saveOnSelect={saveComputerOnSelect}
                 isPersonalComputer={isPersonalComputer}

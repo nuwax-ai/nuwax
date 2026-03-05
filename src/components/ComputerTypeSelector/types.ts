@@ -32,8 +32,6 @@ export interface ComputerTypeSelectorProps {
   fixedSelection?: boolean;
   /** 选中的电脑是否不可用（不在列表中） */
   unavailable?: boolean;
-  /** 外部传入的电脑列表，传入后将禁用内部加载逻辑 */
-  options?: ComputerOption[];
   /** 是否自动触发选择逻辑（默认：true） */
   autoSelect?: boolean;
   /** 是否在选中时自动保存到后端（默认：true） */
