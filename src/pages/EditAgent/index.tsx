@@ -103,6 +103,7 @@ const EditAgent: React.FC = () => {
     showType,
     setShowType,
     setIsSuggest,
+    conversationInfo,
     messageList,
     setChatSuggestList,
     setIsLoadingConversation,
@@ -150,6 +151,10 @@ const EditAgent: React.FC = () => {
   // 获取智能体配置信息是否加载中
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
     useState<boolean>(true);
+
+  // 当前选中的电脑ID（用于通用型智能体切换电脑时，保存当前选中的电脑ID）
+  const [currentSelectedComputerId, setCurrentSelectedComputerId] =
+    useState<string>('');
 
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
@@ -1037,6 +1042,7 @@ const EditAgent: React.FC = () => {
                     }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
+                    onChangeSelectedComputerId={setCurrentSelectedComputerId}
                   />
                 )
               }
@@ -1081,6 +1087,13 @@ const EditAgent: React.FC = () => {
                           onDeleteFile={handleDeleteFile}
                           // 保存文件
                           onSaveFiles={handleSaveFiles}
+                          // 用户选择的智能体电脑ID
+                          agentSandboxId={
+                            currentSelectedComputerId ||
+                            conversationInfo?.agent?.sandboxId
+                          }
+                          // 用户选择的智能体电脑名称
+                          agentSandboxName={''}
                           // 重启容器
                           onRestartServer={() =>
                             restartVncPod(devConversationId)
