@@ -77,7 +77,7 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 // 会话消息列表数量
-const MESSAGE_LIST_SIZE = 20; // 20条
+const MESSAGE_LIST_SIZE = 10;
 
 export default () => {
   // 历史记录
