@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -30,6 +31,7 @@ import {
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
+  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
@@ -1044,24 +1046,30 @@ const Chat: React.FC = () => {
                   />
 
                   {/* 智能体电脑视图 */}
-                  <TooltipIcon
-                    title={
-                      isFileTreeVisible && viewMode === 'desktop'
-                        ? '关闭智能体电脑'
-                        : '打开智能体电脑'
+                  <ConditionRender
+                    condition={
+                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
                     }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && viewMode === 'desktop',
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-computer-star"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={handleOpenDesktopView}
-                  />
+                  >
+                    <TooltipIcon
+                      title={
+                        isFileTreeVisible && viewMode === 'desktop'
+                          ? '关闭智能体电脑'
+                          : '打开智能体电脑'
+                      }
+                      className={cx(styles['icon-box'], {
+                        [styles['active']]:
+                          isFileTreeVisible && viewMode === 'desktop',
+                      })}
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-computer-star"
+                          style={{ fontSize: 16 }}
+                        />
+                      }
+                      onClick={handleOpenDesktopView}
+                    />
+                  </ConditionRender>
                 </>
               )}
             </div>

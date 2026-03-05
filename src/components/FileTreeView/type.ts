@@ -59,7 +59,7 @@ export interface FileTreeViewProps {
   // 是否正在导入项目
   isImportingProject?: boolean;
   /** 用户选择的智能体电脑ID */
-  agentSandboxId?: number;
+  agentSandboxId?: string;
   /** 用户选择的智能体电脑名称 */
   agentSandboxName?: string;
   /** 重启容器回调 */
