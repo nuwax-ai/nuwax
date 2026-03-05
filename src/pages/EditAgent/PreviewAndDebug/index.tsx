@@ -42,6 +42,7 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
+  onChangeSelectedComputerId?: (id: string) => void;
 }
 
 /**
@@ -53,6 +54,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
+  onChangeSelectedComputerId,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -447,6 +449,29 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [pagePreviewData, showType, setShowType]);
 
+  /**
+   * 是否显示文件面板：
+   * 1. 仅通用型智能体 (TaskAgent) 才显示
+   * 2. 必须存在消息
+   * 3. 如果只有一条消息，则该消息的 id 不能为空（id 为空视为无效消息）
+   */
+  const isShowFilePanel = useMemo(() => {
+    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
+      return false;
+    }
+
+    if (!messageList || messageList.length === 0) {
+      return false;
+    }
+
+    if (messageList.length === 1) {
+      const first = messageList[0];
+      return !!first?.id;
+    }
+
+    return true;
+  }, [agentConfigInfo?.type, messageList]);
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
@@ -464,7 +489,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             // 是否显示智能体电脑
             isShowDesktop={agentConfigInfo?.hideDesktop === HideDesktopEnum.No}
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
-            showFilePanel={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
+            showFilePanel={isShowFilePanel}
             // 文件预览 / 智能体电脑切换
             isFileTreeVisible={isFileTreeVisible}
             viewMode={viewMode}
@@ -613,6 +638,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {
                 setSelectedComputerId(id);
+                // 将当前用户选择的电脑ID传递给父组件,用于文件树中是否显示重启智能体电脑选项按钮(agentSandboxId)
+                onChangeSelectedComputerId?.(id);
               }}
               agentId={agentId}
               agentSandboxId={conversationInfo?.agent?.sandboxId}

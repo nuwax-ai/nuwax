@@ -221,6 +221,29 @@ const Chat: React.FC = () => {
     return conversationInfo?.agent || agentDetail;
   }, [conversationInfo?.agent, agentDetail]);
 
+  /**
+   * 是否显示文件预览 / 智能体电脑切换按钮：
+   * 1. 仅通用型智能体 (TaskAgent)
+   * 2. 必须存在消息
+   * 3. 如果只有一条消息，则该消息的 id 必须非空（id 为空视为无效消息）
+   */
+  const isShowFilePanel = useMemo(() => {
+    if (effectiveAgent?.type !== AgentTypeEnum.TaskAgent) {
+      return false;
+    }
+
+    if (!messageList || messageList.length === 0) {
+      return false;
+    }
+
+    if (messageList.length === 1) {
+      const first = messageList[0];
+      return !!first?.id;
+    }
+
+    return true;
+  }, [effectiveAgent?.type, messageList]);
+
   // 获取有效的沙箱ID
   const getEffectiveSandboxId = (info: ConversationInfo = conversationInfo) => {
     try {
@@ -1023,58 +1046,56 @@ const Chat: React.FC = () => {
                   />
                 )}
 
-              {/* 通用智能体, 有消息时，文件预览/智能体电脑切换按钮 */}
-              {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-                messageList?.length > 0 && (
-                  <>
-                    {/* 文件预览视图 */}
+              {/* 通用智能体, 有有效消息时，文件预览/智能体电脑切换按钮 */}
+              {isShowFilePanel && (
+                <>
+                  {/* 文件预览视图 */}
+                  <TooltipIcon
+                    title={
+                      isFileTreeVisible && viewMode === 'preview'
+                        ? '关闭文件预览'
+                        : '打开文件预览'
+                    }
+                    className={cx(styles['icon-box'], {
+                      [styles['active']]:
+                        isFileTreeVisible && viewMode === 'preview',
+                    })}
+                    icon={
+                      <SvgIcon
+                        name="icons-common-file_preview"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={handleFileTreeVisible}
+                  />
+
+                  {/* 智能体电脑视图 */}
+                  <ConditionRender
+                    condition={
+                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
+                    }
+                  >
                     <TooltipIcon
                       title={
-                        isFileTreeVisible && viewMode === 'preview'
-                          ? '关闭文件预览'
-                          : '打开文件预览'
+                        isFileTreeVisible && viewMode === 'desktop'
+                          ? '关闭智能体电脑'
+                          : '打开智能体电脑'
                       }
                       className={cx(styles['icon-box'], {
                         [styles['active']]:
-                          isFileTreeVisible && viewMode === 'preview',
+                          isFileTreeVisible && viewMode === 'desktop',
                       })}
                       icon={
                         <SvgIcon
-                          name="icons-common-file_preview"
+                          name="icons-nav-computer-star"
                           style={{ fontSize: 16 }}
                         />
                       }
-                      onClick={handleFileTreeVisible}
+                      onClick={handleOpenDesktopView}
                     />
-
-                    {/* 智能体电脑视图 */}
-                    <ConditionRender
-                      condition={
-                        conversationInfo?.agent.hideDesktop ===
-                        HideDesktopEnum.No
-                      }
-                    >
-                      <TooltipIcon
-                        title={
-                          isFileTreeVisible && viewMode === 'desktop'
-                            ? '关闭智能体电脑'
-                            : '打开智能体电脑'
-                        }
-                        className={cx(styles['icon-box'], {
-                          [styles['active']]:
-                            isFileTreeVisible && viewMode === 'desktop',
-                        })}
-                        icon={
-                          <SvgIcon
-                            name="icons-nav-computer-star"
-                            style={{ fontSize: 16 }}
-                          />
-                        }
-                        onClick={handleOpenDesktopView}
-                      />
-                    </ConditionRender>
-                  </>
-                )}
+                  </ConditionRender>
+                </>
+              )}
             </div>
           </div>
         </header>
