@@ -251,6 +251,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 <Button
                   type="text"
                   size="small"
+                  // icon={<SvgIcon name="icons-common-transform_pdf_file" style={{ fontSize: 20 }} />}
                   icon={<FilePdfOutlined />}
                   onClick={() => onExportPdf?.(targetNode as FileNode)}
                   className={styles.actionButton}

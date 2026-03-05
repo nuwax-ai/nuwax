@@ -11,6 +11,8 @@ import { ReactComponent as DeleteSvgFile } from '@/assets/icons/common/delete.sv
 import { ReactComponent as DownloadSvgFile } from '@/assets/icons/common/download.svg';
 import { ReactComponent as EditSvgFile } from '@/assets/icons/common/edit.svg';
 import { ReactComponent as ExportSvgFile } from '@/assets/icons/common/export.svg';
+import { ReactComponent as IconFileCopySvgFile } from '@/assets/icons/common/file_copy.svg';
+import { ReactComponent as IconFilePreviewSvgFile } from '@/assets/icons/common/file_preview.svg';
 import { ReactComponent as FullscreenSvgFile } from '@/assets/icons/common/fullscreen.svg';
 import { ReactComponent as ImportSvgFile } from '@/assets/icons/common/import.svg';
 import { ReactComponent as LinkSvgIcon } from '@/assets/icons/common/link.svg';
@@ -22,9 +24,12 @@ import { ReactComponent as RestartSvgFile } from '@/assets/icons/common/restart.
 import { ReactComponent as SketchSvgFile } from '@/assets/icons/common/sketch.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/common/stars.svg';
 import { ReactComponent as StrawSvgFile } from '@/assets/icons/common/straw.svg';
+import { ReactComponent as IconTransformPdfFileSvgFile } from '@/assets/icons/common/transform_pdf_file.svg';
 import { ReactComponent as UploadSvgFile } from '@/assets/icons/common/upload.svg';
+import { ReactComponent as IconUserInfoSvgFile } from '@/assets/icons/common/userinfo.svg';
 import { ReactComponent as ZoomInSvgFile } from '@/assets/icons/common/zoom_in.svg';
 import { ReactComponent as ZoomOutSvgFile } from '@/assets/icons/common/zoom_out.svg';
+
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -55,6 +60,10 @@ const UploadSvg = wrapSvg(UploadSvgFile);
 const LinkSvg = wrapSvg(LinkSvgIcon);
 const ZoomInSvg = wrapSvg(ZoomInSvgFile);
 const ZoomOutSvg = wrapSvg(ZoomOutSvgFile);
+const IconFilePreviewSvg = wrapSvg(IconFilePreviewSvgFile);
+const IconUserInfoSvg = wrapSvg(IconUserInfoSvgFile);
+const IconTransformPdfFileSvg = wrapSvg(IconTransformPdfFileSvgFile);
+const IconFileCopySvg = wrapSvg(IconFileCopySvgFile);
 export default {
   'icons-common-attachments': AttachmentsSvg,
   'icons-common-book': BookSvg,
@@ -83,4 +92,8 @@ export default {
   'icons-common-link': LinkSvg,
   'icons-common-zoom_in': ZoomInSvg,
   'icons-common-zoom_out': ZoomOutSvg,
+  'icons-common-file_preview': IconFilePreviewSvg,
+  'icons-common-user_info': IconUserInfoSvg,
+  'icons-common-transform_pdf_file': IconTransformPdfFileSvg,
+  'icons-common-file_copy': IconFileCopySvg,
 } as Record<string, React.FC>;
