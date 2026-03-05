@@ -77,7 +77,14 @@ const SvgIcon: React.FC<SvgIconProps> = ({
     return null;
   }
 
-  return <Icon component={Comp as React.FC} style={mergedStyle} {...rest} />;
+  return (
+    <Icon
+      component={Comp as React.FC}
+      style={mergedStyle}
+      className={className}
+      {...rest}
+    />
+  );
 };
 
 export default SvgIcon;
