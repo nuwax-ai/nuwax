@@ -978,7 +978,12 @@ const Chat: React.FC = () => {
                 <TooltipIcon
                   title="查看智能体详情"
                   className={cx(styles['icon-box'])}
-                  icon={<SvgIcon name="icons-nav-sidebar" />}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
                   onClick={() => {
                     hidePagePreview();
                     // 先关闭文件树
@@ -999,7 +1004,12 @@ const Chat: React.FC = () => {
                   <TooltipIcon
                     title="打开预览页面"
                     className={cx(styles['icon-box'])}
-                    icon={<SvgIcon name="icons-nav-ecosystem" />}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
                     onClick={() => {
                       sidebarRef.current?.close();
                       closePreviewView(); // 关闭文件树
@@ -1022,7 +1032,12 @@ const Chat: React.FC = () => {
                       [styles['active']]:
                         isFileTreeVisible && viewMode === 'preview',
                     })}
-                    icon={<SvgIcon name="icons-common-file_preview" />}
+                    icon={
+                      <SvgIcon
+                        name="icons-common-file_preview"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
                     onClick={handleFileTreeVisible}
                   />
 
@@ -1037,7 +1052,12 @@ const Chat: React.FC = () => {
                       [styles['active']]:
                         isFileTreeVisible && viewMode === 'desktop',
                     })}
-                    icon={<SvgIcon name="icons-nav-computer-star" />}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-computer-star"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
                     onClick={handleOpenDesktopView}
                   />
                 </>

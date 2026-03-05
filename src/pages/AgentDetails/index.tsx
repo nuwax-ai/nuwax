@@ -338,7 +338,12 @@ const AgentDetails: React.FC = () => {
                 <TooltipIcon
                   title="查看智能体详情"
                   className={cx(styles['icon-box'])}
-                  icon={<SvgIcon name="icons-nav-sidebar" />}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
                   onClick={() => {
                     hidePagePreview();
                     // 确保打开智能体详情前关闭文件树视图，只展示一个右侧面板
@@ -355,7 +360,12 @@ const AgentDetails: React.FC = () => {
                   <TooltipIcon
                     title="打开预览页面"
                     className={cx(styles['icon-box'])}
-                    icon={<SvgIcon name="icons-nav-ecosystem" />}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
                     onClick={() => {
                       sidebarRef.current?.close();
                       handleOpenPreview(agentDetail);
@@ -371,7 +381,12 @@ const AgentDetails: React.FC = () => {
                   <TooltipIcon
                     title="打开智能体电脑"
                     className={cx(styles['icon-box'])}
-                    icon={<SvgIcon name="icons-nav-computer-star" />}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-computer-star"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
                     onClick={handleFileTreeVisible}
                   />
                 )}
