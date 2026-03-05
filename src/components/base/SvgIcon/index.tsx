@@ -20,13 +20,45 @@ export interface SvgIconProps
 }
 
 const DEFAULT_FONT_SIZE = 20;
-const SvgIcon: React.FC<SvgIconProps> = ({ name, style, ...rest }) => {
+const SvgIcon: React.FC<SvgIconProps> = ({
+  name,
+  style,
+  className,
+  ...rest
+}) => {
   const mergedStyle = {
     ...style,
     ...(!style?.fontSize && { fontSize: DEFAULT_FONT_SIZE }),
   };
 
   if (typeof name === 'string' && name.includes('://')) {
+    /**
+     * 远程 SVG 图标：
+     * 使用 CSS mask + currentColor 的方式渲染，这样可以通过外层的 color 控制图标颜色，
+     * 包括 :hover 时改变颜色。
+     */
+    if (name.toLowerCase().endsWith('.svg')) {
+      return (
+        <div
+          // 将图标形状作为 mask，实际用背景色渲染，这样 color/currentColor 可以生效
+          className={className}
+          style={{
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            mask: `url(${name}) no-repeat center center`,
+            WebkitMask: `url(${name}) no-repeat center center`,
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+            // 使用 currentColor，让父元素的 color（含 hover）控制图标颜色
+            backgroundColor: 'currentColor',
+            width: '1em',
+            height: '1em',
+            ...mergedStyle,
+          }}
+        />
+      );
+    }
+
+    // 其它远程图片（png/jpg 等），直接 img 渲染，无法通过 color 改色
     return (
       <img
         src={name}

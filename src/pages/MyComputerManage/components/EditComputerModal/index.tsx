@@ -35,7 +35,7 @@ const EditComputerModal: React.FC<EditComputerModalProps> = ({
 
   return (
     <ModalForm
-      title="修改电脑名称"
+      title={initialData ? '修改电脑名称' : '新增电脑'}
       width={480}
       open={open}
       form={form}
