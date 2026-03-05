@@ -171,6 +171,8 @@ const SkillDetail: React.FC = ({}) => {
         isFileTreePinned={true}
         // 不显示刷新按钮
         showRefreshButton={false}
+        // 是否显示导出 PDF 按钮, 默认显示
+        isShowExportPdfButton={false}
       />
     </div>
   );
