@@ -30,7 +30,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   conversationId,
   targetNode,
   viewMode = 'preview',
+  // 用户选择的智能体电脑名称
+  agentSandboxName,
+  /** 重启容器回调 */
   onRestartServer,
+  /** 重启智能体回调 */
   onRestartAgent,
   onImportProject,
   onExportProject,
@@ -234,8 +238,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 />
               )}
               <div className={styles.fileName}>
-                {userInfo?.nickName || userInfo?.userName || '远程'}
-                的智能体电脑
+                {agentSandboxName ||
+                  `${
+                    userInfo?.nickName || userInfo?.userName || '远程'
+                  }的智能体电脑`}
               </div>
             </div>
           )}
