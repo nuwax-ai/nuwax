@@ -10,7 +10,7 @@ import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
-import { TaskStatus } from '@/types/enums/agent';
+import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
@@ -461,11 +461,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               !pagePreviewData && !!agentConfigInfo?.expandPageArea
             }
             onShowPreview={onOpenPreview}
+            // 是否显示智能体电脑
+            isShowDesktop={agentConfigInfo?.hideDesktop === HideDesktopEnum.No}
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
-            showFilePanel={
-              // !isFileTreeVisible &&
-              agentConfigInfo?.type === AgentTypeEnum.TaskAgent
-            }
+            showFilePanel={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
             // 文件预览 / 智能体电脑切换
             isFileTreeVisible={isFileTreeVisible}
             viewMode={viewMode}

@@ -403,10 +403,14 @@ const EditAgent: React.FC = () => {
         runUpdateAgent(agentId);
       }
 
-      // 如果隐藏远程桌面，则切换到文件预览模式
-      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
-        // 打开文件预览模式
-        openPreviewView(devConversationId);
+      // 如果执行的是隐藏远程桌面操作，并且当前是智能体电脑视图，则关闭智能体电脑视图
+      if (
+        attr === 'hideDesktop' &&
+        value === HideDesktopEnum.Yes &&
+        viewMode === 'desktop'
+      ) {
+        // 关闭智能体电脑视图
+        closePreviewView();
       }
 
       const {
@@ -465,7 +469,7 @@ const EditAgent: React.FC = () => {
         }
       }
     },
-    [agentConfigInfo], // 添加依赖
+    [agentConfigInfo, viewMode], // 添加依赖
   );
 
   /**
@@ -1058,7 +1062,6 @@ const EditAgent: React.FC = () => {
                       >
                         {/*文件树侧边栏 - 只在文件树可见时显示 */}
                         <FileTreeView
-                          // headerClassName={styles['file-tree-header']}
                           taskAgentSelectedFileId={taskAgentSelectedFileId}
                           taskAgentSelectTrigger={taskAgentSelectTrigger}
                           originalFiles={fileTreeData}

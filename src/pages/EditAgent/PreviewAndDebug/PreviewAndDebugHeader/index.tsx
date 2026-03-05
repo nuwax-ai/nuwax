@@ -1,4 +1,5 @@
 import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
@@ -11,6 +12,8 @@ const cx = classNames.bind(styles);
 interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
   onShowPreview?: () => void;
+  /** 是否显示智能体电脑 */
+  isShowDesktop?: boolean;
   onPressDebug: () => void;
   /** 是否显示文件面板相关图标（仅通用型智能体时显示） */
   showFilePanel?: boolean;
@@ -31,6 +34,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
   isShowPreview,
+  isShowDesktop,
   showFilePanel,
   isFileTreeVisible,
   viewMode,
@@ -89,18 +93,21 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
             />
 
             {/* 智能体电脑视图 */}
-            <TooltipIcon
-              title={
-                isFileTreeVisible && viewMode === 'desktop'
-                  ? '关闭智能体电脑'
-                  : '打开智能体电脑'
-              }
-              className={cx(styles['icon-box'], {
-                [styles['active']]: isFileTreeVisible && viewMode === 'desktop',
-              })}
-              icon={<SvgIcon name="icons-nav-computer-star" />}
-              onClick={onOpenDesktopPanel}
-            />
+            <ConditionRender condition={isShowDesktop}>
+              <TooltipIcon
+                title={
+                  isFileTreeVisible && viewMode === 'desktop'
+                    ? '关闭智能体电脑'
+                    : '打开智能体电脑'
+                }
+                className={cx(styles['icon-box'], {
+                  [styles['active']]:
+                    isFileTreeVisible && viewMode === 'desktop',
+                })}
+                icon={<SvgIcon name="icons-nav-computer-star" />}
+                onClick={onOpenDesktopPanel}
+              />
+            </ConditionRender>
           </>
         )}
       </div>
