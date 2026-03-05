@@ -85,7 +85,7 @@ const AgentDetails: React.FC = () => {
 
   const {
     isFileTreeVisible,
-    openDesktopView,
+    // openDesktopView,
     closePreviewView,
     restartVncPod,
     restartAgent,
@@ -307,12 +307,12 @@ const AgentDetails: React.FC = () => {
   ]);
 
   // 显示文件树
-  const handleFileTreeVisible = () => {
-    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
-    sidebarRef.current?.close();
-    // 触发文件列表刷新事件
-    openDesktopView(agentDetail?.conversationId);
-  };
+  // const handleFileTreeVisible = () => {
+  //   // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
+  //   sidebarRef.current?.close();
+  //   // 触发文件列表刷新事件
+  //   openDesktopView(agentDetail?.conversationId);
+  // };
 
   // 左侧内容
   const LeftContent = () => {
@@ -374,7 +374,7 @@ const AgentDetails: React.FC = () => {
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {agentDetail?.type === AgentTypeEnum.TaskAgent &&
+              {/* {agentDetail?.type === AgentTypeEnum.TaskAgent &&
                 agentDetail?.conversationId &&
                 !agentDetail?.hideDesktop &&
                 !isFileTreeVisible && (
@@ -389,7 +389,7 @@ const AgentDetails: React.FC = () => {
                     }
                     onClick={handleFileTreeVisible}
                   />
-                )}
+                )} */}
             </div>
           </div>
         </header>
