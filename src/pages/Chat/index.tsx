@@ -112,6 +112,8 @@ const Chat: React.FC = () => {
 
   // 当前选中的电脑 ID（任务型智能体）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 用户选择的智能体电脑名称
+  // const [selectedComputerName, setSelectedComputerName] = useState<string>('');
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
@@ -1260,6 +1262,10 @@ const Chat: React.FC = () => {
                   onDeleteFile={handleDeleteFile}
                   // 保存文件
                   onSaveFiles={handleSaveFiles}
+                  // 用户选择的智能体电脑ID
+                  agentSandboxId={finalSelectedId}
+                  // 用户选择的智能体电脑名称
+                  agentSandboxName={''}
                   // 重启容器
                   onRestartServer={() => restartVncPod(id)}
                   // 重启智能体
