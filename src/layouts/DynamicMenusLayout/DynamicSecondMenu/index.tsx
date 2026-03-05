@@ -13,6 +13,7 @@ import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
+import { updatePathUrlToLocalStorage } from '../utils';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -258,7 +259,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   // 处理路径URL路径跳转
   const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
-    console.log(path, '处理路径URL路径跳转handlePathUrl ----- path:', openType);
     if (!path) return;
     // http开头的路径，直接打开
     if (path?.includes('http')) {
@@ -275,22 +275,9 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return;
     }
 
-    try {
-      const pathUrl = localStorage.getItem(PATH_URL);
-      if (pathUrl) {
-        const pathUrlObj = JSON.parse(pathUrl);
-        pathUrlObj[parentCode] = resolvedPath;
+    // 修改或保存当前路径到本地缓存
+    updatePathUrlToLocalStorage(parentCode, resolvedPath);
 
-        // 存储当前路径
-        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
-      } else {
-        const pathUrlObj = {
-          [parentCode]: resolvedPath,
-        };
-        // 存储当前路径
-        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
-      }
-    } catch {}
     // 无子菜单，直接路由跳转
     history.push(resolvedPath, { _t: Date.now() });
   };

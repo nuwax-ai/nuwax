@@ -1,6 +1,7 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { SPACE_ID } from '@/constants/home.constants';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import { SpaceInfo } from '@/types/interfaces/workspace';
@@ -8,6 +9,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { history, useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
+import { updatePathUrlToLocalStorage } from '../utils';
 import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
@@ -30,32 +32,44 @@ const SpaceSection: React.FC<{
     return spaceId ?? getSpaceId();
   }, [spaceId, getSpaceId]);
 
+  // 动态空间名称，用于显示空间名称
   const [dynamicTitle, setDynamicTitle] = useState<string>('');
 
   useEffect(() => {
     if (!currentSpaceInfo) {
       return;
     }
-    const spaceIdStr = String(finalSpaceId);
     const isInList = spaceList?.some(
-      (item: SpaceInfo) => String(item.id) === spaceIdStr,
+      (item: SpaceInfo) => item.id === Number(finalSpaceId),
     );
+
+    // 保存空间id到本地
+    localStorage.setItem(SPACE_ID, finalSpaceId);
 
     if (isInList) {
       setDynamicTitle(currentSpaceInfo?.name || '个人空间');
     } else {
       // Fetch details
-      apiGetSpaceDetail(finalSpaceId).then((res) => {
-        if (res.code === SUCCESS_CODE && res.data) {
-          const { creatorName, name } = res.data;
-          const display = creatorName ? `${creatorName} - ${name}` : name;
-          setDynamicTitle(display || '个人空间');
-        } else {
+      apiGetSpaceDetail(finalSpaceId)
+        .then((res) => {
+          if (res.code === SUCCESS_CODE && res.data) {
+            const { creatorName, name } = res.data;
+            const display = creatorName ? `${creatorName} - ${name}` : name;
+            setDynamicTitle(display || '个人空间');
+          } else {
+            setDynamicTitle('个人空间');
+          }
+        })
+        .catch(() => {
           setDynamicTitle('个人空间');
-        }
-      });
+        });
+
+      /**
+       * 保存当前路径到本地, 用于后续从其他菜单跳转回工作空间时，在space页面能够跳转到当前路径
+       */
+      updatePathUrlToLocalStorage('workspace', location.pathname);
     }
-  }, [finalSpaceId, spaceList, currentSpaceInfo]);
+  }, [finalSpaceId, spaceList, currentSpaceInfo, location]);
 
   useEffect(() => {
     // 根据url地址中的finalSpaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url

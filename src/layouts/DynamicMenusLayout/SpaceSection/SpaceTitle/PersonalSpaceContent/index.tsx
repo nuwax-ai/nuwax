@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import { LimitedTooltip } from '@/components/ProComponents';
-import { PATH_URL, SPACE_ID } from '@/constants/home.constants';
+import { SPACE_ID } from '@/constants/home.constants';
+import { updatePathUrlToLocalStorage } from '@/layouts/DynamicMenusLayout/utils';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
@@ -138,22 +139,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       }
     }
 
-    try {
-      const pathUrl = localStorage.getItem(PATH_URL);
-      if (pathUrl) {
-        const pathUrlObj = JSON.parse(pathUrl);
-        pathUrlObj['workspace'] = resolvedPath;
-
-        // 存储当前路径
-        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
-      } else {
-        const pathUrlObj = {
-          workspace: resolvedPath,
-        };
-        // 存储当前路径
-        localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
-      }
-    } catch {}
+    // 修改或保存当前路径到本地缓存
+    updatePathUrlToLocalStorage('workspace', resolvedPath);
 
     // 跳转
     history.push(resolvedPath);
