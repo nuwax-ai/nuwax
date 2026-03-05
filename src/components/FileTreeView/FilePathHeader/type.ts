@@ -9,6 +9,8 @@ export interface FilePathHeaderProps {
   targetNode: FileNode | null;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
+  /** 用户选择的智能体电脑名称 */
+  agentSandboxName?: string;
   /** 重启服务器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */

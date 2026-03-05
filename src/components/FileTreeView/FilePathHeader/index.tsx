@@ -30,7 +30,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   conversationId,
   targetNode,
   viewMode = 'preview',
+  // 用户选择的智能体电脑名称
+  agentSandboxName,
+  /** 重启容器回调 */
   onRestartServer,
+  /** 重启智能体回调 */
   onRestartAgent,
   onImportProject,
   onExportProject,
@@ -110,6 +114,28 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         return 'transparent';
     }
   };
+
+  // 是否需要展示右侧整体 actionButtons（分享 / 全屏 / 更多 / 关闭）
+  const showRightActionButtons = useMemo(() => {
+    const canShare =
+      isShowShare &&
+      (viewMode === 'desktop' ||
+        (targetNode?.fileProxyUrl && viewMode === 'preview'));
+
+    const canFullscreen = showFullscreenIcon || isFullscreen;
+    const canMoreActions = showMoreActions;
+    const canClose = !!onClose && !isFullscreen;
+
+    return canShare || canFullscreen || canMoreActions || canClose;
+  }, [
+    isShowShare,
+    viewMode,
+    targetNode?.fileProxyUrl,
+    showFullscreenIcon,
+    isFullscreen,
+    showMoreActions,
+    onClose,
+  ]);
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
@@ -212,8 +238,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 />
               )}
               <div className={styles.fileName}>
-                {userInfo?.nickName || userInfo?.userName || '远程'}
-                的智能体电脑
+                {agentSandboxName ||
+                  `${
+                    userInfo?.nickName || userInfo?.userName || '远程'
+                  }的智能体电脑`}
               </div>
             </div>
           )}
@@ -300,77 +328,82 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           )}
         </div>
 
-        {/* 右侧：操作按钮 */}
-        <div className={cx(styles.actionButtons)}>
-          {/* 分享 */}
-          {isShowShare &&
-            (viewMode === 'desktop' ||
-              (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-              <Tooltip title="分享" placement="bottom">
+        {/* 右侧：操作按钮（分享 / 全屏 / 更多 / 关闭） */}
+        {showRightActionButtons && (
+          <div className={cx(styles.actionButtons)}>
+            {/* 分享 */}
+            {isShowShare &&
+              (viewMode === 'desktop' ||
+                (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+                <Tooltip title="分享" placement="bottom">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={
+                      <SvgIcon
+                        name="icons-chat-share"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={() => onShareAction(viewMode)}
+                    className={styles.actionButton}
+                  />
+                </Tooltip>
+              )}
+
+            {/* 是否显示全屏图标 */}
+            {(showFullscreenIcon || isFullscreen) && (
+              <Tooltip
+                title={isFullscreen ? '退出全屏' : '全屏'}
+                placement="bottom"
+                key={isFullscreen ? 'exit' : 'enter'}
+              >
                 <Button
                   type="text"
                   size="small"
                   icon={
-                    <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                    isFullscreen ? (
+                      <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                    ) : (
+                      <SvgIcon
+                        name="icons-common-fullscreen"
+                        style={{ fontSize: 16 }}
+                      />
+                    )
                   }
-                  onClick={() => onShareAction(viewMode)}
+                  onClick={onFullscreen}
                   className={styles.actionButton}
                 />
               </Tooltip>
             )}
 
-          {/* 是否显示全屏图标 */}
-          {(showFullscreenIcon || isFullscreen) && (
-            <Tooltip
-              title={isFullscreen ? '退出全屏' : '全屏'}
-              placement="bottom"
-              key={isFullscreen ? 'exit' : 'enter'}
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={
-                  isFullscreen ? (
-                    <FullscreenExitOutlined style={{ fontSize: 16 }} />
-                  ) : (
-                    <SvgIcon
-                      name="icons-common-fullscreen"
-                      style={{ fontSize: 16 }}
-                    />
-                  )
-                }
-                onClick={onFullscreen}
-                className={styles.actionButton}
+            {/* 更多操作菜单 */}
+            {showMoreActions && (
+              <MoreActionsMenu
+                onImportProject={onImportProject}
+                onRestartServer={onRestartServer}
+                onRestartAgent={onRestartAgent}
+                onExportProject={onExportProject}
               />
-            </Tooltip>
-          )}
+            )}
 
-          {/* 更多操作菜单 */}
-          {showMoreActions && (
-            <MoreActionsMenu
-              onImportProject={onImportProject}
-              onRestartServer={onRestartServer}
-              onRestartAgent={onRestartAgent}
-              onExportProject={onExportProject}
-            />
-          )}
-
-          {onClose && !isFullscreen && (
-            <>
-              <div className={styles.divider} />
-              {/* 关闭 */}
-              <Tooltip title="关闭">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<CloseOutlined />}
-                  onClick={onClose}
-                  className={styles.actionButton}
-                />
-              </Tooltip>
-            </>
-          )}
-        </div>
+            {onClose && !isFullscreen && (
+              <>
+                <div className={styles.divider} />
+                {/* 关闭 */}
+                <Tooltip title="关闭">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={onClose}
+                    className={styles.actionButton}
+                  />
+                </Tooltip>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 远程桌面分享弹窗 */}
