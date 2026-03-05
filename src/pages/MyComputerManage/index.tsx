@@ -35,7 +35,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import styles from './index.less';
 
 const { confirm } = Modal;
@@ -302,28 +302,29 @@ const MyComputerManage: React.FC = () => {
                           disabled={!item.agentId}
                           onClick={() => {
                             if (item.agentId) {
-                              // history.push(`/agent/${item.agentId}`);
-                              history.push(
-                                `/api/sandbox/config/redirect/${item.id}`,
-                              );
+                              window.location.href = `/api/sandbox/config/redirect/${item.id}`;
                             }
                           }}
                           className={styles['action-btn']}
                         />
                       </Tooltip>
-                      <Tooltip title="连接密钥，用于独立客户端容器部署，点击可复制">
-                        <Button
-                          icon={<KeyOutlined />}
-                          onClick={() => {
-                            navigator.clipboard.writeText(item.configKey || '');
-                            message.success('客户端连接密钥已复制');
-                          }}
-                          className={classNames(
-                            styles['action-btn'],
-                            styles['link-key-btn'],
-                          )}
-                        />
-                      </Tooltip>
+                      {item.configKey && (
+                        <Tooltip title="连接密钥，用于独立客户端容器部署，点击可复制">
+                          <Button
+                            icon={<KeyOutlined />}
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                item.configKey || '',
+                              );
+                              message.success('客户端连接密钥已复制');
+                            }}
+                            className={classNames(
+                              styles['action-btn'],
+                              styles['link-key-btn'],
+                            )}
+                          />
+                        </Tooltip>
+                      )}
                       <Tooltip title="编辑">
                         <Button
                           icon={<EditOutlined />}
