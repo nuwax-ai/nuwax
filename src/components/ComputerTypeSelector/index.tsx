@@ -279,7 +279,12 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
               <div className={cx(styles['item-content'])}>
                 <span className={cx(styles['item-name'])}>{computer.name}</span>
                 {computer.description && (
-                  <span className={cx(styles['item-desc'])}>
+                  <span
+                    className={cx(styles['item-desc'], {
+                      [styles['item-desc-warning']]:
+                        String(computer.id) !== '-1',
+                    })}
+                  >
                     {computer.description}
                   </span>
                 )}
