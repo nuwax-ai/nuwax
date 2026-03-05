@@ -220,20 +220,20 @@ const Chat: React.FC = () => {
   // 获取有效的沙箱ID
   const getEffectiveSandboxId = (info: ConversationInfo = conversationInfo) => {
     try {
-      // 优先级 1: 个人电脑 (sandboxId)
+      // 优先级 1: 手动选择 (selectedComputerId)
+      if (selectedComputerId) {
+        return selectedComputerId;
+      }
+
+      // 优先级 2: 个人电脑 (sandboxId)
       if (effectiveAgent?.sandboxId) {
         return effectiveAgent.sandboxId;
       }
 
-      // 优先级 2: 共享电脑 (sandboxServerId)
+      // 优先级 3: 共享电脑 (sandboxServerId)
       const sandboxServerId = info?.sandboxServerId;
       if (sandboxServerId) {
         return String(sandboxServerId);
-      }
-
-      // 优先级 3: 手动选择 (selectedComputerId)
-      if (selectedComputerId) {
-        return selectedComputerId;
       }
 
       // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
