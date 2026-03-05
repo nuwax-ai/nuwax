@@ -51,6 +51,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onViewFileTypeChange,
   onDownloadFileByUrl,
   isShowShare = true,
+  // 是否显示导出 PDF 按钮, 默认显示
+  isShowExportPdfButton = true,
   onExportPdf,
   isExportingPdf = false,
   onClose,
@@ -271,6 +273,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           {/* Markdown 文件显示导出 PDF 按钮 */}
           {targetNode &&
             fileName &&
+            // 是否显示导出 PDF 按钮, 默认显示
+            isShowExportPdfButton &&
             (isMarkdownFile(fileName) ||
               fileName.endsWith('.html') ||
               fileName.endsWith('.htm')) &&

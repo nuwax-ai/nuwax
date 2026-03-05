@@ -72,14 +72,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onCreateFileNode,
       // 删除文件回调
       onDeleteFile,
-      // 切换视图模式回调
-      // onViewModeChange,
       // 保存文件回调
       onSaveFiles,
       // 导入项目回调
       onImportProject,
       // 用户选择的智能体电脑ID
-      agentSandboxId = -1,
+      agentSandboxId,
       // 用户选择的智能体电脑名称
       agentSandboxName,
       // 重启容器回调
@@ -92,6 +90,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onFullscreenPreview,
       onShare,
       isShowShare = true,
+      // 是否显示导出 PDF 按钮, 默认显示
+      isShowExportPdfButton = true,
       onClose,
       showFullscreenIcon = true,
       // 是否隐藏文件树（外部控制）
@@ -1572,7 +1572,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onImportProject={onImportProject}
           // 重启容器（用户选择的智能体电脑id==-1时，才展示 ）
           onRestartServer={
-            agentSandboxId === -1 ? handleRestartServer : undefined
+            agentSandboxId === '-1' ? handleRestartServer : undefined
           }
           agentSandboxName={agentSandboxName}
           // 重启智能体
@@ -1611,6 +1611,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isShowShare={isShowShare}
           // 分享回调
           onShare={onShare}
+          // 是否显示导出 PDF 按钮, 默认显示
+          isShowExportPdfButton={isShowExportPdfButton}
           // 导出 PDF 回调
           onExportPdf={handleExportPdf}
           // 是否正在导出 PDF

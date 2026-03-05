@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -30,6 +31,7 @@ import {
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
+  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
@@ -112,6 +114,8 @@ const Chat: React.FC = () => {
 
   // 当前选中的电脑 ID（任务型智能体）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 用户选择的智能体电脑名称
+  // const [selectedComputerName, setSelectedComputerName] = useState<string>('');
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
@@ -225,20 +229,21 @@ const Chat: React.FC = () => {
         return selectedComputerId;
       }
 
-      // 优先级 2: 个人电脑 (sandboxId)
+      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
+      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
+      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
+        return location.state.selectedComputerId;
+      }
+
+      // 优先级 3: 个人电脑 (sandboxId)
       if (effectiveAgent?.sandboxId) {
         return effectiveAgent.sandboxId;
       }
 
-      // 优先级 3: 共享电脑 (sandboxServerId)
+      // 优先级 4: 共享电脑 (sandboxServerId)
       const sandboxServerId = info?.sandboxServerId;
       if (sandboxServerId) {
         return String(sandboxServerId);
-      }
-
-      // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
-      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
-        return location.state.selectedComputerId;
       }
 
       return '';
@@ -1042,24 +1047,30 @@ const Chat: React.FC = () => {
                   />
 
                   {/* 智能体电脑视图 */}
-                  <TooltipIcon
-                    title={
-                      isFileTreeVisible && viewMode === 'desktop'
-                        ? '关闭智能体电脑'
-                        : '打开智能体电脑'
+                  <ConditionRender
+                    condition={
+                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
                     }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && viewMode === 'desktop',
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-computer-star"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={handleOpenDesktopView}
-                  />
+                  >
+                    <TooltipIcon
+                      title={
+                        isFileTreeVisible && viewMode === 'desktop'
+                          ? '关闭智能体电脑'
+                          : '打开智能体电脑'
+                      }
+                      className={cx(styles['icon-box'], {
+                        [styles['active']]:
+                          isFileTreeVisible && viewMode === 'desktop',
+                      })}
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-computer-star"
+                          style={{ fontSize: 16 }}
+                        />
+                      }
+                      onClick={handleOpenDesktopView}
+                    />
+                  </ConditionRender>
                 </>
               )}
             </div>
@@ -1260,6 +1271,10 @@ const Chat: React.FC = () => {
                   onDeleteFile={handleDeleteFile}
                   // 保存文件
                   onSaveFiles={handleSaveFiles}
+                  // 用户选择的智能体电脑ID
+                  agentSandboxId={finalSelectedId}
+                  // 用户选择的智能体电脑名称
+                  agentSandboxName={''}
                   // 重启容器
                   onRestartServer={() => restartVncPod(id)}
                   // 重启智能体

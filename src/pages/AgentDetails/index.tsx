@@ -19,6 +19,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   AssistantRoleEnum,
+  HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -376,7 +377,7 @@ const AgentDetails: React.FC = () => {
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {agentDetail?.type === AgentTypeEnum.TaskAgent &&
                 agentDetail?.conversationId &&
-                !agentDetail?.hideDesktop &&
+                agentDetail?.hideDesktop === HideDesktopEnum.No &&
                 !isFileTreeVisible && (
                   <TooltipIcon
                     title="打开智能体电脑"

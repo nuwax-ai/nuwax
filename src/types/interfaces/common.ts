@@ -540,8 +540,6 @@ export interface ChatInputProps extends ManualComponentItemProps {
   isSandboxUnavailable?: boolean;
   /** 蒙层显示的文本内容 */
   maskText?: string;
-  /** 外部传入的电脑列表 */
-  computerOptions?: any[];
   /** 是否自动触发选择逻辑 */
   autoSelectComputer?: boolean;
   /** 是否在选中时自动保存到后端 */
