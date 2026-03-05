@@ -229,20 +229,21 @@ const Chat: React.FC = () => {
         return selectedComputerId;
       }
 
-      // 优先级 2: 个人电脑 (sandboxId)
+      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
+      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
+      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
+        return location.state.selectedComputerId;
+      }
+
+      // 优先级 3: 个人电脑 (sandboxId)
       if (effectiveAgent?.sandboxId) {
         return effectiveAgent.sandboxId;
       }
 
-      // 优先级 3: 共享电脑 (sandboxServerId)
+      // 优先级 4: 共享电脑 (sandboxServerId)
       const sandboxServerId = info?.sandboxServerId;
       if (sandboxServerId) {
         return String(sandboxServerId);
-      }
-
-      // 兜底: 从 location.state 获取 (仅 PUSH 跳转)
-      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
-        return location.state.selectedComputerId;
       }
 
       return '';
