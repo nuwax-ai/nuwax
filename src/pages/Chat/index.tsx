@@ -1022,7 +1022,7 @@ const Chat: React.FC = () => {
                       [styles['active']]:
                         isFileTreeVisible && viewMode === 'preview',
                     })}
-                    icon={<SvgIcon name="icons-nav-components" />}
+                    icon={<SvgIcon name="icons-common-file_preview" />}
                     onClick={handleFileTreeVisible}
                   />
 
