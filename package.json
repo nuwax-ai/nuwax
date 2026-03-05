@@ -15,6 +15,7 @@
   "scripts": {
     "prebuild:dev": "node scripts/generate-version.js",
     "build:dev": "cross-env UMI_ENV=development max build",
+    "build:m": "node scripts/download-mobile-build.js",
     "prebuild:prod": "node scripts/generate-version.js",
     "build:prod": "cross-env UMI_ENV=production max build",
     "build:prod:m": "cross-env UMI_ENV=production max build && node scripts/download-mobile-build.js",

@@ -78,6 +78,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       // 导入项目回调
       onImportProject,
+      // 用户选择的智能体电脑ID
+      agentSandboxId = -1,
+      // 用户选择的智能体电脑名称
+      agentSandboxName,
+      // 重启容器回调
       onRestartServer,
       onRestartAgent,
       // 是否显示更多操作菜单
@@ -1565,8 +1570,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onExportProject={onExportProject ? handleDownloadProject : undefined}
           // 处理导入项目操作
           onImportProject={onImportProject}
-          // 重启容器
-          onRestartServer={handleRestartServer}
+          // 重启容器（用户选择的智能体电脑id==-1时，才展示 ）
+          onRestartServer={
+            agentSandboxId === -1 ? handleRestartServer : undefined
+          }
+          agentSandboxName={agentSandboxName}
           // 重启智能体
           onRestartAgent={onRestartAgent}
           // 是否正在导出项目

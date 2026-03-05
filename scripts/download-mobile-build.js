@@ -5,7 +5,8 @@ const { execSync } = require('child_process');
 
 const REPO_OWNER = 'nuwax-ai';
 const REPO_NAME = 'nuwax-mobile';
-const BRANCH = 'dev'; // 分支
+// Get branch from arguments, default to 'dev'
+const BRANCH = process.argv[2] || 'dev';
 const TARGET_DIR = 'unpackage/dist/build/web';
 const DIST_M_DIR = path.join(__dirname, '../dist/m');
 

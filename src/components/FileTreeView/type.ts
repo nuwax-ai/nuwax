@@ -60,6 +60,10 @@ export interface FileTreeViewProps {
   onImportProject?: () => Promise<void>;
   // 是否正在导入项目
   isImportingProject?: boolean;
+  /** 用户选择的智能体电脑ID */
+  agentSandboxId?: number;
+  /** 用户选择的智能体电脑名称 */
+  agentSandboxName?: string;
   /** 重启容器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
