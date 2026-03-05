@@ -1,14 +1,21 @@
 import Loading from '@/components/custom/Loading';
 import { PATH_URL } from '@/constants/home.constants';
+import { updatePathUrlToLocalStorage } from '@/layouts/DynamicMenusLayout/utils';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';
 import { MenuItemDto } from '@/types/interfaces/menu';
+import { SpaceInfo } from '@/types/interfaces/workspace';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
 
 const Space: React.FC = () => {
-  const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun, getSpaceId } =
-    useModel('spaceModel');
+  const {
+    currentSpaceInfo,
+    loadingSpaceList,
+    asyncSpaceListFun,
+    getSpaceId,
+    spaceList,
+  } = useModel('spaceModel');
 
   const { getSecondLevelMenus } = useModel('menuModel');
 
@@ -21,6 +28,7 @@ const Space: React.FC = () => {
   // 开发者功能如果关闭，首次进入空间菜单选中“空间广场”；管理员还是全部可见
 
   useEffect(() => {
+    // 当前空间id
     const spaceId = getSpaceId();
     if (!spaceId) {
       return;
@@ -32,8 +40,24 @@ const Space: React.FC = () => {
       const pathUrl = localStorage.getItem(PATH_URL);
       if (pathUrl) {
         const pathUrlObj = JSON.parse(pathUrl);
-        const pathUrlValue = pathUrlObj['workspace'];
+        let pathUrlValue = pathUrlObj['workspace'];
         if (pathUrlValue && !pathUrlValue.includes(':')) {
+          // 如果pathUrlValue中包含spaceId，则替换为spaceList中的spaceId
+          // pathUrlValue：/space/42/develop
+          // 提取pathSpaceId：42
+          const pathSpaceId = pathUrlValue.split('/').filter(Boolean)[1];
+          if (pathSpaceId) {
+            const spaceInfo = spaceList?.find(
+              (item: SpaceInfo) => item.id === Number(pathSpaceId),
+            );
+            // 如果pathSpaceId不存在于spaceList中，则替换为当前空间id
+            if (!spaceInfo) {
+              pathUrlValue = pathUrlValue.replace(pathSpaceId, spaceId);
+
+              // 更新缓存
+              updatePathUrlToLocalStorage('workspace', pathUrlValue);
+            }
+          }
           history.push(pathUrlValue);
           return;
         }
