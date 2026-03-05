@@ -657,8 +657,9 @@ export default () => {
           setChatSuggestList(guidQuestionDtos);
         }
 
-        // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
-        if (len === MESSAGE_LIST_SIZE) {
+        // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
+        // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
+        if (len > 0) {
           setIsMoreMessage(true);
         }
       }
