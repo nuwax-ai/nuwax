@@ -49,6 +49,8 @@ export interface FilePathHeaderProps {
   onShare?: () => void;
   // 是否显示分享按钮
   isShowShare?: boolean;
+  // 是否显示导出 PDF 按钮, 默认显示
+  isShowExportPdfButton?: boolean;
   /** 导出为 PDF 回调（仅 Markdown 文件） */
   onExportPdf?: (node: FileNode) => void;
   /** 是否正在导出 PDF */

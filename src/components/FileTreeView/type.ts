@@ -52,8 +52,6 @@ export interface FileTreeViewProps {
   onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 删除文件回调 */
   onDeleteFile?: (node: FileNode) => Promise<boolean>;
-  /** 视图模式切换回调 */
-  // onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
   // 导入项目
@@ -102,4 +100,6 @@ export interface FileTreeViewProps {
   hideDesktop?: number;
   // 是否动态主题，默认不开启
   isDynamicTheme?: boolean;
+  // 是否显示导出 PDF 按钮, 默认显示
+  isShowExportPdfButton?: boolean;
 }
