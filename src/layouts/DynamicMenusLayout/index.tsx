@@ -109,10 +109,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         if (pathname === '/home' || pathname === '') return true;
       }
       // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
-      else if (
-        menuPathWithoutQuery === '/space' ||
-        menuPathWithoutQuery === '/workspace'
-      ) {
+      else if (menuPathWithoutQuery === '/space') {
         return pathname.startsWith(menuPathWithoutQuery);
       } else if (pathname.includes('ecosystem')) {
         // 生态市场特殊处理，pathname为/ecosystem/plugin 是前端路由

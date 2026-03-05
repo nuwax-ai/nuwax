@@ -1023,56 +1023,58 @@ const Chat: React.FC = () => {
                   />
                 )}
 
-              {/* 通用智能体，文件预览/智能体电脑切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
-                <>
-                  {/* 文件预览视图 */}
-                  <TooltipIcon
-                    title={
-                      isFileTreeVisible && viewMode === 'preview'
-                        ? '关闭文件预览'
-                        : '打开文件预览'
-                    }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && viewMode === 'preview',
-                    })}
-                    icon={
-                      <SvgIcon
-                        name="icons-common-file_preview"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={handleFileTreeVisible}
-                  />
-
-                  {/* 智能体电脑视图 */}
-                  <ConditionRender
-                    condition={
-                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
-                    }
-                  >
+              {/* 通用智能体, 有消息时，文件预览/智能体电脑切换按钮 */}
+              {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+                messageList?.length > 0 && (
+                  <>
+                    {/* 文件预览视图 */}
                     <TooltipIcon
                       title={
-                        isFileTreeVisible && viewMode === 'desktop'
-                          ? '关闭智能体电脑'
-                          : '打开智能体电脑'
+                        isFileTreeVisible && viewMode === 'preview'
+                          ? '关闭文件预览'
+                          : '打开文件预览'
                       }
                       className={cx(styles['icon-box'], {
                         [styles['active']]:
-                          isFileTreeVisible && viewMode === 'desktop',
+                          isFileTreeVisible && viewMode === 'preview',
                       })}
                       icon={
                         <SvgIcon
-                          name="icons-nav-computer-star"
+                          name="icons-common-file_preview"
                           style={{ fontSize: 16 }}
                         />
                       }
-                      onClick={handleOpenDesktopView}
+                      onClick={handleFileTreeVisible}
                     />
-                  </ConditionRender>
-                </>
-              )}
+
+                    {/* 智能体电脑视图 */}
+                    <ConditionRender
+                      condition={
+                        conversationInfo?.agent.hideDesktop ===
+                        HideDesktopEnum.No
+                      }
+                    >
+                      <TooltipIcon
+                        title={
+                          isFileTreeVisible && viewMode === 'desktop'
+                            ? '关闭智能体电脑'
+                            : '打开智能体电脑'
+                        }
+                        className={cx(styles['icon-box'], {
+                          [styles['active']]:
+                            isFileTreeVisible && viewMode === 'desktop',
+                        })}
+                        icon={
+                          <SvgIcon
+                            name="icons-nav-computer-star"
+                            style={{ fontSize: 16 }}
+                          />
+                        }
+                        onClick={handleOpenDesktopView}
+                      />
+                    </ConditionRender>
+                  </>
+                )}
             </div>
           </div>
         </header>

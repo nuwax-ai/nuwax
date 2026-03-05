@@ -71,7 +71,7 @@ export const USER_AVATAR_LIST = [
   },
   {
     type: UserAvatarEnum.Setting,
-    icon: <SvgIcon name="icons-common-user_info" style={{ fontSize: 16 }} />,
+    icon: <SvgIcon name="icons-common-user_info" style={{ fontSize: 14 }} />,
     text: '个人资料',
   },
   {
