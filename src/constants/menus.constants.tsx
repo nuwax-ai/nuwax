@@ -1,5 +1,3 @@
-// import teachMaterialImage from '@/assets/images/teach_material.png';
-// import teachMaterialImageActive from '@/assets/images/teach_material_active.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
   MessageReadStatusEnum,
@@ -9,11 +7,7 @@ import {
   UserOperatorAreaEnum,
 } from '@/types/enums/menus';
 import { UserOperateAreaItemType } from '@/types/interfaces/layouts';
-import {
-  PoweroffOutlined,
-  SettingOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { PoweroffOutlined, UserOutlined } from '@ant-design/icons';
 
 // tabs
 export const TABS = [
@@ -47,11 +41,6 @@ export const TABS = [
     text: '系统管理',
     type: TabsEnum.System_Manage,
   },
-  // {
-  //   icon: teachMaterialImage,
-  //   text: '教材体系',
-  //   type: TabsEnum.Course_System,
-  // },
 ];
 
 // 用户操作区域
@@ -66,6 +55,11 @@ export const USER_OPERATE_AREA: UserOperateAreaItemType[] = [
     icon: <SvgIcon name="icons-nav-notification" />,
     type: UserOperatorAreaEnum.Message,
   },
+  {
+    title: '我的电脑管理',
+    icon: <SvgIcon name="icons-nav-computer" />,
+    type: UserOperatorAreaEnum.Computer,
+  },
 ];
 
 // 用户头像操作列表
@@ -77,8 +71,8 @@ export const USER_AVATAR_LIST = [
   },
   {
     type: UserAvatarEnum.Setting,
-    icon: <SettingOutlined />,
-    text: '设置',
+    icon: <SvgIcon name="icons-common-user_info" style={{ fontSize: 14 }} />,
+    text: '个人资料',
   },
   {
     type: UserAvatarEnum.Log_Out,
@@ -116,5 +110,9 @@ export const SETTING_ACTIONS = [
   {
     type: SettingActionEnum.Theme_Switch,
     label: '主题切换',
+  },
+  {
+    type: SettingActionEnum.Usage_Statistics,
+    label: '用量统计',
   },
 ];

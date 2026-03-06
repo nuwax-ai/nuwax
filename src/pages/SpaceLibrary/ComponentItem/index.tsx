@@ -31,6 +31,9 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 }) => {
   // 更多操作列表
   const [actionList, setActionList] = useState<CustomPopoverItem[]>([]);
+  // // 权限检查
+  // const { hasPermission: hasPermissionMenu } = useModel('menuModel');
+
   // 组件默认信息
   const info = useMemo(() => {
     return COMPONENT_LIST.find((item) => item.type === componentInfo.type);
@@ -46,13 +49,30 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 
   useEffect(() => {
     // 根据组件类型，过滤更多操作
-    const list = COMPONENT_MORE_ACTION.filter((item) => {
+    const list: CustomPopoverItem[] = COMPONENT_MORE_ACTION.filter((item) => {
       const { type, action } = item;
       return (
         type === componentInfo.type &&
         hasPermission(action as ApplicationMoreActionEnum)
       );
     });
+
+    // // 根据菜单权限，过滤更多操作
+    // const menuList = list.map((item) => {
+    //   switch (item.action) {
+    //     // 导出配置
+    //     case ApplicationMoreActionEnum.Export_Config: {
+    //       const isHasPermission = hasPermissionMenu('component_lib_export');
+    //       return {
+    //         ...item,
+    //         disabled: !isHasPermission,
+    //         tooltip: isHasPermission ? '' : '无此资源权限',
+    //       };
+    //     }
+    //     default:
+    //       return item;
+    //   }
+    // });
     setActionList(list);
   }, [componentInfo]);
 

@@ -2,6 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 
 import SvgIcon from '@/components/base/SvgIcon';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import DataResourceList from '@/pages/AppDev/components/FileTreePanel/DataResourceList';
 import type {
   AppDevChatMessage,
@@ -17,10 +18,17 @@ import {
   convertDataSourceSelectionToAttachment,
   generateAttachmentId,
 } from '@/utils/chatUtils';
-import { DownOutlined, RollbackOutlined } from '@ant-design/icons';
+import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
+import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import DesignViewer, { type DesignViewerRef } from '../DesignViewer';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
@@ -67,12 +75,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onDeleteDataResource,
   onAddDataResource,
 }) => {
+  // 权限检查
+  const { hasPermissionByMenuCode } = useModel('menuModel');
+
+  // 聊天Tab
   const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'design'>(
     'chat',
   );
 
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
-  // ...
 
   // 停止按钮 loading 状态
   const [isStoppingTask, setIsStoppingTask] = useState(false);
@@ -99,6 +110,53 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
   );
+
+  // 到顶自动加载更多的侦测 Hook (提前 10px 触发)
+  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
+    rootMargin: '10px 0px 0px 0px',
+    threshold: 0,
+  });
+
+  const handleLoadMoreHistory = useCallback(async () => {
+    // 1. 先记录当前内容的滚动位置与高度
+    const scrollContainer = scrollContainerRef.current?.getScrollContainer();
+    if (!scrollContainer) {
+      return;
+    }
+
+    const scrollPosition = scrollContainer.scrollTop;
+    const scrollHeight = scrollContainer.scrollHeight;
+
+    // 2. 加载历史会话
+    await chat.loadHistorySessions(chat.currentPageRef.current + 1, true);
+
+    // 3. 启用全站通用的 ResizeObserver 持续锚定补偿，来抵抗内部 markdown 多次渲染导致的抖动
+    adjustScrollPositionAfterDOMUpdate(
+      scrollContainer,
+      scrollPosition,
+      scrollHeight,
+    );
+  }, [chat]);
+
+  // 监听进入视口事件，单次触发请求 (Edge-Triggered)
+  const prevLoadMoreInViewRef = useRef(false);
+  useEffect(() => {
+    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
+    prevLoadMoreInViewRef.current = loadMoreInView;
+
+    if (
+      isEntering &&
+      chat.hasMoreHistoryRef.current &&
+      !chat.isLoadingMoreHistoryRef.current
+    ) {
+      handleLoadMoreHistory();
+    }
+  }, [
+    loadMoreInView,
+    chat.hasMoreHistoryRef.current,
+    chat.isLoadingMoreHistoryRef.current,
+    handleLoadMoreHistory,
+  ]);
 
   /**
    * 滚动按钮点击处理
@@ -142,7 +200,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
       const sessionId = lastMessage?.sessionId;
 
-      // console.log('aiChatSessionId', aiChatSessionId, sessionId);
       // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
       if (aiChatSessionId && !sessionId) {
         await cancelAiChatAgentTask(projectId, aiChatSessionId);
@@ -208,16 +265,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       selectedMentions?: MentionItem[],
       requestId?: string,
     ) => {
-      // // 验证：prompt（输入内容）是必填的
-      // if (!chat.chatInput.trim()) {
-      //   message.warning('请输入消息内容');
-      //   return;
-      // }
-
-      // 防止重复发送
-      // if (isSendingMessage || chat.isChatLoading) {
-      //   return;
-      // }
+      // 权限检查
+      if (!hasPermissionByMenuCode('page_app_dev', 'page_app_ai_chat')) {
+        message.error('您没有权限使用AI聊天功能');
+        return;
+      }
 
       setIsSendingMessage(true);
 
@@ -684,42 +736,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             }}
           >
             <div className={styles.chatMessages}>
+              {/* 自动加载更多的触发探测元素 */}
               {chat.hasMoreHistoryRef.current &&
                 !chat.isLoadingMoreHistoryRef.current && (
-                  <Button
-                    type="text"
+                  <div
+                    ref={loadMoreRef}
                     className={styles.loadMoreHistoryButton}
-                    icon={<RollbackOutlined />}
-                    onClick={async () => {
-                      // 1. 先记录当前内容的滚动位置与高度
-                      const scrollContainer =
-                        scrollContainerRef.current?.getScrollContainer();
-                      if (!scrollContainer) {
-                        return;
-                      }
-
-                      // 记录按钮元素（如果存在），用于计算高度变化
-                      const scrollPosition = scrollContainer.scrollTop;
-                      const scrollHeight = scrollContainer.scrollHeight;
-
-                      // 2. 加载历史会话
-                      await chat.loadHistorySessions(
-                        chat.currentPageRef.current + 1,
-                        true,
-                      );
-
-                      // 3. 加载记录成功后，恢复到上一次历史会话的位置
-                      // 等待 DOM 更新完成，包括按钮状态变化
-                      setTimeout(() => {
-                        scrollContainerRef.current?.handleScrollTo(
-                          scrollPosition,
-                          scrollHeight,
-                        );
-                      }, 100);
+                    style={{
+                      textAlign: 'center',
+                      padding: '16px 0',
+                      color: '#999',
                     }}
                   >
-                    点击查看更多历史会话
-                  </Button>
+                    <span>
+                      <LoadingOutlined style={{ marginRight: 8 }} />
+                      正在加载历史会话
+                    </span>
+                  </div>
                 )}
               {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
               {chat.isLoadingHistory ? (

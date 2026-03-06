@@ -1,185 +1,315 @@
-import ConditionRender from '@/components/ConditionRender';
 import {
+  ActionItem,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiSystemModelAccessControl,
   apiSystemModelDelete,
   apiSystemModelList,
   apiSystemModelSave,
 } from '@/services/systemManage';
-import styles from '@/styles/systemManage.less';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import { ModelComponentStatusEnum } from '@/types/enums/space';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
-import { CheckOutlined, PlusOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Button, message, Popconfirm, Select, Table } from 'antd';
-import { ColumnsType } from 'antd/es/table';
-import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, { useMemo, useState } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { Button, message, Switch } from 'antd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 import CreateModel from '../SpaceLibrary/CreateModel';
-
-const cx = classNames.bind(styles);
+import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
 /**
- * 全局模型管理页面
+ * 公共模型管理页面 (原全局模型管理)
  */
 const GlobalModelManage: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
+  const [visible, setVisible] = useState<boolean>(false);
+  const [modelId, setModelId] = useState<number>();
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentAuthModelId, setCurrentAuthModelId] = useState<number | null>(
+    null,
+  );
+  const [currentAuthModelName, setCurrentAuthModelName] = useState<string>('');
+  // 管控状态切换 loading 状态
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+
   const selectOptions = [
     { label: '全部', value: '' },
     { label: '聊天对话-纯文本', value: ModelTypeEnum.Chat },
     { label: '向量嵌入', value: ModelTypeEnum.Embeddings },
     { label: '聊天对话-多模态', value: ModelTypeEnum.Multi },
   ];
-  const [visible, setVisible] = useState<boolean>(false);
-  const [modelId, setModelId] = useState<number>();
-  const [currentType, setCurrentType] = useState<string>();
-  const handleSelectChange = (e: string) => setCurrentType(e);
-  const {
-    data: resData,
-    loading,
-    run,
-  } = useRequest(apiSystemModelList, {
-    debounceWait: 300,
-  });
-  const data = useMemo(() => {
-    return resData?.data.filter((v) => !currentType || v.type === currentType);
-  }, [currentType, resData?.data]);
+
   // 删除模型
-  const { runAsync: deleteModel, loading: delLoading } = useRequest(
-    apiSystemModelDelete,
-    { manual: true },
-  );
-  const delConfirm = async (id: number) => {
-    await deleteModel({ id });
-    message.success('删除成功');
-    run();
+  const handleConfirmDelete = async (id: number) => {
+    const res = await apiSystemModelDelete({ id });
+    if (res.code === SUCCESS_CODE) {
+      message.success('删除成功');
+      actionRef.current?.reload();
+    } else {
+      message.error(res.message || '删除失败');
+    }
   };
-  const columns: ColumnsType<ModelConfigDto> = [
+
+  /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: ModelConfigDto, checked: boolean) => {
+      const newStatus = checked
+        ? AccessControlEnum.Filter
+        : AccessControlEnum.NoFilter;
+      setAccessControlLoadingMap((prev) => ({
+        ...prev,
+        [record.id]: true,
+      }));
+      try {
+        const response = await apiSystemModelAccessControl(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        } else {
+          message.error(response.message || '更新管控状态失败');
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({
+          ...prev,
+          [record.id]: false,
+        }));
+      }
+    },
+    [],
+  );
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
+  }, []);
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
+
+  // 操作列配置
+  const getActions = useCallback(
+    (record: ModelConfigDto): ActionItem<ModelConfigDto>[] => {
+      return [
+        {
+          key: 'edit',
+          label: '编辑',
+          disabled: !hasPermission('model_manage_modify'),
+          onClick: () => {
+            setModelId(record.id);
+            setVisible(true);
+          },
+        },
+        {
+          key: 'auth',
+          label: '授权',
+          // 只有开启管控才显示授权按钮
+          isShow: record.accessControl === AccessControlEnum.Filter,
+          disabled: !hasPermission('model_manage_access_control'),
+          onClick: () => {
+            setCurrentAuthModelId(record.id);
+            setCurrentAuthModelName(record.name);
+            setAuthModalOpen(true);
+          },
+        },
+        {
+          key: 'delete',
+          label: '删除',
+          confirm: {
+            title: '删除模型',
+            description: (
+              <div>
+                确认删除模型 <span style={{ color: 'red' }}>{record.name}</span>
+                ?
+              </div>
+            ),
+          },
+          disabled: !hasPermission('model_manage_delete'),
+          onClick: (r) => handleConfirmDelete(r.id),
+        },
+      ];
+    },
+    [hasPermission],
+  );
+
+  const columns: ProColumns<ModelConfigDto>[] = [
     {
       title: '模型名称',
       dataIndex: 'name',
       width: 200,
-      className: styles['table-column-fixed'],
+      fixed: 'left',
+      hideInSearch: true,
     },
     {
       title: '类型',
       dataIndex: 'type',
       width: 160,
-      render: (type) => selectOptions.find((v) => v.value === type)?.label,
+      valueType: 'select',
+      valueEnum: {
+        [ModelTypeEnum.Chat]: { text: '聊天对话-纯文本' },
+        [ModelTypeEnum.Embeddings]: { text: '向量嵌入' },
+        [ModelTypeEnum.Multi]: { text: '聊天对话-多模态' },
+      },
+      fieldProps: {
+        options: selectOptions.filter((v) => v.value !== ''),
+      },
     },
     {
       title: '模型标识',
       dataIndex: 'model',
       width: 200,
+      hideInSearch: true,
     },
     {
       title: '模型介绍',
       dataIndex: 'description',
       width: 260,
+      hideInSearch: true,
     },
     {
       title: '状态',
       dataIndex: 'enabled',
       width: 100,
-      render: (enabled) => {
-        return enabled === ModelComponentStatusEnum.Enabled
-          ? '已启用'
-          : '已禁用';
+      hideInSearch: true,
+      valueEnum: {
+        [ModelComponentStatusEnum.Enabled]: { text: '已启用' },
+        [ModelComponentStatusEnum.Disabled]: { text: '已禁用' },
       },
     },
     {
       title: '创建者',
-      dataIndex: 'creator',
+      dataIndex: ['creator', 'nickName'],
       width: 160,
-      render: (creator) => <>{creator.nickName}</>,
+      hideInSearch: true,
     },
     {
       title: '更新时间',
       dataIndex: 'created',
       width: 200,
-      render: (created) => <>{dayjs(created).format('YYYY-MM-DD HH:mm:ss')}</>,
+      hideInSearch: true,
+      valueType: 'dateTime',
+    },
+    {
+      title: '管控',
+      tooltip: '若开启管控，需授权才能使用',
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      valueEnum: {
+        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
+        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+      },
+      valueType: 'select',
+      render: (_, record: ModelConfigDto) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
     },
     {
       title: '操作',
-      key: 'action',
-      width: 150,
+      valueType: 'option',
+      width: 180,
       align: 'center',
       fixed: 'right',
-      className: styles['table-column-fixed'],
       render: (_, record) => (
-        <>
-          <Button
-            type="link"
-            className={cx(styles['table-action-ant-btn-link'])}
-            onClick={() => {
-              setModelId(record.id);
-              setVisible(true);
-            }}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            title="删除模型"
-            description={
-              <div>
-                确认删除模型 <span style={{ color: 'red' }}>{record.name}</span>
-                ?
-              </div>
-            }
-            okText="确认"
-            okButtonProps={{
-              loading: delLoading,
-            }}
-            cancelText="取消"
-            onConfirm={() => delConfirm(record.id)}
-          >
-            <Button
-              type="link"
-              className={cx(styles['table-action-ant-btn-link'])}
-            >
-              删除
-            </Button>
-          </Popconfirm>
-        </>
+        <TableActions<ModelConfigDto>
+          record={record}
+          actions={getActions(record)}
+        />
       ),
     },
   ];
-  return (
-    <div className={cx(styles['system-manage-container'], 'scroll-container')}>
-      <h3 className={cx(styles['system-manage-title'])}>全局模型管理</h3>
-      <section className={cx('flex', 'content-between')}>
-        <Select
-          className={cx(styles['search-input-225'])}
-          options={selectOptions}
-          defaultValue=""
-          value={currentType}
-          onChange={handleSelectChange}
-          optionLabelProp="label"
-          popupRender={(menu) => <>{menu}</>}
-          menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
-        />
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => (setModelId(undefined), setVisible(true))}
-        >
-          添加模型
-        </Button>
-      </section>
 
-      <Table
-        rowClassName={cx(styles['table-row-divider'])}
-        className={cx('mt-30')}
+  const request = async (params: any) => {
+    const { type } = params;
+    const res = await apiSystemModelList();
+
+    if (res.code !== SUCCESS_CODE) {
+      message.error(res.message || '获取数据失败');
+      return { data: [], total: 0, success: false };
+    }
+
+    let data = res.data || [];
+    if (type) {
+      data = data.filter((v) => v.type === type);
+    }
+    const { accessControl } = params;
+    if (accessControl !== undefined) {
+      data = data.filter((v) => v.accessControl === Number(accessControl));
+    }
+
+    return {
+      data,
+      total: data.length,
+      success: true,
+    };
+  };
+
+  return (
+    <WorkspaceLayout
+      title="公共模型管理"
+      hideScroll
+      rightSlot={
+        hasPermission('model_manage_add') && (
+          <Button
+            key="add"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setModelId(undefined);
+              setVisible(true);
+            }}
+          >
+            添加模型
+          </Button>
+        )
+      }
+    >
+      <XProTable<ModelConfigDto>
+        actionRef={actionRef}
+        formRef={formRef}
         rowKey="id"
-        loading={loading}
         columns={columns}
-        virtual
-        scroll={{
-          x: 'max-content',
-        }}
-        dataSource={data}
+        request={request}
+        onReset={handleReset}
+        showQueryButtons={hasPermission('model_manage_query_list')}
       />
-      <ConditionRender condition={visible}>
+      {visible && (
         <CreateModel
           action={apiSystemModelSave}
           id={modelId}
@@ -188,10 +318,24 @@ const GlobalModelManage: React.FC = () => {
           }
           open={visible}
           onCancel={() => setVisible(false)}
-          onConfirm={() => (run(), setVisible(false))}
+          onConfirm={() => {
+            setVisible(false);
+            actionRef.current?.reload();
+          }}
         />
-      </ConditionRender>
-    </div>
+      )}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentAuthModelId || 0}
+        targetType="model"
+        targetName={currentAuthModelName}
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentAuthModelId(null);
+          setCurrentAuthModelName('');
+        }}
+      />
+    </WorkspaceLayout>
   );
 };
 

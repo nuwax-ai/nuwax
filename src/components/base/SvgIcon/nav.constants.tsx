@@ -1,12 +1,22 @@
 import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
+import { ReactComponent as ComputerSvgFile } from '@/assets/icons/nav/computer.svg';
+import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
+import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
+import { ReactComponent as ModelSvgFile } from '@/assets/icons/nav/icons-nav-model.svg';
+import { ReactComponent as PublishManageSvgFile } from '@/assets/icons/nav/icons-nav-published.svg';
+import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
+import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
+import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
 import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
+// 新会话图标
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
 import { ReactComponent as NotificationSvgFile } from '@/assets/icons/nav/notification.svg';
 import { ReactComponent as PaletteSvgFile } from '@/assets/icons/nav/palette.svg';
+import { ReactComponent as PermissionSvgFile } from '@/assets/icons/nav/permission.svg';
 import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg';
 import { ReactComponent as PublishAuditSvgFile } from '@/assets/icons/nav/publish_audit.svg';
 import { ReactComponent as SettingsSvgFile } from '@/assets/icons/nav/settings.svg';
@@ -22,10 +32,16 @@ import { ReactComponent as TimeSvgFile } from '@/assets/icons/nav/time.svg';
 import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
+
+import { ReactComponent as IconComputerStarSvgFile } from '@/assets/icons/common/icon_computer_star.svg';
+
 import React from 'react';
 import { wrapSvg } from './utils';
 
 const HomeSvg = wrapSvg(HomeSvgFile);
+const LogSvg = wrapSvg(LogSvgFile);
+const LogOperationSvg = wrapSvg(LogOperationSvgFile);
+const LogRunningSvg = wrapSvg(LogRunningSvgFile);
 const WorkspaceSvg = wrapSvg(WorkspaceSvgFile);
 const SquareSvg = wrapSvg(SquareSvgFile);
 const EcosystemSvg = wrapSvg(EcosystemSvgFile);
@@ -43,12 +59,18 @@ const TaskSvg = wrapSvg(TaskSvgFile);
 const TaskTimeSvg = wrapSvg(TaskTimeSvgFile);
 const TimeSvg = wrapSvg(TimeSvgFile);
 const ComponentsSvg = wrapSvg(ComponentsSvgFile);
+const CubeSvg = wrapSvg(CubeSvgFile);
+const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
 const BackwardSvg = wrapSvg(BackwardSvgFile);
 const PaletteSvg = wrapSvg(PaletteSvgFile);
+const PermissionSvg = wrapSvg(PermissionSvgFile);
 const SidebarSvg = wrapSvg(SidebarSvgFile);
+const ComputerSvg = wrapSvg(ComputerSvgFile);
+const ModelSvg = wrapSvg(ModelSvgFile);
+const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 export default {
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
@@ -68,10 +90,20 @@ export default {
   'icons-nav-task-time': TaskTimeSvg,
   'icons-nav-time': TimeSvg,
   'icons-nav-components': ComponentsSvg,
+  'icons-nav-cube': CubeSvg,
+  'icons-nav-dashboard': DashboardSvg,
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,
   'icons-nav-publish_audit': PublishAuditSvg,
   'icons-nav-backward': BackwardSvg,
   'icons-nav-palette': PaletteSvg,
+  'icons-nav-permission': PermissionSvg,
   'icons-nav-sidebar': SidebarSvg,
+  'icons-nav-log': LogSvg,
+  'icons-nav-log-operation': LogOperationSvg,
+  'icons-nav-log-running': LogRunningSvg,
+  'icons-nav-computer': ComputerSvg,
+  'icons-nav-model': ModelSvg,
+  'icons-nav-publish_manage': PublishManageSvg,
+  'icons-nav-computer-star': IconComputerStarSvgFile,
 } as Record<string, React.FC>;

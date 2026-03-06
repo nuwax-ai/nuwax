@@ -1,16 +1,28 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useWorkflowModel } from '@/hooks/useWorkflowModel';
+import { InputTypeEnum } from '@/types/enums/agent';
 import { DataTypeEnum, UploadFileStatus } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { FileListItem } from '@/types/interfaces/workflow';
 import { getAccept } from '@/utils';
-import { App, Button, Form, Input, InputNumber, Radio, Upload } from 'antd';
+import {
+  App,
+  Button,
+  Cascader,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Upload,
+} from 'antd';
 import { isString } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import CodeEditor from '../CodeEditor';
+
+const { SHOW_CHILD } = Cascader;
 
 interface InputBoxProps {
   item: InputAndOutConfig;
@@ -195,7 +207,70 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
       );
     }
     case item.dataType === 'String': {
-      return <Input {...restProps} />;
+      const inputType = item.inputType as InputTypeEnum;
+      const { description } = item;
+      switch (inputType) {
+        // 单行文本
+        case InputTypeEnum.Text:
+          return (
+            <Input
+              variant="filled"
+              placeholder={description || '请输入'}
+              allowClear
+              disabled={loading}
+              {...restProps}
+            />
+          );
+        // 段落、智能识别
+        case InputTypeEnum.Paragraph:
+        case InputTypeEnum.AutoRecognition:
+          return (
+            <Input.TextArea
+              variant="filled"
+              placeholder={description || '请输入'}
+              allowClear
+              disabled={loading}
+              {...restProps}
+            />
+          );
+        // 数字
+        case InputTypeEnum.Number:
+          return (
+            <InputNumber
+              variant="filled"
+              className="w-full"
+              placeholder={description || '请输入'}
+              disabled={loading}
+              {...restProps}
+            />
+          );
+        // 单选、多选
+        case InputTypeEnum.Select:
+        case InputTypeEnum.MultipleSelect:
+          return (
+            <Cascader
+              variant="filled"
+              expandTrigger="hover"
+              multiple={inputType === InputTypeEnum.MultipleSelect}
+              maxTagCount="responsive"
+              showCheckedStrategy={SHOW_CHILD}
+              placeholder={description || '请选择'}
+              options={item.selectConfig?.options || []}
+              allowClear
+              disabled={loading}
+              {...restProps}
+            />
+          );
+        default:
+          return (
+            <Input
+              placeholder={description || '请输入'}
+              allowClear
+              disabled={loading}
+              {...restProps}
+            />
+          );
+      }
     }
     default: {
       return <Input {...restProps} disabled={loading} />;

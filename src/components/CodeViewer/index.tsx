@@ -3,6 +3,8 @@ import MonacoEditor from './MonacoEditor';
 import styles from './index.less';
 
 interface CodeViewerProps {
+  /** 是否动态主题 */
+  isDynamicTheme?: boolean;
   /** 文件ID */
   fileId: string;
   /** 文件名 */
@@ -22,6 +24,7 @@ interface CodeViewerProps {
  * 显示代码内容，使用 MonacoEditor
  */
 const CodeViewer: React.FC<CodeViewerProps> = ({
+  isDynamicTheme = false,
   fileId,
   fileName,
   filePath,
@@ -33,6 +36,7 @@ const CodeViewer: React.FC<CodeViewerProps> = ({
     <div className={styles.fileContentDisplay}>
       <MonacoEditor
         key={fileId}
+        isDynamicTheme={isDynamicTheme}
         currentFile={{
           id: fileId,
           name: fileName,

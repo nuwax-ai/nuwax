@@ -68,19 +68,19 @@ const MenusLayout: React.FC<{
       agentId: null,
       limit: 20,
     });
-    history.push('/');
+    history.push('/home');
   };
 
   // 点击工作空间
   const handleClickSpace = async () => {
     // 最近编辑
     runEdit({
-      size: 8,
+      size: 5,
     });
     // 开发收藏
     runDevCollect({
       page: 1,
-      size: 8,
+      size: 5,
     });
     history.push('/space');
   };
@@ -105,7 +105,7 @@ const MenusLayout: React.FC<{
           history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
           break;
         case TabsEnum.System_Manage:
-          history.push('/system/user/manage');
+          history.push('/system/user/manage', { _t: Date.now() });
           break;
         case TabsEnum.Ecosystem_Market:
           history.push('/ecosystem');
@@ -149,6 +149,9 @@ const MenusLayout: React.FC<{
         break;
       case UserOperatorAreaEnum.Message:
         setOpenMessage(true);
+        break;
+      case UserOperatorAreaEnum.Computer:
+        history.push('/my-computer-manage', { _t: Date.now() });
         break;
     }
   }, []);
@@ -197,16 +200,6 @@ const MenusLayout: React.FC<{
       navigationStyle === 'style2'
         ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
         : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 风格2展开模式88px，风格1紧凑模式60px
-
-    // 开发环境下添加日志
-    if (process.env.NODE_ENV === 'development') {
-      // console.log(
-      //   'MenusLayout - 导航风格:',
-      //   navigationStyle,
-      //   '-> 宽度:',
-      //   width,
-      // );
-    }
 
     return width;
   }, [navigationStyle, isMobile]);
@@ -257,6 +250,8 @@ const MenusLayout: React.FC<{
         <Tabs onClick={handleTabsClick} />
         {/*用户操作区域： 文档、历史会话、消息*/}
         <UserOperateArea onClick={handleUserClick} />
+        {/* 我的电脑管理 */}
+
         {/*用户头像区域*/}
         <User />
       </div>

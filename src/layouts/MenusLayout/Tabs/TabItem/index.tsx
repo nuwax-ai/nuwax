@@ -60,7 +60,6 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
             className={cx(styles.text)}
             style={{
               display: isStyle2 ? 'block' : 'none',
-              // transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
             }}
           >
             {text}
@@ -103,10 +102,6 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
                 navigationStyle === ThemeNavigationStyleType.STYLE2
                   ? 'block'
                   : 'none',
-              // transform:
-              //   navigationStyle === 'style2'
-              //     ? 'translateY(0)'
-              //     : 'translateY(-5px)',
             }}
           >
             {text}

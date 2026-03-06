@@ -121,7 +121,13 @@
       border: none;
       color: #fff;
 
-      &:hover {
+      &.disabled {
+        background: @GRAY05;
+        color: @WHITE;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(.disabled) {
         background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
         color: #fff;
       }

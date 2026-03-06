@@ -53,6 +53,7 @@
       .md-code-block {
         .md-code-block-banner-wrap {
           max-width: 100%;
+          // z-index: 1 !important;
         }
 
         .md-code-block-content {
@@ -166,6 +167,56 @@
     .ant-image-error .ant-image-img {
       width: unset;
       height: unset;
+    }
+  }
+}
+
+.markdown-cmd-container {
+  .thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding-bottom: 8px;
+    user-select: none;
+    color: #999;
+    font-size: 14px;
+    width: fit-content;
+    margin-left: -3.5px;
+
+    &:hover {
+      color: #666;
+    }
+
+    .thinking-icon {
+      margin-right: 6px;
+      font-size: 16px;
+      color: rgba(0, 0, 0, 45%);
+      display: flex;
+      align-items: center;
+    }
+
+    .thinking-title {
+      line-height: 1;
+    }
+
+    .expand-icon {
+      margin-left: 5px;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 45%);
+      transition: transform 0.3s ease;
+
+      &.is-expanded {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  &.thinking-collapsed {
+    :global {
+      .ds-markdown-thinking {
+        display: none;
+      }
     }
   }
 }

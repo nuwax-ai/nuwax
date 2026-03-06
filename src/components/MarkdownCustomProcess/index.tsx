@@ -350,13 +350,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     >
       <div className={cx(styles['process-header'])}>
         <div className={cx(styles['process-title'])}>
-          {innerProcessing.name || '暂无名称'}
+          {innerProcessing?.name || '暂无名称'}
         </div>
         <div className={cx(styles['process-controls'])}>
           {genStatusDisplay()}
           <div className={cx(styles['process-controls-actions'])}>
             <Tooltip title="查看详情">
               <Button
+                size="small"
                 type="text"
                 disabled={disabled}
                 icon={<ProfileOutlined />}
@@ -370,6 +371,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 onOpenChange={setOpen}
               >
                 <Button
+                  size="small"
                   type="text"
                   disabled={disabled}
                   icon={
@@ -385,6 +387,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             {isPlanType && (
               <Tooltip title={isPlanExpanded ? '收起' : '展开'}>
                 <Button
+                  size="small"
                   type="text"
                   icon={isPlanExpanded ? <MinusOutlined /> : <PlusOutlined />}
                   onClick={() => setIsPlanExpanded(!isPlanExpanded)}
@@ -397,6 +400,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
             {/*<Tooltip title="复制">*/}
             {/*  <Button*/}
+            {/*    size="small"*/}
             {/*    type="text"*/}
             {/*    icon={<CopyOutlined />}*/}
             {/*    disabled={disabled}*/}

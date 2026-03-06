@@ -6,10 +6,10 @@ import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import {
+  AGENT_TYPE_LIST,
   AGENT_TYPE_LIST_DEV,
   CREATE_LIST,
   FILTER_STATUS,
-  getAgentTypeList,
 } from '@/constants/space.constants';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
@@ -36,7 +36,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, message, Row, Space, Upload } from 'antd';
+import { Button, Empty, Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
@@ -113,8 +113,6 @@ const SpaceDevelop: React.FC = () => {
     useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
-  // 获取租户配置信息
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -216,7 +214,7 @@ const SpaceDevelop: React.FC = () => {
       const id = params[0];
       handleDelAgent();
       runEdit({
-        size: 8,
+        size: 5,
       });
       // 如果智能体开发收藏列表包含此删除智能体, 重新查询
       const index = devCollectAgentList?.findIndex(
@@ -226,7 +224,7 @@ const SpaceDevelop: React.FC = () => {
         // 更新开发智能体收藏列表
         runDevCollect({
           page: 1,
-          size: 8,
+          size: 5,
         });
       }
     },
@@ -249,6 +247,10 @@ const SpaceDevelop: React.FC = () => {
   });
 
   useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
     setLoading(true);
     run(spaceId);
   }, [spaceId]);
@@ -436,101 +438,52 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <Row>
-        <Col
-          xs={24}
-          sm={24}
-          md={12}
-          lg={12}
-          xl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div>
-            <Space>
-              <h3 className={cx(styles.title)}>智能体开发</h3>
-              <SelectList
-                value={agentType}
-                options={AGENT_TYPE_LIST_DEV}
-                onChange={handlerChangeAgentType}
-                size="middle"
-              />
-              {/* 单选模式 */}
-              <ButtonToggle
-                options={FILTER_STATUS}
-                value={status}
-                onChange={(value) => handlerChangeStatus(value as React.Key)}
-              />
-              <ButtonToggle
-                options={CREATE_LIST}
-                value={create}
-                onChange={(value) => handlerChangeCreate(value as React.Key)}
-              />
-            </Space>
-          </div>
-        </Col>
-        <Col
-          xs={24}
-          sm={24}
-          md={12}
-          lg={12}
-          xl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div
-            className={cx('flex', 'gap-10', 'justify-content-end')}
-            style={{ textAlign: 'right' }}
-          >
-            <Input
-              rootClassName={cx(styles.input)}
-              placeholder="搜索智能体"
-              value={keyword}
-              onChange={handleQueryAgent}
-              prefix={<SearchOutlined />}
-              allowClear
-              onClear={handleClearKeyword}
-              style={{ width: 214 }}
-            />
-            <UploadImportConfig
-              spaceId={spaceId}
-              onUploadSuccess={handleImportConfig}
-              beforeUpload={beforeUploadDefault}
-            />
-            {/* <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setOpenCreateAgent(true)}
-            >
-              创建智能体
-            </Button> */}
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>智能体开发</h3>
+          <SelectList
+            value={agentType}
+            options={AGENT_TYPE_LIST_DEV}
+            onChange={handlerChangeAgentType}
+            size="middle"
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={FILTER_STATUS}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="搜索智能体"
+            value={keyword}
+            onChange={handleQueryAgent}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+            beforeUpload={beforeUploadDefault}
+          />
 
-            {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
-            {getAgentTypeList(tenantConfigInfo?.enabledSandbox).length === 1 ? (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  const agentTypes = getAgentTypeList(
-                    tenantConfigInfo?.enabledSandbox,
-                  );
-                  setCurrentAgentType(agentTypes[0].value as AgentTypeEnum);
-                  setOpenCreateAgent(true);
-                }}
-              >
-                创建智能体
-              </Button>
-            ) : (
-              <CustomPopover
-                list={getAgentTypeList(tenantConfigInfo?.enabledSandbox)}
-                onClick={handlerClickAgentType}
-              >
-                <Button type="primary" icon={<PlusOutlined />}>
-                  创建智能体
-                </Button>
-              </CustomPopover>
-            )}
-          </div>
-        </Col>
-      </Row>
+          {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+          <CustomPopover list={AGENT_TYPE_LIST} onClick={handlerClickAgentType}>
+            <Button type="primary" icon={<PlusOutlined />}>
+              创建智能体
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
       {/* <div className={cx('flex', styles['select-search-area'])}></div> */}
       {loading ? (
         <Loading />

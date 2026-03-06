@@ -99,6 +99,7 @@ const EcosystemMarketSection: React.FC<{
                 <SecondMenuItem.SubItem
                   key={item.type}
                   name={item.text}
+                  className={cx(styles.subItem)}
                   isActive={activeKey === item.type}
                   onClick={() => handleClickTemplate(item.type)}
                 />

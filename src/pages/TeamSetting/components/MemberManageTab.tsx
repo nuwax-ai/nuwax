@@ -1,27 +1,16 @@
+import { TableActions, XProTable } from '@/components/ProComponents';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiDeleteSpaceUser,
   apiGetSpaceUserList,
 } from '@/services/teamSetting';
-import systemManageStyles from '@/styles/systemManage.less';
-import styles from '@/styles/teamSetting.less';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { SpaceUserInfo } from '@/types/interfaces/teamSetting';
-import { CheckOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Button, Input, message, Modal, Select, Table } from 'antd';
-import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
+import { ActionType, ProColumns } from '@ant-design/pro-components';
+import { Button, message } from 'antd'; // Added Tag
+import React, { useRef, useState } from 'react';
 import AddMember from './AddMember';
-
-const cx = classNames.bind(styles);
-
-const selectOptions = [
-  { value: '', label: '全部' },
-  { value: TeamStatusEnum.Owner, label: '创建人' },
-  { value: TeamStatusEnum.Admin, label: '管理员' },
-  { value: TeamStatusEnum.User, label: '成员' },
-];
 
 interface MemberManageTabProps {
   spaceId: number;
@@ -29,182 +18,136 @@ interface MemberManageTabProps {
 }
 
 const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
-  const [selectedValue, setSelectedValue] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [removeLoadingMap, setRemoveLoadingMap] = useState<
-    Record<number, boolean>
-  >({});
+  const actionRef = useRef<ActionType>();
   const [openAddMemberModal, setOpenAddMemberModal] = useState<boolean>(false);
-
-  const { data, run, refresh, loading } = useRequest(apiGetSpaceUserList, {
-    debounceWait: 300,
-    loadingDelay: 300,
-  });
-
-  const getParams = (role: string, kw: string) => {
-    return {
-      role: role || undefined,
-      kw,
-      spaceId,
-    };
-  };
-
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
-    const params = getParams(selectedValue, value);
-    run(params);
-  };
-
-  const handleSelectChange = (value: string) => {
-    setSelectedValue(value);
-    const params = getParams(value, inputValue);
-    run(params);
-  };
-
-  const { run: runRemoveUser } = useRequest(apiDeleteSpaceUser, {
-    manual: true,
-    loadingDelay: 300,
-    onBefore: (params) => {
-      setRemoveLoadingMap((prev) => ({ ...prev, [params[0].userId]: true }));
-    },
-    onSuccess: () => {
-      message.success('删除成功');
-      refresh();
-    },
-    onFinally: (params) => {
-      setRemoveLoadingMap((prev) => ({ ...prev, [params[0].userId]: false }));
-    },
-  });
-
-  const removeUser = async (userId: number) => {
-    Modal.confirm({
-      title: '确认删除',
-      content: '你确定要删除该用户吗？',
-      okText: '确定',
-      cancelText: '取消',
-      onOk: runRemoveUser.bind(null, { userId, spaceId }),
-      onCancel: () => {},
-    });
-  };
-
-  const addUser = () => {
-    setOpenAddMemberModal(true);
-  };
 
   const handlerConfirmAddMember = () => {
     setOpenAddMemberModal(false);
-    run(getParams(selectedValue, inputValue));
+    actionRef.current?.reload();
   };
 
-  const columns = [
+  const request = async (params: any) => {
+    const { current = 1, pageSize = 10, role, kw } = params;
+    try {
+      const res = await apiGetSpaceUserList({
+        spaceId,
+        role: role || undefined, // empty string to undefined
+        kw,
+      });
+
+      if (res.code === SUCCESS_CODE) {
+        const allList = res.data || [];
+        // Manual pagination
+        const start = (current - 1) * pageSize;
+        const end = start + pageSize;
+        const pageList = allList.slice(start, end);
+        return {
+          data: pageList,
+          total: allList.length,
+          success: true,
+        };
+      }
+      return { data: [], total: 0, success: false };
+    } catch (e) {
+      return { data: [], total: 0, success: false };
+    }
+  };
+
+  const removeUser = async (userId: number) => {
+    const resp = await apiDeleteSpaceUser({ userId, spaceId });
+    if (resp.code === SUCCESS_CODE) {
+      message.success('删除成功');
+      actionRef.current?.reload();
+    }
+  };
+
+  const columns: ProColumns<SpaceUserInfo>[] = [
+    {
+      title: '关键字',
+      dataIndex: 'kw',
+      hideInTable: true,
+      fieldProps: {
+        placeholder: '搜索',
+      },
+    },
     {
       title: '昵称',
       dataIndex: 'nickName',
-      key: 'nickName',
+      search: false,
     },
     {
       title: '用户名',
       dataIndex: 'userName',
-      key: 'userName',
+      search: false,
     },
     {
       title: '角色',
       dataIndex: 'role',
-      key: 'role',
-      render: (role: TeamStatusEnum) => {
-        switch (role) {
-          case TeamStatusEnum.Owner:
-            return '创建人';
-          case TeamStatusEnum.Admin:
-            return '管理员';
-          default:
-            return '成员';
-        }
+      valueType: 'select',
+      valueEnum: {
+        [TeamStatusEnum.Owner]: { text: '创建人' },
+        [TeamStatusEnum.Admin]: { text: '管理员' },
+        [TeamStatusEnum.User]: { text: '成员' },
+      },
+      render: (_: any, record: SpaceUserInfo) => {
+        const role = record.role;
+        let text = '成员';
+        if (role === TeamStatusEnum.Owner) text = '创建人';
+        if (role === TeamStatusEnum.Admin) text = '管理员';
+        return text;
       },
     },
     {
       title: '加入时间',
       dataIndex: 'created',
-      key: 'created',
-      width: '180px',
-      render: (created: string) => {
-        return dayjs(created).format('YYYY-MM-DD HH:mm:ss');
-      },
+      search: false,
+      width: 180,
+      valueType: 'dateTime',
     },
-    ...(role !== TeamStatusEnum.User
-      ? [
-          {
-            title: '操作',
-            key: 'action',
-            align: 'center',
-            width: '160px',
-            render: (_: null, record: SpaceUserInfo) => (
-              <>
-                <Button
-                  type="link"
-                  className={cx(
-                    systemManageStyles['table-action-ant-btn-link'],
-                  )}
-                  loading={removeLoadingMap[record.userId] || false}
-                  onClick={() => removeUser(record.userId)}
-                >
-                  删除
-                </Button>
-              </>
-            ),
-          },
-        ]
-      : []),
+    {
+      title: '操作',
+      valueType: 'option',
+      align: 'center',
+      width: 160,
+      hideInTable: role === TeamStatusEnum.User, // Hide column if current user is just a member
+      render: (_: any, record: SpaceUserInfo) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'delete',
+              label: '删除',
+              confirm: {
+                title: '确认删除',
+                description: '你确定要删除该用户吗？',
+              },
+              onClick: () => removeUser(record.userId),
+            },
+          ]}
+        />
+      ),
+    },
   ];
-
-  useEffect(() => {
-    run({ spaceId, role: undefined, kw: inputValue });
-  }, [spaceId]);
 
   return (
     <>
-      <section className={cx('flex', 'content-between')}>
-        <Select
-          className={cx(systemManageStyles['select-132'])}
-          options={selectOptions}
-          defaultValue=""
-          onChange={handleSelectChange}
-          optionLabelProp="label"
-          popupRender={(menu) => <>{menu}</>}
-          menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
-        />
-        <div>
-          <Input
-            className={cx(systemManageStyles['search-input-255'])}
-            placeholder="搜索"
-            prefix={<SearchOutlined />}
-            onPressEnter={(event) => {
-              if (event.key === 'Enter') {
-                handleInputChange(
-                  (event.currentTarget as HTMLInputElement).value,
-                );
-              }
-            }}
-          />
-          {role !== TeamStatusEnum.User && (
+      <XProTable<SpaceUserInfo>
+        actionRef={actionRef}
+        rowKey="userId"
+        columns={columns}
+        request={request}
+        toolBarRender={() => [
+          role !== TeamStatusEnum.User && (
             <Button
+              key="add"
               type="primary"
               icon={<PlusOutlined />}
-              className={cx('ml-12')}
-              onClick={addUser}
+              onClick={() => setOpenAddMemberModal(true)}
             >
               添加成员
             </Button>
-          )}
-        </div>
-      </section>
-      <Table
-        rowClassName={cx(systemManageStyles['table-row-divider'])}
-        className={cx('mt-22')}
-        rowKey="userId"
-        loading={loading}
-        columns={columns}
-        dataSource={data?.data}
+          ),
+        ]}
       />
       <AddMember
         spaceId={spaceId}

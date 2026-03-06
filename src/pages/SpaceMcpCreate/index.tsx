@@ -22,6 +22,48 @@ import McpHeader from './McpHeader';
 
 const cx = classNames.bind(styles);
 
+// 不同安装方式对应的默认配置模板
+const INSTALL_TYPE_DEFAULT_CONFIG: Record<McpInstallTypeEnum, string> = {
+  [McpInstallTypeEnum.NPX]: `{
+  "mcpServers": {
+    "mcpServerName": {
+      "command": "npx",
+      "args": [],
+      "env": {}
+    }
+  }
+}`,
+  [McpInstallTypeEnum.UVX]: `{
+  "mcpServers": {
+    "mcpServerName": {
+      "command": "uvx",
+      "args": [],
+      "env": {}
+    }
+  }
+}`,
+  [McpInstallTypeEnum.SSE]: `{
+  "mcpServers": {
+    "mcpServerName": {
+      "type": "sse",
+      "url": "url地址",
+      "headers": {}
+    }
+  }
+}`,
+  [McpInstallTypeEnum.STREAMABLE_HTTP]: `{
+  "mcpServers": {
+    "mcpServerName": {
+      "type": "streamableHttp",
+      "url": "url地址",
+      "headers": {}
+    }
+  }
+}`,
+  // 组件库方式不需要 serverConfig，这里给空字符串
+  [McpInstallTypeEnum.COMPONENT]: '',
+};
+
 // 创建MCP服务
 const SpaceMcpCreate: React.FC = () => {
   const params = useParams();
@@ -50,10 +92,12 @@ const SpaceMcpCreate: React.FC = () => {
   } = useMcp();
 
   useEffect(() => {
-    setInstallType(McpInstallTypeEnum.NPX);
-    // 获取MCP服务配置组件列表
+    // 默认安装方式为 npx，并填充对应的默认配置
+    const defaultType = McpInstallTypeEnum.NPX;
+    setInstallType(defaultType);
     form.setFieldsValue({
-      installType: McpInstallTypeEnum.NPX,
+      installType: defaultType,
+      serverConfig: INSTALL_TYPE_DEFAULT_CONFIG[defaultType],
     });
   }, []);
 
@@ -175,9 +219,18 @@ const SpaceMcpCreate: React.FC = () => {
               rules={[{ required: true, message: '请选择安装方式' }]}
             >
               <Radio.Group
-                onChange={(e) =>
-                  setInstallType(e.target.value as McpInstallTypeEnum)
-                }
+                onChange={(e) => {
+                  const type = e.target.value as McpInstallTypeEnum;
+                  setInstallType(type);
+                  // 切换安装方式时，为代码编辑器填充对应的默认配置，方便用户直接修改
+                  if (type !== McpInstallTypeEnum.COMPONENT) {
+                    form.setFieldsValue({
+                      serverConfig: INSTALL_TYPE_DEFAULT_CONFIG[type],
+                    });
+                  } else {
+                    form.setFieldsValue({ serverConfig: '' });
+                  }
+                }}
                 value={installType}
                 options={MCP_INSTALL_TYPE_LIST}
               />
@@ -220,6 +273,10 @@ const SpaceMcpCreate: React.FC = () => {
                   codeLanguage={CodeLangEnum.JSON}
                   height="300px"
                   codeOptimizeVisible={false}
+                  value={form.getFieldValue('serverConfig')}
+                  onChange={(code) => {
+                    form.setFieldsValue({ serverConfig: code });
+                  }}
                 />
               </Form.Item>
             ) : (

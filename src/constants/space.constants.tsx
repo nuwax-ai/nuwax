@@ -71,16 +71,6 @@ const AGENT_TYPE_LIST_ALL = [
   },
 ];
 
-// 获取智能体类型列表（根据enabledSandbox过滤）
-export const getAgentTypeList = (enabledSandbox?: boolean) => {
-  if (enabledSandbox === false) {
-    return AGENT_TYPE_LIST_ALL.filter(
-      (item) => item.value !== AgentTypeEnum.TaskAgent,
-    );
-  }
-  return AGENT_TYPE_LIST_ALL;
-};
-
 // 兼容旧代码
 export const AGENT_TYPE_LIST = AGENT_TYPE_LIST_ALL;
 
@@ -140,7 +130,7 @@ export const FILTER_STATUS_DEV = [
   { value: FilterStatusEnum.Unpublished, label: '未发布' },
 ];
 
-// 智能体开发 - 智能体类型（全部/问答型/任务型）
+// 智能体开发 - 智能体类型（全部/问答型/通用型）
 export const AGENT_TYPE_LIST_DEV = [
   { value: AgentTypeEnum.All, label: '全部' },
   { value: AgentTypeEnum.ChatBot, label: '问答型' },
@@ -221,18 +211,6 @@ const SPACE_APPLICATION_LIST_ALL: SpaceApplicationList[] = [
     text: '成员与设置',
   },
 ];
-
-// 获取工作空间应用列表（根据enabledSandbox过滤）
-export const getSpaceApplicationList = (
-  enabledSandbox?: boolean,
-): SpaceApplicationList[] => {
-  if (enabledSandbox === false) {
-    return SPACE_APPLICATION_LIST_ALL.filter(
-      (item) => item.type !== SpaceApplicationListEnum.Skill_Manage,
-    );
-  }
-  return SPACE_APPLICATION_LIST_ALL;
-};
 
 // 兼容旧代码
 export const SPACE_APPLICATION_LIST = SPACE_APPLICATION_LIST_ALL;

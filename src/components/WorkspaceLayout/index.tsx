@@ -12,6 +12,10 @@ interface WorkspaceLayoutProps {
   // 是否隐藏滚动条
   hideScroll?: boolean;
   extraContent?: React.ReactNode;
+  // Padding 配置
+  headerPadding?: React.CSSProperties['padding'];
+  contentPadding?: React.CSSProperties['padding'];
+  extraPadding?: React.CSSProperties['padding'];
 }
 
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
@@ -22,14 +26,17 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   title,
   hideScroll = false,
   extraContent,
+  headerPadding,
+  contentPadding,
+  extraPadding,
 }) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div
-        className={cx('flex', 'content-between')}
-        style={{ marginBottom: 5 }}
+        className={cx(styles['header-area'])}
+        style={{ padding: headerPadding }}
       >
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+        <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>{title || ''}</h3>
           {/* 左侧区域插槽 */}
           {leftSlot}
@@ -38,7 +45,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {/* 中间区域插槽 */}
           {centerSlot}
         </div>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        <div className={cx(styles['header-right'])}>
           {/* 右侧区域插槽 */}
           {rightSlot}
         </div>
@@ -48,10 +55,18 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           styles.content,
           hideScroll ? 'scroll-container-hide' : '',
         )}
+        style={{ padding: contentPadding }}
       >
         {children}
       </div>
-      {extraContent}
+      {extraContent && (
+        <div
+          className={cx(styles['extra-container'])}
+          style={{ padding: extraPadding }}
+        >
+          {extraContent}
+        </div>
+      )}
     </div>
   );
 };

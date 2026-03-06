@@ -107,3 +107,57 @@ export async function apiTenantConfig(): Promise<
     method: 'GET',
   });
 }
+
+// 获取当前登录用户的动态认证码
+export async function apiGetUserDynamicCode(): Promise<
+  RequestResponse<number>
+> {
+  return request('/api/user/dynamicCode', {
+    method: 'GET',
+  });
+}
+
+// 用量使用情况
+export interface UsageInfo {
+  /** 限制 */
+  limit: string;
+  /** 使用情况 */
+  usage: string;
+  /** 使用情况 */
+  description: string;
+}
+
+// 用户用量统计信息
+export interface UserMetricUsageInfo {
+  /** 今日token使用情况 */
+  todayTokenUsage: UsageInfo;
+  /** 今日智能体对话次数使用情况 */
+  todayAgentPromptUsage: UsageInfo;
+  /** 今日页面应用对话次数使用情况 */
+  todayPageAppPromptUsage: UsageInfo[];
+  /** 今日工作空间使用情况 */
+  newWorkspaceUsage: UsageInfo[];
+  /** 今日智能体使用情况 */
+  newAgentUsage: UsageInfo[];
+  /** 今日页面应用使用情况 */
+  newPageAppUsage: UsageInfo[];
+  /** 今日知识库使用情况 */
+  newKnowledgeBaseUsage: UsageInfo[];
+  /** 知识库存储空间使用情况 */
+  knowledgeBaseStorageUsage: UsageInfo[];
+  /** 今日数据表使用情况 */
+  newTableUsage: UsageInfo[];
+  /** 今日定时任务使用情况 */
+  newTaskUsage: UsageInfo[];
+  /** 沙盒内存限制使用情况 */
+  sandboxMemoryLimit: UsageInfo[];
+}
+
+// 查询用户各项已使用情况
+export async function apiGetUserMetricUsage(): Promise<
+  RequestResponse<UserMetricUsageInfo>
+> {
+  return request('/api/user/metric/usage', {
+    method: 'GET',
+  });
+}

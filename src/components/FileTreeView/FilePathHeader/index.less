@@ -6,13 +6,9 @@
   display: flex;
   align-items: center;
   height: 48px;
-  background: @colorBgContainer;
-  border-bottom: @lineWidth solid @colorSplit;
+  padding: 0 8px 0 16px;
+  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
   gap: 10px;
-
-  &.pl-8 {
-    padding-left: 8px;
-  }
 
   // 左侧：文件信息
   .fileInfo {
@@ -61,25 +57,18 @@
       font-size: @fontSizeSm;
       color: @colorTextSecondary;
     }
+
+    .vncConnectStatus {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
   }
 
   // 文件树展开/折叠按钮
   .fileTreeToggleButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: @borderRadius;
     color: @colorTextTertiary;
-    transition: all 0.2s;
     flex-shrink: 0; // 防止在空间不足时被压缩
-
-    &:hover {
-      color: @colorText;
-      background: @colorFillTertiary;
-    }
 
     &.fileTreeToggleButtonPinned {
       color: @colorPrimary;
@@ -125,22 +114,21 @@
   .actionButtons {
     display: flex;
     align-items: center;
-    flex: 0 0 auto;
+    height: 32px;
+    background: @WHITE;
+    border-radius: @borderRadius;
 
     .actionButton {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
+      width: 42px;
       height: 32px;
-      padding: 0;
-      border-radius: @borderRadius;
       color: @colorTextTertiary;
-      transition: all 0.2s;
 
       &:hover {
         color: @colorText;
-        background: @colorFillTertiary;
+        background: transparent;
       }
     }
   }

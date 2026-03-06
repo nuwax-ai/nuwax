@@ -277,7 +277,7 @@ const SkillDetails: React.FC = () => {
   const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!skillId) {
-      message.error('技能ID不存在或无效，无法导出');
+      message.warning('技能ID不存在或无效，无法导出');
       return;
     }
 
@@ -289,7 +289,7 @@ const SkillDetails: React.FC = () => {
       if (!result.success) {
         // 导出失败，显示错误信息
         const errorMessage = result.error?.message || '导出失败';
-        message.error(errorMessage);
+        message.warning(errorMessage);
         setLoadingExportProject(false);
         return;
       }
@@ -300,8 +300,6 @@ const SkillDetails: React.FC = () => {
         // 导出整个项目压缩包
         exportWholeProjectZip(result, filename);
         message.success('导出成功！');
-      } else {
-        message.error('导出数据异常，请重试');
       }
     } catch (error) {
       console.error('导出项目失败:', error);
@@ -549,10 +547,6 @@ const SkillDetails: React.FC = () => {
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}
           ref={fileTreeViewRef}
-          // 是否显示视图模式切换按钮
-          showViewModeButtons={false}
-          // 是否显示文件树展开/折叠按钮
-          showFileTreeToggleButton={false}
           // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表
@@ -585,6 +579,8 @@ const SkillDetails: React.FC = () => {
           isFileTreePinned={true}
           // 技能不显示刷新按钮
           showRefreshButton={false}
+          // 是否显示导出 PDF 按钮, 默认显示
+          isShowExportPdfButton={false}
         />
 
         {/*版本历史*/}

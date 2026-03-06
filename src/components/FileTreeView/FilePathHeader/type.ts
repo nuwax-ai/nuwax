@@ -1,19 +1,16 @@
+import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { FileNode } from '@/types/interfaces/appDev';
 
 export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
   className?: string;
-  // 是否显示文件树展开/折叠按钮
-  showFileTreeToggleButton?: boolean;
   /** 文件节点 */
   targetNode: FileNode | null;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
-  /** 视图模式切换回调 */
-  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
-  // 是否显示视图模式切换按钮
-  showViewModeButtons?: boolean;
+  /** 用户选择的智能体电脑名称 */
+  agentSandboxName?: string;
   /** 重启服务器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
@@ -52,6 +49,8 @@ export interface FilePathHeaderProps {
   onShare?: () => void;
   // 是否显示分享按钮
   isShowShare?: boolean;
+  // 是否显示导出 PDF 按钮, 默认显示
+  isShowExportPdfButton?: boolean;
   /** 导出为 PDF 回调（仅 Markdown 文件） */
   onExportPdf?: (node: FileNode) => void;
   /** 是否正在导出 PDF */
@@ -59,19 +58,13 @@ export interface FilePathHeaderProps {
   // 关闭整个面板
   onClose?: () => void;
   /** VNC 预览连接状态 */
-  vncConnectStatus?: React.ReactNode;
+  vncConnectStatus?: ConnectionStatus | null;
   /** 文件树是否可见 */
   isFileTreeVisible?: boolean;
   /** 文件树是否固定（用户点击后固定） */
   isFileTreePinned?: boolean;
   /** 文件树展开/折叠回调 */
   onFileTreeToggle?: () => void;
-  /** 刷新文件树回调 */
-  onRefreshFileTree?: () => void;
-  /** 是否正在刷新文件树 */
-  isRefreshingFileTree?: boolean;
-  // 是否显示刷新按钮
-  showRefreshButton?: boolean;
-  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
-  isOnlyShowDesktop?: boolean;
+  // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+  hideDesktop?: number;
 }

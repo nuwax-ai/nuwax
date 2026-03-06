@@ -3,34 +3,22 @@
 
 .row {
   padding: @paddingXs;
-  margin-top: @marginXxs;
   cursor: default;
   color: @navSecondMenuTextSecondary;
-
-  &.first {
-    margin-top: 0;
-  }
 
   &.menuItem {
     cursor: pointer;
 
     .name {
       color: @navSecondMenuTextSecondary;
+      font-size: @fontSize;
+      line-height: @fontHeightLg;
+      white-space: nowrap;
     }
 
     &.has-icon {
-      :global {
-        .ant-typography {
-          margin-left: @marginXs;
-          // line-height: @fontHeightSm;
-        }
-      }
-    }
-
-    :global {
-      .ant-typography {
-        font-size: @fontSize;
-        line-height: @fontHeightLg;
+      .name {
+        margin-left: @marginXs;
       }
     }
   }
@@ -41,10 +29,8 @@
     border-radius: @borderRadius;
     box-shadow: @boxShadowTertiary;
 
-    :global {
-      .ant-typography {
-        color: @colorPrimary;
-      }
+    .name {
+      color: @colorPrimary;
     }
   }
 
@@ -54,10 +40,8 @@
     box-shadow: @boxShadowTertiary;
     color: @colorTextSecondary;
 
-    :global {
-      .ant-typography {
-        color: @colorTextSecondary;
-      }
+    .name {
+      color: @colorTextSecondary;
     }
 
     .collectIcon {
@@ -66,20 +50,21 @@
     }
   }
 
-  .title {
-    font-size: @fontSize;
-  }
-
-  .icon-image {
-    width: 20px;
-    height: 20px;
+  .icon-box {
+    font-size: 20px;
     border-radius: @borderRadiusSm;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .icon-image {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .collectIcon {
     color: @navSecondMenuTextSecondary;
     visibility: hidden;
-    // border-radius: @borderRadiusXs;
     transition: background-color ease-in-out 0.2s;
 
     &:hover {

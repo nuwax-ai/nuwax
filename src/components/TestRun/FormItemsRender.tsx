@@ -27,6 +27,14 @@ const FormItemsRender: React.FC<FormItemRenderProps> = ({
             item.dataType = isReference.dataType;
           }
         }
+
+        // 处理 dataType
+        let dataType: string = item.dataType || '';
+        // String 类型下，根据 inputType 决定 dataType
+        if (item.dataType === 'String' && item.inputType) {
+          dataType = item.inputType;
+        }
+
         return (
           <div key={item.key || `${item.name}-${index}`}>
             <Form.Item
@@ -35,7 +43,7 @@ const FormItemsRender: React.FC<FormItemRenderProps> = ({
                 <>
                   {item.name}
                   <Tag color="#C9CDD4" className="ml-10">
-                    {item.dataType}
+                    {dataType}
                   </Tag>
                 </>
               }

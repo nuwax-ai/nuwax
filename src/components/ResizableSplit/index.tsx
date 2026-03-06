@@ -42,6 +42,8 @@ const ResizableSplit: React.FC<Props> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   // 控制分隔线的延迟淡入
   const [dividerVisible, setDividerVisible] = useState(false);
+  // React-draggable 解决 findDOMNode 警告的 ref
+  const dividerRef = useRef<HTMLDivElement>(null);
   // 保存上一次的容器宽度，用于检测容器尺寸变化
   const prevContainerWidthRef = useRef(0);
   // 保存左侧固定像素宽度（当达到最小宽度时）
@@ -375,6 +377,7 @@ const ResizableSplit: React.FC<Props> = ({
 
       {showDivider && containerWidth > 0 && (
         <Draggable
+          nodeRef={dividerRef}
           axis="x"
           position={dividerPosition}
           onStart={handleDragStart}
@@ -387,6 +390,7 @@ const ResizableSplit: React.FC<Props> = ({
           }}
         >
           <div
+            ref={dividerRef}
             className={`${styles.divider} ${disabled ? styles.disabled : ''} ${
               isDragging ? styles.dragging : ''
             }`}

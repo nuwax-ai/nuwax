@@ -385,8 +385,8 @@
         // ============================================
         async function startPreview() {
             const sk = params.sk || '';
-            // 分享操作获取文件地址和类型
-            if (!!sk) {
+            // 1. 如果有sk参数，说明是分享操作
+            if (sk) {
                 const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
                     method: 'GET',
                     headers: {
@@ -406,7 +406,10 @@
                     showError(message);
                     return;
                 }
-            } else {
+            } 
+            
+            // 2. 如果有_ticket参数，说明是正常预览操作
+            if(params._ticket){
                 // 正常预览操作获取文件地址和类型
                 fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
                 // 从路径中提取文件名
@@ -414,6 +417,16 @@
                 fileType = params.fileUrl.split('.').pop().toLowerCase();
                 // 设置下载地址
                 downloadUrl = params.fileUrl + "?sk=" + params._sk;
+            }
+
+            // 3. 如果有docUrl参数，说明是知识库文档预览操作
+            if (params.docUrl) {
+                fileUrl = params.docUrl;
+                // 从路径中提取文件名
+                fileName = params.docUrl.split('/').pop();
+                fileType = params.docUrl.split('.').pop().toLowerCase();
+                // 设置下载地址
+                downloadUrl = params.docUrl;
             }
 
             // Auto-detect file type from URL if not provided

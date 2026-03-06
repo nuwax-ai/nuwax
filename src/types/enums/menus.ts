@@ -18,6 +18,7 @@ export enum TabsEnum {
 export enum UserOperatorAreaEnum {
   Document = 'document',
   Message = 'message',
+  Computer = 'computer',
 }
 
 // 菜单栏~用户头像操作列表枚举
@@ -40,4 +41,6 @@ export enum SettingActionEnum {
   Email_Bind,
   Reset_Password,
   Theme_Switch,
+  // 用量统计
+  Usage_Statistics,
 }

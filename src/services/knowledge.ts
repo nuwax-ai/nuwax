@@ -27,6 +27,10 @@ import type {
   KnowledgeRawSegmentUpdateParams,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
 import { request } from 'umi';
 
 /**
@@ -364,13 +368,8 @@ export async function apiKnowledgeQaUpdate(
 }
 
 // 知识库问答 - 下载QA批量excel模板
-export async function apiKnowledgeQaDownloadTemplate(): Promise<
-  RequestResponse<Blob>
-> {
-  return request('/api/knowledge/qa/downloadExcelTemplate', {
-    method: 'GET',
-    responseType: 'blob',
-  });
+export async function apiKnowledgeQaDownloadTemplate(): Promise<ExportFileBlobResponse> {
+  return apiExportFileBlob(`/api/knowledge/qa/downloadExcelTemplate`);
 }
 
 // 知识库问答 - 上传QA批量excel模板

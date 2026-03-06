@@ -1,0 +1,72 @@
+.modalBody {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tabsContainer {
+  position: relative;
+
+  :global {
+    .ant-tabs {
+      .ant-tabs-nav {
+        margin-bottom: 0;
+        padding-right: 80px; // 为全选按钮预留空间
+        position: relative;
+      }
+
+      .ant-tabs-nav-wrap {
+        position: relative;
+      }
+    }
+  }
+
+  .selectAllButtonInHeader {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0;
+    height: 44px; // 与 Tabs 导航栏高度对齐
+    display: flex;
+    align-items: center;
+    z-index: 10;
+    line-height: 44px;
+  }
+}
+
+.tabContent {
+  max-height: 50vh;
+  padding-top: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.checkboxGroup {
+  width: 100%;
+
+  :global {
+    .ant-checkbox-group {
+      width: 100%;
+    }
+
+    .ant-checkbox-wrapper {
+      width: 100%;
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+
+      .ant-checkbox {
+        flex-shrink: 0;
+      }
+
+      span {
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        line-height: 1.5;
+      }
+    }
+  }
+}

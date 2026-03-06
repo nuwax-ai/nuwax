@@ -127,6 +127,10 @@ const Created: React.FC<CreatedProp> = ({
       key: 'collect',
       label: '收藏',
     },
+    {
+      key: 'official',
+      label: `仅查看官方${selected.label}`,
+    },
   ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const pageItem = [
@@ -180,6 +184,10 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
+    },
+    {
+      key: 'official',
+      label: `仅查看官方${selected.label}`,
     },
   ];
 
@@ -452,6 +460,17 @@ const Created: React.FC<CreatedProp> = ({
     if (selected.key === AgentComponentTypeEnum.MCP && val === 'custom') {
       // params.justReturnSpaceData = true;
       justReturnSpaceDataRef.current = true;
+    }
+
+    // 增加官方 插件/工作流/技能 的过滤
+    if (
+      selected.key === AgentComponentTypeEnum.Plugin ||
+      selected.key === AgentComponentTypeEnum.Workflow ||
+      selected.key === AgentComponentTypeEnum.Skill
+    ) {
+      if (val === 'official') {
+        params.official = true;
+      }
     }
 
     callInterface(val, params);

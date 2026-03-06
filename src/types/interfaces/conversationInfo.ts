@@ -3,6 +3,7 @@ import type {
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
   HideChatAreaEnum,
+  HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
   TaskStatus,
@@ -137,6 +138,8 @@ export interface ConversationChatParams {
   // 是否调试模式
   debug: boolean;
   selectedComponents: AgentSelectedComponentInfo[];
+  // 沙盒ID
+  sandboxId?: string;
 }
 
 // 临时会话参数
@@ -319,6 +322,8 @@ export interface ConversationInfo {
     expandPageArea: ExpandPageAreaEnum;
     // 是否隐藏聊天区域，1 隐藏；0 不隐藏
     hideChatArea: HideChatAreaEnum;
+    // 是否隐藏远程桌面，1 隐藏；0 不隐藏
+    hideDesktop: HideDesktopEnum;
     // 扩展页面首页
     pageHomeIndex: string;
     // 事件绑定配置
@@ -337,6 +342,10 @@ export interface ConversationInfo {
       }>;
     };
     collect: boolean;
+    /** 是否有权限使用该智能体 */
+    hasPermission?: boolean;
+    /** 会话关联的智能体电脑是否不可用 */
+    isSandboxUnavailable?: boolean;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
@@ -356,6 +365,10 @@ export interface ConversationInfo {
   sandboxSessionId: string;
   // 已分享的URI地址，比对上了则不需要认证
   sharedUris: string[];
+  /** 是否有权限使用该智能体 */
+  hasPermission?: boolean;
+  /** 会话关联的智能体电脑是否不可用 */
+  isSandboxUnavailable?: boolean;
 }
 
 // 查询用户历史会话输入参数
@@ -365,6 +378,8 @@ export interface ConversationListParams {
   lastId?: number | null;
   // 返回会话数量
   limit?: number;
+  // 会话主题模糊查询
+  topic?: string;
 }
 
 // 聊天用户信息

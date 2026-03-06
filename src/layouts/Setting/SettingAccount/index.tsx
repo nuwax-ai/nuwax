@@ -1,17 +1,19 @@
 import avatarImage from '@/assets/images/avatar.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
-import { apiUserUpdate } from '@/services/account';
+import { apiGetUserDynamicCode, apiUserUpdate } from '@/services/account';
 import type {
   SetUserAccountInfo,
   UserUpdateParams,
 } from '@/types/interfaces/login';
 import { customizeRequiredNoStarMark } from '@/utils/form';
+import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
-import { Button, Form, Input, message } from 'antd';
+import { Button, Form, Input, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
@@ -23,6 +25,9 @@ const cx = classNames.bind(styles);
 const SettingAccount: React.FC = () => {
   const [form] = Form.useForm();
   const { userInfo, setUserInfo } = useModel('userInfo');
+  // 动态验证码相关状态
+  const [dynamicCode, setDynamicCode] = useState<number | null>(null);
+  const [expireTime, setExpireTime] = useState<Date | null>(null);
 
   // 更新用户信息
   const { run, loading } = useRequest(apiUserUpdate, {
@@ -42,9 +47,50 @@ const SettingAccount: React.FC = () => {
     },
   });
 
+  // 获取动态验证码
+  const { run: runGetDynamicCode, loading: dynamicCodeLoading } = useRequest(
+    apiGetUserDynamicCode,
+    {
+      manual: true,
+      onSuccess: (code: number) => {
+        setDynamicCode(code);
+        // 设置过期时间：当前时间 + 5分钟
+        const expireDate = new Date();
+        expireDate.setMinutes(expireDate.getMinutes() + 5);
+        setExpireTime(expireDate);
+      },
+    },
+  );
+
+  // 刷新验证码
+  const handleRefreshCode = () => {
+    runGetDynamicCode();
+  };
+
+  // 复制成功回调
+  const handleCopy = () => {
+    message.success('复制成功');
+  };
+
+  // 格式化过期时间
+  const formatExpireTime = (date: Date | null): string => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  };
+
   useEffect(() => {
-    form.setFieldValue('userName', userInfo?.userName);
-    form.setFieldValue('nickName', userInfo?.nickName);
+    form.setFieldsValue({
+      userName: userInfo?.userName,
+      nickName: userInfo?.nickName,
+    });
+    // 初始化时获取动态验证码
+    runGetDynamicCode();
   }, []);
 
   // 上传头像成功后更新头像
@@ -113,9 +159,47 @@ const SettingAccount: React.FC = () => {
         </Form.Item>
       </Form>
       <h4 className={cx(styles.name)}>手机号码</h4>
-      <span className={cx(styles.text, styles.phone)}>{userInfo?.phone}</span>
+      <span className={cx(styles.text, styles['mb-30'])}>
+        {userInfo?.phone}
+      </span>
       <h4 className={cx(styles.name)}>邮箱地址</h4>
-      <span className={cx(styles.text)}>{userInfo?.email || '待绑定'}</span>
+      <span className={cx(styles.text, styles['mb-30'])}>
+        {userInfo?.email || '待绑定'}
+      </span>
+      <h4 className={cx(styles.name)}>
+        动态认证码
+        {expireTime && (
+          <span className={cx(styles.expireTime)}>
+            （{formatExpireTime(expireTime)} 过期）
+          </span>
+        )}
+      </h4>
+      <div className={cx('flex', 'items-center')}>
+        <span className={cx(styles.text)}>{dynamicCode || '--'}</span>
+        <CopyToClipboard
+          text={dynamicCode ? String(dynamicCode) : ''}
+          onCopy={handleCopy}
+        >
+          <Tooltip title="复制">
+            <Button
+              size="small"
+              type="link"
+              icon={<CopyOutlined />}
+              className={cx(styles.btn, styles['ml-4'])}
+            />
+          </Tooltip>
+        </CopyToClipboard>
+        <Tooltip title="刷新">
+          <Button
+            size="small"
+            type="link"
+            icon={<ReloadOutlined />}
+            loading={dynamicCodeLoading}
+            onClick={handleRefreshCode}
+            className={cx(styles.btn)}
+          />
+        </Tooltip>
+      </div>
     </div>
   );
 };

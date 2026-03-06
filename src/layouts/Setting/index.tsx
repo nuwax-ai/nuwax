@@ -12,6 +12,7 @@ import ResetPassword from './ResetPassword';
 import SettingAccount from './SettingAccount';
 import SettingEmail from './SettingEmail';
 import ThemeSwitchPanel from './ThemeSwitchPanel';
+import UsageStatistics from './UsageStatistics';
 
 const cx = classNames.bind(styles);
 
@@ -63,6 +64,8 @@ const Setting: React.FC = () => {
           return <div className={cx(styles.error)}>获取主题配置失败</div>;
         }
         return <ThemeSwitchPanel tenantThemeConfig={tenantThemeConfig} />;
+      case SettingActionEnum.Usage_Statistics:
+        return <UsageStatistics />;
       default:
         return <SettingAccount />;
     }
@@ -80,7 +83,7 @@ const Setting: React.FC = () => {
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
           <div className={cx(styles.left)}>
-            <h3>设置</h3>
+            <h3>个人资料</h3>
             <ul>
               {SETTING_ACTIONS.map((item) => (
                 <li
@@ -105,7 +108,7 @@ const Setting: React.FC = () => {
             icon={<CloseOutlined />}
             onClick={() => setOpenSetting(false)}
           />
-          <div className={cx('flex-1', styles.right)}>
+          <div className={cx('flex-1', 'overflow-hide', styles.right)}>
             <Content />
           </div>
         </div>

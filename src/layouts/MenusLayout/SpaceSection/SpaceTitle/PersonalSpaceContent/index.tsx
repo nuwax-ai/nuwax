@@ -1,4 +1,5 @@
 import { SvgIcon } from '@/components/base';
+import { LimitedTooltip } from '@/components/ProComponents';
 import { SPACE_ID } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
@@ -19,10 +20,13 @@ const cx = classNames.bind(styles);
 const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   onCreateTeam,
   onClosePopover,
+  currentSpaceName,
 }) => {
   const location = useLocation();
   const { pathname } = location;
   const { spaceList, currentSpaceInfo } = useModel('spaceModel');
+  // ... (rest of logic remains same until return)
+
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
@@ -51,7 +55,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     // 智能体开发页以及子页
     if (pathname.includes('develop') && !pathname.includes('page-develop')) {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
-      localStorage.setItem('SPACE_URL', defaultUrl);
+      // localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
     // 网页应用开发
@@ -83,7 +87,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       // 如果团队空间切换到个人空间，需要隐藏团队设置，同样需要切换到默认页'智能体开发'
       if (info.type === SpaceTypeEnum.Personal) {
         const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
-        localStorage.setItem('SPACE_URL', defaultUrl);
+        // localStorage.setItem('SPACE_URL', defaultUrl);
         history.push(`/space/${spaceId}/${defaultUrl}`);
       } else {
         // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
@@ -101,7 +105,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     // 组件库
     else {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'library';
-      localStorage.setItem('SPACE_URL', defaultUrl);
+      // localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
   };
@@ -110,9 +114,9 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     <div className={cx(styles.container, 'flex', 'flex-col', 'overflow-hide')}>
       <div className={cx(styles['p-header'], 'flex')}>
         <CheckOutlined className={styles.icon} />
-        <span className={cx('flex-1', styles.title, 'text-ellipsis')}>
-          {currentSpaceInfo?.name || '个人空间'}
-        </span>
+        <LimitedTooltip className={cx('flex-1', styles.title)}>
+          {currentSpaceName || currentSpaceInfo?.name || '个人空间'}
+        </LimitedTooltip>
       </div>
       <Divider className={styles['divider']} />
       <ul className={cx('flex-1', 'overflow-y')}>
@@ -123,7 +127,9 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
             className={cx(styles['team-info'], 'flex', 'items-center')}
             onClick={() => handleClick(item)}
           >
-            <span className={cx('text-ellipsis')}>{item.name}</span>
+            <LimitedTooltip className={cx('flex-1')}>
+              {item.name}
+            </LimitedTooltip>
           </li>
         ))}
       </ul>

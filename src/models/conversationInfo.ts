@@ -21,6 +21,7 @@ import {
   AgentComponentTypeEnum,
   AssistantRoleEnum,
   ConversationEventTypeEnum,
+  HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -76,7 +77,7 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 // 会话消息列表数量
-const MESSAGE_LIST_SIZE = 20; // 20条
+const MESSAGE_LIST_SIZE = 10;
 
 export default () => {
   // 历史记录
@@ -236,11 +237,6 @@ export default () => {
     },
   });
 
-  // 重启智能体电脑
-  const restartVncPod = useCallback(async (cId: number) => {
-    return await apiRestartPod(cId);
-  }, []);
-
   // 重启智能体
   const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
     apiRestartAgent,
@@ -321,6 +317,18 @@ export default () => {
     }
   }, []);
 
+  // 重启智能体电脑
+  const restartVncPod = useCallback(
+    async (cId: number) => {
+      if (viewMode !== 'desktop') {
+        // 切换到智能体电脑 tab
+        openDesktopView(cId);
+      }
+      return await apiRestartPod(cId);
+    },
+    [viewMode],
+  );
+
   // 关闭预览视图
   const closePreviewView = useCallback(() => {
     // 关闭文件树
@@ -366,23 +374,21 @@ export default () => {
   // 滚动到底部
   const messageViewScrollToBottom = () => {
     // 只有在允许自动滚动时才执行滚动
-    if (!allowAutoScrollRef.current) {
-      return;
-    }
+    // if (!allowAutoScrollRef.current) {
+    //   return;
+    // }
     // 滚动到底部
-    const element = messageViewRef.current;
+    const element = messageViewRef?.current;
     if (element) {
       // 标记为程序触发的滚动，避免被误判为用户滚动
       // 通过设置一个临时属性来标记
       (element as any).__isProgrammaticScroll = true;
       element.scrollTo({
         top: element.scrollHeight,
-        behavior: 'smooth',
+        behavior: 'instant',
       });
-      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
-      setTimeout(() => {
-        (element as any).__isProgrammaticScroll = false;
-      }, 600);
+      // instant 滚动是同步的，直接清除标记
+      (element as any).__isProgrammaticScroll = false;
     }
   };
 
@@ -651,8 +657,9 @@ export default () => {
           setChatSuggestList(guidQuestionDtos);
         }
 
-        // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
-        if (len === MESSAGE_LIST_SIZE) {
+        // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
+        // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
+        if (len > 0) {
           setIsMoreMessage(true);
         }
       }
@@ -664,13 +671,16 @@ export default () => {
         setChatSuggestList(guidQuestionDtos);
       }
 
-      // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
-      setTimeout(() => {
-        // 只有在允许自动滚动时才滚动到底部
-        if (allowAutoScrollRef.current) {
-          messageViewScrollToBottom();
+      // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
+      // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        messageViewScrollToBottom();
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
         }
-      }, 800);
+      };
+      requestAnimationFrame(forceScrollToBottom);
     },
     onError: () => {
       setIsLoadingConversation(true);
@@ -831,18 +841,19 @@ export default () => {
             });
           }
 
-          // 长任务型任务处理(打开远程桌面)
+          // 通用型任务处理(打开远程桌面)
           if (
             data.type === AgentComponentTypeEnum.Event &&
             data.subEventType === 'OPEN_DESKTOP' &&
             // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
-            params.conversationId
+            params.conversationId &&
+            conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
           ) {
             // 打开远程桌面
             openDesktopView(params.conversationId);
           }
 
-          // 长任务型任务处理(刷新文件树)
+          // 通用型任务处理(刷新文件树)
           if (
             data.type === AgentComponentTypeEnum.ToolCall &&
             isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
@@ -919,7 +930,7 @@ export default () => {
           messageIdRef.current = '';
 
           setTimeout(async () => {
-            // 会话结束后，如果是长任务型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+            // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
             if (params.conversationId) {
               // 刷新文件树
               await handleRefreshFileList(params.conversationId);
@@ -1185,6 +1196,7 @@ export default () => {
     files: UploadFileInfo[] = [],
     infos: AgentSelectedComponentInfo[] = [],
     variableParams?: Record<string, string | number>,
+    sandboxId?: string,
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
@@ -1262,6 +1274,7 @@ export default () => {
       attachments,
       debug,
       selectedComponents: infos,
+      sandboxId,
     };
     // 处理会话
     handleConversation(params, currentMessageId, isSync, data);

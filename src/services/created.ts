@@ -25,6 +25,7 @@ export interface IGetList {
   dataType?: string | number;
   justReturnSpaceData?: boolean;
   allowCopy?: number; // 模板库 是否允许复制
+  official?: boolean; // 官方插件/工作流/技能
 }
 function _getMcpList(data?: IGetList): Promise<RequestResponse<any>> {
   return request('/api/mcp/deployed/list', {

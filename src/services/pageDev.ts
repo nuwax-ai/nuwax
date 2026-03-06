@@ -1,6 +1,7 @@
 import type {
   CreateCustomPageInfo,
   CustomPageDto,
+  DomainInfo,
   PageAddPathParams,
   PageBatchConfigProxyParams,
   PageCopyParams,
@@ -125,6 +126,18 @@ export async function apiPageGetProjectInfo(
   });
 }
 
+// 查询项目详情（根据智能体ID）
+export async function apiPageGetProjectInfoByAgent(
+  agentId: number,
+): Promise<RequestResponse<CustomPageDto>> {
+  return request('/api/custom-page/get-project-info-by-agent', {
+    method: 'GET',
+    params: {
+      agentId,
+    },
+  });
+}
+
 // 删除页面项目
 export async function apiPageDeleteProject(
   projectId: number,
@@ -140,6 +153,48 @@ export async function apiPageUpdateProject(
   data: PageUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/custom-page/update-project', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 查询项目绑定的域名列表
+export async function apiCustomPageGetDomainList(
+  projectId: number,
+): Promise<RequestResponse<DomainInfo[]>> {
+  return request('/api/custom-page/domain/list', {
+    method: 'GET',
+    params: { projectId },
+  });
+}
+
+// 添加域名绑定
+export async function apiCustomPageCreateDomain(data: {
+  projectId: number;
+  domain: string;
+}): Promise<RequestResponse<DomainInfo>> {
+  return request('/api/custom-page/domain/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 修改域名绑定
+export async function apiCustomPageUpdateDomain(data: {
+  id: number;
+  domain: string;
+}): Promise<RequestResponse<DomainInfo>> {
+  return request('/api/custom-page/domain/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除域名绑定
+export async function apiCustomPageDeleteDomain(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/domain/delete', {
     method: 'POST',
     data,
   });

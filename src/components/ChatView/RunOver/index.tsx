@@ -19,7 +19,14 @@ const RunOver: React.FC<RunOverProps> = ({
   messageInfo,
   showStatusDesc = true,
 }) => {
-  const { finalResult, processingList } = messageInfo;
+  const { finalResult, processingList, think, text } = messageInfo;
+
+  // 是否存在思考
+  const hasThinking = !!think && think.trim() !== '';
+  // 是否思考完毕
+  const isThinkingFinished = !!text && text.trim() !== '';
+  // 是否正在思考
+  const isThinking = hasThinking && !isThinkingFinished;
 
   // 运行时间
   const runTime = useMemo(() => {
@@ -117,8 +124,13 @@ const RunOver: React.FC<RunOverProps> = ({
     >
       <div className={cx('cursor-pointer', styles['run-success'])}>
         {/* 显示loading状态 */}
-        {messageInfo?.status === MessageStatusEnum.Loading ||
-        messageInfo?.status === MessageStatusEnum.Incomplete ? (
+        {isThinking ? (
+          <>
+            <LoadingOutlined className={cx(styles.successColor)} />
+            <span className={cx(styles['status-name'])}>正在思考</span>
+          </>
+        ) : messageInfo?.status === MessageStatusEnum.Loading ||
+          messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
             {showStatusDesc && lastProcessInfo && (

@@ -6,22 +6,20 @@ import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
-import { TaskStatus } from '@/types/enums/agent';
+import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type {
-  MessageInfo,
-  RoleInfo,
-} from '@/types/interfaces/conversationInfo';
+import { MessageInfo, RoleInfo } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
-import { Button, Form, message } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+import { Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -44,8 +42,7 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
-  // 打开文件面板
-  onOpenFilePanel?: () => void;
+  onChangeSelectedComputerId?: (id: string) => void;
 }
 
 /**
@@ -57,7 +54,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
-  onOpenFilePanel,
+  onChangeSelectedComputerId,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -67,6 +64,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     string,
     string | number
   > | null>(null);
+  // 选中的电脑ID（用于任务智能体模式）
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  // 记录用户是否已发送消息（用于锁定电脑选择）
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
   const {
     conversationInfo,
@@ -96,6 +97,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setFinalResult,
     setIsLoadingOtherInterface,
     clearFilePanelInfo,
+    viewMode,
+    openPreviewView,
+    openDesktopView,
+    closePreviewView,
     isFileTreeVisible,
     // 加载更多消息相关
     isMoreMessage,
@@ -185,6 +190,36 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setShowScrollBtn,
   );
 
+  // 到顶自动加载更多的侦测 Hook (提前 10px 触发，防止用户觉得过早)
+  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
+    rootMargin: '10px 0px 0px 0px',
+    threshold: 0,
+  });
+
+  // 监听进入视口事件，自动触发加载更多
+  // 使用 useRef 记录上一次的 inView 状态，严格保证只有在【刚进入视口】的那一瞬间才触发请求
+  const prevLoadMoreInViewRef = useRef(false);
+  useEffect(() => {
+    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
+    prevLoadMoreInViewRef.current = loadMoreInView;
+
+    if (
+      isEntering &&
+      isMoreMessage &&
+      !loadingMore &&
+      messageList?.length > 0 &&
+      devConversationIdRef.current
+    ) {
+      handleLoadMoreMessage(devConversationIdRef.current);
+    }
+  }, [
+    loadMoreInView,
+    isMoreMessage,
+    loadingMore,
+    messageList?.length,
+    handleLoadMoreMessage,
+  ]);
+
   useEffect(() => {
     // 初始化选中的组件列表
     initSelectedComponentList(manualComponents);
@@ -264,6 +299,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     clearFilePanelInfo();
     setMessageList([]);
     setIsLoadingConversation(false);
+    setHasUserSentMessage(false); // 重置发送状态
+
     try {
       setIsLoadingOtherInterface(true);
       // 创建智能体会话(智能体编排页面devMode为true)
@@ -317,6 +354,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       message.warning('请填写必填参数');
       return;
     }
+    // 标记用户已发送消息
+    setHasUserSentMessage(true);
+
+    const effectiveSandboxId = String(
+      conversationInfo?.sandboxServerId ??
+        conversationInfo?.agent?.sandboxId ??
+        selectedComputerId,
+    );
 
     onMessageSend(
       id,
@@ -324,9 +369,62 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       files,
       selectedComponentList,
       variableParams,
+      effectiveSandboxId,
       true,
       false,
     );
+  };
+
+  /**
+   * 打开 / 切换 文件预览面板
+   * 行为与聊天页面保持一致：
+   * - 文件树未打开：打开预览视图
+   * - 文件树已打开且当前为 preview：再次点击关闭
+   * - 文件树已打开且当前为 desktop：切换为 preview
+   */
+  const handleOpenPreviewPanel = () => {
+    const convId = devConversationIdRef.current;
+    if (!convId) {
+      message.warning('会话ID不存在，无法打开文件预览');
+      return;
+    }
+
+    if (!isFileTreeVisible) {
+      openPreviewView(convId);
+      return;
+    }
+
+    if (viewMode === 'preview') {
+      closePreviewView();
+    } else {
+      openPreviewView(convId);
+    }
+  };
+
+  /**
+   * 打开 / 切换 智能体电脑面板
+   * 行为与聊天页面保持一致：
+   * - 文件树未打开：打开智能体电脑视图
+   * - 文件树已打开且当前为 desktop：再次点击关闭
+   * - 文件树已打开且当前为 preview：切换为 desktop
+   */
+  const handleOpenDesktopPanel = () => {
+    const convId = devConversationIdRef.current;
+    if (!convId) {
+      message.warning('会话ID不存在，无法打开智能体电脑');
+      return;
+    }
+
+    if (!isFileTreeVisible) {
+      openDesktopView(convId);
+      return;
+    }
+
+    if (viewMode === 'desktop') {
+      closePreviewView();
+    } else {
+      openDesktopView(convId);
+    }
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -351,6 +449,29 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [pagePreviewData, showType, setShowType]);
 
+  /**
+   * 是否显示文件面板：
+   * 1. 仅通用型智能体 (TaskAgent) 才显示
+   * 2. 必须存在消息
+   * 3. 如果只有一条消息，则该消息的 id 不能为空（id 为空视为无效消息）
+   */
+  const isShowFilePanel = useMemo(() => {
+    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
+      return false;
+    }
+
+    if (!messageList || messageList.length === 0) {
+      return false;
+    }
+
+    if (messageList.length === 1) {
+      const first = messageList[0];
+      return !!first?.id;
+    }
+
+    return true;
+  }, [agentConfigInfo?.type, messageList]);
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
@@ -364,16 +485,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             isShowPreview={
               !pagePreviewData && !!agentConfigInfo?.expandPageArea
             }
-            onShowPreview={() => {
-              onOpenPreview?.();
-            }}
-            // 打开文件面板
-            onOpenFilePanel={onOpenFilePanel}
+            onShowPreview={onOpenPreview}
+            // 是否显示智能体电脑
+            isShowDesktop={agentConfigInfo?.hideDesktop === HideDesktopEnum.No}
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
-            showFilePanel={
-              !isFileTreeVisible &&
-              agentConfigInfo?.type === AgentTypeEnum.TaskAgent
-            }
+            showFilePanel={isShowFilePanel}
+            // 文件预览 / 智能体电脑切换
+            isFileTreeVisible={isFileTreeVisible}
+            viewMode={viewMode}
+            onOpenPreviewPanel={handleOpenPreviewPanel}
+            onOpenDesktopPanel={handleOpenDesktopPanel}
           />
           <div
             className={cx(
@@ -412,20 +533,23 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 </div>
               ) : messageList?.length > 0 ? (
                 <>
-                  {/* 加载更多按钮 */}
+                  {/* 自动加载更多的触发探测元素 */}
                   {isMoreMessage && messageList?.length > 0 && (
-                    <div className={cx(styles['load-more-container'])}>
-                      <Button
-                        type="text"
-                        loading={loadingMore}
-                        icon={<RollbackOutlined />}
-                        onClick={() =>
-                          handleLoadMoreMessage(devConversationIdRef.current)
-                        }
-                        className={cx(styles['load-more-btn'])}
-                      >
-                        点击查看更多历史会话
-                      </Button>
+                    <div
+                      ref={loadMoreRef}
+                      className={cx(styles['load-more-container'])}
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px 0',
+                        color: '#999',
+                      }}
+                    >
+                      {loadingMore ? (
+                        <span>
+                          <LoadingOutlined style={{ marginRight: 8 }} />
+                          正在加载历史会话
+                        </span>
+                      ) : null}
                     </div>
                   )}
                   {messageList?.map((item: MessageInfo) => (
@@ -508,6 +632,27 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
               onScrollBottom={onScrollBottom}
+              isTaskAgentActive={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+              }
+              selectedComputerId={selectedComputerId}
+              onComputerSelect={(id) => {
+                setSelectedComputerId(id);
+                // 将当前用户选择的电脑ID传递给父组件,用于文件树中是否显示重启智能体电脑选项按钮(agentSandboxId)
+                onChangeSelectedComputerId?.(id);
+              }}
+              agentId={agentId}
+              agentSandboxId={conversationInfo?.agent?.sandboxId}
+              hasPermission={conversationInfo?.agent?.hasPermission}
+              maskText={
+                conversationInfo?.agent?.hasPermission ? '' : '您无该智能体权限'
+              }
+              fixedSelection={
+                !!conversationInfo?.agent?.sandboxId ||
+                !!conversationInfo?.sandboxServerId ||
+                hasUserSentMessage
+              }
+              isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
             />
           </div>
         </div>

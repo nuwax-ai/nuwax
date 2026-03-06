@@ -129,7 +129,7 @@ export default function EcosystemMcp() {
           ? queryFilter
           : { ...queryFilter, categoryCode: category },
       current,
-      pageSize: 30,
+      pageSize: 48,
     };
     runMcpList(params);
   };

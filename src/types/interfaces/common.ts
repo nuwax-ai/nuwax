@@ -176,8 +176,12 @@ export interface CustomFormModalProps {
   // 确定按钮文本
   okText?: string;
   centered?: boolean;
+  // Modal宽度
+  width?: number | string;
   onCancel: () => void;
   onConfirm: () => void;
+  // 确定按钮是否禁用
+  okDisabled?: boolean;
 }
 
 // Form.Item 验证rule
@@ -437,11 +441,13 @@ export interface UploadImportConfigProps {
 export interface SubmitButtonProps {
   form: FormInstance;
   loading?: boolean;
-  // 确定按钮前缀icon
+  // 确定按钮之前的前缀图标，可选
   okPrefixIcon?: React.ReactNode;
-  // 确定按钮文本
+  // 确定按钮显示的文本，可选
   okText?: string;
   onConfirm: () => void;
+  // 确定按钮是否禁用
+  disabled?: boolean;
 }
 
 // 上传文件信息
@@ -519,6 +525,27 @@ export interface ChatInputProps extends ManualComponentItemProps {
   showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
   onToggleTaskAgent?: () => void;
+  // 电脑类型选择相关
+  selectedComputerId?: string;
+  onComputerSelect?: (id: string) => void;
+  // 智能体ID，用于保存用户对电脑类型的选择
+  agentId?: number;
+  /** 智能体绑定的云电脑ID */
+  agentSandboxId?: string | number;
+  /** 是否固定选择 */
+  fixedSelection?: boolean;
+  /** 是否有智能体使用权限 */
+  hasPermission?: boolean;
+  /** 电脑是否不可用 */
+  isSandboxUnavailable?: boolean;
+  /** 蒙层显示的文本内容 */
+  maskText?: string;
+  /** 是否自动触发选择逻辑 */
+  autoSelectComputer?: boolean;
+  /** 是否在选中时自动保存到后端 */
+  saveComputerOnSelect?: boolean;
+  /** 是否为个人电脑 */
+  isPersonalComputer?: boolean;
 }
 
 // 聊天框底部更多操作组件

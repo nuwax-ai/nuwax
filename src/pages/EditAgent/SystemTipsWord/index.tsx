@@ -281,7 +281,13 @@ const SystemTipsWord = forwardRef<
                       style={{ fontSize: 16 }}
                     />
                   }
-                  onClick={() => setOpen(true)}
+                  onClick={(e) => {
+                    setOpen(true);
+                    // 移除按钮焦点，避免显示边框
+                    if (e.currentTarget) {
+                      e.currentTarget.blur();
+                    }
+                  }}
                 >
                   优化
                 </Button>

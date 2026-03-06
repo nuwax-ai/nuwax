@@ -50,7 +50,7 @@ import { useCallback, useEffect, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const { Search } = Input;
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 48;
 
 import CustomPopover from '@/components/CustomPopover';
 import EcosystemCard from '@/components/EcosystemCard';

@@ -3,17 +3,13 @@
 
 .row {
   padding: @paddingXs;
-  margin-top: @marginXxs;
   cursor: default;
   color: @navSecondMenuTextSecondary;
 
   .name {
     color: @navSecondMenuTextSecondary;
     font-size: @fontSize !important;
-  }
-
-  &.first {
-    margin-top: 0;
+    white-space: nowrap;
   }
 
   &.mainItem {
@@ -70,10 +66,16 @@
     font-size: @fontSize;
   }
 
-  .icon-image {
-    width: 20px;
-    height: 20px;
+  .icon-box {
+    font-size: 20px;
     border-radius: @borderRadiusSm;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .icon-image {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .icon-dropdown {
@@ -90,19 +92,10 @@
   .collectIcon {
     color: @colorTextSecondary;
     visibility: hidden;
-    // border-radius: @borderRadiusXs;
     transition: background-color ease-in-out 0.2s;
 
     &:hover {
       background-color: @colorBgContainer;
-    }
-  }
-}
-
-.secondMenuSubItem {
-  :global {
-    .ant-typography {
-      margin-left: @marginXl !important;
     }
   }
 }

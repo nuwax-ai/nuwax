@@ -35,11 +35,12 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
+import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import AuthConfigModal from './AuthConfigModal';
+import DomainBindingModal from './DomainBindingModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PathParamsConfigModal from './PathParamsConfigModal';
@@ -114,6 +115,11 @@ const SpacePageDevelop: React.FC = () => {
   const [projectId, setProjectId] = useState<number>(0);
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 打开域名绑定弹窗
+  const [openDomainBindingModal, setOpenDomainBindingModal] =
+    useState<boolean>(false);
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -191,6 +197,10 @@ const SpacePageDevelop: React.FC = () => {
   });
 
   useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
     setLoading(true);
     runPageList({
       spaceId,
@@ -315,12 +325,20 @@ const SpacePageDevelop: React.FC = () => {
   const handleExportProject = useCallback(async (projectId: string) => {
     // 检查项目ID是否有效
     if (!projectId) {
-      message.error('项目ID不存在或无效，无法导出');
+      message.warning('项目ID不存在或无效，无法导出');
       return;
     }
 
     try {
       const result = await exportProject(projectId);
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.warning(errorMessage);
+        return;
+      }
+
       const filename = `project-${projectId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);
@@ -335,6 +353,22 @@ const SpacePageDevelop: React.FC = () => {
       message.error(`导出失败: ${errorMessage}`);
     }
   }, []);
+
+  // 域名绑定
+  const handleDomainBinding = (info: CustomPageDto) => {
+    const { needLogin, publishType } = info;
+    // 域名绑定在不满足下面条件时，点击直接提示下面这句话
+    // 域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用
+    if (
+      !(publishType === String(PageDevelopSelectTypeEnum.AGENT) && !needLogin)
+    ) {
+      message.warning(
+        '域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用',
+      );
+    } else {
+      setOpenDomainBindingModal(true);
+    }
+  };
 
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
@@ -353,6 +387,10 @@ const SpacePageDevelop: React.FC = () => {
       // 认证配置
       case PageDevelopMoreActionEnum.Auth_Config:
         setOpenAuthConfigModal(true);
+        break;
+      // 域名绑定
+      case PageDevelopMoreActionEnum.Domain_Binding:
+        handleDomainBinding(info);
         break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
@@ -416,70 +454,48 @@ const SpacePageDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <Row>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={14}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div>
-            <Space>
-              <h3 className={cx(styles.title)}>网页应用开发</h3>
-              <SelectList
-                value={type}
-                options={PAGE_DEVELOP_ALL_TYPE}
-                onChange={handlerChangeType}
-              />
-              {/* 单选模式 */}
-              <ButtonToggle
-                options={FILTER_STATUS_DEV}
-                value={status}
-                onChange={(value) => handlerChangeStatus(value as React.Key)}
-              />
-              <ButtonToggle
-                options={CREATE_LIST}
-                value={create}
-                onChange={(value) => handlerChangeCreate(value as React.Key)}
-              />
-            </Space>
-          </div>
-        </Col>
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={24}
-          xl={10}
-          xxl={12}
-          style={{ marginBottom: 5 }}
-        >
-          <div className={cx('flex', 'gap-10', 'justify-content-end')}>
-            <Input
-              rootClassName={cx(styles.input)}
-              placeholder="搜索页面"
-              value={keyword}
-              onChange={handleQueryPage}
-              prefix={<SearchOutlined />}
-              allowClear
-              onClear={handleClearKeyword}
-              style={{ width: 214 }}
-            />
-            {/*添加*/}
-            <CustomPopover
-              list={PAGE_DEVELOP_CREATE_TYPE_LIST}
-              onClick={handleClickPopoverItem}
-            >
-              <Button type="primary" icon={<PlusOutlined />}>
-                创建
-              </Button>
-            </CustomPopover>
-          </div>
-        </Col>
-      </Row>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>网页应用开发</h3>
+          <SelectList
+            value={type}
+            options={PAGE_DEVELOP_ALL_TYPE}
+            onChange={handlerChangeType}
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={FILTER_STATUS_DEV}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder="搜索页面"
+            value={keyword}
+            onChange={handleQueryPage}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          {/*添加*/}
+          <CustomPopover
+            list={PAGE_DEVELOP_CREATE_TYPE_LIST}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              创建
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
 
       {loading ? (
         <Loading />
@@ -499,6 +515,10 @@ const SpacePageDevelop: React.FC = () => {
                   (info.projectType === PageProjectTypeEnum.ONLINE_DEPLOY &&
                     info.buildRunning === Boolean(BuildRunningEnum.Published))
                 );
+              }
+              // 域名绑定功能需要根据租户配置动态控制
+              if (item.value === PageDevelopMoreActionEnum.Domain_Binding) {
+                return !!tenantConfigInfo?.supportCustomDomain;
               }
               return true;
             });
@@ -569,6 +589,12 @@ const SpacePageDevelop: React.FC = () => {
         pageInfo={currentPageInfo}
         onCancel={() => setOpenAuthConfigModal(false)}
         onConfirm={handleConfirmAuthConfig}
+      />
+      {/* 域名绑定弹窗 */}
+      <DomainBindingModal
+        open={openDomainBindingModal}
+        projectId={projectId}
+        onCancel={() => setOpenDomainBindingModal(false)}
       />
       {/*复制到空间弹窗*/}
       {currentPageInfo && (

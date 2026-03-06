@@ -3,15 +3,16 @@ import {
   MOBILE_BREAKPOINT,
   MOBILE_MENU_TOP_PADDING,
 } from '@/constants/layout.constants';
+import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
+import DynamicMenusLayout from './DynamicMenusLayout';
 import HistoryConversation from './HistoryConversation';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
-import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
 import Setting from './Setting';
@@ -42,6 +43,8 @@ const Layout: React.FC = () => {
   //   setBackgroundImage,
   // } = useGlobalSettings();
 
+  const { runQueryCategory } = useCategory();
+
   // 导航风格管理（使用统一主题系统）
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
@@ -57,6 +60,12 @@ const Layout: React.FC = () => {
     setFullMobileMenu,
     getCurrentMenuWidth,
   } = useModel('layout');
+
+  const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { asyncSpaceListFun } = useModel('spaceModel');
+
+  // 动态菜单开关状态
+  // const [useDynamicMenu, setUseDynamicMenu] = useState(true);
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
@@ -96,6 +105,15 @@ const Layout: React.FC = () => {
     },
     [fullMobileMenu],
   );
+
+  useEffect(() => {
+    // 查询广场分类列表
+    runQueryCategory();
+    // 租户配置信息查询接口
+    runTenantConfig();
+    // 工作空间列表查询接口
+    asyncSpaceListFun();
+  }, []);
 
   /**
    * 监听窗口尺寸变化，判断是否为移动端
@@ -244,10 +262,53 @@ const Layout: React.FC = () => {
         style={sidebarStyle}
       >
         {/* 菜单栏 */}
-        <MenusLayout
+        <DynamicMenusLayout
           overrideContainerStyle={menuOverrideStyle}
           isMobile={isMobile}
         />
+        {/* {useDynamicMenu ? (
+          <DynamicMenusLayout
+            overrideContainerStyle={menuOverrideStyle}
+            isMobile={isMobile}
+          />
+        ) : (
+          <MenusLayout
+            overrideContainerStyle={menuOverrideStyle}
+            isMobile={isMobile}
+          />
+        )} */}
+
+        {/* 动态菜单切换按钮 (仅用于预览) */}
+        {/* <div
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 9999,
+            background: 'var(--ant-color-primary)',
+            color: '#ccc',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: '12px',
+            fontWeight: 500,
+            transition: 'all 0.3s',
+            opacity: 0.8,
+            userSelect: 'none',
+          }}
+          onClick={() => {
+            setUseDynamicMenu(!useDynamicMenu);
+            // 切换时重新加载菜单数据
+            if (!useDynamicMenu) {
+              // 可以在这里触发重新加载，但 DynamicMenusLayout 内部已有 useEffect
+            }
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+        >
+          {useDynamicMenu ? '切换回静态菜单' : '预览动态菜单'}
+        </div> */}
 
         {/* 悬浮菜单 */}
         <HoverMenu />

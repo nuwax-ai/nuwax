@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
 interface MonacoEditorProps {
+  isDynamicTheme?: boolean;
   currentFile?: FileNode | null;
   onContentChange?: (fileId: string, content: string) => void;
   readOnly?: boolean; // 只读模式，默认为false
@@ -22,6 +23,7 @@ interface MonacoEditorProps {
  * 直接使用Monaco Editor API，避免CDN加载问题
  */
 const MonacoEditor: React.FC<MonacoEditorProps> = ({
+  isDynamicTheme = false,
   currentFile,
   onContentChange,
   readOnly = false, // 只读模式，默认为false
@@ -38,6 +40,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const updateEditorContentRef = useRef<() => Promise<void>>();
   // 标记是否正在程序更新内容（用于避免程序更新时触发 onContentChange）
   const isUpdatingContentRef = useRef(false);
+  // 跟踪最后一次通过 onContentChange 发送的内容，避免用户输入时的循环更新
+  const lastEmittedContentRef = useRef<string | null>(null);
+  // 跟踪最后一次更新到编辑器的内容，用于判断是否需要更新
+  const lastUpdatedContentRef = useRef<string | null>(null);
 
   /**
    * 动态加载语言支持
@@ -285,6 +291,23 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   );
 
   /**
+   * 定义动态主题
+   * 注意：这里只负责 defineTheme，不在这里直接切换主题，
+   * 这样可以在创建 editor 时一次性使用正确主题，避免先用默认主题再切换导致的闪烁。
+   */
+  function defineDynamicTheme(bgColor: string) {
+    monaco.editor.defineTheme('dynamicTheme', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': bgColor,
+        'editorLineNumber.foreground': '#858585', // 行号
+      },
+    });
+  }
+
+  /**
    * 创建编辑器实例
    */
   const createEditor = useCallback(async () => {
@@ -325,8 +348,13 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 创建编辑器实例
       const editor = await safeAsyncOperation(async () => {
-        // 使用浅色主题
-        const theme = 'vs';
+        // 根据 isDynamicTheme 决定使用的主题
+        let theme: string = 'vs';
+        if (isDynamicTheme) {
+          // 在创建编辑器之前先定义动态主题，确保首次渲染就使用目标背景色
+          defineDynamicTheme('#F5f5f5');
+          theme = 'dynamicTheme';
+        }
 
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
@@ -344,7 +372,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             horizontalScrollbarSize: 8,
           },
         } as any); // 临时使用 any 类型避免类型检查问题
-      }, 'Monaco Editor creation');
+      });
 
       if (!editor) {
         // 编辑器创建被取消
@@ -354,6 +382,9 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       editorInstanceRef.current = editor;
       editorCreatedRef.current = true;
       lastFileIdRef.current = currentFile?.id || null;
+      // 文件切换时重置发送内容引用和最后更新的内容
+      lastEmittedContentRef.current = null;
+      lastUpdatedContentRef.current = currentFile?.content || null;
 
       // 禁用错误诊断和波浪线显示
       try {
@@ -388,6 +419,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           }
           if (currentFile && onContentChange && !isDisposingRef.current) {
             const value = editor.getValue();
+            // 记录最后一次发送的内容
+            lastEmittedContentRef.current = value;
+            // 同时更新最后更新的内容引用，因为这是用户输入导致的
+            lastUpdatedContentRef.current = value;
             onContentChange(currentFile.id, value);
           }
         });
@@ -449,16 +484,104 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           const currentValue = model.getValue();
           const newValue = currentFile.content || '';
 
+          // 如果新值等于编辑器当前值，不需要更新（避免用户输入时的循环更新）
+          if (currentValue === newValue) {
+            // 更新最后更新的内容引用
+            lastUpdatedContentRef.current = newValue;
+            // 清除发送内容引用，因为编辑器内容已经是最新的
+            lastEmittedContentRef.current = null;
+            return;
+          }
+
+          // 如果新值等于最后一次发送的内容，说明这是用户输入导致的更新，不需要更新编辑器
+          if (newValue === lastEmittedContentRef.current) {
+            // 清除引用，允许后续的外部更新
+            lastEmittedContentRef.current = null;
+            return;
+          }
+
+          // 如果编辑器内容比新值更新（用户正在输入），不应该更新
+          // 检查是否是用户输入导致的：如果编辑器内容长度大于新值，说明用户正在输入
+          // 或者，如果编辑器内容的前缀与新值相同，但编辑器内容更长，说明用户正在输入
+          if (currentValue.length > newValue.length) {
+            // 检查是否是用户输入导致的：编辑器内容的前缀是否与新值相同
+            if (newValue.length === 0 || currentValue.startsWith(newValue)) {
+              // 用户正在输入，不更新
+              return;
+            }
+          }
+
+          // 如果新值等于最后一次更新的内容，不需要更新
+          if (newValue === lastUpdatedContentRef.current) {
+            return;
+          }
+
           if (currentValue !== newValue) {
+            // 保存当前光标位置和滚动位置
+            const position = editor.getPosition();
+            const scrollTop = editor.getScrollTop();
+            const scrollLeft = editor.getScrollLeft();
+            const selections = editor.getSelections();
+
             // 标记正在程序更新内容，避免触发 onContentChange
             isUpdatingContentRef.current = true;
             try {
-              model.setValue(newValue);
+              // 使用 executeEdits 来更新内容，这样可以保持光标位置
+              // 计算内容差异，只更新变化的部分
+              const range = model.getFullModelRange();
+              editor.executeEdits('content-update', [
+                {
+                  range: range,
+                  text: newValue,
+                },
+              ]);
+
+              // 恢复光标位置和滚动位置
+              if (position) {
+                // 确保位置在新内容范围内
+                const lineCount = model.getLineCount();
+                const maxColumn = model.getLineMaxColumn(position.lineNumber);
+                const restoredPosition = {
+                  lineNumber: Math.min(position.lineNumber, lineCount),
+                  column: Math.min(position.column, maxColumn),
+                };
+                editor.setPosition(restoredPosition);
+              }
+
+              // 恢复选择区域
+              if (selections && selections.length > 0) {
+                const restoredSelections = selections.map(
+                  (sel: monaco.Selection) => {
+                    const lineCount = model.getLineCount();
+                    const startLine = Math.min(sel.startLineNumber, lineCount);
+                    const endLine = Math.min(sel.endLineNumber, lineCount);
+                    const startMaxColumn = model.getLineMaxColumn(startLine);
+                    const endMaxColumn = model.getLineMaxColumn(endLine);
+                    return {
+                      ...sel,
+                      startLineNumber: startLine,
+                      endLineNumber: endLine,
+                      startColumn: Math.min(sel.startColumn, startMaxColumn),
+                      endColumn: Math.min(sel.endColumn, endMaxColumn),
+                    };
+                  },
+                );
+                editor.setSelections(restoredSelections);
+              }
+
+              // 恢复滚动位置
+              if (scrollTop !== null && scrollLeft !== null) {
+                editor.setScrollTop(scrollTop);
+                editor.setScrollLeft(scrollLeft);
+              }
             } finally {
-              // 使用 setTimeout 确保 setValue 操作完成后再重置标记
-              // Monaco Editor 的 setValue 是同步的，但事件处理可能是异步的
+              // 使用 setTimeout 确保操作完成后再重置标记
               setTimeout(() => {
                 isUpdatingContentRef.current = false;
+                // 更新后，记录最后更新的内容
+                lastUpdatedContentRef.current = newValue;
+                // 清除发送内容引用，允许后续更新
+                lastEmittedContentRef.current = null;
               }, 0);
             }
           }
@@ -483,19 +606,104 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         const currentValue = model.getValue();
         const newValue = currentFile.content || '';
 
+        // 如果新值等于编辑器当前值，不需要更新
+        if (currentValue === newValue) {
+          // 更新最后更新的内容引用
+          lastUpdatedContentRef.current = newValue;
+          // 清除发送内容引用，因为编辑器内容已经是最新的
+          lastEmittedContentRef.current = null;
+          return;
+        }
+
+        // 如果新值等于最后一次发送的内容，说明这是用户输入导致的更新，不需要更新编辑器
+        if (newValue === lastEmittedContentRef.current) {
+          // 清除引用，允许后续的外部更新
+          lastEmittedContentRef.current = null;
+          return;
+        }
+
+        // 如果新值等于最后一次更新的内容，不需要更新
+        if (newValue === lastUpdatedContentRef.current) {
+          return;
+        }
+
+        // 如果编辑器内容比新值更新（用户正在输入），不应该更新
+        if (currentValue.length > newValue.length) {
+          // 检查是否是用户输入导致的：编辑器内容的前缀是否与新值相同
+          if (newValue.length === 0 || currentValue.startsWith(newValue)) {
+            // 用户正在输入，不更新
+            return;
+          }
+        }
+
         if (currentValue !== newValue) {
+          // 保存当前光标位置和滚动位置
+          const position = editor.getPosition();
+          const scrollTop = editor.getScrollTop();
+          const scrollLeft = editor.getScrollLeft();
+          const selections = editor.getSelections();
+
           // 更新语言
           try {
             monaco.editor.setModelLanguage(model, language);
             // 标记正在程序更新内容，避免触发 onContentChange
             isUpdatingContentRef.current = true;
             try {
-              // 更新内容
-              model.setValue(newValue);
+              // 使用 executeEdits 来更新内容，这样可以保持光标位置
+              const range = model.getFullModelRange();
+              editor.executeEdits('content-update', [
+                {
+                  range: range,
+                  text: newValue,
+                },
+              ]);
+
+              // 恢复光标位置和滚动位置
+              if (position) {
+                // 确保位置在新内容范围内
+                const lineCount = model.getLineCount();
+                const maxColumn = model.getLineMaxColumn(position.lineNumber);
+                const restoredPosition = {
+                  lineNumber: Math.min(position.lineNumber, lineCount),
+                  column: Math.min(position.column, maxColumn),
+                };
+                editor.setPosition(restoredPosition);
+              }
+
+              // 恢复选择区域
+              if (selections && selections.length > 0) {
+                const restoredSelections = selections.map(
+                  (sel: monaco.Selection) => {
+                    const lineCount = model.getLineCount();
+                    const startLine = Math.min(sel.startLineNumber, lineCount);
+                    const endLine = Math.min(sel.endLineNumber, lineCount);
+                    const startMaxColumn = model.getLineMaxColumn(startLine);
+                    const endMaxColumn = model.getLineMaxColumn(endLine);
+                    return {
+                      ...sel,
+                      startLineNumber: startLine,
+                      endLineNumber: endLine,
+                      startColumn: Math.min(sel.startColumn, startMaxColumn),
+                      endColumn: Math.min(sel.endColumn, endMaxColumn),
+                    };
+                  },
+                );
+                editor.setSelections(restoredSelections);
+              }
+
+              // 恢复滚动位置
+              if (scrollTop !== null && scrollLeft !== null) {
+                editor.setScrollTop(scrollTop);
+                editor.setScrollLeft(scrollLeft);
+              }
             } finally {
-              // 使用 setTimeout 确保 setValue 操作完成后再重置标记
+              // 使用 setTimeout 确保操作完成后再重置标记
               setTimeout(() => {
                 isUpdatingContentRef.current = false;
+                // 更新后，记录最后更新的内容
+                lastUpdatedContentRef.current = newValue;
+                // 清除发送内容引用，允许后续更新
+                lastEmittedContentRef.current = null;
               }, 0);
             }
           } catch (modelError) {
@@ -622,7 +830,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     }
   }, []);
 
-  // 设置函数引用
+  // 设置函数引用: 没有第二个参数 - 每次渲染都执行
   useEffect(() => {
     createEditorRef.current = createEditor;
     updateEditorContentRef.current = updateEditorContent;
@@ -631,6 +839,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   // 初始化Monaco Editor
   useEffect(() => {
     initializeMonaco();
+
+    return () => {
+      // 组件卸载时清理编辑器
+      safeDisposeEditor(); // 移除依赖，只在组件卸载时执行
+    };
   }, []); // 只在组件挂载时执行一次
 
   // 创建编辑器实例
@@ -663,8 +876,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             typeof editor.isDisposed === 'function' &&
             !editor.isDisposed()
           ) {
-            // 使用浅色主题
-            const theme = 'vs';
+            // 根据是否启用动态主题，保持与创建时一致的主题，避免在系统主题变化时恢复为默认主题
+            const theme = isDynamicTheme ? 'dynamicTheme' : 'vs';
+            if (isDynamicTheme) {
+              // 确保动态主题在需要时已定义
+              defineDynamicTheme('#F5f5f5');
+            }
             monaco.editor.setTheme(theme);
           }
         } catch (error) {
@@ -684,14 +901,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       observer.disconnect();
     };
   }, []);
-
-  // 清理资源
-  useEffect(() => {
-    return () => {
-      // 组件卸载时清理编辑器
-      safeDisposeEditor();
-    };
-  }, []); // 移除依赖，只在组件卸载时执行
 
   if (!isMonacoReady) {
     return (

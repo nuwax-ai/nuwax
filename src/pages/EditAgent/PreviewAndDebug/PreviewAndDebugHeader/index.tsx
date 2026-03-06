@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EditAgentShowType } from '@/types/enums/space';
-import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -11,19 +12,34 @@ const cx = classNames.bind(styles);
 interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
   onShowPreview?: () => void;
+  /** 是否显示智能体电脑 */
+  isShowDesktop?: boolean;
   onPressDebug: () => void;
-  // 打开文件面板
-  onOpenFilePanel?: () => void;
-  // 是否显示文件面板
+  /** 是否显示文件面板相关图标（仅通用型智能体时显示） */
   showFilePanel?: boolean;
+  /** 当前是否已显示文件面板（文件树） */
+  isFileTreeVisible?: boolean;
+  /** 当前文件视图模式：预览 或 智能体电脑 */
+  viewMode?: 'preview' | 'desktop';
+  /** 打开 / 切换到 文件预览 视图 */
+  onOpenPreviewPanel?: () => void;
+  /** 打开 / 切换到 智能体电脑 视图 */
+  onOpenDesktopPanel?: () => void;
 }
 
+/**
+ * 预览与调试头部组件
+ */
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
   isShowPreview,
-  onOpenFilePanel,
+  isShowDesktop,
   showFilePanel,
+  isFileTreeVisible,
+  viewMode,
+  onOpenPreviewPanel,
+  onOpenDesktopPanel,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -37,55 +53,62 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
       )}
     >
       <h3>预览与调试</h3>
-      <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
-        {/*<MessageOutlined className={cx('cursor-pointer')} />*/}
+      <div className={cx('flex', 'items-center')}>
         {(showType === EditAgentShowType.Version_History ||
           showType === EditAgentShowType.Show_Stand ||
           showType === EditAgentShowType.Hide) && (
-          <Button
-            type="text"
-            className={cx(styles.debug)}
-            icon={
-              <SvgIcon name="icons-common-debug" style={{ fontSize: 16 }} />
-            }
+          <TooltipIcon
+            title="调试"
+            className={cx(styles['icon-box'])}
+            icon={<SvgIcon name="icons-common-debug" />}
             onClick={onPressDebug}
-          >
-            调试
-          </Button>
+          />
         )}
 
         {/*打开预览页面*/}
         {isShowPreview && (
-          <Tooltip title="打开预览页面">
-            <Button
-              type="text"
-              className={cx(styles.debug)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-ecosystem"
-                  className={cx(styles.svg)}
-                />
-              }
-              onClick={() => onShowPreview?.()}
-            />
-          </Tooltip>
+          <TooltipIcon
+            title="打开预览页面"
+            className={cx(styles['icon-box'])}
+            icon={<SvgIcon name="icons-nav-ecosystem" />}
+            onClick={onShowPreview}
+          />
         )}
 
-        {/*文件树切换按钮*/}
+        {/* 文件预览 / 智能体电脑切换按钮 */}
         {showFilePanel && (
-          <Tooltip title="文件预览或打开智能体电脑">
-            <Button
-              type="text"
-              className={cx(styles.preview)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-components"
-                  className={cx(styles.svg)}
-                />
+          <>
+            {/* 文件预览视图 */}
+            <TooltipIcon
+              title={
+                isFileTreeVisible && viewMode === 'preview'
+                  ? '关闭文件预览'
+                  : '打开文件预览'
               }
-              onClick={onOpenFilePanel}
+              className={cx(styles['icon-box'], {
+                [styles['active']]: isFileTreeVisible && viewMode === 'preview',
+              })}
+              icon={<SvgIcon name="icons-common-file_preview" />}
+              onClick={onOpenPreviewPanel}
             />
-          </Tooltip>
+
+            {/* 智能体电脑视图 */}
+            <ConditionRender condition={isShowDesktop}>
+              <TooltipIcon
+                title={
+                  isFileTreeVisible && viewMode === 'desktop'
+                    ? '关闭智能体电脑'
+                    : '打开智能体电脑'
+                }
+                className={cx(styles['icon-box'], {
+                  [styles['active']]:
+                    isFileTreeVisible && viewMode === 'desktop',
+                })}
+                icon={<SvgIcon name="icons-nav-computer-star" />}
+                onClick={onOpenDesktopPanel}
+              />
+            </ConditionRender>
+          </>
         )}
       </div>
     </header>

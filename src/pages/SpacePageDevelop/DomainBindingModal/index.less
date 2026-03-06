@@ -1,0 +1,157 @@
+.domain-binding-modal {
+  .cname-section {
+    background-color: var(--ant-color-bg-layout);
+    border-radius: 8px;
+    padding: 16px 0;
+    margin-bottom: 24px;
+    border: 1px solid var(--ant-color-border);
+
+    .cname-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: var(--ant-color-text);
+    }
+
+    .cname-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 16px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .cname-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 64px;
+        height: 24px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 4px;
+        margin-right: 12px;
+        flex-shrink: 0;
+        font-weight: 500;
+
+        &.cn-tag {
+          background-color: #000;
+          color: #fff;
+        }
+
+        &.en-tag {
+          background-color: #000;
+          color: #fff;
+        }
+      }
+
+      .cname-info {
+        flex: 1;
+
+        .cname-value {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--ant-color-text);
+          margin-bottom: 4px;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+        }
+
+        .cname-desc {
+          font-size: 12px;
+          color: var(--ant-color-text-secondary);
+        }
+      }
+    }
+  }
+
+  .domain-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ant-color-text);
+    }
+
+    .domain-count {
+      font-size: 12px;
+      color: var(--ant-color-text-secondary);
+    }
+  }
+
+  .domain-list {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px; /* 增加内边距确保边框不被剪裁 */
+    margin: 0 -4px;
+
+    .domain-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid rgba(0, 0, 0, 5%); /* 使用更显眼的边框色 */
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background-color: var(--ant-color-bg-container);
+      transition: all 0.3s;
+
+      &:hover {
+        // border-color: var(--ant-color-primary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 8%);
+      }
+
+      .domain-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: var(--ant-color-bg-layout);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      .domain-info {
+        flex: 1;
+        overflow: hidden;
+        min-width: 0;
+
+        .domain-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--ant-color-text);
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .domain-actions {
+        display: flex;
+        gap: 4px;
+      }
+    }
+  }
+
+  .add-domain-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .add-domain-input {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+
+    .domain-input {
+      flex: 1;
+    }
+  }
+}

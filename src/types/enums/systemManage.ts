@@ -10,10 +10,18 @@ export enum SystemManageListEnum {
   Global_Model_Manage,
   // 系统配置
   System_Config,
+  // 系统设置
+  System_Setting,
   // 主题配置
   Theme_Config,
+  // 沙盒配置
+  Sandbox_Config,
+  // 分类管理
+  Category_Manage,
   // 系统概览
   Dashboard,
+  // 任务管理
+  Task_Manage,
   // 日志查询
   Log_Query,
   // 操作日志
@@ -40,6 +48,16 @@ export enum SystemManageListEnum {
   Content_Mcp,
   // 技能
   Content_Skill,
+  // 菜单权限
+  MenuPermission,
+  // 权限资源
+  Permission_Resources,
+  // 菜单管理
+  Menu_Manage,
+  // 角色管理
+  Role_Manage,
+  // 用户组管理
+  User_Group_Manage,
 }
 
 // 系统管理-用户管理-角色枚举
@@ -59,4 +77,10 @@ export enum MessageScopeEnum {
   Broadcast = 'Broadcast', // 广播
   Private = 'Private', // 私信
   System = 'System', // 系统消息
+}
+
+// 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+export enum AccessControlEnum {
+  NoFilter = 0,
+  Filter = 1,
 }

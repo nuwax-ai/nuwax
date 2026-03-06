@@ -63,7 +63,7 @@ const SpaceTable = () => {
   // 当前分页的数据
   const [pagination, setPagination] = useState({
     total: 0,
-    pageSize: 10,
+    pageSize: 15,
     current: 1,
   });
   // 导入的loading
@@ -136,46 +136,50 @@ const SpaceTable = () => {
   // 获取数据表结构详情
   const getTableStructureDetails = async () => {
     setStructureTableLoading(true);
-    const { data } = await apiTableDetail(tableId);
-    const fieldList = data?.fieldList || [];
-    const [_systemFieldList, _customFieldList] = fieldList.reduce<
-      [TableFieldInfo[], TableFieldInfo[]]
-    >(
-      (acc, item) => {
-        acc[item.systemFieldFlag ? 0 : 1].push(item);
-        return acc;
-      },
-      [[], []],
-    );
-    // 缓存系统字段和自定义字段
-    systemFieldListRef.current = _systemFieldList;
-    // 将系统变量放在筛选出并折叠
-    const list: TableFieldInfo[] = _systemFieldList?.length
-      ? [
-          {
-            id: 0,
-            fieldName: '--',
-            fieldDescription: '--',
-            systemFieldFlag: true,
-            fieldType: TableFieldTypeEnum.String,
-            nullableFlag: false,
-            defaultValue: '',
-            uniqueFlag: false,
-            enabledFlag: true,
-            sortIndex: 0,
-            children: _systemFieldList,
-          },
-          ..._customFieldList,
-        ]
-      : _customFieldList;
-    const _tableDetail = {
-      ...(data as TableDefineDetails),
-      fieldList: list,
-    };
-    // 缓存表结构数据
-    tableDetailRef.current = _tableDetail;
-    setTableDetail(_tableDetail);
-    setStructureTableLoading(false);
+    try {
+      const { data } = await apiTableDetail(tableId);
+      const fieldList = data?.fieldList || [];
+      const [_systemFieldList, _customFieldList] = fieldList.reduce<
+        [TableFieldInfo[], TableFieldInfo[]]
+      >(
+        (acc, item) => {
+          acc[item.systemFieldFlag ? 0 : 1].push(item);
+          return acc;
+        },
+        [[], []],
+      );
+      // 缓存系统字段和自定义字段
+      systemFieldListRef.current = _systemFieldList;
+      // 将系统变量放在筛选出并折叠
+      const list: TableFieldInfo[] = _systemFieldList?.length
+        ? [
+            {
+              id: 0,
+              fieldName: '--',
+              fieldDescription: '--',
+              systemFieldFlag: true,
+              fieldType: TableFieldTypeEnum.String,
+              nullableFlag: false,
+              defaultValue: '',
+              uniqueFlag: false,
+              enabledFlag: true,
+              sortIndex: 0,
+              children: _systemFieldList,
+            },
+            ..._customFieldList,
+          ]
+        : _customFieldList;
+      const _tableDetail = {
+        ...(data as TableDefineDetails),
+        fieldList: list,
+      };
+      // 缓存表结构数据
+      tableDetailRef.current = _tableDetail;
+      setTableDetail(_tableDetail);
+      setStructureTableLoading(false);
+    } finally {
+      setStructureTableLoading(false);
+    }
   };
 
   // 保存表结构
@@ -236,7 +240,7 @@ const SpaceTable = () => {
   // 查询数据表的业务数据
   const getTableBusinessData = async (
     pageNo: number = 1,
-    pageSize: number = 10,
+    pageSize: number = 15,
   ) => {
     setTableDataLoading(true);
     const _params = {
@@ -374,7 +378,7 @@ const SpaceTable = () => {
     await apiClearBusinessData(tableId);
     message.success('清除成功');
     setTableData([]);
-    setPagination({ total: 0, current: 1, pageSize: 10 });
+    setPagination({ total: 0, current: 1, pageSize: 15 });
     setOpenDelete(false);
   };
 
