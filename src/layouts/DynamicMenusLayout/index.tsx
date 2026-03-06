@@ -72,7 +72,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { refreshUserInfo } = useModel('userInfo');
 
   // 工作空间下的最近编辑和开发收藏
-  const { runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { runEdit } = useModel('devCollectAgent');
 
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
@@ -311,11 +311,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       size: 5,
     });
     // 开发收藏
-    runDevCollect({
-      page: 1,
-      size: 5,
-    });
-  }, [runEdit, runDevCollect]);
+    // runDevCollect({
+    //   page: 1,
+    //   size: 5,
+    // });
+  }, [runEdit]);
 
   /**
    * 递归查找第一个有 path 的子菜单

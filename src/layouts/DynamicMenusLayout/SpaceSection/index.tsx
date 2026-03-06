@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { history, useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import { updatePathUrlToLocalStorage } from '../utils';
-import DevCollect from './DevCollect';
+// import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
 
@@ -24,7 +24,7 @@ const SpaceSection: React.FC<{
 
   const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo, getSpaceId } =
     useModel('spaceModel');
-  const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { editAgentList, runEdit } = useModel('devCollectAgent');
   // // 关闭移动端菜单
   // const { handleCloseMobileMenu } = useModel('layout');
 
@@ -84,10 +84,10 @@ const SpaceSection: React.FC<{
       size: 5,
     });
     // 开发收藏
-    runDevCollect({
-      page: 1,
-      size: 5,
-    });
+    // runDevCollect({
+    //   page: 1,
+    //   size: 5,
+    // });
   }, []);
 
   // 点击进入"工作空间智能体"
@@ -117,8 +117,9 @@ const SpaceSection: React.FC<{
           ))}
         </div>
       </ConditionRender>
-      <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
-      <DevCollect />
+      {/* 隐藏开发收藏 */}
+      {/* <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
+      <DevCollect /> */}
     </div>
   );
 };
