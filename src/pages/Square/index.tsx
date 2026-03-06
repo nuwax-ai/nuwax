@@ -235,10 +235,10 @@ const Square: React.FC = () => {
   // 滚动加载下一页
   const handleScroll = useCallback(() => {
     // 下一页页码
-    const _page = page + 1;
+    const nextPage = page + 1;
     // 滚动时，不改变关键词
-    handleQuery(_page, keyword);
-  }, [page, keyword, handleQuery]);
+    handleQuery(nextPage);
+  }, [page, handleQuery]);
 
   // 初始化加载
   const effectLoadFn = () => {
