@@ -1,6 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Dropdown } from 'antd';
 import classNames from 'classnames';
 import { useMemo } from 'react';
@@ -55,7 +55,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
             {
               key: 'restart',
               icon: (
-                <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
+                <ReloadOutlined />
+                // <SvgIcon name="icons-common-restart_agent" style={{ fontSize: 16 }} />
               ),
               label: (
                 <div className="flex items-center">
