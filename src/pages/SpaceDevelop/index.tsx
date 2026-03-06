@@ -26,7 +26,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
@@ -107,10 +107,12 @@ const SpaceDevelop: React.FC = () => {
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
   const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
-  const { agentList, setAgentList, agentAllRef, handlerCollect } =
-    useModel('applicationDev');
-  const { runEdit, devCollectAgentList, runDevCollect } =
-    useModel('devCollectAgent');
+
+  // 暂时隐藏开发收藏功能
+  // const { agentList, setAgentList, agentAllRef, handlerCollect } =
+  const { agentList, setAgentList, agentAllRef } = useModel('applicationDev');
+  // const { runEdit, devCollectAgentList } =
+  const { runEdit } = useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -209,24 +211,24 @@ const SpaceDevelop: React.FC = () => {
   const { run: runDel } = useRequest(apiAgentDelete, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
+    onSuccess: () => {
       message.success('已成功删除');
-      const id = params[0];
       handleDelAgent();
       runEdit({
         size: 5,
       });
+      // const id = params[0];
       // 如果智能体开发收藏列表包含此删除智能体, 重新查询
-      const index = devCollectAgentList?.findIndex(
-        (item: AgentInfo) => item.agentId === id,
-      );
-      if (index > -1) {
-        // 更新开发智能体收藏列表
-        runDevCollect({
-          page: 1,
-          size: 5,
-        });
-      }
+      // const index = devCollectAgentList?.findIndex(
+      //   (item: AgentInfo) => item.agentId === id,
+      // );
+      // if (index > -1) {
+      //   // 更新开发智能体收藏列表
+      //   runDevCollect({
+      //     page: 1,
+      //     size: 5,
+      //   });
+      // }
     },
   });
 
@@ -484,7 +486,6 @@ const SpaceDevelop: React.FC = () => {
           </CustomPopover>
         </div>
       </div>
-      {/* <div className={cx('flex', styles['select-search-area'])}></div> */}
       {loading ? (
         <Loading />
       ) : agentList?.length > 0 ? (
@@ -500,9 +501,9 @@ const SpaceDevelop: React.FC = () => {
               key={item.id}
               agentConfigInfo={item}
               onClickMore={(type) => handlerClickMore(type, index)}
-              onCollect={(isCollect: boolean) =>
-                handlerCollect(index, isCollect)
-              }
+              // onCollect={(isCollect: boolean) =>
+              //   handlerCollect(index, isCollect)
+              // }
               onClick={handleClick}
             />
           ))}

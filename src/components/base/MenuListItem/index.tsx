@@ -64,7 +64,8 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
           'content-center',
         )}
       >
-        {typeof icon === 'string' ? (
+        {/* 存在图标且图标为字符串 */}
+        {hasIcon && typeof icon === 'string' ? (
           icon?.includes('.png') ||
           icon?.includes('.jpg') ||
           icon?.includes('.jpeg') ? (

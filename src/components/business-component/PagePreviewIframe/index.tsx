@@ -304,7 +304,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
   // 处理页面内容变化和上报
   useEffect(() => {
-    console.log('触发了1 useEffect - pagePreviewData');
     const iframe = iframeRef.current;
     if (!iframe || !pagePreviewData) return;
 
@@ -325,7 +324,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setIsLoading(true);
 
     const handleLoad = debounce(async () => {
-      console.log('触发了3 onload callback');
       let iframeDoc: Document | null = null;
       try {
         iframeDoc =
@@ -676,24 +674,25 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       {/* iframe 预览区域 */}
       <div className={cx(styles['page-preview-body'])}>
-        {showLoading && isLoading && (
-          <div className={cx(styles['loading-wrapper'])}>
-            <Spin size="large" tip="页面加载中..." />
-          </div>
-        )}
-        <iframe
-          ref={iframeRef}
-          key={iframeKey}
-          src={pageUrl}
-          sandbox={SANDBOX}
-          className={cx(styles['page-iframe'])}
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
-          style={{
-            opacity: isLoading ? 0 : 1,
-            transition: 'opacity 1.5s ease-in-out',
-          }}
-        />
+        <Spin
+          spinning={showLoading && isLoading}
+          size="large"
+          tip="页面加载中..."
+        >
+          <iframe
+            ref={iframeRef}
+            key={iframeKey}
+            src={pageUrl}
+            sandbox={SANDBOX}
+            className={cx(styles['page-iframe'])}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            style={{
+              opacity: isLoading ? 0 : 1,
+              transition: 'opacity 1.5s ease-in-out',
+            }}
+          />
+        </Spin>
       </div>
     </div>
   );
