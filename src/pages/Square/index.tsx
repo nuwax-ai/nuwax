@@ -27,7 +27,7 @@ import {
 import { Empty, Input, Select } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
@@ -83,6 +83,10 @@ const Square: React.FC = () => {
   const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
     apiPublishedAgentList,
   );
+
+  // 滚动容器与内容区域，用于自动补全加载
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   const {
     squareComponentList,
@@ -229,12 +233,12 @@ const Square: React.FC = () => {
   };
 
   // 滚动加载下一页
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     // 下一页页码
     const _page = page + 1;
     // 滚动时，不改变关键词
     handleQuery(_page, keyword);
-  };
+  }, [page, keyword, handleQuery]);
 
   // 初始化加载
   const effectLoadFn = () => {
@@ -267,6 +271,48 @@ const Square: React.FC = () => {
     initValues(params);
     effectLoadFn();
   }, [location]);
+
+  /**
+   * 检查列表内容是否填满容器，如果未填满且还有更多数据，则自动加载下一页
+   */
+  const checkAndAutoFill = useCallback(() => {
+    if (
+      !containerRef.current ||
+      !contentRef.current ||
+      loading ||
+      !hasMore ||
+      !squareComponentList ||
+      squareComponentList.length === 0
+    ) {
+      return;
+    }
+
+    const containerHeight = containerRef.current.clientHeight;
+    const contentHeight = contentRef.current.scrollHeight;
+
+    // 如果内容没填满容器，继续加载
+    if (contentHeight <= containerHeight) {
+      handleScroll();
+    }
+  }, [loading, hasMore, squareComponentList, handleScroll]);
+
+  // 数据更新后检查是否需要自动补充加载
+  useEffect(() => {
+    const timer = window.setTimeout(checkAndAutoFill, 100);
+    return () => window.clearTimeout(timer);
+  }, [squareComponentList, checkAndAutoFill]);
+
+  // 窗口大小变化时重新检查
+  useEffect(() => {
+    const handleResize = () => {
+      checkAndAutoFill();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkAndAutoFill]);
 
   // 点击打开页面
   const handleLink = () => {
@@ -361,7 +407,11 @@ const Square: React.FC = () => {
         />
       </div>
 
-      <div id="scrollableDiv" className="scroll-container-hide">
+      <div
+        id="scrollableDiv"
+        ref={containerRef}
+        className="scroll-container-hide"
+      >
         <InfiniteScrollDiv
           scrollableTarget="scrollableDiv"
           list={squareComponentList}
@@ -369,36 +419,69 @@ const Square: React.FC = () => {
           showLoader={!loading}
           onScroll={handleScroll}
         >
-          {loading ? (
-            <Loading className={cx(styles['min-height-300'])} />
-          ) : squareComponentList?.length > 0 ? (
-            <div className={cx(styles['list-section'])}>
-              {squareComponentList.map((item, index) => {
-                // 智能体模式下，显示智能体、网页应用组件
-                if (
-                  categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
-                  categoryTypeRef.current === SquareAgentTypeEnum.PageApp
-                ) {
-                  return (
-                    <SingleAgent
-                      key={index}
-                      publishedItemInfo={item}
-                      onToggleCollectSuccess={handleToggleCollectSuccess}
-                      onClick={() =>
-                        handleClick(item.targetId, item.targetType, item)
-                      }
-                    />
-                  );
-                }
-                // 模板模式下，根据分类名称显示不同的组件
-                else if (
-                  categoryTypeRef.current === SquareAgentTypeEnum.Template
-                ) {
-                  // 模板下的网页应用
+          <div ref={contentRef}>
+            {loading ? (
+              <Loading className={cx(styles['min-height-300'])} />
+            ) : squareComponentList?.length > 0 ? (
+              <div className={cx(styles['list-section'])}>
+                {squareComponentList.map((item, index) => {
+                  // 智能体模式下，显示智能体、网页应用组件
                   if (
-                    categoryNameRef.current ===
-                    SquareTemplateTargetTypeEnum.PageApp
+                    categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
+                    categoryTypeRef.current === SquareAgentTypeEnum.PageApp
                   ) {
+                    return (
+                      <SingleAgent
+                        key={index}
+                        publishedItemInfo={item}
+                        onToggleCollectSuccess={handleToggleCollectSuccess}
+                        onClick={() =>
+                          handleClick(item.targetId, item.targetType, item)
+                        }
+                      />
+                    );
+                  }
+                  // 模板模式下，根据分类名称显示不同的组件
+                  else if (
+                    categoryTypeRef.current === SquareAgentTypeEnum.Template
+                  ) {
+                    // 模板下的网页应用
+                    if (
+                      categoryNameRef.current ===
+                      SquareTemplateTargetTypeEnum.PageApp
+                    ) {
+                      return (
+                        <PageCard
+                          key={index}
+                          coverImg={item.coverImg}
+                          name={item.name}
+                          avatar={item.publishUser?.avatar}
+                          userName={
+                            item.publishUser?.nickName ||
+                            item.publishUser?.userName
+                          }
+                          created={item.created}
+                          onClick={() =>
+                            handleClick(item.targetId, item.targetType, item)
+                          }
+                        />
+                      );
+                    } else {
+                      // 模板下的智能体、工作流、技能
+                      return (
+                        <TemplateItem
+                          key={index}
+                          publishedItemInfo={item}
+                          onClick={() =>
+                            handleClick(item.targetId, item.targetType, item)
+                          }
+                        />
+                      );
+                    }
+                  } else if (
+                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                  ) {
+                    // 技能
                     return (
                       <PageCard
                         key={index}
@@ -416,67 +499,42 @@ const Square: React.FC = () => {
                       />
                     );
                   } else {
-                    // 模板下的智能体、工作流、技能
+                    // 插件、工作量
                     return (
-                      <TemplateItem
+                      <SquareComponentInfo
                         key={index}
                         publishedItemInfo={item}
+                        onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
-                          handleClick(item.targetId, item.targetType, item)
+                          handleClick(item.targetId, item.targetType)
                         }
                       />
                     );
                   }
-                } else if (
-                  categoryTypeRef.current === SquareAgentTypeEnum.Skill
-                ) {
-                  // 技能
-                  return (
-                    <PageCard
-                      key={index}
-                      coverImg={item.coverImg}
-                      name={item.name}
-                      avatar={item.publishUser?.avatar}
-                      userName={
-                        item.publishUser?.nickName || item.publishUser?.userName
-                      }
-                      created={item.created}
-                      onClick={() =>
-                        handleClick(item.targetId, item.targetType, item)
-                      }
-                    />
-                  );
-                } else {
-                  // 插件、工作量
-                  return (
-                    <SquareComponentInfo
-                      key={index}
-                      publishedItemInfo={item}
-                      onToggleCollectSuccess={handleToggleCollectSuccess}
-                      onClick={() =>
-                        handleClick(item.targetId, item.targetType)
-                      }
-                    />
-                  );
-                }
-              })}
-            </div>
-          ) : (
-            <div
-              className={cx('flex', 'flex-1', 'items-center', 'content-center')}
-            >
-              <Empty
+                })}
+              </div>
+            ) : (
+              <div
                 className={cx(
-                  styles['min-height-300'],
                   'flex',
-                  'flex-col',
+                  'flex-1',
                   'items-center',
                   'content-center',
                 )}
-                description="暂无数据"
-              />
-            </div>
-          )}
+              >
+                <Empty
+                  className={cx(
+                    styles['min-height-300'],
+                    'flex',
+                    'flex-col',
+                    'items-center',
+                    'content-center',
+                  )}
+                  description="暂无数据"
+                />
+              </div>
+            )}
+          </div>
         </InfiniteScrollDiv>
       </div>
     </div>
