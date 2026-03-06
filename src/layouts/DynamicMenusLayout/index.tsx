@@ -6,7 +6,6 @@
  * 1. 从 menuModel 获取动态菜单数据
  * 2. 支持一级、二级、三级菜单
  * 3. 复用现有的 Header、User、UserOperateArea、TabItem、SecondMenuItem 等组件
- * 4. 样式与原有 MenusLayout 完全一致
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
@@ -72,7 +71,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { refreshUserInfo } = useModel('userInfo');
 
   // 工作空间下的最近编辑和开发收藏
-  const { runEdit, runDevCollect } = useModel('devCollectAgent');
+  const { runEdit } = useModel('devCollectAgent');
 
   // 当前激活的一级菜单 code
   const [activeTab, setActiveTab] = useState<string>('');
@@ -311,11 +310,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       size: 5,
     });
     // 开发收藏
-    runDevCollect({
-      page: 1,
-      size: 5,
-    });
-  }, [runEdit, runDevCollect]);
+    // runDevCollect({
+    //   page: 1,
+    //   size: 5,
+    // });
+  }, [runEdit]);
 
   /**
    * 递归查找第一个有 path 的子菜单

@@ -1,23 +1,18 @@
 import agentImage from '@/assets/images/agent_image.png';
 import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
-import {
-  ICON_MORE,
-  ICON_STAR,
-  ICON_STAR_FILL,
-  ICON_SUCCESS,
-} from '@/constants/images.constants';
+import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
-import { apiDevCollectAgent } from '@/services/agentDev';
+// import { apiDevCollectAgent } from '@/services/agentDev';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { Button, message, Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { useModel, useRequest } from 'umi';
+// import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,27 +23,27 @@ const cx = classNames.bind(styles);
 const ApplicationItem: React.FC<ApplicationItemProps> = ({
   agentConfigInfo,
   onClick,
-  onCollect,
+  // onCollect,
   onClickMore,
 }) => {
-  const { handleCancelCollect, runDevCollect } = useModel('devCollectAgent');
+  // const { handleCancelCollect, runDevCollect } = useModel('devCollectAgent');
   // // 权限检查
   // const { hasPermission: hasPermissionMenu } = useModel('menuModel');
 
   // 开发智能体收藏
-  const { run: runCollect } = useRequest(apiDevCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('收藏成功');
-      onCollect(!agentConfigInfo?.devCollected);
-      // 更新开发智能体收藏列表
-      runDevCollect({
-        page: 1,
-        size: 8,
-      });
-    },
-  });
+  // const { run: runCollect } = useRequest(apiDevCollectAgent, {
+  //   manual: true,
+  //   debounceInterval: 300,
+  //   onSuccess: () => {
+  //     message.success('收藏成功');
+  //     onCollect(!agentConfigInfo?.devCollected);
+  //     // 更新开发智能体收藏列表
+  //     runDevCollect({
+  //       page: 1,
+  //       size: 8,
+  //     });
+  //   },
+  // });
 
   // 提取权限检查逻辑
   const hasPermission = (permission: PermissionsEnum) => {
@@ -157,23 +152,23 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   // const hasCollectPermission = hasPermissionMenu('agent_collect');
 
   // 收藏、取消收藏事件
-  const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
-    e.stopPropagation();
+  // const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
+  //   e.stopPropagation();
 
-    // 权限检查：如果没有收藏权限，提示并阻止操作
-    // if (!hasCollectPermission) {
-    //   return;
-    // }
+  //   // 权限检查：如果没有收藏权限，提示并阻止操作
+  //   // if (!hasCollectPermission) {
+  //   //   return;
+  //   // }
 
-    const { id, devCollected } = agentConfigInfo;
-    if (devCollected) {
-      await handleCancelCollect(id, () => {
-        onCollect(!devCollected);
-      });
-    } else {
-      await runCollect(id);
-    }
-  };
+  //   const { id, devCollected } = agentConfigInfo;
+  //   if (devCollected) {
+  //     await handleCancelCollect(id, () => {
+  //       onCollect(!devCollected);
+  //     });
+  //   } else {
+  //     await runCollect(id);
+  //   }
+  // };
 
   // 点击更多操作
   const handlerClickMore = (item: CustomPopoverItem) => {
@@ -229,7 +224,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           </div>
           <div className={cx('flex', 'items-center', 'gap-10')}>
             {/* <Tooltip title={hasCollectPermission ? '' : '无此资源权限'}> */}
-            <span
+            {/* <span
               onClick={handlerCollect}
               // className={cx({
               //   [styles['collect-disabled']]: !hasCollectPermission,
@@ -240,7 +235,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
               ) : (
                 <ICON_STAR />
               )}
-            </span>
+            </span> */}
             {/* </Tooltip> */}
             {/*更多操作*/}
             <CustomPopover onClick={handlerClickMore} list={actionList}>

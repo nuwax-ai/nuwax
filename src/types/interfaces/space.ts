@@ -10,7 +10,7 @@ import React from 'react';
 export interface ApplicationItemProps {
   agentConfigInfo: AgentConfigInfo;
   onClick: (agentId: number) => void;
-  onCollect: (isCollect: boolean) => void;
+  // onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
 }
 
