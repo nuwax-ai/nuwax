@@ -16,7 +16,7 @@ import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
 import { ICON_MORE } from '@/constants/images.constants';
@@ -58,6 +58,11 @@ const SpaceSection: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
+
+  // 滚动容器与内容区域，用于自动补全加载
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
   const {
     squareComponentList,
     setSquareComponentList,
@@ -305,6 +310,48 @@ const SpaceSection: React.FC = () => {
     handleQuery(activeKey, nextPage);
   };
 
+  /**
+   * 检查列表内容是否填满容器，如果未填满且还有更多数据，则自动加载下一页
+   */
+  const checkAndAutoFill = useCallback(() => {
+    if (
+      !containerRef.current ||
+      !contentRef.current ||
+      loading ||
+      !hasMore ||
+      !squareComponentList ||
+      squareComponentList.length === 0
+    ) {
+      return;
+    }
+
+    const containerHeight = containerRef.current.clientHeight;
+    const contentHeight = contentRef.current.scrollHeight;
+
+    // 如果内容没填满容器，继续加载
+    if (contentHeight <= containerHeight) {
+      handleScroll();
+    }
+  }, [loading, hasMore, squareComponentList, handleScroll]);
+
+  // 数据更新后检查是否需要自动补充加载
+  useEffect(() => {
+    const timer = window.setTimeout(checkAndAutoFill, 100);
+    return () => window.clearTimeout(timer);
+  }, [squareComponentList, checkAndAutoFill]);
+
+  // 窗口大小变化时重新检查
+  useEffect(() => {
+    const handleResize = () => {
+      checkAndAutoFill();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkAndAutoFill]);
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <Space style={{ marginBottom: 15 }}>
@@ -322,6 +369,7 @@ const SpaceSection: React.FC = () => {
         <div
           className={cx('flex-1', 'scroll-container-hide')}
           id="scrollableDiv"
+          ref={containerRef}
         >
           <InfiniteScrollDiv
             scrollableTarget="scrollableDiv"
@@ -329,7 +377,7 @@ const SpaceSection: React.FC = () => {
             hasMore={hasMore}
             onScroll={handleScroll}
           >
-            <div className={cx(styles['list-section'])}>
+            <div className={cx(styles['list-section'])} ref={contentRef}>
               {getChildren(activeKey)}
             </div>
           </InfiniteScrollDiv>
