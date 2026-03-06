@@ -264,6 +264,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         // 判断是否还有更多数据
         setAgentHasMore(currentPage < totalPages);
 
+        // 更新页码
+        setAgentPage(currentPage);
+
         // 如果是第一页（搜索或首次加载），直接替换列表
         if (currentPage === 1) {
           setAgentList(records);
@@ -297,6 +300,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
         // 判断是否还有更多数据
         setPageHasMore(currentPage < totalPages);
+
+        // 更新页码
+        setPagePage(currentPage);
 
         // 如果是第一页（搜索或首次加载），直接替换列表
         if (currentPage === 1) {
@@ -567,7 +573,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       }
       // 首次切换到智能体 tab 时，加载第一页数据
       if (agentList.length === 0 && !agentLoading) {
-        setAgentPage(1);
         // 查询智能体列表
         queryAgentList();
       }
@@ -582,7 +587,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       }
       // 首次切换到网页应用 tab 时，加载第一页数据
       if (pageList.length === 0 && !pageLoading) {
-        setPagePage(1);
         // 查询网页应用列表
         queryPageList();
       }
@@ -677,7 +681,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setAgentSearchKw(value);
-                  setAgentPage(1);
                   // 平滑滚动到顶部
                   if (agentListScrollRef.current) {
                     agentListScrollRef.current.scrollTo({
@@ -714,7 +717,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     onScroll={() => {
                       if (!agentLoading && agentHasMore) {
                         const nextPage = agentPage + 1;
-                        setAgentPage(nextPage);
                         // 查询智能体列表
                         queryAgentList(nextPage);
                       }
@@ -781,7 +783,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                 }}
                 onSearch={(value) => {
                   setPageSearchKw(value);
-                  setPagePage(1);
                   // 平滑滚动到顶部
                   if (pageListScrollRef.current) {
                     pageListScrollRef.current.scrollTo({
@@ -818,7 +819,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
                     onScroll={() => {
                       if (!pageLoading && pageHasMore) {
                         const nextPage = pagePage + 1;
-                        setPagePage(nextPage);
                         // 查询网页应用列表
                         queryPageList(nextPage);
                       }

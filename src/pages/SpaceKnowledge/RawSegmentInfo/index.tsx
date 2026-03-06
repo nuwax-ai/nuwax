@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons';
 import { Empty, Tooltip, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import DocRename from './DocRename';
 import styles from './index.less';
@@ -47,6 +47,16 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
 
+  // 编辑弹窗
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [currentEditItem, setCurrentEditItem] =
+    useState<KnowledgeRawSegmentInfo | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
+
+  // 滚动容器与内容区域，用于自动补全加载
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
   // 知识库分段配置 - 数据列表查询
   const { run: runRawSegmentList } = useRequest(apiKnowledgeRawSegmentList, {
     manual: true,
@@ -62,7 +72,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       // 如果当前页码大于等于总页数，则不再加载更多数据
       setHasMore(current < pages);
       // 更新页码
-      setPage(current + 1);
+      setPage(current);
       setLoading(false);
     },
     onError: () => {
@@ -108,9 +118,53 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   }, [documentInfo]);
 
   const onScroll = () => {
+    // 下一页页码
+    const nextPage = page + 1;
     // 知识库分段配置 - 数据列表查询
-    handleRawSegmentList(page);
+    handleRawSegmentList(nextPage);
   };
+
+  /**
+   * 检查列表内容是否填满容器，如果未填满且还有更多数据，则自动加载下一页
+   */
+  const checkAndAutoFill = useCallback(() => {
+    if (
+      !containerRef.current ||
+      !contentRef.current ||
+      loading ||
+      !hasMore ||
+      !rawSegmentInfoList ||
+      rawSegmentInfoList.length === 0
+    ) {
+      return;
+    }
+
+    const containerHeight = containerRef.current.clientHeight;
+    const contentHeight = contentRef.current.scrollHeight;
+
+    // 如果内容没填满容器，继续加载
+    if (contentHeight <= containerHeight) {
+      onScroll();
+    }
+  }, [loading, hasMore, rawSegmentInfoList, onScroll]);
+
+  // 数据更新后检查是否需要自动补充加载
+  useEffect(() => {
+    const timer = window.setTimeout(checkAndAutoFill, 100);
+    return () => window.clearTimeout(timer);
+  }, [rawSegmentInfoList, checkAndAutoFill]);
+
+  // 窗口大小变化时重新检查
+  useEffect(() => {
+    const handleResize = () => {
+      checkAndAutoFill();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkAndAutoFill]);
 
   const handlePreview = () => {
     if (!documentInfo?.docUrl) {
@@ -123,12 +177,6 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
     //在新窗口打开
     window.open(previewPageUrl, '_blank');
   };
-
-  // 编辑弹窗
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentEditItem, setCurrentEditItem] =
-    useState<KnowledgeRawSegmentInfo | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const handleEdit = (item: KnowledgeRawSegmentInfo) => {
     setCurrentEditItem(item);
@@ -226,6 +274,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         <div
           className={cx('px-16', 'py-16', 'flex-1', 'scroll-container')}
           id="rawSegmentDiv"
+          ref={containerRef}
         >
           <InfiniteScrollDiv
             scrollableTarget="rawSegmentDiv"
@@ -233,52 +282,54 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
             hasMore={hasMore}
             onScroll={onScroll}
           >
-            {rawSegmentInfoList?.map((info) => (
-              <div
-                key={info.id}
-                className={cx(
-                  styles.line,
-                  'radius-6',
-                  'relative',
-                  'group',
-                  'hover:bg-gray-50',
-                )}
-                style={{ position: 'relative' }} // ensure relative for absolute positioning of edit icon
-                onMouseEnter={(e) => {
-                  const target = e.currentTarget.querySelector('.edit-icon');
-                  if (target) {
-                    (target as HTMLElement).style.display = 'block';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.currentTarget.querySelector('.edit-icon');
-                  if (target) {
-                    (target as HTMLElement).style.display = 'none';
-                  }
-                }}
-              >
-                {info.rawTxt}
+            <div ref={contentRef}>
+              {rawSegmentInfoList?.map((info) => (
                 <div
-                  className="edit-icon"
-                  style={{
-                    display: 'none',
-                    position: 'absolute',
-                    right: '10px',
-                    top: '5px',
-                    cursor: 'pointer',
-                    background: '#fff',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  key={info.id}
+                  className={cx(
+                    styles.line,
+                    'radius-6',
+                    'relative',
+                    'group',
+                    'hover:bg-gray-50',
+                  )}
+                  style={{ position: 'relative' }} // ensure relative for absolute positioning of edit icon
+                  onMouseEnter={(e) => {
+                    const target = e.currentTarget.querySelector('.edit-icon');
+                    if (target) {
+                      (target as HTMLElement).style.display = 'block';
+                    }
                   }}
-                  onClick={() => handleEdit(info)}
+                  onMouseLeave={(e) => {
+                    const target = e.currentTarget.querySelector('.edit-icon');
+                    if (target) {
+                      (target as HTMLElement).style.display = 'none';
+                    }
+                  }}
                 >
-                  <Tooltip title="编辑">
-                    <EditOutlined />
-                  </Tooltip>
+                  {info.rawTxt}
+                  <div
+                    className="edit-icon"
+                    style={{
+                      display: 'none',
+                      position: 'absolute',
+                      right: '10px',
+                      top: '5px',
+                      cursor: 'pointer',
+                      background: '#fff',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    }}
+                    onClick={() => handleEdit(info)}
+                  >
+                    <Tooltip title="编辑">
+                      <EditOutlined />
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </InfiniteScrollDiv>
         </div>
       ) : (
