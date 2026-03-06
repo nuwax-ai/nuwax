@@ -99,7 +99,7 @@ const SpaceKnowledge: React.FC = () => {
     // 如果当前页码大于等于总页数，则不再加载更多数据
     setHasMore(current < pages);
     // 更新页码
-    setPage(current + 1);
+    setPage(current);
     setTotalDocCount(total);
     setLoadingDoc(false);
     // 首次加载文档列表时，当前文档为空，需要查询分段信息，新增文档时，当前文档信息不为空，就不需要查询分段信息
@@ -221,7 +221,7 @@ const SpaceKnowledge: React.FC = () => {
   );
 
   // 删除文档
-  const handleDocDel = () => {
+  const handleDocDel = useCallback(() => {
     const docId = currentDocumentInfo?.id;
     modalConfirm(
       '你确定要删除此文档吗?',
@@ -233,7 +233,7 @@ const SpaceKnowledge: React.FC = () => {
         });
       },
     );
-  };
+  }, [currentDocumentInfo]);
 
   // 修改文档名称成功后更新state
   const handleSuccessUpdateName = (id: number, name: string) => {
@@ -295,7 +295,11 @@ const SpaceKnowledge: React.FC = () => {
           onChange={handleQueryDoc}
           onSetAnalyzed={handleSetAnalyzed}
           hasMore={hasMore}
-          onScroll={() => handleDocList(page)}
+          onScroll={() => {
+            // 下一页页码
+            const nextPage = page + 1;
+            handleDocList(nextPage);
+          }}
         />
         {/*文件信息*/}
         <RawSegmentInfo
