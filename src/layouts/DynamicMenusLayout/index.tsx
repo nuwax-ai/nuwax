@@ -6,7 +6,6 @@
  * 1. 从 menuModel 获取动态菜单数据
  * 2. 支持一级、二级、三级菜单
  * 3. 复用现有的 Header、User、UserOperateArea、TabItem、SecondMenuItem 等组件
- * 4. 样式与原有 MenusLayout 完全一致
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';

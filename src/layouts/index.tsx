@@ -64,9 +64,6 @@ const Layout: React.FC = () => {
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { asyncSpaceListFun } = useModel('spaceModel');
 
-  // 动态菜单开关状态
-  // const [useDynamicMenu, setUseDynamicMenu] = useState(true);
-
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
   /**
@@ -266,49 +263,6 @@ const Layout: React.FC = () => {
           overrideContainerStyle={menuOverrideStyle}
           isMobile={isMobile}
         />
-        {/* {useDynamicMenu ? (
-          <DynamicMenusLayout
-            overrideContainerStyle={menuOverrideStyle}
-            isMobile={isMobile}
-          />
-        ) : (
-          <MenusLayout
-            overrideContainerStyle={menuOverrideStyle}
-            isMobile={isMobile}
-          />
-        )} */}
-
-        {/* 动态菜单切换按钮 (仅用于预览) */}
-        {/* <div
-          style={{
-            position: 'fixed',
-            bottom: 20,
-            right: 20,
-            zIndex: 9999,
-            background: 'var(--ant-color-primary)',
-            color: '#ccc',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            fontSize: '12px',
-            fontWeight: 500,
-            transition: 'all 0.3s',
-            opacity: 0.8,
-            userSelect: 'none',
-          }}
-          onClick={() => {
-            setUseDynamicMenu(!useDynamicMenu);
-            // 切换时重新加载菜单数据
-            if (!useDynamicMenu) {
-              // 可以在这里触发重新加载，但 DynamicMenusLayout 内部已有 useEffect
-            }
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
-        >
-          {useDynamicMenu ? '切换回静态菜单' : '预览动态菜单'}
-        </div> */}
 
         {/* 悬浮菜单 */}
         <HoverMenu />
@@ -336,7 +290,6 @@ const Layout: React.FC = () => {
       <div
         className={`${pageContainerClassName} scroll-container`}
         id="page-container-selector"
-        // style={{ scrollbarGutter: 'stable' }}
       >
         <Outlet />
       </div>
