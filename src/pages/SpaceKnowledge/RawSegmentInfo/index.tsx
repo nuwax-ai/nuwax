@@ -62,7 +62,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
       // 如果当前页码大于等于总页数，则不再加载更多数据
       setHasMore(current < pages);
       // 更新页码
-      setPage(current + 1);
+      setPage(current);
       setLoading(false);
     },
     onError: () => {
@@ -108,8 +108,10 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   }, [documentInfo]);
 
   const onScroll = () => {
+    // 下一页页码
+    const nextPage = page + 1;
     // 知识库分段配置 - 数据列表查询
-    handleRawSegmentList(page);
+    handleRawSegmentList(nextPage);
   };
 
   const handlePreview = () => {
