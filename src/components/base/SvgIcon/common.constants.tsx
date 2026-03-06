@@ -21,6 +21,7 @@ import { ReactComponent as PlusSvgFile } from '@/assets/icons/common/plus.svg';
 import { ReactComponent as PreviewSvgFile } from '@/assets/icons/common/preview.svg';
 import { ReactComponent as RefreshSvgFile } from '@/assets/icons/common/refresh.svg';
 import { ReactComponent as RestartSvgFile } from '@/assets/icons/common/restart.svg';
+import { ReactComponent as RestartAgentSvgFile } from '@/assets/icons/common/restart_agent.svg';
 import { ReactComponent as SketchSvgFile } from '@/assets/icons/common/sketch.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/common/stars.svg';
 import { ReactComponent as StrawSvgFile } from '@/assets/icons/common/straw.svg';
@@ -53,6 +54,7 @@ const PlusSvg = wrapSvg(PlusSvgFile);
 const PreviewSvg = wrapSvg(PreviewSvgFile);
 const RefreshSvg = wrapSvg(RefreshSvgFile);
 const RestartSvg = wrapSvg(RestartSvgFile);
+const RestartAgentSvg = wrapSvg(RestartAgentSvgFile);
 const SketchSvg = wrapSvg(SketchSvgFile);
 const StarsSvg = wrapSvg(StarsSvgFile);
 const StrawSvg = wrapSvg(StrawSvgFile);
@@ -85,6 +87,7 @@ export default {
   'icons-common-preview': PreviewSvg,
   'icons-common-refresh': RefreshSvg,
   'icons-common-restart': RestartSvg,
+  'icons-common-restart_agent': RestartAgentSvg,
   'icons-common-sketch': SketchSvg,
   'icons-common-stars': StarsSvg,
   'icons-common-straw': StrawSvg,
