@@ -17,7 +17,7 @@ const StatCard: React.FC<StatCardProps> = ({
   loading = false,
 }) => {
   return (
-    <Card className={cx(styles['stat-card'])} bordered={false}>
+    <Card className={cx(styles['stat-card'])} variant="borderless">
       {loading ? (
         <div className={cx(styles['stat-card-content'])}>
           <div className={cx(styles['stat-card-info'])}>
