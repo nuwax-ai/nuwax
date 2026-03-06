@@ -77,7 +77,7 @@ export default function EcosystemMcp() {
     // 如果当前页码大于等于总页数，则不再加载更多数据
     setHasMore(current < pages);
     // 更新页码
-    setPage(current + 1);
+    setPage(current);
     setLoading(false);
   };
 
@@ -149,7 +149,9 @@ export default function EcosystemMcp() {
 
   // 滚动加载更多
   const handleScroll = () => {
-    handleMcpList(page);
+    // 下一页页码
+    const nextPage = page + 1;
+    handleMcpList(nextPage);
   };
 
   // 标签页切换
