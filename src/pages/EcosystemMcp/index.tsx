@@ -27,7 +27,7 @@ import {
 import { Page } from '@/types/interfaces/request';
 import { Empty, Input, message, Segmented, Select, Space } from 'antd';
 import classNames from 'classnames';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -66,6 +66,10 @@ export default function EcosystemMcp() {
     useState<ClientConfigVo | null>(null);
   // 详情抽屉是否可见
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+
+  // 滚动容器与内容区域，用于自动补全加载
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<ClientConfigVo>) => {
@@ -168,6 +172,47 @@ export default function EcosystemMcp() {
     setLoading(true);
     handleMcpList(1, activeTab, searchKeyword, value);
   };
+
+  /**
+   * 检查列表内容是否填满容器，如果未填满且还有更多数据，则自动加载下一页
+   */
+  const checkAndAutoFill = useCallback(() => {
+    if (
+      !containerRef.current ||
+      !contentRef.current ||
+      loading ||
+      !hasMore ||
+      !mcpList ||
+      mcpList.length === 0
+    ) {
+      return;
+    }
+
+    const containerHeight = containerRef.current.clientHeight;
+    const contentHeight = contentRef.current.scrollHeight;
+
+    if (contentHeight <= containerHeight) {
+      handleScroll();
+    }
+  }, [loading, hasMore, mcpList, handleScroll]);
+
+  // 数据更新后检查是否需要自动补充加载
+  useEffect(() => {
+    const timer = window.setTimeout(checkAndAutoFill, 100);
+    return () => window.clearTimeout(timer);
+  }, [mcpList, checkAndAutoFill]);
+
+  // 窗口大小变化时重新检查
+  useEffect(() => {
+    const handleResize = () => {
+      checkAndAutoFill();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkAndAutoFill]);
 
   /**
    * 将后端数据转换为卡片数据
@@ -342,6 +387,7 @@ export default function EcosystemMcp() {
               styles['main-container'],
             )}
             id="scrollableDiv"
+            ref={containerRef}
           >
             <InfiniteScrollDiv
               scrollableTarget="scrollableDiv"
@@ -349,7 +395,7 @@ export default function EcosystemMcp() {
               hasMore={hasMore}
               onScroll={handleScroll}
             >
-              <div className={cx(styles['list-section'])}>
+              <div className={cx(styles['list-section'])} ref={contentRef}>
                 {mcpList?.map((config) => (
                   <EcosystemCard
                     key={config?.uid}
