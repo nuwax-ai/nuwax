@@ -1,5 +1,8 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
+import {
+  CONVERSATION_CONNECTION_URL,
+  MESSAGE_PAGE_SIZE,
+} from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -75,9 +78,6 @@ import dayjs from 'dayjs';
 import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-
-// 会话消息列表数量
-const MESSAGE_LIST_SIZE = 10;
 
 export default () => {
   // 历史记录
@@ -563,7 +563,7 @@ export default () => {
       const { code, data } = await runQueryConversationMessageList({
         conversationId,
         index: currentIndex,
-        size: MESSAGE_LIST_SIZE,
+        size: MESSAGE_PAGE_SIZE,
       });
 
       if (code === SUCCESS_CODE) {
@@ -575,7 +575,7 @@ export default () => {
           });
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
-          if (data.length < MESSAGE_LIST_SIZE) {
+          if (data.length < MESSAGE_PAGE_SIZE) {
             setIsMoreMessage(false);
           } else {
             setIsMoreMessage(true);

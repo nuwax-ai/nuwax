@@ -129,6 +129,7 @@ const MyComputerManage: React.FC = () => {
   const handleEditSubmit = async (values: {
     name: string;
     description: string;
+    maxAgentCount?: number;
   }) => {
     try {
       if (currentEditItem) {
@@ -136,6 +137,7 @@ const MyComputerManage: React.FC = () => {
           id: currentEditItem.id,
           name: values.name,
           description: values.description,
+          maxAgentCount: values.maxAgentCount,
         });
         if (res.code === SUCCESS_CODE) {
           message.success('修改成功');
@@ -146,6 +148,7 @@ const MyComputerManage: React.FC = () => {
         const res = await apiCreateSandboxUserConfig({
           name: values.name,
           description: values.description,
+          maxAgentCount: values.maxAgentCount,
         });
         if (res.code === SUCCESS_CODE) {
           message.success('新增成功');

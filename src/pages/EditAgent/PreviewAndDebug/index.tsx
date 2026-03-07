@@ -3,6 +3,7 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
@@ -534,24 +535,25 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               ) : messageList?.length > 0 ? (
                 <>
                   {/* 自动加载更多的触发探测元素 */}
-                  {isMoreMessage && messageList?.length > 0 && (
-                    <div
-                      ref={loadMoreRef}
-                      className={cx(styles['load-more-container'])}
-                      style={{
-                        textAlign: 'center',
-                        padding: '16px 0',
-                        color: '#999',
-                      }}
-                    >
-                      {loadingMore ? (
-                        <span>
-                          <LoadingOutlined style={{ marginRight: 8 }} />
-                          正在加载历史会话
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
+                  {isMoreMessage &&
+                    (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
+                      <div
+                        ref={loadMoreRef}
+                        className={cx(styles['load-more-container'])}
+                        style={{
+                          textAlign: 'center',
+                          padding: '16px 0',
+                          color: '#999',
+                        }}
+                      >
+                        {loadingMore ? (
+                          <span>
+                            <LoadingOutlined style={{ marginRight: 8 }} />
+                            正在加载历史会话
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                   {messageList?.map((item: MessageInfo) => (
                     <ChatView
                       // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识

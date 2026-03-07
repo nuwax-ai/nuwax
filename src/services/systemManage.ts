@@ -603,6 +603,7 @@ export async function apiUpdateSandboxUserConfig(data: {
   id: number;
   name: string;
   description?: string;
+  maxAgentCount?: number;
 }): Promise<RequestResponse<null>> {
   return request('/api/sandbox/config/update', {
     method: 'POST',
@@ -616,6 +617,7 @@ export async function apiUpdateSandboxUserConfig(data: {
 export async function apiCreateSandboxUserConfig(data: {
   name: string;
   description?: string;
+  maxAgentCount?: number;
 }): Promise<RequestResponse<null>> {
   return request('/api/sandbox/config/create', {
     method: 'POST',
