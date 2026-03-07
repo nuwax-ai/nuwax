@@ -2,6 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 
 import SvgIcon from '@/components/base/SvgIcon';
+import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import DataResourceList from '@/pages/AppDev/components/FileTreePanel/DataResourceList';
 import type {
@@ -738,7 +739,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <div className={styles.chatMessages}>
               {/* 自动加载更多的触发探测元素 */}
               {chat.hasMoreHistoryRef.current &&
-                !chat.isLoadingMoreHistoryRef.current && (
+                !chat.isLoadingMoreHistoryRef.current &&
+                (chat.chatMessages?.length || 0) >= MESSAGE_PAGE_SIZE && (
                   <div
                     ref={loadMoreRef}
                     className={styles.loadMoreHistoryButton}

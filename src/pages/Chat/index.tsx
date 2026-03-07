@@ -14,6 +14,7 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
@@ -1124,19 +1125,20 @@ const Chat: React.FC = () => {
                   disabled={!!firstVariableParams || isSendMessageRef.current}
                 />
                 {/* 自动加载更多的触发探测元素 */}
-                {isMoreMessage && messageList?.length > 0 && (
-                  <div
-                    ref={loadMoreRef}
-                    className={cx(styles['load-more-container'])}
-                  >
-                    {loadingMore ? (
-                      <span>
-                        <LoadingOutlined style={{ marginRight: 8 }} />
-                        正在加载历史会话
-                      </span>
-                    ) : null}
-                  </div>
-                )}
+                {isMoreMessage &&
+                  (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
+                    <div
+                      ref={loadMoreRef}
+                      className={cx(styles['load-more-container'])}
+                    >
+                      {loadingMore ? (
+                        <span>
+                          <LoadingOutlined style={{ marginRight: 8 }} />
+                          正在加载历史会话
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                 {messageList?.length > 0 ? (
                   <>
                     {messageList?.map((item: MessageInfo) => (

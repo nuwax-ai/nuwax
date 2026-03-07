@@ -178,3 +178,6 @@ export const IDLE_DETECTION_TIMEOUT_MS = 60 * 60 * 1000;
 
 // 空闲警告倒计时（秒）：30秒
 export const IDLE_WARNING_COUNTDOWN_SECONDS = 30;
+
+// 历史会话默认分页大小
+export const MESSAGE_PAGE_SIZE = 10;
