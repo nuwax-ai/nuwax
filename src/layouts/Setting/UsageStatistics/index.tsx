@@ -46,16 +46,6 @@ const UsageStatistics: React.FC = () => {
   };
 
   /**
-   * 从 UsageInfo 数组中取第一个元素并格式化
-   */
-  const formatFirstUsage = (
-    list?: { usage: string; limit: string; description: string }[] | null,
-  ) => {
-    if (!list || list.length === 0) return '--';
-    return formatUsageInfo(list[0]);
-  };
-
-  /**
    * XProTable 请求数据方法
    * 这里不需要分页和查询，仅将接口返回的数据转换为静态行
    */
@@ -87,56 +77,56 @@ const UsageStatistics: React.FC = () => {
         {
           key: 'pagePrompt',
           type: '网页应用开发对话次数',
-          daily: formatFirstUsage(usage.todayPageAppPromptUsage),
+          daily: formatUsageInfo(usage.todayPageAppPromptUsage),
           other: '--',
         },
         {
           key: 'workspace',
           type: '可创建工作空间数量',
           daily: '--',
-          other: formatFirstUsage(usage.newWorkspaceUsage),
+          other: formatUsageInfo(usage.newWorkspaceUsage),
         },
         {
           key: 'agent',
           type: '可创建智能体数量',
           daily: '--',
-          other: formatFirstUsage(usage.newAgentUsage),
+          other: formatUsageInfo(usage.newAgentUsage),
         },
         {
           key: 'pageApp',
           type: '可创建网页应用数量',
           daily: '--',
-          other: formatFirstUsage(usage.newPageAppUsage),
+          other: formatUsageInfo(usage.newPageAppUsage),
         },
         {
           key: 'knowledgeBase',
           type: '可创建知识库数量',
           daily: '--',
-          other: formatFirstUsage(usage.newKnowledgeBaseUsage),
+          other: formatUsageInfo(usage.newKnowledgeBaseUsage),
         },
         {
           key: 'kbStorage',
           type: '知识库存储上限',
           daily: '--',
-          other: formatFirstUsage(usage.knowledgeBaseStorageUsage),
+          other: formatUsageInfo(usage.knowledgeBaseStorageUsage),
         },
         {
           key: 'table',
           type: '可创建数据表数量',
           daily: '--',
-          other: formatFirstUsage(usage.newTableUsage),
+          other: formatUsageInfo(usage.newTableUsage),
         },
         {
           key: 'task',
           type: '可创建定时任务数量',
           daily: '--',
-          other: formatFirstUsage(usage.newTaskUsage),
+          other: formatUsageInfo(usage.newTaskUsage),
         },
         {
           key: 'sandboxMemory',
           type: '智能体电脑最大内存',
           daily: '--',
-          other: formatFirstUsage(usage.sandboxMemoryLimit),
+          other: formatUsageInfo(usage.sandboxMemoryLimit),
         },
       ];
 

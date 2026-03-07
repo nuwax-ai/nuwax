@@ -134,23 +134,23 @@ export interface UserMetricUsageInfo {
   /** 今日智能体对话次数使用情况 */
   todayAgentPromptUsage: UsageInfo;
   /** 今日页面应用对话次数使用情况 */
-  todayPageAppPromptUsage: UsageInfo[];
+  todayPageAppPromptUsage: UsageInfo;
   /** 今日工作空间使用情况 */
-  newWorkspaceUsage: UsageInfo[];
+  newWorkspaceUsage: UsageInfo;
   /** 今日智能体使用情况 */
-  newAgentUsage: UsageInfo[];
+  newAgentUsage: UsageInfo;
   /** 今日页面应用使用情况 */
-  newPageAppUsage: UsageInfo[];
+  newPageAppUsage: UsageInfo;
   /** 今日知识库使用情况 */
-  newKnowledgeBaseUsage: UsageInfo[];
+  newKnowledgeBaseUsage: UsageInfo;
   /** 知识库存储空间使用情况 */
-  knowledgeBaseStorageUsage: UsageInfo[];
+  knowledgeBaseStorageUsage: UsageInfo;
   /** 今日数据表使用情况 */
-  newTableUsage: UsageInfo[];
+  newTableUsage: UsageInfo;
   /** 今日定时任务使用情况 */
-  newTaskUsage: UsageInfo[];
+  newTaskUsage: UsageInfo;
   /** 沙盒内存限制使用情况 */
-  sandboxMemoryLimit: UsageInfo[];
+  sandboxMemoryLimit: UsageInfo;
 }
 
 // 查询用户各项已使用情况
