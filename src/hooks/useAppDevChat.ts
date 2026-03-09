@@ -29,6 +29,7 @@ import {
   AGENT_SERVICE_RUNNING,
   SUCCESS_CODE,
 } from '@/constants/codes.constants';
+import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import {
   insertPlanBlock,
   insertToolCallBlock,
@@ -944,7 +945,9 @@ export const useAppDevChat = ({
       if (code === SUCCESS_CODE) {
         // 更新分页信息
         currentPageRef.current = page; // 同时更新 ref，确保立即获取最新值
-        hasMoreHistoryRef.current = data?.current < data?.pages;
+        hasMoreHistoryRef.current =
+          (data?.records?.length || 0) >= MESSAGE_PAGE_SIZE &&
+          data?.current < data?.pages;
         setTotalHistoryCount(data?.total || 0);
 
         // 按创建时间排序，获取所有会话

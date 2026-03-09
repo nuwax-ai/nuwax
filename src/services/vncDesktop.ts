@@ -97,10 +97,19 @@ export async function apiDownloadAllFiles(
   );
 }
 
+let lastEnsurePodTime = 0;
+
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
 ): Promise<RequestResponse<EnsurePodResponse>> {
+  const now = Date.now();
+  if (now - lastEnsurePodTime < 5000) {
+    console.log('请求过于频繁，请 5s 后再试');
+    return Promise.reject(new Error('请求过于频繁，请 5s 后再试'));
+  }
+  lastEnsurePodTime = now;
+
   return request('/api/computer/pod/ensure', {
     method: 'POST',
     params: {

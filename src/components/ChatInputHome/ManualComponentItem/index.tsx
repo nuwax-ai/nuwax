@@ -75,6 +75,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
                       width: 12,
                       height: 12,
                       borderRadius: 4,
+                      fontSize: 14,
                     }}
                   />
                 )}

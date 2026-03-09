@@ -706,6 +706,7 @@ export interface SandboxConfigItem {
   created: string;
   modified: string;
   usingCount?: number;
+  maxAgentCount?: number;
 }
 
 /**

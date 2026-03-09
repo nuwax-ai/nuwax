@@ -144,9 +144,9 @@ const RunOver: React.FC<RunOverProps> = ({
           </>
         ) : messageInfo?.status === MessageStatusEnum.Error ? (
           <span>运行错误</span>
-        ) : messageInfo?.status === MessageStatusEnum.Stopped ? (
-          <span>已中断</span>
-        ) : (
+        ) : messageInfo?.status ===
+          MessageStatusEnum.Stopped ? // <span>已中断</span>
+        null : (
           <span>
             运行完毕
             <DownOutlined className={cx(styles.icon)} />
