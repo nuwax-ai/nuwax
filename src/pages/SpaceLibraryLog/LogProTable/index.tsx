@@ -11,12 +11,13 @@ import type {
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
+import { EyeOutlined } from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
+import { message, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -25,7 +26,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useParams, useSearchParams } from 'umi';
+import {
+  history,
+  useLocation,
+  useModel,
+  useParams,
+  useSearchParams,
+} from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -43,6 +50,8 @@ const LogProTable: React.FC = () => {
 
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>();
+
+  const { userInfo } = useModel('userInfo');
 
   // 从 URL 查询参数中获取 targetType，用于初始化查询表单
   const targetTypeFromUrl = useMemo(() => {
@@ -160,8 +169,32 @@ const LogProTable: React.FC = () => {
         title: '会话ID',
         dataIndex: 'conversationId',
         width: 140,
-        ellipsis: true,
         fieldProps: { placeholder: '请输入会话ID' },
+        render: (_, record) => {
+          if (!record.conversationId) return '-';
+          const isCurrentUser = userInfo?.id === record.userId;
+
+          return (
+            <div className="flex items-center gap-2">
+              <span className="truncate">{record.conversationId}</span>
+              {isCurrentUser && (
+                <Tooltip title="查看会话详情">
+                  <a
+                    style={{ marginLeft: 5 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      history.push(
+                        `/home/chat/${record.conversationId}/${record.targetId}`,
+                      );
+                    }}
+                  >
+                    <EyeOutlined className="text-primary hover:opacity-80 cursor-pointer" />
+                  </a>
+                </Tooltip>
+              )}
+            </div>
+          );
+        },
       },
 
       {
