@@ -585,6 +585,10 @@ const Chat: React.FC = () => {
     // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
     hidePagePreview();
 
+    // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
+    // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
+    setClearLoading(false);
+
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
     // 订阅文件列表刷新事件
@@ -601,14 +605,6 @@ const Chat: React.FC = () => {
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
     };
   }, [id]);
-
-  // 当会话请求开始加载时，重置 clearLoading
-  // 实现 clearLoading → loadingConversation 的无缝衔接，避免中间渲染间隙导致 AgentChatEmpty 闪现
-  useEffect(() => {
-    if (loadingConversation && clearLoading) {
-      setClearLoading(false);
-    }
-  }, [loadingConversation, clearLoading]);
 
   // 清空会话记录并创建新会话
   const handleClear = async () => {
