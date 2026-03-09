@@ -1,4 +1,3 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -99,9 +98,17 @@ const AgentDetails: React.FC = () => {
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
-  // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
     useAgentDetails();
+
+  // 缓存智能体名称，避免清空等操作导致 agentDetail 刷新时的文字闪烁
+  const [cachedAgentName, setCachedAgentName] = useState<string>('');
+
+  useEffect(() => {
+    if (agentDetail?.name) {
+      setCachedAgentName(agentDetail.name);
+    }
+  }, [agentDetail?.name]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -327,10 +334,7 @@ const AgentDetails: React.FC = () => {
               className={cx(styles.title)}
               ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
             >
-              {isLoaded &&
-                (agentDetail?.name
-                  ? `和${agentDetail?.name}开始会话`
-                  : '开始会话')}
+              {cachedAgentName ? `和${cachedAgentName}开始会话` : ''}
             </Typography.Title>
             <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
@@ -430,22 +434,33 @@ const AgentDetails: React.FC = () => {
                       onClick={handleMessageSend}
                     />
                   </>
+                ) : // Chat记录为空
+                loading || !isLoaded ? (
+                  <div
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'flex-1',
+                      'h-full',
+                      'w-full',
+                    )}
+                  >
+                    <LoadingOutlined />
+                  </div>
                 ) : (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={agentDetail?.icon}
-                    name={agentDetail?.name || ''}
-                    // 会话建议
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
-                    }
-                  />
+                  <div
+                    className={cx('flex', 'flex-col', 'items-left', 'w-full', {
+                      'h-full': !variables?.length,
+                    })}
+                  >
+                    <RecommendList
+                      className="mt-16"
+                      itemClassName={cx(styles['suggest-item'])}
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -510,67 +525,55 @@ const AgentDetails: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
-      {loading || !isLoaded ? (
-        // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            'flex-1',
-            'w-full',
-            'h-full',
-          )}
-        >
-          <LoadingOutlined />
-        </div>
-      ) : (
-        <ResizableSplit
-          minLeftWidth={400}
-          defaultLeftWidth={
-            agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-          }
-          left={agentDetail?.hideChatArea ? null : LeftContent()}
-          right={
-            agentDetail?.type !== AgentTypeEnum.TaskAgent
-              ? pagePreviewData && (
-                  <>
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!agentDetail?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                      // 复制模板按钮相关 props
-                      showCopyButton={showCopyButton}
-                      allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                      onCopyClick={() => setOpenPageCopyModal(true)}
-                      copyButtonText="复制模板"
-                      copyButtonClassName={styles['copy-btn']}
+      <ResizableSplit
+        minLeftWidth={400}
+        defaultLeftWidth={
+          !agentDetail
+            ? 100
+            : agentDetail?.type === AgentTypeEnum.TaskAgent
+            ? 33
+            : 50
+        }
+        left={agentDetail?.hideChatArea ? null : LeftContent()}
+        right={
+          agentDetail?.type !== AgentTypeEnum.TaskAgent
+            ? pagePreviewData && (
+                <>
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentDetail?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                    // 复制模板按钮相关 props
+                    showCopyButton={showCopyButton}
+                    allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                    onCopyClick={() => setOpenPageCopyModal(true)}
+                    copyButtonText="复制模板"
+                    copyButtonClassName={styles['copy-btn']}
+                  />
+                  {/* 复制模板弹窗 */}
+                  {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                    <CopyToSpaceComponent
+                      spaceId={agentDetail.spaceId}
+                      mode={AgentComponentTypeEnum.Page}
+                      componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                      title={''}
+                      open={openPageCopyModal}
+                      isTemplate={true}
+                      onSuccess={(_: any, targetSpaceId: number) => {
+                        setOpenPageCopyModal(false);
+                        // 跳转
+                        jumpToPageDevelop(targetSpaceId);
+                      }}
+                      onCancel={() => setOpenPageCopyModal(false)}
                     />
-                    {/* 复制模板弹窗 */}
-                    {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                      <CopyToSpaceComponent
-                        spaceId={agentDetail.spaceId}
-                        mode={AgentComponentTypeEnum.Page}
-                        componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                        title={''}
-                        open={openPageCopyModal}
-                        isTemplate={true}
-                        onSuccess={(_: any, targetSpaceId: number) => {
-                          setOpenPageCopyModal(false);
-                          // 跳转
-                          jumpToPageDevelop(targetSpaceId);
-                        }}
-                        onCancel={() => setOpenPageCopyModal(false)}
-                      />
-                    )}
-                  </>
-                )
-              : null
-          }
-        />
-      )}
+                  )}
+                </>
+              )
+            : null
+        }
+      />
       {/*智能体详情*/}
       <AgentSidebar
         ref={sidebarRef}

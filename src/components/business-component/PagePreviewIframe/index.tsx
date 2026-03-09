@@ -674,25 +674,26 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       {/* iframe 预览区域 */}
       <div className={cx(styles['page-preview-body'])}>
-        <Spin
-          spinning={showLoading && isLoading}
-          size="large"
-          tip="页面加载中..."
-        >
-          <iframe
-            ref={iframeRef}
-            key={iframeKey}
-            src={pageUrl}
-            sandbox={SANDBOX}
-            className={cx(styles['page-iframe'])}
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-            style={{
-              opacity: isLoading ? 0 : 1,
-              transition: 'opacity 1.5s ease-in-out',
-            }}
-          />
-        </Spin>
+        {/* 使用独立遮罩保证 loading 始终在区域正中央 */}
+        {showLoading && isLoading && (
+          <div className={cx(styles['page-preview-loading'])}>
+            <Spin size="large" spinning />
+          </div>
+        )}
+
+        <iframe
+          ref={iframeRef}
+          key={iframeKey}
+          src={pageUrl}
+          sandbox={SANDBOX}
+          className={cx(styles['page-iframe'])}
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
+          style={{
+            opacity: isLoading ? 0 : 1,
+            transition: 'opacity 1.5s ease-in-out',
+          }}
+        />
       </div>
     </div>
   );
