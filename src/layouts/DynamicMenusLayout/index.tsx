@@ -284,10 +284,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 默认选中首页
       setActiveTab('homepage');
     } else {
+      const pathname = location.pathname;
+
+      let pathName;
+
+      if (pathname === '/open-iframe-page') {
+        pathName = decodeURIComponent(location.search?.split('?url=')[1] || '');
+      } else {
+        pathName = pathname;
+      }
+
       // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
       const firstLevelCode = findFirstLevelCodeByPath(
         firstLevelMenus,
-        location.pathname,
+        pathName,
       );
 
       if (firstLevelCode && firstLevelCode !== 'new_conversation') {
