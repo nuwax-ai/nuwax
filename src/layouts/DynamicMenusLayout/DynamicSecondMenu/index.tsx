@@ -9,11 +9,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 // 导入特殊内容组件
 import { PATH_URL } from '@/constants/home.constants';
-import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
-import { updatePathUrlToLocalStorage } from '../utils';
+import { handleOpenUrl, updatePathUrlToLocalStorage } from '../utils';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -239,30 +238,12 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     [params, parentCode, spaceList, extractSpaceIdFromPath],
   );
 
-  /**
-   * 打开URL
-   * @param path 路径
-   * @param openType 打开方式
-   */
-  const handleOpenUrl = (
-    path: string,
-    openType: OpenTypeEnum = OpenTypeEnum.CurrentTab,
-  ) => {
-    if (openType === OpenTypeEnum.NewTab) {
-      window.open(path, '_blank');
-      return;
-    }
-    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`, {
-      _t: Date.now(),
-    });
-  };
-
   // 处理路径URL路径跳转
-  const handlePathUrl = (path: string, openType?: OpenTypeEnum) => {
-    if (!path) return;
+  const handlePathUrl = (menu: MenuItemDto) => {
+    const { path = '' } = menu;
     // http开头的路径，直接打开
     if (path?.includes('http')) {
-      handleOpenUrl(path, openType);
+      handleOpenUrl(menu);
       return;
     }
     // 关闭移动端菜单
@@ -297,7 +278,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       }
       if (menu?.path) {
         // 无子菜单，处理路径URL路径跳转
-        handlePathUrl(menu?.path || '', menu?.openType);
+        handlePathUrl(menu);
       }
     },
     [toggleExpand, handlePathUrl],
@@ -595,7 +576,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
             isActive={menuActive}
             onClick={() => {
               // 处理路径URL路径跳转
-              handlePathUrl(menu?.path || '', menu?.openType);
+              handlePathUrl(menu);
             }}
           />
         );
