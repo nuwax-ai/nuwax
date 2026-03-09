@@ -203,6 +203,14 @@ const AgentDetails: React.FC = () => {
   });
 
   useEffect(() => {
+    // 页面加载后判断 pagePreviewData 是否存在值，如果存在则将 uri 置为空字符串，避免显示旧数据
+    if (pagePreviewData) {
+      showPagePreview({
+        ...pagePreviewData,
+        uri: '',
+      });
+    }
+
     setLoading(true);
     runDetail(agentId, true);
 
@@ -214,7 +222,8 @@ const AgentDetails: React.FC = () => {
 
     return () => {
       // 关闭页面预览
-      hidePagePreview();
+      // hidePagePreview();
+
       setIsLoaded(false);
       setMessageList([]);
       setChatSuggestList([]);
@@ -531,7 +540,7 @@ const AgentDetails: React.FC = () => {
       <ResizableSplit
         minLeftWidth={400}
         defaultLeftWidth={
-          !agentDetail
+          !pagePreviewData
             ? 100
             : agentDetail?.type === AgentTypeEnum.TaskAgent
             ? 33
