@@ -138,9 +138,6 @@ const Chat: React.FC = () => {
     }
   }, [history.action, location.key]);
 
-  // 追踪是否为首次挂载，用于在路由进入时强制清理状态
-  const isFirstMount = useRef(true);
-
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
     useAgentDetails();
@@ -527,10 +524,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     addBaseTarget();
-    return () => {
-      // 仅在组件卸载（彻底离开 Chat 路由）时关闭页面预览
-      hidePagePreview();
-    };
   }, []);
 
   useEffect(() => {
@@ -589,32 +582,8 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.taskStatus]);
 
   useEffect(() => {
-    // 路由进入（首次挂载）时，强制隐藏预览，解决跨路由跳转时的状态残留问题
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      hidePagePreview();
-    } else if (pagePreviewData) {
-      // 非首次挂载（但在同一个聊天页面切换会话），执行智能重置逻辑
-      const targetAgent = agentDetail || defaultAgentDetail;
-      if (
-        targetAgent &&
-        targetAgent.pageHomeIndex &&
-        targetAgent.expandPageArea
-      ) {
-        const homeUri =
-          (process.env.BASE_URL || '') + targetAgent.pageHomeIndex;
-        // 只有当当前 URI 不是首页时才重置，且直接重置到首页
-        if (pagePreviewData.uri !== homeUri) {
-          handleOpenPreview(targetAgent);
-        }
-      } else {
-        // 彻底没有详情或未开启预览时，确保置空防止残留旧数据
-        showPagePreview({
-          ...pagePreviewData,
-          uri: '',
-        });
-      }
-    }
+    // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
+    hidePagePreview();
 
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
@@ -629,7 +598,7 @@ const Chat: React.FC = () => {
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
       setSelectedComponentList([]);
-      // hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
+      hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
     };
   }, [id]);
 
@@ -1219,19 +1188,6 @@ const Chat: React.FC = () => {
                       </div>
                     )}
                   </>
-                ) : clearLoading || loadingConversation || !conversationInfo ? (
-                  <div
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      'content-center',
-                      'flex-1',
-                      'h-full',
-                      'w-full',
-                    )}
-                  >
-                    <LoadingOutlined />
-                  </div>
                 ) : !message ? (
                   // Chat记录为空
                   <AgentChatEmpty
@@ -1385,7 +1341,20 @@ const Chat: React.FC = () => {
     };
   }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
-  return (
+  return clearLoading || loadingConversation || !conversationInfo ? (
+    <div
+      className={cx(
+        'flex',
+        'items-center',
+        'content-center',
+        'flex-1',
+        'h-full',
+        'w-full',
+      )}
+    >
+      <LoadingOutlined />
+    </div>
+  ) : (
     <div className={cx('flex', 'h-full')}>
       {/* 智能体聊天和预览页面 */}
       <div
