@@ -334,11 +334,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 默认选中首页
       setActiveTab('homepage');
     } else {
+      // 获取菜单码
+      const menuCode = params?.menuCode || location.state?.menuCode;
       // 根据菜单码或路径获取第一级菜单的 code
       let firstLevelCode = null;
       // 如果菜单码存在，则根据菜单码获取第一级菜单的 code
-      if (params?.menuCode) {
-        firstLevelCode = findFirstLevelCodeByMenuCode(params?.menuCode);
+      if (menuCode) {
+        firstLevelCode = findFirstLevelCodeByMenuCode(menuCode);
       } else {
         // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
         firstLevelCode = findFirstLevelCodeByPath(
@@ -444,7 +446,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
-        history.push(url, { _t: Date.now() });
+        history.push(url, { _t: Date.now(), menuCode: menu.code });
         return;
       }
 
@@ -455,14 +457,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           const pathUrlObj = JSON.parse(pathUrl);
           const pathUrlValue = pathUrlObj[menu.code];
           if (pathUrlValue && !pathUrlValue.includes(':')) {
-            history.push(pathUrlValue, { _t: Date.now() });
+            history.push(pathUrlValue, { _t: Date.now(), menuCode: menu.code });
             return;
           }
         }
       } catch {}
 
       if (menu.path) {
-        history.push(menu.path, { _t: Date.now() });
+        history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
@@ -473,7 +475,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             return;
           }
           // 其他路径，跳转路由
-          history.push(firstPathMenu.path, { _t: Date.now() });
+          history.push(firstPathMenu.path, {
+            _t: Date.now(),
+            menuCode: firstPathMenu.code,
+          });
         }
       }
     },
@@ -504,7 +509,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         case 'my_computer':
           {
             setActiveTab(code || '');
-            history.push('/my-computer-manage', { _t: Date.now() });
+            history.push('/my-computer-manage', {
+              _t: Date.now(),
+              menuCode: menu.code,
+            });
           }
           break;
       }
