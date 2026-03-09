@@ -18,80 +18,6 @@ const GlobalEventPolling: React.FC = () => {
   return contextHolder; // 返回 contextHolder 以支持 Modal 的动态主题
 };
 
-/**
- * 应用容器组件
- * 包含全局设置状态管理和主题配置
- */
-
-import type { UserInfo } from '@/types/interfaces/login';
-import type { MenuItemDto } from '@/types/interfaces/menu';
-import { history } from 'umi';
-import { SUCCESS_CODE } from './constants/codes.constants';
-import { apiQueryMenus } from './services/menuService';
-import { UserService } from './services/userService';
-import { extractAllPermissions } from './utils/permission';
-
-/**
- * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
- * */
-export async function getInitialState(): Promise<{
-  currentUser?: UserInfo;
-  menus?: MenuItemDto[];
-  permissions?: string[];
-  permissionsMap?: Map<string, string[]>;
-  loading?: boolean;
-  fetchUserInfo?: () => Promise<UserInfo | undefined>;
-}> {
-  const fetchUserInfo = async () => {
-    try {
-      const msg = await UserService.getUserInfo();
-      return msg;
-    } catch (error) {
-      history.push('/login');
-    }
-    return undefined;
-  };
-
-  // 如果不是登录页面，执行
-  if (history.location.pathname !== '/login') {
-    const currentUser = await fetchUserInfo();
-    let menus: MenuItemDto[] = [];
-    let permissions: string[] = [];
-    let permissionsMap: Map<string, string[]> = new Map();
-
-    // 如果获取到了用户信息，同时获取菜单和权限
-    if (currentUser?.id) {
-      try {
-        const menuRes = await apiQueryMenus();
-        if (menuRes.code === SUCCESS_CODE && menuRes.data) {
-          menus = menuRes.data as MenuItemDto[];
-          // 从 Map 中提取所有权限码并打平
-          permissionsMap = extractAllPermissions(menus);
-          permissions = [];
-          permissionsMap.forEach((codes) => {
-            permissions.push(...codes);
-          });
-        }
-      } catch (error) {
-        console.error('Initial menu loading failed:', error);
-      }
-    }
-
-    return {
-      fetchUserInfo,
-      currentUser,
-      menus,
-      permissions,
-      permissionsMap,
-      loading: false,
-    };
-  }
-  return {
-    fetchUserInfo,
-    loading: false,
-  };
-}
-
 const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
@@ -271,8 +197,6 @@ export function render(oldRender: () => void) {
  * 可以在这里处理页面切换逻辑
  */
 export function onRouteChange() {
-  // console.info('[router] onRouteChange', ...params);
-
   // 如果是登录成功后的路由变化，确保轮询启动
   if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
     // 这里不需要特别处理，因为GlobalEventPolling组件会确保轮询只启动一次
