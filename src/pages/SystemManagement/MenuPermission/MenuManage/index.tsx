@@ -100,11 +100,14 @@ const MenuManage: React.FC = () => {
         };
       }
       // 转换数据格式，为树形数据添加 key 字段，并过滤掉根节点（id为0）
+      // 注意：对于 parentId 为 null 或 undefined 的情况，统一当做 0（根节点）处理
       const transformData = (data: MenuNodeInfo[]): any[] => {
         return data
           .filter((item) => item.id !== 0) // 过滤掉根节点
           .map((item) => ({
             ...item,
+            // 统一处理 parentId：null 或 undefined 时当做 0（根节点）
+            parentId: item.parentId ?? 0,
             key: item.id,
             children: item.children?.length
               ? transformData(item.children)
