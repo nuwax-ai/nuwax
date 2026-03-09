@@ -535,7 +535,18 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       const hasChildren = menu.children && menu.children.length > 0;
       const menuCode = menu.code || '';
       const isExpanded = expandedMenus.includes(menuCode);
-      const menuActive = isActive(menu.path);
+      let menuActive = false;
+
+      // iframe 场景：根据 URL 上的 menuCode，在「当前菜单及其子菜单」中递归查找是否存在
+      if (
+        location.pathname.includes('/open-iframe-page') &&
+        !!params?.menuCode
+      ) {
+        menuActive = params.menuCode === menu.code;
+      } else {
+        // 普通场景：根据路径判断是否激活
+        menuActive = isActive(menu.path);
+      }
       // 根据层级计算缩进
       // 如果没有上级（level === 0），indent 不变
       // 如果有上级（level > 0 且 level < 4），indent = level * 16 + 10
@@ -608,6 +619,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       handlePathUrl,
       toggleExpand,
       currentSpaceInfo,
+      location,
     ],
   );
 
