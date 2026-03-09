@@ -121,11 +121,9 @@ const SkillDetails: React.FC = () => {
           message.success('保存成功');
           return true;
         }
-        message.error('保存失败');
         return false;
       } catch (error) {
         console.error('保存文件失败:', error);
-        message.error('保存失败');
         return false;
       }
     }
@@ -194,7 +192,7 @@ const SkillDetails: React.FC = () => {
     try {
       setIsImportingProject(true);
       // 调用导入接口
-      const { code, message: errorMessage } = await apiSkillImport({
+      const { code } = await apiSkillImport({
         file,
         targetSkillId: skillId,
         targetSpaceId: spaceId,
@@ -207,8 +205,6 @@ const SkillDetails: React.FC = () => {
         // 刷新技能信息
         runSkillInfo(skillId);
         setImportProjectTrigger(Date.now());
-      } else {
-        message.error(errorMessage || '导入失败');
       }
     } catch (error) {
       setIsImportingProject(false);
@@ -303,7 +299,6 @@ const SkillDetails: React.FC = () => {
       }
     } catch (error) {
       console.error('导出项目失败:', error);
-      message.error('导出失败，请重试');
     } finally {
       setLoadingExportProject(false);
     }
@@ -362,7 +357,6 @@ const SkillDetails: React.FC = () => {
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            message.error('删除文件时发生错误');
             resolve(false);
           }
         },
