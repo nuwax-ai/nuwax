@@ -1324,6 +1324,8 @@ const Chat: React.FC = () => {
                   hideDesktop={effectiveAgent?.hideDesktop}
                   // 是否动态主题
                   isDynamicTheme={true}
+                  // 静态资源文件基础路径
+                  staticFileBasePath={`/api/computer/static/${id}`}
                 />
               </div>
             )}

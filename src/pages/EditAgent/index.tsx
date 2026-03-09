@@ -1118,6 +1118,8 @@ const EditAgent: React.FC = () => {
                               openPreviewView(devConversationId),
                           }}
                           hideDesktop={agentConfigInfo?.hideDesktop}
+                          // 静态资源文件基础路径
+                          staticFileBasePath={`/api/computer/static/${devConversationId}`}
                         />
                       </div>
                     )

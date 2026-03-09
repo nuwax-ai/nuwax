@@ -60,6 +60,8 @@ export type FileType =
   | UnsupportedType;
 
 export interface FilePreviewProps {
+  /** 静态资源文件基础路径 */
+  staticFileBasePath?: string;
   /** File source: URL string, ArrayBuffer, Blob, or File object */
   src?: string | ArrayBuffer | Blob | File;
   /** For multiple images: array of image sources */
@@ -297,6 +299,7 @@ const getLocalizedErrorMessage = (
 
 const FilePreview: React.FC<FilePreviewProps> = ({
   src,
+  staticFileBasePath,
   srcList,
   fileType,
   height = '100%',
@@ -664,6 +667,52 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     );
   };
 
+  // 统一的图片路径处理函数
+  const normalizeImageSrc = useCallback(
+    (src: string) => {
+      if (!src || !staticFileBasePath) return src;
+
+      // 外部链接直接返回
+      if (src.startsWith('http') || src.startsWith('data:')) {
+        return src;
+      }
+
+      // 以 / 开头的绝对路径
+      if (src.startsWith('/')) {
+        // 已经是完整的静态资源路径，直接返回
+        if (src.startsWith('/api/computer/static/')) {
+          return src;
+        }
+
+        // 其他绝对路径，如果有 staticFileBasePath，则在前面拼上
+        return `${staticFileBasePath}${src}`;
+      }
+
+      // 处理相对路径 ./ ../
+      const normalized = src
+        .replace(/^\.\//, '') // ./ -> 空
+        .replace(/^\.\.\//, '') // ../ -> 空
+        .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
+
+      return `${staticFileBasePath}/${normalized}`;
+    },
+    [staticFileBasePath],
+  );
+
+  // 对 Markdown 文本中的图片链接进行统一路径处理
+  const processedMarkdown = useMemo(() => {
+    if (!textContent) return textContent;
+
+    // 仅处理标准图片语法 ![alt](url)
+    return textContent.replace(
+      /(!\[[^\]]*\]\()([^)\s]+)(\))/g,
+      (match, prefix, url, suffix) => {
+        const normalizedUrl = normalizeImageSrc(url);
+        return `${prefix}${normalizedUrl}${suffix}`;
+      },
+    );
+  }, [textContent, normalizeImageSrc]);
+
   const renderPreviewContent = () => {
     if (!resolvedType) return null;
 
@@ -756,7 +805,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   pointerEvents: 'none',
                 }}
               >
-                <ReactMarkdown>{textContent}</ReactMarkdown>
+                <ReactMarkdown>{processedMarkdown}</ReactMarkdown>
               </div>
             )}
             {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
@@ -795,7 +844,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                 }}
               >
                 <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
-                  {textContent}
+                  {processedMarkdown}
                 </PureMarkdownRenderer>
               </div>
             )}
