@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import { ModalFuncProps } from 'antd/es/modal/interface';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useModel, useNavigate } from 'umi';
 import styles from './index.less';
 
@@ -45,6 +45,19 @@ const DropdownChangeName: React.FC<Porps> = ({
   const [form] = Form.useForm();
   const [disabledEdit, setDisabledEdit] = useState(true);
   const [loadingEdit, setLoadingEdit] = useState(false);
+
+  const [cachedConversationInfo, setCachedConversationInfo] =
+    useState<ConversationInfo>(conversationInfo);
+
+  useEffect(() => {
+    if (conversationInfo?.id) {
+      setCachedConversationInfo(conversationInfo);
+    }
+  }, [
+    conversationInfo?.id,
+    conversationInfo?.topic,
+    conversationInfo?.topicUpdated,
+  ]);
 
   const items: MenuProps['items'] = [
     {
@@ -134,7 +147,7 @@ const DropdownChangeName: React.FC<Porps> = ({
       // 重置表单
       form.resetFields();
       // 填充表单数据
-      form.setFieldsValue({ topic: conversationInfo.topic });
+      form.setFieldsValue({ topic: cachedConversationInfo.topic });
       setDisabledEdit(false);
       setModalOpenEdit(true);
       return;
@@ -165,7 +178,7 @@ const DropdownChangeName: React.FC<Porps> = ({
     try {
       setLoadingEdit(true);
       await runUpdateTopic({
-        id: conversationInfo.id,
+        id: cachedConversationInfo.id,
         topic: values.topic,
       });
       setModalOpenEdit(false);
@@ -179,9 +192,9 @@ const DropdownChangeName: React.FC<Porps> = ({
       <Dropdown menu={menuProps}>
         <div className={cx(styles['dropdown-container'])}>
           <Space size={4}>
-            {conversationInfo?.id && (
+            {cachedConversationInfo?.id && (
               <>
-                {conversationInfo.topic}
+                {cachedConversationInfo.topic}
                 <DownOutlined style={{ fontSize: '12px' }} />
               </>
             )}

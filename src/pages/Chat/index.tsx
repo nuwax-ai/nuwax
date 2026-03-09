@@ -1,4 +1,3 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -1180,20 +1179,22 @@ const Chat: React.FC = () => {
                   !message &&
                   (conversationInfo ? (
                     // Chat记录为空
-                    <AgentChatEmpty
-                      className={cx({ 'h-full': !variables?.length })}
-                      icon={conversationInfo?.agent?.icon}
-                      name={conversationInfo?.agent?.name}
-                      // 会话建议
-                      extra={
-                        <RecommendList
-                          className="mt-16"
-                          itemClassName={cx(styles['suggest-item'])}
-                          chatSuggestList={chatSuggestList}
-                          onClick={handleMessageSend}
-                        />
-                      }
-                    />
+                    <div
+                      className={cx(
+                        'flex',
+                        'flex-col',
+                        'items-left',
+                        'w-full',
+                        { 'h-full': !variables?.length },
+                      )}
+                    >
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    </div>
                   ) : (
                     <div
                       className={cx(
