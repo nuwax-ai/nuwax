@@ -1,3 +1,4 @@
+import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -598,6 +599,14 @@ const Chat: React.FC = () => {
     };
   }, [id]);
 
+  // 当会话请求开始加载时，重置 clearLoading
+  // 实现 clearLoading → loadingConversation 的无缝衔接，避免中间渲染间隙导致 AgentChatEmpty 闪现
+  useEffect(() => {
+    if (loadingConversation && clearLoading) {
+      setClearLoading(false);
+    }
+  }, [loadingConversation, clearLoading]);
+
   // 清空会话记录并创建新会话
   const handleClear = async () => {
     setClearLoading(true);
@@ -619,7 +628,8 @@ const Chat: React.FC = () => {
       });
 
       if (res.code === SUCCESS_CODE && res.data) {
-        setClearLoading(false);
+        // 注意：这里不重置 clearLoading，让它在 useEffect([id]) 中重置
+        // 避免 setClearLoading(false) 与 history.replace 之间的渲染间隙导致 AgentChatEmpty 闪现
         setIsLoadingOtherInterface(false);
         const { id: newConversationId, agentId: newAgentId } = res.data;
 
@@ -862,7 +872,6 @@ const Chat: React.FC = () => {
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
             resolve(false);
           }
         },
@@ -1176,41 +1185,35 @@ const Chat: React.FC = () => {
                       </div>
                     )}
                   </>
-                ) : (
-                  !message &&
-                  (conversationInfo ? (
-                    // Chat记录为空
-                    <div
-                      className={cx(
-                        'flex',
-                        'flex-col',
-                        'items-left',
-                        'w-full',
-                        { 'h-full': !variables?.length },
-                      )}
-                    >
+                ) : clearLoading || loadingConversation || !conversationInfo ? (
+                  <div
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'flex-1',
+                      'h-full',
+                      'w-full',
+                    )}
+                  >
+                    <LoadingOutlined />
+                  </div>
+                ) : !message ? (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={effectiveAgent?.icon}
+                    name={effectiveAgent?.name || ''}
+                    extra={
                       <RecommendList
                         className="mt-16"
                         itemClassName={cx(styles['suggest-item'])}
                         chatSuggestList={chatSuggestList}
                         onClick={handleMessageSend}
                       />
-                    </div>
-                  ) : (
-                    <div
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'flex-1',
-                        'h-full',
-                        'w-full',
-                      )}
-                    >
-                      <LoadingOutlined />
-                    </div>
-                  ))
-                )}
+                    }
+                  />
+                ) : null}
               </div>
             </div>
 

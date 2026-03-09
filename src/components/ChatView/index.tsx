@@ -202,6 +202,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     conversationId={conversationId}
                     answer={messageInfo?.text}
                     thinking={messageInfo?.think}
+                    status={messageInfo?.status}
                   />
                 </div>
               </div>

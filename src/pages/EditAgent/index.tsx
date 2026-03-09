@@ -633,7 +633,6 @@ const EditAgent: React.FC = () => {
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
             resolve(false);
           }
         },
