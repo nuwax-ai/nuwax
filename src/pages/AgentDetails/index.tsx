@@ -1,3 +1,4 @@
+import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -435,7 +436,7 @@ const AgentDetails: React.FC = () => {
                     />
                   </>
                 ) : // Chat记录为空
-                loading || !isLoaded ? (
+                loading ? (
                   <div
                     className={cx(
                       'flex',
@@ -448,20 +449,22 @@ const AgentDetails: React.FC = () => {
                   >
                     <LoadingOutlined />
                   </div>
-                ) : (
-                  <div
-                    className={cx('flex', 'flex-col', 'items-left', 'w-full', {
-                      'h-full': !variables?.length,
-                    })}
-                  >
-                    <RecommendList
-                      className="mt-16"
-                      itemClassName={cx(styles['suggest-item'])}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                  </div>
-                )}
+                ) : isLoaded ? (
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={agentDetail?.icon}
+                    name={agentDetail?.name || ''}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                ) : null}
               </div>
             </div>
             <ChatInputHome

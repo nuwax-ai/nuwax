@@ -17,4 +17,6 @@ export interface MarkdownRendererProps {
   answer?: string;
   /** 思考内容 */
   thinking?: string;
+  /** 消息状态 */
+  status?: string;
 }
