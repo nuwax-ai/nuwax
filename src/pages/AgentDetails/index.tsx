@@ -80,9 +80,6 @@ const AgentDetails: React.FC = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
-  // 追踪是否为首次挂载，用于在路由进入时强制清理状态
-  const isFirstMount = useRef(true);
-
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
@@ -167,6 +164,7 @@ const AgentDetails: React.FC = () => {
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
+    loadingDelay: 300, // 300ms内不显示loading
     onSuccess: (result: AgentDetailDto) => {
       setLoading(false);
       setAgentDetail(result);
@@ -206,26 +204,6 @@ const AgentDetails: React.FC = () => {
   });
 
   useEffect(() => {
-    return () => {
-      console.log('组件卸载1');
-      // 仅在组件卸载（彻底离开 AgentDetails 路由）时关闭页面预览
-      hidePagePreview();
-    };
-  }, []);
-
-  useEffect(() => {
-    // 路由进入（首次挂载）时，强制隐藏预览，解决从 Chat 等页面跳过来时状态残留的问题
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      hidePagePreview();
-    } else if (pagePreviewData) {
-      // 非首次挂载（但在同一个详情页切换 ID），如果预览开着，则仅置空路径，防止残留上个 ID 的内容
-      showPagePreview({
-        ...pagePreviewData,
-        uri: '',
-      });
-    }
-
     setLoading(true);
     runDetail(agentId, true);
 
@@ -237,7 +215,7 @@ const AgentDetails: React.FC = () => {
 
     return () => {
       // 关闭页面预览
-      // hidePagePreview(); 此逻辑已外层提取到路由级挂载 Hook 中，确保 ID 切换时不销毁预览！
+      hidePagePreview();
 
       setIsLoaded(false);
       setMessageList([]);
@@ -459,20 +437,6 @@ const AgentDetails: React.FC = () => {
                       onClick={handleMessageSend}
                     />
                   </>
-                ) : // Chat记录为空
-                loading ? (
-                  <div
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      'content-center',
-                      'flex-1',
-                      'h-full',
-                      'w-full',
-                    )}
-                  >
-                    <LoadingOutlined />
-                  </div>
                 ) : isLoaded ? (
                   <AgentChatEmpty
                     className={cx({ 'h-full': !variables?.length })}
@@ -549,17 +513,26 @@ const AgentDetails: React.FC = () => {
     );
   };
 
-  return (
+  return loading ? (
+    <div
+      className={cx(
+        'flex',
+        'items-center',
+        'content-center',
+        'flex-1',
+        'h-full',
+        'w-full',
+      )}
+    >
+      <LoadingOutlined />
+    </div>
+  ) : (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
         minLeftWidth={400}
         defaultLeftWidth={
-          !pagePreviewData
-            ? 100
-            : agentDetail?.type === AgentTypeEnum.TaskAgent
-            ? 33
-            : 50
+          agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
         }
         left={agentDetail?.hideChatArea ? null : LeftContent()}
         right={
