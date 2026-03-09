@@ -1,10 +1,21 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
 .main-content {
   height: 100%;
   position: relative;
   min-width: 400px;
+  animation: fade-in 0.4s ease-out forwards;
 
   .title-box {
     background-color: transparent;
@@ -33,7 +44,7 @@
 
   .main-content-box {
     width: 100%;
-    padding: 0 @padding 0 40px;
+    padding: 0 @paddingXs 0 40px;
     overflow-y: hidden;
     height: 100%;
     flex: 1;

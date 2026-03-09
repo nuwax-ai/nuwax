@@ -104,6 +104,7 @@ const PromptView: React.FC<PromptViewProps> = ({
                   theme={theme}
                   answer={messageInfo?.text}
                   thinking={messageInfo?.think}
+                  status={messageInfo?.status}
                 />
               </div>
             </div>

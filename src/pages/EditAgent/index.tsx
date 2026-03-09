@@ -633,7 +633,6 @@ const EditAgent: React.FC = () => {
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
             resolve(false);
           }
         },
@@ -1119,6 +1118,8 @@ const EditAgent: React.FC = () => {
                               openPreviewView(devConversationId),
                           }}
                           hideDesktop={agentConfigInfo?.hideDesktop}
+                          // 静态资源文件基础路径
+                          staticFileBasePath={`/api/computer/static/${devConversationId}`}
                         />
                       </div>
                     )

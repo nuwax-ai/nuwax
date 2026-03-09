@@ -26,6 +26,10 @@ const SvgIcon: React.FC<SvgIconProps> = ({
   className,
   ...rest
 }) => {
+  if (!name) {
+    return null;
+  }
+
   const mergedStyle = {
     ...style,
     ...(!style?.fontSize && { fontSize: DEFAULT_FONT_SIZE }),

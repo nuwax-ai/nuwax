@@ -5,98 +5,67 @@
 import { apiQueryMenus } from '@/services/menuService';
 import { UserService } from '@/services/userService';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { extractAllMenuCodes, extractAllPermissions } from '@/utils/permission';
-import { useModel } from 'umi';
 
 /**
  * 菜单权限模型
  */
 export default function useMenuModel() {
-  const { initialState } = useModel('@@initialState');
   // 菜单树数据
-  const [menuTree, setMenuTree] = useState<MenuItemDto[]>(
-    initialState?.menus || [],
-  );
+  const [menuTree, setMenuTree] = useState<MenuItemDto[]>([]);
   // 权限码集合（用于快速查找）
-  const [permissionSet, setPermissionSet] = useState<Set<string>>(
-    new Set(initialState?.permissions || []),
-  );
+  const [permissionSet, setPermissionSet] = useState<Set<string>>(new Set([]));
   // 权限码集合（用于快速查找）
   const [permissionsMap, setPermissionsMap] = useState<Map<string, string[]>>(
-    initialState?.permissionsMap || new Map(),
+    new Map(),
   );
   // 菜单码集合（用于检查菜单访问权限）
-  const [menuCodeSet, setMenuCodeSet] = useState<Set<string>>(
-    new Set(initialState?.menus ? extractAllMenuCodes(initialState.menus) : []),
-  );
+  const [menuCodeSet, setMenuCodeSet] = useState<Set<string>>(new Set([]));
 
   // 加载状态
   const [loading, setLoading] = useState<boolean>(false);
-
-  // 监听 initialState 变化
-  useEffect(() => {
-    if (initialState?.menus) {
-      setMenuTree(initialState.menus);
-      setPermissionSet(new Set(initialState.permissions || []));
-      setPermissionsMap(initialState.permissionsMap || new Map());
-      setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
-    }
-  }, [initialState?.menus, initialState?.permissions]);
 
   /**
    * 加载菜单数据 (如果 data 已经存在于 initialState 则不需要重新 fetch)
    * 但为了兼容手动刷新，保留 fetch 逻辑
    */
-  const loadMenus = useCallback(
-    async (force = false) => {
-      // 如果已有数据且不强制刷新，直接返回
-      if (initialState?.menus?.length && !force) {
-        setMenuTree(initialState.menus);
-        setPermissionSet(new Set(initialState.permissions || []));
-        setPermissionsMap(initialState.permissionsMap || new Map());
-        setMenuCodeSet(new Set(extractAllMenuCodes(initialState.menus)));
+  const loadMenus = useCallback(async () => {
+    setLoading(true);
+    try {
+      const userInfo = UserService.getUserInfoFromStorage();
+      if (!userInfo?.id) {
+        setLoading(false);
         return;
       }
+      const res = await apiQueryMenus();
+      if (res.code === SUCCESS_CODE && res.data) {
+        const menus = res.data || [];
+        setMenuTree(menus);
 
-      setLoading(true);
-      try {
-        const userInfo = UserService.getUserInfoFromStorage();
-        if (!userInfo?.id) {
-          console.warn('无法获取用户信息，跳过菜单加载');
-          setLoading(false);
-          return;
-        }
-        const res = await apiQueryMenus();
-        if (res.code === SUCCESS_CODE && res.data) {
-          const menus = res.data || [];
-          setMenuTree(menus);
+        // 提取所有权限码（从 Map 中提取所有值并打平）
+        const permissionsMap: Map<string, string[]> =
+          extractAllPermissions(menus);
+        const permissions: string[] = [];
+        permissionsMap.forEach((codes) => {
+          permissions.push(...codes);
+        });
+        setPermissionSet(new Set(permissions));
+        setPermissionsMap(permissionsMap);
 
-          // 提取所有权限码（从 Map 中提取所有值并打平）
-          const permissionsMap: Map<string, string[]> =
-            extractAllPermissions(menus);
-          const permissions: string[] = [];
-          permissionsMap.forEach((codes) => {
-            permissions.push(...codes);
-          });
-          setPermissionSet(new Set(permissions));
-          setPermissionsMap(permissionsMap);
-
-          // 提取所有菜单码
-          const menuCodes = extractAllMenuCodes(menus);
-          setMenuCodeSet(new Set(menuCodes));
-        }
-      } catch (error) {
-        console.error('加载菜单数据失败:', error);
-      } finally {
-        setLoading(false);
+        // 提取所有菜单码
+        const menuCodes = extractAllMenuCodes(menus);
+        setMenuCodeSet(new Set(menuCodes));
       }
-    },
-    [initialState],
-  );
+    } catch (error) {
+      console.error('加载菜单数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /**
    * 需要单独分离的菜单 code 列表
@@ -248,6 +217,14 @@ export default function useMenuModel() {
     [findMenuByPath],
   );
 
+  // 清除菜单信息
+  const clearMenuInfo = useCallback(() => {
+    setMenuTree([]);
+    setPermissionSet(new Set([]));
+    setPermissionsMap(new Map());
+    setMenuCodeSet(new Set([]));
+  }, []);
+
   return {
     // 状态
     menuTree,
@@ -258,6 +235,7 @@ export default function useMenuModel() {
     otherMenus,
     getSecondLevelMenus,
     findMenuByPath,
+    clearMenuInfo,
     // 权限检查
     hasPermission,
     hasAnyPermission,

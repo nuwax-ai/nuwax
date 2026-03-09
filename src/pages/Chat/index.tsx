@@ -416,11 +416,12 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    if (defaultAgentDetail) {
-      setAgentDetail(defaultAgentDetail);
-      handleOpenPreview(defaultAgentDetail);
+    const targetAgent = defaultAgentDetail || conversationInfo?.agent;
+    if (targetAgent) {
+      setAgentDetail(targetAgent);
+      handleOpenPreview(targetAgent);
     }
-  }, [agentId, defaultAgentDetail]);
+  }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
@@ -581,6 +582,13 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.taskStatus]);
 
   useEffect(() => {
+    // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
+    hidePagePreview();
+
+    // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
+    // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
+    setClearLoading(false);
+
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
     // 订阅文件列表刷新事件
@@ -619,7 +627,8 @@ const Chat: React.FC = () => {
       });
 
       if (res.code === SUCCESS_CODE && res.data) {
-        setClearLoading(false);
+        // 注意：这里不重置 clearLoading，让它在 useEffect([id]) 中重置
+        // 避免 setClearLoading(false) 与 history.replace 之间的渲染间隙导致 AgentChatEmpty 闪现
         setIsLoadingOtherInterface(false);
         const { id: newConversationId, agentId: newAgentId } = res.data;
 
@@ -862,7 +871,6 @@ const Chat: React.FC = () => {
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
             resolve(false);
           }
         },
@@ -1176,42 +1184,22 @@ const Chat: React.FC = () => {
                       </div>
                     )}
                   </>
-                ) : (
-                  !message &&
-                  (conversationInfo ? (
-                    // Chat记录为空
-                    <AgentChatEmpty
-                      className={cx({ 'h-full': !variables?.length })}
-                      icon={conversationInfo?.agent?.icon}
-                      name={conversationInfo?.agent?.name}
-                      // 会话建议
-                      extra={
-                        <RecommendList
-                          className="mt-16"
-                          itemClassName={cx(styles['suggest-item'])}
-                          chatSuggestList={chatSuggestList}
-                          onClick={handleMessageSend}
-                        />
-                      }
-                    />
-                  ) : (
-                    <div
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'flex-1',
-                        'h-full',
-                        'w-full',
-                      )}
-                      style={{
-                        margin: '50px auto',
-                      }}
-                    >
-                      <LoadingOutlined />
-                    </div>
-                  ))
-                )}
+                ) : !message ? (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={effectiveAgent?.icon}
+                    name={effectiveAgent?.name || ''}
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                ) : null}
               </div>
             </div>
 
@@ -1322,6 +1310,8 @@ const Chat: React.FC = () => {
                   hideDesktop={effectiveAgent?.hideDesktop}
                   // 是否动态主题
                   isDynamicTheme={true}
+                  // 静态资源文件基础路径
+                  staticFileBasePath={`/api/computer/static/${id}`}
                 />
               </div>
             )}
@@ -1347,88 +1337,85 @@ const Chat: React.FC = () => {
     };
   }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
-  return (
-    <div className={cx('flex', 'h-full')}>
-      {/*智能体聊天和预览页面*/}
-      {loadingConversation ? (
-        // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            'flex-1',
-            'w-full',
-            'h-full',
-          )}
-        >
-          <LoadingOutlined />
-        </div>
-      ) : (
-        <div
-          style={{
-            flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
-          }}
-        >
-          <ResizableSplit
-            resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-            }
-            minLeftWidth={430}
-            defaultLeftWidth={
-              effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-            }
-            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-            left={effectiveAgent?.hideChatArea ? null : LeftContent()}
-            right={
-              effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-                ? // 会话型
-                  pagePreviewData && (
-                    <>
-                      <PagePreviewIframe
-                        pagePreviewData={pagePreviewData}
-                        showHeader={true}
-                        onClose={hidePagePreview}
-                        showCloseButton={!effectiveAgent?.hideChatArea}
-                        titleClassName={cx(styles['title-style'])}
-                        // 复制模板按钮相关 props
-                        showCopyButton={showCopyButton}
-                        allowCopy={
-                          effectiveAgent?.allowCopy === AllowCopyEnum.Yes
-                        }
-                        onCopyClick={() => setOpenCopyModal(true)}
-                        copyButtonText="复制模板"
-                        copyButtonClassName={styles['copy-btn']}
-                      />
-                      {/* 复制模板弹窗 */}
-                      {showCopyButton &&
-                        effectiveAgent &&
-                        pagePreviewData?.uri && (
-                          <CopyToSpaceComponent
-                            spaceId={effectiveAgent!.spaceId}
-                            mode={AgentComponentTypeEnum.Page}
-                            componentId={parsePageAppProjectId(
-                              pagePreviewData?.uri,
-                            )}
-                            title={''}
-                            open={openCopyModal}
-                            isTemplate={true}
-                            onSuccess={(_: any, targetSpaceId: number) => {
-                              setOpenCopyModal(false);
-                              // 跳转
-                              jumpToPageDevelop(targetSpaceId);
-                            }}
-                            onCancel={() => setOpenCopyModal(false)}
-                          />
-                        )}
-                    </>
-                  )
-                : null
-            }
-          />
-        </div>
+  return clearLoading || loadingConversation || !conversationInfo ? (
+    <div
+      className={cx(
+        'flex',
+        'items-center',
+        'content-center',
+        'flex-1',
+        'h-full',
+        'w-full',
       )}
+    >
+      <LoadingOutlined />
+    </div>
+  ) : (
+    <div className={cx('flex', 'h-full')}>
+      {/* 智能体聊天和预览页面 */}
+      <div
+        style={{
+          flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+          minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
+        }}
+      >
+        <ResizableSplit
+          resetTrigger={
+            pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+          }
+          minLeftWidth={430}
+          defaultLeftWidth={
+            effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+          }
+          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+          left={effectiveAgent?.hideChatArea ? null : LeftContent()}
+          right={
+            effectiveAgent?.type !== AgentTypeEnum.TaskAgent
+              ? // 会话型
+                pagePreviewData && (
+                  <>
+                    <PagePreviewIframe
+                      pagePreviewData={pagePreviewData}
+                      showHeader={true}
+                      onClose={hidePagePreview}
+                      showCloseButton={!effectiveAgent?.hideChatArea}
+                      titleClassName={cx(styles['title-style'])}
+                      // 复制模板按钮相关 props
+                      showCopyButton={showCopyButton}
+                      allowCopy={
+                        effectiveAgent?.allowCopy === AllowCopyEnum.Yes
+                      }
+                      onCopyClick={() => setOpenCopyModal(true)}
+                      copyButtonText="复制模板"
+                      copyButtonClassName={styles['copy-btn']}
+                    />
+                    {/* 复制模板弹窗 */}
+                    {showCopyButton &&
+                      effectiveAgent &&
+                      pagePreviewData?.uri && (
+                        <CopyToSpaceComponent
+                          spaceId={effectiveAgent!.spaceId}
+                          mode={AgentComponentTypeEnum.Page}
+                          componentId={parsePageAppProjectId(
+                            pagePreviewData?.uri,
+                          )}
+                          title={''}
+                          open={openCopyModal}
+                          isTemplate={true}
+                          onSuccess={(_: any, targetSpaceId: number) => {
+                            setOpenCopyModal(false);
+                            // 跳转
+                            jumpToPageDevelop(targetSpaceId);
+                          }}
+                          onCancel={() => setOpenCopyModal(false)}
+                        />
+                      )}
+                  </>
+                )
+              : null
+          }
+        />
+      </div>
       {/* AgentSidebar - 只在文件树隐藏时显示 */}
       {!isFileTreeVisible && (
         <AgentSidebar

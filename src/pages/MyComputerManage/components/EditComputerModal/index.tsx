@@ -82,10 +82,16 @@ const EditComputerModal: React.FC<EditComputerModalProps> = ({
           tooltip="每个Agent会话占用数百兆内存，请根据电脑实际的内存进行调整，超过配置的数量后，系统会自动停止未再使用的会话（再次向已停止的会话发送消息时会重新激活）"
           rules={[
             { required: true, message: '请输入最大存活Agent会话数量' },
-            { type: 'number', min: 1, message: '必须大于0' },
+            {
+              type: 'number',
+              min: 1,
+              max: 99999999,
+              message: '取值范围为1～99999999',
+            },
           ]}
           fieldProps={{
             min: 1,
+            max: 99999999,
             precision: 0,
           }}
         />

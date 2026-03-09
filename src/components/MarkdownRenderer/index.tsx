@@ -11,6 +11,7 @@ import type { MarkdownRendererProps } from '@/types/interfaces/markdownRender';
 import mermaidPlugin, {
   mermaidConfig,
 } from '@/plugins/ds-markdown-mermaid-plugin';
+import { MessageStatusEnum } from '@/types/enums/common';
 import DsMarkdown, { ConfigProvider, MarkdownCMD } from 'ds-markdown'; // 新增：引入ds-markdown
 import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
@@ -37,10 +38,13 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     theme = 'light',
     answer = '',
     thinking = '',
+    status,
   }: MarkdownRendererProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
-    const isThinkingFinished = !!answer && answer.trim() !== '';
+    const isThinkingFinished =
+      status === MessageStatusEnum.Complete ||
+      (!!answer && answer.trim() !== '');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
@@ -103,7 +107,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     return (
       prevProps.id === nextProps.id &&
       prevProps.thinking === nextProps.thinking &&
-      prevProps.answer === nextProps.answer
+      prevProps.answer === nextProps.answer &&
+      prevProps.status === nextProps.status
     );
   },
 );

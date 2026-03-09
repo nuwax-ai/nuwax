@@ -2,10 +2,21 @@
 @import '@/styles/token';
 @import '@/styles/scrollbar.less';
 
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
 .main-content {
   height: 100%;
   position: relative;
   min-width: 400px;
+  animation: fade-in 0.4s ease-out forwards;
 
   .title-box {
     background-color: transparent;
@@ -152,7 +163,8 @@
     /* 文件树侧边栏样式 */
     .file-tree-sidebar {
       flex: 1;
-      position: sticky;
+      // position: sticky;
+      position: relative;
       height: 100%;
       padding-bottom: 20px;
       margin: 0;
