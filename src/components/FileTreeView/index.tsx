@@ -110,6 +110,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       idleDetection,
       hideDesktop = 0,
       isDynamicTheme = false,
+      // 静态资源文件基础路径
+      staticFileBasePath,
     },
     ref,
   ) => {
@@ -1511,6 +1513,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             key={filePreviewKey}
             src={filePreviewUrl}
             fileType={fileTypeForPreview}
+            staticFileBasePath={staticFileBasePath}
           />
         );
       }
