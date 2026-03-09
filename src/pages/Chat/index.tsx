@@ -138,6 +138,9 @@ const Chat: React.FC = () => {
     }
   }, [history.action, location.key]);
 
+  // 追踪是否为首次挂载，用于在路由进入时强制清理状态
+  const isFirstMount = useRef(true);
+
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
     useAgentDetails();
@@ -524,6 +527,10 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     addBaseTarget();
+    return () => {
+      // 仅在组件卸载（彻底离开 Chat 路由）时关闭页面预览
+      hidePagePreview();
+    };
   }, []);
 
   useEffect(() => {
@@ -582,9 +589,12 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.taskStatus]);
 
   useEffect(() => {
-    // 页面加载或切换会话时优化：
-    // 如果当前已有智能体详情，直接尝试恢复到首页，避免先置空 "" 再置回 Home 导致的二次闪烁
-    if (pagePreviewData) {
+    // 路由进入（首次挂载）时，强制隐藏预览，解决跨路由跳转时的状态残留问题
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      hidePagePreview();
+    } else if (pagePreviewData) {
+      // 非首次挂载（但在同一个聊天页面切换会话），执行智能重置逻辑
       const targetAgent = agentDetail || defaultAgentDetail;
       if (
         targetAgent &&
