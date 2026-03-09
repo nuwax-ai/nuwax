@@ -9,7 +9,6 @@
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
-import { SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import type { MenuItemDto } from '@/types/interfaces/menu';
@@ -33,12 +32,12 @@ import UserOperateArea from './UserOperateArea';
 // 复用原有样式
 import { PATH_URL } from '@/constants/home.constants';
 import useConversation from '@/hooks/useConversation';
-import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import HomeSection from './HomeSection';
 import styles from './index.less';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
+import { handleOpenUrl } from './utils';
 
 const cx = classNames.bind(styles);
 
@@ -288,7 +287,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       let pathName;
 
-      if (pathname === '/open-iframe-page') {
+      if (pathname.startsWith('/open-iframe-page')) {
         pathName = decodeURIComponent(location.search?.split('?url=')[1] || '');
       } else {
         pathName = pathname;
@@ -352,24 +351,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   );
 
   /**
-   * 打开URL
-   * @param path 路径
-   * @param openType 打开方式
-   */
-  const handleOpenUrl = (
-    path: string,
-    openType: OpenTypeEnum = OpenTypeEnum.CurrentTab,
-  ) => {
-    if (openType === OpenTypeEnum.NewTab) {
-      window.open(path, '_blank');
-      return;
-    }
-    history.push(`/open-iframe-page?url=${encodeURIComponent(path)}`, {
-      _t: Date.now(),
-    });
-  };
-
-  /**
    * 点击一级菜单
    */
   const handleTabClick = useCallback(
@@ -384,7 +365,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
         if (menu.path) {
           if (menu.path.includes('http')) {
-            handleOpenUrl(menu.path, menu?.openType);
+            handleOpenUrl(menu);
           } else {
             history.push(menu.path);
           }
@@ -403,7 +384,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       setActiveTab(menu.code || '');
       // http开头的路径，直接打开
       if (menu.path?.includes('http')) {
-        handleOpenUrl(menu.path, menu?.openType);
+        handleOpenUrl(menu);
         return;
       }
 
@@ -440,7 +421,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         if (firstPathMenu) {
           // http开头的路径，直接打开
           if (firstPathMenu.path?.includes('http')) {
-            handleOpenUrl(firstPathMenu.path, firstPathMenu?.openType);
+            handleOpenUrl(firstPathMenu);
             return;
           }
           // 其他路径，跳转路由
@@ -467,7 +448,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       isClickMenu.current = false;
       switch (code) {
         case 'documents':
-          handleOpenUrl(menu.path || SITE_DOCUMENT_URL, menu?.openType);
+          handleOpenUrl(menu);
           break;
         case 'notification':
           setOpenMessage(true);
