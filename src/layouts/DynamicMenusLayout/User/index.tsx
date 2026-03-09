@@ -17,6 +17,8 @@ const cx = classNames.bind(styles);
 const User: React.FC = () => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const { userInfo } = useModel('userInfo');
+  // 清除菜单信息
+  const { clearMenuInfo } = useModel('menuModel');
 
   let navigate = useNavigate();
   const { run } = useRequest(apiLogout, {
@@ -24,6 +26,8 @@ const User: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       localStorage.clear();
+      // 清除菜单信息
+      clearMenuInfo();
       navigate('/login', { replace: true });
     },
   });

@@ -168,6 +168,57 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   );
 
   /**
+   * 递归根据 code 查找菜单，并返回其第一级菜单的 code
+   * @param menuCode 需要匹配的菜单 code（可能是任意层级）
+   * @returns 匹配菜单所属的第一级菜单 code，未找到返回 null
+   */
+  const findFirstLevelCodeByMenuCode = useCallback(
+    (menuCode: string): string | null => {
+      if (!menuCode || !firstLevelMenus?.length) return null;
+
+      /**
+       * 深度优先遍历查找匹配的菜单
+       * @param menus 当前遍历的菜单列表
+       * @param firstLevelCode 当前遍历所在的一级菜单 code
+       */
+      const dfs = (
+        menus: MenuItemDto[],
+        firstLevelCode: string,
+      ): string | null => {
+        for (const menu of menus) {
+          // 命中任意层级的菜单，返回对应的一级菜单 code
+          if (menu.code === menuCode) {
+            return firstLevelCode;
+          }
+
+          if (menu.children?.length) {
+            const found = dfs(menu.children, firstLevelCode);
+            if (found) {
+              return found;
+            }
+          }
+        }
+        return null;
+      };
+
+      // 遍历所有一级菜单，从每个一级菜单开始向下递归查找
+      for (const topMenu of firstLevelMenus) {
+        const result = dfs(topMenu.children || [], topMenu.code);
+        // 也要判断一级菜单本身是否就是要找的 code
+        if (topMenu.code === menuCode) {
+          return topMenu.code;
+        }
+        if (result) {
+          return result;
+        }
+      }
+
+      return null;
+    },
+    [firstLevelMenus],
+  );
+
+  /**
    * 递归查找匹配路径的菜单，并返回其第一级父菜单的 code
    * @param menus 菜单列表
    * @param pathname 当前路径
@@ -283,21 +334,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 默认选中首页
       setActiveTab('homepage');
     } else {
-      const pathname = location.pathname;
-
-      let pathName;
-
-      if (pathname.startsWith('/open-iframe-page')) {
-        pathName = decodeURIComponent(location.search?.split('?url=')[1] || '');
+      // 获取菜单码
+      const menuCode = params?.menuCode || location.state?.menuCode;
+      // 根据菜单码或路径获取第一级菜单的 code
+      let firstLevelCode = null;
+      // 如果菜单码存在，则根据菜单码获取第一级菜单的 code
+      if (menuCode) {
+        firstLevelCode = findFirstLevelCodeByMenuCode(menuCode);
       } else {
-        pathName = pathname;
+        // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
+        firstLevelCode = findFirstLevelCodeByPath(
+          firstLevelMenus,
+          location.pathname,
+        );
       }
-
-      // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
-      const firstLevelCode = findFirstLevelCodeByPath(
-        firstLevelMenus,
-        pathName,
-      );
 
       if (firstLevelCode && firstLevelCode !== 'new_conversation') {
         setActiveTab(firstLevelCode);
@@ -396,7 +446,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
         // 防止系统设置中工作空间没有设置路径，导致跳转失败
         const url = menu.path || '/space';
-        history.push(url, { _t: Date.now() });
+        history.push(url, { _t: Date.now(), menuCode: menu.code });
         return;
       }
 
@@ -407,14 +457,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           const pathUrlObj = JSON.parse(pathUrl);
           const pathUrlValue = pathUrlObj[menu.code];
           if (pathUrlValue && !pathUrlValue.includes(':')) {
-            history.push(pathUrlValue, { _t: Date.now() });
+            history.push(pathUrlValue, { _t: Date.now(), menuCode: menu.code });
             return;
           }
         }
       } catch {}
 
       if (menu.path) {
-        history.push(menu.path, { _t: Date.now() });
+        history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
@@ -425,7 +475,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             return;
           }
           // 其他路径，跳转路由
-          history.push(firstPathMenu.path, { _t: Date.now() });
+          history.push(firstPathMenu.path, {
+            _t: Date.now(),
+            menuCode: firstPathMenu.code,
+          });
         }
       }
     },
@@ -456,7 +509,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         case 'my_computer':
           {
             setActiveTab(code || '');
-            history.push('/my-computer-manage', { _t: Date.now() });
+            history.push('/my-computer-manage', {
+              _t: Date.now(),
+              menuCode: menu.code,
+            });
           }
           break;
       }

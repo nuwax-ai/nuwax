@@ -260,7 +260,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     updatePathUrlToLocalStorage(parentCode, resolvedPath);
 
     // 无子菜单，直接路由跳转
-    history.push(resolvedPath, { _t: Date.now() });
+    history.push(resolvedPath, { _t: Date.now(), menuCode: menu.code });
   };
 
   /**
