@@ -1,13 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="ie=edge">
-<link rel="stylesheet" href="/umi.93c65ebb.css">
-<script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
-<script type="text/javascript">
-        (function () {
+  <link rel="stylesheet" href="/m/assets/uni.16bf15a9.css">
+
+	<meta charset="UTF-8" />
+	<script>
+		var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') ||
+			CSS.supports('top: constant(a)'))
+		document.write(
+			'<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
+			(coverSupport ? ', viewport-fit=cover' : '') + '" />')
+	</script>
+	<title>智能体平台</title>
+	<!-- #ifdef H5 || WEB -->
+	<!--2.阿里云验证码-集成主JS-->
+    <script defer type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+	<!-- #endif -->
+	<!--preload-links-->
+	<!--app-context-->
+	<script>
+			(function () {
 				if (typeof window === 'undefined') {
 					return;
 				}
@@ -101,11 +114,13 @@
 					return;
 				}
 			})();
-      </script>
-<script src="/preload_helper.5849565d.js"></script>
+	</script>
+  <script type="module" crossorigin src="/m/assets/index-Dm0Em7HY.js"></script>
+  <link rel="stylesheet" crossorigin href="/m/assets/index-znRZdJ83.css">
 </head>
+
 <body>
-<div id="root"></div>
-<script src="/umi.64a2dd76.js"></script>
+	<div id="app"><!--app-html--></div>
 </body>
+
 </html>

@@ -1,0 +1,333 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 5006434 */
+  src: url('@/static/iconfont/iconfont.ttf');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-ShareAltOutlined:before {
+  content: "\e655";
+}
+
+.icon-CloseSquareOutlined:before {
+  content: "\e6da";
+}
+
+.icon-BorderOutlined:before {
+  content: "\e652";
+}
+
+.icon-HourglassOutlined:before {
+  content: "\e653";
+}
+
+.icon-CheckSquareOutlined:before {
+  content: "\e654";
+}
+
+.icon-waring:before {
+  content: "\e651";
+}
+
+.icon-skill:before {
+  content: "\e64f";
+}
+
+.icon-task:before {
+  content: "\e650";
+}
+
+.icon-a-Filetext:before {
+  content: "\e64e";
+}
+
+.icon-Calendar:before {
+  content: "\e649";
+}
+
+.icon-attention-fill:before {
+  content: "\e64a";
+}
+
+.icon-a-Arrowdown:before {
+  content: "\e64b";
+}
+
+.icon-bar-line-chart:before {
+  content: "\e64c";
+}
+
+.icon-a-Arrowup:before {
+  content: "\e64d";
+}
+
+.icon-keyboard:before {
+  content: "\e638";
+}
+
+.icon-a-Chevronleft:before {
+  content: "\e639";
+}
+
+.icon-eye-close:before {
+  content: "\e63a";
+}
+
+.icon-flow:before {
+  content: "\e63b";
+}
+
+.icon-cube:before {
+  content: "\e63c";
+}
+
+.icon-book:before {
+  content: "\e63d";
+}
+
+.icon-Brush:before {
+  content: "\e63e";
+}
+
+.icon-a-Chevronright:before {
+  content: "\e63f";
+}
+
+.icon-bulb:before {
+  content: "\e640";
+}
+
+.icon-Camera:before {
+  content: "\e641";
+}
+
+.icon-Edit:before {
+  content: "\e642";
+}
+
+.icon-Exit:before {
+  content: "\e643";
+}
+
+.icon-Check-fill:before {
+  content: "\e644";
+}
+
+.icon-Clock:before {
+  content: "\e645";
+}
+
+.icon-attention:before {
+  content: "\e646";
+}
+
+.icon-a-Chevrondown:before {
+  content: "\e647";
+}
+
+.icon-branch:before {
+  content: "\e648";
+}
+
+.icon-Image:before {
+  content: "\e627";
+}
+
+.icon-Loader:before {
+  content: "\e628";
+}
+
+.icon-Plus:before {
+  content: "\e629";
+}
+
+.icon-Search:before {
+  content: "\e62a";
+}
+
+.icon-Mic:before {
+  content: "\e62b";
+}
+
+.icon-More:before {
+  content: "\e62c";
+}
+
+.icon-Menu:before {
+  content: "\e62d";
+}
+
+.icon-Folder:before {
+  content: "\e62e";
+}
+
+.icon-layout:before {
+  content: "\e62f";
+}
+
+.icon-List:before {
+  content: "\e630";
+}
+
+.icon-Brain:before {
+  content: "\e608";
+}
+
+.icon-Heart:before {
+  content: "\e631";
+}
+
+.icon-a-Chevronup:before {
+  content: "\e632";
+}
+
+.icon-Info:before {
+  content: "\e633";
+}
+
+.icon-Check:before {
+  content: "\e634";
+}
+
+.icon-Grid:before {
+  content: "\e635";
+}
+
+.icon-a-Checkcircle:before {
+  content: "\e636";
+}
+
+.icon-Copy:before {
+  content: "\e637";
+}
+
+.icon-voice-1:before {
+  content: "\e615";
+}
+
+.icon-Star-fill:before {
+  content: "\e616";
+}
+
+.icon-eye-open:before {
+  content: "\e617";
+}
+
+.icon-a-trashcan:before {
+  content: "\e618";
+}
+
+.icon-Globe:before {
+  content: "\e619";
+}
+
+.icon-Share:before {
+  content: "\e61a";
+}
+
+.icon-stars:before {
+  content: "\e61b";
+}
+
+.icon-voice:before {
+  content: "\e61c";
+}
+
+.icon-stop:before {
+  content: "\e61d";
+}
+
+.icon-User:before {
+  content: "\e61e";
+}
+
+.icon-stop-circle:before {
+  content: "\e61f";
+}
+
+.icon-Qrcode:before {
+  content: "\e620";
+}
+
+.icon-notification-box:before {
+  content: "\e621";
+}
+
+.icon-a-Pluscircle:before {
+  content: "\e622";
+}
+
+.icon-message-add:before {
+  content: "\e623";
+}
+
+.icon-Sidebar:before {
+  content: "\e624";
+}
+
+.icon-message:before {
+  content: "\e625";
+}
+
+.icon-send:before {
+  content: "\e626";
+}
+
+.icon-Puzzle:before {
+  content: "\e60e";
+}
+
+.icon-Home:before {
+  content: "\e609";
+}
+
+.icon-settings:before {
+  content: "\e60c";
+}
+
+.icon-bell:before {
+  content: "\e607";
+}
+
+.icon-a-Xcircle:before {
+  content: "\e60d";
+}
+
+.icon-X:before {
+  content: "\e60f";
+}
+
+.icon-Link:before {
+  content: "\e60a";
+}
+
+.icon-seal:before {
+  content: "\e60b";
+}
+
+.icon-Star:before {
+  content: "\e610";
+}
+
+.icon-wrench:before {
+  content: "\e611";
+}
+
+.icon-a-zoomin:before {
+  content: "\e612";
+}
+
+.icon-a-zoomout:before {
+  content: "\e613";
+}
+
+.icon-a-Xcircle-fill:before {
+  content: "\e614";
+}
+
