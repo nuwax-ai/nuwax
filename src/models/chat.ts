@@ -110,8 +110,12 @@ export default () => {
   );
 
   // 显示页面预览
-  const showPagePreview = useCallback((data: PagePreviewData) => {
-    setPagePreviewData(data);
+  const showPagePreview = useCallback((data: PagePreviewData | null) => {
+    setPagePreviewData((prev) => {
+      // 深度比较，防止相同数据的冗余更新触发 iframe 刷新
+      if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+      return data;
+    });
   }, []);
 
   // 隐藏页面预览

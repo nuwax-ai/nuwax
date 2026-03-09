@@ -582,12 +582,28 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.taskStatus]);
 
   useEffect(() => {
-    // 页面加载后判断 pagePreviewData 是否存在值，如果存在则将 uri 置为空字符串，避免显示旧数据
+    // 页面加载或切换会话时优化：
+    // 如果当前已有智能体详情，直接尝试恢复到首页，避免先置空 "" 再置回 Home 导致的二次闪烁
     if (pagePreviewData) {
-      showPagePreview({
-        ...pagePreviewData,
-        uri: '',
-      });
+      const targetAgent = agentDetail || defaultAgentDetail;
+      if (
+        targetAgent &&
+        targetAgent.pageHomeIndex &&
+        targetAgent.expandPageArea
+      ) {
+        const homeUri =
+          (process.env.BASE_URL || '') + targetAgent.pageHomeIndex;
+        // 只有当当前 URI 不是首页时才重置，且直接重置到首页
+        if (pagePreviewData.uri !== homeUri) {
+          handleOpenPreview(targetAgent);
+        }
+      } else {
+        // 彻底没有详情或未开启预览时，确保置空防止残留旧数据
+        showPagePreview({
+          ...pagePreviewData,
+          uri: '',
+        });
+      }
     }
 
     // 监听新消息事件
