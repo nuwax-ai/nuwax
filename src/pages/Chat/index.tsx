@@ -1204,9 +1204,6 @@ const Chat: React.FC = () => {
                         'h-full',
                         'w-full',
                       )}
-                      style={{
-                        margin: '50px auto',
-                      }}
                     >
                       <LoadingOutlined />
                     </div>
@@ -1349,86 +1346,70 @@ const Chat: React.FC = () => {
 
   return (
     <div className={cx('flex', 'h-full')}>
-      {/*智能体聊天和预览页面*/}
-      {loadingConversation ? (
-        // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-center',
-            'flex-1',
-            'w-full',
-            'h-full',
-          )}
-        >
-          <LoadingOutlined />
-        </div>
-      ) : (
-        <div
-          style={{
-            flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
-          }}
-        >
-          <ResizableSplit
-            resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-            }
-            minLeftWidth={430}
-            defaultLeftWidth={
-              effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-            }
-            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-            left={effectiveAgent?.hideChatArea ? null : LeftContent()}
-            right={
-              effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-                ? // 会话型
-                  pagePreviewData && (
-                    <>
-                      <PagePreviewIframe
-                        pagePreviewData={pagePreviewData}
-                        showHeader={true}
-                        onClose={hidePagePreview}
-                        showCloseButton={!effectiveAgent?.hideChatArea}
-                        titleClassName={cx(styles['title-style'])}
-                        // 复制模板按钮相关 props
-                        showCopyButton={showCopyButton}
-                        allowCopy={
-                          effectiveAgent?.allowCopy === AllowCopyEnum.Yes
-                        }
-                        onCopyClick={() => setOpenCopyModal(true)}
-                        copyButtonText="复制模板"
-                        copyButtonClassName={styles['copy-btn']}
-                      />
-                      {/* 复制模板弹窗 */}
-                      {showCopyButton &&
-                        effectiveAgent &&
-                        pagePreviewData?.uri && (
-                          <CopyToSpaceComponent
-                            spaceId={effectiveAgent!.spaceId}
-                            mode={AgentComponentTypeEnum.Page}
-                            componentId={parsePageAppProjectId(
-                              pagePreviewData?.uri,
-                            )}
-                            title={''}
-                            open={openCopyModal}
-                            isTemplate={true}
-                            onSuccess={(_: any, targetSpaceId: number) => {
-                              setOpenCopyModal(false);
-                              // 跳转
-                              jumpToPageDevelop(targetSpaceId);
-                            }}
-                            onCancel={() => setOpenCopyModal(false)}
-                          />
-                        )}
-                    </>
-                  )
-                : null
-            }
-          />
-        </div>
-      )}
+      {/* 智能体聊天和预览页面 */}
+      <div
+        style={{
+          flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+          minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
+        }}
+      >
+        <ResizableSplit
+          resetTrigger={
+            pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+          }
+          minLeftWidth={430}
+          defaultLeftWidth={
+            effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+          }
+          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+          left={effectiveAgent?.hideChatArea ? null : LeftContent()}
+          right={
+            effectiveAgent?.type !== AgentTypeEnum.TaskAgent
+              ? // 会话型
+                pagePreviewData && (
+                  <>
+                    <PagePreviewIframe
+                      pagePreviewData={pagePreviewData}
+                      showHeader={true}
+                      onClose={hidePagePreview}
+                      showCloseButton={!effectiveAgent?.hideChatArea}
+                      titleClassName={cx(styles['title-style'])}
+                      // 复制模板按钮相关 props
+                      showCopyButton={showCopyButton}
+                      allowCopy={
+                        effectiveAgent?.allowCopy === AllowCopyEnum.Yes
+                      }
+                      onCopyClick={() => setOpenCopyModal(true)}
+                      copyButtonText="复制模板"
+                      copyButtonClassName={styles['copy-btn']}
+                    />
+                    {/* 复制模板弹窗 */}
+                    {showCopyButton &&
+                      effectiveAgent &&
+                      pagePreviewData?.uri && (
+                        <CopyToSpaceComponent
+                          spaceId={effectiveAgent!.spaceId}
+                          mode={AgentComponentTypeEnum.Page}
+                          componentId={parsePageAppProjectId(
+                            pagePreviewData?.uri,
+                          )}
+                          title={''}
+                          open={openCopyModal}
+                          isTemplate={true}
+                          onSuccess={(_: any, targetSpaceId: number) => {
+                            setOpenCopyModal(false);
+                            // 跳转
+                            jumpToPageDevelop(targetSpaceId);
+                          }}
+                          onCancel={() => setOpenCopyModal(false)}
+                        />
+                      )}
+                  </>
+                )
+              : null
+          }
+        />
+      </div>
       {/* AgentSidebar - 只在文件树隐藏时显示 */}
       {!isFileTreeVisible && (
         <AgentSidebar
