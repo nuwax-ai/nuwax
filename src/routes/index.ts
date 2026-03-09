@@ -27,7 +27,7 @@ const routes = [
     routes: [
       { path: '/', component: '@/pages/Index' },
       { path: '/home', component: '@/pages/Home' },
-      { path: '/open-iframe-page', component: '@/pages/OpenIframePage' },
+      { path: '/open-iframe-page/:code', component: '@/pages/OpenIframePage' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
