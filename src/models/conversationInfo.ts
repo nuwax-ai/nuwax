@@ -607,6 +607,7 @@ export default () => {
   } = useRequest(apiAgentConversation, {
     manual: true,
     debounceWait: 300,
+    loadingDelay: 300, // 300ms内不显示loading
     onSuccess: (result: RequestResponse<ConversationInfo>) => {
       setIsLoadingConversation(true);
       const { data } = result;

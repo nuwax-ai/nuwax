@@ -164,6 +164,7 @@ const AgentDetails: React.FC = () => {
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
+    loadingDelay: 300, // 300ms内不显示loading
     onSuccess: (result: AgentDetailDto) => {
       setLoading(false);
       setAgentDetail(result);
