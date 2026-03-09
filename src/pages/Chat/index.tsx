@@ -582,6 +582,14 @@ const Chat: React.FC = () => {
   }, [conversationInfo?.taskStatus]);
 
   useEffect(() => {
+    // 页面加载后判断 pagePreviewData 是否存在值，如果存在则将 uri 置为空字符串，避免显示旧数据
+    if (pagePreviewData) {
+      showPagePreview({
+        ...pagePreviewData,
+        uri: '',
+      });
+    }
+
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
     // 订阅文件列表刷新事件
