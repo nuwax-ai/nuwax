@@ -1186,19 +1186,23 @@ const Chat: React.FC = () => {
                   </>
                 ) : !message ? (
                   // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={effectiveAgent?.icon}
-                    name={effectiveAgent?.name || ''}
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
-                    }
-                  />
+                  clearLoading ||
+                  loadingConversation ||
+                  !conversationInfo ? null : (
+                    <AgentChatEmpty
+                      className={cx({ 'h-full': !variables?.length })}
+                      icon={effectiveAgent?.icon}
+                      name={effectiveAgent?.name || ''}
+                      extra={
+                        <RecommendList
+                          className="mt-16"
+                          itemClassName={cx(styles['suggest-item'])}
+                          chatSuggestList={chatSuggestList}
+                          onClick={handleMessageSend}
+                        />
+                      }
+                    />
+                  )
                 ) : null}
               </div>
             </div>
@@ -1337,7 +1341,7 @@ const Chat: React.FC = () => {
     };
   }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
-  return clearLoading || loadingConversation || !conversationInfo ? (
+  return loadingConversation || !conversationInfo ? (
     <div
       className={cx(
         'flex',
@@ -1370,8 +1374,17 @@ const Chat: React.FC = () => {
           // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
           left={effectiveAgent?.hideChatArea ? null : LeftContent()}
           right={
-            effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-              ? // 会话型
+            effectiveAgent?.type !== AgentTypeEnum.TaskAgent ? (
+              // 会话型
+              clearLoading || loadingConversation || !conversationInfo ? (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: '#fff',
+                  }}
+                ></div>
+              ) : (
                 pagePreviewData && (
                   <>
                     <PagePreviewIframe
@@ -1412,7 +1425,8 @@ const Chat: React.FC = () => {
                       )}
                   </>
                 )
-              : null
+              )
+            ) : null
           }
         />
       </div>
