@@ -415,11 +415,12 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    if (defaultAgentDetail) {
-      setAgentDetail(defaultAgentDetail);
-      handleOpenPreview(defaultAgentDetail);
+    const targetAgent = defaultAgentDetail || conversationInfo?.agent;
+    if (targetAgent) {
+      setAgentDetail(targetAgent);
+      handleOpenPreview(targetAgent);
     }
-  }, [agentId, defaultAgentDetail]);
+  }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
@@ -593,7 +594,7 @@ const Chat: React.FC = () => {
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
       setSelectedComponentList([]);
-      hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
+      // hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
     };
   }, [id]);
 
