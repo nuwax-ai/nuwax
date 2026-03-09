@@ -252,7 +252,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     const resolvedPath = resolveDynamicPath(path);
 
     if (!resolvedPath) {
-      message.warning('处理路径URL路径跳转失败，请刷新页面重试');
+      message.warning('处理路径跳转失败，请检查菜单路径是否存在');
       return;
     }
 
