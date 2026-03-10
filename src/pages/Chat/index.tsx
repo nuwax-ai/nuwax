@@ -463,6 +463,9 @@ const Chat: React.FC = () => {
     handleLoadMoreMessage,
   ]);
 
+  // 异步查询会话加载状态
+  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
+
   useEffect(() => {
     if (id) {
       setIsLoadingConversation(false);
@@ -471,7 +474,15 @@ const Chat: React.FC = () => {
 
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        const { data } = await runAsync(id);
+        // const { data } = await runAsync(id);
+        let data = null;
+        try {
+          setLoadingAsync(true);
+          const { data: _data } = await runAsync(id);
+          data = _data;
+        } finally {
+          setLoadingAsync(false);
+        }
         // 会话消息列表
         const list = data?.messageList || [];
         const bigText = list
@@ -640,7 +651,7 @@ const Chat: React.FC = () => {
           message: '',
           files: [],
           infos,
-          defaultAgentDetail: effectiveAgent || defaultAgentDetail,
+          // defaultAgentDetail: effectiveAgent || defaultAgentDetail,
           firstVariableParams: null,
           selectedComputerId: null, // 显式清除 location.state 中的 selectedComputerId
         });
@@ -1337,7 +1348,10 @@ const Chat: React.FC = () => {
     };
   }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
-  return clearLoading || loadingConversation || !conversationInfo ? (
+  return clearLoading ||
+    loadingConversation ||
+    loadingAsync ||
+    !conversationInfo ? (
     <div
       className={cx(
         'flex',
