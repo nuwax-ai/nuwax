@@ -12,7 +12,7 @@ import type {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { MessageStatusEnum } from '@/types/enums/common';
 import { ProcessingEnum } from '@/types/enums/common';
-import type { OpenCloseEnum } from '@/types/enums/space';
+import type { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentManualComponentInfo,
@@ -274,6 +274,7 @@ export interface ConversationInfo {
   variables?: Record<string, string | number> | null;
   // Agent信息，已发布过的agent才有此信息
   agent: {
+    type: AgentTypeEnum;
     spaceId: number;
     // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,Knowledge
     targetType: string;
