@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能体电脑分享</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      overflow: hidden;
+    }
+
+    .container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: #fff;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .header-info {
+      font-size: 14px;
+      color: #8c8c8c;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      position: relative;
+    }
+
+    .desktop-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #f0f0f0;
+      border-top-color: #1890ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: #595959;
+    }
+
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 48px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
+    }
+
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background-color: #fff2e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #8c8c8c;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .retry-button {
+      padding: 8px 24px;
+      background-color: #1890ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .retry-button:hover {
+      background-color: #40a9ff;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .expire-info {
+      display: inline-block;
+      padding: 4px 12px;
+      background-color: #f0f7ff;
+      color: #1890ff;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <div class="header-title">🖥️ 智能体电脑分享</div>
+      <div class="header-info">
+        <span class="expire-info" id="expireInfo"></span>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 加载中 -->
+      <div class="loading-container" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">正在加载智能体电脑...</div>
+      </div>
+
+      <!-- 错误提示 -->
+      <div class="error-container hidden" id="error">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">加载失败</div>
+        <div class="error-message" id="errorMessage">
+          无法加载智能体电脑，请稍后重试
+        </div>
+        <button class="retry-button" onclick="location.reload()">
+          重新加载
+        </button>
+      </div>
+
+      <!-- 智能体电脑 iframe -->
+      <iframe 
+        id="desktopFrame" 
+        class="desktop-frame hidden" 
+        allowfullscreen 
+        sandbox="allow-downloads allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox"></iframe>
+      </div>
+  </div>≈
+
+  <script>
+    // 获取 URL 参数
+    function getQueryParams() {
+      const params = {};
+      const queryString = window.location.search.substring(1);
+      const pairs = queryString.split('&');
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i].split('=');
+        params[decodeURIComponent(pair[0])] = decodeURIComponent(
+          pair[1] || ''
+        );
+      }
+      return params;
+    }
+
+    // 显示错误
+    function showError(message) {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const errorMessage = document.getElementById('errorMessage');
+
+      loading.classList.add('hidden');
+      error.classList.remove('hidden');
+      errorMessage.textContent = message || '加载失败，请稍后重试';
+    }
+
+    // 显示桌面
+    function showDesktop(url) {
+      const loading = document.getElementById('loading');
+      const desktopFrame = document.getElementById('desktopFrame');
+
+      loading.classList.add('hidden');
+      desktopFrame.classList.remove('hidden');
+      desktopFrame.src = url;
+    }
+
+    // 格式化剩余时间
+    function formatTimeRemaining(seconds) {
+      if (seconds <= 0) return '已失效';
+
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+
+      if (hours > 0) {
+        return `${hours}小时${minutes}分钟后失效`;
+      } else if (minutes > 0) {
+        return `${minutes}分钟后失效`;
+      } else {
+        return `${seconds}秒后失效`;
+      }
+    }
+
+    // 更新过期时间显示
+    function updateExpireInfo(expireTime) {
+      const expireInfo = document.getElementById('expireInfo');
+      if (!expireTime) {
+        expireInfo.style.display = 'none';
+        return;
+      }
+
+      const updateCountdown = () => {
+        const now = Date.now();
+        const remaining = Math.floor((expireTime - now) / 1000);
+
+        if (remaining <= 0) {
+          expireInfo.textContent = '链接已失效';
+          expireInfo.style.backgroundColor = '#fff1f0';
+          expireInfo.style.color = '#cf1322';
+          showError('分享链接已失效，请重新生成分享链接');
+          return;
+        }
+
+        expireInfo.textContent = formatTimeRemaining(remaining);
+
+        // 每秒更新一次
+        setTimeout(updateCountdown, 1000);
+      };
+
+      updateCountdown();
+    }
+
+    // 加载智能体电脑
+    async function loadDesktop() {
+      try {
+        // 获取 URL 参数
+        const params = getQueryParams();
+        const sk = params.sk || '';
+        const isDev = params.isDev || 'false';
+
+        if (!sk) {
+          showError('缺少分享密钥，请检查链接是否正确');
+          return;
+        }
+
+        // 判断是否开发环境
+        const baseUrl =
+          isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
+
+        // 调用接口获取分享详情
+        const response = await fetch(
+          `${baseUrl}/api/agent/conversation/share/detail/${sk}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('网络请求失败');
+        }
+
+        const { data, code, message } = await response.json();
+        console.log('分享详情:', data, code, message);
+
+        if (code === '0000') {
+          // 检查是否已过期
+          if (data.expireTime && Date.now() > data.expireTime) {
+            showError('分享链接已失效，请重新生成分享链接');
+            return;
+          }
+
+          // 构造智能体电脑 URL
+          // 判断 content 是否已包含查询参数
+          const separator = data.content.includes('?') ? '&' : '?';
+          const fileUrl = baseUrl + data.content + separator + 'sk=' + sk;
+
+          // 显示桌面
+          showDesktop(fileUrl);
+
+          // 更新过期时间显示
+          if (data.expireTime) {
+            updateExpireInfo(data.expireTime);
+          }
+        } else {
+          showError(message || '获取分享信息失败');
+        }
+      } catch (error) {
+        console.error('加载智能体电脑失败:', error);
+        showError('加载失败，请检查网络连接或稍后重试');
+      }
+    }
+
+    // 页面加载完成后执行
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDesktop();
+
+      // 监听 iframe 消息
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'vnc_share_expired') {
+          const expireInfo = document.getElementById('expireInfo');
+          if (expireInfo) {
+            expireInfo.textContent = '链接已失效';
+            expireInfo.style.backgroundColor = '#fff1f0';
+            expireInfo.style.color = '#cf1322';
+          }
+
+          // remove desktopFrame
+          const desktopFrame = document.getElementById('desktopFrame');
+          if (desktopFrame) {
+            desktopFrame.remove();
+          }
+          showError('分享链接已失效，请重新生成分享链接');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

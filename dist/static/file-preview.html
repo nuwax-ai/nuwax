@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>文档预览</title>
+
+    <!-- Local library styles -->
+    <link rel="stylesheet" href="/libs/js-preview/docx.css">
+    <link rel="stylesheet" href="/libs/js-preview/excel.css">
+    <link rel="stylesheet" href="/libs/js-preview/github.min.css">
+    <!-- 本地样式 -->
+    <link rel="stylesheet" href="/libs/js-preview/file-preview.css">
+
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+
+    <!-- Error Overlay -->
+    <div id="errorOverlay" class="error-overlay hidden">
+        <div class="error-icon">⚠️</div>
+        <div id="errorText" class="error-text">加载失败</div>
+        <div class="error-actions">
+            <button class="retry-action-btn" onclick="startPreview()">重试</button>
+            <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">下载</button>
+        </div>
+    </div>
+
+    <!-- Preview Container -->
+    <div id="previewContainer" class="preview-container"></div>
+
+    <script>
+        // ============================================
+        // Global State
+        // ============================================
+        let currentPreviewer = null;
+        let fileUrl = '';
+        let fileType = '';
+        let downloadUrl = ''; // 下载接口地址
+        let fileName = ''; // 文件名
+        const params = getQueryParams();
+
+        // 获取文件的 origin
+        function getBaseUrl(url) {
+            try {
+                return new URL(url).origin;
+            } catch (e) {
+                return window.location.origin;
+            }
+        }
+        const baseUrl = getBaseUrl(params.fileUrl);
+
+        // ============================================
+        // URL Parameter Parsing
+        // ============================================
+        function getQueryParams() {
+            const params = {};
+            const search = window.location.search.slice(1);
+            if (!search) return params;
+
+            search.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) {
+                    params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                }
+            });
+            return params;
+        }
+
+        // ============================================
+        // UI State Management
+        // ============================================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('errorOverlay').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            document.getElementById('errorText').textContent = message || '加载失败';
+            document.getElementById('errorOverlay').classList.remove('hidden');
+            
+            // 如果有下载地址，显示下载按钮
+            const errorDownloadBtn = document.getElementById('errorDownloadBtn');
+            if (downloadUrl && errorDownloadBtn) {
+                errorDownloadBtn.classList.remove('hidden');
+            } else if (errorDownloadBtn) {
+                errorDownloadBtn.classList.add('hidden');
+            }
+        }
+
+        function hideError() {
+            document.getElementById('errorOverlay').classList.add('hidden');
+        }
+
+        // ============================================
+        // Dynamic Script Loading (using local files)
+        // ============================================
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                if (document.querySelector(`script[src="${src}"]`)) {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Failed to load: ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        // ============================================
+        // Preview Renderers (using local libraries)
+        // ============================================
+        async function renderDocx(url, container) {
+            await loadScript('/libs/js-preview/docx.umd.js');
+
+            if (typeof jsPreviewDocx === 'undefined') {
+                throw new Error('DOCX 预览库加载失败');
+            }
+
+            currentPreviewer = jsPreviewDocx.init(container);
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderXlsx(url, container) {
+            await loadScript('/libs/js-preview/excel.umd.js');
+
+            if (typeof jsPreviewExcel === 'undefined') {
+                throw new Error('Excel 预览库加载失败');
+            }
+
+            currentPreviewer = jsPreviewExcel.init(container);
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderPdf(url, container) {
+            await loadScript('/libs/js-preview/pdf.umd.js');
+
+            if (typeof jsPreviewPdf === 'undefined') {
+                throw new Error('PDF 预览库加载失败');
+            }
+
+            // 使用设备像素比来提高 PDF 渲染清晰度
+            const scale = window.devicePixelRatio || 2;
+            currentPreviewer = jsPreviewPdf.init(container, {
+                width: container.clientWidth * scale,
+                height: container.clientHeight * scale,
+            });
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderPptx(url, container) {
+            await loadScript('/libs/js-preview/pptx-preview.umd.js');
+
+            if (typeof PptxPreview === 'undefined' && typeof pptxPreview === 'undefined') {
+                throw new Error('PPTX 预览库加载失败');
+            }
+
+            const PptxLib = typeof PptxPreview !== 'undefined' ? PptxPreview : pptxPreview;
+            currentPreviewer = PptxLib.init(container, {
+                width: container.clientWidth || 800,
+                height: container.clientHeight || 600
+            });
+
+            // Fetch file as ArrayBuffer
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            await currentPreviewer.preview(arrayBuffer);
+        }
+
+        // ============================================
+        // HTML Preview (render as webpage)
+        // ============================================
+        async function renderHtml(url, container) {
+            container.className = 'preview-container html-preview';
+
+            // 尝试获取HTML内容以提取标题
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const html = await response.text();
+                    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+                    if (titleMatch && titleMatch[1]) {
+                        document.title = titleMatch[1].trim();
+                    }
+                }
+            } catch (e) {
+                console.warn('Fetch HTML title failed:', e);
+            }
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'html-preview-iframe';
+            iframe.src = url;
+
+            // Handle iframe load error
+            iframe.onerror = () => {
+                throw new Error('HTML 页面加载失败');
+            };
+
+            // Optional: Add sandbox for security
+            // iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+
+            container.appendChild(iframe);
+        }
+
+        // ============================================
+        // Image Preview
+        // ============================================
+        async function renderImage(url, container) {
+            container.className = 'preview-container image-preview';
+
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '图片预览';
+
+            // Handle image load error
+            img.onerror = () => {
+                throw new Error('图片加载失败');
+            };
+
+            container.appendChild(img);
+        }
+
+        // ============================================
+        // Video Preview
+        // ============================================
+        async function renderVideo(url, container) {
+            container.className = 'preview-container video-preview';
+            // 设置容器样式以实现垂直和水平居中
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+            container.style.overflow = 'hidden'; // 覆盖默认的 overflow: auto
+            container.style.padding = '0px';
+            container.style.background = '#000'; // 黑色背景
+
+            const video = document.createElement('video');
+            video.src = url;
+            video.controls = true;
+            video.autoplay = false;
+            video.style.maxWidth = '100%';
+            video.style.maxHeight = '100%';
+            video.style.objectFit = 'contain';
+            video.style.boxShadow = '0 4px 16px rgba(255, 255, 255, 0.1)'; // 白色阴影适配黑色背景
+
+            // Handle video load error
+            video.onerror = () => {
+                throw new Error('视频加载失败');
+            };
+
+            container.appendChild(video);
+        }
+
+        // ============================================
+        // Audio Preview
+        // ============================================
+        async function renderAudio(url, container) {
+            container.className = 'preview-container audio-preview';
+            // 设置容器样式以实现垂直和水平居中
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+            container.style.overflow = 'hidden';
+            container.style.padding = '0px';
+            container.style.background = '#f5f5f5'; // 浅灰色背景
+
+            const audio = document.createElement('audio');
+            audio.src = url;
+            audio.controls = true;
+            audio.autoplay = false;
+            audio.style.width = '100%';
+            audio.style.maxWidth = '600px';
+            audio.style.outline = 'none';
+
+            // Handle audio load error
+            audio.onerror = () => {
+                throw new Error('音频加载失败');
+            };
+
+            container.appendChild(audio);
+        }
+
+        // ============================================
+        // Text/Code Preview with Syntax Highlighting
+        // ============================================
+        async function renderText(url, container, language = '') {
+            // Load highlight.js for syntax highlighting (Local)
+            await loadScript('/libs/js-preview/highlight.min.js');
+
+            // Fetch file content
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const text = await response.text();
+
+            container.className = 'preview-container text-preview';
+
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+
+            // Set language class for syntax highlighting
+            if (language) {
+                code.className = `language-${language}`;
+            }
+
+            code.textContent = text;
+            pre.appendChild(code);
+            container.appendChild(pre);
+
+            // Apply syntax highlighting if hljs is available
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(code);
+            }
+        }
+
+        // ============================================
+        // Markdown Preview
+        // ============================================
+        async function renderMarkdown(url, container) {
+            // Load marked.js for markdown rendering (Local)
+            await loadScript('/libs/js-preview/marked.min.js');
+            // Load highlight.js for code block syntax highlighting (Local)
+            await loadScript('/libs/js-preview/highlight.min.js');
+
+            if (typeof marked === 'undefined') {
+                throw new Error('Markdown 预览库加载失败');
+            }
+
+            // Fetch markdown content
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const markdown = await response.text();
+
+            // Configure marked to use highlight.js
+            if (typeof hljs !== 'undefined') {
+                marked.setOptions({
+                    highlight: function (code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            try {
+                                return hljs.highlight(code, { language: lang }).value;
+                            } catch (e) {
+                                console.error('Highlight error:', e);
+                            }
+                        }
+                        return hljs.highlightAuto(code).value;
+                    },
+                    breaks: true,
+                    gfm: true
+                });
+            }
+
+            // Render markdown to HTML
+            const html = marked.parse(markdown);
+
+            container.className = 'preview-container markdown-preview';
+            const markdownBody = document.createElement('div');
+            markdownBody.className = 'markdown-body';
+            markdownBody.innerHTML = html;
+            container.appendChild(markdownBody);
+        }
+
+
+        // ============================================
+        // Main Preview Function
+        // ============================================
+        async function startPreview() {
+            const sk = params.sk || '';
+            // 1. 如果有sk参数，说明是分享操作
+            if (sk) {
+                const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const { data, code, message } = await response.json();
+                if (code === '0000') {
+                    fileUrl = baseUrl + data.content + '?sk=' + sk;
+                    // 从路径中提取文件名
+                    fileName = data.content.split('/').pop();
+                    fileType = data.content.split('.').pop().toLowerCase();
+                    // 设置下载地址
+                    downloadUrl = baseUrl + data.content + '?sk=' + sk;
+                    
+                } else {
+                    showError(message);
+                    return;
+                }
+            } 
+            
+            // 2. 如果有_ticket参数，说明是正常预览操作
+            if(params._ticket){
+                // 正常预览操作获取文件地址和类型
+                fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
+                // 从路径中提取文件名
+                fileName = params.fileUrl.split('/').pop();
+                fileType = params.fileUrl.split('.').pop().toLowerCase();
+                // 设置下载地址
+                downloadUrl = params.fileUrl + "?sk=" + params._sk;
+            }
+
+            // 3. 如果有docUrl参数，说明是知识库文档预览操作
+            if (params.docUrl) {
+                fileUrl = params.docUrl;
+                // 从路径中提取文件名
+                fileName = params.docUrl.split('/').pop();
+                fileType = params.docUrl.split('.').pop().toLowerCase();
+                // 设置下载地址
+                downloadUrl = params.docUrl;
+            }
+
+            // Auto-detect file type from URL if not provided
+            if (!fileType && fileUrl) {
+                const ext = fileUrl.split('.').pop().split('?')[0].toLowerCase();
+                const supportedTypes = [
+                    'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
+                    'md', 'html', 'css', 'js', 'ts', 'txt', 'json',
+                    'png', 'jpg', 'jpeg', 'gif', 'svg', 'py', 'java',
+                    'mp4', 'webm', 'ogg', 'mov', 'avi',
+                    'mp3', 'wav', 'm4a', 'aac', 'flac', 'wma'
+                ];
+                if (supportedTypes.includes(ext)) {
+                    fileType = ext;
+                }
+            }
+
+            // Normalize file types
+            if (fileType === 'xls') fileType = 'xlsx';
+            if (fileType === 'ppt') fileType = 'pptx';
+            if (fileType === 'doc') fileType = 'docx';
+
+
+            if (!fileUrl) {
+                showError('未提供文件地址 (fileUrl 参数缺失)');
+                return;
+            }
+
+            if (!fileType) {
+                showError('未提供文件类型 (fileType 参数缺失)');
+                return;
+            }
+
+            showLoading();
+            hideError();
+
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+
+            // Destroy previous previewer
+            if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
+                try {
+                    currentPreviewer.destroy();
+                } catch (e) { /* ignore */ }
+                currentPreviewer = null;
+            }
+
+            try {
+                switch (fileType) {
+                    // Office documents
+                    case 'docx':
+                        await renderDocx(fileUrl, container);
+                        break;
+                    case 'xlsx':
+                        await renderXlsx(fileUrl, container);
+                        break;
+                    case 'pdf':
+                        await renderPdf(fileUrl, container);
+                        break;
+                    case 'pptx':
+                        await renderPptx(fileUrl, container);
+                        break;
+
+                    // Images
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                    case 'svg':
+                        await renderImage(fileUrl, container);
+                        break;
+
+                    // Videos
+                    case 'mp4':
+                    case 'webm':
+                    case 'ogg':
+                    case 'mov':
+                    case 'avi':
+                        await renderVideo(fileUrl, container);
+                        break;
+
+                    // Audio
+                    case 'mp3':
+                    case 'wav':
+                    case 'm4a':
+                    case 'aac':
+                    case 'flac':
+                    case 'wma':
+                        await renderAudio(fileUrl, container);
+                        break;
+
+                    // Markdown
+                    case 'md':
+                        await renderMarkdown(fileUrl, container);
+                        break;
+
+                    // HTML (render as webpage)
+                    case 'html':
+                        await renderHtml(fileUrl, container);
+                        break;
+
+                    // Code files with syntax highlighting
+                    case 'js':
+                        await renderText(fileUrl, container, 'javascript');
+                        break;
+                    case 'ts':
+                        await renderText(fileUrl, container, 'typescript');
+                        break;
+                    case 'css':
+                        await renderText(fileUrl, container, 'css');
+                        break;
+                    case 'json':
+                        await renderText(fileUrl, container, 'json');
+                        break;
+                    case 'py':
+                        await renderText(fileUrl, container, 'python');
+                        break;
+                    case 'java':
+                        await renderText(fileUrl, container, 'java');
+                        break;
+                    case 'txt':
+                        await renderText(fileUrl, container, 'plaintext');
+                        break;
+
+                    default:
+                        throw new Error(`不支持的文件类型: ${fileType}`);
+                }
+
+                hideLoading();
+
+                // Notify parent (for iframe/webview communication)
+                notifyParent({ type: 'preview_success', fileType });
+
+            } catch (error) {
+                console.error('[FilePreview] Render error:', error);
+                showError(error.message || '文档渲染失败');
+                notifyParent({ type: 'preview_error', error: error.message });
+            }
+        }
+
+
+        // ============================================
+        // Download Function
+        // ============================================
+        async function downloadFile() {
+            if (!downloadUrl) {
+                showError('下载地址不存在');
+                return;
+            }
+
+            // 检测是否在微信小程序 web-view 环境中
+            const isInMiniProgram = window.__wxjs_environment === 'miniprogram' || 
+                                    (typeof wx !== 'undefined' && wx.miniProgram);
+            
+            if (isInMiniProgram) {
+                // 小程序环境：复制下载链接到剪切板
+                try {
+                    // 尝试使用现代 Clipboard API
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(downloadUrl);
+                        alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                    } else {
+                        // 降级方案：创建临时输入框
+                        const textArea = document.createElement('textarea');
+                        textArea.value = downloadUrl;
+                        textArea.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999); // 兼容移动端
+                        
+                        const successful = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        if (successful) {
+                            alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                        } else {
+                            alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+                        }
+                    }
+                } catch (err) {
+                    console.error('[FilePreview] Copy to clipboard failed:', err);
+                    alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+                }
+                return;
+            }
+
+            try {
+                const downloadBtn = document.getElementById('errorDownloadBtn');
+                if (downloadBtn) {
+                    downloadBtn.disabled = true;
+                    downloadBtn.style.opacity = '0.6';
+                }
+
+                // 发起下载请求
+                const response = await fetch(downloadUrl, {
+                    method: 'GET',
+                });
+
+                if (!response.ok) {
+                    throw new Error(`下载失败: ${response.status}`);
+                }
+
+                // 从响应头获取文件名（如果接口返回了）
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let downloadFileName = fileName || 'download';
+                
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename[^;=\\n]*=((['"]).*?\\2|[^;\\n]*)/);
+                    if (fileNameMatch && fileNameMatch[1]) {
+                        downloadFileName = fileNameMatch[1].replace(/['"]/g, '');
+                        // 解码 URL 编码的文件名
+                        try {
+                            downloadFileName = decodeURIComponent(downloadFileName);
+                        } catch (e) {
+                            console.warn('Failed to decode filename:', e);
+                        }
+                    }
+                }
+
+                // 获取文件数据
+                const blob = await response.blob();
+                
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = downloadFileName;
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+            } catch (error) {
+                console.error('[FilePreview] Download error:', error);
+                showError(error.message || '下载失败');
+            } finally {
+                const downloadBtn = document.getElementById('errorDownloadBtn');
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.style.opacity = '1';
+                }
+            }
+        }
+
+        // ============================================
+        // Parent Communication
+        // ============================================
+        function notifyParent(data) {
+            try {
+                // For iframe
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(data, '*');
+                }
+
+                // For WeChat Mini Program WebView
+                if (typeof wx !== 'undefined' && wx.miniProgram) {
+                    wx.miniProgram.postMessage({ data });
+                }
+            } catch (e) {
+                console.warn('[FilePreview] Failed to notify parent:', e);
+            }
+        }
+
+        // ============================================
+        // Initialize
+        // ============================================
+        document.addEventListener('DOMContentLoaded', startPreview);
+    </script>
+</body>
+
+</html>
