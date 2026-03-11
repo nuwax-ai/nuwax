@@ -49,15 +49,19 @@ const Login: React.FC = () => {
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
+  // 菜单数据模型
+  const { loadMenus } = useModel('menuModel');
 
   const { run, loading } = useRequest(apiLogin, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
+    onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
       const { expireDate, token, redirect: responseRedirectUrl } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
+      // 登录成功后强制刷新菜单数据（可能切换了账号）
+      await loadMenus(true);
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
       if (isWeakNumber(redirect)) {
         history.go(Number(redirect));

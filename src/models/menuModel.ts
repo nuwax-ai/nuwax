@@ -5,7 +5,8 @@
 import { apiQueryMenus } from '@/services/menuService';
 import { UserService } from '@/services/userService';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useModel } from 'umi';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
@@ -29,43 +30,77 @@ export default function useMenuModel() {
   // 加载状态
   const [loading, setLoading] = useState<boolean>(false);
 
+  // 标记是否已从 initialState 初始化
+  const initializedRef = useRef<boolean>(false);
+
+  // 获取全局初始状态（包含预加载的菜单数据）
+  const { initialState } = useModel('@@initialState');
+
   /**
-   * 加载菜单数据 (如果 data 已经存在于 initialState 则不需要重新 fetch)
-   * 但为了兼容手动刷新，保留 fetch 逻辑
+   * 处理菜单数据：设置菜单树、权限码、菜单码
    */
-  const loadMenus = useCallback(async () => {
-    setLoading(true);
-    try {
-      const userInfo = UserService.getUserInfoFromStorage();
-      if (!userInfo?.id) {
-        setLoading(false);
+  const processMenuData = useCallback((menus: MenuItemDto[]) => {
+    setMenuTree(menus);
+
+    // 提取所有权限码（从 Map 中提取所有值并打平）
+    const permissionsMapData: Map<string, string[]> =
+      extractAllPermissions(menus);
+    const permissions: string[] = [];
+    permissionsMapData.forEach((codes) => {
+      permissions.push(...codes);
+    });
+    setPermissionSet(new Set(permissions));
+    setPermissionsMap(permissionsMapData);
+
+    // 提取所有菜单码
+    const menuCodes = extractAllMenuCodes(menus);
+    setMenuCodeSet(new Set(menuCodes));
+  }, []);
+
+  /**
+   * 从 initialState 初始化菜单数据
+   * 在 model 首次使用时自动执行
+   */
+  useEffect(() => {
+    if (initializedRef.current) return;
+    if (initialState?.menuData && initialState.menuData.length > 0) {
+      initializedRef.current = true;
+      processMenuData(initialState.menuData);
+    }
+  }, [initialState?.menuData, processMenuData]);
+
+  /**
+   * 加载菜单数据
+   * @param force 是否强制重新加载（用于登录成功后刷新菜单）
+   */
+  const loadMenus = useCallback(
+    async (force: boolean = false) => {
+      // 如果不是强制刷新，且已经从 initialState 加载过，且有数据，则跳过
+      if (!force && initializedRef.current && menuTree.length > 0) {
         return;
       }
-      const res = await apiQueryMenus();
-      if (res.code === SUCCESS_CODE && res.data) {
-        const menus = res.data || [];
-        setMenuTree(menus);
 
-        // 提取所有权限码（从 Map 中提取所有值并打平）
-        const permissionsMap: Map<string, string[]> =
-          extractAllPermissions(menus);
-        const permissions: string[] = [];
-        permissionsMap.forEach((codes) => {
-          permissions.push(...codes);
-        });
-        setPermissionSet(new Set(permissions));
-        setPermissionsMap(permissionsMap);
-
-        // 提取所有菜单码
-        const menuCodes = extractAllMenuCodes(menus);
-        setMenuCodeSet(new Set(menuCodes));
+      setLoading(true);
+      try {
+        const userInfo = UserService.getUserInfoFromStorage();
+        if (!userInfo?.id) {
+          setLoading(false);
+          return;
+        }
+        const res = await apiQueryMenus();
+        if (res.code === SUCCESS_CODE && res.data) {
+          const menus = res.data || [];
+          processMenuData(menus);
+          initializedRef.current = true;
+        }
+      } catch (error) {
+        console.error('加载菜单数据失败:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('加载菜单数据失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [menuTree.length, processMenuData],
+  );
 
   /**
    * 需要单独分离的菜单 code 列表
@@ -217,12 +252,17 @@ export default function useMenuModel() {
     [findMenuByPath],
   );
 
-  // 清除菜单信息
+  /**
+   * 清除菜单信息
+   * 用于退出登录时清除菜单数据，确保下次登录会重新加载
+   */
   const clearMenuInfo = useCallback(() => {
     setMenuTree([]);
     setPermissionSet(new Set([]));
     setPermissionsMap(new Map());
     setMenuCodeSet(new Set([]));
+    // 重置初始化标记，确保下次登录会重新加载菜单
+    initializedRef.current = false;
   }, []);
 
   return {

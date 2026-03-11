@@ -65,7 +65,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     setOpenMessage,
     handleCloseMobileMenu,
   } = useModel('layout');
-  const { loadMenus, firstLevelMenus, otherMenus } = useModel('menuModel');
+  const { firstLevelMenus, otherMenus } = useModel('menuModel');
 
   const { refreshUserInfo } = useModel('userInfo');
 
@@ -261,11 +261,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     [isMenuMatch, isPathMatch],
   );
 
-  // 初始化加载菜单数据
   useEffect(() => {
-    loadMenus();
-
-    // 获取用户信息
+    // 强制刷新获取用户信息
     refreshUserInfo();
   }, []);
 

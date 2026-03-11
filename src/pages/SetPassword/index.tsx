@@ -17,11 +17,14 @@ const cx = classNames.bind(styles);
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
   const { setTitle } = useModel('tenantConfigInfo');
+  const { loadMenus } = useModel('menuModel');
 
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: async () => {
+      // 登录成功后强制刷新菜单数据（可能切换了账号）
+      await loadMenus(true);
       navigate('/', { replace: true });
     },
   });

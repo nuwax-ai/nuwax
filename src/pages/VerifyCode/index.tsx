@@ -38,6 +38,7 @@ const VerifyCode: React.FC = () => {
     location.state;
 
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
+  const { loadMenus } = useModel('menuModel');
 
   const handleClick = () => {
     inputRef.current!.focus({
@@ -50,11 +51,13 @@ const VerifyCode: React.FC = () => {
   const { run: runLoginCode } = useRequest(apiLoginCode, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: ILoginResult, params: CodeLogin[]) => {
+    onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
       const { resetPass, expireDate, token } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
+      // 登录成功后强制刷新菜单数据（可能切换了账号）
+      await loadMenus(true);
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
       if (!resetPass) {
         history.push('/set-password');

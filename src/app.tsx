@@ -1,13 +1,50 @@
 import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import { useAntdConfigSetter } from 'umi';
+import { history, useAntdConfigSetter } from 'umi';
+import { SUCCESS_CODE } from './constants/codes.constants';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
+import { apiQueryMenus } from './services/menuService';
 import { unifiedThemeService } from './services/unifiedThemeService';
+import { UserService } from './services/userService';
+import type { MenuItemDto } from './types/interfaces/menu';
+
+/**
+ * 全局初始状态类型
+ */
+export interface InitialStateType {
+  menuData?: MenuItemDto[];
+}
+
+/**
+ * 获取初始状态
+ * 在应用启动时执行（路由渲染前），用于加载全局数据
+ * 这里加载菜单数据，确保在任何页面刷新时都能获取到菜单权限
+ */
+export async function getInitialState(): Promise<InitialStateType> {
+  try {
+    // 如果不是登录页面，执行获取用户信息和菜单数据
+    if (history.location.pathname !== '/login') {
+      const userInfo = await UserService.getUserInfo();
+
+      if (userInfo?.id) {
+        const res = await apiQueryMenus();
+        if (res.code === SUCCESS_CODE && res.data) {
+          return { menuData: res.data };
+        }
+      }
+    }
+    return { menuData: [] };
+  } catch (error) {
+    console.error('getInitialState: 加载菜单数据失败', error);
+  }
+  return { menuData: [] };
+}
+
 /**
  * 全局轮询组件
  * 在应用运行期间保持活跃，处理全局事件

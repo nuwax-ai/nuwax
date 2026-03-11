@@ -63,6 +63,7 @@ const Layout: React.FC = () => {
 
   const { runTenantConfig } = useModel('tenantConfigInfo');
   const { asyncSpaceListFun } = useModel('spaceModel');
+  const { loadMenus } = useModel('menuModel');
 
   // 移除对 @@initialState 的依赖，统一由 useGlobalSettings 管理全局配置
 
@@ -104,6 +105,8 @@ const Layout: React.FC = () => {
   );
 
   useEffect(() => {
+    // 初始化加载菜单数据
+    loadMenus();
     // 查询广场分类列表
     runQueryCategory();
     // 租户配置信息查询接口
