@@ -19,13 +19,13 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
-        <div class="loading-text">加载中...</div>
+        <div class="loading-text"></div>
     </div>
 
     <!-- Error Overlay -->
     <div id="errorOverlay" class="error-overlay hidden">
-        <div class="error-icon">⚠️</div>
-        <div id="errorText" class="error-text">加载失败</div>
+        <div id="errorIcon" class="error-icon"></div>
+        <div id="errorText" class="error-text"></div>
         <div class="error-actions">
             <button class="retry-action-btn" onclick="startPreview()">重试</button>
             <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">下载</button>
@@ -78,6 +78,7 @@
         // ============================================
         function showLoading() {
             document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.querySelector('#loadingOverlay .loading-text').textContent = '加载中...';
             document.getElementById('errorOverlay').classList.add('hidden');
         }
 
@@ -87,6 +88,7 @@
 
         function showError(message) {
             hideLoading();
+            document.getElementById('errorIcon').textContent = '⚠️';
             document.getElementById('errorText').textContent = message || '加载失败';
             document.getElementById('errorOverlay').classList.remove('hidden');
             
