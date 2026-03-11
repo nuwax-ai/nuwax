@@ -631,7 +631,8 @@ const ChatTemp: React.FC = () => {
       ...completeMessageList,
       chatMessage,
       currentMessage,
-    ];
+    ] as MessageInfo[];
+
     setMessageList(() => {
       checkConversationActive(newMessageList);
       return newMessageList;
@@ -674,20 +675,22 @@ const ChatTemp: React.FC = () => {
   }, [conversationInfo]);
 
   const handleCreateTempChat = async (captchaVerifyParam: string) => {
-    // 创建临时会话
-    const {
-      data,
-      success,
-      message: _message,
-    } = await runTempChatCreate({ chatKey, captchaVerifyParam });
-    if (success) {
-      conversationUid.current = data.uid;
-      sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
-      // 查询临时会话详细
-      runQueryConversation({ chatKey, conversationUid: data.uid });
-    } else {
+    try {
+      // 创建临时会话
+      const { data, success } = await runTempChatCreate({
+        chatKey,
+        captchaVerifyParam,
+      });
+      if (success) {
+        conversationUid.current = data.uid;
+        sessionStorage.setItem(TEMP_CONVERSATION_UID, data.uid);
+        // 查询临时会话详细
+        runQueryConversation({ chatKey, conversationUid: data.uid });
+      } else {
+        setIsLoadingConversation(false);
+      }
+    } catch {
       setIsLoadingConversation(false);
-      message.warning(_message);
     }
   };
 
