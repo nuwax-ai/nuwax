@@ -955,7 +955,7 @@ export default () => {
               params.conversationId &&
               conversationInfoRef.current?.agent?.type ===
                 AgentTypeEnum.TaskAgent &&
-              !isFileTreeVisibleRef.current
+              isFileTreeVisibleRef.current
             ) {
               // 刷新文件树
               await handleRefreshFileList(params.conversationId);
