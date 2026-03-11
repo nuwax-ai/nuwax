@@ -7,7 +7,7 @@ import { useDebounceFn } from 'ahooks';
 import { Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
-import { history } from 'umi';
+import { history, useModel } from 'umi';
 import ConversationList, {
   ConversationListRef,
 } from './components/ConversationList';
@@ -16,6 +16,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const HistoryConversation: React.FC = () => {
+  const { runHistory } = useModel('conversationHistory');
   const [keyword, setKeyword] = useState<string>('');
   const [activeKeyword, setActiveKeyword] = useState<string>('');
   const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -72,7 +73,11 @@ const HistoryConversation: React.FC = () => {
       });
 
       if (res.success) {
-        listRef.current?.updateItemTopic(currentRenameId, trimmedTopic);
+        listRef.current?.refresh();
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
         message.success('修改成功');
         setRenameModalVisible(false);
       }
@@ -95,6 +100,10 @@ const HistoryConversation: React.FC = () => {
 
       if (res.success) {
         listRef.current?.removeItem(currentDeleteId);
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
         message.success('删除成功');
         setDeleteModalVisible(false);
       }
