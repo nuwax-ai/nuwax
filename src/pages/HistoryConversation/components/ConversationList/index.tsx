@@ -21,6 +21,7 @@ interface ConversationListProps {
 export interface ConversationListRef {
   updateItemTopic: (id: number, newTopic: string) => void;
   removeItem: (id: number) => void;
+  refresh: () => void;
 }
 
 const ConversationList = React.forwardRef<
@@ -33,20 +34,6 @@ const ConversationList = React.forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
 
-  // 暴露给父组件的方法
-  React.useImperativeHandle(ref, () => ({
-    updateItemTopic: (id: number, newTopic: string) => {
-      setList((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, topic: newTopic } : item,
-        ),
-      );
-    },
-    removeItem: (id: number) => {
-      setList((prev) => prev.filter((item) => item.id !== id));
-    },
-  }));
-
   // 计算每页条数
   const calculatePageSize = () => {
     if (!size?.height) return 20;
@@ -55,6 +42,7 @@ const ConversationList = React.forwardRef<
     return Math.max(count, 10); // 至少加载10条
   };
 
+  // 加载数据
   const loadData = async (isRefresh = false) => {
     if (loading || (!hasMore && !isRefresh)) return;
     setLoading(true);
@@ -87,6 +75,22 @@ const ConversationList = React.forwardRef<
       setLoading(false);
     }
   };
+  // 暴露给父组件的方法
+  React.useImperativeHandle(ref, () => ({
+    updateItemTopic: (id: number, newTopic: string) => {
+      setList((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, topic: newTopic } : item,
+        ),
+      );
+    },
+    removeItem: (id: number) => {
+      setList((prev) => prev.filter((item) => item.id !== id));
+    },
+    refresh: () => {
+      loadData(true);
+    },
+  }));
 
   // 监听关键词变化刷新
   useEffect(() => {
