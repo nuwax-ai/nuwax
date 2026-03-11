@@ -117,6 +117,21 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     }
   };
 
+  // 是否有左侧文件信息内容需要显示
+  const hasFileInfoContent = useMemo(() => {
+    if (viewMode === 'preview') {
+      // preview 模式：检查是否有 fileDetails 或 Segmented
+      const hasFileDetails = !isFileTreeVisible && fileName;
+      const hasSegmented =
+        targetNode?.fileProxyUrl &&
+        fileName &&
+        (fileName?.includes('.htm') || isMarkdownFile(fileName));
+      return hasFileDetails || hasSegmented;
+    }
+    // desktop 模式：pc-box 总是显示，所以总是有内容
+    return true;
+  }, [viewMode, isFileTreeVisible, fileName, targetNode?.fileProxyUrl]);
+
   // 是否需要展示右侧整体 actionButtons（分享 / 全屏 / 更多 / 关闭）
   const showRightActionButtons = useMemo(() => {
     const canShare =
@@ -167,21 +182,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
       {/* 左侧：文件信息 */}
-      {/* 计算是否有子内容：preview 模式需要检查是否有 fileDetails 或 Segmented，desktop 模式总是有 pc-box */}
-      {(() => {
-        if (viewMode === 'preview') {
-          // preview 模式：检查是否有 fileDetails 或 Segmented
-          const hasFileDetails = !isFileTreeVisible && fileName;
-          const hasSegmented =
-            targetNode?.fileProxyUrl &&
-            fileName &&
-            (fileName?.includes('.htm') || isMarkdownFile(fileName));
-          return hasFileDetails || hasSegmented;
-        } else {
-          // desktop 模式：pc-box 总是显示，所以总是有内容
-          return true;
-        }
-      })() && (
+      {hasFileInfoContent && (
         <div className={styles.fileInfo}>
           {viewMode === 'preview' ? (
             <>
