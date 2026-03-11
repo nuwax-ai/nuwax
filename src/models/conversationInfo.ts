@@ -34,7 +34,11 @@ import {
   ProcessingEnum,
 } from '@/types/enums/common';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
-import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import {
+  AgentTypeEnum,
+  EditAgentShowType,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
@@ -75,7 +79,7 @@ import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -86,6 +90,12 @@ export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
+  // 使用 ref 跟踪最新的 conversationInfo，解决异步回调中的闭包陈旧问题
+  const conversationInfoRef = useRef<ConversationInfo | null>(null);
+  useEffect(() => {
+    conversationInfoRef.current = conversationInfo || null;
+  }, [conversationInfo]);
+
   // 当前会话ID
   const [currentConversationId, setCurrentConversationId] = useState<
     number | null
@@ -941,7 +951,12 @@ export default () => {
 
           setTimeout(async () => {
             // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
-            if (params.conversationId) {
+            if (
+              params.conversationId &&
+              conversationInfoRef.current?.agent?.type ===
+                AgentTypeEnum.TaskAgent &&
+              !isFileTreeVisibleRef.current
+            ) {
               // 刷新文件树
               await handleRefreshFileList(params.conversationId);
             }
