@@ -128,13 +128,6 @@
       color: #262626;
     }
 
-    .error-message {
-      font-size: 14px;
-      color: #8c8c8c;
-      text-align: center;
-      line-height: 1.6;
-    }
-
     .retry-button {
       padding: 8px 24px;
       background-color: #1890ff;
@@ -185,11 +178,8 @@
 
       <!-- 错误提示 -->
       <div class="error-container hidden" id="error">
-        <div class="error-icon">⚠️</div>
-        <div class="error-title">加载失败</div>
-        <div class="error-message" id="errorMessage">
-          无法加载智能体电脑，请稍后重试
-        </div>
+        <div id="errorIcon" class="error-icon"></div>
+        <div id="errorTitle" class="error-title"></div>
         <button class="retry-button" onclick="location.reload()">
           重新加载
         </button>
@@ -223,11 +213,16 @@
     function showError(message) {
       const loading = document.getElementById('loading');
       const error = document.getElementById('error');
-      const errorMessage = document.getElementById('errorMessage');
+
+      // 错误图标、标题、消息
+      const errorIcon = document.getElementById('errorIcon');
+      const errorTitle = document.getElementById('errorTitle');
 
       loading.classList.add('hidden');
       error.classList.remove('hidden');
-      errorMessage.textContent = message || '加载失败，请稍后重试';
+      // 设置错误图标、标题、消息
+      errorIcon.textContent = '⚠️';
+      errorTitle.textContent = message || '无法加载智能体电脑，请稍后重试';
     }
 
     // 显示桌面
