@@ -1,3 +1,5 @@
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
 
@@ -16,6 +18,8 @@ interface WorkspaceLayoutProps {
   headerPadding?: React.CSSProperties['padding'];
   contentPadding?: React.CSSProperties['padding'];
   extraPadding?: React.CSSProperties['padding'];
+  // 提示信息
+  tips?: string | React.ReactNode;
 }
 
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
@@ -29,6 +33,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   headerPadding,
   contentPadding,
   extraPadding,
+  tips,
 }) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
@@ -36,8 +41,15 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         className={cx(styles['header-area'])}
         style={{ padding: headerPadding }}
       >
-        <div className={cx(styles['header-left'])}>
+        <div
+          className={cx(styles['header-left'], 'flex', 'items-center', 'gap-2')}
+        >
           <h3 className={cx(styles.title)}>{title || ''}</h3>
+          {tips && (
+            <Tooltip title={tips}>
+              <QuestionCircleOutlined className={cx(styles['tips-icon'])} />
+            </Tooltip>
+          )}
           {/* 左侧区域插槽 */}
           {leftSlot}
         </div>
