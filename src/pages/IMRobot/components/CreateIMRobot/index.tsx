@@ -17,6 +17,7 @@ export interface CreateIMRobotProps {
   mode: CreateUpdateModeEnum;
   info?: IMRobotInfo | null;
   spaceId: number;
+  initialType?: IMRobotTypeEnum;
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -26,6 +27,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
   mode,
   info,
   spaceId,
+  initialType,
   onCancel,
   onSuccess,
 }) => {
@@ -53,12 +55,12 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
       } else {
         form.resetFields();
         form.setFieldsValue({
-          type: IMRobotTypeEnum.WeChatBot,
+          type: initialType || IMRobotTypeEnum.WeChatBot,
           status: true,
         });
       }
     }
-  }, [open, mode, info, form]);
+  }, [open, mode, info, form, initialType]);
 
   const handleConfirm = async () => {
     try {
@@ -101,9 +103,15 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
     }
   };
 
+  const getTitle = () => {
+    if (mode === CreateUpdateModeEnum.Update) return '编辑机器人';
+    if (robotType === IMRobotTypeEnum.WeChatApp) return '新增企业应用';
+    return '新增机器人';
+  };
+
   return (
     <CustomFormModal
-      title={mode === CreateUpdateModeEnum.Create ? '新增机器人' : '编辑机器人'}
+      title={getTitle()}
       open={open}
       form={form}
       onCancel={onCancel}

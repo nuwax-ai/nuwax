@@ -1,8 +1,8 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { IMRobotInfo } from '@/types/interfaces/imRobot';
+import { IMRobotInfo, IMRobotTypeEnum } from '@/types/interfaces/imRobot';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'umi';
@@ -71,9 +71,13 @@ const IMRobot: React.FC = () => {
   const [mode, setMode] = useState<CreateUpdateModeEnum>(
     CreateUpdateModeEnum.Create,
   );
+  const [initialCreateType, setInitialCreateType] = useState<
+    IMRobotTypeEnum | undefined
+  >();
 
-  const handleCreate = () => {
+  const handleCreate = (type?: IMRobotTypeEnum) => {
     setMode(CreateUpdateModeEnum.Create);
+    setInitialCreateType(type);
     setCurrentInfo(null);
     setOpenModal(true);
   };
@@ -96,9 +100,33 @@ const IMRobot: React.FC = () => {
       tips="管理您的即时通讯平台机器人连接与智能体绑定"
       hideScroll={true}
       rightSlot={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          新增机器人
-        </Button>
+        <Space>
+          {platform === 'wechat' ? (
+            <>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => handleCreate(IMRobotTypeEnum.WeChatApp)}
+              >
+                新增企业应用
+              </Button>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={() => handleCreate(IMRobotTypeEnum.WeChatBot)}
+              >
+                新增机器人
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => handleCreate(IMRobotTypeEnum.WeChatBot)}
+            >
+              新增机器人
+            </Button>
+          )}
+        </Space>
       }
       contentPadding={0}
     >
@@ -125,6 +153,7 @@ const IMRobot: React.FC = () => {
         mode={mode}
         info={currentInfo}
         spaceId={spaceId}
+        initialType={initialCreateType}
         onCancel={() => setOpenModal(false)}
         onSuccess={handleSuccess}
       />
