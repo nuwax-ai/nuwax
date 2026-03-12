@@ -20,21 +20,11 @@ const IMRobot: React.FC = () => {
   const spaceId = Number(params.spaceId);
 
   // 平台过滤
-  const [platform, setPlatform] = useState<PlatformType>('dingtalk');
+  const [platform, setPlatform] = useState<PlatformType>('all');
   const [counts, setCounts] = useState<Record<string, number>>({
-    dingtalk: 9,
-    lark: 9,
-    wechat: 7,
-    slack: 0,
-    teams: 0,
-    telegram: 0,
-    discord: 0,
-    whatsapp: 0,
-    wechat_personal: 0,
-    line: 0,
-    kakaotalk: 0,
-    zoom: 0,
-    rcs: 0,
+    dingtalk: 0,
+    lark: 0,
+    wechat: 0,
   });
 
   const fetchCounts = useCallback(async () => {
@@ -45,16 +35,6 @@ const IMRobot: React.FC = () => {
       dingtalk: 9,
       lark: 9,
       wechat: 7,
-      slack: 0,
-      teams: 0,
-      telegram: 0,
-      discord: 0,
-      whatsapp: 0,
-      wechat_personal: 0,
-      line: 0,
-      kakaotalk: 0,
-      zoom: 0,
-      rcs: 0,
     });
   }, [spaceId]);
 
