@@ -4,21 +4,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export type PlatformType =
-  | 'all'
-  | 'dingtalk'
-  | 'lark'
-  | 'wechat'
-  | 'slack'
-  | 'teams'
-  | 'telegram'
-  | 'discord'
-  | 'whatsapp'
-  | 'wechat_personal'
-  | 'line'
-  | 'kakaotalk'
-  | 'zoom'
-  | 'rcs';
+export type PlatformType = 'all' | 'dingtalk' | 'lark' | 'wechat';
 
 interface PlatformItem {
   id: PlatformType;
@@ -40,114 +26,46 @@ const PlatformList: React.FC<PlatformListProps> = ({
   onChange,
   counts = {},
 }) => {
+  const totalCount = useMemo(() => {
+    return Object.values(counts).reduce((acc, cur) => acc + cur, 0);
+  }, [counts]);
+
   const platforms: PlatformItem[] = useMemo(
     () => [
       {
-        id: 'dingtalk',
-        name: '钉钉',
-        count: counts.dingtalk || 9,
+        id: 'all',
+        name: '全部',
+        count: totalCount,
         icon: '',
-        color: '#0089FF',
-        char: '钉',
+        color: '#666',
+        char: '全',
       },
       {
         id: 'lark',
         name: '飞书',
-        count: counts.lark || 9,
+        count: counts.lark || 0,
         icon: '',
         color: '#3370FF',
         char: '飞',
       },
       {
+        id: 'dingtalk',
+        name: '钉钉',
+        count: counts.dingtalk || 0,
+        icon: '',
+        color: '#0089FF',
+        char: '钉',
+      },
+      {
         id: 'wechat',
         name: '企业微信',
-        count: counts.wechat || 7,
+        count: counts.wechat || 0,
         icon: '',
         color: '#1E7E34',
         char: '企',
       },
-      {
-        id: 'slack',
-        name: 'Slack',
-        count: counts.slack || 0,
-        icon: '',
-        color: '#4A154B',
-        char: 'S',
-      },
-      {
-        id: 'teams',
-        name: 'Microsoft Teams',
-        count: counts.teams || 0,
-        icon: '',
-        color: '#6264A7',
-        char: 'T',
-      },
-      {
-        id: 'telegram',
-        name: 'Telegram',
-        count: counts.telegram || 0,
-        icon: '',
-        color: '#0088CC',
-        char: 'T',
-      },
-      {
-        id: 'discord',
-        name: 'Discord',
-        count: counts.discord || 0,
-        icon: '',
-        color: '#5865F2',
-        char: 'D',
-      },
-      {
-        id: 'whatsapp',
-        name: 'WhatsApp',
-        count: counts.whatsapp || 0,
-        icon: '',
-        color: '#25D366',
-        char: 'W',
-      },
-      {
-        id: 'wechat_personal',
-        name: '微信',
-        count: counts.wechat_personal || 0,
-        icon: '',
-        color: '#07C160',
-        char: '微',
-      },
-      {
-        id: 'line',
-        name: 'LINE',
-        count: counts.line || 0,
-        icon: '',
-        color: '#00B900',
-        char: 'L',
-      },
-      {
-        id: 'kakaotalk',
-        name: 'KakaoTalk',
-        count: counts.kakaotalk || 0,
-        icon: '',
-        color: '#FFCD00',
-        char: 'K',
-      },
-      {
-        id: 'zoom',
-        name: 'Zoom',
-        count: counts.zoom || 0,
-        icon: '',
-        color: '#2D8CFF',
-        char: 'Z',
-      },
-      {
-        id: 'rcs',
-        name: 'RCS',
-        count: counts.rcs || 0,
-        icon: '',
-        color: '#4A5CF2',
-        char: 'R',
-      },
     ],
-    [counts],
+    [counts, totalCount],
   );
 
   return (
