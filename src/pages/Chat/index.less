@@ -158,6 +158,80 @@
         margin: 0 auto 8px;
         animation: slide-in-up 0.3s ease-out;
       }
+
+      .queue-panel {
+        max-width: 800px;
+        width: 100%;
+        margin: 0 auto;
+        background: @colorBgElevated;
+        border: 1px solid @colorBorderSecondary;
+        border-radius: 20px;
+        padding: 6px @padding;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 6%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .queue-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        white-space: nowrap;
+      }
+
+      .queue-header-left {
+        display: flex;
+        align-items: center;
+        gap: @paddingXs;
+      }
+
+      .queue-title {
+        font-weight: 600;
+        color: @colorText;
+      }
+
+      .queue-count {
+        background: color-mix(in srgb, @colorPrimary 16%, transparent);
+        color: @colorPrimary;
+        border-radius: 999px;
+        padding: 0 8px;
+        font-size: @fontSizeSm;
+        line-height: 20px;
+        height: 20px;
+      }
+
+      .queue-clear {
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: @borderRadiusSm;
+        color: @colorTextSecondary;
+        transition: all 0.2s ease;
+        background: transparent;
+        border: none;
+        font: inherit;
+
+        &:hover {
+          color: @colorError;
+          background: color-mix(in srgb, @colorError 12%, transparent);
+        }
+      }
+
+      .queue-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+        min-width: 0;
+        max-height: 160px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 2px 0;
+
+        .scrollbar-auto-hide();
+      }
     }
 
     /* 文件树侧边栏样式 */

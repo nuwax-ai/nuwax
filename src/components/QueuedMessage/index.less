@@ -1,0 +1,103 @@
+@import '@/styles/color';
+@import '@/styles/theme';
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: @paddingSm;
+  width: 100%;
+  border: 1px solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  border-radius: 999px;
+  padding: 2px 6px;
+  height: 28px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, @colorPrimary 30%, @colorBorderSecondary);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 8%);
+  }
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.text {
+  font-size: @fontSizeSm;
+  color: @colorText;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.file-badge {
+  color: @colorTextSecondary;
+  background: @colorFillTertiary;
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: @fontSizeSm;
+  line-height: 18px;
+  height: 18px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  padding: 2px 6px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  color: @colorTextSecondary;
+
+  &:hover {
+    background: @colorBgTextHover;
+    color: @colorText;
+  }
+}
+
+.send-btn {
+  color: @colorPrimary;
+  border-color: color-mix(in srgb, @colorPrimary 24%, transparent);
+  background: color-mix(in srgb, @colorPrimary 10%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, @colorPrimary 16%, transparent);
+    border-color: color-mix(in srgb, @colorPrimary 40%, transparent);
+  }
+}
+
+.icon-btn {
+  width: 22px;
+  height: 22px;
+  justify-content: center;
+  padding: 0;
+}
+
+.delete-btn {
+  &:hover {
+    color: @colorError;
+    background: color-mix(in srgb, @colorError 10%, transparent);
+    border-color: color-mix(in srgb, @colorError 30%, transparent);
+  }
+}
