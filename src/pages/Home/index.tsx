@@ -1,6 +1,7 @@
-import ChatInputHome from '@/components/ChatInputHome';
+// import ChatInputHome from './ChatInputHome';
 import Loading from '@/components/custom/Loading';
 // import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import ChatInputHome from '@/components/ChatInputHome';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
