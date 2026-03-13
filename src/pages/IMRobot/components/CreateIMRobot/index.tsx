@@ -1,23 +1,32 @@
-import CustomFormModal from '@/components/CustomFormModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  IM_PLATFORM_LABEL_MAP,
+  IMPlatformEnum,
+} from '@/constants/imRobot.constants';
 import SelectTargetFormItem from '@/pages/SpaceTaskCenter/CreateTimedTask/components/SelectTargetFormItem';
-import { apiAddIMRobot, apiUpdateIMRobot } from '@/services/imRobot';
+import {
+  apiAddIMConfigChannel,
+  apiGetIMConfigChannelDetail,
+  apiTestIMConfigChannelConnection,
+  apiUpdateIMConfigChannel,
+} from '@/services/imRobot';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import {
-  IMRobotInfo,
-  IMRobotStatusEnum,
-  IMRobotTypeEnum,
-} from '@/types/interfaces/imRobot';
-import { Form, Input, message, Radio, Switch } from 'antd';
+import { IMRobotInfo, IMRobotTypeEnum } from '@/types/interfaces/imRobot';
+import { ModalForm, ProFormSwitch } from '@ant-design/pro-components';
+import { Button, Form, message } from 'antd';
 import React, { useEffect, useState } from 'react';
+import DynamicChannelForm, {
+  PlatformChannel,
+} from './components/DynamicChannelForm';
 
 export interface CreateIMRobotProps {
   open: boolean;
   mode: CreateUpdateModeEnum;
   info?: IMRobotInfo | null;
-  spaceId: number;
   initialType?: IMRobotTypeEnum;
+  platform?: PlatformChannel;
+  spaceId?: number;
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -26,155 +35,202 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
   open,
   mode,
   info,
-  spaceId,
   initialType,
+  platform,
+  spaceId,
   onCancel,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const robotType = Form.useWatch('type', form);
+  const [testing, setTesting] = useState(false);
+  const currentType =
+    mode === CreateUpdateModeEnum.Update ? info?.targetType : initialType;
+  const robotType = (currentType as IMRobotTypeEnum) || IMRobotTypeEnum.Bot;
 
   useEffect(() => {
-    if (open) {
+    const initData = async () => {
       if (mode === CreateUpdateModeEnum.Update && info) {
+        try {
+          // 获取最新详情
+          const res = await apiGetIMConfigChannelDetail(info.id);
+          if (res.code === SUCCESS_CODE && res.data) {
+            const detail = res.data;
+            let dynamicConfig = {};
+            try {
+              dynamicConfig = detail.configData
+                ? JSON.parse(detail.configData)
+                : {};
+            } catch (e) {
+              console.error('Parse configData failed:', e);
+            }
+
+            form.setFieldsValue({
+              name: detail.name,
+              targetType: detail.targetType || IMRobotTypeEnum.Bot,
+              enabled: detail.enabled,
+              target: {
+                name: detail.agentName,
+                targetId: detail.agentId,
+                icon: detail.agentIcon,
+                description: detail.agentDescription,
+              },
+              configData: dynamicConfig,
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Fetch IMRobot detail failed:', error);
+        }
+
+        // 回退逻辑：如果接口失败，使用传入的基础信息进行回显
+        let fallbackConfig = {};
+        try {
+          fallbackConfig = info.configData ? JSON.parse(info.configData) : {};
+        } catch (e) {
+          console.error('Parse fallback configData failed:', e);
+        }
+
         form.setFieldsValue({
           name: info.name,
-          type: info.type,
-          status: info.status === IMRobotStatusEnum.Enabled,
+          targetType: info.targetType || IMRobotTypeEnum.Bot,
+          enabled: info.enabled,
           target: {
-            name: info.targetName,
-            icon: info.targetIcon,
-            type: info.targetType,
-            targetId: info.targetId,
+            name: info.agentName,
+            targetId: info.agentId,
+            icon: info.agentIcon,
+            description: info.agentDescription,
           },
-          webhookUrl: info.config?.webhookUrl,
-          agentId: info.config?.agentId,
-          secret: info.config?.secret,
+          configData: fallbackConfig,
         });
       } else {
         form.resetFields();
         form.setFieldsValue({
-          type: initialType || IMRobotTypeEnum.WeChatBot,
-          status: true,
+          type: initialType || IMRobotTypeEnum.Bot,
+          enabled: true,
         });
       }
+    };
+
+    if (open) {
+      initData();
     }
   }, [open, mode, info, form, initialType]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (values: any) => {
     try {
-      const values = await form.validateFields();
-      setLoading(true);
-
       const params: any = {
+        channel: platform,
+        targetType: robotType,
+        agentId: values.target.targetId,
+        enabled: values.enabled,
+        configData: JSON.stringify(values.configData || {}),
         spaceId,
-        name: values.name,
-        type: values.type,
-        status: values.status
-          ? IMRobotStatusEnum.Enabled
-          : IMRobotStatusEnum.Disabled,
-        targetType: AgentComponentTypeEnum.Agent,
-        targetId: values.target.targetId,
-        config: {
-          webhookUrl: values.webhookUrl,
-          agentId: values.agentId,
-          secret: values.secret,
-        },
       };
 
-      let res;
-      if (mode === CreateUpdateModeEnum.Create) {
-        res = await apiAddIMRobot(params);
-      } else {
-        res = await apiUpdateIMRobot({ ...params, id: info?.id });
+      if (mode === CreateUpdateModeEnum.Update) {
+        params.id = info?.id;
       }
+
+      const res =
+        mode === CreateUpdateModeEnum.Create
+          ? await apiAddIMConfigChannel(params)
+          : await apiUpdateIMConfigChannel(params);
 
       if (res.code === SUCCESS_CODE) {
         message.success(
           mode === CreateUpdateModeEnum.Create ? '新增成功' : '编辑成功',
         );
         onSuccess();
+        return true;
       }
     } catch (error) {
       console.error('Validate Failed:', error);
+    }
+    return false;
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      const values = await form.validateFields();
+      setTesting(true);
+      const res = await apiTestIMConfigChannelConnection({
+        channel: platform || '',
+        targetType: robotType,
+        configData: JSON.stringify(values.configData || {}),
+      });
+
+      if (res.code === SUCCESS_CODE) {
+        message.success('测试连接成功');
+      }
+    } catch (error) {
+      console.error('Test Connection Failed:', error);
     } finally {
-      setLoading(false);
+      setTesting(false);
     }
   };
 
+  const showTestBtn =
+    mode === CreateUpdateModeEnum.Create &&
+    ((platform === IMPlatformEnum.Feishu &&
+      robotType === IMRobotTypeEnum.Bot) ||
+      (platform === IMPlatformEnum.Dingding &&
+        robotType === IMRobotTypeEnum.Bot) ||
+      (platform === IMPlatformEnum.Wework &&
+        robotType === IMRobotTypeEnum.App));
+
   const getTitle = () => {
-    if (mode === CreateUpdateModeEnum.Update) return '编辑机器人';
-    if (robotType === IMRobotTypeEnum.WeChatApp) return '新增企业应用';
-    return '新增机器人';
+    const pName = platform
+      ? IM_PLATFORM_LABEL_MAP[platform as IMPlatformEnum]
+      : '';
+    const prefix = mode === CreateUpdateModeEnum.Update ? '编辑' : '新增';
+    const suffix = robotType === IMRobotTypeEnum.App ? '应用' : '机器人';
+    return `${prefix}${pName}${suffix}`;
   };
 
   return (
-    <CustomFormModal
+    <ModalForm
       title={getTitle()}
       open={open}
       form={form}
-      onCancel={onCancel}
-      onConfirm={handleConfirm}
-      loading={loading}
-      width={600}
+      onOpenChange={(visible) => !visible && onCancel()}
+      onFinish={handleConfirm}
+      modalProps={{
+        destroyOnClose: true,
+        width: 600,
+      }}
+      submitter={{
+        render: (props, defaultDoms) => {
+          return [
+            defaultDoms[0],
+            showTestBtn && (
+              <Button
+                key="test"
+                loading={testing}
+                onClick={handleTestConnection}
+              >
+                测试连接
+              </Button>
+            ),
+            defaultDoms[1],
+          ];
+        },
+      }}
     >
-      <Form form={form} layout="vertical">
-        <Form.Item
-          name="name"
-          label="机器人名称"
-          rules={[{ required: true, message: '请输入机器人名称' }]}
-        >
-          <Input placeholder="请输入机器人名称" maxLength={50} showCount />
-        </Form.Item>
-
-        <Form.Item
-          name="type"
-          label="机器人类型"
-          rules={[{ required: true, message: '请选择机器人类型' }]}
-        >
-          <Radio.Group>
-            <Radio value={IMRobotTypeEnum.WeChatBot}>微信机器人</Radio>
-            <Radio value={IMRobotTypeEnum.WeChatApp}>企业应用</Radio>
-          </Radio.Group>
-        </Form.Item>
-
-        <Form.Item name="status" label="启用状态" valuePropName="checked">
-          <Switch checkedChildren="开启" unCheckedChildren="关闭" />
-        </Form.Item>
-
-        <SelectTargetFormItem form={form} name="target" label="绑定智能体" />
-
-        {robotType === IMRobotTypeEnum.WeChatBot && (
-          <Form.Item
-            name="webhookUrl"
-            label="Webhook URL"
-            rules={[{ required: true, message: '请输入 Webhook URL' }]}
-          >
-            <Input placeholder="请输入企业微信机器人 Webhook URL" />
-          </Form.Item>
-        )}
-
-        {robotType === IMRobotTypeEnum.WeChatApp && (
-          <>
-            <Form.Item
-              name="agentId"
-              label="AgentID"
-              rules={[{ required: true, message: '请输入 AgentID' }]}
-            >
-              <Input placeholder="请输入企业应用 AgentID" />
-            </Form.Item>
-            <Form.Item
-              name="secret"
-              label="Secret"
-              rules={[{ required: true, message: '请输入 Secret' }]}
-            >
-              <Input.Password placeholder="请输入企业应用 Secret" />
-            </Form.Item>
-          </>
-        )}
-      </Form>
-    </CustomFormModal>
+      <DynamicChannelForm platform={platform} type={robotType} />
+      <SelectTargetFormItem
+        form={form}
+        name="target"
+        label="智能体"
+        hideTop={[
+          AgentComponentTypeEnum.Knowledge,
+          AgentComponentTypeEnum.Table,
+          AgentComponentTypeEnum.Plugin,
+          AgentComponentTypeEnum.Workflow,
+        ]}
+        checkTag={AgentComponentTypeEnum.Agent}
+      />
+      <ProFormSwitch name="enabled" label="启用状态" />
+    </ModalForm>
   );
 };
 

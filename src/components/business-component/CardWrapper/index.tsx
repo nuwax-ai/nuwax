@@ -19,7 +19,7 @@ interface CardWrapperProps {
   // 标题
   title: string;
   // 头像
-  avatar: string;
+  avatar?: string;
   // 名称
   name: string;
   // 图片
@@ -158,7 +158,7 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
           <div
             className={cx('flex', 'items-center', styles['author-rel-info'])}
           >
-            <AuthorInfo avatar={avatar} name={name} />
+            {avatar && <AuthorInfo avatar={avatar} name={name} />}
             {extra && (
               <div
                 className={cx(

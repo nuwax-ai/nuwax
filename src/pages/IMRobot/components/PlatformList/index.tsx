@@ -1,18 +1,21 @@
+import {
+  IM_PLATFORM_ICON_MAP,
+  IM_PLATFORM_LABEL_MAP,
+  IMPlatformEnum,
+} from '@/constants/imRobot.constants';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export type PlatformType = 'all' | 'dingtalk' | 'lark' | 'wechat';
+export type PlatformType = IMPlatformEnum | undefined;
 
 interface PlatformItem {
-  id: PlatformType;
+  id: IMPlatformEnum;
   name: string;
   count: number;
   icon: string;
-  color: string;
-  char: string;
 }
 
 interface PlatformListProps {
@@ -26,46 +29,28 @@ const PlatformList: React.FC<PlatformListProps> = ({
   onChange,
   counts = {},
 }) => {
-  const totalCount = useMemo(() => {
-    return Object.values(counts).reduce((acc, cur) => acc + cur, 0);
-  }, [counts]);
-
   const platforms: PlatformItem[] = useMemo(
     () => [
       {
-        id: 'all',
-        name: '全部',
-        count: totalCount,
-        icon: '',
-        color: '#666',
-        char: '全',
+        id: IMPlatformEnum.Feishu,
+        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Feishu],
+        count: counts.feishu || 0,
+        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Feishu],
       },
       {
-        id: 'lark',
-        name: '飞书',
-        count: counts.lark || 0,
-        icon: '',
-        color: '#3370FF',
-        char: '飞',
+        id: IMPlatformEnum.Dingding,
+        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Dingding],
+        count: counts.dingding || 0,
+        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Dingding],
       },
       {
-        id: 'dingtalk',
-        name: '钉钉',
-        count: counts.dingtalk || 0,
-        icon: '',
-        color: '#0089FF',
-        char: '钉',
-      },
-      {
-        id: 'wechat',
-        name: '企业微信',
-        count: counts.wechat || 0,
-        icon: '',
-        color: '#1E7E34',
-        char: '企',
+        id: IMPlatformEnum.Wework,
+        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Wework],
+        count: counts.wework || 0,
+        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Wework],
       },
     ],
-    [counts, totalCount],
+    [counts],
   );
 
   return (
@@ -80,11 +65,8 @@ const PlatformList: React.FC<PlatformListProps> = ({
               className={cx(styles.item, { [styles.active]: isActive })}
               onClick={() => onChange(item.id)}
             >
-              <div
-                className={cx(styles.icon)}
-                style={{ backgroundColor: item.color }}
-              >
-                {item.char}
+              <div className={cx(styles.icon)}>
+                <img src={item.icon} alt={item.name} />
               </div>
               <div className={cx(styles.info)}>
                 <div className={cx(styles.name)}>{item.name}</div>

@@ -1,13 +1,11 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-
 /**
  * IM 机器人类型
  */
 export enum IMRobotTypeEnum {
-  /** 企业微信机器人 */
-  WeChatBot = 'WeChatBot',
-  /** 企业微信应用 */
-  WeChatApp = 'WeChatApp',
+  /** 机器人 */
+  Bot = 'bot',
+  /** 应用 */
+  App = 'app',
 }
 
 /**
@@ -25,48 +23,73 @@ export enum IMRobotStatusEnum {
  */
 export interface IMRobotInfo {
   id: number;
-  spaceId: number;
+  channel: string;
+  targetType: string;
+  targetId: number | string;
+  agentId: number;
+  agentName: string;
+  enabled: boolean;
+  configData: string;
   name: string;
-  type: IMRobotTypeEnum;
-  status: IMRobotStatusEnum;
-  /** 绑定目标类型（目前仅支持 Agent） */
-  targetType: AgentComponentTypeEnum.Agent;
-  /** 绑定目标 ID */
-  targetId: number;
-  /** 绑定目标名称 */
-  targetName?: string;
-  /** 绑定目标图标 */
-  targetIcon?: string;
-  /** 机器人配置（Webhook URL 等） */
-  config: {
-    webhookUrl?: string;
-    agentId?: string;
-    secret?: string;
-  };
   created: string;
+  creatorId: number;
+  creatorName: string;
   modified: string;
+  modifiedId: number;
+  modifiedName: string;
+  agentIcon?: string;
+  agentDescription?: string;
 }
 
 /**
- * 添加 IM 机器人参数
+ * 飞书机器人配置
  */
-export interface AddIMRobotParams {
-  spaceId: number;
-  name: string;
-  type: IMRobotTypeEnum;
-  status: IMRobotStatusEnum;
-  targetType: AgentComponentTypeEnum.Agent;
-  targetId: number;
-  config: {
-    webhookUrl?: string;
-    agentId?: string;
-    secret?: string;
-  };
+export interface FeishuConfig {
+  appId: string;
+  appSecret: string;
+  verificationToken: string;
+  encryptKey: string;
 }
 
 /**
- * 更新 IM 机器人参数
+ * 钉钉机器人配置
  */
-export interface UpdateIMRobotParams extends Partial<AddIMRobotParams> {
-  id: number;
+export interface DingdingConfig {
+  clientId: string;
+  clientSecret: string;
+  robotCode: string;
+}
+
+/**
+ * 企业微信机器人配置
+ */
+export interface WeworkBotConfig {
+  aibotId: string;
+  corpId: string;
+  token: string;
+  encodingAesKey: string;
+}
+
+/**
+ * 企业微信应用配置
+ */
+export interface WeworkAppConfig {
+  agentId: string;
+  corpId: string;
+  corpSecret: string;
+  token: string;
+  encodingAesKey: string;
+}
+
+/**
+ * 添加 IM 渠道配置参数
+ */
+export interface AddIMChannelParams {
+  id?: number;
+  channel: string; // feishu/dingding/wework
+  targetType: string;
+  agentId: number;
+  enabled: boolean;
+  configData: string; // JSON 字符串
+  spaceId?: number;
 }
