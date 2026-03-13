@@ -1,0 +1,158 @@
+/**
+ * MentionPopup 组件样式
+ * 实现类似图片中的 @ 提及弹窗样式
+ */
+
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 弹窗本体，固定在光标附近展示
+.mention-popup {
+  width: 320px;
+  max-height: 400px;
+  background: @colorBgContainer;
+  border-radius: @borderRadius;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  overflow: hidden;
+  z-index: 1050;
+  animation: popup-fade-in 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+
+  // 顶部分类标签区域
+  .mention-tabs {
+    display: flex;
+    align-items: center;
+    padding: @paddingXs @paddingSm;
+    border-bottom: 1px solid @colorBorderSecondary;
+    gap: @marginXs;
+
+    .mention-tab {
+      padding: @paddingXxs @paddingSm;
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+      cursor: pointer;
+      border-radius: @borderRadius;
+      transition: all 0.2s;
+
+      &:hover {
+        color: @colorText;
+        background: @colorFillQuaternary;
+      }
+
+      &.active {
+        color: @colorText;
+        background: @colorFillSecondary;
+        font-weight: @fontWeightStrong;
+      }
+    }
+  }
+
+  // 显示当前 @ 后输入的关键字，方便确认筛选条件
+  .mention-search-hint {
+    padding: @paddingXxs @paddingSm;
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    background: @colorFillQuaternary;
+    border-bottom: 1px solid @colorBorderSecondary;
+  }
+
+  // 列表主体区域，同时承担滚动分页容器的职责
+  .mention-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: @paddingXxs 0;
+    max-height: 280px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 3px;
+
+      &:hover {
+        background: @colorTextTertiary;
+      }
+    }
+
+    // 单个提及项
+    .mention-item {
+      display: flex;
+      align-items: center;
+      padding: @paddingXs @paddingSm;
+      cursor: pointer;
+      transition: all 0.15s;
+      gap: @marginSm;
+
+      &:hover {
+        background: @colorFillQuaternary;
+      }
+
+      // 键盘或鼠标同步后的当前选中项
+      &.selected {
+        background: @colorPrimaryBg;
+
+        .mention-item-name {
+          color: @colorPrimary;
+        }
+      }
+
+      .mention-item-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: @borderRadius;
+        background: @colorFillSecondary;
+        font-size: 16px;
+        flex-shrink: 0;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: inherit;
+        }
+      }
+
+      .mention-item-name {
+        flex: 1;
+        font-size: @fontSize;
+        color: @colorText;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .mention-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: @paddingLg;
+      color: @colorTextQuaternary;
+      font-size: @fontSizeSm;
+    }
+  }
+}
+
+@keyframes popup-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
