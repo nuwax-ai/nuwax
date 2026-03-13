@@ -11,6 +11,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
+import QueuedMessageComponent from '@/components/QueuedMessage';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -21,6 +22,7 @@ import { useConversationScrollDetection } from '@/hooks/useConversationScrollDet
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useMessageQueue } from '@/hooks/useMessageQueue';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
@@ -36,6 +38,7 @@ import {
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
@@ -47,6 +50,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { QueuedMessage } from '@/types/interfaces/messageQueue';
 import {
   IUpdateStaticFileParams,
   StaticFileInfo,
@@ -59,14 +63,20 @@ import {
   arraysContainSameItems,
   parsePageAppProjectId,
 } from '@/utils/common';
-import eventBus from '@/utils/eventBus';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
@@ -202,12 +212,19 @@ const Chat: React.FC = () => {
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 停止会话
+    runStopConversation,
+    // 获取当前会话ID
+    getCurrentConversationId,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
+
+  // 消息队列
+  const messageQueue = useMessageQueue();
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
@@ -666,32 +683,184 @@ const Chat: React.FC = () => {
   };
 
   // 消息发送
-  const handleMessageSend = (
-    messageInfo: string,
-    files: UploadFileInfo[] = [],
-  ) => {
-    // 变量参数为空，不发送消息
-    if (wholeDisabled) {
-      form.validateFields(); // 触发表单验证以显示error
-      // message.warning('请填写必填参数'); // This line was removed as per the edit hint
-      return;
-    }
+  const handleMessageSend = useCallback(
+    (messageInfo: string, files: UploadFileInfo[] = []) => {
+      // 变量参数为空，不发送消息
+      if (wholeDisabled) {
+        form.validateFields(); // 触发表单验证以显示error
+        return;
+      }
 
-    // 标记用户已发送消息
-    setHasUserSentMessage(true);
+      // 队列拦截：会话活跃时消息入队
+      if (isConversationActive) {
+        messageQueue.enqueue({ text: messageInfo, files });
+        return;
+      }
 
-    isSendMessageRef.current = true;
-    const effectiveSandboxId = getEffectiveSandboxId();
+      // 标记用户已发送消息
+      setHasUserSentMessage(true);
 
-    onMessageSend(
+      isSendMessageRef.current = true;
+      const effectiveSandboxId = getEffectiveSandboxId();
+
+      onMessageSend(
+        id,
+        messageInfo,
+        files,
+        selectedComponentList,
+        variableParams,
+        effectiveSandboxId,
+      );
+    },
+    [
+      wholeDisabled,
+      isConversationActive,
+      messageQueue.enqueue,
       id,
-      messageInfo,
-      files,
       selectedComponentList,
       variableParams,
-      effectiveSandboxId,
-    );
-  };
+      getEffectiveSandboxId,
+      onMessageSend,
+    ],
+  );
+
+  /** 立即发送：停止当前会话，将消息移到队列头部，由 auto-consume 自动发送 */
+  const handleSendNowQueued = useCallback(
+    async (qMsg: QueuedMessage) => {
+      // 移除原位置，插入到队列头部
+      messageQueue.remove(qMsg.id);
+      messageQueue.prepend({ text: qMsg.text, files: qMsg.files });
+      // 停止当前会话，isConversationActive → false 时 auto-consume 将自动发送
+      const conversationId = getCurrentConversationId();
+      if (conversationId) {
+        runStopConversation(conversationId);
+      }
+    },
+    [
+      messageQueue.remove,
+      messageQueue.prepend,
+      getCurrentConversationId,
+      runStopConversation,
+    ],
+  );
+
+  /** 删除队列消息 */
+  const handleDeleteQueued = useCallback(
+    (queuedId: string) => {
+      messageQueue.remove(queuedId);
+    },
+    [messageQueue.remove],
+  );
+
+  /** 编辑：移除并回填到输入框 */
+  const handleEditQueued = useCallback(
+    (qMsg: QueuedMessage) => {
+      const item = messageQueue.dequeueForEdit(qMsg.id);
+      if (item) {
+        eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
+          text: item.text,
+          files: item.files,
+        });
+      }
+    },
+    [messageQueue.dequeueForEdit],
+  );
+
+  // 自动消费队列：AI 响应完成后自动发送队列头部消息
+  const prevIsConversationActiveRef = useRef(isConversationActive);
+  const isConversationActiveRef = useRef(isConversationActive);
+  const autoConsumeLockRef = useRef(false);
+  const autoConsumeTimerRef = useRef<number | null>(null);
+  const autoConsumeReleaseTimerRef = useRef<number | null>(null);
+
+  const clearAutoConsumeTimers = useCallback(() => {
+    if (autoConsumeTimerRef.current) {
+      window.clearTimeout(autoConsumeTimerRef.current);
+      autoConsumeTimerRef.current = null;
+    }
+    if (autoConsumeReleaseTimerRef.current) {
+      window.clearTimeout(autoConsumeReleaseTimerRef.current);
+      autoConsumeReleaseTimerRef.current = null;
+    }
+  }, []);
+
+  // 切换会话时清空队列
+  useEffect(() => {
+    messageQueue.clearQueue();
+    autoConsumeLockRef.current = false;
+    clearAutoConsumeTimers();
+  }, [id, clearAutoConsumeTimers, messageQueue.clearQueue]);
+
+  // 组件卸载时清理计时器
+  useEffect(() => {
+    return () => clearAutoConsumeTimers();
+  }, [clearAutoConsumeTimers]);
+
+  // 当会话重新进入活跃状态时，释放自动消费锁
+  useEffect(() => {
+    isConversationActiveRef.current = isConversationActive;
+    if (isConversationActive) {
+      autoConsumeLockRef.current = false;
+      clearAutoConsumeTimers();
+    }
+  }, [isConversationActive, clearAutoConsumeTimers]);
+
+  useEffect(() => {
+    const wasActive = prevIsConversationActiveRef.current;
+    prevIsConversationActiveRef.current = isConversationActive;
+
+    if (
+      wasActive &&
+      !isConversationActive &&
+      messageQueue.hasQueuedMessages &&
+      !autoConsumeLockRef.current
+    ) {
+      // 错误暂停：检查最后一条消息是否出错
+      const lastMessage = messageList?.[messageList.length - 1];
+      if (lastMessage?.status === MessageStatusEnum.Error) {
+        return;
+      }
+
+      autoConsumeLockRef.current = true;
+      clearAutoConsumeTimers();
+      autoConsumeTimerRef.current = window.setTimeout(() => {
+        autoConsumeTimerRef.current = null;
+        // 如果会话已重新变为活跃，等待下一轮完成
+        if (isConversationActiveRef.current) {
+          autoConsumeLockRef.current = false;
+          return;
+        }
+
+        if (wholeDisabled) {
+          autoConsumeLockRef.current = false;
+          return;
+        }
+
+        const next = messageQueue.dequeueFirst();
+        if (next) {
+          handleMessageSend(next.text, next.files || []);
+        } else {
+          autoConsumeLockRef.current = false;
+        }
+      }, 500);
+
+      // 兜底释放锁，防止异常情况下卡死
+      autoConsumeReleaseTimerRef.current = window.setTimeout(() => {
+        autoConsumeReleaseTimerRef.current = null;
+        if (autoConsumeLockRef.current && !isConversationActiveRef.current) {
+          autoConsumeLockRef.current = false;
+        }
+      }, 2000);
+    }
+  }, [
+    isConversationActive,
+    messageQueue.hasQueuedMessages,
+    messageQueue.dequeueFirst,
+    messageList,
+    handleMessageSend,
+    wholeDisabled,
+    clearAutoConsumeTimers,
+  ]);
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
@@ -1223,6 +1392,38 @@ const Chat: React.FC = () => {
                   className={cx(styles['conversation-status-bar'])}
                 />
               )}
+
+            {/* 队列消息固定展示区 */}
+            {messageQueue.hasQueuedMessages && (
+              <div className={cx(styles['queue-panel'])}>
+                <div className={cx(styles['queue-header'])}>
+                  <div className={cx(styles['queue-header-left'])}>
+                    <div className={cx(styles['queue-title'])}>待发送</div>
+                    <div className={cx(styles['queue-count'])}>
+                      {messageQueue.queue.length}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={cx(styles['queue-clear'])}
+                    onClick={messageQueue.clearQueue}
+                  >
+                    清空全部
+                  </button>
+                </div>
+                <div className={cx(styles['queue-list'])}>
+                  {messageQueue.queue.map((qMsg) => (
+                    <QueuedMessageComponent
+                      key={qMsg.id}
+                      message={qMsg}
+                      onSendNow={handleSendNowQueued}
+                      onDelete={handleDeleteQueued}
+                      onEdit={handleEditQueued}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 聊天输入框 */}
             <ChatInputHome
