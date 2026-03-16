@@ -1,0 +1,55 @@
+.container {
+  padding: 10px;
+  height: 100%;
+  overflow-y: auto;
+
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 16px;
+    padding-bottom: 24px;
+  }
+}
+
+.emptyWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+.time {
+  font-size: 12px;
+  color: #86909c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.extra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 8px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}

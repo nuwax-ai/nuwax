@@ -308,7 +308,7 @@ const MyComputerManage: React.FC = () => {
                               window.location.href = `/api/sandbox/config/redirect/${item.id}`;
                             }
                           }}
-                          className={styles['action-btn']}
+                          className="action-btn"
                         />
                       </Tooltip>
                       {item.configKey && (
@@ -322,7 +322,7 @@ const MyComputerManage: React.FC = () => {
                               message.success('客户端连接密钥已复制');
                             }}
                             className={classNames(
-                              styles['action-btn'],
+                              'action-btn',
                               styles['link-key-btn'],
                             )}
                           />
@@ -330,23 +330,16 @@ const MyComputerManage: React.FC = () => {
                       )}
                       <Tooltip title="编辑">
                         <Button
+                          className="action-btn edit-btn"
                           icon={<EditOutlined />}
                           onClick={() => handleEdit(item)}
-                          className={classNames(
-                            styles['action-btn'],
-                            styles['edit-btn'],
-                          )}
                         />
                       </Tooltip>
                       <Tooltip title="删除">
                         <Button
-                          danger
+                          className="action-btn delete-btn"
                           icon={<DeleteOutlined />}
                           onClick={() => handleDelete(item.id)}
-                          className={classNames(
-                            styles['action-btn'],
-                            styles['delete-btn'],
-                          )}
                         />
                       </Tooltip>
                     </Space>

@@ -71,6 +71,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   space_square: 'icons-nav-space_square',
   // 成员与设置
   member_setting: 'icons-nav-settings',
+  // IM 机器人
+  im_jiqiren: 'icons-nav-computer',
 
   // Adding leftovers from logs or standard mapping
   component_dev: 'icons-nav-cube',

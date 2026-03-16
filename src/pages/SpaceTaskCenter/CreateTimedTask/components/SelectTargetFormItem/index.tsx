@@ -16,6 +16,8 @@ export interface SelectTargetProps {
   name: string;
   label: string;
   onChange?: (value: McpConfigComponentInfo | null) => void;
+  hideTop?: AgentComponentTypeEnum[];
+  checkTag?: AgentComponentTypeEnum;
 }
 
 const SelectTarget: React.FC<SelectTargetProps> = ({
@@ -23,6 +25,12 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
   name,
   label,
   onChange,
+  hideTop = [
+    AgentComponentTypeEnum.Knowledge,
+    AgentComponentTypeEnum.Table,
+    AgentComponentTypeEnum.Plugin,
+  ],
+  checkTag = AgentComponentTypeEnum.Workflow,
 }) => {
   // 处于loading或added状态的组件列表
   const [addComponents, setAddComponents] = useState<
@@ -105,15 +113,11 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
         // 隐藏顶部
-        hideTop={[
-          AgentComponentTypeEnum.Knowledge,
-          AgentComponentTypeEnum.Table,
-          AgentComponentTypeEnum.Plugin,
-        ]}
+        hideTop={hideTop}
         isSpaceOnly={true}
         open={openAddComponent}
         onCancel={() => setOpenAddComponent(false)}
-        checkTag={AgentComponentTypeEnum.Workflow}
+        checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
       />

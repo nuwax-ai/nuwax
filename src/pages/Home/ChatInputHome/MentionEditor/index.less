@@ -1,0 +1,125 @@
+/**
+ * MentionEditor 组件样式
+ * contenteditable div 实现的富文本输入框样式
+ */
+
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 编辑器与弹窗的相对定位容器
+.mention-editor-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+// contenteditable 输入区域本体
+.mention-editor {
+  position: relative;
+  width: 100%;
+  padding: @paddingXs @paddingSm;
+  font-size: @fontSize;
+  line-height: 1.5;
+  color: @colorText;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  caret-color: @colorPrimary;
+
+  // 自定义 placeholder，避免 contenteditable 的 :empty 不稳定问题
+  &.empty::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: @paddingXs;
+    left: @paddingSm;
+    right: @paddingSm;
+    display: block;
+    color: @colorTextQuaternary;
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.disabled {
+    // 禁用态视觉反馈
+    cursor: not-allowed;
+    opacity: 0.5;
+    user-select: none;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @colorBorder;
+    border-radius: 3px;
+
+    &:hover {
+      background: @colorTextTertiary;
+    }
+  }
+}
+
+// 弹窗包裹层，提供独立层级，避免被外层遮挡
+.mention-popup-wrapper {
+  position: relative;
+  z-index: 1050;
+}
+
+// 已插入编辑器中的 mention 标签
+.mention-chip {
+  display: inline-flex;
+  align-items: center;
+  background: @colorPrimaryBg;
+  border-radius: @borderRadius;
+  padding: 2px 4px 2px 8px;
+  margin: 0 2px;
+  user-select: none;
+  cursor: default;
+  transition: all 0.2s;
+
+  &:hover {
+    background: @colorPrimaryBgHover;
+
+    // 仅在 hover 时强调删除按钮，平时弱化视觉噪音
+    .mention-delete {
+      opacity: 1;
+    }
+  }
+
+  .mention-content {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    .mention-name {
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+      font-weight: 400;
+    }
+
+    .mention-delete {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 2px;
+      font-size: 12px;
+      color: @colorTextSecondary;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: all 0.2s;
+    }
+  }
+}

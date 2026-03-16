@@ -51,6 +51,11 @@ const routes = [
         path: '/space/:spaceId/task-center',
         component: '@/pages/SpaceTaskCenter',
       },
+      // IM 机器人
+      {
+        path: '/space/:spaceId/im-robot',
+        component: '@/pages/IMRobot',
+      },
       {
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',

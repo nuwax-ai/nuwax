@@ -280,15 +280,7 @@ function TableActions<T>({
             <Button
               type="link"
               size="small"
-              icon={
-                moreText ? undefined : (
-                  <Button
-                    size="small"
-                    type="link"
-                    icon={<ICON_MORE />}
-                  ></Button>
-                )
-              }
+              icon={moreText ? undefined : <ICON_MORE />}
               style={{ padding: '0 4px' }}
             >
               {moreText}

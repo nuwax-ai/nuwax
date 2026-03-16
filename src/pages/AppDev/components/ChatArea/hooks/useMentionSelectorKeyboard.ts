@@ -3,8 +3,7 @@ import type {
   MentionPosition,
   MentionSelectorHandle,
   MentionTriggerResult,
-} from '../../MentionSelector/types';
-
+} from '../components/MentionSelector/types';
 export interface UseMentionSelectorKeyboardParams {
   mentionTrigger: MentionTriggerResult;
   mentionPosition: MentionPosition;

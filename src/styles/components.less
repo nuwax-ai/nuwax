@@ -1,0 +1,49 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 通用操作按钮样式
+.action-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+    background: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  &.edit-btn {
+    border-color: #dcfce7;
+    background: #f0fdf4;
+    color: #10b981;
+
+    &:hover {
+      background: #dcfce7 !important;
+      border-color: #bbf7d0 !important;
+      color: #059669 !important;
+    }
+  }
+
+  &.delete-btn {
+    border-color: #fee2e2;
+    background: #fff1f2;
+    color: #ef4444;
+
+    &:hover {
+      background: #fee2e2 !important;
+      border-color: #fecaca !important;
+      color: #dc2626 !important;
+    }
+  }
+}
