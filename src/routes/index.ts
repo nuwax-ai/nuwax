@@ -53,7 +53,7 @@ const routes = [
       },
       // IM 机器人
       {
-        path: '/space/:spaceId/im-robot',
+        path: '/space/:spaceId/im_channel',
         component: '@/pages/IMRobot',
       },
       {
