@@ -19,7 +19,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 聊天输入组件
+ * 手机端聊天输入组件
  */
 const ChatInputPhone: React.FC<ChatInputProps> = ({
   className,

@@ -1,3 +1,4 @@
+import { XModalForm } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   IM_PLATFORM_LABEL_MAP,
@@ -13,7 +14,7 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
-import { ModalForm, ProFormSwitch } from '@ant-design/pro-components';
+import { ProFormSwitch } from '@ant-design/pro-components';
 import { Button, Form, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import DynamicChannelForm, {
@@ -186,7 +187,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
   };
 
   return (
-    <ModalForm
+    <XModalForm
       title={getTitle()}
       open={open}
       form={form}
@@ -228,7 +229,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         checkTag={AgentComponentTypeEnum.Agent}
       />
       <ProFormSwitch name="enabled" label="启用状态" />
-    </ModalForm>
+    </XModalForm>
   );
 };
 

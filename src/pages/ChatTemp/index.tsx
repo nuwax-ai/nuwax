@@ -1,7 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AliyunCaptcha from '@/components/AliyunCaptcha';
 import ChatInputHome from '@/components/ChatInputHome';
-import ChatInputPhone from '@/components/ChatInputPhone';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -65,6 +64,7 @@ import React, {
 } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import ChatInputPhone from './ChatInputPhone';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -941,6 +941,9 @@ const ChatTemp: React.FC = () => {
               // 临时会话停止
               onTempChatStop={runStopTempConversation}
               loadingStopTempConversation={loadingStopTempConversation}
+              // 禁用 @ 提及功能
+              enableMention={false}
+              placeholder="直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片"
             />
             {/*手机会话输入框*/}
             <ChatInputPhone

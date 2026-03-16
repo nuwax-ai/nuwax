@@ -17,7 +17,7 @@ interface CardWrapperProps {
   // 内容
   content: string;
   // 标题
-  title: string;
+  title: React.ReactNode;
   // 头像
   avatar?: string;
   // 名称
@@ -154,7 +154,11 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
             'overflow-hide',
           )}
         >
-          <h3 className={cx('text-ellipsis', styles.title)}>{title}</h3>
+          {typeof title === 'string' ? (
+            <h3 className={cx('text-ellipsis', styles.title)}>{title}</h3>
+          ) : (
+            <div style={{ width: '100%', overflow: 'hidden' }}>{title}</div>
+          )}
           <div
             className={cx('flex', 'items-center', styles['author-rel-info'])}
           >

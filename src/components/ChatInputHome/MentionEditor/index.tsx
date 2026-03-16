@@ -23,6 +23,7 @@
  * ```
  */
 
+import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
@@ -39,13 +40,18 @@ import type {
 } from '../MentionPopup/types';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
+
 /**
- * 获取光标相对于视口的位置
- * 用于定位 MentionPopup 弹窗
+ * 获取光标相对于视口的位置，并根据期望方向计算弹窗显示位置
+ * 当 placement 为 auto 时，会根据可用空间自动选择向上或向下展开
  *
- * @returns 光标位置对象 { top, left }，如果无法获取则返回 null
+ * @param placement - 弹窗期望方向：'auto' | 'up' | 'down'
+ * @returns 弹窗位置对象 { top, left }，如果无法获取则返回 null
  */
-const getCaretPosition = (): { top: number; left: number } | null => {
+const getCaretPosition = (
+  placement: 'auto' | 'up' | 'down' = 'auto',
+): { top: number; left: number } | null => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
     return null;
@@ -53,10 +59,33 @@ const getCaretPosition = (): { top: number; left: number } | null => {
 
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
+  const viewportHeight =
+    window.innerHeight || document.documentElement.clientHeight || 0;
 
-  // 弹窗显示在光标下方，偏移 4px
+  // 参考 MentionPopup 的最大高度（index.less 中为 280px 列表 + 头部区域）
+  const POPUP_ESTIMATED_HEIGHT = 320;
+
+  let finalPlacement = placement;
+  if (placement === 'auto') {
+    const spaceBelow = viewportHeight - rect.bottom;
+    finalPlacement = spaceBelow >= POPUP_ESTIMATED_HEIGHT ? 'down' : 'up';
+  }
+
+  let top: number;
+  if (finalPlacement === 'down') {
+    // 弹窗显示在光标下方，偏移 4px
+    top = rect.bottom + 4;
+  } else {
+    // 弹窗显示在光标上方，预留估算高度和 4px 间距
+    top = rect.top - POPUP_ESTIMATED_HEIGHT - 4;
+    // 防止超出可视区域顶部
+    if (top < 4) {
+      top = 4;
+    }
+  }
+
   return {
-    top: rect.bottom + 4,
+    top,
     left: rect.left,
   };
 };
@@ -257,7 +286,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       onChange,
       onPressEnter,
       onPaste,
-      placeholder = '直接输入指令；可通过回车发送；输入@唤起工具；支持粘贴图片',
+      placeholder = '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持输入@唤起技能；支持粘贴图片',
       autoFocus = true,
       disabled = false,
       className,
@@ -265,6 +294,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       onSkillIdsChange,
       // 是否启用 @ 提及功能，默认启用
       enableMention = true,
+      // @ 弹窗展示方向：auto | up | down
+      mentionPlacement = 'auto',
       // 默认需要回显为 mention chip 的技能列表（按顺序渲染）
       defaultMentions,
       minRows = 2,
@@ -724,7 +755,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       // 是否存在有效的 @ 提及，如果有，则显示弹窗
       if (mentionInfo.hasMention) {
         // 检测到有效的 @ 提及
-        const position = getCaretPosition();
+        const position = getCaretPosition(mentionPlacement);
         if (position) {
           // 保存当前的 range 和 textNode，用于后续插入 mention
           const selection = window.getSelection();
@@ -743,7 +774,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 没有有效的 @ 提及，关闭弹窗
         closeMentionPopup();
       }
-    }, [enableMention, getTextContent, onChange, closeMentionPopup]);
+    }, [
+      enableMention,
+      mentionPlacement,
+      getTextContent,
+      onChange,
+      closeMentionPopup,
+    ]);
 
     /**
      * 处理键盘按下事件
@@ -926,7 +963,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
               savedTextNodeRef.current = textNode;
 
               // 光标在 @ 后面，没有空格间隔，显示弹窗
-              const position = getCaretPosition();
+              const position = getCaretPosition(mentionPlacement);
               if (position) {
                 setMentionPosition(position);
                 setMentionSearchText(textAfterAt);
@@ -961,7 +998,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           }
         }
       }, 0);
-    }, [disabled, enableMention, closeMentionPopup]);
+    }, [disabled, enableMention, mentionPlacement, closeMentionPopup]);
 
     // ==================== Effects ====================
 
@@ -1035,9 +1072,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         {/* 可编辑区域 */}
         <div
           ref={editorRef}
-          className={`${styles['mention-editor']} ${className || ''} ${
-            isEditorEmpty ? styles.empty : ''
-          } ${disabled ? styles.disabled : ''}`}
+          className={cx(styles['mention-editor'], className, {
+            [styles.empty]: isEditorEmpty,
+            [styles.disabled]: disabled,
+          })}
           contentEditable={!disabled}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
@@ -1054,7 +1092,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           suppressContentEditableWarning
         />
 
-        {/* 提及选择弹窗 */}
+        {/* @提及技能选择弹窗 */}
         <div className={styles['mention-popup-wrapper']}>
           <MentionPopup
             ref={mentionPopupRef}

@@ -101,6 +101,8 @@ export interface SingleAgentProps {
   showUserCount?: boolean;
   showConvCount?: boolean;
   showCollectCount?: boolean;
+  collectApi?: (targetId: number) => Promise<any>;
+  unCollectApi?: (targetId: number) => Promise<any>;
 }
 
 // 广场单个组件（插件、工作流等）

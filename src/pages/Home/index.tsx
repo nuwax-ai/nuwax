@@ -1,3 +1,4 @@
+import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -20,7 +21,6 @@ import { AffixRef, App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
-import ChatInputHome from './ChatInputHome';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 

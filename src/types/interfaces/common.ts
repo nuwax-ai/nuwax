@@ -523,6 +523,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
+  /** @ 提及弹窗的展示方向：auto | up | down，默认 auto */
+  mentionPlacement?: 'auto' | 'up' | 'down';
   showAnnouncement?: boolean;
   // 临时会话停止方法
   onTempChatStop?: (requestId: string) => void;
@@ -552,6 +554,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   saveComputerOnSelect?: boolean;
   /** 是否为个人电脑 */
   isPersonalComputer?: boolean;
+  /** 占位符文本 */
+  placeholder?: string;
 }
 
 // 聊天框底部更多操作组件

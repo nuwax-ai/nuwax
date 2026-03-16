@@ -132,6 +132,8 @@ export interface MentionEditorProps {
   className?: string;
   /** 是否启用 @ 提及功能，默认 true */
   enableMention?: boolean;
+  /** MentionPopup 弹窗的展示方向：auto | up | down，默认 auto */
+  mentionPlacement?: 'auto' | 'up' | 'down';
   /** 用于回显的默认提及项列表（需同时传入 value 文本） */
   defaultMentions?: MentionItem[];
   /** 选择提及项时的回调 */

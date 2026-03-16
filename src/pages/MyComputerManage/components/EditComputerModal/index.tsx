@@ -1,6 +1,6 @@
+import { XModalForm } from '@/components/ProComponents';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
-  ModalForm,
   ProFormDigit,
   ProFormText,
   ProFormTextArea,
@@ -40,7 +40,7 @@ const EditComputerModal: React.FC<EditComputerModalProps> = ({
   }, [open, initialData, form]);
 
   return (
-    <ModalForm
+    <XModalForm
       title={initialData ? '修改电脑名称' : '新增电脑'}
       width={480}
       open={open}
@@ -56,7 +56,7 @@ const EditComputerModal: React.FC<EditComputerModalProps> = ({
           submitText: '确认',
         },
       }}
-      onFinish={async (values) => {
+      onFinish={async (values: any) => {
         await onFinish(values);
         return true;
       }}
@@ -106,7 +106,7 @@ const EditComputerModal: React.FC<EditComputerModalProps> = ({
           rows: 3,
         }}
       />
-    </ModalForm>
+    </XModalForm>
   );
 };
 

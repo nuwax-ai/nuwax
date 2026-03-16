@@ -1,8 +1,5 @@
-import {
-  ModalForm,
-  ProFormText,
-  ProFormTextArea,
-} from '@ant-design/pro-components';
+import { XModalForm } from '@/components/ProComponents';
+import { ProFormText, ProFormTextArea } from '@ant-design/pro-components';
 import { Form } from 'antd';
 import React, { useEffect } from 'react';
 
@@ -48,7 +45,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   }, [open, mode, initialData, form]);
 
   return (
-    <ModalForm
+    <XModalForm
       title={`${mode === 'add' ? '添加' : '编辑'}${categoryLabel}分类`}
       open={open}
       form={form}
@@ -108,7 +105,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           showCount: true,
         }}
       />
-    </ModalForm>
+    </XModalForm>
   );
 };
 

@@ -655,6 +655,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+              // 禁用 @ 提及功能
+              enableMention={false}
+              placeholder="直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片"
             />
           </div>
         </div>

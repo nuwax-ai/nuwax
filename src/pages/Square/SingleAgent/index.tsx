@@ -27,6 +27,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   showUserCount = true,
   showConvCount = true,
   showCollectCount = true,
+  collectApi = apiCollectAgent,
+  unCollectApi = apiUnCollectAgent,
 }) => {
   const {
     targetId,
@@ -39,7 +41,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   } = publishedItemInfo;
 
   // 智能体收藏
-  const { run: runCollectAgent } = useRequest(apiCollectAgent, {
+  const { run: runCollectAgent } = useRequest((id: number) => collectApi(id), {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
@@ -48,13 +50,16 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   });
 
   // 智能体取消收藏
-  const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      onToggleCollectSuccess(targetId, false);
+  const { run: runUnCollectAgent } = useRequest(
+    (id: number) => unCollectApi(id),
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        onToggleCollectSuccess(targetId, false);
+      },
     },
-  });
+  );
 
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {

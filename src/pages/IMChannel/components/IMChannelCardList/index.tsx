@@ -43,6 +43,50 @@ export interface IMChannelCardListProps {
   keyword?: string;
 }
 
+const ConfigFieldValue: React.FC<{ record: IMChannelInfo }> = ({ record }) => {
+  let configData: any = {};
+  try {
+    configData = JSON.parse(record.configData || '{}');
+  } catch (e) {
+    // 解析失败
+  }
+
+  const platform = record.channel;
+
+  if (platform === IMPlatformEnum.Feishu) {
+    return (
+      <span
+        style={{ color: '#828894', fontSize: 12 }}
+        className="text-ellipsis"
+      >
+        AppID: {configData.appId || '-'}
+      </span>
+    );
+  }
+  if (platform === IMPlatformEnum.Dingtalk) {
+    return (
+      <span
+        style={{ color: '#828894', fontSize: 12 }}
+        className="text-ellipsis"
+      >
+        RobotCode: {configData.robotCode || '-'}
+      </span>
+    );
+  }
+  if (platform === IMPlatformEnum.Wework) {
+    return (
+      <span
+        style={{ color: '#828894', fontSize: 12 }}
+        className="text-ellipsis"
+      >
+        Token: {configData.token || '-'}
+      </span>
+    );
+  }
+
+  return null;
+};
+
 const IMChannelCardList = forwardRef<
   IMChannelCardListRef,
   IMChannelCardListProps
@@ -154,7 +198,24 @@ const IMChannelCardList = forwardRef<
         <CardWrapper
           key={record.id}
           className={cx(styles.card)}
-          title={record.agentName || '未绑定智能体'}
+          title={
+            <div
+              className={cx('flex', 'items-center')}
+              style={{ width: '100%', gap: 8 }}
+            >
+              <span className="text-ellipsis" style={{ flex: 1 }}>
+                {record.agentName || '未绑定智能体'}
+              </span>
+              {record.channel === IMPlatformEnum.Wework && (
+                <Tag
+                  color={isBot ? 'blue' : 'green'}
+                  style={{ marginRight: 0, flexShrink: 0 }}
+                >
+                  {isBot ? '机器人' : '应用'}
+                </Tag>
+              )}
+            </div>
+          }
           name={record.name}
           content={record.agentDescription || ''}
           icon={record.agentIcon || platformIcon}
@@ -168,12 +229,7 @@ const IMChannelCardList = forwardRef<
           }
           footer={
             <div className={cx(styles.footer)}>
-              <Tag
-                color={isBot ? 'blue' : 'green'}
-                style={{ marginLeft: 8, marginRight: 0 }}
-              >
-                {isBot ? '智能机器人' : '企业应用'}
-              </Tag>
+              <ConfigFieldValue record={record} />
 
               {/* <Tooltip title={isEnabled ? '禁用' : '启用'}>
                 <Switch
@@ -258,7 +314,7 @@ const IMChannelCardList = forwardRef<
     }
 
     return (
-      <div className={cx(styles.container)}>
+      <div className={cx(styles.container, 'scroll-container-hide')}>
         <div className={cx(styles.list)}>
           {filteredRobotList.map(renderCard)}
         </div>

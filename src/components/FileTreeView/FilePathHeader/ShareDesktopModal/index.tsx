@@ -1,13 +1,10 @@
+import { XModalForm } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationShare } from '@/services/agentConfig';
 import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type { ProFormInstance } from '@ant-design/pro-components';
-import {
-  ModalForm,
-  ProFormDependency,
-  ProFormSelect,
-} from '@ant-design/pro-components';
+import { ProFormDependency, ProFormSelect } from '@ant-design/pro-components';
 import { Alert, message } from 'antd';
 import React, { useRef } from 'react';
 
@@ -200,7 +197,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
   };
 
   return (
-    <ModalForm<ShareFormValues>
+    <XModalForm<ShareFormValues>
       title={shareType === 'DESKTOP' ? '分享远程桌面' : '分享文件'}
       open={visible}
       formRef={formRef}
@@ -254,7 +251,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         showIcon
         style={{ marginTop: 8 }}
       />
-    </ModalForm>
+    </XModalForm>
   );
 };
 

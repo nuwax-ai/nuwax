@@ -8,7 +8,9 @@ import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedSkillCollect,
   apiPublishedSkillList,
+  apiPublishedSkillUnCollect,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
@@ -25,11 +27,11 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
-import { Empty, Input, Select } from 'antd';
+import { Empty, Input, message, Select } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useModel, useRequest } from 'umi';
+import { history, useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
 import SquareComponentInfo from './SquareComponentInfo';
@@ -41,6 +43,7 @@ const cx = classNames.bind(styles);
  */
 const Square: React.FC = () => {
   const { templateList } = useModel('squareModel');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const templateListTabs = templateList?.map((item: any) => ({
     label: item.description,
@@ -96,6 +99,20 @@ const Square: React.FC = () => {
     handleToggleCollectSuccess,
   } = useSpaceSquare();
   // 获取租户配置信息
+
+  const handleClickSkill = (item: SquarePublishedItemInfo) => {
+    const agentId = tenantConfigInfo?.defaultTaskAgentId;
+    if (!agentId) {
+      // 站点默认通用型智能体未配置
+      message.warning('站点默认通用型智能体未配置');
+      return;
+    }
+    history.push(
+      `/agent/${agentId}?skillId=${
+        item.targetId
+      }&skillName=${encodeURIComponent(item.name)}`,
+    );
+  };
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -433,23 +450,31 @@ const Square: React.FC = () => {
                   // 智能体模式下，显示智能体、网页应用组件
                   if (
                     categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
-                    categoryTypeRef.current === SquareAgentTypeEnum.PageApp ||
-                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                    categoryTypeRef.current === SquareAgentTypeEnum.PageApp
                   ) {
                     return (
                       <SingleAgent
-                        showUserCount={
-                          categoryTypeRef.current !== SquareAgentTypeEnum.Skill
-                        }
-                        showConvCount={
-                          categoryTypeRef.current !== SquareAgentTypeEnum.Skill
-                        }
                         key={index}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
                           handleClick(item.targetId, item.targetType, item)
                         }
+                      />
+                    );
+                  } else if (
+                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                  ) {
+                    return (
+                      <SingleAgent
+                        showUserCount={false}
+                        showConvCount={false}
+                        key={index}
+                        publishedItemInfo={item}
+                        onToggleCollectSuccess={handleToggleCollectSuccess}
+                        collectApi={apiPublishedSkillCollect}
+                        unCollectApi={apiPublishedSkillUnCollect}
+                        onClick={() => handleClickSkill(item)}
                       />
                     );
                   }

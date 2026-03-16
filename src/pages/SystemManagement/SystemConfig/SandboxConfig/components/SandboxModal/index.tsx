@@ -1,8 +1,5 @@
-import {
-  ModalForm,
-  ProFormDigit,
-  ProFormText,
-} from '@ant-design/pro-components';
+import { XModalForm } from '@/components/ProComponents';
+import { ProFormDigit, ProFormText } from '@ant-design/pro-components';
 import { Form } from 'antd';
 import React, { useEffect } from 'react';
 
@@ -39,7 +36,7 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
   }, [open, mode, initialData, form]);
 
   return (
-    <ModalForm
+    <XModalForm
       title={mode === 'add' ? '添加沙盒' : '编辑沙盒'}
       open={open}
       form={form}
@@ -134,7 +131,7 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
           { type: 'number', max: 9999, message: '最大并发用户数不能超过 9999' },
         ]}
       />
-    </ModalForm>
+    </XModalForm>
   );
 };
 

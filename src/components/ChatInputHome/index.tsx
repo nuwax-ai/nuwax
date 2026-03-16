@@ -15,7 +15,7 @@ import {
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Input, InputRef, message, Tooltip, Upload, UploadProps } from 'antd';
+import { message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -28,11 +28,13 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
+import MentionEditor from './MentionEditor';
+import type { MentionEditorHandle } from './MentionPopup/types';
 
 const cx = classNames.bind(styles);
 
 /**
- * 手机端聊天输入组件
+ * 聊天输入组件
  */
 const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
@@ -64,6 +66,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   autoSelectComputer,
   saveComputerOnSelect,
   isPersonalComputer,
+  enableMention = true,
+  // @ 提及弹窗展示方向：auto | up | down，默认 auto
+  mentionPlacement = 'auto',
+  placeholder,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -83,11 +89,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
+  // 已选中的技能 ID 列表
+  const [skillIds, setSkillIds] = useState<number[]>([]);
   // 停止操作是否正在进行中
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
+  // @ 提及编辑器引用
+  const mentionEditorRef = useRef<MentionEditorHandle>(null);
+
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-  const textareaRef = useRef<InputRef>(null);
 
   useEffect(() => {
     setFiles(
@@ -109,6 +119,26 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
 
+  // 确认发送消息
+  const confirmSendMessage = (value: string) => {
+    // 如果输入框内容不为空 或者 附件文件列表不为空
+    if (!!value.trim() || !!files?.length) {
+      // enter事件
+      onEnter(value, files, skillIds);
+      // 如果需要清空输入框
+      if (isClearInput) {
+        // 清空附件文件列表
+        setUploadFiles([]);
+        // 清空输入框
+        setMessageInfo('');
+        // 清空已选中的技能 ID 列表
+        setSkillIds([]);
+        // 清空@提及编辑器
+        mentionEditorRef.current?.clear();
+      }
+    }
+  };
+
   // 点击发送事件
   const handleSendMessage = () => {
     if (
@@ -119,43 +149,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     ) {
       return;
     }
-    if (messageInfo || files?.length > 0) {
-      // enter事件
-      onEnter(messageInfo, files);
-      if (isClearInput) {
-        // 置空
-        setUploadFiles([]);
-        setMessageInfo('');
-      }
-    }
+
+    // 确认发送消息
+    confirmSendMessage(messageInfo);
   };
 
-  // enter事件
-  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  /**
+   * 处理回车发送消息
+   * 支持 contenteditable div 的回车事件
+   */
+  const handlePressEnter = () => {
     //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
     if (isConversationActive || isStoppingConversation) {
       return;
     }
-    const { value } = e.target as HTMLTextAreaElement;
-    // shift+enter或者ctrl+enter时换行
-    if (
-      e.nativeEvent.keyCode === 13 &&
-      (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
-    ) {
-      setMessageInfo(value);
-    } else if (
-      e.nativeEvent.keyCode === 13 &&
-      (!!value.trim() || !!files?.length)
-    ) {
-      e.preventDefault();
-      // enter事件
-      onEnter(value, files);
-      if (isClearInput) {
-        // 置空
-        setUploadFiles([]);
-        setMessageInfo('');
-      }
-    }
+
+    // 确认发送消息
+    confirmSendMessage(messageInfo);
   };
 
   const handleChange: UploadProps['onChange'] = (info) => {
@@ -175,7 +185,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    * 支持多张图片同时粘贴
    */
   const handlePaste = useCallback(
-    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    async (e: React.ClipboardEvent<HTMLDivElement>) => {
       const clipboardData = e.clipboardData;
       if (!clipboardData || !clipboardData.items) {
         return;
@@ -379,17 +389,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <ConditionRender condition={uploadFiles?.length}>
           <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
         </ConditionRender>
-        {/*输入框*/}
-        <Input.TextArea
-          ref={textareaRef}
+        {/*输入框 - 使用 MentionEditor 实现 @ 提及功能*/}
+        <MentionEditor
+          ref={mentionEditorRef}
+          className={cx(styles.input)}
           disabled={wholeDisabled}
           value={messageInfo}
-          onChange={(e) => setMessageInfo(e.target.value)}
-          rootClassName={cx(styles.input)}
+          onChange={setMessageInfo}
+          onSkillIdsChange={setSkillIds}
+          // 是否启用 @ 提及功能，默认启用
+          enableMention={enableMention}
+          // @ 弹窗展示方向：auto | up | down
+          mentionPlacement={mentionPlacement}
+          // 回车事件处理
           onPressEnter={handlePressEnter}
+          // 粘贴事件处理
           onPaste={handlePaste}
-          placeholder="直接输入指令；可通过回车发送；支持粘贴图片"
-          autoSize={{ minRows: 2, maxRows: 6 }}
+          placeholder={placeholder}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
           {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
