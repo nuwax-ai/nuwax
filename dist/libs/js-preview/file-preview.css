@@ -234,6 +234,8 @@ body {
     font-size: 16px;
     line-height: 1.6;
     color: #24292e;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .markdown-preview .markdown-body h1,
@@ -263,6 +265,7 @@ body {
     border-radius: 3px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 85%;
+    word-break: break-all;
 }
 
 .markdown-preview .markdown-body pre {
