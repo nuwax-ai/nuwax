@@ -715,13 +715,13 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       >
         {/* Tab 标签栏 */}
         <div className={styles['mention-tabs']}>
-          {TABS.map((tab, index) => (
+          {TABS.map((tab) => (
             <div
               key={tab.key}
               className={`${styles['mention-tab']} ${
                 activeTab === tab.key ? styles.active : ''
               }`}
-              onClick={() => handleTabChange(tab.key, index)}
+              onClick={() => handleTabChange(tab.key)}
             >
               {tab.label}
             </div>

@@ -1,7 +1,4 @@
-// import ChatInputHome from './ChatInputHome';
 import Loading from '@/components/custom/Loading';
-// import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
-import ChatInputHome from '@/components/ChatInputHome';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
@@ -15,11 +12,15 @@ import type {
   CategoryItemInfo,
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  MessageSourceType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import { AffixRef, App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
+import ChatInputHome from './ChatInputHome';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
@@ -116,8 +117,17 @@ const Home: React.FC = () => {
     initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
 
-  // 跳转页面
-  const handleEnter = async (_message: string, files?: UploadFileInfo[]) => {
+  /**
+   * 跳转页面
+   * @param _message 传递的消息内容
+   * @param files 传递的附件文件列表
+   * @param skillIds 传递的技能 ID 列表
+   */
+  const handleEnter = async (
+    _message: string,
+    files?: UploadFileInfo[],
+    skillIds?: number[],
+  ) => {
     if (!tenantConfigInfo) {
       message.warning('租户信息不存在');
       return;
@@ -129,13 +139,17 @@ const Home: React.FC = () => {
         ? tenantConfigInfo.defaultTaskAgentId
         : tenantConfigInfo.defaultAgentId;
 
-    await handleCreateConversation(agentId, {
+    // 传递的参数
+    const attach = {
       message: _message,
       files,
       infos: selectedComponentList,
-      messageSourceType: 'home',
+      messageSourceType: 'home' as MessageSourceType,
       hideMenu: isTaskAgentMode,
-    });
+      skillIds,
+    };
+
+    await handleCreateConversation(agentId, attach);
   };
 
   // 切换任务智能体模式

@@ -2,17 +2,17 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   IM_PLATFORM_LABEL_MAP,
   IMPlatformEnum,
-} from '@/constants/imRobot.constants';
+} from '@/constants/imChannel.constants';
 import SelectTargetFormItem from '@/pages/SpaceTaskCenter/CreateTimedTask/components/SelectTargetFormItem';
 import {
   apiAddIMConfigChannel,
   apiGetIMConfigChannelDetail,
   apiTestIMConfigChannelConnection,
   apiUpdateIMConfigChannel,
-} from '@/services/imRobot';
+} from '@/services/imChannel';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { IMRobotInfo, IMRobotTypeEnum } from '@/types/interfaces/imRobot';
+import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
 import { ModalForm, ProFormSwitch } from '@ant-design/pro-components';
 import { Button, Form, message } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -20,18 +20,18 @@ import DynamicChannelForm, {
   PlatformChannel,
 } from './components/DynamicChannelForm';
 
-export interface CreateIMRobotProps {
+export interface CreateIMChannelProps {
   open: boolean;
   mode: CreateUpdateModeEnum;
-  info?: IMRobotInfo | null;
-  initialType?: IMRobotTypeEnum;
+  info?: IMChannelInfo | null;
+  initialType?: IMChannelTypeEnum;
   platform?: PlatformChannel;
   spaceId?: number;
   onCancel: () => void;
   onSuccess: () => void;
 }
 
-const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
+const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
   open,
   mode,
   info,
@@ -45,7 +45,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
   const [testing, setTesting] = useState(false);
   const currentType =
     mode === CreateUpdateModeEnum.Update ? info?.targetType : initialType;
-  const robotType = (currentType as IMRobotTypeEnum) || IMRobotTypeEnum.Bot;
+  const robotType = (currentType as IMChannelTypeEnum) || IMChannelTypeEnum.Bot;
 
   useEffect(() => {
     const initData = async () => {
@@ -66,7 +66,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
 
             form.setFieldsValue({
               name: detail.name,
-              targetType: detail.targetType || IMRobotTypeEnum.Bot,
+              targetType: detail.targetType || IMChannelTypeEnum.Bot,
               enabled: detail.enabled,
               target: {
                 name: detail.agentName,
@@ -79,7 +79,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
             return;
           }
         } catch (error) {
-          console.error('Fetch IMRobot detail failed:', error);
+          console.error('Fetch IMChannel detail failed:', error);
         }
 
         // 回退逻辑：如果接口失败，使用传入的基础信息进行回显
@@ -92,7 +92,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
 
         form.setFieldsValue({
           name: info.name,
-          targetType: info.targetType || IMRobotTypeEnum.Bot,
+          targetType: info.targetType || IMChannelTypeEnum.Bot,
           enabled: info.enabled,
           target: {
             name: info.agentName,
@@ -105,7 +105,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
       } else {
         form.resetFields();
         form.setFieldsValue({
-          type: initialType || IMRobotTypeEnum.Bot,
+          type: initialType || IMChannelTypeEnum.Bot,
           enabled: true,
         });
       }
@@ -170,20 +170,18 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
   };
 
   const showTestBtn =
-    mode === CreateUpdateModeEnum.Create &&
-    ((platform === IMPlatformEnum.Feishu &&
-      robotType === IMRobotTypeEnum.Bot) ||
-      (platform === IMPlatformEnum.Dingtalk &&
-        robotType === IMRobotTypeEnum.Bot) ||
-      (platform === IMPlatformEnum.Wework &&
-        robotType === IMRobotTypeEnum.App));
+    (platform === IMPlatformEnum.Feishu &&
+      robotType === IMChannelTypeEnum.Bot) ||
+    (platform === IMPlatformEnum.Dingtalk &&
+      robotType === IMChannelTypeEnum.Bot) ||
+    (platform === IMPlatformEnum.Wework && robotType === IMChannelTypeEnum.App);
 
   const getTitle = () => {
     const pName = platform
       ? IM_PLATFORM_LABEL_MAP[platform as IMPlatformEnum]
       : '';
     const prefix = mode === CreateUpdateModeEnum.Update ? '编辑' : '新增';
-    const suffix = robotType === IMRobotTypeEnum.App ? '应用' : '机器人';
+    const suffix = robotType === IMChannelTypeEnum.App ? '应用' : '机器人';
     return `${prefix}${pName}${suffix}`;
   };
 
@@ -208,7 +206,7 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
                 loading={testing}
                 onClick={handleTestConnection}
               >
-                测试连接
+                测试连通性
               </Button>
             ),
             defaultDoms[1],
@@ -234,4 +232,4 @@ const CreateIMRobot: React.FC<CreateIMRobotProps> = ({
   );
 };
 
-export default CreateIMRobot;
+export default CreateIMChannel;

@@ -5,19 +5,18 @@ import {
   IM_PLATFORM_ICON_MAP,
   IM_PLATFORM_LABEL_MAP,
   IMPlatformEnum,
-} from '@/constants/imRobot.constants';
+} from '@/constants/imChannel.constants';
 import {
   apiDeleteIMConfigChannel,
   apiIMConfigChannelList,
-  apiUpdateIMConfigChannelEnabled,
-} from '@/services/imRobot';
-import { IMRobotInfo, IMRobotTypeEnum } from '@/types/interfaces/imRobot';
+} from '@/services/imChannel';
+import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
 import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { Button, message, Modal, Switch, Tag, Tooltip } from 'antd';
+import { Button, message, Modal, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import {
@@ -32,26 +31,29 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export interface IMRobotCardListRef {
+export interface IMChannelCardListRef {
   reload: () => void;
 }
 
-export interface IMRobotCardListProps {
-  onEdit: (info: IMRobotInfo) => void;
+export interface IMChannelCardListProps {
+  onEdit: (info: IMChannelInfo) => void;
   onDeleteSuccess?: () => void;
   platform?: string;
   spaceId?: number;
   keyword?: string;
 }
 
-const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
+const IMChannelCardList = forwardRef<
+  IMChannelCardListRef,
+  IMChannelCardListProps
+>(
   (
     { onEdit, onDeleteSuccess, platform = 'feishu', spaceId, keyword = '' },
     ref,
   ) => {
     const [loading, setLoading] = useState(false);
-    const [allRobots, setAllRobots] = useState<IMRobotInfo[]>([]);
-    const [switchingIds, setSwitchingIds] = useState<number[]>([]);
+    const [allRobots, setAllRobots] = useState<IMChannelInfo[]>([]);
+    // const [switchingIds, setSwitchingIds] = useState<number[]>([]);
 
     const fetchData = useCallback(async () => {
       setLoading(true);
@@ -65,7 +67,7 @@ const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
           setAllRobots(list);
         }
       } catch (error) {
-        console.error('Fetch IMRobot List Failed:', error);
+        console.error('Fetch IMChannel List Failed:', error);
       } finally {
         setLoading(false);
       }
@@ -89,31 +91,31 @@ const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
       reload: fetchData,
     }));
 
-    const handleToggleStatus = async (
-      record: IMRobotInfo,
-      checked: boolean,
-    ) => {
-      setSwitchingIds((prev) => [...prev, record.id]);
-      try {
-        const res = await apiUpdateIMConfigChannelEnabled({
-          id: record.id,
-          enabled: checked,
-        });
-        if (res.code === SUCCESS_CODE) {
-          message.success(`${checked ? '启用' : '停用'}成功`);
-          // 更新本地数据
-          setAllRobots((prev) =>
-            prev.map((item) =>
-              item.id === record.id ? { ...item, enabled: checked } : item,
-            ),
-          );
-        }
-      } catch (error) {
-        console.error('Toggle status failed:', error);
-      } finally {
-        setSwitchingIds((prev) => prev.filter((id) => id !== record.id));
-      }
-    };
+    // const handleToggleStatus = async (
+    //   record: IMChannelInfo,
+    //   checked: boolean,
+    // ) => {
+    //   setSwitchingIds((prev) => [...prev, record.id]);
+    //   try {
+    //     const res = await apiUpdateIMConfigChannelEnabled({
+    //       id: record.id,
+    //       enabled: checked,
+    //     });
+    //     if (res.code === SUCCESS_CODE) {
+    //       message.success(`${checked ? '启用' : '停用'}成功`);
+    //       // 更新本地数据
+    //       setAllRobots((prev) =>
+    //         prev.map((item) =>
+    //           item.id === record.id ? { ...item, enabled: checked } : item,
+    //         ),
+    //       );
+    //     }
+    //   } catch (error) {
+    //     console.error('Toggle status failed:', error);
+    //   } finally {
+    //     setSwitchingIds((prev) => prev.filter((id) => id !== record.id));
+    //   }
+    // };
 
     const handleDelete = (id: number, title: string) => {
       Modal.confirm({
@@ -132,20 +134,20 @@ const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
               onDeleteSuccess?.();
             }
           } catch (error) {
-            console.error('Delete IMRobot failed:', error);
+            console.error('Delete IMChannel failed:', error);
           }
         },
       });
     };
 
-    const renderCard = (record: IMRobotInfo) => {
+    const renderCard = (record: IMChannelInfo) => {
       const platformIcon =
         IM_PLATFORM_ICON_MAP[record.channel as IMPlatformEnum] || '';
 
       const platformName =
         IM_PLATFORM_LABEL_MAP[record.channel as IMPlatformEnum] || '该';
-      const isEnabled = record.enabled;
-      const isBot = record.targetType === IMRobotTypeEnum.Bot;
+      // const isEnabled = record.enabled;
+      const isBot = record.targetType === IMChannelTypeEnum.Bot;
       const typeLabel = isBot ? '智能机器人' : '企业应用';
 
       return (
@@ -162,24 +164,25 @@ const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
               <span className={cx(styles.time)}>
                 最近编辑 {dayjs(record.modified).format('MM-DD HH:mm')}
               </span>
+            </div>
+          }
+          footer={
+            <div className={cx(styles.footer)}>
               <Tag
                 color={isBot ? 'blue' : 'green'}
                 style={{ marginLeft: 8, marginRight: 0 }}
               >
                 {isBot ? '智能机器人' : '企业应用'}
               </Tag>
-            </div>
-          }
-          footer={
-            <div className={cx(styles.footer)}>
-              <Tooltip title={isEnabled ? '禁用' : '启用'}>
+
+              {/* <Tooltip title={isEnabled ? '禁用' : '启用'}>
                 <Switch
                   size="small"
                   checked={isEnabled}
                   loading={switchingIds.includes(record.id)}
                   onChange={(checked) => handleToggleStatus(record, checked)}
                 />
-              </Tooltip>
+              </Tooltip> */}
               <div className={cx(styles.actions)}>
                 <Tooltip title="编辑">
                   <Button
@@ -264,4 +267,4 @@ const IMRobotCardList = forwardRef<IMRobotCardListRef, IMRobotCardListProps>(
   },
 );
 
-export default IMRobotCardList;
+export default IMChannelCardList;

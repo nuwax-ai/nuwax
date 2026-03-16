@@ -1,7 +1,7 @@
 import type {
   AddIMChannelParams,
-  IMRobotInfo,
-} from '@/types/interfaces/imRobot';
+  IMChannelInfo,
+} from '@/types/interfaces/imChannel';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -11,7 +11,7 @@ import { request } from 'umi';
 export async function apiIMConfigChannelList(data: {
   channel: string;
   spaceId?: number;
-}): Promise<RequestResponse<IMRobotInfo[]>> {
+}): Promise<RequestResponse<IMChannelInfo[]>> {
   return request('/api/im-config/channel/list', {
     method: 'POST',
     data,
@@ -46,7 +46,7 @@ export async function apiUpdateIMConfigChannel(
  */
 export async function apiGetIMConfigChannelDetail(
   id: number,
-): Promise<RequestResponse<IMRobotInfo>> {
+): Promise<RequestResponse<IMChannelInfo>> {
   return request(`/api/im-config/channel/detail/${id}`, {
     method: 'GET',
   });

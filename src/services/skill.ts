@@ -1,14 +1,12 @@
 import { HistoryData } from '@/types/interfaces/publish';
-import { Page, RequestResponse } from '@/types/interfaces/request';
+import { RequestResponse } from '@/types/interfaces/request';
 import {
-  PublishedSkillListParams,
   SkillDetailInfo,
   SkillImportParams,
   SkillUpdateParams,
   SkillUploadFileParams,
   SkillUploadFilesParams,
 } from '@/types/interfaces/skill';
-import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import {
   apiExportFileBlob,
   ExportFileBlobResponse,
@@ -119,16 +117,6 @@ export async function apiSkillExportSquare(
   skillId: number,
 ): Promise<ExportFileBlobResponse> {
   return apiExportFileBlob(`/api/published/skill/export/${skillId}`);
-}
-
-// 已发布技能列表接口
-export async function apiPublishedSkillList(
-  data: PublishedSkillListParams,
-): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
-  return request('/api/published/skill/list', {
-    method: 'POST',
-    data,
-  });
 }
 
 // 查询技能历史配置信息接口

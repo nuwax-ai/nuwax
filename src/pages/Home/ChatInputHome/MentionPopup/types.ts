@@ -130,10 +130,14 @@ export interface MentionEditorProps {
   disabled?: boolean;
   /** 自定义类名 */
   className?: string;
+  /** 是否启用 @ 提及功能，默认 true */
+  enableMention?: boolean;
+  /** 用于回显的默认提及项列表（需同时传入 value 文本） */
+  defaultMentions?: MentionItem[];
   /** 选择提及项时的回调 */
   onMentionSelect?: (item: MentionItem) => void;
   /** 当前已选技能 ID 列表变化时的回调 */
-  onSkillIdsChange?: (skillIds: Array<string | number>) => void;
+  onSkillIdsChange?: (skillIds: Array<number>) => void;
   /** 最小行数（影响最小高度） */
   minRows?: number;
   /** 最大行数（影响最大高度） */

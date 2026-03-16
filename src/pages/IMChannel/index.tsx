@@ -1,39 +1,39 @@
 import CustomPopover from '@/components/CustomPopover';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { IMPlatformEnum } from '@/constants/imRobot.constants';
+import { IMPlatformEnum } from '@/constants/imChannel.constants';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { CustomPopoverItem } from '@/types/interfaces/common';
-import { IMRobotInfo, IMRobotTypeEnum } from '@/types/interfaces/imRobot';
+import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Input, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useParams } from 'umi';
-import CreateIMRobot from './components/CreateIMRobot';
-import IMRobotCardList, {
-  IMRobotCardListRef,
-} from './components/IMRobotCardList';
+import CreateIMChannel from './components/CreateIMChannel';
+import IMChannelCardList, {
+  IMChannelCardListRef,
+} from './components/IMChannelCardList';
 import PlatformList, { PlatformType } from './components/PlatformList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 新增资源列表
-const IM_ROBOT_ADD_RESOURCES = [
+const IM_CHANNEL_ADD_RESOURCES = [
   {
     label: '新增机器人',
-    value: IMRobotTypeEnum.Bot,
+    value: IMChannelTypeEnum.Bot,
   },
   {
     label: '新增应用',
-    value: IMRobotTypeEnum.App,
+    value: IMChannelTypeEnum.App,
   },
 ];
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiIMConfigChannelList } from '@/services/imRobot';
+import { apiIMConfigChannelList } from '@/services/imChannel';
 
-const IMRobot: React.FC = () => {
+const IMChannel: React.FC = () => {
   const params = useParams() as any;
   const location = useLocation();
   const spaceId = params.spaceId ? Number(params.spaceId) : undefined;
@@ -74,7 +74,7 @@ const IMRobot: React.FC = () => {
     }
   }, [spaceId]);
   // 列表引用
-  const listRef = useRef<IMRobotCardListRef>(null);
+  const listRef = useRef<IMChannelCardListRef>(null);
   useEffect(() => {
     setPlatform(IMPlatformEnum.Feishu);
     setKeyword('');
@@ -84,22 +84,22 @@ const IMRobot: React.FC = () => {
 
   // 弹窗控制
   const [openModal, setOpenModal] = useState(false);
-  const [currentInfo, setCurrentInfo] = useState<IMRobotInfo | null>(null);
+  const [currentInfo, setCurrentInfo] = useState<IMChannelInfo | null>(null);
   const [mode, setMode] = useState<CreateUpdateModeEnum>(
     CreateUpdateModeEnum.Create,
   );
   const [initialCreateType, setInitialCreateType] = useState<
-    IMRobotTypeEnum | undefined
+    IMChannelTypeEnum | undefined
   >();
 
-  const handleCreate = (type?: IMRobotTypeEnum) => {
+  const handleCreate = (type?: IMChannelTypeEnum) => {
     setMode(CreateUpdateModeEnum.Create);
     setInitialCreateType(type);
     setCurrentInfo(null);
     setOpenModal(true);
   };
 
-  const handleEdit = (info: IMRobotInfo) => {
+  const handleEdit = (info: IMChannelInfo) => {
     setMode(CreateUpdateModeEnum.Update);
     setCurrentInfo(info);
     setOpenModal(true);
@@ -112,7 +112,7 @@ const IMRobot: React.FC = () => {
   };
 
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
-    handleCreate(item.value as IMRobotTypeEnum);
+    handleCreate(item.value as IMChannelTypeEnum);
   };
 
   return (
@@ -133,7 +133,7 @@ const IMRobot: React.FC = () => {
           {platform ? (
             platform === IMPlatformEnum.Wework ? (
               <CustomPopover
-                list={IM_ROBOT_ADD_RESOURCES}
+                list={IM_CHANNEL_ADD_RESOURCES}
                 onClick={handleClickPopoverItem}
               >
                 <Button type="primary" icon={<PlusOutlined />}>
@@ -144,7 +144,7 @@ const IMRobot: React.FC = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => handleCreate(IMRobotTypeEnum.Bot)}
+                onClick={() => handleCreate(IMChannelTypeEnum.Bot)}
               >
                 新增机器人
               </Button>
@@ -163,7 +163,7 @@ const IMRobot: React.FC = () => {
           />
         </div>
         <div className={cx(styles.content)}>
-          <IMRobotCardList
+          <IMChannelCardList
             ref={listRef}
             onEdit={handleEdit}
             onDeleteSuccess={fetchCounts}
@@ -174,7 +174,7 @@ const IMRobot: React.FC = () => {
         </div>
       </div>
 
-      <CreateIMRobot
+      <CreateIMChannel
         open={openModal}
         mode={mode}
         info={currentInfo}
@@ -188,4 +188,4 @@ const IMRobot: React.FC = () => {
   );
 };
 
-export default IMRobot;
+export default IMChannel;

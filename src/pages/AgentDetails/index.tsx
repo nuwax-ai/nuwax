@@ -26,6 +26,7 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
+  MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
@@ -248,7 +249,11 @@ const AgentDetails: React.FC = () => {
   }, [agentDetail]);
 
   // 消息发送
-  const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
+  const handleMessageSend = (
+    messageInfo: string,
+    files?: UploadFileInfo[],
+    skillIds?: number[],
+  ) => {
     // 智能体信息为空
     if (!agentDetail) {
       return;
@@ -266,15 +271,18 @@ const AgentDetails: React.FC = () => {
       url += '?hideMenu=true';
     }
 
-    history.push(url, {
+    // 传递的参数
+    const attach = {
       message: messageInfo,
       files,
       infos: selectedComponentList,
       defaultAgentDetail: agentDetail,
       variableParams,
-      messageSourceType: 'agent',
+      messageSourceType: 'agent' as MessageSourceType,
       selectedComputerId,
-    });
+      skillIds,
+    };
+    history.push(url, attach);
   };
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息

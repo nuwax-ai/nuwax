@@ -1,4 +1,4 @@
-import { IMPlatformEnum } from '@/constants/imRobot.constants';
+import { IMPlatformEnum } from '@/constants/imChannel.constants';
 import { ProFormText } from '@ant-design/pro-components';
 import React from 'react';
 

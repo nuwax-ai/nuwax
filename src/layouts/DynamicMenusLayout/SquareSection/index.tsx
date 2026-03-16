@@ -21,8 +21,13 @@ const SquareSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
   const location = useLocation();
-  const { agentInfoList, pageAppInfoList, pluginInfoList, workflowInfoList } =
-    useModel('squareModel');
+  const {
+    agentInfoList,
+    pageAppInfoList,
+    workflowInfoList,
+    skillInfoList,
+    pluginInfoList,
+  } = useModel('squareModel');
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
@@ -92,6 +97,12 @@ const SquareSection: React.FC<{
       icon: <SvgIcon name="icons-common-console" />,
       list: pageAppInfoList,
       type: SquareAgentTypeEnum.PageApp,
+    },
+    {
+      name: '技能',
+      icon: <SvgIcon name="icons-nav-skill" />,
+      list: skillInfoList,
+      type: SquareAgentTypeEnum.Skill,
     },
     {
       name: '插件',

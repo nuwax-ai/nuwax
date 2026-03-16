@@ -257,12 +257,16 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       onChange,
       onPressEnter,
       onPaste,
-      placeholder = '直接输入指令；可通过回车发送；支持粘贴图片',
+      placeholder = '直接输入指令；可通过回车发送；输入@唤起工具；支持粘贴图片',
       autoFocus = true,
       disabled = false,
       className,
       onMentionSelect,
       onSkillIdsChange,
+      // 是否启用 @ 提及功能，默认启用
+      enableMention = true,
+      // 默认需要回显为 mention chip 的技能列表（按顺序渲染）
+      defaultMentions,
       minRows = 2,
       maxRows = 6,
     },
@@ -342,7 +346,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     useEffect(() => {
       const nextSkillIds = Array.from(
-        new Set(selectedMentions.map((item) => item.id)),
+        new Set(selectedMentions.map((item) => item.id as number)),
       );
       onSkillIdsChange?.(nextSkillIds);
     }, [onSkillIdsChange, selectedMentions]);
@@ -526,6 +530,57 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       [removeMentionChip],
     );
 
+    /**
+     * 按传入技能顺序回显 mention chip，忽略 value 文本内容
+     * 光标默认落在最后一个 chip 之后，便于继续输入
+     */
+    useEffect(() => {
+      if (!editorRef.current) return;
+      if (!enableMention) return;
+      if (!defaultMentions || defaultMentions.length === 0) return;
+      // 如果已经有内容（用户手动输入或之前回显过），不重复回显
+      if (editorRef.current.innerText.trim()) return;
+
+      const container = editorRef.current;
+      container.innerHTML = '';
+
+      defaultMentions.forEach((mention) => {
+        const chip = createMentionChip(mention);
+        container.appendChild(chip);
+        // 每个 chip 后插入一个空格文本节点，保证 chip 与后续输入有间隔
+        const spaceNode = document.createTextNode(' ');
+        container.appendChild(spaceNode);
+      });
+
+      // 将光标移动到内容末尾（最后一个空格节点之后）
+      const selection = window.getSelection();
+      if (selection) {
+        const range = document.createRange();
+        const lastChild = container.lastChild;
+
+        if (lastChild && lastChild.nodeType === Node.TEXT_NODE) {
+          const text = lastChild.textContent || '';
+          range.setStart(lastChild, text.length);
+          range.setEnd(lastChild, text.length);
+        } else {
+          const spacer = document.createTextNode('');
+          container.appendChild(spacer);
+          range.setStart(spacer, 0);
+          range.setEnd(spacer, 0);
+        }
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+        container.focus();
+      }
+
+      // 同步内部状态和 onChange
+      setSelectedMentions(defaultMentions);
+      const serializedText = getSerializedEditorText(container);
+      setIsEditorEmpty(serializedText.trim().length === 0);
+      onChange?.(serializedText);
+    }, [createMentionChip, defaultMentions, enableMention, onChange]);
+
     // ==================== 核心事件处理 ====================
 
     /**
@@ -639,6 +694,15 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 检测 @ 符号并控制弹窗显示
      */
     const handleInput = useCallback(() => {
+      // 关闭 @ 提及功能时，仅作为普通输入框同步内容，不做 @ 检测和弹窗处理
+      if (!enableMention) {
+        if (!editorRef.current) return;
+        const text = getTextContent();
+        setIsEditorEmpty(text.trim().length === 0);
+        onChange?.(text);
+        return;
+      }
+
       // 如果正在输入中文，跳过处理
       if (!editorRef.current || isComposingRef.current) return;
 
@@ -679,7 +743,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 没有有效的 @ 提及，关闭弹窗
         closeMentionPopup();
       }
-    }, [getTextContent, onChange, closeMentionPopup]);
+    }, [enableMention, getTextContent, onChange, closeMentionPopup]);
 
     /**
      * 处理键盘按下事件
@@ -691,8 +755,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 中文输入时跳过
         if (isComposingRef.current) return;
 
-        // 弹窗显示时的键盘处理
-        if (showMentionPopup) {
+        // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
+        if (enableMention && showMentionPopup) {
           switch (e.key) {
             case 'ArrowUp':
               e.preventDefault();
@@ -760,6 +824,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         }
       },
       [
+        enableMention,
         showMentionPopup,
         closeMentionPopup,
         onPressEnter,
@@ -821,6 +886,12 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const handleClick = useCallback(() => {
       if (!editorRef.current || disabled) return;
+
+      // 关闭 @ 提及功能时，点击只负责光标定位，不触发弹窗
+      if (!enableMention) {
+        closeMentionPopup();
+        return;
+      }
 
       // 延迟执行以确保光标位置已更新
       setTimeout(() => {
@@ -890,7 +961,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           }
         }
       }, 0);
-    }, [disabled, closeMentionPopup]);
+    }, [disabled, enableMention, closeMentionPopup]);
 
     // ==================== Effects ====================
 

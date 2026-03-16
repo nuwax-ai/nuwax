@@ -24,6 +24,9 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
   extra,
   publishedItemInfo,
   onToggleCollectSuccess,
+  showUserCount = true,
+  showConvCount = true,
+  showCollectCount = true,
 }) => {
   const {
     targetId,
@@ -78,20 +81,26 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
           <footer className={cx('flex', 'items-center', styles.footer)}>
             <div className={cx('flex', 'items-center', styles['count-box'])}>
               {/*用户人数*/}
-              <span className={cx(styles.text)}>
-                <ICON_USER />
-                <span>{statistics?.userCount || 0}</span>
-              </span>
+              {showUserCount && (
+                <span className={cx(styles.text)}>
+                  <ICON_USER />
+                  <span>{statistics?.userCount || 0}</span>
+                </span>
+              )}
               {/*会话次数*/}
-              <span className={cx(styles.text)}>
-                <ICON_MESSAGE />
-                <span>{statistics?.convCount || 0}</span>
-              </span>
+              {showConvCount && (
+                <span className={cx(styles.text)}>
+                  <ICON_MESSAGE />
+                  <span>{statistics?.convCount || 0}</span>
+                </span>
+              )}
               {/*收藏次数*/}
-              <span className={cx(styles.text)}>
-                {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
-                <span>{statistics?.collectCount || 0}</span>
-              </span>
+              {showCollectCount && (
+                <span className={cx(styles.text)}>
+                  {collect ? <ICON_STAR_FILL /> : <ICON_STAR />}
+                  <span>{statistics?.collectCount || 0}</span>
+                </span>
+              )}
             </div>
             {extra}
           </footer>

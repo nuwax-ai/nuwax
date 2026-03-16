@@ -35,6 +35,8 @@ const useConversation = () => {
       messageSourceType?: MessageSourceType;
       // 是否隐藏菜单
       hideMenu?: boolean;
+      // 技能 ID 列表
+      skillIds?: number[];
     },
   ) => {
     const variableParams = attach?.variableParams;

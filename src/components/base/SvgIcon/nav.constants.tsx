@@ -19,6 +19,7 @@ import { ReactComponent as PaletteSvgFile } from '@/assets/icons/nav/palette.svg
 import { ReactComponent as PermissionSvgFile } from '@/assets/icons/nav/permission.svg';
 import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg';
 import { ReactComponent as PublishAuditSvgFile } from '@/assets/icons/nav/publish_audit.svg';
+import { ReactComponent as RobotSvgFile } from '@/assets/icons/nav/robot.svg';
 import { ReactComponent as SettingsSvgFile } from '@/assets/icons/nav/settings.svg';
 import { ReactComponent as SidebarSvgFile } from '@/assets/icons/nav/sidebar.svg';
 import { ReactComponent as SkillSvgFile } from '@/assets/icons/nav/skill.svg';
@@ -62,6 +63,7 @@ const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const CubeSvg = wrapSvg(CubeSvgFile);
 const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
+const RobotSvg = wrapSvg(RobotSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
 const BackwardSvg = wrapSvg(BackwardSvgFile);
@@ -103,6 +105,7 @@ export default {
   'icons-nav-log-operation': LogOperationSvg,
   'icons-nav-log-running': LogRunningSvg,
   'icons-nav-computer': ComputerSvg,
+  'icons-nav-robot': RobotSvg,
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
   'icons-nav-computer-star': IconComputerStarSvgFile,

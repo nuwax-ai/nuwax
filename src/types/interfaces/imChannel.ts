@@ -1,7 +1,7 @@
 /**
  * IM 机器人类型
  */
-export enum IMRobotTypeEnum {
+export enum IMChannelTypeEnum {
   /** 机器人 */
   Bot = 'bot',
   /** 应用 */
@@ -11,7 +11,7 @@ export enum IMRobotTypeEnum {
 /**
  * IM 机器人状态
  */
-export enum IMRobotStatusEnum {
+export enum IMChannelStatusEnum {
   /** 启用 */
   Enabled = 1,
   /** 停用 */
@@ -21,7 +21,7 @@ export enum IMRobotStatusEnum {
 /**
  * IM 机器人信息
  */
-export interface IMRobotInfo {
+export interface IMChannelInfo {
   id: number;
   channel: string;
   targetType: string;

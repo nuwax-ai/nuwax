@@ -2,7 +2,7 @@ import {
   IM_PLATFORM_ICON_MAP,
   IM_PLATFORM_LABEL_MAP,
   IMPlatformEnum,
-} from '@/constants/imRobot.constants';
+} from '@/constants/imChannel.constants';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';

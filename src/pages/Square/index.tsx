@@ -8,6 +8,7 @@ import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedSkillList,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
@@ -139,6 +140,10 @@ const Square: React.FC = () => {
       case SquareAgentTypeEnum.PageApp:
         setTitle('网页应用');
         apiUrlRef.current = apiPublishedAgentList;
+        break;
+      case SquareAgentTypeEnum.Skill:
+        setTitle('技能');
+        apiUrlRef.current = apiPublishedSkillList;
         break;
       case SquareAgentTypeEnum.Plugin:
         setTitle('插件');
@@ -428,10 +433,17 @@ const Square: React.FC = () => {
                   // 智能体模式下，显示智能体、网页应用组件
                   if (
                     categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
-                    categoryTypeRef.current === SquareAgentTypeEnum.PageApp
+                    categoryTypeRef.current === SquareAgentTypeEnum.PageApp ||
+                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
                   ) {
                     return (
                       <SingleAgent
+                        showUserCount={
+                          categoryTypeRef.current !== SquareAgentTypeEnum.Skill
+                        }
+                        showConvCount={
+                          categoryTypeRef.current !== SquareAgentTypeEnum.Skill
+                        }
                         key={index}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
@@ -478,28 +490,28 @@ const Square: React.FC = () => {
                         />
                       );
                     }
-                  } else if (
-                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
-                  ) {
-                    // 技能
-                    return (
-                      <PageCard
-                        key={index}
-                        coverImg={item.coverImg}
-                        name={item.name}
-                        avatar={item.publishUser?.avatar}
-                        userName={
-                          item.publishUser?.nickName ||
-                          item.publishUser?.userName
-                        }
-                        created={item.created}
-                        onClick={() =>
-                          handleClick(item.targetId, item.targetType, item)
-                        }
-                      />
-                    );
+                    // } else if (
+                    //   categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                    // ) {
+                    //   // 技能
+                    //   return (
+                    //     <PageCard
+                    //       key={index}
+                    //       coverImg={item.coverImg}
+                    //       name={item.name}
+                    //       avatar={item.publishUser?.avatar}
+                    //       userName={
+                    //         item.publishUser?.nickName ||
+                    //         item.publishUser?.userName
+                    //       }
+                    //       created={item.created}
+                    //       onClick={() =>
+                    //         handleClick(item.targetId, item.targetType, item)
+                    //       }
+                    //     />
+                    //   );
                   } else {
-                    // 插件、工作量
+                    // 插件、工作流
                     return (
                       <SquareComponentInfo
                         key={index}
