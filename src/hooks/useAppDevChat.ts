@@ -801,42 +801,6 @@ export const useAppDevChat = ({
         setChatMessages((prev) => [...prev, assistantMessage]);
 
         await aIChatSSEConnection(aiChatParams, requestId);
-        // 调用发送消息API
-        // const response = await sendChatMessage(aiChatParams);
-
-        // if (response.success && response.data) {
-        //   // 新增：/ai-chat 接口发送成功后立即刷新版本列表
-        //   if (onRefreshVersionList) {
-        //     onRefreshVersionList();
-        //   }
-
-        //   // 新增：/ai-chat 接口发送成功后清除上传图片
-        //   if (onClearUploadedImages) {
-        //     onClearUploadedImages();
-        //   }
-
-        //   // 消息发送成功后清除数据源选择
-        //   if (onClearDataSourceSelections) {
-        //     onClearDataSourceSelections();
-        //   }
-
-        // // 添加用户消息（包含附件和数据源）
-        // const userMessage = createUserMessage(
-        //   chatInput,
-        //   requestId,
-        //   attachments,
-        //   _selectedDataResources,
-        // );
-
-        // setChatMessages((prev) => [...prev, userMessage]);
-        //   setChatInput('');
-        //   setIsChatLoading(true);
-
-        //   const sessionId = response.data.session_id;
-
-        //   // 立即建立SSE连接（使用返回的session_id）
-        //   await initializeAppDevSSEConnection(sessionId, requestId);
-        // }
       } catch (error) {
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
           showStopAgentServiceModal(projectId, () => {
@@ -853,6 +817,7 @@ export const useAppDevChat = ({
       selectedModelId, // 新增：添加 selectedModelId 依赖
       initializeAppDevSSEConnection,
       showStopAgentServiceModal,
+      selectedDataResources,
     ],
   );
 

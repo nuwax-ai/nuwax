@@ -24,10 +24,9 @@
  * ```
  */
 
-import { collectList, getList } from '@/services/created';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { SkillInfo } from '@/types/interfaces/library';
 import type { Page } from '@/types/interfaces/request';
+import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
@@ -36,14 +35,22 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import {
+  apiSkillCollectListForAt,
+  apiSkillListForAt,
+  apiSkillRecentlyUsedListForAt,
+} from './atSkill';
 import styles from './index.less';
 import type {
   MentionItem,
   MentionPopupHandle,
   MentionPopupProps,
+  SkillInfoForAt,
   TabConfig,
   TabType,
 } from './types';
+
+const cx = classNames.bind(styles);
 
 /**
  * Tab 配置列表
@@ -53,14 +60,10 @@ const TABS: TabConfig[] = [
   { key: 'all', label: '全部' },
   { key: 'recent', label: '最近使用' },
   { key: 'favorite', label: '我的收藏' },
-  { key: 'installed', label: '已安装' },
 ];
 
 /** 单个 Tab 每次请求或分页追加的数量 */
 const PAGE_SIZE = 6;
-/** 最近使用提及项的本地缓存键 */
-const RECENT_ITEMS_STORAGE_KEY = 'home_mention_popup_recent_items';
-
 /**
  * 单个 Tab 的列表状态
  * 用于管理分页数据、首次加载状态和滚动加载状态
@@ -103,81 +106,7 @@ const createTabDataState = (): Record<TabType, TabDataState> => ({
     initialized: false,
     hasMore: true,
   },
-  installed: {
-    items: [],
-    page: 1,
-    total: 0,
-    loading: false,
-    initialized: false,
-    hasMore: true,
-  },
 });
-
-/**
- * 将后端技能数据映射成 MentionPopup 内部统一使用的展示结构
- * 这样列表渲染层无需关心接口字段差异
- */
-const mapSkillToMentionItem = (
-  skill: Partial<SkillInfo> & Record<string, any>,
-): MentionItem => ({
-  id: skill.id ?? skill.targetId ?? '',
-  name: skill.name ?? skill.targetName ?? '未命名',
-  avatar: skill.icon || skill.targetIcon,
-  description: skill.description ?? '',
-  category: 'skill',
-  type: 'skill',
-});
-
-/**
- * 兼容分页接口和数组返回两种数据格式
- * 某些本地数据或老接口可能直接返回数组
- */
-const getResponsePageData = (
-  data: Page<any> | any[] | undefined,
-): { records: any[]; total: number } => {
-  if (Array.isArray(data)) {
-    return {
-      records: data,
-      total: data.length,
-    };
-  }
-
-  return {
-    records: data?.records ?? [],
-    total: data?.total ?? 0,
-  };
-};
-
-/**
- * 读取最近使用的提及项缓存
- * 最近使用 Tab 只依赖本地缓存，不走远端接口
- */
-const getRecentMentionItems = (): MentionItem[] => {
-  try {
-    const cached = localStorage.getItem(RECENT_ITEMS_STORAGE_KEY);
-    return cached ? JSON.parse(cached) : [];
-  } catch (error) {
-    console.error('读取最近使用 mention 失败:', error);
-    return [];
-  }
-};
-
-/**
- * 保存最近选择过的提及项
- * 通过去重 + 头插的方式保证最近使用列表始终按最新操作排序
- */
-const saveRecentMentionItem = (item: MentionItem) => {
-  try {
-    const currentItems = getRecentMentionItems();
-    const deduplicatedItems = currentItems.filter(
-      (currentItem) => String(currentItem.id) !== String(item.id),
-    );
-    const nextItems = [item, ...deduplicatedItems].slice(0, 50);
-    localStorage.setItem(RECENT_ITEMS_STORAGE_KEY, JSON.stringify(nextItems));
-  } catch (error) {
-    console.error('保存最近使用 mention 失败:', error);
-  }
-};
 
 /**
  * MentionPopup 主组件
@@ -267,92 +196,93 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     }, [activeTab, tabDataMap]);
 
     /**
-     * 加载最近使用 Tab 的数据
-     * 数据来自 localStorage，并在前端完成搜索过滤和分页切片
+     * 通用的 Tab 数据处理方法
+     * 根据传入的原始记录数组和目标 Tab，完成映射、分页切片和状态更新
      */
-    const loadRecentTabData = useCallback(
-      async (page: number) => {
-        const cachedRecentItems = getRecentMentionItems();
-        const mergedRecentItems = cachedRecentItems;
-
-        const filteredItems = debouncedSearchText
-          ? mergedRecentItems.filter(
-              (item) =>
-                item.name
-                  .toLowerCase()
-                  .includes(debouncedSearchText.toLowerCase()) ||
-                item.description
-                  ?.toLowerCase()
-                  .includes(debouncedSearchText.toLowerCase()),
-            )
-          : mergedRecentItems;
-
+    const handleTabDataResponse = useCallback(
+      (
+        tab: Exclude<TabType, 'all'>,
+        page: number,
+        records: SkillInfoForAt[],
+      ) => {
         const startIndex = (page - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
-        const pageItems = filteredItems.slice(startIndex, endIndex);
-
-        updateTabDataState('recent', (prev) => ({
-          ...prev,
-          items: page === 1 ? pageItems : [...prev.items, ...pageItems],
-          page,
-          total: filteredItems.length,
-          loading: false,
-          initialized: true,
-          hasMore: endIndex < filteredItems.length,
-        }));
-      },
-      [debouncedSearchText, updateTabDataState],
-    );
-
-    /**
-     * 加载远端 Tab 数据
-     * - all: 全部技能
-     * - favorite: 收藏技能
-     * - installed: 已安装技能
-     */
-    const loadApiTabData = useCallback(
-      async (tab: Exclude<TabType, 'recent'>, page: number) => {
-        const requestParams = {
-          page,
-          pageSize: PAGE_SIZE,
-          kw: debouncedSearchText || undefined,
-        };
-
-        let response;
-        if (tab === 'favorite') {
-          response = await collectList('skill', requestParams);
-        } else if (tab === 'installed') {
-          response = await getList(AgentComponentTypeEnum.Skill, {
-            ...requestParams,
-            justReturnSpaceData: true,
-          });
-        } else {
-          response = await getList(AgentComponentTypeEnum.Skill, requestParams);
-        }
-
-        const { records, total } = getResponsePageData(response?.data);
-        const mappedItems = records.map((record) =>
-          mapSkillToMentionItem(record),
-        );
-        const fallbackItems =
-          page === 1 && mappedItems.length === 0
-            ? tab === 'favorite'
-              ? []
-              : []
-            : [];
-        const nextItems = mappedItems.length > 0 ? mappedItems : fallbackItems;
+        const pageItems = records.slice(startIndex, endIndex);
 
         updateTabDataState(tab, (prev) => ({
           ...prev,
-          items: page === 1 ? nextItems : [...prev.items, ...nextItems],
+          items: page === 1 ? pageItems : [...prev.items, ...pageItems],
           page,
-          total: total || nextItems.length,
+          total: records.length,
+          loading: false,
+          initialized: true,
+          hasMore: endIndex < records.length,
+        }));
+      },
+      [updateTabDataState],
+    );
+
+    /**
+     * 加载最近使用 Tab 的数据
+     * 使用 apiSkillRecentlyUsedListForAt 由接口根据关键字完成过滤，这里只做分页切片
+     */
+    const loadRecentTabData = useCallback(
+      async (page: number) => {
+        const response = await apiSkillRecentlyUsedListForAt({
+          kw: debouncedSearchText,
+          targetType: AgentComponentTypeEnum.Skill,
+        });
+        const records = (response?.data || []) as SkillInfoForAt[];
+
+        handleTabDataResponse('recent', page, records);
+      },
+      [debouncedSearchText, handleTabDataResponse],
+    );
+
+    /**
+     * 加载「我的收藏」 Tab 数据
+     * 使用 apiSkillCollectListForAt 一次性返回全部数据，由接口根据关键字完成过滤，这里只做分页切片
+     */
+    const loadFavoriteTabData = useCallback(
+      async (page: number) => {
+        const response = await apiSkillCollectListForAt({
+          kw: debouncedSearchText,
+          targetType: AgentComponentTypeEnum.Skill,
+        });
+        const records = (response?.data || []) as SkillInfoForAt[];
+
+        handleTabDataResponse('favorite', page, records);
+      },
+      [debouncedSearchText, handleTabDataResponse],
+    );
+
+    /**
+     * 加载「全部」 Tab 数据
+     * 使用 apiSkillListForAt 分页接口
+     */
+    const loadAllTabData = useCallback(
+      async (page: number) => {
+        const requestParams = {
+          page,
+          pageSize: PAGE_SIZE,
+          kw: debouncedSearchText,
+          targetType: AgentComponentTypeEnum.Skill,
+        };
+
+        const response = await apiSkillListForAt(requestParams);
+        const pageData = (response?.data || {}) as Page<SkillInfoForAt>;
+        const records = pageData.records || [];
+        const total = pageData.total || records.length;
+
+        updateTabDataState('all', (prev) => ({
+          ...prev,
+          items: page === 1 ? records : [...prev.items, ...records],
+          page,
+          total,
           loading: false,
           initialized: true,
           hasMore:
-            total > 0
-              ? page * PAGE_SIZE < total
-              : nextItems.length >= PAGE_SIZE,
+            total > 0 ? page * PAGE_SIZE < total : records.length >= PAGE_SIZE,
         }));
       },
       [debouncedSearchText, updateTabDataState],
@@ -364,10 +294,11 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
      */
     const loadTabData = useCallback(
       async (tab: TabType, page: number = 1) => {
-        if (!visible || tabDataMap[tab].loading) {
+        if (!visible) {
           return;
         }
 
+        // 这里不再依赖外部的 tabDataMap，避免因 loading 状态变更导致的死循环请求
         updateTabDataState(tab, (prev) => ({
           ...prev,
           loading: true,
@@ -376,8 +307,10 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         try {
           if (tab === 'recent') {
             await loadRecentTabData(page);
+          } else if (tab === 'favorite') {
+            await loadFavoriteTabData(page);
           } else {
-            await loadApiTabData(tab, page);
+            await loadAllTabData(page);
           }
         } catch (error) {
           console.error(`加载 MentionPopup ${tab} 数据失败:`, error);
@@ -386,29 +319,15 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             loading: false,
             initialized: true,
             hasMore: false,
-            items:
-              page === 1
-                ? tab === 'favorite'
-                  ? []
-                  : tab === 'recent'
-                  ? []
-                  : []
-                : prev.items,
-            total:
-              page === 1
-                ? tab === 'favorite'
-                  ? 0
-                  : tab === 'recent'
-                  ? 0
-                  : 0
-                : prev.total,
+            items: page === 1 ? [] : prev.items,
+            total: page === 1 ? 0 : prev.total,
           }));
         }
       },
       [
-        loadApiTabData,
+        loadAllTabData,
+        loadFavoriteTabData,
         loadRecentTabData,
-        tabDataMap,
         updateTabDataState,
         visible,
       ],
@@ -448,18 +367,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     }, [visible, updateSelectedIndex]);
 
     /**
-     * 当防抖后的搜索词变化时，重置所有 Tab 的分页状态
-     * 这样当前 Tab 会重新从第一页发起查询
-     */
-    useEffect(() => {
-      if (!visible) {
-        return;
-      }
-
-      setTabDataMap(createTabDataState());
-    }, [debouncedSearchText, visible]);
-
-    /**
      * 当前 Tab 尚未初始化时才触发第一页加载
      * 避免同一个 Tab 在同一轮状态下重复请求
      */
@@ -468,13 +375,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         return;
       }
 
-      if (
-        !tabDataMap[activeTab].initialized &&
-        !tabDataMap[activeTab].loading
-      ) {
-        loadTabData(activeTab, 1);
-      }
-    }, [activeTab, loadTabData, tabDataMap, visible]);
+      loadTabData(activeTab, 1);
+    }, [activeTab, loadTabData, visible]);
 
     /**
      * 当弹窗可见且 Tab 或列表内容发生变化时，通知外部“高度可能改变”
@@ -527,7 +429,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const handleSelectCurrentItem = useCallback(() => {
       const item = currentItems[selectedIndex];
       if (item) {
-        saveRecentMentionItem(item);
         onSelect(item);
       }
     }, [currentItems, selectedIndex, onSelect]);
@@ -609,17 +510,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         }
       },
       [updateSelectedIndex],
-    );
-
-    /**
-     * 处理列表项点击
-     */
-    const handleItemClick = useCallback(
-      (item: MentionItem) => {
-        saveRecentMentionItem(item);
-        onSelect(item);
-      },
-      [onSelect],
     );
 
     /**
@@ -760,28 +650,31 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
               {activeTab === 'favorite' ? '暂无收藏' : '未找到匹配项'}
             </div>
           ) : (
-            // 列表项渲染
-            currentItems.map((item, index) => (
+            // 列表项渲染，直接使用接口返回的 SkillInfoForAt 结构
+            currentItems.map((item: MentionItem, index) => (
               <div
                 key={item.id}
-                className={`${styles['mention-item']} ${
+                className={`${styles['mention-item']} overflow-hide ${
                   index === selectedIndex ? styles.selected : ''
                 }`}
-                onClick={() => handleItemClick(item)}
+                onClick={() => onSelect(item)}
                 onMouseMove={() => handleItemMouseMove(index)}
               >
-                {/* 图标 */}
+                {/* 左侧图标 */}
                 <span className={styles['mention-item-icon']}>
-                  {item.avatar &&
-                  (/^(https?:)?\/\//.test(item.avatar) ||
-                    item.avatar.startsWith('/')) ? (
-                    <img src={item.avatar} alt={item.name} />
-                  ) : (
-                    item.icon || item.avatar
-                  )}
+                  <img src={item.icon} alt={item.name} />
                 </span>
-                {/* 名称 */}
-                <span className={styles['mention-item-name']}>{item.name}</span>
+                {/* 右侧名称 + 描述 */}
+                <div className={styles['mention-item-content']}>
+                  <div className={cx('mention-item-name', 'text-ellipsis')}>
+                    {item.name}
+                  </div>
+                  {item.description && (
+                    <div className={cx('mention-item-desc', 'text-ellipsis')}>
+                      {item.description}
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -793,7 +686,5 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     );
   },
 );
-
-MentionPopup.displayName = 'MentionPopup';
 
 export default MentionPopup;

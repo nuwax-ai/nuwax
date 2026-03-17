@@ -124,13 +124,20 @@
         }
       }
 
-      .mention-item-name {
+      .mention-item-content {
         flex: 1;
-        font-size: @fontSize;
-        color: @colorText;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        min-width: 0;
+
+        .mention-item-name {
+          flex: 1;
+          font-size: @fontSize;
+          color: @colorText;
+        }
+
+        .mention-item-desc {
+          font-size: @fontSizeSm;
+          color: red;
+        }
       }
     }
 

@@ -1,26 +1,90 @@
 /**
  * MentionPopup 和 MentionEditor 组件类型定义
- *
- * @description
- * 定义了 @ 提及功能相关的所有 TypeScript 类型
- * 包括数据类型、Props 类型和 Ref Handle 类型
  */
 
-/**
- * 提及项数据类型
- * 表示可被 @ 提及的单个项目
- *
- * @example
- * ```ts
- * const item: MentionItem = {
- *   id: 'ppt',
- *   name: 'PPT',
- *   icon: '📊',
- *   description: 'PPT 制作助手',
- *   category: 'tool'
- * };
- * ```
- */
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
+import { PluginTypeEnum } from '@/types/enums/plugin';
+import { AgentStatisticsInfo, CreatorInfo } from '@/types/interfaces/agent';
+
+// 已收藏的技能列表接口 - 参数接口
+export interface SkillListForAtParams {
+  /*目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill */
+  targetType?: string;
+
+  /*子类型,可用值:Multi,Single,WorkflowChat,ChatBot,TaskAgent,Agent,PageApp */
+  targetSubType?: string;
+
+  /*页码 */
+  page?: number;
+
+  /*每页数量 */
+  pageSize?: number;
+
+  /*分类名称 */
+  category?: string;
+
+  /*关键字搜索 */
+  kw?: string;
+
+  /*空间ID（可选）需要通过空间过滤时有用 */
+  spaceId?: number;
+
+  /*只返回空间的组件 */
+  justReturnSpaceData?: boolean;
+
+  /*访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容 */
+  accessControl?: number;
+
+  /*是否只返回官方标识的内容 */
+  official?: boolean;
+}
+
+// @技能信息
+export interface SkillInfoForAt {
+  // 	发布ID
+  id: number;
+  tenantId: number;
+  // 空间ID
+  spaceId: number;
+  // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
+  targetType: AgentComponentTypeEnum;
+  // 目标对象（智能体、工作流、插件）ID
+  targetId: number;
+  // 发布名称
+  name: string;
+  // 技能描述
+  description: string;
+  // 技能图标
+  icon: string;
+  // 备注
+  remark: string;
+  // 智能体发布修改时间
+  modified: string;
+  // 智能体发布创建时间
+  created: string;
+  // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
+  statistics: AgentStatisticsInfo;
+  // 发布者信息
+  publishUser: CreatorInfo;
+  // 技能分类
+  category: string;
+  // 是否允许复制, 1 允许
+  allowCopy: number;
+  // 访问控制, 0 不走权限管控；1 走权限管控
+  accessControl: number;
+  // 可用值:HTTP,CODE
+  pluginType: PluginTypeEnum;
+  // 智能体类型
+  agentType: string;
+  // 封面图
+  coverImg: string;
+  // 封面图片来源,可用值:SYSTEM,USER
+  coverImgSourceType: CoverImgSourceTypeEnum;
+  // 收藏状态
+  collect: boolean;
+}
+
 export interface MentionItem {
   /** 唯一标识符 */
   id: string | number;
@@ -42,7 +106,7 @@ export interface MentionItem {
  * Tab 类型枚举
  * 定义弹窗中可切换的标签页
  */
-export type TabType = 'all' | 'recent' | 'favorite' | 'installed';
+export type TabType = 'all' | 'recent' | 'favorite';
 
 /**
  * Tab 配置类型
