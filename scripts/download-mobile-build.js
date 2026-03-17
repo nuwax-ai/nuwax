@@ -3,11 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const REPO_OWNER = 'nuwax-ai';
-const REPO_NAME = 'nuwax-mobile';
-// Get branch from arguments, default to 'dev'
-const BRANCH = process.argv[2] || 'dev';
+const args = process.argv.slice(2);
+const source = args.includes('gitlab') ? 'gitlab' : 'github';
+const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
 const TARGET_DIR = 'unpackage/dist/build/web';
+
+let REPO_URL = '';
+if (source === 'gitlab') {
+  REPO_URL =
+    'https://git.yichamao.com/agent-platform/agent-platform-front-weapp.git';
+} else {
+  REPO_URL = 'https://github.com/nuwax-ai/nuwax-mobile.git';
+}
 const DIST_M_DIR = path.join(__dirname, '../dist/m');
 
 // Helper to ensure directory exists
@@ -19,7 +26,7 @@ function ensureDirSync(dirPath) {
 
 async function downloadDirectory() {
   console.log(
-    `📡 Fetching mobile build from ${REPO_OWNER}/${REPO_NAME}@${BRANCH}/${TARGET_DIR}...`,
+    `📡 Fetching mobile build from ${REPO_URL}@${BRANCH}/${TARGET_DIR}...`,
   );
   ensureDirSync(DIST_M_DIR);
 
@@ -45,7 +52,7 @@ async function downloadDirectory() {
 
     // Create an empty repo
     execSync(
-      `git clone --filter=blob:none --no-checkout --depth 1 -b ${BRANCH} https://github.com/${REPO_OWNER}/${REPO_NAME}.git "${TEMP_DIR}"`,
+      `git clone --filter=blob:none --no-checkout --depth 1 -b ${BRANCH} ${REPO_URL} "${TEMP_DIR}"`,
       {
         cwd: __dirname,
         stdio: 'inherit',

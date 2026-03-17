@@ -25,7 +25,7 @@
     display: flex;
     align-items: center;
     padding: @paddingXs @paddingSm;
-    border-bottom: 1px solid @colorBorderSecondary;
+    border-bottom: 0.5px solid @colorBorderSecondary;
     gap: @marginXs;
 
     .mention-tab {
@@ -44,7 +44,6 @@
       &.active {
         color: @colorText;
         background: @colorFillSecondary;
-        font-weight: @fontWeightStrong;
       }
     }
   }
@@ -62,7 +61,6 @@
   .mention-list {
     flex: 1;
     overflow-y: auto;
-    padding: @paddingXxs 0;
     max-height: 280px;
 
     &::-webkit-scrollbar {
@@ -76,10 +74,6 @@
     &::-webkit-scrollbar-thumb {
       background: @colorBorder;
       border-radius: 3px;
-
-      &:hover {
-        background: @colorTextTertiary;
-      }
     }
 
     // 单个提及项
@@ -88,26 +82,19 @@
       align-items: center;
       padding: @paddingXs @paddingSm;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s;
       gap: @marginSm;
 
       &:hover {
-        background: @colorFillQuaternary;
+        background: @colorFillSecondary;
       }
 
       // 键盘或鼠标同步后的当前选中项
       &.selected {
-        background: @colorPrimaryBg;
-
-        .mention-item-name {
-          color: @colorPrimary;
-        }
+        background: @colorFillSecondary;
       }
 
       .mention-item-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
         width: 32px;
         height: 32px;
         border-radius: @borderRadius;
@@ -136,7 +123,7 @@
 
         .mention-item-desc {
           font-size: @fontSizeSm;
-          color: red;
+          color: @colorTextSecondary;
         }
       }
     }

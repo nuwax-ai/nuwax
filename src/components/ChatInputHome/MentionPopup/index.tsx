@@ -666,11 +666,18 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
                 </span>
                 {/* 右侧名称 + 描述 */}
                 <div className={styles['mention-item-content']}>
-                  <div className={cx('mention-item-name', 'text-ellipsis')}>
+                  <div
+                    className={cx(styles['mention-item-name'], 'text-ellipsis')}
+                  >
                     {item.name}
                   </div>
                   {item.description && (
-                    <div className={cx('mention-item-desc', 'text-ellipsis')}>
+                    <div
+                      className={cx(
+                        styles['mention-item-desc'],
+                        'text-ellipsis',
+                      )}
+                    >
                       {item.description}
                     </div>
                   )}
