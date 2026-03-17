@@ -383,6 +383,41 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [onSkillIdsChange, selectedMentions]);
 
     /**
+     * 刷新 MentionPopup 的位置，使其尽量跟随当前光标
+     * 在键盘导航、页面滚动或窗口变化时调用
+     */
+    const refreshMentionPosition = useCallback(() => {
+      if (!enableMention || !showMentionPopup) return;
+      const position = getCaretPosition(mentionPlacement);
+      if (position) {
+        setMentionPosition(position);
+      }
+    }, [enableMention, mentionPlacement, showMentionPopup]);
+
+    /**
+     * 弹窗打开期间，监听滚动和窗口尺寸变化，实时刷新弹窗位置
+     * 解决输入框位于页面底部时，内容变化或滚动导致弹窗与光标脱节的问题
+     */
+    useEffect(() => {
+      if (!showMentionPopup) return;
+
+      const handleReposition = () => {
+        refreshMentionPosition();
+      };
+
+      window.addEventListener('scroll', handleReposition, true);
+      window.addEventListener('resize', handleReposition);
+
+      // 初次打开时也立即对齐一次
+      handleReposition();
+
+      return () => {
+        window.removeEventListener('scroll', handleReposition, true);
+        window.removeEventListener('resize', handleReposition);
+      };
+    }, [refreshMentionPosition, showMentionPopup]);
+
+    /**
      * 聚焦编辑器
      */
     const focus = useCallback(() => {
@@ -794,6 +829,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
         if (enableMention && showMentionPopup) {
+          // 每次键盘导航前刷新一次弹窗位置，保证始终贴合当前光标
+          refreshMentionPosition();
           switch (e.key) {
             case 'ArrowUp':
               e.preventDefault();
@@ -866,6 +903,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         closeMentionPopup,
         onPressEnter,
         removeMentionChipNode,
+        refreshMentionPosition,
       ],
     );
 

@@ -15,7 +15,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
   type,
 }) => {
   const commonRules = [{ required: true, message: '此项为必填项' }];
-  const maxProps = { maxLength: 100, showCount: true };
+  const maxProps = { maxLength: 100, showCount: true, allowClear: false };
 
   if (!platform) return null;
 
@@ -29,18 +29,18 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
           rules={commonRules}
           fieldProps={maxProps}
         />
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'appSecret']}
           label="App Secret"
           rules={commonRules}
           fieldProps={maxProps}
         />
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'encryptKey']}
           label="Encrypt Key"
           fieldProps={maxProps}
         />
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'verificationToken']}
           label="Verification Token"
           fieldProps={maxProps}
@@ -65,7 +65,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
           rules={commonRules}
           fieldProps={maxProps}
         />
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'clientSecret']}
           label="Client Secret"
           rules={commonRules}
@@ -81,7 +81,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
       // ... (omitting unchanged code for brevity)
       return (
         <>
-          <ProFormText.Password
+          <ProFormText
             name={['configData', 'token']}
             label="Token"
             rules={commonRules}
@@ -99,14 +99,14 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
             rules={commonRules}
             fieldProps={maxProps}
           />
-          <ProFormText.Password
+          <ProFormText
             name={['configData', 'corpSecret']}
             label="Secret"
             rules={commonRules}
             fieldProps={maxProps}
           />
 
-          <ProFormText.Password
+          <ProFormText
             name={['configData', 'encodingAesKey']}
             label="EncodingAESKey"
             rules={commonRules}
@@ -117,7 +117,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
     }
     return (
       <>
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'token']}
           label="Token"
           rules={commonRules}
@@ -136,7 +136,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
           fieldProps={maxProps}
         />
 
-        <ProFormText.Password
+        <ProFormText
           name={['configData', 'encodingAesKey']}
           label="EncodingAESKey"
           rules={commonRules}

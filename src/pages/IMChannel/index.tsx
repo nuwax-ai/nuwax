@@ -118,7 +118,6 @@ const IMChannel: React.FC = () => {
   return (
     <WorkspaceLayout
       title="IM 机器人"
-      tips="管理您的即时通讯平台机器人连接与智能体绑定"
       hideScroll={true}
       rightSlot={
         <Space size={12}>

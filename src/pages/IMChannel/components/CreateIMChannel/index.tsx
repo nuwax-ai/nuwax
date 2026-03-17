@@ -79,30 +79,13 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
             });
             return;
           }
+          message.error('获取详情失败');
+          form.resetFields();
         } catch (error) {
           console.error('Fetch IMChannel detail failed:', error);
+          message.error('获取详情失败');
+          form.resetFields();
         }
-
-        // 回退逻辑：如果接口失败，使用传入的基础信息进行回显
-        let fallbackConfig = {};
-        try {
-          fallbackConfig = info.configData ? JSON.parse(info.configData) : {};
-        } catch (e) {
-          console.error('Parse fallback configData failed:', e);
-        }
-
-        form.setFieldsValue({
-          name: info.name,
-          targetType: info.targetType || IMChannelTypeEnum.Bot,
-          enabled: info.enabled,
-          target: {
-            name: info.agentName,
-            targetId: info.agentId,
-            icon: info.agentIcon,
-            description: info.agentDescription,
-          },
-          configData: fallbackConfig,
-        });
       } else {
         form.resetFields();
         form.setFieldsValue({

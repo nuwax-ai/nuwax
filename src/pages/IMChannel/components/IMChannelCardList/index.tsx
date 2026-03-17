@@ -1,5 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CardWrapper from '@/components/business-component/CardWrapper';
+import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   IM_PLATFORM_ICON_MAP,
@@ -270,30 +271,8 @@ const IMChannelCardList = forwardRef<
       );
     };
 
-    const renderSkeleton = () => {
-      return (
-        <div className={cx(styles.container)}>
-          <div className={cx(styles.list)}>
-            {[...Array(4)].map((_, index) => (
-              <CardWrapper
-                key={`skeleton-${index}`}
-                className={cx(styles.card)}
-                loading={true}
-                title=""
-                avatar=""
-                name=""
-                content=""
-                icon=""
-                defaultIcon=""
-              />
-            ))}
-          </div>
-        </div>
-      );
-    };
-
     if (loading) {
-      return renderSkeleton();
+      return <Loading />;
     }
 
     if (filteredRobotList.length === 0) {
