@@ -18,12 +18,10 @@ export const useAutoPreviewFile = () => {
   const handleAutoPreviewLastFile = (list: MessageInfo[], id: number) => {
     if (!list || list.length === 0) return;
 
-    const bigText = list
-      .filter(
-        (item: MessageInfo) => item.messageType === MessageTypeEnum.ASSISTANT,
-      )
-      .map((item: MessageInfo) => item.text)
-      .join('');
+    const assistantMessages = list.filter(
+      (item: MessageInfo) => item.messageType === MessageTypeEnum.ASSISTANT,
+    );
+    const bigText = assistantMessages[assistantMessages.length - 1]?.text || '';
 
     const lastTaskResultFile = extractLastTaskResultFile(bigText);
 
