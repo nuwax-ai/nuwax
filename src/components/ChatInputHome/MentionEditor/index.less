@@ -16,7 +16,7 @@
 .mention-editor {
   position: relative;
   width: 100%;
-  padding: @paddingXs @paddingSm;
+  padding: 4px @paddingSm;
   font-size: @fontSize;
   line-height: 1.5;
   color: @colorText;
@@ -34,7 +34,7 @@
   &.empty::before {
     content: attr(data-placeholder);
     position: absolute;
-    top: @paddingXs;
+    top: 4px;
     left: @paddingSm;
     right: @paddingSm;
     display: block;
@@ -80,7 +80,7 @@
 .mention-chip {
   display: inline-flex;
   align-items: center;
-  background: @colorPrimaryBg;
+  background-color: @colorBgLayout;
   border-radius: @borderRadius;
   padding: 2px 4px 2px 8px;
   margin: 0 2px;
@@ -89,7 +89,7 @@
   transition: all 0.2s;
 
   &:hover {
-    background: @colorPrimaryBgHover;
+    opacity: 0.8;
 
     // 仅在 hover 时强调删除按钮，平时弱化视觉噪音
     .mention-delete {

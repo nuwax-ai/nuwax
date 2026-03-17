@@ -43,14 +43,16 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 获取光标相对于视口的位置，并根据期望方向计算弹窗显示位置
+ * 获取光标相对于视口的位置，并根据期望方向和弹窗高度计算显示位置
  * 当 placement 为 auto 时，会根据可用空间自动选择向上或向下展开
  *
  * @param placement - 弹窗期望方向：'auto' | 'up' | 'down'
+ * @param popupHeight - 弹窗实际高度（用于向上展开时将底边贴近光标）
  * @returns 弹窗位置对象 { top, left }，如果无法获取则返回 null
  */
 const getCaretPosition = (
   placement: 'auto' | 'up' | 'down' = 'auto',
+  popupHeight?: number,
 ): { top: number; left: number } | null => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
@@ -64,20 +66,29 @@ const getCaretPosition = (
 
   // 参考 MentionPopup 的最大高度（index.less 中为 280px 列表 + 头部区域）
   const POPUP_ESTIMATED_HEIGHT = 320;
+  const estimatedHeight = popupHeight ?? POPUP_ESTIMATED_HEIGHT;
 
   let finalPlacement = placement;
   if (placement === 'auto') {
     const spaceBelow = viewportHeight - rect.bottom;
-    finalPlacement = spaceBelow >= POPUP_ESTIMATED_HEIGHT ? 'down' : 'up';
+    finalPlacement = spaceBelow >= estimatedHeight ? 'down' : 'up';
   }
 
   let top: number;
   if (finalPlacement === 'down') {
     // 弹窗显示在光标下方，偏移 4px
     top = rect.bottom + 4;
+
+    // 如果弹窗高度过大，可能会超出视口底部，这里向上收缩避免撑出页面滚动条
+    const height = popupHeight ?? estimatedHeight;
+    const maxTop = viewportHeight - height - 4;
+    if (top > maxTop) {
+      top = Math.max(4, maxTop);
+    }
   } else {
-    // 弹窗显示在光标上方，预留估算高度和 4px 间距
-    top = rect.top - POPUP_ESTIMATED_HEIGHT - 4;
+    // 弹窗显示在光标上方，将底边尽量贴近光标上方 4px 位置
+    const height = popupHeight ?? estimatedHeight;
+    top = rect.top - 4 - height;
     // 防止超出可视区域顶部
     if (top < 4) {
       top = 4;
@@ -333,6 +344,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     /** 编辑器是否为空，用于稳定控制 placeholder 显示 */
     const [isEditorEmpty, setIsEditorEmpty] = useState<boolean>(true);
+    /** 当前 MentionPopup 实际高度（用于向上展开时将弹窗底边贴近光标） */
+    const [mentionPopupHeight, setMentionPopupHeight] = useState<number | null>(
+      null,
+    );
 
     // ==================== 计算属性 ====================
     /** 编辑器最小高度（基于行数） */
@@ -388,11 +403,29 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const refreshMentionPosition = useCallback(() => {
       if (!enableMention || !showMentionPopup) return;
-      const position = getCaretPosition(mentionPlacement);
+      const position = getCaretPosition(
+        mentionPlacement,
+        mentionPopupHeight ?? undefined,
+      );
       if (position) {
         setMentionPosition(position);
       }
-    }, [enableMention, mentionPlacement, showMentionPopup]);
+    }, [enableMention, mentionPlacement, mentionPopupHeight, showMentionPopup]);
+
+    /**
+     * 处理弹窗高度变化
+     * 使用 useCallback 保证传入 MentionPopup 的回调引用稳定，避免无限循环
+     */
+    const handlePopupHeightChange = useCallback(
+      (height: number) => {
+        setMentionPopupHeight(height);
+        const position = getCaretPosition(mentionPlacement, height);
+        if (position) {
+          setMentionPosition(position);
+        }
+      },
+      [mentionPlacement],
+    );
 
     /**
      * 弹窗打开期间，监听滚动和窗口尺寸变化，实时刷新弹窗位置
@@ -402,6 +435,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       if (!showMentionPopup) return;
 
       const handleReposition = () => {
+        // 先刷新弹窗位置，使其贴合当前光标
         refreshMentionPosition();
       };
 
@@ -829,8 +863,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
         if (enableMention && showMentionPopup) {
-          // 每次键盘导航前刷新一次弹窗位置，保证始终贴合当前光标
-          refreshMentionPosition();
           switch (e.key) {
             case 'ArrowUp':
               e.preventDefault();
@@ -903,7 +935,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         closeMentionPopup,
         onPressEnter,
         removeMentionChipNode,
-        refreshMentionPosition,
       ],
     );
 
@@ -1141,6 +1172,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             searchText={mentionSearchText}
             selectedIndex={selectedIndex}
             onSelectedIndexChange={setSelectedIndex}
+            onHeightChange={handlePopupHeightChange}
           />
         </div>
       </div>

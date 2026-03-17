@@ -79,11 +79,9 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
             });
             return;
           }
-          message.error('获取详情失败');
           form.resetFields();
         } catch (error) {
           console.error('Fetch IMChannel detail failed:', error);
-          message.error('获取详情失败');
           form.resetFields();
         }
       } else {

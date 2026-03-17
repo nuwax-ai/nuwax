@@ -193,6 +193,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       searchText: externalSearchText,
       selectedIndex: externalSelectedIndex,
       onSelectedIndexChange,
+      onHeightChange,
     },
     ref,
   ) => {
@@ -474,6 +475,16 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         loadTabData(activeTab, 1);
       }
     }, [activeTab, loadTabData, tabDataMap, visible]);
+
+    /**
+     * 当弹窗可见且 Tab 或列表内容发生变化时，通知外部“高度可能改变”
+     * 由外部统一重新计算弹窗与光标之间的位置关系
+     */
+    useEffect(() => {
+      if (!visible || !containerRef.current) return;
+      const height = containerRef.current.offsetHeight ?? 0;
+      onHeightChange?.(height);
+    }, [visible, currentItems.length]);
 
     /**
      * 切换 Tab 或搜索词后，将列表滚动条重置到顶部
