@@ -8,6 +8,7 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   CategoryItemInfo,
@@ -263,6 +264,8 @@ const Home: React.FC = () => {
           onComputerSelect={handleComputerSelect}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
+          /** 是否启用 @ 提及功能，默认启用 */
+          enableMention={agentDetail?.type === AgentTypeEnum.TaskAgent}
         />
         <div
           className={cx(

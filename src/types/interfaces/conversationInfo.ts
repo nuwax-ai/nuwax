@@ -22,7 +22,10 @@ import type {
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { CardBindConfig, CardDataInfo } from '@/types/interfaces/cardInfo';
-import type { BindConfigWithSub } from '@/types/interfaces/common';
+import type {
+  BindConfigWithSub,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -125,6 +128,30 @@ export interface AttachmentFile {
   mimeType: string;
 }
 
+// 发送消息参数（组件内部使用）
+export interface SendMessageParams {
+  // 会话ID
+  id: number;
+  // 消息内容
+  messageInfo: string;
+  // 附件列表
+  files?: UploadFileInfo[];
+  // 选中的组件列表
+  infos?: AgentSelectedComponentInfo[];
+  // 变量参数，前端需要根据agent配置组装参数
+  variableParams?: Record<string, string | number>;
+  // 沙盒ID
+  sandboxId?: string;
+  // 是否调试模式
+  debug?: boolean;
+  // 是否同步会话记录，默认同步
+  isSync?: boolean;
+  // 会话数据
+  data?: any;
+  // 技能ID列表
+  skillIds?: number[];
+}
+
 // 会话参数
 export interface ConversationChatParams {
   // 会话唯一标识
@@ -140,6 +167,8 @@ export interface ConversationChatParams {
   selectedComponents: AgentSelectedComponentInfo[];
   // 沙盒ID
   sandboxId?: string;
+  // 技能ID列表
+  skillIds?: number[];
 }
 
 // 临时会话参数

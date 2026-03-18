@@ -1,3 +1,4 @@
+import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -556,6 +557,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   isPersonalComputer?: boolean;
   /** 占位符文本 */
   placeholder?: string;
+  /** 默认提及项列表（需同时传入 value 文本） */
+  defaultMentions?: MentionItem[];
 }
 
 // 聊天框底部更多操作组件

@@ -40,7 +40,7 @@ import { Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
@@ -52,6 +52,7 @@ const AgentDetails: React.FC = () => {
   // 智能体ID
   const params = useParams();
   const agentId = Number(params.agentId);
+  const location = useLocation();
   const [form] = Form.useForm();
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
@@ -83,6 +84,12 @@ const AgentDetails: React.FC = () => {
 
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
+
+  // 技能信息
+  const [skillInfo, setSkillInfo] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const {
     isFileTreeVisible,
@@ -124,6 +131,20 @@ const AgentDetails: React.FC = () => {
       .then(() => setVariableParams(values))
       .catch(() => setVariableParams(null));
   }, [form, values]);
+
+  // 从location.search中获取技能信息
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const skillId = searchParams.get('skillId');
+    const skillName = searchParams.get('skillName');
+
+    if (skillId && skillName) {
+      setSkillInfo({
+        id: Number(skillId),
+        name: decodeURIComponent(skillName || ''),
+      });
+    }
+  }, [location.search]);
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -482,6 +503,14 @@ const AgentDetails: React.FC = () => {
               maskText="您无该智能体权限"
               fixedSelection={!!agentDetail?.sandboxId}
               isPersonalComputer={!!agentDetail?.sandboxId}
+              /** 是否启用 @ 提及功能，默认启用 */
+              enableMention={agentDetail?.type === AgentTypeEnum.TaskAgent}
+              // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
+              defaultMentions={
+                agentDetail?.type === AgentTypeEnum.TaskAgent && skillInfo
+                  ? [skillInfo]
+                  : []
+              }
             />
           </div>
 

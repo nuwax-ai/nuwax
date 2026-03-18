@@ -26,6 +26,7 @@
 
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { Page } from '@/types/interfaces/request';
+import { useRequest } from 'ahooks';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -55,11 +56,12 @@ const cx = classNames.bind(styles);
 /**
  * Tab 配置列表
  * 定义弹窗顶部的标签页
+ * 默认优先展示「最近使用」，将「全部」放在最后
  */
 const TABS: TabConfig[] = [
-  { key: 'all', label: '全部' },
   { key: 'recent', label: '最近使用' },
   { key: 'favorite', label: '我的收藏' },
+  { key: 'all', label: '全部' },
 ];
 
 /** 单个 Tab 每次请求或分页追加的数量 */
@@ -119,7 +121,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       position,
       onSelect,
       onClose,
-      searchText: externalSearchText,
+      // 搜索文本（由外部通过 @ 后输入的内容控制）
+      searchText,
       selectedIndex: externalSelectedIndex,
       onSelectedIndexChange,
       onHeightChange,
@@ -128,7 +131,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
   ) => {
     // ==================== State ====================
     /** 当前激活的 Tab */
-    const [activeTab, setActiveTab] = useState<TabType>('all');
+    const [activeTab, setActiveTab] = useState<TabType>('recent');
     /** 内部选中索引（当外部未控制时使用） */
     const [internalSelectedIndex, setInternalSelectedIndex] =
       useState<number>(0);
@@ -144,11 +147,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const listRef = useRef<HTMLDivElement>(null);
 
     // ==================== 计算属性 ====================
-    /** 搜索文本（由外部通过 @ 后输入的内容控制） */
-    const searchText = externalSearchText ?? '';
-    /** 防抖后的搜索文本，仅用于请求和本地筛选 */
-    const [debouncedSearchText, setDebouncedSearchText] =
-      useState<string>(searchText);
     /** 选中索引（优先使用外部控制） */
     const selectedIndex = externalSelectedIndex ?? internalSelectedIndex;
 
@@ -222,21 +220,45 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       [updateTabDataState],
     );
 
+    // 加载「最近使用」数据
+    const { runAsync: runRecentTabData } = useRequest(
+      apiSkillRecentlyUsedListForAt,
+      {
+        manual: true,
+        debounceWait: 300,
+      },
+    );
+
+    // 加载「我的收藏」数据
+    const { runAsync: runFavoriteTabData } = useRequest(
+      apiSkillCollectListForAt,
+      {
+        manual: true,
+        debounceWait: 300,
+      },
+    );
+
+    // 加载「全部」数据
+    const { runAsync: runAllTabData } = useRequest(apiSkillListForAt, {
+      manual: true,
+      debounceWait: 300,
+    });
+
     /**
      * 加载最近使用 Tab 的数据
      * 使用 apiSkillRecentlyUsedListForAt 由接口根据关键字完成过滤，这里只做分页切片
      */
     const loadRecentTabData = useCallback(
       async (page: number) => {
-        const response = await apiSkillRecentlyUsedListForAt({
-          kw: debouncedSearchText,
+        const response = await runRecentTabData({
+          kw: searchText,
           targetType: AgentComponentTypeEnum.Skill,
         });
         const records = (response?.data || []) as SkillInfoForAt[];
 
         handleTabDataResponse('recent', page, records);
       },
-      [debouncedSearchText, handleTabDataResponse],
+      [searchText, handleTabDataResponse],
     );
 
     /**
@@ -245,15 +267,15 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
      */
     const loadFavoriteTabData = useCallback(
       async (page: number) => {
-        const response = await apiSkillCollectListForAt({
-          kw: debouncedSearchText,
+        const response = await runFavoriteTabData({
+          kw: searchText,
           targetType: AgentComponentTypeEnum.Skill,
         });
         const records = (response?.data || []) as SkillInfoForAt[];
 
         handleTabDataResponse('favorite', page, records);
       },
-      [debouncedSearchText, handleTabDataResponse],
+      [searchText, handleTabDataResponse],
     );
 
     /**
@@ -265,11 +287,11 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         const requestParams = {
           page,
           pageSize: PAGE_SIZE,
-          kw: debouncedSearchText,
+          kw: searchText,
           targetType: AgentComponentTypeEnum.Skill,
         };
 
-        const response = await apiSkillListForAt(requestParams);
+        const response = await runAllTabData(requestParams);
         const pageData = (response?.data || {}) as Page<SkillInfoForAt>;
         const records = pageData.records || [];
         const total = pageData.total || records.length;
@@ -285,7 +307,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             total > 0 ? page * PAGE_SIZE < total : records.length >= PAGE_SIZE,
         }));
       },
-      [debouncedSearchText, updateTabDataState],
+      [searchText, updateTabDataState],
     );
 
     /**
@@ -334,36 +356,16 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     );
 
     // ==================== Effects ====================
-
-    /**
-     * searchText 变化时做 500ms 防抖
-     * 输入提示立即更新，但真正的数据重载延后触发，减少接口请求频率
-     */
-    useEffect(() => {
-      if (!visible) {
-        setDebouncedSearchText(searchText);
-        return;
-      }
-
-      const timer = window.setTimeout(() => {
-        setDebouncedSearchText(searchText);
-      }, 500);
-
-      return () => {
-        window.clearTimeout(timer);
-      };
-    }, [searchText, visible]);
-
     /**
      * 弹窗显示时重置状态
-     * 每次重新打开时都回到“全部 Tab + 第一项选中”的初始视图
+     * 每次重新打开时都回到“最近使用 Tab + 第一项选中”的初始视图
      */
     useEffect(() => {
-      if (visible) {
-        setActiveTab('all');
+      return () => {
+        setActiveTab('recent');
         updateSelectedIndex(0);
         setTabDataMap(createTabDataState());
-      }
+      };
     }, [visible, updateSelectedIndex]);
 
     /**
@@ -396,7 +398,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       if (listRef.current) {
         listRef.current.scrollTop = 0;
       }
-    }, [activeTab, debouncedSearchText]);
+    }, [activeTab, searchText]);
 
     /**
      * 当列表项数量变化时，确保选中索引不越界
@@ -628,13 +630,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             </div>
           ))}
         </div>
-
-        {/* 搜索提示（显示当前搜索关键词，来自 @ 后输入的文本） */}
-        {searchText && (
-          <div className={styles['mention-search-hint']}>
-            搜索: {searchText}
-          </div>
-        )}
 
         {/* 列表项 */}
         <div

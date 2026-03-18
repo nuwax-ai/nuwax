@@ -46,6 +46,7 @@ import type {
   ConversationInfo,
   MessageInfo,
   RoleInfo,
+  SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import {
   IUpdateStaticFileParams,
@@ -88,6 +89,8 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  // 技能ID列表
+  const skillIds = location.state?.skillIds;
   // 消息来源
   const messageSourceType: MessageSourceType =
     (location.state?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
@@ -496,17 +499,21 @@ const Chat: React.FC = () => {
         if (isCanMessage && (message || files?.length > 0)) {
           const effectiveSandboxId = getEffectiveSandboxId(data);
 
-          onMessageSend(
+          // 发送消息参数
+          const sendParams: SendMessageParams = {
             id,
-            message,
+            messageInfo: message,
             files,
             infos,
-            firstVariableParams,
-            effectiveSandboxId,
-            false,
-            true,
+            variableParams: firstVariableParams,
+            sandboxId: effectiveSandboxId,
+            // debug: false,
+            // isSync: true,
             data,
-          );
+            skillIds,
+          };
+
+          onMessageSend(sendParams);
         }
       };
       asyncFun();
@@ -517,7 +524,7 @@ const Chat: React.FC = () => {
         limit: 20,
       });
     }
-  }, [id, message, files, infos, firstVariableParams]);
+  }, [id, message, files, infos, firstVariableParams, skillIds]);
 
   useEffect(() => {
     addBaseTarget();
@@ -655,11 +662,11 @@ const Chat: React.FC = () => {
   const handleMessageSend = (
     messageInfo: string,
     files: UploadFileInfo[] = [],
+    skillIds: number[] = [],
   ) => {
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
       form.validateFields(); // 触发表单验证以显示error
-      // message.warning('请填写必填参数'); // This line was removed as per the edit hint
       return;
     }
 
@@ -669,14 +676,18 @@ const Chat: React.FC = () => {
     isSendMessageRef.current = true;
     const effectiveSandboxId = getEffectiveSandboxId();
 
-    onMessageSend(
+    // 发送消息参数
+    const sendParams: SendMessageParams = {
       id,
       messageInfo,
       files,
-      selectedComponentList,
-      variableParams,
-      effectiveSandboxId,
-    );
+      infos: selectedComponentList,
+      variableParams: variableParams || undefined,
+      sandboxId: effectiveSandboxId,
+      skillIds,
+    };
+
+    onMessageSend(sendParams);
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -1246,6 +1257,8 @@ const Chat: React.FC = () => {
                 hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+              /** 是否启用 @ 提及功能，默认启用 */
+              enableMention={effectiveAgent?.type === AgentTypeEnum.TaskAgent}
             />
           </div>
 

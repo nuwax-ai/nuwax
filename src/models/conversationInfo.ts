@@ -41,14 +41,10 @@ import {
 } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
-  AgentSelectedComponentInfo,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
-import type {
-  BindConfigWithSub,
-  UploadFileInfo,
-} from '@/types/interfaces/common';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
   AttachmentFile,
   ConversationChatParams,
@@ -58,6 +54,7 @@ import type {
   MessageInfo,
   MessageQuestionExtInfo,
   ProcessingInfo,
+  SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import {
   CardInfo,
@@ -74,7 +71,6 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
-// import { logger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -1215,18 +1211,19 @@ export default () => {
   };
 
   // 发送消息
-  const onMessageSend = async (
-    id: number,
-    messageInfo: string,
-    files: UploadFileInfo[] = [],
-    infos: AgentSelectedComponentInfo[] = [],
-    variableParams?: Record<string, string | number>,
-    sandboxId?: string,
-    debug: boolean = false,
-    // 是否同步会话记录
-    isSync: boolean = true,
-    data: any = null,
-  ) => {
+  const onMessageSend = async (sendParams: SendMessageParams) => {
+    const {
+      id,
+      messageInfo,
+      files = [],
+      infos = [],
+      variableParams,
+      sandboxId,
+      debug = false,
+      isSync = true,
+      data = null,
+      skillIds,
+    } = sendParams;
     // 清除副作用
     handleClearSideEffect();
 
@@ -1300,6 +1297,8 @@ export default () => {
       debug,
       selectedComponents: infos,
       sandboxId,
+      // 技能ID列表
+      skillIds,
     };
     // 处理会话
     handleConversation(params, currentMessageId, isSync, data);

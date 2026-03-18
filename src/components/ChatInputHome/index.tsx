@@ -69,7 +69,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   enableMention = true,
   // @ 提及弹窗展示方向：auto | up | down，默认 auto
   mentionPlacement = 'auto',
+  /** 占位符文本 */
   placeholder,
+  /** 默认提及项列表（需同时传入 value 文本） */
+  defaultMentions,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -119,11 +122,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
 
-  // 确认发送消息
+  // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
     // 如果输入框内容不为空 或者 附件文件列表不为空
     if (!!value.trim() || !!files?.length) {
-      // enter事件
       onEnter(value, files, skillIds);
       // 如果需要清空输入框
       if (isClearInput) {
@@ -406,6 +408,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           // 粘贴事件处理
           onPaste={handlePaste}
           placeholder={placeholder}
+          // 默认提及项列表
+          defaultMentions={defaultMentions}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
           {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (

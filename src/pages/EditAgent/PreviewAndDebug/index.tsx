@@ -16,7 +16,11 @@ import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import { MessageInfo, RoleInfo } from '@/types/interfaces/conversationInfo';
+import {
+  MessageInfo,
+  RoleInfo,
+  SendMessageParams,
+} from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -343,7 +347,11 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   }, [agentId, agentConfigInfo, form]);
 
   // 消息发送
-  const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
+  const handleMessageSend = (
+    messageInfo: string,
+    files?: UploadFileInfo[],
+    skillIds?: number[],
+  ) => {
     const id = devConversationIdRef.current;
     if (!id) {
       return;
@@ -364,16 +372,22 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
         selectedComputerId,
     );
 
-    onMessageSend(
+    // 发送消息参数
+    const sendParams: SendMessageParams = {
       id,
       messageInfo,
       files,
-      selectedComponentList,
-      variableParams,
-      effectiveSandboxId,
-      true,
-      false,
-    );
+      infos: selectedComponentList,
+      variableParams: variableParams || undefined,
+      sandboxId: effectiveSandboxId,
+      debug: true,
+      // 是否同步会话记录
+      isSync: false,
+      // 技能ID列表
+      skillIds,
+    };
+
+    onMessageSend(sendParams);
   };
 
   /**
@@ -655,7 +669,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
-              // 禁用 @ 提及功能
+              // 禁用 @ 提及功能 (编排页面不支持 @ 提及功能)
               enableMention={false}
               placeholder="直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片"
             />
