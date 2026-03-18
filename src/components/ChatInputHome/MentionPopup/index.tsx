@@ -146,6 +146,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const hasInitTabsRef = useRef<boolean>(false);
     /** 上一次已用于请求的搜索关键字，用于避免与首轮 init 重复请求，并在关键字变化时仅刷新当前 Tab */
     const lastSearchTextRef = useRef<string>('');
+    /** 在最后一项按向下键触发加载更多后，待加载完成时要选中的索引（新一页的第一项） */
+    const pendingSelectIndexAfterLoadRef = useRef<number | null>(null);
 
     // ==================== 事件处理 ====================
 
@@ -450,19 +452,26 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     }, [visible, onHeightChange]);
 
     /**
-     * 切换 Tab 或搜索词后，将列表滚动条重置到顶部
-     * 避免新结果仍停留在旧滚动位置，影响阅读
+     * 切换 Tab 或搜索词后，将列表滚动条重置到顶部，并清除「加载更多后待选中」的标记
      */
     useEffect(() => {
+      pendingSelectIndexAfterLoadRef.current = null;
       if (listRef.current) {
         listRef.current.scrollTop = 0;
       }
     }, [activeTab, searchText]);
 
     /**
-     * 当列表项数量变化时，确保选中索引不越界
+     * 当列表项数量变化时，确保选中索引不越界；
+     * 若存在「按向下键触发的加载更多」待选中的索引，则选中该索引（新一页的第一项）
      */
     useEffect(() => {
+      const pending = pendingSelectIndexAfterLoadRef.current;
+      if (pending !== null && currentItems.length > pending) {
+        pendingSelectIndexAfterLoadRef.current = null;
+        setSelectedIndex(pending);
+        return;
+      }
       if (selectedIndex >= currentItems.length && currentItems.length > 0) {
         setSelectedIndex(currentItems.length - 1);
       }
@@ -508,17 +517,42 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
 
     /**
      * 向下移动选中项
-     * 到达最后一项后循环到第一项
+     *
+     * 行为说明：
+     * - 不是最后一项时：正常向下移动一项
+     * - 在最后一项且还有更多分页时：
+     *   - 记录「加载完成后要选中的索引」为当前列表长度（新一页的第一项）
+     *   - 如果当前未在加载，则主动触发加载下一页
+     *   - 保持当前仍选中最后一项，等待数据回来后自动跳到新一页第一项
+     * - 在最后一项且没有更多分页时：循环到第一项
      */
     const handleArrowDown = useCallback(() => {
-      if (selectedIndex >= currentItems.length - 1) {
-        // 在列表最后一项，循环到第一项
-        setSelectedIndex(0);
-      } else {
-        // 向下移动
+      if (selectedIndex < currentItems.length - 1) {
         setSelectedIndex(selectedIndex + 1);
+        return;
       }
-    }, [selectedIndex, currentItems.length]);
+
+      // 已在最后一项
+      if (activeTabData.hasMore) {
+        // 标记：加载完成后自动选中新一页第一项
+        pendingSelectIndexAfterLoadRef.current = currentItems.length;
+        // 如果当前不在加载中，则由这里触发下一页加载；
+        // 若已经在加载（例如滚动触发了加载更多），则只需等待加载完成即可
+        if (!activeTabData.loading) {
+          loadTabData(activeTab, activeTabData.page + 1);
+        }
+        return;
+      }
+
+      // 没有更多分页，循环回到第一项
+      setSelectedIndex(0);
+    }, [
+      selectedIndex,
+      currentItems.length,
+      activeTab,
+      activeTabData,
+      loadTabData,
+    ]);
 
     /**
      * 向左切换 Tab

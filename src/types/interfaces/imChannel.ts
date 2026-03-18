@@ -39,6 +39,7 @@ export interface IMChannelInfo {
   modifiedName: string;
   agentIcon?: string;
   agentDescription?: string;
+  outputMode?: string;
 }
 
 /**
@@ -92,4 +93,5 @@ export interface AddIMChannelParams {
   enabled: boolean;
   configData: string; // JSON 字符串
   spaceId?: number;
+  outputMode?: string;
 }

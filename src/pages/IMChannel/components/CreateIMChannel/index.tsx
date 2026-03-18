@@ -14,7 +14,7 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
-import { ProFormSwitch } from '@ant-design/pro-components';
+import { ProFormRadio, ProFormSwitch } from '@ant-design/pro-components';
 import { Button, Form, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import DynamicChannelForm, {
@@ -69,6 +69,9 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
               name: detail.name,
               targetType: detail.targetType || IMChannelTypeEnum.Bot,
               enabled: detail.enabled,
+              outputMode:
+                detail.outputMode ||
+                (platform === IMPlatformEnum.Wework ? 'once' : 'stream'),
               target: {
                 name: detail.agentName,
                 targetId: detail.agentId,
@@ -89,6 +92,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         form.setFieldsValue({
           type: initialType || IMChannelTypeEnum.Bot,
           enabled: true,
+          outputMode: platform === IMPlatformEnum.Wework ? 'once' : 'stream',
         });
       }
     };
@@ -105,6 +109,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         targetType: robotType,
         agentId: values.target.targetId,
         enabled: values.enabled,
+        outputMode: values.outputMode,
         configData: JSON.stringify(values.configData || {}),
         spaceId,
       };
@@ -208,6 +213,16 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
           AgentComponentTypeEnum.Workflow,
         ]}
         checkTag={AgentComponentTypeEnum.Agent}
+      />
+      <ProFormRadio.Group
+        name="outputMode"
+        label="输出方式"
+        tooltip="机器人回复消息时，是逐字逐句显示还是全部一次性显示"
+        options={[
+          { label: '流式输出（打字机效果）', value: 'stream' },
+          { label: '一次性输出', value: 'once' },
+        ]}
+        disabled={platform === IMPlatformEnum.Wework}
       />
       <ProFormSwitch name="enabled" label="启用状态" />
     </XModalForm>
