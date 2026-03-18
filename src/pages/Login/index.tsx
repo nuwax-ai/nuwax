@@ -141,7 +141,11 @@ const Login: React.FC = () => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
     // console.log('[Login] 验证码登录使用验证码参数:', captchaVerifyParam);
-    history.push('/verify-code', {
+    const redirect = searchParams.get('redirect');
+    const path = redirect
+      ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
+      : '/verify-code';
+    history.push(path, {
       phoneOrEmail,
       areaCode,
       authType: tenantConfigInfo.authType,

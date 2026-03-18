@@ -2,9 +2,9 @@
 
 Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
-Official Website: https://nuwax.com
+Official Website: [https://nuwax.com](https://nuwax.com)
 
-Demo: https://agent.nuwax.com
+Demo: [https://agent.nuwax.com](https://agent.nuwax.com)
 
 [中文文档](README.zh-CN.md)|[English Doc](README.md) | [Contributing](CONTRIBUTING.md) | [Documentation](docs/)
 
@@ -34,107 +34,26 @@ Use the official nuwax-cli command tool to quickly deploy services locally.
   - Ensure OrbStack or Docker Desktop is started
   - First-time use may require allowing unknown developers: System Preferences → Security & Privacy
 
-##### Client Download
+#### Local Deployment Service Guide
 
-> The client is only a deployment tool and does not include the platform software package
+There are 2 deployment services:
 
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz) (amd64&arm64)
+- Main project service (required)
+- Agent Computer (Sandbox) deployment guide (optional)
 
-##### Execute Commands to Complete Deployment
+In the main local service, configure one or more Agent Computer deployment addresses to use the Agent Computer (Sandbox). Since the "Agent Computer (Sandbox)" includes a personal computer (sandbox) which requires more resources, it supports separate deployment across multiple servers.
 
-The following commands require Docker permissions or can be run with sudo
+#### Deploy Main Service
 
-#### Linux / macOS
+[Installation Documentation](https://nuwax.com/deploy.html)
 
-```bash
-# Example working directory
-mkdir nuwax_deploy
-cd nuwax_deploy
+#### Agent Computer (Sandbox) Deployment Guide
 
-# Download client deployment tool
-# Linux download command (amd64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz
-# Linux download command (arm64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz
-# macOS download command
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz
+You can deploy Agent Computer services on multiple different servers, achieving distributed agent sandbox capabilities through configuration.
 
-# Extract downloaded client files to working directory
-tar -xzf nuwax-cli-*.tar.gz
+> **Environment Requirements**: Each server needs Docker and Docker Compose environment installed, refer to [Docker Installation Documentation](https://nuwax.com/deploy.html#%E6%8E%A8%E8%8D%90%E6%96%B9%E6%A1%88-%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker-%E8%84%9A%E6%9C%AC).
 
-# Add execute permission
-chmod +x nuwax-cli
-
-# Initialize
-./nuwax-cli init
-
-# Start deployment, if you need to specify project name or access port (default 80), you can use the following command:
-# ./nuwax-cli auto-upgrade-deploy run --port 8099 -p nuwax
-./nuwax-cli auto-upgrade-deploy run
-```
-
-> **Important Note**: It is recommended to regularly upgrade the command line tool by executing in the working directory:
->
-> ```bash
-> ./nuwax-cli check-update install
-> ```
-
-Normally, after executing the commands, the service should be deployed successfully.
-
-##### Access Service
-
-After deployment is complete, access in browser: `http://localhost`
-
-Login with default administrator account: `admin@nuwax.com` password: `123456`
-
-> Note: If port 80 is occupied, you can specify a port for deployment, such as: `./nuwax-cli auto-upgrade-deploy run --port 8099`
-
-##### Important Configuration
-
-Please modify promptly after login:
-
-- Administrator password
-- Site information configuration
-- Email service configuration for user registration and login verification codes.
-
-### Troubleshooting
-
-#### 1. Service Startup Failed
-
-- Check if Docker is running properly
-- Use `./nuwax-cli status` to view detailed status
-- Check if ports are occupied
-
-#### 2. Unable to Access Service
-
-- Confirm service has started properly, you can execute `docker ps` or `./nuwax-cli ducker` to view container status
-- Check firewall settings
-- Confirm port configuration is correct
-
-#### 3. Permission Issues - Permission denied
-
-- **Linux (Ubuntu 22.04 LTS)**: Ensure user is in docker group
-- **macOS**: Allow unknown developers to run, ensure OrbStack or Docker Desktop is started
-
-Use `sudo` to execute commands: `sudo ./nuwax-cli auto-upgrade-deploy run`
-
-#### 4. Extraction Failed - Directory not empty(os error 39)
-
-First stop Docker service: `./nuwax-cli docker-service stop`, then manually delete the `docker` directory in the working directory and re-execute the deployment command.
-
-#### 5. Interface Shows System Exception
-
-Check backend logs: `./docker/logs/agent/app.log`, usually restarting the service can resolve:
-
-```bash
-./nuwax-cli docker-service restart
-```
-
-#### 6. Download Failed - error decoding response body
-
-Network issues cause this, re-executing the deployment command will work, supports resumable downloads.
+[Installation Documentation](https://nuwax.com/agent-computer-deploy.html)
 
 ### Common Management Commands
 
@@ -175,11 +94,33 @@ If your system doesn't have Docker environment installed yet, please refer to th
 
 This installation guide includes detailed installation steps for the following platforms:
 
-- **Ubuntu 22.04 LTS** (recommended Linux distribution)
+- **Ubuntu 24.04.3 LTS** (recommended Linux distribution)
 - **macOS** (supports OrbStack and Docker Desktop)
-- **Windows 10/11** (Docker Desktop)
 - **Mirror acceleration configuration** (for mainland China users)
-- **Installation verification and troubleshooting**
+
+### Recommended: One-Click Docker Installation Script
+
+> Community one-click Docker installation script
+
+This script supports 13 Linux distributions, including domestic operating systems (openEuler, Anolis OS, OpenCloudOS, Alinux, Kylin Linux), one-click installation of docker, docker-compose with automatic configuration of Xuanyuan mirror acceleration.
+
+```shell
+bash <(wget -qO- https://xuanyuan.cloud/docker.sh)
+```
+
+#### Script Features and Advantages
+
+✅ Supports 13 mainstream distributions: openEuler, OpenCloudOS, Anolis OS, Alinux (Alibaba Cloud), Kylin Linux, Fedora, Rocky Linux, AlmaLinux, Ubuntu, Debian, CentOS, RHEL, Oracle Linux
+
+✅ Complete support for domestic operating systems: Deep adaptation for domestic OS (openEuler, Anolis OS, OpenCloudOS, Alinux, Kylin Linux), supports automatic version detection and optimal configuration
+
+✅ Intelligent multi-mirror source switching: Built-in 6+ domestic mirror sources including Alibaba Cloud, Tencent Cloud, Huawei Cloud, USTC, Tsinghua, etc., automatically detects and selects the fastest source
+
+✅ Special handling for older systems: Supports expired systems like Ubuntu 16.04, Debian 9/10, automatically configures compatible installation solutions
+
+✅ Dual installation guarantee: Automatically switches to binary installation if package manager installation fails, ensuring installation success rate
+
+✅ macOS/Windows friendly prompts: Automatically detects macOS and Windows systems, provides appropriate Docker Desktop installation guidance
 
 **Quick Docker Installation Verification:**
 
@@ -195,6 +136,157 @@ docker run hello-world
 ```
 
 If the above commands all run successfully, your Docker environment is ready and you can proceed with Nuwax service deployment.
+
+## Architecture Diagram
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           Frontend Layer                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────────────────┐  │
+│  │  PC Web  │  │   H5     │  │ Mini App │  │  IM (Feishu/DingTalk/  │  │
+│  │          │  │          │  │          │  │   WeCom/Slack)         │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        Access Layer                                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────┐   │
+│  │  REST API    │  │  Long        │  │       WebSocket             │   │
+│  │              │  │ Connection   │  │                             │   │
+│  └──────────────┘  └──────────────┘  └──────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                      Application Layer                                     │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │              Component Library                                       │  │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ │  │
+│  │  │ Model│ │Know- │ │ Data │ │Plugin│ │ Work-│ │  MCP │ │ Skill│ │  │
+│  │  │      │ │ ledge│ │ Table│ │      │ │ flow │ │      │ │      │ │  │
+│  │  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │              Management Portal                                        │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │  │
+│  │  │  User    │ │  Audit   │ │  Public  │ │ Content  │ │   Task   │ │  │
+│  │  │Management│ │Management│ │  Model   │ │Management│ │Management│ │  │
+│  │  ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤ │  │
+│  │  │   Log    │ │   Menu   │ │ System   │ │          │ │          │ │  │
+│  │  │  Query   │ │Permission│ │  Config  │ │          │ │          │ │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │              Product Applications                                    │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │  │
+│  │  │   Web App    │  │   Q&A        │  │    General Agent         │  │  │
+│  │  │              │  │   Agent      │  │                          │  │  │
+│  │  └──────────────┘  └──────────────┘  └──────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    Infrastructure Layer                                    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    Lower-level Components                            │  │
+│  │                                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐ │  │
+│  │  │   Cloud     │  │  nuwaclaw   │  │   General Agent Engine     │ │  │
+│  │  │   Sandbox   │  │   PC Client │  │                            │ │  │
+│  │  │             │  │ (mac/win/   │  │  ┌───────────────────────┐ │  │
+│  │  │             │  │  docker)    │  │  │  MCP Integration      │ │  │
+│  │  │             │  │             │  │  ├───────────────────────┤ │  │
+│  │  │             │  │             │  │  │  File Management     │ │  │
+│  │  │             │  │             │  │  │  Skill Management     │ │  │
+│  │  │             │  │             │  │  │  ACP Adapter Layer    │ │  │
+│  │  │             │  │             │  │  │  ┌─────────────────┐ │ │  │
+│  │  │             │  │             │  │  │  │ Supported Agent:│ │ │  │
+│  │  │             │  │             │  │  │  │ claudecode      │ │ │  │
+│  │  │             │  │             │  │  │  │ opencode        │ │ │  │
+│  │  │             │  │             │  │  │  │ codex           │ │ │  │
+│  │  │             │  │             │  │  │  │ openclaw        │ │ │  │
+│  │  │             │  │             │  │  │  │ kimicli         │ │ │  │
+│  │  │             │  │             │  │  │  └─────────────────┘ │ │  │
+│  │  │             │  │             │  │  ├───────────────────────┤ │  │
+│  │  │             │  │             │  │  │  Browser             │ │  │
+│  │  │             │  │             │  │  │  Automation          │ │  │
+│  │  │             │  │             │  │  │  GUI Automation      │ │  │
+│  │  │             │  │             │  │  │  Network Channel     │ │  │
+│  │  │             │  │             │  │  │  Runtime Integration │ │  │
+│  │  │             │  │             │  │  └───────────────────────┘ │  │
+│  │  │             │  │             │  └─────────────────────────────┘ │  │
+│  │  └─────────────┘  └─────────────┘                                   │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    Core Infrastructure                                │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐  │  │
+│  │  │ Database │ │  Cache   │ │  Vector  │ │  Search  │ │ Model │  │  │
+│  │  │  MySQL   │ │  Redis   │ │  Milvus  │ │ Elastic  │ │ Proxy│  │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Project Repository Overview
+
+The Nuwax AI Agent Platform consists of multiple interconnected repositories:
+
+#### **Frontend & Mobile**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **nuwax** | Frontend Web | [https://github.com/nuwax-ai/nuwax](https://github.com/nuwax-ai/nuwax) |
+| **nuwax-mobile** | Mobile Application | [https://github.com/nuwax-ai/nuwax-mobile](https://github.com/nuwax-ai/nuwax-mobile) |
+| **noVNC** | Web-based VNC Client | [https://github.com/nuwax-ai/noVNC](https://github.com/nuwax-ai/noVNC) |
+
+#### **Backend & Application Layer**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **nuwax-backend** | Application Layer (Backend) | [https://github.com/nuwax-ai/nuwax-backend](https://github.com/nuwax-ai/nuwax-backend) |
+
+#### **Agent Engine & Clients**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **nuwaclaw** | Agent PC Client (mac/win/docker) | [https://github.com/nuwax-ai/nuwaclaw](https://github.com/nuwax-ai/nuwaclaw) |
+| **nuwaxcode** | Nuwa Agent Engine (based on open-source opencode) | [https://github.com/nuwax-ai/nuwaxcode](https://github.com/nuwax-ai/nuwaxcode) |
+| **claude-code-acp-ts** | Claude Code ACP based on Zed | [https://github.com/nuwax-ai/claude-code-acp-ts](https://github.com/nuwax-ai/claude-code-acp-ts) |
+
+#### **Infrastructure & Services**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **rcoder** | Sandbox & Container Scheduling (includes General Agent Engine) | [https://github.com/nuwax-ai/rcoder](https://github.com/nuwax-ai/rcoder) |
+| **mcp-proxy** | MCP Service (used by sandbox) | [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
+| **nuwax-file-server** | File Service (used by sandbox and nuwaclaw, includes skill sync) | [https://github.com/nuwax-ai/nuwax-file-server](https://github.com/nuwax-ai/nuwax-file-server) |
+
+#### **Web Application Development**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **xagi-frontend-templates** | Web Application Development Templates | [https://github.com/nuwax-ai/xagi-frontend-templates](https://github.com/nuwax-ai/xagi-frontend-templates) |
+| **vite-plugin-design-mode** | Visual Editor Vite Plugin | [https://github.com/nuwax-ai/vite-plugin-design-mode](https://github.com/nuwax-ai/vite-plugin-design-mode) |
+| **dev-inject** | Web Application Smart Script Injection | [https://github.com/nuwax-ai/dev-inject](https://github.com/nuwax-ai/dev-inject) |
+
+#### **Plugin & Script Execution**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **run_code_rmcp** | Plugin Script Execution (TypeScript/JavaScript/Python) | [https://github.com/nuwax-ai/run_code_rmcp](https://github.com/nuwax-ai/run_code_rmcp) |
+
+#### **Network & Utilities**
+
+| Repository | Description | URL |
+| --- | --- | --- |
+| **lanproxy-go-client** | Network Tunnel Client (used by nuwaclaw) | [https://github.com/ffay/lanproxy-go-client](https://github.com/ffay/lanproxy-go-client) |
 
 ### Agent Platform Frontend
 

@@ -1,25 +1,73 @@
 # 更新日志
 
-本项目的所有重要变更都会记录在此文件中。
-
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
-
-## [1.0.8] - 2026-01-21
+## [1.1.0] - 2026-03-06
 
 ### ✨ 新功能
 
-- 全局状态管理重构：实现了 `getInitialState`，统一了应用初始化逻辑，支持用户信息和菜单权限的预加载
-- 权限管理升级：在 `access.ts` 中集成了基于后端数据的动态权限控制，支持细粒度的功能权限检查
-- 菜单逻辑更新：对接了 `/api/system/user/list-menu/{userId}` 接口，支持基于用户的动态菜单加载
-- 类型定义更新：新增 `SysMenuDto` 接口以匹配后端最新的菜单数据结构
+- 广场（Square）：增强滚动加载与自动填充逻辑，支持更多内容流畅加载。
+- 空间板块（SpaceSection）：增强滚动加载与自动填充逻辑，优化长列表浏览体验。
+- 生态 MCP（EcosystemMcp）：增强滚动加载与自动填充逻辑，提升生态市场内容加载能力。
+- 知识库原始片段（RawSegmentInfo）：增强自动加载与编辑功能，便于文档片段管理。
+- 更多操作菜单（MoreActionsMenu）：新增重启功能图标并更新相关常量，便于开发环境快捷操作。
+
+### 🐛 Bug 修复
+
+- 空间知识库（SpaceKnowledge）：修复页码更新逻辑并优化文档加载体验。
+- 知识库原始片段（RawSegmentInfo）：修复页码更新逻辑以正确加载数据。
+- 数据权限弹窗（DataPermissionModal）：修复页码更新逻辑以提升数据加载体验。
+- 空间板块（SpaceSection）：修复滚动加载逻辑以正确更新页码。
+- 生态 MCP（EcosystemMcp）：修复滚动加载逻辑以正确更新页码。
 
 ### ♻️ 重构
 
-- 优化 `menuModel`：优先从全局状态读取菜单和权限数据，避免重复 API 请求，提升应用性能
-- 代码解耦：提取权限提取逻辑（`extractAllPermissions`、`extractAllMenuCodes`）到 `src/utils/permission.ts`，实现逻辑复用
-- 移除 Mock 数据：清理了 `menuService` 中的 Mock 数据逻辑，完全切换到真实接口
+- 广场（Square）：优化滚动加载逻辑，提升代码可维护性。
+- 菜单列表项、页面预览 iframe、菜单布局（MenuListItem, PagePreviewIframe, MenusLayout）：优化组件逻辑与样式。
+- 布局与动态菜单（Layout, DynamicMenusLayout）：移除已注释的动态菜单相关代码以简化布局。
+- 动态菜单、空间板块、空间开发、应用项（DynamicMenusLayout, SpaceSection, SpaceDevelop, ApplicationItem）：注释掉开发收藏相关逻辑以简化代码。
 
-## [1.0.7]
+### 🎨 样式优化
+
+- 空间开发（SpaceDevelop）：更新主容器样式以优化响应式布局。
+
+## [1.0.8] - 2026-02-02
+
+### ✨ 新功能
+
+- feat(Chat, PreviewAndDebug): add setIsMoreMessage to manage message loading state
+- feat(CreateModel): 新增或编辑模型时，新增最大上下文长度字段
+- feat(historyConversation): 添加历史会话页面关闭按钮
+
+### 🐛 Bug 修复
+
+- 修复 SSE 连接关闭逻辑，确保连接关闭时正确标记中止状态
+- 修复会话停止逻辑，确保 requestId 为空时也能停止会话
+- 修复清空会话后对话设置未重置问题
+- 修复页面切换时 SSE 连接未中断问题
+- 修复代码规范问题（ESLint）
+
+### ♻️ 重构
+
+- 恢复 v1.0.8-alpha 代码版本
+- 移除 ChatArea 组件中冗余的 handleAddToChat 函数，简化代码结构
+- 重构 SSE 连接逻辑，分离工作流与会话的 SSE 连接
+
+### 🎨 样式优化
+
+- style(EditAgent): Comment out mask property in PreviewAndDebug for improved visibility in WeChat
+- style: update AgentModelSetting layout and logic
+- style: update SystemTipsWord layout
+- 将"远程桌面"统一更名为"智能体电脑"
+
+### 🔧 构建/工具
+
+- 更新 .gitignore 文件，添加 .agent 以排除相关文件
+- 清理测试文件和示例文件
+
+### 📚 文档
+
+- 更新项目文档
+
+## [1.0.7] - 2026-01-14
 
 ### ✨ 新功能
 
@@ -42,8 +90,38 @@
 - 修复会话停止逻辑，确保 requestId 为空时也能停止会话
 - 修复清空会话后对话设置未重置问题
 - 修复页面切换时 SSE 连接未中断问题
+- 修复导出文件名解码问题，支持特殊字符
+- 修复文件预览组件类型切换时的闪动问题
+- 修复会话结束后文件树刷新逻辑
+- 修复任务记录跳转使用错误的空间 ID
+- 修复空消息渲染问题，过滤掉空消息
+- 修复 Select 组件选项匹配不上时的显示问题
 
-## [1.0.6]
+### ♻️ 重构
+
+- 重构 AppDev 文件树面板和聊天区域组件结构
+- 重构 FileTreeView 组件，优化文件选择逻辑和视图模式切换
+- 重构 SSE 连接逻辑，分离工作流与会话的 SSE 连接
+- 重构 VncPreview 组件，优化连接检查和重试机制
+- 优化工作流 v3 版本的表单值合并逻辑和节点数据获取逻辑
+- 优化最近使用和会话记录查询逻辑
+- 统一提示信息中的称谓为"你"以提升用户亲和力
+
+### 🎨 样式优化
+
+- 新增滚动条自动隐藏样式，仅在悬停时显示
+- 优化文件树顶部样式和搜索视图高度
+- 优化聊天页面布局，支持动态调整左侧宽度
+- 优化空状态组件图标和加载动画样式
+- 将"远程桌面"统一更名为"智能体电脑"
+
+### 📚 文档
+
+- 新增 TiptapVariableInput 组件文档
+- 新增变量引用规则文档
+- 新增试运行逻辑分析文档
+
+## [1.0.6] - 2026-01-05
 
 ### ✨ 新功能
 
@@ -76,7 +154,7 @@
 - 添加查找替换规则文档
 - 更新开发指南，添加 Vite 插件预注入说明和常见问题
 
-## [1.0.5]
+## [1.0.5] - 2025-12-08
 
 ### ✨ 新功能
 
@@ -86,19 +164,22 @@
 
 ### 🐛 Bug 修复
 
-- 修复文件上传/导入加载状态管理、useAppDevServer 支持 devServerTimeout、PagePreviewIframe 样式与挂载逻辑
-- 修复 VariableAggregation 变量渲染、Design 模式渲染、会话列表排序 bug
+- 修复文件上传/导入加载状态管理、useAppDevServer 支持 devServerUrl 为 null
+- 修复 PagePreviewIframe 文档处理、智能体引导问题、聊天滚动检测逻辑
+- 修复设计模式状态管理，迁移到 appDevDesign 模型
 
 ### ♻️ 重构
 
-- 优化 AppHeader 导航项权限过滤、CollapseMenu 控制逻辑
-- 重构 AppChat 消息列表、InputToolbar 布局、ResizeableContainer 同步机制
+- 重构 TiptapVariableInput 实现自包含变量树，移除 VariableInferenceInput
+- 统一变量转换方法到工具库，提取滚动检测到独立 Hook
+- 优化 DesignViewer 模块化，升级 TiptapVariableInput 到 React 18 API
+- 清理调试日志和未使用代码
 
-### ⚡ 性能优化
+### ⚡️ 性能优化
 
-- 减少 TiptapVariableInput 和 DesignViewer 的不必要渲染，提升长列表滚动性能
+- 优化 TiptapVariableInput 光标位置和滚动保持，使用 useCallback 优化 EditAgent
 
-## [1.0.3]
+## [1.0.3] - 2025-11-24
 
 ### ✨ 新功能
 
@@ -141,6 +222,31 @@
 - 添加创建智能体功能，更新 Created 组件和服务接口以支持智能体类型
 - 添加 streamableHttp 类型支持，更新样式以增强组件可视化效果
 - 添加项目 ID 支持以区分不同项目的最近使用记录，在 ChatArea、ChatInputHome 和 MentionSelector 组件中引入 projectId 属性
+
+### 🐛 Bug 修复
+
+- 修复封面图片源类型导入路径，确保正确引用
+- 添加图片加载错误处理逻辑，确保组件在图片加载失败时使用默认图片
+- 修复 useAppDevServer 中 keepAlive 可能同时运行多个不同 projectId 的问题，引入 useParams 从 URL 获取最新的 projectId，确保同一时间只有当前 URL projectId 的 keepAlive 在运行
+- 优化封面图片来源设置逻辑，确保用户未上传图片时不设置来源
+- 更新 Created 组件的 checkTag 属性，从 Plugin 修改为 Workflow，以确保正确的组件类型匹配
+- 修复 AttachFile 组件中对 mimeType 的容错处理，确保在后端返回空值时不导致错误
+- 延迟发送微信小程序消息，确保 DOM 变化监听稳定性
+- 添加错误发送防抖逻辑，优化错误消息发送至父窗口的稳定性
+- 更新 Created 组件中的 agentItem 标签，将 label 从 '当前空间智能体' 修改为 '全部'，新增 '当前空间智能体' 选项
+
+### ⚡️ 性能优化
+
+- 优化微信小程序消息发送逻辑，简化代码结构并增强 DOM 变化监听功能
+
+### ♻️ 重构
+
+- 使用枚举替代字符串常量，增强代码可读性和可维护性，添加错误处理逻辑
+- 移除同步登录状态功能的实现，简化代码结构
+- 将最近使用的文件和数据源存储从 localStorage 更改为 sessionStorage，提高数据的即时性
+- 注释掉 setupMutationObserver 函数以简化错误监控逻辑，保留相关逻辑以便未来可能的恢复
+- 注释掉资源加载错误处理逻辑，简化错误监控代码
+- 重构 useAppDevServer 和 useDevLogs 钩子以使用 umi 的 useRequest 进行轮询，简化定时器管理，优化状态管理，提升代码可读性和维护性
 
 ## [1.0.1] - 2025-11-10
 
@@ -226,8 +332,8 @@
 [1.0.1]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.1
 [1.0.2]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.2
 [1.0.3]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.3
-[1.0.4]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.4
 [1.0.5]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.5
 [1.0.6]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.6
 [1.0.7]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.7
 [1.0.8]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.0.8
+[1.1.0]: https://github.com/nuwax-ai/nuwax/releases/tag/v1.1.0

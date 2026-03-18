@@ -8,7 +8,7 @@ import { apiLoginCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
-import { getNumbersOnly } from '@/utils/common';
+import { getNumbersOnly, isWeakNumber } from '@/utils/common';
 import { LeftOutlined } from '@ant-design/icons';
 import { Button, Input, InputRef } from 'antd';
 import classNames from 'classnames';
@@ -19,7 +19,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useModel, useNavigate, useRequest } from 'umi';
+import {
+  history,
+  useLocation,
+  useModel,
+  useRequest,
+  useSearchParams,
+} from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,7 +34,7 @@ const DefaultCode = Array(VERIFICATION_CODE_LEN).fill(null);
 const VerifyCode: React.FC = () => {
   const elementId = 'aliyun-captcha-sms';
   const location = useLocation();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { countDown, handleCount } = useCountDown();
   const { runSendCode, sendLoading } = useSendCode();
   const [codeString, setCodeString] = useState<string>('');
@@ -52,7 +58,12 @@ const VerifyCode: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: ILoginResult, params: CodeLogin[]) => {
-      const { resetPass, expireDate, token } = result;
+      const {
+        resetPass,
+        expireDate,
+        token,
+        redirect: responseRedirectUrl,
+      } = result;
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
@@ -62,7 +73,16 @@ const VerifyCode: React.FC = () => {
       if (!resetPass) {
         history.push('/set-password');
       } else {
-        navigate('/', { replace: true });
+        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+        if (isWeakNumber(redirect)) {
+          history.go(Number(redirect));
+        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
+          window.location.href = responseRedirectUrl;
+        } else if (redirect) {
+          history.replace(redirect);
+        } else {
+          history.replace('/');
+        }
       }
     },
   });

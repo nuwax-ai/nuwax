@@ -34,112 +34,26 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
   - 确保 OrbStack 或 Docker Desktop 已启动
   - 首次运行可能需要允许未知开发者：系统偏好设置 → 安全性与隐私
 
-##### 客户端下载
+#### 本地部署服务指南
 
-> 客户端仅作为运维工具，不包含平台软件包
+有 2 个部署服务:
 
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
+- 主体工程服务(必选)
+- 智能体电脑(沙箱)部署指南(可选)。
 
-##### 执行命令完成部署
+在主体本地服务中，配置一个或多个智能体电脑部署的部署地址等，就可以使用智能体电脑(沙箱)。因 "智能体电脑(沙箱)"有个人电脑(沙箱)可用，所需资源更多，因此支持分开部署多个服务器上。
 
-执行以下命令需要有 docker 权限，或者使用 sudo 运行
+#### 部署主体服务
 
-#### Linux / macOS
+[安装文档](https://nuwax.com/deploy.html)
 
-```bash
-# 示例工作目录
-mkdir nuwax_deploy
-cd nuwax_deploy
+#### 智能体电脑(沙箱)部署指南
 
-# 下载客户端运维工具
-# Linux下载命令（amd64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz
-# Linux下载命令（arm64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz
-# macOS下载命令
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz
+可以在多个不同的服务器部署智能体电脑服务，通过配置实现分布式智能体沙箱能力。
 
-# 将下载的客户端文件解压到工作目录
-tar -xzf nuwax-cli-*.tar.gz
+> **环境要求**：每台服务器需要安装 Docker 和 Docker Compose 环境，参考 [Docker 安装文档](https://nuwax.com/deploy.html#%E6%8E%A8%E8%8D%90%E6%96%B9%E6%A1%88-%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker-%E8%84%9A%E6%9C%AC)。
 
-# 添加执行权限
-chmod +x nuwax-cli
-
-# 初始化
-./nuwax-cli init
-
-# 开始部署，如需指定 project name 或访问端口(默认80)，可以使用以下命令：
-# ./nuwax-cli auto-upgrade-deploy run --port 8099 -p nuwax
-./nuwax-cli auto-upgrade-deploy run
-```
-
-> **重要提示：** 建议定期升级命令行工具，在工作目录下执行：
->
-> ```bash
-> ./nuwax-cli check-update install
-> ```
-
-正常情况下，执行完命令后，服务就已经部署好了。
-
-##### 访问服务
-
-部署完成后，在浏览器访问：`http://localhost`
-
-使用默认管理员账号登录：`admin@nuwax.com` 密码：`123456`
-
-> 注：如果 80 端口被占用，可以指定端口部署，比如：`./nuwax-cli auto-upgrade-deploy run --port 8099`
-
-##### 重要配置
-
-登录后请及时修改：
-
-- 管理员密码
-- 站点信息配置
-- 邮件服务配置，用于用户登录注册收取验证码。
-
-```
-#菜单路径
-系统管理 ->系统配置
-```
-
-### 常见问题排查
-
-#### 1. 服务启动失败
-
-- 检查 Docker 是否正常运行
-- 使用 `./nuwax-cli status` 查看详细状态
-- 检查端口是否被占用
-
-#### 2. 无法访问服务
-
-- 确认服务已正常启动，可以执行 `docker ps` 或 `./nuwax-cli ducker` 查看容器状态
-- 检查防火墙设置
-- 确认端口配置正确
-
-#### 3. 权限问题 - Permission denied
-
-- **Linux（Ubuntu 22.04 LTS）**: 确保用户在 docker 组中
-- **macOS**: 允许未知开发者运行，确保 OrbStack 或 Docker Desktop 已启动
-
-使用 `sudo` 来执行命令：`sudo ./nuwax-cli auto-upgrade-deploy run`
-
-#### 4. 解压失败 - Directory not empty(os error 39)
-
-先停止 Docker 服务：`./nuwax-cli docker-service stop`，然后手动删除工作目录下的 `docker` 目录，重新执行部署命令。
-
-#### 5. 进入界面但提示系统异常
-
-查看后台日志：`./docker/logs/agent/app.log`，通常重启服务可解决：
-
-```bash
-./nuwax-cli docker-service restart
-```
-
-#### 6. 下载失败 - error decoding response body
-
-网络问题导致，重新执行部署命令即可，支持断点续传。
+[安装文档](https://nuwax.com/agent-computer-deploy.html)
 
 ### 常用管理命令
 
@@ -180,11 +94,33 @@ chmod +x nuwax-cli
 
 该安装指南包含以下平台的详细安装步骤：
 
-- **Ubuntu 22.04 LTS**（推荐 Linux 发行版）
+- **Ubuntu 24.04.3 LTS**（推荐 Linux 发行版）
 - **macOS**（支持 OrbStack 和 Docker Desktop）
-- **Windows 10/11**（Docker Desktop）
 - **镜像加速配置**（中国大陆用户专用）
-- **安装验证和故障排除**
+
+### 推荐方案：一键安装配置 Docker 脚本
+
+> 社区一键安装配置 Docker 脚本
+
+该脚本支持 13 种 Linux 发行版，包括国产操作系统（openEuler、Anolis OS、OpenCloudOS、Alinux、Kylin Linux），一键安装 docker、docker-compose 并自动配置轩辕镜像加速源。
+
+```shell
+bash <(wget -qO- https://xuanyuan.cloud/docker.sh)
+```
+
+#### 脚本特性与优势
+
+✅ 支持 13 种主流发行版：openEuler (欧拉)、OpenCloudOS、Anolis OS (龙蜥)、Alinux (阿里云)、Kylin Linux (银河麒麟)、Fedora、Rocky Linux、AlmaLinux、Ubuntu、Debian、CentOS、RHEL、Oracle Linux
+
+✅ 国产操作系统完整支持：深度适配国产操作系统（openEuler、Anolis OS、OpenCloudOS、Alinux、Kylin Linux），支持版本自动识别和最优配置
+
+✅ 多镜像源智能切换：内置阿里云、腾讯云、华为云、中科大、清华等 6+ 国内镜像源，自动检测并选择最快源
+
+✅ 老版本系统特殊处理：支持 Ubuntu 16.04、Debian 9/10 等已过期系统，自动配置兼容的安装方案
+
+✅ 双重安装保障：包管理器安装失败时自动切换到二进制安装，确保安装成功率
+
+✅ macOS/Windows 友好提示：自动检测 macOS 和 Windows 系统，提供适合的 Docker Desktop 安装指引
 
 **快速验证 Docker 安装：**
 
@@ -200,6 +136,149 @@ docker run hello-world
 ```
 
 如果上述命令都能正常运行，说明你的 Docker 环境已准备就绪，可以继续部署 Nuwax 服务。
+
+## 架构图
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           前端层 (Frontend Layer)                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────────────────┐  │
+│  │   PC端    │  │   H5     │  │  小程序   │  │  IM (飞书/钉钉/企微)    │  │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        接入层 (Access Layer)                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────┐   │
+│  │  REST API    │  │  长连接        │  │       WebSocket             │   │
+│  └──────────────┘  └──────────────┘  └──────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        应用层 (Application Layer)                         │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    组件库 (Component Library)                       │  │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ │  │
+│  │  │ 模型  │ │知识库 │ │数据表 │ │ 插件  │ │工作流 │ │  MCP │ │ 技能  │ │  │
+│  │  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    管理端 (Management Portal)                        │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐   │  │
+│  │  │ 用户管理 │ │ 审核管理 │ │公共模型  │ │ 内容管理 │ │任务管理│   │  │
+│  │  ├──────────┤ ├──────────┤ ├──────────┤ ├──────────┤ ├──────┤   │  │
+│  │  │ 日志查询 │ │ 菜单权限 │ │ 系统配置 │ │          │ │      │   │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────┘   │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    产品应用 (Product Applications)                    │  │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │  │
+│  │  │   网页应用     │  │ 问答型智能体  │  │    通用型智能体          │  │  │
+│  │  └──────────────┘  └──────────────┘  └──────────────────────────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                      基础设施层 (Infrastructure Layer)                      │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                      下层组件 (Lower-level Components)                │  │
+│  │                                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐ │  │
+│  │  │  云端沙箱    │  │ nuwaclaw    │  │    通用智能体引擎            │ │  │
+│  │  │             │  │ 个人电脑     │  │                             │  │
+│  │  │             │  │ 客户端       │  │  ┌───────────────────────┐ │  │
+│  │  │             │  │ (mac/win/    │  │  │  MCP 集成             │ │  │
+│  │  │             │  │  docker)     │  │  ├───────────────────────┤ │  │
+│  │  │             │  │             │  │  │  文件管理             │ │  │
+│  │  │             │  │             │  │  │  SKILL 管理           │ │  │
+│  │  │             │  │             │  │  │  ACP 适配层           │ │  │
+│  │  │             │  │             │  │  │  ┌─────────────────┐ │ │  │
+│  │  │             │  │             │  │  │  │ 支持 Agent:    │ │ │  │
+│  │  │             │  │             │  │  │  │ claudecode      │ │ │  │
+│  │  │             │  │             │  │  │  │ opencode        │ │ │  │
+│  │  │             │  │             │  │  │  │ codex           │ │ │  │
+│  │  │             │  │             │  │  │  │ openclaw        │ │ │  │
+│  │  │             │  │             │  │  │  │ kimicli         │ │ │  │
+│  │  │             │  │             │  │  │  └─────────────────┘ │ │  │
+│  │  │             │  │             │  │  ├───────────────────────┤ │  │
+│  │  │             │  │             │  │  │  浏览器操作           │ │  │
+│  │  │             │  │             │  │  │  GUI 操作             │ │  │
+│  │  │             │  │             │  │  │  网络通道             │ │  │
+│  │  │             │  │             │  │  │  基础运行环境集成      │ │  │
+│  │  │             │  │             │  │  └───────────────────────┘ │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────────────────────┘ │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    核心基础设施 (Core Infrastructure)                │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐  │  │
+│  │  │ Database │ │  Cache   │ │  Vector  │ │  Search  │ │ Model │  │  │
+│  │  │  MySQL   │ │  Redis   │ │  Milvus  │ │ Elastic  │ │ Proxy│  │  │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────┘  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 项目仓库纵览
+
+Nuwax AI 智能体平台由多个相互关联的仓库组成：
+
+#### **前端与移动端**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **nuwax** | 前端 Web | [https://github.com/nuwax-ai/nuwax](https://github.com/nuwax-ai/nuwax) |
+| **nuwax-mobile** | 移动端应用 | [https://github.com/nuwax-ai/nuwax-mobile](https://github.com/nuwax-ai/nuwax-mobile) |
+| **noVNC** | 基于网页的 VNC 客户端 | [https://github.com/nuwax-ai/noVNC](https://github.com/nuwax-ai/noVNC) |
+
+#### **后端与应用层**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **nuwax-backend** | 应用层（后端） | [https://github.com/nuwax-ai/nuwax-backend](https://github.com/nuwax-ai/nuwax-backend) |
+
+#### **智能体引擎与客户端**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **nuwaclaw** | 智能体电脑客户端（mac/win/docker） | [https://github.com/nuwax-ai/nuwaclaw](https://github.com/nuwax-ai/nuwaclaw) |
+| **nuwaxcode** | 女娲智能体引擎（基于开源 opencode） | [https://github.com/nuwax-ai/nuwaxcode](https://github.com/nuwax-ai/nuwaxcode) |
+| **claude-code-acp-ts** | 基于 Zed 的 Claude Code ACP | [https://github.com/nuwax-ai/claude-code-acp-ts](https://github.com/nuwax-ai/claude-code-acp-ts) |
+
+#### **基础设施与服务**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **rcoder** | 沙箱与容器调度（含通用智能体引擎） | [https://github.com/nuwax-ai/rcoder](https://github.com/nuwax-ai/rcoder) |
+| **mcp-proxy** | MCP 服务（沙箱使用） | [https://github.com/nuwax-ai/mcp-proxy](https://github.com/nuwax-ai/mcp-proxy) |
+| **nuwax-file-server** | 文件服务（沙箱和 nuwaclaw 使用，含 skill 同步） | [https://github.com/nuwax-ai/nuwax-file-server](https://github.com/nuwax-ai/nuwax-file-server) |
+
+#### **网页应用开发**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **xagi-frontend-templates** | 网页应用开发模版 | [https://github.com/nuwax-ai/xagi-frontend-templates](https://github.com/nuwax-ai/xagi-frontend-templates) |
+| **vite-plugin-design-mode** | 可视化编辑 Vite 插件 | [https://github.com/nuwax-ai/vite-plugin-design-mode](https://github.com/nuwax-ai/vite-plugin-design-mode) |
+| **dev-inject** | 网页应用智能脚本注入 | [https://github.com/nuwax-ai/dev-inject](https://github.com/nuwax-ai/dev-inject) |
+
+#### **插件与脚本执行**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **run_code_rmcp** | 插件脚本执行（TS/JS/Python） | [https://github.com/nuwax-ai/run_code_rmcp](https://github.com/nuwax-ai/run_code_rmcp) |
+
+#### **网络与工具**
+
+| 仓库名称 | 描述 | 地址 |
+| --- | --- | --- |
+| **lanproxy-go-client** | 网络穿透客户端（nuwaclaw 使用） | [https://github.com/ffay/lanproxy-go-client](https://github.com/ffay/lanproxy-go-client) |
 
 ### Agent Platform Frontend
 
