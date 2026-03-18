@@ -121,10 +121,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       position,
       onSelect,
       onClose,
-      // 搜索文本（由外部通过 @ 后输入的内容控制）
       searchText,
-      selectedIndex: externalSelectedIndex,
-      onSelectedIndexChange,
+      maxHeight,
       onHeightChange,
     },
     ref,
@@ -132,9 +130,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     // ==================== State ====================
     /** 当前激活的 Tab */
     const [activeTab, setActiveTab] = useState<TabType>('recent');
-    /** 内部选中索引（当外部未控制时使用） */
-    const [internalSelectedIndex, setInternalSelectedIndex] =
-      useState<number>(0);
+    /** 当前选中项索引（仅内部状态） */
+    const [selectedIndex, setSelectedIndex] = useState<number>(0);
     /** 各 Tab 对应的分页数据 */
     const [tabDataMap, setTabDataMap] = useState<Record<TabType, TabDataState>>(
       createTabDataState(),
@@ -145,27 +142,12 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     /** 列表容器引用，用于滚动加载下一页 */
     const listRef = useRef<HTMLDivElement>(null);
-
-    // ==================== 计算属性 ====================
-    /** 选中索引（优先使用外部控制） */
-    const selectedIndex = externalSelectedIndex ?? internalSelectedIndex;
+    /** 是否已经在本轮弹窗生命周期内完成过首轮 Tab 初始化 */
+    const hasInitTabsRef = useRef<boolean>(false);
+    /** 上一次已用于请求的搜索关键字，用于避免与首轮 init 重复请求，并在关键字变化时仅刷新当前 Tab */
+    const lastSearchTextRef = useRef<string>('');
 
     // ==================== 事件处理 ====================
-
-    /**
-     * 更新选中索引
-     * 支持内部和外部控制两种模式
-     */
-    const updateSelectedIndex = useCallback(
-      (index: number) => {
-        if (onSelectedIndexChange) {
-          onSelectedIndexChange(index);
-        } else {
-          setInternalSelectedIndex(index);
-        }
-      },
-      [onSelectedIndexChange],
-    );
 
     const updateTabDataState = useCallback(
       (tab: TabType, updater: (prev: TabDataState) => TabDataState) => {
@@ -257,6 +239,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         const records = (response?.data || []) as SkillInfoForAt[];
 
         handleTabDataResponse('recent', page, records);
+        return records.length > 0;
       },
       [searchText, handleTabDataResponse],
     );
@@ -274,6 +257,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         const records = (response?.data || []) as SkillInfoForAt[];
 
         handleTabDataResponse('favorite', page, records);
+        return records.length > 0;
       },
       [searchText, handleTabDataResponse],
     );
@@ -306,6 +290,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           hasMore:
             total > 0 ? page * PAGE_SIZE < total : records.length >= PAGE_SIZE,
         }));
+        return records.length > 0 || total > 0;
       },
       [searchText, updateTabDataState],
     );
@@ -317,7 +302,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const loadTabData = useCallback(
       async (tab: TabType, page: number = 1) => {
         if (!visible) {
-          return;
+          return false;
         }
 
         // 这里不再依赖外部的 tabDataMap，避免因 loading 状态变更导致的死循环请求
@@ -327,13 +312,15 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         }));
 
         try {
+          let hasData = false;
           if (tab === 'recent') {
-            await loadRecentTabData(page);
+            hasData = await loadRecentTabData(page);
           } else if (tab === 'favorite') {
-            await loadFavoriteTabData(page);
+            hasData = await loadFavoriteTabData(page);
           } else {
-            await loadAllTabData(page);
+            hasData = await loadAllTabData(page);
           }
+          return hasData;
         } catch (error) {
           console.error(`加载 MentionPopup ${tab} 数据失败:`, error);
           updateTabDataState(tab, (prev) => ({
@@ -344,6 +331,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             items: page === 1 ? [] : prev.items,
             total: page === 1 ? 0 : prev.total,
           }));
+          return false;
         }
       },
       [
@@ -355,6 +343,23 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       ],
     );
 
+    /**
+     * 处理 Tab 切换（点击时）
+     */
+    const handleTabChange = useCallback(
+      (tab: TabType) => {
+        setActiveTab(tab);
+        setSelectedIndex(0);
+        if (listRef.current) {
+          listRef.current.scrollTop = 0;
+        }
+
+        // 每次切换 Tab 都重新加载当前 Tab 的第一页数据
+        loadTabData(tab, 1);
+      },
+      [loadTabData],
+    );
+
     // ==================== Effects ====================
     /**
      * 弹窗显示时重置状态
@@ -363,32 +368,86 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     useEffect(() => {
       return () => {
         setActiveTab('recent');
-        updateSelectedIndex(0);
+        setSelectedIndex(0);
         setTabDataMap(createTabDataState());
+        /**
+         * 弹窗完全关闭时重置首轮 Tab 初始化标记与搜索关键字标记
+         */
+        hasInitTabsRef.current = false;
+        lastSearchTextRef.current = '';
       };
-    }, [visible, updateSelectedIndex]);
+    }, [visible]);
 
     /**
-     * 当前 Tab 尚未初始化时才触发第一页加载
-     * 避免同一个 Tab 在同一轮状态下重复请求
+     * 弹窗首次打开时，按 Tab 顺序尝试加载数据
+     * 1. 先加载「最近使用」，如果有数据则停在该 Tab
+     * 2. 若无数据，再加载「我的收藏」，有数据则停在该 Tab
+     * 3. 若仍无数据，最后加载「全部」
+     *
+     * 仅在本轮弹窗生命周期内执行一次：
+     * - 首次 visible === true 时运行
+     * - 之后搜索关键字变化时，只在当前 Tab 内搜索，不再轮询其他 Tab
+     * - 弹窗关闭后（visible === false）重置标记，下次重新打开时再执行一次
      */
     useEffect(() => {
-      if (!visible) {
+      if (!visible || hasInitTabsRef.current) {
         return;
       }
 
-      loadTabData(activeTab, 1);
-    }, [activeTab, loadTabData, visible]);
+      hasInitTabsRef.current = true;
+
+      // 这一行所在的 effect 不要把 searchText 加进依赖数组。
+      // 目前的拆分（一个 effect 管首轮 init，另一个 effect 管搜索变化）是刻意设计的，加入 searchText 反而会破坏「只在首次打开时轮询 Tab」的语义。
+      lastSearchTextRef.current = searchText ?? '';
+      let cancelled = false;
+
+      const initTabs = async () => {
+        for (const tab of TABS) {
+          const hasData = await loadTabData(tab.key, 1);
+          if (cancelled) return;
+          if (hasData) {
+            setActiveTab(tab.key);
+            break;
+          }
+        }
+      };
+
+      initTabs();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [loadTabData, visible]);
 
     /**
-     * 当弹窗可见且 Tab 或列表内容发生变化时，通知外部“高度可能改变”
-     * 由外部统一重新计算弹窗与光标之间的位置关系
+     * 弹窗已打开且首轮 init 完成后：搜索关键字变化时仅刷新当前 Tab 第一页
      */
     useEffect(() => {
-      if (!visible || !containerRef.current) return;
-      const height = containerRef.current.offsetHeight ?? 0;
-      onHeightChange?.(height);
-    }, [visible, currentItems.length]);
+      if (!visible || !hasInitTabsRef.current) return;
+      const currentSearch = searchText ?? '';
+      if (currentSearch === lastSearchTextRef.current) return;
+      lastSearchTextRef.current = currentSearch;
+      loadTabData(activeTab, 1);
+    }, [visible, searchText, activeTab, loadTabData]);
+
+    /**
+     * 使用 ResizeObserver 在弹窗实际尺寸变化时上报高度，确保父组件用真实渲染高度重算位置，
+     * 避免切换 Tab 后弹窗变高但位置未更新导致弹窗底边超出光标
+     */
+    useEffect(() => {
+      if (!visible || !onHeightChange || !containerRef.current) return;
+      const el = containerRef.current;
+
+      const reportHeight = () => {
+        const height = el.offsetHeight ?? 0;
+        if (height > 0) onHeightChange(height);
+      };
+
+      reportHeight();
+      const observer = new ResizeObserver(() => reportHeight());
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [visible, onHeightChange]);
 
     /**
      * 切换 Tab 或搜索词后，将列表滚动条重置到顶部
@@ -405,9 +464,9 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
      */
     useEffect(() => {
       if (selectedIndex >= currentItems.length && currentItems.length > 0) {
-        updateSelectedIndex(currentItems.length - 1);
+        setSelectedIndex(currentItems.length - 1);
       }
-    }, [currentItems.length, selectedIndex, updateSelectedIndex]);
+    }, [currentItems.length, selectedIndex]);
 
     /**
      * 自动滚动到选中项
@@ -441,11 +500,11 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
      */
     const handleArrowUp = useCallback(() => {
       if (selectedIndex <= 0) {
-        updateSelectedIndex(0);
+        setSelectedIndex(0);
       } else {
-        updateSelectedIndex(selectedIndex - 1);
+        setSelectedIndex(selectedIndex - 1);
       }
-    }, [selectedIndex, updateSelectedIndex]);
+    }, [selectedIndex]);
 
     /**
      * 向下移动选中项
@@ -454,12 +513,12 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const handleArrowDown = useCallback(() => {
       if (selectedIndex >= currentItems.length - 1) {
         // 在列表最后一项，循环到第一项
-        updateSelectedIndex(0);
+        setSelectedIndex(0);
       } else {
         // 向下移动
-        updateSelectedIndex(selectedIndex + 1);
+        setSelectedIndex(selectedIndex + 1);
       }
-    }, [selectedIndex, currentItems.length, updateSelectedIndex]);
+    }, [selectedIndex, currentItems.length]);
 
     /**
      * 向左切换 Tab
@@ -467,9 +526,8 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const handleArrowLeft = useCallback(() => {
       const currentIndex = TABS.findIndex((tab) => tab.key === activeTab);
       const newIndex = currentIndex <= 0 ? TABS.length - 1 : currentIndex - 1;
-      setActiveTab(TABS[newIndex].key);
-      updateSelectedIndex(0);
-    }, [activeTab, updateSelectedIndex]);
+      handleTabChange(TABS[newIndex].key);
+    }, [activeTab, handleTabChange]);
 
     /**
      * 向右切换 Tab
@@ -477,16 +535,15 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const handleArrowRight = useCallback(() => {
       const currentIndex = TABS.findIndex((tab) => tab.key === activeTab);
       const newIndex = currentIndex >= TABS.length - 1 ? 0 : currentIndex + 1;
-      setActiveTab(TABS[newIndex].key);
-      updateSelectedIndex(0);
-    }, [activeTab, updateSelectedIndex]);
+      handleTabChange(TABS[newIndex].key);
+    }, [activeTab, handleTabChange]);
 
     /**
      * 重置选中索引为 0
      */
     const resetSelectedIndex = useCallback(() => {
-      updateSelectedIndex(0);
-    }, [updateSelectedIndex]);
+      setSelectedIndex(0);
+    }, []);
 
     // 通过 useImperativeHandle 暴露方法
     useImperativeHandle(ref, () => ({
@@ -501,30 +558,16 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     // ==================== 内部事件处理 ====================
 
     /**
-     * 处理 Tab 切换（点击时）
-     */
-    const handleTabChange = useCallback(
-      (tab: TabType) => {
-        setActiveTab(tab);
-        updateSelectedIndex(0);
-        if (listRef.current) {
-          listRef.current.scrollTop = 0;
-        }
-      },
-      [updateSelectedIndex],
-    );
-
-    /**
      * 鼠标在列表项上移动时同步选中项
      * 使用 onMouseMove 而不是 onMouseEnter，可减少键盘导航过程中被 hover 抢状态的问题
      */
     const handleItemMouseMove = useCallback(
       (index: number) => {
         if (selectedIndex !== index) {
-          updateSelectedIndex(index);
+          setSelectedIndex(index);
         }
       },
-      [selectedIndex, updateSelectedIndex],
+      [selectedIndex],
     );
 
     /**
@@ -589,7 +632,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         handleArrowLeft,
         handleArrowRight,
         handleSelectCurrentItem,
-        updateSelectedIndex,
         onClose,
       ],
     );
@@ -609,6 +651,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           position: 'fixed',
           top: position.top,
           left: position.left,
+          ...(!!maxHeight && { maxHeight }),
         }}
         onMouseDown={(e) => {
           // 阻止点击弹窗内容时让编辑器失焦，否则会触发外层 blur 关闭弹窗
@@ -680,9 +723,11 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
               </div>
             ))
           )}
-          {activeTabData.loading && currentItems.length > 0 && (
-            <div className={styles['mention-empty']}>加载更多中...</div>
-          )}
+          {activeTabData.loading &&
+            activeTabData.page > 1 &&
+            currentItems.length > 0 && (
+              <div className={styles['mention-empty']}>加载更多中...</div>
+            )}
         </div>
       </div>
     );

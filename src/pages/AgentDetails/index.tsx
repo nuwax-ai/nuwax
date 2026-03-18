@@ -353,6 +353,14 @@ const AgentDetails: React.FC = () => {
   //   openDesktopView(agentDetail?.conversationId);
   // };
 
+  // 默认提及项
+  const defaultMentions = useMemo(() => {
+    // 通用型智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
+    return agentDetail?.type === AgentTypeEnum.TaskAgent && skillInfo
+      ? [skillInfo]
+      : [];
+  }, [agentDetail?.type, skillInfo]);
+
   // 左侧内容
   const LeftContent = () => {
     return (
@@ -503,14 +511,11 @@ const AgentDetails: React.FC = () => {
               maskText="您无该智能体权限"
               fixedSelection={!!agentDetail?.sandboxId}
               isPersonalComputer={!!agentDetail?.sandboxId}
+              mentionPlacement="up"
               /** 是否启用 @ 提及功能，默认启用 */
               enableMention={agentDetail?.type === AgentTypeEnum.TaskAgent}
               // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
-              defaultMentions={
-                agentDetail?.type === AgentTypeEnum.TaskAgent && skillInfo
-                  ? [skillInfo]
-                  : []
-              }
+              defaultMentions={defaultMentions}
             />
           </div>
 

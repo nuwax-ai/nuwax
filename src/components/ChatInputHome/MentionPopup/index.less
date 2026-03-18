@@ -49,8 +49,10 @@
   }
 
   // 列表主体区域，同时承担滚动分页容器的职责
+  // min-height: 0 保证在父级 max-height 较小时列表区域可收缩并内部滚动
   .mention-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     max-height: 280px;
 

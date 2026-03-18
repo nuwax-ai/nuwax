@@ -49,18 +49,23 @@ const cx = classNames.bind(styles);
  *
  * @param placement - 弹窗期望方向：'auto' | 'up' | 'down'
  * @param popupHeight - 弹窗实际高度（用于向上展开时将底边贴近光标）
+ * @param fallbackRange - 可选，切换 Tab 等场景下选区可能不在编辑器时，用此 Range 计算位置（如打开弹窗时保存的 @ 位置）
  * @returns 弹窗位置对象 { top, left }，如果无法获取则返回 null
  */
 const getCaretPosition = (
   placement: 'auto' | 'up' | 'down' = 'auto',
   popupHeight?: number,
+  fallbackRange?: Range | null,
 ): { top: number; left: number } | null => {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
-    return null;
-  }
+  const range =
+    fallbackRange ??
+    (() => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return null;
+      return selection.getRangeAt(0);
+    })();
+  if (!range) return null;
 
-  const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
   const viewportHeight =
     window.innerHeight || document.documentElement.clientHeight || 0;
@@ -342,8 +347,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const [mentionSearchText, setMentionSearchText] = useState<string>('');
     /** 已选中的提及项列表 */
     const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
-    /** 弹窗中当前选中项的索引 */
-    const [selectedIndex, setSelectedIndex] = useState<number>(0);
     /** 编辑器是否为空，用于稳定控制 placeholder 显示 */
     const [isEditorEmpty, setIsEditorEmpty] = useState<boolean>(true);
     /** 当前 MentionPopup 实际高度（用于向上展开时将弹窗底边贴近光标） */
@@ -413,6 +416,17 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [enableMention, defaultPlaceholder]);
 
     /**
+     * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条导致左右闪动
+     */
+    const mentionPopupMaxHeight = useMemo(() => {
+      if (!showMentionPopup || !mentionPosition) return undefined;
+      const vh =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const spaceBelow = vh - mentionPosition.top - 24;
+      return Math.min(400, Math.max(120, spaceBelow));
+    }, [showMentionPopup, mentionPosition]);
+
+    /**
      * 刷新 MentionPopup 的位置，使其尽量跟随当前光标
      * 在键盘导航、页面滚动或窗口变化时调用
      */
@@ -422,6 +436,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const position = getCaretPosition(
         mentionPlacement,
         mentionPopupHeight ?? undefined,
+        savedRangeRef.current ?? undefined,
       );
       if (position) {
         setMentionPosition(position);
@@ -439,10 +454,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const handlePopupHeightChange = useCallback(
       (height: number) => {
-        // 记录最新的弹窗高度，并用该高度 + 当前光标位置重新计算位置，
-        // 确保无论向上还是向下展开，弹窗始终贴近当前光标
         setMentionPopupHeight(height);
-        const position = getCaretPosition(mentionPlacement, height);
+        // 使用打开弹窗时保存的 Range 计算位置，避免切换 Tab 后焦点在弹窗内导致 getSelection() 不在编辑器而定位错
+        const position = getCaretPosition(
+          mentionPlacement,
+          height,
+          savedRangeRef.current ?? undefined,
+        );
         if (position) {
           setMentionPosition(position);
         }
@@ -517,7 +535,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const closeMentionPopup = useCallback(() => {
       setShowMentionPopup(false);
       setMentionSearchText('');
-      setSelectedIndex(0);
       mentionAtIndexRef.current = -1;
       savedRangeRef.current = null;
       savedTextNodeRef.current = null;
@@ -985,14 +1002,57 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /**
      * 处理粘贴事件
+     * - 如果剪贴板中包含图片：交给外部 onPaste（用于上传图片），不处理文本
+     * - 如果只有文本/DOM：阻止默认粘贴行为，只按纯文本插入，去掉所有原始 DOM 属性/样式
      */
     const handlePasteEvent = useCallback(
       (e: React.ClipboardEvent<HTMLDivElement>) => {
-        if (onPaste) {
-          onPaste(e);
+        const clipboardData = e.clipboardData;
+
+        // 1. 先检查是否包含图片，如果有图片则交给外部 onPaste 处理上传
+        if (clipboardData && clipboardData.items) {
+          let hasImage = false;
+          for (let i = 0; i < clipboardData.items.length; i += 1) {
+            const item = clipboardData.items[i];
+            if (item.type.indexOf('image') !== -1) {
+              hasImage = true;
+              break;
+            }
+          }
+
+          if (hasImage) {
+            onPaste(e);
+            // 不要在这里 preventDefault，让外层 onPaste 自行决定是否阻止默认行为
+            return;
+          }
         }
+
+        // 2. 没有图片时，按纯文本方式粘贴，去掉所有样式/属性
+        e.preventDefault();
+
+        const text = clipboardData?.getData('text/plain') ?? '';
+        if (!text) return;
+
+        if (!editorRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) {
+          // 如果没有选区，直接追加到末尾
+          editorRef.current.appendChild(document.createTextNode(text));
+        } else {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(text));
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+
+        const serializedText = getSerializedEditorText(editorRef.current);
+        setIsEditorEmpty(serializedText.trim().length === 0);
+        onChange?.(serializedText);
       },
-      [onPaste],
+      [onChange, onPaste],
     );
 
     /**
@@ -1059,7 +1119,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
               savedTextNodeRef.current = textNode;
 
               // 光标在 @ 后面，没有空格间隔，显示弹窗
-              const position = getCaretPosition(mentionPlacement);
+              const position = getCaretPosition(
+                mentionPlacement,
+                mentionPopupHeight ?? undefined,
+              );
               if (position) {
                 setMentionPosition(position);
                 setMentionSearchText(textAfterAt);
@@ -1094,7 +1157,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           }
         }
       }, 0);
-    }, [disabled, enableMention, mentionPlacement, closeMentionPopup]);
+    }, [
+      disabled,
+      enableMention,
+      mentionPlacement,
+      closeMentionPopup,
+      mentionPopupHeight,
+    ]);
 
     // ==================== Effects ====================
 
@@ -1173,12 +1242,19 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             [styles.disabled]: disabled,
           })}
           contentEditable={!disabled}
+          // 输入事件
           onInput={handleInput}
+          // 键盘事件
           onKeyDown={handleKeyDown}
+          // 粘贴事件
           onPaste={handlePasteEvent}
+          // 失焦事件
           onBlur={handleBlur}
+          // 点击事件
           onClick={handleClick}
+          // 输入法组合开始事件
           onCompositionStart={handleCompositionStart}
+          /** 输入法组合结束事件 */
           onCompositionEnd={handleCompositionEnd}
           style={{
             minHeight: `${minHeight}px`,
@@ -1197,8 +1273,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             onSelect={handleMentionSelect}
             onClose={closeMentionPopup}
             searchText={mentionSearchText}
-            selectedIndex={selectedIndex}
-            onSelectedIndexChange={setSelectedIndex}
+            maxHeight={mentionPopupMaxHeight}
             onHeightChange={handlePopupHeightChange}
           />
         </div>

@@ -1257,6 +1257,7 @@ const Chat: React.FC = () => {
                 hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+              mentionPlacement="up"
               /** 是否启用 @ 提及功能，默认启用 */
               enableMention={effectiveAgent?.type === AgentTypeEnum.TaskAgent}
             />
