@@ -833,7 +833,7 @@ const EditAgent: React.FC = () => {
     }
   };
 
-  const handleOpenPreview = () => {
+  const handleOpenPreview = useCallback(() => {
     // 判断是否默认展示页面首页
     if (
       agentConfigInfo &&
@@ -848,7 +848,11 @@ const EditAgent: React.FC = () => {
     } else {
       showPagePreview(null);
     }
-  };
+  }, [
+    agentConfigInfo?.expandPageArea,
+    agentConfigInfo?.pageHomeIndex,
+    showPagePreview,
+  ]);
 
   useEffect(() => {
     handleOpenPreview();

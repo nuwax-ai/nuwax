@@ -29,7 +29,8 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 import MentionEditor from './MentionEditor';
-import type { MentionEditorHandle } from './MentionPopup/types';
+import MentionPopup from './MentionPopup';
+import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 
 const cx = classNames.bind(styles);
 
@@ -99,6 +100,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     useState<boolean>(false);
   // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  // 底部 @ 图标引用（用于定位弹窗）
+  const mentionIconRef = useRef<HTMLSpanElement | null>(null);
+  // 控制底部 @ 图标 Tooltip 显隐（避免弹窗关闭时 tooltip 又冒出来）
+  const [mentionTooltipOpen, setMentionTooltipOpen] = useState<boolean>(false);
 
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -377,6 +382,178 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     };
   }, []);
 
+  // ==================== @ 提及功能相关状态和方法 ====================
+
+  /** 是否显示提及弹窗 */
+  const [atIconShowMentionPopup, setAtIconShowMentionPopup] =
+    useState<boolean>(false);
+  /** 弹窗显示位置 */
+  const [atIconMentionPosition, setAtIconMentionPosition] = useState<{
+    top: number;
+    left: number;
+  }>({ top: 0, left: 0 });
+
+  /**
+   * 处理从弹窗中选择提及项
+   * 将选中的提及插入到编辑器中，替换 @ 和搜索文本
+   *
+   * @param item - 选中的提及项
+   */
+  const handleAtIconMentionSelect = useCallback((item: MentionItem) => {
+    setAtIconShowMentionPopup(false);
+    mentionEditorRef.current?.handleAtIconMentionSelect(item);
+  }, []);
+
+  /**
+   * 关闭提及弹窗
+   */
+  const closeAtIconMentionPopup = useCallback(() => {
+    setAtIconShowMentionPopup(false);
+    // 同步关闭底部 @ 图标的 Tooltip，避免弹窗关闭时 Tooltip 重新出现
+    setMentionTooltipOpen(false);
+  }, []);
+
+  /**
+   * 点击底部 @ 图标：打开 MentionPopup 并将弹窗锚定到图标附近
+   */
+  const handleMentionIconClick = useCallback(
+    (e: React.MouseEvent<HTMLSpanElement>) => {
+      // 关闭 @ 提及功能时，点击只负责光标定位，不触发弹窗
+      if (!enableMention) {
+        closeAtIconMentionPopup();
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 点击后立刻关闭 Tooltip
+      setMentionTooltipOpen(false);
+
+      // 以 @ 图标作为锚点，计算 MentionPopup 的 top/left，使弹窗显示在图标后面（默认下方，必要时上方）
+      const iconEl = mentionIconRef.current;
+      if (iconEl) {
+        const rect = iconEl.getBoundingClientRect();
+        const viewportHeight =
+          window.innerHeight || document.documentElement.clientHeight || 0;
+        const viewportWidth =
+          window.innerWidth || document.documentElement.clientWidth || 0;
+
+        const POPUP_ESTIMATED_HEIGHT = 320;
+        const POPUP_WIDTH = 280;
+        const margin = 8;
+
+        let finalPlacement = mentionPlacement;
+        if (mentionPlacement === 'auto') {
+          const spaceBelow = viewportHeight - rect.bottom;
+          finalPlacement = spaceBelow >= POPUP_ESTIMATED_HEIGHT ? 'down' : 'up';
+        }
+
+        let top: number;
+        if (finalPlacement === 'down') {
+          top = rect.bottom + 4;
+          const maxTop = viewportHeight - POPUP_ESTIMATED_HEIGHT - 4;
+          if (top > maxTop) top = Math.max(4, maxTop);
+        } else {
+          top = rect.top - 4 - POPUP_ESTIMATED_HEIGHT;
+          if (top < 4) top = 4;
+        }
+
+        const left = Math.min(
+          Math.max(4, rect.left),
+          viewportWidth - POPUP_WIDTH - margin,
+        );
+
+        setAtIconMentionPosition({ top, left });
+      }
+
+      setAtIconShowMentionPopup(true);
+    },
+    [enableMention, mentionPlacement, closeAtIconMentionPopup],
+  );
+
+  /**
+   * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条
+   */
+  const mentionPopupMaxHeight = useMemo(() => {
+    if (!atIconShowMentionPopup || !atIconMentionPosition) return undefined;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    const spaceBelow = vh - atIconMentionPosition.top - 24;
+    return Math.min(400, Math.max(120, spaceBelow));
+  }, [atIconShowMentionPopup, atIconMentionPosition]);
+
+  /**
+   * 弹窗内容高度变化时（如切换 Tab、列表条数变化），根据最新高度重新计算位置，避免弹窗与 @ 图标错位
+   */
+  const handlePopupHeightChange = useCallback(
+    (height: number) => {
+      const iconEl = mentionIconRef.current;
+      if (!iconEl || !atIconShowMentionPopup) return;
+
+      const rect = iconEl.getBoundingClientRect();
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const viewportWidth =
+        window.innerWidth || document.documentElement.clientWidth || 0;
+      const POPUP_WIDTH = 280;
+      const margin = 8;
+
+      let finalPlacement = mentionPlacement;
+      if (mentionPlacement === 'auto') {
+        const spaceBelow = viewportHeight - rect.bottom;
+        finalPlacement = spaceBelow >= height ? 'down' : 'up';
+      }
+
+      let top: number;
+      if (finalPlacement === 'down') {
+        top = rect.bottom + 4;
+        const maxTop = viewportHeight - height - 4;
+        if (top > maxTop) top = Math.max(4, maxTop);
+      } else {
+        top = rect.top - 4 - height;
+        if (top < 4) top = 4;
+      }
+
+      const left = Math.min(
+        Math.max(4, rect.left),
+        viewportWidth - POPUP_WIDTH - margin,
+      );
+
+      setAtIconMentionPosition({ top, left });
+    },
+    [atIconShowMentionPopup, mentionPlacement],
+  );
+
+  /**
+   * 点击外部区域关闭弹窗
+   */
+  useEffect(() => {
+    // 如果 @ 提及功能未启用，则不监听点击外部区域关闭弹窗
+    if (!enableMention) {
+      return;
+    }
+
+    /**
+     * 点击外部区域关闭弹窗
+     */
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!atIconShowMentionPopup) {
+        return;
+      }
+      const target = e.target as HTMLElement;
+      // 点击在弹窗本体内部（含 Tab、列表、空白）不关闭，仅点击弹窗外部才关闭
+      if (target.closest('[data-mention-popup]')) {
+        return;
+      }
+      closeAtIconMentionPopup();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [atIconShowMentionPopup, closeAtIconMentionPopup, enableMention]);
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
@@ -412,6 +589,43 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           defaultMentions={defaultMentions}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
+          {/* @ 提及技能 */}
+          <ConditionRender condition={enableMention}>
+            <Tooltip
+              title="试试 @ 提及技能"
+              open={mentionTooltipOpen}
+              onOpenChange={setMentionTooltipOpen}
+            >
+              <span
+                ref={mentionIconRef}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.clear,
+                  styles.box,
+                  styles['plus-box'],
+                )}
+                onClick={handleMentionIconClick}
+              >
+                @
+              </span>
+            </Tooltip>
+
+            {/* @提及技能选择弹窗 */}
+            <MentionPopup
+              visible={atIconShowMentionPopup}
+              position={atIconMentionPosition}
+              onSelect={handleAtIconMentionSelect}
+              onClose={closeAtIconMentionPopup}
+              maxHeight={mentionPopupMaxHeight}
+              onHeightChange={handlePopupHeightChange}
+              showSearchInput={true}
+            />
+          </ConditionRender>
+
+          {/* 清空会话记录 */}
           {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
             <ConditionRender condition={!!onClear}>
               <Tooltip title="清空会话记录">

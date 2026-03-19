@@ -17,6 +17,7 @@
   overflow: hidden;
   z-index: 1050;
   animation: popup-fade-in 0.2s ease-in-out;
+  transition: max-height 0.1s ease-out, transform 0.1s ease-out;
   display: flex;
   flex-direction: column;
 
@@ -25,7 +26,7 @@
     display: flex;
     align-items: center;
     padding: @paddingXs @paddingSm;
-    border-bottom: 0.5px solid @colorBorderSecondary;
+    // border-bottom: 0.5px solid @colorBorderSecondary;
     gap: @marginXs;
 
     .mention-tab {
@@ -48,6 +49,39 @@
         background: @colorFillSecondary;
       }
     }
+  }
+
+  // 搜索输入框（置于弹窗顶部、Tabs 上方，无边框 + 底部分隔线）
+  .mention-search-wrap {
+    padding: @paddingXs;
+    background: @colorBgContainer;
+    border-bottom: 1px solid @colorBorderSecondary;
+    flex-shrink: 0;
+
+    .ant-input-affix-wrapper {
+      padding-left: 0;
+      background: transparent !important;
+      border: none;
+      box-shadow: none;
+    }
+
+    .ant-input {
+      font-size: @fontSizeSm;
+      background: transparent !important;
+
+      &::placeholder {
+        color: @colorTextTertiary;
+      }
+    }
+  }
+
+  .mention-search-icon {
+    color: @colorTextTertiary;
+    font-size: 14px;
+  }
+
+  .mention-search-input {
+    width: 100%;
   }
 
   // 列表主体区域，同时承担滚动分页容器的职责

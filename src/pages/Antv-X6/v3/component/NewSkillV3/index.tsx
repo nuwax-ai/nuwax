@@ -32,8 +32,12 @@ const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
       {(params || []).map((item) => (
         <div key={item.name} style={{ padding: '3px 0' }}>
           <div className={cx('dis-left')}>
-            <span className={cx('mr-16')}>{truncate(item.name, 30)}</span>
-            <Tag color="#C9CDD4">{item.dataType}</Tag>
+            <span style={{ marginRight: '8px' }}>
+              {truncate(item.name, 30)}
+            </span>
+            <Tag color="#C9CDD4" style={{ fontSize: '10px' }}>
+              {item.dataType}
+            </Tag>
           </div>
           <p className={cx(styles['skill-params-description'])}>
             {truncate(item.description || '', 70)}

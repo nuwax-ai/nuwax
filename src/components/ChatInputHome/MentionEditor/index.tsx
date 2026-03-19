@@ -385,13 +385,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, []);
 
     /**
-     * 获取所有已选中的提及项
-     */
-    const getMentions = useCallback((): MentionItem[] => {
-      return selectedMentions;
-    }, [selectedMentions]);
-
-    /**
      * 将当前已选 mention 推导为父组件需要的 skillIds
      * 统一从 selectedMentions 派生，确保新增、删除、清空都能自动同步
      */
@@ -493,20 +486,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     }, [refreshMentionPosition, showMentionPopup]);
 
     /**
-     * 聚焦编辑器
-     */
-    const focus = useCallback(() => {
-      editorRef.current?.focus();
-    }, []);
-
-    /**
-     * 移除编辑器焦点
-     */
-    const blur = useCallback(() => {
-      editorRef.current?.blur();
-    }, []);
-
-    /**
      * 清空编辑器内容和已选提及
      */
     const clear = useCallback(() => {
@@ -517,15 +496,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         onChange?.('');
       }
     }, [onChange]);
-
-    // 通过 useImperativeHandle 暴露方法
-    useImperativeHandle(ref, () => ({
-      focus,
-      blur,
-      clear,
-      getTextContent,
-      getMentions,
-    }));
 
     // ==================== 弹窗控制方法 ====================
 
@@ -669,6 +639,47 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       },
       [removeMentionChip],
     );
+
+    /**
+     * 处理从底部 @ 图标选择提及项
+     * 将选中的提及追加到编辑器内容末尾，不替换已有内容
+     *
+     * @param item - 选中的提及项
+     */
+    const handleAtIconMentionSelect = useCallback(
+      (item: MentionItem) => {
+        if (!editorRef.current || !enableMention) return;
+
+        const container = editorRef.current;
+        const chip = createMentionChip(item);
+        const spaceNode = document.createTextNode(' ');
+        container.appendChild(chip);
+        container.appendChild(spaceNode);
+
+        // 光标移到末尾
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.setStart(spaceNode, 1);
+          range.setEnd(spaceNode, 1);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          container.focus();
+        }
+
+        setSelectedMentions((prev) => [...prev, item]);
+        const serializedText = getSerializedEditorText(container);
+        setIsEditorEmpty(serializedText.trim().length === 0);
+        onChange?.(serializedText);
+      },
+      [createMentionChip, enableMention, onChange],
+    );
+
+    // 通过 useImperativeHandle 暴露方法
+    useImperativeHandle(ref, () => ({
+      clear,
+      handleAtIconMentionSelect,
+    }));
 
     /**
      * 按传入技能顺序回显 mention chip，忽略 value 文本内容

@@ -344,6 +344,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/license-expired',
+    component: '@/pages/403',
+    layout: false,
+  },
+  {
     path: '/*',
     component: '@/pages/404',
     layout: false,

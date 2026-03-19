@@ -33,6 +33,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import { useSkillConfigRefresh } from '../hooks/useSkillConfigRefresh';
 import '../indexV3.less';
 import { outPutConfigs } from '../ParamsV3';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
@@ -95,6 +96,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   const [needSubmit, setNeedSubmit] = useState(false);
 
   const { setIsModified, referenceList } = useModel('workflowV3');
+  const { refreshSkillConfigs } = useSkillConfigRefresh(form);
   const updateAddComponents = (
     configs: CreatedNodeItem[],
     customize: (item: CreatedNodeItem) => AgentAddComponentStatusEnum,
@@ -117,10 +119,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
     item.typeId = item.targetId;
     form.setFieldValue(SKILL_FORM_KEY, skillComponentConfigs.concat([item]));
-    setIsModified(true);
-    form.submit();
     setNeedSubmit(true);
-    // setOpen(false);
   };
 
   // V3: 技能添加现在是前端同步操作，不需要 loading 效果
@@ -200,13 +199,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(false);
     if (needSubmit) {
       setNeedSubmit(false);
-      // V3: 技能添加现在是前端同步操作，不需要显示 loading
-      // setSkillChange(true);  // 移除，避免触发不必要的 loading
       setIsModified(true);
-      // 一起提交表单
-      form.submit();
+      refreshSkillConfigs();
     }
-  }, [needSubmit, form, setNeedSubmit, setOpen]);
+  }, [needSubmit, setNeedSubmit, setOpen, setIsModified, refreshSkillConfigs]);
 
   const formSkillList =
     Form.useWatch(SKILL_FORM_KEY, { form, preserve: true }) || [];
