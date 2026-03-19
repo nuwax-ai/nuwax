@@ -122,13 +122,16 @@ const SkillDetail: React.FC = ({}) => {
               <ConditionRender
                 condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
               >
-                <Button
-                  type="primary"
-                  className={cx(styles['copy-btn'])}
-                  onClick={() => setOpenMove(true)}
-                >
-                  复制模板
-                </Button>
+                {skillInfo?.allowCopy === AllowCopyEnum.Yes && (
+                  <Button
+                    type="primary"
+                    className={cx(styles['copy-btn'])}
+                    onClick={() => setOpenMove(true)}
+                  >
+                    复制模板
+                  </Button>
+                )}
+
                 {/*智能体迁移弹窗*/}
                 <MoveCopyComponent
                   spaceId={skillInfo?.spaceId || 0}

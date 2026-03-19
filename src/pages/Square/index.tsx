@@ -460,9 +460,13 @@ const Square: React.FC = () => {
                         onClick={() =>
                           handleClick(item.targetId, item.targetType, item)
                         }
+                        onStartUse={() =>
+                          handleClick(item.targetId, item.targetType, item)
+                        }
                       />
                     );
                   } else if (
+                    // 技能模式下，显示技能组件
                     categoryTypeRef.current === SquareAgentTypeEnum.Skill
                   ) {
                     return (
@@ -474,7 +478,10 @@ const Square: React.FC = () => {
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         collectApi={apiPublishedSkillCollect}
                         unCollectApi={apiPublishedSkillUnCollect}
-                        onClick={() => handleClickSkill(item)}
+                        onClick={() =>
+                          handleClick(item.targetId, item.targetType, item)
+                        }
+                        onStartUse={() => handleClickSkill(item)}
                       />
                     );
                   }

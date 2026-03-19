@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
   onClick,
+  onStartUse,
   extra,
   publishedItemInfo,
   onToggleCollectSuccess,
@@ -110,7 +111,15 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
             {extra}
           </footer>
           <div className={cx(styles['action-box'], 'flex', 'items-center')}>
-            <Button type="primary" block icon={<ICON_MESSAGE />}>
+            <Button
+              type="primary"
+              block
+              icon={<ICON_MESSAGE />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartUse?.(e);
+              }}
+            >
               开始使用
             </Button>
             <span
