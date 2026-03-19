@@ -88,6 +88,8 @@ const AgentDetails: React.FC = () => {
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<{
     id: number;
+    // 技能ID
+    targetId: number;
     name: string;
   } | null>(null);
 
@@ -141,6 +143,7 @@ const AgentDetails: React.FC = () => {
     if (skillId && skillName) {
       setSkillInfo({
         id: Number(skillId),
+        targetId: Number(skillId),
         name: decodeURIComponent(skillName || ''),
       });
     }
