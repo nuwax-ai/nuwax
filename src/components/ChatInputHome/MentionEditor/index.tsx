@@ -391,7 +391,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     useEffect(() => {
       // 去重技能ID列表
       const nextSkillIds = Array.from(
-        new Set(selectedMentions?.map((item) => item.id as number)),
+        new Set(selectedMentions?.map((item) => item.targetId as number)),
       );
       onSkillIdsChange?.(nextSkillIds);
     }, [onSkillIdsChange, selectedMentions]);
@@ -532,7 +532,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           mentionChip.remove();
           // 从状态中移除
           setSelectedMentions((prev) =>
-            prev.filter((item) => String(item.id) !== mentionId),
+            prev.filter((item) => String(item.targetId) !== mentionId),
           );
           // 触发 onChange
           const newText = getSerializedEditorText(editorRef.current);
@@ -563,7 +563,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         if (mentionId) {
           setSelectedMentions((prev) =>
-            prev.filter((item) => String(item.id) !== mentionId),
+            prev.filter((item) => String(item.targetId) !== mentionId),
           );
         }
 
@@ -608,7 +608,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const mentionSpan = document.createElement('span');
         mentionSpan.className = styles['mention-chip'];
         mentionSpan.contentEditable = 'false'; // 不可编辑
-        mentionSpan.dataset.mentionId = String(item.id);
+        mentionSpan.dataset.mentionId = String(item.targetId);
         mentionSpan.dataset.mentionName = item.name;
 
         // 创建内容容器
@@ -627,7 +627,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         deleteBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          removeMentionChip(String(item.id));
+          removeMentionChip(String(item.targetId));
         };
 
         // 组装 DOM 结构

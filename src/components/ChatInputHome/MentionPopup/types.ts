@@ -88,18 +88,14 @@ export interface SkillInfoForAt {
 export interface MentionItem {
   /** 唯一标识符 */
   id: string | number;
+  // 技能ID
+  targetId: number;
   /** 显示名称 */
   name: string;
   /** 图标（emoji 或图标类名） */
   icon?: string;
-  /** 头像 URL */
-  avatar?: string;
   /** 描述文本，用于搜索匹配和提示 */
   description?: string;
-  /** 分类标识 */
-  category?: string;
-  /** 类型标识 */
-  type?: string;
 }
 
 /**
