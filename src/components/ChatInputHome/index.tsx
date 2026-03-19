@@ -544,40 +544,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           defaultMentions={defaultMentions}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
-          {/* @ 提及技能 */}
-          <ConditionRender condition={enableMention}>
-            <Tooltip
-              title={hasUsedMentionIcon ? '' : '试试 @ 提及技能'}
-              open={mentionTooltipOpen && !atIconShowMentionPopup}
-              onOpenChange={setMentionTooltipOpen}
-            >
-              <span
-                ref={mentionIconRef}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.clear,
-                  styles.box,
-                  styles['plus-box'],
-                )}
-                onClick={handleMentionIconClick}
-              >
-                @
-              </span>
-            </Tooltip>
-
-            {/* @提及技能选择弹窗 */}
-            <MentionPopup
-              visible={atIconShowMentionPopup}
-              position={atIconMentionPosition}
-              onSelect={handleAtIconMentionSelect}
-              onClose={closeAtIconMentionPopup}
-              showSearchInput={true}
-            />
-          </ConditionRender>
-
           {/* 清空会话记录 */}
           {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
             <ConditionRender condition={!!onClear}>
@@ -611,6 +577,40 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </Tooltip>
             </ConditionRender>
           )}
+
+          {/* @ 提及技能 */}
+          <ConditionRender condition={enableMention}>
+            <Tooltip
+              title={hasUsedMentionIcon ? '' : '试试 @ 提及技能'}
+              open={mentionTooltipOpen && !atIconShowMentionPopup}
+              onOpenChange={setMentionTooltipOpen}
+            >
+              <span
+                ref={mentionIconRef}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.clear,
+                  styles.box,
+                  styles['plus-box'],
+                )}
+                onClick={handleMentionIconClick}
+              >
+                @
+              </span>
+            </Tooltip>
+
+            {/* @提及技能选择弹窗 */}
+            <MentionPopup
+              visible={atIconShowMentionPopup}
+              position={atIconMentionPosition}
+              onSelect={handleAtIconMentionSelect}
+              onClose={closeAtIconMentionPopup}
+              showSearchInput={true}
+            />
+          </ConditionRender>
 
           {/*上传按钮*/}
           <Upload
