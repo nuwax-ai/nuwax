@@ -474,13 +474,24 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
      * 自动滚动到选中项
      */
     useEffect(() => {
-      if (visible && containerRef.current) {
-        const selectedEl = containerRef.current.querySelector(
-          `.${styles['mention-item']}.${styles.selected}`,
-        );
-        if (selectedEl) {
-          selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+      if (!visible || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const selectedEl = container.querySelector(
+        `.${styles['mention-item']}.${styles.selected}`,
+      ) as HTMLElement | null;
+
+      if (!selectedEl) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const elRect = selectedEl.getBoundingClientRect();
+
+      // 仅当选中项完全跑出可视区域时，才进行滚动，且使用 behavior: 'auto' 避免连续平滑滚动叠加
+      const isAbove = elRect.top < containerRect.top;
+      const isBelow = elRect.bottom > containerRect.bottom;
+
+      if (isAbove || isBelow) {
+        selectedEl.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }, [selectedIndex, visible]);
 

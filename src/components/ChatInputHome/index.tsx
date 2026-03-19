@@ -104,6 +104,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const mentionIconRef = useRef<HTMLSpanElement | null>(null);
   // 控制底部 @ 图标 Tooltip 显隐（避免弹窗关闭时 tooltip 又冒出来）
   const [mentionTooltipOpen, setMentionTooltipOpen] = useState<boolean>(false);
+  // 标记用户是否已经使用过底部 @ 图标，使用过后不再展示引导 Tooltip
+  const [hasUsedMentionIcon, setHasUsedMentionIcon] = useState<boolean>(false);
 
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -401,6 +403,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const handleAtIconMentionSelect = useCallback((item: MentionItem) => {
     setAtIconShowMentionPopup(false);
+    setHasUsedMentionIcon(false);
     mentionEditorRef.current?.handleAtIconMentionSelect(item);
   }, []);
 
@@ -411,6 +414,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     setAtIconShowMentionPopup(false);
     // 同步关闭底部 @ 图标的 Tooltip，避免弹窗关闭时 Tooltip 重新出现
     setMentionTooltipOpen(false);
+    setHasUsedMentionIcon(false);
   }, []);
 
   /**
@@ -429,6 +433,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
       // 点击后立刻关闭 Tooltip
       setMentionTooltipOpen(false);
+      // 用户已经主动点击使用过一次，之后不再展示引导 Tooltip
+      setHasUsedMentionIcon(true);
 
       // 以 @ 图标作为锚点，计算 MentionPopup 的 top/left，使弹窗显示在图标后面（默认下方，必要时上方）
       const iconEl = mentionIconRef.current;
@@ -592,8 +598,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           {/* @ 提及技能 */}
           <ConditionRender condition={enableMention}>
             <Tooltip
-              title="试试 @ 提及技能"
-              open={mentionTooltipOpen}
+              title={hasUsedMentionIcon ? '' : '试试 @ 提及技能'}
+              open={mentionTooltipOpen && !atIconShowMentionPopup}
               onOpenChange={setMentionTooltipOpen}
             >
               <span

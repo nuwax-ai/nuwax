@@ -1,4 +1,3 @@
-import ConditionRender from '@/components/ConditionRender';
 import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiPublishedSkillInfo } from '@/services/plugin';
@@ -10,7 +9,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
-import { Button, message } from 'antd';
+import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -118,40 +117,23 @@ const SkillDetail: React.FC = ({}) => {
           targetInfo={skillInfo}
           targetType={SquareAgentTypeEnum.Skill}
           extraBeforeCollect={
-            <>
-              <ConditionRender
-                condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
-              >
-                {skillInfo?.allowCopy === AllowCopyEnum.Yes && (
-                  <Button
-                    type="primary"
-                    className={cx(styles['copy-btn'])}
-                    onClick={() => setOpenMove(true)}
-                  >
-                    复制模板
-                  </Button>
-                )}
-
-                {/*智能体迁移弹窗*/}
-                <MoveCopyComponent
-                  spaceId={skillInfo?.spaceId || 0}
-                  loading={loadingCopyTemplate}
-                  type={ApplicationMoreActionEnum.Copy_To_Space}
-                  mode={AgentComponentTypeEnum.Skill}
-                  open={openMove}
-                  isTemplate={true}
-                  title={skillInfo?.name}
-                  onCancel={() => setOpenMove(false)}
-                  onConfirm={handlerConfirmCopyTemplate}
-                />
-              </ConditionRender>
-              <Button
-                onClick={handleExportProject}
-                loading={loadingExportProject}
-              >
-                下载导出
-              </Button>
-            </>
+            skillInfo?.allowCopy === AllowCopyEnum.Yes && (
+              <Space>
+                <Button
+                  type="primary"
+                  className={cx(styles['copy-btn'])}
+                  onClick={() => setOpenMove(true)}
+                >
+                  复制模板
+                </Button>
+                <Button
+                  onClick={handleExportProject}
+                  loading={loadingExportProject}
+                >
+                  下载导出
+                </Button>
+              </Space>
+            )
           }
         />
       )}
@@ -176,6 +158,19 @@ const SkillDetail: React.FC = ({}) => {
         showRefreshButton={false}
         // 是否显示导出 PDF 按钮, 默认显示
         isShowExportPdfButton={false}
+      />
+
+      {/*智能体迁移弹窗*/}
+      <MoveCopyComponent
+        spaceId={skillInfo?.spaceId || 0}
+        loading={loadingCopyTemplate}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        mode={AgentComponentTypeEnum.Skill}
+        open={openMove}
+        isTemplate={true}
+        title={skillInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmCopyTemplate}
       />
     </div>
   );
