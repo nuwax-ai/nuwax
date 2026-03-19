@@ -258,6 +258,9 @@ const SpaceSection: React.FC = () => {
             onClick={() =>
               handleClick(item.targetId, item.targetType, item, 'space')
             }
+            onStartUse={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       } else if (type === SquareAgentTypeEnum.Template) {
