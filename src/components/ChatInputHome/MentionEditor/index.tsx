@@ -43,20 +43,37 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+type CaretPlacement = 'up' | 'down';
+
+interface CaretPosition {
+  /** 弹窗左上角位置 */
+  top: number;
+  left: number;
+  /** 实际采用的展开方向（auto 下推导而来） */
+  finalPlacement: CaretPlacement;
+  /**
+   * 弹窗与光标的锚点：
+   * - 当 finalPlacement === 'down' 时：anchorY 为弹窗的 top（贴在光标下方 4px）
+   * - 当 finalPlacement === 'up' 时：anchorY 为弹窗的 bottom（贴在光标上方 4px）
+   * 用于在高度变化时“固定”这一边，避免与光标的间距发生改变
+   */
+  anchorY: number;
+}
+
 /**
  * 获取光标相对于视口的位置，并根据期望方向和弹窗高度计算显示位置
  * 当 placement 为 auto 时，会根据可用空间自动选择向上或向下展开
  *
  * @param placement - 弹窗期望方向：'auto' | 'up' | 'down'
- * @param popupHeight - 弹窗实际高度（用于向上展开时将底边贴近光标）
+ * @param popupHeight - 预估弹窗高度，用于在 auto 模式下决策向上/向下展开
  * @param fallbackRange - 可选，切换 Tab 等场景下选区可能不在编辑器时，用此 Range 计算位置（如打开弹窗时保存的 @ 位置）
- * @returns 弹窗位置对象 { top, left }，如果无法获取则返回 null
+ * @returns 弹窗位置对象 { top, left, finalPlacement, anchorY }，如果无法获取则返回 null
  */
 const getCaretPosition = (
-  placement: 'auto' | 'up' | 'down' = 'auto',
+  placement: 'auto' | CaretPlacement = 'auto',
   popupHeight?: number,
   fallbackRange?: Range | null,
-): { top: number; left: number } | null => {
+): CaretPosition | null => {
   const range =
     fallbackRange ??
     (() => {
@@ -76,16 +93,19 @@ const getCaretPosition = (
   // 如果传入了弹窗高度，则使用传入的弹窗高度，否则使用预估的弹窗高度，避免在输入关键词导致内容高度变化时，弹窗整体纵向位置发生明显跳动。
   const estimatedHeight = popupHeight ?? POPUP_ESTIMATED_HEIGHT;
 
-  let finalPlacement = placement;
+  let finalPlacement: CaretPlacement =
+    placement === 'auto' ? 'down' : (placement as CaretPlacement);
   if (placement === 'auto') {
     const spaceBelow = viewportHeight - rect.bottom;
     finalPlacement = spaceBelow >= estimatedHeight ? 'down' : 'up';
   }
 
   let top: number;
+  let anchorY: number;
   if (finalPlacement === 'down') {
     // 弹窗显示在光标下方，偏移 4px
     top = rect.bottom + 4;
+    anchorY = top;
 
     // 如果弹窗高度过大，可能会超出视口底部，这里向上收缩避免撑出页面滚动条
     const maxTop = viewportHeight - estimatedHeight - 4;
@@ -94,7 +114,9 @@ const getCaretPosition = (
     }
   } else {
     // 弹窗显示在光标上方，将底边尽量贴近光标上方 4px 位置
-    top = rect.top - 4 - estimatedHeight;
+    const bottom = rect.top - 4;
+    top = bottom - estimatedHeight;
+    anchorY = bottom;
 
     // 防止超出可视区域顶部
     if (top < 4) {
@@ -105,6 +127,8 @@ const getCaretPosition = (
   return {
     top,
     left: rect.left,
+    finalPlacement,
+    anchorY,
   };
 };
 
@@ -338,10 +362,11 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== State ====================
     /** 是否显示提及弹窗 */
     const [showMentionPopup, setShowMentionPopup] = useState<boolean>(false);
-    /** 弹窗显示位置 */
+    /** 弹窗显示位置（向下用 top，向上用 bottom） */
     const [mentionPosition, setMentionPosition] = useState<{
-      top: number;
+      top?: number;
       left: number;
+      bottom?: number;
     }>({ top: 0, left: 0 });
     /** 提及搜索文本（@ 后面输入的内容） */
     const [mentionSearchText, setMentionSearchText] = useState<string>('');
@@ -353,6 +378,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     const [mentionPopupHeight, setMentionPopupHeight] = useState<number | null>(
       null,
     );
+    /** 弹窗与光标的锚点 Y，见 CaretPosition.anchorY 注释 */
+    const popupAnchorYRef = useRef<number | null>(null);
 
     // ==================== 计算属性 ====================
     /** 编辑器最小高度（基于行数） */
@@ -413,9 +440,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      */
     const mentionPopupMaxHeight = useMemo(() => {
       if (!showMentionPopup || !mentionPosition) return undefined;
+      const top = mentionPosition.top ?? 0;
       const vh =
         window.innerHeight || document.documentElement.clientHeight || 0;
-      const spaceBelow = vh - mentionPosition.top - 24;
+      const spaceBelow = vh - top - 24;
       return Math.min(400, Math.max(120, spaceBelow));
     }, [showMentionPopup, mentionPosition]);
 
@@ -432,7 +460,22 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         savedRangeRef.current ?? undefined,
       );
       if (position) {
-        setMentionPosition(position);
+        const vh =
+          window.innerHeight || document.documentElement.clientHeight || 0;
+        if (position.finalPlacement === 'up') {
+          setMentionPosition({
+            left: position.left,
+            bottom: vh - position.anchorY,
+            top: undefined,
+          });
+        } else {
+          setMentionPosition({
+            left: position.left,
+            top: position.anchorY,
+            bottom: undefined,
+          });
+        }
+        popupAnchorYRef.current = position.anchorY;
       }
     }, [enableMention, mentionPlacement, mentionPopupHeight, showMentionPopup]);
 
@@ -445,21 +488,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      *   不再重新根据新高度完全重算 top，避免弹窗整体离编辑器越来越远。
      * - 向下展开时仍使用最新高度重新计算，保持现有行为。
      */
-    const handlePopupHeightChange = useCallback(
-      (height: number) => {
-        setMentionPopupHeight(height);
-        // 使用打开弹窗时保存的 Range 计算位置，避免切换 Tab 后焦点在弹窗内导致 getSelection() 不在编辑器而定位错
-        const position = getCaretPosition(
-          mentionPlacement,
-          height,
-          savedRangeRef.current ?? undefined,
-        );
-        if (position) {
-          setMentionPosition(position);
-        }
-      },
-      [mentionPlacement],
-    );
+    const handlePopupHeightChange = useCallback((height: number) => {
+      setMentionPopupHeight(height);
+    }, []);
 
     /**
      * 弹窗打开期间，监听滚动和窗口尺寸变化，实时刷新弹窗位置
@@ -508,6 +539,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       mentionAtIndexRef.current = -1;
       savedRangeRef.current = null;
       savedTextNodeRef.current = null;
+      popupAnchorYRef.current = null;
     }, []);
 
     // ==================== Mention Chip 操作方法 ====================
@@ -887,8 +919,23 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             savedTextNodeRef.current = selection.getRangeAt(0).startContainer;
           }
 
-          // 显示弹窗
-          setMentionPosition(position);
+          // 显示弹窗，并同步 placement / 锚点，供高度变化时固定贴近光标的一边
+          const vh =
+            window.innerHeight || document.documentElement.clientHeight || 0;
+          if (position.finalPlacement === 'up') {
+            setMentionPosition({
+              left: position.left,
+              bottom: vh - position.anchorY,
+              top: undefined,
+            });
+          } else {
+            setMentionPosition({
+              left: position.left,
+              top: position.anchorY,
+              bottom: undefined,
+            });
+          }
+          popupAnchorYRef.current = position.anchorY;
           setMentionSearchText(mentionInfo.searchText);
           setShowMentionPopup(true);
           mentionAtIndexRef.current = mentionInfo.atIndex;
@@ -1135,7 +1182,24 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
                 mentionPopupHeight ?? undefined,
               );
               if (position) {
-                setMentionPosition(position);
+                const vh =
+                  window.innerHeight ||
+                  document.documentElement.clientHeight ||
+                  0;
+                if (position.finalPlacement === 'up') {
+                  setMentionPosition({
+                    left: position.left,
+                    bottom: vh - position.anchorY,
+                    top: undefined,
+                  });
+                } else {
+                  setMentionPosition({
+                    left: position.left,
+                    top: position.anchorY,
+                    bottom: undefined,
+                  });
+                }
+                popupAnchorYRef.current = position.anchorY;
                 setMentionSearchText(textAfterAt);
                 setShowMentionPopup(true);
                 mentionAtIndexRef.current = lastAtIndex;
@@ -1156,9 +1220,30 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             savedRangeRef.current = range.cloneRange();
             savedTextNodeRef.current = range.startContainer;
 
-            const position = getCaretPosition();
+            const position = getCaretPosition(
+              mentionPlacement,
+              mentionPopupHeight ?? undefined,
+              range,
+            );
             if (position) {
-              setMentionPosition(position);
+              const vh =
+                window.innerHeight ||
+                document.documentElement.clientHeight ||
+                0;
+              if (position.finalPlacement === 'up') {
+                setMentionPosition({
+                  left: position.left,
+                  bottom: vh - position.anchorY,
+                  top: undefined,
+                });
+              } else {
+                setMentionPosition({
+                  left: position.left,
+                  top: position.anchorY,
+                  bottom: undefined,
+                });
+              }
+              popupAnchorYRef.current = position.anchorY;
               setMentionSearchText(mentionInfo.searchText);
               setShowMentionPopup(true);
               mentionAtIndexRef.current = mentionInfo.atIndex;

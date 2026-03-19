@@ -389,10 +389,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   /** 是否显示提及弹窗 */
   const [atIconShowMentionPopup, setAtIconShowMentionPopup] =
     useState<boolean>(false);
-  /** 弹窗显示位置 */
+  /** 弹窗显示位置（向下用 top，向上用 bottom，与 MentionEditor 一致） */
   const [atIconMentionPosition, setAtIconMentionPosition] = useState<{
-    top: number;
+    top?: number;
     left: number;
+    bottom?: number;
   }>({ top: 0, left: 0 });
 
   /**
@@ -436,7 +437,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // 用户已经主动点击使用过一次，之后不再展示引导 Tooltip
       setHasUsedMentionIcon(true);
 
-      // 以 @ 图标作为锚点，计算 MentionPopup 的 top/left，使弹窗显示在图标后面（默认下方，必要时上方）
+      // 以 @ 图标作为锚点，向下用 top 定位，向上用 bottom 定位（与 MentionEditor 一致，高度变化时不闪动）
       const iconEl = mentionIconRef.current;
       if (iconEl) {
         const rect = iconEl.getBoundingClientRect();
@@ -449,20 +450,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         const POPUP_WIDTH = 280;
         const margin = 8;
 
-        let finalPlacement = mentionPlacement;
+        let finalPlacement: 'up' | 'down';
         if (mentionPlacement === 'auto') {
           const spaceBelow = viewportHeight - rect.bottom;
           finalPlacement = spaceBelow >= POPUP_ESTIMATED_HEIGHT ? 'down' : 'up';
-        }
-
-        let top: number;
-        if (finalPlacement === 'down') {
-          top = rect.bottom + 4;
-          const maxTop = viewportHeight - POPUP_ESTIMATED_HEIGHT - 4;
-          if (top > maxTop) top = Math.max(4, maxTop);
         } else {
-          top = rect.top - 4 - POPUP_ESTIMATED_HEIGHT;
-          if (top < 4) top = 4;
+          finalPlacement = mentionPlacement;
         }
 
         const left = Math.min(
@@ -470,64 +463,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           viewportWidth - POPUP_WIDTH - margin,
         );
 
-        setAtIconMentionPosition({ top, left });
+        if (finalPlacement === 'down') {
+          let top = rect.bottom + 4;
+          const maxTop = viewportHeight - POPUP_ESTIMATED_HEIGHT - 4;
+          if (top > maxTop) top = Math.max(4, maxTop);
+          setAtIconMentionPosition({ left, top });
+        } else {
+          const bottomCss = viewportHeight - (rect.top - 4);
+          setAtIconMentionPosition({ left, bottom: bottomCss });
+        }
       }
 
       setAtIconShowMentionPopup(true);
     },
     [enableMention, mentionPlacement, closeAtIconMentionPopup],
-  );
-
-  /**
-   * 弹窗最大高度：不超过视口内从弹窗 top 到底部的空间，避免弹窗撑出页面滚动条
-   */
-  const mentionPopupMaxHeight = useMemo(() => {
-    if (!atIconShowMentionPopup || !atIconMentionPosition) return undefined;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-    const spaceBelow = vh - atIconMentionPosition.top - 24;
-    return Math.min(400, Math.max(120, spaceBelow));
-  }, [atIconShowMentionPopup, atIconMentionPosition]);
-
-  /**
-   * 弹窗内容高度变化时（如切换 Tab、列表条数变化），根据最新高度重新计算位置，避免弹窗与 @ 图标错位
-   */
-  const handlePopupHeightChange = useCallback(
-    (height: number) => {
-      const iconEl = mentionIconRef.current;
-      if (!iconEl || !atIconShowMentionPopup) return;
-
-      const rect = iconEl.getBoundingClientRect();
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight || 0;
-      const viewportWidth =
-        window.innerWidth || document.documentElement.clientWidth || 0;
-      const POPUP_WIDTH = 280;
-      const margin = 8;
-
-      let finalPlacement = mentionPlacement;
-      if (mentionPlacement === 'auto') {
-        const spaceBelow = viewportHeight - rect.bottom;
-        finalPlacement = spaceBelow >= height ? 'down' : 'up';
-      }
-
-      let top: number;
-      if (finalPlacement === 'down') {
-        top = rect.bottom + 4;
-        const maxTop = viewportHeight - height - 4;
-        if (top > maxTop) top = Math.max(4, maxTop);
-      } else {
-        top = rect.top - 4 - height;
-        if (top < 4) top = 4;
-      }
-
-      const left = Math.min(
-        Math.max(4, rect.left),
-        viewportWidth - POPUP_WIDTH - margin,
-      );
-
-      setAtIconMentionPosition({ top, left });
-    },
-    [atIconShowMentionPopup, mentionPlacement],
   );
 
   /**
@@ -625,8 +574,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               position={atIconMentionPosition}
               onSelect={handleAtIconMentionSelect}
               onClose={closeAtIconMentionPopup}
-              maxHeight={mentionPopupMaxHeight}
-              onHeightChange={handlePopupHeightChange}
               showSearchInput={true}
             />
           </ConditionRender>

@@ -24,6 +24,7 @@
  * ```
  */
 
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { Page } from '@/types/interfaces/request';
 import { SearchOutlined } from '@ant-design/icons';
@@ -250,9 +251,12 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       const response = await runRecentTabData({
         targetType: AgentComponentTypeEnum.Skill,
       });
-      const records = (response?.data || []) as SkillInfoForAt[];
 
-      handleTabDataResponse('recent', records);
+      if (response?.code === SUCCESS_CODE) {
+        const records = (response?.data || []) as SkillInfoForAt[];
+
+        handleTabDataResponse('recent', records);
+      }
     }, [handleTabDataResponse]);
 
     /**
@@ -263,9 +267,12 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       const response = await runFavoriteTabData({
         targetType: AgentComponentTypeEnum.Skill,
       });
-      const records = (response?.data || []) as SkillInfoForAt[];
 
-      handleTabDataResponse('favorite', records);
+      if (response?.code === SUCCESS_CODE) {
+        const records = (response?.data || []) as SkillInfoForAt[];
+
+        handleTabDataResponse('favorite', records);
+      }
     }, [handleTabDataResponse]);
 
     /**
@@ -282,21 +289,26 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         };
 
         const response = await runAllTabData(requestParams);
-        const pageData = (response?.data || {}) as Page<SkillInfoForAt>;
-        const records = pageData.records || [];
-        const total = pageData.total || records.length;
 
-        updateTabDataState('all', (prev) => ({
-          ...prev,
-          items: page === 1 ? records : [...prev.items, ...records],
-          page,
-          total,
-          loading: false,
-          initialized: true,
-          hasMore:
-            total > 0 ? page * PAGE_SIZE < total : records.length >= PAGE_SIZE,
-          loadedWithSearchText: effectiveSearchText ?? '',
-        }));
+        if (response?.code === SUCCESS_CODE) {
+          const pageData = (response?.data || {}) as Page<SkillInfoForAt>;
+          const records = pageData.records || [];
+          const total = pageData.total || records.length;
+
+          updateTabDataState('all', (prev) => ({
+            ...prev,
+            items: page === 1 ? records : [...prev.items, ...records],
+            page,
+            total,
+            loading: false,
+            initialized: true,
+            hasMore:
+              total > 0
+                ? page * PAGE_SIZE < total
+                : records.length >= PAGE_SIZE,
+            loadedWithSearchText: effectiveSearchText ?? '',
+          }));
+        }
       },
       [effectiveSearchText, updateTabDataState],
     );
@@ -323,11 +335,11 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             await loadAllTabData(page);
           }
         } catch (error) {
-          console.error(`加载 MentionPopup ${tab} 数据失败:`, error);
+          console.log(`加载 MentionPopup ${tab} 数据失败:`, error);
           updateTabDataState(tab, (prev) => ({
             ...prev,
             loading: false,
-            initialized: true,
+            initialized: false,
             hasMore: false,
             items: page === 1 ? [] : prev.items,
             total: page === 1 ? 0 : prev.total,
@@ -688,8 +700,10 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
         className={styles['mention-popup']}
         style={{
           position: 'fixed',
-          top: position.top,
           left: position.left,
+          ...(position.bottom
+            ? { bottom: position.bottom }
+            : { top: position.top }),
           ...(!!maxHeight && { maxHeight }),
         }}
         onMouseDown={(e) => {
@@ -699,7 +713,6 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           // 阻止点击弹窗其余内容时让编辑器失焦
           e.preventDefault();
         }}
-        onKeyDown={handleKeyDown}
       >
         {/* 搜索输入框（由 showSearchInput 控制，置于 Tabs 上方；data-mention-search 便于点击清除图标时不触发容器 preventDefault） */}
         {showSearchInput && (
@@ -711,11 +724,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
               allowClear
               value={searchInputValue}
               onChange={(e) => setSearchInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
-                  e.stopPropagation();
-                }
-              }}
+              onKeyDown={handleKeyDown}
               prefix={
                 <SearchOutlined className={styles['mention-search-icon']} />
               }

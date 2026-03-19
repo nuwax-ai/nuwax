@@ -17,7 +17,8 @@
   overflow: hidden;
   z-index: 1050;
   animation: popup-fade-in 0.2s ease-in-out;
-  transition: max-height 0.1s ease-out, transform 0.1s ease-out;
+
+  /* 不设 transition，高度/位置变化即时生效，避免由短变长时闪动；底边固定、高度由下往上变长 */
   display: flex;
   flex-direction: column;
 

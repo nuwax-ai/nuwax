@@ -127,8 +127,11 @@ export interface MentionPopupProps {
   visible: boolean;
   /** 弹窗位置（相对于视口） */
   position: {
-    top: number;
+    /** 向下展开时使用 top 定位 */
+    top?: number;
     left: number;
+    /** 向上展开时使用 bottom 定位 */
+    bottom?: number;
   };
   /** 选择项时的回调 */
   onSelect: (item: MentionItem) => void;
