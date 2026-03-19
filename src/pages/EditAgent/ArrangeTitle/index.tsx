@@ -7,8 +7,10 @@ import {
 } from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
+import type { MenuProps } from 'antd';
+import { Dropdown } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -22,26 +24,21 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
   icon,
   modelName,
   onClick,
+  onModelChange,
 }) => {
   // 是否显示模型名称
   const [showModelName, setShowModelName] = useState<boolean>(false);
+
+  const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
+
   useEffect(() => {
     if (agentConfigInfo && originalModelConfigList) {
-      // 是否是通用型智能体
-      const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
-
       if (isTaskAgent) {
-        // 默认模型id
-        // const agentEngine =
-        //   agentConfigInfo?.modelComponentConfig?.bindConfig?.agentEngine ||
-        //   AgentEngineEnum.Default;
-        // 获取模型组件配置中的 targetId
         const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
 
         const modelInfo = originalModelConfigList.find((item) => {
           if (item.id !== targetId) return false;
 
-          // 基础检查：必须支持函数调用，且协议为 Anthropic 或 OpenAI
           const isBaseSupported =
             (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
               item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
@@ -49,19 +46,57 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
 
           if (!isBaseSupported) return false;
 
-          // NuwaxCli 支持所有基础模型 (Anthropic + OpenAI)
           return true;
         });
-        if (modelInfo) {
-          setShowModelName(true);
-        } else {
-          setShowModelName(false);
-        }
+        setShowModelName(!!modelInfo);
       } else {
         setShowModelName(true);
       }
     }
   }, [agentConfigInfo, originalModelConfigList]);
+
+  // 通用智能体的 Dropdown 菜单项
+  const dropdownMenuItems: MenuProps['items'] = useMemo(() => {
+    if (!isTaskAgent || !originalModelConfigList?.length) return [];
+    return originalModelConfigList
+      .filter(
+        (item) =>
+          (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+            item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+          item.functionCall !== ModelFunctionCallEnum.Unsupported,
+      )
+      .map((item) => ({
+        key: item.id,
+        label: item.name,
+      }));
+  }, [isTaskAgent, originalModelConfigList]);
+
+  // 通用智能体：下拉切换模型
+  const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
+    const _id = Number(key);
+    const modelInfo = originalModelConfigList?.find((item) => item.id === _id);
+    if (modelInfo && onModelChange) {
+      onModelChange(_id, modelInfo.name);
+    }
+  };
+
+  const triggerContent = (
+    <div
+      className={cx(
+        'flex',
+        'items-center',
+        'cursor-pointer',
+        styles['drop-box'],
+      )}
+      onClick={isTaskAgent ? undefined : onClick}
+    >
+      <ConditionRender condition={!!icon}>
+        <img src={icon} alt="" />
+      </ConditionRender>
+      <span>{showModelName ? modelName : '请选择会话模型'}</span>
+      <SvgIcon name="icons-common-caret_down" style={{ fontSize: 16 }} />
+    </div>
+  );
 
   return (
     <div
@@ -73,21 +108,24 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
       )}
     >
       <h3>编排</h3>
-      <div
-        className={cx(
-          'flex',
-          'items-center',
-          'cursor-pointer',
-          styles['drop-box'],
-        )}
-        onClick={onClick}
-      >
-        <ConditionRender condition={!!icon}>
-          <img src={icon} alt="" />
-        </ConditionRender>
-        <span>{showModelName ? modelName : '请选择会话模型'}</span>
-        <SvgIcon name="icons-common-caret_down" style={{ fontSize: 16 }} />
-      </div>
+      {isTaskAgent ? (
+        <Dropdown
+          menu={{
+            items: dropdownMenuItems,
+            onClick: handleMenuClick,
+            selectedKeys: agentConfigInfo?.modelComponentConfig?.targetId
+              ? [String(agentConfigInfo.modelComponentConfig.targetId)]
+              : [],
+          }}
+          trigger={['click']}
+          placement="bottomRight"
+          rootClassName={cx(styles['model-dropdown'])}
+        >
+          {triggerContent}
+        </Dropdown>
+      ) : (
+        triggerContent
+      )}
     </div>
   );
 };

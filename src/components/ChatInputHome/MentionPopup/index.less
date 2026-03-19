@@ -8,7 +8,7 @@
 
 // 弹窗本体，固定在光标附近展示
 .mention-popup {
-  width: 320px;
+  width: 280px;
   max-height: 400px;
   background: @colorBgContainer;
   border-radius: @borderRadius;
@@ -29,16 +29,18 @@
     gap: @marginXs;
 
     .mention-tab {
+      flex: 1;
       padding: @paddingXxs @paddingSm;
       font-size: @fontSizeSm;
       color: @colorTextSecondary;
       cursor: pointer;
       border-radius: @borderRadius;
       transition: all 0.2s;
+      text-align: center;
 
       &:hover {
         color: @colorText;
-        background: @colorFillQuaternary;
+        background: @colorFillSecondary;
       }
 
       &.active {

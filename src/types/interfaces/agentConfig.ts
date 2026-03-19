@@ -53,6 +53,8 @@ export interface ArrangeTitleProps {
   icon?: string;
   modelName?: string;
   onClick: () => void;
+  /** 通用智能体直接切换模型的回调 */
+  onModelChange?: (modelId: number, modelName: string) => void;
 }
 
 // 智能体编排区域配置组件

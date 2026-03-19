@@ -765,6 +765,9 @@ const Workflow: React.FC = () => {
       setVisible(newVisible);
     }
 
+    // 同步更新 storeWorkflowRef，确保 getWorkflow('drawerForm') 立即返回最新值
+    // 避免 handleSpecialPortConnection 等异步操作读取到旧的 drawerForm
+    storeWorkflow('drawerForm', newFold);
     // 最后更新 foldWrapItem
     setFoldWrapItem(newFold);
   }, []);
