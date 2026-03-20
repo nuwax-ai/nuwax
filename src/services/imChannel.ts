@@ -89,3 +89,16 @@ export async function apiDeleteIMConfigChannel(
     method: 'POST',
   });
 }
+/**
+ * 统计 IM 渠道配置
+ */
+export async function apiIMConfigChannelStatistics(data: {
+  spaceId: number;
+}): Promise<
+  RequestResponse<{ channel: string; channelName: string; count: number }[]>
+> {
+  return request('/api/im-config/channel/statistics', {
+    method: 'POST',
+    data,
+  });
+}

@@ -31,7 +31,7 @@ const IM_CHANNEL_ADD_RESOURCES = [
 ];
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiIMConfigChannelList } from '@/services/imChannel';
+import { apiIMConfigChannelStatistics } from '@/services/imChannel';
 
 const IMChannel: React.FC = () => {
   const params = useParams() as any;
@@ -39,36 +39,27 @@ const IMChannel: React.FC = () => {
   const spaceId = params.spaceId ? Number(params.spaceId) : undefined;
 
   // 平台过滤
-  const [platform, setPlatform] = useState<PlatformType>(IMPlatformEnum.Feishu);
-  const [counts, setCounts] = useState<Record<string, number>>({
-    [IMPlatformEnum.Dingtalk]: 0,
-    [IMPlatformEnum.Feishu]: 0,
-    [IMPlatformEnum.Wework]: 0,
-  });
+  const [platform, setPlatform] = useState<PlatformType>();
+  const [platformList, setPlatformList] = useState<
+    { channel: string; channelName: string; count: number }[]
+  >([]);
   const [keyword, setKeyword] = useState('');
 
   const fetchCounts = useCallback(async () => {
     if (!spaceId) return;
 
-    const platforms = [
-      IMPlatformEnum.Feishu,
-      IMPlatformEnum.Dingtalk,
-      IMPlatformEnum.Wework,
-    ];
-
     try {
-      const results = await Promise.all(
-        platforms.map((p) => apiIMConfigChannelList({ channel: p, spaceId })),
-      );
-
-      const newCounts: Record<string, number> = {};
-      results.forEach((res, index) => {
-        if (res?.code === SUCCESS_CODE) {
-          newCounts[platforms[index]] = res.data?.length || 0;
-        }
-      });
-
-      setCounts((prev) => ({ ...prev, ...newCounts }));
+      const res = await apiIMConfigChannelStatistics({ spaceId });
+      if (res?.code === SUCCESS_CODE && res.data) {
+        setPlatformList(res.data);
+        // 默认选中第一个平台
+        setPlatform((prev) => {
+          if (!prev && res.data.length > 0) {
+            return res.data[0].channel as IMPlatformEnum;
+          }
+          return prev;
+        });
+      }
     } catch (error) {
       console.error('Fetch counts failed:', error);
     }
@@ -76,10 +67,9 @@ const IMChannel: React.FC = () => {
   // 列表引用
   const listRef = useRef<IMChannelCardListRef>(null);
   useEffect(() => {
-    setPlatform(IMPlatformEnum.Feishu);
+    setPlatform(undefined); // 恢复默认选中第一个平台
     setKeyword('');
     fetchCounts();
-    listRef.current?.reload();
   }, [fetchCounts, location]);
 
   // 弹窗控制
@@ -108,7 +98,25 @@ const IMChannel: React.FC = () => {
   const handleSuccess = () => {
     setOpenModal(false);
     listRef.current?.reload();
-    fetchCounts(); // Update counts
+    // 本地增加计数，不调用接口
+    setPlatformList((prev) =>
+      prev.map((item) =>
+        item.channel === platform
+          ? { ...item, count: (item.count || 0) + 1 }
+          : item,
+      ),
+    );
+  };
+
+  const handleDeleteSuccess = (deletedChannel: string) => {
+    // 本地减少计数，不调用接口
+    setPlatformList((prev) =>
+      prev.map((item) =>
+        item.channel === deletedChannel
+          ? { ...item, count: Math.max(0, (item.count || 0) - 1) }
+          : item,
+      ),
+    );
   };
 
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
@@ -158,14 +166,14 @@ const IMChannel: React.FC = () => {
           <PlatformList
             value={platform}
             onChange={setPlatform}
-            counts={counts}
+            list={platformList}
           />
         </div>
         <div className={cx(styles.content)}>
           <IMChannelCardList
             ref={listRef}
             onEdit={handleEdit}
-            onDeleteSuccess={fetchCounts}
+            onDeleteSuccess={handleDeleteSuccess}
             platform={platform}
             spaceId={spaceId}
             keyword={keyword}

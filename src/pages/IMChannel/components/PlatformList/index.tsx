@@ -1,6 +1,5 @@
 import {
   IM_PLATFORM_ICON_MAP,
-  IM_PLATFORM_LABEL_MAP,
   IMPlatformEnum,
 } from '@/constants/imChannel.constants';
 import classNames from 'classnames';
@@ -21,36 +20,23 @@ interface PlatformItem {
 interface PlatformListProps {
   value: PlatformType;
   onChange: (value: PlatformType) => void;
-  counts?: Record<string, number>;
+  list?: { channel: string; channelName: string; count: number }[];
 }
 
 const PlatformList: React.FC<PlatformListProps> = ({
   value,
   onChange,
-  counts = {},
+  list = [],
 }) => {
   const platforms: PlatformItem[] = useMemo(
-    () => [
-      {
-        id: IMPlatformEnum.Feishu,
-        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Feishu],
-        count: counts.feishu || 0,
-        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Feishu],
-      },
-      {
-        id: IMPlatformEnum.Dingtalk,
-        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Dingtalk],
-        count: counts.dingtalk || 0,
-        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Dingtalk],
-      },
-      {
-        id: IMPlatformEnum.Wework,
-        name: IM_PLATFORM_LABEL_MAP[IMPlatformEnum.Wework],
-        count: counts.wework || 0,
-        icon: IM_PLATFORM_ICON_MAP[IMPlatformEnum.Wework],
-      },
-    ],
-    [counts],
+    () =>
+      list.map((item) => ({
+        id: item.channel as IMPlatformEnum,
+        name: item.channelName,
+        count: item.count || 0,
+        icon: IM_PLATFORM_ICON_MAP[item.channel as IMPlatformEnum],
+      })),
+    [list],
   );
 
   return (
