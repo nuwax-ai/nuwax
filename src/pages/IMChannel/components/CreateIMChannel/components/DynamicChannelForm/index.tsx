@@ -77,6 +77,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
 
   // 企业微信
   if (platform === IMPlatformEnum.Wework) {
+    // 应用
     if (type === 'app') {
       // ... (omitting unchanged code for brevity)
       return (
@@ -115,6 +116,7 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
         </>
       );
     }
+    // 机器人
     return (
       <>
         <ProFormText
@@ -135,7 +137,12 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
           rules={commonRules}
           fieldProps={maxProps}
         />
-
+        <ProFormText
+          name={['configData', 'corpSecret']}
+          label="Secret"
+          rules={commonRules}
+          fieldProps={maxProps}
+        />
         <ProFormText
           name={['configData', 'encodingAesKey']}
           label="EncodingAESKey"
