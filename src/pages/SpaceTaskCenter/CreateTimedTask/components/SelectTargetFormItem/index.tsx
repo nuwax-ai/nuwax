@@ -15,6 +15,7 @@ export interface SelectTargetProps {
   form: FormInstance<any>;
   name: string;
   label: string;
+  tooltip?: string;
   onChange?: (value: McpConfigComponentInfo | null) => void;
   hideTop?: AgentComponentTypeEnum[];
   checkTag?: AgentComponentTypeEnum;
@@ -24,6 +25,7 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
   form,
   name,
   label,
+  tooltip,
   onChange,
   hideTop = [
     AgentComponentTypeEnum.Knowledge,
@@ -91,6 +93,7 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
         <Form.Item
           name={name}
           label={label}
+          tooltip={tooltip}
           style={{ flex: 1, marginBottom: 0, width: '100%' }}
           rules={[
             { required: true, message: `请选择${label}`, type: 'object' },

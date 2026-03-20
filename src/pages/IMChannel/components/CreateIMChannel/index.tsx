@@ -206,6 +206,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         form={form}
         name="target"
         label="智能体"
+        tooltip="通用智能体将使用你的沙箱（电脑）环境执行任务，切勿将对应的机器人分享给他人使用。"
         hideTop={[
           AgentComponentTypeEnum.Knowledge,
           AgentComponentTypeEnum.Table,
@@ -217,7 +218,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
       <ProFormRadio.Group
         name="outputMode"
         label="输出方式"
-        tooltip="机器人回复消息时，是逐字逐句显示还是全部一次性显示"
+        tooltip="机器人回复消息时，是逐字逐句显示还是全部一次性显示。"
         options={[
           { label: '流式输出（打字机效果）', value: 'stream' },
           { label: '一次性输出', value: 'once' },

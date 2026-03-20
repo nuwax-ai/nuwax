@@ -512,7 +512,7 @@ const ChatTemp: React.FC = () => {
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(res, currentMessageId);
         // 滚动到底部
-        messageViewScrollToBottom();
+        handleScrollBottom();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -645,7 +645,7 @@ const ChatTemp: React.FC = () => {
     // 隐藏点击下滚按钮
     setShowScrollBtn(false);
     // 滚动
-    messageViewScrollToBottom();
+    handleScrollBottom();
     // 会话请求参数
     const params: TempConversationChatParams = {
       chatKey,
