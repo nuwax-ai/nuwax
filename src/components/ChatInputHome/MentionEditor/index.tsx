@@ -1291,7 +1291,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 根据外部属性控制是否在渲染后自动聚焦
      */
     useEffect(() => {
-      if (!autoFocus || disabled) {
+      if (!autoFocus) {
         return;
       }
 
@@ -1302,7 +1302,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       return () => {
         window.cancelAnimationFrame(frameId);
       };
-    }, [autoFocus, disabled]);
+    }, [autoFocus]);
 
     /**
      * 点击外部区域关闭弹窗
