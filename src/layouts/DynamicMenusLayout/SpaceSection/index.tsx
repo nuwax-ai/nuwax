@@ -10,7 +10,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { history, useModel, useParams } from 'umi';
 import DynamicSecondMenu from '../DynamicSecondMenu';
 import { updatePathUrlToLocalStorage } from '../utils';
-// import DevCollect from './DevCollect';
 import styles from './index.less';
 import SpaceTitle from './SpaceTitle';
 

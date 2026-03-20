@@ -41,7 +41,11 @@ const Space: React.FC = () => {
       if (pathUrl) {
         const pathUrlObj = JSON.parse(pathUrl);
         let pathUrlValue = pathUrlObj['workspace'];
-        if (pathUrlValue && !pathUrlValue.includes(':')) {
+        if (
+          pathUrlValue &&
+          !pathUrlValue.includes(':') &&
+          pathUrlValue.includes('/space')
+        ) {
           // 如果pathUrlValue中包含spaceId，则替换为spaceList中的spaceId
           // pathUrlValue：/space/42/develop
           // 提取pathSpaceId：42

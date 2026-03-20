@@ -180,7 +180,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
       onOpenChange={(visible) => !visible && onCancel()}
       onFinish={handleConfirm}
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
         width: 600,
       }}
       submitter={{
