@@ -129,16 +129,19 @@ const Square: React.FC = () => {
   };
 
   // 广场-已发布列表接口
-  const { run: runSquareList } = useRequest(apiUrlRef.current, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
-      handleSuccess(result);
+  const { run: runSquareList, cancel: cancelSquareList } = useRequest(
+    (data: SquarePublishedListParams) => apiUrlRef.current(data),
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
+        handleSuccess(result);
+      },
+      onError: () => {
+        setLoading(false);
+      },
     },
-    onError: () => {
-      setLoading(false);
-    },
-  });
+  );
 
   // 初始化配置信息
   const initValues = (params: SquareSearchParams) => {
@@ -256,14 +259,18 @@ const Square: React.FC = () => {
 
   // 滚动加载下一页
   const handleScroll = useCallback(() => {
+    if (loading || !hasMore) return;
     // 下一页页码
     const nextPage = page + 1;
     // 滚动时，不改变关键词
     handleQuery(nextPage);
-  }, [page, handleQuery]);
+  }, [page, loading, hasMore, handleQuery]);
 
   // 初始化加载
   const effectLoadFn = () => {
+    cancelSquareList();
+    setPage(1);
+    setHasMore(false);
     setKeyword('');
     setSquareComponentList([]);
     activeKeyRef.current = undefined;
@@ -345,6 +352,7 @@ const Square: React.FC = () => {
 
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
+    cancelSquareList();
     setLoading(true);
     setSquareComponentList([]);
     setPage(1);
@@ -354,6 +362,7 @@ const Square: React.FC = () => {
 
   // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
   const handleTabClick = (targetType: React.Key) => {
+    cancelSquareList();
     setLoading(true);
     setSquareComponentList([]);
     setPage(1);
@@ -409,6 +418,7 @@ const Square: React.FC = () => {
             value={filterOfficial}
             onChange={(value) => {
               const val = value as FilterOfficialEnum;
+              cancelSquareList();
               setFilterOfficial(val);
               setLoading(true);
               setSquareComponentList([]);
