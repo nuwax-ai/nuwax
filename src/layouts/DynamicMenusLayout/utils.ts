@@ -34,14 +34,22 @@ export const updatePathUrlToLocalStorage = (
  * 打开URL
  * @param path 路径
  * @param openType 打开方式
+ * @param parentCode 父级菜单的 code, 如果存在，则将当前路径保存到本地缓存中
  */
-export const handleOpenUrl = (menu: MenuItemDto) => {
+export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   const { openType = OpenTypeEnum.CurrentTab, path = '', code } = menu;
   if (openType === OpenTypeEnum.NewTab) {
     window.open(path, '_blank');
     return;
   }
-  history.push(`/open-iframe-page/${code}?url=${encodeURIComponent(path)}`, {
+  // 处理路径
+  const resolvedPath = `/open-iframe-page/${code}?url=${encodeURIComponent(
+    path,
+  )}`;
+  if (parentCode) {
+    updatePathUrlToLocalStorage(parentCode, resolvedPath);
+  }
+  history.push(resolvedPath, {
     _t: Date.now(),
   });
 };

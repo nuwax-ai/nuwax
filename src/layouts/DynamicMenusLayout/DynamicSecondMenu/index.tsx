@@ -237,7 +237,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     const { path = '' } = menu;
     // http开头的路径，直接打开
     if (path?.includes('http')) {
-      handleOpenUrl(menu);
+      handleOpenUrl(menu, parentCode);
       return;
     }
     // 关闭移动端菜单
