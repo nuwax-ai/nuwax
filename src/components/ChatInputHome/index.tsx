@@ -26,10 +26,10 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import AtMentionIcon from './AtMentionIcon';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 import MentionEditor from './MentionEditor';
-import MentionPopup from './MentionPopup';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 
 const cx = classNames.bind(styles);
@@ -100,12 +100,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     useState<boolean>(false);
   // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
-  // 底部 @ 图标引用（用于定位弹窗）
-  const mentionIconRef = useRef<HTMLSpanElement | null>(null);
-  // 控制底部 @ 图标 Tooltip 显隐（避免弹窗关闭时 tooltip 又冒出来）
-  const [mentionTooltipOpen, setMentionTooltipOpen] = useState<boolean>(false);
-  // 标记用户是否已经使用过底部 @ 图标，使用过后不再展示引导 Tooltip
-  const [hasUsedMentionIcon, setHasUsedMentionIcon] = useState<boolean>(false);
 
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -384,130 +378,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     };
   }, []);
 
-  // ==================== @ 提及功能相关状态和方法 ====================
-
-  /** 是否显示提及弹窗 */
-  const [atIconShowMentionPopup, setAtIconShowMentionPopup] =
-    useState<boolean>(false);
-  /** 弹窗显示位置（向下用 top，向上用 bottom，与 MentionEditor 一致） */
-  const [atIconMentionPosition, setAtIconMentionPosition] = useState<{
-    top?: number;
-    left: number;
-    bottom?: number;
-  }>({ top: 0, left: 0 });
-
   /**
-   * 处理从弹窗中选择提及项
-   * 将选中的提及插入到编辑器中，替换 @ 和搜索文本
-   *
-   * @param item - 选中的提及项
+   * 将底部 @ 图标选择的提及项插入到 MentionEditor
    */
-  const handleAtIconMentionSelect = useCallback((item: MentionItem) => {
-    setAtIconShowMentionPopup(false);
-    setHasUsedMentionIcon(false);
-    mentionEditorRef.current?.handleAtIconMentionSelect(item);
-  }, []);
-
-  /**
-   * 关闭提及弹窗
-   */
-  const closeAtIconMentionPopup = useCallback(() => {
-    setAtIconShowMentionPopup(false);
-    // 同步关闭底部 @ 图标的 Tooltip，避免弹窗关闭时 Tooltip 重新出现
-    setMentionTooltipOpen(false);
-    setHasUsedMentionIcon(false);
-  }, []);
-
-  /**
-   * 点击底部 @ 图标：打开 MentionPopup 并将弹窗锚定到图标附近
-   */
-  const handleMentionIconClick = useCallback(
-    (e: React.MouseEvent<HTMLSpanElement>) => {
-      // 关闭 @ 提及功能时，点击只负责光标定位，不触发弹窗
-      if (!enableMention) {
-        closeAtIconMentionPopup();
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      // 点击后立刻关闭 Tooltip
-      setMentionTooltipOpen(false);
-      // 用户已经主动点击使用过一次，之后不再展示引导 Tooltip
-      setHasUsedMentionIcon(true);
-
-      // 以 @ 图标作为锚点，向下用 top 定位，向上用 bottom 定位（与 MentionEditor 一致，高度变化时不闪动）
-      const iconEl = mentionIconRef.current;
-      if (iconEl) {
-        const rect = iconEl.getBoundingClientRect();
-        const viewportHeight =
-          window.innerHeight || document.documentElement.clientHeight || 0;
-        const viewportWidth =
-          window.innerWidth || document.documentElement.clientWidth || 0;
-
-        const POPUP_ESTIMATED_HEIGHT = 320;
-        const POPUP_WIDTH = 280;
-        const margin = 8;
-
-        let finalPlacement: 'up' | 'down';
-        if (mentionPlacement === 'auto') {
-          const spaceBelow = viewportHeight - rect.bottom;
-          finalPlacement = spaceBelow >= POPUP_ESTIMATED_HEIGHT ? 'down' : 'up';
-        } else {
-          finalPlacement = mentionPlacement;
-        }
-
-        const left = Math.min(
-          Math.max(4, rect.left),
-          viewportWidth - POPUP_WIDTH - margin,
-        );
-
-        if (finalPlacement === 'down') {
-          let top = rect.bottom + 4;
-          const maxTop = viewportHeight - POPUP_ESTIMATED_HEIGHT - 4;
-          if (top > maxTop) top = Math.max(4, maxTop);
-          setAtIconMentionPosition({ left, top });
-        } else {
-          const bottomCss = viewportHeight - (rect.top - 4);
-          setAtIconMentionPosition({ left, bottom: bottomCss });
-        }
-      }
-
-      setAtIconShowMentionPopup(true);
+  const handleInsertAtMention = useCallback(
+    (item: MentionItem) => {
+      mentionEditorRef.current?.handleAtIconMentionSelect(item);
     },
-    [enableMention, mentionPlacement, closeAtIconMentionPopup],
+    [mentionEditorRef],
   );
-
-  /**
-   * 点击外部区域关闭弹窗
-   */
-  useEffect(() => {
-    // 如果 @ 提及功能未启用，则不监听点击外部区域关闭弹窗
-    if (!enableMention) {
-      return;
-    }
-
-    /**
-     * 点击外部区域关闭弹窗
-     */
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!atIconShowMentionPopup) {
-        return;
-      }
-      const target = e.target as HTMLElement;
-      // 点击在弹窗本体内部（含 Tab、列表、空白）不关闭，仅点击弹窗外部才关闭
-      if (target.closest('[data-mention-popup]')) {
-        return;
-      }
-      closeAtIconMentionPopup();
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [atIconShowMentionPopup, closeAtIconMentionPopup, enableMention]);
 
   return (
     <div className={cx('w-full', 'relative', className)}>
@@ -579,38 +458,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           )}
 
           {/* @ 提及技能 */}
-          <ConditionRender condition={enableMention}>
-            <Tooltip
-              title={hasUsedMentionIcon ? '' : '试试 @ 提及技能'}
-              open={mentionTooltipOpen && !atIconShowMentionPopup}
-              onOpenChange={setMentionTooltipOpen}
-            >
-              <span
-                ref={mentionIconRef}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.clear,
-                  styles.box,
-                  styles['plus-box'],
-                )}
-                onClick={handleMentionIconClick}
-              >
-                @
-              </span>
-            </Tooltip>
-
-            {/* @提及技能选择弹窗 */}
-            <MentionPopup
-              visible={atIconShowMentionPopup}
-              position={atIconMentionPosition}
-              onSelect={handleAtIconMentionSelect}
-              onClose={closeAtIconMentionPopup}
-              showSearchInput={true}
-            />
-          </ConditionRender>
+          <AtMentionIcon
+            enableMention={enableMention}
+            mentionPlacement={mentionPlacement}
+            onSelectMention={handleInsertAtMention}
+          />
 
           {/*上传按钮*/}
           <Upload
