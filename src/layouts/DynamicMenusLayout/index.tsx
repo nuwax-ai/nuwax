@@ -346,9 +346,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         );
       }
 
+      // 存在第一级菜单的 code 且不是新对话菜单，则设置为第一级菜单的 code
       if (firstLevelCode && firstLevelCode !== 'new_conversation') {
         setActiveTab(firstLevelCode);
-      } else if (firstLevelCode === 'new_conversation') {
+      }
+      // 新对话菜单特殊处理：如果第一级菜单的 code 是 new_conversation，则设置为 new_conversation
+      else if (firstLevelCode === 'new_conversation') {
         handleNewConversation();
       } else {
         // 如果第一级菜单没有匹配到，则获取除新对话菜单外的第一个菜单

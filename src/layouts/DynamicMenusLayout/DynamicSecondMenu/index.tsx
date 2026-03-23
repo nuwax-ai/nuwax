@@ -34,23 +34,23 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   // 记录用户手动折叠的菜单（用于防止自动展开覆盖用户操作）
   const manuallyCollapsedRef = useRef<Set<string>>(new Set());
-  // 记录用户手动切换的时间戳，用于防止自动展开立即覆盖手动操作
-  const lastManualToggleRef = useRef<number>(0);
   // 记录上一次的路径，用于判断路径是否真正变化
   const lastPathnameRef = useRef<string>('');
   // 标记是否已经初始化
   const isInitializedRef = useRef<boolean>(false);
-  // 记录上一次的菜单数据长度，用于判断菜单数据是否加载完成
-  const lastMenusLengthRef = useRef<number>(0);
 
-  const { getSecondLevelMenus } = useModel('menuModel');
+  // ================================ Model数据 ================================
 
+  // 获取空间信息
   const { currentSpaceInfo, spaceList } = useModel('spaceModel');
 
-  // 关闭移动端菜单
+  // 关闭移动端菜单, 用于关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
-  // 获取二级菜单
+  // 获取二级菜单方法
+  const { getSecondLevelMenus } = useModel('menuModel');
+
+  // 获取二级菜单, 用于渲染菜单
   const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
 
   /**
@@ -109,9 +109,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
    */
   const toggleExpand = useCallback(
     (code: string) => {
-      // 记录手动操作的时间戳
-      lastManualToggleRef.current = Date.now();
-
       setExpandedMenus((prev) => {
         const isExpanded = prev.includes(code);
         if (isExpanded) {
@@ -182,9 +179,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         // 没有动态参数，直接返回
         return path;
       }
-
-      // 判断 params 是否为空对象
-      // const isParamsEmpty = Object.keys(params).length === 0;
 
       // 如果 parentCode 是 workspace (工作空间)
       if (parentCode === 'workspace') {
@@ -352,85 +346,133 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       pathname: string,
       parentCodes: string[] = [],
     ): string[] | null => {
+      const stripQueryAndHash = (value: string): string => {
+        // 只用于“匹配判断”，不做业务跳转，因此直接去掉 ? 和 #
+        return value.split('#')[0].split('?')[0];
+      };
+
+      const isHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+
+      const safeGetUrlPathname = (value: string): string | null => {
+        try {
+          return new URL(value).pathname;
+        } catch {
+          return null;
+        }
+      };
+
+      /**
+       * 将传入的 pathname 归一化成：
+       * - 若是完整 URL：同时保留 full（去 query/hash 后）和 path（URL.pathname）
+       * - 若不是 URL：直接将 cleaned 作为 path
+       */
+      const normalizeTarget = (
+        value: string,
+      ): {
+        cleaned: string;
+        path: string;
+        isUrl: boolean;
+      } => {
+        const cleaned = stripQueryAndHash(value);
+        const targetIsUrl = isHttpUrl(cleaned);
+        if (targetIsUrl) {
+          const path = safeGetUrlPathname(cleaned) ?? cleaned;
+          return { cleaned, path, isUrl: true };
+        }
+        return { cleaned, path: cleaned, isUrl: false };
+      };
+
+      const target = normalizeTarget(pathname);
+
+      const appendCodeIfNeeded = (codes: string[], code?: string) => {
+        if (!code) return codes;
+        return [...codes, code];
+      };
+
       for (const menu of menus) {
         const currentPath = menu.path;
+        const nextParentCodes = appendCodeIfNeeded(parentCodes, menu.code);
+
         if (!currentPath) {
           // 如果没有路径，继续检查子菜单
           if (menu.children && menu.children.length > 0) {
-            const found = findActiveMenuAndParents(menu.children, pathname, [
-              ...parentCodes,
-              menu.code || '',
-            ]);
-            if (found) {
-              return found;
-            }
+            const found = findActiveMenuAndParents(
+              menu.children,
+              pathname,
+              nextParentCodes,
+            );
+            if (found) return found;
           }
           continue;
         }
 
-        // 检查当前菜单是否匹配
-        let targetPath = currentPath;
-        if (targetPath.includes(':')) {
-          const resolvedPath = resolveDynamicPath(targetPath);
-          if (resolvedPath && !resolvedPath.includes(':')) {
-            targetPath = resolvedPath;
-          } else if (resolvedPath && resolvedPath.includes(':')) {
-            const rawPattern = targetPath.split('?')[0];
-            const pattern = rawPattern.replace(/:(\w+)/g, '[^/]+');
-            const regex = new RegExp(`^${pattern}(/.*)?$`);
-            if (regex.test(pathname)) {
-              // 匹配成功，返回所有上级菜单的 code
-              return parentCodes;
-            }
-            // 继续检查子菜单
-            if (menu.children && menu.children.length > 0) {
-              const found = findActiveMenuAndParents(menu.children, pathname, [
-                ...parentCodes,
-                menu.code || '',
-              ]);
-              if (found) {
-                return found;
-              }
-            }
-            continue;
+        const rawMenuPath = stripQueryAndHash(currentPath);
+
+        // 1) menu.path 是完整 URL：做“完全匹配”（如果 target 也是 URL）
+        if (isHttpUrl(rawMenuPath)) {
+          if (target.isUrl) {
+            if (target.cleaned === rawMenuPath) return nextParentCodes;
           } else {
-            // 解析失败，继续检查子菜单
-            if (menu.children && menu.children.length > 0) {
-              const found = findActiveMenuAndParents(menu.children, pathname, [
-                ...parentCodes,
-                menu.code || '',
-              ]);
-              if (found) {
-                return found;
-              }
-            }
-            continue;
+            // target 不是 URL，但 menu 是 URL：比较 pathname 部分
+            const menuUrlPath = safeGetUrlPathname(rawMenuPath);
+            if (menuUrlPath && menuUrlPath === target.path)
+              return nextParentCodes;
           }
+          // URL 未匹配，继续检查子菜单
+          if (menu.children && menu.children.length > 0) {
+            const found = findActiveMenuAndParents(
+              menu.children,
+              pathname,
+              nextParentCodes,
+            );
+            if (found) return found;
+          }
+          continue;
         }
 
-        const [pathWithoutQuery] = targetPath.split('?');
+        // 2) menu.path 不是 URL：支持动态占位符（只识别 /:param 这种占位符）
+        const hasDynamicPlaceholder = /(^|\/):\w+/.test(rawMenuPath);
+        if (hasDynamicPlaceholder) {
+          // 将 :param 替换成 [^/]+，并支持 /xxx/... 前缀扩展
+          const escaped = rawMenuPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regexStr =
+            '^' + escaped.replace(/:(\w+)/g, '[^/]+') + '(/.*)?$';
+          const regex = new RegExp(regexStr);
+
+          if (regex.test(target.path)) return nextParentCodes;
+
+          if (menu.children && menu.children.length > 0) {
+            const found = findActiveMenuAndParents(
+              menu.children,
+              pathname,
+              nextParentCodes,
+            );
+            if (found) return found;
+          }
+          continue;
+        }
+
+        // 3) menu.path 普通路径：支持精确匹配或前缀匹配
         if (
-          pathname === pathWithoutQuery ||
-          pathname.startsWith(pathWithoutQuery + '/')
+          target.path === rawMenuPath ||
+          target.path.startsWith(rawMenuPath + '/')
         ) {
-          // 匹配成功，返回所有上级菜单的 code
-          return parentCodes;
+          return nextParentCodes;
         }
 
         // 继续检查子菜单
         if (menu.children && menu.children.length > 0) {
-          const found = findActiveMenuAndParents(menu.children, pathname, [
-            ...parentCodes,
-            menu.code || '',
-          ]);
-          if (found) {
-            return found;
-          }
+          const found = findActiveMenuAndParents(
+            menu.children,
+            pathname,
+            nextParentCodes,
+          );
+          if (found) return found;
         }
       }
       return null;
     },
-    [resolveDynamicPath],
+    [],
   );
 
   /**
@@ -445,76 +487,66 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return;
     }
 
-    // 判断菜单数据是否刚刚加载完成（从空数组变为有数据）
-    const menusJustLoaded =
-      lastMenusLengthRef.current === 0 && secondMenus.length > 0;
-    lastMenusLengthRef.current = secondMenus.length;
-
-    // 首次初始化时，需要执行自动展开
-    const isInitialLoad = !isInitializedRef.current;
-    if (isInitialLoad) {
-      isInitializedRef.current = true;
-    }
-
     // 只在路径真正变化时才执行自动展开（首次加载和菜单数据刚加载完成除外）
     if (
-      !isInitialLoad &&
-      !menusJustLoaded &&
+      isInitializedRef.current &&
       location.pathname === lastPathnameRef.current
     ) {
       return;
     }
+    isInitializedRef.current = true;
     lastPathnameRef.current = location.pathname;
 
-    // 如果用户刚刚手动切换了菜单（500ms 内），延迟执行自动展开
-    const timeSinceLastToggle = Date.now() - lastManualToggleRef.current;
-    const delay = timeSinceLastToggle < 500 ? 500 - timeSinceLastToggle : 0;
+    // 是否是应用内打开的iframe页面
+    const isIframePage = location.pathname?.includes('/open-iframe-page');
 
-    const timer = setTimeout(() => {
-      const parentCodes = findActiveMenuAndParents(
-        secondMenus,
-        location.pathname,
-      );
-      if (parentCodes && parentCodes.length > 0) {
-        setExpandedMenus((prev) => {
-          const newExpanded = [...prev];
-          parentCodes.forEach((code) => {
-            // 只有当菜单不在手动折叠列表中时，才自动展开
-            if (
-              !newExpanded.includes(code) &&
-              !manuallyCollapsedRef.current.has(code)
-            ) {
-              // 查找同一层级的其他菜单，先折叠它们
-              const menuInfo = findMenuSiblings(secondMenus, code);
-              if (menuInfo) {
-                // 收集所有同级菜单及其子菜单的 code
-                const siblingsCodesToCollapse: string[] = [];
-                menuInfo.siblings.forEach((sibling) => {
-                  if (sibling.code !== code) {
-                    siblingsCodesToCollapse.push(
-                      ...getAllDescendantCodes(sibling),
-                    );
-                  }
-                });
+    // 当前路径, 用于匹配菜单
+    let targetPath = location.pathname;
+    // 如果当前页面是应用内打开的iframe页面，且路径包含 ?url=，则直接比较路径（应用内打开的外部链接），则获取iframe页面的路径
+    if (isIframePage && location.search?.includes('?url=')) {
+      const activePath = location.search.split('?url=')[1];
+      targetPath = decodeURIComponent(activePath);
+    }
+    // 查找匹配的菜单及其所有上级菜单的 code
+    const parentCodes = findActiveMenuAndParents(secondMenus, targetPath);
 
-                // 移除同一层级的其他菜单及其子菜单
-                siblingsCodesToCollapse.forEach((siblingCode) => {
-                  const index = newExpanded.indexOf(siblingCode);
-                  if (index > -1) {
-                    newExpanded.splice(index, 1);
-                  }
-                });
-              }
-              // 展开当前菜单
-              newExpanded.push(code);
+    if (parentCodes && parentCodes.length > 0) {
+      setExpandedMenus((prev) => {
+        const newExpanded = [...prev];
+        parentCodes.forEach((code) => {
+          // 只有当菜单不在手动折叠列表中时，才自动展开
+          if (
+            !newExpanded.includes(code) &&
+            !manuallyCollapsedRef.current.has(code)
+          ) {
+            // 查找同一层级的其他菜单，先折叠它们
+            const menuInfo = findMenuSiblings(secondMenus, code);
+            if (menuInfo) {
+              // 收集所有同级菜单及其子菜单的 code
+              const siblingsCodesToCollapse: string[] = [];
+              menuInfo.siblings.forEach((sibling) => {
+                if (sibling.code !== code) {
+                  siblingsCodesToCollapse.push(
+                    ...getAllDescendantCodes(sibling),
+                  );
+                }
+              });
+
+              // 移除同一层级的其他菜单及其子菜单
+              siblingsCodesToCollapse.forEach((siblingCode) => {
+                const index = newExpanded.indexOf(siblingCode);
+                if (index > -1) {
+                  newExpanded.splice(index, 1);
+                }
+              });
             }
-          });
-          return newExpanded;
+            // 展开当前菜单
+            newExpanded.push(code);
+          }
         });
-      }
-    }, delay);
-
-    return () => clearTimeout(timer);
+        return newExpanded;
+      });
+    }
   }, [
     location.pathname,
     secondMenus,

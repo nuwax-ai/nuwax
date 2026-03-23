@@ -102,7 +102,7 @@ const SpaceSection: React.FC<{
 
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
-      <div style={{ padding: '0 12px 14px' }}>
+      <div style={{ padding: '0 12px 12px' }}>
         <SpaceTitle name={dynamicTitle} />
       </div>
 

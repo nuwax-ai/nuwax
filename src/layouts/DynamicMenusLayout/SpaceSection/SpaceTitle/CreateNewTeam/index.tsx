@@ -104,6 +104,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
 
           history.push(resolvedPath);
         } else {
+          // 兜底场景下：跳转到开发页面
           history.push(`/space/${spaceId}/develop}`);
         }
       }

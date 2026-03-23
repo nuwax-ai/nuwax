@@ -27,6 +27,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   const params = useParams();
 
   const { pathname } = location;
+  // 空间列表
   const { spaceList, currentSpaceInfo } = useModel('spaceModel');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
