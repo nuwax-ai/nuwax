@@ -1,4 +1,5 @@
 import LabelStar from '@/components/LabelStar';
+import { COMMON_TABLE_STYLE } from '@/constants/layout.constants';
 import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
 import { apiPageSavePathArgs } from '@/services/pageDev';
 import { InputTypeEnum } from '@/types/enums/common';
@@ -244,6 +245,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
           >
             新增入参
           </Button>
+
           <Table<BindConfigWithSub>
             columns={inputColumns}
             dataSource={inputConfigArgs}
@@ -251,6 +253,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
             scroll={{
               y: 460,
             }}
+            style={COMMON_TABLE_STYLE}
             pagination={false}
           />
           <footer className={cx(styles.footer)}>

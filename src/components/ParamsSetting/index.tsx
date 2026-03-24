@@ -1,5 +1,6 @@
 import SelectList from '@/components/custom/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
+import { COMMON_TABLE_STYLE } from '@/constants/layout.constants';
 import { BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
 import {
@@ -327,6 +328,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
         pagination={false}
         virtual
         scroll={scroll}
+        style={COMMON_TABLE_STYLE}
         expandable={{
           childrenColumnName: 'subArgs',
           defaultExpandAllRows: true,

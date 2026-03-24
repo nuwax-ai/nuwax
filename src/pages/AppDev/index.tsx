@@ -1798,6 +1798,7 @@ const AppDev: React.FC = () => {
                 try {
                   await handleUploadProject();
                 } finally {
+                  setSelectedFile(null);
                   setIsFileOperating(false);
                 }
               }}

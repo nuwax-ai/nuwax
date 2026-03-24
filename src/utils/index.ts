@@ -215,7 +215,7 @@ export const checkFileSizeExceedLimit = (
     if (!!tenantConfigInfoString) {
       const tenantConfigInfo = JSON.parse(tenantConfigInfoString);
       // 获取租户配置信息中的最大文件大小, 最大上传文件大小，例如 100MB, maxFileSize可能为null，则不限制上传文件大小
-      const maxFileSize = tenantConfigInfo.maxFileSize;
+      const maxFileSize = tenantConfigInfo?.maxFileSize;
       // 如果设置了最大上传文件大小，则需要检查上传文件总大小是否超过最大上传文件大小
       if (maxFileSize) {
         const _maxFileSize = maxFileSize

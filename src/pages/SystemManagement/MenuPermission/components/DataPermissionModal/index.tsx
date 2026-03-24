@@ -107,7 +107,7 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
   },
   {
     key: 'dataPermission',
-    label: '数据',
+    label: '开发权限',
   },
 ];
 
@@ -593,520 +593,449 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     }
   };
 
-  // 渲染 Tab 内容
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'model':
-        return (
-          <div className={cx('flex', 'h-full')}>
-            {/* 左侧：可选模型列表 */}
-            <div
-              className={cx(
-                'flex',
-                'flex-col',
-                'h-full',
-                'flex-1',
-                'overflow-y',
-                styles.leftList,
-              )}
-            >
-              {modelLoading && !modelList?.length ? (
-                <div
-                  className={cx(
-                    'h-full',
-                    'flex',
-                    'items-center',
-                    'content-center',
-                  )}
-                >
-                  <Loading />
-                </div>
-              ) : (
-                modelList?.map((item: ModelConfigDto) => (
-                  <ResourceItem
-                    key={item.id}
-                    showIcon={false}
-                    name={item.name}
-                    description={item.description}
-                    targetId={item.id}
-                    onAdd={toggleModelSelected}
-                    isAdded={selectedModelIds.includes(item.id)}
-                  />
-                ))
-              )}
-            </div>
-            {/* 分割线 */}
-            <div className={cx(styles.rightSeparator)} />
-            {/* 右侧：已选择的模型列表 */}
-            <div className={cx(styles.rightList, 'flex-1')}>
-              {selectedModelList.length ? (
-                selectedModelList.map((item: ModelConfigDto) => (
-                  <ResourceItem
-                    key={item.id}
-                    showIcon={false}
-                    name={item.name}
-                    description={item.description}
-                    targetId={item.id}
-                    onDelete={removeModelFromSelected}
-                  />
-                ))
-              ) : (
-                <div className={cx(styles.empty)}>暂无已选模型</div>
-              )}
-            </div>
+  // 模型tab内容
+  const ModelTabContent = () => (
+    <div className={cx('flex', 'h-full')}>
+      {/* 左侧：可选模型列表 */}
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'h-full',
+          'flex-1',
+          'overflow-y',
+          styles.leftList,
+        )}
+      >
+        {modelLoading && !modelList?.length ? (
+          <div
+            className={cx('h-full', 'flex', 'items-center', 'content-center')}
+          >
+            <Loading />
           </div>
-        );
-      case 'agent':
-        return (
-          <div className={cx('flex', 'h-full')}>
-            {/* 左侧：搜索 + 可选智能体列表（支持滚动加载） */}
+        ) : (
+          modelList?.map((item: ModelConfigDto) => (
+            <ResourceItem
+              key={item.id}
+              showIcon={false}
+              name={item.name}
+              description={item.description}
+              targetId={item.id}
+              onAdd={toggleModelSelected}
+              isAdded={selectedModelIds.includes(item.id)}
+            />
+          ))
+        )}
+      </div>
+      {/* 分割线 */}
+      <div className={cx(styles.rightSeparator)} />
+      {/* 右侧：已选择的模型列表 */}
+      <div className={cx(styles.rightList, 'flex-1')}>
+        {selectedModelList.length ? (
+          selectedModelList.map((item: ModelConfigDto) => (
+            <ResourceItem
+              key={item.id}
+              showIcon={false}
+              name={item.name}
+              description={item.description}
+              targetId={item.id}
+              onDelete={removeModelFromSelected}
+            />
+          ))
+        ) : (
+          <div className={cx(styles.empty)}>暂无已选模型</div>
+        )}
+      </div>
+    </div>
+  );
+
+  // 智能体tab内容
+  const AgentTabContent = () => (
+    <div className={cx('flex', 'h-full')}>
+      {/* 左侧：搜索 + 可选智能体列表（支持滚动加载） */}
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'h-full',
+          'flex-1',
+          'overflow-hide',
+          styles.leftList,
+        )}
+      >
+        <Input.Search
+          key="agentSearch"
+          placeholder="搜索智能体"
+          allowClear
+          className={cx(styles.searchInput)}
+          value={agentSearchKw}
+          onChange={(e) => setAgentSearchKw(e.target.value)}
+          onSearch={(value) => {
+            setAgentSearchKw(value);
+            // 平滑滚动到顶部
+            if (agentListScrollRef.current) {
+              agentListScrollRef.current.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
+            }
+            // 查询智能体列表
+            queryAgentList(1, value);
+          }}
+        />
+        <div
+          ref={agentListScrollRef}
+          id="agent-list-scroll"
+          className={cx('flex-1', 'overflow-y', 'h-full')}
+        >
+          {agentLoading && !agentList?.length ? (
             <div
-              className={cx(
-                'flex',
-                'flex-col',
-                'h-full',
-                'flex-1',
-                'overflow-hide',
-                styles.leftList,
-              )}
+              className={cx('h-full', 'flex', 'items-center', 'content-center')}
             >
-              <Input.Search
-                key="agentSearch"
-                placeholder="搜索智能体"
-                allowClear
-                className={cx(styles.searchInput)}
-                value={agentSearchKw}
-                onChange={(e) => {
-                  setAgentSearchKw(e.target.value);
-                }}
-                onSearch={(value) => {
-                  setAgentSearchKw(value);
-                  // 平滑滚动到顶部
-                  if (agentListScrollRef.current) {
-                    agentListScrollRef.current.scrollTo({
-                      top: 0,
-                      behavior: 'smooth',
-                    });
-                  }
+              <Loading />
+            </div>
+          ) : (
+            <InfiniteScrollDiv
+              scrollableTarget="agent-list-scroll"
+              list={agentList}
+              hasMore={agentHasMore}
+              onScroll={() => {
+                if (!agentLoading && agentHasMore) {
                   // 查询智能体列表
-                  queryAgentList(1, value);
-                }}
-              />
-              <div
-                ref={agentListScrollRef}
-                id="agent-list-scroll"
-                className={cx('flex-1', 'overflow-y')}
-                style={{ height: '100%', overflowY: 'auto' }}
-              >
-                {agentLoading && !agentList?.length ? (
-                  <div
-                    className={cx(
-                      'h-full',
-                      'flex',
-                      'items-center',
-                      'content-center',
-                    )}
-                  >
-                    <Loading />
-                  </div>
-                ) : (
-                  <InfiniteScrollDiv
-                    scrollableTarget="agent-list-scroll"
-                    list={agentList}
-                    hasMore={agentHasMore}
-                    onScroll={() => {
-                      if (!agentLoading && agentHasMore) {
-                        const nextPage = agentPage + 1;
-                        // 查询智能体列表
-                        queryAgentList(nextPage);
-                      }
-                    }}
-                  >
-                    {agentList?.map((item) => (
-                      <ResourceItem
-                        key={item.targetId}
-                        icon={item.icon}
-                        name={item.name}
-                        description={item.description}
-                        targetId={item.targetId}
-                        onAdd={toggleAgentSelected}
-                        isAdded={selectedAgentIds.includes(item.targetId)}
-                      />
-                    ))}
-                  </InfiniteScrollDiv>
-                )}
-              </div>
-            </div>
-            {/* 分割线 */}
-            <div className={cx(styles.rightSeparator)} />
-            {/* 右侧：已选择的智能体列表（通过ID列表查询） */}
-            <div className={cx(styles.rightList, 'flex-1')}>
-              {selectedAgentList.length ? (
-                selectedAgentList.map((item) => (
-                  <ResourceItem
-                    key={item.id}
-                    icon={item.icon}
-                    name={item.name}
-                    description={item.description}
-                    targetId={item.id}
-                    onDelete={removeAgentFromSelected}
-                  />
-                ))
-              ) : (
-                <div className={cx(styles.empty)}>暂无已选智能体</div>
-              )}
-            </div>
-          </div>
-        );
-      case 'page':
-        return (
-          <div className={cx('flex', 'h-full')}>
-            {/* 左侧：搜索 + 可选网页应用列表（支持滚动加载） */}
-            <div
-              className={cx(
-                'flex',
-                'flex-col',
-                'h-full',
-                'flex-1',
-                'overflow-hide',
-                styles.leftList,
-              )}
-            >
-              <Input.Search
-                key="pageSearch"
-                placeholder="搜索网页应用"
-                allowClear
-                className={cx(styles.searchInput)}
-                value={pageSearchKw}
-                onChange={(e) => {
-                  setPageSearchKw(e.target.value);
-                }}
-                onSearch={(value) => {
-                  setPageSearchKw(value);
-                  // 平滑滚动到顶部
-                  if (pageListScrollRef.current) {
-                    pageListScrollRef.current.scrollTo({
-                      top: 0,
-                      behavior: 'smooth',
-                    });
-                  }
-                  // 查询网页应用列表
-                  queryPageList(1, value);
-                }}
-              />
-              <div
-                ref={pageListScrollRef}
-                id="page-list-scroll"
-                className={cx('flex-1', 'overflow-y')}
-                style={{ height: '100%', overflowY: 'auto' }}
-              >
-                {pageLoading && !pageList?.length ? (
-                  <div
-                    className={cx(
-                      'h-full',
-                      'flex',
-                      'items-center',
-                      'content-center',
-                    )}
-                  >
-                    <Loading />
-                  </div>
-                ) : (
-                  <InfiniteScrollDiv
-                    scrollableTarget="page-list-scroll"
-                    list={pageList}
-                    hasMore={pageHasMore}
-                    onScroll={() => {
-                      if (!pageLoading && pageHasMore) {
-                        const nextPage = pagePage + 1;
-                        // 查询网页应用列表
-                        queryPageList(nextPage);
-                      }
-                    }}
-                  >
-                    {pageList?.map((item) => (
-                      <ResourceItem
-                        key={item.targetId}
-                        icon={item.coverImg || item.icon}
-                        name={item.name}
-                        description={item.description}
-                        targetId={item.targetId}
-                        onAdd={togglePageSelected}
-                        isAdded={selectedPageAgentIds.includes(item.targetId)}
-                      />
-                    ))}
-                  </InfiniteScrollDiv>
-                )}
-              </div>
-            </div>
-            <div className={cx(styles.rightSeparator)} />
-            {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
-            <div className={cx(styles.rightList, 'flex-1')}>
-              {selectedPageList.length ? (
-                selectedPageList.map((item) => (
-                  <ResourceItem
-                    key={item.devAgentId}
-                    icon={item.coverImg || item.icon}
-                    name={item.name}
-                    description={item.description}
-                    targetId={item.devAgentId}
-                    onDelete={removePageFromSelected}
-                  />
-                ))
-              ) : (
-                <div className={cx(styles.empty)}>暂无已选网页应用</div>
-              )}
-            </div>
-          </div>
-        );
-      case 'dataPermission':
-        return (
-          <div className={cx(styles.dataPermissionFormWrapper)}>
-            <Form
-              form={form}
-              layout="vertical"
-              className={cx(styles.dataPermissionForm)}
-              preserve={true}
-              onValuesChange={(changedValues, allValues) => {
-                // 当表单值变化时，更新缓存
-                setFormValuesCache((prev) => ({
-                  ...prev,
-                  ...allValues,
-                }));
+                  queryAgentList(agentPage + 1);
+                }
               }}
             >
-              <Row gutter={[16, 0]}>
-                <Col span={12}>
-                  <Form.Item
-                    label="每日token限制"
-                    name={['tokenLimit', 'limitPerDay']}
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '每日 token 限制，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      placeholder="请输入每日token限制数量"
-                      className={cx('w-full')}
-                      min={-1}
-                      max={1000000000000000}
-                    />
-                  </Form.Item>
-                </Col>
+              {agentList?.map((item) => (
+                <ResourceItem
+                  key={item.targetId}
+                  icon={item.icon}
+                  name={item.name}
+                  description={item.description}
+                  targetId={item.targetId}
+                  onAdd={toggleAgentSelected}
+                  isAdded={selectedAgentIds.includes(item.targetId)}
+                />
+              ))}
+            </InfiniteScrollDiv>
+          )}
+        </div>
+      </div>
+      {/* 分割线 */}
+      <div className={cx(styles.rightSeparator)} />
+      {/* 右侧：已选择的智能体列表（通过ID列表查询） */}
+      <div className={cx(styles.rightList, 'flex-1')}>
+        {selectedAgentList.length ? (
+          selectedAgentList.map((item) => (
+            <ResourceItem
+              key={item.id}
+              icon={item.icon}
+              name={item.name}
+              description={item.description}
+              targetId={item.id}
+              onDelete={removeAgentFromSelected}
+            />
+          ))
+        ) : (
+          <div className={cx(styles.empty)}>暂无已选智能体</div>
+        )}
+      </div>
+    </div>
+  );
 
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建工作空间数量"
-                    name="maxSpaceCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建工作空间数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
+  const PageTabContent = () => (
+    <div className={cx('flex', 'h-full')}>
+      {/* 左侧：搜索 + 可选网页应用列表（支持滚动加载） */}
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'h-full',
+          'flex-1',
+          'overflow-hide',
+          styles.leftList,
+        )}
+      >
+        <Input.Search
+          key="pageSearch"
+          placeholder="搜索网页应用"
+          allowClear
+          className={cx(styles.searchInput)}
+          value={pageSearchKw}
+          onChange={(e) => setPageSearchKw(e.target.value)}
+          onSearch={(value) => {
+            setPageSearchKw(value);
+            // 平滑滚动到顶部
+            if (pageListScrollRef.current) {
+              pageListScrollRef.current.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
+            }
+            // 查询网页应用列表
+            queryPageList(1, value);
+          }}
+        />
+        <div
+          ref={pageListScrollRef}
+          id="page-list-scroll"
+          className={cx('flex-1', 'overflow-y', 'h-full')}
+        >
+          {pageLoading && !pageList?.length ? (
+            <div
+              className={cx('h-full', 'flex', 'items-center', 'content-center')}
+            >
+              <Loading />
+            </div>
+          ) : (
+            <InfiniteScrollDiv
+              scrollableTarget="page-list-scroll"
+              list={pageList}
+              hasMore={pageHasMore}
+              onScroll={() => {
+                if (!pageLoading && pageHasMore) {
+                  // 查询网页应用列表
+                  queryPageList(pagePage + 1);
+                }
+              }}
+            >
+              {pageList?.map((item) => (
+                <ResourceItem
+                  key={item.targetId}
+                  icon={item.coverImg || item.icon}
+                  name={item.name}
+                  description={item.description}
+                  targetId={item.targetId}
+                  onAdd={togglePageSelected}
+                  isAdded={selectedPageAgentIds.includes(item.targetId)}
+                />
+              ))}
+            </InfiniteScrollDiv>
+          )}
+        </div>
+      </div>
+      {/* 分割线 */}
+      <div className={cx(styles.rightSeparator)} />
+      {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
+      <div className={cx(styles.rightList, 'flex-1')}>
+        {selectedPageList.length ? (
+          selectedPageList.map((item) => (
+            <ResourceItem
+              key={item.devAgentId}
+              icon={item.coverImg || item.icon}
+              name={item.name}
+              description={item.description}
+              targetId={item.devAgentId}
+              onDelete={removePageFromSelected}
+            />
+          ))
+        ) : (
+          <div className={cx(styles.empty)}>暂无已选网页应用</div>
+        )}
+      </div>
+    </div>
+  );
 
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建智能体数量"
-                    name="maxAgentCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建智能体数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
+  // 开发权限tab内容
+  const DataPermissionTabContent = () => (
+    <div className={cx(styles.dataPermissionFormWrapper)}>
+      {/* 开发权限表单 */}
+      <Form
+        form={form}
+        layout="vertical"
+        className={cx(styles.dataPermissionForm)}
+        preserve={true}
+        onValuesChange={(_, allValues) => {
+          setFormValuesCache((prev) => ({
+            ...prev,
+            ...allValues,
+          }));
+        }}
+      >
+        <Row gutter={[16, 0]}>
+          <Col span={12}>
+            <Form.Item
+              label="每日token限制"
+              name={['tokenLimit', 'limitPerDay']}
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '每日 token 限制，-1 表示不限制',
+              }}
+            >
+              <InputNumber
+                placeholder="请输入每日token限制数量"
+                className={cx('w-full')}
+                min={-1}
+                max={1000000000000000}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建工作空间数量"
+              name="maxSpaceCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建工作空间数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建智能体数量"
+              name="maxAgentCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建智能体数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建网页应用数量"
+              name="maxPageAppCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建网页应用数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建知识库数量"
+              name="maxKnowledgeCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建知识库数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="知识库存储空间上限 (GB)"
+              name="knowledgeStorageLimitGb"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title:
+                  '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
+              }}
+            >
+              <InputNumber
+                className={cx('w-full')}
+                min={-1}
+                max={100000000}
+                step={0.001}
+                precision={3}
+                formatter={(value) => {
+                  if (value === undefined || value === null) return '';
+                  const num = Number(value);
+                  if (Number.isInteger(num)) return String(num);
+                  return num.toFixed(3).replace(/\.?0+$/, '');
+                }}
+                parser={(value) => {
+                  if (!value) return value as any;
+                  const num = parseFloat(value);
+                  return isNaN(num) ? (value as any) : num;
+                }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建数据表数量"
+              name="maxDataTableCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建数据表数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="可创建定时任务数量"
+              name="maxScheduledTaskCount"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '可创建定时任务数量，-1 表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="智能体电脑内存(GB)"
+              name="agentComputerMemoryGb"
+              initialValue={4}
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="智能体电脑 CPU 核心数"
+              name="agentComputerCpuCores"
+              initialValue={2}
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="通用智能体每天对话次数限制"
+              name="agentDailyPromptLimit"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '通用智能体每天对话次数，-1表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label="网页应用开发每天对话次数"
+              name="pageDailyPromptLimit"
+              tooltip={{
+                icon: <InfoCircleOutlined />,
+                title: '网页应用开发每天对话次数，-1表示不限制',
+              }}
+            >
+              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            </Form.Item>
+          </Col>
+        </Row>
+      </Form>
+    </div>
+  );
 
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建网页应用数量"
-                    name="maxPageAppCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建网页应用数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建知识库数量"
-                    name="maxKnowledgeCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建知识库数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="知识库存储空间上限 (GB)"
-                    name="knowledgeStorageLimitGb"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title:
-                        '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                      step={0.001}
-                      precision={3}
-                      formatter={(value) => {
-                        if (value === undefined || value === null) return '';
-                        const num = Number(value);
-                        // 如果是整数，不显示小数部分
-                        if (Number.isInteger(num)) {
-                          return String(num);
-                        }
-                        // 如果有小数，保留最多3位小数，并去除末尾的0
-                        return num.toFixed(3).replace(/\.?0+$/, '');
-                      }}
-                      parser={(value) => {
-                        if (!value) return value as any;
-                        const num = parseFloat(value);
-                        return isNaN(num) ? (value as any) : num;
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建数据表数量"
-                    name="maxDataTableCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建数据表数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="可创建定时任务数量"
-                    name="maxScheduledTaskCount"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '可创建定时任务数量，-1 表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="智能体电脑内存(GB)"
-                    name="agentComputerMemoryGb"
-                    initialValue={4}
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="智能体电脑 CPU 核心数"
-                    name="agentComputerCpuCores"
-                    initialValue={2}
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="通用智能体每天对话次数限制"
-                    name="agentDailyPromptLimit"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '通用智能体每天对话次数，-1表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="网页应用开发每天对话次数"
-                    name="pageDailyPromptLimit"
-                    tooltip={{
-                      icon: <InfoCircleOutlined />,
-                      title: '网页应用开发每天对话次数，-1表示不限制',
-                    }}
-                  >
-                    <InputNumber
-                      className={cx('w-full')}
-                      min={-1}
-                      max={100000000}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
-          </div>
-        );
-      default:
-        return null;
-    }
+  // 渲染tab内容
+  const renderTabContent = () => {
+    const contentMap: Record<DataPermissionTabKey, React.ReactNode> = {
+      model: <ModelTabContent />,
+      agent: <AgentTabContent />,
+      page: <PageTabContent />,
+      dataPermission: <DataPermissionTabContent />,
+    };
+    return contentMap[activeTab] ?? null;
   };
 
   return (

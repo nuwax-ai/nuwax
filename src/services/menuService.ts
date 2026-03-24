@@ -79,24 +79,18 @@ const MENU_ICON_MAP: Record<string, string> = {
   log_manage: 'icons-nav-log', // Captured: log_manage
 };
 
-// 是否使用本地图标映射 (Configurable Strategy)
-// const USE_LOCAL_ICON_MAPPING = true;
-
 /**
  * 转换后端菜单格式为前端所需格式
  */
 function mapSysMenuToMenuItem(sysMenus: any[]): MenuItemDto[] {
   return sysMenus.map((item) => ({
     ...item,
-    // Debug log for code mapping
-    // _debug: console.log(
-    //   `[MenuMap] Name: ${item.name}, Code: ${item.code}, Icon: ${item.icon}`,
-    // ),
-    // 根据策略决定是否优先使用本地映射的图标
-    icon: MENU_ICON_MAP[item.code] || item.icon,
-    // sortIndex: item.sortIndex, // 映射排序字段
+    /**
+     * 如果菜单项的图标为空，则使用本地图标映射
+     * 如果菜单项的图标不为空，则使用菜单项的图标，优先级高于本地图标映射
+     */
+    icon: item.icon || MENU_ICON_MAP[item.code],
     children: item.children ? mapSysMenuToMenuItem(item.children) : [],
-    // permissions: item.resourceTree ? mapSysMenuToMenuItem(item.resourceTree) : [],
   }));
 }
 

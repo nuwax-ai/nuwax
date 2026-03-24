@@ -33,21 +33,6 @@ const routes = [
       },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
-      {
-        path: '/more-page',
-        name: '更多页面',
-        routes: [
-          {
-            path: '/more-page/api-key',
-            name: 'API KEY',
-            component: '@/pages/MorePage/ApiKey',
-          },
-          // {
-          //   path: '/more-page',
-          //   redirect: '/more-page/api-key',
-          // },
-        ],
-      },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
@@ -147,6 +132,17 @@ const routes = [
       {
         path: '/history-conversation',
         component: '@/pages/HistoryConversation',
+      },
+      {
+        path: '/more-page',
+        name: '更多页面',
+        routes: [
+          {
+            path: 'api-key',
+            name: 'API KEY',
+            component: '@/pages/MorePage/ApiKey',
+          },
+        ],
       },
       // 系统管理统一管理
       {
