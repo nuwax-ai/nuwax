@@ -25,19 +25,21 @@ export const useAutoPreviewFile = () => {
 
     const lastTaskResultFile = extractLastTaskResultFile(bigText);
 
-    if (lastTaskResultFile) {
+    const _lastTaskResultFile = lastTaskResultFile?.split(`${id}/`).pop();
+
+    if (_lastTaskResultFile) {
       // 异步查询文件列表，判断文件是否存在
       apiGetStaticFileList(id)
         .then((fileListRes) => {
           if (fileListRes.code === SUCCESS_CODE && fileListRes.data?.files) {
             // 遍历文件列表，判断文件是否存在
             const fileExists = fileListRes.data.files.some(
-              (file: any) => file.name === lastTaskResultFile,
+              (file: any) => file.name === _lastTaskResultFile,
             );
             // 如果文件存在，打开文件预览，并选中文件
             if (fileExists) {
               openPreviewView(id);
-              setTaskAgentSelectedFileId(lastTaskResultFile);
+              setTaskAgentSelectedFileId(_lastTaskResultFile);
               setTaskAgentSelectTrigger(Date.now());
             }
           }

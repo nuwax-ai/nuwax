@@ -88,6 +88,10 @@ const ConversationList = React.forwardRef<
       setList((prev) => prev.filter((item) => item.id !== id));
     },
     refresh: () => {
+      if (containerRef.current) {
+        containerRef.current.scrollTop = 0;
+      }
+      setList([]);
       loadData(true);
     },
   }));
@@ -157,8 +161,15 @@ const ConversationList = React.forwardRef<
                 </Space>
               </div>
             </div>
-            <div className={styles.summary}>
-              {item.summary || '暂无内容摘要'}
+            <div className={styles['summary-wrapper']}>
+              <div className={styles.summary}>
+                {item.summary || '暂无内容摘要'}
+              </div>
+              <div className={styles['tag-wrapper']}>
+                <div className={styles['agent-tag-bottom']}>
+                  {item.agent?.name || '智能体'}
+                </div>
+              </div>
             </div>
           </div>
         ))}

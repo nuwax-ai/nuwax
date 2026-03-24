@@ -8,7 +8,7 @@ import eventBus from '@/utils/eventBus';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useModel, useParams } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
@@ -21,6 +21,7 @@ const HomeSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
   const { id: chatId } = useParams();
+  const location = useLocation();
   const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
     'conversationHistory',
   );
@@ -59,6 +60,17 @@ const HomeSection: React.FC<{
     handleCloseMobileMenu();
     history.push(`/home/chat/${id}/${agentId}`);
   };
+
+  // 查看全部会话
+  const handleAllConversation = React.useCallback(() => {
+    handleCloseMobileMenu();
+    const targetPath = '/history-conversation';
+    if (location.pathname === targetPath) {
+      history.replace(targetPath, { _t: Date.now() });
+    } else {
+      history.push(targetPath, { _t: Date.now() });
+    }
+  }, [location.pathname, handleCloseMobileMenu]);
 
   useEffect(() => {
     // 最近使用智能体列表
@@ -149,9 +161,7 @@ const HomeSection: React.FC<{
           <ConditionRender condition={conversationList?.length}>
             <span
               className={cx(styles['more-conversation'])}
-              onClick={() => {
-                history.push('/history-conversation');
-              }}
+              onClick={handleAllConversation}
             >
               查看全部 <RightOutlined />
             </span>

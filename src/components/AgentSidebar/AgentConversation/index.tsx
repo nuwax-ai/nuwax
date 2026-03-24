@@ -17,7 +17,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
   const {
     isHistoryConversationOpen,
     closeHistoryConversation,
-    openHistoryConversation,
+    // openHistoryConversation,
   } = useModel('conversationInfo');
   const { conversationListItem, loadingHistoryItem } = useModel(
     'conversationHistory',
@@ -30,7 +30,10 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
   // 查看更多 打开历史会话弹窗 - 现在通过 model 状态管理
   const handleMore = useCallback(() => {
     // 这里不再需要设置本地状态，因为使用 model 中的状态
-    openHistoryConversation();
+    // openHistoryConversation();
+    history.push(`/history-conversation?agentId=${agentId}`, {
+      _t: Date.now(),
+    });
   }, []);
 
   return (

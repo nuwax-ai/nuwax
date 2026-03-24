@@ -7,7 +7,7 @@ import { useDebounceFn } from 'ahooks';
 import { Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
-import { history, useModel } from 'umi';
+import { history, useLocation, useModel, useSearchParams } from 'umi';
 import ConversationList, {
   ConversationListRef,
 } from './components/ConversationList';
@@ -17,6 +17,11 @@ const cx = classNames.bind(styles);
 
 const HistoryConversation: React.FC = () => {
   const { runHistory } = useModel('conversationHistory');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const agentIdParam = searchParams.get('agentId');
+  const agentId =
+    agentIdParam && !isNaN(Number(agentIdParam)) ? Number(agentIdParam) : null;
   const [keyword, setKeyword] = useState<string>('');
   const [activeKeyword, setActiveKeyword] = useState<string>('');
   const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -36,6 +41,16 @@ const HistoryConversation: React.FC = () => {
       wait: 500,
     },
   );
+
+  // 监听菜单点击刷新（类似查看全部）推送的 _t 状态
+  React.useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      setKeyword('');
+      setActiveKeyword('');
+      listRef.current?.refresh();
+    }
+  }, [location.state]);
 
   const onStartSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -75,7 +90,7 @@ const HistoryConversation: React.FC = () => {
       if (res.success) {
         listRef.current?.refresh();
         runHistory({
-          agentId: null,
+          agentId,
           limit: 20,
         });
         message.success('修改成功');
@@ -101,7 +116,7 @@ const HistoryConversation: React.FC = () => {
       if (res.success) {
         listRef.current?.removeItem(currentDeleteId);
         runHistory({
-          agentId: null,
+          agentId,
           limit: 20,
         });
         message.success('删除成功');
@@ -130,7 +145,6 @@ const HistoryConversation: React.FC = () => {
             placeholder="搜索历史会话"
             value={keyword}
             onChange={onStartSearch}
-            bordered={false}
             className={cx(styles['search-input-field'])}
             allowClear
           />
@@ -138,6 +152,7 @@ const HistoryConversation: React.FC = () => {
         <div className={cx(styles['list-wrapper'])}>
           <ConversationList
             ref={listRef}
+            agentId={agentId}
             keyword={activeKeyword}
             onItemClick={handleLink}
             onEdit={handleEdit}

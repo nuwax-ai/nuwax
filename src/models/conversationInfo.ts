@@ -950,27 +950,25 @@ export default () => {
             if (
               params.conversationId &&
               conversationInfoRef.current?.agent?.type ===
-                AgentTypeEnum.TaskAgent &&
-              isFileTreeVisibleRef.current
+                AgentTypeEnum.TaskAgent
             ) {
               // 刷新文件树
               await handleRefreshFileList(params.conversationId);
-            }
 
-            const taskResult = extractTaskResult(data.outputText);
-            if (
-              params.conversationId &&
-              taskResult.hasTaskResult &&
-              taskResult.file
-            ) {
-              openPreviewView(params.conversationId);
-              const fileId = taskResult.file
-                ?.split(`${params.conversationId}/`)
-                .pop();
-              if (fileId) {
-                setTaskAgentSelectedFileId(fileId);
-                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
-                setTaskAgentSelectTrigger(Date.now());
+              const taskResult = extractTaskResult(data.outputText);
+              // 如果有任务结果，并且有文件，则打开预览视图
+              if (taskResult.hasTaskResult && taskResult.file) {
+                // 打开预览视图
+                openPreviewView(params.conversationId);
+                const fileId = taskResult.file
+                  ?.split(`${params.conversationId}/`)
+                  .pop();
+                // 如果文件ID存在，则设置文件ID
+                if (fileId) {
+                  setTaskAgentSelectedFileId(fileId);
+                  // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+                  setTaskAgentSelectTrigger(Date.now());
+                }
               }
             }
           }, 0);
@@ -1185,6 +1183,7 @@ export default () => {
     setMessageList([]);
     // 重置会话信息
     setConversationInfo(null);
+    conversationInfoRef.current = null;
     // 重置当前会话ID
     setCurrentConversationId(null);
     // 重置问题建议
