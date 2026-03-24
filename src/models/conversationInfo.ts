@@ -71,6 +71,10 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
+import {
+  perfTracker,
+  type MessagePerfLifecycle,
+} from '@/utils/nuwaClawBridge/perfTracker';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -1048,11 +1052,15 @@ export default () => {
   const handleConversation = async (
     params: ConversationChatParams,
     currentMessageId: string,
+    perfLifecycle: MessagePerfLifecycle,
     // 是否同步会话记录
     isSync: boolean = true,
     data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+
+    // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
+    perfLifecycle.onHttpStart();
 
     // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
     abortConnectionRef.current = createSSEConnection({
@@ -1064,7 +1072,11 @@ export default () => {
       },
       body: params,
       // 不传 abortController，让函数内部创建新的
+      onOpen: () => {
+        perfLifecycle.onSseConnect();
+      },
       onMessage: (res: ConversationChatResponse) => {
+        perfLifecycle.onFirstChunk();
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
@@ -1121,6 +1133,9 @@ export default () => {
         });
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
+
+        perfLifecycle.onStreamEnd();
+        perfLifecycle.onCloseRenderComplete();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -1136,6 +1151,7 @@ export default () => {
           disabledConversationActive();
           return list;
         });
+        perfLifecycle.onStreamEnd('error');
       },
     });
   };
@@ -1247,6 +1263,13 @@ export default () => {
     };
 
     const currentMessageId = uuidv4();
+    const perfLifecycle = perfTracker.createLifecycle(
+      Number(id),
+      currentMessageId,
+    );
+    // 发送动作时点：从用户动作开始对齐后续网络与流式阶段耗时。
+    perfLifecycle.onSendClick();
+
     // 当前助手信息
     const currentMessage = {
       role: AssistantRoleEnum.ASSISTANT,
@@ -1300,7 +1323,7 @@ export default () => {
       skillIds,
     };
     // 处理会话
-    handleConversation(params, currentMessageId, isSync, data);
+    handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
   };
 
   const handleDebug = useCallback((info: MessageInfo) => {

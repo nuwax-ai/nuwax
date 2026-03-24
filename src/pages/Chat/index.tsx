@@ -1376,7 +1376,7 @@ const Chat: React.FC = () => {
       <LoadingOutlined />
     </div>
   ) : (
-    <div className={cx('flex', 'h-full')}>
+    <div className={cx('flex', 'h-full')} data-nuwaclaw-perf-scope="chat-root">
       {/* 智能体聊天和预览页面 */}
       <div
         style={{

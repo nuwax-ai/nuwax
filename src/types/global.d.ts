@@ -23,5 +23,16 @@ declare namespace Global {
 declare global {
   interface Window {
     Global: typeof Global;
+    NuwaClawBridge?: {
+      perf?: {
+        enabled?: () => boolean;
+        mark?: (stage: string, payload?: Record<string, unknown>) => void;
+        markOnce?: (
+          key: string,
+          stage: string,
+          payload?: Record<string, unknown>,
+        ) => void;
+      };
+    };
   }
 }
