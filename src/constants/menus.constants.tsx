@@ -116,3 +116,17 @@ export const SETTING_ACTIONS = [
     label: '用量统计',
   },
 ];
+
+// 其它需要单独分离的一级菜单 code 类别常量
+export const MENU_CODE_DOCUMENTS = 'documents';
+export const MENU_CODE_NOTIFICATION = 'notification';
+export const MENU_CODE_MY_COMPUTER = 'my_computer';
+export const MENU_CODE_MORE_PAGE = 'more_page';
+
+// 其它需要单独分离的一级菜单 code 列表
+export const OTHER_MENU_CODES = [
+  MENU_CODE_DOCUMENTS,
+  MENU_CODE_NOTIFICATION,
+  MENU_CODE_MY_COMPUTER,
+  MENU_CODE_MORE_PAGE,
+];

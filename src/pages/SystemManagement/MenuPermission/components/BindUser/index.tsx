@@ -455,10 +455,6 @@ const BindUser: React.FC<BindUserProps> = ({
             className={cx(styles['mb-15'])}
           />
 
-          <h3 className={cx(styles['mb-15'])}>
-            已选成员 ({rightColumnMembers.length})
-          </h3>
-
           <div
             ref={rightListScrollRef}
             id="right-member-list-scroll"

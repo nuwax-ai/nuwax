@@ -72,6 +72,7 @@ import FileTreePanel from './components/FileTreePanel';
 
 import PageEditModal from './components/PageEditModal';
 
+import { checkFileSizeExceedLimit } from '@/utils';
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
@@ -922,6 +923,16 @@ const AppDev: React.FC = () => {
       return;
     }
 
+    // 检查文件大小是否超过最大上传文件大小
+    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
+      selectedFile,
+    ]);
+    // 如果超过最大上传文件大小，则提示错误
+    if (isExceedLimitSize) {
+      message.error(`上传文件总大小不能超过${maxFileSize}MB`);
+      return;
+    }
+
     try {
       setIsProjectUploading(true);
 
@@ -1062,6 +1073,16 @@ const AppDev: React.FC = () => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (!file) {
           document.body.removeChild(input);
+          return;
+        }
+
+        // 检查文件大小是否超过最大上传文件大小
+        const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
+          file,
+        ]);
+        // 如果超过最大上传文件大小，则提示错误
+        if (isExceedLimitSize) {
+          message.error(`上传文件总大小不能超过${maxFileSize}MB`);
           return;
         }
 

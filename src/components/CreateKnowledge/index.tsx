@@ -285,10 +285,11 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             name="embeddingModelId"
             label="向量模型"
             rules={[{ required: true, message: '请选择向量模型' }]}
+            tooltip="切换向量模型后，为确保问答检索的准确性，系统将自动根据新模型对知识库内的问答数据进行重新向量化处理。此过程可能需要一定时间，请耐心等待。"
           >
             <SelectList
               placeholder="请选择向量模型"
-              disabled={mode === CreateUpdateModeEnum.Update}
+              /*disabled={mode === CreateUpdateModeEnum.Update}*/
               options={modelConfigList}
               allowClear
             />

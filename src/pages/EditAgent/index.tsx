@@ -55,6 +55,7 @@ import {
   StaticFileInfo,
   VncDesktopUpdateFileInfo,
 } from '@/types/interfaces/vncDesktop';
+import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
@@ -719,6 +720,16 @@ const EditAgent: React.FC = () => {
   ) => {
     if (!devConversationId) {
       messageAntd.error('会话ID不存在，无法上传文件');
+      return;
+    }
+
+    // 检查文件大小是否超过最大上传文件大小
+    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit(
+      files || [],
+    );
+    // 如果超过最大上传文件大小，则提示错误
+    if (isExceedLimitSize) {
+      messageAntd.error(`上传文件总大小不能超过${maxFileSize}MB`);
       return;
     }
 

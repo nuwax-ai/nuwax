@@ -62,6 +62,7 @@ import {
 import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { checkFileSizeExceedLimit } from '@/utils/index';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message as messageAntd } from 'antd';
@@ -955,6 +956,16 @@ const Chat: React.FC = () => {
   ) => {
     if (!id) {
       messageAntd.error('会话ID不存在，无法上传文件');
+      return;
+    }
+
+    // 检查文件大小是否超过最大上传文件大小
+    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit(
+      files || [],
+    );
+    // 如果超过最大上传文件大小，则提示错误
+    if (isExceedLimitSize) {
+      messageAntd.error(`上传文件总大小不能超过${maxFileSize}MB`);
       return;
     }
 

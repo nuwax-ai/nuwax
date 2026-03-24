@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { OTHER_MENU_CODES } from '@/constants/menus.constants';
 import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { extractAllMenuCodes, extractAllPermissions } from '@/utils/permission';
 
@@ -108,10 +109,9 @@ export default function useMenuModel() {
    * notification：通知
    * my_computer：我的电脑
    */
-  const OTHER_MENU_CODES = ['documents', 'notification', 'my_computer'];
 
   /**
-   * 一级菜单列表（排除 documents、notification、my_computer）
+   * 一级菜单列表（排除 documents、notification、my_computer、more_page）
    */
   const firstLevelMenus = useMemo(
     () =>
@@ -124,17 +124,16 @@ export default function useMenuModel() {
   );
 
   /**
-   * 其他菜单列表（只包含 documents、notification、my_computer）
+   * 其他菜单列表（只包含 documents、notification、my_computer、more_page）
    */
-  const otherMenus = useMemo(
-    () =>
-      menuTree?.filter(
-        (menu: MenuItemDto) =>
-          menu.status === MenuEnabledEnum.Enabled &&
-          OTHER_MENU_CODES.includes(menu.code || ''),
-      ),
-    [menuTree],
-  );
+  const otherMenus = useMemo(() => {
+    const menu = menuTree?.filter(
+      (menu: MenuItemDto) =>
+        menu.status === MenuEnabledEnum.Enabled &&
+        OTHER_MENU_CODES.includes(menu.code || ''),
+    );
+    return [...menu];
+  }, [menuTree]);
 
   /**
    * 根据父级菜单 code 获取其子菜单列表（递归查找）

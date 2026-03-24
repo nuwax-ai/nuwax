@@ -1,3 +1,4 @@
+import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { TaskResultData } from '@/types/interfaces/utils';
 
@@ -197,4 +198,58 @@ export const extractLastTaskResultFile = (text: string): string | null => {
   const fileMatch = lastTaskResult.match(/<file>([\s\S]*?)<\/file>/);
 
   return fileMatch?.[1]?.trim() ?? null;
+};
+
+/**
+ * 检查上传文件大小是否超过最大上传文件大小
+ * @param files 文件列表
+ * @returns { isExceedLimitSize: boolean, maxFileSize: number } 是否超过最大上传文件大小，最大上传文件大小
+ */
+export const checkFileSizeExceedLimit = (
+  files: File[],
+): { isExceedLimitSize: boolean; maxFileSize: number } => {
+  try {
+    // 获取租户配置信息
+    const tenantConfigInfoString = localStorage.getItem(TENANT_CONFIG_INFO);
+    // 如果租户配置信息存在，则检查上传文件大小
+    if (!!tenantConfigInfoString) {
+      const tenantConfigInfo = JSON.parse(tenantConfigInfoString);
+      // 获取租户配置信息中的最大文件大小, 最大上传文件大小，例如 100MB, maxFileSize可能为null，则不限制上传文件大小
+      const maxFileSize = tenantConfigInfo.maxFileSize;
+      // 如果设置了最大上传文件大小，则需要检查上传文件总大小是否超过最大上传文件大小
+      if (maxFileSize) {
+        const _maxFileSize = maxFileSize
+          ?.toUpperCase()
+          ?.replace('MB', '')
+          ?.trim();
+        // 将最大上传文件大小转换为数字
+        const _maxFileSizeNumber = Number(_maxFileSize);
+        // 如果最大上传文件大小不是数字，则不限制上传文件大小
+        if (Number.isNaN(_maxFileSizeNumber)) {
+          return {
+            isExceedLimitSize: false,
+            maxFileSize: 0,
+          };
+        }
+        // 计算上传文件总大小
+        const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+        // 文件大小是否超过最大上传文件大小
+        const isExceedLimitSize = totalSize > _maxFileSizeNumber * 1024 * 1024;
+        return {
+          isExceedLimitSize,
+          maxFileSize: _maxFileSizeNumber,
+        };
+      }
+    }
+
+    return {
+      isExceedLimitSize: false,
+      maxFileSize: 0,
+    };
+  } catch (error) {
+    return {
+      isExceedLimitSize: false,
+      maxFileSize: 0,
+    };
+  }
 };
