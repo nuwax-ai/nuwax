@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/custom-variate';
 
 .modal-container {
   width: 1000px !important;
@@ -29,7 +30,7 @@
 
       .table-wrap {
         border: 1px solid @GRAY01;
-        border-radius: 12px;
+        border-radius: @antdTableBorderRadius;
         overflow: hidden;
 
         :global {

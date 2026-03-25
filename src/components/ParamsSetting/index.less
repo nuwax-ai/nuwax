@@ -1,5 +1,6 @@
 @import '@/styles/color';
 @import '@/styles/token';
+@import '@/styles/custom-variate';
 
 .container {
   height: 100%;
@@ -41,7 +42,8 @@
   }
 
   .footer {
-    padding: 0 24px 24px;
+    border-top: 1px solid @antdFooterBorderColor;
+    padding: @antdFooterPadding;
     text-align: right;
 
     .btn-disabled {

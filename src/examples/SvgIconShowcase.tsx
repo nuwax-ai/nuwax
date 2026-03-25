@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   AppstoreOutlined,
   CodeOutlined,
@@ -147,7 +148,7 @@ const SvgIconShowcase: React.FC = () => {
   // 复制图标代码到剪贴板
   const copyIconCode = (iconName: string) => {
     const code = `<SvgIcon name="${iconName}" />`;
-    navigator.clipboard.writeText(code).then(() => {
+    copyTextToClipboard(code, () => {
       message.success(
         isChineseLanguage ? '代码已复制到剪贴板' : 'Code copied to clipboard',
       );
@@ -160,7 +161,7 @@ const SvgIconShowcase: React.FC = () => {
     const code = allIcons
       .map((iconName) => `<SvgIcon name="${iconName}" />`)
       .join('\n');
-    navigator.clipboard.writeText(code).then(() => {
+    copyTextToClipboard(code, () => {
       message.success(
         isChineseLanguage
           ? '所有图标代码已复制到剪贴板'

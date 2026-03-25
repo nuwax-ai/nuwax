@@ -8,6 +8,7 @@ import {
   apiUpdateSandboxUserConfig,
 } from '@/services/systemManage';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   DeleteOutlined,
   DesktopOutlined,
@@ -316,10 +317,9 @@ const MyComputerManage: React.FC = () => {
                           <Button
                             icon={<KeyOutlined />}
                             onClick={() => {
-                              navigator.clipboard.writeText(
-                                item.configKey || '',
-                              );
-                              message.success('客户端连接密钥已复制');
+                              copyTextToClipboard(item.configKey || '', () => {
+                                message.success('客户端连接密钥已复制');
+                              });
                             }}
                             className={classNames(
                               'action-btn',

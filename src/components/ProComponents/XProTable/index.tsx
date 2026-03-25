@@ -144,10 +144,18 @@ function XProTable<
       typeof restProps.search === 'object' ? restProps.search : {};
     const commonSearch = (COMMON_PRO_TABLE_PROPS.search as any) || {};
 
-    return {
+    const merged = {
       ...commonSearch,
       ...baseSearch,
     };
+
+    // LightFilter模式下，searchText和resetText传给底层Form会触发React DOM属性无法识别的警告
+    if (merged.filterType === 'light') {
+      delete merged.searchText;
+      delete merged.resetText;
+    }
+
+    return merged;
   }, [restProps.search]);
 
   return (

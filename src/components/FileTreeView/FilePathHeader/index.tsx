@@ -3,6 +3,7 @@ import { ConnectionStatus } from '@/components/business-component/VncPreview/typ
 import { USER_INFO } from '@/constants/home.constants';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
 import {
   CloseOutlined,
@@ -324,8 +325,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
                 }
                 onClick={() => {
-                  navigator.clipboard.writeText(targetNode?.content || '');
-                  message.success('复制成功');
+                  copyTextToClipboard(targetNode?.content || '', () => {
+                    message.success('复制成功');
+                  });
                 }}
                 className={styles.actionButton}
               />

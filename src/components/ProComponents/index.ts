@@ -1,4 +1,5 @@
 export { default as LimitedTooltip } from './LimitedTooltip';
+export { default as OperationBtn } from './OperationBtn';
 export { default as TableActions } from './TableActions';
 export type { ActionItem } from './TableActions';
 export { default as XModalForm } from './XModalForm';

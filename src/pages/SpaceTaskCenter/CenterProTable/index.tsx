@@ -1,4 +1,8 @@
-import { TableActions, XProTable } from '@/components/ProComponents';
+import {
+  ActionItem,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiTaskDelete,
@@ -429,7 +433,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
             const meta = getStatusMeta(record.status);
             const isEnded = meta.isEnded;
 
-            const actions = [
+            const actions: ActionItem<TaskInfo>[] = [
               {
                 key: 'execute',
                 label: '手动执行',

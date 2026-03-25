@@ -57,9 +57,9 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
 
   return (
     <div className={cx('flex', 'flex-col', 'h-full', styles.container)}>
-      <div className={cx('flex-1')}>
+      <div className={cx('flex-1', styles.content)}>
         <header className={cx('flex', 'items-center', styles.header)}>
-          <div className={cx('flex-1')}>异步运行</div>
+          <h3 className={cx('flex-1')}>异步运行</h3>
           <Switch
             checked={selected === DefaultSelectedEnum.Yes}
             onChange={onChange}

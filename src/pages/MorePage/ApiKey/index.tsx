@@ -1,70 +1,43 @@
+import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   CopyOutlined,
+  DeleteOutlined,
+  EditOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
-  KeyOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Divider,
-  Input,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-} from 'antd';
+import type { ProColumns } from '@ant-design/pro-components';
+import { Button, message, Space, Tag, Tooltip, Typography } from 'antd';
 import React, { useState } from 'react';
-import styles from './index.less';
+import { MOCK_API_KEYS } from './mock';
 
-const { Title, Paragraph, Text } = Typography;
-
-/**
- * 状态枚举
- */
-enum ApiKeyStatus {
-  Active = 'active',
-  Inactive = 'inactive',
-}
-
-interface ApiKeyItem {
+export interface ApiKeyItem {
   id: string;
   name: string;
-  key: string;
-  status: ApiKeyStatus;
+  description: string;
+  apiKey: string;
+  status: 'active' | 'inactive' | 'expired';
   createTime: string;
-  lastUsedTime: string;
+  expireTime: string;
 }
 
-/**
- * API KEY 管理页面
- */
+export const STATUS_MAP: Record<
+  ApiKeyItem['status'],
+  { color: string; text: string }
+> = {
+  active: { color: 'green', text: '活跃' },
+  expired: { color: 'orange', text: '已过期' },
+  inactive: { color: 'red', text: '停用' },
+};
+
+const { Text } = Typography;
+
 const ApiKeyPage: React.FC = () => {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
 
-  // Mock 数据列表
-  const [apiKeys] = useState<ApiKeyItem[]>([
-    {
-      id: '1',
-      name: 'Default Key',
-      key: 'ak-72f8d9****c8e23f9a12',
-      status: ApiKeyStatus.Active,
-      createTime: '2025-01-10 12:00:00',
-      lastUsedTime: '2026-03-24 10:45:12',
-    },
-    {
-      id: '2',
-      name: 'Test Environment',
-      key: 'ak-9e1d8c****f2a71d8e92',
-      status: ApiKeyStatus.Inactive,
-      createTime: '2025-05-18 14:30:15',
-      lastUsedTime: '2026-02-15 09:12:00',
-    },
-  ]);
+  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>(MOCK_API_KEYS);
 
   const toggleShowKey = (id: string) => {
     setShowKeys((prev) => ({
@@ -74,34 +47,43 @@ const ApiKeyPage: React.FC = () => {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    message.success('API KEY 已成功复制到剪贴板');
+    copyTextToClipboard(text, () => {
+      message.success('API KEY 已成功复制到剪贴板');
+    });
   };
 
-  const columns = [
+  // 脱敏处理
+  const maskApiKey = (key: string) => {
+    if (!key || key.length < 10) return key;
+    return `${key.slice(0, 10)}••••••••••••••••••••${key.slice(-4)}`;
+  };
+
+  const columns: ProColumns<ApiKeyItem>[] = [
     {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-      width: '20%',
-      render: (text: string) => <Text strong>{text}</Text>,
+      ellipsis: true,
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      search: false,
     },
     {
       title: 'API KEY',
-      dataIndex: 'key',
-      key: 'key',
-      width: '40%',
-      render: (text: string, record: ApiKeyItem) => {
+      dataIndex: 'apiKey',
+      key: 'apiKey',
+      width: 320,
+      render: (_, record) => {
         const visible = showKeys[record.id];
         return (
-          <Space size={8} className="w-full">
-            <Input.Password
-              value={text}
-              visibilityToggle={false}
-              readOnly
-              size="small"
-              className={styles['key-input']}
-            />
+          <Space size={8}>
+            <Text className="font-mono">
+              {visible ? record.apiKey : maskApiKey(record.apiKey)}
+            </Text>
             <Tooltip title={visible ? '隐藏' : '显示'}>
               <Button
                 type="text"
@@ -115,7 +97,7 @@ const ApiKeyPage: React.FC = () => {
                 type="text"
                 size="small"
                 icon={<CopyOutlined />}
-                onClick={() => copyToClipboard(text)}
+                onClick={() => copyToClipboard(record.apiKey)}
               />
             </Tooltip>
           </Space>
@@ -123,76 +105,84 @@ const ApiKeyPage: React.FC = () => {
       },
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: '12%',
-      render: (status: ApiKeyStatus) => (
-        <Tag
-          color={status === ApiKeyStatus.Active ? 'green' : 'default'}
-          style={{ borderRadius: 4 }}
-        >
-          {status === ApiKeyStatus.Active ? '正常' : '已禁用'}
-        </Tag>
-      ),
-    },
-    {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      width: '18%',
-      render: (text: string) => <Text type="secondary">{text}</Text>,
+      search: false,
+    },
+    {
+      title: '过期时间',
+      dataIndex: 'expireTime',
+      key: 'expireTime',
+      search: false,
+      render: (_, record) => (
+        <Text type={record.expireTime === '永不过期' ? 'success' : undefined}>
+          {record.expireTime}
+        </Text>
+      ),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      search: false,
+      render: (_, record) => {
+        const { color = 'default', text = '未知' } =
+          STATUS_MAP[record.status] || {};
+        return <Tag color={color}>{text}</Tag>;
+      },
     },
     {
       title: '操作',
       key: 'action',
-      render: () => (
-        <Space size={16}>
-          <Typography.Link type="danger">删除</Typography.Link>
-        </Space>
+      width: 120,
+      search: false,
+      fixed: 'right',
+      align: 'center',
+      render: (_, record) => (
+        <TableActions
+          type="button"
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: '编辑',
+              icon: <EditOutlined />,
+              onClick: (r) => {
+                message.info(`正在编辑: ${r.name}`);
+              },
+            },
+            {
+              key: 'delete',
+              label: '删除',
+              icon: <DeleteOutlined />,
+              danger: true,
+              confirm: {
+                title: (r) => `确认删除密钥 "${r.name}" 吗？`,
+                description: '删除后将无法恢复，请谨慎操作。',
+              },
+              onClick: async (r) => {
+                await new Promise((resolve) => {
+                  setTimeout(resolve, 2000);
+                });
+                setApiKeys((prev) => prev.filter((item) => item.id !== r.id));
+                message.success('删除成功');
+              },
+            },
+          ]}
+        />
       ),
     },
   ];
 
   return (
-    <WorkspaceLayout title="API KEY 管理">
-      <div className={styles.container}>
-        <Card className={styles['glass-card']}>
-          <div
-            className="flex items-center"
-            style={{ gap: 12, marginBottom: 12 }}
-          >
-            <KeyOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-            <Title level={4} style={{ marginBottom: 0 }}>
-              鉴权秘钥 (API KEY)
-            </Title>
-          </div>
-          <Paragraph type="secondary" style={{ maxWidth: 640 }}>
-            API KEY 是您与系统后端及外部 Agent 通信的安全令牌。请妥善保管好您的
-            API KEY，避免泄露。泄漏可能导致用量被盗用。
-          </Paragraph>
-
-          <Divider style={{ margin: '24px 0' }} />
-
-          <div className="flex justify-end" style={{ marginBottom: 16 }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              style={{ borderRadius: 6 }}
-            >
-              创建新 KEY
-            </Button>
-          </div>
-
-          <Table
-            dataSource={apiKeys}
-            columns={columns}
-            rowKey="id"
-            pagination={false}
-            className={styles['api-table']}
-          />
-        </Card>
-      </div>
+    <WorkspaceLayout title="API 密钥管理" tips="管理您的API密钥与访问权限">
+      <XProTable<ApiKeyItem>
+        dataSource={apiKeys}
+        columns={columns}
+        rowKey="id"
+        headerTitle="鉴权秘钥 (API KEY)"
+      />
     </WorkspaceLayout>
   );
 };

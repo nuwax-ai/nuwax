@@ -1,0 +1,42 @@
+@import '@/styles/token.less';
+
+.container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dropdown-btn {
+  padding: 0 !important;
+  height: auto !important;
+  width: auto !important;
+}
+
+.more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all @motionDurationMid @motionEaseInOut;
+
+  // 按类型细化
+  &.more-btn-link {
+    padding: 0 @paddingXxs;
+    width: auto;
+    height: auto;
+  }
+
+  &.more-btn-button {
+    padding: @paddingXxs;
+    width: @controlHeight;
+    height: @controlHeight;
+    border-radius: @borderRadius;
+    color: @colorTextSecondary;
+
+    &:hover {
+      color: @colorPrimary;
+      background-color: @colorBgTextHover;
+    }
+  }
+}
