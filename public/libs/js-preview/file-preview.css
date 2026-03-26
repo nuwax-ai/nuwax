@@ -152,6 +152,60 @@ body {
 }
 
 /* ============================================
+   DOCX 预览 / DOCX Preview
+   解决 docx-preview 库在 section 和内联图片上强制使用 pt 宽度导致在移动端无法查看的问题
+   ============================================ */
+.docx-wrapper {
+    background-color: #f0f2f5 !important;
+    padding: 20px !important;
+    overflow-x: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+.docx-wrapper > section.docx {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+    margin: 0 auto 20px !important;
+    background: #fff !important;
+    /* 允许 A4 原生 pt 宽度生效，但在窄屏下限制最大宽度 */
+    max-width: 100% !important;
+    min-height: auto !important;
+    overflow-x: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* 仅限制最大宽度而不强制设置 width: auto，以保持原生宽高比 */
+.docx-wrapper section.docx img,
+.docx-wrapper section.docx [style*="width"] {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* 针对图片周围的特殊 div 容器 */
+.docx-wrapper section.docx div {
+    display: inline-block !important; /* 修正库默认的布局干扰 */
+    max-width: 100% !important;
+}
+
+/* 针对 Vue Office 库可能生成的外部容器类名进行修正 */
+.vue-office-docx {
+    overflow-x: auto !important;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .docx-wrapper {
+        padding: 5px !important;
+    }
+    .docx-wrapper > section.docx {
+        padding: 40px 20px !important; /* 适当缩小内边距以让内容尽可能占满屏幕 */
+        width: 100% !important;
+    }
+}
+
+/* ============================================
    HTML 预览 / HTML Preview
    ============================================ */
 .html-preview {

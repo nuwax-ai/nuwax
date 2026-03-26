@@ -181,7 +181,6 @@ const ApiKeyPage: React.FC = () => {
         dataSource={apiKeys}
         columns={columns}
         rowKey="id"
-        headerTitle="鉴权秘钥 (API KEY)"
       />
     </WorkspaceLayout>
   );
