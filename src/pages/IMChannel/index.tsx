@@ -98,14 +98,15 @@ const IMChannel: React.FC = () => {
   const handleSuccess = () => {
     setOpenModal(false);
     listRef.current?.reload();
-    // 本地增加计数，不调用接口
-    setPlatformList((prev) =>
-      prev.map((item) =>
-        item.channel === platform
-          ? { ...item, count: (item.count || 0) + 1 }
-          : item,
-      ),
-    );
+
+    // 微信机器人由于存在同账号替换逻辑，无论是新增还是编辑场景，都必须从服务端重新获取最新计数数据
+    // 对于其他平台，也仅在新增模式下执行 fetchCounts 以确保 sidebar 计数准确，防止编辑时误增
+    if (
+      platform === IMPlatformEnum.WechatIlink ||
+      mode === CreateUpdateModeEnum.Create
+    ) {
+      fetchCounts();
+    }
   };
 
   const handleDeleteSuccess = (deletedChannel: string) => {

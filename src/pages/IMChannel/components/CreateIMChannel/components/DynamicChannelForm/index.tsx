@@ -153,6 +153,11 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
     );
   }
 
+  // 微信
+  if (platform === IMPlatformEnum.WechatIlink) {
+    return null;
+  }
+
   return null;
 };
 

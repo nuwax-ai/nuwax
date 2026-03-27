@@ -102,3 +102,35 @@ export async function apiIMConfigChannelStatistics(data: {
     data,
   });
 }
+
+/**
+ * 创建微信扫码会话
+ */
+export async function apiStartWechatIlinkQr(): Promise<
+  RequestResponse<{
+    sessionId: string;
+    qrcode: string;
+    qrcodeImgContent: string;
+  }>
+> {
+  return request('/api/im-config/wechat-ilink/qr/start', {
+    method: 'POST',
+  });
+}
+
+/**
+ * 查询微信扫码状态
+ */
+export async function apiGetWechatIlinkQrStatus(params: {
+  sessionId: string;
+}): Promise<
+  RequestResponse<{
+    status: 'wait' | 'scaned' | 'confirmed' | 'expired' | 'connected';
+    configData?: string;
+  }>
+> {
+  return request('/api/im-config/wechat-ilink/qr/status', {
+    method: 'GET',
+    params,
+  });
+}

@@ -291,6 +291,27 @@ Nuwax AI 智能体平台由多个相互关联的仓库组成：
 3. 提交代码变更
 4. 创建 Pull Request
 
+## 社区与支持
+
+欢迎加入女娲智能体平台社区，获取技术支持和最新动态！
+
+### 官方地址
+
+- **官网**：https://nuwax.com
+- **在线演示**：https://agent.nuwax.com
+
+### 社区支持渠道
+
+| 渠道 | 说明 |
+|------|------|
+| **GitHub Issues** | [提交问题](https://github.com/nuwax-ai/nuwax/issues) |
+| **微信群** | 添加群助理微信 `nuwax-ai` |
+| **QQ群** | 群号 `1041169423` |
+| **微信公众号** | 关注"女娲智能体"进行问题反馈 |
+| **抖音/视频号** | 关注获取最新视频内容 |
+
+> 📱 **微信群、公众号、抖音/视频号二维码** 请访问 [用户手册](https://nuwax.com/user-manual.html) 查看
+
 ## 许可证
 
 Apache 2.0 许可证 - 详见 [LICENSE](LICENSE)。

@@ -20,6 +20,7 @@ import React, { useEffect, useState } from 'react';
 import DynamicChannelForm, {
   PlatformChannel,
 } from './components/DynamicChannelForm';
+import WechatIlinkForm from './components/WechatIlinkForm';
 
 export interface CreateIMChannelProps {
   open: boolean;
@@ -92,7 +93,11 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         form.setFieldsValue({
           type: initialType || IMChannelTypeEnum.Bot,
           enabled: true,
-          outputMode: platform === IMPlatformEnum.Wework ? 'once' : 'stream',
+          outputMode:
+            platform === IMPlatformEnum.Wework ||
+            platform === IMPlatformEnum.WechatIlink
+              ? 'once'
+              : 'stream',
         });
       }
     };
@@ -172,6 +177,8 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
     return `${prefix}${pName}${suffix}`;
   };
 
+  const isWechat = platform === IMPlatformEnum.WechatIlink;
+
   return (
     <XModalForm
       title={getTitle()}
@@ -202,6 +209,9 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
       }}
     >
       <DynamicChannelForm platform={platform} type={robotType} />
+
+      {isWechat && <WechatIlinkForm form={form} />}
+
       <SelectTargetFormItem
         form={form}
         name="target"
@@ -215,6 +225,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
         ]}
         checkTag={AgentComponentTypeEnum.Agent}
       />
+
       <ProFormRadio.Group
         name="outputMode"
         label="输出方式"
@@ -223,7 +234,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
           { label: '流式输出（打字机效果）', value: 'stream' },
           { label: '一次性输出', value: 'once' },
         ]}
-        disabled={platform === IMPlatformEnum.Wework}
+        disabled={platform === IMPlatformEnum.Wework || isWechat}
       />
       <ProFormSwitch name="enabled" label="启用状态" />
     </XModalForm>

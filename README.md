@@ -299,6 +299,27 @@ The Nuwax AI Agent Platform consists of multiple interconnected repositories:
 3. Submit code changes
 4. Create Pull Request
 
+## Community & Support
+
+Join the Nuwax AI Agent Platform community for technical support and latest updates!
+
+### Official Links
+
+- **Website**: https://nuwax.com
+- **Demo**: https://agent.nuwax.com
+
+### Community Channels
+
+| Channel | Description |
+|---------|-------------|
+| **GitHub Issues** | [Submit issues](https://github.com/nuwax-ai/nuwax/issues) |
+| **WeChat Group** | Add assistant `nuwax-ai` |
+| **QQ Group** | Group ID: `1041169423` |
+| **WeChat Official Account** | Follow "女娲智能体" for feedback |
+| **Douyin/Video Account** | Follow for latest video content |
+
+> 📱 For **WeChat Group, Official Account, and Douyin QR codes**, please visit [User Manual](https://nuwax.com/user-manual.html)
+
 ## License
 
 Apache 2.0 License - see [LICENSE](LICENSE) for details.
