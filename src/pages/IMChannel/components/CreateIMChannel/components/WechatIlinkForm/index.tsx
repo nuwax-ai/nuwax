@@ -4,8 +4,12 @@ import {
   apiGetWechatIlinkQrStatus,
   apiStartWechatIlinkQr,
 } from '@/services/imChannel';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Form, FormInstance, message, Space, Tag } from 'antd';
+import {
+  CheckCircleFilled,
+  QrcodeOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
+import { Button, Form, FormInstance, message, Space, Spin, Tag } from 'antd';
 import React, { useState } from 'react';
 
 interface WechatIlinkFormProps {
@@ -140,6 +144,8 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
 
   const getStatusTag = (status: string) => {
     switch (status) {
+      case 'none':
+        return <Tag color="default">未开始</Tag>;
       case 'wait':
         return <Tag color="default">等待扫码</Tag>;
       case 'scaned':
@@ -176,63 +182,128 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
       </Form.Item>
       <Form.Item label="扫码连接" tooltip="点击获取二维码并使用手机微信扫码。">
         <div style={{ textAlign: 'center' }}>
-          {qrInfo && (qrInfo.qrcode || qrInfo.qrcodeImgContent) ? (
-            <div
-              style={{
-                marginBottom: 16,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                position: 'relative',
-                width: 200,
-                margin: '0 auto 16px',
-              }}
-            >
-              {/* 扫码成功后隐藏二维码 */}
-              {!isSuccess && (
-                <div style={{ position: 'relative', width: 216, height: 216 }}>
-                  <img
-                    src={`${QR_CODE_GENERATOR_URL}${encodeURIComponent(
-                      qrInfo.qrcodeImgContent,
-                    )}`}
-                    alt="QR Code"
+          <div
+            style={{
+              marginBottom: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              position: 'relative',
+              width: 216,
+              height: 216,
+              margin: '0 auto 16px',
+              border: '1px dashed #d9d9d9',
+              borderRadius: 8,
+              justifyContent: 'center',
+              backgroundColor: '#fafafa',
+              overflow: 'hidden',
+            }}
+          >
+            {/* 加载中状态 */}
+            {qrLoading ? (
+              <Spin tip="正在获取二维码..." />
+            ) : qrInfo && (qrInfo.qrcode || qrInfo.qrcodeImgContent) ? (
+              <div style={{ position: 'relative', width: 216, height: 216 }}>
+                <img
+                  src={`${QR_CODE_GENERATOR_URL}${encodeURIComponent(
+                    qrInfo.qrcodeImgContent,
+                  )}`}
+                  alt="QR Code"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    padding: 8,
+                    opacity: qrInfo.status === 'expired' ? 0.3 : 1,
+                    transition: 'all 0.3s',
+                  }}
+                />
+
+                {/* 扫码成功蒙层 */}
+                {isSuccess && (
+                  <div
                     style={{
-                      width: 216,
-                      height: 216,
-                      border: '1px solid #eee',
-                      padding: 8,
-                      opacity: qrInfo.status === 'expired' ? 0.3 : 1,
-                      transition: 'all 0.3s',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255,255,255,0.95)',
+                      zIndex: 10,
                     }}
-                  />
-                  {qrInfo.status === 'expired' && (
+                  >
+                    <CheckCircleFilled
+                      style={{
+                        fontSize: 48,
+                        color: '#52c41a',
+                        marginBottom: 12,
+                      }}
+                    />
                     <div
                       style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
+                        fontSize: 16,
+                        fontWeight: 500,
+                        color: '#262626',
                       }}
-                      onClick={handleGetQr}
                     >
-                      <Button type="link" icon={<ReloadOutlined />}>
-                        二维码过期，点击刷新
-                      </Button>
+                      扫码成功
                     </div>
-                  )}
-                </div>
-              )}
-              <div style={{ marginTop: 8 }}>
-                状态：{getStatusTag(qrInfo.status)}
+                    <div
+                      style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}
+                    >
+                      请点击下方‘确定’按钮保存
+                    </div>
+                  </div>
+                )}
+
+                {/* 过期蒙层 */}
+                {qrInfo.status === 'expired' && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255,255,255,0.7)',
+                      cursor: 'pointer',
+                      zIndex: 11,
+                    }}
+                    onClick={handleGetQr}
+                  >
+                    <Button type="link" icon={<ReloadOutlined />}>
+                      二维码过期，点击刷新
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : null}
+            ) : (
+              /* 初始占位状态 */
+              <div
+                style={{
+                  color: '#bfbfbf',
+                  textAlign: 'center',
+                  padding: '0 20px',
+                }}
+              >
+                <QrcodeOutlined
+                  style={{ fontSize: 48, marginBottom: 12, display: 'block' }}
+                />
+                <div style={{ fontSize: 13 }}>请点击下方按钮获取二维码</div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            状态：{getStatusTag(qrInfo?.status || 'none')}
+          </div>
+
           <Space size={12}>
             <Button type="primary" onClick={handleGetQr} loading={qrLoading}>
               {qrInfo ? '重新获取二维码' : '获取二维码'}

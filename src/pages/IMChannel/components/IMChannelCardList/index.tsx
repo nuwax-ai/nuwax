@@ -85,6 +85,17 @@ const ConfigFieldValue: React.FC<{ record: IMChannelInfo }> = ({ record }) => {
     );
   }
 
+  if (platform === IMPlatformEnum.WechatIlink) {
+    return (
+      <span
+        style={{ color: '#828894', fontSize: 12 }}
+        className="text-ellipsis"
+      >
+        BotID: {configData.ilinkAccountId || '-'}
+      </span>
+    );
+  }
+
   return null;
 };
 
