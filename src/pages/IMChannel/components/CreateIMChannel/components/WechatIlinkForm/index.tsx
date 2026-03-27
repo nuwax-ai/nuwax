@@ -9,7 +9,16 @@ import {
   QrcodeOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, Form, FormInstance, message, Space, Spin, Tag } from 'antd';
+import {
+  Alert,
+  Button,
+  Form,
+  FormInstance,
+  message,
+  Space,
+  Spin,
+  Tag,
+} from 'antd';
 import React, { useState } from 'react';
 
 interface WechatIlinkFormProps {
@@ -300,9 +309,20 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
             )}
           </div>
 
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ margin: '16px 0' }}>
             状态：{getStatusTag(qrInfo?.status || 'none')}
           </div>
+
+          {isSuccess && (
+            <div style={{ marginBottom: 20, textAlign: 'left' }}>
+              <Alert
+                message="重要提示"
+                description="同一个微信在第二次扫码确认后，原有的机器人连接将立即失效。请务必点击下方的“确定”按钮以保存并生效当前配置。"
+                type="warning"
+                showIcon
+              />
+            </div>
+          )}
 
           <Space size={12}>
             <Button type="primary" onClick={handleGetQr} loading={qrLoading}>
