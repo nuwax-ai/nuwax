@@ -1,45 +1,56 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { apiApiKeyDelete, apiApiKeyList } from '@/services/account';
+import type { ApiKeyInfo } from '@/types/interfaces/account';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import {
+  BarChartOutlined,
   CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  PlusOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message, Space, Tag, Tooltip, Typography } from 'antd';
-import React, { useState } from 'react';
-import { MOCK_API_KEYS } from './mock';
+import dayjs from 'dayjs';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
+import ApiKeyFormModal from './ApiKeyFormModal';
+import ApiKeyPermissionModal from './ApiKeyPermissionModal';
+import ApiKeyStatsModal from './ApiKeyStatsModal';
 
-export interface ApiKeyItem {
-  id: string;
-  name: string;
-  description: string;
-  apiKey: string;
-  status: 'active' | 'inactive' | 'expired';
-  createTime: string;
-  expireTime: string;
-}
-
-export const STATUS_MAP: Record<
-  ApiKeyItem['status'],
-  { color: string; text: string }
-> = {
-  active: { color: 'green', text: '活跃' },
-  expired: { color: 'orange', text: '已过期' },
-  inactive: { color: 'red', text: '停用' },
+export const STATUS_MAP: Record<number, { color: string; text: string }> = {
+  1: { color: 'green', text: '启用' },
+  0: { color: 'red', text: '停用' },
 };
 
 const { Text } = Typography;
 
 const ApiKeyPage: React.FC = () => {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const actionRef = useRef<ActionType>();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<ApiKeyInfo | undefined>();
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [statsRecord, setStatsRecord] = useState<ApiKeyInfo | undefined>();
+  const [permissionOpen, setPermissionOpen] = useState(false);
+  const [permissionRecord, setPermissionRecord] = useState<
+    ApiKeyInfo | undefined
+  >();
+  const location: any = useLocation();
+  const [pageSize, setPageSize] = useState(15);
 
-  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>(MOCK_API_KEYS);
+  useEffect(() => {
+    if (location.state?._t) {
+      setPageSize(15);
+      actionRef.current?.reloadAndRest?.();
+    }
+  }, [location.state?._t]);
 
-  const toggleShowKey = (id: string) => {
+  const toggleShowKey = (id: string | number) => {
     setShowKeys((prev) => ({
       ...prev,
       [id]: !prev[id],
@@ -58,31 +69,26 @@ const ApiKeyPage: React.FC = () => {
     return `${key.slice(0, 10)}••••••••••••••••••••${key.slice(-4)}`;
   };
 
-  const columns: ProColumns<ApiKeyItem>[] = [
+  const columns: ProColumns<ApiKeyInfo>[] = [
     {
-      title: '名称',
+      title: '密钥名称',
       dataIndex: 'name',
       key: 'name',
-      ellipsis: true,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
       search: false,
+      ellipsis: true,
     },
     {
       title: 'API KEY',
-      dataIndex: 'apiKey',
-      key: 'apiKey',
+      dataIndex: 'accessKey',
+      key: 'accessKey',
+      search: false,
       width: 320,
       render: (_, record) => {
         const visible = showKeys[record.id];
         return (
           <Space size={8}>
             <Text className="font-mono">
-              {visible ? record.apiKey : maskApiKey(record.apiKey)}
+              {visible ? record.accessKey : maskApiKey(record.accessKey)}
             </Text>
             <Tooltip title={visible ? '隐藏' : '显示'}>
               <Button
@@ -97,7 +103,7 @@ const ApiKeyPage: React.FC = () => {
                 type="text"
                 size="small"
                 icon={<CopyOutlined />}
-                onClick={() => copyToClipboard(record.apiKey)}
+                onClick={() => copyToClipboard(record.accessKey)}
               />
             </Tooltip>
           </Space>
@@ -106,26 +112,37 @@ const ApiKeyPage: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'created',
+      key: 'created',
       search: false,
+      valueType: 'dateTime',
     },
     {
       title: '过期时间',
-      dataIndex: 'expireTime',
-      key: 'expireTime',
+      dataIndex: 'expire',
+      key: 'expire',
       search: false,
-      render: (_, record) => (
-        <Text type={record.expireTime === '永不过期' ? 'success' : undefined}>
-          {record.expireTime}
-        </Text>
-      ),
+      render: (_, record) => {
+        const val = record.expire;
+        const isNever =
+          !val || val === '永不过期' || val === '0000-00-00 00:00:00';
+
+        // 如果后端返回的是 ISO 格式字符串，使用 dayjs 格式化显示成标准的日期时间
+        const display = val && !isNever ? dayjs(val).format('YYYY-MM-DD') : val;
+
+        return (
+          <Text type={isNever ? 'success' : undefined}>
+            {isNever ? '永不过期' : display}
+          </Text>
+        );
+      },
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       search: false,
+      valueEnum: STATUS_MAP,
       render: (_, record) => {
         const { color = 'default', text = '未知' } =
           STATUS_MAP[record.status] || {};
@@ -135,7 +152,7 @@ const ApiKeyPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 220,
       search: false,
       fixed: 'right',
       align: 'center',
@@ -145,11 +162,30 @@ const ApiKeyPage: React.FC = () => {
           record={record}
           actions={[
             {
+              key: 'stats',
+              label: '调用统计',
+              icon: <BarChartOutlined />,
+              onClick: (r) => {
+                setStatsRecord(r);
+                setStatsOpen(true);
+              },
+            },
+            {
+              key: 'permission',
+              label: '权限配置',
+              icon: <SafetyCertificateOutlined />,
+              onClick: (r) => {
+                setPermissionRecord(r);
+                setPermissionOpen(true);
+              },
+            },
+            {
               key: 'edit',
               label: '编辑',
               icon: <EditOutlined />,
               onClick: (r) => {
-                message.info(`正在编辑: ${r.name}`);
+                setCurrentRecord(r);
+                setModalOpen(true);
               },
             },
             {
@@ -161,11 +197,9 @@ const ApiKeyPage: React.FC = () => {
                 title: (r) => `确认删除密钥 "${r.name}" 吗？`,
                 description: '删除后将无法恢复，请谨慎操作。',
               },
-              onClick: async (r) => {
-                await new Promise((resolve) => {
-                  setTimeout(resolve, 2000);
-                });
-                setApiKeys((prev) => prev.filter((item) => item.id !== r.id));
+              onClick: async () => {
+                await apiApiKeyDelete(record.accessKey);
+                actionRef.current?.reload();
                 message.success('删除成功');
               },
             },
@@ -176,11 +210,59 @@ const ApiKeyPage: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title="API 密钥管理" tips="管理您的API密钥与访问权限">
-      <XProTable<ApiKeyItem>
-        dataSource={apiKeys}
+    <WorkspaceLayout
+      title="API 密钥管理"
+      tips="管理您的API密钥与访问权限"
+      rightSlot={
+        <Button
+          key="add"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setCurrentRecord(undefined);
+            setModalOpen(true);
+          }}
+        >
+          新增密钥
+        </Button>
+      }
+    >
+      <XProTable<ApiKeyInfo>
+        key={location.state?._t || 'api-key-table'}
+        actionRef={actionRef}
+        request={async () => {
+          const result = await apiApiKeyList();
+          return {
+            data: result.data || [],
+            success: result.success,
+          };
+        }}
         columns={columns}
         rowKey="id"
+        pagination={{
+          pageSize,
+          onChange: (_, size) => setPageSize(size),
+        }}
+      />
+      <ApiKeyFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        record={currentRecord}
+        onSuccess={() => {
+          setModalOpen(false);
+          actionRef.current?.reload();
+        }}
+      />
+      <ApiKeyStatsModal
+        open={statsOpen}
+        onOpenChange={setStatsOpen}
+        record={statsRecord}
+      />
+      <ApiKeyPermissionModal
+        open={permissionOpen}
+        onOpenChange={setPermissionOpen}
+        record={permissionRecord}
+        onSuccess={() => actionRef.current?.reload()}
       />
     </WorkspaceLayout>
   );

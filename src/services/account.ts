@@ -1,4 +1,11 @@
 import type {
+  ApiKeyCreateParams,
+  ApiKeyInfo,
+  ApiKeyStatsInfo,
+  ApiKeyUpdateParams,
+  OpenApiDefinition,
+} from '@/types/interfaces/account';
+import type {
   BindEmailParams,
   CodeLogin,
   ILoginResult,
@@ -158,6 +165,73 @@ export async function apiGetUserMetricUsage(): Promise<
   RequestResponse<UserMetricUsageInfo>
 > {
   return request('/api/user/metric/usage', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 查询用户 API KEY 列表
+ */
+export async function apiApiKeyList(): Promise<RequestResponse<ApiKeyInfo[]>> {
+  return request('/api/user/api-key/list', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 新增创建 API KEY
+ */
+export async function apiApiKeyCreate(
+  data: ApiKeyCreateParams,
+): Promise<RequestResponse<ApiKeyInfo>> {
+  return request('/api/user/api-key/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新 API KEY
+ */
+export async function apiApiKeyUpdate(
+  data: ApiKeyUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/user/api-key/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 删除 API KEY
+ */
+export async function apiApiKeyDelete(
+  apiKey: string,
+): Promise<RequestResponse<any>> {
+  return request(`/api/user/api-key/delete/${apiKey}`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 查询用户 API KEY 调用统计数据
+ */
+export async function apiApiKeyStats(
+  apiKey: string,
+): Promise<RequestResponse<ApiKeyStatsInfo[]>> {
+  return request('/api/user/api-key/stats', {
+    method: 'GET',
+    params: { apiKey },
+  });
+}
+
+/**
+ * 获取 API 权限项列表
+ */
+export async function apiGetOpenApiDefinitions(): Promise<
+  RequestResponse<OpenApiDefinition[]>
+> {
+  return request('/api/user/api-key/open-api-definitions', {
     method: 'GET',
   });
 }
