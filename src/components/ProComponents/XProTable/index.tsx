@@ -129,7 +129,7 @@ function XProTable<
         <Button
           key="x-query"
           type="primary"
-          onClick={() => actionRef.current?.reload()}
+          onClick={() => formRef.current?.submit()}
         >
           查询
         </Button>,
