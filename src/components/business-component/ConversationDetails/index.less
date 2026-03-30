@@ -27,18 +27,34 @@
       height: 32px;
       padding: @paddingXs 8px @paddingXs 40px;
       box-sizing: content-box;
-    }
 
-    .title {
-      margin-bottom: 0;
-      color: @colorTextSecondary;
-      font-size: @fontSize;
-    }
+      .title {
+        margin-bottom: 0;
+        color: @colorTextSecondary;
+        font-size: @fontSize;
+      }
 
-    .icon-box {
-      width: 32px;
-      height: 32px;
-      color: @colorTextTertiary;
+      .nav-icon {
+        transform: translateY(-6px);
+        opacity: 0;
+        background-color: @colorBgContainer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: height 0.24s ease, opacity 0.2s ease, transform 0.24s ease;
+
+        &.nav-icon-visible {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+      }
+
+      .icon-box {
+        width: 32px;
+        height: 32px;
+        color: @colorTextTertiary;
+      }
     }
   }
 
@@ -67,9 +83,6 @@
       }
 
       .chat-wrapper-content {
-        // overflow: auto;
-        // margin-bottom: 5px;
-
         overflow: auto;
         margin-bottom: 5px;
         display: flex;

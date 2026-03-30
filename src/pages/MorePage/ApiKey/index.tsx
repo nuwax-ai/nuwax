@@ -42,10 +42,12 @@ const ApiKeyPage: React.FC = () => {
   >();
   const location: any = useLocation();
   const [pageSize, setPageSize] = useState(15);
+  const [allData, setAllData] = useState<ApiKeyInfo[]>([]);
 
   useEffect(() => {
     if (location.state?._t) {
       setPageSize(15);
+      setAllData([]); // 重置全量数据缓存
       actionRef.current?.reloadAndRest?.();
     }
   }, [location.state?._t]);
@@ -74,7 +76,6 @@ const ApiKeyPage: React.FC = () => {
       title: '密钥名称',
       dataIndex: 'name',
       key: 'name',
-      search: false,
       ellipsis: true,
     },
     {
@@ -82,7 +83,7 @@ const ApiKeyPage: React.FC = () => {
       dataIndex: 'accessKey',
       key: 'accessKey',
       search: false,
-      width: 320,
+      width: 360,
       render: (_, record) => {
         const visible = showKeys[record.id];
         return (
@@ -199,6 +200,7 @@ const ApiKeyPage: React.FC = () => {
               },
               onClick: async () => {
                 await apiApiKeyDelete(record.accessKey);
+                setAllData([]); // 重置缓存以重新获取最新数据
                 actionRef.current?.reload();
                 message.success('删除成功');
               },
@@ -230,11 +232,25 @@ const ApiKeyPage: React.FC = () => {
       <XProTable<ApiKeyInfo>
         key={location.state?._t || 'api-key-table'}
         actionRef={actionRef}
-        request={async () => {
-          const result = await apiApiKeyList();
+        request={async (params) => {
+          let data = allData;
+          if (data.length === 0) {
+            const result = await apiApiKeyList();
+            data = result.data || [];
+            setAllData(data);
+          }
+
+          // 本地检索逻辑
+          const filteredData = data.filter((item) => {
+            const nameMatch = params.name
+              ? item.name.toLowerCase().includes(params.name.toLowerCase())
+              : true;
+            return nameMatch;
+          });
+
           return {
-            data: result.data || [],
-            success: result.success,
+            data: filteredData,
+            success: true,
           };
         }}
         columns={columns}
@@ -250,6 +266,7 @@ const ApiKeyPage: React.FC = () => {
         record={currentRecord}
         onSuccess={() => {
           setModalOpen(false);
+          setAllData([]); // 重置缓存以获取最新数据
           actionRef.current?.reload();
         }}
       />
@@ -262,7 +279,10 @@ const ApiKeyPage: React.FC = () => {
         open={permissionOpen}
         onOpenChange={setPermissionOpen}
         record={permissionRecord}
-        onSuccess={() => actionRef.current?.reload()}
+        onSuccess={() => {
+          setAllData([]); // 重置缓存以获取最新数据
+          actionRef.current?.reload();
+        }}
       />
     </WorkspaceLayout>
   );

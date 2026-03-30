@@ -87,7 +87,7 @@ export interface SkillInfoForAt {
 
 export interface MentionItem {
   /** 唯一标识符 */
-  id: string | number;
+  id?: string | number;
   // 技能ID
   targetId: number;
   /** 显示名称 */

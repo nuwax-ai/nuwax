@@ -235,14 +235,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
 
   return (
     <Modal
-      title={
-        <div>
-          <Title level={4} style={{ color: '#1890ff', marginBottom: 4 }}>
-            权限配置
-          </Title>
-          <Text type="secondary">{record?.name}</Text>
-        </div>
-      }
+      title={<Title level={4}>权限配置 - {record?.name}</Title>}
       open={open}
       onCancel={() => onOpenChange(false)}
       width={720}

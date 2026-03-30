@@ -3,6 +3,7 @@ import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentConfigInfo, SpaceLogInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
+import { TooltipPlacement } from 'antd/es/tooltip';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
 
@@ -57,6 +58,7 @@ export interface TooltipIconProps {
   type?: TooltipTitleTypeEnum;
   title?: React.ReactNode;
   icon?: React.ReactNode;
+  placement?: TooltipPlacement;
   onClick?: MouseEventHandler<HTMLSpanElement>;
 }
 

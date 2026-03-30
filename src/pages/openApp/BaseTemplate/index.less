@@ -1,0 +1,177 @@
+@import '@/styles/token';
+
+.container {
+  display: flex;
+  height: 100%;
+}
+
+// 应用智能体侧边栏容器
+.agentSidebarContainer {
+  width: 280px;
+  height: 100%;
+  padding: 14px @paddingSm;
+  border-right: @colorBorderSecondary 1px solid;
+  background-color: @colorBgContainerDisabled;
+  display: flex;
+  flex-direction: column;
+  gap: @paddingSm;
+  overflow: hidden;
+  transition: padding 0.3s ease, border-color 0.2s ease, opacity 0.3s ease;
+
+  &.agentSidebarContainerCollapsed {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right-color: transparent;
+    opacity: 0.35;
+  }
+}
+
+.sidebarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .logo-container {
+    width: 32px;
+    height: 32px;
+    border-radius: @borderRadius;
+    background-color: @colorBgContainer;
+    overflow: hidden;
+
+    .logo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .collapseBtn {
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    border-radius: 50%;
+  }
+}
+
+// 新建会话按钮
+.newSessionBtn {
+  width: 100%;
+  height: @controlHeightLg;
+  border: @lineWidth solid @colorBorder;
+  border-radius: @borderRadiusLg;
+  background-color: @colorBgContainer;
+  padding: 0 @paddingSm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+
+  &:hover {
+    box-shadow: @boxShadowSecondary;
+  }
+
+  .newSessionText {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: @colorText;
+    font-size: @fontSize;
+    font-weight: 500;
+  }
+
+  .shortcutTag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    padding: 0 @paddingXs;
+    border-radius: @borderRadiusOuter;
+    background: @colorBgLayout;
+    color: @colorTextDescription;
+    font-size: @fontSizeSm;
+  }
+}
+
+// 历史会话标题
+.history-title {
+  padding: @paddingXs 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: @colorText;
+    font-size: @fontSize;
+    font-weight: 500;
+  }
+
+  // 查看更多
+  .more-conversation {
+    line-height: @lineHeight;
+    padding: 0;
+    color: @navSecondMenuTextSecondary;
+    font-size: @fontSizeSm;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+    user-select: none;
+
+    &:hover {
+      color: @navSecondMenuTextSecondary;
+    }
+  }
+}
+
+// 底部渐变
+.footer-top-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 68px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0%) 0%,
+    #f9fafb 80.65%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+// 用户区域
+.user-area {
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadiusLg;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: @colorBgLayout;
+    box-shadow: @boxShadowDrawerUp;
+  }
+
+  // 用户头像
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-sizing: content-box;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // 用户名称
+  .user-name {
+    color: @colorTextSecondary;
+  }
+}

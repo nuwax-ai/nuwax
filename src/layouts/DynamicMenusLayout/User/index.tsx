@@ -3,7 +3,7 @@ import { apiLogout } from '@/services/account';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { Popover } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 import UserActionItem from './UserAction';
@@ -14,7 +14,7 @@ const cx = classNames.bind(styles);
 /**
  * 用户头像以及用户操作列表（包含用户名称、设置、退出登录）
  */
-const User: React.FC = () => {
+const User: React.FC<PropsWithChildren> = ({ children }) => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const { userInfo } = useModel('userInfo');
   // 清除菜单信息
@@ -84,12 +84,14 @@ const User: React.FC = () => {
       onOpenChange={setOpenAdmin}
     >
       {/*这里需要包裹一层div，否则控制台会出现Warning警告，可能跟Popover组件有关*/}
-      <div className={styles['user-avatar-container']}>
-        <UserAvatar
-          avatar={userInfo?.avatar}
-          onClick={() => setOpenAdmin(true)}
-        />
-      </div>
+      {children || (
+        <div className={styles['user-avatar-container']}>
+          <UserAvatar
+            avatar={userInfo?.avatar}
+            onClick={() => setOpenAdmin(true)}
+          />
+        </div>
+      )}
     </Popover>
   );
 };

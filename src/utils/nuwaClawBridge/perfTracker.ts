@@ -1,3 +1,5 @@
+import { SessionMessageType } from '@/types/interfaces/appDev';
+
 type PerfPayload = Record<string, unknown>;
 
 type PerfStage =
@@ -21,7 +23,7 @@ export type MessagePerfLifecycle = {
   onSendClick: () => void;
   onHttpStart: () => void;
   onSseConnect: () => void;
-  onFirstChunk: () => void;
+  onFirstChunk: (messageType?: string, chunkData?: unknown) => void;
   onStreamEnd: (reason?: string) => void;
   onUiRenderDone: () => void;
   onCloseRenderComplete: () => void;
@@ -36,6 +38,37 @@ type NuwaPerfBridge = {
 const stageTsMap = new Map<string, MessageStageTs>();
 const roundCounterByConversation = new Map<number, number>();
 const ROUND_COUNTER_MAX_SIZE = 5000;
+
+function isHeartbeatEvent(messageType?: string, chunkData?: unknown): boolean {
+  const isHeartbeatValue = (value: unknown): boolean => {
+    if (typeof value !== 'string') return false;
+    const normalized = value.trim().toLowerCase();
+    return (
+      normalized === 'heartbeat' ||
+      normalized === String(SessionMessageType.HEARTBEAT).toLowerCase()
+    );
+  };
+
+  if (isHeartbeatValue(messageType)) return true;
+  if (!chunkData || typeof chunkData !== 'object') return false;
+
+  const obj = chunkData as Record<string, any>;
+  const data =
+    obj.data && typeof obj.data === 'object'
+      ? (obj.data as Record<string, any>)
+      : null;
+
+  return [
+    obj.eventType,
+    obj.messageType,
+    obj.type,
+    obj.subType,
+    data?.eventType,
+    data?.messageType,
+    data?.type,
+    data?.subType,
+  ].some((value) => isHeartbeatValue(value));
+}
 
 function compactRoundCounterIfNeeded(): void {
   if (roundCounterByConversation.size <= ROUND_COUNTER_MAX_SIZE) return;
@@ -134,10 +167,11 @@ export const perfTracker = {
       onSendClick: () => this.onSendClick(context),
       onHttpStart: () => this.onHttpStart(context),
       onSseConnect: () => this.onSseConnect(context),
-      onFirstChunk: () => {
+      onFirstChunk: (messageType?: string, chunkData?: unknown) => {
         if (firstChunkMarked) return;
+        if (isHeartbeatEvent(messageType, chunkData)) return;
         firstChunkMarked = true;
-        this.onFirstChunk(context);
+        this.onFirstChunk(context, messageType);
       },
       onStreamEnd: (reason?: string) => this.onStreamEnd(context, reason),
       onUiRenderDone: () => this.onUiRenderDone(context),
@@ -164,7 +198,7 @@ export const perfTracker = {
     mark('sse_connect', ctx);
   },
 
-  onFirstChunk(ctx: MessagePerfContext): void {
+  onFirstChunk(ctx: MessagePerfContext, messageType?: string): void {
     const perf = getBridgePerf();
     if (!perf?.enabled?.()) return;
     trackStage(ctx, 'first_chunk');
@@ -172,6 +206,7 @@ export const perfTracker = {
       `${ctx.messageId}:first_chunk`,
       'first_chunk',
       ctx,
+      messageType ? { msgType: messageType } : {},
     );
   },
 
@@ -197,4 +232,3 @@ export const perfTracker = {
     mark('ui_render_done', ctx);
   },
 };
-

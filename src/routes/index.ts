@@ -355,6 +355,26 @@ const routes = [
     layout: false,
   },
   {
+    path: '/app',
+    component: '@/pages/openApp/BaseTemplate',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+    routes: [
+      {
+        path: 'details/:agentId',
+        component: '@/pages/openApp/AppDetails',
+      },
+      {
+        path: 'chat/:id/:agentId',
+        component: '@/pages/openApp/ChatConversation',
+      },
+      {
+        path: 'history/conversation/:agentId',
+        component: '@/pages/openApp/HistoryConversation',
+      },
+    ],
+  },
+  {
     path: '/license-expired',
     component: '@/pages/403',
     layout: false,

@@ -11,7 +11,8 @@ import { useRequest } from 'umi';
 
 export default () => {
   const [usedAgentList, setUsedAgentList] = useState<AgentInfo[]>();
-  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+  // 历史会话列表是否加载完成
+  const [loadingHistoryEnd, setLoadingHistoryEnd] = useState<boolean>(false);
   // 历史会话列表-所有
   const [conversationList, setConversationList] =
     useState<ConversationInfo[]>();
@@ -22,28 +23,32 @@ export default () => {
   // 查询用户最近使用过的智能体列表
   const { run: runUsed } = useRequest(apiUserUsedAgentList, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: (result: AgentInfo[]) => {
       setUsedAgentList(result);
     },
   });
 
   // 查询历史会话记录
-  const { run: runHistory } = useRequest(apiAgentConversationList, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (result: ConversationInfo[]) => {
-      setConversationList(result);
-      setLoadingHistory(false);
+  const { run: runHistory, loading: loadingHistory } = useRequest(
+    apiAgentConversationList,
+    {
+      manual: true,
+      debounceWait: 300,
+      loadingDelay: 300, // 300ms内不显示loading
+      onSuccess: (result: ConversationInfo[]) => {
+        setConversationList(result);
+        setLoadingHistoryEnd(true);
+      },
     },
-  });
+  );
 
   // 查询历史会话记录
   const { run: runHistoryItem, loading: loadingHistoryItem } = useRequest(
     apiAgentConversationList,
     {
       manual: true,
-      debounceInterval: 500,
+      debounceWait: 500,
       onSuccess: (result: ConversationInfo[]) => {
         setConversationListItem(result);
       },
@@ -53,7 +58,7 @@ export default () => {
   // 删除会话
   const { run: runDel } = useRequest(apiAgentConversationDelete, {
     manual: true,
-    debounceInterval: 500,
+    debounceWait: 500,
     onSuccess: (_: null, params: number[]) => {
       const conversationId = params[0];
       setConversationList?.((list) =>
@@ -76,8 +81,8 @@ export default () => {
     runHistory,
     runHistoryItem,
     loadingHistory,
+    loadingHistoryEnd,
     loadingHistoryItem,
-    setLoadingHistory,
     runDel,
   };
 };

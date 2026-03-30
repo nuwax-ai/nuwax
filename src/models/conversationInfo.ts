@@ -1076,7 +1076,9 @@ export default () => {
         perfLifecycle.onSseConnect();
       },
       onMessage: (res: ConversationChatResponse) => {
-        perfLifecycle.onFirstChunk();
+        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判“首包”
+        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断“真正消息块”。
+        perfLifecycle.onFirstChunk(res?.eventType, res);
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 

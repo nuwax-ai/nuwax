@@ -5,6 +5,14 @@ import React, { useEffect } from 'react';
 
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 
+// 默认沙盒配置值
+const DEFAULT_SANDBOX_CONFIG_VALUE = {
+  agentPort: 9086,
+  vncPort: 9088,
+  fileServerPort: 60001,
+  maxUsers: 30,
+};
+
 interface SandboxModalProps {
   open: boolean;
   mode: 'add' | 'edit';
@@ -31,6 +39,10 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         });
       } else {
         form.resetFields();
+        // 设置默认值
+        form.setFieldsValue({
+          configValue: DEFAULT_SANDBOX_CONFIG_VALUE,
+        });
       }
     }
   }, [open, mode, initialData, form]);

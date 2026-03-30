@@ -16,13 +16,14 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
   type = TooltipTitleTypeEnum.Blank,
   icon,
   title,
+  placement,
   onClick,
 }) => {
   const bg =
     type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
   const { token } = theme.useToken();
   return (
-    <Tooltip title={title} classNames={{ root: bg }}>
+    <Tooltip title={title} classNames={{ root: bg }} placement={placement}>
       <span
         className={cx(
           'hover-box',
