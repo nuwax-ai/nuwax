@@ -10,17 +10,15 @@ const Header: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   return (
-    <>
-      <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
-        <div className={cx(styles['logo-container'])}>
-          <img
-            src={tenantConfigInfo?.siteLogo}
-            className={cx(styles.logo)}
-            alt=""
-          />
-        </div>
-      </ConditionRender>
-    </>
+    <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
+      <div className={cx(styles['logo-container'])}>
+        <img
+          src={tenantConfigInfo?.siteLogo}
+          className={cx(styles.logo)}
+          alt=""
+        />
+      </div>
+    </ConditionRender>
   );
 };
 

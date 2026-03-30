@@ -52,6 +52,7 @@ const BaseTemplate: React.FC = () => {
     toggleAppSidebarVisible,
     setIsAppSidebarMode,
     appAgentDetail,
+    createAppNewConversation,
   } = useModel('useOpenApp');
 
   // =========================== footer 渐变 ===========================
@@ -59,7 +60,6 @@ const BaseTemplate: React.FC = () => {
   // 底部渐变显示状态
   const [showFooterTopGradient, setShowFooterTopGradient] =
     useState<boolean>(true);
-  // const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -162,11 +162,6 @@ const BaseTemplate: React.FC = () => {
     [layoutStyle, navigationStyle, isSecondMenuCollapsed],
   );
 
-  // 新建会话
-  const handleNewSession = useCallback(() => {
-    history.push(`/app/details/${agentId}`);
-  }, [agentId]);
-
   // 查看全部历史会话
   const handleViewAllHistory = () => {
     history.push(`/app/history/conversation/${agentId}`);
@@ -196,14 +191,14 @@ const BaseTemplate: React.FC = () => {
       if (!isShortcutPressed) return;
 
       event.preventDefault();
-      handleNewSession();
+      createAppNewConversation(agentId);
     };
 
     window.addEventListener('keydown', handleKeydown);
     return () => {
       window.removeEventListener('keydown', handleKeydown);
     };
-  }, [handleNewSession, isMacSystem]);
+  }, [createAppNewConversation, isMacSystem, agentId]);
 
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -251,7 +246,7 @@ const BaseTemplate: React.FC = () => {
         <button
           className={styles.newSessionBtn}
           type="button"
-          onClick={handleNewSession}
+          onClick={() => createAppNewConversation(agentId)}
         >
           <span className={styles.newSessionText}>
             <PlusCircleOutlined />
@@ -259,7 +254,7 @@ const BaseTemplate: React.FC = () => {
           </span>
           <div className={cx('flex', 'items-center', 'gap-4')}>
             <span className={styles.shortcutTag}>
-              {!isMacSystem ? '⌘' : 'ctrl'}
+              {isMacSystem ? '⌘' : 'ctrl'}
             </span>
             <span className={styles.shortcutTag}>J</span>
           </div>
@@ -364,32 +359,6 @@ const BaseTemplate: React.FC = () => {
         className={`${pageContainerClassName} scroll-container`}
         id="page-container-selector"
       >
-        {/* <header
-          className={cx(styles.contentHeader, {
-            [styles.contentHeaderVisible]: !isSidebarVisible,
-          })}
-        >
-          <div className={styles.contentHeaderLeft}>
-            <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
-              <div className={cx(styles['logo-container'])}>
-                <img
-                  src={tenantConfigInfo?.siteLogo}
-                  className={cx(styles.logo)}
-                  alt=""
-                />
-              </div>
-            </ConditionRender>
-          </div>
-          <Tooltip title="展开导航" placement="bottom">
-            <button
-              type="button"
-              className={styles.expandBtn}
-              onClick={toggleSidebarVisible}
-            >
-              <SvgIcon name="icons-nav-sidebar" style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-        </header> */}
         <Outlet />
       </div>
 

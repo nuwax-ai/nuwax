@@ -1007,7 +1007,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 界面配置列表
   const PageConfigList: CollapseProps['items'] = [
-    // 任务型智能体 才显示 隐藏远程桌面 按钮
+    // 通用型智能体 才显示 隐藏远程桌面 按钮
     ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
       ? [
           {

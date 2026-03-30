@@ -79,6 +79,7 @@ import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
+import { throttle } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -87,6 +88,8 @@ export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
   const { showPagePreview, handleChatProcessingList } = useModel('chat');
+  // 是否是应用智能体模式
+  const { isAppSidebarMode } = useModel('useOpenApp');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
@@ -262,14 +265,21 @@ export default () => {
     },
   );
 
-  // 处理文件列表刷新事件
+  // 处理文件列表刷新事件（在 useCallback 中直接节流， 3秒内只执行一次）
   const handleRefreshFileList = useCallback(
-    async (conversationId?: number) => {
-      if (conversationId) {
+    throttle(
+      async (cId?: number) => {
+        if (!cId) {
+          return;
+        }
+        // 设置文件树数据加载状态
         setFileTreeDataLoading(true);
-        await runGetStaticFileList(conversationId);
-      }
-    },
+        // 查询文件列表
+        await runGetStaticFileList(cId);
+      },
+      3000,
+      { leading: true, trailing: true },
+    ),
     [runGetStaticFileList],
   );
 
@@ -472,17 +482,26 @@ export default () => {
             topic: result.data?.topic,
           });
 
-          // 如果是会话聊天页（chat页），同步更新会话记录
-          runHistory({
-            agentId: null,
-            limit: 20,
-          });
+          // 如果是应用智能体模式，则同步更新当前智能体的会话记录
+          if (isAppSidebarMode) {
+            // 如果是会话聊天页（chat页），同步更新会话记录
+            runHistory({
+              agentId: currentInfo.agentId,
+              limit: 20,
+            });
+          } else {
+            // 如果是会话聊天页（chat页），同步更新会话记录
+            runHistory({
+              agentId: null,
+              limit: 20,
+            });
 
-          // 获取当前智能体的历史记录
-          runHistoryItem({
-            agentId: currentInfo.agentId,
-            limit: 20,
-          });
+            // 获取当前智能体的历史记录
+            runHistoryItem({
+              agentId: currentInfo.agentId,
+              limit: 20,
+            });
+          }
         } catch (error) {
           console.error('更新会话主题失败:', error);
           // 更新失败时重置标志，允许下次重试
@@ -490,7 +509,7 @@ export default () => {
         }
       }
     },
-    [runUpdateTopic, runHistory, runHistoryItem],
+    [runUpdateTopic, runHistory, runHistoryItem, isAppSidebarMode],
   );
 
   // 处理变量参数
@@ -1434,10 +1453,10 @@ export default () => {
     isRestartAgentLoading,
     // 远程桌面容器信息, 暂时未使用
     vncContainerInfo,
-    // 任务智能体会话中点击选中的文件ID
+    // 通用型智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
     setTaskAgentSelectedFileId,
-    // 任务智能体文件选择触发标志
+    // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     setTaskAgentSelectTrigger,
     isLoadingOtherInterface,

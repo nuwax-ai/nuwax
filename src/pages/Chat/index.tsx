@@ -118,13 +118,22 @@ const Chat: React.FC = () => {
   // 是否锁定电脑选择（仅在从 AgentDetails 页面带有 selectedComputerId 且为 PUSH 跳转时生效）
   const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
 
-  // 当前选中的电脑 ID（任务型智能体）
+  // 当前选中的电脑 ID（通用型智能体）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   // 用户选择的智能体电脑名称
   // const [selectedComputerName, setSelectedComputerName] = useState<string>('');
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
+
+  // 开放应用智能体会话聊天页面相关状态
+  const {
+    handleSetAppAgentDetail,
+    isAppSidebarMode,
+    isAppSidebarVisible,
+    toggleAppSidebarVisible,
+    createAppNewConversation,
+  } = useModel('useOpenApp');
 
   // 仅在本次会话中使用从 AgentDetails 页面带过来的 selectedComputerId；
   // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
@@ -199,9 +208,9 @@ const Chat: React.FC = () => {
     openDesktopView,
     restartVncPod,
     restartAgent,
-    // 任务智能体会话中点击选中的文件ID
+    // 通用型智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
-    // 任务智能体文件选择触发标志
+    // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
@@ -422,6 +431,8 @@ const Chat: React.FC = () => {
     const targetAgent = defaultAgentDetail || conversationInfo?.agent;
     if (targetAgent) {
       setAgentDetail(targetAgent);
+      // 设置应用智能体详情
+      handleSetAppAgentDetail(targetAgent);
       handleOpenPreview(targetAgent);
     }
   }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
@@ -443,7 +454,7 @@ const Chat: React.FC = () => {
   // 监听进入视口事件，自动触发加载更多
   // 使用 useRef 记录上一次的 inView 状态，严格保证只有在【刚进入视口】的那一瞬间才触发请求
   // 避免消息列表刚加载完时，由于 IntersectionObserver 的异步性导致 inView 还没变 false 就被 React 重渲染再次触发
-  const prevLoadMoreInViewRef = useRef(false);
+  const prevLoadMoreInViewRef = useRef<boolean>(false);
   useEffect(() => {
     const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
     prevLoadMoreInViewRef.current = loadMoreInView;
@@ -508,8 +519,6 @@ const Chat: React.FC = () => {
             infos,
             variableParams: firstVariableParams,
             sandboxId: effectiveSandboxId,
-            // debug: false,
-            // isSync: true,
             data,
             skillIds,
           };
@@ -518,14 +527,20 @@ const Chat: React.FC = () => {
         }
       };
       asyncFun();
-
-      // 获取当前智能体的历史记录
-      runHistoryItem({
-        agentId,
-        limit: 20,
-      });
     }
   }, [id, message, files, infos, firstVariableParams, skillIds]);
+
+  useEffect(() => {
+    // 应用智能体模式下，不获取当前智能体的历史记录
+    if (isAppSidebarMode) {
+      return;
+    }
+    // 获取当前智能体的历史记录
+    runHistoryItem({
+      agentId,
+      limit: 20,
+    });
+  }, [id, agentId, isAppSidebarMode]);
 
   useEffect(() => {
     addBaseTarget();
@@ -557,34 +572,47 @@ const Chat: React.FC = () => {
     }
   };
 
-  // 监听会话状态更新事件
-  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
-    const { conversationId } = data;
-    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-    if (conversationId === conversationInfo?.id?.toString()) {
-      // 重新查询会话信息
-      runAsync(id);
-      // 重新查询会话记录
-      runHistory({
-        agentId: null,
-        limit: 20,
-      });
-
-      // 取消监听会话状态更新事件
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-  };
-
   useEffect(() => {
-    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-      // 监听会话状态更新事件
-      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    if (conversationInfo?.taskStatus !== TaskStatus.EXECUTING) {
+      return;
     }
+
+    // 监听会话状态更新事件
+    const listenConversationStatusUpdate = (data: {
+      conversationId: string;
+    }) => {
+      const { conversationId } = data;
+      // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+      if (conversationId === conversationInfo?.id?.toString()) {
+        // 重新查询会话信息
+        runAsync(id);
+
+        // 应用智能体模式下，查询当前智能体的会话记录，否则查询所有智能体的会话记录
+        const _agentId = isAppSidebarMode ? agentId : null;
+
+        // 重新查询会话记录
+        runHistory({
+          agentId: _agentId,
+          limit: 20,
+        });
+
+        // 取消监听会话状态更新事件
+        eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+      }
+    };
+
+    // 监听会话状态更新事件
+    eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
 
     return () => {
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     };
-  }, [conversationInfo?.taskStatus]);
+  }, [
+    conversationInfo?.taskStatus,
+    conversationInfo?.id,
+    isAppSidebarMode,
+    agentId,
+  ]);
 
   useEffect(() => {
     // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
@@ -594,15 +622,20 @@ const Chat: React.FC = () => {
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
     setClearLoading(false);
 
+    // 用于绑定刷新文件列表事件的回调函数
+    const refreshFileList = () => {
+      handleRefreshFileList(id);
+    };
+
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
     // 订阅文件列表刷新事件
-    eventBus.on(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
+    eventBus.on(EVENT_TYPE.RefreshFileList, refreshFileList);
 
     return () => {
       eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
       // 组件卸载时取消订阅
-      eventBus.off(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
+      eventBus.off(EVENT_TYPE.RefreshFileList, refreshFileList);
 
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
@@ -637,10 +670,25 @@ const Chat: React.FC = () => {
         setIsLoadingOtherInterface(false);
         const { id: newConversationId, agentId: newAgentId } = res.data;
 
-        let url = `/home/chat/${newConversationId}/${newAgentId}`;
-        if (effectiveAgent?.type === AgentTypeEnum.TaskAgent) {
-          url += '?hideMenu=true';
+        // 会话发起后跳转的页面URL
+        let url = '';
+
+        // 应用智能体模式下，跳转到应用智能体会话页面
+        if (isAppSidebarMode) {
+          // 会话发起后跳转的页面URL
+          const conversationUrl = '/app/chat/:id/:agentId';
+          url = conversationUrl
+            .replace(':id', newConversationId?.toString() || '')
+            .replace(':agentId', newAgentId.toString());
+        } else {
+          url = `/home/chat/${newConversationId}/${newAgentId}`;
+          // 如果是通用型智能体，则隐藏菜单
+          if (effectiveAgent?.type === AgentTypeEnum.TaskAgent) {
+            url += '?hideMenu=true';
+          }
         }
+
+        // 跳转会话页面
         history.replace(url, {
           message: '',
           files: [],
@@ -782,7 +830,7 @@ const Chat: React.FC = () => {
     newName: string,
   ): Promise<boolean> => {
     if (!id) {
-      messageAntd.error('会话ID不存在，无法新建文件');
+      messageAntd.warning('会话ID不存在，无法新建文件');
       return false;
     }
 
@@ -955,7 +1003,7 @@ const Chat: React.FC = () => {
     filePaths: string[],
   ) => {
     if (!id) {
-      messageAntd.error('会话ID不存在，无法上传文件');
+      messageAntd.warning('会话ID不存在，无法上传文件');
       return;
     }
 
@@ -965,7 +1013,7 @@ const Chat: React.FC = () => {
     );
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
-      messageAntd.error(`上传文件总大小不能超过${maxFileSize}MB`);
+      messageAntd.warning(`上传文件总大小不能超过${maxFileSize}MB`);
       return;
     }
 
@@ -1028,9 +1076,39 @@ const Chat: React.FC = () => {
               }}
             />
             <div className={cx('flex', 'items-center', 'gap-4')}>
+              {/* 应用智能体模式下，显示内容导航按钮 */}
+              <ConditionRender
+                condition={isAppSidebarMode && !isAppSidebarVisible}
+              >
+                <TooltipIcon
+                  title="展开导航"
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      style={{ fontSize: 16 }}
+                      onClick={toggleAppSidebarVisible}
+                    />
+                  }
+                />
+
+                {/* 新建会话 */}
+                <TooltipIcon
+                  title="新建会话"
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-new_chat"
+                      style={{ fontSize: 16 }}
+                      onClick={() => createAppNewConversation(agentId)}
+                    />
+                  }
+                />
+              </ConditionRender>
+
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-              {!isSidebarVisible && !isMobile && (
+              {!isAppSidebarMode && !isSidebarVisible && !isMobile && (
                 <TooltipIcon
                   title="查看智能体详情"
                   className={cx(styles['icon-box'])}
@@ -1441,8 +1519,9 @@ const Chat: React.FC = () => {
           }
         />
       </div>
-      {/* AgentSidebar - 只在文件树隐藏时显示 */}
-      {!isFileTreeVisible && (
+      {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
+      <ConditionRender condition={!isAppSidebarMode && !isFileTreeVisible}>
+        {/* AgentSidebar - 只在文件树隐藏时显示 */}
         <AgentSidebar
           ref={sidebarRef}
           className={cx(
@@ -1454,7 +1533,7 @@ const Chat: React.FC = () => {
           onToggleCollectSuccess={handleToggleCollectSuccess}
           onVisibleChange={setIsSidebarVisible}
         />
-      )}
+      </ConditionRender>
       {/*展示台区域*/}
       <ShowArea />
     </div>

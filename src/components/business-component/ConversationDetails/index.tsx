@@ -76,6 +76,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const [form] = Form.useForm();
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
+  // 开放应用智能体会话聊天页面相关状态
   const {
     handleSetAppAgentDetail,
     isAppSidebarMode,
@@ -390,24 +391,20 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
             {/* 右侧按钮区域 */}
             <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 应用智能体模式下，显示内容导航按钮 */}
-              <ConditionRender condition={isAppSidebarMode}>
-                <div
-                  className={cx(styles['nav-icon'], {
-                    [styles['nav-icon-visible']]: !isAppSidebarVisible,
-                  })}
-                >
-                  <TooltipIcon
-                    title="展开导航"
-                    className={cx(styles['icon-box'])}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        style={{ fontSize: 16 }}
-                        onClick={toggleAppSidebarVisible}
-                      />
-                    }
-                  />
-                </div>
+              <ConditionRender
+                condition={isAppSidebarMode && !isAppSidebarVisible}
+              >
+                <TooltipIcon
+                  title="展开导航"
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      style={{ fontSize: 16 }}
+                      onClick={toggleAppSidebarVisible}
+                    />
+                  }
+                />
               </ConditionRender>
 
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}

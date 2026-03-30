@@ -10,7 +10,7 @@ export interface FileTreeProps {
   /** 文件树数据加载状态 */
   fileTreeDataLoading?: boolean;
 
-  /** 任务智能体会话中点击选中的文件ID */
+  /** 通用型智能体会话中点击选中的文件ID */
   taskAgentSelectedFileId?: string;
 
   /** 当前选中的文件ID */

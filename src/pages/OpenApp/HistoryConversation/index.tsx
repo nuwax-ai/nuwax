@@ -9,6 +9,7 @@ const HistoryConversation: React.FC = () => {
   const params = useParams();
   const agentId = Number(params.agentId);
 
+  // 跳转会话聊天页
   const handleLink = (id: number, agentId: number) => {
     history.push(`/app/chat/${id}/${agentId}`);
   };

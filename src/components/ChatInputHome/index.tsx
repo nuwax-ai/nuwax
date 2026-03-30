@@ -499,7 +499,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           </Upload>
-          {/*任务智能体切换按钮*/}
+          {/*通用型智能体切换按钮*/}
           {showTaskAgentToggle && (
             <Tooltip
               title={

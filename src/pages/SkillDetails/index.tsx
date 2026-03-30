@@ -536,7 +536,7 @@ const SkillDetails: React.FC = () => {
       <div className={cx('flex', 'flex-1', 'overflow-y')}>
         {/* 文件树视图 */}
         <FileTreeView
-          // 任务智能体会话中点击选中的文件ID
+          // 通用型智能体会话中点击选中的文件ID
           taskAgentSelectedFileId={'SKILL.md'}
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}

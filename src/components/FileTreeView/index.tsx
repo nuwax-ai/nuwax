@@ -1484,8 +1484,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
-      // 获取文件内容
-      const fileContent = selectedFileNode?.content || '';
       // 获取文件名
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
@@ -1517,6 +1515,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           />
         );
       }
+
+      // 获取文件内容（统一转为字符串，避免 number/object 导致编辑器不显示）
+      const fileContent = String(selectedFileNode?.content ?? '');
 
       // 代码文件：使用代码查看器
       return (

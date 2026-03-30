@@ -150,7 +150,7 @@ export interface TenantConfigInfo {
   /*默认站点Agent */
   defaultAgentId: number;
 
-  /*默认任务智能体Agent */
+  /*默认通用型智能体Agent */
   defaultTaskAgentId?: number;
 
   /*首页会话框下的推荐问题 */

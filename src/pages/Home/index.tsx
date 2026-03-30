@@ -153,12 +153,12 @@ const Home: React.FC = () => {
     await handleCreateConversation(agentId, attach);
   };
 
-  // 切换任务智能体模式
+  // 切换通用型智能体模式
   const handleToggleTaskAgent = () => {
     setIsTaskAgentMode((prev) => !prev);
   };
 
-  // 是否显示任务智能体切换按钮
+  // 是否显示通用型智能体切换按钮
   const showTaskAgentToggle = !!(
     tenantConfigInfo?.defaultTaskAgentId &&
     tenantConfigInfo.defaultTaskAgentId > 0

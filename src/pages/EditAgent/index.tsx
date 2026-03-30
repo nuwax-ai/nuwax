@@ -884,7 +884,7 @@ const EditAgent: React.FC = () => {
      * 设置最小宽度
      */
     if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
+      // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
       if (isFileTreeVisible) {
         document.documentElement.style.minWidth = '1750px';
       } else {

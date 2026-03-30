@@ -1,5 +1,6 @@
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { useState } from 'react';
+import { history } from 'umi';
 
 const useOpenApp = () => {
   // 是否是应用侧边栏模式
@@ -19,6 +20,11 @@ const useOpenApp = () => {
     setAppAgentDetail(info);
   };
 
+  // 创建应用智能体新会话
+  const createAppNewConversation = (agentId: number) => {
+    history.push(`/app/details/${agentId}`);
+  };
+
   return {
     isAppSidebarMode,
     setIsAppSidebarMode,
@@ -26,6 +32,7 @@ const useOpenApp = () => {
     toggleAppSidebarVisible,
     appAgentDetail,
     handleSetAppAgentDetail,
+    createAppNewConversation,
   };
 };
 
