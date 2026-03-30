@@ -3,8 +3,8 @@ import {
   TableActions,
   XProTable,
 } from '@/components/ProComponents';
+import { AGENT_COMPONENT_TYPE_MAP } from '@/constants/agent.constants';
 import { apiSpaceLogList } from '@/services/agentDev';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   SpaceLogInfo,
   SpaceLogQueryFilter,
@@ -108,12 +108,7 @@ const LogProTable: React.FC = () => {
         title: '类型',
         dataIndex: 'targetType',
         valueType: 'select',
-        valueEnum: {
-          [AgentComponentTypeEnum.Agent]: { text: '智能体' },
-          [AgentComponentTypeEnum.Plugin]: { text: '插件' },
-          [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
-          [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
-        },
+        valueEnum: AGENT_COMPONENT_TYPE_MAP,
         hideInTable: false,
         initialValue: targetTypeFromUrl,
         fieldProps: {

@@ -183,6 +183,16 @@ export async function apiRunningLogList(
   });
 }
 
+// 日志查询-API调用日志（列表）
+export async function apiApiKeyLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/requestLogs/apikey/list', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 日志查询-运行日志（详情）
 export async function apiRunningLogDetail(
   data: SpaceLogDetailParams,

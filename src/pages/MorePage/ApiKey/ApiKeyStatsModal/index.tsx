@@ -4,6 +4,7 @@ import type { ApiKeyInfo, ApiKeyStatsInfo } from '@/types/interfaces/account';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Button, Modal, Typography } from 'antd';
 import React from 'react';
+import { history } from 'umi';
 
 const { Title } = Typography;
 
@@ -83,16 +84,19 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       key: 'action',
       width: 100,
       align: 'center',
-      render: (_, record) => (
+      render: (_, statsRecord) => (
         <TableActions
           type="link"
-          record={record}
+          record={statsRecord}
           actions={[
             {
               key: 'view',
               label: '查看记录',
               onClick: () => {
-                // 暂时不实现
+                onOpenChange(false);
+                history.push(
+                  `/more-page/api-key-logs?targetType=ApiKey&targetId=${record?.id}&requestId=${statsRecord.key}`,
+                );
               },
             },
           ]}

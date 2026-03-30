@@ -1,5 +1,6 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
+  AgentComponentTypeEnum,
   AgentEngineEnum,
   DefaultSelectedEnum,
   EventBindResponseActionEnum,
@@ -323,3 +324,13 @@ export const HOME_INDEX_OPTIONS = [
     label: '是',
   },
 ];
+
+// 智能体组件类型映射
+export const AGENT_COMPONENT_TYPE_MAP = {
+  [AgentComponentTypeEnum.Agent]: { text: '智能体' },
+  [AgentComponentTypeEnum.Plugin]: { text: '插件' },
+  [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
+  [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
+  [AgentComponentTypeEnum.Model]: { text: '模型' },
+  [AgentComponentTypeEnum.ApiKey]: { text: 'ApiKey' },
+};

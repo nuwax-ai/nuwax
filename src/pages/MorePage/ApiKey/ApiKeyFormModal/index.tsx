@@ -99,10 +99,6 @@ const ApiKeyFormModal: React.FC<ApiKeyFormModalProps> = ({
       form={form}
       onFinish={onFinish}
       width={520}
-      modalProps={{
-        destroyOnClose: true,
-        maskClosable: false,
-      }}
     >
       <ProFormText
         name="name"

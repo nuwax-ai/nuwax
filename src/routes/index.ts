@@ -142,6 +142,12 @@ const routes = [
             name: 'API KEY',
             component: '@/pages/MorePage/ApiKey',
           },
+          {
+            path: 'api-key-logs',
+            name: 'Api调用日志',
+            component: '@/pages/MorePage/ApiKeyLogs',
+            hideInMenu: true,
+          },
         ],
       },
       // 系统管理统一管理

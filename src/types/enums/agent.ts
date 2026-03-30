@@ -30,6 +30,7 @@ export enum AgentComponentTypeEnum {
   ToolCall = 'ToolCall',
   // 执行计划
   Plan = 'Plan',
+  ApiKey = 'ApiKey',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
