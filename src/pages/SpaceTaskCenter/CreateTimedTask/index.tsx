@@ -6,6 +6,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message, Switch } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import TimedPeriodSelector from './components/TimedPeriodSelector';
 import styles from './index.less';
@@ -110,11 +111,20 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   }>['onFinish'] = (values: any) => {
     const {
       taskTarget: { targetId, type: targetType },
-      message,
+      message: messageText,
       taskName,
       cron,
+      lockTime,
       keepConversation,
     } = values;
+
+    const isSpecificTime = cron === 'SpecificTime';
+
+    // 最终校验：指定时间不能早于当前时间
+    if (isSpecificTime && lockTime && dayjs(lockTime).isBefore(dayjs())) {
+      message.warning('指定时间必须在当前时间之后');
+      return;
+    }
 
     // 基础数据
     let data: any = {
@@ -122,7 +132,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       targetType,
       targetId,
       taskName,
-      cron,
+      cron: isSpecificTime ? null : cron,
+      lockTime: isSpecificTime ? lockTime?.valueOf() : null,
+      maxExecTimes: isSpecificTime ? 1 : null,
       keepConversation: keepConversation ? 1 : 0,
     };
 
@@ -133,7 +145,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     if (targetType === AgentComponentTypeEnum.Agent) {
       data = {
         ...data,
-        params: { message: message, variables: params },
+        params: { message: messageText, variables: params },
       };
     }
 
@@ -190,7 +202,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
   // 更新定时任务
   const updateTaskInfo = async (info: TaskInfo) => {
-    const { cron, taskName, targetType, targetId, params } = info;
+    const { taskName, targetType, targetId, params } = info;
     let result: any = null;
     let message: string = '';
     let keepConversation: string = '';
@@ -247,7 +259,6 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
     // 更新回显任务信息表单值
     form.setFieldsValue({
-      cron,
       taskName,
       taskTarget: {
         name: name,
@@ -265,6 +276,10 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
             keepConversation: keepConversation ? true : false,
           }
         : {}),
+      // 处理定时模式回显
+      cron: info.maxExecTimes === 1 ? 'SpecificTime' : info.cron,
+      lockTime:
+        info.maxExecTimes === 1 && info.lockTime ? dayjs(info.lockTime) : null,
     });
   };
 

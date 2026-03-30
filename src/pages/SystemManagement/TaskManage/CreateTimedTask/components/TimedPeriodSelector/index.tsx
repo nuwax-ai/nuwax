@@ -2,8 +2,9 @@ import SelectList from '@/components/custom/SelectList';
 import { apiSystemTaskCronList } from '@/services/systemManage';
 import { TaskCronInfo, TaskCronItemDto } from '@/types/interfaces/agentTask';
 import { option } from '@/types/interfaces/common';
-import { Form, Space } from 'antd';
+import { DatePicker, Form, Space } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -72,14 +73,23 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
     if (!data || data.length === 0) {
       return;
     }
-    const _typeNameList = data.map((item) => ({
-      label: item.typeName,
-      value: item.typeName,
-    }));
+    const _typeNameList = [
+      ...data.map((item) => ({
+        label: item.typeName,
+        value: item.typeName,
+      })),
+      { label: '指定时间', value: 'SpecificTime' },
+    ];
     setTypeNameList(_typeNameList);
 
     // 如果有需要回显的 cron，则先找到对应的定时范围
     if (targetCron) {
+      if (targetCron === 'SpecificTime') {
+        setTypeName('SpecificTime');
+        setTypeCronList([]);
+        setTypeCron('SpecificTime');
+        return;
+      }
       const currentItem = data.find((info) =>
         info.items.some((subItem) => subItem.cron === targetCron),
       );
@@ -123,15 +133,28 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
     if (value === typeCron) {
       return;
     }
+    if (value === 'SpecificTime') {
+      setTypeName('SpecificTime');
+      setTypeCronList([]);
+      setTypeCron('SpecificTime');
+      return;
+    }
     handleTimedInfo(taskCronListRef.current, value);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // 选择定时范围 - 名称
   const handleChangeTypeName = (value: React.Key) => {
-    setTypeName(value as string);
+    const name = value as string;
+    setTypeName(name);
+    if (name === 'SpecificTime') {
+      setTypeCronList([]);
+      setTypeCron('SpecificTime');
+      onChange?.('SpecificTime');
+      return;
+    }
     const currentItem = taskCronListRef.current?.find(
-      (item) => item.typeName === value,
+      (item) => item.typeName === name,
     );
     handleSetTypeCron(currentItem?.items || []);
   };
@@ -144,24 +167,55 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
   };
 
   return (
-    <Space>
-      <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
-        <SelectList
-          className={cx(styles.select)}
-          options={typeNameList}
-          value={typeName}
-          onChange={handleChangeTypeName}
-        />
-      </Form.Item>
-      <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
-        <SelectList
-          className={cx(styles.select)}
-          options={typeCronList}
-          value={typeCron}
-          onChange={handleChangeTypeCron}
-        />
-      </Form.Item>
-    </Space>
+    <div className={cx(styles.container)}>
+      <Space>
+        <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+          <SelectList
+            className={cx(styles.select)}
+            options={typeNameList}
+            value={typeName}
+            onChange={handleChangeTypeName}
+          />
+        </Form.Item>
+        {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
+          <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+            <SelectList
+              className={cx(styles.select)}
+              options={typeCronList}
+              value={typeCron}
+              onChange={handleChangeTypeCron}
+            />
+          </Form.Item>
+        )}
+
+        {/* 指定时间选择器 */}
+        {typeName === 'SpecificTime' && (
+          <Form.Item
+            name="lockTime"
+            noStyle
+            rules={[
+              { required: true, message: '请选择指定时间' },
+              {
+                validator: (_, value) => {
+                  if (value && dayjs(value).isBefore(dayjs())) {
+                    return Promise.reject(
+                      new Error('指定时间必须在当前时间之后'),
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <DatePicker
+              showTime
+              placeholder="请选择日期时间"
+              style={{ width: 200 }}
+            />
+          </Form.Item>
+        )}
+      </Space>
+    </div>
   );
 };
 

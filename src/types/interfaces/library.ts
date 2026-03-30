@@ -289,9 +289,11 @@ export interface TaskInfo {
   // 最新执行时间
   latestExecTime: string;
   // 锁定时间
-  lockTime: string;
+  lockTime: string | null;
   // 执行次数
   execTimes: number;
+  // 最大执行次数
+  maxExecTimes?: number | null;
   // 错误信息
   error: string;
   // 最后修改时间

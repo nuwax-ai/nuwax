@@ -20,6 +20,8 @@ const User: React.FC<PropsWithChildren> = ({ children }) => {
   // 清除菜单信息
   const { clearMenuInfo } = useModel('menuModel');
 
+  const { clearSpaceInfo } = useModel('spaceModel');
+
   let navigate = useNavigate();
   const { run } = useRequest(apiLogout, {
     manual: true,
@@ -28,6 +30,8 @@ const User: React.FC<PropsWithChildren> = ({ children }) => {
       localStorage.clear();
       // 清除菜单信息
       clearMenuInfo();
+      // 清除空间信息
+      clearSpaceInfo();
       navigate('/login', { replace: true });
     },
   });

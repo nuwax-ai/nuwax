@@ -62,6 +62,12 @@ function Space() {
     return localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
   }, [currentSpaceInfo]);
 
+  // 清除空间信息
+  const clearSpaceInfo = useCallback(() => {
+    setSpaceList([]);
+    setCurrentSpaceInfo(undefined);
+  }, []);
+
   return {
     getSpaceId,
     spaceList,
@@ -73,6 +79,7 @@ function Space() {
     currentSpaceInfo,
     setCurrentSpaceInfo,
     asyncSpaceListFun,
+    clearSpaceInfo,
   };
 }
 

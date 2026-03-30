@@ -193,6 +193,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
             if (workspacePath) {
               spaceId = extractSpaceIdFromPath(workspacePath);
             }
+          } else {
+            spaceId = params?.spaceId;
           }
         } catch {
           // 忽略缓存解析错误
