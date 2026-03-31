@@ -66,6 +66,10 @@ export default defineConfig({
 				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
 				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径
 				const newChatTempPathMobile = '/subpackages' + chatTempPathMobile; //分包后的页面路径
+
+        // 应用详情页路径
+        const appDetailsPathMobile = '/subpackages/pages/app-details/app-details';
+
 				//兼容分包前的页面 先转为分包后的页面 然后跳转
 				if (isMobile && href.includes('/m/#/pages/')) {
 					let mHash = hash;
@@ -99,6 +103,23 @@ export default defineConfig({
 						}
 					}
 
+          // 应用详情页路径
+          if (hash && hash.indexOf(appDetailsPathMobile) !== -1) {
+						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						if (matchId && matchId[1]) {
+							const agentId = matchId[1];
+							// 若带 conversationId 则跳转到 PC 应用会话详情页，否则跳转到应用智能体详情页
+							if (matchConversationId && matchConversationId[1]) {
+								const conversationId = matchConversationId[1];
+								window.location.replace(baseUrl + '/app/chat/' + conversationId + '/' + agentId);
+							} else {
+								window.location.replace(baseUrl + '/app/details/' + agentId);
+							}
+							return;
+						}
+					}
+
 					// 临时会话页面: PC 端访问 M 页面 => 跳转 PC
 					if (hash && hash.indexOf(chatTempPathMobile) !== -1) {
 						const matchChatTemp = hash.match(new RegExp('[?&]chatKey=([^&#]+)'));
@@ -114,12 +135,32 @@ export default defineConfig({
 
 				// 移动端访问 PC 页面 => 跳转 M
 				if (isMobile && !href.includes('/m/')) {
+          // 智能体详情页
 					const match = href.match(new RegExp('/agent/([^/?#]+)'));
 					if (match) {
 						const agentId = match[1];
 						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId);
 						return;
 					}
+
+          // 应用详情页
+          const matchAppDetails = href.match(new RegExp('/app/details/([^/?#]+)'));
+          if (matchAppDetails) {
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+            window.location.replace(replaceUrl);
+            return;
+          }
+
+          // 应用会话页
+          const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
+          if (matchAppChat) {
+            const conversationId = matchAppChat[1];
+            const agentId = matchAppChat[2];
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
+            window.location.replace(replaceUrl);
+            return;
+          }
+
 
 					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
 					const matchChatTemp = href.match(new RegExp('/chat-temp/([^/?#]+)'));

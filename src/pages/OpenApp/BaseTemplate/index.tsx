@@ -348,7 +348,7 @@ const BaseTemplate: React.FC = () => {
           <span className={cx('flex-1', 'text-ellipsis', styles['user-name'])}>
             {userInfo?.nickName || userInfo?.userName}
           </span>
-          <User>
+          <User isAppDetails={true}>
             <EllipsisOutlined className={styles.moreIcon} />
           </User>
         </footer>

@@ -1,3 +1,4 @@
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { HistoryData } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
 import {
@@ -135,7 +136,25 @@ export async function apiSkillConfigHistoryList(
  * @returns Promise<RequestResponse<string>> 返回URL的内容
  */
 export async function fetchContentFromUrl(url: string): Promise<string> {
-  return request(url, {
-    method: 'GET',
-  });
+  try {
+    const fullUrl = `${process.env.BASE_URL || ''}${url}`;
+    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+    const response = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Accept: 'text/plain, application/json, */*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`获取文件内容失败: ${response.status}`);
+    }
+
+    // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number
+    return response.text();
+  } catch (error) {
+    console.error('获取文件内容失败: ', error);
+    throw error;
+  }
 }

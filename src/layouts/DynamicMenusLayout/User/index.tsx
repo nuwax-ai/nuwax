@@ -1,6 +1,7 @@
 import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { UserAvatarEnum } from '@/types/enums/menus';
+import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
@@ -11,10 +12,17 @@ import UserAvatar from './UserAvatar';
 
 const cx = classNames.bind(styles);
 
+interface UserProps {
+  isAppDetails?: boolean;
+}
+
 /**
  * 用户头像以及用户操作列表（包含用户名称、设置、退出登录）
  */
-const User: React.FC<PropsWithChildren> = ({ children }) => {
+const User: React.FC<PropsWithChildren<UserProps>> = ({
+  children,
+  isAppDetails = false,
+}) => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const { userInfo } = useModel('userInfo');
   // 清除菜单信息
@@ -30,9 +38,17 @@ const User: React.FC<PropsWithChildren> = ({ children }) => {
       localStorage.clear();
       // 清除菜单信息
       clearMenuInfo();
+
       // 清除空间信息
       clearSpaceInfo();
-      navigate('/login', { replace: true });
+
+      // 如果是在应用详情页，则跳转到登录页
+      if (isAppDetails) {
+        const currentPath = location.pathname;
+        redirectToLogin(currentPath);
+      } else {
+        navigate('/login', { replace: true });
+      }
     },
   });
 
