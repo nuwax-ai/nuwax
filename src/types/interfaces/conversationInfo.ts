@@ -150,6 +150,8 @@ export interface SendMessageParams {
   data?: any;
   // 技能ID列表
   skillIds?: number[];
+  // 模型ID
+  modelId?: number;
 }
 
 // 会话参数
@@ -169,6 +171,8 @@ export interface ConversationChatParams {
   sandboxId?: string;
   // 技能ID列表
   skillIds?: number[];
+  // 模型ID
+  modelId?: number;
 }
 
 // 临时会话参数

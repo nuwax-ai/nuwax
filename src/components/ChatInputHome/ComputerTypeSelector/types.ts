@@ -38,4 +38,6 @@ export interface ComputerTypeSelectorProps {
   saveOnSelect?: boolean;
   /** 是否为个人电脑（用于区分不可用状态提示） */
   isPersonalComputer?: boolean;
+  /** 是否为只读模式：只允许查看，禁止手动切换 */
+  readonly?: boolean;
 }

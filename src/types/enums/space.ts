@@ -139,6 +139,12 @@ export enum AgentArrangeConfigEnum {
   SubAgent = 'SubAgent',
   // 隐藏远程桌面
   Hide_Remote_Desktop = 'Hide_Remote_Desktop',
+  // 允许用户选择自有模型
+  Allow_Other_Model = 'Allow_Other_Model',
+  // 允许用户@技能
+  Allow_At_Skill = 'Allow_At_Skill',
+  // 允许用户选择个人电脑
+  Allow_Private_Sandbox = 'Allow_Private_Sandbox',
 }
 
 // 是否开启问题建议,可用值:Open,Close

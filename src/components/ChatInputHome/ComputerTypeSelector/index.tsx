@@ -1,3 +1,4 @@
+import { SvgIcon } from '@/components/base';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiGetUserSelectableSandboxList,
@@ -13,9 +14,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { SvgIcon } from '../base';
 import styles from './index.less';
-import type { ComputerOption, ComputerTypeSelectorProps } from './types';
+import { type ComputerOption, type ComputerTypeSelectorProps } from './types';
 
 const cx = classNames.bind(styles);
 
@@ -61,6 +61,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   autoSelect = true,
   saveOnSelect = true,
   isPersonalComputer = false,
+  readonly = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -89,7 +90,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         }));
         setComputerList(options);
         if (selectedMap) {
-          setAgentSelectedMap(selectedMap);
+          setAgentSelectedMap(readonly ? {} : selectedMap);
         }
         setInitialized(true);
         initializedRef.current = true;
@@ -206,7 +207,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   const handleSelect = useCallback(
     async (option: ComputerOption) => {
       // 如果选中的是当前已选中的，直接返回，不触发接口
-      if (String(option.id) === String(value)) {
+      if (String(option.id) === String(value) || readonly) {
         setOpen(false);
         return;
       }
@@ -275,7 +276,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
               )}
             </div>
           ),
-          disabled: fixedSelection && !isSelected,
+          disabled: readonly || (fixedSelection && !isSelected),
           onClick: () => handleSelect(computer),
         });
       });

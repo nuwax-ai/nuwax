@@ -22,6 +22,7 @@ import {
   AgentPublishApplyParams,
   ApiAgentConversationChatPageResultParams,
   ConversationMessageListParams,
+  ModelOptionDto,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -381,5 +382,17 @@ export async function apiAgentConversationShare(
   return request('/api/agent/conversation/share', {
     method: 'POST',
     data,
+  });
+}
+
+/**
+ * 智能体会话可选模型列表
+ * @param agentId 智能体ID
+ */
+export async function apiAgentConversationModelOptions(
+  agentId: number,
+): Promise<RequestResponse<ModelOptionDto[]>> {
+  return request(`/api/agent/conversation/model/options/${agentId}`, {
+    method: 'GET',
   });
 }

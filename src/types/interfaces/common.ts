@@ -2,6 +2,7 @@ import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
+  DefaultSelectedEnum,
   OnlyTemplateEnum,
   OptionDataSourceEnum,
 } from '@/types/enums/agent';
@@ -521,6 +522,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
     message: string,
     files: UploadFileInfo[],
     skillIds?: number[],
+    modelId?: number,
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
@@ -547,6 +549,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   hasPermission?: boolean;
   /** 电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 电脑选择是否为只读模式 */
+  readonly?: boolean;
   /** 蒙层显示的文本内容 */
   maskText?: string;
   /** 是否自动触发选择逻辑 */
@@ -555,6 +559,14 @@ export interface ChatInputProps extends ManualComponentItemProps {
   saveComputerOnSelect?: boolean;
   /** 是否为个人电脑 */
   isPersonalComputer?: boolean;
+  /** 是否允许选择自有模型 */
+  allowOtherModel?: DefaultSelectedEnum;
+  /** 当前选中的模型 ID */
+  selectedModelId?: number;
+  /** 模型改变时的回调 */
+  onModelSelect?: (modelId: number) => void;
+  /** 智能体类型 */
+  agentType?: string;
   /** 占位符文本 */
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */

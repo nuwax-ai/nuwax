@@ -37,6 +37,8 @@ const useConversation = () => {
       hideMenu?: boolean;
       // 技能 ID 列表
       skillIds?: number[];
+      // 模型 ID
+      modelId?: number;
     },
   ) => {
     const variableParams = attach?.variableParams;

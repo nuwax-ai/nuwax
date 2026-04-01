@@ -1259,6 +1259,7 @@ export default () => {
       isSync = true,
       data = null,
       skillIds,
+      modelId,
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
@@ -1342,6 +1343,8 @@ export default () => {
       sandboxId,
       // 技能ID列表
       skillIds,
+      // 模型ID
+      modelId,
     };
     // 处理会话
     handleConversation(params, currentMessageId, perfLifecycle, isSync, data);

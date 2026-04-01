@@ -144,6 +144,12 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   hideChatArea: HideChatAreaEnum;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
+  // 允许用户选择自有模型
+  allowOtherModel: DefaultSelectedEnum;
+  // 允许用户@技能
+  allowAtSkill: DefaultSelectedEnum;
+  // 允许用户选择个人电脑
+  allowPrivateSandbox: DefaultSelectedEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -473,6 +479,12 @@ export interface AgentConfigInfo {
   type: AgentTypeEnum;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
+  // 允许用户选择自有模型
+  allowOtherModel: DefaultSelectedEnum;
+  // 允许用户@技能
+  allowAtSkill: DefaultSelectedEnum;
+  // 允许用户选择个人电脑
+  allowPrivateSandbox: DefaultSelectedEnum;
   // 扩展信息
   extra?: {
     prodProxyMcpId?: number;
@@ -660,6 +672,12 @@ export interface AgentDetailDto extends AgentBaseInfo {
   isSandboxUnavailable?: boolean;
   /** 是否隐藏远程桌面，1 隐藏；0 不隐藏 */
   hideDesktop: HideDesktopEnum;
+  // 允许用户选择自有模型
+  allowOtherModel?: DefaultSelectedEnum;
+  // 允许用户@技能
+  allowAtSkill?: DefaultSelectedEnum;
+  // 允许用户选择个人电脑
+  allowPrivateSandbox?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件
@@ -779,6 +797,39 @@ export interface apiSpaceLogListParams {
 export interface SpaceLogDetailParams {
   /** 请求唯一标识 */
   id: string;
+}
+
+/**
+ * 智能体会话可选模型列表项
+ */
+export interface ModelOptionDto {
+  id: number;
+  tenantId: number;
+  spaceId: number;
+  scope: string;
+  name: string;
+  description: string;
+  model: string;
+  type: string;
+  isReasonModel: number;
+  networkType: string;
+  functionCall: string;
+  maxTokens: number;
+  maxContextTokens: number;
+  apiProtocol: string;
+  apiInfoList: {
+    url: string;
+    key: string;
+    weight: number;
+  }[];
+  strategy: string;
+  dimension: number;
+  modified: string;
+  created: string;
+  creator: CreatorInfo;
+  enabled: number;
+  accessControl: number;
+  usageScenarios: string[];
 }
 
 // 日志查询响应-工作空间

@@ -1,11 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
-import ComputerTypeSelector from '@/components/ComputerTypeSelector';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { TaskStatus } from '@/types/enums/agent';
+import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -27,10 +26,12 @@ import React, {
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import AtMentionIcon from './AtMentionIcon';
+import ComputerTypeSelector from './ComputerTypeSelector';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
+import ModelSelector from './ModelSelector';
 
 const cx = classNames.bind(styles);
 
@@ -67,6 +68,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   autoSelectComputer,
   saveComputerOnSelect,
   isPersonalComputer,
+  readonly,
   enableMention = true,
   // @ 提及弹窗展示方向：auto | up | down，默认 auto
   mentionPlacement = 'auto',
@@ -74,6 +76,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   placeholder,
   /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions,
+  /** 是否允许选择自有模型 */
+  allowOtherModel,
+  /** 当前选中的模型 ID */
+  selectedModelId,
+  /** 模型改变时的回调 */
+  onModelSelect,
+  /** 智能体类型 */
+  agentType,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -127,7 +137,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const confirmSendMessage = (value: string) => {
     // 如果输入框内容不为空 或者 附件文件列表不为空
     if (!!value.trim() || !!files?.length) {
-      onEnter(value, files, skillIds);
+      onEnter(value, files, skillIds, selectedModelId);
       // 如果需要清空输入框
       if (isClearInput) {
         // 清空附件文件列表
@@ -525,15 +535,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           )}
-          {/*手动选择组件*/}
           <ManualComponentItem
             manualComponents={manualComponents}
             selectedComponentList={selectedComponentList}
             onSelectComponent={onSelectComponent}
           />
+          {/* 智能体模型选择器 */}
+          {allowOtherModel === DefaultSelectedEnum.Yes && (
+            <ModelSelector
+              agentId={agentId}
+              selectedModelId={selectedModelId}
+              onModelSelect={onModelSelect}
+              agentType={agentType}
+            />
+          )}
           <div className={cx('flex')} style={{ gap: 4 }}>
             {/* 智能体电脑模式下显示电脑类型选择器 */}
-            {isTaskAgentActive && (
+            {isTaskAgentActive && !readonly && (
               <ComputerTypeSelector
                 value={
                   agentSandboxId !== undefined && agentSandboxId !== null
@@ -543,7 +561,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     ? String(conversationInfo.sandboxServerId)
                     : selectedComputerId
                 }
-                onChange={(id) => onComputerSelect?.(id)}
+                onChange={(id: string) => onComputerSelect?.(id)}
                 disabled={wholeDisabled}
                 agentId={agentId}
                 fixedSelection={
@@ -555,6 +573,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 autoSelect={autoSelectComputer}
                 saveOnSelect={saveComputerOnSelect}
                 isPersonalComputer={isPersonalComputer}
+                readonly={readonly}
               />
             )}
             {/* 根据会话状态显示发送或停止按钮 */}

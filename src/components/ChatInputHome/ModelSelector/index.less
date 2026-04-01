@@ -1,0 +1,116 @@
+@import '@/styles/token';
+
+.model-selector-container {
+  display: flex;
+  align-items: flex-start;
+}
+
+.model-selector {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 3px;
+  height: 28px;
+
+  .selector-btn {
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadius;
+    box-sizing: border-box;
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    transition: background-color ease-in-out 0.3s;
+    word-wrap: normal;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+      background: @colorFillTertiary;
+    }
+
+    .selector-icon {
+      font-size: @fontSize;
+      margin-right: @marginXxs;
+    }
+
+    .selector-arrow {
+      margin-left: @marginXxs;
+      transition: transform @motionDurationFast ease;
+    }
+
+    &.open .selector-arrow {
+      transform: rotate(180deg);
+    }
+  }
+
+  .selector-btn-active {
+    color: @colorTextSecondary;
+  }
+
+  .selector-btn-unavailable {
+    cursor: not-allowed;
+  }
+}
+
+.model-menu {
+  :global {
+    .ant-dropdown-menu {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .ant-dropdown-menu-item {
+      background: transparent !important;
+
+      &:hover {
+        background: @colorFillTertiary !important;
+      }
+
+      &.ant-dropdown-menu-item-selected {
+        background: transparent !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+      }
+    }
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 160px;
+
+    .item-content {
+      display: flex;
+      flex-direction: column;
+      max-width: 240px;
+    }
+
+    .item-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: @colorTextSecondary;
+      font-size: @fontSizeSm;
+      font-weight: 500;
+    }
+
+    .item-desc {
+      font-size: 11px;
+      color: @colorTextQuaternary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .item-check {
+      margin-left: @marginMd;
+      color: @colorPrimary;
+      font-size: @fontSizeSm;
+    }
+  }
+}

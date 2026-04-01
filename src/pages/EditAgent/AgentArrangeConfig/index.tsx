@@ -15,6 +15,7 @@ import {
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  DefaultSelectedEnum,
   EventListEnum,
   ExpandPageAreaEnum,
   HideDesktopEnum,
@@ -889,6 +890,87 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
+    {
+      key: AgentArrangeConfigEnum.Allow_Other_Model,
+      label: '允许用户选择自有模型',
+      children: <p className={cx(styles.text)}>允许用户选择自有模型</p>,
+      extra: (
+        <Switch
+          value={agentConfigInfo?.allowOtherModel === DefaultSelectedEnum.Yes}
+          // 阻止冒泡事件
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
+          onChange={(value) =>
+            onChangeAgent(
+              value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+              'allowOtherModel',
+            )
+          }
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Allow_At_Skill,
+            label: '允许用户@技能',
+            children: <p className={cx(styles.text)}>允许用户@技能</p>,
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowAtSkill === DefaultSelectedEnum.Yes
+                }
+                // 阻止冒泡事件
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowAtSkill',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+          {
+            key: AgentArrangeConfigEnum.Allow_Private_Sandbox,
+            label: '允许用户选择个人电脑',
+            children: <p className={cx(styles.text)}>允许用户选择个人电脑</p>,
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowPrivateSandbox ===
+                  DefaultSelectedEnum.Yes
+                }
+                // 阻止冒泡事件
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowPrivateSandbox',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 界面配置 - 设置
