@@ -4,7 +4,11 @@ import { apiAgentConversationShare } from '@/services/agentConfig';
 import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type { ProFormInstance } from '@ant-design/pro-components';
-import { ProFormDependency, ProFormSelect } from '@ant-design/pro-components';
+import {
+  ProFormDependency,
+  ProFormSelect,
+  ProFormSwitch,
+} from '@ant-design/pro-components';
 import { Alert, message } from 'antd';
 import React, { useRef } from 'react';
 
@@ -35,6 +39,7 @@ const TIME_OPTIONS = [
  */
 interface ShareFormValues {
   expireSeconds: number;
+  allowDownload?: boolean;
 }
 
 interface ShareDesktopModalProps {
@@ -167,6 +172,10 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);
+        // 如果允许下载，拼接 dl=1
+        if (values.allowDownload) {
+          query.set('dl', '1');
+        }
         const previewUrl = baseUrl + path + '?' + query.toString();
 
         // 复制到剪切板
@@ -221,6 +230,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
       }}
       initialValues={{
         expireSeconds: getDefaultExpireSeconds(), // 远程桌面默认1小时，文件分享默认永久
+        allowDownload: true, // 默认开启下载
       }}
     >
       {/* 有效时间选择 */}
@@ -242,6 +252,15 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
           </div>
         )}
       </ProFormDependency>
+
+      {/* 允许下载开关 - 仅文件分享显示 */}
+      {shareType === 'CONVERSATION' && (
+        <ProFormSwitch
+          name="allowDownload"
+          label="允许下载"
+          tooltip="开启后，获得分享链接的用户可以在预览页面下载原文件"
+        />
+      )}
 
       {/* 温馨提示 */}
       <Alert
