@@ -60,3 +60,17 @@ export enum ModelApiInfoColumnNameEnum {
   Apikey = 'apikey',
   Weight = 'weight',
 }
+
+// 模型可用范围枚举
+export enum ModelUsageScenarioEnum {
+  // 网页应用
+  PageApp = 'PageApp',
+  // 通用智能体
+  TaskAgent = 'TaskAgent',
+  // 问答智能体
+  ChatBot = 'ChatBot',
+  // 工作流
+  Workflow = 'Workflow',
+  // 外部API调用
+  OpenApi = 'OpenApi',
+}

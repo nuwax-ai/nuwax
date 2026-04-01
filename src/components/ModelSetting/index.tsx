@@ -1,4 +1,6 @@
 import service from '@/services/workflow';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { ModelUsageScenarioEnum } from '@/types/enums/modelConfig';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -59,8 +61,14 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({
         modelType: 'Chat',
         spaceId,
       });
-      setModelList(_res.data);
-      setGroupedOptionsData(groupModelsByApiProtocol(_res.data));
+
+      const list = _res.data.filter((item) =>
+        item.usageScenarios?.includes(
+          AgentComponentTypeEnum.Workflow as unknown as ModelUsageScenarioEnum,
+        ),
+      );
+      setModelList(list);
+      setGroupedOptionsData(groupModelsByApiProtocol(list));
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     } finally {

@@ -14,7 +14,7 @@ import {
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface ApiKeyPermissionModalProps {
   /** 是否打开 */
@@ -235,7 +235,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
 
   return (
     <Modal
-      title={<Title level={4}>权限配置 - {record?.name}</Title>}
+      title="权限配置"
       open={open}
       onCancel={() => onOpenChange(false)}
       onOk={handleSave}

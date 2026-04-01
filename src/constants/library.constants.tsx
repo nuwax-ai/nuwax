@@ -25,6 +25,7 @@ import {
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
   ModelTypeEnum,
+  ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import {
@@ -446,6 +447,30 @@ export const MODEL_API_PROTOCOL_LIST = [
   {
     value: ModelApiProtocolEnum.Anthropic,
     label: 'Anthropic',
+  },
+];
+
+// 模型可用场景列表
+export const MODEL_USAGE_SCENARIO_LIST = [
+  {
+    value: ModelUsageScenarioEnum.PageApp,
+    label: '网页应用',
+  },
+  {
+    value: ModelUsageScenarioEnum.TaskAgent,
+    label: '通用智能体',
+  },
+  {
+    value: ModelUsageScenarioEnum.ChatBot,
+    label: '问答智能体',
+  },
+  {
+    value: ModelUsageScenarioEnum.Workflow,
+    label: '工作流',
+  },
+  {
+    value: ModelUsageScenarioEnum.OpenApi,
+    label: '外部API调用',
   },
 ];
 

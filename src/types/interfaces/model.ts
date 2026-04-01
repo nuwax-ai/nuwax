@@ -5,6 +5,7 @@ import type {
   ModelScopeEnum,
   ModelStrategyEnum,
   ModelTypeEnum,
+  ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import type { CreatorInfo } from '@/types/interfaces/agent';
@@ -34,6 +35,8 @@ export interface ModelListItemProps {
   size?: string | number;
   // 最大输出token数, token上限
   maxTokens?: number;
+  // 可用范围
+  usageScenarios?: ModelUsageScenarioEnum[];
 }
 
 export interface GroupModelItem {
@@ -63,6 +66,8 @@ export interface ModelFormData {
   maxContextTokens: number;
   // 管控状态
   accessControl?: AccessControlEnum;
+  // 可用范围
+  usageScenarios?: ModelUsageScenarioEnum[];
 }
 
 // 在空间中添加或更新模型配置输入参数

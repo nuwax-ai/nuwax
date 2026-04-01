@@ -13,6 +13,7 @@ import { UpdateModeComponentEnum } from '@/types/enums/library';
 import {
   ModelApiProtocolEnum,
   ModelFunctionCallEnum,
+  ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
@@ -110,25 +111,38 @@ const AgentModelSetting: React.FC<
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
         // 根据引擎类型过滤模型
         const filteredModels = getFilteredModels();
+        // 过滤出支持通用型智能体的模型
+        const list = filteredModels?.filter((item) =>
+          item.usageScenarios?.includes(
+            agentConfigInfo?.type as unknown as ModelUsageScenarioEnum,
+          ),
+        );
 
-        const list: option[] =
-          filteredModels?.map((item) => ({
+        const _list: option[] =
+          list?.map((item) => ({
             label: item.name,
             value: item.id,
           })) || [];
-        setModelConfigList(list);
+        setModelConfigList(_list);
 
         // 数据联动：如果当前选中的模型不在新的列表里，清空选中
-        if (targetId && !filteredModels.some((item) => item.id === targetId)) {
+        if (targetId && !list?.some((item) => item.id === targetId)) {
           setTargetId(null);
         }
       } else {
-        const list: option[] =
-          originalModelConfigList?.map((item) => ({
+        // 过滤出支持问答类型的模型
+        const list = originalModelConfigList?.filter((item) =>
+          item.usageScenarios?.includes(
+            agentConfigInfo?.type as unknown as ModelUsageScenarioEnum,
+          ),
+        );
+
+        const _list: option[] =
+          list?.map((item) => ({
             label: item.name,
             value: item.id,
           })) || [];
-        setModelConfigList(list);
+        setModelConfigList(_list);
       }
     }
   }, [originalModelConfigList, agentConfigInfo, getFilteredModels, targetId]);

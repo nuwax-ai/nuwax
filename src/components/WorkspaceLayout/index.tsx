@@ -1,6 +1,7 @@
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -8,6 +9,7 @@ const cx = classNames.bind(styles);
 interface WorkspaceLayoutProps {
   children?: React.ReactNode | null;
   leftSlot?: React.ReactNode;
+  titleLeftSlot?: React.ReactNode;
   centerSlot?: React.ReactNode;
   rightSlot?: React.ReactNode;
   title?: string;
@@ -20,11 +22,16 @@ interface WorkspaceLayoutProps {
   extraPadding?: React.CSSProperties['padding'];
   // 提示信息
   tips?: string | React.ReactNode;
+  // 是否显示返回按钮
+  back?: boolean;
+  // 返回按钮点击事件
+  onBack?: () => void;
 }
 
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   children = null,
   leftSlot,
+  titleLeftSlot,
   centerSlot,
   rightSlot,
   title,
@@ -34,7 +41,17 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   contentPadding,
   extraPadding,
   tips,
+  back = false,
+  onBack,
 }) => {
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    history.back();
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div
@@ -44,13 +61,21 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <div
           className={cx(styles['header-left'], 'flex', 'items-center', 'gap-2')}
         >
+          {/* 标题左侧插槽 (若存在则不显示内置返回按钮) */}
+          {titleLeftSlot ||
+            (back && (
+              <LeftOutlined
+                className={cx(styles['icon-back'], 'cursor-pointer')}
+                onClick={handleBack}
+              />
+            ))}
           <h3 className={cx(styles.title)}>{title || ''}</h3>
           {tips && (
             <Tooltip title={tips}>
               <QuestionCircleOutlined className={cx(styles['tips-icon'])} />
             </Tooltip>
           )}
-          {/* 左侧区域插槽 */}
+          {/* 标题右侧插槽 */}
           {leftSlot}
         </div>
         <div>

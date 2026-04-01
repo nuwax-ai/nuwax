@@ -6,6 +6,7 @@ import {
   MODEL_FUNCTION_CALL_LIST,
   MODEL_STRATEGY_LIST,
   MODEL_TYPE_LIST,
+  MODEL_USAGE_SCENARIO_LIST,
 } from '@/constants/library.constants';
 import {
   apiModelInfo,
@@ -225,6 +226,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           maxContextTokens: 128000,
           dimension: 1536,
           enabled: ModelComponentStatusEnum.Enabled, // 启用
+          usageScenarios: [],
         }}
         autoComplete="off"
       >
@@ -353,6 +355,14 @@ const CreateModel: React.FC<CreateModelProps> = ({
               { label: '启用', value: ModelComponentStatusEnum.Enabled },
               { label: '禁用', value: ModelComponentStatusEnum.Disabled },
             ]}
+          />
+        </Form.Item>
+
+        <Form.Item name="usageScenarios" label="可用范围">
+          <Select
+            mode="multiple"
+            options={MODEL_USAGE_SCENARIO_LIST}
+            placeholder="请选择可用范围"
           />
         </Form.Item>
 

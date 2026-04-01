@@ -174,6 +174,7 @@ function TableActions<T extends object>({
             menu={{
               items: moreActions.map(({ key, ...action }) => ({
                 key,
+                style: { padding: 0 },
                 label: (
                   <OperationBtn
                     {...action}

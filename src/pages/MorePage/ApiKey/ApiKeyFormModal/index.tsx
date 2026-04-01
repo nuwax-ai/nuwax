@@ -104,7 +104,11 @@ const ApiKeyFormModal: React.FC<ApiKeyFormModalProps> = ({
         name="name"
         label="密匙名称"
         placeholder="例如:生产环境API"
-        rules={[{ required: true, message: '请输入密匙名称' }]}
+        fieldProps={{ maxLength: 50 }}
+        rules={[
+          { required: true, message: '请输入密匙名称' },
+          { max: 50, message: '名称不能超过50个字符' },
+        ]}
       />
 
       <ProFormDatePicker

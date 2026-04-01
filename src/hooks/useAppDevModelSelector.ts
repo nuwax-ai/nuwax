@@ -2,8 +2,13 @@
  * AppDev 模型选择器 Hook
  * 管理模型列表加载和选择逻辑
  */
-import { listModels } from '@/services/appDev';
-import type { ModelLisDto } from '@/types/interfaces/appDev';
+import { apiModelList } from '@/services/modelConfig';
+import { AgentComponentTypeEnum, TaskTypeEnum } from '@/types/enums/agent';
+import {
+  ModelTypeEnum,
+  ModelUsageScenarioEnum,
+} from '@/types/enums/modelConfig';
+import type { ModelConfig, ModelLisDto } from '@/types/interfaces/appDev';
 import { jumpBack } from '@/utils/router';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
@@ -32,12 +37,30 @@ export const useAppDevModelSelector = (
 
     setIsLoadingModels(true);
     try {
-      const { data, message, success } = await listModels(projectId);
-      if (success) {
-        setModels(data);
+      const { data, message, success } = await apiModelList({
+        modelType: TaskTypeEnum.Chat as any,
+        spaceId: Number(spaceId),
+      });
 
-        // 获取编码模型列表
-        const { chatModelList } = data || {};
+      if (success) {
+        // 编码模型过滤：usageScenarios 必须包含 PageApp
+        const chatModelList = (data || []).filter((item) =>
+          item.usageScenarios?.includes(
+            AgentComponentTypeEnum.PageApp as unknown as ModelUsageScenarioEnum,
+          ),
+        );
+
+        // 视觉模型过滤：type 为 Multi
+        const multiModelList = (data || []).filter(
+          (item) => item.type === ModelTypeEnum.Multi,
+        );
+
+        const modelDto: ModelLisDto = {
+          chatModelList: chatModelList as unknown as ModelConfig[],
+          multiModelList: multiModelList as unknown as ModelConfig[],
+        };
+
+        setModels(modelDto);
 
         // 如果没有编码模型列表，则提示用户先配置默认聊天模型
         if (!chatModelList?.length) {
@@ -61,7 +84,7 @@ export const useAppDevModelSelector = (
     } finally {
       setIsLoadingModels(false);
     }
-  }, [projectId]);
+  }, [projectId, spaceId]);
 
   /**
    * 选择编码模型

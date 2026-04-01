@@ -2,11 +2,9 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { apiApiKeyStats } from '@/services/account';
 import type { ApiKeyInfo, ApiKeyStatsInfo } from '@/types/interfaces/account';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Modal, Typography } from 'antd';
+import { Button, Modal } from 'antd';
 import React from 'react';
 import { history } from 'umi';
-
-const { Title } = Typography;
 
 interface ApiKeyStatsModalProps {
   /** 是否显示弹窗 */
@@ -107,7 +105,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
 
   return (
     <Modal
-      title={<Title level={4}>调用统计 - {record?.name}</Title>}
+      title="调用统计"
       open={open}
       onCancel={() => onOpenChange(false)}
       width={1000}
