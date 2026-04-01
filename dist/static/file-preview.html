@@ -35,6 +35,13 @@
     <!-- Preview Container -->
     <div id="previewContainer" class="preview-container"></div>
 
+    <!-- Float Download Button (Hidden by default) -->
+    <button id="previewDownloadBtn" class="preview-download-btn hidden" onclick="downloadFile()" title="下载文件">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+    </button>
+
     <script>
         // ============================================
         // Global State
@@ -54,6 +61,11 @@
                 return window.location.origin;
             }
         }
+        
+        // 开发环境本地调试使用！！
+        // const baseUrl = getBaseUrl('https://testagent.xspaceagi.com');
+
+        // 正式环境动态获取地址！！
         const baseUrl = getBaseUrl(params.fileUrl);
 
         // ============================================
@@ -558,6 +570,14 @@
                 }
 
                 hideLoading();
+
+                // 只有当 dl=1 时才显示右下角下载按钮
+                if (params.dl === '1' && downloadUrl) {
+                    const previewDownloadBtn = document.getElementById('previewDownloadBtn');
+                    if (previewDownloadBtn) {
+                        previewDownloadBtn.classList.remove('hidden');
+                    }
+                }
 
                 // Notify parent (for iframe/webview communication)
                 notifyParent({ type: 'preview_success', fileType });

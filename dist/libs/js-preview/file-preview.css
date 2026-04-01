@@ -395,4 +395,53 @@ body {
         padding: 12px;
         font-size: 12px;
     }
+
+    .preview-download-btn {
+        width: 44px;
+        height: 44px;
+        bottom: 24px;
+        right: 24px;
+        font-size: 20px;
+    }
+}
+
+/* ============================================
+   下载按钮 / Download Button
+   ============================================ */
+.preview-download-btn {
+    position: fixed;
+    right: 40px;
+    bottom: 40px;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #1890ff, #096dd9);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    border: none;
+    font-size: 24px;
+    text-decoration: none;
+}
+
+.preview-download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(24, 144, 255, 0.45);
+    background: linear-gradient(135deg, #40a9ff, #1890ff);
+}
+
+.preview-download-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.25);
+}
+
+.preview-download-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
 }
