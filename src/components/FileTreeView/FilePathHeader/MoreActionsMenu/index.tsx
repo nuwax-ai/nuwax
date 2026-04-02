@@ -18,6 +18,8 @@ interface MoreActionsProps {
   onRestartAgent?: () => void;
   // 导出项目
   onExportProject?: () => void;
+  // 是否是云电脑
+  isCloudComputer?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onRestartServer,
   onRestartAgent,
   onExportProject,
+  isCloudComputer = true,
 }) => {
   // 菜单项配置
   const menuItems = useMemo(
@@ -62,7 +65,9 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: (
                 <div className="flex items-center">
-                  <span>重启智能体电脑</span>
+                  <span>
+                    {isCloudComputer ? '重启智能体电脑' : '重启客户端'}
+                  </span>
                   <TooltipIcon
                     title="当前用户正在运行的所有智能体将全部被重启"
                     icon={<InfoCircleOutlined />}

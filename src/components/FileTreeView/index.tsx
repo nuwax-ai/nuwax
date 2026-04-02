@@ -1575,9 +1575,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 处理导入项目操作
           onImportProject={onImportProject}
           // 重启容器（用户选择的智能体电脑id==-1时，才展示 ）
-          onRestartServer={
-            agentSandboxId === '-1' ? handleRestartServer : undefined
-          }
+          onRestartServer={handleRestartServer}
+          isCloudComputer={agentSandboxId === '-1'}
           agentSandboxName={agentSandboxName}
           // 重启智能体
           onRestartAgent={onRestartAgent}

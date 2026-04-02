@@ -61,6 +61,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreeVisible = false,
   isFileTreePinned = false,
   onFileTreeToggle,
+  isCloudComputer = true,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -391,6 +392,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 onRestartServer={onRestartServer}
                 onRestartAgent={onRestartAgent}
                 onExportProject={onExportProject}
+                isCloudComputer={isCloudComputer}
               />
             )}
 

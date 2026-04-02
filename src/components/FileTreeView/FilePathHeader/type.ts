@@ -67,4 +67,6 @@ export interface FilePathHeaderProps {
   onFileTreeToggle?: () => void;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop?: number;
+  /** 是否是云电脑 */
+  isCloudComputer?: boolean;
 }
