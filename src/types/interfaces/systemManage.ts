@@ -5,6 +5,10 @@ import {
   UserStatusEnum,
 } from '@/types/enums/systemManage';
 import { PublishStatusEnum } from '../enums/common';
+import {
+  KnowledgeDataTypeEnum,
+  KnowledgePubStatusEnum,
+} from '../enums/library';
 import { PluginPublishScopeEnum } from '../enums/plugin';
 import { TaskInfo } from './library';
 
@@ -453,6 +457,47 @@ export type SystemWebappPage = SystemPageResult<SystemWebappInfo>;
 // 知识库信息
 export type SystemKnowledgeInfo = SystemResourceInfo;
 
+// 根据id列表查询知识库详情
+export interface KnowledgeInfoById {
+  // 主键id
+  id: number;
+  // 知识库名称
+  name: string;
+  // 知识库描述
+  description: string;
+  // 知识状态,可用值:Waiting,Published
+  pubStatus: KnowledgePubStatusEnum;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType: KnowledgeDataTypeEnum;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
+  // 知识库的生成Q&A模型ID
+  chatModelId: number;
+  spaceId: number;
+  // 图标的url地址
+  icon: string;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 	创建人昵称
+  creatorNickName: string;
+  // 头像
+  creatorAvatar: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+  // 工作流id
+  workflowId?: string;
+  // 是否受后台权限控制，0 不受，1 受
+  accessControl: AccessControlEnum;
+}
+
 // 查询知识库列表参数
 export interface SystemKnowledgeListParams extends SystemPaginationParams {
   /** 名称 (模糊搜索) */
@@ -463,6 +508,8 @@ export interface SystemKnowledgeListParams extends SystemPaginationParams {
   spaceId?: number;
   /** 创建人名称 */
   creatorName?: string;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
 }
 
 // 知识库列表分页响应

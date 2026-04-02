@@ -26,8 +26,13 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface Porps {
+  agentId: number;
+  /** 会话信息 */
   conversationInfo: ConversationInfo;
+  /** 设置会话信息 */
   setConversationInfo: (value: ConversationInfo) => void;
+  /** 是否是开放应用智能体会话 */
+  isAppSidebarMode?: boolean;
 }
 
 type FieldType = {
@@ -35,8 +40,10 @@ type FieldType = {
 };
 
 const DropdownChangeName: React.FC<Porps> = ({
+  agentId,
   conversationInfo,
   setConversationInfo,
+  isAppSidebarMode = false,
 }) => {
   const navigate = useNavigate();
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -89,16 +96,22 @@ const DropdownChangeName: React.FC<Porps> = ({
         });
         message.success('修改成功');
 
+        const _agentId = isAppSidebarMode ? agentId : null;
+
         // 更新所有智能体的历史记录
         runHistory({
-          agentId: null,
+          agentId: _agentId,
           limit: 20,
         });
-        // 更新当前智能体的历史记录
-        runHistoryItem({
-          agentId: result?.data?.agentId,
-          limit: 20,
-        });
+
+        // 如果不是应用智能体模式，更新当前智能体的历史记录(用于右侧智能体详情侧边栏中的历史会话列表)
+        if (!isAppSidebarMode) {
+          // 更新当前智能体的历史记录
+          runHistoryItem({
+            agentId: result?.data?.agentId,
+            limit: 20,
+          });
+        }
       }
     },
   });

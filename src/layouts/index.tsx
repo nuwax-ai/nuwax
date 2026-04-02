@@ -10,7 +10,6 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import DynamicMenusLayout from './DynamicMenusLayout';
-import HistoryConversation from './HistoryConversation';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
 import Message from './Message';
@@ -269,9 +268,6 @@ const Layout: React.FC = () => {
 
         {/* 悬浮菜单 */}
         <HoverMenu />
-
-        {/* 历史会话记录弹窗 */}
-        <HistoryConversation />
 
         {/* 消息弹窗 */}
         <Message />

@@ -93,7 +93,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
               onClick: () => {
                 onOpenChange(false);
                 history.push(
-                  `/more-page/api-key-logs?targetType=ApiKey&targetId=${record?.id}&requestId=${statsRecord.key}`,
+                  `/more-page/api-key-logs?targetId=${record?.id}&requestId=${statsRecord.key}`,
                 );
               },
             },
@@ -118,12 +118,20 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
     >
       <div style={{ minHeight: 480 }}>
         <XProTable<ApiKeyStatsInfo>
-          request={async () => {
+          request={async (params) => {
+            const { current = 1, pageSize = 15 } = params;
             if (!record?.accessKey) return { data: [], success: true };
             const res = await apiApiKeyStats(record.accessKey);
+            const data = res.data || [];
+            const total = data.length;
+
+            const startIndex = (current - 1) * pageSize;
+            const slicedData = data.slice(startIndex, startIndex + pageSize);
+
             return {
-              data: res.data || [],
+              data: slicedData,
               success: res.success,
+              total,
             };
           }}
           columns={columns}
@@ -132,9 +140,6 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
           toolBarRender={false}
           showQueryButtons={false}
           scroll={{ y: 400 }}
-          pagination={{
-            pageSize: 10,
-          }}
         />
       </div>
     </Modal>

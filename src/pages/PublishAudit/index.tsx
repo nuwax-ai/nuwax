@@ -104,14 +104,14 @@ const PublishAudit: React.FC = () => {
         {
           key: 'pass',
           label: '通过',
-          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          visible: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_pass'),
           onClick: handlePassAudit,
         },
         {
           key: 'reject',
           label: '拒绝',
-          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          visible: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_reject'),
           onClick: (r) => handleRejectAudit(r.id),
         },

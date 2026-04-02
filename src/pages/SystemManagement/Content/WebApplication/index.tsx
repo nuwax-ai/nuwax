@@ -227,13 +227,19 @@ const WebApplication: React.FC = () => {
         [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
       },
       valueType: 'select',
-      render: (_, record: SystemWebappInfo) => (
-        <Switch
-          checked={record.accessControl === AccessControlEnum.Filter}
-          loading={accessControlLoadingMap[record.agentId] || false}
-          onChange={(checked) => handleAccessControlChange(record, checked)}
-        />
-      ),
+      render: (_, record: SystemWebappInfo) => {
+        const accessControlSwitchEnabled =
+          record.publishStatus === PublishStatusEnum.Published &&
+          record.publishScope === PluginPublishScopeEnum.Tenant;
+        return (
+          <Switch
+            checked={record.accessControl === AccessControlEnum.Filter}
+            disabled={!accessControlSwitchEnabled}
+            loading={accessControlLoadingMap[record.agentId] || false}
+            onChange={(checked) => handleAccessControlChange(record, checked)}
+          />
+        );
+      },
     },
     {
       title: '操作',

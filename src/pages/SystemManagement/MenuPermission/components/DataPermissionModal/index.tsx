@@ -1,48 +1,53 @@
-import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
-import Loading from '@/components/custom/Loading';
 import {
   apiGetRoleBoundDataPermissionList,
   apiRoleBindDataPermission,
 } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
 import {
   apiSystemResourceAgentListByIds,
+  apiSystemResourceKnowledgeListByIds,
   apiSystemResourcePageListByIds,
 } from '@/pages/UserManage/user-manage';
+import {
+  apiGetOpenApiList,
+  OpenApiPermissionTargetTypeEnum,
+} from '@/services/account';
 import { apiPublishedAgentList } from '@/services/square';
-import { apiSystemModelList } from '@/services/systemManage';
+import {
+  apiSystemModelList,
+  apiSystemResourceKnowledgeList,
+} from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AccessControlEnum } from '@/types/enums/systemManage';
+import type { OpenApiDefinition } from '@/types/interfaces/account';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { Page } from '@/types/interfaces/request';
+import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import type {
-  SquarePublishedItemInfo,
-  SquarePublishedListParams,
-} from '@/types/interfaces/square';
-import type { ModelConfigDto } from '@/types/interfaces/systemManage';
+  KnowledgeInfoById,
+  ModelConfigDto,
+  SystemKnowledgeInfo,
+  SystemKnowledgePage,
+} from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import {
-  Col,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Row,
-  Tabs,
-  TabsProps,
-  Tooltip,
-  message,
-} from 'antd';
+import { Form, message, Modal, Tabs, TabsProps, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetGroupBoundDataPermissionList,
   apiGroupBindDataPermission,
 } from '../../services/user-group-manage';
-import { DataPermission } from '../../types/role-manage';
-import ResourceItem from './components/ResourceItem';
+import { DataPermission, OpenApiConfigInfo } from '../../types/role-manage';
 import styles from './index.less';
+import {
+  AgentTabPanel,
+  ApiPermissionTabPanel,
+  DeveloperPermissionFormTab,
+  KnowledgeTabPanel,
+  ModelTabPanel,
+  PageTabPanel,
+} from './tabPanels';
 
 const cx = classNames.bind(styles);
 
@@ -62,7 +67,9 @@ export type DataPermissionTabKey =
   | 'model'
   | 'agent'
   | 'page'
-  | 'dataPermission';
+  | 'knowledge'
+  | 'dataPermission'
+  | 'apiPermission';
 
 // 数据权限标签页配置（只包含标签名称）
 export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
@@ -106,8 +113,34 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     ),
   },
   {
+    key: 'knowledge',
+    label: (
+      <span>
+        知识库
+        <Tooltip title="在内容管理中开启管控后可在此处进行授权，若开启管控，需授权才能使用该知识库">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
+  },
+  {
     key: 'dataPermission',
-    label: '开发权限',
+    label: '开发者权限',
+  },
+  {
+    key: 'apiPermission',
+    label: (
+      <span>
+        API权限
+        <Tooltip title="开放API授权，可配置API接口调用频率限制，-1表示不限制">
+          <InfoCircleOutlined
+            style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
+          />
+        </Tooltip>
+      </span>
+    ),
   },
 ];
 
@@ -157,11 +190,41 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   // 网页应用分页状态
   const [pagePage, setPagePage] = useState<number>(1);
   const [pageHasMore, setPageHasMore] = useState<boolean>(false);
+
+  // ======================================= 知识库 =======================================
+  // 知识库列表（管控开启的资源）
+  const [knowledgeList, setKnowledgeList] = useState<SystemKnowledgeInfo[]>([]);
+  const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>(
+    [],
+  );
+  const [selectedKnowledgeList, setSelectedKnowledgeList] = useState<
+    KnowledgeInfoById[]
+  >([]);
+  const [knowledgeSearchKw, setKnowledgeSearchKw] = useState<string>('');
+  const [knowledgePage, setKnowledgePage] = useState<number>(1);
+  const [knowledgeHasMore, setKnowledgeHasMore] = useState<boolean>(false);
+
   // 滚动容器引用
   const agentListScrollRef = useRef<HTMLDivElement>(null);
   const pageListScrollRef = useRef<HTMLDivElement>(null);
+  const knowledgeListScrollRef = useRef<HTMLDivElement>(null);
   // 保存表单值的状态，用于在组件卸载时保留值
   const [formValuesCache, setFormValuesCache] = useState<DataPermission>({});
+
+  // ============================= API 权限 Tab：可选 API 树 =============================
+  /** 左侧树数据，来自 apiGetOpenApiList（随 type 区分角色 / 用户组） */
+  const [openApiTreeData, setOpenApiTreeData] = useState<OpenApiDefinition[]>(
+    [],
+  );
+  /** 拉取开放 API 列表时的 loading */
+  const [openApiListLoading, setOpenApiListLoading] = useState<boolean>(false);
+  /**
+   * 开放 API 勾选与限流：列表中的项即勾选节点，含 key / rpm / rpd；
+   * 与数据权限接口的 openApiConfigs 一致，用于树勾选回显与提交。
+   */
+  const [openApiConfigsCache, setOpenApiConfigsCache] = useState<
+    OpenApiConfigInfo[]
+  >([]);
 
   // 模型列表
   const {
@@ -206,23 +269,16 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       // 同时更新缓存
       setFormValuesCache(formData as DataPermission);
 
-      // 存储查询到的 modelIds，用于后续处理
-      if (result.modelIds && result.modelIds.length > 0) {
-        // 直接设置选中状态
-        setSelectedModelIds(result.modelIds);
-      } else {
-        setSelectedModelIds([]);
-      }
-
+      // 直接设置选中状态
+      setSelectedModelIds(result?.modelIds || []);
       // 回显智能体选择
-      if (result.agentIds && result.agentIds.length > 0) {
-        setSelectedAgentIds(result.agentIds);
-      }
-
+      setSelectedAgentIds(result?.agentIds || []);
       // 回显应用页面选择
-      if (result.pageAgentIds && result.pageAgentIds.length > 0) {
-        setSelectedPageAgentIds(result.pageAgentIds);
-      }
+      setSelectedPageAgentIds(result?.pageAgentIds || []);
+      // 回显知识库选择
+      setSelectedKnowledgeIds(result?.knowledgeIds || []);
+      // 回显 API 权限选择
+      setOpenApiConfigsCache(result.openApiConfigs || []);
     },
   });
 
@@ -248,17 +304,66 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
   );
 
+  // ======================================= 知识库 =======================================
+  // 根据id列表查询知识库列表（数据权限回显）
+  const { run: runGetKnowledgeListByIds } = useRequest(
+    apiSystemResourceKnowledgeListByIds,
+    {
+      manual: true,
+      onSuccess: (result: KnowledgeInfoById[]) => {
+        setSelectedKnowledgeList(result || []);
+      },
+    },
+  );
+
+  // 查询知识库列表
+  const { loading: knowledgeLoading, run: runKnowledgeList } = useRequest(
+    apiSystemResourceKnowledgeList,
+    {
+      manual: true,
+      onSuccess: (result: SystemKnowledgePage) => {
+        // 知识库列表
+        const records = result?.records || [];
+        // 	总记录数
+        const total = result?.total ?? 0;
+        // 当前页码
+        const currentPage = result?.pageNo ?? 1;
+        // 每页条数
+        const pageSize = result?.pageSize ?? 20;
+
+        // 判断是否还有更多数据
+        setKnowledgeHasMore(currentPage * pageSize < total);
+        // 更新页码
+        setKnowledgePage(currentPage);
+
+        // 如果是第一页（搜索或首次加载），直接替换列表
+        if (currentPage === 1) {
+          setKnowledgeList(records);
+        } else {
+          // 加载更多时，合并新数据
+          setKnowledgeList((prev) => {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const newItems = records.filter(
+              (item) => !existingIds.has(item.id),
+            );
+            return [...prev, ...newItems];
+          });
+        }
+      },
+    },
+  );
+
   // 广场-已发布智能体列表接口（智能体列表）
   const { loading: agentLoading, run: runAgentList } = useRequest(
     apiPublishedAgentList,
     {
       manual: true,
-      onSuccess: (
-        result: Page<SquarePublishedItemInfo>,
-        params?: SquarePublishedListParams[],
-      ) => {
+      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
+        // 已发布智能体列表
         const records = result.records || [];
-        const currentPage = params?.[0]?.page || 1;
+        // 当前页码
+        const currentPage = result?.current ?? 1;
+        // 总页数
         const totalPages = result.pages || 0;
 
         // 判断是否还有更多数据
@@ -290,12 +395,11 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     apiPublishedAgentList,
     {
       manual: true,
-      onSuccess: (
-        result: Page<SquarePublishedItemInfo>,
-        params?: SquarePublishedListParams[],
-      ) => {
+      onSuccess: (result: Page<SquarePublishedItemInfo>) => {
         const records = result.records || [];
-        const currentPage = params?.[0]?.page || 1;
+        // 当前页码
+        const currentPage = result?.current ?? 1;
+        // 总页数
         const totalPages = result.pages || 0;
 
         // 判断是否还有更多数据
@@ -370,8 +474,47 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setPagePage(1);
       setAgentHasMore(false);
       setPageHasMore(false);
+
+      // 重置知识库列表
+      setKnowledgeList([]);
+      setSelectedKnowledgeIds([]);
+      setSelectedKnowledgeList([]);
+      setKnowledgeSearchKw('');
+      setKnowledgePage(1);
+      setKnowledgeHasMore(false);
+
+      // API 权限 Tab 状态重置（关闭弹窗时）
+      setOpenApiTreeData([]);
+      setOpenApiConfigsCache([]);
+      setOpenApiListLoading(false);
     }
   }, [open, targetId]);
+
+  /**
+   * 加载 API 权限左侧树数据。
+   * type 为 role 时传 OpenApiPermissionTargetTypeEnum.Role，否则传 Group。
+   * 树使用 defaultExpandAll，加载后全部展开。
+   */
+  const loadOpenApiTree = useCallback(async () => {
+    const targetType =
+      type === 'role'
+        ? OpenApiPermissionTargetTypeEnum.Role
+        : OpenApiPermissionTargetTypeEnum.Group;
+    setOpenApiListLoading(true);
+    try {
+      const res = await apiGetOpenApiList(targetType);
+      if (res.success && res.data) {
+        setOpenApiTreeData(res.data);
+      } else {
+        setOpenApiTreeData([]);
+      }
+    } catch (e) {
+      console.error(e);
+      setOpenApiTreeData([]);
+    } finally {
+      setOpenApiListLoading(false);
+    }
+  }, [type]);
 
   // 根据 selectedModelIds 更新 selectedModelList
   useEffect(() => {
@@ -427,7 +570,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       targetType: AgentComponentTypeEnum.Agent,
       targetSubType: 'ChatBot',
       kw,
-      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+      accessControl: AccessControlEnum.Filter, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
     });
   };
 
@@ -439,8 +582,45 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       targetType: AgentComponentTypeEnum.Agent,
       targetSubType: 'PageApp',
       kw,
-      accessControl: 1, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+      accessControl: AccessControlEnum.Filter, // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
     });
+  };
+
+  // 查询知识库列表
+  const queryKnowledgeList = (page = 1, kw = knowledgeSearchKw) => {
+    runKnowledgeList({
+      pageNo: page,
+      pageSize: 20,
+      name: kw || undefined,
+      accessControl: AccessControlEnum.Filter,
+    });
+  };
+
+  // 知识库行选择配置（使用 targetId 作为选中 ID）
+  const toggleKnowledgeSelected = (targetId: number) => {
+    setSelectedKnowledgeIds((prev) => {
+      if (prev.includes(targetId)) {
+        return prev;
+      }
+      const newIds = [...prev, targetId];
+      if (newIds.length > 0) {
+        runGetKnowledgeListByIds({
+          knowledgeIds: newIds,
+        });
+      }
+      return newIds;
+    });
+  };
+
+  // 从右侧删除知识库
+  const removeKnowledgeFromSelected = (knowledgeId: number) => {
+    // 从右侧ID列表移除
+    setSelectedKnowledgeIds((prev) => prev.filter((id) => id !== knowledgeId));
+
+    // 从右侧列表移除
+    setSelectedKnowledgeList((prev) =>
+      prev.filter((item) => item.id !== knowledgeId),
+    );
   };
 
   // 从右侧删除智能体，添加回左侧
@@ -450,9 +630,6 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
     // 从右侧列表移除
     setSelectedAgentList((prev) => prev.filter((item) => item.id !== agentId));
-
-    // 重新搜索以获取该项并添加回左侧列表
-    queryAgentList();
   };
 
   // 应用页面行选择配置（使用 targetId 作为选中 ID）
@@ -500,6 +677,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     },
   );
 
+  // 保存数据权限
   const handleOk = async () => {
     if (!targetId) {
       message.error('ID缺失，无法保存数据权限');
@@ -509,7 +687,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     // 优先使用缓存的值（即使字段被卸载，缓存的值仍然存在）
     let formValues: DataPermission = { ...formValuesCache };
 
-    // 如果当前在数据权限 tab，尝试验证并获取最新值
+    // 如果当前在开发者权限 tab，尝试验证并获取最新值
     if (activeTab === 'dataPermission') {
       try {
         const validatedValues = (await form.validateFields()) || {};
@@ -523,17 +701,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           formValues = currentValues;
           setFormValuesCache(currentValues);
         }
-        // 如果表单值也为空，继续使用缓存的值
       }
     } else {
-      // 不在数据权限 tab 时，尝试从表单获取最新值（如果字段还在）
+      // 不在开发者权限 tab 时，尝试从表单获取最新值（如果字段还在）
       const currentValues = form.getFieldsValue() || {};
       if (currentValues && Object.keys(currentValues).length > 0) {
         // 如果表单有值，使用表单值并更新缓存
         formValues = currentValues;
         setFormValuesCache(currentValues);
       }
-      // 如果表单值为空，使用缓存的值（已经在上面初始化了）
     }
 
     // 直接使用选中的模型ID数组
@@ -550,6 +726,8 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         modelIds,
         agentIds: selectedAgentIds,
         pageAgentIds: selectedPageAgentIds,
+        knowledgeIds: selectedKnowledgeIds,
+        openApiConfigs: openApiConfigsCache,
       },
     };
 
@@ -561,479 +739,130 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     const tabKey = key as DataPermissionTabKey;
     setActiveTab(tabKey);
 
-    // 只针对智能体和网页应用 tab 做额外处理
-    if (tabKey === 'agent') {
-      // 右侧：根据选中的ID列表查询已选择的智能体
-      if (selectedAgentIds.length > 0) {
-        runGetAgentListByIds({
-          agentIds: selectedAgentIds,
-        });
-      } else {
-        setSelectedAgentList([]);
-      }
-      // 首次切换到智能体 tab 时，加载第一页数据
-      if (agentList.length === 0 && !agentLoading) {
-        // 查询智能体列表
-        queryAgentList();
-      }
-    } else if (tabKey === 'page') {
-      // 右侧：根据选中的ID列表查询已选择的网页应用
-      if (selectedPageAgentIds.length > 0) {
-        runGetPageListByIds({
-          agentIds: selectedPageAgentIds,
-        });
-      } else {
-        setSelectedPageList([]);
-      }
-      // 首次切换到网页应用 tab 时，加载第一页数据
-      if (pageList.length === 0 && !pageLoading) {
-        // 查询网页应用列表
-        queryPageList();
-      }
+    // 智能体 / 网页应用 / 知识库 / API 权限等 Tab 的按需加载
+    switch (tabKey) {
+      case 'agent':
+        // 右侧：根据选中的ID列表查询已选择的智能体
+        if (selectedAgentIds.length > 0) {
+          runGetAgentListByIds({
+            agentIds: selectedAgentIds,
+          });
+        }
+        // 首次切换到智能体 tab 时，加载第一页数据
+        if (agentList.length === 0 && !agentLoading) {
+          queryAgentList();
+        }
+        break;
+      case 'page':
+        // 右侧：根据选中的ID列表查询已选择的网页应用
+        if (selectedPageAgentIds.length > 0) {
+          runGetPageListByIds({
+            agentIds: selectedPageAgentIds,
+          });
+        }
+        // 首次切换到网页应用 tab 时，加载第一页数据
+        if (pageList.length === 0 && !pageLoading) {
+          queryPageList();
+        }
+        break;
+      case 'knowledge':
+        if (selectedKnowledgeIds.length > 0) {
+          runGetKnowledgeListByIds({
+            knowledgeIds: selectedKnowledgeIds,
+          });
+        }
+        if (knowledgeList.length === 0 && !knowledgeLoading) {
+          queryKnowledgeList();
+        }
+        break;
+      case 'apiPermission':
+        // 首次进入且尚无树数据时拉取列表（避免重复请求）
+        if (openApiTreeData.length === 0 && !openApiListLoading) {
+          loadOpenApiTree();
+        }
+        break;
+      default:
+        break;
     }
   };
 
-  // 模型tab内容
-  const ModelTabContent = () => (
-    <div className={cx('flex', 'h-full')}>
-      {/* 左侧：可选模型列表 */}
-      <div
-        className={cx(
-          'flex',
-          'flex-col',
-          'h-full',
-          'flex-1',
-          'overflow-y',
-          styles.leftList,
-        )}
-      >
-        {modelLoading && !modelList?.length ? (
-          <div
-            className={cx('h-full', 'flex', 'items-center', 'content-center')}
-          >
-            <Loading />
-          </div>
-        ) : (
-          modelList?.map((item: ModelConfigDto) => (
-            <ResourceItem
-              key={item.id}
-              showIcon={false}
-              name={item.name}
-              description={item.description}
-              targetId={item.id}
-              onAdd={toggleModelSelected}
-              isAdded={selectedModelIds.includes(item.id)}
-            />
-          ))
-        )}
-      </div>
-      {/* 分割线 */}
-      <div className={cx(styles.rightSeparator)} />
-      {/* 右侧：已选择的模型列表 */}
-      <div className={cx(styles.rightList, 'flex-1')}>
-        {selectedModelList.length ? (
-          selectedModelList.map((item: ModelConfigDto) => (
-            <ResourceItem
-              key={item.id}
-              showIcon={false}
-              name={item.name}
-              description={item.description}
-              targetId={item.id}
-              onDelete={removeModelFromSelected}
-            />
-          ))
-        ) : (
-          <div className={cx(styles.empty)}>暂无已选模型</div>
-        )}
-      </div>
-    </div>
-  );
-
-  // 智能体tab内容
-  const AgentTabContent = () => (
-    <div className={cx('flex', 'h-full')}>
-      {/* 左侧：搜索 + 可选智能体列表（支持滚动加载） */}
-      <div
-        className={cx(
-          'flex',
-          'flex-col',
-          'h-full',
-          'flex-1',
-          'overflow-hide',
-          styles.leftList,
-        )}
-      >
-        <Input.Search
-          key="agentSearch"
-          placeholder="搜索智能体"
-          allowClear
-          className={cx(styles.searchInput)}
-          value={agentSearchKw}
-          onChange={(e) => setAgentSearchKw(e.target.value)}
-          onSearch={(value) => {
-            setAgentSearchKw(value);
-            // 平滑滚动到顶部
-            if (agentListScrollRef.current) {
-              agentListScrollRef.current.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              });
-            }
-            // 查询智能体列表
-            queryAgentList(1, value);
-          }}
-        />
-        <div
-          ref={agentListScrollRef}
-          id="agent-list-scroll"
-          className={cx('flex-1', 'overflow-y', 'h-full')}
-        >
-          {agentLoading && !agentList?.length ? (
-            <div
-              className={cx('h-full', 'flex', 'items-center', 'content-center')}
-            >
-              <Loading />
-            </div>
-          ) : (
-            <InfiniteScrollDiv
-              scrollableTarget="agent-list-scroll"
-              list={agentList}
-              hasMore={agentHasMore}
-              onScroll={() => {
-                if (!agentLoading && agentHasMore) {
-                  // 查询智能体列表
-                  queryAgentList(agentPage + 1);
-                }
-              }}
-            >
-              {agentList?.map((item) => (
-                <ResourceItem
-                  key={item.targetId}
-                  icon={item.icon}
-                  name={item.name}
-                  description={item.description}
-                  targetId={item.targetId}
-                  onAdd={toggleAgentSelected}
-                  isAdded={selectedAgentIds.includes(item.targetId)}
-                />
-              ))}
-            </InfiniteScrollDiv>
-          )}
-        </div>
-      </div>
-      {/* 分割线 */}
-      <div className={cx(styles.rightSeparator)} />
-      {/* 右侧：已选择的智能体列表（通过ID列表查询） */}
-      <div className={cx(styles.rightList, 'flex-1')}>
-        {selectedAgentList.length ? (
-          selectedAgentList.map((item) => (
-            <ResourceItem
-              key={item.id}
-              icon={item.icon}
-              name={item.name}
-              description={item.description}
-              targetId={item.id}
-              onDelete={removeAgentFromSelected}
-            />
-          ))
-        ) : (
-          <div className={cx(styles.empty)}>暂无已选智能体</div>
-        )}
-      </div>
-    </div>
-  );
-
-  const PageTabContent = () => (
-    <div className={cx('flex', 'h-full')}>
-      {/* 左侧：搜索 + 可选网页应用列表（支持滚动加载） */}
-      <div
-        className={cx(
-          'flex',
-          'flex-col',
-          'h-full',
-          'flex-1',
-          'overflow-hide',
-          styles.leftList,
-        )}
-      >
-        <Input.Search
-          key="pageSearch"
-          placeholder="搜索网页应用"
-          allowClear
-          className={cx(styles.searchInput)}
-          value={pageSearchKw}
-          onChange={(e) => setPageSearchKw(e.target.value)}
-          onSearch={(value) => {
-            setPageSearchKw(value);
-            // 平滑滚动到顶部
-            if (pageListScrollRef.current) {
-              pageListScrollRef.current.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              });
-            }
-            // 查询网页应用列表
-            queryPageList(1, value);
-          }}
-        />
-        <div
-          ref={pageListScrollRef}
-          id="page-list-scroll"
-          className={cx('flex-1', 'overflow-y', 'h-full')}
-        >
-          {pageLoading && !pageList?.length ? (
-            <div
-              className={cx('h-full', 'flex', 'items-center', 'content-center')}
-            >
-              <Loading />
-            </div>
-          ) : (
-            <InfiniteScrollDiv
-              scrollableTarget="page-list-scroll"
-              list={pageList}
-              hasMore={pageHasMore}
-              onScroll={() => {
-                if (!pageLoading && pageHasMore) {
-                  // 查询网页应用列表
-                  queryPageList(pagePage + 1);
-                }
-              }}
-            >
-              {pageList?.map((item) => (
-                <ResourceItem
-                  key={item.targetId}
-                  icon={item.coverImg || item.icon}
-                  name={item.name}
-                  description={item.description}
-                  targetId={item.targetId}
-                  onAdd={togglePageSelected}
-                  isAdded={selectedPageAgentIds.includes(item.targetId)}
-                />
-              ))}
-            </InfiniteScrollDiv>
-          )}
-        </div>
-      </div>
-      {/* 分割线 */}
-      <div className={cx(styles.rightSeparator)} />
-      {/* 右侧：已选择的网页应用列表（通过ID列表查询） */}
-      <div className={cx(styles.rightList, 'flex-1')}>
-        {selectedPageList.length ? (
-          selectedPageList.map((item) => (
-            <ResourceItem
-              key={item.devAgentId}
-              icon={item.coverImg || item.icon}
-              name={item.name}
-              description={item.description}
-              targetId={item.devAgentId}
-              onDelete={removePageFromSelected}
-            />
-          ))
-        ) : (
-          <div className={cx(styles.empty)}>暂无已选网页应用</div>
-        )}
-      </div>
-    </div>
-  );
-
-  // 开发权限tab内容
-  const DataPermissionTabContent = () => (
-    <div className={cx(styles.dataPermissionFormWrapper)}>
-      {/* 开发权限表单 */}
-      <Form
-        form={form}
-        layout="vertical"
-        className={cx(styles.dataPermissionForm)}
-        preserve={true}
-        onValuesChange={(_, allValues) => {
-          setFormValuesCache((prev) => ({
-            ...prev,
-            ...allValues,
-          }));
-        }}
-      >
-        <Row gutter={[16, 0]}>
-          <Col span={12}>
-            <Form.Item
-              label="每日token限制"
-              name={['tokenLimit', 'limitPerDay']}
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '每日 token 限制，-1 表示不限制',
-              }}
-            >
-              <InputNumber
-                placeholder="请输入每日token限制数量"
-                className={cx('w-full')}
-                min={-1}
-                max={1000000000000000}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建工作空间数量"
-              name="maxSpaceCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建工作空间数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建智能体数量"
-              name="maxAgentCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建智能体数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建网页应用数量"
-              name="maxPageAppCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建网页应用数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建知识库数量"
-              name="maxKnowledgeCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建知识库数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="知识库存储空间上限 (GB)"
-              name="knowledgeStorageLimitGb"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title:
-                  '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
-              }}
-            >
-              <InputNumber
-                className={cx('w-full')}
-                min={-1}
-                max={100000000}
-                step={0.001}
-                precision={3}
-                formatter={(value) => {
-                  if (value === undefined || value === null) return '';
-                  const num = Number(value);
-                  if (Number.isInteger(num)) return String(num);
-                  return num.toFixed(3).replace(/\.?0+$/, '');
-                }}
-                parser={(value) => {
-                  if (!value) return value as any;
-                  const num = parseFloat(value);
-                  return isNaN(num) ? (value as any) : num;
-                }}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建数据表数量"
-              name="maxDataTableCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建数据表数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="可创建定时任务数量"
-              name="maxScheduledTaskCount"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '可创建定时任务数量，-1 表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="智能体电脑内存(GB)"
-              name="agentComputerMemoryGb"
-              initialValue={4}
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="智能体电脑 CPU 核心数"
-              name="agentComputerCpuCores"
-              initialValue={2}
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="通用智能体每天对话次数限制"
-              name="agentDailyPromptLimit"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '通用智能体每天对话次数，-1表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="网页应用开发每天对话次数"
-              name="pageDailyPromptLimit"
-              tooltip={{
-                icon: <InfoCircleOutlined />,
-                title: '网页应用开发每天对话次数，-1表示不限制',
-              }}
-            >
-              <InputNumber className={cx('w-full')} min={-1} max={100000000} />
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
-    </div>
-  );
-
-  // 渲染tab内容
+  // 各 Tab 内容拆至 tabPanels/，避免单文件过长
   const renderTabContent = () => {
     const contentMap: Record<DataPermissionTabKey, React.ReactNode> = {
-      model: <ModelTabContent />,
-      agent: <AgentTabContent />,
-      page: <PageTabContent />,
-      dataPermission: <DataPermissionTabContent />,
+      model: (
+        <ModelTabPanel
+          modelLoading={modelLoading}
+          modelList={modelList}
+          selectedModelIds={selectedModelIds}
+          selectedModelList={selectedModelList}
+          onToggleModel={toggleModelSelected}
+          onRemoveModel={removeModelFromSelected}
+        />
+      ),
+      agent: (
+        <AgentTabPanel
+          agentSearchKw={agentSearchKw}
+          onAgentSearchKwChange={setAgentSearchKw}
+          onAgentSearch={(v) => queryAgentList(1, v)}
+          agentListScrollRef={agentListScrollRef}
+          agentLoading={agentLoading}
+          agentList={agentList}
+          agentHasMore={agentHasMore}
+          onLoadMoreAgent={() => queryAgentList(agentPage + 1)}
+          selectedAgentIds={selectedAgentIds}
+          selectedAgentList={selectedAgentList}
+          onToggleAgent={toggleAgentSelected}
+          onRemoveAgent={removeAgentFromSelected}
+        />
+      ),
+      page: (
+        <PageTabPanel
+          pageSearchKw={pageSearchKw}
+          onPageSearchKwChange={setPageSearchKw}
+          onPageSearch={(v) => queryPageList(1, v)}
+          pageListScrollRef={pageListScrollRef}
+          pageLoading={pageLoading}
+          pageList={pageList}
+          pageHasMore={pageHasMore}
+          onLoadMorePage={() => queryPageList(pagePage + 1)}
+          selectedPageAgentIds={selectedPageAgentIds}
+          selectedPageList={selectedPageList}
+          onTogglePage={togglePageSelected}
+          onRemovePage={removePageFromSelected}
+        />
+      ),
+      knowledge: (
+        <KnowledgeTabPanel
+          knowledgeSearchKw={knowledgeSearchKw}
+          onKnowledgeSearchKwChange={setKnowledgeSearchKw}
+          onKnowledgeSearch={(v) => queryKnowledgeList(1, v)}
+          knowledgeListScrollRef={knowledgeListScrollRef}
+          knowledgeLoading={knowledgeLoading}
+          knowledgeList={knowledgeList}
+          knowledgeHasMore={knowledgeHasMore}
+          onLoadMoreKnowledge={() => queryKnowledgeList(knowledgePage + 1)}
+          selectedKnowledgeIds={selectedKnowledgeIds}
+          selectedKnowledgeList={selectedKnowledgeList}
+          onToggleKnowledge={toggleKnowledgeSelected}
+          onRemoveKnowledge={removeKnowledgeFromSelected}
+        />
+      ),
+      dataPermission: (
+        <DeveloperPermissionFormTab
+          form={form}
+          onValuesChange={(allValues) =>
+            setFormValuesCache((prev) => ({ ...prev, ...allValues }))
+          }
+        />
+      ),
+      apiPermission: (
+        <ApiPermissionTabPanel
+          openApiListLoading={openApiListLoading}
+          openApiTreeData={openApiTreeData}
+          openApiConfigsCache={openApiConfigsCache}
+          setOpenApiConfigsCache={setOpenApiConfigsCache}
+        />
+      ),
     };
     return contentMap[activeTab] ?? null;
   };

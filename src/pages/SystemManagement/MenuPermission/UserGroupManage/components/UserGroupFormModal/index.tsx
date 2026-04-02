@@ -97,7 +97,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
       form.setFieldsValue({
         name: data.name,
         description: data.description,
-        maxUserCount: data.maxUserCount,
         sortIndex: data.sortIndex || 1,
         status: data.status === UserGroupStatusEnum.Enabled,
         source: data.source || UserGroupSourceEnum.UserDefined,
@@ -120,7 +119,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
           source: UserGroupSourceEnum.UserDefined,
           sortIndex: defaultSortIndex || 1,
           status: true,
-          maxUserCount: 100,
         });
       }
     }
@@ -180,25 +178,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
               rules={[{ required: true, message: '请输入用户组名称' }]}
             >
               <Input placeholder="请输入用户组名称" maxLength={50} showCount />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            <Form.Item
-              label="最大用户数"
-              name="maxUserCount"
-              rules={[{ required: true, message: '请输入最大用户数' }]}
-              tooltip={{
-                title: '最大值为2147483647',
-                icon: <InfoCircleOutlined />,
-              }}
-            >
-              <InputNumber
-                placeholder="请输入最大用户数"
-                className={cx('w-full')}
-                min={1}
-                max={2147483647}
-              />
             </Form.Item>
           </Col>
 

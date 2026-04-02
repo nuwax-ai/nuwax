@@ -191,7 +191,6 @@ const UserGroupManage: React.FC = () => {
     const params: UpdateUserGroupParams = {
       id: record.id,
       status: newStatus,
-      maxUserCount: record.maxUserCount,
     };
     try {
       setUpdateStatusLoadingMap((prev) => ({ ...prev, [record.id]: true }));

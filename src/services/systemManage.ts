@@ -266,6 +266,16 @@ export async function apiSystemResourceKnowledgeDelete(data: {
   });
 }
 
+// 更新知识库管控状态
+export async function apiSystemResourceKnowledgeAccessControl(
+  id: number,
+  status: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/resource/knowledge/access/${id}/${status}`, {
+    method: 'POST',
+  });
+}
+
 // 查询数据表列表
 export async function apiSystemResourceDataTableList(
   data: SystemDataTableListParams,

@@ -73,9 +73,10 @@ const ApiKeyPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      width: 300,
     },
     {
-      title: 'API KEY',
+      title: 'API Key',
       dataIndex: 'accessKey',
       key: 'accessKey',
       search: false,
@@ -191,8 +192,8 @@ const ApiKeyPage: React.FC = () => {
               icon: <DeleteOutlined />,
               danger: true,
               confirm: {
-                title: (r) => `确认删除密钥 "${r.name}" 吗？`,
-                description: '删除后将无法恢复，请谨慎操作。',
+                description: (r) =>
+                  `密钥 "${r.name}" 删除后将无法恢复，请谨慎操作。`,
               },
               onClick: async () => {
                 await apiApiKeyDelete(record.accessKey);
@@ -208,7 +209,7 @@ const ApiKeyPage: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="API 密钥管理"
+      title="API Key"
       tips="管理您的API密钥与访问权限"
       rightSlot={
         <Button
@@ -220,7 +221,7 @@ const ApiKeyPage: React.FC = () => {
             setModalOpen(true);
           }}
         >
-          新增密钥
+          新增 API Key
         </Button>
       }
     >

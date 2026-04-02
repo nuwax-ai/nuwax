@@ -139,7 +139,7 @@ const UserManage: React.FC = () => {
         {
           key: 'disable',
           label: '禁用',
-          isShow: record.status === UserStatusEnum.Enabled,
+          visible: record.status === UserStatusEnum.Enabled,
           disabled: !hasPermissionByMenuCode(
             'user_manage',
             'user_manage_disable',
@@ -149,7 +149,7 @@ const UserManage: React.FC = () => {
         {
           key: 'enable',
           label: '启用',
-          isShow: record.status !== UserStatusEnum.Enabled,
+          visible: record.status !== UserStatusEnum.Enabled,
           disabled: !hasPermissionByMenuCode(
             'user_manage',
             'user_manage_enable',

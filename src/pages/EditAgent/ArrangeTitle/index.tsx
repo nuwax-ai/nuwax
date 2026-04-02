@@ -65,6 +65,10 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
             item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
           item.functionCall !== ModelFunctionCallEnum.Unsupported,
       )
+      .filter((item) => {
+        if (!agentConfigInfo?.type) return true;
+        return item.usageScenarios?.includes(agentConfigInfo.type as any);
+      })
       .map((item) => ({
         key: item.id,
         label: item.name,

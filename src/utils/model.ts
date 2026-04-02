@@ -1,3 +1,4 @@
+import { MODEL_API_PROTOCOL_LIST } from '@/constants/library.constants';
 import type {
   GroupModelItem,
   ModelListItemProps,
@@ -6,10 +7,12 @@ import type {
 export const groupModelsByApiProtocol = (
   models: ModelListItemProps[],
 ): GroupModelItem[] => {
-  const grouped: GroupModelItem[] = [
-    { label: 'OpenAI', options: [] },
-    { label: 'Ollama', options: [] },
-  ];
+  const grouped: GroupModelItem[] = MODEL_API_PROTOCOL_LIST.map((item) => {
+    return {
+      label: item.value,
+      options: [],
+    };
+  });
 
   // 将模型分配到对应的分组
   models.forEach((model) => {

@@ -538,7 +538,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
-    if (isAppSidebarMode) {
+    if (location.pathname?.includes('/app/chat/')) {
       return;
     }
     // 获取当前智能体的历史记录
@@ -546,7 +546,7 @@ const Chat: React.FC = () => {
       agentId,
       limit: 20,
     });
-  }, [id, agentId, isAppSidebarMode]);
+  }, [id, agentId, location.pathname]);
 
   useEffect(() => {
     addBaseTarget();
@@ -1078,10 +1078,10 @@ const Chat: React.FC = () => {
         <header className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             <DropdownChangeName
+              agentId={agentId}
               conversationInfo={conversationInfo}
-              setConversationInfo={(value) => {
-                setConversationInfo(value);
-              }}
+              setConversationInfo={setConversationInfo}
+              isAppSidebarMode={isAppSidebarMode}
             />
             <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 应用智能体模式下，显示内容导航按钮 */}

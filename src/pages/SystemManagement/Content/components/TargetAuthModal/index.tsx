@@ -11,6 +11,8 @@ import {
   AccessibleUserGroupInfo,
   apiAgentBindRestrictionTargets,
   apiAgentRestrictionTargets,
+  apiKnowledgeBindRestrictionTargets,
+  apiKnowledgeRestrictionTargets,
   apiModelBindRestrictionTargets,
   apiModelRestrictionTargets,
   apiPageAgentBindRestrictionTargets,
@@ -28,7 +30,7 @@ interface TargetAuthModalProps {
   /** 目标名称 */
   targetName?: string;
   /** 目标类型 */
-  targetType: 'agent' | 'page' | 'model';
+  targetType: 'agent' | 'page' | 'model' | 'knowledge';
   /** 取消回调 */
   onCancel: () => void;
 }
@@ -65,6 +67,8 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       ? apiAgentRestrictionTargets
       : targetType === 'page'
       ? apiPageAgentRestrictionTargets
+      : targetType === 'knowledge'
+      ? apiKnowledgeRestrictionTargets
       : apiModelRestrictionTargets;
 
   // 绑定限制访问对象接口
@@ -73,6 +77,8 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       ? apiAgentBindRestrictionTargets
       : targetType === 'page'
       ? apiPageAgentBindRestrictionTargets
+      : targetType === 'knowledge'
+      ? apiKnowledgeBindRestrictionTargets
       : apiModelBindRestrictionTargets;
 
   // 查询完整的角色列表

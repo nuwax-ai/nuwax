@@ -164,6 +164,16 @@ export interface UserInfo {
   avatar: string;
 }
 
+// 开放API权限配置
+export interface OpenApiConfigInfo {
+  /*开放api key */
+  key: string;
+  /*接口调用频率限制，每分钟调用次数 */
+  rpm: number;
+  /*接口调用频率限制，每天调用次数 */
+  rpd: number;
+}
+
 // 数据权限
 export interface DataPermission {
   /*模型ID列表，全部模型传[-1]，未选中任何模型不传或传空 */
@@ -177,6 +187,12 @@ export interface DataPermission {
 
   /*可访问的智能体id列表，null或空表示不限制 */
   agentIds?: number[];
+
+  /*有权限访问的知识库id列表 */
+  knowledgeIds?: number[];
+
+  /*开放API权限配置 */
+  openApiConfigs?: OpenApiConfigInfo[];
 
   /*可访问的应用页面id列表，null或空表示不限制 */
   pageAgentIds?: number[];

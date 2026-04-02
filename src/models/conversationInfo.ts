@@ -164,20 +164,6 @@ export default () => {
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
 
-  // 历史会话弹窗状态管理
-  const [isHistoryConversationOpen, setIsHistoryConversationOpen] =
-    useState<boolean>(false);
-
-  // 打开历史会话弹窗
-  const openHistoryConversation = useCallback(() => {
-    setIsHistoryConversationOpen(true);
-  }, []);
-
-  // 关闭历史会话弹窗
-  const closeHistoryConversation = useCallback(() => {
-    setIsHistoryConversationOpen(false);
-  }, []);
-
   // 定时任务弹窗状态管理
   const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
   const [timedTaskMode, setTimedTaskMode] = useState<CreateUpdateModeEnum>();
@@ -277,7 +263,7 @@ export default () => {
         // 查询文件列表
         await runGetStaticFileList(cId);
       },
-      3000,
+      5000,
       { leading: true, trailing: true },
     ),
     [runGetStaticFileList],
@@ -1423,9 +1409,6 @@ export default () => {
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,
-    isHistoryConversationOpen,
-    openHistoryConversation,
-    closeHistoryConversation,
     timedTaskMode,
     isTimedTaskOpen,
     openTimedTask,

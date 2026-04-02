@@ -9,7 +9,7 @@ const ApiKeyLogs: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="Api调用日志"
+      title="API 调用日志"
       hideScroll={false}
       back={true}
       onBack={handleBack}

@@ -10,10 +10,8 @@ import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
-  ClockCircleOutlined,
   EllipsisOutlined,
   LoadingOutlined,
-  PlusCircleOutlined,
   RightOutlined,
 } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -249,7 +247,7 @@ const BaseTemplate: React.FC = () => {
           onClick={() => createAppNewConversation(agentId)}
         >
           <span className={styles.newSessionText}>
-            <PlusCircleOutlined />
+            <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
             新建会话
           </span>
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -279,10 +277,7 @@ const BaseTemplate: React.FC = () => {
           ) : (
             <>
               <div className={cx(styles['history-title'])}>
-                <span className={cx(styles.title)}>
-                  <ClockCircleOutlined />
-                  历史会话
-                </span>
+                <span className={cx(styles.title)}>历史会话</span>
 
                 <ConditionRender condition={conversationList?.length}>
                   <span

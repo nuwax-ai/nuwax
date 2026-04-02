@@ -2,6 +2,7 @@ import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { RoleInfo } from '@/types/interfaces/conversationInfo';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { RequestResponse } from '@/types/interfaces/request';
+import type { KnowledgeInfoById } from '@/types/interfaces/systemManage';
 import { request } from 'umi';
 import { MenuNodeInfo } from '../SystemManagement/MenuPermission/types/menu-manage';
 import { DataPermission } from '../SystemManagement/MenuPermission/types/role-manage';
@@ -96,6 +97,16 @@ export async function apiSystemResourcePageListByIds(data: {
   agentIds: number[];
 }): Promise<RequestResponse<CustomPageDto[]>> {
   return request(`/api/system/resource/page/list-by-ids`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 根据id列表查询知识库列表（数据权限回显）
+export async function apiSystemResourceKnowledgeListByIds(data: {
+  knowledgeIds: number[];
+}): Promise<RequestResponse<KnowledgeInfoById[]>> {
+  return request(`/api/system/resource/knowledge/list-by-ids`, {
     method: 'POST',
     data,
   });

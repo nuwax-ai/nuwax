@@ -11,7 +11,6 @@ import type {
   SpaceLogQueryFilter,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
-// import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import type {
   ActionType,
   FormInstance,
@@ -44,12 +43,6 @@ const LogProTable: React.FC = () => {
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>();
 
-  // 从 URL 查询参数中获取 targetType，用于初始化查询表单
-  const targetTypeFromUrl = useMemo(() => {
-    const searchParams = new URLSearchParams(location.search);
-    return searchParams.get('targetType') || undefined;
-  }, [location.search]);
-
   // 从 URL 查询参数中获取 targetId，用于初始化查询表单
   const targetIdFromUrl = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -76,11 +69,7 @@ const LogProTable: React.FC = () => {
         valueType: 'select',
         valueEnum: AGENT_COMPONENT_TYPE_MAP,
         hideInTable: false,
-        initialValue: targetTypeFromUrl,
-        fieldProps: {
-          placeholder: '请选择类型',
-          allowClear: true,
-        },
+        search: false,
       },
       {
         title: '对象ID',
@@ -108,17 +97,6 @@ const LogProTable: React.FC = () => {
         initialValue: requestIdFromUrl,
         fieldProps: { placeholder: '请输入请求ID' },
       },
-      // {
-      //   title: '用户ID',
-      //   dataIndex: 'userId',
-      //   width: 100,
-      //   ellipsis: true,
-      //   fieldProps: getIntegerOnlyFieldProps(
-      //     '请输入用户ID，仅支持输入整数',
-      //     18,
-      //   ),
-      // },
-
       {
         title: '会话ID',
         dataIndex: 'conversationId',
@@ -241,7 +219,6 @@ const LogProTable: React.FC = () => {
       const queryFilter: SpaceLogQueryFilter = {
         spaceId: Number.isFinite(spaceId) ? spaceId : undefined,
         targetId: tableParams.targetId || undefined,
-        targetType: tableParams.targetType || undefined,
         requestId: tableParams.requestId || undefined,
         userId: Number.isFinite(userIdNum as number)
           ? (userIdNum as number)
@@ -337,7 +314,6 @@ const LogProTable: React.FC = () => {
     isReset.current = true;
     // 显式重置表单到初始值 (URL 参数对应的默认值)
     formRef.current?.setFieldsValue({
-      targetType: targetTypeFromUrl,
       targetId: targetIdFromUrl,
       requestId: requestIdFromUrl,
       targetName: undefined,

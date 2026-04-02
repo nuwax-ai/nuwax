@@ -226,12 +226,31 @@ export async function apiApiKeyStats(
 }
 
 /**
- * 获取 API 权限项列表
+ * 获取用户有权限的API列表
  */
 export async function apiGetOpenApiDefinitions(): Promise<
   RequestResponse<OpenApiDefinition[]>
 > {
   return request('/api/user/api-key/open-api-definitions', {
     method: 'GET',
+  });
+}
+
+// 开放API权限目标类型
+export enum OpenApiPermissionTargetTypeEnum {
+  User = 1,
+  Role = 2,
+  Group = 3,
+}
+
+/**
+ * 查询开放API列表
+ */
+export async function apiGetOpenApiList(
+  targetType: OpenApiPermissionTargetTypeEnum,
+): Promise<RequestResponse<OpenApiDefinition[]>> {
+  return request('/api/system/open-api/list', {
+    method: 'GET',
+    params: { targetType },
   });
 }

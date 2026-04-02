@@ -6,24 +6,35 @@ import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiSystemResourceKnowledgeAccessControl,
   apiSystemResourceKnowledgeDelete,
   apiSystemResourceKnowledgeList,
 } from '@/services/systemManage';
+import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemKnowledgeInfo } from '@/types/interfaces/systemManage';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
-import { useCallback, useEffect, useRef } from 'react';
+import { message, Switch } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
 
 const KnowledgeBase: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
   const location = useLocation();
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentKnowledgeInfo, setCurrentKnowledgeInfo] =
+    useState<SystemKnowledgeInfo | null>(null);
 
   const handleReset = useCallback(() => {
     // 重置表单
@@ -65,6 +76,36 @@ const KnowledgeBase: React.FC = () => {
   }, []);
 
   /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: SystemKnowledgeInfo, checked: boolean) => {
+      const newStatus = checked ? 1 : 0;
+      setAccessControlLoadingMap((prev) => ({ ...prev, [record.id]: true }));
+      try {
+        const response = await apiSystemResourceKnowledgeAccessControl(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({ ...prev, [record.id]: false }));
+      }
+    },
+    [],
+  );
+
+  /**
+   * 处理授权
+   */
+  const handleAuth = useCallback((record: SystemKnowledgeInfo) => {
+    setCurrentKnowledgeInfo(record);
+    setAuthModalOpen(true);
+  }, []);
+
+  /**
    * 操作列配置
    */
   const getActions = useCallback(
@@ -74,6 +115,12 @@ const KnowledgeBase: React.FC = () => {
         label: '查看',
         disabled: !hasPermission('content_knowledge_query_detail'),
         onClick: handleView,
+      },
+      {
+        key: 'auth',
+        label: '授权',
+        visible: record.accessControl === AccessControlEnum.Filter,
+        onClick: handleAuth,
       },
       {
         key: 'delete',
@@ -130,6 +177,26 @@ const KnowledgeBase: React.FC = () => {
       valueType: 'dateTime',
     },
     {
+      title: '管控',
+      tooltip: '若开启管控，需授权才能使用该知识库',
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      valueEnum: {
+        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
+        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+      },
+      valueType: 'select',
+      render: (_, record: SystemKnowledgeInfo) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
+    },
+    {
       title: '操作',
       valueType: 'option',
       fixed: 'right',
@@ -152,12 +219,14 @@ const KnowledgeBase: React.FC = () => {
     current?: number;
     name?: string;
     creatorName?: string;
+    accessControl?: AccessControlEnum;
   }) => {
     const response = await apiSystemResourceKnowledgeList({
       pageNo: params.current || 1,
       pageSize: params.pageSize || 15,
       name: params.name,
       creatorName: params.creatorName,
+      accessControl: params.accessControl,
     });
 
     return {
@@ -177,6 +246,18 @@ const KnowledgeBase: React.FC = () => {
         request={request}
         onReset={handleReset}
         showQueryButtons={hasPermission('content_knowledge_query_list')}
+      />
+
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentKnowledgeInfo?.id || 0}
+        targetName={currentKnowledgeInfo?.name}
+        targetType="knowledge"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentKnowledgeInfo(null);
+        }}
       />
     </WorkspaceLayout>
   );

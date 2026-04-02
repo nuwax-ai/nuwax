@@ -217,7 +217,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           networkType: ModelNetworkTypeEnum.Internet,
           apiInfoList: [{ weight: 1 }],
           isReasonModel: 0,
-          functionCall: ModelFunctionCallEnum.CallSupported,
+          functionCall: ModelFunctionCallEnum.StreamCallSupported,
           apiProtocol: ModelApiProtocolEnum.OpenAI,
           strategy: ModelStrategyEnum.RoundRobin,
           type: ModelTypeEnum.Chat,
@@ -226,7 +226,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           maxContextTokens: 128000,
           dimension: 1536,
           enabled: ModelComponentStatusEnum.Enabled, // 启用
-          usageScenarios: [],
+          usageScenarios: MODEL_USAGE_SCENARIO_LIST.map((v) => v.value),
         }}
         autoComplete="off"
       >

@@ -3,22 +3,33 @@ import {
   DATA_PERMISSION_TAB_ITEMS,
   DataPermissionTabKey,
 } from '@/pages/SystemManagement/MenuPermission/components/DataPermissionModal';
+import type { OpenApiConfigInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
+import {
+  apiGetOpenApiList,
+  OpenApiPermissionTargetTypeEnum,
+} from '@/services/account';
 import { apiSystemModelList } from '@/services/systemManage';
+import type { OpenApiDefinition } from '@/types/interfaces/account';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
-import type { ModelConfigDto } from '@/types/interfaces/systemManage';
+import type {
+  KnowledgeInfoById,
+  ModelConfigDto,
+} from '@/types/interfaces/systemManage';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Empty, Form, InputNumber, Modal, Row, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiSystemResourceAgentListByIds,
+  apiSystemResourceKnowledgeListByIds,
   apiSystemResourcePageListByIds,
   apiSystemUserDataPermission,
   UserDataPermission,
 } from '../../user-manage';
 import ResourceItem from './components/ResourceItem';
+import UserOpenApiPermissionPanel from './components/UserOpenApiPermissionPanel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -47,22 +58,46 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   const [form] = Form.useForm();
   // 当前激活的tab
   const [activeTab, setActiveTab] = useState<DataPermissionTabKey>('model');
+
+  // ============================= 模型 =============================
+  // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
+  const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
+
+  // 已选中的模型列表（通过ID列表过滤）
+  const [filteredModelList, setFilteredModelList] = useState<ModelConfigDto[]>(
+    [],
+  );
+
+  // ============================= 智能体 =============================
   // 智能体列表
   const [agentList, setAgentList] = useState<AgentConfigInfo[]>([]);
-  // 应用页面列表
-  const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 选中的智能体ID列表
   const [selectedAgentIds, setSelectedAgentIds] = useState<number[]>([]);
+
+  // ============================= 应用页面 =============================
+  // 应用页面列表
+  const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 选中的应用页面关联的agentId列表（此处应该是页面的devAgentId字段值列表）
   const [selectedPageAgentIds, setSelectedPageAgentIds] = useState<number[]>(
     [],
   );
-  // 存储查询到的数据权限中的 modelIds，用于处理异步加载问题
-  const [fetchedModelIds, setFetchedModelIds] = useState<number[] | null>(null);
 
-  const [filteredModelList, setFilteredModelList] = useState<ModelConfigDto[]>(
+  // ============================= 知识库 =============================
+  // 知识库列表
+  const [knowledgeList, setKnowledgeList] = useState<KnowledgeInfoById[]>([]);
+  // 选中的知识库ID列表
+  const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>(
     [],
   );
+
+  // API 权限：用户数据权限接口返回的勾选与限流配置
+  const [userOpenApiConfigs, setUserOpenApiConfigs] = useState<
+    OpenApiConfigInfo[]
+  >([]);
+  const [openApiTreeData, setOpenApiTreeData] = useState<OpenApiDefinition[]>(
+    [],
+  );
+  const [openApiListLoading, setOpenApiListLoading] = useState(false);
 
   // 模型列表
   const {
@@ -101,8 +136,28 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         setFetchedModelIds(result.modelIds || null);
         setSelectedAgentIds(result.agentIds || []);
         setSelectedPageAgentIds(result.pageAgentIds || []);
+        // 知识库ID列表
+        setSelectedKnowledgeIds(result?.knowledgeIds || []);
+        // API 权限
+        setUserOpenApiConfigs(result.openApiConfigs || []);
       },
     });
+
+  /** 加载开放 API 树（与查看用户 API 权限一致，目标类型为 User） */
+  const loadOpenApiTree = useCallback(async () => {
+    setOpenApiListLoading(true);
+    try {
+      const res = await apiGetOpenApiList(OpenApiPermissionTargetTypeEnum.User);
+      if (res.success && res.data) {
+        setOpenApiTreeData(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+      setOpenApiTreeData([]);
+    } finally {
+      setOpenApiListLoading(false);
+    }
+  }, []);
 
   // 根据ID列表查询智能体
   const { loading: agentLoading, run: runGetAgentListByIds } = useRequest(
@@ -125,6 +180,16 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       },
     },
   );
+
+  // ======================================= 知识库 =======================================
+  // 根据ID列表查询知识库列表
+  const { loading: knowledgeLoading, run: runGetKnowledgeListByIds } =
+    useRequest(apiSystemResourceKnowledgeListByIds, {
+      manual: true,
+      onSuccess: (result: KnowledgeInfoById[]) => {
+        setKnowledgeList(result || []);
+      },
+    });
 
   // 当弹窗打开时，加载数据
   useEffect(() => {
@@ -160,6 +225,16 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       setAgentList([]);
       setPageList([]);
       setActiveTab('model');
+
+      // ======================================= 知识库 =======================================
+      // 知识库列表
+      setKnowledgeList([]);
+      // 选中的知识库ID列表
+      setSelectedKnowledgeIds([]);
+
+      // ======================================= API 权限 =======================================
+      setUserOpenApiConfigs([]);
+      setOpenApiTreeData([]);
     }
   }, [open, userId]);
 
@@ -183,69 +258,65 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     const tabKey = key as DataPermissionTabKey;
     setActiveTab(tabKey);
 
-    // 只针对智能体和应用页面 tab 加载数据
-    if (tabKey === 'agent') {
-      if (selectedAgentIds.length > 0) {
-        // 切换到智能体 tab 时，根据权限 ID 列表查询智能体数据
-        runGetAgentListByIds({
-          agentIds: selectedAgentIds,
-        });
-      } else {
-        // 如果没有权限，清空列表
-        setAgentList([]);
-      }
-    } else if (tabKey === 'page') {
-      if (selectedPageAgentIds.length > 0) {
-        // 切换到应用页面 tab 时，根据权限 ID 列表查询应用页面数据
-        runGetPageListByIds({
-          agentIds: selectedPageAgentIds,
-        });
-      } else {
-        // 如果没有权限，清空列表
-        setPageList([]);
-      }
+    // 按需加载各 Tab 数据
+    switch (tabKey) {
+      case 'agent':
+        if (selectedAgentIds.length > 0) {
+          runGetAgentListByIds({
+            agentIds: selectedAgentIds,
+          });
+        }
+        break;
+      case 'page':
+        if (selectedPageAgentIds.length > 0) {
+          runGetPageListByIds({
+            agentIds: selectedPageAgentIds,
+          });
+        }
+        break;
+      case 'knowledge':
+        if (selectedKnowledgeIds.length > 0) {
+          runGetKnowledgeListByIds({
+            knowledgeIds: selectedKnowledgeIds,
+          });
+        }
+        break;
+      case 'apiPermission':
+        if (openApiTreeData.length === 0 && !openApiListLoading) {
+          loadOpenApiTree();
+        }
+        break;
+      default:
+        break;
     }
   };
 
-  // 智能体列表（直接使用查询结果，因为接口已经根据 ID 列表过滤）
-  const filteredAgentList = agentList;
-
-  // 应用页面列表（直接使用查询结果，因为接口已经根据 ID 列表过滤）
-  const filteredPageList = pageList;
-
   // 检查是否有数据
   const hasModelData = filteredModelList.length > 0;
-  const hasAgentData = filteredAgentList.length > 0;
-  const hasPageData = filteredPageList.length > 0;
+  const hasAgentData = agentList.length > 0;
+  const hasPageData = pageList.length > 0;
 
   // 渲染 Tab 内容
   const renderTabContent = () => {
     switch (activeTab) {
       case 'model':
-        return hasModelData ? (
+        return (modelLoading || dataPermissionLoading) &&
+          !filteredModelList?.length ? (
+          <div
+            className={cx('h-full', 'flex', 'items-center', 'content-center')}
+          >
+            <Loading />
+          </div>
+        ) : hasModelData ? (
           <div className={cx('flex-1', 'overflow-y', 'h-full')}>
-            {(modelLoading || dataPermissionLoading) &&
-            !filteredModelList?.length ? (
-              <div
-                className={cx(
-                  'h-full',
-                  'flex',
-                  'items-center',
-                  'content-center',
-                )}
-              >
-                <Loading />
-              </div>
-            ) : (
-              filteredModelList?.map((item: ModelConfigDto) => (
-                <ResourceItem
-                  key={item.id}
-                  showIcon={false}
-                  name={item.name}
-                  description={item.description}
-                />
-              ))
-            )}
+            {filteredModelList?.map((item: ModelConfigDto) => (
+              <ResourceItem
+                key={item.id}
+                showIcon={false}
+                name={item.name}
+                description={item.description}
+              />
+            ))}
           </div>
         ) : (
           <div
@@ -255,7 +326,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           </div>
         );
       case 'agent':
-        return agentLoading && !filteredAgentList?.length ? (
+        return agentLoading && !agentList?.length ? (
           <div
             className={cx('h-full', 'flex', 'items-center', 'content-center')}
           >
@@ -263,7 +334,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           </div>
         ) : hasAgentData ? (
           <div className={cx('flex-1', 'overflow-y', 'h-full')}>
-            {filteredAgentList.map((item) => (
+            {agentList.map((item) => (
               <ResourceItem
                 key={item.id}
                 icon={item.icon}
@@ -280,7 +351,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           </div>
         );
       case 'page':
-        return pageLoading && !filteredPageList?.length ? (
+        return pageLoading && !pageList?.length ? (
           <div
             className={cx('h-full', 'flex', 'items-center', 'content-center')}
           >
@@ -288,10 +359,35 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           </div>
         ) : hasPageData ? (
           <div className={cx('flex-1', 'overflow-y', 'h-full')}>
-            {filteredPageList.map((item) => (
+            {pageList.map((item) => (
               <ResourceItem
                 key={item.devAgentId}
                 icon={item.coverImg || item.icon}
+                name={item.name}
+                description={item.description}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={cx('flex', 'items-center', 'content-center', 'h-full')}
+          >
+            <Empty description="暂无数据" />
+          </div>
+        );
+      case 'knowledge':
+        return knowledgeLoading && !knowledgeList?.length ? (
+          <div
+            className={cx('h-full', 'flex', 'items-center', 'content-center')}
+          >
+            <Loading />
+          </div>
+        ) : knowledgeList?.length > 0 ? (
+          <div className={cx('flex-1', 'overflow-y', 'h-full')}>
+            {knowledgeList.map((item) => (
+              <ResourceItem
+                key={item.id}
+                icon={item.icon}
                 name={item.name}
                 description={item.description}
               />
@@ -479,6 +575,14 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               </Row>
             </Form>
           </div>
+        );
+      case 'apiPermission':
+        return (
+          <UserOpenApiPermissionPanel
+            openApiListLoading={openApiListLoading}
+            openApiTreeData={openApiTreeData}
+            openApiConfigs={userOpenApiConfigs}
+          />
         );
       default:
         return null;
