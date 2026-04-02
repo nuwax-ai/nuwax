@@ -125,7 +125,6 @@ export default () => {
     string[] | GuidQuestionDto[]
   >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
   const [showType, setShowType] = useState<EditAgentShowType>(
@@ -739,337 +738,306 @@ export default () => {
     res: ConversationChatResponse,
     // 自定义随机id
     currentMessageId: string,
-    // 是否立即更新（不进入 200ms 延迟）
-    isImmediate: boolean = false,
   ) => {
     const { data, eventType } = res;
     setCurrentConversationRequestId(res.requestId);
 
-    // 核心更新逻辑
-    const performUpdate = () => {
-      setMessageList((messageList) => {
-        if (!messageList?.length) {
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
-          disabledConversationActive();
-          return [];
-        }
-        // 深拷贝消息列表
-        let list: any[] = [...messageList];
-        const index = list.findIndex((item) => item.id === currentMessageId);
-        // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
-        let arraySpliceAction = 1;
-        // 当前消息
-        const currentMessage = list.find(
-          (item) => item.id === currentMessageId,
-        ) as MessageInfo;
-        // 消息不存在时
-        if (!currentMessage) {
-          return messageList;
-        }
+    // 立即执行同步更新：React 18 会自动处理批量更新合并，无需手动防抖。
+    // 这保证了流式输出中的每一个数据包（Chunk）都能被正确拼接，且不会丢失。
+    setMessageList((messageList) => {
+      if (!messageList?.length) {
+        disabledConversationActive();
+        return [];
+      }
+      // 深拷贝消息列表
+      let list: any[] = [...messageList];
+      const index = list.findIndex((item) => item.id === currentMessageId);
+      // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
+      let arraySpliceAction = 1;
+      // 当前消息
+      const currentMessage = list.find(
+        (item) => item.id === currentMessageId,
+      ) as MessageInfo;
+      // 消息不存在时
+      if (!currentMessage) {
+        return messageList;
+      }
 
-        let newMessage: any = null;
+      let newMessage: any = null;
 
-        // 更新UI状态...
-        if (eventType === ConversationEventTypeEnum.PROCESSING) {
-          const processingResult = data.result || {};
-          data.executeId = processingResult.executeId;
-          newMessage = {
-            ...currentMessage,
-            text: getCustomBlock(currentMessage.text || '', data),
-            status: MessageStatusEnum.Loading,
-            processingList: [
-              ...(currentMessage?.processingList || []),
-              data,
-            ] as ProcessingInfo[],
-          };
-          // 添加处理扩展页面逻辑
-          if (data.status === ProcessingEnum.EXECUTING) {
-            // 判断页面类型
-            if (data.type === 'Page') {
-              const input = processingResult.input;
-              // 添加页面类型 后的未返回默认 Page
-              input.uri_type = processingResult.input.uri_type ?? 'Page';
+      // 更新UI状态...
+      if (eventType === ConversationEventTypeEnum.PROCESSING) {
+        const processingResult = data.result || {};
+        data.executeId = processingResult.executeId;
+        newMessage = {
+          ...currentMessage,
+          text: getCustomBlock(currentMessage.text || '', data),
+          status: MessageStatusEnum.Loading,
+          processingList: [
+            ...(currentMessage?.processingList || []),
+            data,
+          ] as ProcessingInfo[],
+        };
+        // 添加处理扩展页面逻辑
+        if (data.status === ProcessingEnum.EXECUTING) {
+          // 判断页面类型
+          if (data.type === 'Page') {
+            const input = processingResult.input;
+            // 添加页面类型 后的未返回默认 Page
+            input.uri_type = processingResult.input.uri_type ?? 'Page';
 
+            // 显示页面预览
+            if (!input.uri_type || input.uri_type === 'Page') {
+              const previewData = {
+                uri: input.uri,
+                params: input.arguments || {},
+                executeId: data.executeId || '',
+                method: input.method,
+                request_id: input.request_id,
+                data_type: input.data_type,
+              };
+              // console.log('CHART', previewData);
               // 显示页面预览
-              if (!input.uri_type || input.uri_type === 'Page') {
-                const previewData = {
-                  uri: input.uri,
-                  params: input.arguments || {},
-                  executeId: data.executeId || '',
-                  method: input.method,
-                  request_id: input.request_id,
-                  data_type: input.data_type,
-                };
-                // console.log('CHART', previewData);
-                // 显示页面预览
-                showPagePreview(previewData);
-              }
+              showPagePreview(previewData);
+            }
 
-              // 链接类型
-              if (input.uri_type === 'Link') {
-                const input = processingResult.input;
-                input.uri_type = processingResult.input.uri_type ?? 'Page';
-                // 拼接 query 参数
-                const queryString = new URLSearchParams(
-                  input.arguments,
-                ).toString();
-                const pageUrl = `${input.uri}?${queryString}`;
-                window.open(pageUrl, '_blank');
-              }
+            // 链接类型
+            if (input.uri_type === 'Link') {
+              const input = processingResult.input;
+              input.uri_type = processingResult.input.uri_type ?? 'Page';
+              // 拼接 query 参数
+              const queryString = new URLSearchParams(
+                input.arguments,
+              ).toString();
+              const pageUrl = `${input.uri}?${queryString}`;
+              window.open(pageUrl, '_blank');
             }
           }
-
-          // 已调用完毕后, 处理卡片信息
-          if (
-            data?.status === ProcessingEnum.FINISHED &&
-            data?.cardBindConfig &&
-            data?.cardData
-          ) {
-            // 卡片列表
-            setCardList((cardList) => {
-              // 竖向列表
-              if (
-                data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST
-              ) {
-                // 过滤掉空对象, 因为cardData中可能存在空对象
-                const _cardData =
-                  data?.cardData?.filter(
-                    (item: CardDataInfo) => !isEmptyObject(item),
-                  ) || [];
-                // 如果卡片列表不为空，则自动展开展示台
-                if (_cardData?.length) {
-                  // 自动展开展示台
-                  setShowType(EditAgentShowType.Show_Stand);
-                }
-                const cardDataList =
-                  _cardData?.map((item: CardDataInfo) => ({
-                    ...item,
-                    cardKey: data.cardBindConfig.cardKey,
-                  })) || [];
-                // 如果是同一次会话请求，则追加，否则更新
-                return res.requestId === requestId
-                  ? [...cardList, ...cardDataList]
-                  : [...cardDataList];
-              }
-              // 自动展开展示台
-              setShowType(EditAgentShowType.Show_Stand);
-              // 单张卡片
-              const cardInfo = {
-                ...data?.cardData,
-                cardKey: data.cardBindConfig?.cardKey,
-              };
-              // 如果是同一次会话请求，则追加，否则更新
-              return (
-                res.requestId === requestId
-                  ? [...cardList, cardInfo]
-                  : [cardInfo]
-              ) as CardInfo[];
-            });
-          }
-
-          // 通用型任务处理(打开远程桌面)
-          if (
-            data.type === AgentComponentTypeEnum.Event &&
-            data.subEventType === 'OPEN_DESKTOP' &&
-            // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
-            params.conversationId &&
-            conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
-          ) {
-            // 打开远程桌面
-            openDesktopView(params.conversationId);
-          }
-
-          // 通用型任务处理(刷新文件树)
-          if (
-            data.type === AgentComponentTypeEnum.ToolCall &&
-            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
-            viewModeRef.current === 'preview' && // 文件预览
-            // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
-            params.conversationId
-          ) {
-            // 刷新文件树
-            handleRefreshFileList(params.conversationId);
-          }
-
-          handleChatProcessingList([
-            ...(currentMessage?.processingList || []),
-            { ...data },
-          ] as ProcessingInfo[]);
         }
-        // MESSAGE事件
-        if (eventType === ConversationEventTypeEnum.MESSAGE) {
-          const { text, type, ext, id, finished } = data;
-          // 思考think
-          if (type === MessageModeEnum.THINK) {
+
+        // 已调用完毕后, 处理卡片信息
+        if (
+          data?.status === ProcessingEnum.FINISHED &&
+          data?.cardBindConfig &&
+          data?.cardData
+        ) {
+          // 卡片列表
+          setCardList((cardList) => {
+            // 竖向列表
+            if (data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST) {
+              // 过滤掉空对象, 因为cardData中可能存在空对象
+              const _cardData =
+                data?.cardData?.filter(
+                  (item: CardDataInfo) => !isEmptyObject(item),
+                ) || [];
+              // 如果卡片列表不为空，则自动展开展示台
+              if (_cardData?.length) {
+                // 自动展开展示台
+                setShowType(EditAgentShowType.Show_Stand);
+              }
+              const cardDataList =
+                _cardData?.map((item: CardDataInfo) => ({
+                  ...item,
+                  cardKey: data.cardBindConfig.cardKey,
+                })) || [];
+              // 如果是同一次会话请求，则追加，否则更新
+              return res.requestId === requestId
+                ? [...cardList, ...cardDataList]
+                : [...cardDataList];
+            }
+            // 自动展开展示台
+            setShowType(EditAgentShowType.Show_Stand);
+            // 单张卡片
+            const cardInfo = {
+              ...data?.cardData,
+              cardKey: data.cardBindConfig?.cardKey,
+            };
+            // 如果是同一次会话请求，则追加，否则更新
+            return (
+              res.requestId === requestId ? [...cardList, cardInfo] : [cardInfo]
+            ) as CardInfo[];
+          });
+        }
+
+        // 通用型任务处理(打开远程桌面)
+        if (
+          data.type === AgentComponentTypeEnum.Event &&
+          data.subEventType === 'OPEN_DESKTOP' &&
+          // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
+          params.conversationId &&
+          conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
+        ) {
+          // 打开远程桌面
+          openDesktopView(params.conversationId);
+        }
+
+        // 通用型任务处理(刷新文件树)
+        if (
+          data.type === AgentComponentTypeEnum.ToolCall &&
+          isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
+          viewModeRef.current === 'preview' && // 文件预览
+          // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
+          params.conversationId
+        ) {
+          // 刷新文件树
+          handleRefreshFileList(params.conversationId);
+        }
+
+        handleChatProcessingList([
+          ...(currentMessage?.processingList || []),
+          { ...data },
+        ] as ProcessingInfo[]);
+      }
+      // MESSAGE事件
+      if (eventType === ConversationEventTypeEnum.MESSAGE) {
+        const { text, type, ext, id, finished } = data;
+        // 思考think
+        if (type === MessageModeEnum.THINK) {
+          newMessage = {
+            ...currentMessage,
+            think: `${currentMessage.think}${text}`,
+            status: MessageStatusEnum.Incomplete,
+          };
+        }
+        // 问答
+        else if (type === MessageModeEnum.QUESTION) {
+          newMessage = {
+            ...currentMessage,
+            text: `${currentMessage.text}${text}`,
+            // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
+            status: finished ? null : MessageStatusEnum.Incomplete,
+          };
+          if (ext?.length) {
+            // 问题建议
+            setChatSuggestList(
+              ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
+                [],
+            );
+          }
+        } else {
+          // 工作流过程输出
+          if (messageIdRef.current && messageIdRef.current !== id && finished) {
             newMessage = {
               ...currentMessage,
-              think: `${currentMessage.think}${text}`,
-              status: MessageStatusEnum.Incomplete,
+              id,
+              text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              status: null, // 隐藏运行状态
             };
-          }
-          // 问答
-          else if (type === MessageModeEnum.QUESTION) {
+            // 插入新的消息
+            arraySpliceAction = 0;
+          } else {
+            messageIdRef.current = id;
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
-              // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
-              status: finished ? null : MessageStatusEnum.Incomplete,
+              // 如果finished为true，则状态为Complete，否则为Incomplete
+              status: finished
+                ? MessageStatusEnum.Complete
+                : MessageStatusEnum.Incomplete,
             };
-            if (ext?.length) {
-              // 问题建议
-              setChatSuggestList(
-                ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
-                  [],
-              );
-            }
-          } else {
-            // 工作流过程输出
-            if (
-              messageIdRef.current &&
-              messageIdRef.current !== id &&
-              finished
-            ) {
-              newMessage = {
-                ...currentMessage,
-                id,
-                text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
-                status: null, // 隐藏运行状态
-              };
-              // 插入新的消息
-              arraySpliceAction = 0;
-            } else {
-              messageIdRef.current = id;
-              newMessage = {
-                ...currentMessage,
-                text: `${currentMessage.text}${text}`,
-                // 如果finished为true，则状态为Complete，否则为Incomplete
-                status: finished
-                  ? MessageStatusEnum.Complete
-                  : MessageStatusEnum.Incomplete,
-              };
-            }
           }
         }
-        // FINAL_RESULT事件
-        if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-          // 重置消息ID
-          messageIdRef.current = '';
+      }
+      // FINAL_RESULT事件
+      if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+        // 重置消息ID
+        messageIdRef.current = '';
 
-          setTimeout(async () => {
-            // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
-            if (
-              params.conversationId &&
-              conversationInfoRef.current?.agent?.type ===
-                AgentTypeEnum.TaskAgent
-            ) {
-              // 刷新文件树
-              await handleRefreshFileList(params.conversationId);
+        setTimeout(async () => {
+          // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+          if (
+            params.conversationId &&
+            conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+          ) {
+            // 刷新文件树
+            await handleRefreshFileList(params.conversationId);
 
-              const taskResult = extractTaskResult(data.outputText);
-              // 如果有任务结果，并且有文件，则打开预览视图
-              if (taskResult.hasTaskResult && taskResult.file) {
-                // 打开预览视图
-                openPreviewView(params.conversationId);
-                const fileId = taskResult.file
-                  ?.split(`${params.conversationId}/`)
-                  .pop();
-                // 如果文件ID存在，则设置文件ID
-                if (fileId) {
-                  setTaskAgentSelectedFileId(fileId);
-                  // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
-                  setTaskAgentSelectTrigger(Date.now());
-                }
+            const taskResult = extractTaskResult(data.outputText);
+            // 如果有任务结果，并且有文件，则打开预览视图
+            if (taskResult.hasTaskResult && taskResult.file) {
+              // 打开预览视图
+              openPreviewView(params.conversationId);
+              const fileId = taskResult.file
+                ?.split(`${params.conversationId}/`)
+                .pop();
+              // 如果文件ID存在，则设置文件ID
+              if (fileId) {
+                setTaskAgentSelectedFileId(fileId);
+                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+                setTaskAgentSelectTrigger(Date.now());
               }
             }
-          }, 0);
-
-          /**
-           * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
-           */
-          if (
-            res.error?.includes('正在执行任务') ||
-            (!data?.success && data?.error?.includes('正在执行任务'))
-          ) {
-            modalConfirm(
-              '提示',
-              '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
-              () => {
-                if (params?.conversationId) {
-                  runStopConversation(params?.conversationId.toString());
-                }
-                return new Promise((resolve) => {
-                  setTimeout(resolve, 2000);
-                });
-              },
-            );
           }
+        }, 0);
 
-          newMessage = {
-            ...currentMessage,
-            status: MessageStatusEnum.Complete,
-            finalResult: data,
-            requestId: res.requestId,
-          };
-
-          // 调试结果
-          setRequestId(res.requestId);
-          setFinalResult(data as ConversationFinalResult);
-          // 是否开启问题建议,可用值:Open,Close
-          if (isSuggest.current) {
-            runChatSuggest(params as ConversationChatSuggestParams);
-          }
-
-          // 用户主动取消任务
-          if (!data?.success && data?.error?.includes('用户主动取消任务')) {
-            // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-            if (!newMessage?.text && !data.outputText) {
-              // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-              // 这样会在后续的 splice 操作中删除当前消息而不是替换
-              newMessage = null;
-              // 确保删除操作生效：直接从列表中移除当前消息
-              list.splice(index, 1);
-              // 标记已处理，跳过后续的 splice 逻辑
-              // arraySpliceAction = 0;
-            }
-          }
-        }
-        // ERROR事件
-        if (eventType === ConversationEventTypeEnum.ERROR) {
-          newMessage = {
-            ...currentMessage,
-            status: MessageStatusEnum.Error,
-          };
+        /**
+         * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
+         */
+        if (
+          res.error?.includes('正在执行任务') ||
+          (!data?.success && data?.error?.includes('正在执行任务'))
+        ) {
+          modalConfirm(
+            '提示',
+            '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+            () => {
+              if (params?.conversationId) {
+                runStopConversation(params?.conversationId.toString());
+              }
+              return new Promise((resolve) => {
+                setTimeout(resolve, 2000);
+              });
+            },
+          );
         }
 
-        // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
-        if (newMessage) {
-          list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        newMessage = {
+          ...currentMessage,
+          status: MessageStatusEnum.Complete,
+          finalResult: data,
+          requestId: res.requestId,
+        };
+
+        // 调试结果
+        setRequestId(res.requestId);
+        setFinalResult(data as ConversationFinalResult);
+        // 是否开启问题建议,可用值:Open,Close
+        if (isSuggest.current) {
+          runChatSuggest(params as ConversationChatSuggestParams);
         }
 
-        // 检查会话状态
-        checkConversationActive(list);
-
-        return list;
-      });
-    };
-
-    if (isImmediate) {
-      // 立即更新：清除之前的定时器并同步执行
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
+        // 用户主动取消任务
+        if (!data?.success && data?.error?.includes('用户主动取消任务')) {
+          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+          if (!newMessage?.text && !data.outputText) {
+            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+            // 这样会在后续的 splice 操作中删除当前消息而不是替换
+            newMessage = null;
+            // 确保删除操作生效：直接从列表中移除当前消息
+            list.splice(index, 1);
+            // 标记已处理，跳过后续的 splice 逻辑
+            // arraySpliceAction = 0;
+          }
+        }
       }
-      performUpdate();
-    } else {
-      // 延迟更新：防抖，200ms 内最后一条生效
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      // ERROR事件
+      if (eventType === ConversationEventTypeEnum.ERROR) {
+        newMessage = {
+          ...currentMessage,
+          status: MessageStatusEnum.Error,
+        };
       }
-      timeoutRef.current = setTimeout(performUpdate, 200);
-    }
+
+      // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
+      if (newMessage) {
+        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+      }
+
+      // 检查会话状态
+      checkConversationActive(list);
+
+      return list;
+    });
   };
 
   // 会话处理
@@ -1106,23 +1074,12 @@ export default () => {
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
-        // 如果是结束类型的消息包（或者 data.finished 为 true），立即同步更新状态，不进 200ms 缓存
-        const isEndMessage =
-          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
-          res.eventType === ConversationEventTypeEnum.ERROR ||
-          res.data?.finished === true;
-
-        handleChangeMessageList(params, res, currentMessageId, isEndMessage);
+        // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
+        handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
       },
       onClose: async () => {
-        // ✨ 关键：立即清除可能挂载的 200ms 延迟更新任务，防止竞争
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -1179,12 +1136,6 @@ export default () => {
         perfLifecycle.onCloseRenderComplete();
       },
       onError: () => {
-        // ✨ 关键：立即清除挂起的任务
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-
         message.error('网络超时或服务不可用，请稍后再试');
         // 将当前会话的loading状态的消息改为Error状态
         const list =
@@ -1209,11 +1160,6 @@ export default () => {
     messageIdRef.current = '';
     // 重置问题建议列表
     setChatSuggestList([]);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    // 清除滚动
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = null;
@@ -1261,12 +1207,6 @@ export default () => {
     setVariables([]);
     setRequiredNameList([]);
     setUserFillVariables(null);
-
-    if (timeoutRef.current) {
-      //清除会话定时器
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
 
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
