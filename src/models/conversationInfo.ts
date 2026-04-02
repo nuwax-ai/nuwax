@@ -739,10 +739,14 @@ export default () => {
     res: ConversationChatResponse,
     // 自定义随机id
     currentMessageId: string,
+    // 是否立即更新（不进入 200ms 延迟）
+    isImmediate: boolean = false,
   ) => {
     const { data, eventType } = res;
     setCurrentConversationRequestId(res.requestId);
-    timeoutRef.current = setTimeout(() => {
+
+    // 核心更新逻辑
+    const performUpdate = () => {
       setMessageList((messageList) => {
         if (!messageList?.length) {
           if (timeoutRef.current) {
@@ -1050,7 +1054,22 @@ export default () => {
 
         return list;
       });
-    }, 200);
+    };
+
+    if (isImmediate) {
+      // 立即更新：清除之前的定时器并同步执行
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      performUpdate();
+    } else {
+      // 延迟更新：防抖，200ms 内最后一条生效
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(performUpdate, 200);
+    }
   };
 
   // 会话处理
@@ -1087,11 +1106,23 @@ export default () => {
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
-        handleChangeMessageList(params, res, currentMessageId);
+        // 如果是结束类型的消息包（或者 data.finished 为 true），立即同步更新状态，不进 200ms 缓存
+        const isEndMessage =
+          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+          res.eventType === ConversationEventTypeEnum.ERROR ||
+          res.data?.finished === true;
+
+        handleChangeMessageList(params, res, currentMessageId, isEndMessage);
         // 滚动到底部
         handleScrollBottom();
       },
       onClose: async () => {
+        // ✨ 关键：立即清除可能挂载的 200ms 延迟更新任务，防止竞争
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -1132,6 +1163,9 @@ export default () => {
                 handleChatProcessingList(updatedProcessingList);
               }
             }
+
+            // 再次调用 checkConversationActive 确保状态同步
+            checkConversationActive(copyList);
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
@@ -1145,6 +1179,12 @@ export default () => {
         perfLifecycle.onCloseRenderComplete();
       },
       onError: () => {
+        // ✨ 关键：立即清除挂起的任务
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
         message.error('网络超时或服务不可用，请稍后再试');
         // 将当前会话的loading状态的消息改为Error状态
         const list =

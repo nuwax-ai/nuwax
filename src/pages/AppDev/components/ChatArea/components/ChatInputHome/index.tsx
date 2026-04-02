@@ -27,7 +27,13 @@ import {
 import type { UploadProps } from 'antd';
 import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { useMentionSelectorKeyboard } from '../../hooks/useMentionSelectorKeyboard';
@@ -42,6 +48,18 @@ import { calculateMentionPosition } from '../MentionSelector/utils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 获取模型选项工具函数
+ */
+const getModeOptions = (models?: ModelConfig[]) => {
+  return (
+    models?.map((model: ModelConfig) => ({
+      label: model.name,
+      value: model.id,
+    })) || []
+  );
+};
 
 // 聊天输入框组件
 // @ 提及的项类型
@@ -730,18 +748,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 使用 useClickOutside 检测点击外部事件
   useClickOutside(mentionContainerRef, handleCloseMentionSelector, []);
 
-  // 获取模型选项
-  const getModeOptions = (models: ModelConfig[]) => {
-    return (
-      models?.map((model: ModelConfig) => ({
-        label: model.name,
-        value: model.id,
-      })) || []
-    );
-  };
-
-  // 模型弹窗内容
-  const PopoverContent = () => {
+  // 模型弹窗内容 - 使用 useMemo 稳定引用，防止重渲染导致弹出框关闭
+  const popoverContent = useMemo(() => {
     return (
       <div className={cx('flex', styles['model-selector-popover'])}>
         <div
@@ -769,7 +777,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         </div>
       </div>
     );
-  };
+  }, [
+    modelSelector?.models,
+    modelSelector?.selectedModelId,
+    modelSelector?.selectedMultiModelId,
+  ]);
 
   return (
     <div className={cx('w-full', 'relative', className)}>
@@ -1030,7 +1042,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             {/* 大模型选择 */}
             <Tooltip title="模型">
               <Popover
-                content={<PopoverContent />}
+                content={popoverContent}
                 trigger="click"
                 open={open}
                 onOpenChange={setOpen}
