@@ -221,6 +221,8 @@ const Square: React.FC = () => {
     // 智能体
     if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
       data.targetType = AgentComponentTypeEnum.Agent;
+      // 目标子类型（查询智能体时，需要设置目标子类型, ChatBot查询的智能体包含了对话型智能体和通用型智能体）
+      data.targetSubType = 'ChatBot';
     }
 
     // 网页应用
