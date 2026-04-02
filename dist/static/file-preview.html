@@ -654,6 +654,12 @@
                 // 从响应头获取文件名（如果接口返回了）
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let downloadFileName = fileName || 'download';
+                // 解码 URL 编码的文件名
+                try {
+                    downloadFileName = decodeURIComponent(downloadFileName);
+                } catch (e) {
+                    console.warn('Failed to decode filename:', e);
+                }
                 
                 if (contentDisposition) {
                     const fileNameMatch = contentDisposition.match(/filename[^;=\\n]*=((['"]).*?\\2|[^;\\n]*)/);
