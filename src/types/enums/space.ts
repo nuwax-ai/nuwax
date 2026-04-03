@@ -61,6 +61,8 @@ export enum ApplicationMoreActionEnum {
   Move = 'Move',
   // 临时会话
   Temporary_Session = 'Temporary_Session',
+  // 独立会话
+  Independent_Session = 'Independent_Session',
   // API Key
   API_Key = 'API_Key',
   // 导出配置

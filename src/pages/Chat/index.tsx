@@ -538,7 +538,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 应用智能体模式下，不获取当前智能体的历史记录
-    if (location.pathname?.includes('/app/chat/')) {
+    if (isAppSidebarMode) {
       return;
     }
     // 获取当前智能体的历史记录
@@ -546,7 +546,7 @@ const Chat: React.FC = () => {
       agentId,
       limit: 20,
     });
-  }, [id, agentId, location.pathname]);
+  }, [id, agentId, isAppSidebarMode]);
 
   useEffect(() => {
     addBaseTarget();
@@ -595,11 +595,13 @@ const Chat: React.FC = () => {
 
         // 应用智能体模式下，查询当前智能体的会话记录，否则查询所有智能体的会话记录
         const _agentId = isAppSidebarMode ? agentId : null;
+        // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的20条会话记录
+        const limit = isAppSidebarMode ? 8 : 20;
 
         // 重新查询会话记录
         runHistory({
           agentId: _agentId,
-          limit: 20,
+          limit,
         });
 
         // 取消监听会话状态更新事件
@@ -614,6 +616,7 @@ const Chat: React.FC = () => {
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     };
   }, [
+    id,
     conversationInfo?.taskStatus,
     conversationInfo?.id,
     isAppSidebarMode,
@@ -628,20 +631,11 @@ const Chat: React.FC = () => {
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
     setClearLoading(false);
 
-    // 用于绑定刷新文件列表事件的回调函数
-    const refreshFileList = () => {
-      handleRefreshFileList(id);
-    };
-
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-    // 订阅文件列表刷新事件
-    eventBus.on(EVENT_TYPE.RefreshFileList, refreshFileList);
 
     return () => {
       eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-      // 组件卸载时取消订阅
-      eventBus.off(EVENT_TYPE.RefreshFileList, refreshFileList);
 
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
@@ -1077,12 +1071,6 @@ const Chat: React.FC = () => {
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
-            <DropdownChangeName
-              agentId={agentId}
-              conversationInfo={conversationInfo}
-              setConversationInfo={setConversationInfo}
-              isAppSidebarMode={isAppSidebarMode}
-            />
             <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 应用智能体模式下，显示内容导航按钮 */}
               <ConditionRender
@@ -1113,7 +1101,15 @@ const Chat: React.FC = () => {
                   }
                 />
               </ConditionRender>
+              <DropdownChangeName
+                agentId={agentId}
+                conversationInfo={conversationInfo}
+                setConversationInfo={setConversationInfo}
+                isAppSidebarMode={isAppSidebarMode}
+              />
+            </div>
 
+            <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isAppSidebarMode && !isSidebarVisible && !isMobile && (

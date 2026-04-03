@@ -95,6 +95,7 @@ const ApiPermissionTabPanel: React.FC<ApiPermissionTabPanelProps> = ({
               <InputNumber
                 size="small"
                 min={-1}
+                max={2147483647}
                 className={styles['input-number']}
                 value={cfg.rpm}
                 onChange={(v) => {
@@ -109,6 +110,7 @@ const ApiPermissionTabPanel: React.FC<ApiPermissionTabPanelProps> = ({
               <InputNumber
                 size="small"
                 min={-1}
+                max={2147483647}
                 className={styles['input-number']}
                 value={cfg.rpd}
                 onChange={(v) => {

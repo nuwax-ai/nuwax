@@ -200,6 +200,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const videoRefreshTimestampRef = useRef<number>(Date.now());
     // 用于存储音频文件的刷新时间戳，确保每次点击时都能刷新
     const audioRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储图片文件的刷新时间戳，确保每次点击时都能刷新
+    const imageRefreshTimestampRef = useRef<number>(Date.now());
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -287,6 +289,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 // 如果是新选中的音频文件，更新刷新时间戳
                 if (isAudio) {
                   audioRefreshTimestampRef.current = Date.now();
+                }
+
+                // 如果是新选中的图片文件，更新刷新时间戳
+                if (isImage) {
+                  // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
+                  setSelectedFileNode((prevNode) =>
+                    prevNode ? { ...prevNode } : prevNode,
+                  );
+                  imageRefreshTimestampRef.current = Date.now();
                 }
                 return;
               }
@@ -421,6 +432,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             if (isAudioFileType) {
               audioRefreshTimestampRef.current = Date.now();
             }
+
+            // 如果是新选中的图片文件，更新刷新时间戳
+            if (isImageFileType) {
+              // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
+              setSelectedFileNode((prevNode) =>
+                prevNode ? { ...prevNode } : prevNode,
+              );
+              imageRefreshTimestampRef.current = Date.now();
+            }
           }
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
@@ -432,6 +452,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               setSelectedFileNode(fileNode);
               return;
             }
+
+            // 先切到当前文件并清空内容，避免异步返回前继续显示上一个文件内容
+            setSelectedFileNode({
+              ...fileNode,
+              content: '',
+            });
 
             // 获取文件内容并更新文件树
             const newFileContent = await fetchFileContentUpdateFiles(
@@ -1459,7 +1485,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (isImage) {
         // 如果文件代理URL存在，使用FilePreview组件
         if (fileProxyUrl) {
-          return <FilePreview src={fileProxyUrl} fileType="image" />;
+          const { key: imageKey, url: imageUrl } = buildFilePreviewProps(
+            'image',
+            fileProxyUrl,
+            selectedFileId,
+            imageRefreshTimestampRef,
+          );
+
+          return <FilePreview key={imageKey} src={imageUrl} fileType="image" />;
         }
 
         return (
@@ -1522,6 +1555,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 代码文件：使用代码查看器
       return (
         <CodeViewer
+          key={`code-viewer-${selectedFileId}`}
           isDynamicTheme={isDynamicTheme}
           fileId={selectedFileId}
           fileName={fileName}

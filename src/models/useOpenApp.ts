@@ -1,5 +1,5 @@
 import { AgentDetailDto } from '@/types/interfaces/agent';
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { history } from 'umi';
 
 const useOpenApp = () => {
@@ -9,6 +9,18 @@ const useOpenApp = () => {
   const [isAppSidebarVisible, setIsAppSidebarVisible] = useState<boolean>(true);
   // 应用智能体详情
   const [appAgentDetail, setAppAgentDetail] = useState<AgentDetailDto | null>();
+
+  // 设置为初始化应用侧边栏模式（默认是关闭的）
+  useLayoutEffect(() => {
+    if (
+      location.pathname.startsWith('/app/chat/') ||
+      location.pathname.startsWith('/app/details/')
+    ) {
+      setIsAppSidebarMode(true);
+    } else {
+      setIsAppSidebarMode(false);
+    }
+  }, [location.pathname]);
 
   // 切换侧边栏显示状态
   const toggleAppSidebarVisible = () => {
@@ -27,7 +39,6 @@ const useOpenApp = () => {
 
   return {
     isAppSidebarMode,
-    setIsAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     appAgentDetail,

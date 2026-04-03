@@ -8,7 +8,6 @@ import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { EVENT_TYPE } from '@/constants/event.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
@@ -58,7 +57,6 @@ import {
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
-import eventBus from '@/utils/eventBus';
 import {
   exportConfigFile,
   exportWholeProjectZip,
@@ -520,23 +518,6 @@ const EditAgent: React.FC = () => {
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
   };
-
-  useEffect(() => {
-    if (!devConversationId) {
-      return;
-    }
-    // 订阅文件列表刷新事件
-    eventBus.on(EVENT_TYPE.RefreshFileList, () =>
-      handleRefreshFileList(devConversationId),
-    );
-
-    return () => {
-      // 组件卸载时取消订阅
-      eventBus.off(EVENT_TYPE.RefreshFileList, () =>
-        handleRefreshFileList(devConversationId),
-      );
-    };
-  }, [devConversationId]);
 
   // 新建文件（空内容）、文件夹
   const handleCreateFileNode = async (

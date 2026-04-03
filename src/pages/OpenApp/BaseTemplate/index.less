@@ -9,7 +9,7 @@
 .agentSidebarContainer {
   width: 280px;
   height: 100%;
-  padding: 14px @paddingSm;
+  padding: @paddingXs @paddingSm;
   border-right: @colorBorderSecondary 1px solid;
   background-color: @colorBgContainerDisabled;
   display: flex;
@@ -28,6 +28,7 @@
 }
 
 .sidebarTop {
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,8 +48,8 @@
   }
 
   .collapseBtn {
-    width: 32px;
-    height: 32px;
+    width: 16px;
+    height: 16px;
     margin-left: auto;
     border-radius: 50%;
   }
@@ -96,7 +97,7 @@
 
 // 历史会话标题
 .history-title {
-  padding: @paddingXs 0;
+  padding: @paddingXs 0 @paddingXs @paddingSm;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -125,6 +126,10 @@
       color: @navSecondMenuTextSecondary;
     }
   }
+}
+
+.history-list {
+  padding-left: 28px;
 }
 
 // 底部渐变

@@ -65,6 +65,9 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             hasPermission(PermissionsEnum.TempChat) &&
             agentConfigInfo.type !== AgentTypeEnum.TaskAgent
           );
+        // 独立会话
+        case ApplicationMoreActionEnum.Independent_Session:
+          return agentConfigInfo?.publishStatus === PublishStatusEnum.Published;
         // 迁移
         case ApplicationMoreActionEnum.Move:
           // 迁移操作：仅创建者和管理员展示

@@ -184,10 +184,6 @@ const SpaceDevelop: React.FC = () => {
       setOpenMove(false);
       // 目标空间ID
       const targetSpaceId = params[1];
-      // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
-      // if (targetSpaceId === spaceId) {
-      //   run(spaceId);
-      // }
       // 跳转
       jumpToAgent(targetSpaceId, data);
     },
@@ -375,6 +371,19 @@ const SpaceDevelop: React.FC = () => {
       case ApplicationMoreActionEnum.Temporary_Session:
         setOpenTempChat(true);
         setCurrentAgentInfo(agentInfo);
+        break;
+      // 独立会话
+      case ApplicationMoreActionEnum.Independent_Session:
+        // 之所以使用try catch，是因为navigator.clipboard.writeText在某些浏览器或NuwaClaw中可能不支持
+        try {
+          // 这里实现复制路径到浏览器地址栏
+          const path = `${window.location.origin}/app/details/${agentInfo.id}`;
+          navigator.clipboard.writeText(path);
+          message.success('已复制独立会话路径');
+        } catch (error) {
+          console.error('复制独立会话路径失败:', error);
+          message.error('复制独立会话路径失败');
+        }
         break;
       // API Key
       case ApplicationMoreActionEnum.API_Key:

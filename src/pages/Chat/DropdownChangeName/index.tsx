@@ -83,6 +83,19 @@ const DropdownChangeName: React.FC<Porps> = ({
   // 删除
   const [modal, contextHolder] = Modal.useModal();
 
+  // 更新左侧历史会话记录列表
+  const handleUpdateHistory = () => {
+    const _agentId = isAppSidebarMode ? agentId : null;
+    // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的20条会话记录
+    const limit = isAppSidebarMode ? 8 : 20;
+
+    // 更新所有智能体的历史记录
+    runHistory({
+      agentId: _agentId,
+      limit,
+    });
+  };
+
   // 根据用户消息更新会话主题
   const { runAsync: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
     manual: true,
@@ -96,13 +109,8 @@ const DropdownChangeName: React.FC<Porps> = ({
         });
         message.success('修改成功');
 
-        const _agentId = isAppSidebarMode ? agentId : null;
-
-        // 更新所有智能体的历史记录
-        runHistory({
-          agentId: _agentId,
-          limit: 20,
-        });
+        // 更新左侧历史会话记录列表
+        handleUpdateHistory();
 
         // 如果不是应用智能体模式，更新当前智能体的历史记录(用于右侧智能体详情侧边栏中的历史会话列表)
         if (!isAppSidebarMode) {
@@ -123,10 +131,8 @@ const DropdownChangeName: React.FC<Porps> = ({
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
         message.success('删除成功');
-        // 如果是会话聊天页（chat页），同步更新会话记录
-        runHistory({
-          agentId: null,
-        });
+        // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
+        handleUpdateHistory();
         navigate('/', { replace: true });
       }
     },

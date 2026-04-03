@@ -149,6 +149,8 @@ export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Copy_To_Space, label: '复制到空间' },
   { type: ApplicationMoreActionEnum.Move, label: '迁移' },
   { type: ApplicationMoreActionEnum.Temporary_Session, label: '临时会话' },
+  // 独立会话（已发布的智能体可独立会话）
+  { type: ApplicationMoreActionEnum.Independent_Session, label: '独立会话' },
   { type: ApplicationMoreActionEnum.API_Key, label: 'API Key' },
   { type: ApplicationMoreActionEnum.Export_Config, label: '导出配置' },
   { type: ApplicationMoreActionEnum.Log, label: '日志' },

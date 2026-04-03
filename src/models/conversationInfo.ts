@@ -3,7 +3,6 @@ import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
-import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -69,7 +68,6 @@ import {
 import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
-import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -359,22 +357,25 @@ export default () => {
   }, []);
 
   // 打开预览视图
-  const openPreviewView = useCallback(async (cId: number) => {
-    // 停止保活
-    stopKeepalivePodPolling();
+  const openPreviewView = useCallback(
+    async (cId: number) => {
+      // 停止保活
+      stopKeepalivePodPolling();
 
-    // 检查是否需要刷新文件列表
-    // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
-    const needRefresh =
-      viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+      // 检查是否需要刷新文件列表
+      // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
+      const needRefresh =
+        viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
 
-    // 打开预览视图或远程桌面视图时修改状态值
-    openPreviewChangeState('preview');
-    // 只在需要时触发文件列表刷新事件
-    if (needRefresh) {
-      eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
-    }
-  }, []);
+      // 打开预览视图或远程桌面视图时修改状态值
+      openPreviewChangeState('preview');
+      // 只在需要时触发文件列表刷新事件
+      if (needRefresh) {
+        handleRefreshFileList(cId);
+      }
+    },
+    [handleRefreshFileList],
+  );
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -472,7 +473,7 @@ export default () => {
             // 如果是会话聊天页（chat页），同步更新会话记录
             runHistory({
               agentId: currentInfo.agentId,
-              limit: 20,
+              limit: 8,
             });
           } else {
             // 如果是会话聊天页（chat页），同步更新会话记录
