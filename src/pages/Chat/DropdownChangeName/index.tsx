@@ -87,7 +87,7 @@ const DropdownChangeName: React.FC<Porps> = ({
   const handleUpdateHistory = () => {
     const _agentId = isAppSidebarMode ? agentId : null;
     // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的20条会话记录
-    const limit = isAppSidebarMode ? 8 : 20;
+    const limit = isAppSidebarMode ? 8 : 5;
 
     // 更新所有智能体的历史记录
     runHistory({

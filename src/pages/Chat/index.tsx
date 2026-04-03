@@ -562,24 +562,8 @@ const Chat: React.FC = () => {
     }
   }, [infos, messageSourceType, manualComponents]);
 
-  // 监听会话更新事件，更新会话记录
-  const handleConversationUpdate = (data: {
-    conversationId: string;
-    message: MessageInfo;
-  }) => {
-    const { conversationId, message } = data;
-    if (Number(id) === Number(conversationId)) {
-      setMessageList((list: MessageInfo[]) => [...list, message]);
-      // 当用户手动滚动时，暂停自动滚动
-      if (allowAutoScrollRef.current) {
-        // 滚动到底部
-        messageViewScrollToBottom();
-      }
-    }
-  };
-
   useEffect(() => {
-    if (conversationInfo?.taskStatus !== TaskStatus.EXECUTING) {
+    if (!conversationInfo?.id) {
       return;
     }
 
@@ -590,13 +574,16 @@ const Chat: React.FC = () => {
       const { conversationId } = data;
       // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
       if (conversationId === conversationInfo?.id?.toString()) {
-        // 重新查询会话信息
-        runAsync(id);
+        // 如果会话状态为执行中，则重新查询会话信息
+        if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+          // 重新查询会话信息
+          runAsync(id);
+        }
 
         // 应用智能体模式下，查询当前智能体的会话记录，否则查询所有智能体的会话记录
         const _agentId = isAppSidebarMode ? agentId : null;
         // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的20条会话记录
-        const limit = isAppSidebarMode ? 8 : 20;
+        const limit = isAppSidebarMode ? 8 : 5;
 
         // 重新查询会话记录
         runHistory({
@@ -622,6 +609,22 @@ const Chat: React.FC = () => {
     isAppSidebarMode,
     agentId,
   ]);
+
+  // 监听会话更新事件，更新会话记录
+  const handleConversationUpdate = (data: {
+    conversationId: string;
+    message: MessageInfo;
+  }) => {
+    const { conversationId, message } = data;
+    if (Number(id) === Number(conversationId)) {
+      setMessageList((list: MessageInfo[]) => [...list, message]);
+      // 当用户手动滚动时，暂停自动滚动
+      if (allowAutoScrollRef.current) {
+        // 滚动到底部
+        messageViewScrollToBottom();
+      }
+    }
+  };
 
   useEffect(() => {
     // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
