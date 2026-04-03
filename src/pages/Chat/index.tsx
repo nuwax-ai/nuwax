@@ -61,7 +61,6 @@ import {
   parsePageAppProjectId,
 } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
 import { jumpToPageDevelop } from '@/utils/router';
@@ -1048,23 +1047,7 @@ const Chat: React.FC = () => {
       return;
     }
 
-    try {
-      const result = await apiDownloadAllFiles(id);
-      // 判断是否成功
-      if (!result.success) {
-        // 导出失败，显示错误信息
-        const errorMessage = result.error?.message || '导出失败';
-        messageAntd.warning(errorMessage);
-        return;
-      }
-
-      const filename = `chat-${id}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      messageAntd.success('导出成功！');
-    } catch (error) {
-      console.error('导出项目失败:', error);
-    }
+    apiDownloadAllFiles(id);
   };
 
   // 左侧内容

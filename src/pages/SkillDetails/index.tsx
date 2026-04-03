@@ -7,7 +7,6 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import {
   apiSkillDetail,
-  apiSkillExport,
   apiSkillImport,
   apiSkillUpdate,
   apiSkillUploadFiles,
@@ -22,7 +21,7 @@ import {
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
 import { modalConfirm } from '@/utils/ant-custom';
-import { exportWholeProjectZip } from '@/utils/exportImportFile';
+import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -279,24 +278,11 @@ const SkillDetails: React.FC = () => {
 
     try {
       setLoadingExportProject(true);
-      const result = await apiSkillExport(skillId);
-
-      // 判断是否成功
-      if (!result.success) {
-        // 导出失败，显示错误信息
-        const errorMessage = result.error?.message || '导出失败';
-        message.warning(errorMessage);
-        setLoadingExportProject(false);
-        return;
-      }
-
-      // 导出成功，处理文件下载
-      if (result.data) {
-        const filename = `skill-${skillId}.zip`;
-        // 导出整个项目压缩包
-        exportWholeProjectZip(result, filename);
-        message.success('导出成功！');
-      }
+      // 获取技能导出文件链接地址
+      const linkUrl = `${process.env.BASE_URL}/api/skill/export/${skillId}`;
+      // 通过浏览器下载文件
+      exportFileViaBrowserDownload(linkUrl);
+      message.success('导出成功！');
     } catch (error) {
       console.error('导出项目失败:', error);
     } finally {

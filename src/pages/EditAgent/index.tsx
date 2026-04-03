@@ -57,10 +57,7 @@ import {
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
-import {
-  exportConfigFile,
-  exportWholeProjectZip,
-} from '@/utils/exportImportFile';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { useRequest } from 'ahooks';
 import { message as messageAntd } from 'antd';
@@ -745,23 +742,7 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    try {
-      const result = await apiDownloadAllFiles(devConversationId);
-      // 判断是否成功
-      if (!result.success) {
-        // 导出失败，显示错误信息
-        const errorMessage = result.error?.message || '导出失败';
-        messageAntd.warning(errorMessage);
-        return;
-      }
-
-      const filename = `agent-${agentId}-${devConversationId}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      messageAntd.success('导出成功！');
-    } catch (error) {
-      console.error('导出项目失败:', error);
-    }
+    apiDownloadAllFiles(devConversationId);
   };
 
   // 设置统计信息

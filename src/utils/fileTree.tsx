@@ -16,6 +16,7 @@ import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { message } from 'antd';
 import { isMarkdownFile } from './common';
+import { exportFileViaBrowserDownload } from './exportImportFile';
 import { htmlToPdf } from './htmlToPdf';
 import { markdownToPdf } from './markdownToPdf';
 
@@ -270,34 +271,37 @@ export const downloadFileByUrl = async (
       ? fileProxyUrl
       : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
 
-    // 使用 fetch 获取文件内容
-    const response = await fetch(fullUrl);
-    if (!response.ok) {
-      throw new Error(`下载失败: ${response.statusText}`);
-    }
+    // 通过浏览器下载文件
+    exportFileViaBrowserDownload(fullUrl);
 
-    // 将响应转换为 Blob
-    const blob = await response.blob();
+    // // 使用 fetch 获取文件内容
+    // const response = await fetch(fullUrl);
+    // if (!response.ok) {
+    //   throw new Error(`下载失败: ${response.statusText}`);
+    // }
 
-    // 创建临时 URL
-    const objectURL = URL.createObjectURL(blob);
+    // // 将响应转换为 Blob
+    // const blob = await response.blob();
 
-    // 创建下载链接
-    const link = document.createElement('a');
-    link.href = objectURL;
-    link.download = fileName;
-    link.style.display = 'none';
+    // // 创建临时 URL
+    // const objectURL = URL.createObjectURL(blob);
 
-    // 添加到 DOM 并触发下载
-    document.body.appendChild(link);
-    link.click();
+    // // 创建下载链接
+    // const link = document.createElement('a');
+    // link.href = objectURL;
+    // link.download = fileName;
+    // link.style.display = 'none';
 
-    // 清理
-    document.body.removeChild(link);
-    // 释放 URL 对象
-    setTimeout(() => {
-      URL.revokeObjectURL(objectURL);
-    }, 100);
+    // // 添加到 DOM 并触发下载
+    // document.body.appendChild(link);
+    // link.click();
+
+    // // 清理
+    // document.body.removeChild(link);
+    // // 释放 URL 对象
+    // setTimeout(() => {
+    //   URL.revokeObjectURL(objectURL);
+    // }, 100);
   } catch (error) {
     console.error('下载文件失败:', error);
     message.error('下载文件失败，请重试');

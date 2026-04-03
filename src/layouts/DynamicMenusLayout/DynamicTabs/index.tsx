@@ -40,7 +40,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
   }, [menus, activeTab]);
 
   return (
-    <div className="flex flex-col items-center flex-1 overflow-y w-full py-8">
+    <div className="flex flex-col items-center flex-1 overflow-y w-full py-8 scroll-container">
       {tabItems.map((item) => (
         <TabItem
           key={item.type}

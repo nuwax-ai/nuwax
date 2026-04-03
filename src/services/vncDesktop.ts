@@ -7,10 +7,8 @@ import type {
   RestartPodResponse,
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
-import {
-  apiExportFileBlob,
-  ExportFileBlobResponse,
-} from '@/utils/exportImportFile';
+import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import { message } from 'antd';
 import { request } from 'umi';
 
 // 查询文件列表
@@ -89,12 +87,16 @@ export async function apiUploadFiles(
 }
 
 // 下载全部文件
-export async function apiDownloadAllFiles(
-  cId: number,
-): Promise<ExportFileBlobResponse> {
-  return apiExportFileBlob(
-    `/api/computer/static/download-all-files?cId=${cId}`,
-  );
+export async function apiDownloadAllFiles(cId: number): Promise<void> {
+  try {
+    // 获取导出文件链接地址
+    const linkUrl = `${process.env.BASE_URL}/api/computer/static/download-all-files?cId=${cId}`;
+    // 通过浏览器下载文件
+    exportFileViaBrowserDownload(linkUrl);
+    message.success('导出成功！');
+  } catch (error) {
+    console.error('导出项目失败:', error);
+  }
 }
 
 let lastEnsurePodTime = 0;
