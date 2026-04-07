@@ -4,6 +4,7 @@ import {
   apiCollectEvent,
   ApiCollectEventResponse,
 } from '@/services/event';
+import { dict } from '@/services/i18nRuntime';
 import eventBus from '@/utils/eventBus';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Modal } from 'antd';
@@ -81,11 +82,11 @@ export default function useEventPolling(): React.ReactElement | null {
 
     // 显示版本更新提示（居中显示）
     modal.confirm({
-      title: '发现新版本',
+      title: dict('PC.Hooks.UseEventPolling.newVersionFound'),
       icon: React.createElement(ExclamationCircleFilled),
-      content: `检测到新版本 ${newVersion}，是否立即更新？`,
-      okText: '更新',
-      cancelText: '取消',
+      content: dict('PC.Hooks.UseEventPolling.updatePrompt', newVersion),
+      okText: dict('PC.Hooks.UseEventPolling.update'),
+      cancelText: dict('PC.Common.Global.cancel'),
       centered: true, // 弹窗居中显示
       maskClosable: true, // 允许点击遮罩关闭，点击遮罩时会触发 onCancel
       onOk: () => {

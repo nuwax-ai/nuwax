@@ -55,7 +55,10 @@ export const useWorkflowLifecycle = ({
         // V3: 刷新时同步更新版本号
         if (data.editVersion !== undefined) {
           workflowSaveService.setEditVersion(data.editVersion);
-          workflowLogger.log('刷新后版本号已更新:', data.editVersion);
+          workflowLogger.log(
+            'Edit version updated after refresh:',
+            data.editVersion,
+          );
         }
       }
     } catch (error) {

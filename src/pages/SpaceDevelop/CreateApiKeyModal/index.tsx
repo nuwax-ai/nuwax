@@ -6,6 +6,7 @@ import {
   apiAgentAkList,
   apiAgentAkUpdate,
 } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import { DevModeEnum } from '@/types/enums/agent';
 import { UserApiKeyInfo } from '@/types/interfaces/agent';
 import type { CreateTempChatModalProps } from '@/types/interfaces/space';
@@ -67,7 +68,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('修改成功');
+      message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
     },
   });
 
@@ -76,12 +77,12 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('删除成功');
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
     },
   });
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   useEffect(() => {
@@ -128,12 +129,16 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, accessKey: string) => {
-    modalConfirm('你确定要删除此API Key吗?', accessKey, () => {
-      handleDel(id, accessKey);
-      return new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-    });
+    modalConfirm(
+      dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.deleteConfirmText'),
+      accessKey,
+      () => {
+        handleDel(id, accessKey);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
+    );
   };
 
   // 入参配置columns
@@ -150,7 +155,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       ),
     },
     {
-      title: '创建人',
+      title: dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.creator'),
       dataIndex: 'userName',
       key: 'userName',
       width: 100,
@@ -163,7 +168,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       ),
     },
     {
-      title: '创建时间',
+      title: dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.createdTime'),
       dataIndex: 'created',
       key: 'created',
       width: 160,
@@ -178,8 +183,12 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     {
       title: (
         <div className={cx('h-full', 'flex', 'items-center', 'gap-6')}>
-          <span>开发模式</span>
-          <Tooltip title="开启开发模式后，未发布的变更也将实时体现。">
+          <span>{dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.devMode')}</span>
+          <Tooltip
+            title={dict(
+              'PC.Pages.SpaceDevelop.CreateApiKeyModal.devModeTooltip',
+            )}
+          >
             <ExclamationCircleOutlined />
           </Tooltip>
         </div>
@@ -207,7 +216,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <CopyToClipboard text={record.accessKey || ''} onCopy={handleCopy}>
-            <Tooltip title="复制">
+            <Tooltip title={dict('PC.Common.Global.copy')}>
               <Button
                 type="text"
                 rootClassName={cx('h-full', 'flex', 'items-center')}
@@ -246,7 +255,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       }}
       title={
         <div className={cx('text-ellipsis')} style={{ width: '400px' }}>
-          {name}-API Key
+          {dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.modalTitle', name)}
         </div>
       }
       open={open}
@@ -268,7 +277,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
           y: 450,
         }}
         locale={{
-          emptyText: <Empty description="暂无数据" />,
+          emptyText: <Empty description={dict('PC.Common.Global.emptyData')} />,
         }}
         footer={() => (
           <Button
@@ -276,7 +285,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
             loading={loading}
             icon={<PlusOutlined />}
           >
-            新增API Key
+            {dict('PC.Pages.SpaceDevelop.CreateApiKeyModal.addApiKey')}
           </Button>
         )}
       />

@@ -5,6 +5,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict, t } from '@/services/i18nRuntime';
 import {
   apiSystemResourceKnowledgeAccessControl,
   apiSystemResourceKnowledgeDelete,
@@ -68,10 +69,13 @@ const KnowledgeBase: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemKnowledgeInfo) => {
     const response = await apiSystemResourceKnowledgeDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemContentKnowledgeBase.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error(response.message || '删除失败');
+      message.error(
+        response.message ||
+          t('PC.Pages.SystemContentKnowledgeBase.deleteFailed'),
+      );
     }
   }, []);
 
@@ -112,32 +116,33 @@ const KnowledgeBase: React.FC = () => {
     (record: SystemKnowledgeInfo): ActionItem<SystemKnowledgeInfo>[] => [
       {
         key: 'view',
-        label: '查看',
+        label: t('PC.Pages.SystemContentKnowledgeBase.view'),
         disabled: !hasPermission('content_knowledge_query_detail'),
         onClick: handleView,
       },
       {
         key: 'auth',
-        label: '授权',
+        label: dict('PC.Pages.SystemContentKnowledgeBase.grantAuth'),
         visible: record.accessControl === AccessControlEnum.Filter,
         onClick: handleAuth,
       },
       {
         key: 'delete',
-        label: '删除',
+        label: t('PC.Pages.SystemContentKnowledgeBase.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: t(
+            'PC.Pages.SystemContentKnowledgeBase.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: t(
+            'PC.Pages.SystemContentKnowledgeBase.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_knowledge_delete'),
         onClick: handleDelete,
       },
     ],
-    [hasPermission, handleView, handleDelete],
+    [hasPermission, handleView, handleDelete, handleAuth],
   );
 
   /**
@@ -145,31 +150,31 @@ const KnowledgeBase: React.FC = () => {
    */
   const columns: ProColumns<SystemKnowledgeInfo>[] = [
     {
-      title: '名称',
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入知识库名称',
+        placeholder: t('PC.Pages.SystemContentKnowledgeBase.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true,
     },
     {
-      title: '创建人',
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '创建时间',
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -177,17 +182,12 @@ const KnowledgeBase: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '管控',
-      tooltip: '若开启管控，需授权才能使用该知识库',
+      title: dict('PC.Pages.SystemContentKnowledgeBase.accessControlTitle'),
       dataIndex: 'accessControl',
+      tooltip: dict('PC.Pages.SystemContentKnowledgeBase.accessControlTooltip'),
       align: 'center',
       width: 100,
       fixed: 'right',
-      valueEnum: {
-        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
-        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
-      },
-      valueType: 'select',
       render: (_, record: SystemKnowledgeInfo) => (
         <Switch
           checked={record.accessControl === AccessControlEnum.Filter}
@@ -237,7 +237,10 @@ const KnowledgeBase: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="知识库管理" hideScroll>
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentKnowledgeBase.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemKnowledgeInfo>
         actionRef={actionRef}
         formRef={formRef}

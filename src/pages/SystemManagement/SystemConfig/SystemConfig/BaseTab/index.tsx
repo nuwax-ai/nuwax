@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemAgentList,
   apiSystemConfigUpdate,
@@ -75,7 +76,7 @@ const BaseTab = forwardRef(
         }
       });
       await apiSystemConfigUpdate(params);
-      message.success('保存成功');
+      message.success(t('PC.Pages.SystemConfig.saveSuccess'));
       refresh();
     };
 

@@ -7,6 +7,7 @@ import {
   apiAgentTaskCronList,
   apiAgentTaskUpdate,
 } from '@/services/agentTask';
+import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   CreateTimedTaskProps,
@@ -91,7 +92,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('定时任务创建成功');
+      message.success(dict('PC.Components.CreateTimedTask.createSuccess'));
       onConfirm();
       // 重置定时周期
       handleTimedInfo(taskCronListRef.current);
@@ -103,7 +104,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('定时任务更新成功');
+      message.success(dict('PC.Components.CreateTimedTask.updateSuccess'));
       onConfirm();
       // 重置定时周期
       handleTimedInfo(taskCronListRef.current);
@@ -183,7 +184,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       form={form}
       open={open}
       title={
-        mode === CreateUpdateModeEnum.Create ? '创建定时任务' : '更新定时任务'
+        mode === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateTimedTask.createTitle')
+          : dict('PC.Components.CreateTimedTask.updateTitle')
       }
       onCancel={onCancelCreate}
       onConfirm={handlerConfirm}
@@ -196,9 +199,23 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item label={<LabelStar label="定时周期" />}>
+        <Form.Item
+          label={
+            <LabelStar
+              label={dict('PC.Components.CreateTimedTask.timedPeriod')}
+            />
+          }
+        >
           <Space>
-            <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+            <Form.Item
+              noStyle
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Common.Global.pleaseInput'),
+                },
+              ]}
+            >
               <SelectList
                 className={cx(styles.select)}
                 options={typeNameList}
@@ -206,7 +223,15 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
                 onChange={handleChangeTypeName}
               />
             </Form.Item>
-            <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+            <Form.Item
+              noStyle
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Common.Global.pleaseInput'),
+                },
+              ]}
+            >
               <SelectList
                 className={cx(styles.select)}
                 options={typeCronList}
@@ -218,16 +243,38 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         </Form.Item>
         <Form.Item
           name="topic"
-          label="任务名称"
-          rules={[{ required: true, message: '请输入任务名称' }]}
+          label={dict('PC.Components.CreateTimedTask.taskName')}
+          rules={[
+            {
+              required: true,
+              message: dict(
+                'PC.Components.CreateTimedTask.pleaseInputTaskName',
+              ),
+            },
+          ]}
         >
-          <Input placeholder="请输入任务名称" showCount maxLength={100} />
+          <Input
+            placeholder={dict(
+              'PC.Components.CreateTimedTask.pleaseInputTaskName',
+            )}
+            showCount
+            maxLength={100}
+          />
         </Form.Item>
         <OverrideTextArea
           name="summary"
-          label="任务内容"
-          rules={[{ required: true, message: '请输入任务内容' }]}
-          placeholder="请输入你要执行的任务信息，信息提供的越详细执行成功率越高"
+          label={dict('PC.Components.CreateTimedTask.taskContent')}
+          rules={[
+            {
+              required: true,
+              message: dict(
+                'PC.Components.CreateTimedTask.pleaseInputTaskContent',
+              ),
+            },
+          ]}
+          placeholder={dict(
+            'PC.Components.CreateTimedTask.taskContentPlaceholder',
+          )}
           maxLength={2000}
         />
       </Form>

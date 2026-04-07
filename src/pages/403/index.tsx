@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Button, Result } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -16,10 +17,10 @@ const LicenseExpiredPage: React.FC = () => {
       <Result
         status="403"
         title="403"
-        subTitle="抱歉，你的license授权已过期"
+        subTitle={dict('PC.Pages.Error403.licenseExpired')}
         extra={
           <Button type="primary" onClick={() => history.push('/')}>
-            返回首页
+            {dict('PC.Common.Global.backHome')}
           </Button>
         }
       />

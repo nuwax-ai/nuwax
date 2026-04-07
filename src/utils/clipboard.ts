@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 
 type CopyCallback = (text: string, result?: boolean) => void;
@@ -20,11 +21,11 @@ const STYLES = {
 };
 
 // 错误信息常量
-const MESSAGES = {
-  COPY_FAILED: '复制失败，请手动复制',
-  COPY_SUCCESS: '复制成功',
-  NO_CONTENT: '没有可复制的内容',
-};
+const getMessages = () => ({
+  COPY_FAILED: dict('PC.Utils.Clipboard.copyFailed'),
+  COPY_SUCCESS: dict('PC.Utils.Clipboard.copySuccess'),
+  NO_CONTENT: dict('PC.Utils.Clipboard.noContent'),
+});
 
 /**
  * 传统复制方法（降级方案）
@@ -50,14 +51,14 @@ export const fallbackCopyTextToClipboard = (
     if (successful && callback) {
       callback(text, true);
     } else if (!successful) {
-      message.error(MESSAGES.COPY_FAILED);
+      message.error(getMessages().COPY_FAILED);
       if (callback) {
         callback(text, false);
       }
     }
   } catch (err) {
-    console.error(MESSAGES.COPY_FAILED, err);
-    message.error(MESSAGES.COPY_FAILED);
+    console.error(getMessages().COPY_FAILED, err);
+    message.error(getMessages().COPY_FAILED);
     if (callback) {
       callback(text, false);
     }
@@ -78,7 +79,7 @@ export const copyTextToClipboard = async (
   showSuccessMsg: boolean = false,
 ): Promise<void> => {
   if (!text) {
-    message.error(MESSAGES.NO_CONTENT);
+    message.error(getMessages().NO_CONTENT);
     if (callback) {
       callback(text, false);
     }
@@ -90,14 +91,14 @@ export const copyTextToClipboard = async (
     try {
       await navigator.clipboard.writeText(text);
       if (showSuccessMsg) {
-        message.success(MESSAGES.COPY_SUCCESS);
+        message.success(getMessages().COPY_SUCCESS);
       }
       if (callback) {
         callback(text, true);
       }
     } catch (err) {
-      console.error(MESSAGES.COPY_FAILED, err);
-      message.error(MESSAGES.COPY_FAILED);
+      console.error(getMessages().COPY_FAILED, err);
+      message.error(getMessages().COPY_FAILED);
       fallbackCopyTextToClipboard(text, callback);
     }
   } else {

@@ -2,6 +2,7 @@
  * AppDev 页面相关常量定义
  */
 
+import { dict } from '@/services/i18nRuntime';
 import type { ChatMessage } from '@/types/interfaces/appDev';
 
 /**
@@ -12,8 +13,7 @@ export const CHAT_CONSTANTS = {
     {
       id: '1',
       type: 'ai' as const,
-      content:
-        '你好！我是AI助手，可以帮你进行代码开发、问题解答等。有什么可以帮助你的吗？',
+      content: dict('PC.Constants.AppDev.defaultAiMessage'),
       timestamp: new Date(),
     },
   ] as ChatMessage[],
@@ -113,10 +113,10 @@ export const FILE_CONSTANTS = {
 export const DEV_SERVER_CONSTANTS = {
   DEFAULT_PORT_RANGE: [3000, 4000] as [number, number],
   STATUS_MESSAGES: {
-    STARTING: '正在启动开发环境...',
-    RUNNING: '开发环境运行中',
-    STOPPED: '开发环境已停止',
-    ERROR: '开发环境启动失败',
+    STARTING: dict('PC.Constants.AppDev.statusStarting'),
+    RUNNING: dict('PC.Constants.AppDev.statusRunning'),
+    STOPPED: dict('PC.Constants.AppDev.statusStopped'),
+    ERROR: dict('PC.Constants.AppDev.statusError'),
   },
   API_TIMEOUT: 10000, // 10秒
   SSE_HEARTBEAT_INTERVAL: 30000, // 30秒
@@ -131,9 +131,9 @@ export const UI_CONSTANTS = {
     UPLOAD_SINGLE_FILE: 500,
   },
   LOADING_MESSAGES: {
-    FILE_CONTENT: '正在加载文件内容...',
-    FILE_TREE: '正在加载文件树...',
-    UPLOADING: '正在上传文件...',
+    FILE_CONTENT: dict('PC.Constants.AppDev.loadingFileContent'),
+    FILE_TREE: dict('PC.Constants.AppDev.loadingFileTree'),
+    UPLOADING: dict('PC.Constants.AppDev.uploadingFile'),
   },
   ANIMATION_DURATION: 300,
   DEBOUNCE_DELAY: 300,
@@ -175,8 +175,8 @@ export const KEYBOARD_SHORTCUTS = {
 export const VERSION_CONSTANTS = {
   AVAILABLE_VERSIONS: ['v1', 'v2', 'v3', 'v4', 'v5'],
   DEFAULT_VERSION: 'v4',
-  READ_ONLY_MESSAGE: '旧版本为只读模式。恢复或切换到最新版本以进行编辑。',
-  PREVIEW_DISABLED_MESSAGE: '版本预览模式下无法查看页面预览',
+  READ_ONLY_MESSAGE: dict('PC.Constants.AppDev.readOnlyMessage'),
+  PREVIEW_DISABLED_MESSAGE: dict('PC.Constants.AppDev.previewDisabledMessage'),
 } as const;
 
 /**
@@ -191,23 +191,23 @@ export const UPLOAD_CONSTANTS = {
  * 错误消息常量
  */
 export const ERROR_MESSAGES = {
-  NO_PROJECT_ID: '请先创建或选择项目',
-  EMPTY_FILE_PATH: '请输入文件路径',
-  NO_FILE_SELECTED: '请选择文件',
-  UPLOAD_FAILED: '上传失败',
-  LOAD_FILE_FAILED: '加载文件失败',
-  SAVE_FILE_FAILED: '保存文件失败',
-  DEV_SERVER_START_FAILED: '开发环境启动失败',
-  CHAT_SEND_FAILED: '发送消息失败',
+  NO_PROJECT_ID: dict('PC.Constants.AppDev.errNoProjectId'),
+  EMPTY_FILE_PATH: dict('PC.Constants.AppDev.errEmptyFilePath'),
+  NO_FILE_SELECTED: dict('PC.Constants.AppDev.errNoFileSelected'),
+  UPLOAD_FAILED: dict('PC.Constants.AppDev.errUploadFailed'),
+  LOAD_FILE_FAILED: dict('PC.Constants.AppDev.errLoadFileFailed'),
+  SAVE_FILE_FAILED: dict('PC.Constants.AppDev.errSaveFileFailed'),
+  DEV_SERVER_START_FAILED: dict('PC.Constants.AppDev.errDevServerStartFailed'),
+  CHAT_SEND_FAILED: dict('PC.Constants.AppDev.errChatSendFailed'),
 } as const;
 
 /**
  * 成功消息常量
  */
 export const SUCCESS_MESSAGES = {
-  FILE_SAVED: '文件已保存',
-  FILE_UPLOADED: '文件上传成功',
-  PROJECT_UPLOADED: '项目上传并启动成功',
-  DEV_SERVER_STARTED: '开发环境启动成功',
-  CHAT_CANCELLED: '已取消AI任务',
+  FILE_SAVED: dict('PC.Constants.AppDev.successFileSaved'),
+  FILE_UPLOADED: dict('PC.Constants.AppDev.successFileUploaded'),
+  PROJECT_UPLOADED: dict('PC.Constants.AppDev.successProjectUploaded'),
+  DEV_SERVER_STARTED: dict('PC.Constants.AppDev.successDevServerStarted'),
+  CHAT_CANCELLED: dict('PC.Constants.AppDev.successChatCancelled'),
 } as const;

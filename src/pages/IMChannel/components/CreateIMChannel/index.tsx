@@ -5,6 +5,7 @@ import {
   IMPlatformEnum,
 } from '@/constants/imChannel.constants';
 import SelectTargetFormItem from '@/pages/SpaceTaskCenter/CreateTimedTask/components/SelectTargetFormItem';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiAddIMConfigChannel,
   apiGetIMConfigChannelDetail,
@@ -130,7 +131,9 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
 
       if (res.code === SUCCESS_CODE) {
         message.success(
-          mode === CreateUpdateModeEnum.Create ? '新增成功' : '编辑成功',
+          mode === CreateUpdateModeEnum.Create
+            ? dict('PC.Pages.IMChannel.CreateIMChannel.addSuccess')
+            : dict('PC.Pages.IMChannel.CreateIMChannel.editSuccess'),
         );
         onSuccess();
         return true;
@@ -152,7 +155,9 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
       });
 
       if (res.code === SUCCESS_CODE) {
-        message.success('测试连接成功');
+        message.success(
+          dict('PC.Pages.IMChannel.CreateIMChannel.testConnectionSuccess'),
+        );
       }
     } catch (error) {
       console.error('Test Connection Failed:', error);
@@ -172,8 +177,14 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
     const pName = platform
       ? IM_PLATFORM_LABEL_MAP[platform as IMPlatformEnum]
       : '';
-    const prefix = mode === CreateUpdateModeEnum.Update ? '编辑' : '新增';
-    const suffix = robotType === IMChannelTypeEnum.App ? '应用' : '机器人';
+    const prefix =
+      mode === CreateUpdateModeEnum.Update
+        ? dict('PC.Pages.IMChannel.CreateIMChannel.edit')
+        : dict('PC.Pages.IMChannel.CreateIMChannel.add');
+    const suffix =
+      robotType === IMChannelTypeEnum.App
+        ? dict('PC.Pages.IMChannel.CreateIMChannel.app')
+        : dict('PC.Pages.IMChannel.CreateIMChannel.bot');
     return `${prefix}${pName}${suffix}`;
   };
 
@@ -200,7 +211,7 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
                 loading={testing}
                 onClick={handleTestConnection}
               >
-                测试连通性
+                {dict('PC.Pages.IMChannel.CreateIMChannel.testConnectivity')}
               </Button>
             ),
             defaultDoms[1],
@@ -215,8 +226,8 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
       <SelectTargetFormItem
         form={form}
         name="target"
-        label="智能体"
-        tooltip="通用智能体将使用你的沙箱（电脑）环境执行任务，切勿将对应的机器人分享给他人使用。"
+        label={dict('PC.Pages.IMChannel.CreateIMChannel.agent')}
+        tooltip={dict('PC.Pages.IMChannel.CreateIMChannel.agentTooltip')}
         hideTop={[
           AgentComponentTypeEnum.Knowledge,
           AgentComponentTypeEnum.Table,
@@ -228,15 +239,24 @@ const CreateIMChannel: React.FC<CreateIMChannelProps> = ({
 
       <ProFormRadio.Group
         name="outputMode"
-        label="输出方式"
-        tooltip="机器人回复消息时，是逐字逐句显示还是全部一次性显示。"
+        label={dict('PC.Pages.IMChannel.CreateIMChannel.outputMode')}
+        tooltip={dict('PC.Pages.IMChannel.CreateIMChannel.outputModeTooltip')}
         options={[
-          { label: '流式输出（打字机效果）', value: 'stream' },
-          { label: '一次性输出', value: 'once' },
+          {
+            label: dict('PC.Pages.IMChannel.CreateIMChannel.streamOutput'),
+            value: 'stream',
+          },
+          {
+            label: dict('PC.Pages.IMChannel.CreateIMChannel.onceOutput'),
+            value: 'once',
+          },
         ]}
         disabled={platform === IMPlatformEnum.Wework || isWechat}
       />
-      <ProFormSwitch name="enabled" label="启用状态" />
+      <ProFormSwitch
+        name="enabled"
+        label={dict('PC.Pages.IMChannel.CreateIMChannel.enabledStatus')}
+      />
     </XModalForm>
   );
 };

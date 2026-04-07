@@ -2,6 +2,7 @@ import {
   apiAgentConversationDelete,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
 import { Input, message, Modal } from 'antd';
@@ -75,11 +76,15 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
     if (!currentRenameId) return;
     const trimmedTopic = newTopic.trim();
     if (!trimmedTopic) {
-      message.warning('标题不能为空');
+      message.warning(
+        t('PC.Components.HistoryConversationList.renameTitleEmpty'),
+      );
       return;
     }
     if (trimmedTopic.length > 50) {
-      message.warning('标题长度不能超过 50 个字符');
+      message.warning(
+        t('PC.Components.HistoryConversationList.renameTitleTooLong'),
+      );
       return;
     }
 
@@ -96,7 +101,9 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           agentId,
           limit: 20,
         });
-        message.success('修改成功');
+        message.success(
+          t('PC.Components.HistoryConversationList.renameSuccess'),
+        );
         setRenameModalVisible(false);
       }
     } finally {
@@ -122,7 +129,9 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           agentId,
           limit: 20,
         });
-        message.success('删除成功');
+        message.success(
+          t('PC.Components.HistoryConversationList.deleteSuccess'),
+        );
         setDeleteModalVisible(false);
       }
     } finally {
@@ -141,11 +150,15 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
         <CloseOutlined />
       </div>
       <div className={cx(styles['main-content'])}>
-        <div className={cx(styles.title)}>历史会话</div>
+        <div className={cx(styles.title)}>
+          {t('PC.Components.HistoryConversationList.pageTitle')}
+        </div>
         <div className={cx(styles['search-input'])}>
           <Input
             prefix={<SearchOutlined style={{ color: '#999', fontSize: 16 }} />}
-            placeholder="搜索历史会话"
+            placeholder={t(
+              'PC.Components.HistoryConversationList.searchPlaceholder',
+            )}
             value={keyword}
             onChange={onStartSearch}
             className={cx(styles['search-input-field'])}
@@ -165,14 +178,14 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       </div>
 
       <Modal
-        title="修改名称"
+        title={t('PC.Components.HistoryConversationList.renameModalTitle')}
         open={renameModalVisible}
         onOk={handleRenameSubmit}
         onCancel={() => setRenameModalVisible(false)}
         confirmLoading={submitting}
         okButtonProps={{ disabled: !newTopic.trim() }}
-        okText="确定"
-        cancelText="取消"
+        okText={t('PC.Common.Global.confirm')}
+        cancelText={t('PC.Common.Global.cancel')}
         destroyOnHidden
         centered
       >
@@ -180,7 +193,9 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           <Input
             value={newTopic}
             onChange={(e) => setNewTopic(e.target.value)}
-            placeholder="请输入新名称"
+            placeholder={t(
+              'PC.Components.HistoryConversationList.renamePlaceholder',
+            )}
             maxLength={50}
             autoFocus
             onPressEnter={handleRenameSubmit}
@@ -194,13 +209,13 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       </Modal>
 
       <Modal
-        title="永久删除会话"
+        title={t('PC.Components.HistoryConversationList.deleteModalTitle')}
         open={deleteModalVisible}
         onOk={handleDeleteSubmit}
         onCancel={() => setDeleteModalVisible(false)}
         confirmLoading={submitting}
-        okText="确定"
-        cancelText="取消"
+        okText={t('PC.Common.Global.confirm')}
+        cancelText={t('PC.Common.Global.cancel')}
         okButtonProps={{ danger: true }}
         destroyOnHidden
         centered
@@ -212,7 +227,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
             fontSize: 14,
           }}
         >
-          本条会话数据将被永久删除,不可恢复及撤销。确定要删除吗?
+          {t('PC.Components.HistoryConversationList.deleteModalContent')}
         </div>
       </Modal>
     </div>

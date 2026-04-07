@@ -1,5 +1,6 @@
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
+import { dict } from '@/services/i18nRuntime';
 import { DataTypeEnum, InputTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
@@ -159,7 +160,7 @@ const useTryRun = () => {
             {
               bindValue: '',
               dataType: DataTypeEnum.String,
-              description: '请重新配置入参,添加子级',
+              description: dict('PC.Hooks.UseTryRun.reconfigureParams'),
               enable: record.enable,
               inputType: InputTypeEnum.Query,
               key: subItemKey,

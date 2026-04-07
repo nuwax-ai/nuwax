@@ -2,6 +2,7 @@ import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
 import { optionsMap } from '@/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
@@ -35,6 +36,9 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../index.less';
 import './commonNode.less';
+
+const OTHER_BRANCH_HINT_ZH =
+  '\u6b64\u9009\u9879\u7528\u6237\u4e0d\u53ef\u89c1\uff0c\u7528\u6237\u56de\u590d\u65e0\u5173\u5185\u5bb9\u65f6\u8d70\u6b64\u5206\u652f';
 
 // 定义通用的输入输出
 export const InputAndOut: React.FC<NodeRenderProps> = ({
@@ -93,22 +97,28 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                   {/* 只在第一个输入框组旁边显示标签 */}
                   {index === 0 && (
                     <div className="font-color-gray07 font-12 mt-6">
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '22%' }}>变量值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '22%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnVariableValue')}
+                      </span>
                     </div>
                   )}
                   <Form.Item key={item.key}>
                     <div className="dis-left">
                       <Form.Item
-                        label="参数名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldParamName')}
                         name={[item.name, 'name']}
                         noStyle
-                        // rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: 'Please enter variable name' }]}
                       >
                         <Input
                           size="small"
                           style={{ width: '30%', marginRight: '10px' }}
-                          placeholder="请输入参数名"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamName',
+                          )}
                           disabled={disabledInput}
                         />
                       </Form.Item>
@@ -116,7 +126,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         name={[item.name, 'bindValue']}
                         noStyle
                         // rules={[
-                        //   { required: true, message: '请选择或输入变量值' },
+                        //   { required: true, message: 'Please select or enter variable value' },
                         // ]}
                       >
                         <InputOrReference
@@ -210,35 +220,43 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                 <div key={item.key}>
                   {index === 0 && (
                     <div className="font-color-gray07">
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '20%' }}>变量值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '20%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnVariableValue')}
+                      </span>
                     </div>
                   )}
                   <Form.Item key={item.key}>
                     <div className="dis-left">
                       <Form.Item
-                        label="参数名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldParamName')}
                         name={[item.name, 'name']}
                         noStyle
-                        // rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: 'Please enter variable name' }]}
                       >
                         <Input
                           size="small"
                           style={{ width: '30%', marginRight: '10px' }}
-                          placeholder="请输入参数名"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamName',
+                          )}
                           disabled={disabledInput}
                         />
                       </Form.Item>
                       <Form.Item
-                        label="变量名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldVariableName')}
                         name={[item.name, 'bindValue']}
                         noStyle
                         // rules={[
-                        //   { required: true, message: '请选择或输入变量值' },
+                        //   { required: true, message: 'Please select or enter variable value' },
                         // ]}
                       >
                         <Input
-                          placeholder="请输入参数值"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamValue',
+                          )}
                           size="small"
                           style={{ width: '55%', marginRight: '10px' }}
                         />
@@ -412,7 +430,9 @@ export const FormList: React.FC<FormListProps> = ({
             }
             if (
               form.getFieldValue([inputItemName, item.name, 'content']) ===
-              '此选项用户不可见，用户回复无关内容时走此分支'
+                t('PC.Pages.AntvX6CommonNode.otherBranchHint') ||
+              form.getFieldValue([inputItemName, item.name, 'content']) ===
+                OTHER_BRANCH_HINT_ZH
             ) {
               fieldData = true;
             }
@@ -481,8 +501,12 @@ export const InputList: React.FC<InputListProps> = ({
                   {/* 只在第一个输入框组旁边显示标签 */}
                   {index === 0 && (
                     <>
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '25%' }}>参数值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '25%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamValue')}
+                      </span>
                     </>
                   )}
                   <Form.Item key={item.key}>

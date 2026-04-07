@@ -1,4 +1,5 @@
 import CopyIconButton from '@/components/base/CopyIconButton';
+import { t } from '@/services/i18nRuntime';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
@@ -164,7 +165,11 @@ const RunResult: React.FC<RunResultProps> = ({
       <div className={cx(styles.runResultSection)}>
         <div className={cx(styles.runResultSectionHeader)}>
           <span>{title}</span>
-          <CopyIconButton data={obj} jsonSpace={2} tooltipTitle="复制" />
+          <CopyIconButton
+            data={obj}
+            jsonSpace={2}
+            tooltipTitle={t('PC.Common.Global.copy')}
+          />
         </div>
         <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
           <code>{JSON.stringify(obj, null, 2)}</code>
@@ -195,7 +200,12 @@ const RunResult: React.FC<RunResultProps> = ({
             />
           )}
           <span className={cx(styles.statusText)}>
-            {title || (loading ? '运行中' : success ? '运行成功' : '运行失败')}
+            {title ||
+              (loading
+                ? t('PC.Pages.AntvX6RegisterNodes.running')
+                : success
+                ? t('PC.Pages.AntvX6RegisterNodes.success')
+                : t('PC.Pages.AntvX6RegisterNodes.failed'))}
           </span>
           {!loading && <span className={cx(styles.runTime)}>{time}</span>}
         </div>
@@ -212,11 +222,13 @@ const RunResult: React.FC<RunResultProps> = ({
       {!collapsed && (
         <div className={cx(styles.runResultBody)}>
           <div className={cx(styles.runResultInfo)}>
-            <div className={cx(styles.totalCount)}>总数: {total}</div>
+            <div className={cx(styles.totalCount)}>
+              {t('PC.Pages.AntvX6RunResult.totalCount', String(total))}
+            </div>
             {total > 1 && !success && (
               <div className={cx(styles.onlyErrorCheckbox)}>
                 <Checkbox checked={onlyError} onChange={handleOnlyErrorChange}>
-                  只看错误
+                  {t('PC.Pages.AntvX6RunResult.onlyShowErrors')}
                 </Checkbox>
               </div>
             )}
@@ -226,11 +238,11 @@ const RunResult: React.FC<RunResultProps> = ({
           {Object.keys(batchVariables).length > 0 && (
             <div className={cx(styles.runResultBatch)}>
               <div className={cx(styles.runResultBatchHeader)}>
-                <span>本次批处理变量</span>
+                <span>{t('PC.Pages.AntvX6RunResult.batchVariables')}</span>
                 <CopyIconButton
                   data={batchVariables}
                   jsonSpace={2}
-                  tooltipTitle="复制"
+                  tooltipTitle={t('PC.Common.Global.copy')}
                 />
               </div>
               <div className={cx(styles.runResultSectionContent, 'overflow-y')}>
@@ -239,8 +251,8 @@ const RunResult: React.FC<RunResultProps> = ({
             </div>
           )}
 
-          {renderKeyValue(inputParams, '输入')}
-          {renderKeyValue(outputResult, '输出')}
+          {renderKeyValue(inputParams, t('PC.Pages.AntvX6Data.input'))}
+          {renderKeyValue(outputResult, t('PC.Pages.AntvX6Data.output'))}
         </div>
       )}
     </div>

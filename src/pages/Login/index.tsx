@@ -2,7 +2,9 @@ import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
+import { dict, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
+import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import {
@@ -60,6 +62,12 @@ const Login: React.FC = () => {
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phoneOrEmail);
+      try {
+        const latestUserInfo = await UserService.refreshUserInfo();
+        await syncLangFromUserInfo(latestUserInfo);
+      } catch (error) {
+        console.error('[Login] Sync language after login failed:', error);
+      }
       // 登录成功后强制刷新菜单数据（可能切换了账号）
       await loadMenus(true);
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
@@ -93,7 +101,9 @@ const Login: React.FC = () => {
     return [
       {
         required: true,
-        message: isEmailAuth ? '请输入邮箱地址!' : '请输入手机号码!',
+        message: isEmailAuth
+          ? dict('PC.Pages.Login.inputEmailRequired')
+          : dict('PC.Pages.Login.inputPhoneRequired'),
       },
       {
         validator(_: any, value: string) {
@@ -101,11 +111,11 @@ const Login: React.FC = () => {
           if (isEmailAuth) {
             return isValidEmail(value)
               ? Promise.resolve()
-              : Promise.reject(new Error('请输入正确的邮箱账号!'));
+              : Promise.reject(new Error(dict('PC.Pages.Login.invalidEmail')));
           } else {
             return isValidPhone(value)
               ? Promise.resolve()
-              : Promise.reject(new Error('请输入正确的手机号码!'));
+              : Promise.reject(new Error(dict('PC.Pages.Login.invalidPhone')));
           }
         },
       },
@@ -113,13 +123,18 @@ const Login: React.FC = () => {
   };
 
   const passwordRules = [
-    { required: true, message: '请输入6位以上密码!' },
+    {
+      required: true,
+      message: dict('PC.Pages.Login.passwordRequired'),
+    },
     {
       validator(_: any, value: string) {
         if (!value || validatePassword(value)) {
           return Promise.resolve();
         }
-        return Promise.reject(new Error('请输入正确格式的密码!'));
+        return Promise.reject(
+          new Error(dict('PC.Pages.Login.invalidPassword')),
+        );
       },
     },
   ];
@@ -187,11 +202,11 @@ const Login: React.FC = () => {
   const onFinish: FormProps<LoginFieldType>['onFinish'] = () => {
     if (!checked) {
       return confirm({
-        title: '服务协议及隐私保护',
+        title: dict('PC.Pages.Login.serviceAgreementTitle'),
         icon: <ExclamationCircleFilled />,
         content: <SiteProtocol />,
-        okText: '同意',
-        cancelText: '不同意',
+        okText: dict('PC.Pages.Login.serviceAgreementAgree'),
+        cancelText: dict('PC.Pages.Login.serviceAgreementDisagree'),
         onOk() {
           setChecked(true);
           doLogin();
@@ -208,8 +223,14 @@ const Login: React.FC = () => {
   const { token } = theme.useToken();
   // 分段器切换登录方式
   const options: SegmentedItemType[] = [
-    { label: '密码登录', value: LoginTypeEnum.Password + '' },
-    { label: '验证码登录/注册', value: LoginTypeEnum.Code + '' },
+    {
+      label: dict('PC.Pages.Login.passwordLogin'),
+      value: LoginTypeEnum.Password + '',
+    },
+    {
+      label: dict('PC.Pages.Login.codeLoginOrRegister'),
+      value: LoginTypeEnum.Code + '',
+    },
   ];
 
   return (
@@ -249,18 +270,21 @@ const Login: React.FC = () => {
               >
                 <Form.Item>
                   <Title level={3} style={{ marginTop: 48 }}>
-                    {`欢迎使用${tenantConfigInfo?.siteName || ''}`}
+                    {dict(
+                      'PC.Pages.Login.welcome',
+                      tenantConfigInfo?.siteName || '',
+                    )}
                   </Title>
                 </Form.Item>
                 <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
                   {tenantConfigInfo?.authType === 3 ? (
                     <Input
                       rootClassName={cx(styles.input)}
-                      placeholder="请输入邮箱地址"
+                      placeholder={dict('PC.Pages.Login.inputEmailPlaceholder')}
                     />
                   ) : (
                     <Input
-                      placeholder="请输入手机号"
+                      placeholder={dict('PC.Pages.Login.inputPhonePlaceholder')}
                       rootClassName={cx(styles.input, styles['current-input'])}
                       addonBefore={
                         <div className={cx(styles.icon, 'flex', 'flex-col')}>
@@ -278,7 +302,9 @@ const Login: React.FC = () => {
                     <Input.Password
                       rootClassName={cx(styles.input)}
                       autoComplete="off"
-                      placeholder="请输入6位以上密码"
+                      placeholder={dict(
+                        'PC.Pages.Login.inputPasswordPlaceholder',
+                      )}
                     />
                   </Form.Item>
                 )}
@@ -291,7 +317,9 @@ const Login: React.FC = () => {
                     htmlType="submit"
                     loading={loading}
                   >
-                    {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
+                    {loginType === LoginTypeEnum.Password
+                      ? dict('PC.Pages.Login.login')
+                      : dict('PC.Pages.Login.nextStep')}
                   </Button>
                 </Form.Item>
                 <Form.Item

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
@@ -25,13 +26,17 @@ const { KnowledgeNode } = Library;
 
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
-  return <div className="node-title-style">用于终止当前循环，执行下次循环</div>;
+  return (
+    <div className="node-title-style">
+      {dict('PC.Pages.AntvX6.loopContinueDesc')}
+    </div>
+  );
 };
 
 const LoopBreak: React.FC = () => {
   return (
     <div className="node-title-style">
-      用于立即终止当前所在的循环，跳出循环体
+      {dict('PC.Pages.AntvX6.loopBreakDesc')}
     </div>
   );
 };

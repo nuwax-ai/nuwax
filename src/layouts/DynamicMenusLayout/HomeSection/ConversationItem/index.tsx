@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { Typography } from 'antd';
 import classNames from 'classnames';
@@ -45,7 +46,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         {name}
       </Typography.Text>
       {taskStatus === TaskStatus.EXECUTING && (
-        <span className={cx(styles['status-text'])}>执行中</span>
+        <span className={cx(styles['status-text'])}>
+          {dict('PC.Layouts.DynamicMenusLayout.ConversationItem.executing')}
+        </span>
       )}
     </div>
   );

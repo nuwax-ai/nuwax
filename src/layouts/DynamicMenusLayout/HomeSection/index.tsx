@@ -1,5 +1,8 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
+// import { EVENT_TYPE } from '@/constants/event.constants';
+import { dict } from '@/services/i18nRuntime';
+// import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { RightOutlined } from '@ant-design/icons';
@@ -81,7 +84,7 @@ const HomeSection: React.FC<{
       <ConditionRender condition={usedAgentList !== undefined}>
         <div className={cx(styles['title-row'])}>
           <h3 className={cx(styles.title)} style={{ marginTop: 0 }}>
-            最近使用
+            {dict('PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed')}
           </h3>
         </div>
         {usedAgentList?.length ? (
@@ -97,22 +100,29 @@ const HomeSection: React.FC<{
           </div>
         ) : (
           <>
-            <div className={cx(styles['no-used'])}>你还没有使用任何智能体</div>
             <div className={cx(styles['no-used'])}>
-              现在去广场开启你的探索之旅吧～
+              {dict('PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed')}
+            </div>
+            <div className={cx(styles['no-used'])}>
+              {dict('PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare')}
             </div>
           </>
         )}
       </ConditionRender>
       <ConditionRender condition={conversationList !== undefined}>
         <div className={cx(styles['title-row'])}>
-          <h3 className={cx(styles.title)}>会话记录</h3>
+          <h3 className={cx(styles.title)}>
+            {dict(
+              'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
+            )}
+          </h3>
           <ConditionRender condition={conversationList?.length}>
             <span
               className={cx(styles['more-conversation'])}
               onClick={handleAllConversation}
             >
-              查看全部 <RightOutlined />
+              {dict('PC.Layouts.DynamicMenusLayout.HomeSection.viewAll')}{' '}
+              <RightOutlined />
             </span>
           </ConditionRender>
         </div>
@@ -130,9 +140,13 @@ const HomeSection: React.FC<{
             ))
           ) : (
             <>
-              <div className={cx(styles['no-used'])}>右边看👉</div>
               <div className={cx(styles['no-used'])}>
-                在会话框中输入指令开始你的第一次会话吧～
+                {dict('PC.Layouts.DynamicMenusLayout.HomeSection.lookRight')}
+              </div>
+              <div className={cx(styles['no-used'])}>
+                {dict(
+                  'PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation',
+                )}
               </div>
             </>
           )}

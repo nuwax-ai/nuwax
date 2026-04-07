@@ -1,4 +1,5 @@
 import Constant from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import service from '@/services/workflow';
 import { HistoryData } from '@/types/interfaces/publish';
 import { Button, message } from 'antd';
@@ -22,7 +23,7 @@ const VersionAction: React.FC<VersionActionProps> = ({
       setHistoryLoading(true);
       const res = await service.apiRestoreWorkflowVersion(item.id);
       if (res.code === Constant.success) {
-        message.success('还原成功');
+        message.success(dict('PC.Pages.AntvX6VersionAction.restoreSuccess'));
         setHistoryLoading(false);
         onRefresh();
         onClose();
@@ -63,7 +64,7 @@ const VersionAction: React.FC<VersionActionProps> = ({
             loading={historyLoading}
             onClick={() => handleRestoreVersion(data)}
           >
-            还原
+            {dict('PC.Pages.AntvX6VersionAction.restore')}
           </Button>
         </div>
       )}

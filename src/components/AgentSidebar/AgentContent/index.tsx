@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图�
 import { SvgIcon } from '@/components/base';
 import ChatTitleActions from '@/components/ChatTitleActions';
 import ConditionRender from '@/components/ConditionRender';
+import { dict } from '@/services/i18nRuntime';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { Typography } from 'antd';
 import classNames from 'classnames';
@@ -45,7 +46,7 @@ const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
       </Typography.Title>
       <div className={cx(styles.infoContainer)}>
         <Typography.Text className={cx(styles.from)} ellipsis={true}>
-          来自于{' '}
+          {dict('PC.Components.AgentContent.from')}{' '}
           {agentDetail?.publishUser?.nickName ||
             agentDetail?.publishUser?.userName}
         </Typography.Text>

@@ -48,6 +48,7 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   DataTypeEnum,
   NodeShapeEnum,
@@ -57,85 +58,86 @@ import { StencilList } from '@/types/interfaces/graph';
 import { SwitcherFilled } from '@ant-design/icons';
 import { Cascader, Checkbox, Input } from 'antd';
 
-// 定义左侧栏目的数据
+// Left stencil sections.
 export const asideList: StencilList[] = [
   {
     name: '',
     key: 'group1',
     children: [
       {
-        name: '大模型',
+        name: t('PC.Pages.AntvX6Params.nodeLlmName'),
         icon: <ICON_WORKFLOW_LLM />,
         bgIcon: BG_ICON_WORKFLOW_LLM,
         type: NodeTypeEnum.LLM,
         shape: NodeShapeEnum.General,
-        description: '调用大语言模型，使用变量和提示词生成回复',
+        description: t('PC.Pages.AntvX6Params.nodeLlmDescription'),
       },
       {
-        name: '插件',
+        name: t('PC.Pages.AntvX6Params.nodePluginName'),
         icon: <ICON_WORKFLOW_PLUGIN />,
         bgIcon: BG_ICON_WORKFLOW_PLUGIN,
         type: NodeTypeEnum.Plugin,
         shape: NodeShapeEnum.General,
-        description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
+        description: t('PC.Pages.AntvX6Params.nodePluginDescription'),
       },
       {
-        name: '工作流',
+        name: t('PC.Pages.AntvX6Params.nodeWorkflowName'),
         icon: <ICON_WORKFLOW_WORKFLOW />,
         bgIcon: BG_ICON_WORKFLOW_WORKFLOW,
         type: NodeTypeEnum.Workflow,
         shape: NodeShapeEnum.General,
-        description: '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
+        description: t('PC.Pages.AntvX6Params.nodeWorkflowDescription'),
       },
       {
-        name: 'MCP',
+        name: t('PC.Pages.AntvX6Params.nodeMcpName'),
         icon: <ICON_WORKFLOW_MCP />,
         bgIcon: BG_ICON_WORKFLOW_MCP,
         type: NodeTypeEnum.MCP,
         shape: NodeShapeEnum.General,
-        description: 'MCP 组件',
+        description: t('PC.Pages.AntvX6Params.nodeMcpDescription'),
       },
     ],
   },
   {
-    name: '业务逻辑',
+    name: t('PC.Pages.AntvX6Params.groupBusinessLogic'),
     key: 'group2',
     children: [
       {
-        name: '代码',
+        name: t('PC.Pages.AntvX6Params.nodeCodeName'),
         icon: <ICON_WORKFLOW_CODE />,
         bgIcon: BG_ICON_WORKFLOW_CODE,
         type: NodeTypeEnum.Code,
         shape: NodeShapeEnum.General,
-        description: '编写代码，处理输入变量来生成返回值',
+        description: t('PC.Pages.AntvX6Params.nodeCodeDescription'),
       },
       {
-        name: '条件分支',
+        name: t('PC.Pages.AntvX6Params.nodeConditionName'),
         icon: <ICON_WORKFLOW_CONDITION />,
         bgIcon: BG_ICON_WORKFLOW_CONDITION,
         type: NodeTypeEnum.Condition,
         shape: NodeShapeEnum.General,
-        description:
-          '连接多个下游分支，若设定的条件成立则仅运行对应的分支，若 均不成立则只运行“否则”分支',
+        description: t('PC.Pages.AntvX6Params.nodeConditionDescription'),
       },
       {
-        name: '意图识别',
+        name: t('PC.Pages.AntvX6Params.nodeIntentRecognitionName'),
         icon: <ICON_WORKFLOW_INTENT_RECOGNITION />,
         bgIcon: BG_ICON_WORKFLOW_INTENT_RECOGNITION,
         type: NodeTypeEnum.IntentRecognition,
         shape: NodeShapeEnum.General,
-        description: '用于用户输入的意图识别，并将其与预设意图选项进行匹配。',
+        description: t(
+          'PC.Pages.AntvX6Params.nodeIntentRecognitionDescription',
+        ),
       },
       {
-        name: '循环',
+        name: t('PC.Pages.AntvX6Params.nodeLoopName'),
         icon: <ICON_WORKFLOW_LOOP />,
         bgIcon: BG_ICON_WORKFLOW_LOOP,
         type: NodeTypeEnum.Loop,
         shape: NodeShapeEnum.Loop,
-        description: '用于通过设定循环次数和逻辑，重复执行一系列任务。',
+        description: t('PC.Pages.AntvX6Params.nodeLoopDescription'),
       },
       {
-        name: '继续循环',
+        name: t('PC.Pages.AntvX6Params.nodeLoopContinueName'),
         icon: <ICON_WORKFLOW_LOOPCONTINUE />,
         bgIcon: BG_ICON_WORKFLOW_LOOPCONTINUE,
         type: NodeTypeEnum.LoopContinue,
@@ -143,7 +145,7 @@ export const asideList: StencilList[] = [
         description: '',
       },
       {
-        name: '终止循环',
+        name: t('PC.Pages.AntvX6Params.nodeLoopBreakName'),
         icon: <ICON_WORKFLOW_LOOPBREAK />,
         bgIcon: BG_ICON_WORKFLOW_LOOPBREAK,
         type: NodeTypeEnum.LoopBreak,
@@ -153,148 +155,139 @@ export const asideList: StencilList[] = [
     ],
   },
   {
-    name: '知识&数据',
+    name: t('PC.Pages.AntvX6Params.groupKnowledgeData'),
     key: 'group3',
     children: [
       {
-        name: '知识库',
+        name: t('PC.Pages.AntvX6Params.nodeKnowledgeBaseName'),
         icon: <ICON_WORKFLOW_KNOWLEDGE_BASE />,
         bgIcon: BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
         type: NodeTypeEnum.Knowledge,
         shape: NodeShapeEnum.General,
-        description: '在选定的知识中，根据输入变量召回最匹配的信息',
+        description: t('PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription'),
       },
-      // {
-      //   name: '数据库',
-      //   icon: <ICON_WORKFLOW_DATABASE />,
-      //   type: 'Database',
-      //   key: GENERAL_NODE,
-      //   description:
-      //     '可支持对数据表放开读写控制，用户可读写其他用户提交的数据， 由开发者控制',
-      // },
       {
-        name: '变量',
+        name: t('PC.Pages.AntvX6Params.nodeVariableName'),
         icon: <ICON_WORKFLOW_VARIABLE />,
         bgIcon: BG_ICON_WORKFLOW_VARIABLE,
         type: NodeTypeEnum.Variable,
         shape: NodeShapeEnum.General,
-        description:
-          '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
+        description: t('PC.Pages.AntvX6Params.nodeVariableDescription'),
       },
 
       {
-        name: '长期记忆',
+        name: t('PC.Pages.AntvX6Params.nodeLongTermMemoryName'),
         icon: <ICON_WORKFLOW_LONG_TERM_MEMORY />,
         bgIcon: BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
         type: NodeTypeEnum.LongTermMemory,
         shape: NodeShapeEnum.General,
-        description: '用于调用长期记忆，获取用户的个性化信息',
+        description: t('PC.Pages.AntvX6Params.nodeLongTermMemoryDescription'),
       },
     ],
   },
   {
-    name: '数据表',
+    name: t('PC.Pages.AntvX6Params.groupDataTable'),
     key: 'group4',
     children: [
       {
-        name: '数据新增',
+        name: t('PC.Pages.AntvX6Params.nodeTableDataAddName'),
         icon: <ICON_WORKFLOW_DATABASEADD />,
         bgIcon: BG_ICON_WORKFLOW_DATABASEADD,
         type: NodeTypeEnum.TableDataAdd,
         shape: NodeShapeEnum.General,
-        description: '对选定的数据表进行数据写入',
+        description: t('PC.Pages.AntvX6Params.nodeTableDataAddDescription'),
       },
       {
-        name: '数据删除',
+        name: t('PC.Pages.AntvX6Params.nodeTableDataDeleteName'),
         icon: <ICON_WORKFLOW_DATABASEDELETE />,
         bgIcon: BG_ICON_WORKFLOW_DATABASEDELETE,
         type: NodeTypeEnum.TableDataDelete,
         shape: NodeShapeEnum.General,
-        description: '对选定的数据表根据指定ID进行数据删除',
+        description: t('PC.Pages.AntvX6Params.nodeTableDataDeleteDescription'),
       },
       {
-        name: '数据更新',
+        name: t('PC.Pages.AntvX6Params.nodeTableDataUpdateName'),
         icon: <ICON_WORKFLOW_DATABASEUPDATE />,
         bgIcon: BG_ICON_WORKFLOW_DATABASEUPDATE,
         type: NodeTypeEnum.TableDataUpdate,
         shape: NodeShapeEnum.General,
-        description: '对选定的数据表根据指定条件进行数据更新',
+        description: t('PC.Pages.AntvX6Params.nodeTableDataUpdateDescription'),
       },
       {
-        name: '数据查询',
+        name: t('PC.Pages.AntvX6Params.nodeTableDataQueryName'),
         icon: <ICON_WORKFLOW_DATABASEQUERY />,
         bgIcon: BG_ICON_WORKFLOW_DATABASEQUERY,
         type: NodeTypeEnum.TableDataQuery,
         shape: NodeShapeEnum.General,
-        description: '对选定的数据表根据指定条件进行数据查询',
+        description: t('PC.Pages.AntvX6Params.nodeTableDataQueryDescription'),
       },
       {
-        name: 'SQL自定义',
+        name: t('PC.Pages.AntvX6Params.nodeTableSqlName'),
         icon: <ICON_WORKFLOW_DATABASE />,
         bgIcon: BG_ICON_WORKFLOW_DATABASE,
         type: NodeTypeEnum.TableSQL,
         shape: NodeShapeEnum.General,
-        description:
-          '可支持对数据表的查询控制，用户可查询其他用户提交的数据，由开发者控制',
+        description: t('PC.Pages.AntvX6Params.nodeTableSqlDescription'),
       },
     ],
   },
   {
-    name: '组件&工具',
+    name: t('PC.Pages.AntvX6Params.groupComponentTool'),
     key: 'group5',
     children: [
       {
-        name: '问答',
+        name: t('PC.Pages.AntvX6Params.nodeQaName'),
         icon: <ICON_WORKFLOW_QA />,
         bgIcon: BG_ICON_WORKFLOW_QA,
         type: NodeTypeEnum.QA,
         shape: NodeShapeEnum.General,
-        description: '支持中间向用户提问问题',
+        description: t('PC.Pages.AntvX6Params.nodeQaDescription'),
       },
       {
-        name: '文本处理',
+        name: t('PC.Pages.AntvX6Params.nodeTextProcessingName'),
         icon: <ICON_WORKFLOW_TEXT_PROCESSING />,
         bgIcon: BG_ICON_WORKFLOW_TEXT_PROCESSING,
         type: NodeTypeEnum.TextProcessing,
         shape: NodeShapeEnum.General,
-        description: '用于处理多个字符串类型变量的格式',
+        description: t('PC.Pages.AntvX6Params.nodeTextProcessingDescription'),
       },
       {
-        name: '文档提取',
+        name: t('PC.Pages.AntvX6Params.nodeDocumentExtractionName'),
         icon: <ICON_WORKFLOW_DOCUMENT_EXTRACTION />,
         bgIcon: BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION,
         type: NodeTypeEnum.DocumentExtraction,
         shape: NodeShapeEnum.General,
-        description:
-          '用于提取文档内容，支持的文件类型: txt、 markdown、pdf、 html、 xlsx、 xls、 docx、 csv、 md、 htm',
+        description: t(
+          'PC.Pages.AntvX6Params.nodeDocumentExtractionDescription',
+        ),
       },
       {
-        name: 'http请求',
+        name: t('PC.Pages.AntvX6Params.nodeHttpRequestName'),
         icon: <ICON_WORKFLOW_HTTP_REQUEST />,
         bgIcon: BG_ICON_WORKFLOW_HTTP_REQUEST,
         type: NodeTypeEnum.HTTPRequest,
         shape: NodeShapeEnum.General,
-        description: '用于配置http请求调用已有的服务',
+        description: t('PC.Pages.AntvX6Params.nodeHttpRequestDescription'),
       },
     ],
   },
   {
-    name: '输出',
+    name: t('PC.Pages.AntvX6Params.groupOutput'),
     key: 'group6',
     children: [
       {
-        name: '过程输出',
+        name: t('PC.Pages.AntvX6Params.nodeProcessOutputName'),
         icon: <ICON_WORKFLOW_OUTPUT />,
         bgIcon: BG_ICON_WORKFLOW_OUTPUT,
         type: NodeTypeEnum.Output,
         shape: NodeShapeEnum.General,
-        description: '支持中间过程的消息输出，支持流式和非流式两种方式',
+        description: t('PC.Pages.AntvX6Params.nodeProcessOutputDescription'),
       },
     ],
   },
 ];
 
-// 定义右侧变量类型
+// Variable types for the right panel.
 
 export const dataTypes = [
   {
@@ -401,7 +394,7 @@ export const dataTypes = [
       },
       {
         label: 'Array<Code>',
-        value: DataTypeEnum.Array_File_Code, // 这里假设 "Array<Code>" 对应 "Array_File_Default"
+        value: DataTypeEnum.Array_File_Code, // "Array<Code>" maps to "Array_File_Default".
       },
       {
         label: 'Array<PPT>',
@@ -429,18 +422,18 @@ export const dataTypes = [
       },
       {
         label: 'Array<Svg>',
-        value: DataTypeEnum.Array_File_Svg, // 这里假设 "Array<Svg>" 对应 "Array_File_Default"
+        value: DataTypeEnum.Array_File_Svg, // "Array<Svg>" maps to "Array_File_Default".
       },
     ],
   },
 ];
 
-// 模拟模型的输入参数
+// Mock model input schema.
 export const modelTypes = [
   {
-    label: '标题生成',
+    label: t('PC.Pages.AntvX6Params.modelTypeTitleGeneration'),
     icon: <ICON_START />,
-    key: '标题生成',
+    key: 'titleGeneration',
     children: [
       {
         key: 'output',
@@ -456,43 +449,72 @@ export const modelTypes = [
   },
 ];
 
-// 循环的option
+// Loop mode options.
 export const cycleOption = [
-  { label: '使用数组循环', value: 'ARRAY_LOOP' },
-  { label: '指定次数循环', value: 'SPECIFY_TIMES_LOOP' },
-  { label: '无限循环', value: 'INFINITE_LOOP' },
+  {
+    label: t('PC.Pages.AntvX6Params.cycleArrayLoop'),
+    value: 'ARRAY_LOOP',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.cycleSpecifyTimesLoop'),
+    value: 'SPECIFY_TIMES_LOOP',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.cycleInfiniteLoop'),
+    value: 'INFINITE_LOOP',
+  },
 ];
 export const InputConfigs = [
   {
     name: 'name',
-    placeholder: '变量名',
-    label: '变量名',
-    rules: [{ required: true, message: '请输入变量名' }],
+    placeholder: t('PC.Pages.AntvX6Params.inputVariableName'),
+    label: t('PC.Pages.AntvX6Params.inputVariableName'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.inputVariableNameRequired'),
+      },
+    ],
     component: Input,
     width: 140,
   },
   {
     name: 'dataType',
-    placeholder: '选择类型',
-    label: '变量类型',
-    rules: [{ required: true, message: '请选择变量类型' }],
+    placeholder: t('PC.Pages.AntvX6Params.selectType'),
+    label: t('PC.Pages.AntvX6Params.inputVariableType'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.inputVariableTypeRequired'),
+      },
+    ],
     component: Cascader,
     width: 110,
     options: dataTypes,
   },
   {
     name: 'description',
-    placeholder: '描述',
+    placeholder: t('PC.Pages.AntvX6Params.description'),
     label: '',
-    rules: [{ required: true, message: '请输入描述' }],
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.descriptionRequired'),
+      },
+    ],
     component: Checkbox,
     width: 0,
   },
   {
     name: 'require',
-    placeholder: '变量名',
+    placeholder: t('PC.Pages.AntvX6Params.inputVariableName'),
     label: '',
-    rules: [{ required: true, message: '请输入变量名' }],
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.inputVariableNameRequired'),
+      },
+    ],
     component: Checkbox,
     width: 0,
   },
@@ -501,37 +523,57 @@ export const InputConfigs = [
 export const outPutConfigs = [
   {
     name: 'name',
-    placeholder: '参数名',
-    label: '参数名',
-    rules: [{ required: true, message: '请输入参数名' }],
+    placeholder: t('PC.Pages.AntvX6Params.paramName'),
+    label: t('PC.Pages.AntvX6Params.paramName'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.paramNameRequired'),
+      },
+    ],
     component: Input,
     width: 100,
   },
   {
     name: 'bindValue',
-    placeholder: '输入或引用参数值',
-    label: '参数值',
-    rules: [{ required: true, message: '请输入参数值' }],
+    placeholder: t('PC.Pages.AntvX6Params.inputOrReferenceParamValue'),
+    label: t('PC.Pages.AntvX6Params.paramValue'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.paramValueRequired'),
+      },
+    ],
     component: InputOrReference,
     width: 180,
   },
   {
     name: 'description',
-    placeholder: '描述',
+    placeholder: t('PC.Pages.AntvX6Params.description'),
     label: '',
-    rules: [{ required: true, message: '请输入描述' }],
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.descriptionRequired'),
+      },
+    ],
     component: Checkbox,
     width: 0,
   },
 ];
 
-// 意图识别的参数配置
+// Intent recognition parameter configs.
 export const intentionConfigs = [
   {
     name: 'intent',
-    placeholder: '输入参数值',
+    placeholder: t('PC.Pages.AntvX6Params.inputParamValue'),
     label: '',
-    rules: [{ required: true, message: '请输入用户意图的描述' }],
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.intentDescriptionRequired'),
+      },
+    ],
     component: Input,
     width: 296,
   },
@@ -540,80 +582,174 @@ export const intentionConfigs = [
 export const modelConfigs = [
   {
     name: 'name',
-    placeholder: '参数名',
-    label: '参数名',
-    rules: [{ required: true, message: '请输入参数名' }],
+    placeholder: t('PC.Pages.AntvX6Params.paramName'),
+    label: t('PC.Pages.AntvX6Params.paramName'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.paramNameRequired'),
+      },
+    ],
     component: Input,
     width: 140,
   },
   {
     name: 'paramsValue',
-    placeholder: '输入或引用变量值',
-    label: '变量值',
-    rules: [{ required: true, message: '请输入变量值' }],
+    placeholder: t('PC.Pages.AntvX6Params.inputOrReferenceVariableValue'),
+    label: t('PC.Pages.AntvX6Params.variableValue'),
+    rules: [
+      {
+        required: true,
+        message: t('PC.Pages.AntvX6Params.variableValueRequired'),
+      },
+    ],
     component: InputOrReference,
     width: 120,
   },
 ];
 
-// 工作流的左侧菜单
+// Workflow drawer left menu.
 export const leftMenuList = [
   {
     icon: <SwitcherFilled />,
-    name: '资源库工作流',
+    name: t('PC.Pages.AntvX6Params.resourceWorkflow'),
     key: 'resources',
   },
   {
     icon: <SwitcherFilled />,
-    name: '官方示例',
+    name: t('PC.Pages.AntvX6Params.officialExample'),
     key: 'example',
   },
 ];
 
-// 定义条件分支和数据的条件配置项
+// Operators for condition branches and data filters.
 export const options = [
-  { label: '等于', value: 'EQUAL', displayValue: '=' },
-  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
-  { label: '大于', value: 'GREATER_THAN', displayValue: '>' },
   {
-    label: '大于等于',
+    label: t('PC.Pages.AntvX6Params.operatorEqual'),
+    value: 'EQUAL',
+    displayValue: '=',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotEqual'),
+    value: 'NOT_EQUAL',
+    displayValue: '≠',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorGreaterThan'),
+    value: 'GREATER_THAN',
+    displayValue: '>',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorGreaterThanOrEqual'),
     value: 'GREATER_THAN_OR_EQUAL',
     displayValue: '≥',
   },
-  { label: '小于', value: 'LESS_THAN', displayValue: '<' },
-  { label: '小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
-  { label: '长度大于', value: 'LENGTH_GREATER_THAN', displayValue: '>' },
   {
-    label: '长度大于等于',
+    label: t('PC.Pages.AntvX6Params.operatorLessThan'),
+    value: 'LESS_THAN',
+    displayValue: '<',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLessThanOrEqual'),
+    value: 'LESS_THAN_OR_EQUAL',
+    displayValue: '≤',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLengthGreaterThan'),
+    value: 'LENGTH_GREATER_THAN',
+    displayValue: '>',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLengthGreaterThanOrEqual'),
     value: 'LENGTH_GREATER_THAN_OR_EQUAL',
     displayValue: '≥',
   },
-  { label: '长度小于', value: 'LENGTH_LESS_THAN', displayValue: '<' },
   {
-    label: '长度小于等于',
+    label: t('PC.Pages.AntvX6Params.operatorLengthLessThan'),
+    value: 'LENGTH_LESS_THAN',
+    displayValue: '<',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLengthLessThanOrEqual'),
     value: 'LENGTH_LESS_THAN_OR_EQUAL',
     displayValue: '≤',
   },
-  { label: '包含', value: 'CONTAINS', displayValue: '⊃' },
-  { label: '不包含', value: 'NOT_CONTAINS', displayValue: '⊅' },
-  { label: '匹配正则表达式', value: 'MATCH_REGEX', displayValue: '~' },
-  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
-  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorContains'),
+    value: 'CONTAINS',
+    displayValue: '⊃',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotContains'),
+    value: 'NOT_CONTAINS',
+    displayValue: '⊅',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorMatchRegex'),
+    value: 'MATCH_REGEX',
+    displayValue: '~',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorIsNull'),
+    value: 'IS_NULL',
+    displayValue: '∅',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotNull'),
+    value: 'NOT_NULL',
+    displayValue: '!∅',
+  },
 ];
 
 export const tableOptions = [
-  { label: '等于', value: 'EQUAL', displayValue: '=' },
-  { label: '不等于', value: 'NOT_EQUAL', displayValue: '≠' },
-  { label: '大于', value: 'GREATER_THAN', displayValue: '>' },
   {
-    label: '大于等于',
+    label: t('PC.Pages.AntvX6Params.operatorEqual'),
+    value: 'EQUAL',
+    displayValue: '=',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotEqual'),
+    value: 'NOT_EQUAL',
+    displayValue: '≠',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorGreaterThan'),
+    value: 'GREATER_THAN',
+    displayValue: '>',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorGreaterThanOrEqual'),
     value: 'GREATER_THAN_OR_EQUAL',
     displayValue: '≥',
   },
-  { label: '小于', value: 'LESS_THAN', displayValue: '<' },
-  { label: '小于等于', value: 'LESS_THAN_OR_EQUAL', displayValue: '≤' },
-  { label: '属于', value: 'IN', displayValue: '⊃' },
-  { label: '不属于', value: 'NOT_IN', displayValue: '⊅' },
-  { label: '为空', value: 'IS_NULL', displayValue: '∅' },
-  { label: '不为空', value: 'NOT_NULL', displayValue: '!∅' },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLessThan'),
+    value: 'LESS_THAN',
+    displayValue: '<',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorLessThanOrEqual'),
+    value: 'LESS_THAN_OR_EQUAL',
+    displayValue: '≤',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorIn'),
+    value: 'IN',
+    displayValue: '⊃',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotIn'),
+    value: 'NOT_IN',
+    displayValue: '⊅',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorIsNull'),
+    value: 'IS_NULL',
+    displayValue: '∅',
+  },
+  {
+    label: t('PC.Pages.AntvX6Params.operatorNotNull'),
+    value: 'NOT_NULL',
+    displayValue: '!∅',
+  },
 ];

@@ -1,13 +1,14 @@
 import Loading from '@/components/custom/Loading';
 import {
-  DATA_PERMISSION_TAB_ITEMS,
   DataPermissionTabKey,
+  getDataPermissionTabItems,
 } from '@/pages/SystemManagement/MenuPermission/components/DataPermissionModal';
 import type { OpenApiConfigInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import {
   apiGetOpenApiList,
   OpenApiPermissionTargetTypeEnum,
 } from '@/services/account';
+import { dict } from '@/services/i18nRuntime';
 import { apiSystemModelList } from '@/services/systemManage';
 import type { OpenApiDefinition } from '@/types/interfaces/account';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
@@ -322,7 +323,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.noData')} />
           </div>
         );
       case 'agent':
@@ -347,7 +348,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.noData')} />
           </div>
         );
       case 'page':
@@ -372,7 +373,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.noData')} />
           </div>
         );
       case 'knowledge':
@@ -412,15 +413,21 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
               <Row gutter={[16, 0]}>
                 <Col span={12}>
                   <Form.Item
-                    label="每日token限制"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimit',
+                    )}
                     name={['tokenLimit', 'limitPerDay']}
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '每日 token 限制，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimitTooltip',
+                      ),
                     }}
                   >
                     <InputNumber
-                      placeholder="请输入每日token限制数量"
+                      placeholder={dict(
+                        'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimitPlaceholder',
+                      )}
                       className={cx('w-full')}
                       min={-1}
                       max={1000000000000000}
@@ -430,11 +437,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建工作空间数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxSpaceCount',
+                    )}
                     name="maxSpaceCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建工作空间数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxSpaceCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -443,11 +454,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建智能体数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxAgentCount',
+                    )}
                     name="maxAgentCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建智能体数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxAgentCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -456,11 +471,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建网页应用数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxPageAppCount',
+                    )}
                     name="maxPageAppCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建网页应用数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxPageAppCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -469,11 +488,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建知识库数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxKnowledgeCount',
+                    )}
                     name="maxKnowledgeCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建知识库数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxKnowledgeCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -482,11 +505,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="知识库存储空间上限 (GB)"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.knowledgeStorageLimitGb',
+                    )}
                     name="knowledgeStorageLimitGb"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '知识库存储空间上限(GB)，-1表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.knowledgeStorageLimitGbTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -495,11 +522,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建数据表数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxDataTableCount',
+                    )}
                     name="maxDataTableCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建数据表数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxDataTableCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -508,11 +539,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="可创建定时任务数量"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCount',
+                    )}
                     name="maxScheduledTaskCount"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '可创建定时任务数量，-1 表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCountTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -521,12 +556,16 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="智能体电脑内存(GB)"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.agentComputerMemoryGb',
+                    )}
                     name="agentComputerMemoryGb"
                     initialValue={4}
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.agentComputerMemoryGbTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={0} />
@@ -535,12 +574,16 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="智能体电脑 CPU 核心数"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.agentComputerCpuCores',
+                    )}
                     name="agentComputerCpuCores"
                     initialValue={2}
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.agentComputerCpuCoresTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={0} />
@@ -549,11 +592,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="通用智能体每天对话次数限制"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.agentDailyPromptLimit',
+                    )}
                     name="agentDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '通用智能体每天对话次数，-1表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.agentDailyPromptLimitTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -562,11 +609,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
                 <Col span={12}>
                   <Form.Item
-                    label="网页应用开发每天对话次数"
+                    label={dict(
+                      'PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimit',
+                    )}
                     name="pageDailyPromptLimit"
                     tooltip={{
                       icon: <InfoCircleOutlined />,
-                      title: '网页应用开发每天对话次数，-1表示不限制',
+                      title: dict(
+                        'PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimitTooltip',
+                      ),
                     }}
                   >
                     <InputNumber className={cx('w-full')} min={-1} />
@@ -591,7 +642,10 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   return (
     <Modal
-      title={`数据权限 - ${userName || ''}`}
+      title={dict(
+        'PC.Pages.UserManage.DataPermissionModal.dataPermissionTitle',
+        userName || '',
+      )}
       open={open}
       onCancel={onCancel}
       width={700}
@@ -601,7 +655,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          items={DATA_PERMISSION_TAB_ITEMS}
+          items={getDataPermissionTabItems()}
         />
         <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
       </div>

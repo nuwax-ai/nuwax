@@ -7,12 +7,18 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import Loading from '@/components/custom/Loading';
 import ToggleWrap from '@/components/ToggleWrap';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   ConversationFinalResult,
   ExecuteResultInfo,
 } from '@/types/interfaces/conversationInfo';
 import { LogDetailsProps } from '@/types/interfaces/space';
+import {
+  parseConversationFinalResultJson,
+  safeElapsedMsForDict,
+  stringifyExecutePayloadForPre,
+} from '@/utils/conversationFinalResult';
 import { CopyOutlined } from '@ant-design/icons';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
@@ -44,32 +50,32 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   // 输出参数
   const [outputData, setOutputData] = useState<string>('');
 
-  // 处理输入、输出参数数据
-  const handleData = (data: string | object) => {
-    return typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-  };
-
   useEffect(() => {
-    if (!executeResult) {
+    const _finalResult = parseConversationFinalResultJson(executeResult);
+    setFinalResult(_finalResult);
+
+    if (!_finalResult) {
+      setExecuteInfo(undefined);
+      setInputData('');
+      setOutputData('');
       return;
     }
-    const _finalResult = JSON.parse(executeResult);
-    setFinalResult(_finalResult);
-    // 执行结果列表
-    const result = _finalResult?.componentExecuteResults || [];
-    if (result?.length > 0) {
-      // 当前执行结果
+
+    const result = _finalResult.componentExecuteResults || [];
+    if (result.length > 0) {
       const _executeInfo = result[currentIndex];
       setExecuteInfo(_executeInfo);
-      // 当前执行结果不为空
-      if (!!_executeInfo) {
-        // 输入参数
-        let _inputData = handleData(_executeInfo.input);
-        setInputData(_inputData);
-        // 输出参数
-        const _outputData = handleData(_executeInfo.data);
-        setOutputData(_outputData);
+      if (_executeInfo) {
+        setInputData(stringifyExecutePayloadForPre(_executeInfo.input));
+        setOutputData(stringifyExecutePayloadForPre(_executeInfo.data));
+      } else {
+        setInputData('');
+        setOutputData('');
       }
+    } else {
+      setExecuteInfo(undefined);
+      setInputData('');
+      setOutputData('');
     }
   }, [executeResult, currentIndex]);
 
@@ -84,7 +90,7 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   }, [executeResult]);
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   // 获取图标，如果不存在则使用默认图
@@ -110,7 +116,11 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   };
 
   return (
-    <ToggleWrap title="日志详情" onClose={onClose} visible={visible}>
+    <ToggleWrap
+      title={dict('PC.Pages.SpaceLog.LogDetails.title')}
+      onClose={onClose}
+      visible={visible}
+    >
       {loading ? (
         <Loading className="h-full" />
       ) : !!finalResult ? (
@@ -119,14 +129,17 @@ const LogDetails: React.FC<LogDetailsProps> = ({
             <div className={cx('flex', styles['time-box'])}>
               <div className={cx(styles.num, 'flex', 'items-center')}>
                 <span>
-                  耗时{finalResult.endTime - finalResult.startTime} ms
+                  {dict(
+                    'PC.Pages.SpaceLog.LogDetails.elapsedTime',
+                    safeElapsedMsForDict(finalResult),
+                  )}
                 </span>
                 <span className={cx(styles['vertical-line'])} />
-                <span>{finalResult.totalTokens} Tokens</span>
+                <span>{finalResult.totalTokens ?? '--'} Tokens</span>
               </div>
             </div>
             <div className={cx('flex', styles.box)}>
-              <span>消息ID:</span>
+              <span>{dict('PC.Pages.SpaceLog.LogDetails.messageIdLabel')}</span>
               <span className={cx(styles.value, 'text-ellipsis')}>
                 {requestId}
               </span>
@@ -136,7 +149,9 @@ const LogDetails: React.FC<LogDetailsProps> = ({
             </div>
           </header>
           <div className={cx(styles.wrap)}>
-            <h5 className={cx(styles.title)}>调用组件</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SpaceLog.LogDetails.calledComponents')}
+            </h5>
             {finalResult?.componentExecuteResults?.map(
               (info: ExecuteResultInfo, index: number) => (
                 // 模型可能不存在id，所以使用index作为key
@@ -166,15 +181,21 @@ const LogDetails: React.FC<LogDetailsProps> = ({
             )}
           </div>
           <div className={cx(styles.wrap)}>
-            <h5 className={cx(styles.title)}>节点详情</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SpaceLog.LogDetails.nodeDetails')}
+            </h5>
             <NodeDetails node={executeInfo} />
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
-            <h5 className={cx(styles.title)}>输入</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SpaceLog.LogDetails.input')}
+            </h5>
             <pre>{inputData}</pre>
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
-            <h5 className={cx(styles.title)}>输出</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SpaceLog.LogDetails.output')}
+            </h5>
             <pre>{outputData}</pre>
             {/* <pre
               dangerouslySetInnerHTML={{
@@ -185,7 +206,7 @@ const LogDetails: React.FC<LogDetailsProps> = ({
         </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
+          <Empty description={dict('PC.Common.Global.emptyData')} />
         </div>
       )}
     </ToggleWrap>

@@ -11,6 +11,7 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { ICON_AGENT, ICON_WORKFLOW_SQUARE } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
 import { CustomPopoverItem } from '@/types/interfaces/common';
@@ -30,23 +31,23 @@ export const ECOSYSTEM_MARKET_LIST = [
   {
     type: EcosystemMarketEnum.Plugin,
     icon: <SvgIcon name="icons-nav-plugins" />,
-    text: '插件',
+    text: dict('PC.Common.Global.plugin'),
   },
   {
     type: EcosystemMarketEnum.Template,
     icon: <SvgIcon name="icons-nav-template" />,
-    text: '模板',
+    text: dict('PC.Common.Global.template'),
     list: [
       {
-        text: '智能体',
+        text: dict('PC.Common.Global.agent'),
         type: AgentComponentTypeEnum.Agent,
       },
       {
-        text: '工作流',
+        text: dict('PC.Common.Global.workflow'),
         type: AgentComponentTypeEnum.Workflow,
       },
       {
-        text: '网页应用',
+        text: dict('PC.Constants.Ecosystem.webApp'),
         type: AgentComponentTypeEnum.PageApp,
       },
     ],
@@ -62,37 +63,37 @@ export const COMPONENT_LIST: {
   {
     type: AgentComponentTypeEnum.Plugin,
     defaultImage: pluginImage,
-    text: '插件',
+    text: dict('PC.Common.Global.plugin'),
   },
   {
     type: AgentComponentTypeEnum.Knowledge,
     defaultImage: knowledgeImage,
-    text: '知识库',
+    text: dict('PC.Common.Global.knowledge'),
   },
   {
     type: AgentComponentTypeEnum.Workflow,
     defaultImage: workflowImage,
-    text: '工作流',
+    text: dict('PC.Common.Global.workflow'),
   },
   {
     type: AgentComponentTypeEnum.Table,
     defaultImage: databaseImage,
-    text: '数据表',
+    text: dict('PC.Common.Global.dataTable'),
   },
   {
     type: AgentComponentTypeEnum.Model,
     defaultImage: modelImage,
-    text: '模型',
+    text: dict('PC.Common.Global.model'),
   },
   {
     type: AgentComponentTypeEnum.Agent,
     defaultImage: agentImage,
-    text: '智能体',
+    text: dict('PC.Common.Global.agent'),
   },
   {
     type: AgentComponentTypeEnum.Variable,
     defaultImage: variableImage,
-    text: '变量',
+    text: dict('PC.Constants.Common.variable'),
   },
   {
     type: AgentComponentTypeEnum.MCP,
@@ -102,7 +103,7 @@ export const COMPONENT_LIST: {
   {
     type: AgentComponentTypeEnum.Page,
     defaultImage: pageImage,
-    text: '网页应用',
+    text: dict('PC.Constants.Ecosystem.webApp'),
   },
 ];
 
@@ -126,15 +127,15 @@ export const TabTypeEnum: {
 export const TabItems: TabsProps['items'] = [
   {
     key: TabTypeEnum.ALL,
-    label: '全部',
+    label: dict('PC.Common.Global.all'),
   },
   {
     key: TabTypeEnum.ENABLED,
-    label: `已启用`,
+    label: dict('PC.Constants.Ecosystem.enabled'),
   },
   {
     key: TabTypeEnum.SHARED,
-    label: `我的分享`,
+    label: dict('PC.Constants.Ecosystem.myShares'),
   },
 ];
 
@@ -142,31 +143,55 @@ export const TabItems: TabsProps['items'] = [
 export const ECO_MCP_TAB_ITEMS: TabsProps['items'] = [
   {
     key: EcosystemTabTypeEnum.ALL,
-    label: '全部',
+    label: dict('PC.Common.Global.all'),
   },
   {
     key: EcosystemTabTypeEnum.ENABLED,
-    label: '已启用',
+    label: dict('PC.Constants.Ecosystem.enabled'),
   },
 ];
 
 // MCP分类
 export const ECO_MCP_CATEGORY_OPTIONS = [
-  { label: '全部', value: 'All' },
-  { label: '生活服务', value: 'LifeServices' },
-  { label: '电脑操作', value: 'ComputerOperations' },
-  { label: '个人知识', value: 'PersonalKnowledge' },
-  { label: '商业效率', value: 'BusinessEfficiency' },
-  { label: '社交媒体', value: 'SocialMedia' },
-  { label: '电商平台', value: 'E-commercePlatforms' },
-  { label: '金融服务', value: 'FinancialServices' },
-  { label: '技术开发', value: 'TechnologyDevelopment' },
-  { label: '其他', value: 'Other' },
+  { label: dict('PC.Common.Global.all'), value: 'All' },
+  {
+    label: dict('PC.Constants.Ecosystem.catLifeServices'),
+    value: 'LifeServices',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catComputerOps'),
+    value: 'ComputerOperations',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catPersonalKnowledge'),
+    value: 'PersonalKnowledge',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catBusinessEfficiency'),
+    value: 'BusinessEfficiency',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catSocialMedia'),
+    value: 'SocialMedia',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catEcommerce'),
+    value: 'E-commercePlatforms',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catFinancialServices'),
+    value: 'FinancialServices',
+  },
+  {
+    label: dict('PC.Constants.Ecosystem.catTechDev'),
+    value: 'TechnologyDevelopment',
+  },
+  { label: dict('PC.Common.Global.other'), value: 'Other' },
 ];
 
 export const ECO_TYPE_TITLE_MAP = {
-  [EcosystemDataTypeEnum.PLUGIN]: '插件',
-  [EcosystemDataTypeEnum.TEMPLATE]: '模板',
+  [EcosystemDataTypeEnum.PLUGIN]: dict('PC.Common.Global.plugin'),
+  [EcosystemDataTypeEnum.TEMPLATE]: dict('PC.Common.Global.template'),
   [EcosystemDataTypeEnum.MCP]: 'MCP',
 };
 
@@ -175,19 +200,19 @@ export const ECO_TYPE_TITLE_MAP = {
  */
 export const ECO_TEMPLATE_SHARE_STATUS_OPTIONS = [
   {
-    label: '全部',
+    label: dict('PC.Common.Global.all'),
     value: -1,
   },
   {
-    label: '已发布',
+    label: dict('PC.Common.Global.published'),
     value: 3,
   },
   {
-    label: '审核中',
+    label: dict('PC.Constants.Ecosystem.underReview'),
     value: 2,
   },
   {
-    label: '已下线',
+    label: dict('PC.Constants.Ecosystem.offline'),
     value: 4,
   },
 ];
@@ -195,7 +220,7 @@ export const ECO_TEMPLATE_SHARE_STATUS_OPTIONS = [
 // 生态市场更多操作列表
 export const EcoMarketActionList: CustomPopoverItem[] = [
   {
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
   },
 ];

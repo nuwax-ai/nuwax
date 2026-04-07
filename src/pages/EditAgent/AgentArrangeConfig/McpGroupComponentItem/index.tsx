@@ -1,4 +1,5 @@
 import CollapseComponentList from '@/components/CollapseComponentList';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpGroupComponentItemProps } from '@/types/interfaces/agentConfig';
 import { DownOutlined } from '@ant-design/icons';
@@ -42,7 +43,12 @@ const McpGroupComponentItem: React.FC<McpGroupComponentItemProps> = ({
             'cursor-pointer',
           )}
         >
-          <span>{`工具（${item.children.length}）`}</span>
+          <span>
+            {t(
+              'PC.Pages.AgentArrangeMcpGroupComponentItem.toolsWithCount',
+              String(item.children.length),
+            )}
+          </span>
           <DownOutlined
             className={cx(styles['down-icon'], {
               [styles['down-icon-rotate']]: showChildren,

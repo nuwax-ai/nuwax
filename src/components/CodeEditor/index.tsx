@@ -1,5 +1,6 @@
 import CodeOptimizeModal from '@/components/CodeOptimizeModal';
 import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import Editor, { loader } from '@monaco-editor/react';
 import { FloatButton, Form } from 'antd';
@@ -85,7 +86,7 @@ const CodeEditor: React.FC<Props> = ({
   }, []);
 
   if (!isMonacoReady) {
-    return <div>Loading editor...</div>;
+    return <div>{dict('PC.Components.CodeEditor.loadingEditor')}</div>;
   }
 
   const handleCodeChange = (newValue?: string) => {
@@ -173,13 +174,13 @@ const CodeEditor: React.FC<Props> = ({
           type="primary"
           style={{ insetInlineEnd: 94, display: testRun ? 'none' : 'block' }}
           icon={<ICON_CONFIRM_STAR />}
-          tooltip="代码助手"
+          tooltip={dict('PC.Components.CodeEditor.codeAssistant')}
           onClick={() => {
             setOpen(true);
           }}
         />
         <CodeOptimizeModal
-          title="代码助手"
+          title={dict('PC.Components.CodeEditor.codeAssistant')}
           open={open}
           codeLanguage={codeLanguage}
           onCancel={() => {

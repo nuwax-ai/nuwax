@@ -1,3 +1,5 @@
+import { dict } from '@/services/i18nRuntime';
+
 /**
  * IM 机器人平台类型
  */
@@ -12,10 +14,10 @@ export enum IMPlatformEnum {
  * IM 机器人 platform 展示名称
  */
 export const IM_PLATFORM_LABEL_MAP: Record<IMPlatformEnum, string> = {
-  [IMPlatformEnum.Feishu]: '飞书',
-  [IMPlatformEnum.Dingtalk]: '钉钉',
-  [IMPlatformEnum.Wework]: '企业微信',
-  [IMPlatformEnum.WechatIlink]: '微信',
+  [IMPlatformEnum.Feishu]: dict('PC.Constants.ImChannel.platformFeishu'),
+  [IMPlatformEnum.Dingtalk]: dict('PC.Constants.ImChannel.platformDingtalk'),
+  [IMPlatformEnum.Wework]: dict('PC.Constants.ImChannel.platformWework'),
+  [IMPlatformEnum.WechatIlink]: dict('PC.Constants.ImChannel.platformWechat'),
 };
 
 /**

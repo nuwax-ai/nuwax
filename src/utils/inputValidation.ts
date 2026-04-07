@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import React from 'react';
 
 /**
@@ -48,7 +49,7 @@ export const getNumberOnlyFieldProps = (
   options: NumberOnlyFieldPropsOptions = {},
 ) => {
   const {
-    placeholder = '请输入数字',
+    placeholder = dict('PC.Utils.InputValidation.enterNumber'),
     allowNegative = false,
     allowDecimal = false,
     maxLength,

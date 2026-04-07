@@ -36,7 +36,7 @@ export const convertEmToLetterSpacingClass = (
 
 /**
  * 生成 Tailwind CSS 字母间距选项列表
- * 返回格式：{ label: '0.05em', value: '0.05em' } 或 { label: 'None', value: 'None' }
+ * Returns: { label: '0.05em', value: '0.05em' } or { label: 'None', value: 'None' }
  * label 用于下拉展示，value 直接作为字母间距值使用
  */
 export const generateTailwindLetterSpacingOptions = (): Array<{

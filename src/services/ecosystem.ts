@@ -33,12 +33,12 @@ export function apiEcoMarketClientConfigList(
  *
  * @example
  * ```typescript
- * // 查询插件类型的配置列表
+ * // 查询Plugin类型的配置列表
  * const result = await getClientConfigList({
  *   queryFilter: {
- *     dataType: 1, // 插件
+ *     dataType: 1, // Plugin
  *     subTabType: 1, // 全部
- *     name: '搜索关键词'
+ *     name: 'search keyword'
  *   },
  *   current: 1,
  *   pageSize: 10
@@ -68,7 +68,7 @@ export async function getClientConfigList(
       }
     );
   } catch (error) {
-    console.error('获取客户端配置列表失败:', error);
+    console.error('Failed to get client config list:', error);
     // 返回空数据结构，避免页面崩溃
     return {
       size: 0,
@@ -95,8 +95,8 @@ export async function getClientConfigList(
  * });
  *
  * if (detail) {
- *   console.log('配置名称:', detail.name);
- *   console.log('配置描述:', detail.description);
+ *   console.log('Config name:', detail.name);
+ *   console.log('Config description:', detail.description);
  * }
  * ```
  */
@@ -117,7 +117,7 @@ export async function getClientConfigDetail(
     // 返回响应数据，错误处理由全局拦截器处理
     return response.data || null;
   } catch (error) {
-    console.error('获取客户端配置详情失败:', error);
+    console.error('Failed to get client config detail:', error);
     // 返回null，表示获取失败
     return null;
   }
@@ -135,15 +135,15 @@ export async function getClientConfigDetail(
  * // 删除指定配置
  * const success = await deleteClientConfig('config-uuid-123');
  * if (success) {
- *   console.log('配置删除成功');
+ *   console.log('Config deleted successfully');
  * } else {
- *   console.log('配置删除失败');
+ *   console.log('Config deletion failed');
  * }
  * ```
  */
 export async function deleteClientConfig(uid: string): Promise<boolean> {
   if (!uid || uid.trim() === '') {
-    console.warn('UID不能为空');
+    console.warn('UID cannot be empty');
     return false;
   }
 
@@ -160,7 +160,7 @@ export async function deleteClientConfig(uid: string): Promise<boolean> {
     // 返回删除结果
     return response.data === true;
   } catch (error) {
-    console.error('删除客户端配置失败:', error);
+    console.error('Failed to delete client config:', error);
     return false;
   }
 }
@@ -177,11 +177,11 @@ export async function deleteClientConfig(uid: string): Promise<boolean> {
  * // 下线指定配置
  * const result = await offlineClientConfig('config-uuid-123');
  * if (result) {
- *   console.log('配置下线成功:', result.name);
- *   console.log('下线时间:', result.offlineTime);
- *   console.log('分享状态:', result.shareStatus); // 应该是4(已下线)
+ *   console.log('Config offline succeeded:', result.name);
+ *   console.log('Offline time:', result.offlineTime);
+ *   console.log('Share status:', result.shareStatus); // 应该是4(已下线)
  * } else {
- *   console.log('配置下线失败');
+ *   console.log('Config offline failed');
  * }
  * ```
  */
@@ -189,7 +189,7 @@ export async function offlineClientConfig(
   uid: string,
 ): Promise<ClientConfigVo | null> {
   if (!uid || uid.trim() === '') {
-    console.warn('UID不能为空');
+    console.warn('UID cannot be empty');
     return null;
   }
 
@@ -206,7 +206,7 @@ export async function offlineClientConfig(
     // 返回下线后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('下线客户端配置失败:', error);
+    console.error('Failed to offline client config:', error);
     return null;
   }
 }
@@ -223,16 +223,16 @@ export async function offlineClientConfig(
  * // 撤回指定配置
  * const result = await withdrawClientConfig('config-uuid-123');
  * if (result) {
- *   console.log('配置撤销成功:', result.name);
- *   console.log('撤销时间:', result.modified);
+ *   console.log('Config withdrawal succeeded:', result.name);
+ *   console.log('Withdrawal time:', result.modified);
  * } else {
- *   console.log('配置撤销失败');
+ *   console.log('Config withdrawal failed');
  * }
  * ```
  */
 export async function withdrawClientConfig(uid: string): Promise<boolean> {
   if (!uid || uid.trim() === '') {
-    console.warn('UID不能为空');
+    console.warn('UID cannot be empty');
     return false;
   }
 
@@ -249,7 +249,7 @@ export async function withdrawClientConfig(uid: string): Promise<boolean> {
     // 返回撤回后的配置详情
     return response.code === SUCCESS_CODE;
   } catch (error) {
-    console.error('撤销发布失败:', error);
+    console.error('Failed to unpublish config:', error);
     return false;
   }
 }
@@ -263,21 +263,21 @@ export async function withdrawClientConfig(uid: string): Promise<boolean> {
  *
  * @example
  * ```typescript
- * // 创建插件配置草稿
+ * // 创建Plugin配置草稿
  * const draft = await createClientConfigDraft({
- *   name: '我的AI插件',
- *   description: '这是一个AI助手插件',
- *   dataType: 1, // 插件
- *   targetType: '插件',
- *   author: '张三',
+ *   name: 'My AI Plugin',
+ *   description: 'This is an AI assistant plugin',
+ *   dataType: 1, // Plugin
+ *   targetType: 'Plugin',
+ *   author: 'Alice',
  *   useStatus: 1, // 启用
  *   icon: 'https://example.com/icon.png'
  * });
  *
  * if (draft) {
- *   console.log('草稿创建成功:', draft.name);
- *   console.log('草稿UID:', draft.uid);
- *   console.log('分享状态:', draft.shareStatus); // 应该是1(草稿)
+ *   console.log('Draft created successfully:', draft.name);
+ *   console.log('Draft UID:', draft.uid);
+ *   console.log('Share status:', draft.shareStatus); // 应该是1(草稿)
  * }
  * ```
  */
@@ -285,12 +285,12 @@ export async function createClientConfigDraft(
   params: ClientConfigSaveReqDTO,
 ): Promise<ClientConfigVo | null> {
   if (!params.name || params.name.trim() === '') {
-    console.warn('配置名称不能为空');
+    console.warn('Config name cannot be empty');
     return null;
   }
 
   if (!params.dataType) {
-    console.warn('数据类型不能为空');
+    console.warn('Data type cannot be empty');
     return null;
   }
 
@@ -306,7 +306,7 @@ export async function createClientConfigDraft(
     // 返回创建的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('创建客户端配置草稿失败:', error);
+    console.error('Failed to create client config draft:', error);
     return null;
   }
 }
@@ -322,20 +322,20 @@ export async function createClientConfigDraft(
  * ```typescript
  * // 保存并提交审核
  * const result = await saveAndPublishClientConfig({
- *   name: '我的AI插件',
- *   description: '这是一个AI助手插件',
- *   dataType: 1, // 插件
- *   targetType: '插件',
- *   author: '张三',
+ *   name: 'My AI Plugin',
+ *   description: 'This is an AI assistant plugin',
+ *   dataType: 1, // Plugin
+ *   targetType: 'Plugin',
+ *   author: 'Alice',
  *   useStatus: 1, // 启用
- *   publishDoc: '插件使用说明文档',
+ *   publishDoc: 'Plugin usage documentation',
  *   icon: 'https://example.com/icon.png'
  * });
  *
  * if (result) {
- *   console.log('提交审核成功:', result.name);
- *   console.log('配置UID:', result.uid);
- *   console.log('分享状态:', result.shareStatus); // 应该是2(审核中)
+ *   console.log('Submitted for review successfully:', result.name);
+ *   console.log('Config UID:', result.uid);
+ *   console.log('Share status:', result.shareStatus); // 应该是2(审核中)
  * }
  * ```
  */
@@ -343,12 +343,12 @@ export async function saveAndPublishClientConfig(
   params: ClientConfigSaveReqDTO,
 ): Promise<ClientConfigVo | null> {
   if (!params.name || params.name.trim() === '') {
-    console.warn('配置名称不能为空');
+    console.warn('Config name cannot be empty');
     return null;
   }
 
   if (!params.dataType) {
-    console.warn('数据类型不能为空');
+    console.warn('Data type cannot be empty');
     return null;
   }
 
@@ -364,7 +364,7 @@ export async function saveAndPublishClientConfig(
     // 返回提交审核后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('保存并发布客户端配置失败:', error);
+    console.error('Failed to save and publish client config:', error);
     return null;
   }
 }
@@ -381,20 +381,20 @@ export async function saveAndPublishClientConfig(
  * // 保存并提交审核
  * const result = await saveAndPublishClientConfig({
  *   uid: 'config-uuid-123',
- *   name: '我的AI插件',
- *   description: '这是一个AI助手插件',
- *   dataType: 1, // 插件
- *   targetType: '插件',
- *   author: '张三',
+ *   name: 'My AI Plugin',
+ *   description: 'This is an AI assistant plugin',
+ *   dataType: 1, // Plugin
+ *   targetType: 'Plugin',
+ *   author: 'Alice',
  *   useStatus: 1, // 启用
- *   publishDoc: '插件使用说明文档',
+ *   publishDoc: 'Plugin usage documentation',
  *   icon: 'https://example.com/icon.png'
  * });
  *
  * if (result) {
- *   console.log('提交审核成功:', result.name);
- *   console.log('配置UID:', result.uid);
- *   console.log('分享状态:', result.shareStatus); // 应该是2(审核中)
+ *   console.log('Submitted for review successfully:', result.name);
+ *   console.log('Config UID:', result.uid);
+ *   console.log('Share status:', result.shareStatus); // 应该是2(审核中)
  * }
  * ```
  */
@@ -402,12 +402,12 @@ export async function updateAndPublishClientConfig(
   params: ClientConfigSaveReqDTO,
 ): Promise<ClientConfigVo | null> {
   if (!params.name || params.name.trim() === '') {
-    console.warn('配置名称不能为空');
+    console.warn('Config name cannot be empty');
     return null;
   }
 
   if (!params.dataType) {
-    console.warn('数据类型不能为空');
+    console.warn('Data type cannot be empty');
     return null;
   }
 
@@ -423,7 +423,7 @@ export async function updateAndPublishClientConfig(
     // 返回提交审核后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('保存并发布客户端配置失败:', error);
+    console.error('Failed to save and publish client config:', error);
     return null;
   }
 }
@@ -440,19 +440,19 @@ export async function updateAndPublishClientConfig(
  * // 更新配置草稿
  * const result = await updateClientConfigDraft({
  *   uid: 'config-uuid-123',
- *   name: '更新后的插件名称',
- *   description: '更新后的描述',
- *   dataType: 1, // 插件
- *   targetType: '插件',
- *   author: '张三',
+ *   name: 'Updated plugin name',
+ *   description: 'Updated description',
+ *   dataType: 1, // Plugin
+ *   targetType: 'Plugin',
+ *   author: 'Alice',
  *   useStatus: 1, // 启用
  *   icon: 'https://example.com/new-icon.png'
  * });
  *
  * if (result) {
- *   console.log('草稿更新成功:', result.name);
- *   console.log('更新时间:', result.modified);
- *   console.log('分享状态:', result.shareStatus); // 应该还是1(草稿)
+ *   console.log('Draft updated successfully:', result.name);
+ *   console.log('Updated time:', result.modified);
+ *   console.log('Share status:', result.shareStatus); // 应该还是1(草稿)
  * }
  * ```
  */
@@ -460,17 +460,17 @@ export async function updateClientConfigDraft(
   params: ClientConfigUpdateDraftReqDTO,
 ): Promise<ClientConfigVo | null> {
   if (!params.uid || params.uid.trim() === '') {
-    console.warn('配置UID不能为空');
+    console.warn('Config UID cannot be empty');
     return null;
   }
 
   if (!params.name || params.name.trim() === '') {
-    console.warn('配置名称不能为空');
+    console.warn('Config name cannot be empty');
     return null;
   }
 
   if (!params.dataType) {
-    console.warn('数据类型不能为空');
+    console.warn('Data type cannot be empty');
     return null;
   }
 
@@ -486,7 +486,7 @@ export async function updateClientConfigDraft(
     // 返回更新后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('更新客户端配置草稿失败:', error);
+    console.error('Failed to update client config draft:', error);
     return null;
   }
 }
@@ -503,11 +503,11 @@ export async function updateClientConfigDraft(
  * // 禁用指定配置
  * const result = await disableClientConfig('config-uuid-123');
  * if (result) {
- *   console.log('配置禁用成功:', result.name);
- *   console.log('禁用时间:', result.modified);
- *   console.log('使用状态:', result.useStatus); // 应该是2(已禁用)
+ *   console.log('Config disabled successfully:', result.name);
+ *   console.log('Disabled time:', result.modified);
+ *   console.log('Usage status:', result.useStatus); // 应该是2(已禁用)
  * } else {
- *   console.log('配置禁用失败');
+ *   console.log('Config disable failed');
  * }
  * ```
  */
@@ -515,7 +515,7 @@ export async function disableClientConfig(
   uid: string,
 ): Promise<ClientConfigVo | null> {
   if (!uid || uid.trim() === '') {
-    console.warn('UID不能为空');
+    console.warn('UID cannot be empty');
     return null;
   }
 
@@ -535,7 +535,7 @@ export async function disableClientConfig(
     // 返回禁用后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('禁用生态市场配置失败:', error);
+    console.error('Failed to disable eco-market config:', error);
     return null;
   }
 }
@@ -552,11 +552,11 @@ export async function disableClientConfig(
  * // 启用指定配置
  * const result = await enableClientConfig('config-uuid-123');
  * if (result) {
- *   console.log('配置启用成功:', result.name);
- *   console.log('启用时间:', result.modified);
- *   console.log('使用状态:', result.useStatus); // 应该是1(已启用)
+ *   console.log('Config enabled successfully:', result.name);
+ *   console.log('Enabled time:', result.modified);
+ *   console.log('Usage status:', result.useStatus); // 应该是1(已启用)
  * } else {
- *   console.log('配置启用失败');
+ *   console.log('Config enable failed');
  * }
  * ```
  */
@@ -564,7 +564,7 @@ export async function enableClientConfig(
   uid: string,
 ): Promise<ClientConfigVo | null> {
   if (!uid || uid.trim() === '') {
-    console.warn('UID不能为空');
+    console.warn('UID cannot be empty');
     return null;
   }
 
@@ -581,7 +581,7 @@ export async function enableClientConfig(
     // 返回启用后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('启用生态市场配置失败:', error);
+    console.error('Failed to enable eco-market config:', error);
     return null;
   }
 }
@@ -603,11 +603,11 @@ export async function enableClientConfig(
  *   })
  * });
  * if (result) {
- *   console.log('配置更新并启用成功:', result.name);
- *   console.log('更新时间:', result.modified);
- *   console.log('使用状态:', result.useStatus); // 应该是1(已启用)
+ *   console.log('Config updated and enabled successfully:', result.name);
+ *   console.log('Updated time:', result.modified);
+ *   console.log('Usage status:', result.useStatus); // 应该是1(已启用)
  * } else {
- *   console.log('配置更新并启用失败');
+ *   console.log('Config update-and-enable failed');
  * }
  * ```
  */
@@ -618,12 +618,12 @@ export async function updateAndEnableClientConfig(params: {
   configJson?: string;
 }): Promise<ClientConfigVo | null> {
   if (!params.uid || params.uid.trim() === '') {
-    console.warn('配置UID不能为空');
+    console.warn('Config UID cannot be empty');
     return null;
   }
 
   if (!params.configParamJson) {
-    console.warn('配置参数不能为空');
+    console.warn('Config params cannot be empty');
     return null;
   }
 
@@ -639,7 +639,7 @@ export async function updateAndEnableClientConfig(params: {
     // 返回更新并启用后的配置详情
     return response.data || null;
   } catch (error) {
-    console.error('更新并启用生态市场配置失败:', error);
+    console.error('Failed to update and enable eco-market config:', error);
     return null;
   }
 }

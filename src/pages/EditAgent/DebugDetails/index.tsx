@@ -6,9 +6,11 @@ import pluginImage from '@/assets/images/plugin_image.png';
 import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import ToggleWrap from '@/components/ToggleWrap';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DebugDetailsProps } from '@/types/interfaces/agentConfig';
 import type { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
+import { safeElapsedMsForDict } from '@/utils/conversationFinalResult';
 import { CopyOutlined } from '@ant-design/icons';
 import { Empty, message } from 'antd';
 import classNames from 'classnames';
@@ -73,7 +75,7 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   }, []);
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   // 获取图标，如果不存在则使用默认图
@@ -99,17 +101,24 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
   };
 
   return (
-    <ToggleWrap title="调试详情" onClose={onClose} visible={visible}>
+    <ToggleWrap
+      title={dict('PC.Pages.EditAgent.DebugDetails.title')}
+      onClose={onClose}
+      visible={visible}
+    >
       {!!finalResult ? (
         <>
           <header className={cx(styles.header)}>
             <div className={cx('flex', styles['time-box'])}>
               <div className={cx(styles.num, 'flex', 'items-center')}>
                 <span>
-                  耗时{finalResult.endTime - finalResult.startTime} ms
+                  {dict(
+                    'PC.Pages.EditAgent.DebugDetails.elapsedTime',
+                    safeElapsedMsForDict(finalResult),
+                  )}
                 </span>
                 <span className={cx(styles['vertical-line'])} />
-                <span>{finalResult.totalTokens} Tokens</span>
+                <span>{finalResult.totalTokens ?? '--'} Tokens</span>
               </div>
             </div>
             <div className={cx('flex', styles.box)}>
@@ -123,7 +132,9 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             </div>
           </header>
           <div className={cx(styles.wrap)}>
-            <h5 className={cx(styles.title)}>调用组件</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.EditAgent.DebugDetails.calledComponents')}
+            </h5>
             {finalResult?.componentExecuteResults?.map(
               (info: ExecuteResultInfo, index: number) => (
                 // 模型可能不存在id，所以使用index作为key
@@ -153,21 +164,27 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             )}
           </div>
           <div className={cx(styles.wrap)}>
-            <h5 className={cx(styles.title)}>节点详情</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SystemRunningLogDetailDrawer.nodeDetails')}
+            </h5>
             <NodeDetails node={executeInfo} />
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
-            <h5 className={cx(styles.title)}>输入</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.SystemRunningLogDetailDrawer.input')}
+            </h5>
             <pre>{inputData}</pre>
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
-            <h5 className={cx(styles.title)}>输出</h5>
+            <h5 className={cx(styles.title)}>
+              {dict('PC.Pages.EditAgent.DebugDetails.output')}
+            </h5>
             <pre>{outputData}</pre>
           </div>
         </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
+          <Empty description={dict('PC.Common.Global.noData')} />
         </div>
       )}
     </ToggleWrap>

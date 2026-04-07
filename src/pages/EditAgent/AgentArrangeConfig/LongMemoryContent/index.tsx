@@ -1,4 +1,5 @@
 // import TooltipIcon from '@/components/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
 import { OpenCloseEnum } from '@/types/enums/space';
 import type { LongMemoryContentProps } from '@/types/interfaces/agentConfig';
 // import { InfoCircleOutlined } from '@ant-design/icons';
@@ -17,15 +18,15 @@ const LongMemoryContent: React.FC<LongMemoryContentProps> = ({
   return (
     <div className={cx(styles.container)}>
       <p className={cx(textClassName)}>
-        总结聊天对话的内容，并用于更好的响应用户的消息。
+        {t('PC.Pages.AgentArrangeLongMemoryContent.description')}
       </p>
       {/*<div className={cx('flex')}>*/}
       {/*  <Checkbox disabled={openLongMemory === OpenCloseEnum.Close}>*/}
-      {/*    支持在Prompt中调用*/}
+      {/*    Enable Prompt usage*/}
       {/*  </Checkbox>*/}
       {/*  <TooltipIcon*/}
       {/*    icon={<InfoCircleOutlined />}*/}
-      {/*    title="默认支持在Prompt中调用，取消勾选后将不支持在Prompt中调用（仅能在Workflow中调用）"*/}
+      {/*    title="Prompt usage is enabled by default. If unchecked, prompt usage is disabled (workflow only)."*/}
       {/*  />*/}
       {/*</div>*/}
     </div>

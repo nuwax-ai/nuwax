@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import type {
   AudioAttachment,
   DataSourceAttachment,
@@ -80,7 +81,10 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
       <div className={`${styles.messageImageAttachment} ${className || ''}`}>
         <Image
           src={imageSrc}
-          alt={imageAttachment.filename || '图片'}
+          alt={
+            imageAttachment.filename ||
+            t('PC.Pages.AppDevMessageAttachment.imageAlt')
+          }
           width={size}
           height={size}
           style={{
@@ -113,15 +117,15 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     ): string => {
       switch (fileType) {
         case 'Text':
-          return '文本文件';
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeText');
         case 'Document':
-          return '文档';
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeDocument');
         case 'Audio':
-          return '音频文件';
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeAudio');
         case 'File':
-          return '文件';
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeFile');
         default:
-          return '文件';
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeFile');
       }
     };
 
@@ -157,7 +161,7 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
               (fileAttachment.source?.source_type === 'FilePath'
                 ? fileAttachment.source.data?.path?.split('/').pop()
                 : null) ||
-              '文件'}
+              t('PC.Pages.AppDevMessageAttachment.fileTypeFile')}
           </div>
           <div className={styles.fileAttachmentType}>
             {getFileTypeText(type as 'Text' | 'Document' | 'Audio' | 'File')}
@@ -175,11 +179,11 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     const getDataSourceTypeText = (type: 'plugin' | 'workflow'): string => {
       switch (type) {
         case 'plugin':
-          return '插件';
+          return t('PC.Pages.AppDevMessageAttachment.dataSourcePlugin');
         case 'workflow':
-          return '工作流';
+          return t('PC.Pages.AppDevMessageAttachment.dataSourceWorkflow');
         default:
-          return '数据源';
+          return t('PC.Pages.AppDevMessageAttachment.dataSourceDefault');
       }
     };
 

@@ -1,6 +1,7 @@
 import RunOver from '@/components/ChatView/RunOver';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { parseFinalResultTimes } from '@/utils/conversationFinalResult';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -73,13 +74,14 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       .reverse()
       .find((msg) => msg.role === 'ASSISTANT' && msg.status);
 
-    if (lastAssistant?.finalResult) {
+    const finalTimes = parseFinalResultTimes(lastAssistant?.finalResult);
+    if (finalTimes) {
       return {
         isRunning: false,
         userMessageTime: null,
         hasFinalResult: true,
-        finalStartTime: lastAssistant.finalResult.startTime,
-        finalEndTime: lastAssistant.finalResult.endTime,
+        finalStartTime: finalTimes.startTime,
+        finalEndTime: finalTimes.endTime,
         isStopped: false,
       };
     }

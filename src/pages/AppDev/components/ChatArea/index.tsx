@@ -1,5 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
+import { t } from '@/services/i18nRuntime';
 
 import SvgIcon from '@/components/base/SvgIcon';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
@@ -209,16 +210,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const response = await cancelAgentTask(projectId);
 
       if (response && response.success) {
-        message.success('Agent 任务已取消');
+        message.success(t('PC.Pages.AppDevChatArea.agentTaskCancelled'));
         // 调用原有的取消聊天功能
         chat.cancelChat();
       } else {
         message.error(
-          `取消 Agent 任务失败: ${response?.message || '未知错误'}`,
+          t(
+            'PC.Pages.AppDevChatArea.cancelAgentTaskFailed',
+            response?.message || t('PC.Pages.AppDevChatArea.unknownError'),
+          ),
         );
       }
     } catch (error) {
-      // message.error('取消 Agent 任务失败');
+      // message.error('Canceling Agent task failed');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
     } finally {
@@ -268,7 +272,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     ) => {
       // 权限检查
       if (!hasPermissionByMenuCode('page_app_dev', 'page_app_ai_chat')) {
-        message.error('您没有权限使用AI聊天功能');
+        message.error(t('PC.Pages.AppDevChatArea.noPermissionForAiChat'));
         return;
       }
 
@@ -417,7 +421,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           onUpdateDataSources(_selectedDataSources);
         }
       } catch (error) {
-        message.error('发送消息失败');
+        message.error(t('PC.Pages.AppDevChatArea.sendMessageFailed'));
       } finally {
         // 延迟重置发送状态，给用户反馈
         setTimeout(() => {
@@ -544,14 +548,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isLoading && !isStreaming && (
               <div className={styles.loadingIndicator}>
                 <Spin size="small" />
-                <span>正在思考...</span>
+                <span>{t('PC.Pages.AppDevChatArea.thinking')}</span>
               </div>
             )}
 
             {/* 错误状态 */}
             {isError && (
               <div className={styles.errorIndicator}>
-                <span>❌ 消息发送失败</span>
+                <span>{t('PC.Pages.AppDevChatArea.messageSendFailed')}</span>
               </div>
             )}
 
@@ -562,7 +566,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   className={styles.thinkingHeader}
                   onClick={() => toggleThinkingExpansion(message.id)}
                 >
-                  <span className={styles.thinkingTitle}>💭 AI 思考过程</span>
+                  <span className={styles.thinkingTitle}>
+                    {t('PC.Pages.AppDevChatArea.aiThinkingProcess')}
+                  </span>
                   <span className={styles.expandIcon}>
                     {isThinkingExpanded ? '▼' : '▶'}
                   </span>
@@ -585,7 +591,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isStreaming && isLastMessage && (
               <div className={styles.streamingIndicator}>
                 <Spin size="small" />
-                {/* <span className={styles.streamingText}>正在输出...</span> */}
+                {/* <span className={styles.streamingText}>Streaming...</span> */}
               </div>
             )}
           </div>
@@ -685,8 +691,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           >
             <div className={styles.dataSourceContainer}>
               <div className={styles.dataSourceHeader}>
-                <span className={styles.dataSourceTitle}>数据资源</span>
-                <Tooltip title="添加数据资源">
+                <span className={styles.dataSourceTitle}>
+                  {t('PC.Pages.AppDevChatArea.dataResources')}
+                </span>
+                <Tooltip title={t('PC.Pages.AppDevChatArea.addDataResource')}>
                   <Button
                     type="text"
                     className={styles.addButton}
@@ -752,7 +760,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   >
                     <span>
                       <LoadingOutlined style={{ marginRight: 8 }} />
-                      正在加载历史会话
+                      {t('PC.Pages.AppDevChatArea.loadingHistorySessions')}
                     </span>
                   </div>
                 )}
@@ -760,14 +768,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               {chat.isLoadingHistory ? (
                 <AppDevEmptyState
                   type="loading"
-                  title="正在加载历史会话"
-                  description="请稍候..."
+                  title={t('PC.Pages.AppDevChatArea.loadingHistorySessions')}
+                  description={t('PC.Pages.AppDevChatArea.loadingDescription')}
                 />
               ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
                 <AppDevEmptyState
                   type="conversation-empty"
-                  title="开始新对话"
-                  description="向 AI 助手提问，开始你的项目开发"
+                  title={t('PC.Pages.AppDevChatArea.startNewConversation')}
+                  description={t(
+                    'PC.Pages.AppDevChatArea.startNewConversationDescription',
+                  )}
                 />
               ) : (
                 chatMessagesList
@@ -795,7 +805,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
         {/* 自动错误处理进度条 目前有 透传问题先关闭了*/}
         {autoErrorRetryCount > 0 && chat.isChatLoading && (
-          <Tooltip title={`(${autoErrorRetryCount}/3) 尝试自动修复中...`}>
+          <Tooltip
+            title={t(
+              'PC.Pages.AppDevChatArea.autoFixingProgress',
+              String(autoErrorRetryCount),
+              '3',
+            )}
+          >
             <div className={styles.progressContainer}>
               <div className={styles.progressBar}>
                 <div

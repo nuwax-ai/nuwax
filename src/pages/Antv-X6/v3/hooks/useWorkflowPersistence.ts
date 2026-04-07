@@ -2,6 +2,7 @@ import Constant, {
   WORKFLOW_VERSION_CONFLICT,
 } from '@/constants/codes.constants';
 import { SaveStatusEnum } from '@/models/workflowV3';
+import { t } from '@/services/i18nRuntime';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
@@ -71,7 +72,7 @@ export const useWorkflowPersistence = ({
         const graph =
           graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
         if (!graph) {
-          workflowLogger.error('画布未初始化');
+          workflowLogger.error('Canvas is not initialized');
           return false;
         }
 
@@ -80,16 +81,20 @@ export const useWorkflowPersistence = ({
 
         // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
         if (!payload) {
-          workflowLogger.warn('画布数据无效，尝试使用 workflowProxy 数据');
+          workflowLogger.warn(
+            'Canvas payload is invalid, fallback to workflowProxy payload',
+          );
           payload = workflowProxy.buildFullConfig();
           if (!payload) {
-            workflowLogger.error('构建保存数据失败，无可用数据源');
+            workflowLogger.error(
+              'Failed to build save payload: no available data source',
+            );
             return false;
           }
-          workflowLogger.log('使用 workflowProxy 数据保存');
+          workflowLogger.log('Saving with workflowProxy payload');
         } else {
           workflowLogger.log(
-            '使用单一数据源保存, 节点数:',
+            'Saving with single source payload, node count:',
             payload.nodes.length,
           );
         }
@@ -112,7 +117,7 @@ export const useWorkflowPersistence = ({
           // 保存成功，更新版本号（data 直接是版本号）
           if (_res.data !== null && _res.data !== undefined) {
             workflowSaveService.setEditVersion(_res.data);
-            workflowLogger.log('版本号已更新:', _res.data);
+            workflowLogger.log('Edit version updated:', _res.data);
           }
           workflowSaveService.clearDirty();
           workflowProxy.clearPendingUpdates();
@@ -121,16 +126,18 @@ export const useWorkflowPersistence = ({
           setSaveStatus(SaveStatusEnum.Saved);
           setLastSaveTime(new Date());
           setSaveError(null);
-          workflowLogger.log('保存成功 ✓');
+          workflowLogger.log('Save succeeded ✓');
           if (onSuccess) {
             onSuccess();
           }
           return true;
         } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
           // 版本冲突，弹窗询问用户是否强制覆盖
-          workflowLogger.warn('版本冲突，工作流已被其他窗口修改');
+          workflowLogger.warn(
+            'Version conflict: workflow was modified in another window',
+          );
           setSaveStatus(SaveStatusEnum.Failed);
-          setSaveError('版本冲突');
+          setSaveError(t('PC.Pages.AntvX6Persistence.versionConflict'));
 
           // 防止重复弹出版本冲突弹窗，且组件必须处于挂载状态
           if (
@@ -139,10 +146,10 @@ export const useWorkflowPersistence = ({
           ) {
             isVersionConflictModalVisibleRef.current = true;
             Modal.confirm({
-              title: '版本冲突',
-              content: '工作流已在其他窗口修改，是否强制覆盖？',
-              okText: '强制覆盖',
-              cancelText: '取消',
+              title: t('PC.Pages.AntvX6Persistence.versionConflictTitle'),
+              content: t('PC.Pages.AntvX6Persistence.versionConflictContent'),
+              okText: t('PC.Pages.AntvX6Persistence.forceOverwrite'),
+              cancelText: t('PC.Pages.AntvX6Persistence.cancel'),
               onOk: () => {
                 // 用户确认强制覆盖
                 isVersionConflictModalVisibleRef.current = false;
@@ -160,18 +167,22 @@ export const useWorkflowPersistence = ({
           }
           return false;
         } else {
-          workflowLogger.error('工作流保存失败:', _res.message);
+          workflowLogger.error('Workflow save failed:', _res.message);
           // 更新保存状态为失败
           setSaveStatus(SaveStatusEnum.Failed);
-          setSaveError(_res.message || '保存失败');
+          setSaveError(
+            _res.message || t('PC.Pages.AntvX6Persistence.saveFailed'),
+          );
           return false;
         }
       } catch (error) {
-        console.error('[V3] 工作流保存异常:', error);
+        console.error('[V3] Workflow save exception:', error);
         // 更新保存状态为失败
         setSaveStatus(SaveStatusEnum.Failed);
         setSaveError(
-          error instanceof Error ? error.message : '网络异常，保存失败',
+          error instanceof Error
+            ? error.message
+            : t('PC.Pages.AntvX6Persistence.networkSaveFailed'),
         );
         return false;
       }
@@ -279,7 +290,7 @@ export const useWorkflowPersistence = ({
         return true;
       }
 
-      console.error('[V3] 节点配置自动保存失败:', proxyResult.message);
+      console.error('[V3] Auto-save node config failed:', proxyResult.message);
       return false;
     },
     [

@@ -1,6 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CodeViewer from '@/components/CodeViewer';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
   isImageFile,
@@ -175,8 +176,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <AppDevEmptyState
           type="loading"
-          title="正在加载文件内容"
-          description="请稍候..."
+          title={t('PC.Pages.AppDevContentViewer.loadingFileContentTitle')}
+          description={t('PC.Pages.AppDevContentViewer.loadingDescription')}
         />
       );
     }
@@ -185,11 +186,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <AppDevEmptyState
           type="error"
-          title="加载文件失败"
+          title={t('PC.Pages.AppDevContentViewer.loadFileFailedTitle')}
           description={fileContentError}
           buttons={[
             {
-              text: '重试',
+              text: t('PC.Pages.AppDevContentViewer.retry'),
               onClick: onRefreshFile,
             },
           ]}
@@ -201,8 +202,10 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <AppDevEmptyState
           type="no-file"
-          title="暂无选中文件"
-          description="请从左侧文件树选择一个文件进行预览"
+          title={t('PC.Pages.AppDevContentViewer.noSelectedFileTitle')}
+          description={t(
+            'PC.Pages.AppDevContentViewer.noSelectedFileDescription',
+          )}
         />
       );
     }
@@ -235,10 +238,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
             // 不支持预览的文件类型
             <AppDevEmptyState
               type="error"
-              title="无法预览此文件类型"
-              description={`当前不支持预览 ${
-                selectedFileId.split('.').pop() || selectedFileId
-              } 格式的文件。`}
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId.split('.').pop() || selectedFileId,
+              )}
             />
           ) : isImage ? (
             <ImageViewer
@@ -276,10 +280,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           ) : (
             <AppDevEmptyState
               type="error"
-              title="无法预览此文件类型"
-              description={`当前不支持预览 ${
-                selectedFileId.split('.').pop() || selectedFileId
-              } 格式的文件。`}
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId.split('.').pop() || selectedFileId,
+              )}
             />
           )}
         </div>
@@ -309,8 +314,10 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       return (
         <AppDevEmptyState
           type="no-file"
-          title="暂无选中文件"
-          description="请从左侧文件树选择一个文件进行预览"
+          title={t('PC.Pages.AppDevContentViewer.noSelectedFileTitle')}
+          description={t(
+            'PC.Pages.AppDevContentViewer.noSelectedFileDescription',
+          )}
         />
       );
     }
@@ -339,10 +346,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           {!isPreviewable && !hasContents ? (
             <AppDevEmptyState
               type="error"
-              title="无法预览此文件类型"
-              description={`当前不支持预览 ${
-                selectedFileId.split('.').pop() || selectedFileId
-              } 格式的文件。`}
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId.split('.').pop() || selectedFileId,
+              )}
             />
           ) : hasContents ? (
             <CodeViewer
@@ -372,8 +380,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           ) : (
             <AppDevEmptyState
               type="error"
-              title="无法预览此文件类型"
-              description={`当前不支持预览 ${selectedFileId} 格式的文件`}
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId,
+              )}
             />
           )}
         </div>
@@ -387,7 +398,9 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       <AppDevEmptyState
         type="no-preview-url"
         title={VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}
-        description="请恢复或切换到最新版本以查看预览"
+        description={t(
+          'PC.Pages.AppDevContentViewer.previewDisabledDescription',
+        )}
       />
     );
   }

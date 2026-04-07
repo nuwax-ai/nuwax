@@ -1,5 +1,6 @@
 import Constant from '@/constants/codes.constants';
 import service, { IGetList } from '@/services/created';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -347,7 +348,10 @@ const SelectComponent: React.FC<CreatedProp> = ({
   //   顶部的标题
   const title = (
     <div className={cx('dis-left', styles['created-title'])}>
-      <h3 className={styles['created-title-text']}>添加{label}</h3>
+      <h3 className={styles['created-title-text']}>
+        {dict('PC.Components.SelectComponent.add')}
+        {label}
+      </h3>
     </div>
   );
 
@@ -397,11 +401,13 @@ const SelectComponent: React.FC<CreatedProp> = ({
                   require('@/assets/images/avatar.png')
                 }
                 style={{ borderRadius: '50%' }}
-                alt="用户头像"
+                alt={dict('PC.Components.SelectComponent.userAvatar')}
               />
               <span>{item.publishUser?.nickName}</span>
               <Divider type="vertical" />
-              <span>{`发布于${getTime(item.created!)}`}</span>
+              <span>{`${dict(
+                'PC.Components.SelectComponent.publishedAt',
+              )}${getTime(item.created!)}`}</span>
               {![
                 AgentComponentTypeEnum.Knowledge,
                 AgentComponentTypeEnum.MCP,
@@ -442,7 +448,9 @@ const SelectComponent: React.FC<CreatedProp> = ({
           )}
           disabled={isAddedState ? false : isLoadingState}
         >
-          {isAddedState ? '已添加' : '添加'}
+          {isAddedState
+            ? dict('PC.Components.SelectComponent.added')
+            : dict('PC.Components.SelectComponent.addBtn')}
         </Button>
       </div>
     );
@@ -476,7 +484,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
               allowClear
               variant="filled"
               value={search}
-              placeholder="搜索"
+              placeholder={dict('PC.Components.SelectComponent.search')}
               prefix={<SearchOutlined />}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -509,7 +517,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
             <div
               className={cx('h-full', 'flex', 'items-center', 'content-center')}
             >
-              <Empty description="暂无数据" />
+              <Empty description={dict('PC.Common.Global.emptyData')} />
             </div>
           )}
         </div>

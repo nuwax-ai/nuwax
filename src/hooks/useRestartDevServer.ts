@@ -3,6 +3,7 @@
  * 封装了完整的重启流程，通过参数控制是否切换标签页
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useCallback } from 'react';
 import { useModel } from 'umi';
@@ -61,7 +62,9 @@ export const useRestartDevServer = ({
       } = params || {};
 
       if (!projectId) {
-        const errorMessage = '项目ID不存在或无效，无法重启服务';
+        const errorMessage = dict(
+          'PC.Hooks.UseRestartDevServer.invalidProjectId',
+        );
         if (showMessage) {
           message.error(errorMessage);
         }
@@ -100,7 +103,8 @@ export const useRestartDevServer = ({
 
         finalResult = result;
       } catch (error: any) {
-        const errorMessage = error?.message || '重启开发服务器失败';
+        const errorMessage =
+          error?.message || dict('PC.Hooks.UseRestartDevServer.restartFailed');
         if (showMessage) {
           message.error(errorMessage);
         }

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { apiPageBatchConfigProxy } from '@/services/pageDev';
 import {
   ProxyConfig,
@@ -52,7 +53,11 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('保存成功');
+      message.success(
+        dict(
+          'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.savedSuccessfully',
+        ),
+      );
       setLoading(false);
       onConfirm(allProxyConfigs);
     },
@@ -67,7 +72,11 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
     // 判断路径是否存在重复
     const isExistSamePath = hasDuplicate(currentProxyConfigs || [], 'path');
     if (isExistSamePath) {
-      message.error('路径不能相同');
+      message.error(
+        dict(
+          'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.duplicatePathError',
+        ),
+      );
       setLoading(false);
       return;
     }
@@ -75,7 +84,11 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
     // 是否包含根目录
     const isRootPath = currentProxyConfigs?.some((item) => item.path === '/');
     if (isRootPath) {
-      message.error('根路径/是系统内置，无需配置');
+      message.error(
+        dict(
+          'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.rootPathError',
+        ),
+      );
       setLoading(false);
       return;
     }
@@ -142,22 +155,28 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<ProxyConfig> = [
     {
-      title: '路径',
+      title: dict('PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.path'),
       dataIndex: 'path',
       render: (_, record) => (
         <Input
-          placeholder="请输入路径"
+          placeholder={dict(
+            'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.pathPlaceholder',
+          )}
           value={record.path}
           onChange={(e) => handleInputValue(record.key, 'path', e.target.value)}
         />
       ),
     },
     {
-      title: '后端地址',
+      title: dict(
+        'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.backendAddress',
+      ),
       dataIndex: 'backends',
       render: (_, record) => (
         <Input
-          placeholder="请输入后端地址"
+          placeholder={dict(
+            'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.backendAddressPlaceholder',
+          )}
           value={record.backends[0].backend}
           onChange={(e) =>
             handleInputValue(record.key, 'backends', e.target.value)
@@ -168,7 +187,9 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
     {
       title: () => (
         <Button icon={<PlusOutlined />} onClick={handleAddConfig}>
-          新增配置
+          {dict(
+            'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.addConfig',
+          )}
         </Button>
       ),
       dataIndex: 'action',
@@ -199,7 +220,7 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
       />
       <footer className={cx('text-right', 'mb-16', 'px-16')}>
         <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
+          {dict('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

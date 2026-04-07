@@ -2,6 +2,7 @@ import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
 import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
@@ -156,7 +157,9 @@ const SystemTipsWord = forwardRef<
               key={'systemPrompt'}
               value={valueSystem}
               onChange={(html) => onChangeSystem(extractTextFromHTML(html))}
-              placeholder="输入系统提示词，对大模型进行角色塑造"
+              placeholder={dict(
+                'PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder',
+              )}
               getEditor={(editor: any) => {
                 editorSystemRef.current = editor;
               }}
@@ -176,7 +179,9 @@ const SystemTipsWord = forwardRef<
               key={'userPrompt'}
               value={valueUser}
               onChange={(html) => onChangeUser(extractTextFromHTML(html))}
-              placeholder="输入用户提示词，预置指令、问题或请求"
+              placeholder={dict(
+                'PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder',
+              )}
               getEditor={(editor: any) => {
                 editorUserRef.current = editor;
               }}
@@ -211,9 +216,13 @@ const SystemTipsWord = forwardRef<
     const modalTitle = (
       <div className={cx('flex', 'items-center', 'content-between')}>
         <span>
-          {valueSegmented === 'systemPrompt' ? '系统提示词' : '用户提示词'}
+          {valueSegmented === 'systemPrompt'
+            ? dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt')
+            : dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt')}
         </span>
-        <Tooltip title="退出全屏">
+        <Tooltip
+          title={dict('PC.Pages.EditAgent.SystemTipsWord.exitFullscreen')}
+        >
           <Button
             type="text"
             icon={
@@ -250,12 +259,20 @@ const SystemTipsWord = forwardRef<
             value={valueSegmented}
             onChange={setValueSegmented}
             options={[
-              { label: '系统提示词', value: 'systemPrompt' },
-              { label: '用户提示词', value: 'userPrompt' },
+              {
+                label: dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt'),
+                value: 'systemPrompt',
+              },
+              {
+                label: dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt'),
+                value: 'userPrompt',
+              },
             ]}
           />
           <div className="flex items-center gap-6">
-            <Tooltip title="全屏编辑">
+            <Tooltip
+              title={dict('PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit')}
+            >
               <Button
                 type="text"
                 className={cx(styles['border-none'])}
@@ -269,7 +286,12 @@ const SystemTipsWord = forwardRef<
               />
             </Tooltip>
             {valueSegmented === 'systemPrompt' && (
-              <Tooltip title="自动优化提示词" placement="top">
+              <Tooltip
+                title={dict(
+                  'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip',
+                )}
+                placement="top"
+              >
                 <Button
                   color="primary"
                   variant="filled"
@@ -289,7 +311,7 @@ const SystemTipsWord = forwardRef<
                     }
                   }}
                 >
-                  优化
+                  {dict('PC.Pages.EditAgent.SystemTipsWord.optimize')}
                 </Button>
               </Tooltip>
             )}

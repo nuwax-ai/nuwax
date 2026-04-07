@@ -34,7 +34,7 @@ export function createOfflineNodeData(
 
   const nodeData: AddNodeResponse = {
     id: nodeId,
-    name: params.name || NODE_DEFAULT_NAMES[type] || '新节点',
+    name: params.name || NODE_DEFAULT_NAMES[type] || 'New Node',
     description: params.description || '',
     workflowId,
     type,
@@ -92,7 +92,7 @@ export function createOfflineLoopNodeData(
 
   const nodeData: AddNodeResponse = {
     id: nodeId,
-    name: params.name || NODE_DEFAULT_NAMES[NodeTypeEnum.Loop] || '循环',
+    name: params.name || NODE_DEFAULT_NAMES[NodeTypeEnum.Loop] || 'Loop',
     description: params.description || '',
     workflowId,
     type: NodeTypeEnum.Loop,

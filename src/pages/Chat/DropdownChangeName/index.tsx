@@ -2,6 +2,7 @@ import {
   apiAgentConversationDelete,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { DeleteOutlined, DownOutlined, EditOutlined } from '@ant-design/icons';
@@ -68,12 +69,12 @@ const DropdownChangeName: React.FC<Porps> = ({
 
   const items: MenuProps['items'] = [
     {
-      label: '修改名称',
+      label: dict('PC.Pages.Chat.rename'),
       key: 'edit',
       icon: <EditOutlined />,
     },
     {
-      label: '删除',
+      label: dict('PC.Common.Global.delete'),
       key: 'delete',
       icon: <DeleteOutlined />,
       danger: true,
@@ -107,7 +108,7 @@ const DropdownChangeName: React.FC<Porps> = ({
           topic: result.data.topic,
           topicUpdated: 1,
         });
-        message.success('修改成功');
+        message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
 
         // 更新左侧历史会话记录列表
         handleUpdateHistory();
@@ -130,7 +131,12 @@ const DropdownChangeName: React.FC<Porps> = ({
     debounceWait: 300,
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
-        message.success('删除成功');
+        message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+        // 如果是会话聊天页（chat页），同步更新会话记录
+        // runHistory({
+        //   agentId: null,
+        // });
+        // message.success('删除成功');
         // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
         handleUpdateHistory();
         navigate('/', { replace: true });
@@ -141,7 +147,9 @@ const DropdownChangeName: React.FC<Porps> = ({
   const config: ModalFuncProps = {
     title: (
       <Typography>
-        <Typography.Title level={5}>永久删除会话</Typography.Title>
+        <Typography.Title level={5}>
+          {dict('PC.Pages.Chat.permanentlyDeleteConversation')}
+        </Typography.Title>
       </Typography>
     ),
     icon: null,
@@ -150,7 +158,7 @@ const DropdownChangeName: React.FC<Porps> = ({
       <>
         <Typography>
           <Typography.Text type={'secondary'}>
-            本条会话数据将被永久删除,不可恢复及撤销。确定要删除吗?
+            {dict('PC.Pages.Chat.permanentDeleteWarning')}
           </Typography.Text>
         </Typography>
       </>
@@ -221,7 +229,7 @@ const DropdownChangeName: React.FC<Porps> = ({
         </div>
       </Dropdown>
       <Modal
-        title="修改名称"
+        title={dict('PC.Pages.Chat.rename')}
         centered
         okButtonProps={{ disabled: disabledEdit, loading: loadingEdit }}
         open={modalOpenEdit}
@@ -242,11 +250,16 @@ const DropdownChangeName: React.FC<Porps> = ({
             label=""
             name="topic"
             rules={[
-              { required: true, message: '会话名称不能为空' },
+              {
+                required: true,
+                message: dict('PC.Pages.Chat.conversationNameRequired'),
+              },
               {
                 validator: (_, value) => {
                   if (value && value.trim() === '') {
-                    return Promise.reject(new Error('会话名称不能只包含空格'));
+                    return Promise.reject(
+                      new Error(dict('PC.Pages.Chat.conversationNameNoSpaces')),
+                    );
                   }
                   return Promise.resolve();
                 },
@@ -256,7 +269,7 @@ const DropdownChangeName: React.FC<Porps> = ({
             <Input
               size="large"
               style={{ marginTop: 10 }}
-              placeholder="请输入会话名称"
+              placeholder={dict('PC.Pages.Chat.inputConversationName')}
               showCount
               maxLength={50}
             />

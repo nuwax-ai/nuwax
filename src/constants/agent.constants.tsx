@@ -1,4 +1,5 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   AgentEngineEnum,
@@ -27,9 +28,9 @@ export const AGENT_ENGINE_OPTIONS = [
     value: AgentEngineEnum.Default,
     label: (
       <span className={'flex items-center'}>
-        <span>默认</span>
+        <span>{dict('PC.Constants.Agent.default')}</span>
         <TooltipIcon
-          title="默认引擎比较成熟，效果最佳，仅支持部分指定厂商模型"
+          title={dict('PC.Constants.Agent.defaultEngineTooltip')}
           icon={<InfoCircleOutlined />}
         />
       </span>
@@ -41,7 +42,7 @@ export const AGENT_ENGINE_OPTIONS = [
       <span className={'flex items-center'}>
         <span>NuwaxCli</span>
         <TooltipIcon
-          title="NuwaxCli引擎在快速迭代阶段，部分场景可能有待提升，但支持几乎所有厂商模型"
+          title={dict('PC.Constants.Agent.nuwaxCliEngineTooltip')}
           icon={<InfoCircleOutlined />}
         />
       </span>
@@ -53,19 +54,19 @@ export const AGENT_ENGINE_OPTIONS = [
 export const CALL_METHOD_OPTIONS = [
   {
     value: InvokeTypeEnum.AUTO,
-    label: '自动调用',
+    label: dict('PC.Constants.Agent.autoInvoke'),
   },
   {
     value: InvokeTypeEnum.ON_DEMAND,
-    label: '按需调用',
+    label: dict('PC.Constants.Agent.onDemand'),
   },
   {
     value: InvokeTypeEnum.MANUAL,
-    label: '手动选择',
+    label: dict('PC.Constants.Agent.manualSelect'),
   },
   {
     value: InvokeTypeEnum.MANUAL_ON_DEMAND,
-    label: '手动选择+按需调用',
+    label: dict('PC.Constants.Agent.manualSelectOnDemand'),
   },
 ];
 
@@ -73,11 +74,11 @@ export const CALL_METHOD_OPTIONS = [
 export const SKILL_METHOD_OPTIONS = [
   {
     value: InvokeTypeEnum.ON_DEMAND,
-    label: '按需调用',
+    label: dict('PC.Constants.Agent.onDemand'),
   },
   {
     value: InvokeTypeEnum.MANUAL_ON_DEMAND, // 手动选择+按需调用 (技能时，代表手动选择)
-    label: '手动选择',
+    label: dict('PC.Constants.Agent.manualSelect'),
   },
 ];
 
@@ -85,11 +86,11 @@ export const SKILL_METHOD_OPTIONS = [
 export const CALL_DEFAULT_SELECTED = [
   {
     value: DefaultSelectedEnum.No,
-    label: '否',
+    label: dict('PC.Common.Global.no'),
   },
   {
     value: DefaultSelectedEnum.Yes,
-    label: '是',
+    label: dict('PC.Common.Global.yes'),
   },
 ];
 
@@ -97,11 +98,11 @@ export const CALL_DEFAULT_SELECTED = [
 export const OUTPUT_WAY_OPTIONS = [
   {
     value: OutputDirectlyEnum.No,
-    label: '否',
+    label: dict('PC.Common.Global.no'),
   },
   {
     value: OutputDirectlyEnum.Yes,
-    label: '是',
+    label: dict('PC.Common.Global.yes'),
   },
 ];
 
@@ -111,9 +112,9 @@ export const SEARCH_STRATEGY_OPTIONS = [
     value: SearchStrategyEnum.MIXED,
     label: (
       <span className={'flex items-center'}>
-        <span>混合</span>
+        <span>{dict('PC.Constants.Agent.mixed')}</span>
         <TooltipIcon
-          title="结合全文检索与语义检索的优势,并对结果进行综合排序"
+          title={dict('PC.Constants.Agent.mixedTooltip')}
           icon={<InfoCircleOutlined />}
         />
       </span>
@@ -123,9 +124,9 @@ export const SEARCH_STRATEGY_OPTIONS = [
     value: SearchStrategyEnum.SEMANTIC,
     label: (
       <span className={'flex items-center'}>
-        <span>语义</span>
+        <span>{dict('PC.Constants.Agent.semantic')}</span>
         <TooltipIcon
-          title="基于向量的文本相关性查询,推荐在需要理解语义关联度和跨语言查询的场景使用。"
+          title={dict('PC.Constants.Agent.semanticTooltip')}
           icon={<InfoCircleOutlined />}
         />
       </span>
@@ -135,9 +136,9 @@ export const SEARCH_STRATEGY_OPTIONS = [
     value: SearchStrategyEnum.FULL_TEXT,
     label: (
       <span className={'flex items-center'}>
-        <span>全文</span>
+        <span>{dict('PC.Constants.Agent.fullText')}</span>
         <TooltipIcon
-          title="依赖于关键词的全文搜索,推荐在搜索具有特定名称、缩写词、短语或ID的场景使用。"
+          title={dict('PC.Constants.Agent.fullTextTooltip')}
           icon={<InfoCircleOutlined />}
         />
       </span>
@@ -149,11 +150,11 @@ export const SEARCH_STRATEGY_OPTIONS = [
 export const NO_RECALL_RESPONSE = [
   {
     value: NoneRecallReplyTypeEnum.DEFAULT,
-    label: '默认',
+    label: dict('PC.Constants.Agent.defaultRecall'),
   },
   {
     value: NoneRecallReplyTypeEnum.CUSTOM,
-    label: '自定义',
+    label: dict('PC.Common.Global.custom'),
   },
 ];
 
@@ -161,20 +162,32 @@ export const NO_RECALL_RESPONSE = [
 export const BIND_CARD_STYLE_LIST = [
   {
     value: BindCardStyleEnum.SINGLE,
-    label: '单张卡片',
+    label: dict('PC.Constants.Agent.singleCard'),
   },
   {
     value: BindCardStyleEnum.LIST,
-    label: '竖向列表',
+    label: dict('PC.Constants.Agent.verticalList'),
   },
 ];
 
 // 生成多样性选项
 export const GENERATE_DIVERSITY_OPTIONS = [
-  { label: '精确模式', value: UpdateModeComponentEnum.Precision },
-  { label: '平衡模式', value: UpdateModeComponentEnum.Balanced },
-  { label: '创意模式', value: UpdateModeComponentEnum.Creative },
-  { label: '自定义', value: UpdateModeComponentEnum.Customization },
+  {
+    label: dict('PC.Constants.Agent.precisionMode'),
+    value: UpdateModeComponentEnum.Precision,
+  },
+  {
+    label: dict('PC.Constants.Agent.balancedMode'),
+    value: UpdateModeComponentEnum.Balanced,
+  },
+  {
+    label: dict('PC.Constants.Agent.creativeMode'),
+    value: UpdateModeComponentEnum.Creative,
+  },
+  {
+    label: dict('PC.Common.Global.custom'),
+    value: UpdateModeComponentEnum.Customization,
+  },
 ];
 
 // 生产多样性
@@ -202,11 +215,11 @@ export const GENERATE_DIVERSITY_OPTION_VALUE = {
 export const PLUGIN_PUBLISH_OPTIONS = [
   {
     value: PluginPublishScopeEnum.Tenant,
-    label: '全局',
+    label: dict('PC.Constants.Agent.global'),
   },
   {
     value: PluginPublishScopeEnum.Space,
-    label: '工作空间',
+    label: dict('PC.Constants.Agent.workspace'),
   },
 ];
 
@@ -214,27 +227,27 @@ export const PLUGIN_PUBLISH_OPTIONS = [
 export const AGENT_VARIABLES_INPUT_OPTIONS = [
   {
     value: InputTypeEnum.Text,
-    label: '单行文本',
+    label: dict('PC.Constants.Agent.singleLineText'),
   },
   {
     value: InputTypeEnum.Paragraph,
-    label: '段落',
+    label: dict('PC.Constants.Agent.paragraph'),
   },
   {
     value: InputTypeEnum.Number,
-    label: '数字',
+    label: dict('PC.Constants.Agent.number'),
   },
   {
     value: InputTypeEnum.Select,
-    label: '单选',
+    label: dict('PC.Constants.Agent.singleSelect'),
   },
   {
     value: InputTypeEnum.MultipleSelect,
-    label: '多选',
+    label: dict('PC.Constants.Agent.multiSelect'),
   },
   {
     value: InputTypeEnum.AutoRecognition,
-    label: '智能识别',
+    label: dict('PC.Constants.Agent.smartRecognition'),
   },
 ];
 
@@ -261,15 +274,15 @@ export const SIDEBAR_WIDTH = 368 + 32;
 export const GUID_QUESTION_SET_OPTIONS = [
   {
     value: GuidQuestionSetTypeEnum.Question,
-    label: '问题引导',
+    label: dict('PC.Constants.Agent.questionGuide'),
   },
   {
     value: GuidQuestionSetTypeEnum.Page,
-    label: '扩展页面路径',
+    label: dict('PC.Constants.Agent.extPagePath'),
   },
   {
     value: GuidQuestionSetTypeEnum.Link,
-    label: '外链地址',
+    label: dict('PC.Constants.Agent.externalLink'),
   },
 ];
 
@@ -277,11 +290,11 @@ export const GUID_QUESTION_SET_OPTIONS = [
 export const EVENT_BIND_RESPONSE_ACTION_OPTIONS = [
   {
     value: EventBindResponseActionEnum.Page,
-    label: '扩展页面打开',
+    label: dict('PC.Constants.Agent.extPageOpen'),
   },
   {
     value: EventBindResponseActionEnum.Link,
-    label: '外部链接跳转',
+    label: dict('PC.Constants.Agent.extLinkRedirect'),
   },
 ];
 
@@ -289,15 +302,15 @@ export const EVENT_BIND_RESPONSE_ACTION_OPTIONS = [
 export const EVENT_LIST = [
   {
     value: EventListEnum.Edit,
-    label: '编辑',
+    label: dict('PC.Common.Global.edit'),
   },
   {
     value: EventListEnum.InsertSystemPrompt,
-    label: '插入到提示词',
+    label: dict('PC.Constants.Agent.insertToPrompt'),
   },
   {
     value: EventListEnum.Delete,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
   },
 ];
 
@@ -305,11 +318,11 @@ export const EVENT_LIST = [
 export const VISIBLE_TO_LLM_OPTIONS = [
   {
     value: VisibleToLLMEnum.No,
-    label: '否',
+    label: dict('PC.Common.Global.no'),
   },
   {
     value: VisibleToLLMEnum.Yes,
-    label: '是',
+    label: dict('PC.Common.Global.yes'),
   },
 ];
 
@@ -317,20 +330,22 @@ export const VISIBLE_TO_LLM_OPTIONS = [
 export const HOME_INDEX_OPTIONS = [
   {
     value: HomeIndexEnum.No,
-    label: '否',
+    label: dict('PC.Common.Global.no'),
   },
   {
     value: HomeIndexEnum.Yes,
-    label: '是',
+    label: dict('PC.Common.Global.yes'),
   },
 ];
 
 // 智能体组件类型映射
 export const AGENT_COMPONENT_TYPE_MAP = {
-  [AgentComponentTypeEnum.Agent]: { text: '智能体' },
-  [AgentComponentTypeEnum.Plugin]: { text: '插件' },
-  [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
+  [AgentComponentTypeEnum.Agent]: { text: dict('PC.Common.Global.agent') },
+  [AgentComponentTypeEnum.Plugin]: { text: dict('PC.Common.Global.plugin') },
+  [AgentComponentTypeEnum.Workflow]: {
+    text: dict('PC.Common.Global.workflow'),
+  },
   [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
-  [AgentComponentTypeEnum.Model]: { text: '模型' },
+  [AgentComponentTypeEnum.Model]: { text: dict('PC.Common.Global.model') },
   [AgentComponentTypeEnum.ApiKey]: { text: 'ApiKey' },
 };

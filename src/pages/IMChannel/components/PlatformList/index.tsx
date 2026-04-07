@@ -2,6 +2,7 @@ import {
   IM_PLATFORM_ICON_MAP,
   IMPlatformEnum,
 } from '@/constants/imChannel.constants';
+import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -41,7 +42,9 @@ const PlatformList: React.FC<PlatformListProps> = ({
 
   return (
     <div className={cx(styles.container)}>
-      <div className={cx(styles.header)}>平台列表</div>
+      <div className={cx(styles.header)}>
+        {dict('PC.Pages.IMChannel.PlatformList.platformList')}
+      </div>
       <div className={cx(styles.listWrapper)}>
         {platforms.map((item) => {
           const isActive = value === item.id;
@@ -56,7 +59,12 @@ const PlatformList: React.FC<PlatformListProps> = ({
               </div>
               <div className={cx(styles.info)}>
                 <div className={cx(styles.name)}>{item.name}</div>
-                <div className={cx(styles.count)}>{item.count} 个机器人</div>
+                <div className={cx(styles.count)}>
+                  {dict(
+                    'PC.Pages.IMChannel.PlatformList.robotCount',
+                    String(item.count),
+                  )}
+                </div>
               </div>
             </div>
           );

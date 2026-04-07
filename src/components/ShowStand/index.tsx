@@ -1,5 +1,6 @@
 import Card from '@/components/Card';
 import ToggleWrap from '@/components/ToggleWrap';
+import { dict } from '@/services/i18nRuntime';
 import { CardStyleEnum } from '@/types/enums/common';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import { ShowStandProps } from '@/types/interfaces/common';
@@ -26,7 +27,7 @@ const ShowStand: React.FC<ShowStandProps> = ({
 
   return (
     <ToggleWrap
-      title={'展示台'}
+      title={dict('PC.Components.ShowStand.title')}
       className={className}
       visible={visible}
       onClose={onClose}
@@ -45,7 +46,7 @@ const ShowStand: React.FC<ShowStandProps> = ({
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
+          <Empty description={dict('PC.Common.Global.emptyData')} />
         </div>
       )}
     </ToggleWrap>

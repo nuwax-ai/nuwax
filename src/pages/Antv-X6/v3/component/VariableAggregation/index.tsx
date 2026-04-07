@@ -1,4 +1,5 @@
-// 变量聚合节点
+// Variable aggregation node.
+import { t } from '@/services/i18nRuntime';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
@@ -10,18 +11,20 @@ import { useVariableAggregation } from './useVariableAggregation';
 import VariableGroupItem from './VariableGroupItem';
 
 /**
- * 变量聚合节点组件
- * 重构版本 - 使用抽取的 Hook 和组件，更清晰的代码结构
+ * Variable aggregation node component.
  */
 const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   const strategyOptions = [
-    { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
+    {
+      label: t('PC.Pages.AntvX6VariableAggregation.strategyFirstNonNull'),
+      value: 'FIRST_NON_NULL',
+    },
   ];
 
-  // 使用 useRef 持久化计数器，确保跨渲染唯一
+  // Persist counter across renders to build unique keys.
   const keyCounterRef = useRef(0);
 
-  // 确保 outputArgs 的 key 唯一，避免 Tree 组件警告
+  // Ensure output tree keys are unique to avoid Tree warnings.
   const ensureUniqueKeys = (
     items: InputAndOutConfig[] | undefined,
   ): InputAndOutConfig[] => {
@@ -33,7 +36,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
     }));
   };
 
-  // 使用自定义 Hook 管理状态和逻辑，传入 nodeId 用于检测节点切换
+  // Keep state and logic in a dedicated hook.
   const {
     variableGroups,
     referenceList,
@@ -50,18 +53,20 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
     getGroupTypeDisplay,
   } = useVariableAggregation({ form, nodeId: id });
 
-  // 监听 outputArgs 并确保 key 唯一
+  // Watch outputArgs and normalize keys.
   const outputArgs =
     Form.useWatch('outputArgs', { form, preserve: true }) || [];
   const processedOutputArgs = useMemo(() => {
-    keyCounterRef.current = 0; // 重置计数器
+    keyCounterRef.current = 0;
     return ensureUniqueKeys(outputArgs);
   }, [outputArgs]);
 
   return (
     <>
       <div className="node-item-style">
-        <div className="node-title-style margin-bottom">聚合策略</div>
+        <div className="node-title-style margin-bottom">
+          {t('PC.Pages.AntvX6VariableAggregation.strategyTitle')}
+        </div>
         <Form.Item name="aggregationStrategy">
           <select className="ant-select ant-select-sm aggregation-strategy-select">
             {strategyOptions.map((opt) => (
@@ -75,7 +80,9 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
 
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
-          <span className="node-title-style">分组配置</span>
+          <span className="node-title-style">
+            {t('PC.Pages.AntvX6VariableAggregation.groupConfigTitle')}
+          </span>
           <Button
             onClick={handleAddGroup}
             icon={<PlusOutlined />}
@@ -104,14 +111,18 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         ))}
 
         {variableGroups.length === 0 && (
-          <div className="empty-state-tip">点击 + 添加分组</div>
+          <div className="empty-state-tip">
+            {t('PC.Pages.AntvX6VariableAggregation.emptyGroupHint')}
+          </div>
         )}
       </div>
 
-      {/* 输出展示 - 使用处理后的数据确保 key 唯一 */}
+      {/* Output */}
       {processedOutputArgs.length > 0 && (
         <>
-          <div className="node-title-style margin-bottom">输出</div>
+          <div className="node-title-style margin-bottom">
+            {t('PC.Pages.AntvX6VariableAggregation.outputTitle')}
+          </div>
           <TreeOutput treeData={processedOutputArgs} />
         </>
       )}

@@ -1,4 +1,5 @@
 import { IMPlatformEnum } from '@/constants/imChannel.constants';
+import { dict } from '@/services/i18nRuntime';
 import { ProFormText } from '@ant-design/pro-components';
 import React from 'react';
 
@@ -14,7 +15,12 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
   platform,
   type,
 }) => {
-  const commonRules = [{ required: true, message: '此项为必填项' }];
+  const commonRules = [
+    {
+      required: true,
+      message: dict('PC.Pages.IMChannel.DynamicChannelForm.requiredField'),
+    },
+  ];
   const maxProps = { maxLength: 100, showCount: true, allowClear: false };
 
   if (!platform) return null;

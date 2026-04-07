@@ -14,6 +14,7 @@ import NavigationStylePanel from '@/components/business-component/ThemeConfig/Na
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { dict } from '@/services/i18nRuntime';
 import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
@@ -87,7 +88,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       setHasUserSwitchThemeFlag();
     } catch (error) {
       console.error('更新主题色失败:', error);
-      message.error('主题色更新失败');
+      message.error(
+        dict('PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateFailed'),
+      );
     }
   };
 
@@ -103,16 +106,20 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       );
       if (backgroundConfig) {
         const layoutStyle = backgroundConfig.layoutStyle;
+        const themeLabel =
+          layoutStyle === ThemeLayoutColorStyle.DARK
+            ? dict('PC.Layouts.Setting.ThemeSwitchPanel.dark')
+            : dict('PC.Layouts.Setting.ThemeSwitchPanel.light');
         message.info(
-          `已自动切换为${
-            layoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
-          }导航栏`,
+          dict('PC.Layouts.Setting.ThemeSwitchPanel.autoSwitchNav', themeLabel),
         );
         setHasUserSwitchThemeFlag();
       }
     } catch (error) {
       console.error('更新背景图失败:', error);
-      message.error('背景图更新失败');
+      message.error(
+        dict('PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateFailed'),
+      );
     }
   };
 
@@ -123,7 +130,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       setHasUserSwitchThemeFlag();
     } catch (error) {
       console.error('更新导航风格失败:', error);
-      message.error('导航风格更新失败');
+      message.error(
+        dict('PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateFailed'),
+      );
     }
   };
 
@@ -152,25 +161,33 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
           }
 
           // 显示背景自动匹配提示
+          const themeLabel =
+            themeData.layoutStyle === ThemeLayoutColorStyle.DARK
+              ? dict('PC.Layouts.Setting.ThemeSwitchPanel.dark')
+              : dict('PC.Layouts.Setting.ThemeSwitchPanel.light');
           message.info(
-            `已自动切换为${matchingBackground.name}以匹配${
-              themeData.layoutStyle === ThemeLayoutColorStyle.DARK
-                ? '深色'
-                : '浅色'
-            }导航栏`,
+            dict(
+              'PC.Layouts.Setting.ThemeSwitchPanel.autoSwitchBackground',
+              matchingBackground.name,
+              themeLabel,
+            ),
           );
           setHasUserSwitchThemeFlag();
         }
       }
     } catch (error) {
       console.error('切换导航主题失败:', error);
-      message.error('导航主题切换失败');
+      message.error(
+        dict('PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleFailed'),
+      );
     }
   };
 
   return (
     <div className={cx(styles.container)}>
-      <div className={cx(styles.title)}>主题切换</div>
+      <div className={cx(styles.title)}>
+        {dict('PC.Layouts.Setting.ThemeSwitchPanel.title')}
+      </div>
       <div className={cx(styles.content, 'scroll-container')}>
         {/* 垂直布局的主题配置区域 */}
         <div className={cx(styles.configContainer)}>

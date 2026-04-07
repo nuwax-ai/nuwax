@@ -236,7 +236,7 @@ const ReactScrollToBottomContainer = forwardRef<
               const heightDifference =
                 currentScrollHeight - previousScrollHeight;
 
-              // 检查是否有"加载更多历史会话"按钮，考虑其高度变化
+              // Check whether a "Load more history sessions" button exists.
               // const loadMoreButton = scrollContainerRef.current.querySelector(
               //   '.loadMoreHistoryButton',
               // ) as HTMLElement | null;
@@ -248,7 +248,7 @@ const ReactScrollToBottomContainer = forwardRef<
 
               // 调试日志（开发环境）
               if (process.env.NODE_ENV === 'development') {
-                // console.log('[handleScrollTo] 滚动位置恢复:', {
+                // console.log('[handleScrollTo] restore scroll position:', {
                 //   previousScrollTop,
                 //   previousScrollHeight,
                 //   currentScrollHeight,
@@ -276,7 +276,7 @@ const ReactScrollToBottomContainer = forwardRef<
                   // 如果滚动位置偏差超过 10px，进行调整
                   if (scrollDifference > 10) {
                     if (process.env.NODE_ENV === 'development') {
-                      // console.log('[handleScrollTo] 滚动位置偏差，进行调整:', {
+                      // console.log('[handleScrollTo] scroll offset detected, adjusting:', {
                       //   expectedScrollTop,
                       //   actualScrollTop,
                       //   scrollDifference,
@@ -425,7 +425,7 @@ const ReactScrollToBottomContainer = forwardRef<
           <ScrollController>
             {({ scrollToBottom: contextScrollToBottom, atBottom }) => {
               // 完全禁用库的状态检测，避免冲突
-              // console.log('[ScrollController] atBottom 状态:', atBottom); // 已被注释的调试日志
+              // console.log('[ScrollController] atBottom state:', atBottom); // debug log intentionally disabled
 
               // 直接设置 ref，不使用 useEffect
               scrollToBottomRef.current = contextScrollToBottom;

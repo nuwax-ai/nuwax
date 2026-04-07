@@ -1,6 +1,9 @@
 import CustomPopover from '@/components/CustomPopover';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { IMPlatformEnum } from '@/constants/imChannel.constants';
+import { dict } from '@/services/i18nRuntime';
+import { apiIMConfigChannelStatistics } from '@/services/imChannel';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
@@ -21,17 +24,14 @@ const cx = classNames.bind(styles);
 // 新增资源列表
 const IM_CHANNEL_ADD_RESOURCES = [
   {
-    label: '新增机器人',
+    label: dict('PC.Pages.IMChannel.Index.addBot'),
     value: IMChannelTypeEnum.Bot,
   },
   {
-    label: '新增应用',
+    label: dict('PC.Pages.IMChannel.Index.addApp'),
     value: IMChannelTypeEnum.App,
   },
 ];
-
-import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiIMConfigChannelStatistics } from '@/services/imChannel';
 
 const IMChannel: React.FC = () => {
   const params = useParams() as any;
@@ -126,12 +126,12 @@ const IMChannel: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="IM 机器人"
+      title={dict('PC.Pages.IMChannel.Index.title')}
       hideScroll={true}
       rightSlot={
         <Space size={12}>
           <Input.Search
-            placeholder="搜索智能体名称"
+            placeholder={dict('PC.Pages.IMChannel.Index.searchPlaceholder')}
             value={keyword}
             allowClear
             onSearch={setKeyword}
@@ -145,7 +145,7 @@ const IMChannel: React.FC = () => {
                 onClick={handleClickPopoverItem}
               >
                 <Button type="primary" icon={<PlusOutlined />}>
-                  新增
+                  {dict('PC.Pages.IMChannel.Index.add')}
                 </Button>
               </CustomPopover>
             ) : (
@@ -154,7 +154,7 @@ const IMChannel: React.FC = () => {
                 icon={<PlusOutlined />}
                 onClick={() => handleCreate(IMChannelTypeEnum.Bot)}
               >
-                新增机器人
+                {dict('PC.Pages.IMChannel.Index.addBot')}
               </Button>
             )
           ) : null}

@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 
+import { dict } from '@/services/i18nRuntime';
 import {
   ModelApiProtocolEnum,
   ModelFunctionCallEnum,
@@ -97,7 +98,11 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
       <ConditionRender condition={!!icon}>
         <img src={icon} alt="" />
       </ConditionRender>
-      <span>{showModelName ? modelName : '请选择会话模型'}</span>
+      <span>
+        {showModelName
+          ? modelName
+          : dict('PC.Pages.EditAgent.ArrangeTitle.selectChatModel')}
+      </span>
       <SvgIcon name="icons-common-caret_down" style={{ fontSize: 16 }} />
     </div>
   );
@@ -111,7 +116,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
         styles['edit-header'],
       )}
     >
-      <h3>编排</h3>
+      <h3>{dict('PC.Pages.EditAgent.ArrangeTitle.arrange')}</h3>
       {isTaskAgent ? (
         <Dropdown
           menu={{

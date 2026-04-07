@@ -1,6 +1,7 @@
 import McpCollapseComponentList from '@/components/McpCollapseComponentList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { MCP_COLLAPSE_COMPONENT_LIST } from '@/constants/mcp.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -149,7 +150,7 @@ const useMcp = () => {
       ),
       extra: (
         <TooltipIcon
-          title={`添加${item.label}`}
+          title={dict('PC.Hooks.UseMcp.addItem', item.label)}
           onClick={(e) => handlerComponentPlus(e, item.type)}
         />
       ),

@@ -1,12 +1,8 @@
 import ConditionRender from '@/components/ConditionRender';
 import LabelIcon from '@/components/LabelIcon';
 import SliderNumber from '@/components/SliderNumber';
-import {
-  CALL_METHOD_OPTIONS,
-  NO_RECALL_RESPONSE,
-  SEARCH_STRATEGY_OPTIONS,
-} from '@/constants/agent.constants';
 import { apiAgentComponentKnowledgeUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import {
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -19,7 +15,7 @@ import type {
 import type { KnowledgeSettingProps } from '@/types/interfaces/agentConfig';
 import { Divider, Input, Modal, Radio } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
@@ -102,47 +98,96 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
     handleChangeKnowledge('matchingDegree', newValue);
   };
 
+  const invokeTypeOptions = useMemo(
+    () => [
+      {
+        value: InvokeTypeEnum.AUTO,
+        label: t('PC.Pages.AgentArrangeInvokeType.optionAuto'),
+      },
+      {
+        value: InvokeTypeEnum.ON_DEMAND,
+        label: t('PC.Pages.AgentArrangeInvokeType.optionOnDemand'),
+      },
+    ],
+    [],
+  );
+
+  const searchStrategyOptions = useMemo(
+    () => [
+      {
+        value: SearchStrategyEnum.MIXED,
+        label: t('PC.Pages.AgentArrangeKnowledgeSetting.searchMixed'),
+      },
+      {
+        value: SearchStrategyEnum.SEMANTIC,
+        label: t('PC.Pages.AgentArrangeKnowledgeSetting.searchSemantic'),
+      },
+      {
+        value: SearchStrategyEnum.FULL_TEXT,
+        label: t('PC.Pages.AgentArrangeKnowledgeSetting.searchFullText'),
+      },
+    ],
+    [],
+  );
+
+  const noRecallResponseOptions = useMemo(
+    () => [
+      {
+        value: NoneRecallReplyTypeEnum.DEFAULT,
+        label: t('PC.Pages.AgentArrangeKnowledgeSetting.noRecallDefault'),
+      },
+      {
+        value: NoneRecallReplyTypeEnum.CUSTOM,
+        label: t('PC.Pages.AgentArrangeKnowledgeSetting.noRecallCustom'),
+      },
+    ],
+    [],
+  );
+
   return (
-    <Modal title="知识库设置" open={open} footer={null} onCancel={onCancel}>
+    <Modal
+      title={t('PC.Pages.AgentArrangeKnowledgeSetting.title')}
+      open={open}
+      footer={null}
+      onCancel={onCancel}
+    >
       <div className={cx(styles.container)}>
-        <h3 className={cx(styles.title)}>召回</h3>
+        <h3 className={cx(styles.title)}>
+          {t('PC.Pages.AgentArrangeKnowledgeSetting.recallSection')}
+        </h3>
         {/*调用方式*/}
         <div className={cx('flex', 'mb-16')}>
           <LabelIcon
-            label="调用方式"
-            title="选择是否每轮对话自动召回或按需从特定知识库召回"
+            label={t('PC.Pages.AgentArrangeKnowledgeSetting.invokeType')}
+            title={t('PC.Pages.AgentArrangeKnowledgeSetting.invokeTypeTip')}
           />
           <Radio.Group
             onChange={(e) =>
               handleChangeKnowledge('invokeType', e.target.value)
             }
             value={componentBindConfig.invokeType}
-            options={CALL_METHOD_OPTIONS.filter(
-              (item) =>
-                item.value !== InvokeTypeEnum.MANUAL &&
-                item.value !== InvokeTypeEnum.MANUAL_ON_DEMAND,
-            )}
+            options={invokeTypeOptions}
           />
         </div>
         {/*搜索策略*/}
         <div className={cx('flex', 'mb-16')}>
           <LabelIcon
-            label="搜索策略"
-            title="从知识库中获取知识的检索方式,不同的检索策略可以更有效地找到正确的信息,提高其生成的答案的准确性和可用性。"
+            label={t('PC.Pages.AgentArrangeKnowledgeSetting.searchStrategy')}
+            title={t('PC.Pages.AgentArrangeKnowledgeSetting.searchStrategyTip')}
           />
           <Radio.Group
             onChange={(e) =>
               handleChangeKnowledge('searchStrategy', e.target.value)
             }
             value={componentBindConfig.searchStrategy}
-            options={SEARCH_STRATEGY_OPTIONS}
+            options={searchStrategyOptions}
           />
         </div>
         {/*最大召回数量*/}
         <div className={cx('flex', 'mb-16')}>
           <LabelIcon
-            label="最大召回数量"
-            title="从知识库中返回给大模型的最大段落数,数值越大返回的内容越多"
+            label={t('PC.Pages.AgentArrangeKnowledgeSetting.maxRecallCount')}
+            title={t('PC.Pages.AgentArrangeKnowledgeSetting.maxRecallCountTip')}
           />
           <SliderNumber
             min={1}
@@ -154,8 +199,10 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
         {/*最小匹配度*/}
         <div className={cx('flex', 'mb-16')}>
           <LabelIcon
-            label="最小匹配度"
-            title="根据设置的匹配度选取段落返回给大模型,低于设定匹配度的内容不会被召回"
+            label={t('PC.Pages.AgentArrangeKnowledgeSetting.minMatchingDegree')}
+            title={t(
+              'PC.Pages.AgentArrangeKnowledgeSetting.minMatchingDegreeTip',
+            )}
           />
           <SliderNumber
             min={0.01}
@@ -166,19 +213,21 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
           />
         </div>
         <Divider />
-        <h3 className={cx(styles.title)}>回复</h3>
+        <h3 className={cx(styles.title)}>
+          {t('PC.Pages.AgentArrangeKnowledgeSetting.replySection')}
+        </h3>
         {/*无召回回复*/}
         <div className={cx('flex', 'mb-16')}>
           <LabelIcon
-            label="无召回回复"
-            title="当知识库没有召回有效切片时的回复话术"
+            label={t('PC.Pages.AgentArrangeKnowledgeSetting.noRecallReply')}
+            title={t('PC.Pages.AgentArrangeKnowledgeSetting.noRecallReplyTip')}
           />
           <Radio.Group
             onChange={(e) =>
               handleChangeKnowledge('noneRecallReplyType', e.target.value)
             }
             value={componentBindConfig.noneRecallReplyType}
-            options={NO_RECALL_RESPONSE}
+            options={noRecallResponseOptions}
           />
         </div>
         <ConditionRender
@@ -188,7 +237,9 @@ const KnowledgeSetting: React.FC<KnowledgeSettingProps> = ({
           }
         >
           <Input.TextArea
-            placeholder="请输入"
+            placeholder={t(
+              'PC.Pages.AgentArrangeKnowledgeSetting.noRecallReplyPlaceholder',
+            )}
             value={componentBindConfig.noneRecallReply}
             onChange={(e) =>
               handleChangeKnowledge('noneRecallReply', e.target.value)

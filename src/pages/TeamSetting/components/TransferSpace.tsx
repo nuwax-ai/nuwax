@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { USER_INFO } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiGetSpaceUserList, apiTransferSpace } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import type { SpaceUserInfo } from '@/types/interfaces/teamSetting';
@@ -61,7 +62,9 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
       setLoading(true);
     },
     onSuccess: () => {
-      message.success('转让成功');
+      message.success(
+        dict('PC.Pages.TeamSetting.TransferSpace.transferSuccess'),
+      );
       onConfirmTransfer?.();
     },
     onFinally: () => {
@@ -94,7 +97,7 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="转移团队所有权"
+      title={dict('PC.Pages.TeamSetting.TransferSpace.transferOwnershipTitle')}
       open={open}
       loading={loading}
       onCancel={cancelModal}
@@ -102,7 +105,7 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
     >
       <>
         <p className={cx(styles['team-setting-modal-description'])}>
-          转让所有权后，你的状态将更改为管理员。
+          {dict('PC.Pages.TeamSetting.TransferSpace.transferDescription')}
         </p>
         <Form
           form={form}
@@ -113,17 +116,21 @@ const TransferSpace: React.FC<RemoveSpaceProps> = ({
         >
           <Form.Item
             name="targetUserId"
-            label="将所有权转让给"
+            label={dict('PC.Pages.TeamSetting.TransferSpace.transferToLabel')}
             rules={[
               {
                 required: true,
-                message: '请选择团队成员',
+                message: dict(
+                  'PC.Pages.TeamSetting.TransferSpace.selectTeamMember',
+                ),
               },
             ]}
           >
             <Select
               options={selectOptions}
-              placeholder="请选择团队成员"
+              placeholder={dict(
+                'PC.Pages.TeamSetting.TransferSpace.selectTeamMember',
+              )}
             ></Select>
           </Form.Item>
         </Form>

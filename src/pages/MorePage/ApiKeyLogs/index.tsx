@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { dict } from '@/services/i18nRuntime';
 import { history } from 'umi';
 import LogProTable from './LogProTable';
 
@@ -9,7 +10,7 @@ const ApiKeyLogs: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="API 调用日志"
+      title={dict('PC.Pages.MorePage.ApiKeyLogs.pageTitle')}
       hideScroll={false}
       back={true}
       onBack={handleBack}

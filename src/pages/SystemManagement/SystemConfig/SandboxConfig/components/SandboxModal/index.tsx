@@ -1,11 +1,12 @@
 import { XModalForm } from '@/components/ProComponents';
+import { t } from '@/services/i18nRuntime';
 import { ProFormDigit, ProFormText } from '@ant-design/pro-components';
 import { Form } from 'antd';
 import React, { useEffect } from 'react';
 
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 
-// 默认沙盒配置值
+// Default sandbox configuration values
 const DEFAULT_SANDBOX_CONFIG_VALUE = {
   agentPort: 9086,
   vncPort: 9088,
@@ -39,7 +40,7 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
         });
       } else {
         form.resetFields();
-        // 设置默认值
+        // Set default values
         form.setFieldsValue({
           configValue: DEFAULT_SANDBOX_CONFIG_VALUE,
         });
@@ -49,7 +50,11 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
 
   return (
     <XModalForm
-      title={mode === 'add' ? '添加沙盒' : '编辑沙盒'}
+      title={
+        mode === 'add'
+          ? t('PC.Pages.SystemConfigSandboxModal.addTitle')
+          : t('PC.Pages.SystemConfigSandboxModal.editTitle')
+      }
       open={open}
       form={form}
       grid={true}
@@ -60,20 +65,26 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       }}
       submitter={{
         searchConfig: {
-          resetText: '取消',
-          submitText: '保存',
+          resetText: t('PC.Common.Global.cancel'),
+          submitText: t('PC.Common.Global.save'),
         },
       }}
       onFinish={onFinish}
     >
       <ProFormText
         name="name"
-        label="沙盒名称"
-        placeholder="例如：AGENT沙箱"
+        label={t('PC.Pages.SystemConfigSandboxModal.name')}
+        placeholder={t('PC.Pages.SystemConfigSandboxModal.namePlaceholder')}
         colProps={{ span: 24 }}
         rules={[
-          { required: true, message: '请输入沙盒名称' },
-          { max: 100, message: '沙盒名称不能超过 100 个字符' },
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigSandboxModal.nameRequired'),
+          },
+          {
+            max: 100,
+            message: t('PC.Pages.SystemConfigSandboxModal.nameMaxLength'),
+          },
         ]}
         fieldProps={{
           maxLength: 100,
@@ -82,15 +93,21 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       />
       <ProFormText
         name={['configValue', 'hostWithScheme']}
-        label="沙盒根地址"
-        placeholder="例如：http://192.168.1.21"
+        label={t('PC.Pages.SystemConfigSandboxModal.host')}
+        placeholder={t('PC.Pages.SystemConfigSandboxModal.hostPlaceholder')}
         colProps={{ span: 24 }}
         rules={[
-          { required: true, message: '请输入沙盒根地址' },
-          { max: 255, message: '地址长度不能超过 255 个字符' },
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigSandboxModal.hostRequired'),
+          },
+          {
+            max: 255,
+            message: t('PC.Pages.SystemConfigSandboxModal.hostMaxLength'),
+          },
           {
             pattern: /^https?:\/\/.+/,
-            message: '请输入正确的地址格式，需包含 http:// 或 https://',
+            message: t('PC.Pages.SystemConfigSandboxModal.hostInvalid'),
           },
         ]}
         fieldProps={{
@@ -100,32 +117,49 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       />
       <ProFormDigit
         name={['configValue', 'agentPort']}
-        label="Agent端口"
+        label={t('PC.Pages.SystemConfigSandboxModal.agentPort')}
         placeholder="9086"
         colProps={{ span: 8 }}
         fieldProps={{ precision: 0, min: 1, max: 65535 }}
-        rules={[{ required: true, message: '请输入Agent端口' }]}
+        rules={[
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigSandboxModal.agentPortRequired'),
+          },
+        ]}
       />
       <ProFormDigit
         name={['configValue', 'vncPort']}
-        label="VNC端口"
+        label={t('PC.Pages.SystemConfigSandboxModal.vncPort')}
         placeholder="9088"
         colProps={{ span: 8 }}
         fieldProps={{ precision: 0, min: 1, max: 65535 }}
-        rules={[{ required: true, message: '请输入VNC端口' }]}
+        rules={[
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigSandboxModal.vncPortRequired'),
+          },
+        ]}
       />
       <ProFormDigit
         name={['configValue', 'fileServerPort']}
-        label="文件服务端口"
+        label={t('PC.Pages.SystemConfigSandboxModal.fileServerPort')}
         placeholder="60001"
         colProps={{ span: 8 }}
         fieldProps={{ precision: 0, min: 1, max: 65535 }}
-        rules={[{ required: true, message: '请输入文件服务端口' }]}
+        rules={[
+          {
+            required: true,
+            message: t(
+              'PC.Pages.SystemConfigSandboxModal.fileServerPortRequired',
+            ),
+          },
+        ]}
       />
       <ProFormText
         name={['configValue', 'apiKey']}
-        label="通信key (可选)"
-        placeholder="留空表示不使用通信密钥"
+        label={t('PC.Pages.SystemConfigSandboxModal.apiKey')}
+        placeholder={t('PC.Pages.SystemConfigSandboxModal.apiKeyPlaceholder')}
         colProps={{ span: 24 }}
         fieldProps={{
           maxLength: 128,
@@ -134,13 +168,20 @@ const SandboxModal: React.FC<SandboxModalProps> = ({
       />
       <ProFormDigit
         name={['configValue', 'maxUsers']}
-        label="最大并发用户数"
+        label={t('PC.Pages.SystemConfigSandboxModal.maxUsers')}
         placeholder="30"
         colProps={{ span: 8 }}
         fieldProps={{ precision: 0, min: 1, max: 9999 }}
         rules={[
-          { required: true, message: '请输入最大并发用户数' },
-          { type: 'number', max: 9999, message: '最大并发用户数不能超过 9999' },
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigSandboxModal.maxUsersRequired'),
+          },
+          {
+            type: 'number',
+            max: 9999,
+            message: t('PC.Pages.SystemConfigSandboxModal.maxUsersMax'),
+          },
         ]}
       />
     </XModalForm>

@@ -1,5 +1,6 @@
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import SvgIcon from '@/components/base/SvgIcon';
+import { t } from '@/services/i18nRuntime';
 import { AgentManualComponentInfo } from '@/types/interfaces/agent';
 import { ManualComponentItemProps } from '@/types/interfaces/common';
 import classNames from 'classnames';
@@ -7,25 +8,58 @@ import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const containsKeyword = (text: string, keyword: string) => {
+  const normalizedText = text.toLowerCase();
+  const normalizedKeyword = keyword.toLowerCase();
+  return normalizedText.includes(normalizedKeyword);
+};
+
 const isInfoContains = (item: AgentManualComponentInfo, keywords: string[]) => {
   return keywords.some(
     (keyword) =>
-      item.name?.includes(keyword) || item.description?.includes(keyword),
+      containsKeyword(item.name || '', keyword) ||
+      containsKeyword(item.description || '', keyword),
   );
 };
 
+const getNetworkKeywords = () => [
+  t('PC.Components.ChatInputHomeManualComponentItem.keywordNetwork'),
+  t('PC.Components.ChatInputHomeManualComponentItem.keywordSearch'),
+  'network',
+  'search',
+];
+
+const getThinkingKeywords = () => [
+  t('PC.Components.ChatInputHomeManualComponentItem.keywordReasoning'),
+  t('PC.Components.ChatInputHomeManualComponentItem.keywordThinking'),
+  'reasoning',
+  'thinking',
+];
+
 const getIcon = (_item: AgentManualComponentInfo) => {
-  if (_item.type === 'Plugin' && isInfoContains(_item, ['联网', '搜索'])) {
+  if (_item.type === 'Plugin' && isInfoContains(_item, getNetworkKeywords())) {
     return 'icons-chat-network';
   }
-  if (_item.type === 'Model' || isInfoContains(_item, ['推理', '思考'])) {
+  if (_item.type === 'Model' || isInfoContains(_item, getThinkingKeywords())) {
     return 'icons-chat-deep_thinking';
   }
   return _item.icon;
 };
 
 const isShowIcon = (name: string) => {
-  return name.includes('思考') || name.includes('联网');
+  return (
+    containsKeyword(
+      name,
+      t('PC.Components.ChatInputHomeManualComponentItem.keywordThinking'),
+    ) ||
+    containsKeyword(
+      name,
+      t('PC.Components.ChatInputHomeManualComponentItem.keywordNetwork'),
+    ) ||
+    containsKeyword(name, 'thinking') ||
+    containsKeyword(name, 'network')
+  );
 };
 
 /**

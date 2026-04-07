@@ -7,6 +7,7 @@
  * - 历史变化后数据同步到 Proxy
  */
 
+import { t } from '@/services/i18nRuntime';
 import type { GraphContainerRef } from '@/types/interfaces/graph';
 import { Graph } from '@antv/x6';
 import { message } from 'antd';
@@ -68,7 +69,7 @@ export const useWorkflowHistory = ({
             setHistoryProcessing(false);
           }, 200);
         } else {
-          message.warning('没有可撤销的操作');
+          message.warning(t('PC.Pages.AntvX6History.noUndoAvailable'));
         }
       }
 
@@ -86,7 +87,7 @@ export const useWorkflowHistory = ({
             setHistoryProcessing(false);
           }, 200);
         } else {
-          message.warning('没有可重做的操作');
+          message.warning(t('PC.Pages.AntvX6History.noRedoAvailable'));
         }
       }
     };
@@ -183,7 +184,7 @@ export const useWorkflowHistory = ({
         setHistoryProcessing(false);
       }, 200);
     } else {
-      message.warning('没有可撤销的操作');
+      message.warning(t('PC.Pages.AntvX6History.noUndoAvailable'));
     }
   };
 
@@ -197,7 +198,7 @@ export const useWorkflowHistory = ({
         setHistoryProcessing(false);
       }, 200);
     } else {
-      message.warning('没有可重做的操作');
+      message.warning(t('PC.Pages.AntvX6History.noRedoAvailable'));
     }
   };
 

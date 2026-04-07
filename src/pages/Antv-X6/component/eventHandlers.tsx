@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { UpdateEdgeType } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
@@ -50,15 +51,15 @@ const bindEventHandlers = ({
           node.type === NodeTypeEnum.LoopEnd ||
           node.type === NodeTypeEnum.Loop
         ) {
-          message.error('不能粘贴循环节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteLoopNode'));
           return;
         }
         if (node.type === NodeTypeEnum.Start) {
-          message.error('不能粘贴开始节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteStartNode'));
           return;
         }
         if (node.type === NodeTypeEnum.End) {
-          message.error('不能粘贴结束节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteEndNode'));
           return;
         }
 
@@ -166,7 +167,9 @@ const bindEventHandlers = ({
         const _targetNodeId = _cell.getTargetNode()?.id;
 
         if (!isEdgeDeletable(sourceNode, targetNode)) {
-          message.warning('不能删除循环节点连线');
+          message.warning(
+            t('PC.Pages.AntvX6EventHandlers.cannotDeleteLoopEdge'),
+          );
           return;
         }
         const isException = _handleExceptionItemEdgeRemove(
@@ -231,7 +234,9 @@ const bindEventHandlers = ({
         }
       } else {
         if (isResistNodeType.includes(_cell.getData().type)) {
-          message.warning('不能删除开始节点和结束节点');
+          message.warning(
+            t('PC.Pages.AntvX6EventHandlers.cannotDeleteStartEndNodes'),
+          );
           return;
         }
 
@@ -243,9 +248,11 @@ const bindEventHandlers = ({
           if (_cell.getData().type === NodeTypeEnum.Loop) {
             // 弹出确认框
             modal.confirm({
-              title: '确定要删除循环节点吗？',
-              okText: '确认',
-              cancelText: '取消',
+              title: t(
+                'PC.Pages.AntvX6EventHandlers.deleteLoopNodeConfirmTitle',
+              ),
+              okText: t('PC.Pages.AntvX6EventHandlers.confirm'),
+              cancelText: t('PC.Pages.AntvX6EventHandlers.cancel'),
               onOk: () => {
                 removeNode(_cell.id, _cell.getData()); // 调用删除节点的函数
                 graph.removeCells(cells); // 删除选中的单元格

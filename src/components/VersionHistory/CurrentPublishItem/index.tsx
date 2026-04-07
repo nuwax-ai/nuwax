@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { CurrentPublishItemProps } from '@/types/interfaces/publish';
 import classNames from 'classnames';
@@ -27,9 +28,9 @@ const CurrentPublishItem: React.FC<CurrentPublishItemProps> = ({
           {info?.description}
         </span>
         <span className={cx(styles['p-time'], 'text-ellipsis')}>
-          {`${
-            info?.publishUser?.nickName || info?.publishUser?.userName
-          }发布于${dayjs(info?.publishDate).format('YYYY-MM-DD HH:mm')}`}
+          {`${info?.publishUser?.nickName || info?.publishUser?.userName}${dict(
+            'PC.Components.CurrentPublishItem.publishedAt',
+          )}${dayjs(info?.publishDate).format('YYYY-MM-DD HH:mm')}`}
         </span>
       </div>
       <div
@@ -53,10 +54,10 @@ const CurrentPublishItem: React.FC<CurrentPublishItemProps> = ({
       >
         {`${
           info?.publishStatus === PublishStatusEnum.Published
-            ? '下架'
+            ? dict('PC.Components.CurrentPublishItem.offShelf')
             : info?.publishStatus === PublishStatusEnum.Applying
-            ? '审核中'
-            : '已下架'
+            ? dict('PC.Components.CurrentPublishItem.reviewing')
+            : dict('PC.Components.CurrentPublishItem.hasBeenOffShelf')
         }`}
       </div>
     </div>

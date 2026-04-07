@@ -1,4 +1,4 @@
-// 变量聚合节点 - 自定义 Hook
+// Variable aggregation node - custom hook.
 import { DataTypeMap } from '@/constants/common.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, VariableGroup } from '@/types/interfaces/node';
@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface UseVariableAggregationProps {
   form: FormInstance;
-  nodeId?: number; // 节点 ID，用于检测节点切换
+  nodeId?: number; // Node ID, used to detect node switch.
 }
 
 interface UseVariableAggregationReturn {
@@ -36,8 +36,7 @@ interface UseVariableAggregationReturn {
 }
 
 /**
- * 变量聚合节点的核心逻辑 Hook
- * 包含状态管理、初始化、同步和所有处理函数
+ * Core hook for variable aggregation node.
  */
 export const useVariableAggregation = ({
   form,
@@ -45,46 +44,42 @@ export const useVariableAggregation = ({
 }: UseVariableAggregationProps): UseVariableAggregationReturn => {
   const { setIsModified, referenceList, getValue } = useModel('workflowV3');
 
-  // 使用 Form.useWatch 监听 variableGroups
+  // Watch variableGroups.
   const variableGroups: VariableGroup[] =
     Form.useWatch('variableGroups', { form, preserve: true }) || [];
 
-  // 监听 inputArgs 用于初始化回显
+  // Watch inputArgs for initialization.
   const inputArgsFromForm = Form.useWatch('inputArgs', {
     form,
     preserve: true,
   });
 
-  // 使用 ref 标记是否已经初始化过
+  // Init guards.
   const isInitialized = React.useRef(false);
-  // 跟踪上一个节点 ID，用于检测节点切换
   const prevNodeIdRef = React.useRef<number | undefined>(nodeId);
-  // 标记是否需要强制重新初始化（节点切换时）
   const forceReinitRef = React.useRef(false);
 
-  // 当节点切换时重置初始化状态
+  // Reset initialization state when node changes.
   useEffect(() => {
     if (nodeId !== undefined && prevNodeIdRef.current !== nodeId) {
       isInitialized.current = false;
-      forceReinitRef.current = true; // 标记需要强制重新初始化
+      forceReinitRef.current = true;
       prevNodeIdRef.current = nodeId;
     }
   }, [nodeId]);
 
-  // ========== 初始化逻辑 ==========
+  // Initialization.
   useEffect(() => {
-    // 如果已初始化且不是强制重新初始化，跳过
     if (isInitialized.current && !forceReinitRef.current) {
       return;
     }
 
-    // 如果 inputArgsFromForm 为空，可能是数据还没加载，也可能是新节点（空数组）
-    // 我们只在 undefined 或 null 时等待
+    // Wait only when data is not available yet.
     if (inputArgsFromForm === undefined || inputArgsFromForm === null) {
       return;
     }
 
-    // 检查是否有需要从 argMap 获取 subArgs 的变量引用
+    // Detect whether complex args require argMap for subArgs hydration.
     const hasComplexTypeWithBindValue = inputArgsFromForm.some((arg: any) => {
       const isComplexType =
         arg.dataType === DataTypeEnum.Object ||
@@ -95,13 +90,13 @@ export const useVariableAggregation = ({
       return isComplexType && hasBindValue;
     });
 
-    // 如果有复杂类型需要 subArgs，但 argMap 还没加载，则等待
+    // Wait until argMap is ready for complex types.
     const argMapKeys = Object.keys(referenceList?.argMap || {});
     if (hasComplexTypeWithBindValue && argMapKeys.length === 0) {
       return;
     }
 
-    // 将 inputArgs 转换为 variableGroups 格式
+    // Convert inputArgs to variableGroups.
     const initialGroups: VariableGroup[] = inputArgsFromForm.map(
       (arg: any) => ({
         id: arg.key || uuidv4(),
@@ -132,17 +127,15 @@ export const useVariableAggregation = ({
     );
 
     isInitialized.current = true;
-    forceReinitRef.current = false; // 重置强制初始化标记
+    forceReinitRef.current = false;
 
     if (initialGroups.length > 0) {
       form.setFieldsValue({ variableGroups: initialGroups });
     }
   }, [inputArgsFromForm, form, referenceList]);
 
-  // ========== 同步 inputArgs 和 outputArgs ==========
-  // 注意：只在初始化完成后才同步，避免在数据加载前清空表单
+  // Sync inputArgs and outputArgs.
   useEffect(() => {
-    // 如果还没初始化完成，不执行同步逻辑
     if (!isInitialized.current) {
       return;
     }
@@ -151,14 +144,13 @@ export const useVariableAggregation = ({
       form.setFieldsValue({ inputArgs: [], outputArgs: [] });
       return;
     }
-    // 递归深度复制子字段结构，确保每个节点有唯一的 key
+    // Deep-copy nested fields and ensure unique keys.
     const deepCopySubArgs = (
       items: InputAndOutConfig[] | undefined,
       parentKey: string = '',
     ): InputAndOutConfig[] => {
       if (!items || items.length === 0) return [];
       return items.map((item, index) => {
-        // 使用完整的 uuid 确保全局唯一，避免任何可能的冲突
         const uniqueKey = `out_${parentKey}_${index}_${uuidv4()}`;
         return {
           name: item.name || '',
@@ -173,7 +165,7 @@ export const useVariableAggregation = ({
       });
     };
 
-    // 生成 inputArgs
+    // Build inputArgs.
     const inputArgs: InputAndOutConfig[] = variableGroups.map((group) => {
       const groupEntry: InputAndOutConfig = {
         key: group.id || group.name || uuidv4(),
@@ -204,7 +196,7 @@ export const useVariableAggregation = ({
       return groupEntry;
     });
 
-    // 生成 outputArgs
+    // Build outputArgs.
     const outputArgs: InputAndOutConfig[] = variableGroups.map((group) => {
       const isComplexType =
         group.dataType === DataTypeEnum.Object ||
@@ -237,14 +229,14 @@ export const useVariableAggregation = ({
     form.setFieldsValue({ inputArgs, outputArgs });
   }, [variableGroups, form]);
 
-  // ========== 分组操作函数 ==========
+  // Group actions.
   const updateGroups = (newGroups: VariableGroup[]) => {
     form.setFieldsValue({ variableGroups: newGroups });
     setIsModified(true);
   };
 
   const handleAddGroup = () => {
-    // 创建默认的空输入项
+    // Create one default empty input.
     const defaultInput: InputAndOutConfig = {
       key: uuidv4(),
       name: '',
@@ -280,7 +272,7 @@ export const useVariableAggregation = ({
     updateGroups(newGroups);
   };
 
-  // ========== 输入项操作函数 ==========
+  // Input-item actions.
   const handleAddInput = (groupIndex: number) => {
     const group = variableGroups[groupIndex];
     const newInput: InputAndOutConfig = {
@@ -316,7 +308,7 @@ export const useVariableAggregation = ({
     }
   };
 
-  // ========== 变量引用操作函数 ==========
+  // Variable-reference actions.
   const handleReferenceSelect = (
     groupIndex: number,
     inputIndex: number,
@@ -389,7 +381,7 @@ export const useVariableAggregation = ({
     }
   };
 
-  // ========== 辅助函数 ==========
+  // Helper functions.
   const getGroupAllowedType = (
     group: VariableGroup,
   ): DataTypeEnum | undefined => {

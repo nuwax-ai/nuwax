@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
 import { SubAgent } from '@/types/interfaces/agent';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -84,7 +85,7 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
       {/* 空状态 */}
       {!processedAgents?.length && (
         <p className={cx(styles['empty-text'])}>
-          暂无子智能体配置，点击右上角添加
+          {t('PC.Pages.AgentArrangeSubAgentConfig.empty')}
         </p>
       )}
 
@@ -97,7 +98,11 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
             </span>
             <div className={cx(styles['text-content'])}>
               <h3 className={cx(styles['agent-name'])}>
-                {agent.name || `子智能体 ${index + 1}`}
+                {agent.name ||
+                  t(
+                    'PC.Pages.AgentArrangeSubAgentConfig.defaultNameWithIndex',
+                    String(index + 1),
+                  )}
               </h3>
               <ConditionRender condition={agent.description}>
                 <p className={cx(styles['agent-desc'])}>{agent.description}</p>
@@ -106,12 +111,12 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
           </div>
           <div className={cx(styles['agent-actions'])}>
             <TooltipIcon
-              title="编辑"
+              title={t('PC.Pages.AgentArrangeSubAgentConfig.edit')}
               icon={<EditOutlined className="cursor-pointer" />}
               onClick={() => handleEdit(index)}
             />
             <TooltipIcon
-              title="删除"
+              title={t('PC.Pages.AgentArrangeSubAgentConfig.delete')}
               icon={<DeleteOutlined className="cursor-pointer" />}
               onClick={() => handleDelete(index)}
             />

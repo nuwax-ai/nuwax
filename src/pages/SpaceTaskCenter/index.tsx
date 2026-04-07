@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { TaskInfo } from '@/types/interfaces/library';
 import { PlusOutlined } from '@ant-design/icons';
@@ -48,7 +49,7 @@ const SpaceTaskCenter: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="任务中心"
+      title={dict('PC.Pages.SpaceTaskCenter.title')}
       hideScroll={true}
       rightSlot={
         <Button
@@ -57,7 +58,7 @@ const SpaceTaskCenter: React.FC = () => {
           icon={<PlusOutlined />}
           onClick={handleCreateTask}
         >
-          创建任务
+          {dict('PC.Pages.SpaceTaskCenter.createTask')}
         </Button>
       }
     >

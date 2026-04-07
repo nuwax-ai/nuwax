@@ -5,6 +5,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemResourceSkillDelete,
   apiSystemResourceSkillList,
@@ -57,10 +58,12 @@ const SkillPage: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemSkillInfo) => {
     const response = await apiSystemResourceSkillDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemContentSkill.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error(response.message || '删除失败');
+      message.error(
+        response.message || t('PC.Pages.SystemContentSkill.deleteFailed'),
+      );
     }
   }, []);
 
@@ -71,20 +74,21 @@ const SkillPage: React.FC = () => {
     (record: SystemSkillInfo): ActionItem<SystemSkillInfo>[] => [
       {
         key: 'view',
-        label: '查看',
+        label: t('PC.Pages.SystemContentSkill.view'),
         disabled: !hasPermission('content_skill_query_detail'),
         onClick: handleView,
       },
       {
         key: 'delete',
-        label: '删除',
+        label: t('PC.Pages.SystemContentSkill.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: t(
+            'PC.Pages.SystemContentSkill.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: t(
+            'PC.Pages.SystemContentSkill.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_skill_delete'),
         onClick: handleDelete,
@@ -98,31 +102,31 @@ const SkillPage: React.FC = () => {
    */
   const columns: ProColumns<SystemSkillInfo>[] = [
     {
-      title: '名称',
+      title: t('PC.Pages.SystemContentSkill.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入技能名称',
+        placeholder: t('PC.Pages.SystemContentSkill.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemContentSkill.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true,
     },
     {
-      title: '创建人',
+      title: t('PC.Pages.SystemContentSkill.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '创建时间',
+      title: t('PC.Pages.SystemContentSkill.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -130,7 +134,7 @@ const SkillPage: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemContentSkill.columnAction'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',
@@ -168,7 +172,10 @@ const SkillPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="技能管理" hideScroll>
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentSkill.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemSkillInfo>
         actionRef={actionRef}
         formRef={formRef}

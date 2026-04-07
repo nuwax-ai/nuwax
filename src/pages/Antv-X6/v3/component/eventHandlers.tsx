@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { UpdateEdgeType } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
@@ -16,9 +17,9 @@ const isResistNodeType = [
   NodeTypeEnum.LoopEnd,
 ];
 /**
- * 绑定图形编辑器的事件处理器
- * @param graph - AntV X6 图形实例
- * @returns 清理函数，用于解除绑定或清理资源
+ * Bind graph editor event handlers.
+ * @param graph - AntV X6 graph instance
+ * @returns cleanup function
  */
 const bindEventHandlers = ({
   graph,
@@ -29,19 +30,19 @@ const bindEventHandlers = ({
   modal,
   message,
 }: BindEventHandlers) => {
-  // 存储复制的节点数据，支持多次粘贴
+  // Store copied node data for repeated paste.
   let copiedNodeData: ChildNode | null = null;
-  // 粘贴计数，用于计算累积偏移
+  // Paste counter for cumulative offset.
   let pasteCount = 0;
 
-  // 快捷键绑定：复制选中的单元格
+  // Hotkey: copy selected cell.
   graph.bindKey(['meta+c', 'ctrl+c'], () => {
-    const cells = graph.getSelectedCells(); // 获取当前选中的单元格
+    const cells = graph.getSelectedCells();
     if (cells.length) {
       const node = cells[0];
       if (node.isNode()) {
         const nodeData = node.getData();
-        // 检查是否为不可复制的节点类型
+        // Skip non-copyable node types.
         if (
           nodeData.type === NodeTypeEnum.LoopStart ||
           nodeData.type === NodeTypeEnum.LoopEnd ||
@@ -49,34 +50,34 @@ const bindEventHandlers = ({
           nodeData.type === NodeTypeEnum.Start ||
           nodeData.type === NodeTypeEnum.End
         ) {
-          message.warning('该节点类型不支持复制');
-          // 清除之前保存的节点数据，防止粘贴出错误的节点
+          message.warning(
+            t('PC.Pages.AntvX6EventHandlers.unsupportedCopyNodeType'),
+          );
+          // Clear cached node data to avoid invalid paste.
           copiedNodeData = null;
           pasteCount = 0;
           return false;
         }
-        // 存储复制的节点数据
+        // Cache copied node data.
         copiedNodeData = cloneDeep(nodeData);
-        // 重置粘贴计数
+        // Reset paste count.
         pasteCount = 0;
-        graph.copy(cells); // 执行复制操作
-        message.success('已复制节点');
+        graph.copy(cells);
+        message.success(t('PC.Pages.AntvX6EventHandlers.nodeCopied'));
       }
     }
-    return false; // 阻止默认行为
+    return false;
   });
 
-  // 快捷键绑定：粘贴已复制的单元格
+  // Hotkey: paste copied cell.
   graph.bindKey(['meta+v', 'ctrl+v'], () => {
-    // 使用存储的节点数据进行粘贴
+    // Prefer cached node data.
     if (copiedNodeData) {
-      // 增加粘贴计数
       pasteCount++;
-      // 累积偏移：每次粘贴偏移 30px
       const offset = pasteCount * 30;
       copyNode(copiedNodeData, { x: offset, y: offset });
     } else if (!graph.isClipboardEmpty()) {
-      // 兼容：如果没有存储的节点数据，尝试从选中的单元格获取
+      // Fallback to selected cell for compatibility.
       const cells = graph.getSelectedCells();
       if (cells && cells.length > 0) {
         const node = cells[0].getData();
@@ -85,23 +86,23 @@ const bindEventHandlers = ({
           node.type === NodeTypeEnum.LoopEnd ||
           node.type === NodeTypeEnum.Loop
         ) {
-          message.error('不能粘贴循环节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteLoopNode'));
           return;
         }
         if (node.type === NodeTypeEnum.Start) {
-          message.error('不能粘贴开始节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteStartNode'));
           return;
         }
         if (node.type === NodeTypeEnum.End) {
-          message.error('不能粘贴结束节点');
+          message.error(t('PC.Pages.AntvX6EventHandlers.cannotPasteEndNode'));
           return;
         }
         copyNode(node);
       }
     } else {
-      message.warning('请先复制一个节点');
+      message.warning(t('PC.Pages.AntvX6EventHandlers.copyNodeFirst'));
     }
-    return false; // 阻止默认行为
+    return false;
   });
 
   const handleSpecialNodeEdge = (cells: any[]): void => {
@@ -110,7 +111,7 @@ const bindEventHandlers = ({
     const sourceNode = _cell.getSourceNode()?.getData();
     const _index: string = _cell.getSourcePortId() as string;
 
-    // 修改当前的数据
+    // Update current node data.
     const newNodeParams = JSON.parse(JSON.stringify(sourceNode));
     if (sourceNode.type === NodeTypeEnum.Condition) {
       for (let item of newNodeParams.nodeConfig.conditionBranchConfigs) {
@@ -136,7 +137,7 @@ const bindEventHandlers = ({
           sourceNode,
           id: '0',
         });
-        graph.removeCells(cells); // 删除选中的单元格
+        graph.removeCells(cells);
         return;
       }
     } else {
@@ -157,12 +158,12 @@ const bindEventHandlers = ({
     edge: Edge,
     doSuccess: (newNodeParams: ChildNode) => void,
   ): boolean => {
-    // 获取边的两个连接桩
+    // Read edge source/target ports.
     const sourcePort = edge.getSourcePortId();
     const sourceNode = edge.getSourceNode()?.getData();
     const targetNode = edge.getTargetNode()?.getData();
 
-    // 处理节点的异常处理 out port 连边的逻辑
+    // Handle exception out-port edge removal.
     const protGroup = getPortGroup(edge.getSourceNode(), sourcePort);
     if (showExceptionPort(sourceNode, protGroup)) {
       const newNodeParams: ChildNode = cloneDeep(sourceNode);
@@ -184,21 +185,21 @@ const bindEventHandlers = ({
 
     return false;
   };
-  // 快捷键绑定：删除选中的单元格
+  // Hotkey: delete selected cell.
   graph.bindKey(['delete', 'backspace'], () => {
-    const cells = graph.getSelectedCells(); // 获取当前选中的单元格
+    const cells = graph.getSelectedCells();
     if (cells.length) {
       const _cell = cells[0];
-      // 判定是删除节点还是边
+      // Determine whether deleting an edge or a node.
       if (_cell.isEdge()) {
-        // 获取当前节点
         const sourceNode = _cell.getSourceNode()?.getData();
         const targetNode = _cell.getTargetNode()?.getData();
-        // 获取连接点的节点id
         const _targetNodeId = _cell.getTargetNode()?.id;
 
         if (!isEdgeDeletable(sourceNode, targetNode)) {
-          message.warning('不能删除循环节点连线');
+          message.warning(
+            t('PC.Pages.AntvX6EventHandlers.cannotDeleteLoopEdge'),
+          );
           return;
         }
         const isException = _handleExceptionItemEdgeRemove(
@@ -213,7 +214,7 @@ const bindEventHandlers = ({
         );
         if (isException) return;
 
-        // 查看当前的边是否是loop或者他的子节点
+        // Check whether edge belongs to loop or loop child nodes.
         if (
           sourceNode.type === NodeTypeEnum.Loop ||
           targetNode.type === NodeTypeEnum.Loop
@@ -228,7 +229,7 @@ const bindEventHandlers = ({
               nodeData: sourceNode,
               targetNodeId: _targetNodeId?.toString(),
             });
-            graph.removeCells([_cell]); // 新增行：实际移除边元素
+            graph.removeCells([_cell]);
             return;
           }
 
@@ -242,7 +243,7 @@ const bindEventHandlers = ({
               nodeData: targetNode,
               targetNodeId: targetNode.id.toString(),
             });
-            graph.removeCells([_cell]); // 新增行：实际移除边元素
+            graph.removeCells([_cell]);
             return;
           }
         }
@@ -263,56 +264,56 @@ const bindEventHandlers = ({
         }
       } else {
         if (isResistNodeType.includes(_cell.getData().type)) {
-          message.warning('不能删除开始节点和结束节点');
+          message.warning(
+            t('PC.Pages.AntvX6EventHandlers.cannotDeleteStartEndNodes'),
+          );
           return;
         }
 
-        // 如果是删除循环节点或删除循环的子节点
+        // Delete loop node or loop child node.
         if (
           _cell.getData().loopNodeId ||
           _cell.getData().type === NodeTypeEnum.Loop
         ) {
           if (_cell.getData().type === NodeTypeEnum.Loop) {
-            // 弹出确认框
             modal.confirm({
-              title: '确定要删除循环节点吗？',
-              okText: '确认',
-              cancelText: '取消',
+              title: t(
+                'PC.Pages.AntvX6EventHandlers.deleteLoopNodeConfirmTitle',
+              ),
+              okText: t('PC.Pages.AntvX6EventHandlers.confirm'),
+              cancelText: t('PC.Pages.AntvX6EventHandlers.cancel'),
               onOk: () => {
-                removeNode(_cell.id, _cell.getData()); // 调用删除节点的函数
-                graph.removeCells(cells); // 删除选中的单元格
+                removeNode(_cell.id, _cell.getData());
+                graph.removeCells(cells);
               },
               onCancel: () => {
-                return false; // 取消删除操作
+                return false;
               },
             });
             return;
           }
-          // 删除节点
           removeNode(_cell.id, _cell.getData());
         } else {
-          // 删除节点
           removeNode(_cell.id);
         }
       }
-      graph.removeCells(cells); // 删除选中的单元格
+      graph.removeCells(cells);
     }
 
-    return false; // 阻止默认行为
+    return false;
   });
 
-  // 快捷键绑定：撤销上一步操作
+  // Hotkey: undo previous operation.
   // graph.bindKey(['meta+z', 'ctrl+z'], () => {
   //   if (graph.canUndo()) {
-  //     // 检查是否可以撤销
-  //     graph.undo(); // 执行撤销操作
+  //     graph.undo();
   //   }
-  //   return false; // 阻止默认行为
+  //   return false;
   // });
 
-  // 返回清理函数，用于在组件卸载时解除绑定或清理资源
+  // Cleanup function.
   return () => {
-    // 清理工作，如果有的话
+    // no-op
   };
 };
 

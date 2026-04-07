@@ -1,6 +1,7 @@
 import pluginImage from '@/assets/images/plugin_image.png'; // 插件图标
 import workflowImage from '@/assets/images/workflow_image.png'; // 插件图标
 import { BINDING_DEFAULT_JSON_DATA } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { VariableDataBindingProps } from '@/types/interfaces/agentConfig';
 import { DownOutlined } from '@ant-design/icons';
@@ -74,14 +75,14 @@ const VariableDataBinding: React.FC<VariableDataBindingProps> = ({
           )}
           onClick={() => setIsRotate(!isRotate)}
         >
-          <span>插件或工作流返回数据结构以及示例</span>
+          <span>{dict('PC.Pages.EditAgent.pluginWorkflowDataStructure')}</span>
           <DownOutlined
             className={cx(styles.icon, { [styles['icon-rotate']]: !isRotate })}
           />
         </div>
         <div className={cx({ [styles['rotate-box']]: isRotate })}>
-          <p>&#x2F;&#x2F;options 选项列表；</p>
-          <p>&#x2F;&#x2F;value：选项值；label选项名称；children下级选项</p>
+          <p>{dict('PC.Pages.EditAgent.codeExampleOptionsComment')}</p>
+          <p>{dict('PC.Pages.EditAgent.codeExampleValueComment')}</p>
           <pre>
             <code>{JSON.stringify(BINDING_DEFAULT_JSON_DATA, null, 2)}</code>
           </pre>

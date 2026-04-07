@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -16,35 +17,45 @@ const IntranetServerCommand: React.FC<IntranetServerCommandProps> = ({
 }) => {
   return (
     <Modal
-      title="内网服务器执行命令"
+      title={dict('PC.Pages.SpaceLibrary.IntranetServerCommand.modalTitle')}
       open={visible}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
         body: cx(styles.body),
       }}
-      footer={() => <Button onClick={onCancel}>关闭</Button>}
+      footer={() => (
+        <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
+      )}
       onCancel={onCancel}
     >
       <div className={cx('flex')}>
-        <p>Windows（在CMD窗口中执行）</p>
-        <span className={cx(styles['sub-title'])}>Windows 64位 客户端下载</span>
+        <p>
+          {dict('PC.Pages.SpaceLibrary.IntranetServerCommand.windowsTitle')}
+        </p>
+        <span className={cx(styles['sub-title'])}>
+          {dict('PC.Pages.SpaceLibrary.IntranetServerCommand.windowsDownload')}
+        </span>
       </div>
       <div className={cx(styles.box)}>
         client_windows_amd64.exe -s 47.109.49.58 -p 4993 -k
         dec539fc0bfc4963b4331ee5 -ssl true
       </div>
       <div className={cx('flex')}>
-        <p>Mac（在终端命令行中执行）</p>
-        <span className={cx(styles['sub-title'])}>Mac OS 64位 客户下载</span>
+        <p>{dict('PC.Pages.SpaceLibrary.IntranetServerCommand.macTitle')}</p>
+        <span className={cx(styles['sub-title'])}>
+          {dict('PC.Pages.SpaceLibrary.IntranetServerCommand.macDownload')}
+        </span>
       </div>
       <div className={cx(styles.box)}>
         nohup ./client_darwin_amd64 -s 47.109.49.58 -p 4993 -k
         dec539fc331ee5381af3e0 -ssl true &
       </div>
       <div className={cx('flex')}>
-        <p>Linux（在终端命令行中执行）</p>
-        <span className={cx(styles['sub-title'])}>Linux 64位 客户端下载</span>
+        <p>{dict('PC.Pages.SpaceLibrary.IntranetServerCommand.linuxTitle')}</p>
+        <span className={cx(styles['sub-title'])}>
+          {dict('PC.Pages.SpaceLibrary.IntranetServerCommand.linuxDownload')}
+        </span>
       </div>
       <div className={cx(styles.box)}>
         nohup ./client_linux_amd64 -s 47.109.49.58 -p 4993 -k

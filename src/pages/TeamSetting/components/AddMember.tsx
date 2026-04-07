@@ -1,5 +1,6 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiAddSpaceMember,
   apiGetSpaceUserList,
@@ -36,8 +37,14 @@ export interface AddMemberProps {
 }
 
 const selectOptions = [
-  { value: TeamStatusEnum.Admin, label: '管理员' },
-  { value: TeamStatusEnum.User, label: '成员' },
+  {
+    value: TeamStatusEnum.Admin,
+    label: dict('PC.Pages.TeamSetting.roleAdmin'),
+  },
+  {
+    value: TeamStatusEnum.User,
+    label: dict('PC.Pages.TeamSetting.roleMember'),
+  },
 ];
 
 const AddMember: React.FC<AddMemberProps> = ({
@@ -72,7 +79,7 @@ const AddMember: React.FC<AddMemberProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
-      message.success('添加成功');
+      message.success(dict('PC.Pages.TeamSetting.AddMember.addSuccess'));
       onConfirmAdd?.();
     },
   });
@@ -83,7 +90,7 @@ const AddMember: React.FC<AddMemberProps> = ({
     debounceWait: 300,
     onSuccess: (data: SearchUserInfo[]) => {
       if (!data?.length) {
-        message.warning('未搜索到相关用户');
+        message.warning(dict('PC.Pages.TeamSetting.AddMember.noUserFound'));
         setLeftColumnMembers([]);
         return;
       }
@@ -109,7 +116,9 @@ const AddMember: React.FC<AddMemberProps> = ({
 
   const handlerSubmit = () => {
     if (rightColumnMembers.length === 0) {
-      message.warning('请选择要添加的成员');
+      message.warning(
+        dict('PC.Pages.TeamSetting.AddMember.selectMemberWarning'),
+      );
       return;
     }
     const params = rightColumnMembers.map((m) => ({
@@ -187,7 +196,7 @@ const AddMember: React.FC<AddMemberProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="添加新成员"
+      title={dict('PC.Pages.TeamSetting.AddMember.addNewMember')}
       classNames={{
         content: cx(styles['add-member-modal-content']),
       }}
@@ -198,7 +207,9 @@ const AddMember: React.FC<AddMemberProps> = ({
       <div style={{ display: 'flex', gap: 20 }}>
         <div className={cx(styles['add-member-left-column'])}>
           <Input
-            placeholder="输入用户名、邮箱或手机号码，回车搜索"
+            placeholder={dict(
+              'PC.Pages.TeamSetting.AddMember.searchPlaceholder',
+            )}
             prefix={<SearchOutlined />}
             onPressEnter={(event) => {
               if (event.key === 'Enter') {
@@ -216,7 +227,7 @@ const AddMember: React.FC<AddMemberProps> = ({
               leftColumnMembers.length > 0
             }
           >
-            全部
+            {dict('PC.Pages.TeamSetting.AddMember.all')}
           </Checkbox>
           <Checkbox.Group
             style={{ display: 'block', marginTop: 10 }}
@@ -233,7 +244,10 @@ const AddMember: React.FC<AddMemberProps> = ({
 
         <div style={{ width: '300px' }}>
           <h3 style={{ marginBottom: 15 }}>
-            已选成员 ({rightColumnMembers.length})
+            {dict('PC.Pages.TeamSetting.AddMember.selectedMembers').replace(
+              '{0}',
+              String(rightColumnMembers.length),
+            )}
           </h3>
           <List
             dataSource={rightColumnMembers}

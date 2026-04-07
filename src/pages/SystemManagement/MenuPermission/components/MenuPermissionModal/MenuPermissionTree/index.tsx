@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { DownOutlined } from '@ant-design/icons';
 import { Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
@@ -317,7 +318,12 @@ const MenuPermissionTree: React.FC<MenuPermissionTreeProps> = ({
     resources: ResourceTreeNode[],
   ): DataNode[] => {
     return resources.map((resource) => ({
-      title: resource.name || `资源 ${resource.id}`,
+      title:
+        resource.name ||
+        t(
+          'PC.Pages.SystemMenuPermissionModal.resourceLabelWithId',
+          String(resource.id),
+        ),
       key: resource.id, // 使用资源ID作为key，与extractResourceIds保持一致
       value: resource.id,
       children: resource.children

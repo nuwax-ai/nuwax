@@ -3,6 +3,7 @@
  * 包含文件扁平化、数据源分组、最近使用管理等工具函数
  */
 
+import { t } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type {
   DataResource,
@@ -88,12 +89,16 @@ export const flattenFolders = (
 export const getDataSourceTypeName = (
   type: DataResourceType | string,
 ): string => {
-  const typeMap: Record<string, string> = {
-    workflow: '工作流',
-    plugin: '插件',
-    reverse_proxy: '反向代理',
-  };
-  return typeMap[type] || type;
+  switch (type) {
+    case 'workflow':
+      return t('PC.Pages.AppDevMentionSelector.dataSourceTypeWorkflow');
+    case 'plugin':
+      return t('PC.Pages.AppDevMentionSelector.dataSourceTypePlugin');
+    case 'reverse_proxy':
+      return t('PC.Pages.AppDevMentionSelector.dataSourceTypeReverseProxy');
+    default:
+      return type;
+  }
 };
 
 /**
@@ -106,13 +111,13 @@ export const getDefaultDescription = (
 ): string => {
   switch (type) {
     case 'plugin':
-      return '插件资源，提供特定功能和服务';
+      return t('PC.Pages.AppDevMentionSelector.defaultDescPlugin');
     case 'workflow':
-      return '工作流资源，支持复杂的业务流程编排';
+      return t('PC.Pages.AppDevMentionSelector.defaultDescWorkflow');
     case 'reverse_proxy':
-      return '反向代理资源，提供网络代理服务';
+      return t('PC.Pages.AppDevMentionSelector.defaultDescReverseProxy');
     default:
-      return '数据资源';
+      return t('PC.Pages.AppDevMentionSelector.defaultDescDataSource');
   }
 };
 
@@ -198,7 +203,7 @@ export const getRecentFiles = (projectId?: string): RecentFileItem[] => {
 export const saveRecentFile = (file: FileNode, projectId?: string): void => {
   try {
     if (!projectId) {
-      // console.warn('保存最近使用的文件时缺少 projectId，将使用默认存储键');
+      // console.warn('Missing projectId when saving recent file, fallback to default storage key');
     }
     const storageKey = getStorageKey(projectId || '', RECENT_FILES_KEY_PREFIX);
     const items = getRecentFiles(projectId);
@@ -214,7 +219,7 @@ export const saveRecentFile = (file: FileNode, projectId?: string): void => {
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
     sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
-    // console.error('保存最近使用的文件失败:', error);
+    // console.error('Failed to save recent file:', error);
   }
 };
 
@@ -253,7 +258,7 @@ export const saveRecentDataSource = (
 ): void => {
   try {
     if (!projectId) {
-      // console.warn('保存最近使用的数据源时缺少 projectId，将使用默认存储键');
+      // console.warn('Missing projectId when saving recent datasource, fallback to default storage key');
     }
     const storageKey = getStorageKey(
       projectId || '',
@@ -271,7 +276,7 @@ export const saveRecentDataSource = (
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
     sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
-    // console.error('保存最近使用的数据源失败:', error);
+    // console.error('Failed to save recent datasource:', error);
   }
 };
 

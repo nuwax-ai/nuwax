@@ -8,6 +8,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
 import useMcp from '@/hooks/useMcp';
+import { dict } from '@/services/i18nRuntime';
 import { apiMcpDetail, apiMcpUpdate } from '@/services/mcp';
 import { AgentAddComponentStatusEnum } from '@/types/enums/agent';
 import {
@@ -139,7 +140,9 @@ const SpaceMcpCreate: React.FC = () => {
     onSuccess: (_: null, params: McpUpdateParams[]) => {
       const currentMcpDetailInfo = params[0];
       const { withDeploy } = currentMcpDetailInfo;
-      const text = withDeploy ? '已完成保存并提交部署' : '保存MCP服务成功';
+      const text = withDeploy
+        ? dict('PC.Pages.SpaceMcpEdit.saveAndDeploySuccess')
+        : dict('PC.Pages.SpaceMcpEdit.saveSuccess');
       message.success(text);
       setSaveDeployLoading(false);
       setSaveLoading(false);
@@ -234,11 +237,11 @@ const SpaceMcpCreate: React.FC = () => {
     // 组件库
     if (installType === McpInstallTypeEnum.COMPONENT) {
       if (!mcpConfigComponentList?.length) {
-        message.warning('请选择组件');
+        message.warning(dict('PC.Pages.SpaceMcpEdit.selectComponent'));
         return;
       }
     } else if (!serverConfig) {
-      message.warning('请输入MCP服务配置');
+      message.warning(dict('PC.Pages.SpaceMcpEdit.inputServerConfig'));
       return;
     }
 
@@ -358,21 +361,37 @@ const SpaceMcpCreate: React.FC = () => {
                 >
                   <Form.Item
                     name="name"
-                    label="服务名称"
-                    rules={[{ required: true, message: '请输入MCP服务名称' }]}
+                    label={dict('PC.Pages.SpaceMcpEdit.serviceName')}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict('PC.Pages.SpaceMcpEdit.inputServiceName'),
+                      },
+                    ]}
                   >
-                    <Input placeholder="MCP服务名称" showCount maxLength={30} />
+                    <Input
+                      placeholder={dict(
+                        'PC.Pages.SpaceMcpEdit.serviceNamePlaceholder',
+                      )}
+                      showCount
+                      maxLength={30}
+                    />
                   </Form.Item>
                   <Form.Item
                     name="description"
-                    label="描述"
+                    label={dict('PC.Pages.SpaceMcpEdit.description')}
                     rules={[
-                      { required: true, message: '请输入描述你的MCP服务' },
+                      {
+                        required: true,
+                        message: dict('PC.Pages.SpaceMcpEdit.inputDescription'),
+                      },
                     ]}
                   >
                     <Input.TextArea
                       className="dispose-textarea-count"
-                      placeholder="描述你的MCP服务"
+                      placeholder={dict(
+                        'PC.Pages.SpaceMcpEdit.descriptionPlaceholder',
+                      )}
                       showCount
                       maxLength={10000}
                       autoSize={{ minRows: 3, maxRows: 5 }}
@@ -380,8 +399,15 @@ const SpaceMcpCreate: React.FC = () => {
                   </Form.Item>
                   <Form.Item
                     name="installType"
-                    label="安装方式"
-                    rules={[{ required: true, message: '请选择安装方式' }]}
+                    label={dict('PC.Pages.SpaceMcpEdit.installMethod')}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.SpaceMcpEdit.selectInstallMethod',
+                        ),
+                      },
+                    ]}
                   >
                     <Radio.Group disabled options={MCP_INSTALL_TYPE_LIST} />
                   </Form.Item>
@@ -393,16 +419,20 @@ const SpaceMcpCreate: React.FC = () => {
                       name="serverConfig"
                       label={
                         <div className={cx('flex', 'items-center')}>
-                          <span>MCP服务配置</span>
+                          <span>
+                            {dict('PC.Pages.SpaceMcpEdit.mcpServiceConfig')}
+                          </span>
                           <span className={cx(styles['sub-title'])}>
-                            MCP服务使用json配置，提交前确保格式正确
+                            {dict('PC.Pages.SpaceMcpEdit.mcpConfigJsonTip')}
                           </span>
                         </div>
                       }
                       rules={[
                         {
                           required: true,
-                          message: '请输入MCP服务配置',
+                          message: dict(
+                            'PC.Pages.SpaceMcpEdit.inputServerConfig',
+                          ),
                         },
                         {
                           validator: (_, value) => {
@@ -411,7 +441,11 @@ const SpaceMcpCreate: React.FC = () => {
                             }
                             if (!isValidJSON(value)) {
                               return Promise.reject(
-                                new Error('请输入有效的JSON格式'),
+                                new Error(
+                                  dict(
+                                    'PC.Pages.SpaceMcpEdit.invalidJsonFormat',
+                                  ),
+                                ),
                               );
                             }
                             return Promise.resolve();
@@ -429,7 +463,11 @@ const SpaceMcpCreate: React.FC = () => {
                   ) : (
                     <Form.Item
                       name="components"
-                      label={<LabelStar label="组件选择" />}
+                      label={
+                        <LabelStar
+                          label={dict('PC.Pages.SpaceMcpEdit.componentSelect')}
+                        />
+                      }
                     >
                       <ConfigOptionCollapse
                         className={cx(styles['collapse-container'])}

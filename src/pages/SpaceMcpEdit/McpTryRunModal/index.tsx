@@ -2,6 +2,7 @@ import ParamsNameLabel from '@/components/ParamsNameLabel';
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
+import { dict } from '@/services/i18nRuntime';
 import { apiMcpTryRun } from '@/services/mcp';
 import { DataTypeEnum } from '@/types/enums/common';
 import { McpExecuteTypeEnum } from '@/types/enums/mcp';
@@ -78,7 +79,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: dict('PC.Pages.SpaceMcpEdit.paramName'),
       dataIndex: 'name',
       key: 'name',
       className: 'flex',
@@ -91,7 +92,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
       ),
     },
     {
-      title: '参数值',
+      title: dict('PC.Pages.SpaceMcpEdit.paramValue'),
       dataIndex: 'description',
       key: 'description',
       render: (_: string, record: BindConfigWithSub) => (
@@ -102,7 +103,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
             <Input
               value={record.bindValue}
               onChange={(e) => handleChangeInputValue(record, e.target.value)}
-              placeholder="请输入参数值"
+              placeholder={dict('PC.Pages.SpaceMcpEdit.inputParamValue')}
             />
           )}
           <p className={cx(styles['param-desc'])}>{record.description}</p>
@@ -110,7 +111,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SpaceMcpEdit.operation'),
       key: 'action',
       width: 60,
       align: 'center',
@@ -178,7 +179,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
               styles.header,
             )}
           >
-            <h3>试运行</h3>
+            <h3>{dict('PC.Pages.SpaceMcpEdit.tryRun')}</h3>
             <CloseOutlined
               className={cx('cursor-pointer')}
               onClick={handleCancel}
@@ -190,7 +191,9 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
           >
             {/*左侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col')}>
-              <h3 className={cx(styles['p-title'])}>{name} 输入参数</h3>
+              <h3 className={cx(styles['p-title'])}>
+                {name} {dict('PC.Pages.SpaceMcpEdit.inputParams')}
+              </h3>
               <Table<BindConfigWithSub>
                 className={cx(styles['table-wrap'])}
                 columns={inputColumns}
@@ -213,7 +216,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
                       onClick={handleRunTest}
                       loading={loading}
                     >
-                      运行
+                      {dict('PC.Pages.SpaceMcpEdit.run')}
                     </Button>
                   </div>
                 )}
@@ -221,7 +224,9 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
             </div>
             {/*右侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
-              <h3 className={cx(styles['p-title'])}>{name} 调试结果</h3>
+              <h3 className={cx(styles['p-title'])}>
+                {name} {dict('PC.Pages.SpaceMcpEdit.debugResult')}
+              </h3>
               <div
                 className={cx(
                   'flex-1',
@@ -241,7 +246,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
                     )}
                   >
                     <LoadingOutlined />
-                    <span>加载中...</span>
+                    <span>{dict('PC.Common.Global.loading')}</span>
                   </div>
                 ) : result ? (
                   <div
@@ -265,7 +270,7 @@ const McpTryRunModal: React.FC<McpTryRunModalProps> = ({
                       'content-center',
                     )}
                   >
-                    调试结果将展示在此处
+                    {dict('PC.Pages.SpaceMcpEdit.debugResultPlaceholder')}
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@ import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
+import { dict } from '@/services/i18nRuntime';
 // import { apiDevCollectAgent } from '@/services/agentDev';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
@@ -193,12 +194,13 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1')}>
-            最近编辑 {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
+            {dict('PC.Pages.SpaceDevelop.ApplicationItem.lastEdited')}{' '}
+            {dayjs(agentConfigInfo.modified).format('MM-DD HH:mm')}
           </span>
           {agentConfigInfo?.publishStatus === PublishStatusEnum.Published && (
             <span className={cx('flex', 'items-center', 'gap-4')}>
               <ICON_SUCCESS />
-              已发布
+              {dict('PC.Pages.SpaceDevelop.ApplicationItem.published')}
             </span>
           )}
         </>
@@ -216,13 +218,19 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             className={cx('flex', 'items-center', 'cursor-pointer', 'gap-10')}
           >
             {agentConfigInfo.type === AgentTypeEnum.TaskAgent ? (
-              <Tag color="orange">通用型</Tag>
+              <Tag color="orange">
+                {dict('PC.Pages.SpaceDevelop.ApplicationItem.taskType')}
+              </Tag>
             ) : (
-              <Tag color="green">问答型</Tag>
+              <Tag color="green">
+                {dict('PC.Pages.SpaceDevelop.ApplicationItem.chatType')}
+              </Tag>
             )}
             {/* 个人电脑 */}
             {agentConfigInfo?.extra?.private && (
-              <Tag color="blue">个人电脑</Tag>
+              <Tag color="blue">
+                {dict('PC.Pages.SpaceDevelop.ApplicationItem.privateComputer')}
+              </Tag>
             )}
           </div>
           <div className={cx('flex', 'items-center', 'gap-10')}>

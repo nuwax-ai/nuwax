@@ -1,5 +1,6 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
+import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import {
   CodeCreateParams,
@@ -153,7 +154,7 @@ const CodeOptimizeModal: React.FC<
               onReplace?.(messageList?.[messageList?.length - 1]?.text)
             }
           >
-            替换
+            {dict('PC.Components.CodeOptimizeModal.replace')}
           </Button>
           <Button
             onClick={(e) => {
@@ -162,7 +163,7 @@ const CodeOptimizeModal: React.FC<
             }}
             className={cx(styles['btn'], 'ml-10 ')}
           >
-            退出
+            {dict('PC.Components.CodeOptimizeModal.exit')}
           </Button>
         </div>
       ) : (
@@ -177,7 +178,7 @@ const CodeOptimizeModal: React.FC<
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
             onPressEnter={handlePressEnter}
-            placeholder="请描述你的具体业务需求，逻辑尽量描述详细"
+            placeholder={dict('PC.Components.CodeOptimizeModal.placeholder')}
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
 

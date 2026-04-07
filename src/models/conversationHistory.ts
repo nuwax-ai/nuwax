@@ -3,6 +3,7 @@ import {
   apiAgentConversationList,
 } from '@/services/agentConfig';
 import { apiUserUsedAgentList } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
@@ -67,7 +68,7 @@ export default () => {
       setConversationListItem?.((list) =>
         list?.filter((item) => item.id !== conversationId),
       );
-      message.success('删除成功');
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
     },
   });
 

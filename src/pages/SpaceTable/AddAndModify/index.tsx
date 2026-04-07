@@ -1,5 +1,6 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { BOOLEAN_LIST } from '@/constants/dataTable.constants';
+import { dict } from '@/services/i18nRuntime';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
 import {
   AddAndModifyProps,
@@ -49,15 +50,30 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
     const { fieldType, fieldName } = item;
     switch (fieldType) {
       case TableFieldTypeEnum.Date:
-        return <DatePicker showTime placeholder="请选择时间" />;
+        return (
+          <DatePicker
+            showTime
+            placeholder={dict('PC.Common.Global.selectTime')}
+          />
+        );
       case TableFieldTypeEnum.String:
         return (
-          <Input placeholder={`请输入${fieldName}`} showCount maxLength={255} />
+          <Input
+            placeholder={dict(
+              'PC.Pages.SpaceTable.AddAndModify.inputPlaceholder',
+              fieldName,
+            )}
+            showCount
+            maxLength={255}
+          />
         );
       case TableFieldTypeEnum.MEDIUMTEXT:
         return (
           <Input.TextArea
-            placeholder={`请输入${fieldName}`}
+            placeholder={dict(
+              'PC.Pages.SpaceTable.AddAndModify.inputPlaceholder',
+              fieldName,
+            )}
             className="dispose-textarea-count"
             showCount
             maxLength={4194304}
@@ -84,14 +100,21 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
               };
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
-            ? `数值范围：[-2147483648, 2147483647]`
-            : `精度20位,整数部分最多14位,小数部分最多6位`;
+            ? dict('PC.Pages.SpaceTable.AddAndModify.integerRange')
+            : dict('PC.Pages.SpaceTable.AddAndModify.numberPrecision');
         return <InputNumber {...props} placeholder={placeholder} />;
       }
 
       default:
         return (
-          <Input placeholder={`请输入${fieldName}`} showCount maxLength={255} />
+          <Input
+            placeholder={dict(
+              'PC.Pages.SpaceTable.AddAndModify.inputPlaceholder',
+              fieldName,
+            )}
+            showCount
+            maxLength={255}
+          />
         );
     }
   };
@@ -109,8 +132,8 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
         form.submit();
       }}
       onCancel={onCancel}
-      okText="提交"
-      cancelText="取消"
+      okText={dict('PC.Common.Global.submit')}
+      cancelText={dict('PC.Common.Global.cancel')}
       confirmLoading={loading}
       className="add-modal-style"
     >
@@ -127,8 +150,8 @@ const AddAndModify: React.FC<AddAndModifyProps> = ({
             TableFieldTypeEnum.Boolean,
             TableFieldTypeEnum.Date,
           ].includes(item.fieldType)
-            ? '请选择'
-            : '请输入';
+            ? dict('PC.Common.Global.pleaseSelect')
+            : dict('PC.Common.Global.pleaseInput');
           const rules = !item.nullableFlag
             ? [{ required: true, message: `${inputDesc}${item.fieldName}` }]
             : [];

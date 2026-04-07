@@ -1,12 +1,7 @@
 /**
- * V3 工作流页面主入口
+ * V3 workflow page entry.
  *
- * 基于 V1 代码重构，解决前后端数据不同步问题
- * 核心改动：
- * - 使用统一代理层管理节点/边操作
- * - 组装全量数据后统一更新（以前端的画布上的节点及连线及相关数据属性为依据）
- * - 使用前端变量引用计算（替代 getOutputArgs 接口）
- * - 要支持 撤销/重做 操作（X6 提供）
+ * Refactored from V1 to keep frontend/backend data consistent.
  */
 
 import Constant from '@/constants/codes.constants';
@@ -62,7 +57,7 @@ import { useWorkflowLifecycle } from './hooks/useWorkflowLifecycle';
 import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
-// V3 数据代理层
+// V3 data proxy layer.
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
 import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
@@ -91,10 +86,9 @@ const Workflow: React.FC = () => {
   } = useModel('workflowV3');
 
   const params = useParams();
-  // 当前工作流的id
+  // id
   const workflowId = Number(params.workflowId);
   const spaceId = Number(params.spaceId);
-  // 当前被选中的节点
   const [foldWrapItem, setFoldWrapItem] =
     useState<ChildNode>(DEFAULT_DRAWER_FORM);
 
@@ -126,7 +120,6 @@ const Workflow: React.FC = () => {
     });
   }, [setInfo]);
 
-  // 调整画布的大小(滚轮缩放时更新状态)
   const changeZoom = useCallback(
     (val: number) => {
       setInfo((prev) => {
@@ -140,53 +133,42 @@ const Workflow: React.FC = () => {
     [setInfo],
   );
 
-  // 打开和关闭新增组件
   const [open, setOpen] = useState(false);
-  // 展示修改工作流的弹窗
   const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
-  // 创建工作流，插件，知识库，数据库
   const [createdItem, setCreatedItem] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
-  // 拖动节点到画布中的x和y
+  // xy
   const [dragEvent, setDragEvent] = useState<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
-  // 当点击连接桩和边时，存储一些数据
   const currentNodeRef = useRef<CurrentNodeRefProps | null>(null);
-  // 节点的form表单
+  // form
   const [form] = Form.useForm<NodeConfig>();
-  // 修改右侧抽屉的名称
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
-  // 错误列表的参数
   const [errorParams, setErrorParams] = useState<ErrorParams>({
     errorList: [],
     show: false,
   });
-  // 发布前的校验
-  // 画布的ref
+  // ref
   const graphRef = useRef<GraphContainerRef>(null);
-  const graphInstanceRef = useRef<Graph | null>(null); // 持久化引用，解决 undo/redo 及 unmount 时 graphRef 失效问题
-  // 阻止获取当前节点的上级参数
+  const graphInstanceRef = useRef<Graph | null>(null); // Persistent graph ref for undo/redo and unmount.
   const preventGetReference = useRef<number>(0);
-  // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
-  // 标记节点切换中，防止表单初始化触发保存
   const isNodeSwitchingRef = useRef(false);
-  // V3: 延迟引用 - 用于解决 hooks 循环依赖问题
+  // V3:  -  hooks
   const changeDrawerRef = useRef<((child: ChildNode | null) => void) | null>(
     null,
   );
   const validWorkflowRef = useRef<(() => Promise<boolean>) | null>(null);
   const doSubmitFormDataRef = useRef<(() => Promise<boolean>) | null>(null);
   const getDetailsRef = useRef<(() => Promise<void>) | null>(null);
-  // V3: 赋值 getDetails 到 ref（getDetails 在前面定义，因此这里赋值）
+  // V3:  getDetails  ref（getDetails ，）
   getDetailsRef.current = getDetails;
   const [showVersionHistory, setShowVersionHistory] = useState(false);
-  // 是否显示创建工作流，插件，知识库，数据库的弹窗和试运行的弹窗
   const { setTestRun } = useModel('model');
-  // 从useModel中获取到数据
+  // useModel
   const {
     setReferenceList,
     setIsModified,
@@ -195,10 +177,10 @@ const Workflow: React.FC = () => {
     isModified,
   } = useModel('workflowV3');
 
-  // 使用 Hook 控制抽屉打开时的滚动条
+  //  Hook
   useDrawerScroll(showVersionHistory);
 
-  // 全局禁用Ctrl+S/Cmd+S
+  // Ctrl+S/Cmd+S
   useDisableSaveShortcut();
 
   const updateCurrentNodeRef = useCallback(
@@ -213,7 +195,7 @@ const Workflow: React.FC = () => {
     [currentNodeRef],
   );
 
-  // 调整画布的大小（左下角 select 控件）
+  // （ select ）
   const changeGraph = useCallback(
     (val: number | string) => {
       if (val === -1) {
@@ -225,34 +207,32 @@ const Workflow: React.FC = () => {
     [graphRef],
   );
 
-  /** -----------------  需要调用接口的方法  --------------------- */
-  // 同步 foldWrapItem 到 model 中的 drawerForm
+  /** -----------------    --------------------- */
+  //  foldWrapItem  model  drawerForm
   useEffect(() => {
-    // 直接使用 setDrawerForm 进行更新
+    //  setDrawerForm
     storeWorkflow('drawerForm', foldWrapItem);
 
-    // V3: 当 foldWrapItem 变化时，同步更新表单数据
-    // 确保 UI 显示与本地数据一致
+    // V3:  foldWrapItem ，
+    //  UI
     if (foldWrapItem && foldWrapItem.nodeConfig) {
-      // 保留当前表单中的技能数据，避免被 foldWrapItem 覆盖
+      // ， foldWrapItem
       const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
       form.setFieldsValue(foldWrapItem.nodeConfig);
-      // 如果当前表单有技能数据，恢复它（优先使用表单中的最新数据）
       if (Array.isArray(currentSkills) && currentSkills.length > 0) {
         form.setFieldValue(SKILL_FORM_KEY, currentSkills);
       }
     }
 
     if (skillChange) {
-      // 处理技能变化时的表单更新
       setSkillChange(false);
     }
   }, [foldWrapItem]);
 
-  // 获取当前节点的参数 - V3 使用前端计算替代后端接口
+  // Get current node reference args (V3 frontend calculation).
   const getReference = async (id: number): Promise<boolean> => {
     console.log(
-      '[getReference] 调用, id:',
+      '[getReference] called, id:',
       id,
       'preventGetReference:',
       preventGetReference.current,
@@ -260,23 +240,19 @@ const Workflow: React.FC = () => {
     if (id === FoldFormIdEnum.empty || preventGetReference.current === id)
       return false;
 
-    // V3: 使用前端计算代替后端接口调用
+    // V3 frontend calculation path.
     try {
-      // 优先从画布获取最新节点数据（确保是最新编辑状态）
       let nodeList: any[] = [];
       let edgeList: any[] = [];
 
       const graph = graphRef.current?.getGraphRef?.();
       if (graph) {
-        // 从画布直接获取节点数据
         nodeList = graph.getNodes().map((n: any) => {
           const data = n.getData();
-          // 合并位置信息
           const position = n.getPosition();
           const size = n.getSize();
 
-          // 对于 Loop 节点，从画布子节点动态获取最新的 innerNodes
-          // 这样可以确保循环体内节点的最新变更（如新增输出变量）被正确引用
+          //  Loop ， innerNodes
           let innerNodes = data.innerNodes;
           if (data.type === NodeTypeEnum.Loop) {
             const children = n.getChildren();
@@ -303,7 +279,6 @@ const Workflow: React.FC = () => {
           };
         });
 
-        // 从画布获取边数据
         edgeList = graph.getEdges().map((e: any) => ({
           id: e.id,
           source: e.getSourceCellId(),
@@ -312,7 +287,7 @@ const Workflow: React.FC = () => {
           targetPort: (e.getTarget() as any)?.port,
         }));
       } else {
-        // 回退到 workflowProxy 数据
+        //  workflowProxy
         const fullData = workflowProxy.getFullWorkflowData();
         nodeList = fullData?.nodes || graphParams.nodeList;
         edgeList = fullData?.edges || graphParams.edgeList;
@@ -351,36 +326,33 @@ const Workflow: React.FC = () => {
       }
       return true;
     } catch (error) {
-      console.error('[V3] 前端计算变量引用失败:', error);
+      console.error('[V3] calculate variable references failed:', error);
       return false;
     }
   };
-  // 获取当前节点数据
   const getNodeConfig = async (id: number) => {
     if (id === FoldFormIdEnum.empty) return;
 
-    // V3: 优先从代理层获取数据（确保是最新状态）
+    // V3: prefer proxy node data (latest state).
     const node = workflowProxy.getNodeById(id);
     if (node) {
       setFoldWrapItem(cloneDeep(node));
     } else {
-      // 降级尝试从接口获取
       try {
         const _res = await service.getNodeConfig(id);
         if (_res.code === Constant.success) {
           const data = _res.data;
-          // 兜底：接口获取后同步到代理层与画布
           workflowProxy.updateNode(data);
           graphRef.current?.graphUpdateNode(String(data.id), data);
           setFoldWrapItem(data);
           changeUpdateTime();
         }
       } catch (e) {
-        console.error('获取节点详情失败', e);
+        console.error('[V3] get node config failed:', e);
       }
     }
   };
-  // 优化后的onFinish方法
+  // onFinish
   // V3 Hooks Integration for Persistence and Interaction
   const { saveFullWorkflow, debouncedSaveFullWorkflow, autoSaveNodeConfig } =
     useWorkflowPersistence({
@@ -391,7 +363,7 @@ const Workflow: React.FC = () => {
       setFoldWrapItem,
     });
 
-  // V3: 更新工作流基础信息（名称、描述、图标），走全量保存接口
+  // V3: （），
   const onUpdateWorkflow = useCallback(
     async (updateInfo: {
       name?: string;
@@ -399,7 +371,7 @@ const Workflow: React.FC = () => {
       icon?: string;
     }) => {
       try {
-        // 更新本地 info 状态
+        //  info
         setInfo((prev) => {
           if (!prev) return null;
           return {
@@ -411,7 +383,7 @@ const Workflow: React.FC = () => {
           };
         });
 
-        // 更新 workflowProxy 中的工作流信息
+        //  workflowProxy
         const currentInfo = workflowProxy.getWorkflowInfo();
         if (currentInfo) {
           workflowProxy.setWorkflowInfo({
@@ -422,18 +394,17 @@ const Workflow: React.FC = () => {
           });
         }
 
-        // 更新 workflowSaveService 的元数据（避免被全量保存覆盖）
+        //  workflowSaveService （）
         workflowSaveService.updateMeta({
           name: updateInfo.name,
           description: updateInfo.description,
           icon: updateInfo.icon,
         });
 
-        // 调用全量保存接口
         const success = await saveFullWorkflow();
         return success;
       } catch (error) {
-        console.error('更新工作流基础信息失败:', error);
+        console.error('[V3] update workflow basic info failed:', error);
         return false;
       }
     },
@@ -449,7 +420,7 @@ const Workflow: React.FC = () => {
     getNodeConfig: (id) => getNodeConfig(id),
     updateCurrentNodeRef,
   });
-  // V3: 节点操作 Hook（使用 ref 解决循环依赖）
+  // V3:  Hook（ ref ）
   const nodeOperationsHook = useNodeOperations({
     workflowId,
     graphRef,
@@ -476,7 +447,7 @@ const Workflow: React.FC = () => {
     },
   });
 
-  // V3: 试运行 Hook（使用 ref 解决循环依赖）
+  // V3:  Hook（ ref ）
   const testRunHook = useTestRun({
     workflowId,
     spaceId,
@@ -498,7 +469,7 @@ const Workflow: React.FC = () => {
     setErrorParams,
   });
 
-  // V3: 工作流校验 Hook（使用 ref 解决循环依赖）
+  // V3:  Hook（ ref ）
   const validationHook = useWorkflowValidation({
     workflowId,
     info,
@@ -526,7 +497,7 @@ const Workflow: React.FC = () => {
       try {
         let values = form.getFieldsValue(true);
 
-        // 清理 VariableAggregation 节点的扁平化键
+        //  VariableAggregation
         if (currentFoldWrapItem.type === NodeTypeEnum.VariableAggregation) {
         }
 
@@ -565,7 +536,7 @@ const Workflow: React.FC = () => {
         }
         result = await autoSaveNodeConfig(updateFormConfig);
       } catch (error) {
-        console.error('表单提交失败:', error);
+        console.error('[V3] form submit failed:', error);
         result = false;
       }
       return result;
@@ -575,17 +546,16 @@ const Workflow: React.FC = () => {
 
   const doSubmitFormData = useCallback(async (): Promise<boolean> => {
     let result = false;
-    // V3: 直接使用 skillChange 状态，而非 getWorkflow('skillChange')
-    // 因为 workflow.ts 中有一个 bug，storeWorkflow('skillChange', visible) 存储了错误的值
+    // V3:  skillChange ， getWorkflow('skillChange')
+    //  workflow.ts  bug，storeWorkflow('skillChange', visible)
     const hasSkillChange = skillChange;
     if (getWorkflow('isModified') === false) {
-      // 即使没有修改，也要清除 skillChange 状态以停止 loading
+      // ， skillChange  loading
       if (hasSkillChange) {
         setSkillChange(false);
       }
       return result;
     }
-    //重新获取节点配置信息 并更新表单 与节点配置数据
     try {
       setIsModified(false);
       result = await onSaveWorkflow(getWorkflow('drawerForm'));
@@ -594,7 +564,6 @@ const Workflow: React.FC = () => {
         const isSuccess = _res.code === Constant.success;
         const data = _res.data;
         if (isSuccess && data && data.nodeConfig[SKILL_FORM_KEY]) {
-          //更新表单数据 包括技能数据
           const updateValue = updateSkillComponentConfigs(
             form.getFieldsValue(true)[SKILL_FORM_KEY] || [],
             data.nodeConfig[SKILL_FORM_KEY],
@@ -613,36 +582,34 @@ const Workflow: React.FC = () => {
     }
     return result;
   }, [setIsModified, form, setSkillChange, skillChange]);
-  // V3: 赋值 doSubmitFormData 到 ref（用于解决循环依赖）
+  // V3:  doSubmitFormData  ref（）
   doSubmitFormDataRef.current = doSubmitFormData;
 
   /**
-   * 切换节点前保存当前节点数据
    *
-   * 问题背景：TreeNodeTitle 等组件使用 onBlur 来更新表单值，而不是 onChange。
-   * 当用户在输入框中输入内容后直接点击另一个节点，blur 事件会触发，
-   * 但 React 的状态更新是异步的，可能在 changeDrawer 检查时还没有完成。
    *
-   * 解决方案：
-   * 1. 手动触发 blur 事件
-   * 2. 等待 React 状态更新完成
-   * 3. 获取最新表单值并更新到 workflowProxy 和画布
+   * ：TreeNodeTitle  onBlur ， onChange
+   * ，blur ，
+   *  React ， changeDrawer
+   *
+   * ：
+   * 1.  blur
+   * 2.  React
+   * 3.  workflowProxy
    */
   const saveCurrentNodeBeforeSwitch = useCallback(
     async (currentNode: ChildNode): Promise<ChildNode> => {
-      // 触发当前 focus 元素的 blur 事件
+      //  focus  blur
       const activeElement = document.activeElement as HTMLElement;
       if (activeElement && typeof activeElement.blur === 'function') {
         activeElement.blur();
       }
 
-      // 获取最新表单值
       const currentFormValues = form.getFieldsValue(true);
 
-      // 合并表单值到节点数据
       const updatedNode = {
         ...currentNode,
-        ...currentFormValues, // 顶层属性（如 Loop 的 outputArgs）
+        ...currentFormValues, // （ Loop  outputArgs）
         name: currentNode.name,
         nodeConfig: {
           ...currentNode.nodeConfig,
@@ -650,7 +617,6 @@ const Workflow: React.FC = () => {
         },
       };
 
-      // 更新到代理层和画布（这是变量引用查找的数据来源）
       workflowProxy.updateNode(updatedNode);
       graphRef.current?.graphUpdateNode(String(currentNode.id), updatedNode);
 
@@ -659,13 +625,12 @@ const Workflow: React.FC = () => {
     [form, graphRef],
   );
 
-  // 点击组件，显示抽屉
   const changeDrawer = useCallback(async (child: ChildNode | null) => {
     const _isModified = getWorkflow('isModified');
     const _drawerForm = getWorkflow('drawerForm');
 
     workflowLogger.log(
-      '[changeDrawer] 节点切换, isModified:',
+      '[changeDrawer] node switch, isModified:',
       _isModified,
       'currentNode:',
       _drawerForm?.id,
@@ -673,40 +638,36 @@ const Workflow: React.FC = () => {
       child?.id,
     );
 
-    // 标记节点切换开始，防止表单初始化触发 isModified
+    // Mark node switching to avoid false positive modifications.
     isNodeSwitchingRef.current = true;
-    // 使用 setTimeout 在下一个事件循环重置标记
-    // 600ms 足够让 throttledHandleGraphUpdate (500ms) 完成
+    // Reset in next event loop. 600ms covers throttled update window.
     setTimeout(() => {
       isNodeSwitchingRef.current = false;
     }, 600);
 
-    // 切换节点时保存当前节点数据（包含触发 blur 和等待状态更新）
+    // Save current node before switching (with blur trigger).
     if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
       if (_isModified) {
-        // 获取最新表单值
         const currentFormValues = form.getFieldsValue(true);
 
-        // 判断是否有实质性修改
         const hasChanges = checkNodeModified(_drawerForm, currentFormValues);
 
         if (hasChanges) {
-          workflowLogger.log('[changeDrawer] 切换节点，保存当前节点数据');
+          workflowLogger.log('[changeDrawer] save current node before switch');
 
-          // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
+          // Trigger blur and persist latest form state.
           const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(
             _drawerForm,
           );
 
           setIsModified(false);
-          // 保存到后端，完成后刷新新节点的引用参数
           onSaveWorkflow(updatedDrawerForm).then(() => {
             if (child && child.id !== 0) {
               getReference(child.id);
             }
           });
         } else {
-          // 如果没有实质性修改，但 flagged 为 modified，则清除 flag
+          // ， flagged  modified， flag
           setIsModified(false);
           if (child && child.id !== 0) {
             getReference(child.id);
@@ -733,7 +694,7 @@ const Workflow: React.FC = () => {
 
     const _visible = getWorkflow('visible');
 
-    // 计算新的 foldWrapItem 和 visible 状态（避免在 updater 函数内调用 setState）
+    //  foldWrapItem  visible （ updater  setState）
     let newVisible = _visible;
     let newFold: ChildNode;
 
@@ -759,30 +720,28 @@ const Workflow: React.FC = () => {
       };
     }
 
-    // 先更新 visible 和 testRun 状态
+    //  visible  testRun
     setTestRun(false);
     if (newVisible !== _visible) {
       setVisible(newVisible);
     }
 
-    // 同步更新 storeWorkflowRef，确保 getWorkflow('drawerForm') 立即返回最新值
-    // 避免 handleSpecialPortConnection 等异步操作读取到旧的 drawerForm
+    //  storeWorkflowRef， getWorkflow('drawerForm')
+    //  handleSpecialPortConnection  drawerForm
     storeWorkflow('drawerForm', newFold);
-    // 最后更新 foldWrapItem
+    //  foldWrapItem
     setFoldWrapItem(newFold);
   }, []);
-  // V3: 赋值 changeDrawer 到 ref（用于解决循环依赖）
+  // V3:  changeDrawer  ref（）
   changeDrawerRef.current = changeDrawer;
 
-  // 校验当前工作流
   const validWorkflow = useCallback(async () => {
     return await validationHook.validWorkflow();
   }, [validationHook]);
 
-  // V3: 赋值 validWorkflow 到 ref（用于解决循环依赖）
+  // V3:  validWorkflow  ref（）
   validWorkflowRef.current = validWorkflow;
 
-  // 右上角的相关操作
   const handleOperationsChange = useCallback(
     async (val: string) => {
       switch (val) {
@@ -791,13 +750,13 @@ const Workflow: React.FC = () => {
           break;
         }
         case 'Delete': {
-          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          //  getWorkflow  drawerForm， foldWrapItem
           const currentNode = getWorkflow('drawerForm');
           nodeOperationsHook.deleteNode(currentNode.id);
           break;
         }
         case 'Duplicate': {
-          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          //  getWorkflow  drawerForm， foldWrapItem
           const currentNode = getWorkflow('drawerForm');
           nodeOperationsHook.copyNode(currentNode);
           break;
@@ -823,33 +782,27 @@ const Workflow: React.FC = () => {
   );
 
   const handleBack = useCallback(async () => {
-    // 返回前先进行覆盖检查（保存）
-    // 只有保存成功（或确认强制覆盖）后才跳转
-    // 版本冲突时用户点击"取消"也可以放弃修改直接返回
     await saveFullWorkflow(
       false,
       () => {
         jumpBack(`/space/${spaceId}/library`);
       },
       () => {
-        // 用户选择取消（放弃修改），直接返回
         jumpBack(`/space/${spaceId}/library`);
       },
     );
   }, [saveFullWorkflow, spaceId]);
 
   const handleDrawerClose = useCallback(() => {
-    // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
+    // TODO  Loop
     graphRef.current?.graphTriggerBlankClick();
   }, []);
 
   const handleClickBlank = useCallback(() => {
-    // 关闭右侧抽屉
     changeDrawer(null);
     setVisible(false);
   }, []);
 
-  // 更改节点的名称
   const changeFoldWrap = ({
     name,
     description,
@@ -864,7 +817,6 @@ const Workflow: React.FC = () => {
 
   const handleSaveNode = useCallback(
     (data: ChildNode, payload: Partial<ChildNode>) => {
-      // 更新节点名称
       const newValue = { ...data, ...payload };
       changeNode({ nodeData: newValue });
       const graph = graphRef.current?.getGraphRef();
@@ -886,9 +838,7 @@ const Workflow: React.FC = () => {
     [changeNode, setFoldWrapItem],
   );
 
-  // 点击画布中的节点
   const handleNodeClick = (node: ChildNode | null) => {
-    // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
     if (
       getWorkflow('visible') &&
       node &&
@@ -896,7 +846,7 @@ const Workflow: React.FC = () => {
     )
       return;
 
-    // 优先使用 workflowProxy 的最新数据（避免 graphParams 重绘后数据丢失）
+    //  workflowProxy （ graphParams ）
     if (node) {
       const latestNode = workflowProxy.getNodeById(node.id);
       if (latestNode) {
@@ -916,27 +866,23 @@ const Workflow: React.FC = () => {
   };
 
   const handleErrorNodeClick = (node: ChildNode | null) => {
-    // 如果右侧抽屉是再展示的，且就是当前选中的节点，那么就不做任何操作
     if (visible && node && node.id === getWorkflow('drawerForm').id) return;
     if (node) {
-      //分成二个步骤：
-      // 1. 先获取当前选中节点的位置，然后平移画布到当前选中节点在视口中间
+      // 1. ，
       const graph = graphRef.current?.getGraphRef();
       const cell = graph?.getCellById(node.id.toString());
       if (cell) {
         graph?.centerCell(cell);
       }
-      // 2. 选中节点
+      // 2.
       selectGraphNode(node.id);
     }
   };
 
-  // 通过连接桩或者边创建节点
   const createNodeByPortOrEdge = async (
     config: CreateNodeByPortOrEdgeProps,
   ) => {
     const { child, sourceNode, portId, position, targetNode, edgeId } = config;
-    // 首先创建节点
     currentNodeRef.current = {
       sourceNode: sourceNode,
       portId: portId,
@@ -954,17 +900,16 @@ const Workflow: React.FC = () => {
     await nodeOperationsHook.dragChild(child, newPosition);
   };
 
-  // V3: 页面离开保护（刷新/关闭/SPA路由跳转）
+  // V3: （//SPA）
   useBeforeUnload({
     getGraph: () =>
       graphRef.current?.getGraphRef?.() || graphInstanceRef.current,
     onSave: saveFullWorkflow,
   });
 
-  // 组件卸载时的清理
   useEffect(() => {
     return () => {
-      // V3: 离开页面时全量保存
+      // V3:
       if (workflowProxy.hasPendingChanges()) {
         saveFullWorkflow();
       }
@@ -986,13 +931,10 @@ const Workflow: React.FC = () => {
     if (foldWrapItem.id !== 0) {
       const newFoldWrapItem = cloneDeep(foldWrapItem);
 
-      // 先重置表单，清除所有字段
       form.resetFields();
 
-      // 然后设置当前节点的配置
       form.setFieldsValue(newFoldWrapItem.nodeConfig);
 
-      // 设置默认值
       setFormDefaultValues({
         type: newFoldWrapItem.type,
         nodeConfig: newFoldWrapItem.nodeConfig,
@@ -1001,15 +943,13 @@ const Workflow: React.FC = () => {
     }
   }, [foldWrapItem.id, foldWrapItem.type]);
 
-  // 监听保存更新修改
   useModifiedSaveUpdateV3({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
       const currentFormValues = form.getFieldsValue(true);
 
-      // 深度比较，如果没有实质变化则不保存
       if (!checkNodeModified(_drawerForm, currentFormValues)) {
-        // console.log('[useModifiedSaveUpdateV3] 即将保存但检测到无实质变化，跳过');
+        // console.log('[useModifiedSaveUpdateV3] ，');
         return true;
       }
 
@@ -1028,7 +968,6 @@ const Workflow: React.FC = () => {
     await getDetails();
   };
 
-  // 更新画布中的节点
   const handleGraphUpdateByFormData = useCallback(
     (changedValues: any, fullFormValues: any) => {
       const nodeId = getWorkflow('drawerForm').id;
@@ -1044,32 +983,28 @@ const Workflow: React.FC = () => {
     [graphRef.current],
   );
 
-  // 使用节流处理表单值变化，确保最后一次调用必须触发更新
   const throttledHandleGraphUpdate = useThrottledCallback(
     (changedValues: any, fullFormValues: any) => {
       console.log(
-        '[throttledHandleGraphUpdate] 触发, changedValues:',
+        '[throttledHandleGraphUpdate] , changedValues:',
         Object.keys(changedValues),
         'isNodeSwitching:',
         isNodeSwitchingRef.current,
       );
-      // 先关闭之前修改的标记
       setIsModified(false);
       handleGraphUpdateByFormData(changedValues, fullFormValues);
-      // 只有在非节点切换期间才标记为已修改
-      // 节点切换时的表单初始化不应触发保存
       if (!isNodeSwitchingRef.current) {
         setIsModified(true);
       }
     },
-    500, // 500ms 的节流延迟
+    500, // 500ms
     {
-      leading: true, // 立即执行第一次调用
-      trailing: true, // 确保最后一次调用被执行
+      leading: true, //
+      trailing: true, //
     },
   );
 
-  // V3: 历史记录操作（快捷键及状态管理）
+  // V3: （）
   const { historyState, handleUndo, handleRedo } = useWorkflowHistory({
     graphRef,
     graphInstanceRef,
@@ -1148,5 +1083,5 @@ const Workflow: React.FC = () => {
   );
 };
 
-// V3 直接导出 Workflow 组件
+// V3  Workflow
 export default Workflow;

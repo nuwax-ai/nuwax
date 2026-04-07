@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { UserService } from '@/services/userService';
 import type { UserInfo } from '@/types/interfaces/login';
 import { useCallback, useState } from 'react';
@@ -23,7 +24,9 @@ export default () => {
       return result;
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : '获取用户信息失败';
+        err instanceof Error
+          ? err.message
+          : dict('PC.Models.UserInfo.getUserInfoFailed');
       setError(errorMessage);
       console.error('获取用户信息失败:', err);
       return null;
@@ -44,7 +47,9 @@ export default () => {
       return result;
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : '刷新用户信息失败';
+        err instanceof Error
+          ? err.message
+          : dict('PC.Models.UserInfo.refreshUserInfoFailed');
       setError(errorMessage);
       console.error('刷新用户信息失败:', err);
       return null;

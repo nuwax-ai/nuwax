@@ -1,4 +1,5 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -38,25 +39,25 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   const nodeTypeName = useMemo(() => {
     switch (node?.targetType) {
       case AgentComponentTypeEnum.Agent:
-        return '智能体';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeAgent');
       case AgentComponentTypeEnum.Plugin:
-        return '插件';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypePlugin');
       case AgentComponentTypeEnum.Workflow:
-        return '工作流';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeWorkflow');
       case AgentComponentTypeEnum.Knowledge:
-        return '知识库';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeKnowledge');
       case AgentComponentTypeEnum.Variable:
-        return '变量';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeVariable');
       case AgentComponentTypeEnum.Table:
-        return '数据表';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeTable');
       case AgentComponentTypeEnum.Model:
-        return '模型';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeModel');
       case AgentComponentTypeEnum.MCP:
         return 'MCP';
       case AgentComponentTypeEnum.ToolCall:
-        return '工具调用';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypeToolCall');
       case AgentComponentTypeEnum.Plan:
-        return '计划';
+        return t('PC.Pages.SystemRunningLogNodeDetails.targetTypePlan');
       default:
         return '--';
     }
@@ -65,13 +66,25 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   return (
     <>
       <div className={cx(styles.container)}>
-        {renderDetailItem('类型', nodeTypeName)}
-        {renderDetailItem('状态', '成功')}
-        {renderDetailItem('名称', node?.targetName as string)}
-        {renderDetailItem('耗时', time)}
+        {renderDetailItem(
+          t('PC.Pages.SystemRunningLogNodeDetails.labelType'),
+          nodeTypeName,
+        )}
+        {renderDetailItem(
+          t('PC.Pages.SystemRunningLogNodeDetails.labelStatus'),
+          t('PC.Pages.SystemRunningLogNodeDetails.statusSuccess'),
+        )}
+        {renderDetailItem(
+          t('PC.Pages.SystemRunningLogNodeDetails.labelName'),
+          node?.targetName as string,
+        )}
+        {renderDetailItem(
+          t('PC.Pages.SystemRunningLogNodeDetails.labelElapsed'),
+          time,
+        )}
       </div>
       {renderDetailItem(
-        '发起时间',
+        t('PC.Pages.SystemRunningLogNodeDetails.labelStartTime'),
         node?.requestStartTime
           ? dayjs(node?.requestStartTime).format('YYYY-MM-DD HH:mm')
           : '',
@@ -79,7 +92,7 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       )}
       <div />
       {renderDetailItem(
-        '结束时间',
+        t('PC.Pages.SystemRunningLogNodeDetails.labelEndTime'),
         node?.requestEndTime
           ? dayjs(node?.requestEndTime).format('YYYY-MM-DD HH:mm')
           : '',

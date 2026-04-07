@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import service from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ModelUsageScenarioEnum } from '@/types/enums/modelConfig';
@@ -99,7 +100,7 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({
   return (
     <Form.Item name={'modelId'}>
       <Select
-        placeholder="请选择模型"
+        placeholder={dict('PC.Components.ModelSetting.pleaseSelectModel')}
         style={{ width: '100%', marginTop: '10px' }}
         className="input-style"
         labelRender={labelRender}
@@ -143,10 +144,16 @@ export const GroupedOptionSelect: React.FC<ModelSettingProp> = ({
 };
 
 const options = [
-  { label: '精确模式', value: 'Precision' },
-  { label: '平衡模式', value: 'Balanced' },
-  { label: '创意模式', value: 'Creative' },
-  { label: '自定义', value: 'Customization' },
+  {
+    label: dict('PC.Components.ModelSetting.precisionMode'),
+    value: 'Precision',
+  },
+  { label: dict('PC.Components.ModelSetting.balancedMode'), value: 'Balanced' },
+  { label: dict('PC.Components.ModelSetting.creativeMode'), value: 'Creative' },
+  {
+    label: dict('PC.Components.ModelSetting.customMode'),
+    value: 'Customization',
+  },
 ];
 
 const typeOptionValue = {
@@ -266,9 +273,13 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
   return (
     <>
       <div className="model-dispose-mode-style">
-        <div className="model-title-style border-bottom">模型</div>
+        <div className="model-title-style border-bottom">
+          {dict('PC.Components.ModelSetting.model')}
+        </div>
         <div className="dis-sb margin-top-10">
-          <span className="dispose-title-style">生成多样性</span>
+          <span className="dispose-title-style">
+            {dict('PC.Components.ModelSetting.generateDiversity')}
+          </span>
           <div className="dis-left">
             <Form.Item name={'mode'} style={{ marginBottom: 0 }}>
               <Radio.Group
@@ -284,7 +295,7 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
               onClick={() => setShowMore(!showMore)}
               className="right-content-style"
             >
-              <span>高级设置</span>
+              <span>{dict('PC.Components.ModelSetting.advancedSettings')}</span>
               {showMore ? <CaretUpFilled /> : <CaretDownFilled />}
             </div>
           </div>
@@ -295,9 +306,9 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
             min={0}
             max={1}
             step={0.1}
-            title={'生成随机性'}
+            title={dict('PC.Components.ModelSetting.generateRandomness')}
             configKey="temperature"
-            content="temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 'Top p' 同时调整。"
+            content={dict('PC.Components.ModelSetting.temperatureDesc')}
           />
           <Content
             form={form}
@@ -306,19 +317,21 @@ export const ModelSetting: React.FC<ModelSettingProp> = ({ form }) => {
             step={0.1}
             title={'Top P'}
             configKey="topP"
-            content="Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 '生成随机性' 同时调整。"
+            content={dict('PC.Components.ModelSetting.topPDesc')}
           />
         </div>
         <Divider />
-        <div className="dispose-title-style">输入及输出设置</div>
+        <div className="dispose-title-style">
+          {dict('PC.Components.ModelSetting.inputOutputSettings')}
+        </div>
         <Content
           form={form}
           min={5}
           max={currentMaxTokens}
           step={1}
-          title={'最大回复长度'}
+          title={dict('PC.Components.ModelSetting.maxReplyLength')}
           configKey="maxTokens"
-          content="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
+          content={dict('PC.Components.ModelSetting.maxTokensDesc')}
         />
       </div>
     </>
@@ -333,7 +346,9 @@ export const ModelSelected: React.FC<ModelSettingProp> = ({
   return (
     <div className="node-item-style">
       <div className="dis-sb">
-        <span className="node-title-style">模型</span>
+        <span className="node-title-style">
+          {dict('PC.Components.ModelSetting.model')}
+        </span>
         <Popover
           content={<ModelSetting form={form} />}
           trigger="click"

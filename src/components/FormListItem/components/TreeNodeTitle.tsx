@@ -1,5 +1,6 @@
 import { ICON_ASSOCIATION } from '@/constants/images.constants';
 import { dataTypes } from '@/pages/Antv-X6/params';
+import { dict } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import { CascaderChange, CascaderValue } from '@/utils';
 import { DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
@@ -84,7 +85,9 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
             defaultValue={nodeData.name}
             onBlur={(e) => onUpdateField(nodeData.key, 'name', e.target.value)}
             disabled={nodeData.systemVariable}
-            placeholder="请输入参数名称"
+            placeholder={dict(
+              'PC.Components.FormListItem.paramNamePlaceholder',
+            )}
             className="tree-form-name flex-1"
             style={{
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
@@ -109,7 +112,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
               (nodeData.subArgs && nodeData.subArgs.length > 0)
             }
             placement={'bottomRight'}
-            placeholder="请选择数据类型"
+            placeholder={dict('PC.Components.FormListItem.dataTypePlaceholder')}
             style={{
               width: '100%',
               backgroundColor: nodeData.systemVariable ? '#f5f5f5' : undefined,
@@ -126,7 +129,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
         >
           {/* 添加子节点按钮 */}
           {canAddChild && (
-            <Tooltip title="新增子节点">
+            <Tooltip title={dict('PC.Components.FormListItem.addChildNode')}>
               <Button
                 type="text"
                 className="tree-icon-style"
@@ -153,7 +156,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
             }
             trigger="click"
           >
-            <Tooltip title="添加描述">
+            <Tooltip title={dict('PC.Components.FormListItem.addDescription')}>
               <Button
                 type="text"
                 className="tree-icon-style"
@@ -165,7 +168,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
 
           {/* 必填复选框 */}
           {showCheck && (
-            <Tooltip title="是否必须">
+            <Tooltip title={dict('PC.Components.FormListItem.isRequired')}>
               <Checkbox
                 checked={nodeData.require}
                 onChange={(e) => onUpdateRequire(nodeData, e.target.checked)}
@@ -175,7 +178,7 @@ const TreeNodeTitle: React.FC<TreeNodeTitleProps> = memo(
           )}
 
           {/* 删除按钮 */}
-          <Tooltip title="删除">
+          <Tooltip title={dict('PC.Common.Global.delete')}>
             <Button
               type="text"
               disabled={nodeData.systemVariable}

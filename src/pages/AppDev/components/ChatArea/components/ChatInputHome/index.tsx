@@ -9,6 +9,7 @@ import {
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useClickOutside from '@/hooks/useClickOutside';
+import { t } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { ModelConfig } from '@/types/interfaces/appDev';
@@ -148,8 +149,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 占位符消息轮播
   const placeholderMessages = [
-    '一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力',
-    '可以通过 @ 提及文件、目录、数据资源，以增强提示词的准确性',
+    t('PC.Pages.AppDevChatInput.placeholderAbility1'),
+    t('PC.Pages.AppDevChatInput.placeholderAbility2'),
   ];
 
   // 使用占位符轮播 Hook
@@ -425,12 +426,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     (requestId?: string) => {
       //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
       if (chat.isChatLoading || isSendingMessage || isStoppingTask) {
-        // console.warn('正在处理中，不能发送消息');
+        // console.warn('Processing in progress, sending is blocked');
         return;
       }
 
       if (pendingChanges?.length > 0) {
-        message.error('请先保存或重置修改, 再发送消息');
+        message.error(t('PC.Pages.AppDevChatInput.pendingChangesError'));
         return;
       }
 
@@ -492,7 +493,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
 
     if (pendingChanges?.length > 0) {
-      message.error('请先保存或重置修改, 再发送消息');
+      message.error(t('PC.Pages.AppDevChatInput.pendingChangesError'));
       return;
     }
 
@@ -586,9 +587,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         imageFiles.splice(MAX_IMAGE_COUNT - currentCount);
         if (imageFiles.length === 0) {
           message.warning(
-            `原型图片最多上传${MAX_IMAGE_COUNT}张，当前已有${currentCount}张，最多还能上传${
-              MAX_IMAGE_COUNT - currentCount
-            }张`,
+            t(
+              'PC.Pages.AppDevChatInput.maxPrototypeImageWarning',
+              String(MAX_IMAGE_COUNT),
+              String(currentCount),
+              String(MAX_IMAGE_COUNT - currentCount),
+            ),
           );
           return;
         }
@@ -598,7 +602,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       const tempFileInfoList: UploadFileInfo[] = imageFiles.map(
         (file, index) => ({
           uid: uuidv4(),
-          name: file.name || `粘贴图片-${Date.now()}-${index + 1}.png`,
+          name:
+            file.name ||
+            t(
+              'PC.Pages.AppDevChatInput.pasteImageFileName',
+              String(Date.now()),
+              String(index + 1),
+            ),
           size: file.size,
           type: file.type,
           status: UploadFileStatus.uploading,
@@ -665,7 +675,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             return { success: false, uid, error: result.message };
           }
         } catch (error) {
-          // console.error('上传图片失败:', error);
+          // console.error('Failed to upload image:', error);
           // 上传失败，更新状态
           setAttachmentPrototypeImages((prev) =>
             prev.map((item) =>
@@ -692,7 +702,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // 存在上传失败时，显示上传结果
       if (failCount > 0) {
         message.warning(
-          `${successCount}张图片上传成功，${failCount}张上传失败`,
+          t(
+            'PC.Pages.AppDevChatInput.uploadResultSummary',
+            String(successCount),
+            String(failCount),
+          ),
         );
       }
     },
@@ -755,7 +769,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <div
           className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
         >
-          <h4>编码模型</h4>
+          <h4>{t('PC.Pages.AppDevChatInput.codingModel')}</h4>
           <SelectList
             className={cx(styles['select-list'])}
             options={getModeOptions(modelSelector?.models?.chatModelList)}
@@ -766,7 +780,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <div
           className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
         >
-          <h4>视觉模型（可选）</h4>
+          <h4>{t('PC.Pages.AppDevChatInput.visionModelOptional')}</h4>
           <SelectList
             className={cx(styles['select-list'])}
             allowClear
@@ -788,12 +802,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
         {/*附件文件列表*/}
         <ConditionRender condition={attachmentFiles?.length}>
-          <h5 className={cx(styles['file-title'])}>附件文件</h5>
+          <h5 className={cx(styles['file-title'])}>
+            {t('PC.Pages.AppDevChatInput.attachmentFiles')}
+          </h5>
           <ChatUploadFile files={attachmentFiles} onDel={handleDelFile} />
         </ConditionRender>
         {/*附件文件列表*/}
         <ConditionRender condition={attachmentPrototypeImages?.length}>
-          <h5 className={cx(styles['file-title'])}>原型图片</h5>
+          <h5 className={cx(styles['file-title'])}>
+            {t('PC.Pages.AppDevChatInput.prototypeImages')}
+          </h5>
           <ChatUploadFile
             files={attachmentPrototypeImages}
             onDel={handleDelFilePrototypeImages}
@@ -801,7 +819,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         </ConditionRender>
         {/*已选择的提及项（文件/数据源）*/}
         <ConditionRender condition={selectedMentions?.length}>
-          <h5 className={cx(styles['file-title'])}>@ 提及</h5>
+          <h5 className={cx(styles['file-title'])}>
+            {t('PC.Pages.AppDevChatInput.mentionsTitle')}
+          </h5>
           <div
             className={cx(
               styles['mentions-list'],
@@ -990,7 +1010,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               showUploadList={false}
               maxCount={MAX_IMAGE_COUNT}
             >
-              <Tooltip title="上传附件">
+              <Tooltip title={t('PC.Pages.AppDevChatInput.uploadFile')}>
                 <Button
                   type="text"
                   className={cx(styles['svg-icon'], {
@@ -1022,7 +1042,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               showUploadList={false}
               maxCount={MAX_IMAGE_COUNT}
             >
-              <Tooltip title="上传原型图片">
+              <Tooltip
+                title={t('PC.Pages.AppDevChatInput.uploadPrototypeImage')}
+              >
                 <Button
                   type="text"
                   className={cx(styles['svg-icon'], {
@@ -1040,7 +1062,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           </div>
           <div className={cx('flex', 'items-center', 'content-end', 'gap-10')}>
             {/* 大模型选择 */}
-            <Tooltip title="模型">
+            <Tooltip title={t('PC.Pages.AppDevChatInput.model')}>
               <Popover
                 content={popoverContent}
                 trigger="click"
@@ -1065,7 +1087,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             </Tooltip>
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
-              <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
+              <Tooltip
+                title={
+                  isStoppingTask
+                    ? t('PC.Pages.AppDevChatInput.stopping')
+                    : t('PC.Pages.AppDevChatInput.cancelAiTask')
+                }
+              >
                 <span
                   onClick={handleCancelAgentTask}
                   className={`${styles.box} ${styles['send-box']} ${

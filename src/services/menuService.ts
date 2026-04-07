@@ -41,6 +41,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   model_manage: 'icons-nav-model',
   // 系统配置
   system_config: 'icons-nav-settings',
+  // 多语言管理
+  i18n_manage: 'icons-nav-settings',
   // 系统概览
   system_dashboard: 'icons-nav-dashboard',
   // 任务管理

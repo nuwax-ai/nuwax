@@ -33,13 +33,13 @@ export default () => {
             />
           );
         } catch (error) {
-          // console.error('❌ [genAppDevPlugin] Plan 数据解析失败:', error, {
+          // console.error('❌ [genAppDevPlugin] Failed to parse plan data:', error, {
           //   data,
           //   props,
           // });
           return (
             <div style={{ color: 'red' }}>
-              Plan 解析失败: {(error as Error).message}
+              Plan parsing failed: {(error as Error).message}
             </div>
           );
         }
@@ -68,13 +68,13 @@ export default () => {
             />
           );
         } catch (error) {
-          // console.error('❌ [genAppDevPlugin] ToolCall 数据解析失败:', error, {
+          // console.error('❌ [genAppDevPlugin] Failed to parse tool call data:', error, {
           //   data,
           //   props,
           // });
           return (
             <div style={{ color: 'red' }}>
-              ToolCall 解析失败: {(error as Error).message}
+              ToolCall parsing failed: {(error as Error).message}
             </div>
           );
         }

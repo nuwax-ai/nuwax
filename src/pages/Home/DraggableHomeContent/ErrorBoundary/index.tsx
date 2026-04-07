@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import React from 'react';
 
 interface ErrorBoundaryState {
@@ -23,7 +24,7 @@ class DragErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('拖拽组件错误:', error, errorInfo);
+    console.error('Drag component error:', error, errorInfo);
   }
 
   render() {
@@ -31,14 +32,14 @@ class DragErrorBoundary extends React.Component<
       return (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <h3>拖拽功能暂时不可用</h3>
-            <p>请刷新页面重试</p>
+            <h3>{dict('PC.Pages.HomeDrag.errorTitle')}</h3>
+            <p>{dict('PC.Pages.HomeDrag.errorDescription')}</p>
             <button
               type="button"
               onClick={() => window.location.reload()}
               className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
             >
-              刷新页面
+              {dict('PC.Pages.HomeDrag.refreshPage')}
             </button>
           </div>
         </div>

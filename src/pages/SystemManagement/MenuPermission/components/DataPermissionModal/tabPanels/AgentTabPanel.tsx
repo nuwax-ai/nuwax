@@ -8,6 +8,7 @@
  */
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { Input } from 'antd';
@@ -74,7 +75,7 @@ const AgentTabPanel: React.FC<AgentTabPanelProps> = ({
     >
       <Input.Search
         key="agentSearch"
-        placeholder="搜索智能体"
+        placeholder={dict('PC.Pages.DataPermissionTabPanel.searchAgent')}
         allowClear
         className={cx(styles.searchInput)}
         value={agentSearchKw}
@@ -142,7 +143,9 @@ const AgentTabPanel: React.FC<AgentTabPanelProps> = ({
           />
         ))
       ) : (
-        <div className={cx(styles.empty)}>暂无已选智能体</div>
+        <div className={cx(styles.empty)}>
+          {dict('PC.Pages.DataPermissionTabPanel.noSelectedAgent')}
+        </div>
       )}
     </div>
   </div>

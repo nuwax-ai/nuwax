@@ -7,6 +7,7 @@
  * @see DataPermissionModal
  */
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import classNames from 'classnames';
 import React from 'react';
@@ -84,7 +85,9 @@ const ModelTabPanel: React.FC<ModelTabPanelProps> = ({
           />
         ))
       ) : (
-        <div className={cx(styles.empty)}>暂无已选模型</div>
+        <div className={cx(styles.empty)}>
+          {dict('PC.Pages.DataPermissionTabPanel.noSelectedModel')}
+        </div>
       )}
     </div>
   </div>

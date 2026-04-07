@@ -1,4 +1,5 @@
 import TreeInput from '@/components/FormListItem/TreeInput';
+import { t } from '@/services/i18nRuntime';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { Form } from 'antd';
 import React from 'react';
@@ -16,7 +17,7 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ form }) => {
             <div className="node-item-style">
               <TreeInput
                 form={form}
-                title={'输入'}
+                title={t('PC.Pages.AntvX6Data.input')}
                 params={form.getFieldValue('inputArgs')}
               />
             </div>
@@ -28,7 +29,9 @@ const PluginInNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput treeData={form.getFieldValue('outputArgs')} />
             </>
           )

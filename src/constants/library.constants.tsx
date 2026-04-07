@@ -13,6 +13,7 @@ import {
   ICON_PLUGIN,
   ICON_WORKFLOW,
 } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { InputTypeEnum } from '@/types/enums/agent';
 import { HttpContentTypeEnum, HttpMethodEnum } from '@/types/enums/common';
 import {
@@ -44,32 +45,32 @@ import { BarsOutlined } from '@ant-design/icons';
 export const TASK_CENTER_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: TaskCenterMoreActionEnum.Record,
-    label: '执行记录',
+    label: dict('PC.Constants.Library.execRecord'),
     type: TaskCenterMoreActionEnum.Record,
   },
   {
     action: TaskCenterMoreActionEnum.Edit,
-    label: '编辑',
+    label: dict('PC.Common.Global.edit'),
     type: TaskCenterMoreActionEnum.Edit,
   },
   {
     action: TaskCenterMoreActionEnum.Enable,
-    label: '启用',
+    label: dict('PC.Common.Global.enable'),
     type: TaskCenterMoreActionEnum.Enable,
   },
   {
     action: TaskCenterMoreActionEnum.Disable,
-    label: '停用',
+    label: dict('PC.Common.Global.disable'),
     type: TaskCenterMoreActionEnum.Disable,
   },
   {
     action: TaskCenterMoreActionEnum.Execute,
-    label: '手动执行',
+    label: dict('PC.Constants.Library.manualExec'),
     type: TaskCenterMoreActionEnum.Execute,
   },
   {
     action: TaskCenterMoreActionEnum.Delete,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: TaskCenterMoreActionEnum.Delete,
   },
@@ -88,44 +89,44 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   // 工作流
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
+    label: dict('PC.Constants.Space.copyToSpace'),
     type: ComponentTypeEnum.Workflow,
   },
   {
     action: ApplicationMoreActionEnum.Export_Config,
-    label: '导出配置',
+    label: dict('PC.Constants.Space.exportConfig'),
     type: ComponentTypeEnum.Workflow,
   },
   {
     action: ApplicationMoreActionEnum.Log,
-    label: '日志',
+    label: dict('PC.Common.Global.log'),
     type: ComponentTypeEnum.Workflow,
   },
   {
     action: ApplicationMoreActionEnum.Del,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Workflow,
   },
   // 插件
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
+    label: dict('PC.Constants.Space.copyToSpace'),
     type: ComponentTypeEnum.Plugin,
   },
   {
     action: ApplicationMoreActionEnum.Export_Config,
-    label: '导出配置',
+    label: dict('PC.Constants.Space.exportConfig'),
     type: ComponentTypeEnum.Plugin,
   },
   {
     action: ApplicationMoreActionEnum.Log,
-    label: '日志',
+    label: dict('PC.Common.Global.log'),
     type: ComponentTypeEnum.Plugin,
   },
   {
     action: ApplicationMoreActionEnum.Del,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Plugin,
   },
@@ -134,31 +135,31 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   // { type: ApplicationMoreActionEnum.Statistics, label: '统计' },
   {
     action: ApplicationMoreActionEnum.Del,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Knowledge,
   },
   // 数据表
   {
     action: ApplicationMoreActionEnum.Copy,
-    label: '复制',
+    label: dict('PC.Common.Global.copy'),
     type: ComponentTypeEnum.Table,
   },
   {
     action: ApplicationMoreActionEnum.Export_Config,
-    label: '导出配置',
+    label: dict('PC.Constants.Space.exportConfig'),
     type: ComponentTypeEnum.Table,
   },
   {
     action: ApplicationMoreActionEnum.Del,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Table,
   },
   // 模型
   {
     action: ApplicationMoreActionEnum.Del,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Model,
   },
@@ -168,11 +169,11 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
 export const PLUGIN_CREATE_TOOL = [
   {
     value: PluginTypeEnum.HTTP,
-    label: '基于已有服务（http接口）创建',
+    label: dict('PC.Constants.Library.createByHttp'),
   },
   {
     value: PluginTypeEnum.CODE,
-    label: '基于云端代码（nodejs、python）创建',
+    label: dict('PC.Constants.Library.createByCloudCode'),
   },
 ];
 
@@ -212,7 +213,7 @@ export const REQUEST_METHOD = [
 export const REQUEST_CONTENT_FORMAT = [
   {
     value: HttpContentTypeEnum.OTHER,
-    label: '无',
+    label: dict('PC.Constants.Library.none'),
   },
   {
     value: HttpContentTypeEnum.FORM_DATA,
@@ -252,9 +253,9 @@ export const AFFERENT_MODE_LIST = [
 export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
   {
     value: KnowledgeTextImportEnum.Local_Doc,
-    label: '本地文档',
+    label: dict('PC.Constants.Library.localDoc'),
     icon: <ICON_LOCAL_DOC />,
-    desc: '上传 PDF, TXT, MD, DOC, DOCX 格式的本地文件',
+    desc: dict('PC.Constants.Library.localDocDesc'),
   },
   // {
   //   value: KnowledgeTextImportEnum.Online_Doc,
@@ -264,9 +265,9 @@ export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
   // },
   {
     value: KnowledgeTextImportEnum.Custom,
-    label: '自定义',
+    label: dict('PC.Common.Global.custom'),
     icon: <ICON_CUSTOM_DOC />,
-    desc: '自定义',
+    desc: dict('PC.Common.Global.custom'),
   },
 ];
 
@@ -274,40 +275,40 @@ export const KNOWLEDGE_TEXT_IMPORT_TYPE = [
 export const KNOWLEDGE_QA_IMPORT_TYPE = [
   {
     value: KnowledgeTextImportEnum.Custom,
-    label: '手动添加',
+    label: dict('PC.Constants.Library.manualAdd'),
     icon: <ICON_CUSTOM_DOC />,
-    desc: '手动添加',
+    desc: dict('PC.Constants.Library.manualAdd'),
   },
   {
     value: KnowledgeTextImportEnum.Local_Doc,
-    label: '批量导入',
+    label: dict('PC.Constants.Library.batchImport'),
     icon: <ICON_LOCAL_DOC />,
-    desc: '上传 Excel 格式的本地文件',
+    desc: dict('PC.Constants.Library.batchImportDesc'),
   },
 ];
 // 知识库-本地文档添加内容-步骤列表
 export const KNOWLEDGE_LOCAL_DOC_LIST = [
   {
-    title: '上传',
+    title: dict('PC.Constants.Library.upload'),
   },
   {
-    title: '创建设置',
+    title: dict('PC.Constants.Library.createSettings'),
   },
   {
-    title: '数据处理',
+    title: dict('PC.Constants.Library.dataProcess'),
   },
 ];
 
 // 知识库-自定义文档添加内容-步骤列表
 export const KNOWLEDGE_CUSTOM_DOC_LIST = [
   {
-    title: '文本填写',
+    title: dict('PC.Constants.Library.textFill'),
   },
   {
-    title: '分段设置',
+    title: dict('PC.Constants.Library.segmentSettings'),
   },
   {
-    title: '数据处理',
+    title: dict('PC.Constants.Library.dataProcess'),
   },
 ];
 
@@ -317,31 +318,31 @@ export const COMPONENT_LIST = [
     type: ComponentTypeEnum.Plugin,
     defaultImage: pluginImage,
     icon: <ICON_PLUGIN />,
-    text: '插件',
+    text: dict('PC.Common.Global.plugin'),
   },
   {
     type: ComponentTypeEnum.Knowledge,
     defaultImage: knowledgeImage,
     icon: <ICON_KNOWLEDGE />,
-    text: '知识库',
+    text: dict('PC.Common.Global.knowledge'),
   },
   {
     type: ComponentTypeEnum.Workflow,
     defaultImage: workflowImage,
     icon: <ICON_WORKFLOW />,
-    text: '工作流',
+    text: dict('PC.Common.Global.workflow'),
   },
   {
     type: ComponentTypeEnum.Table,
     defaultImage: databaseImage,
     icon: <ICON_DATABASE />,
-    text: '数据表',
+    text: dict('PC.Common.Global.dataTable'),
   },
   {
     type: ComponentTypeEnum.Model,
     defaultImage: modelImage,
     icon: <ICON_MODEL />,
-    text: '模型',
+    text: dict('PC.Common.Global.model'),
   },
 ];
 
@@ -349,7 +350,7 @@ export const COMPONENT_LIST = [
 export const MODEL_NETWORK_TYPE_LIST = [
   {
     value: ModelNetworkTypeEnum.Internet,
-    label: '公网模型',
+    label: dict('PC.Constants.Library.publicModel'),
   },
   // {
   //   value: ModelNetworkTypeEnum.Intranet,
@@ -361,73 +362,73 @@ export const MODEL_NETWORK_TYPE_LIST = [
 export const MODEL_STRATEGY_LIST = [
   {
     value: ModelStrategyEnum.RoundRobin,
-    label: '轮询',
+    label: dict('PC.Constants.Library.roundRobin'),
   },
   {
     value: ModelStrategyEnum.WeightedRoundRobin,
-    label: '加权轮询',
+    label: dict('PC.Constants.Library.weightedRoundRobin'),
   },
   {
     value: ModelStrategyEnum.LeastConnections,
-    label: '加权最少连接',
+    label: dict('PC.Constants.Library.weightedLeastConn'),
   },
   {
     value: ModelStrategyEnum.Random,
-    label: '随机',
+    label: dict('PC.Constants.Library.random'),
   },
   {
     value: ModelStrategyEnum.ResponseTime,
-    label: '响应时间',
+    label: dict('PC.Constants.Library.responseTime'),
   },
 ];
 // 模型类型
 export const MODEL_TYPE_LIST = [
   {
     value: ModelTypeEnum.Completions,
-    label: '文本补全',
+    label: dict('PC.Constants.Library.textCompletion'),
   },
   {
     value: ModelTypeEnum.Chat,
-    label: '聊天对话-纯文本',
+    label: dict('PC.Constants.Library.chatText'),
   },
   {
     value: ModelTypeEnum.Edits,
-    label: '文本编辑',
+    label: dict('PC.Constants.Library.textEdit'),
   },
   {
     value: ModelTypeEnum.Images,
-    label: '图像处理',
+    label: dict('PC.Constants.Library.imageProcess'),
   },
   {
     value: ModelTypeEnum.Multi,
-    label: '聊天对话-多模态',
+    label: dict('PC.Constants.Library.chatMultimodal'),
   },
   {
     value: ModelTypeEnum.Embeddings,
-    label: '向量嵌入',
+    label: dict('PC.Constants.Library.vectorEmbedding'),
   },
   {
     value: ModelTypeEnum.Audio,
-    label: '语音处理',
+    label: dict('PC.Constants.Library.audioProcess'),
   },
   {
     value: ModelTypeEnum.Other,
-    label: '其他',
+    label: dict('PC.Common.Global.other'),
   },
 ];
 // 函数调用支持
 export const MODEL_FUNCTION_CALL_LIST = [
   {
     value: ModelFunctionCallEnum.CallSupported,
-    label: '支持普通函数调用',
+    label: dict('PC.Constants.Library.supportFuncCall'),
   },
   {
     value: ModelFunctionCallEnum.StreamCallSupported,
-    label: '支持流式函数调用',
+    label: dict('PC.Constants.Library.supportStreamFuncCall'),
   },
   {
     value: ModelFunctionCallEnum.Unsupported,
-    label: '不支持函数调用',
+    label: dict('PC.Constants.Library.unsupportFuncCall'),
   },
 ];
 // 模型接口协议
@@ -477,49 +478,53 @@ export const MODEL_USAGE_SCENARIO_LIST = [
 // 插件
 export const PLUGIN_CODE_SEGMENTED_LIST = [
   {
-    label: '元数据',
+    label: dict('PC.Constants.Library.metadata'),
     value: PluginCodeModeEnum.Metadata,
     icon: <BarsOutlined />,
   },
-  { label: '代码', value: PluginCodeModeEnum.Code, icon: <ICON_CODE /> },
+  {
+    label: dict('PC.Constants.Library.code'),
+    value: PluginCodeModeEnum.Code,
+    icon: <ICON_CODE />,
+  },
 ];
 
 // 知识库分段标识符列表
 export const KNOWLEDGE_SEGMENT_IDENTIFIER_LIST = [
   {
-    label: '换行（\\n）',
+    label: dict('PC.Constants.Library.segNewline'),
     value: KnowledgeSegmentIdentifierEnum.Line_Feed,
   },
   {
-    label: '2个换行（\\n\\n）',
+    label: dict('PC.Constants.Library.segTwoNewline'),
     value: KnowledgeSegmentIdentifierEnum.Two_Line_Feed,
   },
   {
-    label: '中文句号（。）',
+    label: dict('PC.Constants.Library.segChinesePeriod'),
     value: KnowledgeSegmentIdentifierEnum.Chinese_Sentence,
   },
   {
-    label: '中文叹号(！)',
+    label: dict('PC.Constants.Library.segChineseExclamation'),
     value: KnowledgeSegmentIdentifierEnum.Chinese_Exclamation,
   },
   {
-    label: '英文句号（.）',
+    label: dict('PC.Constants.Library.segEnglishPeriod'),
     value: KnowledgeSegmentIdentifierEnum.English_Sentence,
   },
   {
-    label: '英文叹号（!）',
+    label: dict('PC.Constants.Library.segEnglishExclamation'),
     value: KnowledgeSegmentIdentifierEnum.English_Exclamation,
   },
   {
-    label: '中文问号（？）',
+    label: dict('PC.Constants.Library.segChineseQuestion'),
     value: KnowledgeSegmentIdentifierEnum.Chinese_Question_Mark,
   },
   {
-    label: '英文问号（?）',
+    label: dict('PC.Constants.Library.segEnglishQuestion'),
     value: KnowledgeSegmentIdentifierEnum.English_Question_Mark,
   },
   {
-    label: '自定义',
+    label: dict('PC.Common.Global.custom'),
     value: KnowledgeSegmentIdentifierEnum.Custom,
   },
 ];

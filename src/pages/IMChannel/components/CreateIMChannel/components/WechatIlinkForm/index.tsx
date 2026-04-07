@@ -1,5 +1,6 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { QR_CODE_GENERATOR_URL } from '@/constants/imChannel.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiGetWechatIlinkQrStatus,
   apiStartWechatIlinkQr,
@@ -64,7 +65,9 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
             timerRef.current = null;
           }
           setQrInfo((prev) => (prev ? { ...prev, status: 'expired' } : null));
-          message.warning('本次扫码已由于超时停止，请重新获取二维码');
+          message.warning(
+            dict('PC.Pages.IMChannel.WechatIlinkForm.qrTimeoutWarning'),
+          );
           return;
         }
 
@@ -85,9 +88,13 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
               prev ? { ...prev, status, configData } : null,
             );
             if (status === 'connected') {
-              message.success('连接成功');
+              message.success(
+                dict('PC.Pages.IMChannel.WechatIlinkForm.connectionSuccess'),
+              );
             } else {
-              message.success('扫码确认成功');
+              message.success(
+                dict('PC.Pages.IMChannel.WechatIlinkForm.scanConfirmSuccess'),
+              );
             }
             return;
           } else if (status === 'expired') {
@@ -98,7 +105,7 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
             setQrInfo((prev) =>
               prev ? { ...prev, status, configData } : null,
             );
-            message.error('二维码已过期，请重新获取');
+            message.error(dict('PC.Pages.IMChannel.WechatIlinkForm.qrExpired'));
             return;
           } else {
             setQrInfo((prev) =>
@@ -141,7 +148,9 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
           qrcodeImgContent: res.data.qrcodeImgContent,
           status: 'wait',
         });
-        message.success('获取二维码成功');
+        message.success(
+          dict('PC.Pages.IMChannel.WechatIlinkForm.getQrSuccess'),
+        );
         startPolling(res.data.sessionId);
       }
     } catch (error) {
@@ -154,16 +163,36 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
   const getStatusTag = (status: string) => {
     switch (status) {
       case 'none':
-        return <Tag color="default">未开始</Tag>;
+        return (
+          <Tag color="default">
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.statusNone')}
+          </Tag>
+        );
       case 'wait':
-        return <Tag color="default">等待扫码</Tag>;
+        return (
+          <Tag color="default">
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.statusWait')}
+          </Tag>
+        );
       case 'scaned':
-        return <Tag color="processing">已扫码，请在手机上确认</Tag>;
+        return (
+          <Tag color="processing">
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.statusScanned')}
+          </Tag>
+        );
       case 'confirmed':
       case 'connected':
-        return <Tag color="success">已连接</Tag>;
+        return (
+          <Tag color="success">
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.statusConnected')}
+          </Tag>
+        );
       case 'expired':
-        return <Tag color="error">已过期</Tag>;
+        return (
+          <Tag color="error">
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.statusExpired')}
+          </Tag>
+        );
       default:
         return null;
     }
@@ -189,7 +218,10 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
       <Form.Item name="configData" hidden>
         <div />
       </Form.Item>
-      <Form.Item label="扫码连接" tooltip="点击获取二维码并使用手机微信扫码。">
+      <Form.Item
+        label={dict('PC.Pages.IMChannel.WechatIlinkForm.scanToConnect')}
+        tooltip={dict('PC.Pages.IMChannel.WechatIlinkForm.scanTooltip')}
+      >
         <div style={{ textAlign: 'center' }}>
           <div
             style={{
@@ -210,7 +242,9 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
           >
             {/* 加载中状态 */}
             {qrLoading ? (
-              <Spin tip="正在获取二维码..." />
+              <Spin
+                tip={dict('PC.Pages.IMChannel.WechatIlinkForm.fetchingQr')}
+              />
             ) : qrInfo && (qrInfo.qrcode || qrInfo.qrcodeImgContent) ? (
               <div style={{ position: 'relative', width: 216, height: 216 }}>
                 <img
@@ -258,12 +292,14 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
                         color: '#262626',
                       }}
                     >
-                      扫码成功
+                      {dict('PC.Pages.IMChannel.WechatIlinkForm.scanSuccess')}
                     </div>
                     <div
                       style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}
                     >
-                      请点击下方‘确定’按钮保存
+                      {dict(
+                        'PC.Pages.IMChannel.WechatIlinkForm.clickConfirmToSave',
+                      )}
                     </div>
                   </div>
                 )}
@@ -287,7 +323,9 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
                     onClick={handleGetQr}
                   >
                     <Button type="link" icon={<ReloadOutlined />}>
-                      二维码过期，点击刷新
+                      {dict(
+                        'PC.Pages.IMChannel.WechatIlinkForm.qrExpiredRefresh',
+                      )}
                     </Button>
                   </div>
                 )}
@@ -304,20 +342,27 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
                 <QrcodeOutlined
                   style={{ fontSize: 48, marginBottom: 12, display: 'block' }}
                 />
-                <div style={{ fontSize: 13 }}>请点击下方按钮获取二维码</div>
+                <div style={{ fontSize: 13 }}>
+                  {dict('PC.Pages.IMChannel.WechatIlinkForm.clickToGetQr')}
+                </div>
               </div>
             )}
           </div>
 
           <div style={{ margin: '16px 0' }}>
-            状态：{getStatusTag(qrInfo?.status || 'none')}
+            {dict('PC.Pages.IMChannel.WechatIlinkForm.status')}：
+            {getStatusTag(qrInfo?.status || 'none')}
           </div>
 
           {isSuccess && (
             <div style={{ marginBottom: 20, textAlign: 'left' }}>
               <Alert
-                message="重要提示"
-                description="同一个微信在第二次扫码确认后，原有的机器人连接将立即失效。请务必点击下方的“确定”按钮以保存并生效当前配置。"
+                message={dict(
+                  'PC.Pages.IMChannel.WechatIlinkForm.importantNotice',
+                )}
+                description={dict(
+                  'PC.Pages.IMChannel.WechatIlinkForm.importantNoticeDesc',
+                )}
                 type="warning"
                 showIcon
               />
@@ -326,7 +371,9 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
 
           <Space size={12}>
             <Button type="primary" onClick={handleGetQr} loading={qrLoading}>
-              {qrInfo ? '重新获取二维码' : '获取二维码'}
+              {qrInfo
+                ? dict('PC.Pages.IMChannel.WechatIlinkForm.reGetQr')
+                : dict('PC.Pages.IMChannel.WechatIlinkForm.getQr')}
             </Button>
           </Space>
         </div>

@@ -71,7 +71,7 @@ export const useWorkflowValidation = ({
     if (workflowProxy.hasPendingChanges()) {
       const saveResult = await saveFullWorkflow();
       if (!saveResult) {
-        console.error('[V3] 工作流保存失败，无法进行校验');
+        console.error('[V3] Workflow save failed, validation aborted');
         return false;
       }
     }
@@ -216,7 +216,7 @@ export const useWorkflowValidation = ({
     // 优先进行覆盖检查（保存）
     // 即使没有 pendingChanges，也建议进行检查以确保版本一致性
     // 或者根据业务逻辑，仅当 hasPendingChanges 时才保存
-    // 但用户要求"先判断是否有覆盖"，implies explicit check.
+    // Explicitly check potential overwrite/version conflict before publishing.
     // saveFullWorkflow 会处理版本冲突弹窗，并在成功（或强制覆盖成功）后回调 proceedWithPublish
     await saveFullWorkflow(false, proceedWithPublish);
   }, [

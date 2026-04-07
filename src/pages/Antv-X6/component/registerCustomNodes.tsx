@@ -8,6 +8,7 @@ import {
   optionsMap,
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
+import { t } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
   NodeShapeEnum,
@@ -26,9 +27,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import '../index.less';
 import './registerCustomNodes.less';
 import RunResult from './runResult';
-// 定义那些节点有试运行
 
-// 条件节点
+// Condition node.
 const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const conditionBranchConfigs = data.nodeConfig.conditionBranchConfigs;
 
@@ -56,7 +56,7 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
             </div>
             {item.conditionArgs && item.conditionArgs.length > 0 && (
               <div className="dis-left">
-                {/* 添加空值检查，确保 compareType 不是 null 或 undefined */}
+                {/* Guard null/undefined compareType */}
                 <span className="condition-node-compare-type">
                   {item.conditionArgs[0]?.compareType
                     ? compareTypeMap[
@@ -77,7 +77,7 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   );
 };
 
-// 问答节点
+// QA node.
 const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const inputArgs = data.nodeConfig.inputArgs;
   const question = data.nodeConfig.question;
@@ -85,23 +85,31 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   return (
     <div className="qa-node-content-style">
       <div className="dis-left">
-        <span className="text-right qa-title-style">输入</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.input')}
+        </span>
         {inputArgs?.slice(0, 2).map((item, index) => (
           <Tag key={`inputArgs-${item.name}-${index}`}>{item.name}</Tag>
         ))}
         {inputArgs && inputArgs.length > 2 && (
           <Tag>+{inputArgs.length - 2}</Tag>
         )}
-        {!inputArgs && <span>未配置输入内容</span>}
+        {!inputArgs && (
+          <span>{t('PC.Pages.AntvX6RegisterNodes.unconfiguredInput')}</span>
+        )}
       </div>
       <div className="dis-left">
-        <span className="text-right qa-title-style">提问内容</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.questionContent')}
+        </span>
         <span className="question-content-style">
-          {question || '未配置提问内容'}
+          {question || t('PC.Pages.AntvX6RegisterNodes.unconfiguredQuestion')}
         </span>
       </div>
       <div className="dis-left">
-        <span className="text-right qa-title-style">问答类型</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.qaType')}
+        </span>
         <span>{answerTypeMap[answerType]}</span>
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
@@ -113,7 +121,8 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
             <span className="text-right qa-title-style"></span>
             <Tag>{optionsMap[index]}</Tag>
             <span className="qa-content-style">
-              {item.content || '未配置内容'}
+              {item.content ||
+                t('PC.Pages.AntvX6RegisterNodes.unconfiguredContent')}
             </span>
           </div>
         ))}
@@ -121,16 +130,19 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   );
 };
 
-// 意图识别节点
+// Intent recognition node.
 const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const intentConfigs = data.nodeConfig.intentConfigs;
   return (
     <div className="qa-node-content-style">
       {intentConfigs?.map((item, index) => (
         <div className="dis-left" key={index}>
-          <span className="qa-title-style">选项{index + 1}</span>
+          <span className="qa-title-style">
+            {t('PC.Pages.AntvX6RegisterNodes.optionLabel', index + 1)}
+          </span>
           <span className="qa-content-style">
-            {item.intent || '未配置意图'}
+            {item.intent ||
+              t('PC.Pages.AntvX6RegisterNodes.unconfiguredIntent')}
           </span>
         </div>
       ))}
@@ -139,7 +151,7 @@ const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 };
 
 /**
- * 定义 GeneralNode 类组件，代表一个通用节点，该节点可以是流程图或其他图形编辑器中的元素。
+ * General node for graph rendering.
  */
 const DISABLE_EDIT_NODE_TYPES = [
   NodeTypeEnum.LoopStart,
@@ -159,11 +171,11 @@ const NodeRunResult: React.FC<{
   ).toFixed(3);
   const total = data?.length || 0;
   const [pageTotal, setPageTotal] = useState(total);
-  // 当前页码
+  // Current page.
   const [current, setCurrent] = useState(1);
-  // 是否只看错误
+  // Whether only failed items are shown.
   const [onlyError, setOnlyError] = useState(false);
-  // 是否展开
+  // Expand state.
   const [expanded, setExpanded] = useState(false);
   const [innerData, setInnerData] = useState<RunResultItem[] | []>([]);
 
@@ -176,21 +188,21 @@ const NodeRunResult: React.FC<{
       item?.status === RunResultStatusEnum.STOP_WAIT_ANSWER,
   );
 
-  // 处理页码变化
+  // Handle page change.
   const handlePageChange = (page: number) => {
-    console.log('页码变化：', page);
+    console.log('[RegisterCustomNodes] page changed:', page);
     setCurrent(page);
   };
 
-  // 处理只看错误变化
+  // Handle only-error filter change.
   const handleOnlyErrorChange = (checked: boolean) => {
-    console.log('只看错误变化：', checked);
+    console.log('[RegisterCustomNodes] only-error changed:', checked);
     setOnlyError(checked);
   };
 
-  // 处理展开/收起变化
+  // Handle expand change.
   const handleExpandChange = (expanded: boolean) => {
-    console.log('展开/收起变化：', expanded);
+    console.log('[RegisterCustomNodes] expand changed:', expanded);
     setExpanded(expanded);
   };
 
@@ -220,19 +232,19 @@ const NodeRunResult: React.FC<{
       case statusList.some(
         (status) => status === RunResultStatusEnum.STOP_WAIT_ANSWER,
       ):
-        return '请答复问题';
+        return t('PC.Pages.AntvX6RegisterNodes.replyQuestion');
       case statusList.some(
         (status) => status === RunResultStatusEnum.EXECUTING,
       ):
-        return '运行中';
+        return t('PC.Pages.AntvX6RegisterNodes.running');
       case statusList.some((status) => status === RunResultStatusEnum.FAILED):
-        return '运行失败';
+        return t('PC.Pages.AntvX6RegisterNodes.failed');
       case statusList.every(
         (status) => status === RunResultStatusEnum.FINISHED,
       ):
-        return '运行成功';
+        return t('PC.Pages.AntvX6RegisterNodes.success');
       default:
-        return '运行失败';
+        return t('PC.Pages.AntvX6RegisterNodes.failed');
     }
   }, [data]);
 
@@ -264,7 +276,9 @@ const ExceptionHandle: React.FC<{
 }> = ({ data }) => {
   return (
     <div className="exception-handle-style">
-      <span className="exception-handle-title">异常时</span>
+      <span className="exception-handle-title">
+        {t('PC.Pages.AntvX6RegisterNodes.exceptionWhen')}
+      </span>
       <p className="exception-handle-content">
         {
           EXCEPTION_HANDLE_OPTIONS.find(
@@ -278,7 +292,7 @@ const ExceptionHandle: React.FC<{
 
 export const GeneralNode: React.FC<NodeProps> = (props) => {
   /**
-   * 通过render返回节点的样式和内容
+   * Render node style and content.
    */
   const { node, graph } = props;
   const data = node.getData<ChildNode>();
@@ -303,11 +317,11 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   const marginBottom = isSpecialNode ? '10px' : '0';
 
   const handleEditingStatusChange = (val: boolean) => {
-    // 编辑中不能移动节点
+    // Disable node move while editing.
     node.setData({ enableMove: !val });
   };
 
-  // 处理保存
+  // Save handler.
   const handleSave = (saveValue: string): boolean => {
     setEditValue(saveValue);
     graph.trigger('node:custom:save', {
@@ -323,7 +337,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     data.type,
   )
     ? false
-    : !!runResults.length; //循环内的开始结果节点不展示
+    : !!runResults.length; // Hide run result for loop-start result node.
   const showException = showExceptionHandle(data);
 
   if (!data) {
@@ -333,15 +347,15 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   return (
     <>
       <div
-        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+        className={`general-node ${selected ? 'selected-general-node' : ''}`} // Apply class by selected state.
       >
-        {/* 节点头部，包含标题、图像和操作菜单 */}
+        {/* Node header with title, icon and actions */}
         <div
           className="general-node-header"
           style={{
             background: gradientBackground,
             marginBottom,
-          }} // 应用渐变背景
+          }} // Apply gradient background.
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
@@ -363,23 +377,22 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
-        {/* 异常处理 */}
+        {/* Exception handling */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
         )}
       </div>
-      {/* 运行结果 */}
+      {/* Run result */}
       {showRunResult && <NodeRunResult data={runResults} />}
     </>
   );
 };
 
 /**
- * 定义循环的节点
+ * Loop node.
  */
 
-// 添加循环体节点
-// 优化后的 LoopNode 组件
+// Optimized loop node.
 export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
   const [editValue, setEditValue] = useState(data?.name || '');
@@ -391,11 +404,11 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
     setEditValue(data?.name || '');
   }, [data?.name]);
   const handleEditingStatusChange = (val: boolean) => {
-    // 编辑中不能移动节点
+    // Disable node move while editing.
     node.setData({ enableMove: !val });
   };
 
-  // 处理保存
+  // Save handler.
   const handleSave = (saveValue: string): boolean => {
     setEditValue(saveValue);
     graph.trigger('node:custom:save', {
@@ -432,14 +445,13 @@ export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
 };
 
 /**
- * 定义连接桩的样式配置，包括四个方向上的连接桩（上、右、下、左）。
- * 每个连接桩都是一个小圆圈，具有特定的颜色、大小和可见性设置。
+ * Port style config for top/right/bottom/left ports.
  */
 
-// 注册组件时，确保传递了正确的类型
+// Register custom nodes.
 
 export function registerCustomNodes() {
-  // 将自定义节点正确注册
+  // Register custom nodes.
   register({
     shape: NodeShapeEnum.General,
     component: GeneralNode,
@@ -459,20 +471,20 @@ interface Point {
 }
 
 export const createCurvePath = (s: Point, e: Point) => {
-  const startOffset = 2; // 起点偏移量
-  const endOffset = 2; // 终点偏移量
+  const startOffset = 2; // Start offset.
+  const endOffset = 2; // End offset.
   const deltaX = Math.abs(e.x - s.x);
-  const control = Math.floor((deltaX / 3) * 2); // 控制点的计算
+  const control = Math.floor((deltaX / 3) * 2); // Bezier control.
 
-  // 计算新的起点和终点位置，考虑到偏移量
+  // Calculate start/end points with offsets.
   let newStartX = s.x < e.x ? s.x + startOffset : s.x - startOffset;
   let newEndX = e.x > s.x ? e.x - endOffset : e.x + endOffset;
 
-  // 根据原始方向调整Y轴位置
+  // Keep Y positions by original direction.
   const startY = s.y;
   const endY = e.y;
 
-  // 计算控制点的位置
+  // Calculate control points.
   const v1 = { x: newStartX + control, y: startY };
   const v2 = { x: newEndX - control, y: endY };
 

@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './NavigationStylePanel.less';
@@ -32,14 +33,18 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   const navigationStyles: NavigationStyle[] = [
     {
       id: 'style1',
-      name: '风格1',
-      description: '紧凑模式：60px宽度，无文字显示，页面容器有外边距和圆角',
+      name: t('PC.Components.ThemeConfigNavigationStylePanel.style1Name'),
+      description: t(
+        'PC.Components.ThemeConfigNavigationStylePanel.style1Description',
+      ),
       isDefault: true,
     },
     {
       id: 'style2',
-      name: '风格2',
-      description: '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
+      name: t('PC.Components.ThemeConfigNavigationStylePanel.style2Name'),
+      description: t(
+        'PC.Components.ThemeConfigNavigationStylePanel.style2Description',
+      ),
     },
   ];
 
@@ -55,23 +60,27 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
     // 通知外部组件
     onNavigationStyleChange?.(styleId);
 
-    console.log('NavigationStylePanel - 切换导航栏风格:', styleId);
+    console.log('NavigationStylePanel - switch navigation style:', styleId);
   };
 
   // 处理深浅色风格切换（集成到导航深浅色管理中）
   const handleColorStyleToggle = () => {
     // 同时管理导航深浅色和全局布局深浅色
     onNavigationThemeToggle();
-    console.log('NavigationStylePanel - 切换深浅色风格');
+    console.log('NavigationStylePanel - switch light/dark mode');
   };
 
   return (
     <div className={cx(styles.navigationStylePanel)}>
-      <h3 className={cx(styles.panelTitle)}>导航栏</h3>
+      <h3 className={cx(styles.panelTitle)}>
+        {t('PC.Components.ThemeConfigNavigationStylePanel.panelTitle')}
+      </h3>
 
       {/* 导航栏风格样式选择 */}
       <div className={cx(styles.navigationStyleOptions)}>
-        <h4>风格样式</h4>
+        <h4>
+          {t('PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle')}
+        </h4>
         <div className={cx(styles.styleOptions)}>
           {navigationStyles.map((style) => (
             <div
@@ -105,7 +114,9 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
 
       {/* 导航栏深浅色选择 */}
       <div className={cx(styles.navigationColorOptions)}>
-        <h4>深浅色</h4>
+        <h4>
+          {t('PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle')}
+        </h4>
         <div className={cx(styles.colorOptions)}>
           {/* 浅色模式 */}
           <div className={cx(styles.colorOption)}>
@@ -119,7 +130,9 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
                 <div className={cx(styles.colorItemContent)}></div>
               </div>
             </div>
-            <div className={cx(styles.colorLabel)}>浅色</div>
+            <div className={cx(styles.colorLabel)}>
+              {t('PC.Components.ThemeConfigNavigationStylePanel.lightMode')}
+            </div>
           </div>
 
           {/* 深色模式 */}
@@ -134,7 +147,9 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
                 <div className={cx(styles.colorItemContent)}></div>
               </div>
             </div>
-            <div className={cx(styles.colorLabel)}>深色</div>
+            <div className={cx(styles.colorLabel)}>
+              {t('PC.Components.ThemeConfigNavigationStylePanel.darkMode')}
+            </div>
           </div>
         </div>
       </div>

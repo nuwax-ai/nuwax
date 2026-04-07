@@ -1,5 +1,6 @@
 import { PAGE_SETTING_ACTIONS } from '@/constants/space.constants';
 import { apiAgentPageUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import { HomeIndexEnum } from '@/types/enums/agent';
 import { PageSettingEnum } from '@/types/enums/space';
 import {
@@ -70,7 +71,12 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
             // 为每个请求添加错误处理，避免单个失败影响整体
             updatePromises.push(
               runUpdate(pageNotHomeIndexData).catch((error) => {
-                console.error('更新其他页面失败:', error);
+                console.error(
+                  t(
+                    'PC.Pages.AgentArrangePageSettingModal.updateOtherPageFailed',
+                  ),
+                  error,
+                );
                 return null;
               }),
             );
@@ -89,10 +95,13 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
         bindConfig: componentInfo?.bindConfig,
       } as AgentPageUpdateParams;
       await runUpdate(data);
-      message.success('保存成功');
+      message.success(t('PC.Toast.Global.savedSuccessfully'));
     } catch (error) {
-      console.error('保存配置失败:', error);
-      message.error('保存失败，请重试');
+      console.error(
+        t('PC.Pages.AgentArrangePageSettingModal.saveConfigFailed'),
+        error,
+      );
+      message.error(t('PC.Pages.AgentArrangePageSettingModal.saveFailed'));
     }
   };
 
@@ -139,9 +148,13 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
           <div className={cx(styles.left)}>
-            <h3>设置</h3>
+            <h3>{t('PC.Pages.AgentArrangePageSettingModal.title')}</h3>
             <ul>
               {PAGE_SETTING_ACTIONS.map((item) => {
+                const actionLabel =
+                  item.type === PageSettingEnum.Visible_To_LLM
+                    ? t('PC.Pages.AgentArrangePageSettingModal.visibleToLlm')
+                    : t('PC.Pages.AgentArrangePageSettingModal.homeIndex');
                 return (
                   <li
                     key={item.type}
@@ -150,7 +163,7 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
                     })}
                     onClick={() => setAction(item.type)}
                   >
-                    {item.label}
+                    {actionLabel}
                   </li>
                 );
               })}

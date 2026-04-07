@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 
+import { t } from '@/services/i18nRuntime';
 import MentionPopup from '../MentionPopup';
 import type { MentionItem } from '../MentionPopup/types';
 import styles from '../index.less';
@@ -192,7 +193,10 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
   }, [atIconShowMentionPopup, calcAndSetAtIconMentionPosition]);
 
   const tooltipTitle = useMemo(
-    () => (hasUsedMentionIcon ? '' : '试试 @ 提及技能'),
+    () =>
+      hasUsedMentionIcon
+        ? ''
+        : t('PC.Components.ChatInputHomeAtMentionIcon.tryMentionSkill'),
     [hasUsedMentionIcon],
   );
 

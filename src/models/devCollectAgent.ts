@@ -4,6 +4,7 @@ import {
   apiUserDevCollectAgentList,
   apiUserEditAgentList,
 } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import { message } from 'antd';
 import { debounce } from 'lodash';
@@ -47,7 +48,7 @@ export default () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('取消收藏成功');
+      message.success(dict('PC.Models.DevCollectAgent.uncollectSuccess'));
       const agentId = params[0];
       const list =
         devCollectAgentList?.filter((item) => item.agentId !== agentId) || [];

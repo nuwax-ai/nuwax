@@ -1,5 +1,6 @@
 import sendImage from '@/assets/images/send_image_gray.png';
 import PromptView from '@/components/ChatView/promptView';
+import { dict } from '@/services/i18nRuntime';
 import {
   OptimizeTypeEnum,
   PromptOptimizeParams,
@@ -174,10 +175,10 @@ const PromptOptimizeModal: React.FC<
               onReplace?.(messageList?.[messageList?.length - 1]?.text)
             }
           >
-            替换
+            {dict('PC.Components.PromptOptimizeModal.replace')}
           </Button>
           <Button onClick={handleExit} className={cx(styles['btn'], 'ml-10 ')}>
-            退出
+            {dict('PC.Components.PromptOptimizeModal.exit')}
           </Button>
         </div>
       ) : (
@@ -187,11 +188,12 @@ const PromptOptimizeModal: React.FC<
           onClick={() =>
             // 如果有默认文本就优化默认文本
             handleSendMessage(
-              defaultValue || '一个能为你提供工作帮助和建议的智能机器人',
+              defaultValue ||
+                dict('PC.Components.PromptOptimizeModal.defaultOptimizePrompt'),
             )
           }
         >
-          自动优化
+          {dict('PC.Components.PromptOptimizeModal.autoOptimize')}
         </Button>
       )}
       <div className={cx(styles.footer, 'flex', 'items-center')}>
@@ -203,7 +205,9 @@ const PromptOptimizeModal: React.FC<
             onChange={(e) => setMessage(e.target.value)}
             rootClassName={styles.input}
             onPressEnter={handlePressEnter}
-            placeholder="请描述你的提示词需求，比如角色定义、技能要求等"
+            placeholder={dict(
+              'PC.Components.PromptOptimizeModal.promptPlaceholder',
+            )}
             autoSize={{ minRows: 1, maxRows: 3 }}
           />
           <Button

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { FileType } from '@/types/interfaces/common';
 import cloneDeep from 'lodash/cloneDeep';
 import { mergeObject } from 'ut2';
@@ -73,7 +74,7 @@ function parseJSON<T = any>(
   str: string,
 ): { isValid: boolean; data?: T; error?: string } {
   if (!str || typeof str !== 'string') {
-    return { isValid: false, error: '输入为空或不是字符串' };
+    return { isValid: false, error: dict('PC.Utils.Common.emptyInput') };
   }
 
   try {
@@ -82,7 +83,10 @@ function parseJSON<T = any>(
   } catch (error) {
     return {
       isValid: false,
-      error: error instanceof Error ? error.message : 'JSON格式错误',
+      error:
+        error instanceof Error
+          ? error.message
+          : dict('PC.Utils.Common.invalidJsonFormat'),
     };
   }
 }
@@ -142,9 +146,12 @@ function formatTimeAgo(targetTime: string) {
   const diffDays = Math.floor(diffHours / 24); // 转换为天
 
   if (diffDays > 365 * 2) {
-    return `${Math.floor(diffDays / 365)}年前`;
+    return dict('PC.Utils.Common.yearsAgo').replace(
+      '{0}',
+      String(Math.floor(diffDays / 365)),
+    );
   } else if (diffDays > 365) {
-    return '去年';
+    return dict('PC.Utils.Common.lastYear');
   } else if (diffDays > 30) {
     const currentDate = new Date();
     const inputDate = new Date(targetTime);
@@ -159,26 +166,32 @@ function formatTimeAgo(targetTime: string) {
     }
 
     if (monthsDifference >= 1) {
-      return `${monthsDifference} 月前`;
+      return dict('PC.Utils.Common.monthsAgo').replace(
+        '{0}',
+        String(monthsDifference),
+      );
     }
     return '';
   } else if (diffDays > 6) {
-    return `${diffDays}天前`;
+    return dict('PC.Utils.Common.daysAgo').replace('{0}', String(diffDays));
   } else if (diffDays > 2) {
     let date = new Date(targetTime);
     let month = date.getMonth() + 1;
     let day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
     return `${month}-${day}`;
   } else if (diffDays === 2) {
-    return '前天';
+    return dict('PC.Utils.Common.dayBeforeYesterday');
   } else if (diffDays === 1) {
-    return '昨天';
+    return dict('PC.Utils.Common.yesterday');
   } else if (diffHours > 1) {
-    return `${diffHours}小时前`;
+    return dict('PC.Utils.Common.hoursAgo').replace('{0}', String(diffHours));
   } else if (diffMinutes > 0) {
-    return `${diffMinutes}分钟前`;
+    return dict('PC.Utils.Common.minutesAgo').replace(
+      '{0}',
+      String(diffMinutes),
+    );
   } else {
-    return '刚刚';
+    return dict('PC.Utils.Common.justNow');
   }
 }
 

@@ -134,10 +134,10 @@ export const useTestRun = ({
           }
         },
         onError: (error) => {
-          console.error('流式请求异常:', error);
+          console.error('Streaming request error:', error);
         },
         onOpen: (response) => {
-          console.log('连接已建立', response.status);
+          console.log('Connection established', response.status);
         },
         onClose: () => {
           setLoading(false);
@@ -236,10 +236,10 @@ export const useTestRun = ({
           }
         },
         onError: (error) => {
-          console.error('流式请求异常:', error);
+          console.error('Streaming request error:', error);
         },
         onOpen: (response) => {
-          console.log('连接已建立', response.status);
+          console.log('Connection established', response.status);
         },
         onClose: () => {
           setLoading(false);
@@ -264,7 +264,7 @@ export const useTestRun = ({
         setTestRun(true);
       }
     } catch (error) {
-      console.error('试运行所有节点失败:', error);
+      console.error('Failed to run all test nodes:', error);
     } finally {
       clearTimeout(loadingTimer);
       setTestRunLoading(false);

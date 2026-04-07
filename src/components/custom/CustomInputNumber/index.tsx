@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { CustomInputNumberProps } from '@/types/interfaces/common';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -10,7 +11,7 @@ const cx = classNames.bind(styles);
 const CustomInputNumber: React.FC<CustomInputNumberProps> = ({
   value,
   onChange,
-  placeholder = '请输入',
+  placeholder = dict('PC.Common.Global.pleaseInput'),
   min = 0,
   max,
   step = 1,

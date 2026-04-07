@@ -7,6 +7,7 @@
 import Constant, {
   WORKFLOW_VERSION_CONFLICT,
 } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import service from '@/services/workflow';
 import { workflowLogger } from '@/utils/logger';
 import { Graph } from '@antv/x6';
@@ -50,7 +51,7 @@ export function useAutoSave(
   const doSave = useCallback(
     async (forceCommit = false): Promise<boolean> => {
       if (!graph) {
-        workflowLogger.warn('Graph 未初始化');
+        workflowLogger.warn('Graph is not initialized');
         return false;
       }
 
@@ -63,7 +64,7 @@ export function useAutoSave(
 
         const payload = workflowSaveService.buildPayload(graph);
         if (!payload) {
-          workflowLogger.error('构建保存数据失败');
+          workflowLogger.error('Failed to build workflow save payload');
           return false;
         }
 
@@ -86,20 +87,22 @@ export function useAutoSave(
           workflowSaveService.clearDirty();
           isDirtyRef.current = false;
           onSaveSuccess?.();
-          workflowLogger.log('useAutoSave 自动保存成功');
+          workflowLogger.log('useAutoSave auto save succeeded');
           return true;
         } else if (result.code === WORKFLOW_VERSION_CONFLICT) {
           // 自动保存遇到版本冲突时，通知用户但不自动强制提交
-          workflowLogger.warn('useAutoSave 版本冲突，自动保存失败');
-          onSaveError?.(new Error('版本冲突，工作流已在其他窗口修改'));
+          workflowLogger.warn('useAutoSave version conflict, auto save failed');
+          onSaveError?.(
+            new Error(t('PC.Pages.AntvX6AutoSave.versionConflictMessage')),
+          );
           return false;
         } else {
-          workflowLogger.error('useAutoSave 保存失败:', result.message);
+          workflowLogger.error('useAutoSave save failed:', result.message);
           onSaveError?.(new Error(result.message));
           return false;
         }
       } catch (error) {
-        workflowLogger.error('useAutoSave 保存异常:', error);
+        workflowLogger.error('useAutoSave save exception:', error);
         onSaveError?.(error);
         return false;
       }

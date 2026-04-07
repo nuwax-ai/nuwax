@@ -1,4 +1,5 @@
 import { HOME_INDEX_OPTIONS } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
 import { HomeIndexProps } from '@/types/interfaces/agentConfig';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
@@ -30,7 +31,9 @@ const HomeIndex: React.FC<HomeIndexProps> = ({
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1')}>
-        <h3 className={cx('mb-12')}>是否为默认首页</h3>
+        <h3 className={cx('mb-12')}>
+          {dict('PC.Pages.EditAgent.isDefaultHome')}
+        </h3>
         <Radio.Group
           options={HOME_INDEX_OPTIONS}
           onChange={handleChangeType}
@@ -39,7 +42,7 @@ const HomeIndex: React.FC<HomeIndexProps> = ({
       </div>
       <footer className={cx(styles.footer)}>
         <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
+          {dict('PC.Pages.EditAgent.save')}
         </Button>
       </footer>
     </div>

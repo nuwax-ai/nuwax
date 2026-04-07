@@ -4,6 +4,7 @@ import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpCollapseComponentListProps } from '@/types/interfaces/mcp';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -21,27 +22,27 @@ const McpCollapseComponentList: React.FC<McpCollapseComponentListProps> = ({
     switch (type) {
       case AgentComponentTypeEnum.Agent:
         return {
-          text: '智能体负责接收用户任务请求，进行智能分析和决策，协调各个模块的协同工作，并最终给出响应结果。',
+          text: dict('PC.Components.McpCollapseComponentList.agentDesc'),
           image: agentImage,
         };
       case AgentComponentTypeEnum.Plugin:
         return {
-          text: '插件能够让智能体调用外部API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。',
+          text: dict('PC.Components.McpCollapseComponentList.pluginDesc'),
           image: pluginImage,
         };
       case AgentComponentTypeEnum.Workflow:
         return {
-          text: '工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。',
+          text: dict('PC.Components.McpCollapseComponentList.workflowDesc'),
           image: workflowImage,
         };
       case AgentComponentTypeEnum.Knowledge:
         return {
-          text: '将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。',
+          text: dict('PC.Components.McpCollapseComponentList.knowledgeDesc'),
           image: knowledgeImage,
         };
       case AgentComponentTypeEnum.Table:
         return {
-          text: '以表格结构组织数据，可实现类似书签和图书管理等功能。',
+          text: dict('PC.Components.McpCollapseComponentList.tableDesc'),
           image: databaseImage,
         };
     }
@@ -56,7 +57,7 @@ const McpCollapseComponentList: React.FC<McpCollapseComponentListProps> = ({
         defaultImage={getInfo(type)?.image}
         extra={
           <TooltipIcon
-            title="删除"
+            title={dict('PC.Components.McpCollapseComponentList.delete')}
             icon={<DeleteOutlined className={'cursor-pointer'} />}
             onClick={() => onDel(item.targetId, item.type)}
           />

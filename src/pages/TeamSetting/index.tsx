@@ -1,5 +1,6 @@
 import teamImage from '@/assets/images/team_image.png';
 import { PATH_URL, SPACE_ID } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiGetSpaceDetail, apiUpdateSpaceTeam } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import { SpaceTypeEnum } from '@/types/enums/space';
@@ -25,11 +26,11 @@ const getStatusName = (status?: string) => {
 
   switch (status) {
     case TeamStatusEnum.Owner:
-      return '创建人';
+      return dict('PC.Pages.TeamSetting.roleOwner');
     case TeamStatusEnum.Admin:
-      return '管理员';
+      return dict('PC.Pages.TeamSetting.roleAdmin');
     default:
-      return '成员';
+      return dict('PC.Pages.TeamSetting.roleMember');
   }
 };
 
@@ -55,7 +56,7 @@ const TeamSetting: React.FC = () => {
   const { run: runEdit } = useRequest(apiUpdateSpaceTeam, {
     manual: true,
     onSuccess: (_: null, params: UpdateSpaceTeamParams[]) => {
-      message.success('修改成功');
+      message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
       const _info = {
         ...spaceDetailInfo,
         ...params[0],
@@ -92,7 +93,7 @@ const TeamSetting: React.FC = () => {
   const tabs: TabsProps['items'] = [
     {
       key: 'MemberManage',
-      label: '成员管理',
+      label: dict('PC.Pages.TeamSetting.memberManagement'),
       children: (
         <MemberManageTab
           spaceId={spaceId}
@@ -104,7 +105,7 @@ const TeamSetting: React.FC = () => {
       ? [
           {
             key: 'SpaceSetting',
-            label: '空间设置',
+            label: dict('PC.Pages.TeamSetting.spaceSetting'),
             children: (
               <SpaceSettingTab
                 spaceId={spaceId}
@@ -145,7 +146,10 @@ const TeamSetting: React.FC = () => {
             )}
           </h1>
           <p className={cx('font-14')}>
-            我的状态：{getStatusName(spaceDetailInfo?.currentUserRole)}
+            {dict('PC.Pages.TeamSetting.myStatus').replace(
+              '{0}',
+              getStatusName(spaceDetailInfo?.currentUserRole),
+            )}
           </p>
         </section>
       </section>

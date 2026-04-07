@@ -7,6 +7,8 @@ import {
   USER_NO_LOGIN,
 } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
@@ -194,22 +196,22 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
-    // message.error(`请求错误 ${error.response.status}`);
-    const networkErrorMsg = '网络异常';
+    // message.error(`Request error ${error.response.status}`);
+    const networkErrorMsg = dict('PC.Toast.Global.networkError');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
     return Promise.reject();
   } else if (error.request) {
     // 处理请求超时
-    const timeoutErrorMsg = '服务器无响应，请重试';
+    const timeoutErrorMsg = dict('PC.Toast.Global.serverTimeout');
     if (shouldShowErrorMessage(timeoutErrorMsg)) {
       message.error(timeoutErrorMsg);
     }
     return Promise.reject();
   } else {
     // 处理网络错误
-    const networkErrorMsg = '网络异常，无法连接服务器';
+    const networkErrorMsg = dict('PC.Toast.Global.serverUnreachable');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
@@ -239,6 +241,15 @@ const requestInterceptors = [
     // 添加通用头信息
     config.headers['Content-Type'] = 'application/json';
     config.headers['Accept'] = 'application/json, text/plain, */*';
+    const browserLang =
+      typeof navigator !== 'undefined' && navigator.language
+        ? navigator.language.toLowerCase()
+        : '';
+    const lang =
+      localStorage.getItem(I18N_STORAGE_KEYS.ACTIVE_LANG) || browserLang;
+    if (lang) {
+      config.headers['Accept-Language'] = lang;
+    }
 
     return { ...config };
   },

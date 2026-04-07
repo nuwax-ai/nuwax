@@ -16,6 +16,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -182,7 +183,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     ) {
       // 自动触发预览
       showPagePreview({
-        name: '页面预览',
+        name: t('PC.Components.ConversationDetails.pagePreviewName'),
         uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
         params: {},
         executeId: '',
@@ -295,7 +296,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
       form.validateFields(); // 触发表单验证以显示error
-      message.warning('请填写必填参数');
+      message.warning(
+        t('PC.Components.ConversationDetails.requiredParamsWarning'),
+      );
       return;
     }
 
@@ -390,7 +393,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 condition={isAppSidebarMode && !isAppSidebarVisible}
               >
                 <TooltipIcon
-                  title="展开导航"
+                  title={t(
+                    'PC.Components.ConversationDetails.expandNavigation',
+                  )}
                   className={cx(styles['icon-box'])}
                   icon={
                     <SvgIcon
@@ -407,7 +412,12 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 className={cx(styles.title)}
                 ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
               >
-                {cachedAgentName ? `和${cachedAgentName}开始会话` : ''}
+                {cachedAgentName
+                  ? t(
+                      'PC.Components.ConversationDetails.startConversationWithAgent',
+                      cachedAgentName,
+                    )
+                  : ''}
               </Typography.Title>
             </div>
 
@@ -416,7 +426,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {!isAppSidebarMode && !isSidebarVisible && !isMobile && (
                 <TooltipIcon
-                  title="查看智能体详情"
+                  title={t(
+                    'PC.Components.ConversationDetails.viewAgentDetails',
+                  )}
                   className={cx(styles['icon-box'])}
                   icon={
                     <SvgIcon
@@ -438,7 +450,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
                   <TooltipIcon
-                    title="打开预览页面"
+                    title={t(
+                      'PC.Components.ConversationDetails.openPreviewPage',
+                    )}
                     className={cx(styles['icon-box'])}
                     icon={
                       <SvgIcon
@@ -526,7 +540,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               agentId={agentId}
               agentSandboxId={agentDetail?.sandboxId}
               hasPermission={agentDetail?.hasPermission}
-              maskText="您无该智能体权限"
+              maskText={t(
+                'PC.Components.ConversationDetails.noAgentPermission',
+              )}
               fixedSelection={!!agentDetail?.sandboxId}
               isPersonalComputer={!!agentDetail?.sandboxId}
               mentionPlacement="up"
@@ -619,7 +635,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     showCopyButton={showCopyButton}
                     allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
                     onCopyClick={() => setOpenPageCopyModal(true)}
-                    copyButtonText="复制模板"
+                    copyButtonText={t(
+                      'PC.Components.PagePreviewIframe.copyTemplate',
+                    )}
                     copyButtonClassName={styles['copy-btn']}
                   />
                   {/* 复制模板弹窗 */}

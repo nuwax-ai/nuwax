@@ -18,7 +18,7 @@ import WorkflowProxyV3 from '../workflowProxyV3';
 const createMockNode = (overrides: Partial<ChildNode>): ChildNode => ({
   id: 1,
   type: NodeTypeEnum.Start,
-  name: '测试节点',
+  name: 'Test Node',
   description: '',
   workflowId: 12345,
   shape: 'custom-react',
@@ -36,7 +36,7 @@ const createMockWorkflowData = (): WorkflowDataV3 => ({
     createMockNode({
       id: 1,
       type: NodeTypeEnum.Start,
-      name: '开始',
+      name: 'Start',
       nextNodeIds: [2],
       nodeConfig: {
         extension: { x: 100, y: 200, width: 200, height: 100 },
@@ -46,7 +46,7 @@ const createMockWorkflowData = (): WorkflowDataV3 => ({
     createMockNode({
       id: 2,
       type: NodeTypeEnum.LLM,
-      name: '大模型',
+      name: 'LLM',
       nextNodeIds: [3],
       nodeConfig: {
         extension: { x: 300, y: 200, width: 200, height: 150 },
@@ -57,7 +57,7 @@ const createMockWorkflowData = (): WorkflowDataV3 => ({
     createMockNode({
       id: 3,
       type: NodeTypeEnum.End,
-      name: '结束',
+      name: 'End',
       nextNodeIds: [],
       nodeConfig: {
         extension: { x: 500, y: 200, width: 200, height: 100 },
@@ -78,13 +78,13 @@ const createMockConditionWorkflowData = (): WorkflowDataV3 => ({
     createMockNode({
       id: 1,
       type: NodeTypeEnum.Start,
-      name: '开始',
+      name: 'Start',
       nextNodeIds: [2],
     }),
     createMockNode({
       id: 2,
       type: NodeTypeEnum.Condition,
-      name: '条件分支',
+      name: 'Condition Branch',
       nextNodeIds: [],
       nodeConfig: {
         extension: { x: 300, y: 200 },
@@ -97,19 +97,19 @@ const createMockConditionWorkflowData = (): WorkflowDataV3 => ({
     createMockNode({
       id: 3,
       type: NodeTypeEnum.LLM,
-      name: '分支1',
+      name: 'Branch 1',
       nextNodeIds: [5],
     }),
     createMockNode({
       id: 4,
       type: NodeTypeEnum.LLM,
-      name: '分支2',
+      name: 'Branch 2',
       nextNodeIds: [5],
     }),
     createMockNode({
       id: 5,
       type: NodeTypeEnum.End,
-      name: '结束',
+      name: 'End',
       nextNodeIds: [],
     }),
   ],
@@ -139,7 +139,7 @@ describe('WorkflowProxyV3', () => {
     vi.restoreAllMocks();
   });
 
-  describe('初始化与重置', () => {
+  describe('Initialization and reset', () => {
     it('should initialize with workflow data', () => {
       const mockData = createMockWorkflowData();
       proxy.initialize(mockData);
@@ -167,7 +167,7 @@ describe('WorkflowProxyV3', () => {
     });
   });
 
-  describe('节点查询', () => {
+  describe('Node queries', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -175,7 +175,7 @@ describe('WorkflowProxyV3', () => {
     it('should get node by id', () => {
       const node = proxy.getNodeById(2);
       expect(node).not.toBeNull();
-      expect(node?.name).toBe('大模型');
+      expect(node?.name).toBe('LLM');
       expect(node?.type).toBe(NodeTypeEnum.LLM);
     });
 
@@ -189,11 +189,11 @@ describe('WorkflowProxyV3', () => {
       nodes[0].name = 'Modified';
 
       const nodesAgain = proxy.getNodes();
-      expect(nodesAgain[0].name).toBe('开始'); // Original unchanged
+      expect(nodesAgain[0].name).toBe('Start'); // Original unchanged
     });
   });
 
-  describe('节点添加', () => {
+  describe('Node addition', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -202,7 +202,7 @@ describe('WorkflowProxyV3', () => {
       const newNode = createMockNode({
         id: 100,
         type: NodeTypeEnum.Code,
-        name: '代码节点',
+        name: 'Code Node',
         nextNodeIds: [],
         nodeConfig: { extension: { x: 400, y: 300 } },
       });
@@ -211,7 +211,7 @@ describe('WorkflowProxyV3', () => {
 
       expect(result.success).toBe(true);
       expect(proxy.getNodes()).toHaveLength(4);
-      expect(proxy.getNodeById(100)?.name).toBe('代码节点');
+      expect(proxy.getNodeById(100)?.name).toBe('Code Node');
       expect(proxy.hasPendingChanges()).toBe(true);
     });
 
@@ -219,13 +219,13 @@ describe('WorkflowProxyV3', () => {
       const duplicateNode = createMockNode({
         id: 1, // Already exists
         type: NodeTypeEnum.Code,
-        name: '重复节点',
+        name: 'Duplicate node',
       });
 
       const result = proxy.addNode(duplicateNode);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('已存在');
+      expect(result.message).toContain('already exists');
       expect(proxy.getNodes()).toHaveLength(3);
     });
 
@@ -240,11 +240,11 @@ describe('WorkflowProxyV3', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('未初始化');
+      expect(result.message).toContain('is not initialized');
     });
   });
 
-  describe('节点更新', () => {
+  describe('Node updates', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -253,7 +253,7 @@ describe('WorkflowProxyV3', () => {
       const updatedNode = createMockNode({
         id: 2,
         type: NodeTypeEnum.LLM,
-        name: '更新后的大模型',
+        name: 'Updated LLM',
         nextNodeIds: [3],
         nodeConfig: {
           extension: { x: 350, y: 250 },
@@ -265,7 +265,7 @@ describe('WorkflowProxyV3', () => {
 
       expect(result.success).toBe(true);
       const node = proxy.getNodeById(2);
-      expect(node?.name).toBe('更新后的大模型');
+      expect(node?.name).toBe('Updated LLM');
       expect(node?.nodeConfig?.modelId).toBe('gpt-4-turbo');
     });
 
@@ -273,18 +273,18 @@ describe('WorkflowProxyV3', () => {
       const newNode = createMockNode({
         id: 999,
         type: NodeTypeEnum.Variable,
-        name: '变量节点',
+        name: 'Variable node',
       });
 
       const result = proxy.updateNode(newNode);
 
       expect(result.success).toBe(true);
       expect(proxy.getNodes()).toHaveLength(4);
-      expect(proxy.getNodeById(999)?.name).toBe('变量节点');
+      expect(proxy.getNodeById(999)?.name).toBe('Variable node');
     });
   });
 
-  describe('节点删除', () => {
+  describe('Node deletion', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -313,11 +313,11 @@ describe('WorkflowProxyV3', () => {
       const result = proxy.deleteNode(999);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('不存在');
+      expect(result.message).toContain('does not exist');
     });
   });
 
-  describe('节点复制', () => {
+  describe('Node copy', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -340,7 +340,7 @@ describe('WorkflowProxyV3', () => {
     });
   });
 
-  describe('节点位置更新', () => {
+  describe('Node position updates', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -364,7 +364,7 @@ describe('WorkflowProxyV3', () => {
     });
   });
 
-  describe('边操作', () => {
+  describe('Edge operations', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -375,7 +375,7 @@ describe('WorkflowProxyV3', () => {
         createMockNode({
           id: 100,
           type: NodeTypeEnum.Code,
-          name: '代码节点',
+          name: 'Code Node',
           nodeConfig: { extension: { x: 400, y: 400 } },
         }),
       );
@@ -395,11 +395,11 @@ describe('WorkflowProxyV3', () => {
       const result = proxy.addEdge(edge);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('已存在');
+      expect(result.message).toContain('already exists');
     });
   });
 
-  describe('条件分支节点', () => {
+  describe('Condition branch node', () => {
     beforeEach(() => {
       proxy.initialize(createMockConditionWorkflowData());
     });
@@ -423,7 +423,7 @@ describe('WorkflowProxyV3', () => {
     });
   });
 
-  describe('数据一致性', () => {
+  describe('Data consistency', () => {
     beforeEach(() => {
       proxy.initialize(createMockWorkflowData());
     });
@@ -434,7 +434,7 @@ describe('WorkflowProxyV3', () => {
         createMockNode({
           id: 999,
           type: NodeTypeEnum.Code,
-          name: '外部添加',
+          name: 'Added externally',
         }),
       );
 

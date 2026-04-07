@@ -11,6 +11,7 @@ import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
+import { dict } from '@/services/i18nRuntime';
 import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
@@ -360,7 +361,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
       form.validateFields(); // 触发表单验证以显示error
-      message.warning('请填写必填参数');
+      message.warning(dict('PC.Pages.PreviewAndDebug.fillRequiredParams'));
       return;
     }
     // 标记用户已发送消息
@@ -400,7 +401,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const handleOpenPreviewPanel = () => {
     const convId = devConversationIdRef.current;
     if (!convId) {
-      message.warning('会话ID不存在，无法打开文件预览');
+      message.warning(
+        dict('PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview'),
+      );
       return;
     }
 
@@ -426,7 +429,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const handleOpenDesktopPanel = () => {
     const convId = devConversationIdRef.current;
     if (!convId) {
-      message.warning('会话ID不存在，无法打开智能体电脑');
+      message.warning(dict('PC.Pages.PreviewAndDebug.convIdNotFoundDesktop'));
       return;
     }
 
@@ -563,7 +566,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                         {loadingMore ? (
                           <span>
                             <LoadingOutlined style={{ marginRight: 8 }} />
-                            正在加载历史会话
+                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
                           </span>
                         ) : null}
                       </div>
@@ -597,7 +600,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                       )}
                     >
                       <LoadingOutlined />
-                      <span>智能体正在执行，请稍等</span>
+                      <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
                     </div>
                   )}
                 </>
@@ -661,7 +664,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               agentSandboxId={conversationInfo?.agent?.sandboxId}
               hasPermission={conversationInfo?.agent?.hasPermission}
               maskText={
-                conversationInfo?.agent?.hasPermission ? '' : '您无该智能体权限'
+                conversationInfo?.agent?.hasPermission
+                  ? ''
+                  : dict('PC.Components.ChatInputHome.noAgentPermission')
               }
               fixedSelection={
                 !!conversationInfo?.agent?.sandboxId ||
@@ -671,7 +676,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
               // 禁用 @ 提及功能 (编排页面不支持 @ 提及功能)
               enableMention={false}
-              placeholder="直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片"
+              placeholder={dict(
+                'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+              )}
             />
           </div>
         </div>

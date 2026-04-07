@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Col, Empty, Row, Typography } from 'antd';
 import React from 'react';
 import PluginCard, { PluginCardProps } from '../EcosystemCard';
@@ -34,7 +35,7 @@ export interface PluginCardListProps {
 const PluginCardList: React.FC<PluginCardListProps> = ({
   title,
   plugins = [],
-  emptyText = '暂无数据',
+  emptyText = dict('PC.Common.Global.emptyData'),
   onCardClick,
   column = 1,
   gutter = [16, 16],

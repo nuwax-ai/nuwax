@@ -4,6 +4,7 @@
  */
 
 import useClickOutside from '@/hooks/useClickOutside';
+import { dict } from '@/services/i18nRuntime';
 import { Tabs, theme, Tree } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import '../styles.less';
@@ -388,7 +389,7 @@ const VariableList: React.FC<VariableListProps> = ({
             textAlign: 'center',
           }}
         >
-          未找到匹配变量
+          {dict('PC.Components.VariableList.noMatchingVariable')}
         </div>
       );
     }
@@ -477,7 +478,7 @@ const VariableList: React.FC<VariableListProps> = ({
     if (regularVariables.length > 0) {
       items.push({
         key: 'variables',
-        label: '变量',
+        label: dict('PC.Components.VariableList.tabVariables'),
         children: renderTree(
           transformToTreeDataForTree(regularVariables, token),
         ),
@@ -487,7 +488,7 @@ const VariableList: React.FC<VariableListProps> = ({
     if (toolVariables.length > 0) {
       items.push({
         key: 'tools',
-        label: '工具',
+        label: dict('PC.Components.VariableList.tabTools'),
         children: renderTree(transformToTreeDataForTree(toolVariables, token)),
       });
     }
@@ -495,7 +496,7 @@ const VariableList: React.FC<VariableListProps> = ({
     if (skillVariables.length > 0) {
       items.push({
         key: 'skills',
-        label: '技能',
+        label: dict('PC.Components.VariableList.tabSkills'),
         children: renderTree(transformToTreeDataForTree(skillVariables, token)),
       });
     }

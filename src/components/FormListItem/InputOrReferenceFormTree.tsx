@@ -1,4 +1,5 @@
 import { useWorkflowModel } from '@/hooks/useWorkflowModel';
+import { dict } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import {
   InputAndOutConfig,
@@ -68,7 +69,12 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     return (
       <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
-        <Popover content={nodeData.description || '暂无描述'}>
+        <Popover
+          content={
+            nodeData.description ||
+            dict('PC.Components.FormListItem.noDescription')
+          }
+        >
           <InfoCircleOutlined
             title=""
             style={{ marginLeft: '4px', cursor: 'help' }}
@@ -148,7 +154,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
           popupClassName: 'inputOrReferencePopup',
           label: (
             <div style={{ padding: 8, color: 'red' }}>
-              未添加上级节点连线或上级节点无参数
+              {dict('PC.Components.FormListItem.noPreviousNodesOrParams')}
             </div>
           ),
           disabled: true,
@@ -180,7 +186,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         </Tag>
       ) : (
         <Input
-          placeholder={placeholder || '请输入或引用参数'}
+          placeholder={
+            placeholder ||
+            dict('PC.Components.FormListItem.inputOrReferenceParam')
+          }
           style={{ marginRight: 8 }}
           size="small"
           disabled={isDisabled}

@@ -1,4 +1,5 @@
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import { t } from '@/services/i18nRuntime';
 import { apiCustomPageCopyProject } from '@/services/pageDev';
 import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -69,7 +70,9 @@ const CopyToSpaceComponent: React.FC<CopyToSpaceComponentProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: (data: any, params: PageCopyParams[]) => {
-        message.success('页面复制成功');
+        message.success(
+          t('PC.Components.CopyToSpaceComponent.pageCopySuccess'),
+        );
         setInternalLoading(false);
         // 关闭弹窗
         onCancel();
@@ -92,7 +95,9 @@ const CopyToSpaceComponent: React.FC<CopyToSpaceComponentProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: (data: number, params: PublishTemplateCopyParams[]) => {
-        message.success('模板复制成功');
+        message.success(
+          t('PC.Components.CopyToSpaceComponent.templateCopySuccess'),
+        );
         setInternalLoading(false);
         // 关闭弹窗
         onCancel();

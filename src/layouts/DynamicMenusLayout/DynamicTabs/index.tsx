@@ -3,9 +3,13 @@
  * @description 直接复用现有 TabItem 组件，保持样式一致
  */
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import TabItem from './TabItem';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 export interface DynamicTabsProps {
   /** 一级菜单列表 */
@@ -40,7 +44,18 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
   }, [menus, activeTab]);
 
   return (
-    <div className="flex flex-col items-center flex-1 overflow-y w-full py-8 scroll-container">
+    <div
+      className={cx(
+        styles['dynamic-tabs-container'],
+        'flex',
+        'flex-col',
+        'flex-1',
+        'overflow-y',
+        'w-full',
+        'py-8',
+        'scroll-container',
+      )}
+    >
       {tabItems.map((item) => (
         <TabItem
           key={item.type}

@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { ChildNode } from '@/types/interfaces/graph';
 import { ErrorItem } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
@@ -52,7 +53,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
           height: '48px',
         }}
       >
-        <span>错误列表</span>
+        <span>{t('PC.Pages.AntvX6ErrorList.title')}</span>
         <Button
           type="text"
           icon={<CloseOutlined />}
@@ -83,7 +84,9 @@ const ErrorList: React.FC<ErrorListProps> = ({
                 >
                   <div className="image-div-style">{returnImg(node.type)}</div>
                   <div className="content-error-item-width">
-                    <p className="error-node-name">{node.name || '暂无'}</p>
+                    <p className="error-node-name">
+                      {node.name || t('PC.Pages.AntvX6ErrorList.empty')}
+                    </p>
                     {item.error.length > 110 ? (
                       <Popover
                         content={<p>{getDisplayErrorContent(item.error)}</p>} // Popover 内容 超出 500 字符时 支持截断

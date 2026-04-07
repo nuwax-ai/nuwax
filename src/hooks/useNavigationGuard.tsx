@@ -32,6 +32,7 @@
  * ```
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
@@ -72,12 +73,12 @@ export function useNavigationGuard(
   const {
     condition,
     onConfirm,
-    title = '确认离开',
-    message = '你确定要离开当前页面吗？',
+    title = dict('PC.Hooks.UseNavigationGuard.confirmLeave'),
+    message = dict('PC.Hooks.UseNavigationGuard.confirmLeaveMessage'),
     enabled = true,
-    confirmText = '确认',
-    discardText = '放弃',
-    cancelText = '取消',
+    confirmText = dict('PC.Common.Global.confirm'),
+    discardText = dict('PC.Hooks.UseNavigationGuard.discard'),
+    cancelText = dict('PC.Common.Global.cancel'),
     showCancelButton = false,
   } = options;
 

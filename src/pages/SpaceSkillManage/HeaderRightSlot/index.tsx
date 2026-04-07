@@ -2,6 +2,7 @@ import CustomPopover from '@/components/CustomPopover';
 import WorkspaceSearch from '@/components/WorkspaceLayout/components/WorkspaceSearch';
 import { SKILL_ALL_RESOURCE } from '@/constants/space.constants';
 import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
+import { dict } from '@/services/i18nRuntime';
 import { CreateSkillWayEnum } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { PlusOutlined } from '@ant-design/icons';
@@ -66,7 +67,7 @@ const HeaderRightSlot: React.FC<HeaderRightSlotProps> = ({
       />
       <CustomPopover list={SKILL_ALL_RESOURCE} onClick={handleClickPopoverItem}>
         <Button type="primary" icon={<PlusOutlined />}>
-          技能
+          {dict('PC.Pages.SpaceSkillManage.HeaderRightSlot.skill')}
         </Button>
       </CustomPopover>
     </Space>

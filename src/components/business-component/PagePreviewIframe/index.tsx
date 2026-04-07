@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -91,7 +92,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   showCopyButton = false,
   allowCopy = false,
   onCopyClick,
-  copyButtonText = '复制模板',
+  copyButtonText = t('PC.Components.PagePreviewIframe.copyTemplate'),
   copyButtonClassName,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
@@ -262,7 +263,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             }
 
             console.warn(
-              '[PagePreviewIframe] popstate 事件：找不到目标 URL，已添加到历史记录',
+              '[PagePreviewIframe] Popstate target URL not found, appended to history.',
               changeData.url,
             );
           }
@@ -330,7 +331,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           iframe.contentDocument || iframe.contentWindow?.document || null;
       } catch (error) {
         console.warn(
-          '[PagePreviewIframe] 无法访问 iframe 文档（可能是跨域限制）:',
+          '[PagePreviewIframe] Failed to access iframe document (possible cross-origin restriction):',
           error,
         );
         setIsLoading(false);
@@ -350,7 +351,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           if (!iframeDoc?.body) return;
 
           const title =
-            iframeDoc.querySelector('head > title')?.textContent || '页面预览';
+            iframeDoc.querySelector('head > title')?.textContent ||
+            t('PC.Components.PagePreviewIframe.defaultPageTitle');
           setPreviewPageTitle(title);
 
           const html = iframeDoc.body.innerHTML;
@@ -363,7 +365,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             if (nginxWelcomeText === 'Welcome to nginx!') {
               const params = {
                 requestId: pagePreviewData?.request_id as string,
-                html: '无法读取数据',
+                html: t('PC.Components.PagePreviewIframe.unableToReadData'),
               };
               console.log('CHART1', params);
               await apiAgentComponentPageResultUpdate(params);
@@ -526,7 +528,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
     // 检查是否可以后退
     if (!canGoBack) {
-      // console.warn('[PagePreviewIframe] 无法后退：已在历史记录开头');
+      // console.warn('[PagePreviewIframe] Unable to go back: already at history start.');
       return;
     }
 
@@ -553,7 +555,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
     // 检查是否可以前进
     if (!canGoForward) {
-      // console.warn('[PagePreviewIframe] 无法前进：已在历史记录末尾');
+      // console.warn('[PagePreviewIframe] Unable to go forward: already at history end.');
       return;
     }
 
@@ -605,7 +607,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
                 {copyButtonText}
               </Button>
             )}
-            <Tooltip title="刷新">
+            <Tooltip
+              title={t('PC.Components.PagePreviewIframe.tooltipRefresh')}
+            >
               <Button
                 type="text"
                 onClick={reload}
@@ -618,7 +622,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               />
             </Tooltip>
 
-            <Tooltip title="后退" open={canGoBack ? undefined : false}>
+            <Tooltip
+              title={t('PC.Components.PagePreviewIframe.tooltipBack')}
+              open={canGoBack ? undefined : false}
+            >
               <Button
                 type="text"
                 onClick={goBack}
@@ -632,7 +639,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               />
             </Tooltip>
 
-            <Tooltip title="前进" open={canGoForward ? undefined : false}>
+            <Tooltip
+              title={t('PC.Components.PagePreviewIframe.tooltipForward')}
+              open={canGoForward ? undefined : false}
+            >
               <Button
                 type="text"
                 onClick={goForward}
@@ -646,7 +656,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               />
             </Tooltip>
 
-            <Tooltip title="复制链接">
+            <Tooltip
+              title={t('PC.Components.PagePreviewIframe.tooltipCopyLink')}
+            >
               <Button
                 type="text"
                 onClick={goCopy}

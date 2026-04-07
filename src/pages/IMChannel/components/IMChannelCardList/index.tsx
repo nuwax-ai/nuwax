@@ -7,6 +7,7 @@ import {
   IM_PLATFORM_LABEL_MAP,
   IMPlatformEnum,
 } from '@/constants/imChannel.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiDeleteIMConfigChannel,
   apiIMConfigChannelList,
@@ -174,15 +175,15 @@ const IMChannelCardList = forwardRef<
     Modal.confirm({
       title,
       icon: <ExclamationCircleOutlined />,
-      content: '删除后将无法恢复，请谨慎操作。',
-      okText: '确认',
+      content: dict('PC.Pages.IMChannel.CardList.deleteContent'),
+      okText: dict('PC.Common.Global.confirm'),
       okType: 'danger',
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk: async () => {
         try {
           const res = await apiDeleteIMConfigChannel(id);
           if (res.code === SUCCESS_CODE) {
-            message.success('删除成功');
+            message.success(dict('PC.Toast.Global.deletedSuccessfully'));
             setAllRobots((prev) => prev.filter((item) => item.id !== id));
             onDeleteSuccess?.(channel);
           }
@@ -198,10 +199,13 @@ const IMChannelCardList = forwardRef<
       IM_PLATFORM_ICON_MAP[record.channel as IMPlatformEnum] || '';
 
     const platformName =
-      IM_PLATFORM_LABEL_MAP[record.channel as IMPlatformEnum] || '该';
+      IM_PLATFORM_LABEL_MAP[record.channel as IMPlatformEnum] ||
+      dict('PC.Pages.IMChannel.CardList.defaultPlatformName');
     // const isEnabled = record.enabled;
     const isBot = record.targetType === IMChannelTypeEnum.Bot;
-    const typeLabel = isBot ? '智能机器人' : '企业应用';
+    const typeLabel = isBot
+      ? dict('PC.Pages.IMChannel.CardList.smartBot')
+      : dict('PC.Pages.IMChannel.CardList.enterpriseApp');
 
     return (
       <CardWrapper
@@ -213,14 +217,17 @@ const IMChannelCardList = forwardRef<
             style={{ width: '100%', gap: 8 }}
           >
             <span className="text-ellipsis" style={{ flex: 1 }}>
-              {record.agentName || '未绑定智能体'}
+              {record.agentName ||
+                dict('PC.Pages.IMChannel.CardList.unboundAgent')}
             </span>
             {record.channel === IMPlatformEnum.Wework && (
               <Tag
                 color={isBot ? 'blue' : 'green'}
                 style={{ marginRight: 0, flexShrink: 0 }}
               >
-                {isBot ? '机器人' : '应用'}
+                {isBot
+                  ? dict('PC.Pages.IMChannel.CardList.bot')
+                  : dict('PC.Pages.IMChannel.CardList.app')}
               </Tag>
             )}
           </div>
@@ -232,7 +239,8 @@ const IMChannelCardList = forwardRef<
         extra={
           <div className={cx(styles.extra)}>
             <span className={cx(styles.time)}>
-              最近编辑 {dayjs(record.modified).format('MM-DD HH:mm')}
+              {dict('PC.Pages.IMChannel.CardList.lastEdited')}{' '}
+              {dayjs(record.modified).format('MM-DD HH:mm')}
             </span>
           </div>
         }
@@ -249,7 +257,7 @@ const IMChannelCardList = forwardRef<
                 />
               </Tooltip> */}
             <div className={cx(styles.actions)}>
-              <Tooltip title="编辑">
+              <Tooltip title={dict('PC.Pages.IMChannel.CardList.edit')}>
                 <Button
                   className="action-btn edit-btn"
                   icon={<EditOutlined />}
@@ -259,7 +267,7 @@ const IMChannelCardList = forwardRef<
                   }}
                 />
               </Tooltip>
-              <Tooltip title="删除">
+              <Tooltip title={dict('PC.Pages.IMChannel.CardList.delete')}>
                 <Button
                   className="action-btn delete-btn"
                   icon={<DeleteOutlined />}
@@ -268,7 +276,11 @@ const IMChannelCardList = forwardRef<
                     handleDelete(
                       record.id,
                       record.channel,
-                      `确认删除${platformName}${typeLabel}？`,
+                      dict(
+                        'PC.Pages.IMChannel.CardList.confirmDelete',
+                        platformName,
+                        typeLabel,
+                      ),
                     );
                   }}
                 />
@@ -290,11 +302,15 @@ const IMChannelCardList = forwardRef<
       <div className={cx(styles.emptyWrapper)}>
         <AppDevEmptyState
           type="no-data"
-          title={isSearchEmpty ? '未能找到匹配的结果' : '未能找到相关结果'}
+          title={
+            isSearchEmpty
+              ? dict('PC.Pages.IMChannel.CardList.noMatchingResults')
+              : dict('PC.Pages.IMChannel.CardList.noResultsFound')
+          }
           description={
             isSearchEmpty
-              ? `未找到包含 “${keyword}” 的机器人或配置`
-              : '当前平台下暂无机器人，请点击上方“新增机器人”按钮开始创建'
+              ? dict('PC.Pages.IMChannel.CardList.noKeywordResults', keyword)
+              : dict('PC.Pages.IMChannel.CardList.noRobotsDesc')
           }
         />
       </div>

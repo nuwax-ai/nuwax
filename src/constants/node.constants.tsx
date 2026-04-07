@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
   CompareTypeEnum,
@@ -27,9 +28,9 @@ export const testRunList = [
 ];
 
 export const branchTypeMap = {
-  IF: '如果',
-  ELSE_IF: '否则如果',
-  ELSE: '否则',
+  IF: dict('PC.Constants.Node.if'),
+  ELSE_IF: dict('PC.Constants.Node.elseIf'),
+  ELSE: dict('PC.Constants.Node.else'),
 };
 export const GENERAL_NODE = NodeShapeEnum.General;
 export const LOOP_NODE = NodeShapeEnum.Loop;
@@ -37,15 +38,15 @@ export const LOOP_NODE = NodeShapeEnum.Loop;
 // 异常处理类型 label 映射
 export const EXCEPTION_HANDLE_OPTIONS = [
   {
-    label: '中断流程',
+    label: dict('PC.Constants.Node.interruptFlow'),
     value: ExceptionHandleTypeEnum.INTERRUPT,
   },
   {
-    label: '返回特定内容',
+    label: dict('PC.Constants.Node.returnSpecificContent'),
     value: ExceptionHandleTypeEnum.SPECIFIC_CONTENT,
   },
   {
-    label: '执行异常流程',
+    label: dict('PC.Constants.Node.execExceptionFlow'),
     value: ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW,
   },
 ];
@@ -70,10 +71,10 @@ export const EXCEPTION_NODES_TYPE = [
 ];
 
 export const RETRY_COUNT_OPTIONS = [
-  { label: '不重试', value: 0 },
-  { label: '1次', value: 1 },
-  { label: '2次', value: 2 },
-  { label: '3次', value: 3 },
+  { label: dict('PC.Constants.Node.noRetry'), value: 0 },
+  { label: dict('PC.Constants.Node.retryOnce'), value: 1 },
+  { label: dict('PC.Constants.Node.retryTwice'), value: 2 },
+  { label: dict('PC.Constants.Node.retryThreeTimes'), value: 3 },
 ];
 
 export const compareTypeMap = {
@@ -91,8 +92,8 @@ export const compareTypeMap = {
 };
 
 export const answerTypeMap = {
-  [AnswerTypeEnum.TEXT]: '直接回答',
-  [AnswerTypeEnum.SELECT]: '选项回答',
+  [AnswerTypeEnum.TEXT]: dict('PC.Constants.Node.directAnswer'),
+  [AnswerTypeEnum.SELECT]: dict('PC.Constants.Node.optionAnswer'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距
@@ -174,8 +175,8 @@ export const DEFAULT_DRAWER_FORM: ChildNode = {
     inputArgs: [],
   },
   id: FoldFormIdEnum.empty,
-  name: '测试',
-  description: '测试',
+  name: dict('PC.Constants.Node.testName'),
+  description: dict('PC.Constants.Node.testDescription'),
   workflowId: 0,
   icon: '',
 };
@@ -183,6 +184,12 @@ export const DEFAULT_DRAWER_FORM: ChildNode = {
 export const SKILL_FORM_KEY = 'skillComponentConfigs';
 
 export const VARIABLE_CONFIG_TYPE_OPTIONS = [
-  { label: '设置变量值', value: VariableConfigTypeEnum.SET_VARIABLE },
-  { label: '获取变量值', value: VariableConfigTypeEnum.GET_VARIABLE },
+  {
+    label: dict('PC.Constants.Node.setVariable'),
+    value: VariableConfigTypeEnum.SET_VARIABLE,
+  },
+  {
+    label: dict('PC.Constants.Node.getVariable'),
+    value: VariableConfigTypeEnum.GET_VARIABLE,
+  },
 ];

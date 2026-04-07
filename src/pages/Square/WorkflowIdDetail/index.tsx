@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import { dict } from '@/services/i18nRuntime';
 import { apiPublishedWorkflowInfo } from '@/services/plugin';
 import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
@@ -44,7 +45,9 @@ const WorkflowIdDetail: React.FC = ({}) => {
       manual: true,
       debounceInterval: 300,
       onSuccess: (data: number, params: PublishTemplateCopyParams[]) => {
-        message.success('模板复制成功');
+        message.success(
+          dict('PC.Pages.Square.WorkflowIdDetail.templateCopySuccess'),
+        );
         // 关闭弹窗
         setOpenMove(false);
         // 目标空间ID
@@ -64,73 +67,79 @@ const WorkflowIdDetail: React.FC = ({}) => {
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
       ellipsis: true,
     },
     {
-      title: '参数描述',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramDescription'),
       dataIndex: 'description',
       key: 'description',
       width: 260,
       ellipsis: true,
     },
     {
-      title: '参数类型',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramType'),
       dataIndex: 'dataType',
       key: 'dataType',
       width: 100,
     },
     {
-      title: '传入方式',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.inputMethod'),
       dataIndex: 'inputType',
       key: 'inputType',
       width: 100,
     },
     {
-      title: '是否必须',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.required'),
       dataIndex: 'require',
       key: 'require',
       width: 80,
       align: 'center',
-      render: (text) => (text ? '是' : '否'),
+      render: (text) =>
+        text
+          ? dict('PC.Pages.Square.WorkflowIdDetail.yes')
+          : dict('PC.Pages.Square.WorkflowIdDetail.no'),
     },
     {
-      title: '默认值',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.defaultValue'),
       dataIndex: 'bindValue',
       key: 'bindValue',
       width: 150,
     },
     {
-      title: '开启',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.enabled'),
       dataIndex: 'enable',
       key: 'enable',
       width: 80,
       align: 'center',
-      render: (text) => (text ? '是' : '否'),
+      render: (text) =>
+        text
+          ? dict('PC.Pages.Square.WorkflowIdDetail.yes')
+          : dict('PC.Pages.Square.WorkflowIdDetail.no'),
     },
   ];
 
   // 出参配置columns
   const outputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramName'),
       dataIndex: 'name',
       key: 'name',
       width: 430,
       ellipsis: true,
     },
     {
-      title: '参数描述',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramDescription'),
       dataIndex: 'description',
       key: 'description',
       width: 300,
       ellipsis: true,
     },
     {
-      title: '参数类型',
+      title: dict('PC.Pages.Square.WorkflowIdDetail.paramType'),
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
@@ -156,7 +165,9 @@ const WorkflowIdDetail: React.FC = ({}) => {
       )}
       <div className={cx(styles['main-container'], 'scroll-container')}>
         <div className={cx('flex', 'items-center', 'content-between')}>
-          <span className={cx(styles.title)}>工作流描述</span>
+          <span className={cx(styles.title)}>
+            {dict('PC.Pages.Square.WorkflowIdDetail.workflowDescription')}
+          </span>
           <ConditionRender
             condition={workflowInfo?.allowCopy === AllowCopyEnum.Yes}
           >
@@ -165,7 +176,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
               className={cx(styles['copy-btn'])}
               onClick={() => setOpenMove(true)}
             >
-              复制模板
+              {dict('PC.Pages.Square.WorkflowIdDetail.copyTemplate')}
             </Button>
             {/*智能体迁移弹窗*/}
             <MoveCopyComponent
@@ -184,7 +195,9 @@ const WorkflowIdDetail: React.FC = ({}) => {
           {workflowInfo?.description}
         </p>
         <Divider style={{ margin: '20px 0' }} />
-        <span className={cx(styles.title)}>入参配置</span>
+        <span className={cx(styles.title)}>
+          {dict('PC.Pages.Square.WorkflowIdDetail.inputConfig')}
+        </span>
         <Table
           className={cx(styles['table-wrap'], 'overflow-hide')}
           columns={inputColumns}
@@ -197,7 +210,9 @@ const WorkflowIdDetail: React.FC = ({}) => {
             defaultExpandAllRows: true,
           }}
         />
-        <span className={cx(styles.title)}>出参配置</span>
+        <span className={cx(styles.title)}>
+          {dict('PC.Pages.Square.WorkflowIdDetail.outputConfig')}
+        </span>
         {workflowInfo?.outputArgs?.length > 0 ? (
           <Table<BindConfigWithSub>
             className={cx(styles['table-wrap'], 'overflow-hide')}
@@ -221,7 +236,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
               'content-center',
             )}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.emptyData')} />
           </div>
         )}
       </div>

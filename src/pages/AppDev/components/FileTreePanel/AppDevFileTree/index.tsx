@@ -65,7 +65,7 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
       await onRenameFile(renamingNode, trimmedValue);
     } catch (error) {
       // 如果重命名失败，可以考虑恢复原名字或显示错误提示
-      // console.error('重命名失败:', error);
+      // console.error('Rename failed:', error);
     }
   }, [renamingNode, renameValue, onRenameFile, cancelRename]);
 

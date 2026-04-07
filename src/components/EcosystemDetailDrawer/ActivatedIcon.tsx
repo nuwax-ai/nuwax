@@ -1,4 +1,5 @@
 import ActivatedImage from '@/assets/ecosystem/activated.png';
+import { dict } from '@/services/i18nRuntime';
 import { Image } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
@@ -15,7 +16,11 @@ const ActivatedIcon: React.FC<ActivatedIconProps> = ({ size = 40 }) => {
       className={cx(styles['activated-icon'])}
       style={{ width: size, height: size }}
     >
-      <Image preview={false} src={ActivatedImage} alt="已启用" />
+      <Image
+        preview={false}
+        src={ActivatedImage}
+        alt={dict('PC.Components.ActivatedIcon.activated')}
+      />
     </div>
   );
 };

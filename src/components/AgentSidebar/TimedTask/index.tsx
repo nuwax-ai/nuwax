@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { apiAgentTaskCancel, apiAgentTaskList } from '@/services/agentTask';
+import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
@@ -67,7 +68,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
     debounceInterval: 500,
     onSuccess: (_: null, params: number[]) => {
       const [id] = params;
-      message.success('定时任务已取消');
+      message.success(dict('PC.Components.TimedTask.taskCancelled'));
       setExecutingTaskList((prev) => {
         return prev.filter((item) => item.id !== id);
       });
@@ -116,7 +117,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
   const items: TabsProps['items'] = [
     {
       key: TaskStatus.EXECUTING,
-      label: '进行中',
+      label: dict('PC.Components.TimedTask.inProgress'),
       children: (
         <TaskList
           loading={loading}
@@ -129,7 +130,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
     },
     {
       key: TaskStatus.CANCEL,
-      label: '已取消',
+      label: dict('PC.Components.TimedTask.cancelled'),
       children: (
         <TaskList
           loading={loading}
@@ -166,7 +167,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
         )}
       >
         <Typography.Title className={cx(styles.title)} level={5}>
-          定时任务
+          {dict('PC.Components.TimedTask.timedTask')}
         </Typography.Title>
         <Button
           size="small"
@@ -175,7 +176,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
           icon={<SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />}
           type="text"
         >
-          添加
+          {dict('PC.Components.TimedTask.addTask')}
         </Button>
       </div>
       {/* 定时任务tab */}

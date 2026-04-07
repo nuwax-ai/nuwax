@@ -5,6 +5,8 @@ import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import BasicLayout from '@/pages/Login/BasicLayout';
 import { apiLoginCode } from '@/services/account';
+import { dict, syncLangFromUserInfo } from '@/services/i18nRuntime';
+import { UserService } from '@/services/userService';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
@@ -67,6 +69,12 @@ const VerifyCode: React.FC = () => {
       localStorage.setItem(ACCESS_TOKEN, token);
       localStorage.setItem(EXPIRE_DATE, expireDate);
       localStorage.setItem(PHONE, params[0].phone);
+      try {
+        const latestUserInfo = await UserService.refreshUserInfo();
+        await syncLangFromUserInfo(latestUserInfo);
+      } catch (error) {
+        console.error('[VerifyCode] Sync language after login failed:', error);
+      }
       // 登录成功后强制刷新菜单数据（可能切换了账号）
       await loadMenus(true);
       // 判断用户是否设置过密码，如果未设置过，需要弹出密码设置框让用户设置密码
@@ -242,13 +250,18 @@ const VerifyCode: React.FC = () => {
             />
           </div>
           <h3>
-            {phoneOrEmail?.includes('@') ? '输入邮箱验证码' : '输入短信验证码'}
+            {phoneOrEmail?.includes('@')
+              ? dict('PC.Pages.VerifyCode.inputEmailCode')
+              : dict('PC.Pages.VerifyCode.inputSmsCode')}
           </h3>
           <p>
-            {`验证码已发送至${
-              phoneOrEmail?.includes('@') ? '你的邮箱 ' : '手机号 '
-            }`}
-            {`${!phoneOrEmail?.includes('@') ? areaCode : ''} ${phoneOrEmail}`}
+            {dict(
+              'PC.Pages.VerifyCode.codeSentTo',
+              phoneOrEmail?.includes('@')
+                ? dict('PC.Pages.VerifyCode.yourEmail')
+                : dict('PC.Pages.VerifyCode.yourPhone'),
+              `${!phoneOrEmail?.includes('@') ? areaCode : ''} ${phoneOrEmail}`,
+            )}
           </p>
           <div className={cx(styles['code-container'])}>
             {codes.map((code, index) => {
@@ -269,7 +282,9 @@ const VerifyCode: React.FC = () => {
           </div>
           <div className={cx(styles['count-down-container'])}>
             {countDown > 0 && (
-              <span className={styles['count-down']}>{countDown}s后</span>
+              <span className={styles['count-down']}>
+                {`${countDown}${dict('PC.Pages.VerifyCode.countdownSuffix')}`}
+              </span>
             )}
             <span
               className={cx(
@@ -279,7 +294,7 @@ const VerifyCode: React.FC = () => {
               )}
               onClick={handleClickReSendCode}
             >
-              重新获取
+              {dict('PC.Pages.VerifyCode.resend')}
             </span>
           </div>
         </div>

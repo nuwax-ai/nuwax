@@ -1,4 +1,4 @@
-// 这个页面定义普通的节点，如输入，输出，等
+// Node panels for common workflow node types.
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
@@ -7,6 +7,7 @@ import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/html
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
@@ -33,9 +34,9 @@ import { useModel } from 'umi';
 import { cycleOption, outPutConfigs } from '../ParamsV3';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
-// 定义一些公共的数组
+// Shared options.
 
-// 定义开始节点
+// Start node.
 const StartNode: React.FC<NodeDisposeProps> = ({
   form,
   nodeConfig,
@@ -46,7 +47,7 @@ const StartNode: React.FC<NodeDisposeProps> = ({
     <Form.Item name={'inputArgs'}>
       <CustomTree
         key={`${type}-${id}-inputArgs`}
-        title={'输入'}
+        title={t('PC.Pages.AntvX6Data.input')}
         inputItemName={'inputArgs'}
         params={nodeConfig?.inputArgs || []}
         form={form}
@@ -55,13 +56,13 @@ const StartNode: React.FC<NodeDisposeProps> = ({
     </Form.Item>
   );
 };
-// 定义文档提取节点
+// Document extraction node.
 const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <>
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6Data.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
@@ -74,7 +75,9 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput treeData={form.getFieldValue('outputArgs')} />
             </>
           )
@@ -84,12 +87,15 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
-// 定义结束和过程输出的节点渲染
+// End/process-output node.
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
   const { referenceList } = useModel('workflowV3');
   const segOptions = [
-    { label: '返回变量', value: 'VARIABLE' },
-    { label: '返回文本', value: 'TEXT' },
+    {
+      label: t('PC.Pages.AntvX6NodeItem.returnVariable'),
+      value: 'VARIABLE',
+    },
+    { label: t('PC.Pages.AntvX6NodeItem.returnText'), value: 'TEXT' },
   ];
   const outputArgs =
     Form.useWatch(InputItemNameEnum.outputArgs, {
@@ -117,7 +123,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
         }
       >
         <InputAndOut
-          title="输出变量"
+          title={t('PC.Pages.AntvX6NodeItem.outputVariable')}
           form={form}
           fieldConfigs={outPutConfigs}
           showCopy={true}
@@ -131,9 +137,9 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
             <>
               <div className="dis-sb margin-bottom">
                 <span className="node-title-style gap-6 flex items-center">
-                  输出内容
+                  {t('PC.Pages.AntvX6NodeItem.outputContent')}
                   <TooltipIcon
-                    title="可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。"
+                    title={t('PC.Pages.AntvX6NodeItem.outputContentTooltip')}
                     icon={<ExclamationCircleOutlined />}
                   />
                 </span>
@@ -145,7 +151,9 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                 }
               >
                 <TiptapVariableInput
-                  placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
+                  placeholder={t(
+                    'PC.Pages.AntvX6NodeItem.outputContentPlaceholder',
+                  )}
                   style={{
                     minHeight: '80px',
                     marginBottom: '10px',
@@ -167,15 +175,15 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
   );
 };
 
-// 定义循环的节点渲染
+// Loop node.
 const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   return (
     <div>
       <div className="node-item-style">
         <span className="node-title-style margin-bottom gap-6 flex items-center">
-          循环设置
+          {t('PC.Pages.AntvX6NodeItem.loopSetting')}
           <TooltipIcon
-            title="如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。"
+            title={t('PC.Pages.AntvX6NodeItem.loopSettingTooltip')}
             icon={<ExclamationCircleOutlined />}
           />
         </span>
@@ -187,7 +195,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
         </Form.Item>
       </div>
 
-      {/* 动态渲染循环次数 */}
+      {/* Render loop settings by selected loop type. */}
       <Form.Item
         noStyle
         shouldUpdate={(prevValues, currentValues) =>
@@ -199,12 +207,16 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
           if (loopType === 'SPECIFY_TIMES_LOOP') {
             return (
               <div className="node-item-style">
-                <div className="node-title-style margin-bottom">循环次数</div>
+                <div className="node-title-style margin-bottom">
+                  {t('PC.Pages.AntvX6NodeItem.loopTimes')}
+                </div>
                 <Form.Item name="loopTimes">
                   <InputNumber
                     size="small"
                     style={{ width: '100%', marginBottom: '10px' }}
-                    placeholder="请输入循环次数，并且值为正整数"
+                    placeholder={t(
+                      'PC.Pages.AntvX6NodeItem.loopTimesPlaceholder',
+                    )}
                     min={1}
                     precision={0}
                   />
@@ -215,7 +227,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
             return (
               <div className="node-item-style">
                 <InputAndOut
-                  title="循环数组"
+                  title={t('PC.Pages.AntvX6NodeItem.loopArray')}
                   fieldConfigs={outPutConfigs}
                   inputItemName={InputItemNameEnum.inputArgs}
                   form={form}
@@ -230,9 +242,9 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
         <InputAndOut
           title={
             <>
-              中间变量
+              {t('PC.Pages.AntvX6NodeItem.intermediateVariable')}
               <TooltipIcon
-                title="变量可在多次循环中实现共享，可用于在多次循环中传递变量。"
+                title={t('PC.Pages.AntvX6NodeItem.intermediateVariableTooltip')}
                 icon={<ExclamationCircleOutlined />}
               />
             </>
@@ -245,7 +257,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </div>
 
       <InputAndOut
-        title="输出"
+        title={t('PC.Pages.AntvX6Data.output')}
         fieldConfigs={outPutConfigs}
         inputItemName={InputItemNameEnum.outputArgs}
         form={form}
@@ -255,7 +267,7 @@ const CycleNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
-// 定义变量的节点渲染
+// Variable node.
 const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const options = VARIABLE_CONFIG_TYPE_OPTIONS;
   const configType = form.getFieldValue('configType');
@@ -274,7 +286,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
           isSetVariable ? (
             <div className="node-item-style">
               <InputAndOut
-                title={'设置变量'}
+                title={t('PC.Pages.AntvX6NodeItem.setVariable')}
                 fieldConfigs={outPutConfigs}
                 inputItemName={InputItemNameEnum.inputArgs}
                 form={form}
@@ -287,7 +299,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           !isSetVariable ? (
             <OtherFormList
-              title={'输出变量'}
+              title={t('PC.Pages.AntvX6NodeItem.outputVariable')}
               fieldConfigs={outPutConfigs}
               inputItemName={InputItemNameEnum.outputArgs}
               form={form}
@@ -299,7 +311,9 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           isSetVariable ? (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput
                 treeData={[
                   {
@@ -321,24 +335,24 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
-// 变量聚合节点 - 已抽取到单独文件
+// Variable aggregation node (extracted).
 import VariableAggregationNode from './VariableAggregation';
 
-// 定义文本处理的节点渲染
+// Text processing node.
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const { referenceList } = useModel('workflowV3');
   const textTypeOptions = [
-    { label: '字符串拼接', value: 'CONCAT' },
-    { label: '字符串分割', value: 'SPLIT' },
+    { label: t('PC.Pages.AntvX6NodeItem.stringConcat'), value: 'CONCAT' },
+    { label: t('PC.Pages.AntvX6NodeItem.stringSplit'), value: 'SPLIT' },
   ];
 
   const [options, setOptions] = useState([
-    { value: '\\n', label: '换行 (\\n)' },
-    { value: '\\t', label: '制表符 (\\t)' },
-    { value: '。', label: '句号 (。)' },
-    { value: ',', label: '逗号 (,)' },
-    { value: ';', label: '分号 (;)' },
-    { value: '&nbsp;', label: '空格 ( )' },
+    { value: '\\n', label: t('PC.Pages.AntvX6NodeItem.newline') },
+    { value: '\\t', label: t('PC.Pages.AntvX6NodeItem.tab') },
+    { value: '\u3002', label: t('PC.Pages.AntvX6NodeItem.fullStop') },
+    { value: ',', label: t('PC.Pages.AntvX6NodeItem.comma') },
+    { value: ';', label: t('PC.Pages.AntvX6NodeItem.semicolon') },
+    { value: '&nbsp;', label: t('PC.Pages.AntvX6NodeItem.space') },
   ]);
 
   const [newItem, setNewItem] = useState({
@@ -352,7 +366,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
       preserve: true,
     }) || [];
 
-  // 添加新选项
+  // Add a custom separator option.
   const addItem = (
     e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
   ) => {
@@ -391,7 +405,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
       </Form.Item>
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6Data.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
@@ -402,19 +416,31 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
           form.getFieldValue('textHandleType') === 'CONCAT' ? (
             <div className="node-item-style">
               <div className="dis-sb margin-bottom">
-                <span className="node-title-style">字符串拼接</span>
+                <span className="node-title-style">
+                  {t('PC.Pages.AntvX6NodeItem.stringConcat')}
+                </span>
                 <Popover
                   placement="topRight"
                   content={
                     <>
-                      <p className="node-title-style">数组连接符设置</p>
-                      <p>使用以下符号来自动连接数组中的每个项目</p>
-                      <p className="array-link-setting-select-label">连接符</p>
+                      <p className="node-title-style">
+                        {t('PC.Pages.AntvX6NodeItem.arrayJoinSymbolSetting')}
+                      </p>
+                      <p>
+                        {t(
+                          'PC.Pages.AntvX6NodeItem.arrayJoinSymbolDescription',
+                        )}
+                      </p>
+                      <p className="array-link-setting-select-label">
+                        {t('PC.Pages.AntvX6NodeItem.joinSymbol')}
+                      </p>
                       <Form.Item name="join">
                         <Select
                           options={options}
                           allowClear
-                          placeholder={'请选择连接符号'}
+                          placeholder={t(
+                            'PC.Pages.AntvX6NodeItem.selectJoinSymbol',
+                          )}
                           popupRender={(menu) => (
                             <>
                               {menu}
@@ -426,28 +452,32 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                 <Space>
                                   <Input
                                     value={newItem.label}
-                                    placeholder="选项名称"
+                                    placeholder={t(
+                                      'PC.Pages.AntvX6NodeItem.optionNamePlaceholder',
+                                    )}
                                     onChange={(e) =>
                                       setNewItem({
                                         value: newItem.value,
                                         label: e.target.value,
                                       })
                                     }
-                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                    onKeyDown={(e) => e.stopPropagation()}
                                   />
                                   <Input
                                     value={newItem.value}
-                                    placeholder="选项值"
+                                    placeholder={t(
+                                      'PC.Pages.AntvX6NodeItem.optionValuePlaceholder',
+                                    )}
                                     onChange={(e) =>
                                       setNewItem({
                                         label: newItem.label,
                                         value: e.target.value,
                                       })
                                     }
-                                    onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                                    onKeyDown={(e) => e.stopPropagation()}
                                   />
                                   <Button type="primary" onClick={addItem}>
-                                    添加
+                                    {t('PC.Pages.AntvX6NodeItem.add')}
                                   </Button>
                                 </Space>
                               </div>
@@ -470,7 +500,9 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                 }
               >
                 <TiptapVariableInput
-                  placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
+                  placeholder={t(
+                    'PC.Pages.AntvX6NodeItem.inputVariablePlaceholder',
+                  )}
                   style={{
                     minHeight: '80px',
                   }}
@@ -491,11 +523,13 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('textHandleType') === 'SPLIT' ? (
             <div className="node-item-style">
-              <span className="node-title-style">分隔符</span>
+              <span className="node-title-style">
+                {t('PC.Pages.AntvX6NodeItem.delimiter')}
+              </span>
               <Form.Item name="splits">
                 <Select
                   allowClear
-                  placeholder={'请选择分割符号'}
+                  placeholder={t('PC.Pages.AntvX6NodeItem.selectSplitSymbol')}
                   mode={'multiple'}
                   maxTagCount={3}
                   popupRender={(menu) => (
@@ -506,28 +540,32 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                         <Space>
                           <Input
                             value={newItem.label}
-                            placeholder="选项名称"
+                            placeholder={t(
+                              'PC.Pages.AntvX6NodeItem.optionNamePlaceholder',
+                            )}
                             onChange={(e) =>
                               setNewItem({
                                 value: newItem.value,
                                 label: e.target.value,
                               })
                             }
-                            onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                            onKeyDown={(e) => e.stopPropagation()}
                           />
                           <Input
                             value={newItem.value}
-                            placeholder="选项值"
+                            placeholder={t(
+                              'PC.Pages.AntvX6NodeItem.optionValuePlaceholder',
+                            )}
                             onChange={(e) =>
                               setNewItem({
                                 label: newItem.label,
                                 value: e.target.value,
                               })
                             }
-                            onKeyDown={(e) => e.stopPropagation()} // 阻止键盘事件冒泡
+                            onKeyDown={(e) => e.stopPropagation()}
                           />
                           <Button type="primary" onClick={addItem}>
-                            添加
+                            {t('PC.Pages.AntvX6NodeItem.add')}
                           </Button>
                         </Space>
                       </div>
@@ -545,7 +583,9 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput
                 treeData={
                   form.getFieldValue('textHandleType') === 'CONCAT'
@@ -581,7 +621,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
-// 定义代码节点
+// Code node.
 const CodeNode: React.FC<NodeDisposeProps> = ({
   form,
   nodeConfig,
@@ -601,7 +641,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
     <>
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6Data.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
@@ -610,7 +650,9 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
       <div className="node-item-style">
         <div>
           <div className="dis-sb margin-bottom">
-            <span className="node-title-style ">代码</span>
+            <span className="node-title-style ">
+              {t('PC.Pages.AntvX6NodeItem.code')}
+            </span>
             <Button
               icon={<ExpandAltOutlined />}
               size="small"
@@ -631,7 +673,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
         </div>
       </div>
       <CustomTree
-        title={'输出'}
+        title={t('PC.Pages.AntvX6Data.output')}
         key={`${type}-${id}-outputArgs`}
         params={nodeConfig?.outputArgs || []}
         form={form}

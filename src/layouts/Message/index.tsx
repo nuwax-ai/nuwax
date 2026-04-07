@@ -1,4 +1,5 @@
 // import { MESSAGE_OPTIONS } from '@/constants/menus.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiNotifyMessageList,
   apiNotifyMessageUnreadClear,
@@ -142,7 +143,7 @@ const Message: React.FC = () => {
                   'items-center',
                   'content-center',
                 )}
-                description="暂无消息"
+                description={dict('PC.Layouts.Message.noMessages')}
                 // description={
                 //   segmentedValue === MessageReadStatusEnum.All
                 //     ? '暂无消息'

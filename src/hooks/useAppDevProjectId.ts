@@ -31,7 +31,7 @@ export const useAppDevProjectId = () => {
       return queryProjectId;
     }
 
-    // console.warn('⚠️ [AppDevProjectId] 没有找到有效的 projectId');
+    // console.warn('⚠️ [AppDevProjectId] No valid projectId found');
     return null;
   }, [params.projectId, location.search]);
 

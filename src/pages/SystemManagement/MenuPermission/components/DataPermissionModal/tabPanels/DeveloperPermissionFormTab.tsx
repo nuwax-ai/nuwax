@@ -6,6 +6,7 @@
  *
  * @see DataPermissionModal
  */
+import { dict } from '@/services/i18nRuntime';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Col, Form, InputNumber, Row } from 'antd';
 import type { FormInstance } from 'antd/es/form';
@@ -42,15 +43,19 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
       <Row gutter={[16, 0]}>
         <Col span={12}>
           <Form.Item
-            label="每日token限制"
+            label={dict('PC.Pages.DeveloperPermissionForm.dailyTokenLimit')}
             name={['tokenLimit', 'limitPerDay']}
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '每日 token 限制，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.dailyTokenLimitTooltip',
+              ),
             }}
           >
             <InputNumber
-              placeholder="请输入每日token限制数量"
+              placeholder={dict(
+                'PC.Pages.DeveloperPermissionForm.dailyTokenLimitPlaceholder',
+              )}
               className={cx('w-full')}
               min={-1}
               max={1000000000000000}
@@ -59,11 +64,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建工作空间数量"
+            label={dict('PC.Pages.DeveloperPermissionForm.maxSpaceCount')}
             name="maxSpaceCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建工作空间数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxSpaceCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -71,11 +78,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建智能体数量"
+            label={dict('PC.Pages.DeveloperPermissionForm.maxAgentCount')}
             name="maxAgentCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建智能体数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxAgentCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -83,11 +92,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建网页应用数量"
+            label={dict('PC.Pages.DeveloperPermissionForm.maxPageAppCount')}
             name="maxPageAppCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建网页应用数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxPageAppCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -95,11 +106,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建知识库数量"
+            label={dict('PC.Pages.DeveloperPermissionForm.maxKnowledgeCount')}
             name="maxKnowledgeCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建知识库数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxKnowledgeCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -107,12 +120,15 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="知识库存储空间上限 (GB)"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.knowledgeStorageLimitGb',
+            )}
             name="knowledgeStorageLimitGb"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title:
-                '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.knowledgeStorageLimitGbTooltip',
+              ),
             }}
           >
             <InputNumber
@@ -137,11 +153,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建数据表数量"
+            label={dict('PC.Pages.DeveloperPermissionForm.maxDataTableCount')}
             name="maxDataTableCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建数据表数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxDataTableCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -149,11 +167,15 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="可创建定时任务数量"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.maxScheduledTaskCount',
+            )}
             name="maxScheduledTaskCount"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '可创建定时任务数量，-1 表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.maxScheduledTaskCountTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -161,12 +183,16 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="智能体电脑内存(GB)"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.agentComputerMemoryGb',
+            )}
             name="agentComputerMemoryGb"
             initialValue={4}
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.agentComputerMemoryGbTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={1} max={100000000} />
@@ -174,12 +200,16 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="智能体电脑 CPU 核心数"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.agentComputerCpuCores',
+            )}
             name="agentComputerCpuCores"
             initialValue={2}
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '智能体电脑 CPU 核心数（留空表示使用默认值）',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.agentComputerCpuCoresTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={1} max={100000000} />
@@ -187,11 +217,15 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="通用智能体每天对话次数限制"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.agentDailyPromptLimit',
+            )}
             name="agentDailyPromptLimit"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '通用智能体每天对话次数，-1表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.agentDailyPromptLimitTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />
@@ -199,11 +233,15 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         </Col>
         <Col span={12}>
           <Form.Item
-            label="网页应用开发每天对话次数"
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.pageDailyPromptLimit',
+            )}
             name="pageDailyPromptLimit"
             tooltip={{
               icon: <InfoCircleOutlined />,
-              title: '网页应用开发每天对话次数，-1表示不限制',
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.pageDailyPromptLimitTooltip',
+              ),
             }}
           >
             <InputNumber className={cx('w-full')} min={-1} max={100000000} />

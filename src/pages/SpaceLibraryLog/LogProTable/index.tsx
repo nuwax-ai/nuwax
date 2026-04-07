@@ -5,6 +5,7 @@ import {
 } from '@/components/ProComponents';
 import { AGENT_COMPONENT_TYPE_MAP } from '@/constants/agent.constants';
 import { apiSpaceLogList } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import type {
   SpaceLogInfo,
   SpaceLogQueryFilter,
@@ -105,66 +106,80 @@ const LogProTable: React.FC = () => {
     () => [
       {
         width: 100,
-        title: '类型',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colType'),
         dataIndex: 'targetType',
         valueType: 'select',
         valueEnum: AGENT_COMPONENT_TYPE_MAP,
         hideInTable: false,
         initialValue: targetTypeFromUrl,
         fieldProps: {
-          placeholder: '请选择类型',
+          placeholder: dict(
+            'PC.Pages.SpaceLibraryLog.LogProTable.phSelectType',
+          ),
           allowClear: true,
           onChange: handleTargetTypeChange,
         },
       },
       {
-        title: '对象ID',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colTargetId'),
         dataIndex: 'targetId',
         width: 140,
         ellipsis: true,
         initialValue: targetIdFromUrl,
         fieldProps: {
-          placeholder: '请输入对象ID',
+          placeholder: dict('PC.Pages.SpaceLibraryLog.LogProTable.phTargetId'),
           onChange: handleTargetIdChange,
         },
       },
       {
-        title: '对象名称',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colTargetName'),
         dataIndex: 'targetName',
         width: 140,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入对象名称' },
+        fieldProps: {
+          placeholder: dict(
+            'PC.Pages.SpaceLibraryLog.LogProTable.phTargetName',
+          ),
+        },
       },
       {
-        title: '请求ID',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colRequestId'),
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
         hideInTable: false,
-        fieldProps: { placeholder: '请输入请求ID' },
+        fieldProps: {
+          placeholder: dict('PC.Pages.SpaceLibraryLog.LogProTable.phRequestId'),
+        },
       },
       {
-        title: '用户ID',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colUserId'),
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
         fieldProps: getIntegerOnlyFieldProps(
-          '请输入用户ID，仅支持输入整数',
+          dict('PC.Pages.SpaceLibraryLog.LogProTable.phUserId'),
           18,
         ),
       },
       {
-        title: '用户名',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colUserName'),
         dataIndex: 'userName',
         width: 180,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入用户名' },
+        fieldProps: {
+          placeholder: dict('PC.Pages.SpaceLibraryLog.LogProTable.phUserName'),
+        },
       },
       {
-        title: '会话ID',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colConversationId'),
         dataIndex: 'conversationId',
         width: 140,
-        fieldProps: { placeholder: '请输入会话ID' },
+        fieldProps: {
+          placeholder: dict(
+            'PC.Pages.SpaceLibraryLog.LogProTable.phConversationId',
+          ),
+        },
         render: (_, record) => {
           if (!record.conversationId) return '-';
           const isCurrentUser = userInfo?.id === record.userId;
@@ -173,7 +188,11 @@ const LogProTable: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="truncate">{record.conversationId}</span>
               {isCurrentUser && (
-                <Tooltip title="查看会话详情">
+                <Tooltip
+                  title={dict(
+                    'PC.Pages.SpaceLibraryLog.LogProTable.viewConversationDetail',
+                  )}
+                >
                   <a
                     style={{ marginLeft: 5 }}
                     onClick={(e) => {
@@ -193,7 +212,7 @@ const LogProTable: React.FC = () => {
       },
 
       {
-        title: '输入内容',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colInput'),
         dataIndex: 'input',
         minWidth: 150,
         width: 220,
@@ -202,10 +221,14 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.input}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: dict(
+            'PC.Pages.SpaceLibraryLog.LogProTable.phInputContent',
+          ),
+        },
       },
       {
-        title: '输出内容',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colOutput'),
         dataIndex: 'output',
         minWidth: 150,
         width: 220,
@@ -214,31 +237,35 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.output}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: dict(
+            'PC.Pages.SpaceLibraryLog.LogProTable.phOutputContent',
+          ),
+        },
       },
 
       {
-        title: '时间范围',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colTimeRange'),
         dataIndex: 'createTimeRange',
         valueType: 'dateTimeRange',
         hideInTable: true,
       },
       {
-        title: '输入token',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colInputToken'),
         dataIndex: 'inputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '输出token',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colOutputToken'),
         dataIndex: 'outputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '请求时间',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colRequestTime'),
         dataIndex: 'requestStartTime',
         width: 180,
         valueType: 'dateTime',
@@ -249,7 +276,7 @@ const LogProTable: React.FC = () => {
         // },
       },
       {
-        title: '整体耗时',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colElapsedTime'),
         key: 'elapsedTimeMs',
         width: 110,
         align: 'center',
@@ -351,7 +378,10 @@ const LogProTable: React.FC = () => {
           'success' in resp &&
           !resp.success
         ) {
-          message.error(resp.message || '查询失败');
+          message.error(
+            resp.message ||
+              dict('PC.Pages.SpaceLibraryLog.LogProTable.queryFailed'),
+          );
           return { data: [], total: 0, success: false };
         }
 
@@ -377,7 +407,9 @@ const LogProTable: React.FC = () => {
    */
   const handleOpenDetails = useCallback((record: SpaceLogInfo) => {
     if (!record?.id) {
-      message.warning('该条记录缺少 requestId，无法查看详情');
+      message.warning(
+        dict('PC.Pages.SpaceLibraryLog.LogProTable.noRequestIdWarning'),
+      );
       return;
     }
 
@@ -389,7 +421,7 @@ const LogProTable: React.FC = () => {
     return [
       ...columns,
       {
-        title: '操作',
+        title: dict('PC.Pages.SpaceLibraryLog.LogProTable.colActions'),
         valueType: 'option',
         width: 90,
         fixed: 'right',
@@ -402,7 +434,9 @@ const LogProTable: React.FC = () => {
               actions={[
                 {
                   key: 'detail',
-                  label: '详情',
+                  label: dict(
+                    'PC.Pages.SpaceLibraryLog.LogProTable.actionDetail',
+                  ),
                   onClick: () => handleOpenDetails(record),
                 },
               ]}

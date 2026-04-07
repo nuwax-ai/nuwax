@@ -8,6 +8,7 @@
  * @see DataPermissionModal
  */
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type { OpenApiDefinition } from '@/types/interfaces/account';
 import { Empty, InputNumber, Tree, Typography } from 'antd';
 import classNames from 'classnames';
@@ -91,7 +92,9 @@ const ApiPermissionTabPanel: React.FC<ApiPermissionTabPanelProps> = ({
               className={styles.openApiTreeTitleControls}
               onClick={(e) => e.stopPropagation()}
             >
-              <Text className={styles['font-12']}>每分钟调用次数</Text>
+              <Text className={styles['font-12']}>
+                {dict('PC.Pages.DataPermissionTabPanel.rpmLabel')}
+              </Text>
               <InputNumber
                 size="small"
                 min={-1}
@@ -106,7 +109,9 @@ const ApiPermissionTabPanel: React.FC<ApiPermissionTabPanelProps> = ({
                   );
                 }}
               />
-              <Text className={styles['font-12']}>每天调用次数</Text>
+              <Text className={styles['font-12']}>
+                {dict('PC.Pages.DataPermissionTabPanel.rpdLabel')}
+              </Text>
               <InputNumber
                 size="small"
                 min={-1}
@@ -162,7 +167,11 @@ const ApiPermissionTabPanel: React.FC<ApiPermissionTabPanelProps> = ({
                   'h-full',
                 )}
               >
-                <Empty description="暂无 API 权限配置" />
+                <Empty
+                  description={dict(
+                    'PC.Pages.DataPermissionTabPanel.noApiPermission',
+                  )}
+                />
               </div>
             )
           )}

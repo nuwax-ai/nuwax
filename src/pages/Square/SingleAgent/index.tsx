@@ -7,6 +7,7 @@ import {
   ICON_USER,
 } from '@/constants/images.constants';
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import type { SingleAgentProps } from '@/types/interfaces/square';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -120,7 +121,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
                 onStartUse?.(e);
               }}
             >
-              开始使用
+              {dict('PC.Pages.Square.SingleAgent.startUsing')}
             </Button>
             <span
               className={cx(styles['star-box'])}

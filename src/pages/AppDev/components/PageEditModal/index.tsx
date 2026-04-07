@@ -1,6 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { t } from '@/services/i18nRuntime';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PageEditModalProps } from '@/types/interfaces/pageDev';
@@ -14,7 +15,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 页面编辑弹窗
+ * Page edit modal.
  */
 const PageEditModal: React.FC<PageEditModalProps> = ({
   open,
@@ -23,20 +24,20 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm();
-  // 图标
+  // Icon.
   const [imageUrl, setImageUrl] = useState<string>('');
-  // 封面图片
+  // Cover image.
   const [coverImgUrl, setCoverImgUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  // 用户是否上传封面图片
+  // Whether cover image is uploaded by user.
   const [isUserUploadCoverImg, setIsUserUploadCoverImg] =
     useState<boolean>(false);
 
-  // 上传前端项目压缩包并启动开发服务器
+  // Update page app config.
   const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
     manual: true,
     onSuccess: () => {
-      message.success('编辑成功');
+      message.success(t('PC.Pages.AppDevPageEditModal.editSuccess'));
       onConfirm();
       setLoading(false);
     },
@@ -60,18 +61,18 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     }
   }, [open, projectInfo]);
 
-  // 编辑应用
+  // Edit app.
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
-    // 封面图片来源, 如果用户上传了封面图片，则设置封面图片来源为USER, 否则使用项目原有的封面图片来源
+    // Use USER source when cover is uploaded in current edit session.
     const coverImgSourceType = isUserUploadCoverImg
       ? CoverImgSourceTypeEnum.USER
       : projectInfo?.coverImgSourceType;
-    // 调用编辑页面接口
+    // Call update API.
     const data = {
       ...values,
       projectId: projectInfo?.projectId,
-      // 如果用户没有上传封面图片，则不设置封面图片来源
+      // Do not pass cover source when user did not upload cover in this edit.
       ...(coverImgSourceType ? { coverImgSourceType } : {}),
     };
     runUpdatePage(data);
@@ -88,13 +89,13 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     setIsUserUploadCoverImg(false);
   };
 
-  // 上传图标成功
+  // Icon upload success.
   const uploadIconSuccess = (url: string) => {
     setImageUrl(url);
     form.setFieldValue('icon', url);
   };
 
-  // 上传封面图片成功
+  // Cover upload success.
   const uploadCoverImgSuccess = (url: string) => {
     setCoverImgUrl(url);
     setIsUserUploadCoverImg(true);
@@ -105,7 +106,7 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     <CustomFormModal
       form={form}
       open={open}
-      title="编辑应用"
+      title={t('PC.Pages.AppDevPageEditModal.modalTitle')}
       loading={loading}
       classNames={{
         content: styles['modal-content'],
@@ -125,18 +126,27 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
       >
         <Form.Item
           name="projectName"
-          label="名称"
-          rules={[{ required: true, message: '请输入名称' }]}
+          label={t('PC.Pages.AppDevPageEditModal.name')}
+          rules={[
+            {
+              required: true,
+              message: t('PC.Pages.AppDevPageEditModal.nameRequired'),
+            },
+          ]}
         >
-          <Input placeholder="请输入名称" showCount maxLength={50} />
+          <Input
+            placeholder={t('PC.Pages.AppDevPageEditModal.namePlaceholder')}
+            showCount
+            maxLength={50}
+          />
         </Form.Item>
         <OverrideTextArea
           name="projectDesc"
-          label="描述"
-          placeholder="请输入描述"
+          label={t('PC.Pages.AppDevPageEditModal.description')}
+          placeholder={t('PC.Pages.AppDevPageEditModal.descriptionPlaceholder')}
           maxLength={200}
         />
-        <Form.Item name="icon" label="图标">
+        <Form.Item name="icon" label={t('PC.Pages.AppDevPageEditModal.icon')}>
           <UploadAvatar
             onUploadSuccess={uploadIconSuccess}
             imageUrl={imageUrl}
@@ -147,9 +157,9 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
           name="coverImg"
           label={
             <div className={cx('flex', 'gap-10', 'items-center')}>
-              <span>封面图片</span>
+              <span>{t('PC.Pages.AppDevPageEditModal.coverImage')}</span>
               <span className={cx(styles['text-tip'])}>
-                建议尺寸356px * 200px, 比例16:9
+                {t('PC.Pages.AppDevPageEditModal.coverImageTip')}
               </span>
             </div>
           }

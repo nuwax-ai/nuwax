@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { CategoryInfo } from '@/types/interfaces/agentConfig';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -187,7 +188,7 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
         />
       </div>
       <div className={cx(styles['tab-right'])}>
-        <Tooltip title="拖拽智能体卡片可交换位置">
+        <Tooltip title={dict('PC.Pages.HomeDrag.dragAgentTip')}>
           <ExclamationCircleOutlined className={cx(styles.icon)} />
         </Tooltip>
       </div>

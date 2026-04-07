@@ -1,20 +1,20 @@
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
+import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import '../../indexV3.less';
 import { asideList } from '../../ParamsV3';
-// 定义组件的属性接口，规定了组件接受的属性及其类型
+// Component props definition.
 interface Prop {
-  // 当前正在展示的节点
-  // dragChild 是一个回调函数，用于处理拖拽开始事件。
-  // 它接收 React 的原生 DragEvent 和当前被拖拽的子项 (Child) 对象作为参数。
+  // Current node list entry being rendered.
+  // dragChild handles drag/click to create nodes on canvas.
   dragChild: (
     child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement>,
   ) => void;
   isLoop?: boolean;
-  // 当前端口的名称
+  // Current port name.
   portName?: string;
 }
 const renderIcon = (url: string) => {
@@ -33,15 +33,14 @@ const renderIcon = (url: string) => {
   );
 };
 
-// StencilContent 组件用于渲染 stencil 内容，并允许用户拖拽子项（Child）到画布上。
+// Render stencil panel and allow dragging child nodes onto canvas.
 const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
   /**
-   * handleDragStart 处理拖拽开始事件。
-   * 当用户开始拖拽时，它会调用父组件传递过来的 dragChild 回调，
-   * 并将当前拖拽事件和被拖拽的子项（Child）对象传递给它。
+   * Handle drag start.
+   * Calls parent `dragChild` with current event and child node.
    *
-   * @param e - 拖拽事件对象
-   * @param child - 被拖拽的子项对象
+   * @param e - drag event
+   * @param child - dragged child node
    */
   const handleDragStart = (
     child: StencilChildNode,
@@ -52,23 +51,25 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
 
   return (
     <div className="stencil-content">
-      {/* 输入框用于搜索功能 */}
-      {/* <Input placeholder="搜索" prefix={<SearchOutlined />} /> */}
-      <p className="stencil-title">节点选择</p>
-      {/* 渲染 stencil 列表 */}
+      {/* Search input placeholder */}
+      {/* <Input placeholder="Search" prefix={<SearchOutlined />} /> */}
+      <p className="stencil-title">
+        {t('PC.Pages.AntvX6Stencil.nodeSelectorTitle')}
+      </p>
+      {/* Render stencil list */}
       <div className="stencil-list-style">
         {asideList.map((item) => (
           <div className="stencil-list-item" key={item.name}>
-            {/* 如果有组名，则显示组标题 */}
+            {/* Show group title if present */}
             {item.name && <p className="stencil-list-title">{item.name}</p>}
             <div className="stencil-list-content">
-              {/* 渲染该组内的所有子项  其中循环节点不添加 循环节点*/}
+              {/* Render group children, skip Loop node inside loop context */}
               {item.children
                 .filter((child) =>
                   isLoop ? child.type !== NodeTypeEnum.Loop : true,
                 )
                 .map((child) => {
-                  // 特殊类型处理：LoopBreak/LoopContinue 只在 Loop 节点时显示
+                  // Show LoopBreak/LoopContinue only in Loop context.
                   const isLoopControl = [
                     NodeTypeEnum.LoopBreak,
                     NodeTypeEnum.LoopContinue,

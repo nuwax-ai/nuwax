@@ -1,6 +1,7 @@
 import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { SkillItemProps } from '@/types/interfaces/library';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -30,7 +31,8 @@ const ComponentItem: React.FC<SkillItemProps> = ({
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
-            最近编辑 {dayjs(skillInfo.modified).format('MM-DD HH:mm')}
+            {dict('PC.Pages.SpaceSkillManage.ComponentItem.lastEdited')}{' '}
+            {dayjs(skillInfo.modified).format('MM-DD HH:mm')}
           </span>
         </>
       }

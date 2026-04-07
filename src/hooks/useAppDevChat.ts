@@ -35,6 +35,7 @@ import {
   insertToolCallBlock,
   insertToolCallUpdateBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
+import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
@@ -317,7 +318,7 @@ export const useAppDevChat = ({
                     ...msg,
                     text: insertToolCallBlock(msg.text || '', data.toolCallId, {
                       toolCallId: data.toolCallId,
-                      title: data.title || '工具调用',
+                      title: data.title || t('PC.Pages.AppDevChat.toolCall'),
                       kind: data.kind || 'execute',
                       status: data.status,
                       content: data.content,
@@ -351,7 +352,8 @@ export const useAppDevChat = ({
                       data.toolCallId,
                       {
                         toolCallId: data.toolCallId,
-                        title: data.title || '工具调用更新',
+                        title:
+                          data.title || t('PC.Pages.AppDevChat.toolCallUpdate'),
                         kind: data.kind || 'execute',
                         status: data.status,
                         content: data.content,
@@ -399,28 +401,34 @@ export const useAppDevChat = ({
             //弹窗提示错误消息 强制用户关闭对话框并让用户确认停止Agent服务
             Modal.confirm({
               maskClosable: false,
-              title: '错误消息',
+              title: t('PC.Pages.AppDevChat.errorMessageTitle'),
               content:
-                '服务异常，请停止Agent服务并重新开始对话' +
+                t('PC.Pages.AppDevChat.stopAgentAndRestartDialog') +
                 (data?.code ? `(${data?.code})` : ''),
               onOk: () => {
                 return new Promise((resolve, reject) => {
                   stopAgentService(projectId)
                     .then((stopResponse) => {
                       if (stopResponse.code === '0000') {
-                        message.success('Agent服务已停止');
+                        message.success(
+                          t('PC.Pages.AppDevChat.agentServiceStopped'),
+                        );
                         resolve(true);
                       } else {
                         message.error(
-                          `停止Agent服务失败: ${
-                            stopResponse.message || '未知错误'
-                          }`,
+                          t(
+                            'PC.Pages.AppDevChat.stopAgentServiceFailedWithReason',
+                            stopResponse.message ||
+                              t('PC.Pages.AppDevChatArea.unknownError'),
+                          ),
                         );
                         reject();
                       }
                     })
                     .catch(() => {
-                      message.error('停止Agent服务失败');
+                      message.error(
+                        t('PC.Pages.AppDevChat.stopAgentServiceFailed'),
+                      );
                       reject();
                     });
                 });
@@ -526,7 +534,7 @@ export const useAppDevChat = ({
           handleSSEMessage(data, requestId);
         },
         onError: (error: Error) => {
-          // message.error('AI助手连接失败');
+          // message.error('AI assistant connection failed');
           // 错误时先刷新文本缓冲区
           flushTextBuffer(true);
           //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
@@ -588,8 +596,8 @@ export const useAppDevChat = ({
     (projectId: string, doNext: () => void) => {
       // 显示确认对话框
       Modal.confirm({
-        title: '检测到后台Agent服务正在运行',
-        content: '是否停止当前运行的Agent服务？',
+        title: t('PC.Pages.AppDevChat.agentServiceRunningDetected'),
+        content: t('PC.Pages.AppDevChat.stopRunningAgentServiceConfirm'),
         maskClosable: false,
         onOk: () => {
           return new Promise((resolve, reject) => {
@@ -597,19 +605,23 @@ export const useAppDevChat = ({
             cancelAgentTask(projectId)
               .then((stopResponse) => {
                 if (stopResponse.code === '0000') {
-                  message.success('Agent服务已停止');
+                  message.success(t('PC.Pages.AppDevChat.agentServiceStopped'));
                   doNext();
                   resolve(true);
                 } else {
                   message.error(
-                    `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
+                    t(
+                      'PC.Pages.AppDevChat.stopAgentServiceFailedWithReason',
+                      stopResponse.message ||
+                        t('PC.Pages.AppDevChatArea.unknownError'),
+                    ),
                   );
                   cancelChat();
                   reject();
                 }
               })
               .catch(() => {
-                message.error('停止Agent服务失败');
+                message.error(t('PC.Pages.AppDevChat.stopAgentServiceFailed'));
                 cancelChat();
                 reject();
               });
@@ -617,7 +629,7 @@ export const useAppDevChat = ({
         },
         onCancel: () => {
           // 用户取消停止Agent服务，不发送消息，不增加计数
-          message.info('已取消发送');
+          message.info(t('PC.Pages.AppDevChat.sendCancelled'));
           cancelChat();
         },
       });
@@ -696,7 +708,7 @@ export const useAppDevChat = ({
               markStreamingMessageError(
                 prev,
                 requestId,
-                '服务异常，请稍后再试',
+                t('PC.Pages.AppDevChat.serviceExceptionTryLater'),
               ),
             );
           }
@@ -712,11 +724,15 @@ export const useAppDevChat = ({
         }
       },
       onError: () => {
-        // message.error('AI助手连接失败');
+        // message.error('AI assistant connection failed');
         aIChatAbortConnectionRef.current?.abort();
         setIsChatLoading(false);
         setChatMessages((prev) =>
-          markStreamingMessageError(prev, requestId, 'AI助手连接失败'),
+          markStreamingMessageError(
+            prev,
+            requestId,
+            t('PC.Pages.AppDevChat.aiAssistantConnectionFailed'),
+          ),
         );
       },
       onClose: () => {
@@ -849,7 +865,7 @@ export const useAppDevChat = ({
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
-        message.warning('请输入消息内容');
+        message.warning(t('PC.Pages.AppDevChat.inputMessageRequired'));
         return;
       }
 
@@ -954,7 +970,7 @@ export const useAppDevChat = ({
         }
       }
     } catch (error) {
-      console.error('加载历史会话失败:', error);
+      console.error('Failed to load history sessions:', error);
     } finally {
       // 清除加载状态
       if (isLoadMore) {

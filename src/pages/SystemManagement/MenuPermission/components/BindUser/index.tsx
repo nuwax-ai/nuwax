@@ -2,6 +2,7 @@ import personalImage from '@/assets/images/personal.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import { apiSearchUser } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import { Page } from '@/types/interfaces/request';
@@ -155,7 +156,7 @@ const BindUser: React.FC<BindUserProps> = ({
   //   manual: true,
   //   debounceInterval: 300,
   //   onSuccess: () => {
-  //     message.success('添加成功');
+  //     message.success('Added successfully');
   //     onConfirmBindUser?.();
   //   },
   // });
@@ -166,7 +167,7 @@ const BindUser: React.FC<BindUserProps> = ({
     debounceInterval: 300,
     onSuccess: (data: SearchUserInfo[]) => {
       if (!data?.length) {
-        message.warning('未搜索到相关用户');
+        message.warning(t('PC.Pages.SystemMenuBindUser.userNotFoundBySearch'));
         setLeftMember(null);
         return;
       }
@@ -410,7 +411,7 @@ const BindUser: React.FC<BindUserProps> = ({
 
   return (
     <Modal
-      title={`绑定用户 - ${name}`}
+      title={t('PC.Pages.SystemMenuBindUser.bindUserWithName', name)}
       open={open}
       classNames={{
         content: cx(styles['add-member-modal-content']),
@@ -420,7 +421,7 @@ const BindUser: React.FC<BindUserProps> = ({
       onCancel={onCancel}
       footer={
         <Button type="primary" onClick={onCancel}>
-          关闭
+          {t('PC.Pages.SystemMenuBindUser.close')}
         </Button>
       }
     >
@@ -428,7 +429,7 @@ const BindUser: React.FC<BindUserProps> = ({
         {/* 左侧：搜索并选择成员 */}
         <div className={cx(styles['add-member-left-column'], 'flex-1')}>
           <Input.Search
-            placeholder="输入用户名、邮箱或手机号码，回车搜索"
+            placeholder={t('PC.Pages.SystemMenuBindUser.leftSearchPlaceholder')}
             allowClear
             onSearch={handleLeftSearch}
           />
@@ -447,7 +448,9 @@ const BindUser: React.FC<BindUserProps> = ({
         {/* 右侧：已选成员列表，支持关键字后端搜索 + 滚动加载更多 */}
         <div className={cx('flex-1', styles.rightColumn)}>
           <Input.Search
-            placeholder="通过关键字搜索已绑定成员"
+            placeholder={t(
+              'PC.Pages.SystemMenuBindUser.rightSearchPlaceholder',
+            )}
             allowClear
             value={rightSearchKeyword}
             onChange={(e) => setRightSearchKeyword(e.target.value)}
@@ -482,7 +485,7 @@ const BindUser: React.FC<BindUserProps> = ({
                   'h-full',
                 )}
               >
-                <Empty description="暂无数据" />
+                <Empty description={t('PC.Common.Global.emptyData')} />
               </div>
             ) : open && isScrollReady ? (
               // 滚动加载时使用 InfiniteScrollDiv，它会自动显示底部的加载动画

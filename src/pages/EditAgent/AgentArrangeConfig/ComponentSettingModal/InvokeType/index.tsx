@@ -1,8 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import {
-  CALL_DEFAULT_SELECTED,
-  CALL_METHOD_OPTIONS,
-} from '@/constants/agent.constants';
+import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import type {
   InvokeTypeProps,
@@ -11,31 +8,20 @@ import type {
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Button, Input, Radio, RadioChangeEvent, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 调用方式
 const InvokeType: React.FC<InvokeTypeProps> = ({
-  options = CALL_METHOD_OPTIONS,
+  options,
   invokeType,
   onSaveSet,
   defaultSelected,
   defaultAlias,
   isSkill,
-  tooltip = (
-    <div>
-      <p>自动调用：用户每次发送消息后都会触发调用一次</p>
-      <p>按需调用：由模型根据任务情况决定是否需要调用</p>
-      <p>
-        手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
-      </p>
-      <p>
-        手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
-      </p>
-    </div>
-  ),
+  tooltip,
 }) => {
   const [type, setType] = useState<InvokeTypeEnum>();
   // 是否默认选中
@@ -52,6 +38,66 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
     setSelected(defaultSelected || DefaultSelectedEnum.No);
     setAlias(defaultAlias || '');
   }, [invokeType, defaultSelected, defaultAlias]);
+
+  const invokeTypeOptions = useMemo(() => {
+    const sourceOptions =
+      options && options.length
+        ? options
+        : [
+            { value: InvokeTypeEnum.AUTO, label: '' },
+            { value: InvokeTypeEnum.ON_DEMAND, label: '' },
+            { value: InvokeTypeEnum.MANUAL, label: '' },
+            { value: InvokeTypeEnum.MANUAL_ON_DEMAND, label: '' },
+          ];
+
+    return sourceOptions.map(({ value }) => {
+      if (value === InvokeTypeEnum.AUTO) {
+        return {
+          value,
+          label: t('PC.Pages.AgentArrangeInvokeType.optionAuto'),
+        };
+      }
+      if (value === InvokeTypeEnum.ON_DEMAND) {
+        return {
+          value,
+          label: t('PC.Pages.AgentArrangeInvokeType.optionOnDemand'),
+        };
+      }
+      if (value === InvokeTypeEnum.MANUAL) {
+        return {
+          value,
+          label: t('PC.Pages.AgentArrangeInvokeType.optionManual'),
+        };
+      }
+      return {
+        value,
+        label: t('PC.Pages.AgentArrangeInvokeType.optionManualOnDemand'),
+      };
+    });
+  }, [options]);
+
+  const defaultSelectedOptions = useMemo(
+    () => [
+      {
+        value: DefaultSelectedEnum.No,
+        label: t('PC.Pages.AgentArrangeInvokeType.optionNo'),
+      },
+      {
+        value: DefaultSelectedEnum.Yes,
+        label: t('PC.Pages.AgentArrangeInvokeType.optionYes'),
+      },
+    ],
+    [],
+  );
+
+  const defaultTooltip = (
+    <div>
+      <p>{t('PC.Pages.AgentArrangeInvokeType.autoDescription')}</p>
+      <p>{t('PC.Pages.AgentArrangeInvokeType.onDemandDescription')}</p>
+      <p>{t('PC.Pages.AgentArrangeInvokeType.manualDescription')}</p>
+      <p>{t('PC.Pages.AgentArrangeInvokeType.manualOnDemandDescription')}</p>
+    </div>
+  );
 
   // 切换调用方式
   const handleChangeType = ({ target: { value } }: RadioChangeEvent) => {
@@ -78,13 +124,13 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1', styles.content)}>
         <h3 className={cx('gap-6', 'flex', 'items-center')}>
-          <span>调用方式</span>
-          <Tooltip title={tooltip}>
+          <span>{t('PC.Pages.AgentArrangeInvokeType.title')}</span>
+          <Tooltip title={tooltip || defaultTooltip}>
             <ExclamationCircleOutlined className={cx(styles.icon)} />
           </Tooltip>
         </h3>
         <Radio.Group
-          options={options}
+          options={invokeTypeOptions}
           onChange={handleChangeType}
           value={type}
         />
@@ -95,9 +141,11 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
             type === InvokeTypeEnum.MANUAL_ON_DEMAND
           }
         >
-          <h3 className={cx('mt-16')}>是否默认选中</h3>
+          <h3 className={cx('mt-16')}>
+            {t('PC.Pages.AgentArrangeInvokeType.defaultSelected')}
+          </h3>
           <Radio.Group
-            options={CALL_DEFAULT_SELECTED}
+            options={defaultSelectedOptions}
             onChange={(e) => setSelected(e.target.value as DefaultSelectedEnum)}
             value={selected}
           />
@@ -108,14 +156,14 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
           condition={isSkill && type === InvokeTypeEnum.MANUAL_ON_DEMAND}
         >
           <h3 className={cx('gap-6', 'flex', 'items-center', 'mt-16')}>
-            <span>展示别名</span>
-            <Tooltip title="可选，若填写，前端优先展示该名称">
+            <span>{t('PC.Pages.AgentArrangeInvokeType.alias')}</span>
+            <Tooltip title={t('PC.Pages.AgentArrangeInvokeType.aliasTooltip')}>
               <ExclamationCircleOutlined className={cx(styles.icon)} />
             </Tooltip>
           </h3>
           <Input
             className={cx(styles['alias-input'])}
-            placeholder="请输入展示别名"
+            placeholder={t('PC.Pages.AgentArrangeInvokeType.aliasPlaceholder')}
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
           />
@@ -123,7 +171,7 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
       </div>
       <footer className={cx(styles.footer)}>
         <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
+          {t('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

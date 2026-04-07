@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
 import classNames from 'classnames';
 import {
@@ -26,35 +27,45 @@ export default function SharedIcon({
         return (
           <div className={cx(styles.container)}>
             <ICON_PUBLISHED />
-            <span className={styles.text}>已发布</span>
+            <span className={styles.text}>
+              {dict('PC.Components.SharedIcon.published')}
+            </span>
           </div>
         );
       case EcosystemShareStatusEnum.REVIEWING:
         return (
           <div className={cx(styles.container)}>
             <ICON_SEAL />
-            <span className={styles.text}>审核中</span>
+            <span className={styles.text}>
+              {dict('PC.Components.SharedIcon.reviewing')}
+            </span>
           </div>
         );
       case EcosystemShareStatusEnum.OFFLINE:
         return (
           <div className={cx(styles.container)}>
             <ICON_OFFLINED />
-            <span className={styles.text}>已下线</span>
+            <span className={styles.text}>
+              {dict('PC.Components.SharedIcon.offline')}
+            </span>
           </div>
         );
       case EcosystemShareStatusEnum.DRAFT:
         return (
           <div className={cx(styles.container)}>
             <ICON_EDIT />
-            <span className={styles.text}>草稿</span>
+            <span className={styles.text}>
+              {dict('PC.Components.SharedIcon.draft')}
+            </span>
           </div>
         );
       case EcosystemShareStatusEnum.REJECTED:
         return (
           <div className={cx(styles.container)}>
             <ICON_REJECTED />
-            <span className={styles.text}>已驳回</span>
+            <span className={styles.text}>
+              {dict('PC.Components.SharedIcon.rejected')}
+            </span>
           </div>
         );
       default:

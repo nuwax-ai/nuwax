@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { ExceptionHandleTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
@@ -27,13 +28,17 @@ const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
-  return <div className="node-title-style">用于终止当前循环，执行下次循环</div>;
+  return (
+    <div className="node-title-style">
+      {dict('PC.Pages.AntvX6NodePanel.loopContinueDescription')}
+    </div>
+  );
 };
 
 const LoopBreak: React.FC = () => {
   return (
     <div className="node-title-style">
-      用于立即终止当前所在的循环，跳出循环体
+      {dict('PC.Pages.AntvX6NodePanel.loopBreakDescription')}
     </div>
   );
 };

@@ -113,7 +113,7 @@ class UnifiedThemeService {
 
       return null;
     } catch (error) {
-      console.warn('加载用户设置失败:', error);
+      console.warn('Failed to load user settings:', error);
       return null;
     }
   }
@@ -134,7 +134,7 @@ class UnifiedThemeService {
       const templateConfig = JSON.parse(tenantConfig.templateConfig);
       return this.normalizeTenantConfig(templateConfig);
     } catch (error) {
-      console.warn('加载租户设置失败:', error);
+      console.warn('Failed to load tenant settings:', error);
       return null;
     }
   }
@@ -391,7 +391,7 @@ class UnifiedThemeService {
         JSON.stringify(globalSettings),
       );
     } catch (error) {
-      console.error('保存主题数据失败:', error);
+      console.error('Failed to save theme data:', error);
     }
   }
 
@@ -467,7 +467,7 @@ class UnifiedThemeService {
       );
       this.updateBodyClasses();
     } catch (error) {
-      console.error('应用主题数据到DOM失败:', error);
+      console.error('Failed to apply theme data to DOM:', error);
     }
   }
 
@@ -530,7 +530,7 @@ class UnifiedThemeService {
         }),
       );
     } catch (error) {
-      console.error('触发全局事件失败:', error);
+      console.error('Failed to emit global event:', error);
     }
   }
 
@@ -542,7 +542,7 @@ class UnifiedThemeService {
       try {
         listener(this.currentData);
       } catch (error) {
-        console.error('监听器回调失败:', error);
+        console.error('Listener callback failed:', error);
       }
     });
   }
@@ -582,13 +582,13 @@ class UnifiedThemeService {
   getConfigSourceText(): string {
     switch (this.currentData.source) {
       case 'user':
-        return '用户设置';
+        return 'User Settings';
       case 'tenant':
-        return '租户配置';
+        return 'Tenant Configuration';
       case 'default':
-        return '默认配置';
+        return 'Default Configuration';
       default:
-        return '未知来源';
+        return 'Unknown Source';
     }
   }
 
@@ -623,7 +623,7 @@ class UnifiedThemeService {
         }
       }
     } catch (error) {
-      console.warn('获取额外主题颜色失败:', error);
+      console.warn('Failed to get extra theme colors:', error);
     }
 
     return colors;

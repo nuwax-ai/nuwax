@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import { CodeBlockActions, useThemeState } from 'ds-markdown';
 import { createBuildInPlugin } from 'ds-markdown/plugins';
@@ -69,7 +70,11 @@ export default (conversationId: string | number = '') => {
                   <div className="md-code-block-banner-wrap">
                     <div className="md-code-block-banner md-code-block-banner-lite">
                       <>
-                        <div className="md-code-block-language">表格</div>
+                        <div className="md-code-block-language">
+                          {dict(
+                            'PC.Components.MarkdownRenderer.tableCodeBlock',
+                          )}
+                        </div>
                         <CodeBlockActions
                           language="markdown"
                           codeContent={tableMDContent}

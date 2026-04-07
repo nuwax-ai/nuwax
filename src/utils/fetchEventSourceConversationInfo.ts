@@ -1,5 +1,6 @@
 // src/utils/sse.ts 仅仅在智能体会话中使用!!!!
 // src/models/conversationInfo.ts 仅仅在智能体会话中使用!!!!
+import { dict } from '@/services/i18nRuntime';
 import {
   EventSourceMessage,
   fetchEventSource,
@@ -158,7 +159,11 @@ export function createSSEConnection<T = any>(
 
         onopen: async (response) => {
           if (response.status >= 400) {
-            throw new Error(`SSE连接失败: ${response.statusText}`);
+            throw new Error(
+              `${dict('PC.Utils.FetchEventSource.sseConnectionFailed')}: ${
+                response.statusText
+              }`,
+            );
           }
           console.log('✅ [SSE Utils] SSE 连接已建立');
           // 连接建立时初始化时间戳并启动超时检查

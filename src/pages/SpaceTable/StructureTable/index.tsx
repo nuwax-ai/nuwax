@@ -2,11 +2,10 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import LabelStar from '@/components/LabelStar';
 import {
-  MEDIUM_TEXT_STRING,
-  SHORT_TEXT_STRING,
   TABLE_FIELD_STRING_LIST,
   TABLE_FIELD_TYPE_LIST,
 } from '@/constants/dataTable.constants';
+import { dict } from '@/services/i18nRuntime';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
 import type {
   StructureTableProps,
@@ -65,9 +64,9 @@ const StructureTable: React.FC<StructureTableProps> = ({
   const getStringLength = (fieldType: TableFieldTypeEnum) => {
     switch (fieldType) {
       case TableFieldTypeEnum.String:
-        return SHORT_TEXT_STRING;
+        return dict('PC.Pages.SpaceTable.StructureTable.shortText');
       case TableFieldTypeEnum.MEDIUMTEXT:
-        return MEDIUM_TEXT_STRING;
+        return dict('PC.Pages.SpaceTable.StructureTable.mediumText');
       default:
         return '--';
     }
@@ -84,7 +83,11 @@ const StructureTable: React.FC<StructureTableProps> = ({
       dataLength,
     } = record;
     if (systemFieldFlag) {
-      return <span className="flex items-center h-full">系统变量</span>;
+      return (
+        <span className="flex items-center h-full">
+          {dict('PC.Pages.SpaceTable.StructureTable.systemVariable')}
+        </span>
+      );
     }
     // disabled: 新增成功的字段,不允许修改默认值; 除非用户清空所有的业务数据,然后再修改数据表的默认值
     switch (fieldType) {
@@ -94,7 +97,10 @@ const StructureTable: React.FC<StructureTableProps> = ({
           fieldType === TableFieldTypeEnum.String ? 255 : undefined;
         return (
           <Input
-            placeholder={`请输入${fieldName}默认值`}
+            placeholder={dict(
+              'PC.Pages.SpaceTable.AddAndModify.defaultPlaceholder',
+              fieldName,
+            )}
             // 这里没有使用defaultValue,是因为需要做清空操作
             value={defaultValue}
             maxLength={maxLength}
@@ -123,8 +129,8 @@ const StructureTable: React.FC<StructureTableProps> = ({
               };
         const placeholder =
           fieldType === TableFieldTypeEnum.Integer
-            ? `数值范围：[-2147483648, 2147483647]`
-            : `精度20位,整数部分最多14位,小数部分最多6位`;
+            ? dict('PC.Pages.SpaceTable.AddAndModify.integerRange')
+            : dict('PC.Pages.SpaceTable.AddAndModify.numberPrecision');
         return (
           <InputNumber
             {...props}
@@ -153,7 +159,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       case TableFieldTypeEnum.Date:
         return (
           <DatePicker
-            placeholder="请选择时间"
+            placeholder={dict('PC.Common.Global.selectTime')}
             showTime
             className={cx('w-full')}
             defaultValue={defaultValue ? dayjs(defaultValue) : null}
@@ -171,13 +177,17 @@ const StructureTable: React.FC<StructureTableProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<TableFieldInfo> = [
     {
-      title: '序号',
+      title: dict('PC.Pages.SpaceTable.StructureTable.serial'),
       dataIndex: 'serial',
       width: 80,
       render: (_, __, index) => <span>{index + 1}</span>,
     },
     {
-      title: <LabelStar label="字段名" />,
+      title: (
+        <LabelStar
+          label={dict('PC.Pages.SpaceTable.StructureTable.fieldName')}
+        />
+      ),
       dataIndex: 'fieldName',
       width: 220,
       render: (value, record) => (
@@ -188,7 +198,9 @@ const StructureTable: React.FC<StructureTableProps> = ({
             </div>
           ) : (
             <Input
-              placeholder="请输入字段名"
+              placeholder={dict(
+                'PC.Pages.SpaceTable.StructureTable.inputFieldName',
+              )}
               value={value}
               allowClear
               onChange={(e) =>
@@ -200,7 +212,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
       ),
     },
     {
-      title: '字段详细描述',
+      title: dict('PC.Pages.SpaceTable.StructureTable.fieldDescription'),
       dataIndex: 'fieldDescription',
       width: 220,
       render: (value, record) =>
@@ -208,7 +220,9 @@ const StructureTable: React.FC<StructureTableProps> = ({
           <span className="flex items-center h-full">{value}</span>
         ) : (
           <Input
-            placeholder="请输入字段详细描述"
+            placeholder={dict(
+              'PC.Pages.SpaceTable.StructureTable.inputFieldDescription',
+            )}
             value={value}
             allowClear
             disabled={record?.systemFieldFlag}
@@ -219,7 +233,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '字段类型',
+      title: dict('PC.Pages.SpaceTable.StructureTable.fieldType'),
       dataIndex: 'fieldType',
       width: 140,
       render: (value, record) =>
@@ -239,7 +253,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '数据长度',
+      title: dict('PC.Pages.SpaceTable.StructureTable.dataLength'),
       dataIndex: 'dataLength', // dataLength，前端自定义属性，用于区分短文本或长文本, 对应数据库类型: VARCHAR(255) 或 MEDIUMTEXT
       width: 140,
       render: (value, record) =>
@@ -247,7 +261,13 @@ const StructureTable: React.FC<StructureTableProps> = ({
           '--'
         ) : record.isNew && record.fieldType === TableFieldTypeEnum.String ? (
           <Select
-            options={TABLE_FIELD_STRING_LIST}
+            options={TABLE_FIELD_STRING_LIST.map((item) => ({
+              ...item,
+              label:
+                item.value === TableFieldTypeEnum.String
+                  ? dict('PC.Pages.SpaceTable.StructureTable.shortText')
+                  : dict('PC.Pages.SpaceTable.StructureTable.mediumText'),
+            }))}
             style={{ width: '100%' }}
             value={value}
             onChange={(value) => onChangeValue(record.id, 'dataLength', value)}
@@ -260,7 +280,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     },
     // 字段nullableFlag	是否可为空,true:可空;false:非空,此处为'是否必须'，所以取反
     {
-      title: '是否必须',
+      title: dict('PC.Pages.SpaceTable.StructureTable.required'),
       dataIndex: 'nullableFlag',
       align: 'center',
       width: 90,
@@ -280,7 +300,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '是否唯一',
+      title: dict('PC.Pages.SpaceTable.StructureTable.unique'),
       dataIndex: 'uniqueFlag',
       align: 'center',
       width: 90,
@@ -310,7 +330,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '是否启用',
+      title: dict('PC.Pages.SpaceTable.StructureTable.enabled'),
       dataIndex: 'enabledFlag',
       align: 'center',
       width: 90,
@@ -330,7 +350,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '默认值',
+      title: dict('PC.Pages.SpaceTable.StructureTable.defaultValue'),
       dataIndex: 'defaultValue',
       width: 220,
       render: (_, record) =>
@@ -343,7 +363,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
         ),
     },
     {
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       key: 'action',
       width: 80,
       align: 'center',

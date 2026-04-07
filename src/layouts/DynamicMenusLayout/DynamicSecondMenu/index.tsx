@@ -4,6 +4,7 @@
  * 支持特殊菜单（主页、工作空间）注入默认内容
  */
 import SecondMenuItem from '@/components/base/SecondMenuItem';
+import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
@@ -248,7 +249,11 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     const resolvedPath = resolveDynamicPath(path);
 
     if (!resolvedPath) {
-      message.warning('处理路径跳转失败，请检查菜单路径是否存在');
+      message.warning(
+        dict(
+          'PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed',
+        ),
+      );
       return;
     }
 

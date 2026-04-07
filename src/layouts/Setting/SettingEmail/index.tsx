@@ -2,6 +2,7 @@ import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
 import { apiBindEmail } from '@/services/account';
+import { dict } from '@/services/i18nRuntime';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { BindEmailParams } from '@/types/interfaces/login';
 import { isValidEmail, isValidPhone } from '@/utils/common';
@@ -31,7 +32,7 @@ const SettingEmail: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: BindEmailParams[]) => {
-      message.success('绑定成功');
+      message.success(dict('PC.Layouts.Setting.SettingEmail.bindSuccess'));
       form.resetFields();
       setCountDown(0);
       onClearTimer();
@@ -73,7 +74,11 @@ const SettingEmail: React.FC = () => {
 
   return (
     <div className={cx(styles.container)}>
-      <h3>{authType ? '邮箱绑定' : '手机号绑定'}</h3>
+      <h3>
+        {authType
+          ? dict('PC.Layouts.Setting.SettingEmail.emailBindTitle')
+          : dict('PC.Layouts.Setting.SettingEmail.phoneBindTitle')}
+      </h3>
       <Form
         layout="vertical"
         form={form}
@@ -83,11 +88,17 @@ const SettingEmail: React.FC = () => {
       >
         <Form.Item
           name={authType ? 'email' : 'phone'}
-          label={authType ? '邮箱地址' : '手机号码'}
+          label={
+            authType
+              ? dict('PC.Layouts.Setting.SettingEmail.emailAddress')
+              : dict('PC.Layouts.Setting.SettingEmail.phoneNumber')
+          }
           rules={[
             {
               required: true,
-              message: authType ? '请输入邮箱地址' : '请输入手机号码',
+              message: authType
+                ? dict('PC.Layouts.Setting.SettingEmail.inputEmailAddress')
+                : dict('PC.Layouts.Setting.SettingEmail.inputPhoneNumber'),
             },
             {
               validator(_, value) {
@@ -95,35 +106,67 @@ const SettingEmail: React.FC = () => {
                 if (authType) {
                   return isValidEmail(value)
                     ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的邮箱地址!'));
+                    : Promise.reject(
+                        new Error(
+                          dict(
+                            'PC.Layouts.Setting.SettingEmail.inputCorrectEmail',
+                          ),
+                        ),
+                      );
                 } else {
                   return isValidPhone(value)
                     ? Promise.resolve()
-                    : Promise.reject(new Error('请输入正确的手机号码!'));
+                    : Promise.reject(
+                        new Error(
+                          dict(
+                            'PC.Layouts.Setting.SettingEmail.inputCorrectPhone',
+                          ),
+                        ),
+                      );
                 }
               },
             },
           ]}
         >
-          <Input placeholder={authType ? '请输入邮箱地址' : '请输入手机号码'} />
+          <Input
+            placeholder={
+              authType
+                ? dict('PC.Layouts.Setting.SettingEmail.inputEmailAddress')
+                : dict('PC.Layouts.Setting.SettingEmail.inputPhoneNumber')
+            }
+          />
         </Form.Item>
         <Form.Item
           name="code"
-          label="验证码"
+          label={dict('PC.Layouts.Setting.SettingEmail.verificationCode')}
           rules={[
-            { required: true, message: '请输入验证码' },
+            {
+              required: true,
+              message: dict(
+                'PC.Layouts.Setting.SettingEmail.inputVerificationCode',
+              ),
+            },
             {
               validator(_, value) {
                 if (!value || value?.length === VERIFICATION_CODE_LEN) {
                   return Promise.resolve();
                 }
-                return Promise.reject(new Error('请输入正确的验证码!'));
+                return Promise.reject(
+                  new Error(
+                    dict('PC.Layouts.Setting.SettingEmail.inputCorrectCode'),
+                  ),
+                );
               },
             },
           ]}
         >
           <div className={cx('flex', 'content-between')}>
-            <Input rootClassName={styles.input} placeholder="请输入验证码" />
+            <Input
+              rootClassName={styles.input}
+              placeholder={dict(
+                'PC.Layouts.Setting.SettingEmail.placeholderCode',
+              )}
+            />
             {countDown < 60 && countDown > 0 ? (
               <Button rootClassName={styles.btn} disabled type="primary">
                 {`${countDown}s`}
@@ -134,14 +177,14 @@ const SettingEmail: React.FC = () => {
                 type="primary"
                 onClick={handleSendCode}
               >
-                发送验证码
+                {dict('PC.Layouts.Setting.SettingEmail.sendCode')}
               </Button>
             )}
           </div>
         </Form.Item>
         <Form.Item>
           <Button block type="primary" htmlType="submit" loading={loading}>
-            绑定
+            {dict('PC.Layouts.Setting.SettingEmail.bind')}
           </Button>
         </Form.Item>
       </Form>

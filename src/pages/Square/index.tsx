@@ -5,6 +5,7 @@ import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
@@ -55,7 +56,9 @@ const Square: React.FC = () => {
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
   const [loading, setLoading] = useState<boolean>(false);
   // 标题
-  const [title, setTitle] = useState<string>('智能体');
+  const [title, setTitle] = useState<string>(
+    dict('PC.Pages.Square.Square.agent'),
+  );
 
   // 过滤官方标识
   const [filterOfficial, setFilterOfficial] = useState<FilterOfficialEnum>(
@@ -63,8 +66,14 @@ const Square: React.FC = () => {
   );
   // 过滤官方标识内容
   const FILTER_OFFICIAL = [
-    { value: FilterOfficialEnum.All, label: '全部' },
-    { value: FilterOfficialEnum.Official, label: '仅查看官方' + title },
+    {
+      value: FilterOfficialEnum.All,
+      label: dict('PC.Pages.Square.Square.all'),
+    },
+    {
+      value: FilterOfficialEnum.Official,
+      label: dict('PC.Pages.Square.Square.onlyOfficial', title),
+    },
   ];
 
   // 分类名称
@@ -104,7 +113,7 @@ const Square: React.FC = () => {
     const agentId = tenantConfigInfo?.defaultTaskAgentId;
     if (!agentId) {
       // 站点默认通用型智能体未配置
-      message.warning('站点默认通用型智能体未配置');
+      message.warning(dict('PC.Pages.Square.Square.defaultAgentNotConfigured'));
       return;
     }
     history.push(
@@ -154,23 +163,23 @@ const Square: React.FC = () => {
     // 分类类型
     switch (cate_type) {
       case SquareAgentTypeEnum.Agent:
-        setTitle('智能体');
+        setTitle(dict('PC.Pages.Square.Square.agent'));
         apiUrlRef.current = apiPublishedAgentList;
         break;
       case SquareAgentTypeEnum.PageApp:
-        setTitle('网页应用');
+        setTitle(dict('PC.Pages.Square.Square.pageApp'));
         apiUrlRef.current = apiPublishedAgentList;
         break;
       case SquareAgentTypeEnum.Skill:
-        setTitle('技能');
+        setTitle(dict('PC.Pages.Square.Square.skill'));
         apiUrlRef.current = apiPublishedSkillList;
         break;
       case SquareAgentTypeEnum.Plugin:
-        setTitle('插件');
+        setTitle(dict('PC.Pages.Square.Square.plugin'));
         apiUrlRef.current = apiPublishedPluginList;
         break;
       case SquareAgentTypeEnum.Workflow:
-        setTitle('工作流');
+        setTitle(dict('PC.Pages.Square.Square.workflow'));
         apiUrlRef.current = apiPublishedWorkflowList;
         break;
       // 模板模式下，根据分类名称设置标题
@@ -178,19 +187,19 @@ const Square: React.FC = () => {
         {
           switch (cate_name) {
             case SquareTemplateTargetTypeEnum.PageApp:
-              setTitle('网页应用');
+              setTitle(dict('PC.Pages.Square.Square.pageApp'));
               break;
             case SquareTemplateTargetTypeEnum.ChatBot:
-              setTitle('智能体');
+              setTitle(dict('PC.Pages.Square.Square.agent'));
               break;
             case SquareTemplateTargetTypeEnum.Workflow:
-              setTitle('工作流');
+              setTitle(dict('PC.Pages.Square.Square.workflow'));
               break;
             case SquareTemplateTargetTypeEnum.Skill:
-              setTitle('技能');
+              setTitle(dict('PC.Pages.Square.Square.skill'));
               break;
             default:
-              setTitle('模板');
+              setTitle(dict('PC.Pages.Square.Square.template'));
               break;
           }
           apiUrlRef.current = apiPublishedTemplateList;
@@ -386,11 +395,12 @@ const Square: React.FC = () => {
         }}
       >
         <h3 className={cx('text-ellipsis-2')}>
-          {configInfo?.squareBannerText || '人人都是智能设计师'}
+          {configInfo?.squareBannerText ||
+            dict('PC.Pages.Square.Square.bannerTitle')}
         </h3>
         <p className={cx('text-ellipsis-2')}>
           {configInfo?.squareBannerSubText ||
-            '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+            dict('PC.Pages.Square.Square.bannerSubtitle')}
         </p>
       </header>
       <div
@@ -409,7 +419,7 @@ const Square: React.FC = () => {
                 options={templateListTabs}
                 value={activeKeyRef.current}
                 style={{ width: 160, marginLeft: 10 }}
-                placeholder="请选择分类"
+                placeholder={dict('PC.Pages.Square.Square.selectCategory')}
                 allowClear
                 onChange={(value) => handleTabClick(value as React.Key)}
               />
@@ -433,7 +443,7 @@ const Square: React.FC = () => {
         <Input.Search
           className={cx(styles['search-input'])}
           key={categoryNameRef.current}
-          placeholder="搜索"
+          placeholder={dict('PC.Pages.Square.Square.search')}
           allowClear
           value={keyword}
           onSearch={onSearch}
@@ -586,7 +596,7 @@ const Square: React.FC = () => {
                     'items-center',
                     'content-center',
                   )}
-                  description="暂无数据"
+                  description={dict('PC.Common.Global.emptyData')}
                 />
               </div>
             )}

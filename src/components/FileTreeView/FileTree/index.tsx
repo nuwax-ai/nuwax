@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
@@ -421,7 +422,7 @@ const FileTree: React.FC<FileTreeProps> = ({
             'h-full',
           )}
         >
-          暂无文件
+          {dict('PC.Components.FileTree.noFiles')}
         </div>
       )}
     </div>

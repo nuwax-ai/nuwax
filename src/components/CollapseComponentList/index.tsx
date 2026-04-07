@@ -5,6 +5,7 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { CollapseComponentListProps } from '@/types/interfaces/agentConfig';
@@ -25,34 +26,34 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
     switch (type) {
       case AgentComponentTypeEnum.Plugin:
         return {
-          text: '插件能够让智能体调用外部API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。',
+          text: dict('PC.Components.CollapseComponentList.pluginDesc'),
           image: pluginImage,
         };
       case AgentComponentTypeEnum.Workflow:
         return {
-          text: '工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。',
+          text: dict('PC.Components.CollapseComponentList.workflowDesc'),
           image: workflowImage,
         };
       case AgentComponentTypeEnum.MCP:
         return {
-          text: '智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。',
+          text: dict('PC.Components.CollapseComponentList.mcpDesc'),
           image: mcpImage,
         };
       case AgentComponentTypeEnum.Table:
         return {
-          text: '以表格结构组织数据，可实现类似书签和图书管理等功能。',
+          text: dict('PC.Components.CollapseComponentList.tableDesc'),
           image: databaseImage,
         };
       // 页面
       case AgentComponentTypeEnum.Page:
         return {
-          text: '页面是智能体的可视化界面，用户可以通过页面与智能体进行交互。',
+          text: dict('PC.Components.CollapseComponentList.pageDesc'),
           image: databaseImage,
         };
       // 技能
       case AgentComponentTypeEnum.Skill:
         return {
-          text: '技能是智能体的技能，用户可以通过技能与智能体进行交互。',
+          text: dict('PC.Components.CollapseComponentList.skillDesc'),
           image: databaseImage,
         };
     }
@@ -92,12 +93,12 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
         extra={
           <>
             <TooltipIcon
-              title="设置"
+              title={dict('PC.Components.CollapseComponentList.settings')}
               icon={<ICON_SETTING className={'cursor-pointer'} />}
               onClick={() => onSet(item.id)}
             />
             <TooltipIcon
-              title="删除"
+              title={dict('PC.Components.CollapseComponentList.delete')}
               icon={
                 isDeling(item.id, item.targetId, item.type) ? (
                   <LoadingOutlined />

@@ -4,6 +4,7 @@ import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
@@ -64,7 +65,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
           <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
             <span className={cx(styles.box)}>{`${fileSize}`}</span>
-            <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
+            <span className={cx(styles.box)}>
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount',
+                docCount,
+              )}
+            </span>
           </div>
         </div>
       </section>
@@ -82,8 +88,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         defaultValue={docType}
         onChange={handleChange}
       >
-        <Radio value={KnowledgeDocTypeEnum.DOC}>文档</Radio>
-        <Radio value={KnowledgeDocTypeEnum.QA}>QA问答</Radio>
+        <Radio value={KnowledgeDocTypeEnum.DOC}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
+        </Radio>
+        <Radio value={KnowledgeDocTypeEnum.QA}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
+        </Radio>
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -102,7 +112,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加内容
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
             </Button>
           </CustomPopover>
         ) : (
@@ -112,7 +122,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加QA问答
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
             </Button>
           </CustomPopover>
         )}

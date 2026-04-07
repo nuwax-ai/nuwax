@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { DeployStatusEnum } from '@/types/enums/mcp';
 import classNames from 'classnames';
 import {
@@ -19,23 +20,23 @@ interface McpStatusProps {
 const McpStatusMap: Record<string, { icon: React.ReactNode; title: string }> = {
   [DeployStatusEnum.Initialization]: {
     icon: <ICON_INITIALIZATION />,
-    title: '待部署',
+    title: dict('PC.Components.McpStatus.pendingDeploy'),
   },
   [DeployStatusEnum.Deploying]: {
     icon: <ICON_DEPLOYING />,
-    title: '部署中',
+    title: dict('PC.Components.McpStatus.deploying'),
   },
   [DeployStatusEnum.Deployed]: {
     icon: <ICON_DEPLOYED />,
-    title: '已部署',
+    title: dict('PC.Components.McpStatus.deployed'),
   },
   [DeployStatusEnum.DeployFailed]: {
     icon: <ICON_DEPLOY_FAILED />,
-    title: '部署失败',
+    title: dict('PC.Components.McpStatus.deployFailed'),
   },
   [DeployStatusEnum.Stopped]: {
     icon: <ICON_STOPPED />,
-    title: '已停止',
+    title: dict('PC.Components.McpStatus.stopped'),
   },
 };
 

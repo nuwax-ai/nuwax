@@ -2,6 +2,7 @@ import {
   PLUGIN_INPUT_CONFIG,
   PLUGIN_OUTPUT_CONFIG,
 } from '@/constants/space.constants';
+import { dict } from '@/services/i18nRuntime';
 import { DataTypeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -210,7 +211,7 @@ const usePluginConfig = () => {
   // 更新成功
   const handleUpdateSuccess = () => {
     if (isClickSaveBtnRef.current) {
-      message.success('插件保存成功');
+      message.success(dict('PC.Hooks.UsePluginConfig.saveSuccess'));
       isClickSaveBtnRef.current = false;
     }
     // 更新修改时间

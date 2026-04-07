@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { dict } from '@/services/i18nRuntime';
 import { apiPageAddPath, apiPageUpdatePath } from '@/services/pageDev';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
@@ -24,7 +25,10 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const title = mode === CreateUpdateModeEnum.Create ? '添加路径' : '修改路径';
+  const title =
+    mode === CreateUpdateModeEnum.Create
+      ? dict('PC.Pages.SpacePageDevelop.AddPathModal.addPath')
+      : dict('PC.Pages.SpacePageDevelop.AddPathModal.editPath');
 
   useEffect(() => {
     if (open && editPathInfo) {
@@ -37,7 +41,12 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
   }, [open, editPathInfo]);
 
   const handleSuccess = (info: PageAddPathParams) => {
-    message.success(`${title}成功`);
+    message.success(
+      dict('PC.Pages.SpacePageDevelop.AddPathModal.actionSuccess').replace(
+        '{0}',
+        title,
+      ),
+    );
     setLoading(false);
     onConfirm(info, editPathInfo);
   };
@@ -105,23 +114,45 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
       >
         <Form.Item
           name="name"
-          label="路径名称"
-          rules={[{ required: true, message: '请输入路径名称' }]}
+          label={dict('PC.Pages.SpacePageDevelop.AddPathModal.pathName')}
+          rules={[
+            {
+              required: true,
+              message: dict(
+                'PC.Pages.SpacePageDevelop.AddPathModal.pleaseEnterPathName',
+              ),
+            },
+          ]}
         >
-          <Input placeholder="请输入路径名称" showCount maxLength={50} />
+          <Input
+            placeholder={dict(
+              'PC.Pages.SpacePageDevelop.AddPathModal.pleaseEnterPathName',
+            )}
+            showCount
+            maxLength={50}
+          />
         </Form.Item>
         <Form.Item
           name="pageUri"
-          label="路径URI"
+          label={dict('PC.Pages.SpacePageDevelop.AddPathModal.pathUri')}
           rules={[
-            { required: true, message: '请输入路径URI' },
+            {
+              required: true,
+              message: dict(
+                'PC.Pages.SpacePageDevelop.AddPathModal.pleaseEnterPathUri',
+              ),
+            },
             {
               validator(_, value) {
                 if (!value || value.startsWith('/')) {
                   return Promise.resolve();
                 }
                 return Promise.reject(
-                  new Error('请输入正确的路径URI，必须以/开头'),
+                  new Error(
+                    dict(
+                      'PC.Pages.SpacePageDevelop.AddPathModal.pathUriFormatError',
+                    ),
+                  ),
                 );
               },
             },
@@ -129,14 +160,21 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
         >
           <Input
             disabled={mode === CreateUpdateModeEnum.Update}
-            placeholder="路径URI，例如 /detail/view 或 /detail/view/{id}"
+            placeholder={dict(
+              'PC.Pages.SpacePageDevelop.AddPathModal.pathUriPlaceholder',
+            )}
             showCount
             maxLength={200}
           />
         </Form.Item>
-        <Form.Item name="description" label="路径功能描述">
+        <Form.Item
+          name="description"
+          label={dict('PC.Pages.SpacePageDevelop.AddPathModal.pathDescription')}
+        >
           <Input.TextArea
-            placeholder="路径功能描述信息，例如 获取详情信息"
+            placeholder={dict(
+              'PC.Pages.SpacePageDevelop.AddPathModal.pathDescriptionPlaceholder',
+            )}
             autoSize={{ minRows: 4, maxRows: 6 }}
           />
         </Form.Item>

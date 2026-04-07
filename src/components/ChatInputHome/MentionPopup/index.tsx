@@ -25,6 +25,7 @@
  */
 
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { Page } from '@/types/interfaces/request';
 import { SearchOutlined } from '@ant-design/icons';
@@ -62,9 +63,18 @@ const cx = classNames.bind(styles);
  * 默认优先展示「最近使用」，将「全部」放在最后
  */
 const TABS: TabConfig[] = [
-  { key: 'all', label: '全部' },
-  { key: 'recent', label: '最近使用' },
-  { key: 'favorite', label: '我的收藏' },
+  {
+    key: 'all',
+    label: t('PC.Components.ChatInputHomeMentionPopup.tabAll'),
+  },
+  {
+    key: 'recent',
+    label: t('PC.Components.ChatInputHomeMentionPopup.tabRecent'),
+  },
+  {
+    key: 'favorite',
+    label: t('PC.Components.ChatInputHomeMentionPopup.tabFavorite'),
+  },
 ];
 
 /** 单个 Tab 每次请求或分页追加的数量 */
@@ -335,7 +345,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             await loadAllTabData(page);
           }
         } catch (error) {
-          console.log(`加载 MentionPopup ${tab} 数据失败:`, error);
+          console.error('Failed to load MentionPopup tab data:', tab, error);
           updateTabDataState(tab, (prev) => ({
             ...prev,
             loading: false,
@@ -720,7 +730,9 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             <Input
               ref={searchInputRef}
               className={styles['mention-search-input']}
-              placeholder="搜索技能"
+              placeholder={t(
+                'PC.Components.ChatInputHomeMentionPopup.searchSkill',
+              )}
               allowClear
               value={searchInputValue}
               onChange={(e) => setSearchInputValue(e.target.value)}
@@ -755,11 +767,15 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           onScroll={handleListScroll}
         >
           {activeTabData.loading && currentItems.length === 0 ? (
-            <div className={styles['mention-empty']}>加载中...</div>
+            <div className={styles['mention-empty']}>
+              {t('PC.Components.ChatInputHomeMentionPopup.loading')}
+            </div>
           ) : currentItems.length === 0 ? (
             // 空状态
             <div className={styles['mention-empty']}>
-              {activeTab === 'favorite' ? '暂无收藏' : '未找到匹配项'}
+              {activeTab === 'favorite'
+                ? t('PC.Components.ChatInputHomeMentionPopup.emptyFavorite')
+                : t('PC.Components.ChatInputHomeMentionPopup.emptyNotFound')}
             </div>
           ) : (
             // 列表项渲染，直接使用接口返回的 SkillInfoForAt 结构
@@ -800,7 +816,9 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           {activeTabData.loading &&
             activeTabData.page > 1 &&
             currentItems.length > 0 && (
-              <div className={styles['mention-empty']}>加载更多中...</div>
+              <div className={styles['mention-empty']}>
+                {t('PC.Components.ChatInputHomeMentionPopup.loadingMore')}
+              </div>
             )}
         </div>
       </div>

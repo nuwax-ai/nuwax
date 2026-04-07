@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import CustomInputNumber from '@/components/custom/CustomInputNumber';
 import LabelStar from '@/components/LabelStar';
-import { BIND_CARD_STYLE_LIST } from '@/constants/agent.constants';
+import { t } from '@/services/i18nRuntime';
 import { BindCardStyleEnum } from '@/types/enums/plugin';
 import { ArgList } from '@/types/interfaces/agent';
 import type {
@@ -53,9 +53,9 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
   const [cardKey, setCardKey] = useState<string>('');
   // 卡片整体绑定的数组
   const [bindArray, setBindArray] = useState<BindConfigWithSub[]>([]);
-  // 展开、隐藏"为卡片整体绑定一个数组"下拉列表
+  // Expand/collapse the "bind array for whole card" dropdown
   const [openBindArray, setOpenBindArray] = useState<boolean>(false);
-  // 为卡片内的列表项绑定数据
+  // Bind data for list items inside the card
   const [argList, setArgList] = useState<ArgList[]>([]);
   // 卡片跳转显隐
   const [urlVisible, setUrlVisible] = useState<boolean>(false);
@@ -122,7 +122,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     }
   }, [cardInfo, cardBindConfig]);
 
-  // "为卡片内的列表项绑定数据"下拉数据源
+  // Dropdown data source for binding card list items
   const dataSource: BindConfigWithSub[] = useMemo(() => {
     const _outputArgBindConfigs = cloneDeep(outputArgBindConfigs);
     if (cardStyle === BindCardStyleEnum.SINGLE) {
@@ -144,7 +144,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     setArgList(cardInfo?.argList || []);
   };
 
-  // 为卡片整体绑定一个数组
+  // Bind an array for the whole card
   const handleSelectBindArray = (
     _: React.Key[],
     { node }: { node: BindConfigWithSub },
@@ -153,14 +153,14 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     setOpenBindArray(false);
   };
 
-  // 为卡片内的列表项绑定数据(展开、隐藏下拉选择)
+  // Bind card list item data (toggle dropdown)
   const handleArgList = (index: number, value: React.Key | boolean) => {
     const _argList = cloneDeep(argList);
     _argList[index].open = value;
     setArgList(_argList);
   };
 
-  // 为卡片内的列表项绑定数据(选择下拉选择项)
+  // Bind card list item data (select dropdown item)
   const handleSelectDataSource = (index: number, node?: BindConfigWithSub) => {
     const _argList = cloneDeep(argList);
     _argList[index].open = false;
@@ -209,6 +209,20 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
     setLoading(false);
   };
 
+  const cardStyleOptions = useMemo(
+    () => [
+      {
+        value: BindCardStyleEnum.SINGLE,
+        label: t('PC.Pages.AgentArrangeCardBindDataSource.optionSingle'),
+      },
+      {
+        value: BindCardStyleEnum.LIST,
+        label: t('PC.Pages.AgentArrangeCardBindDataSource.optionList'),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className={cx('flex-1', 'flex', 'flex-col')}>
       <Form
@@ -217,28 +231,47 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
         rootClassName={cx('flex-1')}
         requiredMark={customizeRequiredMark}
       >
-        <Form.Item label="选择卡片样式">
+        <Form.Item
+          label={t('PC.Pages.AgentArrangeCardBindDataSource.selectStyle')}
+        >
           <Radio.Group
             onChange={onChangeCardStyle}
             value={cardStyle}
-            options={BIND_CARD_STYLE_LIST}
+            options={cardStyleOptions}
           />
         </Form.Item>
         {cardStyle === BindCardStyleEnum.LIST && (
           <>
             <Form.Item
-              label={<LabelStar label="卡片列表最大长度" />}
-              rules={[{ required: true, message: '请输入卡片列表最大长度' }]}
+              label={
+                <LabelStar
+                  label={t(
+                    'PC.Pages.AgentArrangeCardBindDataSource.cardListMaxLength',
+                  )}
+                />
+              }
+              rules={[
+                {
+                  required: true,
+                  message: t(
+                    'PC.Pages.AgentArrangeCardBindDataSource.cardListMaxLengthPlaceholder',
+                  ),
+                },
+              ]}
             >
               <CustomInputNumber
                 value={cardListLen}
                 onChange={(value) => setCardListLen(value)}
-                placeholder="请输入卡片列表最大长度"
+                placeholder={t(
+                  'PC.Pages.AgentArrangeCardBindDataSource.cardListMaxLengthPlaceholder',
+                )}
                 max={20}
                 min={1}
               />
             </Form.Item>
-            <Form.Item label="为卡片整体绑定一个数组">
+            <Form.Item
+              label={t('PC.Pages.AgentArrangeCardBindDataSource.bindArray')}
+            >
               <Select
                 allowClear
                 onClear={() => {
@@ -252,7 +285,9 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   setOpenBindArray(open);
                 }}
                 onClick={() => setOpenBindArray(true)}
-                placeholder="请为卡片整体绑定一个数组"
+                placeholder={t(
+                  'PC.Pages.AgentArrangeCardBindDataSource.bindArrayPlaceholder',
+                )}
                 popupRender={() =>
                   bindArray?.length > 0 ? (
                     <Tree
@@ -271,14 +306,16 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                       }}
                     />
                   ) : (
-                    <Empty description="暂无数据" />
+                    <Empty description={t('PC.Common.Global.emptyData')} />
                   )
                 }
               />
             </Form.Item>
           </>
         )}
-        <Form.Item label="为卡片内的列表项绑定数据">
+        <Form.Item
+          label={t('PC.Pages.AgentArrangeCardBindDataSource.bindListItemData')}
+        >
           {argList?.map((info, index) => (
             <Form.Item key={info.key} className={cx('mb-16')}>
               <div className={cx('flex', 'items-center', styles['space-box'])}>
@@ -313,19 +350,23 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                         }}
                       />
                     ) : (
-                      <Empty description="暂无数据" />
+                      <Empty description={t('PC.Common.Global.emptyData')} />
                     )
                   }
-                  placeholder={info.placeholder || '请选择'}
+                  placeholder={
+                    info.placeholder || t('PC.Common.Global.pleaseSelect')
+                  }
                 />
               </div>
             </Form.Item>
           ))}
         </Form.Item>
         <Form.Item
-          label="点击卡片跳转"
+          label={t('PC.Pages.AgentArrangeCardBindDataSource.cardClickJump')}
           tooltip={{
-            title: '绑定后，用户在智能体对话流中点击 卡片可跳转至其他页面',
+            title: t(
+              'PC.Pages.AgentArrangeCardBindDataSource.cardClickJumpTooltip',
+            ),
             icon: <InfoCircleOutlined />,
           }}
         >
@@ -369,14 +410,16 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   }}
                 />
               )}
-              placeholder="为url选择数据来源"
+              placeholder={t(
+                'PC.Pages.AgentArrangeCardBindDataSource.urlDataSourcePlaceholder',
+              )}
             />
           </ConditionRender>
         </Form.Item>
       </Form>
       <footer className={cx(styles.footer)}>
         <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
+          {t('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

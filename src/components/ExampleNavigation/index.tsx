@@ -2,6 +2,7 @@
  * 示例页面导航组件
  * 提供示例页面之间的快速导航
  */
+import { dict } from '@/services/i18nRuntime';
 import {
   AppstoreOutlined,
   ArrowLeftOutlined,
@@ -43,22 +44,22 @@ interface ExampleNavigationProps {
  */
 const examplePages = [
   {
-    title: '示例中心',
+    title: dict('PC.Components.ExampleNavigation.exampleCenter'),
     path: '/examples',
     icon: <AppstoreOutlined />,
   },
   {
-    title: '背景风格切换',
+    title: dict('PC.Components.ExampleNavigation.backgroundStyle'),
     path: '/examples/background-style',
     icon: <AppstoreOutlined />,
   },
   {
-    title: '导航Token指南',
+    title: dict('PC.Components.ExampleNavigation.navigationTokenGuide'),
     path: '/examples/navigation-token',
     icon: <AppstoreOutlined />,
   },
   {
-    title: 'Ant Design展示',
+    title: dict('PC.Components.ExampleNavigation.antdShowcase'),
     path: '/examples/antd-showcase',
     icon: <AppstoreOutlined />,
   },
@@ -81,7 +82,7 @@ const ExampleNavigation: React.FC<ExampleNavigationProps> = ({
         title: (
           <Space>
             <HomeOutlined />
-            <span>首页</span>
+            <span>{dict('PC.Components.ExampleNavigation.home')}</span>
           </Space>
         ),
         href: '/',
@@ -90,7 +91,7 @@ const ExampleNavigation: React.FC<ExampleNavigationProps> = ({
         title: (
           <Space>
             <AppstoreOutlined />
-            <span>示例中心</span>
+            <span>{dict('PC.Components.ExampleNavigation.exampleCenter')}</span>
           </Space>
         ),
         href: '/examples',
@@ -157,7 +158,7 @@ const ExampleNavigation: React.FC<ExampleNavigationProps> = ({
               onClick={() => history.push(backPath)}
               className="back-button"
             >
-              返回
+              {dict('PC.Components.ExampleNavigation.back')}
             </Button>
           )}
 

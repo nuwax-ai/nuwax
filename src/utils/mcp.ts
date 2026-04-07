@@ -1,18 +1,19 @@
+import { dict } from '@/services/i18nRuntime';
 import { DeployStatusEnum } from '@/types/enums/mcp';
 
 // 获取mcp部署状态
 export const getMcpDeployStatus = (status?: DeployStatusEnum) => {
   switch (status) {
     case DeployStatusEnum.Initialization:
-      return '待部署';
+      return dict('PC.Utils.Mcp.pendingDeploy');
     case DeployStatusEnum.Deploying:
-      return '部署中';
+      return dict('PC.Utils.Mcp.deploying');
     case DeployStatusEnum.Deployed:
-      return '已部署';
+      return dict('PC.Utils.Mcp.deployed');
     case DeployStatusEnum.DeployFailed:
-      return '部署失败';
+      return dict('PC.Utils.Mcp.deployFailed');
     case DeployStatusEnum.Stopped:
-      return '已停止';
+      return dict('PC.Utils.Mcp.stopped');
     default:
       return '';
   }

@@ -2,6 +2,7 @@ import guidQuestionImage from '@/assets/images/guid_question.png';
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
+import { t } from '@/services/i18nRuntime';
 import { GuidQuestionSetTypeEnum } from '@/types/enums/agent';
 import { GuidQuestionDto } from '@/types/interfaces/agent';
 import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
@@ -99,10 +100,12 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   return (
     <>
-      <p className={cx(styles['header-title'])}>开场白文案</p>
+      <p className={cx(styles['header-title'])}>
+        {t('PC.Pages.AgentArrangeOpenRemarks.headerTitle')}
+      </p>
       <div className={cx(styles['content-box'])}>
         <Input.TextArea
-          placeholder="请输入开场白"
+          placeholder={t('PC.Pages.AgentArrangeOpenRemarks.placeholder')}
           value={content}
           onChange={(e) => handleOpeningChatMsg(e.target.value)}
           autoSize={{ minRows: 3, maxRows: 5 }}
@@ -117,10 +120,10 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
         )}
       >
         <p className={cx(styles.title, 'flex', 'items-center')}>
-          开场白预置问题
+          {t('PC.Pages.AgentArrangeOpenRemarks.guidQuestionTitle')}
         </p>
         <TooltipIcon
-          title="添加预置问题"
+          title={t('PC.Pages.AgentArrangeOpenRemarks.addGuidQuestion')}
           icon={
             <SvgIcon
               name="icons-common-plus"
@@ -135,7 +138,9 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
         <Input
           key={index}
           rootClassName={cx(styles.input)}
-          placeholder="输入开场白引导问题"
+          placeholder={t(
+            'PC.Pages.AgentArrangeOpenRemarks.guidQuestionPlaceholder',
+          )}
           value={item.info}
           onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
           showCount={false}
@@ -149,13 +154,13 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           suffix={
             <>
               <TooltipIcon
-                title="删除预置问题"
+                title={t('PC.Pages.AgentArrangeOpenRemarks.deleteGuidQuestion')}
                 className={cx(styles['icon-input-suffix'])}
                 icon={<DeleteOutlined className={cx('cursor-pointer')} />}
                 onClick={() => handleDel(index)}
               />
               <TooltipIcon
-                title="设置"
+                title={t('PC.Pages.AgentArrangeOpenRemarks.settings')}
                 icon={<ICON_SETTING className={'cursor-pointer'} />}
                 onClick={() => handleSetGuidQuestions(item, index)}
               />

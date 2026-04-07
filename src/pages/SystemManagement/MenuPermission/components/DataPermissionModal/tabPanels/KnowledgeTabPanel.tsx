@@ -8,6 +8,7 @@
  */
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type {
   KnowledgeInfoById,
   SystemKnowledgeInfo,
@@ -72,7 +73,7 @@ const KnowledgeTabPanel: React.FC<KnowledgeTabPanelProps> = ({
     >
       <Input.Search
         key="knowledgeSearch"
-        placeholder="搜索知识库"
+        placeholder={dict('PC.Pages.DataPermissionTabPanel.searchKnowledge')}
         allowClear
         className={cx(styles.searchInput)}
         value={knowledgeSearchKw}
@@ -140,7 +141,9 @@ const KnowledgeTabPanel: React.FC<KnowledgeTabPanelProps> = ({
           />
         ))
       ) : (
-        <div className={cx(styles.empty)}>暂无已选知识库</div>
+        <div className={cx(styles.empty)}>
+          {dict('PC.Pages.DataPermissionTabPanel.noSelectedKnowledge')}
+        </div>
       )}
     </div>
   </div>

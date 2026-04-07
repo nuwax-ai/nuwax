@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { t } from '@/services/i18nRuntime';
 import { Button, Dropdown } from 'antd';
 import { useMemo } from 'react';
 
@@ -33,7 +34,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'import',
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
-        label: '导入技能',
+        label: t('PC.Pages.SkillDetailsMoreActionsMenu.importSkill'),
         onClick: onImportProject,
         disabled: isLoading,
       },
@@ -45,7 +46,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: (
           <SvgIcon name="icons-common-fullscreen" style={{ fontSize: 16 }} />
         ),
-        label: '全屏预览',
+        label: t('PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview'),
         onClick: onFullscreenPreview,
       },
       {
@@ -54,7 +55,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'export',
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
-        label: '导出技能',
+        label: t('PC.Pages.SkillDetailsMoreActionsMenu.exportSkill'),
         onClick: onExportProject,
         disabled: isExportingProject,
       },

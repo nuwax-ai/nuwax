@@ -11,6 +11,7 @@ import {
   ICON_TS,
   ICON_TSX,
 } from '@/constants/fileTreeImages.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -228,7 +229,7 @@ export const downloadFileByUrl = async (
     if (exportAsPdf && isMarkdownFile(fileName)) {
       const markdownContent = targetNode.content || '';
       if (!markdownContent) {
-        message.warning('文件内容为空，无法导出 PDF');
+        message.warning(dict('PC.Utils.FileTree.emptyFileCannotExportPdf'));
         return;
       }
       // 使用静态导入的 markdownToPdf
@@ -238,7 +239,7 @@ export const downloadFileByUrl = async (
         pageSize: 'a4',
         orientation: 'portrait',
       });
-      message.success('PDF 导出成功');
+      message.success(dict('PC.Utils.FileTree.pdfExportSuccess'));
       return;
     }
 
@@ -249,7 +250,7 @@ export const downloadFileByUrl = async (
     ) {
       const htmlContent = targetNode.content || '';
       if (!htmlContent) {
-        message.warning('文件内容为空，无法导出 PDF');
+        message.warning(dict('PC.Utils.FileTree.emptyFileCannotExportPdf'));
         return;
       }
       const pdfFileName = fileName.replace(/\.(html|htm)$/i, '');
@@ -258,7 +259,7 @@ export const downloadFileByUrl = async (
         pageSize: 'a4',
         orientation: 'portrait',
       });
-      message.success('PDF 导出成功');
+      message.success(dict('PC.Utils.FileTree.pdfExportSuccess'));
       return;
     }
 
@@ -303,8 +304,8 @@ export const downloadFileByUrl = async (
     //   URL.revokeObjectURL(objectURL);
     // }, 100);
   } catch (error) {
-    console.error('下载文件失败:', error);
-    message.error('下载文件失败，请重试');
+    console.error('Failed to download file:', error);
+    message.error(dict('PC.Utils.FileTree.downloadFailedRetry'));
   }
 };
 

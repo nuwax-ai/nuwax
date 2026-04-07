@@ -1,6 +1,7 @@
 import personalImage from '@/assets/images/personal.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import { MESSAGE_SCOPE_OPTIONS } from '@/constants/system.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiSystemNotifyMessageSend } from '@/services/systemManage';
 import { apiSearchUser } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
@@ -58,7 +59,9 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
-      message.success('消息发送成功');
+      message.success(
+        dict('PC.Pages.UserManage.MessageSendModal.messageSendSuccess'),
+      );
       setLoading(false);
       onCancel?.();
     },
@@ -72,7 +75,9 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
     debounceWait: 300,
     onSuccess: (data: SearchUserInfo[]) => {
       if (!data?.length) {
-        message.warning('未搜索到相关用户');
+        message.warning(
+          dict('PC.Pages.UserManage.MessageSendModal.noUserFound'),
+        );
         setLeftColumnMembers([]);
         return;
       }
@@ -95,14 +100,18 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
 
   const handlerSubmit = () => {
     if (!content) {
-      message.warning('请输入消息内容');
+      message.warning(
+        dict('PC.Pages.UserManage.MessageSendModal.pleaseInputMessage'),
+      );
       return;
     }
     if (
       messageScope === MessageScopeEnum.Broadcast &&
       rightColumnMembers.length === 0
     ) {
-      message.warning('请选择要添加的成员');
+      message.warning(
+        dict('PC.Pages.UserManage.MessageSendModal.pleaseSelectMembers'),
+      );
       return;
     }
     setLoading(true);
@@ -172,25 +181,33 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="添加接受消息用户"
+      title={dict('PC.Pages.UserManage.MessageSendModal.addMessageUser')}
       classNames={{
         content: cx(styles['add-member-modal-content']),
       }}
       open={open}
-      okText="发送消息"
+      okText={dict('PC.Pages.UserManage.MessageSendModal.sendMessage')}
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
       <div className={cx('flex', 'flex-col', 'gap-10')}>
         <Radio.Group
-          options={MESSAGE_SCOPE_OPTIONS}
+          options={MESSAGE_SCOPE_OPTIONS.map((opt) => ({
+            ...opt,
+            label:
+              opt.value === MessageScopeEnum.Broadcast
+                ? dict('PC.Pages.UserManage.MessageSendModal.broadcast')
+                : dict('PC.Pages.UserManage.MessageSendModal.systemMessage'),
+          }))}
           value={messageScope}
           onChange={(e) => setMessageScope(e.target.value)}
         />
 
         <Input.TextArea
-          placeholder="输入消息内容"
+          placeholder={dict(
+            'PC.Pages.UserManage.MessageSendModal.inputMessageContent',
+          )}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           autoSize={{ minRows: 5, maxRows: 6 }}
@@ -199,7 +216,9 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
           <div style={{ display: 'flex', gap: 20 }}>
             <div className={cx(styles['add-member-left-column'])}>
               <Input
-                placeholder="输入用户名、邮箱或手机号码，回车搜索"
+                placeholder={dict(
+                  'PC.Pages.UserManage.MessageSendModal.searchUserPlaceholder',
+                )}
                 prefix={<SearchOutlined />}
                 onPressEnter={(event) => {
                   if (event.key === 'Enter') {
@@ -217,7 +236,7 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
                   leftColumnMembers.length > 0
                 }
               >
-                全部
+                {dict('PC.Pages.UserManage.MessageSendModal.selectAll')}
               </Checkbox>
               <Checkbox.Group
                 style={{ display: 'block', marginTop: 10 }}
@@ -234,7 +253,10 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
 
             <div style={{ width: '300px' }}>
               <h3 style={{ marginBottom: 15 }}>
-                已选成员 ({rightColumnMembers.length})
+                {dict(
+                  'PC.Pages.UserManage.MessageSendModal.selectedMembers',
+                  String(rightColumnMembers.length),
+                )}
               </h3>
               <List
                 dataSource={rightColumnMembers}

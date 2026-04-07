@@ -5,6 +5,7 @@ import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
 import SqlOptimizeModal from '@/components/SqlOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
+import { t } from '@/services/i18nRuntime';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -15,14 +16,14 @@ import { useModel } from 'umi';
 import { outPutConfigs, tableOptions } from '../params';
 import { InputAndOut, TreeOutput } from './commonNode';
 
-// 定义数据增，删，改的节点
+// Database CRUD node renderer.
 const Database: React.FC<NodeDisposeProps> = ({
   form,
   type,
   nodeConfig,
   id,
 }) => {
-  const [open, setOpen] = useState(false); // 自动生成sql的弹窗
+  const [open, setOpen] = useState(false); // SQL generation modal
 
   const { setIsModified, referenceList } = useModel('workflow');
 
@@ -51,14 +52,14 @@ const Database: React.FC<NodeDisposeProps> = ({
     },
   ];
 
-  // 获取输入参数（在组件顶层调用，避免在条件渲染中使用 Hook）
+  // Read input args at top level to avoid hooks in conditional render.
   const inputArgs =
     Form.useWatch(InputItemNameEnum.inputArgs, {
       form,
       preserve: true,
     }) || [];
 
-  // 打开自动生成弹窗
+  // Open SQL generation modal.
   const onOpenCreated = () => {
     setOpen(true);
   };
@@ -71,26 +72,26 @@ const Database: React.FC<NodeDisposeProps> = ({
 
   return (
     <div>
-      {/* 输入 */}
+      {/* Input */}
       {type === 'TableSQL' && (
         <div className="node-item-style">
           <InputAndOut
-            title="输入"
+            title={t('PC.Pages.AntvX6Data.input')}
             fieldConfigs={outPutConfigs}
             inputItemName={InputItemNameEnum.inputArgs}
             form={form}
           />
         </div>
       )}
-      {/* 条件 */}
+      {/* Conditions */}
       {type !== 'TableDataAdd' && type !== 'TableSQL' && (
         <div className="node-item-style">
           <p className="node-title-style">
             {type === 'TableDataDelete'
-              ? '删除条件'
+              ? t('PC.Pages.AntvX6Database.deleteCondition')
               : type === 'TableDataUpdate'
-              ? '更新条件'
-              : '查询条件'}
+              ? t('PC.Pages.AntvX6Database.updateCondition')
+              : t('PC.Pages.AntvX6Database.queryCondition')}
           </p>
           <Form.Item>
             <Space>
@@ -117,11 +118,11 @@ const Database: React.FC<NodeDisposeProps> = ({
                           }}
                           options={[
                             {
-                              label: '且',
+                              label: t('PC.Pages.AntvX6Database.and'),
                               value: 'AND',
                             },
                             {
-                              label: '或',
+                              label: t('PC.Pages.AntvX6Database.or'),
                               value: 'OR',
                             },
                           ]}
@@ -173,7 +174,9 @@ const Database: React.FC<NodeDisposeProps> = ({
                                       ]}
                                     >
                                       <Select
-                                        placeholder="请选择"
+                                        placeholder={t(
+                                          'PC.Pages.AntvX6Database.selectPlaceholder',
+                                        )}
                                         options={form.getFieldValue(
                                           'tableFields',
                                         )}
@@ -223,7 +226,11 @@ const Database: React.FC<NodeDisposeProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <Empty description={'当前查询数据为空'} />
+                        <Empty
+                          description={t(
+                            'PC.Pages.AntvX6Database.emptyConditionData',
+                          )}
+                        />
                       )}
 
                       <Button
@@ -237,7 +244,7 @@ const Database: React.FC<NodeDisposeProps> = ({
                         }}
                         icon={<PlusOutlined />}
                       >
-                        添加条件
+                        {t('PC.Pages.AntvX6Database.addCondition')}
                       </Button>
                     </div>
                   );
@@ -247,34 +254,46 @@ const Database: React.FC<NodeDisposeProps> = ({
           </Form.Item>
         </div>
       )}
-      {/* 更新字段 */}
+      {/* Update fields */}
       {(type === 'TableDataAdd' || type === 'TableDataUpdate') && (
         <div className="node-item-style">
           <TreeInput
-            title={type === 'TableDataAdd' ? '输入' : '选择更新字段'}
+            title={
+              type === 'TableDataAdd'
+                ? t('PC.Pages.AntvX6Data.input')
+                : t('PC.Pages.AntvX6Database.selectUpdateFields')
+            }
             form={form}
             options={form.getFieldValue('tableFields') || []}
             showAdd={type === 'TableDataUpdate'}
             params={form.getFieldValue('inputArgs') || []}
             showDelete={type === 'TableDataUpdate'}
-            descText="变量值"
+            descText={t('PC.Pages.AntvX6Database.variableValue')}
           />
         </div>
       )}
       {type === 'TableDataQuery' && (
         <div className="node-item-style">
           <div className=" margin-bottom">
-            <span className="node-title-style ">查询上限</span>
+            <span className="node-title-style ">
+              {t('PC.Pages.AntvX6Database.queryLimit')}
+            </span>
           </div>
           <Form.Item name="limit">
-            <InputNumber min={1} max={1000} placeholder="请输入查询上限" />
+            <InputNumber
+              min={1}
+              max={1000}
+              placeholder={t('PC.Pages.AntvX6Database.queryLimitPlaceholder')}
+            />
           </Form.Item>
         </div>
       )}
-      {/* 数据表 */}
+      {/* Data table */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom ">
-          <span className="node-title-style">数据表</span>
+          <span className="node-title-style">
+            {t('PC.Pages.AntvX6Database.table')}
+          </span>
         </div>
         {form.getFieldValue('tableId') ? (
           <DataTable
@@ -299,7 +318,7 @@ const Database: React.FC<NodeDisposeProps> = ({
             onExpand
             onOptimize
             onOptimizeClick={onOpenCreated}
-            placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+            placeholder={t('PC.Pages.AntvX6Database.sqlPlaceholder')}
             variables={transformToPromptVariables(
               inputArgs.filter(
                 (item: InputAndOutConfig) =>
@@ -311,15 +330,15 @@ const Database: React.FC<NodeDisposeProps> = ({
         </div>
       )}
 
-      {/* 输出参数 */}
+      {/* Output args */}
       {type === 'TableSQL' || type === 'TableDataQuery' ? (
         <Form.Item name={'inputArgs'}>
-          {/* TODO 这个输出参数的key可能需要修改 为什么是inputArgs */}
+          {/* TODO: output key naming may need cleanup; now keeps inputArgs */}
           <CustomTree
             key={`${type}-${id}-outputArgs`}
-            title={'输出'}
+            title={t('PC.Pages.AntvX6Data.output')}
             inputItemName={'outputArgs'}
-            params={nodeConfig?.outputArgs || []} // 改为直接读取表单最新值
+            params={nodeConfig?.outputArgs || []} // Use latest value from form
             form={form}
             showCheck
             isNotAdd
@@ -330,7 +349,9 @@ const Database: React.FC<NodeDisposeProps> = ({
           {() =>
             form.getFieldValue('outputArgs') && (
               <>
-                <div className="node-title-style margin-bottom">输出</div>
+                <div className="node-title-style margin-bottom">
+                  {t('PC.Pages.AntvX6Data.output')}
+                </div>
                 <TreeOutput treeData={form.getFieldValue('outputArgs')} />
               </>
             )
@@ -338,7 +359,7 @@ const Database: React.FC<NodeDisposeProps> = ({
         </Form.Item>
       )}
       <SqlOptimizeModal
-        title="生成sql语句"
+        title={t('PC.Pages.AntvX6Database.generateSqlTitle')}
         open={open}
         onCancel={() => {
           setOpen(false);
@@ -349,7 +370,7 @@ const Database: React.FC<NodeDisposeProps> = ({
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          // 只取第二个SQL语句
+          // Keep only pure SQL content.
           const finalSql = text.startsWith('sql')
             ? text.replace('sql', '').trim()
             : text.trim();

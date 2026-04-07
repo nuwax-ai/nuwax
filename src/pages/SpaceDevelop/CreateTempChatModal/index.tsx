@@ -12,7 +12,6 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
-  ConfigProvider,
   DatePicker,
   Empty,
   message,
@@ -22,7 +21,6 @@ import {
   TableColumnsType,
   Tooltip,
 } from 'antd';
-import locale from 'antd/locale/zh_CN';
 import classNames from 'classnames';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useEffect, useState } from 'react';
@@ -30,11 +28,9 @@ import CopyToClipboard from 'react-copy-to-clipboard';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
+import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
-import 'dayjs/locale/zh-cn';
 // import CopyChatWidgetCode from './CopyChatWidgetCode';
-
-dayjs.locale('zh-cn');
 
 const cx = classNames.bind(styles);
 
@@ -75,7 +71,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('修改成功');
+      message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
     },
   });
 
@@ -84,7 +80,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: [number, number]) => {
-      message.success('删除成功');
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
       // 删除成功后，从数据源中过滤掉该项
       const [id] = params;
       const _dataSource = dataSource?.filter(
@@ -95,7 +91,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
   });
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   useEffect(() => {
@@ -138,12 +134,16 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
-    modalConfirm('你确定要删除该链接吗?', chatUrl, () => {
-      handleDel(id, agentId);
-      return new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-    });
+    modalConfirm(
+      dict('PC.Pages.SpaceDevelop.CreateTempChatModal.deleteConfirmText'),
+      chatUrl,
+      () => {
+        handleDel(id, agentId);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
+    );
   };
 
   // 显示二维码弹窗
@@ -155,7 +155,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<AgentTempChatDto> = [
     {
-      title: '链接地址',
+      title: dict('PC.Pages.SpaceDevelop.CreateTempChatModal.linkAddress'),
       dataIndex: 'chatUrl',
       key: 'chatUrl',
       className: 'flex',
@@ -173,7 +173,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
             className={cx(styles['chat-url'], 'flex-1')}
           />
           <CopyToClipboard text={value || ''} onCopy={handleCopy}>
-            <Tooltip title="复制">
+            <Tooltip title={dict('PC.Common.Global.copy')}>
               <span
                 className={cx(
                   styles['img-box'],
@@ -192,7 +192,9 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
               </span>
             </Tooltip>
           </CopyToClipboard>
-          <Tooltip title="二维码">
+          <Tooltip
+            title={dict('PC.Pages.SpaceDevelop.CreateTempChatModal.qrCode')}
+          >
             <span
               className={cx(
                 styles['img-box'],
@@ -215,7 +217,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       ),
     },
     {
-      title: '登录可用',
+      title: dict('PC.Pages.SpaceDevelop.CreateTempChatModal.loginRequired'),
       dataIndex: 'requireLogin',
       key: 'requireLogin',
       width: 85,
@@ -232,26 +234,24 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       ),
     },
     {
-      title: '有效期',
+      title: dict('PC.Pages.SpaceDevelop.CreateTempChatModal.validity'),
       key: 'expire',
       width: 210,
       render: (_, record) => (
-        <ConfigProvider locale={locale}>
-          <DatePicker
-            minDate={dayjs()}
-            value={record.expire ? dayjs(record.expire) : null}
-            allowClear={false}
-            showTime
-            format={'YYYY-MM-DD HH:mm:ss'}
-            onChange={(_, dateString) =>
-              handleUpdate(record.id, 'expire', dateString.toString())
-            }
-          />
-        </ConfigProvider>
+        <DatePicker
+          minDate={dayjs()}
+          value={record.expire ? dayjs(record.expire) : null}
+          allowClear={false}
+          showTime
+          format={'YYYY-MM-DD HH:mm:ss'}
+          onChange={(_, dateString) =>
+            handleUpdate(record.id, 'expire', dateString.toString())
+          }
+        />
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       width: 80,
       key: 'action',
       align: 'center',
@@ -285,7 +285,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
         }}
         title={
           <div className={cx('text-ellipsis')} style={{ width: '400px' }}>
-            {name}-临时会话链接管理
+            {dict('PC.Pages.SpaceDevelop.CreateTempChatModal.modalTitle', name)}
           </div>
         }
         open={open}
@@ -306,7 +306,9 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
             y: 450,
           }}
           locale={{
-            emptyText: <Empty description="暂无数据" />,
+            emptyText: (
+              <Empty description={dict('PC.Common.Global.emptyData')} />
+            ),
           }}
           footer={() => (
             <Button
@@ -314,7 +316,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
               loading={loading}
               icon={<PlusOutlined />}
             >
-              新增链接
+              {dict('PC.Pages.SpaceDevelop.CreateTempChatModal.addLink')}
             </Button>
           )}
         />

@@ -4,6 +4,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import { EVENT_BIND_RESPONSE_ACTION_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentComponentEventUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import {
   BindValueType,
   EventBindResponseActionEnum,
@@ -172,7 +173,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('更新成功');
+      message.success(t('PC.Pages.AgentArrangeEventBindModal.updateSuccess'));
       onConfirm();
       setLoading(false);
     },
@@ -269,7 +270,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名',
+      title: t('PC.Pages.AgentArrangeEventBindModal.paramName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -282,25 +283,30 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     {
       title: () => (
         <div className={cx('h-full', 'flex', 'items-center')}>
-          <span>参数值(非必填)</span>
+          <span>{t('PC.Pages.AgentArrangeEventBindModal.paramValue')}</span>
           <TooltipIcon
             title={
               <>
                 <div>
-                  以下参数非必填，不填写时由模型补充,
-                  可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+                  {t('PC.Pages.AgentArrangeEventBindModal.paramValueTip')}
                 </div>
                 <div>
-                  智能体ID {'{{'}AGENT_ID{'}}'}
+                  {t('PC.Pages.AgentArrangeEventBindModal.agentIdVariable')}{' '}
+                  {'{{'}AGENT_ID{'}}'}
                 </div>
                 <div>
-                  系统用户ID {'{{'}SYS_USER_ID{'}}'}
+                  {t(
+                    'PC.Pages.AgentArrangeEventBindModal.systemUserIdVariable',
+                  )}{' '}
+                  {'{{'}SYS_USER_ID{'}}'}
                 </div>
                 <div>
-                  用户UID {'{{'}USER_UID{'}}'}
+                  {t('PC.Pages.AgentArrangeEventBindModal.userUidVariable')}{' '}
+                  {'{{'}USER_UID{'}}'}
                 </div>
                 <div>
-                  用户名 {'{{'}USER_NAME{'}}'}
+                  {t('PC.Pages.AgentArrangeEventBindModal.userNameVariable')}{' '}
+                  {'{{'}USER_NAME{'}}'}
                 </div>
               </>
             }
@@ -313,7 +319,10 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
             allowClear
-            placeholder={`请输入${record.description}`}
+            placeholder={t(
+              'PC.Pages.AgentArrangeEventBindModal.paramValuePlaceholder',
+              record.description || '',
+            )}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)
@@ -326,9 +335,22 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
   // 响应动作列表(没有路径列表时，不展示扩展页面打开选项)
   const responseActionList = useMemo(() => {
+    const localizedOptions = EVENT_BIND_RESPONSE_ACTION_OPTIONS.map((item) => {
+      if (item.value === EventBindResponseActionEnum.Page) {
+        return {
+          ...item,
+          label: t('PC.Pages.AgentArrangeEventBindModal.responseActionPage'),
+        };
+      }
+      return {
+        ...item,
+        label: t('PC.Pages.AgentArrangeEventBindModal.responseActionLink'),
+      };
+    });
+
     return pageArgConfigs.length > 0
-      ? EVENT_BIND_RESPONSE_ACTION_OPTIONS
-      : EVENT_BIND_RESPONSE_ACTION_OPTIONS.filter(
+      ? localizedOptions
+      : localizedOptions.filter(
           (item) => item.value !== EventBindResponseActionEnum.Page,
         );
   }, [pageArgConfigs]);
@@ -336,7 +358,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="事件绑定"
+      title={t('PC.Pages.AgentArrangeEventBindModal.title')}
       open={open}
       loading={loading}
       onCancel={onCancel}
@@ -355,16 +377,33 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       >
         <Form.Item
           name="name"
-          label="事件名称"
-          rules={[{ required: true, message: '请输入事件名称' }]}
+          label={t('PC.Pages.AgentArrangeEventBindModal.eventName')}
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.AgentArrangeEventBindModal.eventNameRequired',
+              ),
+            },
+          ]}
         >
-          <Input placeholder="请输入事件名称" allowClear />
+          <Input
+            placeholder={t(
+              'PC.Pages.AgentArrangeEventBindModal.eventNamePlaceholder',
+            )}
+            allowClear
+          />
         </Form.Item>
         <Form.Item
           name="identification"
-          label="事件标识（用于区分具体事件）"
+          label={t('PC.Pages.AgentArrangeEventBindModal.eventCode')}
           rules={[
-            { required: true, message: '请输入事件标识' },
+            {
+              required: true,
+              message: t(
+                'PC.Pages.AgentArrangeEventBindModal.eventCodeRequired',
+              ),
+            },
             {
               validator(_, value) {
                 if (!value || validateTableName(value)) {
@@ -372,7 +411,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 }
                 return Promise.reject(
                   new Error(
-                    '事件标识只能包含字母、数字和下划线,且必须以字母或下划线开头!',
+                    t('PC.Pages.AgentArrangeEventBindModal.eventCodeInvalid'),
                   ),
                 );
               },
@@ -380,13 +419,20 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           ]}
         >
           <Input
-            placeholder="请输入事件标识,只能包含字母、数字和下划线"
+            placeholder={t(
+              'PC.Pages.AgentArrangeEventBindModal.eventCodePlaceholder',
+            )}
             allowClear
           />
         </Form.Item>
-        <Form.Item name="type" label="响应动作">
+        <Form.Item
+          name="type"
+          label={t('PC.Pages.AgentArrangeEventBindModal.responseAction')}
+        >
           <SelectList
-            placeholder="请选择响应动作"
+            placeholder={t(
+              'PC.Pages.AgentArrangeEventBindModal.responseActionPlaceholder',
+            )}
             options={responseActionList}
             value={type}
             onChange={handleChangeType}
@@ -395,12 +441,21 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         {type === EventBindResponseActionEnum.Page ? (
           <Form.Item
             name="pageUriId"
-            label="页面路径"
-            rules={[{ required: true, message: '请选择页面路径' }]}
+            label={t('PC.Pages.AgentArrangeEventBindModal.pagePath')}
+            rules={[
+              {
+                required: true,
+                message: t(
+                  'PC.Pages.AgentArrangeEventBindModal.pagePathRequired',
+                ),
+              },
+            ]}
           >
             {/* 页面路径 */}
             <SelectList
-              placeholder="请选择页面路径"
+              placeholder={t(
+                'PC.Pages.AgentArrangeEventBindModal.pagePathPlaceholder',
+              )}
               options={pathList as any}
               onChange={changePagePath}
             />
@@ -409,9 +464,14 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           type === EventBindResponseActionEnum.Link && (
             <Form.Item
               name="url"
-              label="链接地址"
+              label={t('PC.Pages.AgentArrangeEventBindModal.linkUrl')}
               rules={[
-                { required: true, message: '请输入链接地址' },
+                {
+                  required: true,
+                  message: t(
+                    'PC.Pages.AgentArrangeEventBindModal.linkUrlRequired',
+                  ),
+                },
                 {
                   validator(_, value) {
                     if (!value || isHttp(value)) {
@@ -419,7 +479,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                     }
                     return Promise.reject(
                       new Error(
-                        '请输入正确格式的链接地址，必须以http://或https://开头!',
+                        t('PC.Pages.AgentArrangeEventBindModal.linkUrlInvalid'),
                       ),
                     );
                   },
@@ -442,8 +502,13 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 style={{ color: token.colorTextTertiary }}
                 onClick={() => setIsActive(!isActive)}
               />
-              <span className={cx('user-select-none')}>输入</span>
-              <TooltipIcon title="配置输入参数" icon={<InfoCircleOutlined />} />
+              <span className={cx('user-select-none')}>
+                {t('PC.Pages.AgentArrangeEventBindModal.input')}
+              </span>
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeEventBindModal.configInputArgs')}
+                icon={<InfoCircleOutlined />}
+              />
             </div>
             <div
               className={cx(

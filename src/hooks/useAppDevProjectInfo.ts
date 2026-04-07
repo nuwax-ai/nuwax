@@ -4,10 +4,12 @@
  */
 
 import { getProjectInfo } from '@/services/appDev';
+import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import type {
   ProjectDetailData,
   VersionInfoItem,
 } from '@/types/interfaces/appDev';
+import { getJsLocale } from '@/utils/i18nAdapters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /**
@@ -96,14 +98,16 @@ export const useAppDevProjectInfo = (
           setProjectInfoState((prev) => ({
             ...prev,
             isLoading: false,
-            error: '你没有权限访问该项目',
+            error: dict('PC.Hooks.UseAppDevProjectInfo.noPermission'),
             hasPermission: false,
           }));
         }
       }
     } catch (error: any) {
       const errorMessage =
-        error?.message || error?.toString() || '获取项目详情时发生未知错误';
+        error?.message ||
+        error?.toString() ||
+        dict('PC.Hooks.UseAppDevProjectInfo.fetchProjectFailed');
 
       setProjectInfoState((prev) => ({
         ...prev,
@@ -160,23 +164,23 @@ export const useAppDevProjectInfo = (
   const getActionText = useCallback((action: string): string => {
     switch (action) {
       case 'chat':
-        return 'AI 对话';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionChat');
       case 'submit_files_update':
-        return '文件更新';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionFileUpdate');
       case 'upload_single_file':
-        return '上传单文件';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionUploadSingleFile');
       case 'create_project':
-        return '创建项目';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionCreateProject');
       case 'build':
-        return '构建';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionBuild');
       case 'deploy':
-        return '部署';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionDeploy');
       case 'upload':
-        return '上传项目';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionUploadProject');
       case 'rollback_version':
-        return '版本回滚';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionVersionRollback');
       default:
-        return '未知操作';
+        return dict('PC.Hooks.UseAppDevProjectInfo.actionUnknown');
     }
   }, []);
 
@@ -208,7 +212,7 @@ export const useAppDevProjectInfo = (
   const formatVersionTime = useCallback((time: string): string => {
     try {
       const date = new Date(time);
-      return date.toLocaleString('zh-CN', {
+      return date.toLocaleString(getJsLocale(getCurrentLang()), {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

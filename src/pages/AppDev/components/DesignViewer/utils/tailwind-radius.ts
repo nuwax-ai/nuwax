@@ -27,10 +27,10 @@ export const RADIUS_REGEXP =
  */
 export const convertLabelToRadiusClass = (label: string): string | null => {
   // 创建反向映射：从标签到类名
-  // 注意：'Small' 可能对应 'rounded-sm' 或 'rounded'，优先返回 'rounded-sm'
+  // Note: 'Small' may map to 'rounded-sm' or 'rounded'; prefer 'rounded-sm'
   const labelToClass: Record<string, string> = {};
   Object.entries(tailwindRadiusMap).forEach(([className, labelValue]) => {
-    // 如果标签已存在，且当前类名更具体（如 'rounded-sm' 比 'rounded' 更具体），则更新
+    // If the label already exists, prefer a more specific class name.
     if (
       !labelToClass[labelValue] ||
       className.length > labelToClass[labelValue].length

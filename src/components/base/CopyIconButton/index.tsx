@@ -39,7 +39,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
   buttonSize = 'small',
   showMessage = true,
   jsonSpace = 2,
-  tooltipTitle = '复制',
+  tooltipTitle = dict('PC.Components.CopyIconButton.copy'),
   style,
   className,
 }) => {

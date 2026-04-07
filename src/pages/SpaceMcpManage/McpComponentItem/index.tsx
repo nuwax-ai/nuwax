@@ -5,6 +5,7 @@ import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE } from '@/constants/images.constants';
 import { MCP_MORE_ACTION } from '@/constants/mcp.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   DeployStatusEnum,
   McpMoreActionEnum,
@@ -74,9 +75,13 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
   // 获取时间信息
   const getTime = () => {
     if (mcpInfo.deployStatus === DeployStatusEnum.Deployed) {
-      return `发布于 ${dayjs(mcpInfo.deployed).format('MM-DD HH:mm')}`;
+      return `${dict('PC.Pages.SpaceMcpManage.publishedAt')} ${dayjs(
+        mcpInfo.deployed,
+      ).format('MM-DD HH:mm')}`;
     }
-    return `创建于 ${dayjs(mcpInfo.created).format('MM-DD HH:mm')}`;
+    return `${dict('PC.Pages.SpaceMcpManage.createdAt')} ${dayjs(
+      mcpInfo.created,
+    ).format('MM-DD HH:mm')}`;
   };
 
   return (

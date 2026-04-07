@@ -1,4 +1,5 @@
 import Created from '@/components/Created';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -90,7 +91,14 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
           label={label}
           style={{ flex: 1, marginBottom: 0, width: '100%' }}
           rules={[
-            { required: true, message: `请选择${label}`, type: 'object' },
+            {
+              required: true,
+              message: t(
+                'PC.Pages.SystemTaskSelectTargetFormItem.selectLabel',
+                label,
+              ),
+              type: 'object',
+            },
           ]}
         >
           <SelectTargetFormItemTarget

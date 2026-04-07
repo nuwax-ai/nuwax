@@ -139,17 +139,17 @@ export const formatErrorForAgent = (
   const errorStack = extractErrorStack(logs, errorIndex);
 
   // 构建错误报告
-  let errorReport = `🚨 检测到开发服务器错误，相关日志如下：\n\n`;
+  let errorReport = `🚨 Development server error detected. Related logs:\n\n`;
 
   // 添加错误摘要
-  errorReport += `**错误摘要：**\n`;
-  errorReport += `- 错误行号: ${errorLog.line}\n`;
-  errorReport += `- 时间: ${errorLog.timestamp || '未知'}\n`;
-  errorReport += `- 错误内容: ${errorLog.content}\n\n`;
+  errorReport += `**Error Summary:**\n`;
+  errorReport += `- Error line: ${errorLog.line}\n`;
+  errorReport += `- Time: ${errorLog.timestamp || 'Unknown'}\n`;
+  errorReport += `- Error content: ${errorLog.content}\n\n`;
 
   // 添加错误堆栈（如果有）
   if (errorStack.length > 1) {
-    errorReport += `**错误堆栈：**\n`;
+    errorReport += `**Error Stack:**\n`;
     errorStack.forEach((stackLog) => {
       errorReport += `${stackLog.line}| ${stackLog.content}\n`;
     });
@@ -157,7 +157,7 @@ export const formatErrorForAgent = (
   }
 
   // 添加上下文日志
-  errorReport += `**上下文日志（最近50行）：**\n`;
+  errorReport += `**Context Logs (latest 50 lines):**\n`;
   context.forEach((log) => {
     const prefix = isErrorLog(log)
       ? '❌'
@@ -167,7 +167,7 @@ export const formatErrorForAgent = (
     errorReport += `${prefix} ${log.line}| ${log.content}\n`;
   });
 
-  errorReport += `\n请分析上述错误并提供修复建议。`;
+  errorReport += `\nPlease analyze the error above and provide a fix suggestion.`;
 
   return errorReport;
 };
@@ -349,7 +349,7 @@ const createLogGroup = (timestamp: string, logs: DevLogEntry[]): LogGroup => {
   ).length;
 
   return {
-    timestamp: timestamp || '未知时间',
+    timestamp: timestamp || 'Unknown time',
     logs,
     errorCount,
     warnCount,
@@ -412,7 +412,7 @@ export const formatTimestampDisplay = (timestamp: string): string => {
       return date.format('YYYY/MM/DD HH:mm:ss');
     }
   } catch (error) {
-    console.warn('时间戳解析失败:', timestamp, error);
+    console.warn('Failed to parse timestamp:', timestamp, error);
   }
 
   return timestamp;

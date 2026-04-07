@@ -1,6 +1,7 @@
 import { BulbOutlined, DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
+import { dict } from '@/services/i18nRuntime';
 import React, { memo, useMemo, useRef, useState } from 'react';
 
 import styles from './index.less';
@@ -76,7 +77,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
               >
                 <BulbOutlined className={styles['thinking-icon']} />
                 <span className={styles['thinking-title']}>
-                  {!isThinkingFinished ? '正在思考' : '已思考'}
+                  {!isThinkingFinished
+                    ? dict('PC.Components.MarkdownRenderer.thinking')
+                    : dict('PC.Components.MarkdownRenderer.thought')}
                 </span>
                 <DownOutlined
                   className={cx(styles['expand-icon'], {

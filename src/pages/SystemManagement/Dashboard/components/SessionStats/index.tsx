@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Line } from '@ant-design/plots';
 import { useSize } from 'ahooks';
 import { Card, Col, Radio, Row } from 'antd';
@@ -82,7 +83,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
         },
       },
       tooltip: (d: { date: string; value: number }) => ({
-        name: '新增会话',
+        name: dict('PC.Pages.SystemDashboard.newSession'),
         value: (d.value || 0).toLocaleString(),
       }),
     }),
@@ -100,7 +101,9 @@ const SessionStats: React.FC<SessionStatsProps> = ({
       </Row>
       <Card className={cx(styles['session-chart'])} bordered={false}>
         <div className={cx(styles['chart-header'])}>
-          <h3 className={cx(styles['chart-title'])}>七日新增会话趋势</h3>
+          <h3 className={cx(styles['chart-title'])}>
+            {dict('PC.Pages.SystemDashboard.sevenDayTrend')}
+          </h3>
           <Radio.Group
             value={period}
             onChange={(e) => onPeriodChange?.(e.target.value)}
@@ -108,9 +111,15 @@ const SessionStats: React.FC<SessionStatsProps> = ({
             className={cx(styles['period-selector'])}
             disabled={loading}
           >
-            <Radio.Button value="7d">7天</Radio.Button>
-            <Radio.Button value="30d">30天</Radio.Button>
-            <Radio.Button value="month">按月</Radio.Button>
+            <Radio.Button value="7d">
+              {dict('PC.Pages.SystemDashboard.period7d')}
+            </Radio.Button>
+            <Radio.Button value="30d">
+              {dict('PC.Pages.SystemDashboard.period30d')}
+            </Radio.Button>
+            <Radio.Button value="month">
+              {dict('PC.Pages.SystemDashboard.periodMonth')}
+            </Radio.Button>
           </Radio.Group>
         </div>
         <div style={{ height: 280, position: 'relative' }} ref={containerRef}>

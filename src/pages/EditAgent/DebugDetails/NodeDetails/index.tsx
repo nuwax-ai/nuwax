@@ -1,4 +1,5 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { NodeDetailsProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
@@ -32,19 +33,19 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   const nodeTypeName = useMemo(() => {
     switch (node?.type) {
       case AgentComponentTypeEnum.Plugin:
-        return '插件';
+        return dict('PC.Pages.EditAgent.NodeDetails.typePlugin');
       case AgentComponentTypeEnum.Workflow:
-        return '工作流';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeWorkflow');
       case AgentComponentTypeEnum.Knowledge:
-        return '知识库';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeKnowledge');
       case AgentComponentTypeEnum.Variable:
-        return '变量';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeVariable');
       case AgentComponentTypeEnum.Table:
-        return '数据表';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeTable');
       case AgentComponentTypeEnum.Model:
-        return '模型';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeModel');
       case AgentComponentTypeEnum.MCP:
-        return 'MCP';
+        return dict('PC.Pages.EditAgent.NodeDetails.typeMCP');
       default:
         return '--';
     }
@@ -53,20 +54,32 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   return (
     <>
       <div className={cx(styles.container)}>
-        {renderDetailItem('类型', nodeTypeName)}
-        {renderDetailItem('状态', '成功')}
-        {renderDetailItem('名称', node?.name as string)}
-        {renderDetailItem('耗时', time)}
+        {renderDetailItem(
+          dict('PC.Pages.EditAgent.NodeDetails.labelType'),
+          nodeTypeName,
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.EditAgent.NodeDetails.labelStatus'),
+          dict('PC.Pages.EditAgent.NodeDetails.statusSuccess'),
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.EditAgent.NodeDetails.labelName'),
+          node?.name as string,
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.EditAgent.NodeDetails.labelDuration'),
+          time,
+        )}
       </div>
       {renderDetailItem(
-        '发起时间',
+        dict('PC.Pages.EditAgent.NodeDetails.labelStartTime'),
         node?.startTime
           ? dayjs(node?.startTime).format('YYYY-MM-DD HH:mm')
           : '',
         styles['mt-10'],
       )}
       {renderDetailItem(
-        '结束时间',
+        dict('PC.Pages.EditAgent.NodeDetails.labelEndTime'),
         node?.endTime ? dayjs(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
         styles['mt-10'],
       )}

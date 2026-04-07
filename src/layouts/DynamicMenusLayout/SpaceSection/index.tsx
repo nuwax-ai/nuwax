@@ -2,6 +2,7 @@ import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiGetSpaceDetail } from '@/services/teamSetting';
 import { TeamStatusEnum } from '@/types/enums/teamSetting';
 import type { AgentInfo } from '@/types/interfaces/agent';
@@ -47,7 +48,10 @@ const SpaceSection: React.FC<{
     localStorage.setItem(SPACE_ID, finalSpaceId);
 
     if (isInList) {
-      setDynamicTitle(currentSpaceInfo?.name || '个人空间');
+      setDynamicTitle(
+        currentSpaceInfo?.name ||
+          dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
+      );
     } else {
       // Fetch details
       apiGetSpaceDetail(finalSpaceId)
@@ -59,13 +63,22 @@ const SpaceSection: React.FC<{
               currentUserRole !== TeamStatusEnum.Owner && creatorName
                 ? `${creatorName} - ${name}`
                 : name;
-            setDynamicTitle(display || '个人空间');
+            setDynamicTitle(
+              display ||
+                dict(
+                  'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace',
+                ),
+            );
           } else {
-            setDynamicTitle('个人空间');
+            setDynamicTitle(
+              dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
+            );
           }
         })
         .catch(() => {
-          setDynamicTitle('个人空间');
+          setDynamicTitle(
+            dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace'),
+          );
         });
 
       /**
@@ -109,7 +122,9 @@ const SpaceSection: React.FC<{
       {/* 空间菜单列表 */}
       <DynamicSecondMenu parentCode={activeTab} />
       <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
+        <h3 className={cx(styles['collection-title'])}>
+          {dict('PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited')}
+        </h3>
         <div className="flex flex-col gap-4">
           {editAgentList?.map((item: AgentInfo) => (
             <MenuListItem

@@ -1,4 +1,5 @@
-// 变量分组项组件
+// Variable group item component.
+import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, VariableGroup } from '@/types/interfaces/node';
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
@@ -28,8 +29,7 @@ interface VariableGroupItemProps {
 }
 
 /**
- * 变量分组项组件
- * 渲染单个分组的 UI，包括分组头部、变量引用列表等
+ * Render a single variable group section.
  */
 const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
   group,
@@ -48,12 +48,14 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
 }) => {
   return (
     <div className="form-list-style group-item-container">
-      {/* 分组头部 - 紧凑布局 */}
+      {/* Group header */}
       <div className="dis-sb group-header">
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <Input
             size="small"
-            placeholder="分组名称"
+            placeholder={t(
+              'PC.Pages.AntvX6VariableAggregation.groupNamePlaceholder',
+            )}
             value={group.name}
             onChange={(e) =>
               onUpdateGroup(groupIndex, { name: e.target.value })
@@ -82,7 +84,7 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
         </div>
       </div>
 
-      {/* 变量引用列表 - 紧凑，无参数名 */}
+      {/* Variable reference list */}
       {(group.inputs || []).map((input: InputAndOutConfig, inputIndex) => (
         <div
           key={input.key || inputIndex}
@@ -108,9 +110,11 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
         </div>
       ))}
 
-      {/* 空状态提示 */}
+      {/* Empty-state hint */}
       {(!group.inputs || group.inputs.length === 0) && (
-        <div className="group-empty-tip">点击 + 添加变量引用</div>
+        <div className="group-empty-tip">
+          {t('PC.Pages.AntvX6VariableAggregation.emptyGroupInputHint')}
+        </div>
       )}
     </div>
   );

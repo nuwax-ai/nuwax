@@ -2,6 +2,7 @@
  * Mermaid图表导出工具类
  * 提供统一的SVG和PNG导出功能
  */
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import mermaid from 'mermaid';
 
@@ -31,10 +32,10 @@ export class MermaidExporter {
       const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
       this.downloadBlob(blob, filename);
 
-      message.success('SVG 导出成功');
+      message.success(dict('PC.Utils.MermaidExporter.svgExportSuccess'));
     } catch (error) {
       console.error('SVG export error:', error);
-      message.error('SVG 导出失败');
+      message.error(dict('PC.Utils.MermaidExporter.svgExportFailed'));
       throw error;
     }
   }
@@ -63,10 +64,10 @@ export class MermaidExporter {
       const pngBlob = await this.svgToPng(svg, scale, backgroundColor);
       this.downloadBlob(pngBlob, filename);
 
-      message.success('PNG 导出成功');
+      message.success(dict('PC.Utils.MermaidExporter.pngExportSuccess'));
     } catch (error) {
       console.error('PNG export error:', error);
-      message.error('PNG 导出失败');
+      message.error(dict('PC.Utils.MermaidExporter.pngExportFailed'));
       throw error;
     }
   }
@@ -101,10 +102,10 @@ export class MermaidExporter {
       const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
 
       this.downloadBlob(blob, filename);
-      message.success('SVG 导出成功');
+      message.success(dict('PC.Utils.MermaidExporter.svgExportSuccess'));
     } catch (error) {
       console.error('SVG export error:', error);
-      message.error('SVG 导出失败');
+      message.error(dict('PC.Utils.MermaidExporter.svgExportFailed'));
     }
   }
 
@@ -172,10 +173,10 @@ export class MermaidExporter {
       );
 
       this.downloadBlob(blob, filename);
-      message.success('PNG 导出成功');
+      message.success(dict('PC.Utils.MermaidExporter.pngExportSuccess'));
     } catch (error) {
       console.error('PNG export error:', error);
-      message.error('PNG 导出失败');
+      message.error(dict('PC.Utils.MermaidExporter.pngExportFailed'));
     }
   }
 
@@ -735,7 +736,7 @@ export class MermaidExporter {
         canvas.toBlob((blob) => {
           if (blob) {
             this.downloadBlob(blob, filename);
-            message.success('PNG 导出成功');
+            message.success(dict('PC.Utils.MermaidExporter.pngExportSuccess'));
           }
         }, 'image/png');
       };
@@ -745,7 +746,7 @@ export class MermaidExporter {
       )}`;
     } catch (error) {
       console.error('PNG export failed:', error);
-      message.error('PNG 导出失败');
+      message.error(dict('PC.Utils.MermaidExporter.pngExportFailed'));
     }
   }
 }

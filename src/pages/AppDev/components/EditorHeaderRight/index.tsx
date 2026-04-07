@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import { t } from '@/services/i18nRuntime';
 import { SyncOutlined } from '@ant-design/icons';
 import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -128,7 +129,11 @@ const VersionCompareMode: React.FC<VersionCompareProps> = ({
 
   // 版本切换按钮文本
   const switchButtonText = useMemo(
-    () => `切换 v${targetVersion} 版本`,
+    () =>
+      t(
+        'PC.Pages.AppDevEditorHeaderRight.switchVersionButton',
+        String(targetVersion ?? '-'),
+      ),
     [targetVersion],
   );
 
@@ -140,7 +145,7 @@ const VersionCompareMode: React.FC<VersionCompareProps> = ({
         className={styles.versionDropdownButton}
       />
       <Button onClick={onCancelCompare} disabled={buttonsDisabled}>
-        取消
+        {t('PC.Pages.AppDevEditorHeaderRight.cancel')}
       </Button>
       <Button
         type="primary"
@@ -208,35 +213,40 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
   return (
     <div className={styles.previewStatusInfo}>
       {isConnectedState && (
-        <span className={styles.statusBadge}>开发服务器已连接</span>
+        <span className={styles.statusBadge}>
+          {t('PC.Pages.AppDevEditorHeaderRight.devServerConnected')}
+        </span>
       )}
       {isLoadingState && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
-          加载中...
+          {t('PC.Pages.AppDevEditorHeaderRight.loading')}
         </span>
       )}
       {isStarting && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
-          启动中...
+          {t('PC.Pages.AppDevEditorHeaderRight.starting')}
         </span>
       )}
       {isRestarting && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
-          重启中...
+          {t('PC.Pages.AppDevEditorHeaderRight.restarting')}
         </span>
       )}
       {isProjectUploading && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
-          导入中...
+          {t('PC.Pages.AppDevEditorHeaderRight.importing')}
         </span>
       )}
       {lastRefreshed && (
         <span className={styles.lastUpdated}>
-          最后更新: {lastRefreshed.toLocaleTimeString()}
+          {t(
+            'PC.Pages.AppDevEditorHeaderRight.lastUpdated',
+            lastRefreshed.toLocaleTimeString(),
+          )}
         </span>
       )}
     </div>
@@ -294,7 +304,9 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
                 }
                 style={{ marginLeft: 8, fontSize: '10px' }}
               >
-                {isCurrentVersion ? '当前' : getActionText(version.action)}
+                {isCurrentVersion
+                  ? t('PC.Pages.AppDevEditorHeaderRight.currentTag')
+                  : getActionText(version.action)}
               </Tag>
             </div>
           ),
@@ -361,8 +373,10 @@ const ConsoleButton: React.FC<ConsoleButtonProps> = ({
 }) => {
   // 工具提示文本
   const tooltipText = useMemo(() => {
-    if (showDevLogConsole) return '关闭日志';
-    return '查看日志';
+    if (showDevLogConsole) {
+      return t('PC.Pages.AppDevEditorHeaderRight.closeLog');
+    }
+    return t('PC.Pages.AppDevEditorHeaderRight.viewLog');
   }, [showDevLogConsole]);
 
   // 是否有错误
@@ -416,7 +430,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'import',
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
-        label: '导入项目',
+        label: t('PC.Pages.AppDevEditorHeaderRight.menuImportProject'),
         onClick: onImportProject,
         // disabled: isChatLoading || !hasPermission('page_app_import'),
         disabled: isChatLoading,
@@ -424,7 +438,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       // {
       //   key: 'upload',
       //   icon: <PlusOutlined />,
-      //   label: '上传单个文件',
+      //   label: 'Upload single file',
       //   onClick: onUploadSingleFile,
       //   disabled: isChatLoading,
       // },
@@ -434,7 +448,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'restart',
         icon: <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />,
-        label: '重启服务器',
+        label: t('PC.Pages.AppDevEditorHeaderRight.menuRestartServer'),
         onClick: onRestartServer,
         // disabled: isChatLoading || !hasPermission('page_app_restart_server'),
         disabled: isChatLoading,
@@ -444,7 +458,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: (
           <SvgIcon name="icons-common-fullscreen" style={{ fontSize: 16 }} />
         ),
-        label: '全屏页面预览',
+        label: t('PC.Pages.AppDevEditorHeaderRight.menuFullscreenPreview'),
         onClick: onFullscreenPreview,
         disabled: isChatLoading,
       },
@@ -454,7 +468,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'export',
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
-        label: '导出项目',
+        label: t('PC.Pages.AppDevEditorHeaderRight.menuExportProject'),
         onClick: onExportProject,
         // disabled: isChatLoading || !hasPermission('page_app_export'),
         disabled: isChatLoading,
@@ -561,7 +575,9 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
           />
           {/* 刷新按钮 */}
           {shouldShowPreviewStatus && (
-            <Tooltip title="刷新预览">
+            <Tooltip
+              title={t('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}
+            >
               <Button
                 type="text"
                 className={styles.refreshButton}

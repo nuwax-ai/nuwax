@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { USER_OPERATE_AREA } from '@/constants/menus.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiNotifyMessageUnreadCount } from '@/services/message';
 import { UserOperatorAreaEnum } from '@/types/enums/menus';
 import type { UserOperateAreaItemType } from '@/types/interfaces/layouts';
@@ -42,16 +43,24 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
 
   const dataSource: UserOperateAreaItemType[] = useMemo(() => {
     const _userOperateArea = cloneDeep(USER_OPERATE_AREA);
-    if (unreadCount === 0) {
-      return _userOperateArea;
-    } else {
-      return _userOperateArea.map((item: UserOperateAreaItemType) => {
-        if (item.type === UserOperatorAreaEnum.Message) {
-          item.title = `${unreadCount} 条未读消息`;
-        }
-        return item;
-      });
-    }
+    return _userOperateArea.map((item: UserOperateAreaItemType) => {
+      if (item.type === UserOperatorAreaEnum.Document) {
+        item.title = dict('PC.Components.UserOperate.documents');
+      }
+      if (item.type === UserOperatorAreaEnum.Computer) {
+        item.title = dict('PC.Components.UserOperate.myComputer');
+      }
+      if (item.type === UserOperatorAreaEnum.Message) {
+        item.title =
+          unreadCount > 0
+            ? dict(
+                'PC.Components.UserOperate.unreadMessageCount',
+                String(unreadCount),
+              )
+            : dict('PC.Components.UserOperate.noUnreadMessage');
+      }
+      return item;
+    });
   }, [unreadCount, USER_OPERATE_AREA]);
 
   useEffect(() => {

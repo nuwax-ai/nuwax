@@ -4,6 +4,7 @@ import {
   SANDBOX,
 } from '@/constants/common.constants';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
+import { t } from '@/services/i18nRuntime';
 import { apiCheckVncStatus } from '@/services/vncDesktop';
 import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
@@ -72,7 +73,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     // Helper to build the VNC URL
     const buildVncUrl = useCallback(() => {
       if (!cId) {
-        setErrorMessage('缺少必要配置（服务地址或容器 ID）');
+        setErrorMessage(t('PC.Components.VncPreview.missingConfig'));
         return null;
       }
 
@@ -111,23 +112,33 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
       if (result.isTimeout) {
         setStatus('error');
-        setErrorMessage('智能体电脑暂时不可用，请稍后手动刷新重试。');
+        setErrorMessage(t('PC.Components.VncPreview.desktopUnavailable'));
         return;
       }
 
       if (result.status === 403) {
         setStatus('error');
-        setErrorMessage('访问被拒绝 (403 Forbidden)，请检查权限配置。');
+        setErrorMessage(t('PC.Components.VncPreview.forbidden'));
         return;
       }
       if (result.status === 502 || result.status === 503) {
         setStatus('error');
-        setErrorMessage(`服务暂时不可用 (${result.status})，请稍后重试。`);
+        setErrorMessage(
+          t(
+            'PC.Components.VncPreview.serviceUnavailableWithStatus',
+            String(result.status),
+          ),
+        );
         return;
       }
       if (result.status && result.status >= 400) {
         setStatus('error');
-        setErrorMessage(`请求失败 (HTTP ${result.status})，请检查服务状态。`);
+        setErrorMessage(
+          t(
+            'PC.Components.VncPreview.requestFailedWithStatus',
+            String(result.status),
+          ),
+        );
         return;
       }
 
@@ -163,15 +174,19 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
             break;
           case 'vnc_connection_failed':
             setStatus('error');
-            setErrorMessage(msg || '无法连接到智能体电脑');
+            setErrorMessage(
+              msg || t('PC.Components.VncPreview.cannotConnectDesktop'),
+            );
             break;
           case 'vnc_connection_closed':
             setStatus('error');
-            setErrorMessage(msg || '连接已断开');
+            setErrorMessage(
+              msg || t('PC.Components.VncPreview.connectionClosed'),
+            );
             break;
           case 'vnc_share_expired':
             setStatus('error');
-            setErrorMessage('分享已过期');
+            setErrorMessage(t('PC.Components.VncPreview.shareExpired'));
             break;
           default:
             break;
@@ -241,7 +256,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
      */
     const shouldEnableIdleDetection = useMemo(() => {
       const result = idleEnabled && status === 'connected';
-      vncIdleLogger.log('检查空闲检测启用条件', {
+      vncIdleLogger.log('Evaluate idle-detection preconditions', {
         idleEnabled,
         status,
         shouldEnable: result,
@@ -256,11 +271,13 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const handleIdleTimeout = useCallback(() => {
       // 如果弹窗已经在显示中，跳过
       if (isIdleWarningActiveRef.current) {
-        vncIdleLogger.log('⚠️ 弹窗已显示，跳过重复触发');
+        vncIdleLogger.log(
+          'Idle warning modal already visible, skip duplicate trigger.',
+        );
         return;
       }
       isIdleWarningActiveRef.current = true;
-      vncIdleLogger.log('⏰ 空闲超时，显示警告弹窗', {
+      vncIdleLogger.log('Idle timeout reached, open warning modal.', {
         countdownSeconds,
         cId,
       });
@@ -281,11 +298,11 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
      * 处理用户取消空闲警告
      */
     const handleIdleWarningCancel = useCallback(() => {
-      vncIdleLogger.log('✅ 用户取消空闲警告', '重置空闲计时器');
+      vncIdleLogger.log('Idle warning canceled by user.', 'Reset idle timer.');
       setShowIdleWarning(false);
       isIdleWarningActiveRef.current = false;
       resetIdleTimer();
-      message.success('已取消自动关闭');
+      message.success(t('PC.Components.VncPreview.autoCloseCanceled'));
       onIdleCancel?.();
     }, [resetIdleTimer, onIdleCancel]);
 
@@ -293,15 +310,15 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
      * 处理空闲警告倒计时结束：断开连接
      */
     const handleIdleWarningTimeout = useCallback(() => {
-      vncIdleLogger.log('⏱️ 空闲警告倒计时结束', {
-        action: '断开 VNC 连接',
+      vncIdleLogger.log('Idle warning countdown finished.', {
+        action: 'Disconnect VNC connection',
         cId,
       });
       setShowIdleWarning(false);
       isIdleWarningActiveRef.current = false;
       // 断开连接
       disconnect();
-      message.info('由于长时间未操作，已自动关闭智能体电脑连接');
+      message.info(t('PC.Components.VncPreview.autoClosedByIdleTimeout'));
       onIdleTimeout?.();
     }, [cId, disconnect, onIdleTimeout]);
 
@@ -310,11 +327,17 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const renderStatusTag = useCallback(() => {
       switch (status) {
         case 'connected':
-          return <Tag color="#52c41a">已连接</Tag>;
+          return (
+            <Tag color="#52c41a">{t('PC.Components.VncPreview.connected')}</Tag>
+          );
         case 'connecting':
-          return <Tag color="#1890ff">连接中...</Tag>;
+          return (
+            <Tag color="#1890ff">
+              {t('PC.Components.VncPreview.connecting')}
+            </Tag>
+          );
         case 'disconnected':
-          return <Tag>未连接</Tag>;
+          return <Tag>{t('PC.Components.VncPreview.disconnected')}</Tag>;
         case 'error':
           // 连接失败时不显示标签
           return null;
@@ -359,27 +382,31 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
               }}
             >
               <DesktopOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-              <p>准备连接</p>
+              <p>{t('PC.Components.VncPreview.preparingConnection')}</p>
             </div>
           )}
 
           {status === 'connecting' ? (
             <div className={styles.loadingOverlay}>
               <Spin size="large" />
-              <span className={styles.loadingText}>智能体电脑连接中...</span>
+              <span className={styles.loadingText}>
+                {t('PC.Components.VncPreview.desktopConnecting')}
+              </span>
             </div>
           ) : null}
 
           {status === 'error' && (
             <div className={styles.errorOverlay}>
               <Alert
-                message="连接错误"
-                description={errorMessage || '无法建立连接'}
+                message={t('PC.Components.VncPreview.connectionError')}
+                description={
+                  errorMessage || t('PC.Components.VncPreview.cannotEstablish')
+                }
                 type="error"
                 showIcon
                 action={
                   <Button size="small" type="primary" onClick={connect}>
-                    重试
+                    {t('PC.Components.VncPreview.retry')}
                   </Button>
                 }
               />

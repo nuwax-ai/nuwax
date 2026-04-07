@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
@@ -35,6 +36,7 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
   maxLength = 50,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const LS_TOTAL_ZH = '\u603b\u8ba1';
 
   // 获取操作描述文本
   const getOperationText = () => {
@@ -45,19 +47,38 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
         : '';
 
     // 根据 type 添加不同的前缀
-    const typePrefix = type === 'tool_call_update' ? '[更新] ' : '';
+    const typePrefix =
+      type === 'tool_call_update'
+        ? t('PC.Pages.AppDevToolCallProcess.updatePrefix')
+        : '';
 
     switch (kind) {
       case 'read':
-        return `${typePrefix}读取文件 ${filePath}${lineInfo}`;
+        return `${typePrefix}${t(
+          'PC.Pages.AppDevToolCallProcess.readFile',
+          `${filePath}${lineInfo}`,
+        )}`;
       case 'edit':
-        return `${typePrefix}编辑文件 ${filePath}${lineInfo}`;
+        return `${typePrefix}${t(
+          'PC.Pages.AppDevToolCallProcess.editFile',
+          `${filePath}${lineInfo}`,
+        )}`;
       case 'write':
-        return `${typePrefix}创建文件 ${filePath}`;
+        return `${typePrefix}${t(
+          'PC.Pages.AppDevToolCallProcess.createFile',
+          filePath,
+        )}`;
       case 'execute':
-        return `${typePrefix}执行命令 ${title || '执行命令'}`;
+        return `${typePrefix}${t(
+          'PC.Pages.AppDevToolCallProcess.executeCommand',
+          title || t('PC.Pages.AppDevToolCallProcess.executeCommandDefault'),
+        )}`;
       default:
-        return `${typePrefix}${title || '工具调用'} ${filePath}${lineInfo}`;
+        return `${typePrefix}${t(
+          'PC.Pages.AppDevToolCallProcess.genericCall',
+          title || t('PC.Pages.AppDevToolCallProcess.toolCallDefault'),
+          `${filePath}${lineInfo}`,
+        )}`;
     }
   };
 
@@ -65,13 +86,13 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
   const getStatusText = () => {
     switch (status) {
       case 'completed':
-        return '已完成';
+        return t('PC.Pages.AppDevToolCallProcess.statusCompleted');
       case 'in_progress':
-        return '执行中';
+        return t('PC.Pages.AppDevToolCallProcess.statusInProgress');
       case 'failed':
-        return '失败';
+        return t('PC.Pages.AppDevToolCallProcess.statusFailed');
       default:
-        return '待执行';
+        return t('PC.Pages.AppDevToolCallProcess.statusPending');
     }
   };
 
@@ -115,7 +136,10 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
     const lines = text.split('\n');
     const isFileList = lines.some(
       (line) =>
-        line.includes('drwx') || line.includes('-rw-') || line.includes('总计'),
+        line.includes('drwx') ||
+        line.includes('-rw-') ||
+        line.includes(LS_TOTAL_ZH) ||
+        line.includes('total'),
     );
 
     if (isFileList) {
@@ -156,7 +180,7 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
                   <span className={fileLineClass}>{line}</span>
                 </div>
               );
-            } else if (line.includes('总计')) {
+            } else if (line.includes(LS_TOTAL_ZH) || line.includes('total')) {
               // 统计行
               return (
                 <div key={index} className={styles.fileListSummary}>
@@ -281,19 +305,27 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
             ) : (
               <div className={styles.noContent}>
                 <div className={styles.statusInfo}>
-                  <span className={styles.statusLabel}>状态:</span>
+                  <span className={styles.statusLabel}>
+                    {t('PC.Pages.AppDevToolCallProcess.statusLabel')}
+                  </span>
                   <span className={styles.statusValue}>{getStatusText()}</span>
                 </div>
                 <div className={styles.timeInfo}>
-                  <span className={styles.timeLabel}>时间:</span>
+                  <span className={styles.timeLabel}>
+                    {t('PC.Pages.AppDevToolCallProcess.timeLabel')}
+                  </span>
                   <span className={styles.timeValue}>
                     {new Date(timestamp).toLocaleString()}
                   </span>
                 </div>
                 {type === 'tool_call_update' && (
                   <div className={styles.updateInfo}>
-                    <span className={styles.updateLabel}>类型:</span>
-                    <span className={styles.updateValue}>工具调用更新</span>
+                    <span className={styles.updateLabel}>
+                      {t('PC.Pages.AppDevToolCallProcess.typeLabel')}
+                    </span>
+                    <span className={styles.updateValue}>
+                      {t('PC.Pages.AppDevToolCallProcess.toolCallUpdateType')}
+                    </span>
                   </div>
                 )}
               </div>

@@ -1,5 +1,6 @@
 import pluginImage from '@/assets/images/plugin_image.png';
 import { PLUGIN_CODE_SEGMENTED_LIST } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { PluginCodeHeaderProps } from '@/types/interfaces/plugin';
@@ -82,21 +83,24 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
                 color="volcano"
                 style={{ marginLeft: '6px' }}
               >
-                有更新未发布
+                {dict('PC.Pages.SpacePluginCloudTool.unpublishedUpdate')}
               </Tag>
             )}
         </div>
         <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
           <span className={cx(styles.box)}>
-            {pluginInfo?.type === PluginTypeEnum.HTTP ? 'http' : '代码'}
+            {pluginInfo?.type === PluginTypeEnum.HTTP
+              ? 'http'
+              : dict('PC.Pages.SpacePluginCloudTool.code')}
           </span>
           <span className={cx(styles.box)}>
             {pluginInfo?.publishStatus === PublishStatusEnum.Published
-              ? '已发布'
-              : '未发布'}
+              ? dict('PC.Pages.SpacePluginCloudTool.published')
+              : dict('PC.Pages.SpacePluginCloudTool.unpublished')}
           </span>
           <span className={cx(styles['update-time'])}>
-            配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
+            {dict('PC.Pages.SpacePluginCloudTool.savedAt')}
+            {dayjs(pluginInfo?.modified).format('HH:mm')}
           </span>
         </div>
       </section>
@@ -111,7 +115,7 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
         onClick={onToggleHistory}
       />
       <Button className={cx(styles['try-btn'])} type="primary" onClick={onSave}>
-        保存
+        {dict('PC.Pages.SpacePluginCloudTool.save')}
       </Button>
       <Button
         className={cx(styles['try-btn'])}
@@ -119,10 +123,10 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
         icon={<CaretRightOutlined />}
         onClick={onTryRun}
       >
-        试运行
+        {dict('PC.Pages.SpacePluginCloudTool.tryRun')}
       </Button>
       <Button type="primary" onClick={onPublish} disabled={disabledBtn}>
-        发布
+        {dict('PC.Pages.SpacePluginCloudTool.publish')}
       </Button>
     </header>
   );

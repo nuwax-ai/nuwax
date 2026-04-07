@@ -1,7 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { AgentConfigInfo, SpaceLogInfo } from '@/types/interfaces/agent';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import type { MouseEventHandler } from 'react';
@@ -108,7 +108,8 @@ export interface LogHeaderProps {
 export interface LogDetailsProps {
   loading: boolean;
   requestId: string;
-  executeResult?: SpaceLogInfo;
+  /** 智能体日志详情接口返回的 executeResult，JSON 字符串（见 logInfo.executeResult） */
+  executeResult?: string;
   visible?: boolean;
   onClose: () => void;
 }

@@ -1,5 +1,6 @@
 import { SaveStatusEnum } from '@/models/workflowV3';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
@@ -65,19 +66,19 @@ const Header: React.FC<HeaderProp> = ({
   const undoShortcut = isMac ? 'Cmd+Z' : 'Ctrl+Z';
   const redoShortcut = isMac ? 'Cmd+Shift+Z' : 'Ctrl+Shift+Z';
 
-  // 延迟显示"保存中"状态，避免快速闪烁
-  // 只有保存时间超过 300ms 才显示"保存中"
+  // Delay the "saving" state to avoid quick flicker.
+  // Show saving state only when save duration exceeds 300ms.
   const [showSaving, setShowSaving] = React.useState(false);
   const savingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     if (saveStatus === SaveStatusEnum.Saving) {
-      // 延迟 300ms 后才显示"保存中"
+      // Show "saving" only after 300ms delay.
       savingTimerRef.current = setTimeout(() => {
         setShowSaving(true);
       }, 300);
     } else {
-      // 保存完成，立即清除定时器并隐藏
+      // Save completed: clear timer and hide immediately.
       if (savingTimerRef.current) {
         clearTimeout(savingTimerRef.current);
         savingTimerRef.current = null;
@@ -92,7 +93,7 @@ const Header: React.FC<HeaderProp> = ({
     };
   }, [saveStatus]);
 
-  // 发布按钮是否禁用
+  // Whether publish button should be disabled.
   const disabledBtn = useMemo(() => {
     if (info) {
       return !info?.permissions?.includes(PermissionsEnum.Publish);
@@ -101,46 +102,54 @@ const Header: React.FC<HeaderProp> = ({
     }
   }, [info]);
 
-  // 渲染保存状态标签
+  // Render save status tag.
   const renderSaveStatus = () => {
     switch (saveStatus) {
       case SaveStatusEnum.Saving:
-        // 只有超过 300ms 才显示"保存中"
+        // Show "saving" only when duration exceeds 300ms.
         if (!showSaving) {
-          // 保存中但未超过 300ms，显示上一次的状态（已保存）
+          // Within 300ms, keep showing the previous "saved" state.
           return (
             <Tag color="default" bordered={false}>
-              已自动保存{' '}
-              {getTime(
-                lastSaveTime?.toString() ?? modified ?? new Date().toString(),
+              {t(
+                'PC.Pages.AntvX6Header.autoSavedAt',
+                getTime(
+                  lastSaveTime?.toString() ?? modified ?? new Date().toString(),
+                ),
               )}
             </Tag>
           );
         }
         return (
           <Tag color="processing" bordered={false} icon={<LoadingOutlined />}>
-            保存中...
+            {t('PC.Pages.AntvX6Header.saving')}
           </Tag>
         );
       case SaveStatusEnum.Saved:
         return (
           <Tag color="default" bordered={false}>
-            已自动保存{' '}
-            {getTime(
-              lastSaveTime?.toString() ?? modified ?? new Date().toString(),
+            {t(
+              'PC.Pages.AntvX6Header.autoSavedAt',
+              getTime(
+                lastSaveTime?.toString() ?? modified ?? new Date().toString(),
+              ),
             )}
           </Tag>
         );
       case SaveStatusEnum.Failed:
         return (
           <div className="flex items-center gap-8" style={{ marginRight: 8 }}>
-            <Tooltip title={saveError || '保存失败，请检查网络连接'}>
+            <Tooltip
+              title={
+                saveError || t('PC.Pages.AntvX6Header.saveFailedCheckNetwork')
+              }
+            >
               <Tag
                 color="error"
                 bordered={false}
                 icon={<ExclamationCircleFilled />}
               >
-                保存失败
+                {t('PC.Pages.AntvX6Header.saveFailed')}
               </Tag>
             </Tooltip>
             {onManualSave && (
@@ -149,7 +158,7 @@ const Header: React.FC<HeaderProp> = ({
                 onClick={() => onManualSave?.()}
                 size="small"
               >
-                点击重试保存
+                {t('PC.Pages.AntvX6Header.retrySave')}
               </Button>
             )}
           </div>
@@ -158,7 +167,7 @@ const Header: React.FC<HeaderProp> = ({
         return (
           <div className="flex items-center gap-8" style={{ marginRight: 8 }}>
             <Tag color="warning" bordered={false}>
-              有未保存的更改
+              {t('PC.Pages.AntvX6Header.unsavedChanges')}
             </Tag>
             {onManualSave && (
               <Button
@@ -166,7 +175,7 @@ const Header: React.FC<HeaderProp> = ({
                 onClick={() => onManualSave?.()}
                 size="small"
               >
-                点击立即保存
+                {t('PC.Pages.AntvX6Header.saveNow')}
               </Button>
             )}
           </div>
@@ -174,7 +183,10 @@ const Header: React.FC<HeaderProp> = ({
       default:
         return (
           <Tag color="default" bordered={false}>
-            已自动保存 {getTime(modified ?? new Date().toString())}
+            {t(
+              'PC.Pages.AntvX6Header.autoSavedAt',
+              getTime(modified ?? new Date().toString()),
+            )}
           </Tag>
         );
     }
@@ -208,7 +220,7 @@ const Header: React.FC<HeaderProp> = ({
               />
             </Popover>
             {publishStatus === 'Published' && (
-              <Popover content={'已发布'}>
+              <Popover content={t('PC.Pages.AntvX6Header.published')}>
                 <CheckCircleFilled
                   className="mr-6"
                   style={{ color: '#00B23C', fontSize: '16px' }}
@@ -225,19 +237,21 @@ const Header: React.FC<HeaderProp> = ({
 
       <div className="header-tag-style flex items-center gap-8">
         {/* <Tag color="#C9CDD4">
-              {publishStatus === 'Published' ? '已发布' : '未发布'}
+              {publishStatus === 'Published'
+                ? t('PC.Pages.AntvX6Header.published')
+                : t('PC.Pages.AntvX6Header.unpublished')}
             </Tag> */}
         {renderSaveStatus()}
 
         {publishDate === null && (
           <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
-            未发布
+            {t('PC.Pages.AntvX6Header.unpublished')}
           </Tag>
         )}
 
         {publishDate !== null && publishDate !== modified && (
           <Tag bordered={false} color="volcano">
-            有更新未发布
+            {t('PC.Pages.AntvX6Header.updatedNotPublished')}
           </Tag>
         )}
       </div>
@@ -246,7 +260,9 @@ const Header: React.FC<HeaderProp> = ({
         className="flex items-center gap-8 mr-12"
         style={{ display: 'flex', gap: '16px' }}
       >
-        <Tooltip title={`撤销 (${undoShortcut})`}>
+        <Tooltip
+          title={t('PC.Pages.AntvX6Header.undoWithShortcut', undoShortcut)}
+        >
           <UndoOutlined
             style={{
               fontSize: '18px',
@@ -256,7 +272,9 @@ const Header: React.FC<HeaderProp> = ({
             onClick={canUndo ? onUndo : undefined}
           />
         </Tooltip>
-        <Tooltip title={`重做 (${redoShortcut})`}>
+        <Tooltip
+          title={t('PC.Pages.AntvX6Header.redoWithShortcut', redoShortcut)}
+        >
           <RedoOutlined
             style={{
               fontSize: '18px',
@@ -278,7 +296,9 @@ const Header: React.FC<HeaderProp> = ({
         type={'primary'}
         loading={isValidLoading}
       >
-        {isValidLoading ? '校验中' : '发布'}
+        {isValidLoading
+          ? t('PC.Pages.AntvX6Header.validating')
+          : t('PC.Pages.AntvX6Header.publish')}
       </Button>
     </div>
   );

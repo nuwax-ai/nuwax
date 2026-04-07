@@ -1,4 +1,5 @@
 import pluginImage from '@/assets/images/plugin_image.png';
+import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { PluginHeaderProps } from '@/types/interfaces/plugin';
@@ -78,19 +79,24 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
           <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
             <span className={cx(styles.box)}>
-              {pluginInfo?.type === PluginTypeEnum.HTTP ? 'http' : '代码'}
+              {pluginInfo?.type === PluginTypeEnum.HTTP
+                ? 'http'
+                : dict('PC.Pages.SpacePluginTool.PluginHeader.code')}
             </span>
             <span className={cx(styles.box)}>
               {pluginInfo?.publishStatus === PublishStatusEnum.Published
-                ? '已发布'
-                : '未发布'}
+                ? dict('PC.Pages.SpacePluginTool.PluginHeader.published')
+                : dict('PC.Pages.SpacePluginTool.PluginHeader.unpublished')}
             </span>
           </div>
         </div>
       </section>
       <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
         <span className={cx(styles['update-time'])}>
-          配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
+          {dict(
+            'PC.Pages.SpacePluginTool.PluginHeader.configSavedAt',
+            dayjs(pluginInfo?.modified).format('HH:mm'),
+          )}
         </span>
 
         <span>
@@ -98,7 +104,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           {pluginInfo?.publishDate !== null &&
             dayjs(pluginInfo?.publishDate).isBefore(pluginInfo?.modified) && (
               <Tag bordered={false} color="volcano" style={{ marginRight: 0 }}>
-                有更新未发布
+                {dict(
+                  'PC.Pages.SpacePluginTool.PluginHeader.updateUnpublished',
+                )}
               </Tag>
             )}
         </span>
@@ -108,7 +116,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         onClick={onToggleHistory}
       />
       <Button className={cx(styles['try-btn'])} type="primary" onClick={onSave}>
-        保存
+        {dict('PC.Common.Global.save')}
       </Button>
       <Button
         className={cx(styles['try-btn'])}
@@ -116,10 +124,10 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         icon={<CaretRightOutlined />}
         onClick={onTryRun}
       >
-        试运行
+        {dict('PC.Pages.SpacePluginTool.PluginHeader.tryRun')}
       </Button>
       <Button type="primary" onClick={onPublish} disabled={disabledBtn}>
-        发布
+        {dict('PC.Pages.SpacePluginTool.PluginHeader.publish')}
       </Button>
     </header>
   );

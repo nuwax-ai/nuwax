@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import LabelStar from '@/components/LabelStar';
+import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import {
   ExceptionHandingProps,
@@ -59,21 +60,30 @@ const ExceptionHanding: React.FC<ExceptionHandingProps> = ({
     <div className={cx('flex', 'flex-col', 'h-full', styles.container)}>
       <div className={cx('flex-1', styles.content)}>
         <header className={cx('flex', 'items-center', styles.header)}>
-          <h3 className={cx('flex-1')}>异常时中断流程</h3>
+          <h3 className={cx('flex-1')}>
+            {t('PC.Pages.AgentArrangeExceptionHandling.title')}
+          </h3>
           <Switch
             checked={selected === DefaultSelectedEnum.Yes}
             onChange={onChange}
           />
         </header>
-        <p className={cx(styles.desc)}>异常时输出给大模型的默认信息</p>
+        <p className={cx(styles.desc)}>
+          {t('PC.Pages.AgentArrangeExceptionHandling.description')}
+        </p>
         <ConditionRender condition={selected}>
-          <LabelStar className={cx(styles['reply-content'])} label="默认信息" />
+          <LabelStar
+            className={cx(styles['reply-content'])}
+            label={t('PC.Pages.AgentArrangeExceptionHandling.defaultInfo')}
+          />
           <Input.TextArea
             className={cx('dispose-textarea-count')}
             classNames={{
               textarea: cx(styles.textarea),
             }}
-            placeholder="请输入异常时输出给大模型的默认信息"
+            placeholder={t(
+              'PC.Pages.AgentArrangeExceptionHandling.defaultInfoPlaceholder',
+            )}
             autoSize={{ minRows: 5, maxRows: 6 }}
             maxLength={1000}
             showCount
@@ -90,7 +100,7 @@ const ExceptionHanding: React.FC<ExceptionHandingProps> = ({
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >
-          保存
+          {t('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

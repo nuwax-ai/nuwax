@@ -1,5 +1,6 @@
 import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import { useTableAutoHeight } from '@/hooks/useTableAutoHeight';
+import { dict } from '@/services/i18nRuntime';
 import type {
   ActionType,
   FormInstance,
@@ -84,7 +85,7 @@ function XProTable<
       );
       if (!hasIndex) {
         cols.unshift({
-          title: '序号',
+          title: dict('PC.Components.XProTable.index'),
           dataIndex: 'index',
           valueType: 'index',
           width: 48,
@@ -124,14 +125,14 @@ function XProTable<
             }
           }}
         >
-          重置
+          {dict('PC.Components.XProTable.reset')}
         </Button>,
         <Button
           key="x-query"
           type="primary"
           onClick={() => formRef.current?.submit()}
         >
-          查询
+          {dict('PC.Components.XProTable.query')}
         </Button>,
       ];
     };

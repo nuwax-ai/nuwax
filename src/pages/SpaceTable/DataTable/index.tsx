@@ -1,5 +1,7 @@
+import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import { TableFieldTypeEnum } from '@/types/enums/dataTable';
 import { DataTableProp, TableFieldInfo } from '@/types/interfaces/dataTable';
+import { getJsLocale } from '@/utils/i18nAdapters';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -64,10 +66,11 @@ const DataTable: React.FC<DataTableProp> = ({
         pagination={{
           ...pagination,
           onChange: onPageChange,
-          showTotal: (total) => `共 ${total} 条`,
+          showTotal: (total) =>
+            dict('PC.Pages.SpaceTable.DataTable.totalCount', String(total)),
           showSizeChanger: true,
           locale: {
-            items_per_page: '条 / 页',
+            items_per_page: dict('PC.Pages.SpaceTable.DataTable.itemsPerPage'),
           },
         }}
       >
@@ -99,10 +102,13 @@ const DataTable: React.FC<DataTableProp> = ({
                   return <Checkbox checked={value} disabled />;
                 case TableFieldTypeEnum.Date:
                   return value
-                    ? new Date(value).toLocaleString('zh-CN', {
-                        hour12: false,
-                      })
-                    : '--'; // 转换为 '2024-08-07 16:24:27' 格式
+                    ? new Date(value).toLocaleString(
+                        getJsLocale(getCurrentLang()),
+                        {
+                          hour12: false,
+                        },
+                      )
+                    : '--';
                 default:
                   return value || '--'; // 其他类型的单元格直接返回原始值，不做任何处理
               }
@@ -112,7 +118,7 @@ const DataTable: React.FC<DataTableProp> = ({
 
         {/* 操作列 */}
         <Table.Column
-          title="操作"
+          title={dict('PC.Common.Global.operation')}
           dataIndex="action"
           width={100}
           className={'table-action-column-fixed'}
@@ -123,13 +129,13 @@ const DataTable: React.FC<DataTableProp> = ({
               <Button
                 icon={<EditOutlined />}
                 onClick={() => onEdit(record)}
-                title="编辑"
+                title={dict('PC.Common.Global.edit')}
                 type="text"
               />
               <Button
                 icon={<DeleteOutlined />}
                 onClick={() => onDel(record)}
-                title="删除"
+                title={dict('PC.Common.Global.delete')}
                 type="text"
               />
             </Space>

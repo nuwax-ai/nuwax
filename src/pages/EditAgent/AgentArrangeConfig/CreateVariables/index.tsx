@@ -1,6 +1,6 @@
 import LabelStar from '@/components/LabelStar';
-import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import { InputTypeEnum, UpdateVariablesTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
@@ -125,6 +125,29 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   const updateVariablesTypeRef = useRef<UpdateVariablesTypeEnum>(
     UpdateVariablesTypeEnum.Delete,
   );
+  const inputTypeLabelMap = useMemo<Record<InputTypeEnum, string>>(
+    () => ({
+      [InputTypeEnum.Text]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeText',
+      ),
+      [InputTypeEnum.Paragraph]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeParagraph',
+      ),
+      [InputTypeEnum.Number]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeNumber',
+      ),
+      [InputTypeEnum.Select]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeSelect',
+      ),
+      [InputTypeEnum.MultipleSelect]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeMultipleSelect',
+      ),
+      [InputTypeEnum.AutoRecognition]: t(
+        'PC.Pages.AgentArrangeCreateVariableModal.inputTypeAutoRecognition',
+      ),
+    }),
+    [],
+  );
 
   useEffect(() => {
     const variables: BindConfigWithSub[] =
@@ -162,9 +185,13 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       debounceInterval: 300,
       onSuccess: () => {
         if (updateVariablesTypeRef.current === UpdateVariablesTypeEnum.Delete) {
-          message.success('删除成功');
+          message.success(
+            t('PC.Pages.AgentArrangeCreateVariables.deleteSuccess'),
+          );
         } else {
-          message.success('更新成功');
+          message.success(
+            t('PC.Pages.AgentArrangeCreateVariables.updateSuccess'),
+          );
         }
         isAddedNewVariable.current = true;
         setInputData(inputDataRef.current);
@@ -208,7 +235,9 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
         ),
     },
     {
-      title: <LabelStar label="名称" />,
+      title: (
+        <LabelStar label={t('PC.Pages.AgentArrangeCreateVariables.name')} />
+      ),
       dataIndex: 'name',
       key: 'name',
       width: 180,
@@ -220,7 +249,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       ),
     },
     {
-      title: '描述',
+      title: t('PC.Pages.AgentArrangeCreateVariables.description'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
@@ -232,31 +261,32 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       ),
     },
     {
-      title: '类型',
+      title: t('PC.Pages.AgentArrangeCreateVariables.type'),
       dataIndex: 'systemVariable',
       key: 'systemVariable',
       width: 100,
       ellipsis: true,
       render: (value: boolean) => (
         <span className={cx('flex', 'items-center', 'h-full')}>
-          {value ? '系统变量' : '自定义变量'}
+          {value
+            ? t('PC.Pages.AgentArrangeCreateVariables.systemVariable')
+            : t('PC.Pages.AgentArrangeCreateVariables.customVariable')}
         </span>
       ),
     },
     {
-      title: '输入方式',
+      title: t('PC.Pages.AgentArrangeCreateVariables.inputType'),
       dataIndex: 'inputType',
       key: 'inputType',
       width: 100,
       render: (value: InputTypeEnum) => (
         <span className={cx('flex', 'items-center', 'h-full')}>
-          {AGENT_VARIABLES_INPUT_OPTIONS.find((item) => item.value === value)
-            ?.label || '--'}
+          {inputTypeLabelMap[value] || '--'}
         </span>
       ),
     },
     {
-      title: '是否必须',
+      title: t('PC.Pages.AgentArrangeCreateVariables.required'),
       dataIndex: 'require',
       key: 'require',
       width: 100,
@@ -265,7 +295,9 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
         <span
           className={cx('flex', 'items-center', 'content-center', 'h-full')}
         >
-          {value ? '是' : '否'}
+          {value
+            ? t('PC.Pages.AgentArrangeCreateVariables.yes')
+            : t('PC.Pages.AgentArrangeCreateVariables.no')}
         </span>
       ),
     },
@@ -374,7 +406,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   return (
     <Modal
       width={870}
-      title="变量"
+      title={t('PC.Pages.AgentArrangeCreateVariables.title')}
       open={open}
       footer={null}
       onCancel={handleCancel}
@@ -402,7 +434,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
             }}
             footer={() => (
               <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
-                新增
+                {t('PC.Pages.AgentArrangeCreateVariables.add')}
               </Button>
             )}
           />

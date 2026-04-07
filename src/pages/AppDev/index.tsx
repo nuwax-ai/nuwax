@@ -22,9 +22,11 @@ import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
   bindDataSource,
   buildProject,
+  exportProject,
   stopAgentService,
   uploadAndStartProject,
 } from '@/services/appDev';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -72,7 +74,6 @@ import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 
 import { checkFileSizeExceedLimit } from '@/utils';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
@@ -400,7 +401,7 @@ const AppDev: React.FC = () => {
   const handleAddLogToChat = useCallback(
     (content: string, isAuto?: boolean, callback?: () => void) => {
       if (!content.trim()) {
-        message.warning('输入内容为空');
+        message.warning(t('PC.Pages.AppDevIndex.inputContentEmpty'));
         return;
       }
 
@@ -410,7 +411,9 @@ const AppDev: React.FC = () => {
       if (isAuto && !chat.isChatLoading) {
         // ⭐ 加锁：防止重复调用自动发送逻辑
         if (autoSendLockRef.current) {
-          console.warn('[AppDev] ⚠️ 自动发送已在处理中，忽略重复调用');
+          console.warn(
+            '[AppDev] auto-send is already processing, skip duplicate trigger',
+          );
           return;
         }
 
@@ -435,13 +438,15 @@ const AppDev: React.FC = () => {
                 currentRequestIdRef.current,
               );
               console.log(
-                `[AppDev] ✅ 自动发送消息事件已触发，requestId: ${currentRequestIdRef.current}`,
+                `[AppDev] Auto-send message event triggered, requestId: ${currentRequestIdRef.current}`,
               );
 
               // 发送成功后，生成新的 requestId 供下次使用（如果下次还有自动处理）
               currentRequestIdRef.current = generateRequestId();
             } else {
-              console.warn('[AppDev] ⚠️ 聊天正在加载中，取消自动发送');
+              console.warn(
+                '[AppDev] chat is loading, canceling auto-send trigger',
+              );
               // 如果取消发送，重置 requestId
               currentRequestIdRef.current = '';
             }
@@ -456,7 +461,7 @@ const AppDev: React.FC = () => {
         return;
       }
       // 显示成功提示
-      message.success('日志已添加,等待发送');
+      message.success(t('PC.Pages.AppDevIndex.logAddedWaitingSend'));
     },
     [chat],
   );
@@ -623,7 +628,7 @@ const AppDev: React.FC = () => {
       try {
         previewRef.current.captureIframeContent();
       } catch (error) {
-        console.error('[AppDev] 截图上传过程中发生错误:', error);
+        console.error('[AppDev] error while capturing iframe content:', error);
       }
     }
   }, [previewRef.current]);
@@ -633,7 +638,7 @@ const AppDev: React.FC = () => {
    */
   const handlePublishComponent = useCallback(async () => {
     if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法部署');
+      message.error(t('PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy'));
       return;
     }
 
@@ -652,10 +657,10 @@ const AppDev: React.FC = () => {
         const { prodServerUrl } = result.data;
         // 显示部署结果 - 垂直居中显示
         Modal.success({
-          title: '成功发布成组件',
+          title: t('PC.Pages.AppDevIndex.publishComponentSuccessTitle'),
           content: (
             <div>
-              <p>项目已成功构建并发布！</p>
+              <p>{t('PC.Pages.AppDevIndex.publishComponentSuccessDesc')}</p>
               {prodServerUrl && (
                 <p>
                   <a
@@ -663,7 +668,7 @@ const AppDev: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    点击预览
+                    {t('PC.Pages.AppDevIndex.clickToPreview')}
                   </a>
                 </p>
               )}
@@ -673,11 +678,13 @@ const AppDev: React.FC = () => {
         });
         projectInfo.refreshProjectInfo();
       } else {
-        message.error(result.message || '发布失败');
+        message.error(
+          result.message || t('PC.Pages.AppDevIndex.publishFailed'),
+        );
       }
     } catch (error) {
       // request请求中设置了skipErrorHandler: true, 跳过了错误处理
-      message.error('发布失败,先尝试解决错误后重试');
+      message.error(t('PC.Pages.AppDevIndex.publishFailedRetryAfterFix'));
     } finally {
       setIsDeploying(false);
     }
@@ -697,7 +704,7 @@ const AppDev: React.FC = () => {
    */
   const handleBeforePublish = async () => {
     if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法部署');
+      message.error(t('PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy'));
       return;
     }
     // 先关闭弹窗，再显示 loading 效果（与发布成组件一致）
@@ -728,30 +735,12 @@ const AppDev: React.FC = () => {
   const handleExportProject = useCallback(async () => {
     // 检查项目ID是否有效
     if (!hasValidProjectId || !projectId) {
-      message.warning('项目ID不存在或无效，无法导出');
+      message.warning(t('PC.Pages.AppDevIndex.invalidProjectIdCannotExport'));
       return;
     }
 
-    try {
-      // 导出项目链接地址
-      const linkUrl =
-        process.env.BASE_URL +
-        `/api/custom-page/export-project?projectId=${encodeURIComponent(
-          projectId,
-        )}`;
-
-      // 通过浏览器下载文件
-      exportFileViaBrowserDownload(linkUrl);
-      message.success('项目导出成功！');
-    } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
-
-      message.error(`导出失败: ${errorMessage}`);
-    }
+    // 导出整个项目压缩包
+    exportProject(projectId);
   }, [hasValidProjectId, projectId]);
 
   /**
@@ -776,7 +765,9 @@ const AppDev: React.FC = () => {
     async (item: AgentAddComponentBaseInfo) => {
       // 检查项目ID是否有效
       if (!hasValidProjectId || !projectId) {
-        message.error('项目ID不存在或无效，无法绑定数据源');
+        message.error(
+          t('PC.Pages.AppDevIndex.invalidProjectIdCannotBindDataSource'),
+        );
         return;
       }
 
@@ -785,7 +776,7 @@ const AppDev: React.FC = () => {
         item.targetType !== AgentComponentTypeEnum.Plugin &&
         item.targetType !== AgentComponentTypeEnum.Workflow
       ) {
-        message.warning('仅支持绑定插件和工作流类型的数据源');
+        message.warning(t('PC.Pages.AppDevIndex.onlyPluginWorkflowSupported'));
         return;
       }
 
@@ -817,7 +808,7 @@ const AppDev: React.FC = () => {
 
         // 检查绑定结果
         if (result?.code === SUCCESS_CODE) {
-          message.success('数据源绑定成功');
+          message.success(t('PC.Pages.AppDevIndex.bindDataSourceSuccess'));
 
           // 更新处于loading状态的组件列表
           setAddComponents((list) => {
@@ -836,12 +827,15 @@ const AppDev: React.FC = () => {
           setAddComponents((list) =>
             list.filter((info) => info.targetId !== item.targetId),
           );
-          const errorMessage = result?.message || '绑定数据源失败';
+          const errorMessage =
+            result?.message || t('PC.Pages.AppDevIndex.bindDataSourceFailed');
           throw new Error(errorMessage);
         }
       } catch (error: any) {
         const errorMessage =
-          error?.message || error?.toString() || '绑定数据源时发生未知错误';
+          error?.message ||
+          error?.toString() ||
+          t('PC.Pages.AppDevIndex.bindDataSourceUnknownError');
         message.error(errorMessage);
       }
     },
@@ -886,7 +880,7 @@ const AppDev: React.FC = () => {
    */
   const handleUploadProject = useCallback(async () => {
     if (!selectedFile) {
-      message.error('请先选择文件');
+      message.error(t('PC.Pages.AppDevIndex.selectFileFirst'));
       return;
     }
 
@@ -896,7 +890,9 @@ const AppDev: React.FC = () => {
     ]);
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
-      message.error(`上传文件总大小不能超过${maxFileSize}MB`);
+      message.error(
+        t('PC.Pages.AppDevIndex.uploadSizeLimitExceeded', String(maxFileSize)),
+      );
       return;
     }
 
@@ -906,12 +902,13 @@ const AppDev: React.FC = () => {
       const result = await uploadAndStartProject({
         file: selectedFile,
         projectId: projectId || undefined,
-        projectName: workspace.projectName || '未命名项目',
+        projectName:
+          workspace.projectName || t('PC.Pages.AppDevIndex.unnamedProject'),
         spaceId: spaceId ? Number(spaceId) : undefined,
       });
 
       if (result?.success && result?.data) {
-        message.success('项目导入成功');
+        message.success(t('PC.Pages.AppDevIndex.importProjectSuccess'));
         setIsUploadModalVisible(false);
         setSelectedFile(null);
 
@@ -934,11 +931,11 @@ const AppDev: React.FC = () => {
           }
         }, 500);
       } else {
-        // message.warning('项目上传成功，但返回数据格式异常');
+        // message.warning('Upload succeeded but response data format is invalid.');
         setIsProjectUploading(false);
       }
     } catch (error) {
-      // message.error(error instanceof Error ? error.message : '上传项目失败');
+      // message.error(error instanceof Error ? error.message : 'Project upload failed.');
       setIsProjectUploading(false);
     } finally {
       // setUploadLoading(false); // 移除未使用变量
@@ -953,7 +950,7 @@ const AppDev: React.FC = () => {
     const isZip = file.name?.toLowerCase().endsWith('.zip');
 
     if (!isZip) {
-      message.error('仅支持 .zip 压缩文件格式');
+      message.error(t('PC.Pages.AppDevIndex.zipOnly'));
       return false;
     }
 
@@ -1049,7 +1046,12 @@ const AppDev: React.FC = () => {
         ]);
         // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
-          message.error(`上传文件总大小不能超过${maxFileSize}MB`);
+          message.error(
+            t(
+              'PC.Pages.AppDevIndex.uploadSizeLimitExceeded',
+              String(maxFileSize),
+            ),
+          );
           return;
         }
 
@@ -1070,7 +1072,7 @@ const AppDev: React.FC = () => {
             projectInfo.refreshProjectInfo();
           }
         } catch (error) {
-          console.error('上传失败', error);
+          console.error('[AppDev] right-click upload failed', error);
         } finally {
           // 清理加载状态和DOM
           setSingleFileUploadLoading(false);
@@ -1162,7 +1164,7 @@ const AppDev: React.FC = () => {
         );
       } else {
         // 只有白屏没有错误，可以记录日志但不触发自动处理
-        console.warn('[AppDev] 检测到白屏，但未捕获到错误信息');
+        console.warn('[AppDev] white screen detected without captured error');
       }
     },
     [autoErrorHandling],
@@ -1179,7 +1181,7 @@ const AppDev: React.FC = () => {
       }
 
       if (!targetPath.trim()) {
-        message.error('目标路径不能为空');
+        message.error(t('PC.Pages.AppDevIndex.targetPathRequired'));
         return false;
       }
 
@@ -1195,20 +1197,25 @@ const AppDev: React.FC = () => {
           fullPath,
         );
         if (success) {
-          message.success(`文件上传成功: ${fileName}`);
+          message.success(
+            t('PC.Pages.AppDevIndex.fileUploadSuccess', fileName),
+          );
           handleRestartDevServer();
           // 刷新项目详情(刷新版本列表)
           projectInfo.refreshProjectInfo();
           return true;
         } else {
-          message.error('文件上传失败');
+          message.error(t('PC.Pages.AppDevIndex.fileUploadFailed'));
           return false;
         }
       } catch (error) {
         message.error(
-          `文件上传失败: ${
-            error instanceof Error ? error.message : '未知错误'
-          }`,
+          t(
+            'PC.Pages.AppDevIndex.fileUploadFailedWithError',
+            error instanceof Error
+              ? error.message
+              : t('PC.Pages.AppDevIndex.unknownError'),
+          ),
         );
         return false;
       }
@@ -1227,10 +1234,16 @@ const AppDev: React.FC = () => {
       const success = await fileManagement.deleteFileItem(nodeToDelete.id);
 
       if (success) {
+        const deleteType =
+          nodeToDelete.type === 'folder'
+            ? t('PC.Pages.AppDevIndex.fileTypeFolder')
+            : t('PC.Pages.AppDevIndex.fileTypeFile');
         message.success(
-          `成功删除 ${nodeToDelete.type === 'folder' ? '文件夹' : '文件'}: ${
-            nodeToDelete.name
-          }`,
+          t(
+            'PC.Pages.AppDevIndex.deleteSuccessWithType',
+            deleteType,
+            nodeToDelete.name,
+          ),
         );
         // 删除文件时不自动切换tab
         restartDevServer({
@@ -1306,11 +1319,11 @@ const AppDev: React.FC = () => {
     return (
       <div className={styles.errorContainer}>
         <Alert
-          message="缺少项目ID参数"
+          message={t('PC.Pages.AppDevIndex.missingProjectIdMessage')}
           description={
             <div>
-              <p>请在 URL 中添加 projectId 参数，例如：</p>
-              <code>/space/你的空间ID/app-dev/你的项目ID</code>
+              <p>{t('PC.Pages.AppDevIndex.missingProjectIdDesc')}</p>
+              <code>{t('PC.Pages.AppDevIndex.missingProjectIdExample')}</code>
             </div>
           }
           type="warning"
@@ -1322,9 +1335,11 @@ const AppDev: React.FC = () => {
                 onClick={() => setIsUploadModalVisible(true)}
                 disabled={chat.isChatLoading} // 新增：聊天加载时禁用
               >
-                上传项目
+                {t('PC.Pages.AppDevIndex.uploadProject')}
               </Button>
-              <Button onClick={() => window.history.back()}>返回</Button>
+              <Button onClick={() => window.history.back()}>
+                {t('PC.Pages.AppDevIndex.back')}
+              </Button>
             </Space>
           }
         />
@@ -1356,8 +1371,10 @@ const AppDev: React.FC = () => {
         visible={
           isDeploying || (isFileOperating && shouldShowFileOperatingMask)
         }
-        tip={isDeploying ? '项目发布中…' : undefined}
-        subtitle={isDeploying ? '请稍候，发布完成后将自动关闭' : undefined}
+        tip={isDeploying ? t('PC.Pages.AppDevIndex.deployingTip') : undefined}
+        subtitle={
+          isDeploying ? t('PC.Pages.AppDevIndex.deployingSubtitle') : undefined
+        }
         icon={
           isDeploying ? (
             <svg
@@ -1463,7 +1480,7 @@ const AppDev: React.FC = () => {
                     options={[
                       {
                         label: (
-                          <Tooltip title="预览">
+                          <Tooltip title={t('PC.Pages.AppDevIndex.preview')}>
                             <SvgIcon
                               name="icons-common-preview"
                               style={{ fontSize: 18 }}
@@ -1474,7 +1491,7 @@ const AppDev: React.FC = () => {
                       },
                       {
                         label: (
-                          <Tooltip title="代码">
+                          <Tooltip title={t('PC.Pages.AppDevIndex.code')}>
                             <SvgIcon
                               name="icons-common-code"
                               style={{ fontSize: 18 }}
@@ -1735,7 +1752,7 @@ const AppDev: React.FC = () => {
 
         {/* 上传项目模态框 */}
         <Modal
-          title="导入项目"
+          title={t('PC.Pages.AppDevIndex.importProjectTitle')}
           open={isUploadModalVisible && !chat.isChatLoading}
           // ⚠️ 不用 onOk，按钮自身 onClick 处理
           onOk={undefined}
@@ -1752,7 +1769,7 @@ const AppDev: React.FC = () => {
               }}
               disabled={isFileOperating}
             >
-              取消
+              {t('PC.Common.Global.cancel')}
             </Button>,
             <Button
               key="confirm"
@@ -1770,7 +1787,7 @@ const AppDev: React.FC = () => {
                 }
               }}
             >
-              确认导入
+              {t('PC.Pages.AppDevIndex.confirmImport')}
             </Button>,
           ]}
           width={500}
@@ -1788,9 +1805,11 @@ const AppDev: React.FC = () => {
               <p className="ant-upload-drag-icon">
                 <UploadOutlined />
               </p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
+              <p className="ant-upload-text">
+                {t('PC.Pages.AppDevIndex.uploadDragText')}
+              </p>
               <p className="ant-upload-hint">
-                仅支持 .zip 压缩文件格式（将更新当前项目）
+                {t('PC.Pages.AppDevIndex.uploadZipHint')}
               </p>
             </Upload.Dragger>
             {selectedFile && (
@@ -1802,12 +1821,13 @@ const AppDev: React.FC = () => {
                   borderRadius: 6,
                 }}
               >
-                <Text strong>已选择文件：</Text>
+                <Text strong>{t('PC.Pages.AppDevIndex.selectedFile')}</Text>
                 <br />
                 <Text>{selectedFile.name}</Text>
                 <br />
                 <Text type="secondary">
-                  文件大小：{(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {t('PC.Pages.AppDevIndex.fileSize')}:
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </Text>
               </div>
             )}
@@ -1816,7 +1836,7 @@ const AppDev: React.FC = () => {
 
         {/* 单文件上传模态框 */}
         <Modal
-          title="上传单个文件"
+          title={t('PC.Pages.AppDevIndex.singleFileUploadTitle')}
           open={isSingleFileUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
           onCancel={handleCancelSingleFileUpload}
           footer={[
@@ -1825,7 +1845,7 @@ const AppDev: React.FC = () => {
               onClick={handleCancelSingleFileUpload}
               disabled={isFileOperating}
             >
-              取消
+              {t('PC.Common.Global.cancel')}
             </Button>,
             <Button
               key="submit"
@@ -1836,7 +1856,7 @@ const AppDev: React.FC = () => {
                 !uploadFile || !singleFilePath.trim() || isFileOperating
               }
             >
-              上传
+              {t('PC.Pages.AppDevIndex.upload')}
             </Button>,
           ]}
           width={500}
@@ -1846,22 +1866,25 @@ const AppDev: React.FC = () => {
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <Text>当前项目ID：{projectId || '未设置'}</Text>
+              <Text>
+                {t('PC.Pages.AppDevIndex.currentProjectId')}:
+                {projectId || t('PC.Pages.AppDevIndex.notSet')}
+              </Text>
             </div>
             <div>
-              <Text strong>文件路径：</Text>
+              <Text strong>{t('PC.Pages.AppDevIndex.filePath')}:</Text>
               <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
-                请输入文件路径（带文件名和后缀），例如：src/components/NewComponent.tsx
+                {t('PC.Pages.AppDevIndex.filePathTip')}
               </div>
               <Input
-                placeholder="如：src/components/NewComponent.tsx"
+                placeholder={t('PC.Pages.AppDevIndex.filePathPlaceholder')}
                 value={singleFilePath}
                 onChange={(e) => setSingleFilePath(e.target.value)}
                 style={{ marginTop: 8 }}
               />
             </div>
             <div>
-              <Text strong>选择文件：</Text>
+              <Text strong>{t('PC.Pages.AppDevIndex.selectFile')}:</Text>
               <Upload.Dragger
                 beforeUpload={(file) => {
                   handleSelectSingleFile(file);
@@ -1874,15 +1897,20 @@ const AppDev: React.FC = () => {
                 <p className="ant-upload-drag-icon">
                   <UploadOutlined />
                 </p>
-                <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
+                <p className="ant-upload-text">
+                  {t('PC.Pages.AppDevIndex.uploadDragText')}
+                </p>
                 <p className="ant-upload-hint">
-                  支持任意文件格式，文件将被添加到指定路径
+                  {t('PC.Pages.AppDevIndex.singleFileUploadHint')}
                 </p>
               </Upload.Dragger>
               {uploadFile && (
                 <div style={{ marginTop: 8 }}>
                   <Alert
-                    message={`已选择文件: ${uploadFile.name}`}
+                    message={t(
+                      'PC.Pages.AppDevIndex.selectedFileWithName',
+                      uploadFile.name,
+                    )}
                     type="success"
                     showIcon
                     action={
@@ -1891,7 +1919,7 @@ const AppDev: React.FC = () => {
                         size="small"
                         onClick={() => setUploadFile(null)}
                       >
-                        清除
+                        {t('PC.Pages.AppDevIndex.clear')}
                       </Button>
                     }
                   />
@@ -1903,13 +1931,13 @@ const AppDev: React.FC = () => {
 
         {/* 删除确认对话框 */}
         <Modal
-          title="确认删除"
+          title={t('PC.Pages.AppDevIndex.confirmDeleteTitle')}
           open={deleteModalVisible}
           // ⚠️ 不再用 onOk，按钮自身 onClick 处理
           onOk={undefined}
           onCancel={handleDeleteCancel}
-          okText="删除"
-          cancelText="取消"
+          okText={t('PC.Pages.AppDevIndex.delete')}
+          cancelText={t('PC.Common.Global.cancel')}
           okButtonProps={{
             danger: true,
             // 禁用逻辑统一用 isFileOperating，loading 由全局 mask 处理
@@ -1925,7 +1953,7 @@ const AppDev: React.FC = () => {
               onClick={handleDeleteCancel}
               disabled={isFileOperating}
             >
-              取消
+              {t('PC.Common.Global.cancel')}
             </Button>,
             <Button
               key="confirm"
@@ -1943,18 +1971,22 @@ const AppDev: React.FC = () => {
                 }
               }}
             >
-              删除
+              {t('PC.Pages.AppDevIndex.delete')}
             </Button>,
           ]}
         >
           <p>
-            确定要删除 {nodeToDelete?.type === 'folder' ? '文件夹' : '文件'}{' '}
-            &quot;
-            {nodeToDelete?.name}&quot; 吗？
+            {t(
+              'PC.Pages.AppDevIndex.confirmDeleteContent',
+              nodeToDelete?.type === 'folder'
+                ? t('PC.Pages.AppDevIndex.fileTypeFolder')
+                : t('PC.Pages.AppDevIndex.fileTypeFile'),
+              nodeToDelete?.name || '',
+            )}
           </p>
           {nodeToDelete?.type === 'folder' && (
             <p style={{ color: '#ff4d4f', fontSize: '12px' }}>
-              注意：删除文件夹将同时删除其内部的所有文件和子文件夹，此操作不可恢复！
+              {t('PC.Pages.AppDevIndex.deleteFolderWarning')}
             </p>
           )}
         </Modal>
@@ -1983,7 +2015,7 @@ const AppDev: React.FC = () => {
       />
       {/*发布智能体弹窗*/}
       <PublishComponentModal
-        title="应用"
+        title={t('PC.Pages.AppDevIndex.application')}
         targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
         open={openPublishComponentModal}
         onBeforePublishFn={handleBeforePublish}

@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import CopyIconButton from '@/components/base/CopyIconButton';
+import { dict } from '@/services/i18nRuntime';
 
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { Modal, Tooltip } from 'antd';
@@ -48,9 +49,13 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
             <CopyIconButton
               data={data}
               jsonSpace={2}
-              tooltipTitle="复制详情数据"
-              successMessage="详情数据已复制"
-              errorMessage="详情数据复制失败，请重试"
+              tooltipTitle={dict(
+                'PC.Components.MarkdownCustomProcess.copyDetailData',
+              )}
+              successMessage={dict('PC.Toast.Global.copiedSuccessfully')}
+              errorMessage={dict(
+                'PC.Components.MarkdownCustomProcess.copyFailedRetry',
+              )}
             />
           </div>
         </div>

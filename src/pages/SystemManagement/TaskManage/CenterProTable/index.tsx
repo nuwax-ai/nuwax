@@ -1,5 +1,6 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 
 import {
   apiSystemTaskCancel,
@@ -72,38 +73,42 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         case 'EXECUTING':
           return {
             color: 'processing' as const,
-            text: '执行中',
+            text: t('PC.Pages.SystemTaskCenterProTable.statusExecuting'),
             isEnded: false,
           };
         case 'CREATE':
           return {
             color: 'warning' as const,
-            text: '任务创建，等待执行',
+            text: t('PC.Pages.SystemTaskCenterProTable.statusCreatedWaiting'),
             isEnded: false,
           };
         case 'CONTINUE':
           return {
             color: 'success' as const,
-            text: '执行成功，待下次执行',
+            text: t(
+              'PC.Pages.SystemTaskCenterProTable.statusSuccessWaitingNext',
+            ),
             isEnded: false,
           };
         case 'FAIL':
           return {
             color: 'error' as const,
-            text: '执行失败，待下次执行',
+            text: t(
+              'PC.Pages.SystemTaskCenterProTable.statusFailedWaitingNext',
+            ),
             isEnded: false,
           };
         case 'CANCEL':
         case 'COMPLETE':
           return {
             color: 'default' as const,
-            text: '已结束，不再执行',
+            text: t('PC.Pages.SystemTaskCenterProTable.statusEndedNoMore'),
             isEnded: true,
           };
         case 'OVERFLOW_MAX_EXEC_TIMES':
           return {
             color: 'default' as const,
-            text: '已结束，不再执行',
+            text: t('PC.Pages.SystemTaskCenterProTable.statusEndedNoMore'),
             isEnded: false,
           };
         default:
@@ -174,7 +179,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         }
         return { data: [], total: 0, success: false };
       } catch (e) {
-        console.error('查询任务列表失败', e);
+        console.error('Failed to query task list', e);
         return { data: [], total: 0, success: false };
       }
     }, []);
@@ -186,7 +191,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       async (id: number) => {
         const resp = await apiSystemTaskExecute(id);
         if (resp?.code === SUCCESS_CODE) {
-          message.success('执行任务成功');
+          message.success(
+            t('PC.Pages.SystemTaskCenterProTable.executeTaskSuccess'),
+          );
           refreshList();
         }
       },
@@ -200,7 +207,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       async (id: number) => {
         const resp = await apiSystemTaskEnable(id);
         if (resp?.code === SUCCESS_CODE) {
-          message.success('启用任务成功');
+          message.success(
+            t('PC.Pages.SystemTaskCenterProTable.enableTaskSuccess'),
+          );
           refreshList();
         }
       },
@@ -214,7 +223,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       async (id: number) => {
         const resp = await apiSystemTaskCancel(id);
         if (resp?.code === SUCCESS_CODE) {
-          message.success('停用任务成功');
+          message.success(
+            t('PC.Pages.SystemTaskCenterProTable.disableTaskSuccess'),
+          );
           refreshList();
         }
       },
@@ -228,7 +239,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       async (id: number) => {
         const resp = await apiSystemTaskDelete(id);
         if (resp?.code === SUCCESS_CODE) {
-          message.success('删除任务成功');
+          message.success(
+            t('PC.Pages.SystemTaskCenterProTable.deleteTaskSuccess'),
+          );
           refreshList();
         }
       },
@@ -238,42 +251,46 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const columns: ProColumns<TaskInfo>[] = useMemo(
       () => [
         {
-          title: '任务类型',
+          title: t('PC.Pages.SystemTaskCenterProTable.taskType'),
           dataIndex: 'targetType',
           width: 110,
           hideInSearch: true,
           valueType: 'select',
           valueEnum: {
-            [AgentComponentTypeEnum.Agent]: { text: '智能体' },
-            [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
+            [AgentComponentTypeEnum.Agent]: {
+              text: t('PC.Pages.SystemTaskCenterProTable.agent'),
+            },
+            [AgentComponentTypeEnum.Workflow]: {
+              text: t('PC.Pages.SystemTaskCenterProTable.workflow'),
+            },
           },
           fieldProps: {
-            placeholder: '请选择任务类型',
+            placeholder: t('PC.Pages.SystemTaskCenterProTable.selectTaskType'),
             allowClear: true,
           },
           render: (_: any, record: TaskInfo) => {
             const type = record.targetType;
             const text =
               type === AgentComponentTypeEnum.Agent
-                ? '智能体'
+                ? t('PC.Pages.SystemTaskCenterProTable.agent')
                 : type === AgentComponentTypeEnum.Workflow
-                ? '工作流'
+                ? t('PC.Pages.SystemTaskCenterProTable.workflow')
                 : type || '-';
             return text;
           },
         },
         {
-          title: '任务名称',
+          title: t('PC.Pages.SystemTaskCenterProTable.taskName'),
           dataIndex: 'taskName',
           width: 200,
           ellipsis: true,
           fieldProps: {
-            placeholder: '请输入任务名称',
+            placeholder: t('PC.Pages.SystemTaskCenterProTable.enterTaskName'),
             allowClear: true,
           },
         },
         {
-          title: '任务对象',
+          title: t('PC.Pages.SystemTaskCenterProTable.taskTarget'),
           dataIndex: 'targetName',
           hideInSearch: true,
           ellipsis: true,
@@ -288,7 +305,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           },
         },
         {
-          title: '任务状态',
+          title: t('PC.Pages.SystemTaskCenterProTable.taskStatus'),
           dataIndex: 'status',
           width: 200,
           hideInSearch: true,
@@ -298,44 +315,44 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           },
         },
         {
-          title: '执行次数',
+          title: t('PC.Pages.SystemTaskCenterProTable.executionTimes'),
           dataIndex: 'execTimes',
           width: 90,
           hideInSearch: true,
         },
         {
-          title: '最近执行时间',
+          title: t('PC.Pages.SystemTaskCenterProTable.latestExecutionTime'),
           dataIndex: 'latestExecTime',
           width: 170,
           hideInSearch: true,
           valueType: 'dateTime',
         },
         {
-          title: '下次执行时间',
+          title: t('PC.Pages.SystemTaskCenterProTable.nextExecutionTime'),
           dataIndex: 'lockTime',
           width: 170,
           hideInSearch: true,
           valueType: 'dateTime',
         },
         {
-          title: '创建人',
+          title: t('PC.Pages.SystemTaskCenterProTable.creator'),
           dataIndex: ['creator', 'userName'],
           ellipsis: true,
           width: 170,
           fieldProps: {
-            placeholder: '请输入创建人',
+            placeholder: t('PC.Pages.SystemTaskCenterProTable.enterCreator'),
             allowClear: true,
           },
         },
         {
-          title: '创建时间',
+          title: t('PC.Pages.SystemTaskCenterProTable.createdTime'),
           dataIndex: 'created',
           width: 170,
           hideInSearch: true,
           valueType: 'dateTime',
         },
         {
-          title: '操作',
+          title: t('PC.Pages.SystemTaskCenterProTable.actions'),
           align: 'center',
           valueType: 'option',
           fixed: 'right',
@@ -349,39 +366,45 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                 actions={[
                   {
                     key: 'execute',
-                    label: '手动执行',
+                    label: t('PC.Pages.SystemTaskCenterProTable.manualExecute'),
                     disabled: !hasPermission('task_manage_execute_manual'),
                     onClick: () => handleExecuteTask(record.id),
                   },
                   {
                     key: 'enable',
-                    label: '启用',
+                    label: t('PC.Pages.SystemTaskCenterProTable.enable'),
                     visible: () => isEnded,
                     disabled: !hasPermission('task_manage_enable'),
                     confirm: {
-                      title: '确认启用该任务？',
+                      title: t(
+                        'PC.Pages.SystemTaskCenterProTable.confirmEnableTask',
+                      ),
                     },
                     onClick: () => handleEnableTask(record.id),
                   },
                   {
                     key: 'disable',
-                    label: '停用',
+                    label: t('PC.Pages.SystemTaskCenterProTable.disable'),
                     visible: () => !isEnded,
                     disabled: !hasPermission('task_manage_cancel'),
                     confirm: {
-                      title: '确认停用该任务？',
+                      title: t(
+                        'PC.Pages.SystemTaskCenterProTable.confirmDisableTask',
+                      ),
                     },
                     onClick: () => handleDisableTask(record.id),
                   },
                   {
                     key: 'edit',
-                    label: '编辑',
+                    label: t('PC.Pages.SystemTaskCenterProTable.edit'),
                     disabled: !hasPermission('task_manage_modify'),
                     onClick: () => onEdit(record),
                   },
                   {
                     key: 'record',
-                    label: '执行记录',
+                    label: t(
+                      'PC.Pages.SystemTaskCenterProTable.executionRecord',
+                    ),
                     disabled: !hasPermission('task_manage_execute_record'),
                     onClick: () => {
                       const baseUrl = '/system/log-query/running-log';
@@ -394,10 +417,12 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                   },
                   {
                     key: 'delete',
-                    label: '删除',
+                    label: t('PC.Pages.SystemTaskCenterProTable.delete'),
                     disabled: !hasPermission('task_manage_delete'),
                     confirm: {
-                      title: '确认删除该任务？',
+                      title: t(
+                        'PC.Pages.SystemTaskCenterProTable.confirmDeleteTask',
+                      ),
                     },
                     onClick: () => handleDeleteTask(record.id),
                   },

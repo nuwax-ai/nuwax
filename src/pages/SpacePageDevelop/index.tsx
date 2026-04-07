@@ -12,6 +12,7 @@ import {
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST, FILTER_STATUS_DEV } from '@/constants/space.constants';
 import { exportProject } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiCustomPageQueryList,
   apiPageDeleteProject,
@@ -33,7 +34,6 @@ import {
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
 import { modalConfirm } from '@/utils/ant-custom';
-import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -186,7 +186,7 @@ const SpacePageDevelop: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('删除成功');
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
       const projectId = params[0];
       const _pageList = pageList.filter((item) => item.projectId !== projectId);
       setPageList(_pageList);
@@ -314,7 +314,7 @@ const SpacePageDevelop: React.FC = () => {
         const url = `${process.env.BASE_URL}${result.pageUrl}`;
         window.open(url, '_blank');
       } else {
-        message.error('页面URL不存在');
+        message.error(dict('PC.Pages.SpacePageDevelop.Index.pageUrlNotExist'));
       }
     },
   });
@@ -325,33 +325,14 @@ const SpacePageDevelop: React.FC = () => {
   const handleExportProject = useCallback(async (projectId: string) => {
     // 检查项目ID是否有效
     if (!projectId) {
-      message.warning('项目ID不存在或无效，无法导出');
+      message.warning(
+        dict('PC.Pages.SpacePageDevelop.Index.projectIdInvalidCannotExport'),
+      );
       return;
     }
 
-    try {
-      const result = await exportProject(projectId);
-      // 判断是否成功
-      if (!result.success) {
-        // 导出失败，显示错误信息
-        const errorMessage = result.error?.message || '导出失败';
-        message.warning(errorMessage);
-        return;
-      }
-
-      const filename = `project-${projectId}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      message.success('项目导出成功！');
-    } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
-
-      message.error(`导出失败: ${errorMessage}`);
-    }
+    // 导出整个项目压缩包
+    exportProject(projectId);
   }, []);
 
   // 域名绑定
@@ -363,7 +344,7 @@ const SpacePageDevelop: React.FC = () => {
       !(publishType === String(PageDevelopSelectTypeEnum.AGENT) && !needLogin)
     ) {
       message.warning(
-        '域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用',
+        dict('PC.Pages.SpacePageDevelop.Index.domainBindingConditionWarning'),
       );
     } else {
       setOpenDomainBindingModal(true);
@@ -406,12 +387,16 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
-        modalConfirm('你确定要删除此页面吗?', info.name, () => {
-          runPageDelete(info.projectId);
-          return new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-          });
-        });
+        modalConfirm(
+          dict('PC.Pages.SpacePageDevelop.Index.confirmDeletePage'),
+          info.name,
+          () => {
+            runPageDelete(info.projectId);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
         break;
     }
   };
@@ -456,7 +441,9 @@ const SpacePageDevelop: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>网页应用开发</h3>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.SpacePageDevelop.Index.pageTitle')}
+          </h3>
           <SelectList
             value={type}
             options={PAGE_DEVELOP_ALL_TYPE}
@@ -477,7 +464,9 @@ const SpacePageDevelop: React.FC = () => {
         <div className={cx(styles['header-right'])}>
           <Input
             rootClassName={cx(styles.input)}
-            placeholder="搜索页面"
+            placeholder={dict(
+              'PC.Pages.SpacePageDevelop.Index.searchPlaceholder',
+            )}
             value={keyword}
             onChange={handleQueryPage}
             prefix={<SearchOutlined />}
@@ -491,7 +480,7 @@ const SpacePageDevelop: React.FC = () => {
             onClick={handleClickPopoverItem}
           >
             <Button type="primary" icon={<PlusOutlined />}>
-              创建
+              {dict('PC.Pages.SpacePageDevelop.Index.create')}
             </Button>
           </CustomPopover>
         </div>
@@ -530,7 +519,9 @@ const SpacePageDevelop: React.FC = () => {
                 avatar={info.creatorAvatar}
                 userName={info.creatorNickName || info.creatorName}
                 created={info.created}
-                overlayText="查看详情"
+                overlayText={dict(
+                  'PC.Pages.SpacePageDevelop.Index.viewDetails',
+                )}
                 onClick={() => handleClickCard(info)}
                 footerInner={
                   <CustomPopover
@@ -549,7 +540,9 @@ const SpacePageDevelop: React.FC = () => {
                         : styles['unpublished-text'],
                     )}
                   >
-                    {info.buildRunning ? '已发布' : '未发布'}
+                    {info.buildRunning
+                      ? dict('PC.Pages.SpacePageDevelop.Index.published')
+                      : dict('PC.Pages.SpacePageDevelop.Index.unpublished')}
                   </div>
                 }
               />
@@ -558,7 +551,9 @@ const SpacePageDevelop: React.FC = () => {
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="未能找到相关结果" />
+          <Empty
+            description={dict('PC.Pages.SpacePageDevelop.Index.noResultsFound')}
+          />
         </div>
       )}
       {/* 反向代理弹窗 */}

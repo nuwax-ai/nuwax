@@ -2,6 +2,7 @@ import ConditionRender from '@/components/ConditionRender';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeRawSegmentList,
   apiKnowledgeRawSegmentUpdate,
@@ -209,7 +210,9 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
               : item,
           ),
         );
-        message.success('修改成功');
+        message.success(
+          dict('PC.Pages.SpaceKnowledge.RawSegmentInfo.modifySuccess'),
+        );
         setIsModalOpen(false);
         setCurrentEditItem(null);
       }
@@ -237,7 +240,11 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
           />
 
           {documentInfo?.docUrl && (
-            <Tooltip title="预览原始文档">
+            <Tooltip
+              title={dict(
+                'PC.Pages.SpaceKnowledge.RawSegmentInfo.previewRawDoc',
+              )}
+            >
               <EyeOutlined
                 className={cx(styles.del, 'cursor-pointer', 'mr-8')}
                 style={{ fontSize: '16px' }}
@@ -266,7 +273,9 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
             styles['segment-box'],
           )}
         >
-          <span>分段正在处理中</span>
+          <span>
+            {dict('PC.Pages.SpaceKnowledge.RawSegmentInfo.segmentProcessing')}
+          </span>
         </div>
       ) : loading ? (
         <Loading />
@@ -323,7 +332,11 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
                     }}
                     onClick={() => handleEdit(info)}
                   >
-                    <Tooltip title="编辑">
+                    <Tooltip
+                      title={dict(
+                        'PC.Pages.SpaceKnowledge.RawSegmentInfo.edit',
+                      )}
+                    >
                       <EditOutlined />
                     </Tooltip>
                   </div>
@@ -334,7 +347,11 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         </div>
       ) : (
         <div className={cx('flex', 'flex-1', 'items-center', 'content-center')}>
-          <Empty description="暂无分段" />
+          <Empty
+            description={dict(
+              'PC.Pages.SpaceKnowledge.RawSegmentInfo.noSegment',
+            )}
+          />
         </div>
       )}
 

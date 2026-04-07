@@ -115,7 +115,7 @@ export async function apiImportExcel(
   file: File,
 ): Promise<RequestResponse<null>> {
   const formData = new FormData();
-  formData.append('file', file); // 假设文件名为 'file'，根据实际情况调整
+  formData.append('file', file); // Use "file" as form field name.
   return request(`/api/compose/db/table/importExcel/${tableId}`, {
     method: 'POST',
     data: formData,

@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { AgentAddComponentStatusEnum } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
@@ -79,7 +80,8 @@ const MCPTools: React.FC<MCPToolsProps> = ({
                 {tool.name}
               </div>
               <div className={cx(styles['mcp-tools-item-description-style'])}>
-                {tool.description || '暂无描述'}
+                {tool.description ||
+                  t('PC.Components.CreatedMcpTools.noDescription')}
               </div>
             </div>
             <div
@@ -96,7 +98,9 @@ const MCPTools: React.FC<MCPToolsProps> = ({
                 disabled={isCurrentLoading ? false : isAddedState}
                 loading={isCurrentLoading}
               >
-                {isAddedState ? '已添加' : '添加'}
+                {isAddedState
+                  ? t('PC.Components.CreatedMcpTools.added')
+                  : t('PC.Components.CreatedMcpTools.add')}
               </Button>
             </div>
           </div>

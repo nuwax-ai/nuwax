@@ -53,11 +53,31 @@
   }
 }
 
+.model-dropdown-container {
+  background-color: @colorBgElevated;
+  border-radius: @borderRadius;
+  box-shadow: @boxShadowSecondary;
+  padding: 4px 0 0;
+
+  :global {
+    .ant-dropdown-menu {
+      box-shadow: none !important;
+      border-radius: @borderRadius @borderRadius 0 0 !important;
+    }
+  }
+
+  .add-button-wrap {
+    padding: 4px;
+    border-top: 1px solid @colorBorderSecondary;
+  }
+}
+
 .model-menu {
   :global {
     .ant-dropdown-menu {
       max-height: 240px;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .ant-dropdown-menu-item {
@@ -82,33 +102,62 @@
     align-items: center;
     justify-content: space-between;
     min-width: 160px;
+    max-width: 240px;
 
     .item-content {
       display: flex;
       flex-direction: column;
-      max-width: 240px;
+      flex: 1;
+      min-width: 0;
+
+      .item-name {
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .item-desc {
+        font-size: 11px;
+        color: @colorTextQuaternary;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
-    .item-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: @colorTextSecondary;
-      font-size: @fontSizeSm;
-      font-weight: 500;
+    .item-actions {
+      display: none;
+      align-items: center;
+      gap: @marginXxs;
+      margin-left: @marginXxs;
+
+      .action-icon {
+        padding: @paddingXs;
+        border-radius: @borderRadius;
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+        cursor: pointer;
+        transition: all @motionDurationMid;
+
+        &:hover {
+          color: @colorPrimary;
+          background: @colorFillTertiary;
+        }
+      }
     }
 
-    .item-desc {
-      font-size: 11px;
-      color: @colorTextQuaternary;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 2px;
+    &:hover {
+      .item-actions {
+        display: flex;
+      }
     }
 
     .item-check {
-      margin-left: @marginMd;
+      margin-left: @marginSm;
       color: @colorPrimary;
       font-size: @fontSizeSm;
     }

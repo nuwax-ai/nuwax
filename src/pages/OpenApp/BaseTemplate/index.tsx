@@ -3,11 +3,10 @@ import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import { MOBILE_BREAKPOINT } from '@/constants/layout.constants';
-import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import ConversationItem from '@/layouts/DynamicMenusLayout/HomeSection/ConversationItem';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
+import { dict } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   EllipsisOutlined,
@@ -34,10 +33,7 @@ const cx = classNames.bind(styles);
  */
 const BaseTemplate: React.FC = () => {
   const { id: cId, agentId } = useParams();
-  // 导航风格管理（使用统一主题系统）
-  const { navigationStyle, layoutStyle } = useUnifiedTheme();
-  const { isSecondMenuCollapsed, setOpenAdmin, setIsMobile } =
-    useModel('layout');
+  const { setOpenAdmin } = useModel('layout');
   // 状态管理
   const { userInfo, getUserInfo } = useModel('userInfo');
 
@@ -56,7 +52,7 @@ const BaseTemplate: React.FC = () => {
   const historyListRef = useRef<HTMLDivElement | null>(null);
   // 底部渐变显示状态
   const [showFooterTopGradient, setShowFooterTopGradient] =
-    useState<boolean>(true);
+    useState<boolean>(false);
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -85,14 +81,6 @@ const BaseTemplate: React.FC = () => {
     setShowFooterTopGradient(distanceFromBottom > threshold);
   }, [loadingHistory]);
 
-  /**
-   * 检查是否为移动端设备
-   * 使用 useCallback 优化，避免重复创建函数
-   */
-  const checkIsMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-  }, []);
-
   useEffect(() => {
     // 获取用户信息
     getUserInfo();
@@ -103,60 +91,6 @@ const BaseTemplate: React.FC = () => {
       limit: 8,
     });
   }, [agentId]);
-
-  /**
-   * 监听窗口尺寸变化，判断是否为移动端
-   * 使用防抖优化性能
-   */
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkIsMobile, 100); // 100ms 防抖
-    };
-
-    window.addEventListener('resize', handleResize);
-    checkIsMobile(); // 初始化判断
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
-    };
-  }, [checkIsMobile]);
-
-  /**
-   * 主容器样式类名（使用独立的布局风格类）
-   * 包含导航风格和布局风格类
-   */
-  const mainContainerClassName = useMemo(
-    () =>
-      cx(
-        'flex',
-        'h-full',
-        styles.container,
-        `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
-        `xagi-nav-${navigationStyle}`, // 导航风格类
-      ),
-    [layoutStyle, navigationStyle],
-  );
-
-  /**
-   * 页面容器样式类名（使用独立的布局风格类）
-   * 根据导航风格动态调整
-   */
-  const pageContainerClassName = useMemo(
-    () =>
-      cx(
-        'flex-1',
-        styles[
-          `xagi-layout-${isSecondMenuCollapsed ? 'collapsed' : 'expanded'}`
-        ],
-        styles[`xagi-layout-${layoutStyle}`],
-        styles[`xagi-nav-${navigationStyle}`],
-      ),
-    [layoutStyle, navigationStyle, isSecondMenuCollapsed],
-  );
 
   // 查看全部历史会话
   const handleViewAllHistory = () => {
@@ -198,7 +132,7 @@ const BaseTemplate: React.FC = () => {
   };
 
   return (
-    <div className={mainContainerClassName}>
+    <div className={cx('flex', 'h-full', styles.container)}>
       {/* 侧边菜单栏区域 */}
       <div
         className={cx(styles.agentSidebarContainer, {
@@ -220,7 +154,7 @@ const BaseTemplate: React.FC = () => {
           </ConditionRender>
           {/* 收起导航按钮 */}
           <TooltipIcon
-            title="收起导航"
+            title={dict('PC.Pages.OpenApp.collapseNav')}
             className={styles.collapseBtn}
             icon={
               <SvgIcon
@@ -241,7 +175,7 @@ const BaseTemplate: React.FC = () => {
         >
           <span className={styles.newSessionText}>
             <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
-            新建会话
+            {dict('PC.Pages.OpenApp.newConversation')}
           </span>
           <div className={cx('flex', 'items-center', 'gap-4')}>
             <span className={styles.shortcutTag}>
@@ -272,7 +206,7 @@ const BaseTemplate: React.FC = () => {
               <div className={cx(styles['history-title'])}>
                 <span className={cx(styles.title)}>
                   <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
-                  历史会话
+                  {dict('PC.Pages.OpenApp.historyConversation')}
                 </span>
 
                 <ConditionRender condition={conversationList?.length}>
@@ -280,7 +214,7 @@ const BaseTemplate: React.FC = () => {
                     className={cx(styles['more-conversation'])}
                     onClick={handleViewAllHistory}
                   >
-                    查看全部 <RightOutlined />
+                    {dict('PC.Pages.OpenApp.viewAll')} <RightOutlined />
                   </span>
                 </ConditionRender>
               </div>
@@ -311,9 +245,11 @@ const BaseTemplate: React.FC = () => {
                     )
                   : loadingHistoryEnd && (
                       <>
-                        <div className={cx(styles['no-used'])}>右边看👉</div>
                         <div className={cx(styles['no-used'])}>
-                          在会话框中输入指令开始你的第一次会话吧～
+                          {dict('PC.Pages.OpenApp.lookRight')}
+                        </div>
+                        <div className={cx(styles['no-used'])}>
+                          {dict('PC.Pages.OpenApp.firstConversationTip')}
                         </div>
                       </>
                     )}
@@ -351,7 +287,7 @@ const BaseTemplate: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={`${pageContainerClassName}`}>
+      <div className={'flex-1'}>
         <Outlet />
       </div>
 

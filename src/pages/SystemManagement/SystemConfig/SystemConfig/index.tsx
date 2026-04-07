@@ -1,6 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import Loading from '@/components/custom/Loading';
 import { SYSTEM_SETTING_TABS } from '@/constants/system.constants';
+import { t } from '@/services/i18nRuntime';
 import { apiSystemConfigList } from '@/services/systemManage';
 import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
 import { Button, Tabs } from 'antd';
@@ -71,13 +72,13 @@ const SystemConfig: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="系统设置"
+      title={t('PC.Pages.SystemConfig.pageTitle')}
       hideScroll
       extraContent={
         <div style={{ padding: '0 24px 24px' }}>
           {hasPermission('system_setting_save') && (
             <Button type="primary" onClick={handleSave}>
-              保存
+              {t('PC.Common.Global.save')}
             </Button>
           )}
         </div>

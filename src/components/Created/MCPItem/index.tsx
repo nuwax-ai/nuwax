@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
@@ -64,13 +65,15 @@ const MCPItem: React.FC<MCPItemProps> = ({
                   require('@/assets/images/avatar.png')
                 }
                 style={{ borderRadius: '50%' }}
-                alt="用户头像"
+                alt={t('PC.Components.CreatedMcpItem.avatarAlt')}
               />
               <span>{item.publishUser?.nickName}</span>
               <Divider type="vertical" />
               <span>
-                {'部署于'}
-                {getTime(item.deployed!)}
+                {t(
+                  'PC.Components.CreatedMcpItem.deployedAt',
+                  getTime(item.deployed!),
+                )}
               </span>
             </div>
           </div>

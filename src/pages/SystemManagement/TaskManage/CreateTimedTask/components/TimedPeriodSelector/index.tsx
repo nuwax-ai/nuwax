@@ -1,4 +1,5 @@
 import SelectList from '@/components/custom/SelectList';
+import { t } from '@/services/i18nRuntime';
 import { apiSystemTaskCronList } from '@/services/systemManage';
 import { TaskCronInfo, TaskCronItemDto } from '@/types/interfaces/agentTask';
 import { option } from '@/types/interfaces/common';
@@ -78,7 +79,10 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
         label: item.typeName,
         value: item.typeName,
       })),
-      { label: '指定时间', value: 'SpecificTime' },
+      {
+        label: t('PC.Pages.SystemTaskTimedPeriodSelector.specificTime'),
+        value: 'SpecificTime',
+      },
     ];
     setTypeNameList(_typeNameList);
 
@@ -167,55 +171,78 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <Space>
-        <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+    <Space>
+      <Form.Item
+        noStyle
+        rules={[
+          {
+            required: true,
+            message: t('PC.Pages.SystemTaskTimedPeriodSelector.enter'),
+          },
+        ]}
+      >
+        <SelectList
+          className={cx(styles.select)}
+          options={typeNameList}
+          value={typeName}
+          onChange={handleChangeTypeName}
+        />
+      </Form.Item>
+      {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
+        <Form.Item
+          noStyle
+          rules={[
+            {
+              required: true,
+              message: t('PC.Pages.SystemTaskTimedPeriodSelector.enter'),
+            },
+          ]}
+        >
           <SelectList
             className={cx(styles.select)}
-            options={typeNameList}
-            value={typeName}
-            onChange={handleChangeTypeName}
+            options={typeCronList}
+            value={typeCron}
+            onChange={handleChangeTypeCron}
           />
         </Form.Item>
-        {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
-          <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
-            <SelectList
-              className={cx(styles.select)}
-              options={typeCronList}
-              value={typeCron}
-              onChange={handleChangeTypeCron}
-            />
-          </Form.Item>
-        )}
-
-        {/* 指定时间选择器 */}
-        {typeName === 'SpecificTime' && (
-          <Form.Item
-            name="lockTime"
-            noStyle
-            rules={[
-              { required: true, message: '请选择指定时间' },
-              {
-                validator: (_, value) => {
-                  if (value && dayjs(value).isBefore(dayjs())) {
-                    return Promise.reject(
-                      new Error('指定时间必须在当前时间之后'),
-                    );
-                  }
-                  return Promise.resolve();
-                },
+      )}
+      {typeName === 'SpecificTime' && (
+        <Form.Item
+          name="lockTime"
+          noStyle
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.SystemTaskTimedPeriodSelector.selectSpecificTime',
+              ),
+            },
+            {
+              validator: (_, selectedValue) => {
+                if (selectedValue && dayjs(selectedValue).isBefore(dayjs())) {
+                  return Promise.reject(
+                    new Error(
+                      t(
+                        'PC.Pages.SystemTaskTimedPeriodSelector.specificTimeMustBeFuture',
+                      ),
+                    ),
+                  );
+                }
+                return Promise.resolve();
               },
-            ]}
-          >
-            <DatePicker
-              showTime
-              placeholder="请选择日期时间"
-              style={{ width: 200 }}
-            />
-          </Form.Item>
-        )}
-      </Space>
-    </div>
+            },
+          ]}
+        >
+          <DatePicker
+            showTime
+            placeholder={t(
+              'PC.Pages.SystemTaskTimedPeriodSelector.selectDateTime',
+            )}
+            style={{ width: 200 }}
+          />
+        </Form.Item>
+      )}
+    </Space>
   );
 };
 

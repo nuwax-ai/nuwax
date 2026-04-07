@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataTableProps } from '@/types/interfaces/workflow';
 import { getImg } from '@/utils/workflow';
@@ -41,7 +42,7 @@ const DataTable: React.FC<DataTableProps> = ({
                 onClick={() => setIsExpand(false)}
                 className="database-tag-style cursor-pointer"
               >
-                {'收起'}
+                {dict('PC.Components.Skill.database.collapse')}
               </div>
             </div>
           ) : (

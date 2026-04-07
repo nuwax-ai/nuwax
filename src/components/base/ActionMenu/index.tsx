@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { dict } from '@/services/i18nRuntime';
 import { DownOutlined } from '@ant-design/icons';
 import { Dropdown, theme } from 'antd';
 import classNames from 'classnames';
@@ -50,7 +51,7 @@ export interface ActionMenuProps {
 const ActionMenu: React.FC<ActionMenuProps> = ({
   actions,
   visibleCount = 3,
-  moreText = '更多',
+  moreText = dict('PC.Components.ActionMenu.more'),
   moreIcon = 'icons-more',
   showArrow = true,
   className,

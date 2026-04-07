@@ -2,6 +2,7 @@ import workflowIcon from '@/assets/images/workflow_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { dict } from '@/services/i18nRuntime';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
@@ -42,7 +43,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: number) => {
-      message.success('工作流已创建成功');
+      message.success(dict('PC.Components.CreateWorkflow.workflowCreated'));
       onCancel();
       history.push(`/space/${spaceId}/workflow/${result}`);
     },
@@ -53,7 +54,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: UpdateWorkflowParams[]) => {
-      message.success('工作流更新成功');
+      message.success(dict('PC.Components.CreateWorkflow.workflowUpdated'));
       const info = params[0];
       onConfirm?.(info as WorkflowBaseInfo);
       onCancel(); // 关闭对话框
@@ -96,7 +97,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       if (onUpdate) {
         const success = await onUpdate(updateParams);
         if (success) {
-          message.success('工作流更新成功');
+          message.success(dict('PC.Components.CreateWorkflow.workflowUpdated'));
           onConfirm?.(updateParams);
           onCancel();
         }
@@ -117,7 +118,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={type === CreateUpdateModeEnum.Create ? '创建工作流' : '更新工作流'}
+      title={
+        type === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateWorkflow.createWorkflow')
+          : dict('PC.Components.CreateWorkflow.updateWorkflow')
+      }
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
@@ -135,32 +140,58 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       >
         <Form.Item
           name="name"
-          label="名称"
+          label={dict('PC.Components.CreateWorkflow.name')}
           rules={[
-            { required: true, message: '请输入工作流名称' },
+            {
+              required: true,
+              message: dict(
+                'PC.Components.CreateWorkflow.pleaseInputWorkflowName',
+              ),
+            },
             {
               validator(_, value) {
                 if (!value || value?.length <= 30) {
                   return Promise.resolve();
                 }
                 if (value?.length > 30) {
-                  return Promise.reject(new Error('名称不能超过30个字符!'));
+                  return Promise.reject(
+                    new Error(
+                      dict('PC.Components.CreateWorkflow.nameMaxChars'),
+                    ),
+                  );
                 }
-                return Promise.reject(new Error('输入工作流名称!'));
+                return Promise.reject(
+                  new Error(
+                    dict(
+                      'PC.Components.CreateWorkflow.pleaseInputWorkflowNameBang',
+                    ),
+                  ),
+                );
               },
             },
           ]}
         >
-          <Input placeholder="输入工作流名称" showCount maxLength={30} />
+          <Input
+            placeholder={dict(
+              'PC.Components.CreateWorkflow.placeholderWorkflowName',
+            )}
+            showCount
+            maxLength={30}
+          />
         </Form.Item>
         <OverrideTextArea
           name="description"
-          label="描述"
+          label={dict('PC.Components.CreateWorkflow.description')}
           initialValue={description}
-          placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
+          placeholder={dict(
+            'PC.Components.CreateWorkflow.placeholderWorkflowDesc',
+          )}
           maxLength={10000}
         />
-        <Form.Item name="icon" label="图标">
+        <Form.Item
+          name="icon"
+          label={dict('PC.Components.CreateWorkflow.icon')}
+        >
           <UploadAvatar
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}

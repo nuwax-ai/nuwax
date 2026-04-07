@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import {
   TaskListProps,
@@ -28,8 +29,8 @@ const TaskList: React.FC<TaskListProps> = ({
 }) => {
   const emptyDesc =
     taskStatus === TaskStatus.EXECUTING
-      ? '暂无进行中的任务'
-      : '暂无已取消的任务';
+      ? dict('PC.Components.TaskList.noInProgressTasks')
+      : dict('PC.Components.TaskList.noCancelledTasks');
   if (loading) {
     return (
       <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
@@ -51,12 +52,12 @@ const TaskList: React.FC<TaskListProps> = ({
   ) => {
     e.stopPropagation();
     confirm({
-      title: '你确定要取消此定时任务吗?',
+      title: dict('PC.Components.TaskList.confirmCancelTask'),
       icon: <ExclamationCircleFilled />,
       content: info.topic,
-      okText: '确定',
+      okText: dict('PC.Common.Global.confirm'),
       maskClosable: true,
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk() {
         onCancelTask?.(info);
       },

@@ -2,6 +2,7 @@ import SecondMenuItem from '@/components/base/SecondMenuItem';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import { getSquareTemplateSegmentedList } from '@/constants/square.constants';
+import { dict } from '@/services/i18nRuntime';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import {
   SquareAgentInfo,
@@ -87,37 +88,37 @@ const SquareSection: React.FC<{
   // 菜单列表
   const dataSource = [
     {
-      name: '智能体',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.agent'),
       icon: <SvgIcon name="icons-nav-stars" />,
       list: agentInfoList,
       type: SquareAgentTypeEnum.Agent,
     },
     {
-      name: '网页应用',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.pageApp'),
       icon: <SvgIcon name="icons-common-console" />,
       list: pageAppInfoList,
       type: SquareAgentTypeEnum.PageApp,
     },
     {
-      name: '技能',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.skill'),
       icon: <SvgIcon name="icons-nav-skill" />,
       list: skillInfoList,
       type: SquareAgentTypeEnum.Skill,
     },
     {
-      name: '插件',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.plugin'),
       icon: <SvgIcon name="icons-nav-plugins" />,
       list: pluginInfoList,
       type: SquareAgentTypeEnum.Plugin,
     },
     {
-      name: '工作流',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.workflow'),
       icon: <SvgIcon name="icons-nav-workflow" />,
       list: workflowInfoList,
       type: SquareAgentTypeEnum.Workflow,
     },
     {
-      name: '模板',
+      name: dict('PC.Layouts.DynamicMenusLayout.SquareSection.template'),
       icon: <SvgIcon name="icons-nav-template" />,
       list: templateListTabs,
       type: SquareAgentTypeEnum.Template,

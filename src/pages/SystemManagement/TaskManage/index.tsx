@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { TaskInfo } from '@/types/interfaces/library';
 import { useEffect, useRef, useState } from 'react';
@@ -46,7 +47,10 @@ const TaskManage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="任务管理" hideScroll={true}>
+    <WorkspaceLayout
+      title={dict('PC.Pages.SystemTaskManage.pageTitle')}
+      hideScroll={true}
+    >
       {/* 主要内容区域 */}
       <CenterProTable ref={centerProTableRef} onEdit={handleEditTask} />
       {/* 创建任务弹窗 */}

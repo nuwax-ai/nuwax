@@ -1,4 +1,5 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
@@ -64,10 +65,10 @@ export const useFileImport = <T = any>(
     multiple = false,
     accept = '.zip,.skill,.md',
     validateFileType,
-    fileTypeErrorMsg = '仅支持 .zip 压缩文件、.skill 文件或 SKILL.md 文件',
+    fileTypeErrorMsg = dict('PC.Hooks.UseFileImport.unsupportedFileType'),
     onSuccess,
     onError,
-    successMessage = '导入成功',
+    successMessage = dict('PC.Hooks.UseFileImport.importSuccess'),
   } = options;
 
   const [loading, setLoading] = useState(false);
@@ -161,7 +162,9 @@ export const useFileImport = <T = any>(
           message.success(successMessage);
           onSuccess?.(result.data);
         } else {
-          throw new Error(result.message || '导入失败');
+          throw new Error(
+            result.message || dict('PC.Hooks.UseFileImport.importFailed'),
+          );
         }
       } catch (error) {
         onError?.(error);

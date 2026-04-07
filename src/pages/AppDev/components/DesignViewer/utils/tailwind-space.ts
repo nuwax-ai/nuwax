@@ -211,7 +211,7 @@ export const parseStyleValue = (value: string | null | undefined): string => {
  * @returns 对应的 CSS 值，如 "1rem", "0.5rem" 等
  */
 export const parseTailwindSpacing = (className: string): string => {
-  // 匹配类名中的数字部分，如 "p-4" 中的 "4"
+  // Match the numeric segment in class names, e.g. "4" in "p-4".
   const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
   if (match) {
     const value = match[1];

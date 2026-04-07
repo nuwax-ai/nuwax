@@ -1,5 +1,6 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import type {
   FileType,
   UploadImportConfigProps,
@@ -29,13 +30,18 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
       const code = info.file.response?.code;
       if (code === SUCCESS_CODE) {
         onUploadSuccess?.();
-        message.success('已成功导入配置');
+        message.success(dict('PC.Components.UploadImportConfig.importSuccess'));
       } else {
         message.warning(info.file.response?.message);
       }
     } else if (info.file.status === 'error') {
       setLoading(false);
-      message.error(`${info.file.name} 上传失败`);
+      message.error(
+        dict('PC.Components.UploadImportConfig.uploadFailed').replace(
+          '{0}',
+          info.file.name,
+        ),
+      );
     }
   };
 
@@ -43,11 +49,10 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
     e.stopPropagation();
     e.preventDefault();
     Modal.confirm({
-      title: '提示',
-      content:
-        '配置中若包含插件、MCP，导入成功后请检查相关配置，以确保能正确运行',
-      okText: '确定',
-      cancelText: '取消',
+      title: dict('PC.Components.UploadImportConfig.notice'),
+      content: dict('PC.Components.UploadImportConfig.checkConfigHint'),
+      okText: dict('PC.Common.Global.confirm'),
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk: () => {
         // 手动触发文件选择
         if (buttonRef.current) {
@@ -70,7 +75,7 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
       fileName.endsWith('.workflow') ||
       fileName.endsWith('.plugin');
     if (!isValidFile) {
-      message.error('请上传 .table, .workflow 或 .plugin 类型的文件!');
+      message.error(dict('PC.Components.UploadImportConfig.invalidFileType'));
     }
     return isValidFile || Upload.LIST_IGNORE;
   };
@@ -92,7 +97,7 @@ const UploadImportConfig: React.FC<UploadImportConfigProps> = ({
         <Button ref={buttonRef} />
       </Upload>
       <Button loading={loading} icon={<UploadOutlined />} onClick={handleClick}>
-        导入配置
+        {dict('PC.Components.UploadImportConfig.importConfig')}
       </Button>
     </>
   );

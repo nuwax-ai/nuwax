@@ -5,6 +5,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 // import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 // import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
@@ -48,7 +49,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     onSuccess: (result: number) => {
       setImageUrl('');
       onConfirmCreate?.(result);
-      message.success('智能体已创建');
+      message.success(dict('PC.Components.CreateAgent.createSuccess'));
       setLoading(false);
     },
     onError: () => {
@@ -61,7 +62,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
-      message.success('智能体编辑成功');
+      message.success(dict('PC.Components.CreateAgent.editSuccess'));
       setLoading(false);
       const info: AgentConfigUpdateParams = params[0];
       onConfirmUpdate?.(info);
@@ -122,17 +123,21 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
         string
       > = {
-        [AgentTypeEnum.ChatBot]: '问答型',
-        [AgentTypeEnum.TaskAgent]: '通用型',
+        [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
+        [AgentTypeEnum.TaskAgent]: dict(
+          'PC.Components.CreateAgent.typeTaskAgent',
+        ),
       };
 
       const typeName =
         typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
       return mode === CreateUpdateModeEnum.Create
-        ? `创建${typeName}智能体`
-        : `更新${typeName}智能体`;
+        ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
+        : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
     }
-    return mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体';
+    return mode === CreateUpdateModeEnum.Create
+      ? dict('PC.Components.CreateAgent.createTitle')
+      : dict('PC.Components.CreateAgent.updateTitle');
   }, [type, mode]);
 
   return (
@@ -172,37 +177,47 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         {/*  <>*/}
         <Form.Item
           name="name"
-          label="智能体名称"
+          label={dict('PC.Components.CreateAgent.nameLabel')}
           validateTrigger="onBlur"
           rules={[
-            { required: true, message: '请输入智能体名称' },
+            {
+              required: true,
+              message: dict('PC.Components.CreateAgent.nameRequired'),
+            },
             {
               validator(_, value) {
                 if (!value || value?.length <= 50) {
                   return Promise.resolve();
                 }
                 if (value?.length > 50) {
-                  return Promise.reject(new Error('名称不能超过50个字符!'));
+                  return Promise.reject(
+                    new Error(dict('PC.Components.CreateAgent.nameMaxLength')),
+                  );
                 }
-                return Promise.reject(new Error('请输入智能体名称!'));
+                return Promise.reject(
+                  new Error(dict('PC.Components.CreateAgent.nameRequired')),
+                );
               },
             },
           ]}
         >
           <Input
-            placeholder="给智能体起一个独一无二的名字"
+            placeholder={dict('PC.Components.CreateAgent.namePlaceholder')}
             showCount
             maxLength={50}
           />
         </Form.Item>
         <OverrideTextArea
           name="description"
-          label="智能体功能介绍"
+          label={dict('PC.Components.CreateAgent.descriptionLabel')}
           initialValue={agentConfigInfo?.description}
-          placeholder="介绍智能体的功能，将会展示给智能体的用户"
+          placeholder={dict('PC.Components.CreateAgent.descriptionPlaceholder')}
           maxLength={10000}
         />
-        <Form.Item name="icon" label="图标">
+        <Form.Item
+          name="icon"
+          label={dict('PC.Components.CreateAgent.iconLabel')}
+        >
           <UploadAvatar
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}

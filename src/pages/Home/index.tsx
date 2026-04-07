@@ -8,6 +8,7 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
@@ -134,7 +135,7 @@ const Home: React.FC = () => {
     modelId?: number,
   ) => {
     if (!tenantConfigInfo) {
-      message.warning('租户信息不存在');
+      message.warning(dict('PC.Pages.Home.noTenantInfo'));
       return;
     }
 
@@ -227,7 +228,7 @@ const Home: React.FC = () => {
     if (item.type === 'Link') {
       // 打开外链
       if (!item.url) {
-        antdMessage.error('链接地址配置错误');
+        antdMessage.error(dict('PC.Pages.Home.linkConfigError'));
         return;
       }
       window.open(item.url, '_blank');

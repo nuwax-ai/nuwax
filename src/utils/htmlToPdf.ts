@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import html2canvas from 'html2canvas';
 // @ts-ignore - 使用 require 绕过模块联邦问题
 import { jsPDF } from 'jspdf';
@@ -232,7 +233,7 @@ const htmlToPdfByPrint = async (
 
   if (!iframeDoc || !iframeWindow) {
     document.body.removeChild(iframe);
-    throw new Error('无法创建打印环境');
+    throw new Error(dict('PC.Utils.HtmlToPdf.cannotCreatePrintEnv'));
   }
 
   iframeDoc.open();
@@ -307,7 +308,7 @@ export const htmlToPdf = async (
     // 写入 HTML 内容到 iframe
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) {
-      throw new Error('无法访问 iframe 文档');
+      throw new Error(dict('PC.Utils.HtmlToPdf.cannotAccessIframeDoc'));
     }
 
     iframeDoc.open();

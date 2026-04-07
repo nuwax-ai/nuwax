@@ -6,6 +6,7 @@ import {
   COMPONENT_LIST,
   COMPONENT_MORE_ACTION,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
@@ -88,7 +89,8 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
-            最近编辑 {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
+            {dict('PC.Pages.SpaceLibrary.ComponentItem.lastEdited')}{' '}
+            {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
           </span>
           {
             // 模型组件
@@ -99,10 +101,10 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
                 {componentInfo?.enabled === ModelComponentStatusEnum.Enabled ? (
                   <>
                     <ICON_SUCCESS />
-                    已启用
+                    {dict('PC.Pages.SpaceLibrary.ComponentItem.enabled')}
                   </>
                 ) : (
-                  <>已禁用</>
+                  <>{dict('PC.Pages.SpaceLibrary.ComponentItem.disabled')}</>
                 )}
               </span>
             ) : (
@@ -112,7 +114,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
                   className={cx('flex', 'items-center', 'gap-4', styles.status)}
                 >
                   <ICON_SUCCESS />
-                  已发布
+                  {dict('PC.Pages.SpaceLibrary.ComponentItem.published')}
                 </span>
               )
             )

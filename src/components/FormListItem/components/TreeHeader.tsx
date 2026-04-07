@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Form, FormInstance, Popover, Select } from 'antd';
@@ -53,19 +54,36 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({
                     }}
                     content={
                       <ul>
-                        <li>文本: 使用普通文本格式回复</li>
-                        <li>Markdown: 将引导模型使用 Markdown 格式输出回复</li>
-                        <li>JSON: 将引导模型使用 JSON 格式输出</li>
+                        <li>
+                          {dict(
+                            'PC.Components.FormListItem.outputFormatTextDesc',
+                          )}
+                        </li>
+                        <li>
+                          {dict(
+                            'PC.Components.FormListItem.outputFormatMarkdownDesc',
+                          )}
+                        </li>
+                        <li>
+                          {dict(
+                            'PC.Components.FormListItem.outputFormatJsonDesc',
+                          )}
+                        </li>
                       </ul>
                     }
                   >
                     <InfoCircleOutlined />
                   </Popover>
-                  <span className="ml-10">输出格式</span>
+                  <span className="ml-10">
+                    {dict('PC.Components.FormListItem.outputFormat')}
+                  </span>
                 </div>
               }
               options={[
-                { label: '文本', value: 'Text' },
+                {
+                  label: dict('PC.Components.FormListItem.outputFormatText'),
+                  value: 'Text',
+                },
                 { label: 'Markdown', value: 'Markdown' },
                 { label: 'JSON', value: 'JSON' },
               ]}
@@ -77,7 +95,9 @@ const TreeHeader: React.FC<TreeHeaderProps> = ({
                     {
                       key: uuidv4(),
                       name: 'output',
-                      description: '输出结果',
+                      description: dict(
+                        'PC.Components.FormListItem.outputResult',
+                      ),
                       dataType: DataTypeEnum.String,
                       require: false,
                       systemVariable: false,

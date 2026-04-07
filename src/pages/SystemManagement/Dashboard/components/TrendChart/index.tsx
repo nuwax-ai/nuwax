@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Line } from '@ant-design/plots';
 import { useSize } from 'ahooks';
 import { Card, Radio, Skeleton } from 'antd';
@@ -13,14 +14,17 @@ const TrendChart: React.FC<TrendChartProps> = ({
   data,
   height = 280,
   color = '#1890ff',
-  tooltipName = '数据',
+  tooltipName = dict('PC.Pages.SystemDashboard.chartTooltipData'),
   loading = false,
   period = '7d',
   onPeriodChange,
   periods = [
-    { label: '7天', value: '7d' },
-    { label: '30天', value: '30d' },
-    { label: '按月', value: 'month' },
+    { label: dict('PC.Pages.SystemDashboard.period7d'), value: '7d' },
+    { label: dict('PC.Pages.SystemDashboard.period30d'), value: '30d' },
+    {
+      label: dict('PC.Pages.SystemDashboard.periodMonth'),
+      value: 'month',
+    },
   ],
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -5,6 +5,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeConfigAdd,
   apiKnowledgeConfigDetail,
@@ -82,7 +83,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: number) => {
-      message.success('知识库已创建成功');
+      message.success(dict('PC.Components.CreateKnowledge.createSuccess'));
       setLoading(false);
       onCancel();
       history.push(`/space/${spaceId}/knowledge/${result}`);
@@ -97,7 +98,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: KnowledgeConfigUpdateParams[]) => {
-      message.success('知识库更新成功');
+      message.success(dict('PC.Components.CreateKnowledge.updateSuccess'));
       setLoading(false);
       const info = params[0];
       onConfirm?.(info);
@@ -247,7 +248,9 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       <CustomFormModal
         form={form}
         title={
-          mode === CreateUpdateModeEnum.Create ? '创建知识库' : '更新知识库'
+          mode === CreateUpdateModeEnum.Create
+            ? dict('PC.Components.CreateKnowledge.createTitle')
+            : dict('PC.Components.CreateKnowledge.updateTitle')
         }
         open={open}
         loading={loading}
@@ -269,26 +272,50 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         >
           <Form.Item
             name="name"
-            label="名称"
-            rules={[{ required: true, message: '输入知识库名称' }]}
+            label={dict('PC.Components.CreateKnowledge.nameLabel')}
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Components.CreateKnowledge.nameRequired'),
+              },
+            ]}
           >
-            <Input placeholder="输入知识库名称" showCount maxLength={100} />
+            <Input
+              placeholder={dict(
+                'PC.Components.CreateKnowledge.namePlaceholder',
+              )}
+              showCount
+              maxLength={100}
+            />
           </Form.Item>
           <OverrideTextArea
             name="description"
-            label="描述"
+            label={dict('PC.Components.CreateKnowledge.descriptionLabel')}
             initialValue={knowledgeInfo?.description}
-            placeholder="输入知识库内容的描述"
+            placeholder={dict(
+              'PC.Components.CreateKnowledge.descriptionPlaceholder',
+            )}
             maxLength={10000}
           />
           <Form.Item
             name="embeddingModelId"
-            label="向量模型"
-            rules={[{ required: true, message: '请选择向量模型' }]}
-            tooltip="切换向量模型后，为确保问答检索的准确性，系统将自动根据新模型对知识库内的问答数据进行重新向量化处理。此过程可能需要一定时间，请耐心等待。"
+            label={dict('PC.Components.CreateKnowledge.embeddingModelLabel')}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Components.CreateKnowledge.embeddingModelRequired',
+                ),
+              },
+            ]}
+            tooltip={dict(
+              'PC.Components.CreateKnowledge.embeddingModelTooltip',
+            )}
           >
             <SelectList
-              placeholder="请选择向量模型"
+              placeholder={dict(
+                'PC.Components.CreateKnowledge.embeddingModelPlaceholder',
+              )}
               /*disabled={mode === CreateUpdateModeEnum.Update}*/
               options={modelConfigList}
               allowClear
@@ -297,15 +324,25 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 
           <Form.Item
             name="dataParsingMethod"
-            label="文档内容提取方式"
-            tooltip="选择工作流后所有文档、图片等都将通过工作流解析，设计工作流时请注意固定入参为：file_url，出参请在“结束”节点选择“返回文本”，并在“输出内容”区域设置返回的变量。"
+            label={dict('PC.Components.CreateKnowledge.dataParsingMethodLabel')}
+            tooltip={dict(
+              'PC.Components.CreateKnowledge.dataParsingMethodTooltip',
+            )}
           >
             <Select
               style={{ width: '100%' }}
-              placeholder="请选择文档内容提取方式"
+              placeholder={dict(
+                'PC.Components.CreateKnowledge.dataParsingMethodPlaceholder',
+              )}
               options={[
-                { value: 'default', label: '系统默认' },
-                { value: 'workflow', label: '自定义工作流' },
+                {
+                  value: 'default',
+                  label: dict('PC.Components.CreateKnowledge.systemDefault'),
+                },
+                {
+                  value: 'workflow',
+                  label: dict('PC.Components.CreateKnowledge.customWorkflow'),
+                },
               ]}
             />
           </Form.Item>
@@ -322,7 +359,10 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             </Form.Item>
           )}
 
-          <Form.Item name="icon" label="图标">
+          <Form.Item
+            name="icon"
+            label={dict('PC.Components.CreateKnowledge.iconLabel')}
+          >
             <UploadAvatar
               className={cx(styles['upload-box'])}
               onUploadSuccess={setImageUrl}

@@ -10,6 +10,7 @@ import {
   apiUpdateTableDefinition,
   apiUpdateTableName,
 } from '@/services/dataTable';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { TableFieldTypeEnum, TableTabsEnum } from '@/types/enums/dataTable';
@@ -213,7 +214,7 @@ const SpaceTable = () => {
         validateTableName(item.fieldName),
       );
       if (!isFieldNameValidate) {
-        message.error('字段名只能包含字母、数字、下划线，且必须以字母开头');
+        message.error(dict('PC.Pages.SpaceTable.Index.fieldNameValidate'));
         cancelCallback?.();
         return;
       }
@@ -224,7 +225,7 @@ const SpaceTable = () => {
       };
       await apiUpdateTableDefinition(_params);
       setLoading(false);
-      message.success('保存成功');
+      message.success(dict('PC.Toast.Global.savedSuccessfully'));
       // 保存成功后，调用成功回调
       if (successCallback) {
         successCallback();
@@ -334,7 +335,7 @@ const SpaceTable = () => {
 
     // 确保必需字段不为空
     if (!name) {
-      message.error('名称不能为空');
+      message.error(dict('PC.Common.Global.nameEmpty'));
       return;
     }
 
@@ -345,7 +346,7 @@ const SpaceTable = () => {
       id: tableDetail.id,
     };
     await apiUpdateTableName(_params);
-    message.success('修改成功');
+    message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
     setEditTableLoading(false);
     setTableDetail({
       ...(tableDetail as TableDefineDetails),
@@ -358,14 +359,18 @@ const SpaceTable = () => {
 
   // 删除数据表业务数据
   const handleDeleteTableBusinessData = async (id: number) => {
-    modalConfirm('删除确认', '确定要删除吗？', async () => {
-      await apiTableDeleteBusinessData(tableId, id);
-      message.success('删除成功');
-      getTableBusinessData(pagination.current, pagination.pageSize);
-      return new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-    });
+    modalConfirm(
+      dict('PC.Common.Global.deleteConfirmTitle'),
+      dict('PC.Common.Global.deleteConfirmContent'),
+      async () => {
+        await apiTableDeleteBusinessData(tableId, id);
+        message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+        getTableBusinessData(pagination.current, pagination.pageSize);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
+    );
   };
 
   // 切换页码或者每页显示的条数
@@ -376,7 +381,7 @@ const SpaceTable = () => {
   // 确认清空数据表
   const handleConfirmClear = async () => {
     await apiClearBusinessData(tableId);
-    message.success('清除成功');
+    message.success(dict('PC.Toast.Global.clearedSuccessfully'));
     setTableData([]);
     setPagination({ total: 0, current: 1, pageSize: 15 });
     setOpenDelete(false);
@@ -403,12 +408,12 @@ const SpaceTable = () => {
           setImportLoading(false);
           return;
         }
-        message.success('导入成功');
+        message.success(dict('PC.Toast.Global.importedSuccessfully'));
         // 重新查询数据表的业务数据
         getTableBusinessData();
         setPagination({ ...pagination, current: 1 });
       } catch (error) {
-        message.error('导入失败，请重试');
+        message.error(dict('PC.Toast.Global.importFailedRetry'));
       } finally {
         setImportLoading(false);
         processingFileRef.current = null; // 重置处理状态
@@ -417,7 +422,7 @@ const SpaceTable = () => {
 
     // 处理上传错误
     if (info.file.status === 'error') {
-      message.error('文件上传失败，请重试');
+      message.error(dict('PC.Toast.Global.fileUploadFailedRetry'));
       setImportLoading(false);
       processingFileRef.current = null; // 重置处理状态
     }
@@ -447,9 +452,9 @@ const SpaceTable = () => {
   // 弹出确认框，确认保存或者放弃变更
   const onModalConfirm = (key: string) => {
     Modal.confirm({
-      title: '提示',
+      title: dict('PC.Pages.SpaceTable.Index.hint'),
       icon: <ExclamationCircleFilled />,
-      content: '当前表结构已修改，是否保存？',
+      content: dict('PC.Pages.SpaceTable.Index.structureModified'),
       maskClosable: true,
       footer: (
         <div className="flex content-end gap-10 mt-16">
@@ -458,9 +463,11 @@ const SpaceTable = () => {
               Modal.destroyAll();
             }}
           >
-            取消
+            {dict('PC.Common.Global.cancel')}
           </Button>
-          <Button onClick={() => onModalCancel(key)}>放弃变更</Button>
+          <Button onClick={() => onModalCancel(key)}>
+            {dict('PC.Pages.SpaceTable.Index.discardChanges')}
+          </Button>
           <Button
             type="primary"
             onClick={() => {
@@ -473,7 +480,7 @@ const SpaceTable = () => {
               );
             }}
           >
-            确定保存
+            {dict('PC.Pages.SpaceTable.Index.confirmSave')}
           </Button>
         </div>
       ),
@@ -613,7 +620,11 @@ const SpaceTable = () => {
       </div>
       <AddAndModify
         open={editTableDataVisible}
-        title={initialValues ? '修改数据' : '新增数据'}
+        title={
+          initialValues
+            ? dict('PC.Pages.SpaceTable.Index.modifyData')
+            : dict('PC.Pages.SpaceTable.Index.addData')
+        }
         onSubmit={handleCreateUpdateData}
         formList={formList}
         initialValues={initialValues}
@@ -641,7 +652,7 @@ const SpaceTable = () => {
         onSure={handleConfirmClear}
         onCancel={() => setOpenDelete(false)}
         open={openDelete}
-        title={'清除确认'}
+        title={dict('PC.Pages.SpaceTable.Index.clearConfirm')}
         sureText={tableDetail?.tableName || ''}
       />
     </div>

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import {
   apiDocAutoRetryTaskByDocId,
   apiKnowledgeDocumentDetail,
@@ -33,8 +34,10 @@ const DocItem: React.FC<DocItemProps> = ({
       const status: KnowledgeDocumentStatus = {
         docStatus: DocStatusEnum.ANALYZING_RAW,
         docStatusCode: DocStatusCodeEnum.ANALYZING_RAW,
-        docStatusDesc: '分析中',
-        docStatusReason: '分段生成中',
+        docStatusDesc: dict('PC.Pages.SpaceKnowledge.DocItem.analyzing'),
+        docStatusReason: dict(
+          'PC.Pages.SpaceKnowledge.DocItem.segmentGenerating',
+        ),
       };
       onSetAnalyzed(id, status);
     },
@@ -123,7 +126,7 @@ const DocItem: React.FC<DocItemProps> = ({
 
       {info.docStatusCode === DocStatusCodeEnum.ANALYZED ? (
         <span className={cx(styles.analyzing, styles['analyzing-success'])}>
-          构建成功
+          {dict('PC.Pages.SpaceKnowledge.DocItem.buildSuccess')}
         </span>
       ) : info.docStatusCode === DocStatusCodeEnum.ANALYZE_FAILED ? (
         <Button
@@ -133,10 +136,12 @@ const DocItem: React.FC<DocItemProps> = ({
           danger
           onClick={handleAutoRetry}
         >
-          构建失败,重新构建
+          {dict('PC.Pages.SpaceKnowledge.DocItem.buildFailedRetry')}
         </Button>
       ) : (
-        <span className={cx(styles.analyzing)}>构建中</span>
+        <span className={cx(styles.analyzing)}>
+          {dict('PC.Pages.SpaceKnowledge.DocItem.building')}
+        </span>
       )}
     </li>
   );

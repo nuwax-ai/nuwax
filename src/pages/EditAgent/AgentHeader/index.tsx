@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
+import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
@@ -81,11 +82,19 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   const items: MenuProps['items'] = [
     {
       key: 'showStand',
-      label: <div onClick={onToggleShowStand}>展示台</div>,
+      label: (
+        <div onClick={onToggleShowStand}>
+          {dict('PC.Pages.AgentEdit.showStand')}
+        </div>
+      ),
     },
     {
       key: 'versionHistory',
-      label: <div onClick={onToggleVersionHistory}>版本历史</div>,
+      label: (
+        <div onClick={onToggleVersionHistory}>
+          {dict('PC.Pages.AgentEdit.versionHistory')}
+        </div>
+      ),
     },
     ...actionList,
   ];
@@ -130,8 +139,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         <div className={cx('flex', 'items-center', styles['save-time-box'])}>
           <span className={cx(styles['save-time'])}>
-            草稿自动保存于&nbsp;
-            {dayjs(agentConfigInfo?.modified).format('HH:mm')}
+            {dict(
+              'PC.Pages.AgentEdit.draftAutoSavedAt',
+              dayjs(agentConfigInfo?.modified).format('HH:mm'),
+            )}
           </span>
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {agentConfigInfo?.publishDate !== null &&
@@ -143,7 +154,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
                 color="volcano"
                 className={cx(styles['volcano'])}
               >
-                有更新未发布
+                {dict('PC.Pages.AgentEdit.unpublishedChanges')}
               </Tag>
             )}
         </div>
@@ -167,7 +178,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           onClick={onPublish}
           disabled={disabledBtn}
         >
-          发布
+          {dict('PC.Pages.AgentEdit.publish')}
         </Button>
       </div>
     </header>

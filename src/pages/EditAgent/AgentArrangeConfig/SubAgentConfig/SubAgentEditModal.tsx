@@ -5,6 +5,7 @@ import {
   SITE_DOCUMENT_URL,
   SUB_AGENT_PROMPT_TEMPLATE,
 } from '@/constants/common.constants';
+import { t } from '@/services/i18nRuntime';
 import { SubAgent } from '@/types/interfaces/agent';
 import { LinkOutlined } from '@ant-design/icons';
 import { Button, Modal, Tooltip } from 'antd';
@@ -145,10 +146,10 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
   const handleCancel = () => {
     if (hasChanges) {
       Modal.confirm({
-        title: '确认取消',
-        content: '你有未保存的修改，确定要取消吗？',
-        okText: '确定取消',
-        cancelText: '继续编辑',
+        title: t('PC.Pages.AgentArrangeSubAgentEditModal.cancelTitle'),
+        content: t('PC.Pages.AgentArrangeSubAgentEditModal.cancelContent'),
+        okText: t('PC.Pages.AgentArrangeSubAgentEditModal.cancelConfirm'),
+        cancelText: t('PC.Pages.AgentArrangeSubAgentEditModal.keepEditing'),
         onOk: onCancel,
       });
     } else {
@@ -180,8 +181,12 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
   const modalTitle = (
     <div className={cx(styles['modal-title-wrapper'])}>
       <div className={cx('flex', 'items-center', 'gap-xs')}>
-        <span>{isEdit ? '编辑子智能体' : '新建子智能体'}</span>
-        <Tooltip title="查看文档">
+        <span>
+          {isEdit
+            ? t('PC.Pages.AgentArrangeSubAgentEditModal.editTitle')
+            : t('PC.Pages.AgentArrangeSubAgentEditModal.createTitle')}
+        </span>
+        <Tooltip title={t('PC.Pages.AgentArrangeSubAgentEditModal.viewDoc')}>
           <LinkOutlined
             className={cx(styles['doc-link-icon'])}
             onClick={handleOpenDoc}
@@ -189,7 +194,11 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
         </Tooltip>
       </div>
       <Tooltip
-        title={isFullscreen ? '退出全屏' : '全屏编辑'}
+        title={
+          isFullscreen
+            ? t('PC.Pages.AgentArrangeSubAgentEditModal.exitFullscreen')
+            : t('PC.Pages.AgentArrangeSubAgentEditModal.enterFullscreen')
+        }
         open={fullscreenTooltipOpen}
         onOpenChange={setFullscreenTooltipOpen}
       >
@@ -222,8 +231,8 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
       onOk={handleConfirm}
       onCancel={handleCancel}
       width={isFullscreen ? '100vw' : 600}
-      okText="确定"
-      cancelText="取消"
+      okText={t('PC.Common.Global.confirm')}
+      cancelText={t('PC.Common.Global.cancel')}
       closable={false}
       className={cx(isFullscreen && styles['fullscreen-modal'])}
       styles={{
@@ -238,7 +247,9 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
           <TiptapVariableInput
             value={prompt}
             onChange={setPrompt}
-            placeholder="请输入子智能体 Prompt"
+            placeholder={t(
+              'PC.Pages.AgentArrangeSubAgentEditModal.promptPlaceholder',
+            )}
             enableHistory={true}
             className={cx(
               isFullscreen

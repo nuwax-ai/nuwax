@@ -8,6 +8,7 @@
  */
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { Input } from 'antd';
@@ -69,7 +70,7 @@ const PageTabPanel: React.FC<PageTabPanelProps> = ({
     >
       <Input.Search
         key="pageSearch"
-        placeholder="搜索网页应用"
+        placeholder={dict('PC.Pages.DataPermissionTabPanel.searchPage')}
         allowClear
         className={cx(styles.searchInput)}
         value={pageSearchKw}
@@ -137,7 +138,9 @@ const PageTabPanel: React.FC<PageTabPanelProps> = ({
           />
         ))
       ) : (
-        <div className={cx(styles.empty)}>暂无已选网页应用</div>
+        <div className={cx(styles.empty)}>
+          {dict('PC.Pages.DataPermissionTabPanel.noSelectedPage')}
+        </div>
       )}
     </div>
   </div>

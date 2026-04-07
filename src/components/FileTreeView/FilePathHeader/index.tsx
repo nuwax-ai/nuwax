@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { USER_INFO } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
@@ -161,9 +162,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 文件树展开/折叠图标 */}
       {viewMode !== 'desktop' && (
         <div className={cx('flex', 'items-center', 'gap-4')}>
-          <span>文件预览</span>
+          <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
           <Tooltip
-            title={isFileTreeVisible ? '点击收起文件树' : '点击展开文件树'}
+            title={
+              isFileTreeVisible
+                ? dict('PC.Components.FilePathHeader.collapseFileTree')
+                : dict('PC.Components.FilePathHeader.expandFileTree')
+            }
           >
             <Button
               type="text"
@@ -220,11 +225,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                       onChange={onViewFileTypeChange}
                       options={[
                         {
-                          label: '预览',
+                          label: dict('PC.Components.FilePathHeader.preview'),
                           value: 'preview',
                         },
                         {
-                          label: '代码',
+                          label: dict('PC.Components.FilePathHeader.code'),
                           value: 'code',
                         },
                       ]}
@@ -245,8 +250,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               <div className={styles.fileName}>
                 {agentSandboxName ||
                   `${
-                    userInfo?.nickName || userInfo?.userName || '远程'
-                  }的智能体电脑`}
+                    userInfo?.nickName ||
+                    userInfo?.userName ||
+                    dict('PC.Components.FilePathHeader.remote')
+                  }${dict('PC.Components.FilePathHeader.agentComputerSuffix')}`}
               </div>
             </div>
           )}
@@ -262,10 +269,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             onClick={onSaveFiles}
             loading={isSavingFiles}
           >
-            保存
+            {dict('PC.Common.Global.save')}
           </Button>
           <Button size="small" type="default" onClick={onCancelSaveFiles}>
-            取消
+            {dict('PC.Common.Global.cancel')}
           </Button>
         </div>
       )}
@@ -282,7 +289,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               fileName.endsWith('.html') ||
               fileName.endsWith('.htm')) &&
             viewMode === 'preview' && (
-              <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+              <Tooltip
+                title={
+                  isExportingPdf
+                    ? dict('PC.Components.FilePathHeader.exporting')
+                    : dict('PC.Components.FilePathHeader.exportPdf')
+                }
+              >
+                {' '}
                 <Button
                   type="text"
                   size="small"
@@ -298,7 +312,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
           {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
           {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-            <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
+            <Tooltip
+              title={
+                isDownloadingFile
+                  ? dict('PC.Components.FilePathHeader.downloading')
+                  : dict('PC.Components.FilePathHeader.download')
+              }
+            >
               <Button
                 type="text"
                 size="small"
@@ -318,7 +338,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
           {/* 复制内容 */}
           {!!targetNode?.content && viewMode === 'preview' && (
-            <Tooltip title="复制">
+            <Tooltip title={dict('PC.Components.FilePathHeader.copy')}>
               <Button
                 type="text"
                 size="small"
@@ -327,7 +347,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 }
                 onClick={() => {
                   copyTextToClipboard(targetNode?.content || '', () => {
-                    message.success('复制成功');
+                    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
                   });
                 }}
                 className={styles.actionButton}
@@ -343,7 +363,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             {isShowShare &&
               (viewMode === 'desktop' ||
                 (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-                <Tooltip title="分享" placement="bottom">
+                <Tooltip
+                  title={dict('PC.Components.FilePathHeader.share')}
+                  placement="bottom"
+                >
                   <Button
                     type="text"
                     size="small"
@@ -362,7 +385,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             {/* 是否显示全屏图标 */}
             {(showFullscreenIcon || isFullscreen) && (
               <Tooltip
-                title={isFullscreen ? '退出全屏' : '全屏'}
+                title={
+                  isFullscreen
+                    ? dict('PC.Components.FilePathHeader.exitFullscreen')
+                    : dict('PC.Components.FilePathHeader.fullscreen')
+                }
                 placement="bottom"
                 key={isFullscreen ? 'exit' : 'enter'}
               >
@@ -400,7 +427,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               <>
                 <div className={styles.divider} />
                 {/* 关闭 */}
-                <Tooltip title="关闭">
+                <Tooltip title={dict('PC.Components.FilePathHeader.close')}>
                   <Button
                     type="text"
                     size="small"

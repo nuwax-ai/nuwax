@@ -2,6 +2,7 @@ import { SvgIcon } from '@/components/base';
 import { LimitedTooltip } from '@/components/ProComponents';
 import { SPACE_ID } from '@/constants/home.constants';
 import { updatePathUrlToLocalStorage } from '@/layouts/DynamicMenusLayout/utils';
+import { dict } from '@/services/i18nRuntime';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import type { PersonalSpaceContentType } from '@/types/interfaces/layouts';
@@ -152,7 +153,9 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       <div className={cx(styles['p-header'], 'flex')}>
         <CheckOutlined className={styles.icon} />
         <LimitedTooltip className={cx('flex-1', styles.title)}>
-          {currentSpaceName || currentSpaceInfo?.name || '个人空间'}
+          {currentSpaceName ||
+            currentSpaceInfo?.name ||
+            dict('PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace')}
         </LimitedTooltip>
       </div>
       <Divider className={styles['divider']} />
@@ -175,7 +178,9 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         onClick={onCreateTeam}
       >
         <SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />
-        <span className={cx('flex-1', 'text-ellipsis')}>创建团队空间</span>
+        <span className={cx('flex-1', 'text-ellipsis')}>
+          {dict('PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace')}
+        </span>
       </div>
     </div>
   );

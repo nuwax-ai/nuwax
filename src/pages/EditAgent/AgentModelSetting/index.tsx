@@ -8,6 +8,7 @@ import {
 } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 // import { AgentEngineEnum } from '@/types/enums/agent';
+import { dict } from '@/services/i18nRuntime';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import {
@@ -290,7 +291,7 @@ const AgentModelSetting: React.FC<
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
       <Modal
-        title="模型设置"
+        title={dict('PC.Pages.EditAgent.AgentModelSetting.modelSetting')}
         classNames={{
           content: cx(styles['modal-wrapper2']),
         }}
@@ -302,7 +303,9 @@ const AgentModelSetting: React.FC<
           {/* 会话模型选择 */}
           <div className="flex-1">
             <SelectList
-              placeholder="请选择会话模型"
+              placeholder={dict(
+                'PC.Pages.EditAgent.AgentModelSetting.selectChatModel',
+              )}
               className={cx(styles.select2)}
               onChange={handleChangeModelTarget}
               options={modelConfigList}
@@ -316,7 +319,7 @@ const AgentModelSetting: React.FC<
 
   return (
     <Modal
-      title="模型设置"
+      title={dict('PC.Pages.EditAgent.AgentModelSetting.modelSetting')}
       classNames={{
         content: cx(styles['modal-wrapper']),
       }}
@@ -326,9 +329,13 @@ const AgentModelSetting: React.FC<
     >
       <Flex gap={20}>
         <div className="flex-1">
-          <h3 className={cx(styles.title)}>会话模型</h3>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.EditAgent.AgentModelSetting.chatModel')}
+          </h3>
           <SelectList
-            placeholder="请选择会话模型"
+            placeholder={dict(
+              'PC.Pages.EditAgent.AgentModelSetting.selectChatModel',
+            )}
             className={cx(styles.select)}
             onChange={handleChangeModelTarget}
             options={modelConfigList}
@@ -336,9 +343,15 @@ const AgentModelSetting: React.FC<
           />
         </div>
         <div className="flex-1">
-          <h3 className={cx(styles.title)}>推理模型(可选)</h3>
+          <h3 className={cx(styles.title)}>
+            {dict(
+              'PC.Pages.EditAgent.AgentModelSetting.reasoningModelOptional',
+            )}
+          </h3>
           <SelectList
-            placeholder="请选择推理模型"
+            placeholder={dict(
+              'PC.Pages.EditAgent.AgentModelSetting.selectReasoningModel',
+            )}
             className={cx(styles.select)}
             onChange={(value) => handleChange(value, 'reasoningModelId')}
             options={reasonModelList}
@@ -348,22 +361,52 @@ const AgentModelSetting: React.FC<
         </div>
       </Flex>
       <h3 className={cx(styles.title, 'flex', 'items-center')}>
-        生成多样性
+        {dict('PC.Pages.EditAgent.AgentModelSetting.generateDiversity')}
         <TooltipIcon
           title={
             <>
-              <h4 className={cx(styles['generate-name'])}>精确模式:</h4>
-              <p>严格遵循指令生成内容</p>
-              <p>适用于需准确无误的场合，如正式文档、代码等</p>
-              <h4 className={cx(styles['generate-name'])}>平衡模式:</h4>
-              <p>在创新和精确之间寻求平衡</p>
-              <p>适用于大多数日常应用场景，生成有趣但不失严谨的内容</p>
-              <h4 className={cx(styles['generate-name'])}>创意模式:</h4>
-              <p>激发创意，提供新颖独特的想法</p>
-              <p>适合需要灵感和独特观点的场景，如头脑风暴、创意写作等</p>
-              <h4 className={cx(styles['generate-name'])}>自定义模式:</h4>
-              <p>通过高级设置，自定义生成方式</p>
-              <p>根据需求，进行精细调整，实现个性化优化</p>
+              <h4 className={cx(styles['generate-name'])}>
+                {dict(
+                  'PC.Pages.EditAgent.AgentModelSetting.precisionModeTitle',
+                )}
+              </h4>
+              <p>
+                {dict(
+                  'PC.Pages.EditAgent.AgentModelSetting.precisionModeDesc1',
+                )}
+              </p>
+              <p>
+                {dict(
+                  'PC.Pages.EditAgent.AgentModelSetting.precisionModeDesc2',
+                )}
+              </p>
+              <h4 className={cx(styles['generate-name'])}>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.balanceModeTitle')}
+              </h4>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.balanceModeDesc1')}
+              </p>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.balanceModeDesc2')}
+              </p>
+              <h4 className={cx(styles['generate-name'])}>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.creativeModeTitle')}
+              </h4>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.creativeModeDesc1')}
+              </p>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.creativeModeDesc2')}
+              </p>
+              <h4 className={cx(styles['generate-name'])}>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.customModeTitle')}
+              </h4>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.customModeDesc1')}
+              </p>
+              <p>
+                {dict('PC.Pages.EditAgent.AgentModelSetting.customModeDesc2')}
+              </p>
             </>
           }
           icon={<InfoCircleOutlined />}
@@ -380,8 +423,12 @@ const AgentModelSetting: React.FC<
       {/*生成随机性;0-1*/}
       <div className={cx('flex', 'mb-16')}>
         <LabelIcon
-          label="生成随机性"
-          title="temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 “Top p” 同时调整"
+          label={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.generateRandomness',
+          )}
+          title={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.generateRandomnessTooltip',
+          )}
         />
         <SliderNumber
           min={0}
@@ -395,7 +442,7 @@ const AgentModelSetting: React.FC<
       <div className={cx('flex', 'mb-16')}>
         <LabelIcon
           label="Top p"
-          title="Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 “生成随机性” 同时调整。"
+          title={dict('PC.Pages.EditAgent.AgentModelSetting.topPTooltip')}
         />
         <SliderNumber
           min={0}
@@ -405,12 +452,18 @@ const AgentModelSetting: React.FC<
           onChange={(value) => handleChange(value, 'topP')}
         />
       </div>
-      <h3 className={cx(styles.title)}>输入及输出设置</h3>
+      <h3 className={cx(styles.title)}>
+        {dict('PC.Pages.EditAgent.AgentModelSetting.inputOutputSettings')}
+      </h3>
       {/*上下文轮数*/}
       <div className={cx('flex', 'mb-16')}>
         <LabelIcon
-          label="携带上下文轮数"
-          title="设置带入模型上下文的对话历史轮数。轮数越多，多轮对话的相关性越高，但消耗的 Token 也越多"
+          label={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.contextRoundsLabel',
+          )}
+          title={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.contextRoundsTooltip',
+          )}
         />
         <SliderNumber
           min={0}
@@ -423,8 +476,12 @@ const AgentModelSetting: React.FC<
       {/*最大生成长度*/}
       <div className={cx('flex', 'mb-16')}>
         <LabelIcon
-          label="最大回复长度"
-          title="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
+          label={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.maxReplyLengthLabel',
+          )}
+          title={dict(
+            'PC.Pages.EditAgent.AgentModelSetting.maxReplyLengthTooltip',
+          )}
         />
         <SliderNumber
           min={1}

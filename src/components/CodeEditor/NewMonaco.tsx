@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import { ICON_WORKFLOW_CODE } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Select, Space } from 'antd';
@@ -83,7 +84,7 @@ const NewMonaco: React.FC<MonacoProps> = ({
                   display: 'inline-block',
                 }}
               >
-                代码
+                {dict('PC.Components.NewMonaco.code')}
               </span>
               {!disabledSwitchLanguage && (
                 <Select
@@ -92,7 +93,9 @@ const NewMonaco: React.FC<MonacoProps> = ({
                   onChange={handleLanguageChange}
                   options={LANGUAGE_OPTIONS}
                   size="small"
-                  placeholder="请选择语言"
+                  placeholder={dict(
+                    'PC.Components.NewMonaco.pleaseSelectLanguage',
+                  )}
                 />
               )}
             </Space>

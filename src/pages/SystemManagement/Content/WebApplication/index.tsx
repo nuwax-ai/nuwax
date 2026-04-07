@@ -2,6 +2,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemResourceWebappDelete,
   apiSystemResourceWebappList,
@@ -78,10 +79,13 @@ const WebApplication: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemWebappInfo) => {
     const response = await apiSystemResourceWebappDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemContentWebApplication.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error(response.message || '删除失败');
+      message.error(
+        response.message ||
+          t('PC.Pages.SystemContentWebApplication.deleteFailed'),
+      );
     }
   }, []);
 
@@ -123,7 +127,7 @@ const WebApplication: React.FC = () => {
       const actions: ActionItem<SystemWebappInfo>[] = [
         {
           key: 'view',
-          label: '查看',
+          label: t('PC.Pages.SystemContentWebApplication.view'),
           disabled: !hasPermission('content_page_app_query_detail'),
           onClick: handleView,
         },
@@ -137,7 +141,7 @@ const WebApplication: React.FC = () => {
       ) {
         actions.push({
           key: 'auth',
-          label: '授权',
+          label: t('PC.Pages.SystemContentWebApplication.authorize'),
           disabled: !hasPermission('content_page_app_access_control'),
           onClick: handleAuth,
         });
@@ -145,14 +149,15 @@ const WebApplication: React.FC = () => {
 
       actions.push({
         key: 'delete',
-        label: '删除',
+        label: t('PC.Pages.SystemContentWebApplication.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: t(
+            'PC.Pages.SystemContentWebApplication.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: t(
+            'PC.Pages.SystemContentWebApplication.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_page_app_delete'),
         onClick: handleDelete,
@@ -168,47 +173,55 @@ const WebApplication: React.FC = () => {
    */
   const columns: ProColumns<SystemWebappInfo>[] = [
     {
-      title: '名称',
+      title: t('PC.Pages.SystemContentWebApplication.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入网页应用名称',
+        placeholder: t('PC.Pages.SystemContentWebApplication.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemContentWebApplication.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true,
     },
     {
-      title: '创建人',
+      title: t('PC.Pages.SystemContentWebApplication.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '发布状态',
+      title: t('PC.Pages.SystemContentWebApplication.columnPublishStatus'),
       dataIndex: 'publishStatus',
       align: 'center',
       width: 100,
       hideInSearch: true,
       render: (_, record: SystemWebappInfo) => {
         const statusMap: Record<PublishStatusEnum, string> = {
-          [PublishStatusEnum.Developing]: '待发布',
-          [PublishStatusEnum.Applying]: '待审核',
-          [PublishStatusEnum.Published]: '已发布',
-          [PublishStatusEnum.Rejected]: '已拒绝',
+          [PublishStatusEnum.Developing]: t(
+            'PC.Pages.SystemContentWebApplication.statusDeveloping',
+          ),
+          [PublishStatusEnum.Applying]: t(
+            'PC.Pages.SystemContentWebApplication.statusApplying',
+          ),
+          [PublishStatusEnum.Published]: t(
+            'PC.Pages.SystemContentWebApplication.statusPublished',
+          ),
+          [PublishStatusEnum.Rejected]: t(
+            'PC.Pages.SystemContentWebApplication.statusRejected',
+          ),
         };
         return statusMap[record.publishStatus] || '--';
       },
     },
     {
-      title: '创建时间',
+      title: t('PC.Pages.SystemContentWebApplication.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -216,15 +229,21 @@ const WebApplication: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '管控',
-      tooltip: '若开启管控，发布到系统广场的网页应用需授权才能使用',
+      title: t('PC.Pages.SystemContentWebApplication.columnAccessControl'),
+      tooltip: t('PC.Pages.SystemContentWebApplication.accessControlTooltip'),
       dataIndex: 'accessControl',
       align: 'center',
       width: 100,
       fixed: 'right',
       valueEnum: {
-        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
-        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+        [AccessControlEnum.NoFilter]: {
+          text: t('PC.Pages.SystemContentWebApplication.accessControlOff'),
+          status: 'Default',
+        },
+        [AccessControlEnum.Filter]: {
+          text: t('PC.Pages.SystemContentWebApplication.accessControlOn'),
+          status: 'Processing',
+        },
       },
       valueType: 'select',
       render: (_, record: SystemWebappInfo) => {
@@ -242,7 +261,7 @@ const WebApplication: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemContentWebApplication.columnAction'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',
@@ -282,7 +301,10 @@ const WebApplication: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="网页应用管理" hideScroll>
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentWebApplication.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemWebappInfo>
         actionRef={actionRef}
         formRef={formRef}

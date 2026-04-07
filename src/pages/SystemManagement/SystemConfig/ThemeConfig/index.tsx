@@ -7,6 +7,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { t } from '@/services/i18nRuntime';
 import { apiSystemConfigUpdate } from '@/services/systemManage';
 import {
   reloadConfiguration,
@@ -32,7 +33,7 @@ const cx = classNames.bind(styles);
  * 重构特点：
  * - 使用统一的主题数据管理服务
  * - 所有切换都是临时预览效果，不会立即保存到本地缓存
- * - 用户需要点击"保存配置"按钮才会真正保存到后端和本地缓存
+ * - Users must click the "Save Config" button to persist changes to backend and local cache
  * - 支持完整的自定义功能（自定义颜色、背景图片上传等）
  * - 配置优先级：用户设置 > 租户信息设置 > 默认配置
  */
@@ -91,7 +92,7 @@ const ThemeConfig: React.FC = () => {
     try {
       await updatePrimaryColor(color, { saveToStorage: false });
     } catch (error) {
-      console.warn('预览主题色失败:', error);
+      console.warn('Failed to preview theme color:', error);
     }
   };
 
@@ -116,7 +117,7 @@ const ThemeConfig: React.FC = () => {
         { saveToStorage: false },
       );
     } catch (error) {
-      console.warn('预览导航风格失败:', error);
+      console.warn('Failed to preview navigation style:', error);
     }
   };
 
@@ -134,7 +135,7 @@ const ThemeConfig: React.FC = () => {
     try {
       await updateBackground(backgroundId, { saveToStorage: false });
     } catch (error) {
-      console.warn('预览背景图失败:', error);
+      console.warn('Failed to preview background image:', error);
     }
 
     // 显示联动提示
@@ -143,9 +144,12 @@ const ThemeConfig: React.FC = () => {
     );
     if (backgroundConfig) {
       message.info(
-        `已自动切换为${
-          newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
-        }导航栏（预览效果）`,
+        t(
+          'PC.Pages.SystemThemeConfig.autoSwitchedNavModePreview',
+          newLayoutStyle === ThemeLayoutColorStyle.DARK
+            ? t('PC.Pages.SystemThemeConfig.darkMode')
+            : t('PC.Pages.SystemThemeConfig.lightMode'),
+        ),
       );
     }
   };
@@ -163,7 +167,7 @@ const ThemeConfig: React.FC = () => {
     try {
       await updateLayoutStyle(newLayoutStyle, { saveToStorage: false });
     } catch (error) {
-      console.warn('预览布局风格失败:', error);
+      console.warn('Failed to preview layout style:', error);
     }
 
     // 检查当前背景是否与新的导航栏深浅色匹配
@@ -186,14 +190,18 @@ const ThemeConfig: React.FC = () => {
             saveToStorage: false,
           });
         } catch (error) {
-          console.warn('预览背景图失败:', error);
+          console.warn('Failed to preview background image:', error);
         }
 
         // 显示背景自动匹配提示
         message.info(
-          `已自动切换为${matchingBackground.name}以匹配${
-            newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
-          }导航栏（预览效果）`,
+          t(
+            'PC.Pages.SystemThemeConfig.autoSwitchedBackgroundPreview',
+            matchingBackground.name,
+            newLayoutStyle === ThemeLayoutColorStyle.DARK
+              ? t('PC.Pages.SystemThemeConfig.darkMode')
+              : t('PC.Pages.SystemThemeConfig.lightMode'),
+          ),
         );
       }
     }
@@ -223,8 +231,8 @@ const ThemeConfig: React.FC = () => {
         templateConfig: JSON.stringify(themeConfig),
       });
 
-      message.success('主题配置保存成功');
-      console.log('保存的配置:', themeConfig);
+      message.success(t('PC.Pages.SystemThemeConfig.saveSuccess'));
+      console.log('Saved theme config:', themeConfig);
 
       // 页面刷新后检查
       setTimeout(() => {
@@ -242,7 +250,7 @@ const ThemeConfig: React.FC = () => {
     setPreviewNavigationStyle('style1' as any);
     setPreviewLayoutStyle(ThemeLayoutColorStyle.LIGHT);
     setPreviewIsNavigationDark(false);
-    message.info('已重置为默认配置（预览效果）');
+    message.info(t('PC.Pages.SystemThemeConfig.resetPreview'));
   };
 
   // 恢复到已保存状态（页面加载状态）
@@ -260,7 +268,7 @@ const ThemeConfig: React.FC = () => {
 
     // 使用 setTimeout 确保在 remount 后消息能正常显示
     // setTimeout(() => {
-    //   message.info('已重置为默认配置（预览效果）');
+    //   message.info('Reset to default config (preview mode)');
     // }, 200);
   }, [message]);
 
@@ -274,16 +282,16 @@ const ThemeConfig: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="主题配置"
+      title={t('PC.Pages.SystemThemeConfig.pageTitle')}
       extraContent={
         <div style={{ padding: '12px 6px' }}>
           {hasPermission('system_theme_config_save') && (
             <>
               <Button type="primary" onClick={handleSave}>
-                保存配置
+                {t('PC.Pages.SystemThemeConfig.saveConfig')}
               </Button>
               <Button style={{ marginLeft: 12 }} onClick={handleReset}>
-                重置默认
+                {t('PC.Pages.SystemThemeConfig.resetDefault')}
               </Button>
             </>
           )}

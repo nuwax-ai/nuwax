@@ -2,6 +2,7 @@
  * AppDev 模型选择器 Hook
  * 管理模型列表加载和选择逻辑
  */
+import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
 import { AgentComponentTypeEnum, TaskTypeEnum } from '@/types/enums/agent';
 import {
@@ -65,9 +66,8 @@ export const useAppDevModelSelector = (
         // 如果没有编码模型列表，则提示用户先配置默认聊天模型
         if (!chatModelList?.length) {
           Modal.confirm({
-            title: '提示',
-            content:
-              '请在系统管理或组件库中配置编码模型，添加模型的时候请选择支持Anthropic协议的模型，推荐使用智谱的Coding Plan https://bigmodel.cn/glm-coding',
+            title: dict('PC.Hooks.UseAppDevModelSelector.notice'),
+            content: dict('PC.Hooks.UseAppDevModelSelector.configCodingModel'),
             // 核心代码：通过样式隐藏取消按钮
             cancelButtonProps: { style: { display: 'none' } },
             onOk() {
@@ -76,11 +76,13 @@ export const useAppDevModelSelector = (
           });
         }
       } else {
-        throw new Error(message || '获取模型列表失败');
+        throw new Error(message || 'Failed to get model list');
       }
     } catch (error) {
-      console.error(' 加载模型列表失败:', error);
-      message.error('加载模型列表失败，请刷新页面重试');
+      console.error('Failed to load model list:', error);
+      message.error(
+        dict('PC.Hooks.UseAppDevModelSelector.loadModelListFailed'),
+      );
     } finally {
       setIsLoadingModels(false);
     }

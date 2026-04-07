@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
@@ -25,7 +26,7 @@ interface TreeOutput extends InputAndOutConfig {
 const truncate = (str: string, maxLength: number) => {
   return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
 };
-// 定义技能的参数展示
+// Render skill parameters in popover.
 const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
   return (
     <div style={{ maxWidth: '300px' }}>
@@ -48,7 +49,7 @@ const SkillParamsContent: React.FC<{ params: TreeOutput[] }> = ({ params }) => {
   );
 };
 
-// V3 定义通用的技能显示（无 loading）
+// V3 skill list without loading state.
 export const SkillList: React.FC<SkillProps> = ({
   params,
   disabled = false,
@@ -56,17 +57,16 @@ export const SkillList: React.FC<SkillProps> = ({
   modifyItem,
   variables = [],
 }) => {
-  // const [skillParams,setSkillParams] = useState<NodeConfig>(params);
-  // 使用useState钩子来管理每个项目的hover状态
+  // Hovered item state.
   const [currentComponentInfo, setCurrentComponentInfo] =
     useState<CreatedNodeItem | null>(null);
 
-  // 打开技能配置的数据
+  // Modal state for skill setting.
   const [open, setOpen] = useState(false);
-  // 新增一个状态来控制蒙版层的显示
+  // Mask visibility for hover actions.
   const [showMask, setShowMask] = useState(false);
 
-  // 移除技能
+  // Remove skill item.
   const handleDelete = (item: CreatedNodeItem) => {
     removeItem(item);
   };
@@ -81,7 +81,7 @@ export const SkillList: React.FC<SkillProps> = ({
   };
   const handleEdit = (item: CreatedNodeItem) => {
     const inputConfigArgs = item.inputArgBindConfigs as BindConfigWithSub[];
-    // 使用递归函数设置默认值：输入，并处理嵌套的子配置
+    // Normalize nested bind-value types.
     const _inputConfigArgs = loopSetBindValueType(inputConfigArgs || []);
 
     setCurrentComponentInfo({
@@ -100,7 +100,7 @@ export const SkillList: React.FC<SkillProps> = ({
   };
   const genKey = useCallback(
     (item: CreatedNodeItem, prefix: string, index: number) => {
-      // 包含 index 以确保即使 typeId 为 undefined 也能生成唯一 key
+      // Include index to ensure uniqueness when typeId is undefined.
       return `${prefix}-${item?.type}-${item?.typeId ?? index}-${
         item?.toolName || ''
       }`;
@@ -109,7 +109,7 @@ export const SkillList: React.FC<SkillProps> = ({
   );
   return (
     <div className={cx(styles['skill-list'], 'relative')}>
-      {/* V3: 前端同步操作，移除 loading */}
+      {/* V3: sync operations on frontend without loading placeholder */}
       {params.map((item, index) => (
         <div
           key={genKey(item, 'skill', index)}
@@ -121,9 +121,7 @@ export const SkillList: React.FC<SkillProps> = ({
           <div
             className={cx(styles['skill-item-style'], 'dis-left')}
             style={{
-              //设置为整体为灰色
               opacity: disabled ? 0.5 : 1,
-              //设置为不可点击
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
             onMouseEnter={() => {
@@ -167,7 +165,10 @@ export const SkillList: React.FC<SkillProps> = ({
                         <InfoCircleOutlined className={cx('white')} />
                       </Popover>
                     )}
-                  <Popover content={'编辑参数'} trigger="hover">
+                  <Popover
+                    content={t('PC.Pages.AntvX6Skill.editParams')}
+                    trigger="hover"
+                  >
                     <SettingOutlined
                       className={cx('ml-12 cursor-pointer white')}
                       onClick={() => {
@@ -177,7 +178,10 @@ export const SkillList: React.FC<SkillProps> = ({
                     />
                   </Popover>
                   {!disabled && (
-                    <Popover content={'移除'} trigger="hover">
+                    <Popover
+                      content={t('PC.Pages.AntvX6Skill.remove')}
+                      trigger="hover"
+                    >
                       <DeleteOutlined
                         className={cx('ml-12  white')}
                         onClick={() => handleDelete(item)}

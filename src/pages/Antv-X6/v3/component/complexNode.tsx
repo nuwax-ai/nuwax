@@ -7,6 +7,7 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -38,7 +39,7 @@ import '../indexV3.less';
 import { outPutConfigs } from '../ParamsV3';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
 import { SkillList } from './NewSkillV3';
-// 请求方法的选项
+// HTTP method options.
 const REQUEST_METHOD_OPTIONS = [
   { label: 'GET', value: 'GET' },
   { label: 'POST', value: 'POST' },
@@ -47,10 +48,10 @@ const REQUEST_METHOD_OPTIONS = [
   { label: 'PATCH', value: 'PATCH' },
 ];
 
-// 各种方法的options
+// HTTP content type options.
 const REQUEST_CONTENT_TYPE_OPTIONS = [
   {
-    label: '无',
+    label: t('PC.Pages.AntvX6ComplexNode.none'),
     value: HttpContentTypeEnum.OTHER,
     style: { marginTop: 3, marginBottom: 3 },
   },
@@ -78,18 +79,16 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-// 定义大模型节点
+// LLM node.
 const ModelNode: React.FC<NodeDisposeProps> = ({
   form,
   id,
   nodeConfig,
   type,
 }) => {
-  // 打开、关闭弹窗
+  // Modal visibility states.
   const [open, setOpen] = useState(false);
-  // 打开关闭优化
   const [show, setShow] = useState(false);
-  // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
@@ -113,19 +112,16 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setAddComponents(theList);
   };
 
-  // 新增技能
+  // Add skill.
   const onAddedSkill = (item: CreatedNodeItem) => {
     const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY) || [];
-    item.type = item.targetType as unknown as NodeTypeEnum; // TODO 这里需要优化
+    item.type = item.targetType as unknown as NodeTypeEnum; // TODO: optimize
     item.typeId = item.targetId;
     form.setFieldValue(SKILL_FORM_KEY, skillComponentConfigs.concat([item]));
     setNeedSubmit(true);
   };
 
-  // V3: 技能添加现在是前端同步操作，不需要 loading 效果
-  // 移除基于 skillChange 的 loading 逻辑
-
-  // 移出技能
+  // Remove skill.
   const removeItem = (item: CreatedNodeItem) => {
     const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
@@ -138,12 +134,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      // V3: 触发全量保存
       form.submit();
     }
   };
 
-  // 修改技能参数
+  // Update skill params.
   const modifyItem = (item: CreatedNodeItem) => {
     const skillComponentConfigs = form.getFieldValue(SKILL_FORM_KEY);
     if (skillComponentConfigs) {
@@ -156,12 +151,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      // V3: 触发全量保存
       form.submit();
     }
   };
 
-  //   显示新增技能
+  // Open add-skill modal.
   const showAdd = () => {
     setOpen(true);
   };
@@ -174,7 +168,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     });
   }, [skillComponentConfigs]);
 
-  // Form.useWatch 在第一次渲染时可能返回空，使用 nodeConfig.inputArgs 作为 fallback
+  // Use nodeConfig.inputArgs as fallback for first render.
   const watchedInputArgs = Form.useWatch(InputItemNameEnum.inputArgs, {
     form,
     preserve: true,
@@ -187,7 +181,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
   );
 
-  // Debug: Check variables and referenceList
   workflowLogger.log(
     '[LLMNode] variables:',
     variables?.length,
@@ -208,11 +201,13 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     Form.useWatch(SKILL_FORM_KEY, { form, preserve: true }) || [];
   return (
     <div className="model-node-style">
-      {/* 模型模块 */}
+      {/* Model module */}
       <ModelSelected form={form} modelConfig={nodeConfig?.modelConfig} />
-      {/* 技能模块 */}
+      {/* Skills module */}
       <div className="dis-sb">
-        <span className="node-title-style">工具</span>
+        <span className="node-title-style">
+          {t('PC.Pages.AntvX6ComplexNode.skills')}
+        </span>
         <Button
           icon={<PlusOutlined />}
           size="small"
@@ -238,23 +233,23 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           )
         }
       </Form.Item>
-      {/* 输入参数 */}
+      {/* Input parameters */}
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6ComplexNode.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
         />
       </div>
-      {/* 系统提示词 */}
+      {/* System prompt */}
       <div className="node-item-style">
         <ExpandableInputTextarea
           title={
             <>
-              系统提示词
+              {t('PC.Pages.AntvX6ComplexNode.systemPromptTitle')}
               <TooltipIcon
-                title="为对话提供系统级指导，如设定人设和回复逻辑。"
+                title={t('PC.Pages.AntvX6ComplexNode.systemPromptTooltip')}
                 icon={<ExclamationCircleOutlined />}
               ></TooltipIcon>
             </>
@@ -263,7 +258,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           onExpand
           onOptimize
           onOptimizeClick={() => setShow(true)}
-          placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
+          placeholder={t('PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder')}
           variables={transformToPromptVariables(
             variables,
             referenceList?.argMap,
@@ -271,14 +266,14 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           skills={skillComponentConfigs}
         />
       </div>
-      {/* 用户提示词 */}
+      {/* User prompt */}
       <div className="node-item-style">
         <ExpandableInputTextarea
           title={
             <>
-              用户提示词
+              {t('PC.Pages.AntvX6ComplexNode.userPromptTitle')}
               <TooltipIcon
-                title="向模型提供用户指令，如查询或任何基于文本输入的提问。"
+                title={t('PC.Pages.AntvX6ComplexNode.userPromptTooltip')}
                 icon={<ExclamationCircleOutlined />}
               ></TooltipIcon>
             </>
@@ -287,7 +282,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           onExpand
           // onOptimize
           // onOptimizeClick={() => setShow(true)}
-          placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
+          placeholder={t('PC.Pages.AntvX6ComplexNode.userPromptPlaceholder')}
           variables={transformToPromptVariables(
             variables,
             referenceList?.argMap,
@@ -295,11 +290,11 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           skills={skillComponentConfigs}
         />
       </div>
-      {/* 输出参数 */}
+      {/* Output parameters */}
       <Form.Item shouldUpdate name={'outputArgs'}>
         <CustomTree
           key={`${type}-${id}-outputArgs`}
-          title={'输出'}
+          title={t('PC.Pages.AntvX6ComplexNode.output')}
           notShowTitle
           form={form}
           params={nodeConfig?.outputArgs || []}
@@ -316,7 +311,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         tabs={skillCreatedTabs}
       />
       <PromptOptimizeModal
-        title="提示词优化"
+        title={t('PC.Pages.AntvX6ComplexNode.promptOptimizeTitle')}
         open={show}
         onCancel={() => {
           setShow(false);
@@ -328,7 +323,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           if (text.includes('```')) {
             text = text.replace(/```/g, '');
           }
-          // 只取第二个SQL语句
           form.setFieldsValue({ systemPrompt: text || '' });
           setIsModified(true);
           setShow(false);
@@ -340,28 +334,28 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   );
 };
 
-// 定义意图识别
+// Intent recognition node.
 const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const { referenceList } = useModel('workflowV3');
   return (
     <div className="model-node-style">
-      {/* 模型模块 */}
+      {/* Model module */}
       <Form.Item noStyle>
         <ModelSelected form={form} />
       </Form.Item>
-      {/* 输入参数 */}
+      {/* Input parameters */}
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6ComplexNode.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
         />
       </div>
-      {/* 意图匹配 */}
+      {/* Intent matching */}
       <div className="node-item-style">
         <FormList
-          title={'意图匹配'}
+          title={t('PC.Pages.AntvX6ComplexNode.intentMatchTitle')}
           form={form}
           field="intent"
           hasUuid
@@ -370,14 +364,14 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
           inputItemName={InputItemNameEnum.intentConfigs}
         />
       </div>
-      {/* 补充提示词 */}
+      {/* Extra prompt */}
       <div className="node-item-style">
         <ExpandableInputTextarea
-          title="补充提示词"
+          title={t('PC.Pages.AntvX6ComplexNode.extraPromptTitle')}
           // inputFieldName="systemPrompt"
           inputFieldName="extraPrompt"
           onExpand
-          placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
+          placeholder={t('PC.Pages.AntvX6ComplexNode.extraPromptPlaceholder')}
           variables={transformToPromptVariables(
             (
               Form.useWatch(InputItemNameEnum.inputArgs, {
@@ -392,12 +386,14 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
           )}
         />
       </div>
-      {/* 输出 */}
+      {/* Output */}
       <Form.Item shouldUpdate>
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6ComplexNode.output')}
+              </div>
               <TreeOutput treeData={form.getFieldValue('outputArgs')} />
             </>
           )
@@ -407,7 +403,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
-// 定义问答
+// Q&A node.
 const QuestionsNode: React.FC<NodeDisposeProps> = ({
   form,
   nodeConfig,
@@ -415,9 +411,9 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   id,
 }) => {
   const { referenceList } = useModel('workflowV3');
-  // 更改问答方式
+  // Switch answer type.
   const changeType = (val: string) => {
-    // 首次选中
+    // Initialize options for the first select-answer setup.
     let options = form.getFieldValue('options');
     if (val === 'SELECT' && (!options || !options.length)) {
       options = [
@@ -430,7 +426,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
         {
           uuid: uuidv4(),
           index: 1,
-          content: '此选项用户不可见，用户回复无关内容时走此分支',
+          content: t('PC.Pages.AntvX6CommonNode.otherBranchHint'),
           nextNodeIds: [],
         },
       ];
@@ -458,24 +454,24 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
 
   return (
     <div className="node-title-style">
-      {/* 模型模块 */}
+      {/* Model module */}
       <ModelSelected form={form} />
-      {/* 输入参数 */}
+      {/* Input parameters */}
       <div className="node-item-style">
         <InputAndOut
-          title="输入"
+          title={t('PC.Pages.AntvX6ComplexNode.input')}
           fieldConfigs={outPutConfigs}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
         />
       </div>
-      {/* 提问问题 */}
+      {/* Question */}
       <div className="node-item-style">
         <ExpandableInputTextarea
-          title="提问问题"
+          title={t('PC.Pages.AntvX6ComplexNode.questionTitle')}
           inputFieldName="question"
           onExpand
-          placeholder="可使用{{变量名}}的方式引用输入参数中的变量"
+          placeholder={t('PC.Pages.AntvX6ComplexNode.questionPlaceholder')}
           variables={transformToPromptVariables(
             (
               Form.useWatch(InputItemNameEnum.inputArgs, {
@@ -490,29 +486,36 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
           )}
         />
       </div>
-      {/* 回答类型 */}
+      {/* Answer type */}
       <div className="node-item-style">
-        <Form.Item label="回答类型" name={'answerType'}>
+        <Form.Item
+          label={t('PC.Pages.AntvX6ComplexNode.answerTypeLabel')}
+          name={'answerType'}
+        >
           <Radio.Group
             onChange={(value: RadioChangeEvent) =>
               changeType(value.target.value)
             }
           >
             <Space direction="vertical">
-              <Radio value={'TEXT'}>直接回答</Radio>
-              <Radio value={'SELECT'}>选项回答</Radio>
+              <Radio value={'TEXT'}>
+                {t('PC.Pages.AntvX6ComplexNode.answerTypeText')}
+              </Radio>
+              <Radio value={'SELECT'}>
+                {t('PC.Pages.AntvX6ComplexNode.answerTypeSelect')}
+              </Radio>
             </Space>
           </Radio.Group>
         </Form.Item>
       </div>
 
-      {/* 输出参数 */}
+      {/* Output parameters */}
       <Form.Item shouldUpdate noStyle>
         {() =>
           form.getFieldValue('answerType') === 'TEXT' ? (
             <CustomTree
               key={`${type}-${id}-outputArgs`}
-              title={'输出'}
+              title={t('PC.Pages.AntvX6ComplexNode.output')}
               form={form}
               params={nodeConfig?.outputArgs || []}
               inputItemName={'outputArgs'}
@@ -526,7 +529,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
         {() =>
           form.getFieldValue('answerType') === 'SELECT' ? (
             <FormList
-              title={'设置选项内容'}
+              title={t('PC.Pages.AntvX6ComplexNode.optionContentTitle')}
               form={form}
               field="content"
               inputItemName={InputItemNameEnum.options}
@@ -540,8 +543,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   );
 };
 
-// 定义http工具
-
+// HTTP tool node.
 const HttpToolNode: React.FC<NodeDisposeProps> = ({
   form,
   nodeConfig,
@@ -552,25 +554,32 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
   const outputParams = nodeConfig?.outputArgs || [];
   return (
     <div>
-      {/* 请求配置 */}
+      {/* Request config */}
       <div className="node-item-style">
-        <Form.Item label="请求方法与路径">
+        <Form.Item label={t('PC.Pages.AntvX6ComplexNode.requestMethodAndPath')}>
           <div className="dis-sb">
             <Form.Item name="method" noStyle>
               <Select
                 style={{ width: '30%', marginRight: '10px' }}
                 options={REQUEST_METHOD_OPTIONS}
-                placeholder="请求方法"
+                placeholder={t(
+                  'PC.Pages.AntvX6ComplexNode.requestMethodPlaceholder',
+                )}
               />
             </Form.Item>
             <Form.Item name="url" noStyle>
-              <Input placeholder="请输入url地址" />
+              <Input
+                placeholder={t('PC.Pages.AntvX6ComplexNode.urlPlaceholder')}
+              />
             </Form.Item>
           </div>
         </Form.Item>
       </div>
       <div className="node-item-style">
-        <Form.Item name="contentType" label="请求内容格式">
+        <Form.Item
+          name="contentType"
+          label={t('PC.Pages.AntvX6ComplexNode.requestContentTypeLabel')}
+        >
           <Radio.Group
             className="margin-bottom"
             options={REQUEST_CONTENT_TYPE_OPTIONS}
@@ -578,13 +587,23 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
         </Form.Item>
       </div>
       <div className="node-item-style">
-        <Form.Item label="请求超时配置" name="timeout">
-          <Input placeholder="请输入超时配置时长" addonAfter="s"></Input>
+        <Form.Item
+          label={t('PC.Pages.AntvX6ComplexNode.requestTimeoutLabel')}
+          name="timeout"
+        >
+          <Input
+            placeholder={t(
+              'PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder',
+            )}
+            addonAfter="s"
+          ></Input>
         </Form.Item>
       </div>
-      {/* 入参 */}
+      {/* Input params */}
       <div className="has-child-node">
-        <p className="node-title-bold-style">入参</p>
+        <p className="node-title-bold-style">
+          {t('PC.Pages.AntvX6ComplexNode.inputParams')}
+        </p>
         <div className="node-item-style">
           <InputAndOut
             title="Header"
@@ -612,11 +631,11 @@ const HttpToolNode: React.FC<NodeDisposeProps> = ({
           />
         </div>
       </div>
-      {/* 出参 */}
+      {/* Output params */}
       <Form.Item name={'outputArgs'}>
         <CustomTree
           key={`${type}-${id}-outputArgs`}
-          title={'出参'}
+          title={t('PC.Pages.AntvX6ComplexNode.outputParams')}
           form={form}
           inputItemName="outputArgs"
           params={outputParams}

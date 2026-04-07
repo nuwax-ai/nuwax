@@ -151,7 +151,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
           if (!sourceCell || !targetCell) {
             workflowLogger.warn(
-              `[GraphContainer] 边的源节点(${sourceId})或目标节点(${targetId})不存在，跳过创建边`,
+              `[GraphContainer] Source node (${sourceId}) or target node (${targetId}) does not exist, edge creation skipped`,
             );
             return null;
           }
@@ -233,7 +233,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           changeCondition({ nodeData: _params });
         } else {
           workflowLogger.warn(
-            '[GraphContainer] 找不到父循环节点，无法建立父子关系',
+            '[GraphContainer] Parent loop node not found, cannot build parent-child relation',
           );
         }
       }
@@ -432,7 +432,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         !graphRef.current.getCellById(targetId)
       ) {
         workflowLogger.warn(
-          `[GraphContainer] 无法创建边：源节点(${sourceId})或目标节点(${targetId})在画布中未找到`,
+          `[GraphContainer] Unable to create edge: source node (${sourceId}) or target node (${targetId}) was not found on canvas`,
         );
         return;
       }

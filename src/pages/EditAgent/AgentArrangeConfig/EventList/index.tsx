@@ -1,5 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
 import { EVENT_LIST } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
 import { EventListEnum } from '@/types/enums/agent';
 import type { EventListProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
@@ -34,7 +35,7 @@ const EventList: React.FC<EventListProps> = ({
     </div>
   ) : (
     <p className={cx(textClassName)}>
-      通过事件绑定可给大模型返回的内容指定点击操作响应。
+      {dict('PC.Pages.EditAgent.EventList.emptyDescription')}
     </p>
   );
 };

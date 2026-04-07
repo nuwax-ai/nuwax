@@ -1,4 +1,5 @@
 import { DEFAULT_DRAWER_FORM } from '@/constants/node.constants';
+import { dict } from '@/services/i18nRuntime';
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,8 +38,8 @@ const useWorkflow = () => {
       inputArgs: [],
     },
     id: 0,
-    name: '测试',
-    description: '测试',
+    name: dict('PC.Models.Workflow.defaultNodeName'),
+    description: dict('PC.Models.Workflow.defaultNodeDescription'),
     workflowId: 0,
     icon: '',
   });

@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import { AgentConversationProps } from '@/types/interfaces/agentTask';
 import { formatTimeAgo } from '@/utils/common';
 import { Button, Empty, Typography } from 'antd';
@@ -40,7 +41,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
           )}
         >
           <Typography.Title className={cx(styles.title)} level={5}>
-            相关会话
+            {dict('PC.Components.AgentConversation.title')}
           </Typography.Title>
           <Button
             size="small"
@@ -55,7 +56,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
             iconPosition="end"
             type="text"
           >
-            查看更多
+            {dict('PC.Components.AgentConversation.viewMore')}
           </Button>
         </div>
       )}
@@ -76,7 +77,9 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
             </div>
           ))
         ) : (
-          <Empty description="暂无相关会话" />
+          <Empty
+            description={dict('PC.Components.AgentConversation.emptyDesc')}
+          />
         )}
       </div>
     </div>

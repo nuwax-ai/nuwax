@@ -144,8 +144,8 @@ function buildForwardGraph(nodes: ChildNode[]): Map<number, number[]> {
 }
 
 /**
- * 获取逻辑上的“未来节点”（从起始点正向可达的所有节点）
- * 注意：跳过 Loop → LoopStart 的边，避免循环体内节点被错误标记为"未来节点"
+ * Get logical "future nodes" (all nodes forward-reachable from the start)
+ * Note: skip Loop → LoopStart edges to avoid incorrectly marking loop body nodes as "future nodes"
  */
 function getForwardReachableNodes(
   startNodeId: number,
@@ -161,7 +161,7 @@ function getForwardReachableNodes(
     nexts.forEach((nextId) => {
       if (!reachable.has(nextId)) {
         const nextNode = nodeMap?.get(nextId);
-        // 跳过 Loop → LoopStart 边（循环迭代控制边，不应让循环体内节点成为"未来节点"）
+        // Skip Loop → LoopStart edges (iteration-control edges) so loop body nodes are not marked as "future nodes"
         if (
           currentNode?.type === NodeTypeEnum.Loop &&
           nextNode?.type === NodeTypeEnum.LoopStart &&
@@ -239,7 +239,7 @@ function ensureVariableSuccessOutput(node: ChildNode): InputAndOutConfig[] {
     outputs.push({
       name: 'isSuccess',
       dataType: DataTypeEnum.Boolean,
-      description: '变量设置结果',
+      description: 'Variable assignment result',
       require: false,
       systemVariable: false,
       bindValueType: undefined,
@@ -276,7 +276,7 @@ function getNodeOutputArgs(
       outputs.push({
         name: 'INDEX',
         dataType: DataTypeEnum.Integer,
-        description: '数组索引',
+        description: 'Array index',
         require: false,
         systemVariable: true,
         bindValueType: undefined,
@@ -392,8 +392,8 @@ export function calculateNodePreviousArgs(
   // 确保 nodeId 是 number 类型
   const nodeIdNum = Number(nodeId);
 
-  // 1. 获取所有"逻辑未来节点"，这些节点即便连线回来也不能作为前置参数（同步 Java 死循环规避）
-  // 跳过 Loop → LoopStart 边，避免循环体内节点被错误标记为"未来节点"
+  // 1. Get all "logical future nodes". Even with back edges, they cannot be used as predecessor arguments.
+  // Skip Loop → LoopStart edges to avoid incorrectly marking loop body nodes as "future nodes"
   const futureNodes = getForwardReachableNodes(
     nodeIdNum,
     forwardGraph,
@@ -612,7 +612,7 @@ export function calculateNodePreviousArgs(
       inputBasedOutputs.push({
         name: INDEX_SYSTEM_NAME,
         dataType: DataTypeEnum.Integer,
-        description: '数组索引',
+        description: 'Array index',
         require: false,
         systemVariable: true,
         bindValueType: undefined,

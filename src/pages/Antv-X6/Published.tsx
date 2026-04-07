@@ -1,4 +1,5 @@
 import { PLUGIN_PUBLISH_OPTIONS } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { Form, FormProps, Input, Modal, Radio } from 'antd';
 import React, { useEffect } from 'react';
@@ -44,25 +45,30 @@ const Published: React.FC<PublishedProp> = ({
   return (
     <Modal
       open={open}
-      title={'发布工作流'}
+      title={dict('PC.Pages.AntvX6Published.title')}
       keyboard={false} //是否能使用sec关闭
       maskClosable={false} //点击蒙版层是否可以关闭
       onCancel={onCancel}
       confirmLoading={loading}
-      cancelText="取消"
-      okText="确认"
+      cancelText={dict('PC.Common.Global.cancel')}
+      okText={dict('PC.Common.Global.confirm')}
       onOk={() => {
         form.submit();
       }}
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item name="scope" label="发布范围">
+        <Form.Item name="scope" label={dict('PC.Pages.AntvX6Published.scope')}>
           <Radio.Group options={PLUGIN_PUBLISH_OPTIONS} />
         </Form.Item>
-        <Form.Item name="remark" label="发布记录">
+        <Form.Item
+          name="remark"
+          label={dict('PC.Pages.AntvX6Published.releaseNote')}
+        >
           <Input.TextArea
             autoSize={{ minRows: 3, maxRows: 5 }}
-            placeholder="这里填写详细的发布记录，如果范围选择了全局，审核通过后，所有工作空间均可引用该工作流"
+            placeholder={dict(
+              'PC.Pages.AntvX6Published.releaseNotePlaceholder',
+            )}
           ></Input.TextArea>
         </Form.Item>
       </Form>

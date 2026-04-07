@@ -1,4 +1,5 @@
 import { SvgIcon } from '@/components/base';
+import { dict } from '@/services/i18nRuntime';
 import React from 'react';
 import styles from './MobileMenu.less';
 
@@ -39,7 +40,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     {isOpen && (
       <div
         className={styles.mobileMenuMask}
-        aria-label="菜单遮罩/Menu Mask"
+        aria-label={dict('PC.Layouts.MobileMenu.menuMask')}
         tabIndex={-1}
         onClick={onToggle}
         role="button"

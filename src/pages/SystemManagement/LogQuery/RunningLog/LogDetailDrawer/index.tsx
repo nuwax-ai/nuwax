@@ -7,6 +7,7 @@ import variableImage from '@/assets/images/variable_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import Loading from '@/components/custom/Loading';
 import { apiRunningLogDetail } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SpaceLogInfoDetail } from '@/types/interfaces/agent';
 import { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
@@ -20,8 +21,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 日志详情抽屉
- * 说明：用于 ProTable 行点击后的侧滑详情展示。
+ * Running log detail drawer.
  */
 export interface LogDetailDrawerProps {
   open: boolean;
@@ -45,7 +45,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
   onClose,
 }) => {
   const drawerWidth = useMemo(() => {
-    // 简单响应式：PC 720，移动端尽量占满
+    // Basic responsive width: 720 on desktop, near full on mobile.
     if (typeof window === 'undefined') {
       return 720;
     }
@@ -53,19 +53,19 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
     return Math.min(720, Math.max(360, Math.floor(w * 0.92)));
   }, []);
 
-  // 加载中
+  // Loading state.
   const [loading, setLoading] = useState(false);
-  // 详情信息
+  // Detail payload.
   const [spaceLogInfoDetail, setSpaceLogInfoDetail] =
     useState<SpaceLogInfoDetail>();
 
-  // 最终详情
+  // Final result block.
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
 
   const [componentExecuteResults, setComponentExecuteResults] = useState<
     ExecuteResultInfo[]
   >([]);
-  // 当前执行结果索引，默认为0
+  // Current execution result index.
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   const handleClickExecuteResult = (
@@ -93,14 +93,14 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
     });
   };
 
-  // 获取详情信息
+  // Fetch detail by ID.
   const getDetailById = async () => {
     if (id) {
       try {
         setLoading(true);
         const { data } = await apiRunningLogDetail({ id });
         setSpaceLogInfoDetail(data);
-        // 智能体
+        // Agent mode.
         if (data.targetType === AgentComponentTypeEnum.Agent) {
           const _processData = JSON.parse(data.processData || '{}');
 
@@ -113,7 +113,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
           if (_componentExecuteResults?.length > 0) {
             handleClickExecuteResult(0, _componentExecuteResults);
           } else {
-            // 其它
+            // Other target types.
             setComponentExecuteResults([]);
             setCurrentIndex(0);
             setFinalResult({
@@ -127,7 +127,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
             });
           }
         } else {
-          // 其它
+          // Other target types.
           setComponentExecuteResults([]);
           setCurrentIndex(0);
           setFinalResult({
@@ -146,10 +146,10 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
     }
   };
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(t('PC.Toast.Global.copiedSuccessfully'));
   };
 
-  // 获取图标，如果不存在则使用默认图
+  // Resolve icon, fallback to default icon by component type.
   const getDefaultIcon = (info: ExecuteResultInfo) => {
     switch (info.type) {
       case AgentComponentTypeEnum.Plugin:
@@ -178,7 +178,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
   return (
     <Drawer
       className={styles.drawer}
-      title="日志详情"
+      title={t('PC.Pages.SystemRunningLogDetailDrawer.title')}
       placement="right"
       open={open}
       onClose={onClose}
@@ -197,7 +197,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
             <div className={cx('flex', styles['time-box'])}>
               <div className={cx(styles.num, 'flex', 'items-center')}>
                 <span>
-                  耗时{' '}
+                  {t('PC.Pages.SystemRunningLogDetailDrawer.duration')}{' '}
                   {spaceLogInfoDetail.requestEndTime -
                     spaceLogInfoDetail.requestStartTime}{' '}
                   ms
@@ -211,7 +211,9 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
               </div>
             </div>
             <div className={cx('flex', styles.box)}>
-              <span>消息ID:</span>
+              <span>
+                {t('PC.Pages.SystemRunningLogDetailDrawer.messageId')}
+              </span>
               <span className={cx(styles.value, 'text-ellipsis')}>
                 {spaceLogInfoDetail.requestId}
               </span>
@@ -226,10 +228,12 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
           {spaceLogInfoDetail.targetType === AgentComponentTypeEnum.Agent &&
             !!componentExecuteResults?.length && (
               <div className={cx(styles.wrap)}>
-                <h5 className={cx(styles.title)}>调用组件</h5>
+                <h5 className={cx(styles.title)}>
+                  {t('PC.Pages.SystemRunningLogDetailDrawer.calledComponents')}
+                </h5>
                 {componentExecuteResults?.map(
                   (info: ExecuteResultInfo, index: number) => (
-                    // 模型可能不存在id，所以使用index作为key
+                    // Models may not have stable IDs, fallback to index.
                     <div
                       key={info?.id || index}
                       className={cx(
@@ -267,12 +271,14 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
             )}
 
           <div className={cx(styles.wrap)}>
-            <h5 className={cx(styles.title)}>节点详情</h5>
+            <h5 className={cx(styles.title)}>
+              {t('PC.Pages.SystemRunningLogDetailDrawer.nodeDetails')}
+            </h5>
             <NodeDetails node={finalResult} />
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>
-              输入&nbsp;
+              {t('PC.Pages.SystemRunningLogDetailDrawer.input')}&nbsp;
               <CopyToClipboard
                 text={finalResult?.input || ''}
                 onCopy={handleCopy}
@@ -284,7 +290,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>
-              输出&nbsp;
+              {t('PC.Pages.SystemRunningLogDetailDrawer.output')}&nbsp;
               <CopyToClipboard
                 text={finalResult?.output || ''}
                 onCopy={handleCopy}
@@ -297,7 +303,8 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
           {spaceLogInfoDetail?.targetType !== AgentComponentTypeEnum.Agent && (
             <div className={cx(styles.wrap, styles['render-container'])}>
               <h5 className={cx(styles.title)}>
-                执行过程&nbsp;
+                {t('PC.Pages.SystemRunningLogDetailDrawer.executionProcess')}
+                &nbsp;
                 <CopyToClipboard
                   text={spaceLogInfoDetail.processData || ''}
                   onCopy={handleCopy}
@@ -311,7 +318,9 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
         </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
+          <Empty
+            description={t('PC.Pages.SystemRunningLogDetailDrawer.empty')}
+          />
         </div>
       )}
     </Drawer>

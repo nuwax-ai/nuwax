@@ -1,4 +1,5 @@
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import { dict } from '@/services/i18nRuntime';
 import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
@@ -44,7 +45,7 @@ export const useCopyTemplate = (): UseCopyTemplateReturn => {
       manual: true,
       debounceInterval: 300,
       onSuccess: (data: number, params: PublishTemplateCopyParams[]) => {
-        message.success('模板复制成功');
+        message.success(dict('PC.Hooks.UseCopyTemplate.copySuccess'));
         // 关闭弹窗
         setOpenMove(false);
         // 目标空间ID

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { McpEditItemProps } from '@/types/interfaces/mcp';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -17,7 +18,7 @@ const McpEditItem: React.FC<McpEditItemProps> = ({
       <header className={cx('flex', 'items-center', 'content-between')}>
         <h6 className={cx(styles.name)}>{name}</h6>
         <Button className={cx(styles.btn)} onClick={onClick}>
-          试运行
+          {dict('PC.Pages.SpaceMcpEdit.tryRun')}
         </Button>
       </header>
       <p className={cx(styles.desc, 'text-ellipsis-3')}>{description}</p>

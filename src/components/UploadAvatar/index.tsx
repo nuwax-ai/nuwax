@@ -2,6 +2,7 @@ import { SvgIconGoodTheme } from '@/components/base';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { FileType, UploadAvatarProps } from '@/types/interfaces/common';
 import { FormOutlined } from '@ant-design/icons';
 import { message, Upload, UploadProps } from 'antd';
@@ -46,11 +47,11 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
     const isJpgOrPng =
       type === 'image/jpeg' || type === 'image/jpg' || type === 'image/png';
     if (!isJpgOrPng) {
-      message.error('请上传 JPG、JPEG、PNG 类型图片文件!');
+      message.error(dict('PC.Toast.UploadAvatar.invalidType'));
     }
     const isLt2M = size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('图片大小不能超过2MB!');
+      message.error(dict('PC.Toast.UploadAvatar.invalidSize'));
     }
     return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
   };

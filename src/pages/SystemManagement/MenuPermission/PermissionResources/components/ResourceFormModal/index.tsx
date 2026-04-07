@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { t } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -34,79 +35,101 @@ const { TextArea } = Input;
 const cx = classNames.bind(styles);
 
 interface ResourceFormModalProps {
-  /** 是否打开 */
+  /** Whether modal is visible */
   open: boolean;
-  /** 是否为编辑模式 */
+  /** Whether current mode is edit */
   isEdit?: boolean;
-  /** 编辑时的资源数据 */
+  /** Resource data in edit mode */
   resourceInfo?: ResourceInfo | null;
-  /** 新增时，默认排序索引，默认1 */
+  /** Default sort index in create mode */
   defaultSortIndex?: number;
-  /** 父资源（新增子资源时使用） */
+  /** Parent resource in create-child mode */
   parentResource?: ResourceTreeNode | null;
-  /** 取消回调 */
+  /** Cancel callback */
   onCancel: () => void;
-  /** 成功回调 */
+  /** Success callback */
   onSuccess: () => void;
 }
 
-// 资源类型选项
-const RESOURCE_TYPE_OPTIONS = [
-  { label: '模块', value: ResourceTypeEnum.Module },
-  { label: '组件', value: ResourceTypeEnum.Component },
-];
-
-// 资源来源选项 来源 1:系统内置 2:用户自定义
-const RESOURCE_SOURCE_OPTIONS = [
-  { label: '系统内置', value: ResourceSourceEnum.SystemBuiltIn },
-  { label: '用户自定义', value: ResourceSourceEnum.UserDefined },
-];
-
 /**
- * 权限资源表单Modal组件
- * 用于新增或编辑权限资源信息
+ * Permission resource form modal.
+ * Used to create or edit resource info.
  */
 const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
   open,
   isEdit = false,
-  /** 编辑时，资源信息 */
+  /** Resource info in edit mode */
   resourceInfo,
-  /** 新增时，默认排序索引，默认1 */
+  /** Default sort index in create mode */
   defaultSortIndex = 1,
-  /** 新增时，父资源信息 */
+  /** Parent resource info in create mode */
   parentResource,
-  /** 取消回调 */
+  /** Cancel callback */
   onCancel,
-  /** 成功回调 */
+  /** Success callback */
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  const resourceTypeOptions = useMemo(
+    () => [
+      {
+        label: t('PC.Pages.SystemPermissionResourceFormModal.typeModule'),
+        value: ResourceTypeEnum.Module,
+      },
+      {
+        label: t('PC.Pages.SystemPermissionResourceFormModal.typeComponent'),
+        value: ResourceTypeEnum.Component,
+      },
+    ],
+    [],
+  );
+  const resourceSourceOptions = useMemo(
+    () => [
+      {
+        label: t(
+          'PC.Pages.SystemPermissionResourceFormModal.sourceSystemBuiltIn',
+        ),
+        value: ResourceSourceEnum.SystemBuiltIn,
+      },
+      {
+        label: t(
+          'PC.Pages.SystemPermissionResourceFormModal.sourceUserDefined',
+        ),
+        value: ResourceSourceEnum.UserDefined,
+      },
+    ],
+    [],
+  );
 
-  // 新增资源
+  // Add resource
   const { run: runAddResource, loading: addLoading } = useRequest(
     apiAddResource,
     {
       manual: true,
       onSuccess: () => {
-        message.success('新增资源成功');
+        message.success(
+          t('PC.Pages.SystemPermissionResourceFormModal.addSuccess'),
+        );
         onSuccess();
       },
     },
   );
 
-  // 更新资源
+  // Update resource
   const { run: runUpdateResource, loading: updateLoading } = useRequest(
     apiUpdateResource,
     {
       manual: true,
       onSuccess: () => {
-        message.success('更新资源成功');
+        message.success(
+          t('PC.Pages.SystemPermissionResourceFormModal.updateSuccess'),
+        );
         onSuccess();
       },
     },
   );
 
-  // 根据ID查询权限资源
+  // Query resource details by id
   const { run: runGetResourceById, data: resourceInfoResponse } = useRequest(
     apiGetResourceById,
     {
@@ -114,7 +137,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     },
   );
 
-  // 查询资源树列表（用于父节点选择）
+  // Query resource tree for parent selection
   const { run: runGetResourceList, data: resourceTreeList } = useRequest(
     apiGetResourceList,
     {
@@ -124,13 +147,13 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      // 查询资源树列表
+      // Query resource tree
       runGetResourceList();
       if (isEdit && resourceInfo) {
-        // 编辑模式：查询资源详情
+        // Edit mode: query resource detail
         runGetResourceById(resourceInfo.id);
       } else {
-        // 新增模式：重置表单并设置初始值
+        // Create mode: reset form and set default values
         form.resetFields();
         form.setFieldsValue({
           sortIndex: defaultSortIndex || 1,
@@ -143,10 +166,10 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     }
   }, [open, isEdit, resourceInfo, defaultSortIndex]);
 
-  // 初始化表单数据（编辑模式）
+  // Initialize form data for edit mode
   useEffect(() => {
     if (isEdit && resourceInfoResponse) {
-      // 编辑模式：填充表单数据
+      // Fill form values in edit mode
       form.setFieldsValue({
         code: resourceInfoResponse.code,
         name: resourceInfoResponse.name,
@@ -161,7 +184,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     }
   }, [isEdit, resourceInfoResponse]);
 
-  // 初始化表单数据（新增模式）
+  // Initialize form data for create mode
   useEffect(() => {
     if (parentResource && resourceTreeList && resourceTreeList.length > 0) {
       form.setFieldsValue({
@@ -173,7 +196,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
 
   const loading = addLoading || updateLoading;
 
-  // 将资源树转换为TreeSelect需要的数据格式
+  // Convert resource tree to TreeSelect data format
   const treeSelectData = useMemo(() => {
     const convertToTreeData = (resources: ResourceTreeNode[]): any[] => {
       return (
@@ -183,7 +206,7 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
               resource.id !== 0 &&
               resource.type === ResourceTypeEnum.Module &&
               (isEdit ? resource.id !== resourceInfo?.id : true),
-          ) // 过滤掉根节点（id为0） 编辑模式下过滤掉当前资源
+          ) // Filter root node (id=0); in edit mode also filter current resource
           .map((resource) => ({
             title: resource.name,
             value: resource.id,
@@ -197,18 +220,18 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
     if (!resourceTreeList || !resourceTreeList.length) {
       return [];
     }
-    // 如果第一个节点是根节点（id为0），则只返回其子节点
+    // If first node is root (id=0), only return its children
     if (resourceTreeList.length === 1 && resourceTreeList[0].id === 0) {
       const rootNode = resourceTreeList[0];
       return rootNode.children?.length
         ? convertToTreeData(rootNode.children)
         : [];
     }
-    // 否则过滤掉所有 id 为 0 的节点
+    // Otherwise filter all id=0 nodes
     return convertToTreeData(resourceTreeList);
   }, [resourceTreeList, isEdit && resourceInfo]);
 
-  // 处理提交
+  // Submit handler
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -228,17 +251,25 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         await runAddResource(formData);
       }
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('[ResourceFormModal] form validation failed:', error);
     }
   };
 
   return (
     <CustomFormModal
       form={form}
-      title={isEdit ? '编辑资源' : '新增资源'}
+      title={
+        isEdit
+          ? t('PC.Pages.SystemPermissionResourceFormModal.editTitle')
+          : t('PC.Pages.SystemPermissionResourceFormModal.createTitle')
+      }
       open={open}
       loading={loading}
-      okText={isEdit ? '保存' : '创建'}
+      okText={
+        isEdit
+          ? t('PC.Pages.SystemPermissionResourceFormModal.save')
+          : t('PC.Pages.SystemPermissionResourceFormModal.create')
+      }
       width={650}
       onCancel={onCancel}
       onConfirm={handleSubmit}
@@ -252,28 +283,32 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
         requiredMark={customizeRequiredMark}
         className={cx(styles.form)}
       >
-        {/* 基本信息 */}
+        {/* Basic info */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="资源码"
+              label={t('PC.Pages.SystemPermissionResourceFormModal.code')}
               name="code"
               rules={[
                 {
                   pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
-                  message:
-                    '资源码必须以英文字母开头，只能包含字母、数字和下划线',
+                  message: t(
+                    'PC.Pages.SystemPermissionResourceFormModal.codePatternInvalid',
+                  ),
                 },
               ]}
               tooltip={{
-                title:
-                  '资源码用于标识资源，可以为空，为空时系统默认生成，只能包含字母、数字和下划线',
+                title: t(
+                  'PC.Pages.SystemPermissionResourceFormModal.codeTooltip',
+                ),
                 icon: <InfoCircleOutlined />,
               }}
             >
               <Input
                 disabled={isEdit}
-                placeholder="请输入资源码"
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.codePlaceholder',
+                )}
                 maxLength={100}
                 showCount
               />
@@ -281,30 +316,57 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           </Col>
           <Col span={12}>
             <Form.Item
-              label="资源名称"
+              label={t('PC.Pages.SystemPermissionResourceFormModal.name')}
               name="name"
-              rules={[{ required: true, message: '请输入资源名称' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t(
+                    'PC.Pages.SystemPermissionResourceFormModal.nameRequired',
+                  ),
+                },
+              ]}
             >
-              <Input placeholder="请输入资源名称" maxLength={50} showCount />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              label="资源类型"
-              name="type"
-              rules={[{ required: true, message: '请选择资源类型' }]}
-            >
-              <Select
-                disabled={isEdit}
-                placeholder="请选择资源类型"
-                options={RESOURCE_TYPE_OPTIONS}
+              <Input
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.namePlaceholder',
+                )}
+                maxLength={50}
+                showCount
               />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="排序" name="sortIndex">
+            <Form.Item
+              label={t('PC.Pages.SystemPermissionResourceFormModal.type')}
+              name="type"
+              rules={[
+                {
+                  required: true,
+                  message: t(
+                    'PC.Pages.SystemPermissionResourceFormModal.typeRequired',
+                  ),
+                },
+              ]}
+            >
+              <Select
+                disabled={isEdit}
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.typePlaceholder',
+                )}
+                options={resourceTypeOptions}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={t('PC.Pages.SystemPermissionResourceFormModal.sort')}
+              name="sortIndex"
+            >
               <InputNumber
-                placeholder="请输入排序"
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.sortPlaceholder',
+                )}
                 className={cx('w-full')}
                 min={1}
                 max={10000}
@@ -312,9 +374,14 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="父节点" name="parentId">
+            <Form.Item
+              label={t('PC.Pages.SystemPermissionResourceFormModal.parentNode')}
+              name="parentId"
+            >
               <TreeSelect
-                placeholder="请选择父节点（无）"
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.parentNodePlaceholder',
+                )}
                 treeData={treeSelectData}
                 allowClear
                 showSearch
@@ -329,54 +396,81 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({
           </Col>
           <Col span={12}>
             <Form.Item
-              label="路由路径"
+              label={t('PC.Pages.SystemPermissionResourceFormModal.routePath')}
               name="path"
               rules={[
                 {
                   pattern: /^\/[a-zA-Z0-9/?#&=._:@%+ -]+$/,
-                  message:
-                    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
+                  message: t(
+                    'PC.Pages.SystemPermissionResourceFormModal.routePathPatternInvalid',
+                  ),
                 },
                 {
                   max: 500,
-                  message: '路由路径长度不能超过500个字符',
+                  message: t(
+                    'PC.Pages.SystemPermissionResourceFormModal.routePathLengthInvalid',
+                  ),
                 },
               ]}
               tooltip={{
-                title:
-                  '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+                title: t(
+                  'PC.Pages.SystemPermissionResourceFormModal.routePathTooltip',
+                ),
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Input placeholder="请输入路由路径，例如：/system/menu" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="来源" name="source">
-              <Select
-                disabled
-                placeholder="请选择来源"
-                options={RESOURCE_SOURCE_OPTIONS}
+              <Input
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.routePathPlaceholder',
+                )}
               />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="是否启用"
+              label={t('PC.Pages.SystemPermissionResourceFormModal.source')}
+              name="source"
+            >
+              <Select
+                disabled
+                placeholder={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.sourcePlaceholder',
+                )}
+                options={resourceSourceOptions}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={t('PC.Pages.SystemPermissionResourceFormModal.enabled')}
               name="status"
               valuePropName="checked"
               tooltip={{
-                title: '是否启用此资源',
+                title: t(
+                  'PC.Pages.SystemPermissionResourceFormModal.enabledTooltip',
+                ),
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              <Switch
+                checkedChildren={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.switchEnabled',
+                )}
+                unCheckedChildren={t(
+                  'PC.Pages.SystemPermissionResourceFormModal.switchDisabled',
+                )}
+              />
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item label="描述" name="description">
+        <Form.Item
+          label={t('PC.Pages.SystemPermissionResourceFormModal.description')}
+          name="description"
+        >
           <TextArea
-            placeholder="请输入描述"
+            placeholder={t(
+              'PC.Pages.SystemPermissionResourceFormModal.descriptionPlaceholder',
+            )}
             className="dispose-textarea-count"
             autoSize={{ minRows: 3, maxRows: 5 }}
             showCount

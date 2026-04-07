@@ -4,6 +4,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { unbindDataSource } from '@/services/appDev';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -22,11 +23,11 @@ import styles from './index.less';
 const getDefaultDescription = (type: string): string => {
   switch (type) {
     case 'plugin':
-      return '插件资源，提供特定功能和服务';
+      return t('PC.Pages.AppDevDataResourceList.defaultDescPlugin');
     case 'workflow':
-      return '工作流资源，支持复杂的业务流程编排';
+      return t('PC.Pages.AppDevDataResourceList.defaultDescWorkflow');
     default:
-      return '数据资源';
+      return t('PC.Pages.AppDevDataResourceList.defaultDescDataSource');
   }
 };
 
@@ -143,15 +144,15 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   const handleDelete = async (resourceId: number) => {
     const resource = resources.find((r) => r.id === resourceId);
     if (!resource) {
-      message.error('未找到要删除的数据源');
+      message.error(t('PC.Pages.AppDevDataResourceList.deleteTargetNotFound'));
       return;
     }
 
     // 显示二次确认弹窗
     Modal.confirm({
-      content: `数据资源一旦删除，页面将失去对该资源的访问权限`,
-      okText: '确认删除',
-      cancelText: '取消',
+      content: t('PC.Pages.AppDevDataResourceList.deleteConfirmContent'),
+      okText: t('PC.Pages.AppDevDataResourceList.confirmDelete'),
+      cancelText: t('PC.Pages.AppDevDataResourceList.cancel'),
       okType: 'danger',
       icon: null,
       onOk: async () => {
@@ -230,7 +231,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
           showImage={true}
           extra={
             <TooltipIcon
-              title="删除"
+              title={t('PC.Pages.AppDevDataResourceList.delete')}
               icon={
                 isLoading ? (
                   <LoadingOutlined />

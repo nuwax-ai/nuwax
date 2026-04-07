@@ -1,6 +1,7 @@
 import copyImage from '@/assets/images/copy.png';
 import Loading from '@/components/custom/Loading';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiMcpServerConfigExport,
   apiMcpServerConfigRefresh,
@@ -78,12 +79,12 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
   // 重新生成配置
   const handleRebuildConfig = () => {
     confirm({
-      title: '你确定要重新生成配置吗?',
+      title: dict('PC.Pages.SpaceMcpManage.confirmRebuildConfig'),
       icon: <ExclamationCircleFilled />,
       content: name,
-      okText: '确定',
+      okText: dict('PC.Common.Global.confirm'),
       maskClosable: true,
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk() {
         confirmRebuildConfig();
       },
@@ -101,13 +102,13 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
   }, [open, mcpId]);
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   return (
     <Modal
       width={560}
-      title={`${name}-服务导出管理`}
+      title={`${name}-${dict('PC.Pages.SpaceMcpManage.serviceExportTitle')}`}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.container),
@@ -118,17 +119,17 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
       footer={null}
       onCancel={onCancel}
     >
-      <h5 className={cx(styles.title)}>配置服务</h5>
+      <h5 className={cx(styles.title)}>
+        {dict('PC.Pages.SpaceMcpManage.configService')}
+      </h5>
       <div className={cx(styles.desc, 'flex', 'items-center')}>
-        <span>
-          复制以下配置，可以在任意支持mcp的客户端中使用，若有需要你可以点击
-        </span>
+        <span>{dict('PC.Pages.SpaceMcpManage.configCopyTip')}</span>
         <Button
           type="link"
           className={cx(styles['rebuild-config'])}
           onClick={handleRebuildConfig}
         >
-          重新生成配置
+          {dict('PC.Pages.SpaceMcpManage.rebuildConfig')}
         </Button>
       </div>
       <div className={cx(styles['config-box'], 'relative')}>
@@ -138,7 +139,7 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
           <>
             <CopyToClipboard text={config} onCopy={handleCopy}>
               <TooltipIcon
-                title="复制"
+                title={dict('PC.Common.Global.copy')}
                 icon={
                   <img className={styles['copy-img']} src={copyImage} alt="" />
                 }

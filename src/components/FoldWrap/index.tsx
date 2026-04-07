@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { FoldWrapType } from '@/types/interfaces/common';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, Input, InputRef, Popover } from 'antd';
@@ -88,7 +89,12 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
           <Form.Item
             name="name"
             className={styles['form-item-style']}
-            rules={[{ required: true, message: '请输入节点名称' }]}
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Components.FoldWrap.pleaseInputNodeName'),
+              },
+            ]}
             style={{ height: isEdit ? '32px' : '24px' }}
           >
             {isEdit ? (
@@ -136,7 +142,12 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
           <Form.Item
             name="description"
             className={styles['form-item-style']}
-            rules={[{ required: true, message: '请输入节点描述' }]}
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Components.FoldWrap.pleaseInputNodeDesc'),
+              },
+            ]}
           >
             {isEditDesc ? (
               <Input.TextArea
@@ -181,7 +192,10 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
       <div className={cx(styles['divider-horizontal'], styleMargin)} />
       <div className={'flex-1 overflow-y'}>
         {children || (
-          <Empty className={cx(styles.empty)} description="暂无内容" />
+          <Empty
+            className={cx(styles.empty)}
+            description={dict('PC.Components.FoldWrap.noContent')}
+          />
         )}
       </div>
     </div>

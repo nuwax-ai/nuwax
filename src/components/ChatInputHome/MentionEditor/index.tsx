@@ -23,6 +23,7 @@
  * ```
  */
 
+import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -430,9 +431,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       }
       // 如果启用 @ 提及功能，则显示默认占位符文本
       if (enableMention) {
-        return '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持输入@唤起技能；支持粘贴图片';
+        return t(
+          'PC.Components.ChatInputHomeMentionEditor.placeholderWithMention',
+        );
       }
-      return '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片';
+      return t(
+        'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+      );
     }, [enableMention, defaultPlaceholder]);
 
     /**

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import classNames from 'classnames';
 import {
@@ -26,42 +27,42 @@ const AgentTypeMap: Record<
 > = {
   [AgentComponentTypeEnum.Agent]: {
     icon: <ICON_AGENT />,
-    title: '智能体',
+    title: dict('PC.Components.AgentType.agent'),
     styleClassName: styles.agent,
   },
   [AgentComponentTypeEnum.Plugin]: {
     icon: <ICON_PLUGIN />,
-    title: '插件',
+    title: dict('PC.Components.AgentType.plugin'),
     styleClassName: styles.plugin,
   },
   [AgentComponentTypeEnum.Workflow]: {
     icon: <ICON_WORKFLOW />,
-    title: '工作流',
+    title: dict('PC.Components.AgentType.workflow'),
     styleClassName: styles.workflow,
   },
   [AgentComponentTypeEnum.Knowledge]: {
     icon: <ICON_KNOWLEDGE />,
-    title: '知识库',
+    title: dict('PC.Components.AgentType.knowledge'),
     styleClassName: styles.knowledge,
   },
   [AgentComponentTypeEnum.Table]: {
     icon: <ICON_TABLE />,
-    title: '数据表',
+    title: dict('PC.Components.AgentType.table'),
     styleClassName: styles.table,
   },
   [AgentComponentTypeEnum.Model]: {
     icon: <ICON_MODEL />,
-    title: '模型',
+    title: dict('PC.Components.AgentType.model'),
     styleClassName: styles.model,
   },
   [AgentComponentTypeEnum.Page]: {
     icon: <ICON_PAGE_APP />,
-    title: '网页应用',
+    title: dict('PC.Components.AgentType.pageApp'),
     styleClassName: styles.page,
   },
   [AgentComponentTypeEnum.Skill]: {
     icon: <ICON_SKILL />,
-    title: '技能',
+    title: dict('PC.Components.AgentType.skill'),
     styleClassName: styles.skill,
   },
 };

@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
@@ -30,9 +31,12 @@ interface ControlPanelProps {
   testRunLoading: boolean;
 }
 const options = [
-  { label: '放大 10%', value: '+' },
-  { label: '缩小 10%', value: '-' },
-  { label: '缩放到适配画布', value: -1 },
+  { label: t('PC.Pages.AntvX6ControlPanel.zoomIn10Percent'), value: '+' },
+  {
+    label: t('PC.Pages.AntvX6ControlPanel.zoomOut10Percent'),
+    value: '-',
+  },
+  { label: t('PC.Pages.AntvX6ControlPanel.fitCanvas'), value: -1 },
   //添加分割线
   {
     label: (
@@ -50,10 +54,10 @@ const options = [
     disabled: true,
     style: { padding: 0, cursor: 'default' },
   },
-  { label: '缩放到 50%', value: 0.5 },
-  { label: '缩放到 100%', value: 1 },
-  { label: '缩放到 150%', value: 1.5 },
-  { label: '缩放到 200%', value: 2 },
+  { label: t('PC.Pages.AntvX6ControlPanel.zoom50Percent'), value: 0.5 },
+  { label: t('PC.Pages.AntvX6ControlPanel.zoom100Percent'), value: 1 },
+  { label: t('PC.Pages.AntvX6ControlPanel.zoom150Percent'), value: 1.5 },
+  { label: t('PC.Pages.AntvX6ControlPanel.zoom200Percent'), value: 2 },
 ];
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -125,7 +129,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           />
           {/* 添加缩放到适配画布 */}
           <Popover
-            content={'缩放到适配画布'}
+            content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
             trigger={['hover']}
             mouseEnterDelay={1}
           >
@@ -160,13 +164,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               type="primary"
               onClick={() => setOpen(true)}
             >
-              添加节点
+              {t('PC.Pages.AntvX6ControlPanel.addNode')}
             </Button>
           </Popover>
         </div>
         <div className="action-section" style={{ marginLeft: 18 }}>
           <ToolOutlined
-            title="调试"
+            title={t('PC.Pages.AntvX6ControlPanel.debug')}
             style={{ paddingRight: 12, paddingLeft: 12 }}
           />
           <Button
@@ -176,7 +180,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             color="green"
             onClick={handleTestRun}
           >
-            试运行
+            {t('PC.Pages.AntvX6ControlPanel.testRun')}
           </Button>
         </div>
       </div>

@@ -5,6 +5,7 @@ import {
 } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiPublishList } from '@/services/publishManage';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
@@ -82,13 +83,13 @@ const PublishedManage: React.FC = () => {
     return [
       {
         key: 'view',
-        label: '查看',
+        label: dict('PC.Pages.PublishedManage.view'),
         disabled: !hasPermission('published_manage_query_detail'),
         onClick: handleView,
       },
       {
         key: 'offShelf',
-        label: '下架',
+        label: dict('PC.Pages.PublishedManage.offShelf'),
         disabled: !hasPermission('published_manage_offline'),
         onClick: (r) => handleOffShelf(r.id),
       },
@@ -97,51 +98,61 @@ const PublishedManage: React.FC = () => {
 
   const columns: ProColumns<PublishListInfo>[] = [
     {
-      title: '发布名称',
+      title: dict('PC.Pages.PublishedManage.publishName'),
       dataIndex: 'name',
       width: 200,
-      fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
+      fieldProps: {
+        placeholder: dict('PC.Pages.PublishedManage.searchNamePlaceholder'),
+      },
     },
     {
-      title: '类型',
+      title: dict('PC.Pages.PublishedManage.type'),
       dataIndex: 'targetType',
       width: 100,
       valueType: 'select',
       valueEnum: {
-        [SquareAgentTypeEnum.Agent]: { text: '智能体' },
+        [SquareAgentTypeEnum.Agent]: {
+          text: dict('PC.Pages.PublishedManage.typeAgent'),
+        },
         // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
-        [SquareAgentTypeEnum.Plugin]: { text: '插件' },
-        [SquareAgentTypeEnum.Workflow]: { text: '工作流' },
-        [SquareAgentTypeEnum.Skill]: { text: '技能' },
+        [SquareAgentTypeEnum.Plugin]: {
+          text: dict('PC.Pages.PublishedManage.typePlugin'),
+        },
+        [SquareAgentTypeEnum.Workflow]: {
+          text: dict('PC.Pages.PublishedManage.typeWorkflow'),
+        },
+        [SquareAgentTypeEnum.Skill]: {
+          text: dict('PC.Pages.PublishedManage.typeSkill'),
+        },
       },
     },
     {
-      title: '描述信息',
+      title: dict('PC.Pages.PublishedManage.description'),
       dataIndex: 'description',
       width: 200,
       hideInSearch: true,
     },
     {
-      title: '版本信息',
+      title: dict('PC.Pages.PublishedManage.versionInfo'),
       dataIndex: 'remark',
       width: 200,
       hideInSearch: true,
     },
     {
-      title: '发布者',
+      title: dict('PC.Pages.PublishedManage.publisher'),
       dataIndex: ['publishUser', 'userName'],
       width: 150,
       hideInSearch: true,
     },
     {
-      title: '发布时间',
+      title: dict('PC.Pages.PublishedManage.publishTime'),
       dataIndex: 'created',
       width: 180,
       hideInSearch: true,
       valueType: 'dateTime',
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.PublishedManage.actions'),
       valueType: 'option',
       width: 120,
       align: 'center',
@@ -164,7 +175,9 @@ const PublishedManage: React.FC = () => {
     });
 
     if (response.code !== SUCCESS_CODE) {
-      message.error(response.message || '获取数据失败');
+      message.error(
+        response.message || dict('PC.Pages.PublishedManage.fetchDataFailed'),
+      );
     }
 
     return {
@@ -175,7 +188,10 @@ const PublishedManage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="已发布管理" hideScroll>
+    <WorkspaceLayout
+      title={dict('PC.Pages.PublishedManage.pageTitle')}
+      hideScroll
+    >
       <XProTable<PublishListInfo>
         actionRef={actionRef}
         formRef={formRef}

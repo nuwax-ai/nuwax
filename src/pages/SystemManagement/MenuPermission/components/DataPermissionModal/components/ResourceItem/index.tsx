@@ -1,5 +1,6 @@
 import AgentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
+import { t } from '@/services/i18nRuntime';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -71,7 +72,9 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
             className={cx(styles.btn)}
             onClick={() => onAdd(targetId)}
           >
-            {isAdded ? '已添加' : '添加'}
+            {isAdded
+              ? t('PC.Pages.SystemMenuDataPermissionModal.itemAdded')
+              : t('PC.Pages.SystemMenuDataPermissionModal.itemAdd')}
           </Button>
         )}
         {onDelete && (
@@ -81,7 +84,7 @@ const ResourceItem: React.FC<ResourceItemProps> = ({
             className={cx(styles.btn)}
             onClick={() => onDelete(targetId)}
           >
-            移除
+            {t('PC.Pages.SystemMenuDataPermissionModal.itemRemove')}
           </Button>
         )}
       </div>

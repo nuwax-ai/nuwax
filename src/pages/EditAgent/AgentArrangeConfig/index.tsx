@@ -12,6 +12,7 @@ import {
   apiAgentComponentSubAgentUpdate,
   apiAgentVariables,
 } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -135,37 +136,37 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     () => [
       {
         key: 'plan',
-        label: '规划',
+        label: t('PC.Pages.AgentArrangeConfig.plan'),
         ref: planSectionRef,
       },
       {
         key: 'tool',
-        label: '工具',
+        label: t('PC.Pages.AgentArrangeConfig.tools'),
         ref: toolSectionRef,
       },
       {
         key: 'skill',
-        label: '技能',
+        label: t('PC.Pages.AgentArrangeConfig.skills'),
         ref: skillSectionRef,
       },
       {
         key: 'knowledge',
-        label: '知识',
+        label: t('PC.Pages.AgentArrangeConfig.knowledge'),
         ref: knowledgeSectionRef,
       },
       {
         key: 'memory',
-        label: '记忆',
+        label: t('PC.Pages.AgentArrangeConfig.memory'),
         ref: memorySectionRef,
       },
       {
         key: 'experience',
-        label: '对话',
+        label: t('PC.Pages.AgentArrangeConfig.conversation'),
         ref: experienceSectionRef,
       },
       {
         key: 'page',
-        label: '界面',
+        label: t('PC.Pages.AgentArrangeConfig.interface'),
         ref: pageSectionRef,
       },
     ],
@@ -409,7 +410,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const newDeleteList = [...deleteList, { id, targetId, type }];
     setDeleteList(newDeleteList);
     await runAgentComponentDel(id);
-    message.success('已成功删除');
+    message.success(t('PC.Pages.AgentArrangeConfig.deleteSuccess'));
     const list =
       agentComponentList?.filter(
         (item: AgentComponentInfo) =>
@@ -485,7 +486,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     manual: true,
     debounceWait: 300,
     onSuccess: async () => {
-      message.success('已成功添加');
+      message.success(t('PC.Pages.AgentArrangeConfig.addSuccess'));
       // 重新查询智能体配置组件列表
       await asyncFun();
     },
@@ -571,11 +572,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             item.type === AgentComponentTypeEnum.SubAgent,
         );
         if (!componentInfo) {
-          message.error('创建子智能体组件失败');
+          message.error(t('PC.Pages.AgentArrangeConfig.createSubAgentFailed'));
           return;
         }
       } catch (error) {
-        message.error('创建子智能体组件失败');
+        message.error(t('PC.Pages.AgentArrangeConfig.createSubAgentFailed'));
         return;
       }
     }
@@ -587,7 +588,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     };
     await apiAgentComponentSubAgentUpdate(params as any);
-    message.success('保存成功');
+    message.success(t('PC.Toast.Global.savedSuccessfully'));
     asyncFun(true);
   };
 
@@ -595,7 +596,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
-      label: '插件',
+      label: t('PC.Pages.AgentArrangeConfig.plugin'),
       children: (
         <CollapseComponentList
           textClassName={cx(styles.text)}
@@ -608,7 +609,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加插件"
+          title={t('PC.Pages.AgentArrangeConfig.addPlugin')}
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Plugin)
           }
@@ -621,7 +622,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.Workflow,
-      label: '工作流',
+      label: t('PC.Pages.AgentArrangeConfig.workflow'),
       children: (
         <CollapseComponentList
           textClassName={cx(styles.text)}
@@ -634,7 +635,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加工作流"
+          title={t('PC.Pages.AgentArrangeConfig.addWorkflow')}
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Workflow)
           }
@@ -650,7 +651,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: 'MCP',
       children: !groupMcpList?.length ? (
         <p className={cx(styles.text)}>
-          智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。
+          {t('PC.Pages.AgentArrangeConfig.mcpDescription')}
         </p>
       ) : (
         groupMcpList.map((item: GroupMcpInfo) => (
@@ -665,7 +666,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加MCP"
+          title={t('PC.Pages.AgentArrangeConfig.addMcp')}
           onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.MCP)}
         />
       ),
@@ -680,7 +681,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const KnowledgeList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Text,
-      label: '文本',
+      label: t('PC.Pages.AgentArrangeConfig.text'),
       children: (
         <KnowledgeTextList
           textClassName={cx(styles.text)}
@@ -691,7 +692,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加知识库"
+          title={t('PC.Pages.AgentArrangeConfig.addKnowledge')}
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Knowledge)
           }
@@ -708,7 +709,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const SkillList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Skill,
-      label: '技能',
+      label: t('PC.Pages.AgentArrangeConfig.skill'),
       children: (
         <CollapseComponentList
           textClassName={cx(styles.text)}
@@ -721,7 +722,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加技能"
+          title={t('PC.Pages.AgentArrangeConfig.addSkill')}
           onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Skill)}
         />
       ),
@@ -732,7 +733,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.SubAgent,
-      label: '子智能体',
+      label: t('PC.Pages.AgentArrangeConfig.subAgent'),
       children: (
         <SubAgentConfig
           subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
@@ -741,7 +742,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加子智能体"
+          title={t('PC.Pages.AgentArrangeConfig.addSubAgent')}
           onClick={(e) => {
             e.stopPropagation();
             setOpenSubAgentModel(true);
@@ -759,7 +760,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const MemoryList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Variable,
-      label: '变量',
+      label: t('PC.Pages.AgentArrangeConfig.variable'),
       children: (
         <VariableList
           textClassName={cx(styles.text)}
@@ -767,7 +768,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           onClick={handlerVariablePlus}
         />
       ),
-      extra: <TooltipIcon title="添加变量" onClick={handlerVariablePlus} />,
+      extra: (
+        <TooltipIcon
+          title={t('PC.Pages.AgentArrangeConfig.addVariable')}
+          onClick={handlerVariablePlus}
+        />
+      ),
       classNames: {
         header: 'collapse-header',
         body: 'collapse-body',
@@ -775,7 +781,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.Table,
-      label: '数据表',
+      label: t('PC.Pages.AgentArrangeConfig.table'),
       children: (
         <CollapseComponentList
           textClassName={cx(styles.text)}
@@ -788,7 +794,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <TooltipIcon
-          title="添加数据表"
+          title={t('PC.Pages.AgentArrangeConfig.addTable')}
           onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Table)}
         />
       ),
@@ -799,7 +805,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.Long_Memory,
-      label: '长期记忆',
+      label: t('PC.Pages.AgentArrangeConfig.longMemory'),
       children: (
         <LongMemoryContent
           textClassName={cx(styles.text)}
@@ -834,12 +840,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const ConversationalExperienceList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.User_Problem_Suggestion,
-      label: '用户问题建议',
+      label: t('PC.Pages.AgentArrangeConfig.userQuestionSuggestion'),
       children: (
         <p className={cx(styles.text)}>
           {agentConfigInfo?.openSuggest === OpenCloseEnum.Open
-            ? '在智能体回复后，根据 Prompt 提供多条用户提问建议'
-            : '在每次智能体回复后，不会提供任何用户问题建议'}
+            ? t('PC.Pages.AgentArrangeConfig.userQuestionSuggestionEnabled')
+            : t('PC.Pages.AgentArrangeConfig.userQuestionSuggestionDisabled')}
         </p>
       ),
       extra: (
@@ -864,10 +870,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.Open_Scheduled_Task,
-      label: '定时任务',
+      label: t('PC.Pages.AgentArrangeConfig.scheduledTask'),
       children: (
         <p className={cx(styles.text)}>
-          开启后，用户可以通过设置定时任务的方式让智能体执行任务
+          {t('PC.Pages.AgentArrangeConfig.scheduledTaskDescription')}
         </p>
       ),
       extra: (
@@ -1029,7 +1035,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     } as AgentComponentEventUpdateParams;
     await runEventUpdate(newEventsInfo);
-    message.success('删除成功');
+    message.success(t('PC.Pages.AgentArrangeConfig.deleteSuccessSimple'));
     // 重新查询智能体配置组件列表
     asyncFun(true);
   };
@@ -1078,7 +1084,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             .join('');
 
           // 构建事件标签的 HTML（需要转义）
-          const eventTagHtml = `<div class="event" event-type="${item.identification}" data='动态JSON参数'>[#引用编号]</div>`;
+          const eventTagHtml = `<div class="event" event-type="${
+            item.identification
+          }" data='${t(
+            'PC.Pages.AgentArrangeConfig.dynamicJsonParameter',
+          )}'>[${t('PC.Pages.AgentArrangeConfig.referenceNumber')}]</div>`;
           const escapedEventTag = eventTagHtml
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
@@ -1092,12 +1102,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             .replace(/'/g, '&#039;');
 
           // 构建完整的 HTML 格式文本
-          const eventText = `<p>返回内容后面追加引用信息如下</p><p>${escapedEventTag}</p><p><br class="ProseMirror-trailingBreak"></p><p>${escapedIdentification}的动态JSON参数JsonSchema如下</p><p>\`\`\`</p>${jsonSchemaLines}<p>\`\`\`</p>`;
+          const eventText = `<p>${t(
+            'PC.Pages.AgentArrangeConfig.appendReferenceInfo',
+          )}</p><p>${escapedEventTag}</p><p><br class="ProseMirror-trailingBreak"></p><p>${t(
+            'PC.Pages.AgentArrangeConfig.dynamicJsonSchemaPrefix',
+            escapedIdentification,
+          )}</p><p>\`\`\`</p>${jsonSchemaLines}<p>\`\`\`</p>`;
 
           onInsertSystemPrompt(eventText);
-          message.success('已插入到系统提示词');
+          message.success(t('PC.Pages.AgentArrangeConfig.insertPromptSuccess'));
         } else {
-          message.warning('插入系统提示词功能不可用');
+          message.warning(
+            t('PC.Pages.AgentArrangeConfig.insertPromptUnavailable'),
+          );
         }
         break;
       // 删除
@@ -1114,12 +1131,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ? [
           {
             key: AgentArrangeConfigEnum.Hide_Remote_Desktop,
-            label: '隐藏远程桌面',
+            label: t('PC.Pages.AgentArrangeConfig.hideRemoteDesktop'),
             children: (
               <p className={cx(styles.text)}>
                 {agentConfigInfo?.hideDesktop === HideDesktopEnum.Yes
-                  ? '在智能体对话框右侧隐藏远程桌面'
-                  : '在智能体对话框右侧显示远程桌面'}
+                  ? t('PC.Pages.AgentArrangeConfig.hideRemoteDesktopEnabled')
+                  : t('PC.Pages.AgentArrangeConfig.hideRemoteDesktopDisabled')}
               </p>
             ),
             extra: (
@@ -1147,7 +1164,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
     {
       key: AgentArrangeConfigEnum.Opening_Remarks,
-      label: '开场白',
+      label: t('PC.Pages.AgentArrangeConfig.openingRemarks'),
       children: (
         <OpenRemarksEdit
           agentConfigInfo={agentConfigInfo}
@@ -1167,7 +1184,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       : [
           {
             key: AgentArrangeConfigEnum.Page,
-            label: '页面',
+            label: t('PC.Pages.AgentArrangeConfig.page'),
             children: (
               <CollapseComponentList
                 textClassName={cx(styles.text)}
@@ -1180,7 +1197,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             ),
             extra: (
               <TooltipIcon
-                title="添加页面"
+                title={t('PC.Pages.AgentArrangeConfig.addPage')}
                 onClick={(e) =>
                   handlerComponentPlus(e, AgentComponentTypeEnum.Page)
                 }
@@ -1193,16 +1210,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           },
           {
             key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
-            label: '展开页面区',
+            label: t('PC.Pages.AgentArrangeConfig.defaultExpandPageArea'),
             children: (
               // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
               <p className={cx(styles.text)}>
-                当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
+                {t('PC.Pages.AgentArrangeConfig.defaultExpandPageAreaDesc')}
               </p>
             ),
             extra: (
               <Tooltip
-                title={!allPageComponentList?.length ? '请先添加页面' : ''}
+                title={
+                  !allPageComponentList?.length
+                    ? t('PC.Pages.AgentArrangeConfig.addPageFirst')
+                    : ''
+                }
               >
                 <Switch
                   disabled={!allPageComponentList?.length}
@@ -1229,7 +1250,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           },
           {
             key: AgentArrangeConfigEnum.Page_Event_Binding,
-            label: '事件绑定',
+            label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
             children: (
               // 事件绑定列表
               <EventList
@@ -1240,7 +1261,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             ),
             extra: (
               <TooltipIcon
-                title="添加事件绑定"
+                title={t('PC.Pages.AgentArrangeConfig.addEventBinding')}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleAddEventBinding();
@@ -1348,7 +1369,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           )}
 
           <div ref={toolSectionRef}>
-            <ConfigOptionsHeader title="工具" />
+            <ConfigOptionsHeader
+              title={t('PC.Pages.AgentArrangeConfig.tools')}
+            />
             <ConfigOptionCollapse
               items={ToolList}
               defaultActiveKey={toolActiveKey}
@@ -1358,7 +1381,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           {/* 通用型智能体显示技能 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
-              <ConfigOptionsHeader title="技能" />
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.skills')}
+              />
               <ConfigOptionCollapse
                 items={SkillList}
                 defaultActiveKey={skillActiveKey}
@@ -1367,7 +1392,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           )}
 
           <div ref={knowledgeSectionRef}>
-            <ConfigOptionsHeader title="知识" />
+            <ConfigOptionsHeader
+              title={t('PC.Pages.AgentArrangeConfig.knowledge')}
+            />
             <ConfigOptionCollapse
               items={KnowledgeList}
               defaultActiveKey={knowledgeActiveKey}
@@ -1375,7 +1402,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           </div>
 
           <div ref={memorySectionRef}>
-            <ConfigOptionsHeader title="记忆" />
+            <ConfigOptionsHeader
+              title={t('PC.Pages.AgentArrangeConfig.memory')}
+            />
             <ConfigOptionCollapse
               items={MemoryList}
               defaultActiveKey={memoryActiveKey}
@@ -1383,7 +1412,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           </div>
 
           <div ref={experienceSectionRef}>
-            <ConfigOptionsHeader title="对话体验" />
+            <ConfigOptionsHeader
+              title={t('PC.Pages.AgentArrangeConfig.conversationExperience')}
+            />
             <ConfigOptionCollapse
               items={ConversationalExperienceList}
               onChangeCollapse={(key) =>
@@ -1394,7 +1425,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           </div>
 
           <div ref={pageSectionRef}>
-            <ConfigOptionsHeader title="界面配置" />
+            <ConfigOptionsHeader
+              title={t('PC.Pages.AgentArrangeConfig.interfaceConfig')}
+            />
             <ConfigOptionCollapse
               items={PageConfigList}
               defaultActiveKey={pageActiveKey}

@@ -1,9 +1,13 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { dict } from '@/services/i18nRuntime';
 import LogProTable from './LogProTable';
 
 const RunningLog: React.FC = () => {
   return (
-    <WorkspaceLayout title="运行日志" hideScroll={false}>
+    <WorkspaceLayout
+      title={dict('PC.Pages.SystemLog.runningLog')}
+      hideScroll={false}
+    >
       <LogProTable />
     </WorkspaceLayout>
   );

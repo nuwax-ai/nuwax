@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import type { PlanEntry } from '@/types/interfaces/appDev';
 import {
   BorderOutlined,
@@ -54,13 +55,13 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
     const overallStatus = getOverallStatus();
     switch (overallStatus) {
       case 'completed':
-        return '已完成';
+        return t('PC.Pages.AppDevPlanProcess.completed');
       case 'in_progress':
-        return '执行中';
+        return t('PC.Pages.AppDevPlanProcess.inProgress');
       case 'failed':
-        return '部分失败';
+        return t('PC.Pages.AppDevPlanProcess.partialFailed');
       default:
-        return '待执行';
+        return t('PC.Pages.AppDevPlanProcess.pending');
     }
   };
 
@@ -119,7 +120,11 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
 
   // 获取截取后的计划文本
   const getTruncatedPlanText = () => {
-    const fullText = `执行计划 (${stats.completed}/${stats.total} 已完成)`;
+    const fullText = t(
+      'PC.Pages.AppDevPlanProcess.executionPlanProgress',
+      String(stats.completed),
+      String(stats.total),
+    );
     return truncateText(fullText, textTruncateMode, maxLength);
   };
 
@@ -130,7 +135,11 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
         <div className={styles.operationInfo}>
           <span className={styles[getStatusDotClass()]} />
           <Tooltip
-            title={`执行计划 (${stats.completed}/${stats.total} 已完成)`}
+            title={t(
+              'PC.Pages.AppDevPlanProcess.executionPlanProgress',
+              String(stats.completed),
+              String(stats.total),
+            )}
             placement="topLeft"
             mouseEnterDelay={0.5}
           >
@@ -168,12 +177,6 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
                   {/* <Tooltip title={entry.content} placement="right"> */}
                   <span className={`${styles.taskText}`}>{entry.content}</span>
                   {/* </Tooltip> */}
-                  {/* <span className={styles.taskStatus}>
-                    {entry.status === 'pending' && '待执行'}
-                    {entry.status === 'in_progress' && '执行中'}
-                    {entry.status === 'completed' && '已完成'}
-                    {entry.status === 'failed' && '失败'}
-                  </span> */}
                 </div>
               ))}
             </div>

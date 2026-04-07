@@ -2,6 +2,7 @@ import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import service, { IGetList } from '@/services/created';
 import { apiTableAdd } from '@/services/dataTable';
+import { t } from '@/services/i18nRuntime';
 import { apiCustomPageQueryList } from '@/services/pageDev';
 import {
   AgentAddComponentStatusEnum,
@@ -59,6 +60,32 @@ const defaultTabs = CREATED_TABS.filter((item) =>
   defaultTabsTypes.includes(item.key),
 );
 
+const getCreatedTabLabel = (
+  key: AgentComponentTypeEnum,
+  fallbackLabel = '',
+): string => {
+  switch (key) {
+    case AgentComponentTypeEnum.Plugin:
+      return t('PC.Components.Created.tabPlugin');
+    case AgentComponentTypeEnum.Workflow:
+      return t('PC.Components.Created.tabWorkflow');
+    case AgentComponentTypeEnum.Knowledge:
+      return t('PC.Components.Created.tabKnowledge');
+    case AgentComponentTypeEnum.Table:
+      return t('PC.Components.Created.tabTable');
+    case AgentComponentTypeEnum.Agent:
+      return t('PC.Components.Created.tabAgent');
+    case AgentComponentTypeEnum.MCP:
+      return t('PC.Components.Created.tabMcp');
+    case AgentComponentTypeEnum.Page:
+      return t('PC.Components.Created.tabPage');
+    case AgentComponentTypeEnum.Skill:
+      return t('PC.Components.Created.tabSkill');
+    default:
+      return fallbackLabel;
+  }
+};
+
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
   isSpaceOnly = false,
@@ -84,9 +111,10 @@ const Created: React.FC<CreatedProp> = ({
     label: string;
     key: AgentComponentTypeEnum;
   }>({
-    label: '插件',
+    label: getCreatedTabLabel(AgentComponentTypeEnum.Plugin),
     key: AgentComponentTypeEnum.Plugin,
   });
+  const selectedLabel = getCreatedTabLabel(selected.key, selected.label);
   // 分页
   const [pagination, setPagination] = useState({
     page: 1,
@@ -117,77 +145,77 @@ const Created: React.FC<CreatedProp> = ({
   const items: MenuItem[] = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
     {
       key: 'library',
-      label: `组件库${selected.label}`,
+      label: t('PC.Components.Created.libraryWithLabel', selectedLabel),
     },
     {
       key: 'collect',
-      label: '收藏',
+      label: t('PC.Components.Created.collect'),
     },
     {
       key: 'official',
-      label: `仅查看官方${selected.label}`,
+      label: t('PC.Components.Created.officialOnlyWithLabel', selectedLabel),
     },
   ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const pageItem = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
   ];
 
   const agentItem = [
     {
       key: 'all',
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
     {
       key: 'library',
-      label: '当前空间智能体',
+      label: t('PC.Components.Created.currentSpaceAgent'),
     },
   ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const knowledgeItem = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
     {
       key: 1,
-      label: '文档',
+      label: t('PC.Components.Created.document'),
     },
   ];
 
   const databaseItem = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '组件库数据表',
+      label: t('PC.Components.Created.libraryDataTable'),
     },
   ];
 
   const mcpItem = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
     {
       key: 'custom',
-      label: '自定义服务',
+      label: t('PC.Components.Created.customService'),
     },
   ];
 
   const skillItem = [
     {
       key: 'all', // 子项也需要唯一的 key
-      label: '全部',
+      label: t('PC.Components.Created.all'),
     },
     {
       key: 'official',
-      label: `仅查看官方${selected.label}`,
+      label: t('PC.Components.Created.officialOnlyWithLabel', selectedLabel),
     },
   ];
 
@@ -489,7 +517,10 @@ const Created: React.FC<CreatedProp> = ({
     if (_item) {
       setSelectMenu(isSpaceOnly ? 'library' : 'all');
       setSearch('');
-      SetSelected(_item);
+      SetSelected({
+        ..._item,
+        label: getCreatedTabLabel(_item.key, _item.label),
+      });
 
       // 页面
       if (val === AgentComponentTypeEnum.Page) {
@@ -562,7 +593,9 @@ const Created: React.FC<CreatedProp> = ({
   // 顶部的标题
   const title = (
     <div className={cx('dis-left', styles['created-title'])}>
-      <h3 className={styles['created-title-text']}>添加</h3>
+      <h3 className={styles['created-title-text']}>
+        {t('PC.Components.Created.addTitle')}
+      </h3>
       <Segmented
         value={selected.key}
         size="large"
@@ -570,7 +603,7 @@ const Created: React.FC<CreatedProp> = ({
         options={tabs
           .filter((item) => !hideTop?.includes(item.key))
           .map((item) => ({
-            label: item.label,
+            label: getCreatedTabLabel(item.key, item.label),
             value: item.key,
           }))}
         className={styles['segmented-style']}
@@ -714,11 +747,13 @@ const Created: React.FC<CreatedProp> = ({
                   require('@/assets/images/avatar.png')
                 }
                 style={{ borderRadius: '50%' }}
-                alt="用户头像"
+                alt={t('PC.Components.Created.userAvatar')}
               />
               <span>{item.publishUser?.nickName}</span>
               <Divider type="vertical" />
-              <span>{`发布于${getTime(item.created!)}`}</span>
+              <span>
+                {t('PC.Components.Created.publishedAt', getTime(item.created!))}
+              </span>
               {![
                 AgentComponentTypeEnum.Knowledge,
                 AgentComponentTypeEnum.MCP,
@@ -759,7 +794,9 @@ const Created: React.FC<CreatedProp> = ({
           )}
           disabled={isCurrentLoading ? false : isAddedState}
         >
-          {isAddedState ? '已添加' : '添加'}
+          {isAddedState
+            ? t('PC.Components.Created.added')
+            : t('PC.Components.Created.add')}
         </Button>
       </div>
     );
@@ -805,7 +842,7 @@ const Created: React.FC<CreatedProp> = ({
               allowClear
               value={search}
               variant="filled"
-              placeholder="搜索"
+              placeholder={t('PC.Components.Created.search')}
               prefix={<SearchOutlined />}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -839,7 +876,9 @@ const Created: React.FC<CreatedProp> = ({
               icon={<PlusOutlined />}
               block
               onClick={() => handleClickCreate(selected.key, spaceId)}
-            >{`创建${selected.label}`}</Button>
+            >
+              {t('PC.Components.Created.createWithLabel', selectedLabel)}
+            </Button>
           </div>
           {/* 下方的菜单 */}
           <Menu
@@ -874,7 +913,9 @@ const Created: React.FC<CreatedProp> = ({
             <div className={cx(styles['created-list-empty-style'])}>
               <Empty
                 description={
-                  doSearching.searching ? '暂无数据，请重新搜索' : '暂无数据'
+                  doSearching.searching
+                    ? t('PC.Components.Created.emptyWithSearch')
+                    : t('PC.Components.Created.empty')
                 }
               />
             </div>

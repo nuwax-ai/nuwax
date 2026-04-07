@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { createLogger } from '@/utils/logger';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Progress } from 'antd';
@@ -33,7 +34,7 @@ export interface IdleWarningModalProps {
   onTimeout: () => void;
   /**
    * 弹窗标题
-   * @default '你已长时间未操作'
+   * @default "You have been inactive for a while"
    */
   title?: string;
   /**
@@ -42,7 +43,7 @@ export interface IdleWarningModalProps {
   description?: string;
   /**
    * 确认按钮文字
-   * @default '继续使用'
+   * @default "Continue"
    */
   confirmText?: string;
   /**
@@ -77,9 +78,9 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   countdownSeconds = 15,
   onCancel,
   onTimeout,
-  title = '你已长时间未操作',
-  description = '系统将自动关闭智能体电脑连接，以节省资源。',
-  confirmText = '继续使用',
+  title = t('PC.Components.VncIdleWarningModal.title'),
+  description = t('PC.Components.VncIdleWarningModal.description'),
+  confirmText = t('PC.Components.VncIdleWarningModal.confirmText'),
   autoDetectActivity = true,
 }) => {
   // 当前倒计时秒数
@@ -124,7 +125,10 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
     }
     isCancellingRef.current = true;
 
-    modalLogger.log('✅ 用户取消操作', '关闭弹窗并重置倒计时');
+    modalLogger.log(
+      'User canceled idle warning.',
+      'Close modal and reset countdown.',
+    );
     clearCountdownTimer();
     setCountdown(countdownSeconds);
     onCancelRef.current?.();
@@ -137,12 +141,12 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   const handleTimeout = useCallback(() => {
     // 防止重复触发
     if (hasTriggeredTimeoutRef.current) {
-      modalLogger.log('⚠️ 已触发过超时回调，跳过');
+      modalLogger.log('Timeout callback already triggered, skip.');
       return;
     }
     hasTriggeredTimeoutRef.current = true;
 
-    modalLogger.log('⏱️ 倒计时结束', '执行超时回调');
+    modalLogger.log('Countdown completed.', 'Run timeout callback.');
     clearCountdownTimer();
     setCountdown(countdownSeconds);
     onTimeoutRef.current?.();
@@ -153,7 +157,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
    */
   const handleActivity = useCallback(() => {
     if (autoDetectActivity && open) {
-      modalLogger.log('🖱️ 检测到用户活动', '自动取消');
+      modalLogger.log('User activity detected.', 'Cancel automatically.');
       handleCancel();
     }
   }, [autoDetectActivity, open, handleCancel]);
@@ -167,7 +171,10 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   // 启动/停止倒计时
   useEffect(() => {
     if (open) {
-      modalLogger.log('📢 弹窗打开', `开始 ${countdownSeconds}s 倒计时`);
+      modalLogger.log(
+        'Idle warning modal opened.',
+        `Start ${countdownSeconds}s countdown.`,
+      );
       // 重置状态
       isCancellingRef.current = false;
       hasTriggeredTimeoutRef.current = false;
@@ -183,14 +190,14 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
           }
           // 每5秒记录一次倒计时状态
           if ((prev - 1) % 5 === 0 || prev <= 5) {
-            modalLogger.log('⏳ 倒计时', `剩余 ${prev - 1}s`);
+            modalLogger.log('Countdown tick.', `${prev - 1}s remaining.`);
           }
           return prev - 1;
         });
       }, 1000);
     } else {
       // 弹窗关闭时清除定时器
-      modalLogger.log('📕 弹窗关闭');
+      modalLogger.log('Idle warning modal closed.');
       clearCountdownTimer();
       setCountdown(countdownSeconds);
     }
@@ -285,7 +292,10 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
             strokeWidth={6}
           />
           <p className={cx(styles['countdown-text'])}>
-            {countdown} 秒后自动关闭
+            {t(
+              'PC.Components.VncIdleWarningModal.countdownAutoClose',
+              String(countdown),
+            )}
           </p>
         </div>
 
@@ -303,7 +313,9 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
         </div>
 
         {/* 提示文字 */}
-        <p className={cx(styles['hint-text'])}>任意键鼠操作将{confirmText}</p>
+        <p className={cx(styles['hint-text'])}>
+          {t('PC.Components.VncIdleWarningModal.hintAction', confirmText)}
+        </p>
       </div>
     </Modal>
   );

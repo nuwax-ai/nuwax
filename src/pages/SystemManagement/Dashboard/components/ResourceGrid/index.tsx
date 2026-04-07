@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Card, Skeleton } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,7 +12,7 @@ const ResourceGrid: React.FC<ResourceGridProps> = ({ resources, loading }) => {
     <Card
       className={cx(styles['resource-grid'])}
       bordered={false}
-      title="资源概览"
+      title={dict('PC.Pages.SystemDashboard.resourceOverview')}
     >
       <div className={cx(styles['resource-list'])}>
         {(loading ? Array.from({ length: 8 }) : resources).map(

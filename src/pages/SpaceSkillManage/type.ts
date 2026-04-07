@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 
@@ -17,17 +18,17 @@ export enum SkillMoreActionEnum {
 export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: SkillMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
+    label: dict('PC.Pages.SpaceSkillManage.type.copyToSpace'),
     type: ComponentTypeEnum.Skill,
   },
   {
     action: SkillMoreActionEnum.Export_Project,
-    label: '导出技能',
+    label: dict('PC.Pages.SpaceSkillManage.type.exportSkill'),
     type: ComponentTypeEnum.Skill,
   },
   {
     action: SkillMoreActionEnum.Delete,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
     isDel: true,
     type: ComponentTypeEnum.Skill,
   },

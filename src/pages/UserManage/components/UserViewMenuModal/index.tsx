@@ -2,6 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import Loading from '@/components/custom/Loading';
 import type { MenuNodeInfo } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import type { ResourceTreeNode } from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
+import { dict } from '@/services/i18nRuntime';
 import { DownOutlined } from '@ant-design/icons';
 import { Form, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
@@ -94,7 +95,12 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
     resources: ResourceTreeNode[],
   ): DataNode[] => {
     return resources.map((resource) => ({
-      title: resource.name || `资源 ${resource.id}`,
+      title:
+        resource.name ||
+        dict(
+          'PC.Pages.UserManage.UserViewMenuModal.resourceId',
+          String(resource.id),
+        ),
       key: resource.id,
       value: resource.id,
       children: resource.children
@@ -193,7 +199,12 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
           const shouldShowSwitcher = hasChildren || hasResourceTree;
 
           return {
-            title: menu.name || `菜单 ${menu.id}`, // 只保存菜单名称，资源树在 titleRender 中渲染
+            title:
+              menu.name ||
+              dict(
+                'PC.Pages.UserManage.UserViewMenuModal.menuId',
+                String(menu.id),
+              ), // 只保存菜单名称，资源树在 titleRender 中渲染
             key: menu.id,
             value: menu.id, // 使用菜单ID作为值
             children: menu.children
@@ -226,7 +237,9 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="查看菜单资源权限"
+      title={dict(
+        'PC.Pages.UserManage.UserViewMenuModal.viewMenuResourcePermission',
+      )}
       open={open}
       onCancel={onCancel}
       onConfirm={onCancel}
@@ -266,7 +279,9 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
             }}
           />
         ) : (
-          <div className={cx(styles.empty)}>没有数据</div>
+          <div className={cx(styles.empty)}>
+            {dict('PC.Common.Global.noData')}
+          </div>
         )}
       </div>
     </CustomFormModal>

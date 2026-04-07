@@ -68,7 +68,10 @@ export const useSkillConfigRefresh = (form: FormInstance) => {
       });
       form.setFieldValue(SKILL_FORM_KEY, merged);
     } catch (error) {
-      console.error('[useSkillConfigRefresh] 工具参数回填失败:', error);
+      console.error(
+        '[useSkillConfigRefresh] Failed to backfill tool params:',
+        error,
+      );
     }
   }, [form, getWorkflow]);
 

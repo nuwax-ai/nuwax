@@ -48,7 +48,7 @@ function toNodeId(id: string | number | undefined | null): number {
 
   // 检查是否是有效的数字
   if (isNaN(numId)) {
-    workflowLogger.warn('[WorkflowProxy] 无效的节点 ID:', id);
+    workflowLogger.warn('[WorkflowProxy] Invalid node ID:', id);
     return 0;
   }
 
@@ -57,7 +57,7 @@ function toNodeId(id: string | number | undefined | null): number {
     const cleanStr = id.trim();
     if (cleanStr.length >= 16 && !Number.isSafeInteger(Number(cleanStr))) {
       workflowLogger.warn(
-        '[WorkflowProxy] 节点 ID 超出安全整数范围，精度丢失:',
+        '[WorkflowProxy] Node ID exceeds safe integer range. Precision loss:',
         cleanStr,
       );
       return 0;
@@ -113,9 +113,9 @@ class WorkflowProxyV3 {
     this.notify('mutation');
 
     workflowLogger.log(
-      '[Proxy] 节点数量:',
+      '[Proxy] Node count:',
       data.nodes.length,
-      '边数量:',
+      'Edge count:',
       data.edges.length,
     );
 
@@ -123,7 +123,7 @@ class WorkflowProxyV3 {
     data.nodes.forEach((node) => {
       if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         workflowLogger.log(
-          '[Proxy] 节点',
+          '[Proxy] Node',
           node.id,
           node.name,
           'nextNodeIds:',
@@ -226,12 +226,12 @@ class WorkflowProxyV3 {
 
       if (!nodeIds.has(sourceId)) {
         workflowLogger.warn(
-          `[Proxy] 边的源节点不存在: ${edge.source}, 将移除此边`,
+          `[Proxy] Source node for edge does not exist: ${edge.source}. Edge will be removed`,
         );
         invalidEdges.push(edge);
       } else if (!nodeIds.has(targetId)) {
         workflowLogger.warn(
-          `[Proxy] 边的目标节点不存在: ${edge.target}, 将移除此边`,
+          `[Proxy] Target node for edge does not exist: ${edge.target}. Edge will be removed`,
         );
         invalidEdges.push(edge);
       }
@@ -240,7 +240,9 @@ class WorkflowProxyV3 {
     // 移除无效的边
     if (invalidEdges.length > 0) {
       this.workflowData.edges = edges.filter((e) => !invalidEdges.includes(e));
-      workflowLogger.log(`[Proxy] 已移除 ${invalidEdges.length} 条无效边`);
+      workflowLogger.log(
+        `[Proxy] Removed ${invalidEdges.length} invalid edge(s)`,
+      );
     }
 
     // 2. 验证 nextNodeIds 与边的一致性（仅警告，不自动修复）
@@ -270,7 +272,7 @@ class WorkflowProxyV3 {
       expectedNextIds.forEach((id) => {
         if (!actualNextIds.has(id)) {
           workflowLogger.warn(
-            `[Proxy] 节点 ${node.id} (${node.name}) 画布有边到 ${id}，但 nextNodeIds 缺少此连接，已自动添加`,
+            `[Proxy] Node ${node.id} (${node.name}) has a canvas edge to ${id}, but nextNodeIds is missing this link. Auto-added.`,
           );
           if (!node.nextNodeIds) node.nextNodeIds = [];
           node.nextNodeIds.push(id);
@@ -281,7 +283,7 @@ class WorkflowProxyV3 {
       actualNextIds.forEach((id) => {
         if (!expectedNextIds.has(id)) {
           workflowLogger.warn(
-            `[Proxy] 节点 ${node.id} (${node.name}) nextNodeIds 包含 ${id}，但画布无对应边，已自动移除`,
+            `[Proxy] Node ${node.id} (${node.name}) nextNodeIds contains ${id}, but no matching canvas edge exists. Auto-removed.`,
           );
           node.nextNodeIds = (node.nextNodeIds || []).filter(
             (nid) => nid !== id,
@@ -349,7 +351,7 @@ class WorkflowProxyV3 {
    */
   updateNode(node: ChildNode): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     const index = this.workflowData.nodes.findIndex(
@@ -357,11 +359,15 @@ class WorkflowProxyV3 {
     );
     if (index >= 0) {
       this.workflowData.nodes[index] = cloneDeep(node);
-      workflowLogger.log('[Proxy] 节点更新成功:', node.id, node.name);
+      workflowLogger.log(
+        '[Proxy] Node updated successfully:',
+        node.id,
+        node.name,
+      );
     } else {
       // 节点不存在，作为新增处理
       this.workflowData.nodes.push(cloneDeep(node));
-      workflowLogger.log('[Proxy] 节点新增（通过更新）:', node.id, node.name);
+      workflowLogger.log('[Proxy] Node added via update:', node.id, node.name);
     }
 
     this.recordUpdate({
@@ -382,7 +388,7 @@ class WorkflowProxyV3 {
    */
   addNode(node: ChildNode): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     // 检查节点是否已存在
@@ -390,7 +396,7 @@ class WorkflowProxyV3 {
       (n) => toNodeId(n.id) === toNodeId(node.id),
     );
     if (exists) {
-      return { success: false, message: `节点 ${node.id} 已存在` };
+      return { success: false, message: `Node ${node.id} already exists` };
     }
 
     this.workflowData.nodes.push(cloneDeep(node));
@@ -412,14 +418,14 @@ class WorkflowProxyV3 {
    */
   deleteNode(nodeId: number): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     const index = this.workflowData.nodes.findIndex(
       (n) => toNodeId(n.id) === toNodeId(nodeId),
     );
     if (index < 0) {
-      return { success: false, message: `节点 ${nodeId} 不存在` };
+      return { success: false, message: `Node ${nodeId} does not exist` };
     }
 
     const deleted = this.workflowData.nodes.splice(index, 1)[0];
@@ -522,14 +528,14 @@ class WorkflowProxyV3 {
     offset?: { x: number; y: number },
   ): ProxyResult & { newNode?: ChildNode } {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     const sourceNode = this.workflowData.nodes.find(
       (n) => toNodeId(n.id) === toNodeId(nodeId),
     );
     if (!sourceNode) {
-      return { success: false, message: `节点 ${nodeId} 不存在` };
+      return { success: false, message: `Node ${nodeId} does not exist` };
     }
 
     // 1. Clone data
@@ -591,14 +597,14 @@ class WorkflowProxyV3 {
     height?: number,
   ): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     const node = this.workflowData.nodes.find(
       (n) => toNodeId(n.id) === toNodeId(nodeId),
     );
     if (!node) {
-      return { success: false, message: `节点 ${nodeId} 不存在` };
+      return { success: false, message: `Node ${nodeId} does not exist` };
     }
 
     // 更新节点扩展信息中的位置
@@ -700,7 +706,7 @@ class WorkflowProxyV3 {
    * @param sourceNode 源节点
    * @param portInfo 端口信息
    * @param targetNodeId 目标节点 ID
-   * @param action 'add' 或 'remove'
+   * @param action 'add' or 'remove'
    */
   private updateSpecialNodeConnection(
     sourceNode: ChildNode,
@@ -801,7 +807,7 @@ class WorkflowProxyV3 {
    */
   addEdge(edge: EdgeV3): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     // 检查边是否已存在（考虑 sourcePort）
@@ -812,7 +818,7 @@ class WorkflowProxyV3 {
         (e.sourcePort || '') === (edge.sourcePort || ''),
     );
     if (exists) {
-      return { success: false, message: '边已存在' };
+      return { success: false, message: 'Edge already exists' };
     }
 
     this.workflowData.edges.push(cloneDeep(edge) as EdgeV3);
@@ -837,7 +843,7 @@ class WorkflowProxyV3 {
           'add',
         );
         workflowLogger.log(
-          '[Proxy] 特殊端口连线添加:',
+          '[Proxy] Special-port edge added:',
           portInfo.type,
           'uuid:',
           portInfo.uuid,
@@ -875,7 +881,7 @@ class WorkflowProxyV3 {
    */
   deleteEdge(source: string, target: string, sourcePort?: string): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     // 使用字符串比较，确保类型一致
@@ -892,7 +898,7 @@ class WorkflowProxyV3 {
     });
 
     if (index < 0) {
-      return { success: false, message: '边不存在' };
+      return { success: false, message: 'Edge does not exist' };
     }
 
     const deleted = this.workflowData.edges.splice(index, 1)[0];
@@ -918,7 +924,7 @@ class WorkflowProxyV3 {
           'remove',
         );
         workflowLogger.log(
-          '[Proxy] 特殊端口连线删除:',
+          '[Proxy] Special-port edge removed:',
           portInfo.type,
           'uuid:',
           portInfo.uuid,
@@ -954,14 +960,14 @@ class WorkflowProxyV3 {
    */
   updateNodeNextIds(nodeId: number, nextNodeIds: number[]): ProxyResult {
     if (!this.workflowData) {
-      return { success: false, message: '工作流数据未初始化' };
+      return { success: false, message: 'Workflow data is not initialized' };
     }
 
     const node = this.workflowData.nodes.find(
       (n) => toNodeId(n.id) === toNodeId(nodeId),
     );
     if (!node) {
-      return { success: false, message: `节点 ${nodeId} 不存在` };
+      return { success: false, message: `Node ${nodeId} does not exist` };
     }
 
     node.nextNodeIds = [...nextNodeIds];
@@ -1254,7 +1260,7 @@ class WorkflowProxyV3 {
 
     this.notify('mutation');
 
-    // console.log('[V3 Proxy] syncFromGraph 完成，处理了', edges.length, '条边');
+    // console.log('[V3 Proxy] syncFromGraph completed. Processed', edges.length, 'edges');
   }
 
   subscribe(listener: (type: ProxyEventType) => void): () => void {

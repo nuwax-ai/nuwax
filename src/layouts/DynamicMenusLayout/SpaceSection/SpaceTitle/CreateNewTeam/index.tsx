@@ -4,6 +4,7 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SPACE_ID } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiCreateSpaceTeam } from '@/services/workspace';
 import type { CreateNewTeamProps } from '@/types/interfaces/layouts';
 import { MenuItemDto } from '@/types/interfaces/menu';
@@ -37,7 +38,9 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: number) => {
-      message.success('新建成功');
+      message.success(
+        dict('PC.Layouts.DynamicMenusLayout.CreateNewTeam.createSuccess'),
+      );
       setImageUrl('');
       // 关闭弹窗
       onCancel();
@@ -126,7 +129,9 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
   return (
     <CustomFormModal
       form={form}
-      title="创建团队空间"
+      title={dict(
+        'PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace',
+      )}
       open={open}
       onCancel={onCancel}
       loading={loading}
@@ -134,7 +139,7 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
     >
       <div className={cx('flex', 'flex-col', 'items-center', 'py-16')}>
         <p className={cx(styles['create-team-tips'])}>
-          通过创建团队空间，将支持项目、智能体、插件、工作流和知识库在团队内进行协作和共享。
+          {dict('PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips')}
         </p>
         <UploadAvatar
           className={styles['upload-box']}
@@ -153,12 +158,30 @@ const CreateNewTeam: React.FC<CreateNewTeamProps> = ({ open, onCancel }) => {
         >
           <Form.Item
             name="name"
-            label="团队名称"
-            rules={[{ required: true, message: '请输入团队名称' }]}
+            label={dict('PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName')}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName',
+                ),
+              },
+            ]}
           >
-            <Input placeholder="请输入团队名称" showCount maxLength={50} />
+            <Input
+              placeholder={dict(
+                'PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName',
+              )}
+              showCount
+              maxLength={50}
+            />
           </Form.Item>
-          <OverrideTextArea name="description" label="描述" />
+          <OverrideTextArea
+            name="description"
+            label={dict(
+              'PC.Layouts.DynamicMenusLayout.CreateNewTeam.description',
+            )}
+          />
         </Form>
       </div>
     </CustomFormModal>

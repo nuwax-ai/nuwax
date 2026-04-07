@@ -3,6 +3,7 @@
  * 变量树管理 Hook（复用现有逻辑）
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { useMemo } from 'react';
 import type { PromptVariable, VariableTreeNode } from '../types';
 import { buildVariableTree } from '../utils/treeUtils';
@@ -110,7 +111,7 @@ export const useVariableTree = (
           tree.push({
             key: 'category-tools',
             value: 'Tools',
-            label: '工具',
+            label: dict('PC.Components.TiptapVariableInput.tools'),
             isLeaf: false,
             children: toolNodes,
             variable: {
@@ -125,7 +126,7 @@ export const useVariableTree = (
           tree.push({
             key: 'category-skills',
             value: 'Skills',
-            label: '技能',
+            label: dict('PC.Components.TiptapVariableInput.skills'),
             isLeaf: false,
             children: skillNodes,
             variable: {
@@ -141,7 +142,7 @@ export const useVariableTree = (
           tree.push({
             key: 'category-tools',
             value: 'Tools',
-            label: '工具',
+            label: dict('PC.Components.TiptapVariableInput.tools'),
             isLeaf: false,
             children: toolNodes,
             variable: {
@@ -152,7 +153,7 @@ export const useVariableTree = (
           tree.push({
             key: 'category-skills',
             value: 'Skills',
-            label: '技能',
+            label: dict('PC.Components.TiptapVariableInput.skills'),
             isLeaf: false,
             children: skillNodes,
             variable: {

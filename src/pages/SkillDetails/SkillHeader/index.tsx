@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import {
@@ -81,7 +82,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
 
         {skillInfo?.publishStatus === PublishStatusEnum.Published && (
           <TooltipIcon
-            title="已发布"
+            title={t('PC.Pages.SkillDetailsHeader.published')}
             icon={<CheckCircleFilled className={cx(styles.circle)} />}
           />
         )}
@@ -95,7 +96,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
               color="volcano"
               className={cx(styles['volcano'])}
             >
-              有更新未发布
+              {t('PC.Pages.SkillDetailsHeader.updatesNotPublished')}
             </Tag>
           )}
         <MoreActionsMenu
@@ -116,7 +117,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           onClick={onPublish}
           disabled={!skillInfo}
         >
-          发布
+          {t('PC.Pages.SkillDetailsHeader.publish')}
         </Button>
       </div>
     </header>

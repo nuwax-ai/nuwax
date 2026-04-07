@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { OverrideTextAreaProps } from '@/types/interfaces/common';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
@@ -10,7 +11,7 @@ const { TextArea } = Input;
 
 const OverrideTextArea: React.FC<OverrideTextAreaProps> = (props) => {
   const {
-    placeholder = '请输入',
+    placeholder = dict('PC.Common.Global.pleaseInput'),
     name,
     label,
     initialValue,

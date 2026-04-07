@@ -1,4 +1,5 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { NodeDetailsProps } from '@/types/interfaces/agentConfig';
 import classNames from 'classnames';
@@ -18,7 +19,10 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   ) => {
     return (
       <div className={cx('flex', styles.box, className)}>
-        <span className={cx(styles.label)}>{label}：</span>
+        <span className={cx(styles.label)}>
+          {label}
+          {dict('PC.Pages.SpaceLog.NodeDetails.labelSeparator')}
+        </span>
         <EllipsisTooltip
           text={value || '--'}
           className={cx(styles.value, 'flex-1')}
@@ -32,17 +36,17 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   const nodeTypeName = useMemo(() => {
     switch (node?.type) {
       case AgentComponentTypeEnum.Plugin:
-        return '插件';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typePlugin');
       case AgentComponentTypeEnum.Workflow:
-        return '工作流';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typeWorkflow');
       case AgentComponentTypeEnum.Knowledge:
-        return '知识库';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typeKnowledge');
       case AgentComponentTypeEnum.Variable:
-        return '变量';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typeVariable');
       case AgentComponentTypeEnum.Table:
-        return '数据表';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typeTable');
       case AgentComponentTypeEnum.Model:
-        return '模型';
+        return dict('PC.Pages.SpaceLog.NodeDetails.typeModel');
       case AgentComponentTypeEnum.MCP:
         return 'MCP';
       default:
@@ -53,13 +57,25 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
   return (
     <>
       <div className={cx(styles.container)}>
-        {renderDetailItem('类型', nodeTypeName)}
-        {renderDetailItem('状态', '成功')}
-        {renderDetailItem('名称', node?.name as string)}
-        {renderDetailItem('耗时', time)}
+        {renderDetailItem(
+          dict('PC.Pages.SpaceLog.NodeDetails.lblType'),
+          nodeTypeName,
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.SpaceLog.NodeDetails.lblStatus'),
+          dict('PC.Pages.SpaceLog.NodeDetails.statusSuccess'),
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.SpaceLog.NodeDetails.lblName'),
+          node?.name as string,
+        )}
+        {renderDetailItem(
+          dict('PC.Pages.SpaceLog.NodeDetails.lblElapsedTime'),
+          time,
+        )}
       </div>
       {renderDetailItem(
-        '发起时间',
+        dict('PC.Pages.SpaceLog.NodeDetails.lblStartTime'),
         node?.startTime
           ? dayjs(node?.startTime).format('YYYY-MM-DD HH:mm')
           : '',
@@ -67,7 +83,7 @@ export const NodeDetails: React.FC<NodeDetailsProps> = ({ node }) => {
       )}
       <div />
       {renderDetailItem(
-        '结束时间',
+        dict('PC.Pages.SpaceLog.NodeDetails.lblEndTime'),
         node?.endTime ? dayjs(node?.endTime).format('YYYY-MM-DD HH:mm') : '',
         styles['mt-10'],
       )}

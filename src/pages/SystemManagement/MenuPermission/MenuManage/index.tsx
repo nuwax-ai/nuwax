@@ -1,6 +1,7 @@
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
@@ -131,7 +132,7 @@ const MenuManage: React.FC = () => {
         success: true,
       };
     } catch (error) {
-      console.error('查询菜单列表失败', error);
+      console.error('[MenuManage] query menu list failed', error);
       // 发生错误时也清空 draggableData
       setDraggableData([]);
       return {
@@ -161,7 +162,7 @@ const MenuManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemMenuManage.deleteSuccess'));
       actionRef.current?.reload();
     },
   });
@@ -196,12 +197,16 @@ const MenuManage: React.FC = () => {
 
   // 处理删除确认
   const handleDeleteConfirm = (menu: MenuNodeInfo) => {
-    modalConfirm('删除菜单', `确认删除菜单 "${menu.name}" 吗？`, () => {
-      runDelete(menu?.id);
-      return new Promise((resolve) => {
-        setTimeout(resolve, 300);
-      });
-    });
+    modalConfirm(
+      t('PC.Pages.SystemMenuManage.deleteMenuTitle'),
+      t('PC.Pages.SystemMenuManage.deleteMenuConfirm', menu.name),
+      () => {
+        runDelete(menu?.id);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        });
+      },
+    );
   };
 
   // 处理新增
@@ -288,7 +293,7 @@ const MenuManage: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('排序更新成功');
+      message.success(t('PC.Pages.SystemMenuManage.sortUpdateSuccess'));
       // 标记拖拽完成，允许 postData 正常同步数据
       isDraggingRef.current = false;
       // 清空原始数据引用
@@ -721,7 +726,7 @@ const MenuManage: React.FC = () => {
 
     if (!hasActive) {
       // 如果节点没有被正确插入，恢复原数据并提示错误
-      message.error('拖拽失败，请重试');
+      message.error(t('PC.Pages.SystemMenuManage.dragFailedRetry'));
       isDraggingRef.current = false;
       originalDataRef.current = null;
       return;
@@ -786,7 +791,7 @@ const MenuManage: React.FC = () => {
   // 定义表格列
   const columns: ProColumns<MenuNodeInfo & { key: number }>[] = [
     {
-      title: '排序',
+      title: t('PC.Pages.SystemMenuManage.columnSort'),
       key: 'sort',
       align: 'center',
       width: 80,
@@ -795,7 +800,7 @@ const MenuManage: React.FC = () => {
       render: () => <DragHandle />,
     },
     // {
-    //   title: '图标',
+    //   title: 'Icon',
     //   dataIndex: 'icon',
     //   key: 'icon',
     //   width: 80,
@@ -804,7 +809,7 @@ const MenuManage: React.FC = () => {
     //       {icon ? (
     //         <img
     //           src={icon}
-    //           alt={record.name || '菜单图标'}
+    //           alt={record.name || 'Menu icon'}
     //           className={cx(styles.menuIcon)}
     //         />
     //       ) : (
@@ -814,7 +819,7 @@ const MenuManage: React.FC = () => {
     //   ),
     // },
     {
-      title: '菜单名称',
+      title: t('PC.Pages.SystemMenuManage.columnMenuName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -856,7 +861,7 @@ const MenuManage: React.FC = () => {
       },
     },
     {
-      title: '编码',
+      title: t('PC.Pages.SystemMenuManage.columnCode'),
       dataIndex: 'code',
       key: 'code',
       width: 200,
@@ -864,7 +869,7 @@ const MenuManage: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: '路由路径',
+      title: t('PC.Pages.SystemMenuManage.columnRoutePath'),
       dataIndex: 'path',
       key: 'path',
       width: 200,
@@ -874,7 +879,7 @@ const MenuManage: React.FC = () => {
         record.path || '--',
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemMenuManage.columnDescription'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
@@ -882,7 +887,7 @@ const MenuManage: React.FC = () => {
       hideInSearch: true,
     },
     {
-      title: '是否启用',
+      title: t('PC.Pages.SystemMenuManage.columnEnabled'),
       dataIndex: 'status',
       key: 'status',
       align: 'center',
@@ -894,8 +899,8 @@ const MenuManage: React.FC = () => {
         <Switch
           checked={record.status === MenuEnabledEnum.Enabled}
           loading={updateVisibleLoadingMap[record.id] || false}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
+          checkedChildren={t('PC.Pages.SystemMenuManage.enabled')}
+          unCheckedChildren={t('PC.Pages.SystemMenuManage.disabled')}
           onChange={(checked) => {
             const newStatus = checked
               ? MenuEnabledEnum.Enabled
@@ -909,7 +914,7 @@ const MenuManage: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemMenuManage.columnAction'),
       key: 'action',
       align: 'center',
       width: 180,
@@ -920,7 +925,7 @@ const MenuManage: React.FC = () => {
           <Tooltip
             title={
               !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
-                ? '无此资源权限'
+                ? t('PC.Pages.SystemMenuManage.noPermission')
                 : ''
             }
           >
@@ -932,7 +937,7 @@ const MenuManage: React.FC = () => {
               }
               onClick={() => handleAddChild(record)}
             >
-              新增
+              {t('PC.Pages.SystemMenuManage.actionAdd')}
             </Button>
           </Tooltip>
 
@@ -940,7 +945,7 @@ const MenuManage: React.FC = () => {
           <Tooltip
             title={
               !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
-                ? '无此资源权限'
+                ? t('PC.Pages.SystemMenuManage.noPermission')
                 : ''
             }
           >
@@ -952,16 +957,16 @@ const MenuManage: React.FC = () => {
               }
               onClick={() => handleEdit(record)}
             >
-              编辑
+              {t('PC.Pages.SystemMenuManage.actionEdit')}
             </Button>
           </Tooltip>
 
           <Tooltip
             title={
               record.source === MenuSourceEnum.SystemBuiltIn
-                ? '系统内置的菜单不能删除'
+                ? t('PC.Pages.SystemMenuManage.systemBuiltinDeleteDisabled')
                 : !hasPermissionByMenuCode('menu_manage', 'menu_manage_delete')
-                ? '无此资源权限'
+                ? t('PC.Pages.SystemMenuManage.noPermission')
                 : ''
             }
           >
@@ -974,7 +979,7 @@ const MenuManage: React.FC = () => {
               }
               onClick={() => handleDeleteConfirm(record)}
             >
-              删除
+              {t('PC.Pages.SystemMenuManage.actionDelete')}
             </Button>
           </Tooltip>
         </Space>
@@ -984,7 +989,7 @@ const MenuManage: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="菜单管理"
+      title={t('PC.Pages.SystemMenuManage.pageTitle')}
       hideScroll
       rightSlot={
         hasPermissionByMenuCode('menu_manage', 'menu_manage_add') && (
@@ -994,7 +999,7 @@ const MenuManage: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >
-            新增菜单
+            {t('PC.Pages.SystemMenuManage.addMenu')}
           </Button>
         )
       }
@@ -1058,7 +1063,7 @@ const MenuManage: React.FC = () => {
             locale={{
               emptyText: (
                 <Empty
-                  description="暂无菜单数据"
+                  description={t('PC.Pages.SystemMenuManage.noMenuData')}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   className={cx(styles.empty)}
                 />

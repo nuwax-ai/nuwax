@@ -3,6 +3,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { submitSpecifiedFilesUpdate } from '@/services/appDev';
+import { t } from '@/services/i18nRuntime';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
@@ -202,7 +203,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
       if (!devServerUrl) {
         // No dev server URL available
-        setLoadError('开发服务器URL不可用');
+        setLoadError(t('PC.Pages.AppDevPreview.devServerUrlUnavailable'));
         return;
       }
 
@@ -232,10 +233,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 如果没有开发服务器URL，调用启动开发服务器接口
           onStartDev();
         } else {
-          setLoadError('开发服务器URL不可用');
+          setLoadError(t('PC.Pages.AppDevPreview.devServerUrlUnavailable'));
         }
       } catch (error) {
-        setLoadError('重试失败，请检查网络连接');
+        setLoadError(t('PC.Pages.AppDevPreview.retryFailedCheckNetwork'));
       } finally {
         setRetrying(false);
       }
@@ -301,11 +302,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       // 确定标题 - 可自定义覆盖组件默认标题
       let title: string | undefined;
       if (hasServerError && serverErrorCode) {
-        title = `服务器错误 (${formatErrorCode(serverErrorCode)})`;
+        title = t(
+          'PC.Pages.AppDevPreview.serverErrorWithCode',
+          formatErrorCode(serverErrorCode),
+        );
       } else if (hasStartError && serverErrorCode) {
-        title = `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`;
+        title = t(
+          'PC.Pages.AppDevPreview.serverStartFailedWithCode',
+          formatErrorCode(serverErrorCode),
+        );
       } else if (isStarting) {
-        title = '启动中';
+        title = t('PC.Pages.AppDevPreview.starting');
       }
       // 其他情况使用组件默认标题
 
@@ -316,11 +323,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       } else if (hasStartError && startError) {
         description = startError;
       } else if (isProjectUploading) {
-        description = '正在导入项目并重启开发服务器，请稍候...';
+        description = t('PC.Pages.AppDevPreview.importingAndRestarting');
       } else if (isStarting) {
-        description = '正在启动开发环境，请稍候...';
+        description = t('PC.Pages.AppDevPreview.startingEnvironment');
       } else if (isDeveloping) {
-        description = '正在生成，请稍候...';
+        description = t('PC.Pages.AppDevPreview.developingPleaseWait');
       }
       // 其他情况使用组件默认描述
 
@@ -342,7 +349,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 有错误时显示重试按钮
         buttons = [
           {
-            text: retrying ? '刷新中...' : '刷新',
+            text: retrying
+              ? t('PC.Pages.AppDevPreview.refreshing')
+              : t('PC.Pages.AppDevPreview.refresh'),
             icon: <ReloadOutlined />,
             onClick: retryPreview,
             loading: retrying,
@@ -353,7 +362,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 如果是服务器错误且有重启回调，添加重启服务器按钮
         if (hasServerError && onRestartDev) {
           buttons.push({
-            text: '重启服务器',
+            text: t('PC.Pages.AppDevPreview.restartServer'),
             icon: <ThunderboltOutlined />,
             onClick: onRestartDev,
             type: 'primary',
@@ -366,7 +375,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 其他情况且有启动/重启回调时显示重启服务按钮
         buttons = [
           {
-            text: retrying ? '重启中...' : '重启服务',
+            text: retrying
+              ? t('PC.Pages.AppDevPreview.restarting')
+              : t('PC.Pages.AppDevPreview.restartService'),
             icon: <ReloadOutlined />,
             onClick: retryPreview,
             loading: retrying,
@@ -406,7 +417,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      */
     const refreshPreview = useCallback(() => {
       if (pendingChanges?.length > 0) {
-        message.error('请先保存或重置修改, 再刷新预览');
+        message.error(t('PC.Pages.AppDevPreview.saveOrResetBeforeRefresh'));
         return;
       }
       // 关闭设计模式
@@ -415,11 +426,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         loadDevServerPreview();
       } else if (iframeRef.current) {
-        setLoadError('开发服务器URL不可用');
+        setLoadError(t('PC.Pages.AppDevPreview.devServerUrlUnavailable'));
         setLastRefreshed(new Date());
       } else {
         // iframeRef.current 为空，无法刷新
-        console.error('iframeRef.current 为空，无法刷新');
+        console.error('[Preview] iframeRef.current is null, unable to refresh');
       }
     }, [devServerUrl, loadDevServerPreview, pendingChanges]);
 
@@ -449,7 +460,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           jumpTo(-steps); //直接在父容器中回退
         }
       } catch (error) {
-        // console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
+        // console.warn('[Preview] iframe back failed (possibly due to cross-origin restrictions):', error);
         jumpTo(-steps); //直接在父容器中回退
       }
     }, []);
@@ -462,7 +473,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     // 截图 iframe 内容
     const captureIframeContent = async () => {
       const iframeElement = iframeRef.current;
-      // console.log('截图 iframe 内容55555', iframeElement, devServerUrl);
+      // console.log('Capture iframe content', iframeElement, devServerUrl);
 
       if (!devServerUrl) {
         return;
@@ -478,7 +489,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
       // 如果 iframe 不存在，创建一个新的 iframe 元素
       if (!iframeElement) {
-        // console.log('[Preview] 创建新的 iframe 元素进行截图');
+        // console.log('[Preview] Create a new iframe element for screenshot');
 
         // 创建一个新的 iframe 元素
         const createIframe = document.createElement('iframe');
@@ -492,7 +503,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // 设置加载完成事件
         createIframe.onload = async () => {
-          // console.log('[Preview] iframe 加载完成，开始截图');
+          // console.log('[Preview] iframe loaded, start screenshot');
 
           try {
             // 等待一小段时间确保内容渲染完成
@@ -504,7 +515,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               createIframe.contentDocument ||
               createIframe.contentWindow?.document;
             if (!iframeDoc) {
-              console.error('[Preview] 无法访问 iframe 文档');
+              console.error('[Preview] Unable to access iframe document');
               document.body.removeChild(createIframe);
               return;
             }
@@ -529,7 +540,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             // 将 canvas 转换为 blob
             canvas.toBlob(async (blob) => {
               if (!blob) {
-                console.error('[Preview] 无法生成图片 blob');
+                console.error('[Preview] Failed to generate image blob');
                 document.body.removeChild(createIframe);
                 return;
               }
@@ -563,7 +574,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 // 移除临时创建的 iframe
                 document.body.removeChild(createIframe);
               } catch (uploadError) {
-                console.error('[Preview] 图片上传过程中发生错误:', uploadError);
+                console.error(
+                  '[Preview] Error occurred during image upload:',
+                  uploadError,
+                );
 
                 // 确保移除临时创建的 iframe
                 if (document.body.contains(createIframe)) {
@@ -572,7 +586,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               }
             }, 'image/png');
           } catch (error) {
-            console.error('[Preview] 截图失败:', error);
+            console.error('[Preview] Screenshot failed:', error);
 
             // 确保移除临时创建的 iframe
             if (document.body.contains(createIframe)) {
@@ -583,7 +597,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // 设置加载错误事件
         createIframe.onerror = () => {
-          console.error('[Preview] iframe 加载失败');
+          console.error('[Preview] iframe load failed');
 
           // 确保移除临时创建的 iframe
           if (document.body.contains(createIframe)) {
@@ -595,14 +609,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         document.body.appendChild(createIframe);
       } else {
         // 如果 iframe 存在，使用现有 iframe 进行截图
-        // console.log('运行到这里了iframeElement', iframeElement);
+        // console.log('Using existing iframe element', iframeElement);
         try {
           const iframeDoc =
             iframeElement.contentDocument ||
             iframeElement.contentWindow?.document;
           // console.log('iframeDoc', iframeDoc);
           if (!iframeDoc) {
-            console.error('[Preview] 无法访问 iframe 文档');
+            console.error('[Preview] Unable to access iframe document');
             return;
           }
 
@@ -625,7 +639,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 将 canvas 转换为 blob
           canvas.toBlob(async (blob) => {
             if (!blob) {
-              console.error('[Preview] 无法生成图片 blob');
+              console.error('[Preview] Failed to generate image blob');
               return;
             }
 
@@ -646,7 +660,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const result = await response.json();
               const imageUrl = result.data?.url || result.url || '';
 
-              // console.log('[Preview] 图片上传成功:', imageUrl, result);
+              // console.log('[Preview] Image uploaded successfully:', imageUrl, result);
               // 调用编辑页面接口，更新图标
               const params = {
                 projectId: projectInfo?.projectId,
@@ -656,11 +670,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               };
               runUpdatePage(params);
             } catch (uploadError) {
-              console.error('[Preview] 图片上传过程中发生错误:', uploadError);
+              console.error(
+                '[Preview] Error occurred during image upload:',
+                uploadError,
+              );
             }
           }, 'image/png');
         } catch (error) {
-          console.error('[Preview] 截图失败:', error);
+          console.error('[Preview] Screenshot failed:', error);
         }
       }
     };
@@ -695,7 +712,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       //   const iframe = document.querySelector('iframe');
       //   console.log('iframe', iframe, iframe?.contentWindow);
       //   if (iframe && iframe.contentWindow) {
-      //     console.log('发送消息给 iframe 开启设计模式33333333333333333333');
+      //     console.log('Send message to iframe to enable design mode');
       //     iframe.contentWindow.postMessage(
       //       {
       //         type: 'TOGGLE_DESIGN_MODE',
@@ -721,13 +738,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      */
     const handleIframeError = useCallback(() => {
       setIsLoading(false);
-      setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
+      setLoadError(
+        t('PC.Pages.AppDevPreview.previewLoadFailedCheckServerNetwork'),
+      );
 
       // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
       if (onWhiteScreenOrIframeError) {
         onWhiteScreenOrIframeError(
           dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
-            ' 预览加载失败，请检查开发服务器状态或网络连接',
+            ` ${t(
+              'PC.Pages.AppDevPreview.previewLoadFailedCheckServerNetwork',
+            )}`,
           'iframe',
         );
       }
@@ -782,8 +803,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })
             .join('; ');
 
-          // ⭐ 只要有错误就触发自动处理，不限于白屏
-          // 白屏时使用 'whiteScreen' 类型，否则使用 'whiteScreen'（因为类型定义只支持 whiteScreen | iframe）
+          // Trigger auto handling whenever errors exist, not only for white screens.
+          // Use 'whiteScreen' when applicable, otherwise use 'iframe'.
           if (onWhiteScreenOrIframeError) {
             // 即使不是白屏，也触发自动处理（使用 whiteScreen 类型）
             onWhiteScreenOrIframeError(
@@ -1021,12 +1042,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const saveChanges = async () => {
       const projectId = projectInfo?.projectId || '';
       if (!projectId) {
-        message.error('缺少项目ID，无法保存');
+        message.error(t('PC.Pages.AppDevPreview.projectIdMissingCannotSave'));
         return;
       }
 
       if (pendingChanges.length === 0) {
-        message.warning('没有待保存的更改');
+        message.warning(t('PC.Pages.AppDevPreview.noPendingChanges'));
         return;
       }
 
@@ -1094,7 +1115,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 `[DesignViewer] Error processing file ${filePath}:`,
                 error,
               );
-              message.error(`处理文件 ${filePath} 时出错`);
+              message.error(
+                t('PC.Pages.AppDevPreview.processFileError', filePath),
+              );
               // 出错时保留原内容，防止文件丢失？或者跳过？
               // 这里选择保留原内容，避免破坏
               filesToUpdate.push(file);
@@ -1119,13 +1142,16 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 刷新文件树列表
         onRefreshFileTree?.(true, true);
         if (response.code === SUCCESS_CODE) {
-          message.success(`成功保存！`);
+          message.success(t('PC.Pages.AppDevPreview.saveSuccess'));
           // 方案一，保存后关闭设计模式
           // closeDesignMode();
           // 清空待保存列表
           setPendingChanges([]);
         } else {
-          message.error(response.message || '保存失败，请查看控制台错误信息');
+          message.error(
+            response.message ||
+              t('PC.Pages.AppDevPreview.saveFailedCheckConsole'),
+          );
         }
       } catch (error) {
         // 保存失败后，关闭保存状态
@@ -1186,7 +1212,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           } catch (error) {
             console.error(
-              `[Preview] 恢复更改失败 (${type}):`,
+              `[Preview] Restore change failed (${type}):`,
               sourceInfo,
               error,
             );
@@ -1227,7 +1253,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               allowDescriptionWrap={true} // 允许换行显示
               maxLines={4} // 最多显示 4 行
               clickableDescription={true} // 启用点击查看完整内容
-              viewFullTextButtonText="查看完整错误信息" // 自定义按钮文本
+              viewFullTextButtonText={t(
+                'PC.Pages.AppDevPreview.viewFullErrorInfo',
+              )} // Custom button text
             />
           )}
         </div>
@@ -1239,14 +1267,16 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })}
           >
             <WarningOutlined className={styles['warning-icon']} />
-            <span className={styles['unsaved-text']}>未保存的更改</span>
+            <span className={styles['unsaved-text']}>
+              {t('PC.Pages.AppDevPreview.unsavedChanges')}
+            </span>
             <Button
               type="text"
               className={styles['reset-button']}
               onClick={onCancelEdit}
               disabled={isSaving}
             >
-              重置
+              {t('PC.Pages.AppDevPreview.reset')}
             </Button>
             <Button
               type="primary"
@@ -1254,7 +1284,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               onClick={saveChanges}
               loading={isSaving}
             >
-              保存
+              {t('PC.Pages.AppDevPreview.save')}
             </Button>
           </div>
         )}

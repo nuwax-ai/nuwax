@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -50,7 +51,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   style,
   disabled = false,
   icon,
-  children = '复制',
+  children = dict('PC.Common.Global.copy'),
   tooltipText,
   showSuccessMsg = true,
   jsonSpace = 2,

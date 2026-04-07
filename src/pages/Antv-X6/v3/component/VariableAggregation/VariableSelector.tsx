@@ -1,4 +1,5 @@
-// 变量选择器组件
+// Variable selector component.
+import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
@@ -7,7 +8,7 @@ import React, { useRef, useState } from 'react';
 import { returnImg } from '../../utils/workflowV3';
 import './index.less';
 
-// 扩展类型，添加 disabled 和 originalKey 属性
+// Extended arg type with local UI fields.
 type FilteredArg = InputAndOutConfig & {
   disabled?: boolean;
   originalKey?: string;
@@ -23,8 +24,7 @@ interface VariableSelectorProps {
 }
 
 /**
- * 变量选择器组件
- * 用于选择上级节点的输出变量
+ * Selector for output variables from upstream nodes.
  */
 const VariableSelector: React.FC<VariableSelectorProps> = ({
   displayValue,
@@ -34,12 +34,12 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
   onSelect,
   onClear,
 }) => {
-  // 使用 useRef 持久化计数器，确保跨渲染唯一
+  // Keep stable incremental suffix across renders.
   const keyCounterRef = useRef(0);
-  // 控制下拉菜单显示状态
+  // Dropdown visibility state.
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // 过滤变量树，添加节点前缀确保不同节点的树有不同的 key
+  // Filter and namespace keys per upstream node.
   const filterOutputArgs = (
     outputArgs: InputAndOutConfig[],
     allowedType: DataTypeEnum | undefined,
@@ -62,7 +62,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
             )
           : undefined;
 
-        // 生成唯一 key：节点前缀 + 原始key + 递增计数器
+        // Unique key: node prefix + original key + local counter.
         const uniqueKey = `${nodePrefix}_${originalKey}__${keyCounterRef.current++}`;
 
         return {
@@ -76,7 +76,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
       .filter((arg) => !selectedKeys.has(arg.originalKey || ''));
   };
 
-  // 渲染树节点标题
+  // Render tree node title.
   const renderTitle = (nodeData: FilteredArg) => {
     const isDisabled = nodeData.disabled;
     return (
@@ -86,7 +86,12 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
         }`}
       >
         <span>{nodeData.name}</span>
-        <Popover content={nodeData.description || '暂无描述'}>
+        <Popover
+          content={
+            nodeData.description ||
+            t('PC.Pages.AntvX6VariableAggregation.noDescription')
+          }
+        >
           <InfoCircleOutlined
             style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
           />
@@ -101,7 +106,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
     );
   };
 
-  // 生成下拉菜单
+  // Build dropdown menu.
   const getMenu = (nodes: PreviousList[]) => {
     if (!nodes?.length) {
       return [
@@ -109,7 +114,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
           key: 'no-data',
           label: (
             <div className="no-data-tip">
-              未添加上级节点连线或上级节点无参数
+              {t('PC.Pages.AntvX6VariableAggregation.noUpstreamNodeOrParams')}
             </div>
           ),
           disabled: true,
@@ -122,7 +127,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
         node.outputArgs || [],
         allowedType,
         selectedKeys,
-        String(node.id), // 添加节点ID作为前缀确保唯一性
+        String(node.id),
       );
 
       return {
@@ -144,7 +149,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
                     const nodeData = info.node as unknown as FilteredArg;
                     if (nodeData.originalKey) {
                       onSelect(nodeData.originalKey);
-                      setDropdownOpen(false); // 选中后关闭下拉菜单
+                      setDropdownOpen(false);
                     }
                   }}
                   defaultExpandAll
@@ -184,7 +189,9 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
           )}
         </Tag>
       ) : (
-        <span className="placeholder-text">选择变量</span>
+        <span className="placeholder-text">
+          {t('PC.Pages.AntvX6VariableAggregation.selectVariable')}
+        </span>
       )}
       <Dropdown
         menu={{ items: getMenu(previousNodes) }}

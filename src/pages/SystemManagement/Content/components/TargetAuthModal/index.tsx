@@ -2,6 +2,7 @@ import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services
 import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
+import { t } from '@/services/i18nRuntime';
 import { Button, Checkbox, Empty, message, Modal, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -23,11 +24,11 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface TargetAuthModalProps {
-  /** 是否打开 */
+  /** Whether modal is open. */
   open: boolean;
-  /** 智能体ID、网页应用ID、模型ID */
+  /** Agent/Page/Model ID. */
   targetId: number;
-  /** 目标名称 */
+  /** Target display name. */
   targetName?: string;
   /** 目标类型 */
   targetType: 'agent' | 'page' | 'model' | 'knowledge';
@@ -38,12 +39,7 @@ interface TargetAuthModalProps {
 type TabKey = 'role' | 'group';
 
 /**
- * 目标对象授权弹窗
- * @param open 是否打开
- * @param targetId 目标对象ID
- * @param targetType 目标类型
- * @param onCancel 取消回调
- * @returns
+ * Restriction target authorization modal.
  */
 const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   open,
@@ -53,15 +49,15 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   onCancel,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('role');
-  // 完整的角色列表和用户组列表
+  // Full role and user-group lists.
   const [roleList, setRoleList] = useState<RoleInfo[]>([]);
   const [groupList, setGroupList] = useState<UserGroupInfo[]>([]);
-  // 已授权的角色和用户组ID列表（用于回显）
+  // Authorized role/group IDs for selection echo.
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // 查询可访问的角色和用户组列表接口
+  // Query accessible roles and groups.
   const apiQueryRestrictionTargets =
     targetType === 'agent'
       ? apiAgentRestrictionTargets
@@ -71,7 +67,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       ? apiKnowledgeRestrictionTargets
       : apiModelRestrictionTargets;
 
-  // 绑定限制访问对象接口
+  // Bind restriction targets.
   const apiBindRestrictionTargets =
     targetType === 'agent'
       ? apiAgentBindRestrictionTargets
@@ -81,7 +77,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       ? apiKnowledgeBindRestrictionTargets
       : apiModelBindRestrictionTargets;
 
-  // 查询完整的角色列表
+  // Query all roles.
   const { run: runGetRoleList } = useRequest(apiGetRoleList, {
     manual: true,
     onSuccess: (data: RoleInfo[]) => {
@@ -89,7 +85,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
   });
 
-  // 查询完整的用户组列表
+  // Query all user groups.
   const { run: runGetGroupList } = useRequest(apiGetUserGroupList, {
     manual: true,
     onSuccess: (data: UserGroupInfo[]) => {
@@ -97,7 +93,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
   });
 
-  // 查询已授权的角色和用户组列表（用于回显选中状态）
+  // Query currently authorized roles and groups.
   const { run: runGetRestrictionTargets } = useRequest(
     apiQueryRestrictionTargets,
     {
@@ -108,20 +104,20 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
       }) => {
         const roles = data?.roles || [];
         const groups = data?.groups || [];
-        // 将返回的角色和用户组ID设置为已选中状态（接口返回的就是已授权的列表）
+        // Echo backend-authorized targets as selected.
         setSelectedRoleIds(roles.map((role) => role.id));
         setSelectedGroupIds(groups.map((group) => group.id));
       },
     },
   );
 
-  // 绑定限制访问对象
+  // Bind restriction targets.
   const { run: runBindRestrictionTargets } = useRequest(
     apiBindRestrictionTargets,
     {
       manual: true,
       onSuccess: () => {
-        message.success('授权成功');
+        message.success(t('PC.Toast.SystemTargetAuthModal.authorized'));
         setLoading(false);
         onCancel();
       },
@@ -131,13 +127,13 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
   );
 
-  // 打开弹窗时加载数据
+  // Load data when modal opens.
   useEffect(() => {
     if (open && targetId) {
-      // 查询完整的角色列表和用户组列表
+      // Load full role/group options.
       runGetRoleList();
       runGetGroupList();
-      // 查询已授权的角色和用户组列表（用于回显）
+      // Load selected role/group IDs.
       runGetRestrictionTargets(targetId);
     } else {
       setRoleList([]);
@@ -148,7 +144,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     }
   }, [open, targetId]);
 
-  // 提交数据
+  // Submit bindings.
   const handleSubmit = () => {
     setLoading(true);
     runBindRestrictionTargets({
@@ -158,24 +154,24 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     });
   };
 
-  // 处理角色选择变化
+  // Handle role selection change.
   const handleRoleChange = (checkedValues: number[]) => {
     setSelectedRoleIds(checkedValues);
   };
 
-  // 处理用户组选择变化
+  // Handle group selection change.
   const handleGroupChange = (checkedValues: number[]) => {
     setSelectedGroupIds(checkedValues);
   };
 
-  // 获取所有角色ID
+  // All role IDs.
   const allRoleIds = roleList?.map((item) => item.id) || [];
-  // 判断是否全部选中
+  // Whether all roles are selected.
   const isAllRoleSelected =
     allRoleIds.length > 0 &&
     allRoleIds.every((id: number) => selectedRoleIds.includes(id));
 
-  // 全选/取消全选角色
+  // Select all / clear all roles.
   const handleRoleSelectAll = () => {
     if (isAllRoleSelected) {
       setSelectedRoleIds([]);
@@ -184,14 +180,14 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     }
   };
 
-  // 获取所有用户组ID
+  // All user-group IDs.
   const allGroupIds = groupList?.map((item) => item.id) || [];
-  // 判断是否全部选中
+  // Whether all groups are selected.
   const isAllGroupSelected =
     allGroupIds.length > 0 &&
     allGroupIds.every((id: number) => selectedGroupIds.includes(id));
 
-  // 全选/取消全选用户组
+  // Select all / clear all groups.
   const handleGroupSelectAll = () => {
     if (isAllGroupSelected) {
       setSelectedGroupIds([]);
@@ -203,7 +199,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
   const tabItems = [
     {
       key: 'role',
-      label: '角色',
+      label: t('PC.Pages.SystemTargetAuthModal.roleTab'),
       children: (
         <div className={cx(styles.tabContent)}>
           {roleList && roleList.length > 0 ? (
@@ -225,7 +221,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
               <Empty
                 description={
                   <span>
-                    暂无数据，请前往{' '}
+                    {t('PC.Pages.SystemTargetAuthModal.emptyPrefix')}{' '}
                     <Button
                       type="link"
                       size="small"
@@ -235,9 +231,9 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
                         onCancel();
                       }}
                     >
-                      角色管理
+                      {t('PC.Pages.SystemTargetAuthModal.roleManagement')}
                     </Button>{' '}
-                    新建角色
+                    {t('PC.Pages.SystemTargetAuthModal.createRole')}
                   </span>
                 }
               />
@@ -248,7 +244,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
     {
       key: 'group',
-      label: '用户组',
+      label: t('PC.Pages.SystemTargetAuthModal.userGroupTab'),
       children: (
         <div className={cx(styles.tabContent)}>
           {groupList && groupList.length > 0 ? (
@@ -270,7 +266,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
               <Empty
                 description={
                   <span>
-                    暂无数据，请前往{' '}
+                    {t('PC.Pages.SystemTargetAuthModal.emptyPrefix')}{' '}
                     <Button
                       type="link"
                       size="small"
@@ -282,9 +278,9 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
                         onCancel();
                       }}
                     >
-                      用户组管理
+                      {t('PC.Pages.SystemTargetAuthModal.userGroupManagement')}
                     </Button>{' '}
-                    新建用户组
+                    {t('PC.Pages.SystemTargetAuthModal.createUserGroup')}
                   </span>
                 }
               />
@@ -295,7 +291,7 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
     },
   ];
 
-  // 根据当前 tab 获取对应的全选状态和操作函数
+  // Build select-all state for current tab.
   const getSelectAllConfig = () => {
     if (activeTab === 'role') {
       return {
@@ -316,7 +312,11 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
 
   return (
     <Modal
-      title={`授权 - ${targetName ?? ''}`}
+      title={
+        targetName
+          ? t('PC.Pages.SystemTargetAuthModal.authorizeWithName', targetName)
+          : t('PC.Pages.SystemTargetAuthModal.authorize')
+      }
       open={open}
       confirmLoading={loading}
       onCancel={onCancel}
@@ -340,7 +340,9 @@ const TargetAuthModal: React.FC<TargetAuthModalProps> = ({
             size="small"
             onClick={selectAllConfig.onSelectAll}
           >
-            {selectAllConfig.isAllSelected ? '取消全选' : '全选'}
+            {selectAllConfig.isAllSelected
+              ? t('PC.Pages.SystemTargetAuthModal.clearAll')
+              : t('PC.Pages.SystemTargetAuthModal.selectAll')}
           </Button>
         )}
       </div>

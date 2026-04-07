@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ActivatedIcon from './ActivatedIcon';
 import styles from './index.less';
 // 方程式支持
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import {
@@ -36,7 +37,7 @@ const { Title, Paragraph } = Typography;
 
 const DEFAULT_ICON =
   'https://agent-1251073634.cos.ap-chengdu.myqcloud.com/store/b5fdb62e8b994a418d0fdfae723ee827.png';
-const DEFAULT_TEXT = '插件';
+const DEFAULT_TEXT = dict('PC.Components.EcosystemDetailDrawer.plugin');
 
 // 类型定义
 interface ConfigParam {
@@ -325,9 +326,13 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   // 计算按钮文本
   const buttonText = useMemo(() => {
     if (isEnabled) {
-      return showToolSection || showMcpConfig ? '更新配置' : '更新';
+      return showToolSection || showMcpConfig
+        ? dict('PC.Components.EcosystemDetailDrawer.updateConfig')
+        : dict('PC.Components.EcosystemDetailDrawer.update');
     }
-    return showToolSection || showMcpConfig ? '保存配置并启用' : '启用';
+    return showToolSection || showMcpConfig
+      ? dict('PC.Components.EcosystemDetailDrawer.saveConfigAndEnable')
+      : dict('PC.Components.EcosystemDetailDrawer.enable');
   }, [isEnabled, showToolSection, showMcpConfig]);
 
   // 计算是否显示启用按钮图标
@@ -338,18 +343,19 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   // 计算启用按钮提示文本
   const enableButtonTooltip = useMemo(() => {
     return dataType === EcosystemDataTypeEnum.MCP
-      ? '启用后将发布到官方服务列表'
-      : '启用后将发布到系统广场';
+      ? dict('PC.Components.EcosystemDetailDrawer.enablePublishOfficialTip')
+      : dict('PC.Components.EcosystemDetailDrawer.enablePublishSquareTip');
   }, [dataType]);
 
   // 计算停用按钮提示文本
   const disableButtonTooltip = useMemo(() => {
     if (dataType === EcosystemDataTypeEnum.MCP) {
-      return '停用后，官方服务列表中将不可见';
+      return dict('PC.Components.EcosystemDetailDrawer.disableOfficialTip');
     }
-    return `停用后，广场${
-      dataType ? ECO_TYPE_TITLE_MAP[dataType] : ''
-    }中将不可见`;
+    return dict(
+      'PC.Components.EcosystemDetailDrawer.disableSquareTip',
+      dataType ? ECO_TYPE_TITLE_MAP[dataType] : '',
+    );
   }, [dataType]);
 
   // 渲染操作按钮
@@ -394,7 +400,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
               </Tooltip>
             }
           >
-            停用
+            {dict('PC.Components.EcosystemDetailDrawer.disable')}
           </Button>
         )}
       </>
@@ -425,9 +431,22 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             label={item.name}
             name={item.name}
             tooltip={item.description}
-            rules={[{ required: true, message: `请输入${item.name}` }]}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Components.EcosystemDetailDrawer.pleaseInput',
+                  item.name,
+                ),
+              },
+            ]}
           >
-            <Input placeholder={`请输入${item.name}`} />
+            <Input
+              placeholder={dict(
+                'PC.Components.EcosystemDetailDrawer.pleaseInput',
+                item.name,
+              )}
+            />
           </Form.Item>
         ))}
       </Form>
@@ -494,10 +513,17 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
             <Title level={5} className={cx(styles.title)}>
               {title}
               {isNewVersion && (
-                <span className={cx(styles.newVersion)}>新版本更新</span>
+                <span className={cx(styles.newVersion)}>
+                  {dict('PC.Components.EcosystemDetailDrawer.newVersionUpdate')}
+                </span>
               )}
             </Title>
-            <div className={cx(styles.subtitle)}>来自{author}</div>
+            <div className={cx(styles.subtitle)}>
+              {dict(
+                'PC.Components.EcosystemDetailDrawer.fromAuthor',
+                author || '',
+              )}
+            </div>
           </div>
         </div>
         {/* 关闭按钮 */}
@@ -522,7 +548,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
 
         <div className={cx(styles.section)}>
           <Title level={5} className={cx(styles.sectionTitle)}>
-            使用文档
+            {dict('PC.Components.EcosystemDetailDrawer.usageDoc')}
           </Title>
           <PureMarkdownRenderer id={`${title}`} disableTyping={true}>
             {publishDoc ? encodeHTML(publishDoc) : ''}

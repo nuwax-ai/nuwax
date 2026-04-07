@@ -43,4 +43,6 @@ export enum SettingActionEnum {
   Theme_Switch,
   // 用量统计
   Usage_Statistics,
+  // 语言切换
+  Language_Switch,
 }

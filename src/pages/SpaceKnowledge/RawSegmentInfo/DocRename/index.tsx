@@ -1,4 +1,5 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeDocumentUpdateDocName } from '@/services/knowledge';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { KnowledgeDocumentUpdateDocNameParams } from '@/types/interfaces/knowledge';
@@ -33,7 +34,9 @@ const DocRename: React.FC<DocRenameProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: (_: null, params: KnowledgeDocumentUpdateDocNameParams[]) => {
-        message.success('更新成功');
+        message.success(
+          dict('PC.Pages.SpaceKnowledge.DocRename.updateSuccess'),
+        );
         setHovered(false);
         const { docId, name } = params[0];
         onSuccessUpdateName(docId, name);
@@ -59,7 +62,7 @@ const DocRename: React.FC<DocRenameProps> = ({
 
   return (
     <TooltipIcon
-      title="重命名"
+      title={dict('PC.Pages.SpaceKnowledge.DocRename.rename')}
       type={TooltipTitleTypeEnum.Blank}
       icon={
         <Popover
@@ -78,17 +81,21 @@ const DocRename: React.FC<DocRenameProps> = ({
               <Form.Item
                 className={cx(styles.input, 'mb-16')}
                 name="name"
-                label="重命名"
+                label={dict('PC.Pages.SpaceKnowledge.DocRename.rename')}
                 rules={[
                   {
                     required: true,
-                    message: '文档名称不能为空',
+                    message: dict(
+                      'PC.Pages.SpaceKnowledge.DocRename.docNameRequired',
+                    ),
                   },
                 ]}
               >
                 <Input.TextArea
                   className="dispose-textarea-count"
-                  placeholder={'请输入文档名称'}
+                  placeholder={dict(
+                    'PC.Pages.SpaceKnowledge.DocRename.inputDocName',
+                  )}
                   maxLength={100}
                   showCount
                   autoSize={{ minRows: 6, maxRows: 8 }}
@@ -96,7 +103,7 @@ const DocRename: React.FC<DocRenameProps> = ({
               </Form.Item>
               <Form.Item className={cx('flex', 'content-end', 'mb-6')}>
                 <Button htmlType="submit" type="primary">
-                  确认
+                  {dict('PC.Common.Global.confirm')}
                 </Button>
               </Form.Item>
             </Form>

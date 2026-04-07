@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { isBase64Image } from '@/utils/appDevUtils';
 import { Button, Image, Tooltip } from 'antd';
 import React from 'react';
@@ -38,12 +39,14 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
       {imagePath && (
         <div className={styles.imagePreviewHeader}>
           <span>
-            图片预览: {imagePath}
+            {dict('PC.Pages.AppDevImageViewer.previewPath', imagePath)}
             {isBase64 && (
-              <span className={styles.base64Indicator}> (Base64)</span>
+              <span className={styles.base64Indicator}>
+                {dict('PC.Pages.AppDevImageViewer.base64Tag')}
+              </span>
             )}
           </span>
-          <Tooltip title="刷新">
+          <Tooltip title={dict('PC.Common.Global.refresh')}>
             <Button
               size="small"
               type="text"

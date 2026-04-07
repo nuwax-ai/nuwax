@@ -42,7 +42,7 @@ export class UserService {
       const userInfoStr = localStorage.getItem(USER_INFO);
       return userInfoStr ? JSON.parse(userInfoStr) : null;
     } catch (error) {
-      console.error('解析本地用户信息失败:', error);
+      console.error('Failed to parse local user info:', error);
       this.clearUserInfo();
       return null;
     }
@@ -55,7 +55,7 @@ export class UserService {
     try {
       localStorage.setItem(USER_INFO, JSON.stringify(userInfo));
     } catch (error) {
-      console.error('保存用户信息到本地存储失败:', error);
+      console.error('Failed to save user info to local storage:', error);
     }
   }
 
@@ -109,7 +109,7 @@ export class UserService {
         return null;
       }
     } catch (error) {
-      console.error('从服务器获取用户信息失败:', error);
+      console.error('Failed to fetch user info from server:', error);
       this.clearUserInfo();
       throw error;
     }

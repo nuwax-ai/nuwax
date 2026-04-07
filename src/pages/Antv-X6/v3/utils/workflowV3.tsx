@@ -876,7 +876,7 @@ export const QuicklyCreateEdgeConditionConfig = (
   // 如果配置数组不存在或为空，返回空结果（节点可能刚创建还没有配置）
   if (!_arr || _arr.length === 0) {
     console.warn(
-      '[QuicklyCreateEdgeConditionConfig] 条件/意图配置为空，跳过连线',
+      '[QuicklyCreateEdgeConditionConfig] Condition/intent config is empty. Skip edge creation',
     );
     return { nodeData, sourcePortId: '' };
   }

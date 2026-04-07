@@ -17,6 +17,7 @@ import {
   LIBRARY_ALL_TYPE,
 } from '@/constants/space.constants';
 import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
+import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import {
   apiComponentList,
@@ -216,7 +217,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (data: number, params: number[]) => {
-      message.success('插件复制成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.pluginCopySuccess'));
       setLoadingPlugin(false);
       // 复制到空间成功后处理数据
       handleCopyToSpaceSuccess({
@@ -244,7 +245,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('插件删除成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess'));
       const id = params[0];
       handleDel(id);
     },
@@ -255,7 +256,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('模型删除成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.modelDeleteSuccess'));
       const id = params[0];
       handleDel(id);
     },
@@ -266,7 +267,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (data: number, params: number[]) => {
-      message.success('工作流复制成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.workflowCopySuccess'));
       setLoadingWorkflow(false);
       // 复制到空间成功后处理数据
       handleCopyToSpaceSuccess({
@@ -285,7 +286,9 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('工作流删除成功');
+      message.success(
+        dict('PC.Pages.SpaceLibrary.Index.workflowDeleteSuccess'),
+      );
       const id = params[0];
       handleDel(id);
     },
@@ -296,7 +299,9 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('知识库删除成功');
+      message.success(
+        dict('PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess'),
+      );
       const id = params[0];
       handleDel(id);
     },
@@ -307,7 +312,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: number[]) => {
-      message.success('数据表删除成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.tableDeleteSuccess'));
       const id = params[0];
       handleDel(id);
     },
@@ -318,7 +323,7 @@ const SpaceLibrary: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('数据表复制成功');
+      message.success(dict('PC.Pages.SpaceLibrary.Index.tableCopySuccess'));
       runComponent(spaceId);
     },
   });
@@ -441,28 +446,32 @@ const SpaceLibrary: React.FC = () => {
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
-    modalConfirm('你确定要删除此组件吗?', name, () => {
-      switch (type) {
-        case ComponentTypeEnum.Plugin:
-          runPluginDel(id);
-          break;
-        case ComponentTypeEnum.Model:
-          runModelDel(id);
-          break;
-        case ComponentTypeEnum.Workflow:
-          runWorkflowDel(id);
-          break;
-        case ComponentTypeEnum.Knowledge:
-          runKnowledgeDel(id);
-          break;
-        case ComponentTypeEnum.Table:
-          runTableDel(id);
-          break;
-      }
-      return new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-    });
+    modalConfirm(
+      dict('PC.Pages.SpaceLibrary.Index.confirmDeleteComponent'),
+      name,
+      () => {
+        switch (type) {
+          case ComponentTypeEnum.Plugin:
+            runPluginDel(id);
+            break;
+          case ComponentTypeEnum.Model:
+            runModelDel(id);
+            break;
+          case ComponentTypeEnum.Workflow:
+            runWorkflowDel(id);
+            break;
+          case ComponentTypeEnum.Knowledge:
+            runKnowledgeDel(id);
+            break;
+          case ComponentTypeEnum.Table:
+            runTableDel(id);
+            break;
+        }
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
+    );
   };
 
   // 确认复制到空间
@@ -518,8 +527,11 @@ const SpaceLibrary: React.FC = () => {
         break;
       case ApplicationMoreActionEnum.Export_Config:
         modalConfirm(
-          `导出配置 - ${info?.name}`,
-          '如果内部包含数据表或知识库，数据本身不会导出',
+          dict(
+            'PC.Pages.SpaceLibrary.Index.exportConfigTitle',
+            info?.name || '',
+          ),
+          dict('PC.Pages.SpaceLibrary.Index.exportWorkflowConfigDesc'),
           () => {
             exportConfigFile(info.id, AgentComponentTypeEnum.Workflow);
             return new Promise((resolve) => {
@@ -539,8 +551,11 @@ const SpaceLibrary: React.FC = () => {
     switch (action) {
       case ApplicationMoreActionEnum.Export_Config:
         modalConfirm(
-          `导出配置 - ${info?.name}`,
-          '仅导出数据表结构，数据本身不会导出',
+          dict(
+            'PC.Pages.SpaceLibrary.Index.exportConfigTitle',
+            info?.name || '',
+          ),
+          dict('PC.Pages.SpaceLibrary.Index.exportTableConfigDesc'),
           () => {
             exportConfigFile(info.id, AgentComponentTypeEnum.Table);
             return new Promise((resolve) => {
@@ -646,7 +661,9 @@ const SpaceLibrary: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
-          <h3 className={cx(styles.title)}>组件库</h3>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.SpaceLibrary.Index.pageTitle')}
+          </h3>
           <SelectList
             value={type}
             options={LIBRARY_ALL_TYPE}
@@ -667,7 +684,7 @@ const SpaceLibrary: React.FC = () => {
         <div className={cx(styles['header-right'])}>
           <Input
             rootClassName={cx(styles.input)}
-            placeholder="搜索组件"
+            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
             value={keyword}
             onChange={handleQueryAgent}
             prefix={<SearchOutlined />}
@@ -685,7 +702,7 @@ const SpaceLibrary: React.FC = () => {
             onClick={handleClickPopoverItem}
           >
             <Button type="primary" icon={<PlusOutlined />}>
-              组件
+              {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
             </Button>
           </CustomPopover>
         </div>
@@ -712,7 +729,7 @@ const SpaceLibrary: React.FC = () => {
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="未能找到相关结果" />
+          <Empty description={dict('PC.Pages.SpaceLibrary.Index.noResults')} />
         </div>
       )}
       {/*新建插件弹窗*/}

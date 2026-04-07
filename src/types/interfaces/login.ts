@@ -53,9 +53,10 @@ export interface BindEmailParams {
 
 // 更新用户信息
 export interface UserUpdateParams {
-  userName: string;
-  nickName: string;
-  avatar: string;
+  userName?: string;
+  nickName?: string;
+  avatar?: string;
+  lang?: string;
 }
 
 // 重置密码
@@ -86,6 +87,7 @@ export interface UserInfo {
   lastLoginTime: string;
   created: string;
   modified: string;
+  lang?: string;
 }
 
 // 滑动验证码弹窗类型

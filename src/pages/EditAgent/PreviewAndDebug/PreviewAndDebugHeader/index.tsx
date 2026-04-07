@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import { EditAgentShowType } from '@/types/enums/space';
 import classNames from 'classnames';
 import React from 'react';
@@ -52,13 +53,19 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
         styles.container,
       )}
     >
-      <h3>预览与调试</h3>
+      <h3>
+        {dict(
+          'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.previewAndDebug',
+        )}
+      </h3>
       <div className={cx('flex', 'items-center')}>
         {(showType === EditAgentShowType.Version_History ||
           showType === EditAgentShowType.Show_Stand ||
           showType === EditAgentShowType.Hide) && (
           <TooltipIcon
-            title="调试"
+            title={dict(
+              'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.debug',
+            )}
             className={cx(styles['icon-box'])}
             icon={<SvgIcon name="icons-common-debug" />}
             onClick={onPressDebug}
@@ -68,7 +75,9 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
         {/*打开预览页面*/}
         {isShowPreview && (
           <TooltipIcon
-            title="打开预览页面"
+            title={dict(
+              'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openPreviewPage',
+            )}
             className={cx(styles['icon-box'])}
             icon={<SvgIcon name="icons-nav-ecosystem" />}
             onClick={onShowPreview}
@@ -82,8 +91,12 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
             <TooltipIcon
               title={
                 isFileTreeVisible && viewMode === 'preview'
-                  ? '关闭文件预览'
-                  : '打开文件预览'
+                  ? dict(
+                      'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeFilePreview',
+                    )
+                  : dict(
+                      'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openFilePreview',
+                    )
               }
               className={cx(styles['icon-box'], {
                 [styles['active']]: isFileTreeVisible && viewMode === 'preview',
@@ -97,8 +110,12 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
               <TooltipIcon
                 title={
                   isFileTreeVisible && viewMode === 'desktop'
-                    ? '关闭智能体电脑'
-                    : '打开智能体电脑'
+                    ? dict(
+                        'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                      )
+                    : dict(
+                        'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                      )
                 }
                 className={cx(styles['icon-box'], {
                   [styles['active']]:

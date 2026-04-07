@@ -1,4 +1,5 @@
 import CustomPopover from '@/components/CustomPopover';
+import { dict } from '@/services/i18nRuntime';
 import { EllipsisOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -98,7 +99,10 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
       </span>
       <div className={cx('flex-1', 'text-ellipsis', styles.name)}>{name}</div>
       {onCancelCollect && (
-        <CustomPopover list={[{ label: '取消收藏' }]} onClick={onCancelCollect}>
+        <CustomPopover
+          list={[{ label: dict('PC.Components.MenuListItem.cancelCollect') }]}
+          onClick={onCancelCollect}
+        >
           <EllipsisOutlined className={cx(styles.collectIcon)} />
         </CustomPopover>
       )}

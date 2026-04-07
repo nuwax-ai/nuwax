@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { McpHeaderProps } from '@/types/interfaces/mcp';
 import { jumpBack } from '@/utils/router';
 import { LeftOutlined } from '@ant-design/icons';
@@ -24,25 +25,27 @@ const McpHeader: React.FC<McpHeaderProps> = ({
         onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
       >
         <LeftOutlined className={cx('hover-box', styles.icon)} />
-        <span className={styles.name}>创建MCP服务</span>
+        <span className={styles.name}>
+          {dict('PC.Pages.SpaceMcpCreate.createMcpService')}
+        </span>
       </div>
 
       <div className={cx('flex-1')}></div>
       <div className={cx('flex', 'items-center', styles['extra-box'])}>
-        <Button onClick={onCancel}>取消</Button>
+        <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
         <Button
           className={cx(styles['save-btn'])}
           onClick={onSave}
           loading={saveLoading}
         >
-          保存
+          {dict('PC.Pages.SpaceMcpEdit.save')}
         </Button>
         <Button
           type="primary"
           onClick={onSaveAndDeploy}
           loading={saveDeployLoading}
         >
-          保存并部署
+          {dict('PC.Pages.SpaceMcpEdit.saveAndDeploy')}
         </Button>
       </div>
     </header>

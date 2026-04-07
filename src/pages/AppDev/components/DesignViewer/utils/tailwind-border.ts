@@ -114,7 +114,7 @@ export const parseTailwindBorderWidth = (className: string): string | null => {
     return '0'; // 返回 Tailwind 边框宽度值
   }
   if (className === 'border') {
-    return '1'; // border 默认是 1px，返回 Tailwind 边框宽度值 '1'
+    return '1'; // Default border is 1px; return Tailwind border width key '1'
   }
   const match = className.match(/^border-(\d+)$/);
   if (match) {

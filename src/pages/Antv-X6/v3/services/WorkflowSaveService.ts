@@ -90,7 +90,7 @@ class WorkflowSaveService {
    */
   updateMeta(updates: Partial<WorkflowMeta>): void {
     if (!this.meta) {
-      console.error('[SaveService] 未初始化，无法更新元数据');
+      console.error('[SaveService] Not initialized, cannot update metadata');
       return;
     }
     this.meta = {
@@ -149,7 +149,7 @@ class WorkflowSaveService {
    */
   buildPayload(graph: Graph): IgetDetails | null {
     if (!this.meta || !this.originalDetails) {
-      console.error('[SaveService] 未初始化，无法构建保存数据');
+      console.error('[SaveService] Not initialized, cannot build save payload');
       return null;
     }
 
@@ -159,7 +159,7 @@ class WorkflowSaveService {
     // 验证：确保画布有节点且包含开始节点（防止页面离开时画布已清除）
     if (rawNodes.length === 0 || !rawNodes.some((n) => n.type === 'Start')) {
       console.warn(
-        '[SaveService] 画布无有效节点，尝试使用 workflowProxy 数据保存',
+        '[SaveService] No valid nodes found on canvas, fallback to workflowProxy payload',
       );
       // 动态导入 workflowProxy 避免循环依赖
       // 返回 null 让调用方使用 workflowProxy.buildFullConfig()

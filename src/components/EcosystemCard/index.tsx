@@ -1,4 +1,5 @@
 import { COMPONENT_LIST, TAG_ICON_LIST } from '@/constants/ecosystem.constants';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   EcosystemDataTypeEnum,
@@ -121,7 +122,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
         <div
           className={cx(styles['position-top-right'], styles['activated-text'])}
         >
-          已启用
+          {dict('PC.Components.EcosystemCard.enabled')}
         </div>
       )}
       {isNewVersion && (
@@ -131,7 +132,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
             styles['new-version-text'],
           )}
         >
-          有版本更新
+          {dict('PC.Components.EcosystemCard.versionUpdate')}
         </div>
       )}
       <header className={cx('flex', styles.header)}>
@@ -165,7 +166,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
             <div
               className={cx('flex', 'items-center', styles['from-author-box'])}
             >
-              <span>来自于</span>
+              <span>{dict('PC.Components.AgentContent.from')}</span>
               <span className={cx('flex-1', 'text-ellipsis')}>{author}</span>
             </div>
             {shareStatus && <SharedIcon shareStatus={shareStatus} />}

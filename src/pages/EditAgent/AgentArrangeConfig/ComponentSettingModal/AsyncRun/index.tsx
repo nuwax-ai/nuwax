@@ -1,5 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
 import LabelStar from '@/components/LabelStar';
+import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import {
   AsyncRunProps,
@@ -24,7 +25,10 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    setContent(asyncReplyContent || '已经开始为你处理，请耐心等待运行结果');
+    setContent(
+      asyncReplyContent ||
+        t('PC.Pages.AgentArrangeAsyncRun.defaultReplyContent'),
+    );
     setSelected(async || DefaultSelectedEnum.No);
   }, [async, asyncReplyContent]);
 
@@ -59,23 +63,30 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
     <div className={cx('flex', 'flex-col', 'h-full', styles.container)}>
       <div className={cx('flex-1', styles.content)}>
         <header className={cx('flex', 'items-center', styles.header)}>
-          <h3 className={cx('flex-1')}>异步运行</h3>
+          <h3 className={cx('flex-1')}>
+            {t('PC.Pages.AgentArrangeAsyncRun.title')}
+          </h3>
           <Switch
             checked={selected === DefaultSelectedEnum.Yes}
             onChange={onChange}
           />
         </header>
         <p className={cx(styles.desc)}>
-          任务进入异步运行时默认返回一条回复内容，用户可以继续对话，任务在后台运行完成后会通知用户
+          {t('PC.Pages.AgentArrangeAsyncRun.description')}
         </p>
         <ConditionRender condition={selected}>
-          <LabelStar className={cx(styles['reply-content'])} label="回复内容" />
+          <LabelStar
+            className={cx(styles['reply-content'])}
+            label={t('PC.Pages.AgentArrangeAsyncRun.replyContent')}
+          />
           <Input.TextArea
             className={cx('dispose-textarea-count')}
             classNames={{
               textarea: cx(styles.textarea),
             }}
-            placeholder="你可以在这里设置消息回复,任务运行时将自动回复,比如: 任务已在进行中,一旦完成我将第一时间向你报告结果,你还有其他需要我协助的事项吗?"
+            placeholder={t(
+              'PC.Pages.AgentArrangeAsyncRun.replyContentPlaceholder',
+            )}
             autoSize={{ minRows: 5, maxRows: 6 }}
             maxLength={1000}
             showCount
@@ -83,7 +94,9 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
             onChange={(e) => setContent(e.target.value)}
           />
           <ConditionRender condition={!content}>
-            <p className={cx(styles.tips)}>回复内容必须设置</p>
+            <p className={cx(styles.tips)}>
+              {t('PC.Pages.AgentArrangeAsyncRun.replyContentRequired')}
+            </p>
           </ConditionRender>
         </ConditionRender>
       </div>
@@ -95,7 +108,7 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >
-          保存
+          {t('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

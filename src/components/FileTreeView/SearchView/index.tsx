@@ -1,4 +1,5 @@
 import { flattenFiles } from '@/pages/AppDev/components/ChatArea/components/MentionSelector/utils';
+import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { getFileIcon } from '@/utils/fileTree';
 import { SearchOutlined } from '@ant-design/icons';
@@ -147,7 +148,7 @@ const SearchView: React.FC<SearchViewProps> = ({
       {/* 搜索栏 */}
       <div className={cx(styles['search-bar'])}>
         <Input
-          placeholder="搜索文件..."
+          placeholder={dict('PC.Components.SearchView.searchPlaceholder')}
           className={cx(styles['search-input'])}
           prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
           value={searchValue}
@@ -196,7 +197,9 @@ const SearchView: React.FC<SearchViewProps> = ({
           ) : (
             // 没有搜索结果时显示提示
             <div className={cx(styles['search-empty'])}>
-              <div className={cx(styles['empty-text'])}>暂无匹配文件</div>
+              <div className={cx(styles['empty-text'])}>
+                {dict('PC.Components.SearchView.noMatchingFiles')}
+              </div>
             </div>
           )}
         </div>

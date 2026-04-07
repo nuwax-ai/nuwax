@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
 
@@ -105,11 +106,11 @@ export const DataTypeMap = {
 export const ParamsSettingDefaultOptions = [
   {
     value: BindValueType.Input,
-    label: '输入',
+    label: dict('PC.Constants.Common.input'),
   },
   {
     value: BindValueType.Reference,
-    label: '引用',
+    label: dict('PC.Constants.Common.reference'),
   },
 ];
 
@@ -118,26 +119,41 @@ export const CREATED_TABS: {
   label: string;
   key: AgentComponentTypeEnum;
 }[] = [
-  { label: '插件', key: AgentComponentTypeEnum.Plugin },
-  { label: '工作流', key: AgentComponentTypeEnum.Workflow },
-  { label: '知识库', key: AgentComponentTypeEnum.Knowledge },
-  { label: '数据表', key: AgentComponentTypeEnum.Table },
-  { label: '智能体', key: AgentComponentTypeEnum.Agent },
-  { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
-  { label: '页面', key: AgentComponentTypeEnum.Page },
-  { label: '技能', key: AgentComponentTypeEnum.Skill },
+  {
+    label: dict('PC.Common.Global.plugin'),
+    key: AgentComponentTypeEnum.Plugin,
+  },
+  {
+    label: dict('PC.Common.Global.workflow'),
+    key: AgentComponentTypeEnum.Workflow,
+  },
+  {
+    label: dict('PC.Common.Global.knowledge'),
+    key: AgentComponentTypeEnum.Knowledge,
+  },
+  {
+    label: dict('PC.Common.Global.dataTable'),
+    key: AgentComponentTypeEnum.Table,
+  },
+  { label: dict('PC.Common.Global.agent'), key: AgentComponentTypeEnum.Agent },
+  {
+    label: dict('PC.Constants.Common.mcpService'),
+    key: AgentComponentTypeEnum.MCP,
+  },
+  { label: dict('PC.Constants.Common.page'), key: AgentComponentTypeEnum.Page },
+  { label: dict('PC.Common.Global.skill'), key: AgentComponentTypeEnum.Skill },
 ];
 
 // 组件类型名称
 export const COMPONENT_TYPE_NAME_MAP = {
-  [AgentComponentTypeEnum.Agent]: '智能体',
-  [AgentComponentTypeEnum.Plugin]: '插件',
-  [AgentComponentTypeEnum.Workflow]: '工作流',
-  [AgentComponentTypeEnum.Knowledge]: '知识库',
-  [AgentComponentTypeEnum.Variable]: '变量',
-  [AgentComponentTypeEnum.Table]: '数据表',
-  [AgentComponentTypeEnum.Model]: '模型',
-  [AgentComponentTypeEnum.MCP]: 'MCP服务',
+  [AgentComponentTypeEnum.Agent]: dict('PC.Common.Global.agent'),
+  [AgentComponentTypeEnum.Plugin]: dict('PC.Common.Global.plugin'),
+  [AgentComponentTypeEnum.Workflow]: dict('PC.Common.Global.workflow'),
+  [AgentComponentTypeEnum.Knowledge]: dict('PC.Common.Global.knowledge'),
+  [AgentComponentTypeEnum.Variable]: dict('PC.Constants.Common.variable'),
+  [AgentComponentTypeEnum.Table]: dict('PC.Common.Global.dataTable'),
+  [AgentComponentTypeEnum.Model]: dict('PC.Common.Global.model'),
+  [AgentComponentTypeEnum.MCP]: dict('PC.Constants.Common.mcpService'),
 };
 
 /**
@@ -158,14 +174,11 @@ export const SANDBOX =
  *  子智能体提示词模板
  */
 export const SUB_AGENT_PROMPT_TEMPLATE = `---
-name: 你的子智能体名称
-description: 子智能体应在何时被调用的说明
+name: ${dict('PC.Constants.Common.subAgentTemplateName')}
+description: ${dict('PC.Constants.Common.subAgentTemplateDesc')}
 ---
 
-你的子智能体系统提示信息在此处显示。该提示可包含多个段落，
-需明确界定子智能体的角色、功能及解决问题的方法。
-
-包含具体说明、最佳实践以及子智能体应遵循的任何限制条件。`;
+${dict('PC.Constants.Common.subAgentTemplateBody')}`;
 
 /**
  * 空闲检测配置

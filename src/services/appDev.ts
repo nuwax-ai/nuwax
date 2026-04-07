@@ -1,4 +1,5 @@
 import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
+import { t } from '@/services/i18nRuntime';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import type {
   BuildResponse,
@@ -20,10 +21,8 @@ import type {
   UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
-import {
-  apiExportFileBlob,
-  ExportFileBlobResponse,
-} from '@/utils/exportImportFile';
+import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
+import { message } from 'antd';
 import { request } from 'umi';
 
 /**
@@ -318,7 +317,7 @@ export const sendChatMessage = async (
     // user_id: 'app-dev-user',
   };
 
-  // console.log('📤 [Service] 发送聊天请求:', requestData);
+  // console.log('📤 [Service] Sending chat request:', requestData);
 
   // 使用新的 /chat 接口
   return request('/api/custom-page/ai-chat', {
@@ -449,15 +448,30 @@ export const getProjectContentByVersion = async (
  * @param projectId 项目ID
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
  */
-export const exportProject = async (
-  projectId: string,
-): Promise<ExportFileBlobResponse> => {
-  return apiExportFileBlob(
-    `/api/custom-page/export-project?projectId=${encodeURIComponent(
-      projectId,
-    )}`,
-  );
-};
+export async function exportProject(projectId: string): Promise<void> {
+  try {
+    // 导出项目链接地址
+    const linkUrl =
+      process.env.BASE_URL +
+      `/api/custom-page/export-project?projectId=${encodeURIComponent(
+        projectId,
+      )}`;
+
+    // 通过浏览器下载文件
+    exportFileViaBrowserDownload(linkUrl);
+    message.success(t('PC.Pages.AppDevIndex.exportSuccess'));
+  } catch (error) {
+    // 改进错误处理，兼容不同的错误格式
+    const errorMessage =
+      (error as any)?.message ||
+      (error as any)?.toString() ||
+      t('PC.Pages.AppDevIndex.exportUnknownError');
+
+    message.error(
+      t('PC.Pages.AppDevIndex.exportFailedWithError', errorMessage),
+    );
+  }
+}
 
 /**
  * 回滚项目版本
@@ -493,7 +507,7 @@ export const saveConversation = async (params: {
   topic: string;
   summary?: string;
 }): Promise<any> => {
-  // console.log('📤 [API] 调用保存会话接口:', {
+  // console.log('📤 [API] Calling save conversation API:', {
   //   url: '/api/custom-page/save-conversation',
   //   method: 'POST',
   //   params,
@@ -504,7 +518,7 @@ export const saveConversation = async (params: {
     data: params,
   });
 
-  // console.log('📥 [API] 保存会话接口响应:', result);
+  // console.log('📥 [API] Save conversation API response:', result);
   return result;
 };
 

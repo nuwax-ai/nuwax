@@ -4,6 +4,7 @@ import {
   UPLOAD_FILE_SUFFIX,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { FileType } from '@/types/interfaces/common';
 import type { UploadFileProps } from '@/types/interfaces/knowledge';
 import { UploadOutlined } from '@ant-design/icons';
@@ -48,7 +49,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
   const beforeUploadDefault = (file: FileType) => {
     const { name, size } = file;
     if (!name.includes('.')) {
-      message.error('请上传正确的文件类型');
+      message.error(dict('PC.Pages.SpaceKnowledge.UploadFile.correctFileType'));
       return false;
     }
     const splitList = name.split('.');
@@ -57,12 +58,14 @@ const UploadFile: React.FC<UploadFileProps> = ({
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error(
-        '请上传 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 类型文件!',
+        dict('PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes'),
       );
     }
     const isLt100M = size / 1024 / 1024 < 100;
     if (!isLt100M) {
-      message.error('文件大小不能超过100MB!');
+      message.error(
+        dict('PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB'),
+      );
     }
     return (isFile && isLt100M) || Upload.LIST_IGNORE;
   };
@@ -89,11 +92,11 @@ const UploadFile: React.FC<UploadFileProps> = ({
         <p className="ant-upload-drag-icon">
           <UploadOutlined />
         </p>
-        <p className="ant-upload-text">点击上传或拖拽文档到这里</p>
+        <p className="ant-upload-text">
+          {dict('PC.Pages.SpaceKnowledge.UploadFile.clickOrDragToUpload')}
+        </p>
         <p className="ant-upload-hint">
-          支持
-          PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上传
-          300 个文件，每个文件不超过 100MB， PDF 最多 500 页
+          {dict('PC.Pages.SpaceKnowledge.UploadFile.uploadHint')}
         </p>
       </Dragger>
     </div>

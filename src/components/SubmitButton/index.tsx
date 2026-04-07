@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { SubmitButtonProps } from '@/types/interfaces/common';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
@@ -35,7 +36,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
       className={cx(!submittable && styles['confirm-btn'], styles.btn)}
       disabled={disabled || !submittable}
     >
-      {okText || '确定'}
+      {okText || dict('PC.Components.SubmitButton.confirm')}
     </Button>
   );
 };

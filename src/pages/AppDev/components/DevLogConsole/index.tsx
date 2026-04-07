@@ -4,6 +4,7 @@
  */
 
 import SvgIcon from '@/components/base/SvgIcon';
+import { t } from '@/services/i18nRuntime';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import { LogLevel } from '@/types/interfaces/appDev';
 import {
@@ -122,7 +123,13 @@ const LogGroupItem: React.FC<{
     >
       {/* 组头 - 简洁的时间戳显示 */}
       <div className="log-group-header">
-        <Tooltip title={onAddToChat ? '点击添加到聊天框' : ''}>
+        <Tooltip
+          title={
+            onAddToChat
+              ? t('PC.Pages.AppDevDevLogConsole.clickToAddToChat')
+              : ''
+          }
+        >
           <div className="group-header-left">
             <span className="group-timestamp">
               {formatTimestampDisplay(group.timestamp)}
@@ -257,10 +264,16 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
       <div className="dev-log-console-header">
         <div className="header-left">
           <BugOutlined className="header-icon" />
-          <span className="header-title">开发服务器日志</span>
+          <span className="header-title">
+            {t('PC.Pages.AppDevDevLogConsole.headerTitle')}
+          </span>
           {hasErrorInLatestBlock && (
             <>
-              <Tooltip title="最新日志包含错误">
+              <Tooltip
+                title={t(
+                  'PC.Pages.AppDevDevLogConsole.latestLogsContainErrors',
+                )}
+              >
                 <Badge status="error" className="error-badge" />
               </Tooltip>
               {onAddToChat && (
@@ -276,14 +289,14 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
                   }
                   onClick={handleFindLatestErrorLogs}
                 >
-                  一键问题处理
+                  {t('PC.Pages.AppDevDevLogConsole.quickIssueFix')}
                 </Button>
               )}
             </>
           )}
         </div>
         <div className="header-right">
-          <Tooltip title="刷新日志">
+          <Tooltip title={t('PC.Pages.AppDevDevLogConsole.refreshLogs')}>
             <Button
               type="text"
               size="small"
@@ -291,7 +304,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
               onClick={onRefresh}
             />
           </Tooltip>
-          <Tooltip title="清空日志">
+          <Tooltip title={t('PC.Pages.AppDevDevLogConsole.clearLogs')}>
             <Button
               type="text"
               size="small"
@@ -299,7 +312,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
               onClick={onClear}
             />
           </Tooltip>
-          <Tooltip title="关闭日志控制台">
+          <Tooltip title={t('PC.Pages.AppDevDevLogConsole.closeLogConsole')}>
             <Button
               type="text"
               size="small"
@@ -317,7 +330,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
             <div className="loading-spinner">
               <ReloadOutlined spin />
             </div>
-            <p>正在加载日志...</p>
+            <p>{t('PC.Pages.AppDevDevLogConsole.loadingLogs')}</p>
           </div>
         ) : logGroups.length > 0 ? (
           <div ref={logListRef} className="log-list">
@@ -332,7 +345,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
         ) : (
           <div className="empty-logs">
             <BugOutlined className="empty-icon" />
-            <p>暂无日志数据</p>
+            <p>{t('PC.Pages.AppDevDevLogConsole.noLogData')}</p>
           </div>
         )}
       </div>

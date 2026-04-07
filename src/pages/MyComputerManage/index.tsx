@@ -1,5 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiCreateSandboxUserConfig,
   apiDeleteSandboxUserConfig,
@@ -88,11 +89,17 @@ const MyComputerManage: React.FC = () => {
     try {
       const res = await apiToggleSandboxConfig(id);
       if (res.code === SUCCESS_CODE) {
-        message.success(`${checked ? '已启用' : '已禁用'}`);
+        message.success(
+          dict(
+            checked
+              ? 'PC.Toast.MyComputerManage.enabled'
+              : 'PC.Toast.MyComputerManage.disabled',
+          ),
+        );
         fetchList();
       }
     } catch (error) {
-      message.error('操作失败');
+      message.error(dict('PC.Toast.MyComputerManage.operationFailed'));
     } finally {
       setToggleLoadingId(null);
     }
@@ -100,16 +107,16 @@ const MyComputerManage: React.FC = () => {
 
   const handleDelete = (id: number) => {
     confirm({
-      title: '确认删除该电脑？',
+      title: dict('PC.Pages.MyComputerManage.deleteConfirmTitle'),
       icon: <ExclamationCircleOutlined />,
-      content: '删除后将无法恢复，请谨慎操作。',
-      okText: '确认',
+      content: dict('PC.Pages.MyComputerManage.deleteConfirmContent'),
+      okText: dict('PC.Common.Global.confirm'),
       okType: 'danger',
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk: async () => {
         const res = await apiDeleteSandboxUserConfig(id);
         if (res.code === SUCCESS_CODE) {
-          message.success('删除成功');
+          message.success(dict('PC.Toast.Global.deletedSuccessfully'));
           fetchList();
         }
       },
@@ -141,7 +148,9 @@ const MyComputerManage: React.FC = () => {
           maxAgentCount: values.maxAgentCount,
         });
         if (res.code === SUCCESS_CODE) {
-          message.success('修改成功');
+          message.success(
+            dict('PC.Toast.MyComputerManage.modifiedSuccessfully'),
+          );
           setEditModalOpen(false);
           fetchList();
         }
@@ -152,30 +161,46 @@ const MyComputerManage: React.FC = () => {
           maxAgentCount: values.maxAgentCount,
         });
         if (res.code === SUCCESS_CODE) {
-          message.success('新增成功');
+          message.success(
+            dict('PC.Toast.MyComputerManage.createdSuccessfully'),
+          );
           setEditModalOpen(false);
           fetchList();
         }
       }
     } catch (error) {
       console.error(error);
-      message.error(currentEditItem ? '修改失败' : '新增失败');
+      message.error(
+        dict(
+          currentEditItem
+            ? 'PC.Toast.MyComputerManage.modifyFailed'
+            : 'PC.Toast.MyComputerManage.createFailed',
+        ),
+      );
     }
   };
 
   return (
     <WorkspaceLayout
-      title="我的电脑管理"
+      title={dict('PC.Pages.MyComputerManage.pageTitle')}
       leftSlot={
         <Radio.Group
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           buttonStyle="solid"
         >
-          <Radio.Button value="all">全部</Radio.Button>
-          <Radio.Button value="online">在线</Radio.Button>
-          <Radio.Button value="offline">离线</Radio.Button>
-          <Radio.Button value="deactivated">已停用</Radio.Button>
+          <Radio.Button value="all">
+            {dict('PC.Pages.MyComputerManage.filterAll')}
+          </Radio.Button>
+          <Radio.Button value="online">
+            {dict('PC.Pages.MyComputerManage.filterOnline')}
+          </Radio.Button>
+          <Radio.Button value="offline">
+            {dict('PC.Pages.MyComputerManage.filterOffline')}
+          </Radio.Button>
+          <Radio.Button value="deactivated">
+            {dict('PC.Pages.MyComputerManage.filterDeactivated')}
+          </Radio.Button>
         </Radio.Group>
       }
       rightSlot={
@@ -187,7 +212,7 @@ const MyComputerManage: React.FC = () => {
             setEditModalOpen(true);
           }}
         >
-          新增电脑
+          {dict('PC.Pages.MyComputerManage.addComputer')}
         </Button>
       }
     >
@@ -250,10 +275,10 @@ const MyComputerManage: React.FC = () => {
                       })}
                     >
                       {!item.isActive
-                        ? '已停用'
+                        ? dict('PC.Pages.MyComputerManage.statusDeactivated')
                         : item.online
-                        ? '在线'
-                        : '离线'}
+                        ? dict('PC.Pages.MyComputerManage.statusOnline')
+                        : dict('PC.Pages.MyComputerManage.statusOffline')}
                     </Tag>
                   </div>
                 }
@@ -285,7 +310,9 @@ const MyComputerManage: React.FC = () => {
                       <Tooltip
                         title={
                           item.isActive
-                            ? '停用后将无法再通过智能体操控该电脑'
+                            ? dict(
+                                'PC.Pages.MyComputerManage.deactivateTooltip',
+                              )
                             : ''
                         }
                       >
@@ -300,7 +327,9 @@ const MyComputerManage: React.FC = () => {
                       </Tooltip>
                     </Space>
                     <Space size={8}>
-                      <Tooltip title="会话">
+                      <Tooltip
+                        title={dict('PC.Pages.MyComputerManage.sessionTooltip')}
+                      >
                         <Button
                           icon={<MessageOutlined />}
                           disabled={!item.agentId}
@@ -313,12 +342,20 @@ const MyComputerManage: React.FC = () => {
                         />
                       </Tooltip>
                       {item.configKey && (
-                        <Tooltip title="连接密钥，用于独立客户端容器部署，点击可复制">
+                        <Tooltip
+                          title={dict(
+                            'PC.Pages.MyComputerManage.connectionKeyTooltip',
+                          )}
+                        >
                           <Button
                             icon={<KeyOutlined />}
                             onClick={() => {
                               copyTextToClipboard(item.configKey || '', () => {
-                                message.success('客户端连接密钥已复制');
+                                message.success(
+                                  dict(
+                                    'PC.Toast.MyComputerManage.connectionKeyCopied',
+                                  ),
+                                );
                               });
                             }}
                             className={classNames(
@@ -328,14 +365,16 @@ const MyComputerManage: React.FC = () => {
                           />
                         </Tooltip>
                       )}
-                      <Tooltip title="编辑">
+                      <Tooltip
+                        title={dict('PC.Pages.MyComputerManage.editTooltip')}
+                      >
                         <Button
                           className="action-btn edit-btn"
                           icon={<EditOutlined />}
                           onClick={() => handleEdit(item)}
                         />
                       </Tooltip>
-                      <Tooltip title="删除">
+                      <Tooltip title={dict('PC.Common.Global.delete')}>
                         <Button
                           className="action-btn delete-btn"
                           icon={<DeleteOutlined />}
@@ -352,7 +391,11 @@ const MyComputerManage: React.FC = () => {
       ) : (
         !loading && (
           <div style={{ padding: '300px 0' }}>
-            <Empty description="暂无电脑配置" />
+            <Empty
+              description={dict(
+                'PC.Pages.MyComputerManage.emptyComputerConfig',
+              )}
+            />
           </div>
         )
       )}

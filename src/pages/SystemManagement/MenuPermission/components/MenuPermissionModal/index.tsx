@@ -1,4 +1,5 @@
 import Loading from '@/components/custom/Loading';
+import { t } from '@/services/i18nRuntime';
 import { Button, Modal, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -160,7 +161,7 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: () => {
-        message.success('菜单权限保存成功');
+        message.success(t('PC.Pages.SystemMenuPermissionModal.saveSuccess'));
         onSuccess?.();
       },
     },
@@ -345,7 +346,7 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       open={open}
       width={600}
       onCancel={onClose}
-      title={`菜单权限配置-${name}`}
+      title={t('PC.Pages.SystemMenuPermissionModal.titleWithName', name)}
       onOk={handleSave}
       okButtonProps={{ loading: bindMenuLoading }}
       className={cx(styles.menuPermissionModal)}
@@ -354,7 +355,7 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
         hasNoMenuData
           ? [
               <Button key="cancel" onClick={onClose}>
-                取消
+                {t('PC.Common.Global.cancel')}
               </Button>,
             ]
           : undefined // 使用默认 footer（包含确认和取消按钮）
@@ -377,7 +378,9 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
             initialResourceIds={initialResourceIds}
           />
         ) : (
-          <div className={cx(styles.empty)}>暂无菜单数据</div>
+          <div className={cx(styles.empty)}>
+            {t('PC.Pages.SystemMenuPermissionModal.emptyMenuData')}
+          </div>
         )}
       </div>
     </Modal>

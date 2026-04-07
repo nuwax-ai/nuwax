@@ -1,6 +1,7 @@
 import LabelStar from '@/components/LabelStar';
 import { COMMON_TABLE_STYLE } from '@/constants/layout.constants';
 import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiPageSavePathArgs } from '@/services/pageDev';
 import { InputTypeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/common';
@@ -82,7 +83,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
     debounceWait: 300,
     onSuccess: (_: null, params: PageArgConfig[]) => {
       setLoading(false);
-      message.success('保存成功');
+      message.success(dict('PC.Toast.Global.savedSuccessfully'));
       const info = params[0];
       onConfirmSave(info);
     },
@@ -120,25 +121,41 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: <LabelStar label="参数名称" />,
+      title: (
+        <LabelStar
+          label={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramName',
+          )}
+        />
+      ),
       dataIndex: 'name',
       key: 'name',
       className: 'flex items-center',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数名称，确保含义清晰"
+          placeholder={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramNamePlaceholder',
+          )}
           value={value}
           onChange={(e) => handleInputValue(record.key, 'name', e.target.value)}
         />
       ),
     },
     {
-      title: <LabelStar label="参数描述" />,
+      title: (
+        <LabelStar
+          label={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramDescription',
+          )}
+        />
+      ),
       dataIndex: 'description',
       key: 'description',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
+          placeholder={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramDescriptionPlaceholder',
+          )}
           value={value}
           onChange={(e) =>
             handleInputValue(record.key, 'description', e.target.value)
@@ -147,7 +164,13 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
     {
-      title: <LabelStar label="传入方式" />,
+      title: (
+        <LabelStar
+          label={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.inputType',
+          )}
+        />
+      ),
       dataIndex: 'inputType',
       key: 'inputType',
       width: 120,
@@ -164,7 +187,9 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
     {
-      title: '是否必须',
+      title: dict(
+        'PC.Pages.SpacePageDevelop.PathParamsConfigContent.isRequired',
+      ),
       dataIndex: 'require',
       key: 'require',
       width: 100,
@@ -181,13 +206,17 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
     {
-      title: '默认值',
+      title: dict(
+        'PC.Pages.SpacePageDevelop.PathParamsConfigContent.defaultValue',
+      ),
       dataIndex: 'bindValue',
       key: 'bindValue',
       width: 150,
       render: (value, record) => (
         <Input
-          placeholder="请输入默认值"
+          placeholder={dict(
+            'PC.Pages.SpacePageDevelop.PathParamsConfigContent.defaultValuePlaceholder',
+          )}
           value={value}
           onChange={(e) =>
             handleInputValue(record.key, 'bindValue', e.target.value)
@@ -196,7 +225,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
     {
-      title: '开启',
+      title: dict('PC.Pages.SpacePageDevelop.PathParamsConfigContent.enable'),
       dataIndex: 'enable',
       key: 'enable',
       width: 70,
@@ -214,7 +243,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SpacePageDevelop.PathParamsConfigContent.action'),
       key: 'action',
       width: 80,
       align: 'center',
@@ -234,7 +263,11 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {!currentPathParam ? (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
-          <Empty description="暂无路径参数" />
+          <Empty
+            description={dict(
+              'PC.Pages.SpacePageDevelop.PathParamsConfigContent.noPathParams',
+            )}
+          />
         </div>
       ) : (
         <>
@@ -243,7 +276,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
             icon={<PlusOutlined />}
             onClick={handleInputConfigAdd}
           >
-            新增入参
+            {dict('PC.Pages.SpacePageDevelop.PathParamsConfigContent.addParam')}
           </Button>
 
           <Table<BindConfigWithSub>
@@ -258,7 +291,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
           />
           <footer className={cx(styles.footer)}>
             <Button type="primary" onClick={handleSave} loading={loading}>
-              保存
+              {dict('PC.Common.Global.save')}
             </Button>
           </footer>
         </>

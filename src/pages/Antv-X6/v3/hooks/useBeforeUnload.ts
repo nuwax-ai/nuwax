@@ -1,10 +1,10 @@
 /**
- * 页面离开保护 Hook
+ * Page leave guard hook.
  *
- * 功能：
- * 1. 处理浏览器刷新/关闭（beforeunload）
- * 2. 处理页面可见性变化（visibilitychange）
- * 3. 尝试使用 sendBeacon 进行同步保存
+ * Features:
+ * 1) Handle browser refresh/close (`beforeunload`)
+ * 2) Handle page visibility changes (`visibilitychange`)
+ * 3) Attempt synchronous save through `sendBeacon`
  */
 
 import { Graph } from '@antv/x6';
@@ -13,11 +13,11 @@ import { workflowSaveService } from '../services/WorkflowSaveService';
 import { workflowProxy } from '../services/workflowProxyV3';
 
 interface UseBeforeUnloadOptions {
-  /** Graph 获取函数 */
+  /** Graph getter */
   getGraph: () => Graph | null | undefined;
-  /** 保存函数（用于异步保存） */
+  /** Save function (for async save) */
   onSave?: () => Promise<boolean>;
-  /** 用于确定是否需要保护的函数 */
+  /** Function used to determine whether guard is needed */
   hasUnsavedChanges?: () => boolean;
 }
 
@@ -28,7 +28,7 @@ export function useBeforeUnload({
 }: UseBeforeUnloadOptions) {
   const isSavingRef = useRef(false);
 
-  // 检查是否有未保存的更改
+  // Check whether there are unsaved changes.
   const checkUnsavedChanges = useCallback(() => {
     if (hasUnsavedChanges) {
       return hasUnsavedChanges();
@@ -39,7 +39,7 @@ export function useBeforeUnload({
     );
   }, [hasUnsavedChanges]);
 
-  // 使用 sendBeacon 同步保存
+  // Perform synchronous save through sendBeacon.
   const syncSaveWithBeacon = useCallback(() => {
     const graph = getGraph();
     if (!graph) return false;
@@ -58,15 +58,15 @@ export function useBeforeUnload({
     return false;
   }, [getGraph]);
 
-  // 处理 beforeunload（浏览器刷新/关闭）
+  // Handle beforeunload (browser refresh/close).
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (checkUnsavedChanges()) {
-        // 显示确认对话框
+        // Show browser native confirmation.
         e.preventDefault();
         e.returnValue = '';
 
-        // 尝试同步保存
+        // Try synchronous save.
         syncSaveWithBeacon();
       }
     };
@@ -77,26 +77,29 @@ export function useBeforeUnload({
     };
   }, [checkUnsavedChanges, syncSaveWithBeacon]);
 
-  // 处理页面可见性变化（切换标签页/最小化窗口）
+  // Handle visibility changes (tab switch/minimize).
   useEffect(() => {
     const handleVisibilityChange = () => {
-      // 当页面变为隐藏状态时（切换到其他标签页或最小化）
+      // When page is hidden (switch tab or minimize window)
       if (document.visibilityState === 'hidden' && checkUnsavedChanges()) {
-        // 使用异步保存（如果可用）
+        // Prefer async save if available.
         if (onSave && !isSavingRef.current) {
           isSavingRef.current = true;
           onSave()
             .then(() => {
-              console.log('[useBeforeUnload] 页面隐藏时保存成功');
+              console.log('[useBeforeUnload] Save succeeded when page hidden');
             })
             .catch((err) => {
-              console.error('[useBeforeUnload] 页面隐藏时保存失败:', err);
+              console.error(
+                '[useBeforeUnload] Save failed when page hidden:',
+                err,
+              );
             })
             .finally(() => {
               isSavingRef.current = false;
             });
         } else {
-          // 回退到 sendBeacon 同步保存
+          // Fallback to synchronous save via sendBeacon.
           syncSaveWithBeacon();
         }
       }

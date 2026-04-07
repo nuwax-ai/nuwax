@@ -1,4 +1,5 @@
 import { FileNode } from '@/models/appDev';
+import { dict } from '@/services/i18nRuntime';
 import {
   editorOptions,
   getLanguageFromFile,
@@ -907,9 +908,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       <div className={`${styles.monacoEditor} ${className || ''}`}>
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>⏳</div>
-          <h3 className={styles.emptyTitle}>正在加载编辑器...</h3>
+          <h3 className={styles.emptyTitle}>
+            {dict('PC.Components.MonacoEditor.loadingEditor')}
+          </h3>
           <p className={styles.emptyDescription}>
-            请稍候，Monaco Editor正在初始化
+            {dict('PC.Components.MonacoEditor.loadingEditorDesc')}
           </p>
         </div>
       </div>
@@ -921,9 +924,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       <div className={`${styles.monacoEditor} ${className || ''}`}>
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📄</div>
-          <h3 className={styles.emptyTitle}>选择文件进行编辑</h3>
+          <h3 className={styles.emptyTitle}>
+            {dict('PC.Components.MonacoEditor.selectFileToEdit')}
+          </h3>
           <p className={styles.emptyDescription}>
-            从左侧文件树中选择一个文件，或创建新文件开始编辑
+            {dict('PC.Components.MonacoEditor.selectFileToEditDesc')}
           </p>
         </div>
       </div>

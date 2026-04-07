@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
@@ -13,7 +14,7 @@ interface WorkspaceSearchProps {
   onClear?: () => void;
 }
 const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
-  placeholder = '请输入搜索内容',
+  placeholder = dict('PC.Components.WorkspaceSearch.placeholder'),
   value = '',
   onChange = () => {},
   onClear = () => {},

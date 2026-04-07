@@ -1,5 +1,6 @@
 import CopyButton from '@/components/base/CopyButton';
 import ConditionRender from '@/components/ConditionRender';
+import { dict } from '@/services/i18nRuntime';
 import { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { CopyOutlined } from '@ant-design/icons';
 import { message } from 'antd';
@@ -22,7 +23,7 @@ const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
   const { text, finalResult } = messageInfo || {};
 
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   return (
@@ -51,7 +52,7 @@ const PromptViewBottomMore: React.FC<PromptViewBottomMoreProps> = ({
           onCopy={handleCopy}
           icon={<CopyOutlined />}
         >
-          复制
+          {dict('PC.Common.Global.copy')}
         </CopyButton>
       </div>
     </div>

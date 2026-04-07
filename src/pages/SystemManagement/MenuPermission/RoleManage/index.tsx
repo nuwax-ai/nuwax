@@ -2,6 +2,7 @@ import CustomPopover from '@/components/CustomPopover';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
@@ -51,53 +52,51 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 角色管理页面
- * 用于管理系统角色，分配菜单权限和数据范围
+ * Role management page.
  */
 const RoleManage: React.FC = () => {
   const location = useLocation();
-  // 更新状态loading map
+  // Loading map for row-level status updates.
   const [updateStatusLoadingMap, setUpdateStatusLoadingMap] = useState<
     Record<number, boolean>
   >({});
-  // 新增/编辑角色Modal是否打开
+  // Create/edit modal state.
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  // 是否为编辑角色
+  // Edit mode flag.
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  // 当前角色信息
+  // Current role context.
   const [currentRole, setCurrentRole] = useState<RoleInfo | null>();
-  // 菜单权限弹窗是否打开
+  // Menu permission modal state.
   const [menuPermissionModalOpen, setMenuPermissionModalOpen] =
     useState<boolean>(false);
-  // 数据权限弹窗是否打开
+  // Data permission modal state.
   const [dataPermissionModalOpen, setDataPermissionModalOpen] =
     useState<boolean>(false);
-  // 角色绑定用户抽屉是否打开
+  // Bind-user drawer state.
   const [bindUserDrawerOpen, setBindUserDrawerOpen] = useState<boolean>(false);
 
-  // 拖拽排序的数据源
+  // Drag-sort datasource.
   const [draggableData, setDraggableData] = useState<
     (RoleInfo & { key: number })[]
   >([]);
 
-  // 标记是否正在拖拽，用于防止 postData 覆盖拖拽后的数据
+  // Prevent postData from overriding data while dragging.
   const isDraggingRef = useRef<boolean>(false);
-  // 保存拖拽前的原始数据，用于接口失败时恢复
+  // Backup data before drag, used for rollback on API failure.
   const originalDataRef = useRef<(RoleInfo & { key: number })[] | null>(null);
 
-  // 新增时，默认排序索引，默认1
+  // Default sort index for create mode.
   const [defaultSortIndex, setDefaultSortIndex] = useState<number>(1);
 
-  // ProTable 的 ref
+  // ProTable refs.
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
 
-  // 权限检查
+  // Permission check.
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
   /**
-   * ProTable 的 request 函数
-   * 根据表单查询条件获取角色列表
+   * ProTable request handler.
    */
   const request = useCallback(async (params: any) => {
     const { name, code } = params;
@@ -107,14 +106,13 @@ const RoleManage: React.FC = () => {
     };
     try {
       const res = await apiGetRoleList(queryParams);
-      // 如果请求失败或数据为空/null，返回空数组并清空 draggableData
+      // Keep empty state deterministic when response is invalid.
       if (res?.code !== SUCCESS_CODE || !res?.data) {
-        // 立即清空 draggableData，确保表格显示空状态
         setDraggableData([]);
         return {
           data: [],
           total: 0,
-          success: true, // 即使没有数据，也返回 success: true，让 ProTable 正常渲染空状态
+          success: true,
         };
       }
       const data = res.data.map((item: RoleInfo) => ({
@@ -127,8 +125,7 @@ const RoleManage: React.FC = () => {
         success: true,
       };
     } catch (error) {
-      console.error('查询角色列表失败', error);
-      // 发生错误时也清空 draggableData
+      console.error('[RoleManage] query role list failed', error);
       setDraggableData([]);
       return {
         data: [],
@@ -139,30 +136,28 @@ const RoleManage: React.FC = () => {
   }, []);
 
   /**
-   * 重置处理
+   * Reset table and form state.
    */
   const handleReset = useCallback(() => {
-    // 重置到默认值，包括表单
     actionRef.current?.reset?.();
   }, []);
 
-  // 监听 location.state 变化
-  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  // Reset when route state changes.
   useEffect(() => {
     handleReset();
   }, [location.state, handleReset]);
 
-  // 删除角色
+  // Delete role.
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemRoleManage.deleteSuccess'));
       actionRef.current?.reload();
     },
   });
 
-  // 更新角色状态
+  // Update role status.
   const { run: runUpdateRole } = useRequest(apiUpdateRole, {
     manual: true,
     debounceInterval: 300,
@@ -171,7 +166,7 @@ const RoleManage: React.FC = () => {
     },
   });
 
-  // 处理状态更新
+  // Handle status change.
   const handleUpdateStatus = async (record: RoleInfo, checked: boolean) => {
     const newStatus = checked
       ? RoleStatusEnum.Enabled
@@ -190,106 +185,102 @@ const RoleManage: React.FC = () => {
     }
   };
 
-  // 处理绑定用户
+  // Bind users.
   const handleBindUser = (role: RoleInfo) => {
     setCurrentRole(role);
     setBindUserDrawerOpen(true);
   };
 
-  // 处理编辑
+  // Edit role.
   const handleEdit = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
     setIsEdit(true);
     setModalOpen(true);
   };
 
-  // 处理删除确认
+  // Confirm delete.
   const handleDeleteConfirm = (roleInfo: RoleInfo) => {
-    modalConfirm('删除角色', `确认删除角色 "${roleInfo.name}" 吗？`, () => {
-      runDelete(roleInfo.id);
-      return new Promise((resolve) => {
-        setTimeout(resolve, 300);
-      });
-    });
+    modalConfirm(
+      t('PC.Pages.SystemRoleManage.deleteRoleTitle'),
+      t('PC.Pages.SystemRoleManage.deleteRoleConfirm', roleInfo.name),
+      () => {
+        runDelete(roleInfo.id);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        });
+      },
+    );
   };
 
-  // 处理菜单权限
+  // Configure menu permission.
   const handleMenuPermission = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
     setMenuPermissionModalOpen(true);
   };
 
-  // 处理数据权限
+  // Configure data permission.
   const handleDataPermission = (roleInfo: RoleInfo) => {
     setCurrentRole(roleInfo);
     setDataPermissionModalOpen(true);
   };
 
-  // 处理菜单权限弹窗关闭
+  // Close menu permission modal.
   const handleMenuPermissionModalClose = () => {
     setMenuPermissionModalOpen(false);
     setCurrentRole(null);
   };
 
-  // 处理菜单权限保存成功
+  // Handle menu permission save success.
   const handleMenuPermissionSuccess = () => {
     setMenuPermissionModalOpen(false);
     setCurrentRole(null);
     actionRef.current?.reload();
   };
 
-  // 处理新增
+  // Add role.
   const handleAdd = () => {
     setCurrentRole(null);
     setIsEdit(false);
     setModalOpen(true);
-    // 新增时，默认排序索引，默认1
     setDefaultSortIndex((draggableData?.length || 0) + 1);
   };
 
-  // 处理Modal关闭
+  // Close role modal.
   const handleModalCancel = () => {
     setModalOpen(false);
     setCurrentRole(null);
     setDefaultSortIndex(1);
   };
 
-  // 处理Modal成功
+  // Handle role modal success.
   const handleModalSuccess = () => {
     setModalOpen(false);
     actionRef.current?.reload();
   };
 
-  // 更新角色排序
+  // Update role order.
   const { run: runUpdateRoleSort } = useRequest(apiUpdateRoleSort, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('排序更新成功');
-      // 标记拖拽完成，允许 postData 正常同步数据
+      message.success(t('PC.Pages.SystemRoleManage.sortUpdated'));
       isDraggingRef.current = false;
-      // 清空原始数据引用
       originalDataRef.current = null;
-      // 不调用 reload()，因为 draggableData 已经更新，表格会通过 dataSource 自动更新
-      // 这样可以避免拖拽的行先回到原位置再移动到新位置的问题
     },
     onError: () => {
-      // 标记拖拽完成
       isDraggingRef.current = false;
-      // 接口失败时，恢复原始数据
       if (originalDataRef.current) {
         setDraggableData(originalDataRef.current);
         originalDataRef.current = null;
       } else {
-        // 如果没有保存原始数据，重新从服务器获取
         actionRef.current?.reload();
       }
     },
   });
 
-  // 处理拖拽结束
+  // Handle drag end.
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    // 如果没有目标位置或拖拽到同一位置，直接返回
+    // Ignore invalid or no-op drag.
     if (!over || active.id === over.id) {
       isDraggingRef.current = false;
       return;
@@ -303,30 +294,25 @@ const RoleManage: React.FC = () => {
     );
     const overIndex = draggableData.findIndex((item) => item.key === overKey);
 
-    // 如果找不到对应的索引，说明拖拽到了无效位置
+    // Invalid drag target.
     if (activeIndex === -1 || overIndex === -1) {
       isDraggingRef.current = false;
       return;
     }
 
-    // 标记正在拖拽，防止 postData 覆盖数据
     isDraggingRef.current = true;
 
-    // 保存原始数据到 ref，用于错误时恢复
     originalDataRef.current = [...draggableData];
 
-    // 更新数据
     const newData = arrayMove(draggableData, activeIndex, overIndex);
     setDraggableData(newData);
 
-    // 收集所有需要更新的角色（只更新受影响的行）
     const updateItems: UpdateRoleSortItem[] = newData.map((item, index) => ({
       id: item.id,
       name: item.name,
       sortIndex: index + 1,
     }));
 
-    // 批量更新角色排序
     if (updateItems.length > 0) {
       runUpdateRoleSort({
         items: updateItems,
@@ -334,10 +320,10 @@ const RoleManage: React.FC = () => {
     }
   };
 
-  // 定义表格列
+  // Table columns.
   const columns: ProColumns<RoleInfo & { key: number }>[] = [
     {
-      title: '排序',
+      title: t('PC.Pages.SystemRoleManage.columnSort'),
       key: 'sort',
       align: 'center',
       width: 80,
@@ -346,7 +332,7 @@ const RoleManage: React.FC = () => {
       render: () => <DragHandle />,
     },
     {
-      title: '角色名称',
+      title: t('PC.Pages.SystemRoleManage.columnRoleName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -354,14 +340,14 @@ const RoleManage: React.FC = () => {
       valueType: 'text',
     },
     {
-      title: '编码',
+      title: t('PC.Pages.SystemRoleManage.columnCode'),
       dataIndex: 'code',
       key: 'code',
       width: 150,
       valueType: 'text',
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemRoleManage.columnDescription'),
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
@@ -371,8 +357,8 @@ const RoleManage: React.FC = () => {
     {
       title: (
         <span>
-          状态
-          <Tooltip title="启用或禁用此角色">
+          {t('PC.Pages.SystemRoleManage.columnStatus')}
+          <Tooltip title={t('PC.Pages.SystemRoleManage.statusTooltip')}>
             <InfoCircleOutlined
               style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
             />
@@ -389,15 +375,15 @@ const RoleManage: React.FC = () => {
         <Tooltip
           title={
             record.source === RoleSourceEnum.SystemBuiltIn
-              ? '系统内置的角色不能禁用'
+              ? t('PC.Pages.SystemRoleManage.builtInCannotDisable')
               : ''
           }
         >
           <Switch
             disabled={record.source === RoleSourceEnum.SystemBuiltIn}
             checked={record.status === RoleStatusEnum.Enabled}
-            checkedChildren="启用"
-            unCheckedChildren="禁用"
+            checkedChildren={t('PC.Pages.SystemRoleManage.enabled')}
+            unCheckedChildren={t('PC.Pages.SystemRoleManage.disabled')}
             loading={updateStatusLoadingMap[record.id] || false}
             onChange={(checked) => handleUpdateStatus(record, checked)}
           />
@@ -405,53 +391,53 @@ const RoleManage: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemRoleManage.columnAction'),
       key: 'action',
       align: 'center',
       width: 260,
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: RoleInfo & { key: number }) => {
-        // 判断是否为系统内置角色
+        // Built-in role checks.
         const isSystemBuiltIn = record.source === RoleSourceEnum.SystemBuiltIn;
 
-        // 编辑权限检查
+        // Edit permission checks.
         const canEdit =
           hasPermissionByMenuCode('role_manage', 'role_manage_modify') &&
           !isSystemBuiltIn;
         const editTooltip = isSystemBuiltIn
-          ? '系统内置的角色不能编辑'
+          ? t('PC.Pages.SystemRoleManage.builtInCannotEdit')
           : !hasPermissionByMenuCode('role_manage', 'role_manage_modify')
-          ? '无此资源权限'
+          ? t('PC.Pages.SystemRoleManage.noPermission')
           : '';
 
-        // 删除权限检查
+        // Delete permission checks.
         const canDelete =
           hasPermissionByMenuCode('role_manage', 'role_manage_delete') &&
           !isSystemBuiltIn;
         const deleteTooltip = isSystemBuiltIn
-          ? '系统内置的角色不能删除'
+          ? t('PC.Pages.SystemRoleManage.builtInCannotDelete')
           : !hasPermissionByMenuCode('role_manage', 'role_manage_delete')
-          ? '无此资源权限'
+          ? t('PC.Pages.SystemRoleManage.noPermission')
           : '';
 
-        // 构建更多操作菜单项
+        // Build more actions menu.
         const moreActionList: CustomPopoverItem[] = [
           {
             key: 'edit',
-            label: '编辑',
+            label: t('PC.Pages.SystemRoleManage.edit'),
             disabled: !canEdit,
             tooltip: editTooltip,
           },
           {
             key: 'delete',
-            label: '删除',
+            label: t('PC.Pages.SystemRoleManage.delete'),
             disabled: !canDelete,
             tooltip: deleteTooltip,
           },
         ];
 
-        // 处理更多操作点击
+        // Handle more action click.
         const handleMoreActionClick = (item: CustomPopoverItem) => {
           if (item.disabled) {
             return;
@@ -468,7 +454,7 @@ const RoleManage: React.FC = () => {
             <Tooltip
               title={
                 !hasPermissionByMenuCode('role_manage', 'role_manage_bind_user')
-                  ? '无此资源权限'
+                  ? t('PC.Pages.SystemRoleManage.noPermission')
                   : ''
               }
             >
@@ -483,13 +469,13 @@ const RoleManage: React.FC = () => {
                 }
                 onClick={() => handleBindUser(record)}
               >
-                绑定用户
+                {t('PC.Pages.SystemRoleManage.bindUser')}
               </Button>
             </Tooltip>
             <Tooltip
               title={
                 !hasPermissionByMenuCode('role_manage', 'role_manage_bind_menu')
-                  ? '无此资源权限'
+                  ? t('PC.Pages.SystemRoleManage.noPermission')
                   : ''
               }
             >
@@ -504,13 +490,13 @@ const RoleManage: React.FC = () => {
                 }
                 onClick={() => handleMenuPermission(record)}
               >
-                菜单权限
+                {t('PC.Pages.SystemRoleManage.menuPermission')}
               </Button>
             </Tooltip>
             <Tooltip
               title={
                 !hasPermissionByMenuCode('role_manage', 'role_manage_bind_data')
-                  ? '无此资源权限'
+                  ? t('PC.Pages.SystemRoleManage.noPermission')
                   : ''
               }
             >
@@ -525,7 +511,7 @@ const RoleManage: React.FC = () => {
                 }
                 onClick={() => handleDataPermission(record)}
               >
-                数据权限
+                {t('PC.Pages.SystemRoleManage.dataPermission')}
               </Button>
             </Tooltip>
             <CustomPopover
@@ -542,7 +528,7 @@ const RoleManage: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="角色管理"
+      title={t('PC.Pages.SystemRoleManage.pageTitle')}
       hideScroll
       rightSlot={
         hasPermissionByMenuCode('role_manage', 'role_manage_add') && (
@@ -552,12 +538,12 @@ const RoleManage: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >
-            新增角色
+            {t('PC.Pages.SystemRoleManage.addRole')}
           </Button>
         )
       }
     >
-      {/* 角色列表 */}
+      {/* Role list */}
       <DndContext
         collisionDetection={closestCenter}
         onDragEnd={onDragEnd}
@@ -591,18 +577,15 @@ const RoleManage: React.FC = () => {
             options={false}
             toolBarRender={false}
             postData={(data: (RoleInfo & { key: number })[]) => {
-              // 同步数据到 draggableData 用于拖拽
-              // 如果正在拖拽，不覆盖数据，保持拖拽后的位置
               if (!isDraggingRef.current) {
                 setDraggableData(data || []);
               }
-              // 始终返回数据，让 ProTable 正常渲染
               return data;
             }}
             locale={{
               emptyText: (
                 <Empty
-                  description="暂无角色数据"
+                  description={t('PC.Pages.SystemRoleManage.emptyData')}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   className={cx(styles.empty)}
                 />
@@ -612,20 +595,20 @@ const RoleManage: React.FC = () => {
         </SortableContext>
       </DndContext>
 
-      {/* 新增/编辑角色Modal */}
+      {/* Create/Edit role modal */}
       <RoleFormModal
         open={modalOpen}
         isEdit={isEdit}
-        /** 编辑时的角色数据 */
+        /** Role info for edit mode. */
         roleInfo={currentRole}
-        /** 新增时，默认排序索引，默认1 */
+        /** Default sort index for create mode. */
         defaultSortIndex={defaultSortIndex}
-        /** 取消回调 */
+        /** Cancel callback. */
         onCancel={handleModalCancel}
         onSuccess={handleModalSuccess}
       />
 
-      {/* 菜单权限配置Modal */}
+      {/* Menu permission modal */}
       <MenuPermissionModal
         open={menuPermissionModalOpen}
         targetId={currentRole?.id || 0}
@@ -633,7 +616,7 @@ const RoleManage: React.FC = () => {
         onClose={handleMenuPermissionModalClose}
         onSuccess={handleMenuPermissionSuccess}
       />
-      {/* 数据权限配置Modal */}
+      {/* Data permission modal */}
       <DataPermissionModal
         open={dataPermissionModalOpen}
         targetId={currentRole?.id || 0}
@@ -644,7 +627,7 @@ const RoleManage: React.FC = () => {
           setCurrentRole(null);
         }}
       />
-      {/* 角色绑定用户弹窗 */}
+      {/* Bind-user drawer */}
       <BindUser
         targetId={currentRole?.id || 0}
         name={currentRole?.name || ''}

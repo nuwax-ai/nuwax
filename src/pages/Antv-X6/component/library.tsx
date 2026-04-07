@@ -1,8 +1,9 @@
-// 知识库，数据库等节点
+// Knowledge-base related nodes.
 import Created from '@/components/Created';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import { SkillList } from '@/components/Skill';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -18,32 +19,33 @@ import { useModel } from 'umi';
 import '../index.less';
 import { TreeOutput } from './commonNode';
 
-const DEFAULT_INPUT_ARGS_DESC = '检索关键词';
+const DEFAULT_INPUT_ARGS_DESC_KEY =
+  'PC.Pages.AntvX6Library.defaultInputArgsDesc';
 const KBC_FORM_KEY = 'knowledgeBaseConfigs';
 const KBC_INPUT_ARGS_KEY = 'inputArgs';
-// 定义知识库
+// Knowledge base node.
 const KnowledgeNode: React.FC<NodeDisposeProps> = ({
   form, // updateNode,
   type,
   id,
 }) => {
-  // 打开、关闭弹窗
+  // Open/close modal.
   const [open, setOpen] = useState(false);
   const { setIsModified } = useModel('workflow');
-  // 处于loading状态的组件列表
+  // Components in loading state.
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
 
-  //   显示新增技能
+  // Show add modal.
   const showAdd = () => {
     setOpen(true);
   };
 
-  // 知识库
+  // Add knowledge base.
   const onAddedSkill = (item: CreatedNodeItem) => {
     const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY) || [];
-    item.type = item.targetType as unknown as NodeTypeEnum; //类型转换
+    item.type = item.targetType as unknown as NodeTypeEnum; // Type cast.
     item.knowledgeBaseId = item.targetId;
 
     form.setFieldValue(KBC_FORM_KEY, knowledgeBaseConfigs.concat(item));
@@ -61,7 +63,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     ]);
   };
 
-  // 移出技能
+  // Remove selected item.
   const removeItem = (item: CreatedNodeItem) => {
     const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY);
     if (knowledgeBaseConfigs) {
@@ -73,7 +75,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     }
   };
 
-  // 修改技能参数
+  // Update item config.
   const modifyItem = (item: CreatedNodeItem) => {
     setIsModified(true);
     const knowledgeBaseConfigs = form.getFieldValue(KBC_FORM_KEY);
@@ -103,27 +105,29 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
     (item: any) => {
       return {
         ...item,
-        description: item.description || DEFAULT_INPUT_ARGS_DESC,
+        description: item.description || t(DEFAULT_INPUT_ARGS_DESC_KEY),
       };
     },
   );
 
   return (
     <div className="knowledge-node">
-      {/* 输入参数 */}
+      {/* Input args */}
       <div className="node-item-style">
         <TreeInput
-          title={'输入'}
+          title={t('PC.Pages.AntvX6Data.input')}
           form={form}
           params={inputArgs}
           key={`${type}-${id}-${KBC_INPUT_ARGS_KEY}`}
         />
       </div>
 
-      {/* 知识库选择 */}
+      {/* Knowledge base selector */}
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
-          <span className="node-title-style">知识库</span>
+          <span className="node-title-style">
+            {t('PC.Pages.AntvX6Library.knowledgeBase')}
+          </span>
           <Button
             icon={<PlusOutlined />}
             size={'small'}
@@ -149,9 +153,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       <div className="knowledge-node-box node-item-style">
         <div className="dis-sb mb-16">
           <div className="knowlegenow-left-title flex items-center">
-            <span>搜索策略</span>
+            <span>{t('PC.Pages.AntvX6Library.searchStrategy')}</span>
             <TooltipIcon
-              title="从知识库中获取知识的检索方式，不同的检索策略可以更有效地找到正确的信息，提高其生成的答案的准确性和可用性"
+              title={t('PC.Pages.AntvX6Library.searchStrategyTooltip')}
               icon={<InfoCircleOutlined />}
             />
           </div>
@@ -159,18 +163,27 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
             <Select
               className="flex-1"
               options={[
-                { label: '语义', value: 'SEMANTIC' },
-                { label: '混合', value: 'MIXED' },
-                { label: '全文', value: 'FULL_TEXT' },
+                {
+                  label: t('PC.Pages.AntvX6Library.searchStrategySemantic'),
+                  value: 'SEMANTIC',
+                },
+                {
+                  label: t('PC.Pages.AntvX6Library.searchStrategyMixed'),
+                  value: 'MIXED',
+                },
+                {
+                  label: t('PC.Pages.AntvX6Library.searchStrategyFullText'),
+                  value: 'FULL_TEXT',
+                },
               ]}
             />
           </Form.Item>
         </div>
         <div className="dis-sb mb-16">
           <div className="knowlegenow-left-title flex items-center">
-            <span>最大召回数量</span>
+            <span>{t('PC.Pages.AntvX6Library.maxRecallCount')}</span>
             <TooltipIcon
-              title="从知识库中返回给大模型的最大段落数，数值越大返回的内容越多"
+              title={t('PC.Pages.AntvX6Library.maxRecallCountTooltip')}
               icon={<InfoCircleOutlined />}
             />
           </div>
@@ -186,9 +199,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         </div>
         <div className="dis-sb ">
           <div className="knowlegenow-left-title flex items-center">
-            <span>最小匹配度</span>
+            <span>{t('PC.Pages.AntvX6Library.minMatchScore')}</span>
             <TooltipIcon
-              title="根据设置的匹配度选取段落返回给大模型，低于设定匹配度的内容不会被召回"
+              title={t('PC.Pages.AntvX6Library.minMatchScoreTooltip')}
               icon={<InfoCircleOutlined />}
             />
           </div>
@@ -203,13 +216,15 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           </Form.Item>
         </div>
       </div>
-      {/* 输出 */}
-      {/* 输出 */}
+      {/* Output */}
+      {/* Output */}
       <Form.Item shouldUpdate>
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {t('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput treeData={form.getFieldValue('outputArgs')} />
             </>
           )

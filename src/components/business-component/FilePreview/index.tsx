@@ -37,6 +37,7 @@ import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { SANDBOX } from '@/constants/common.constants';
+import { t } from '@/services/i18nRuntime';
 import { init as pptxInit } from 'pptx-preview';
 
 // File type categories
@@ -258,7 +259,7 @@ const getLocalizedErrorMessage = (
     errorStr.includes('zip file') ||
     errorStr.includes('jszip')
   ) {
-    return '文件格式无效或已损坏，请确认是否为有效的 PPTX 文件';
+    return t('PC.Components.FilePreview.errorInvalidPptx');
   }
 
   // 网络相关错误
@@ -267,33 +268,33 @@ const getLocalizedErrorMessage = (
     errorStr.includes('fetch') ||
     errorStr.includes('failed to fetch')
   ) {
-    return '网络请求失败，请检查网络连接后重试';
+    return t('PC.Components.FilePreview.errorNetwork');
   }
 
   // 文件加载错误
   if (errorStr.includes('load') || errorStr.includes('loading')) {
-    return '文件加载失败，请重试';
+    return t('PC.Components.FilePreview.errorFileLoad');
   }
 
   // 解析错误
   if (errorStr.includes('parse') || errorStr.includes('parsing')) {
-    return '文件解析失败，文件可能已损坏或格式不支持';
+    return t('PC.Components.FilePreview.errorFileParse');
   }
 
   // 根据文件类型返回默认错误
   switch (fileType) {
     case 'docx':
-      return '文档预览失败，请确认文件格式正确';
+      return t('PC.Components.FilePreview.errorDocxPreview');
     case 'xlsx':
-      return '表格预览失败，请确认文件格式正确';
+      return t('PC.Components.FilePreview.errorXlsxPreview');
     case 'pdf':
-      return 'PDF 预览失败，请确认文件格式正确';
+      return t('PC.Components.FilePreview.errorPdfPreview');
     case 'pptx':
-      return '演示文稿预览失败，请确认文件格式正确';
+      return t('PC.Components.FilePreview.errorPptxPreview');
     case 'image':
-      return '图片加载失败';
+      return t('PC.Components.FilePreview.errorImageLoad');
     default:
-      return '文件预览失败，请重试';
+      return t('PC.Components.FilePreview.errorDefaultPreview');
   }
 };
 
@@ -452,7 +453,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
-        setErrorMessage('文件内容加载失败，请重试');
+        setErrorMessage(t('PC.Components.FilePreview.errorLoadFileContent'));
         onError?.(error);
       }
       return;
@@ -480,7 +481,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           onRendered?.();
         } catch (error: any) {
           setStatus('error');
-          setErrorMessage('HTML 内容加载失败，请重试');
+          setErrorMessage(t('PC.Components.FilePreview.errorLoadHtmlContent'));
           onError?.(error);
         }
       }
@@ -733,7 +734,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               className={styles.previewImage}
               onError={() => {
                 setStatus('error');
-                setErrorMessage('图片加载失败，请检查文件是否有效');
+                setErrorMessage(
+                  t('PC.Components.FilePreview.errorImageLoadCheckFile'),
+                );
               }}
             />
             {imageSources.length > 1 && (
@@ -882,7 +885,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       {(showRefresh || showDownload) && src && status === 'success' && (
         <div className={styles.toolbar}>
           {showRefresh && (
-            <Tooltip title="刷新">
+            <Tooltip title={t('PC.Components.FilePreview.tooltipRefresh')}>
               <Button
                 className={styles.toolbarBtn}
                 icon={<ReloadOutlined />}
@@ -892,7 +895,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             </Tooltip>
           )}
           {showDownload && (
-            <Tooltip title="下载">
+            <Tooltip title={t('PC.Components.FilePreview.tooltipDownload')}>
               <Button
                 className={styles.toolbarBtn}
                 icon={<CloudDownloadOutlined />}
@@ -909,7 +912,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           <FileOutlined
             style={{ fontSize: 48, color: '#bfbfbf', marginBottom: 16 }}
           />
-          <p>暂无文件可预览</p>
+          <p>{t('PC.Components.FilePreview.emptyNoFile')}</p>
         </div>
       )}
 
@@ -917,15 +920,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         <div className={styles.loadingOverlay}>
           {resolvedType && getFileIcon(resolvedType)}
           <Spin size="large" />
-          <span className={styles.loadingText}>正在加载预览...</span>
+          <span className={styles.loadingText}>
+            {t('PC.Components.FilePreview.loadingPreview')}
+          </span>
         </div>
       )}
 
       {status === 'error' && (
         <div className={styles.errorOverlay}>
           <Alert
-            message="预览失败"
-            description={errorMessage || '无法预览此文件'}
+            message={t('PC.Components.FilePreview.alertPreviewFailed')}
+            description={
+              errorMessage || t('PC.Components.FilePreview.alertCannotPreview')
+            }
             type="error"
             showIcon
             action={
@@ -935,7 +942,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                 icon={<ReloadOutlined />}
                 onClick={handleRetry}
               >
-                重试
+                {t('PC.Components.FilePreview.retry')}
               </Button>
             }
           />
@@ -945,9 +952,14 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       {status === 'unsupported' && (
         <div className={styles.unsupportedOverlay}>
           {getFileIcon('unsupported', 64)}
-          <p className={styles.unsupportedText}>暂不支持预览此文件类型</p>
+          <p className={styles.unsupportedText}>
+            {t('PC.Components.FilePreview.unsupportedType')}
+          </p>
           <p className={styles.unsupportedHint}>
-            文件类型: .{getExtension(fileName)}
+            {t(
+              'PC.Components.FilePreview.fileTypeLabel',
+              getExtension(fileName),
+            )}
           </p>
           {showDownload && (
             <Button
@@ -955,7 +967,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               icon={<CloudDownloadOutlined />}
               onClick={handleDownload}
             >
-              下载文件
+              {t('PC.Components.FilePreview.downloadFile')}
             </Button>
           )}
         </div>

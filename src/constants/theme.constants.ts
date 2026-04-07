@@ -3,6 +3,7 @@
  * 定义布局风格和导航风格的所有CSS变量配置
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import {
   ThemeBackgroundConfig,
@@ -19,12 +20,16 @@ import { FIRST_MENU_WIDTH_STYLE2 } from './layout.constants';
  * 定义可选择的主题色选项
  */
 export const THEME_COLOR_CONFIGS = [
-  { color: '#5147ff', name: '蓝色', isDefault: true },
-  { color: '#ff4d4f', name: '红色' },
-  { color: '#fa8c16', name: '橙色' },
-  { color: '#52c41a', name: '绿色' },
-  { color: '#722ed1', name: '紫色' },
-  { color: '#eb2f96', name: '粉色' },
+  {
+    color: '#5147ff',
+    name: dict('PC.Constants.Theme.colorBlue'),
+    isDefault: true,
+  },
+  { color: '#ff4d4f', name: dict('PC.Constants.Theme.colorRed') },
+  { color: '#fa8c16', name: dict('PC.Constants.Theme.colorOrange') },
+  { color: '#52c41a', name: dict('PC.Constants.Theme.colorGreen') },
+  { color: '#722ed1', name: dict('PC.Constants.Theme.colorPurple') },
+  { color: '#eb2f96', name: dict('PC.Constants.Theme.colorPink') },
 ] as const;
 
 /**
@@ -65,59 +70,59 @@ export const DEFAULT_THEME_CONFIG = {
 export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
   {
     id: 'bg-variant-1',
-    name: '星空夜景',
+    name: dict('PC.Constants.Theme.bgStarryNight'),
     url: '/bg/bg-variant-1.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
-    description: '深色背景，适合深色布局风格',
+    description: dict('PC.Constants.Theme.bgStarryNightDesc'),
   },
   {
     id: 'bg-variant-2',
-    name: '云朵白天',
+    name: dict('PC.Constants.Theme.bgCloudyDay'),
     url: '/bg/bg-variant-2.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
-    description: '浅色背景，适合浅色布局风格',
+    description: dict('PC.Constants.Theme.bgCloudyDayDesc'),
   },
   {
     id: 'bg-variant-3',
-    name: '森林晨光',
+    name: dict('PC.Constants.Theme.bgForestDawn'),
     url: '/bg/bg-variant-3.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
-    description: '明亮背景，适合浅色布局风格',
+    description: dict('PC.Constants.Theme.bgForestDawnDesc'),
   },
   {
     id: 'bg-variant-4',
-    name: '深海夜色',
+    name: dict('PC.Constants.Theme.bgDeepSeaNight'),
     url: '/bg/bg-variant-4.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
-    description: '深色背景，适合深色布局风格',
+    description: dict('PC.Constants.Theme.bgDeepSeaNightDesc'),
   },
   {
     id: 'bg-variant-5',
-    name: '梦幻紫色',
+    name: dict('PC.Constants.Theme.bgDreamyPurple'),
     url: '/bg/bg-variant-5.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
-    description: '深色调背景，适合深色布局风格',
+    description: dict('PC.Constants.Theme.bgDreamyPurpleDesc'),
   },
   {
     id: 'bg-variant-6',
-    name: '温暖阳光',
+    name: dict('PC.Constants.Theme.bgWarmSunshine'),
     url: '/bg/bg-variant-6.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
-    description: '温暖色调，适合浅色布局风格',
+    description: dict('PC.Constants.Theme.bgWarmSunshineDesc'),
   },
   {
     id: 'bg-variant-7',
-    name: '夜晚都市',
+    name: dict('PC.Constants.Theme.bgNightCity'),
     url: '/bg/bg-variant-7.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
-    description: '都市夜景，适合深色布局风格',
+    description: dict('PC.Constants.Theme.bgNightCityDesc'),
   },
   {
     id: 'bg-variant-8',
-    name: '清新蓝天',
+    name: dict('PC.Constants.Theme.bgFreshBlueSky'),
     url: '/bg/bg-variant-8.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
-    description: '清新明亮，适合浅色布局风格',
+    description: dict('PC.Constants.Theme.bgFreshBlueSkyDesc'),
   },
 ];
 

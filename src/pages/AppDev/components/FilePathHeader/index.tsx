@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { dict } from '@/services/i18nRuntime';
 import { CheckOutlined } from '@ant-design/icons';
 import { Button, Spin, Tooltip } from 'antd';
 import React from 'react';
@@ -45,7 +46,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {/* <span className={styles.fileLanguage}>{language}</span> */}
         {isLoading && <Spin size="small" />}
         {isModified && !readOnly && (
-          <span className={styles.modifiedIndicator}>已修改</span>
+          <span className={styles.modifiedIndicator}>
+            {dict('PC.Pages.AppDevFilePathHeader.modified')}
+          </span>
         )}
       </div>
       <div className={styles.fileActions}>
@@ -60,7 +63,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               disabled={!isModified || readOnly}
               style={{ marginRight: 8 }}
             >
-              保存
+              {dict('PC.Common.Global.save')}
             </Button>
             <Button
               size="small"
@@ -68,11 +71,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               disabled={!isModified || readOnly}
               style={{ marginRight: 8 }}
             >
-              取消
+              {dict('PC.Common.Global.cancel')}
             </Button>
           </>
         )}
-        <Tooltip title="刷新">
+        <Tooltip title={dict('PC.Common.Global.refresh')}>
           <Button
             size="small"
             type="text"

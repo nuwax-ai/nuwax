@@ -1,4 +1,5 @@
 import defaultAvatar from '@/assets/images/avatar.png';
+import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -57,7 +58,7 @@ const PageCard: React.FC<PageCardProps> = ({
         <div
           className={cx(styles['position-top-right'], styles['activated-text'])}
         >
-          已启用
+          {dict('PC.Components.PageCard.activated')}
         </div>
       )}
       {isNewVersion && (
@@ -67,7 +68,7 @@ const PageCard: React.FC<PageCardProps> = ({
             styles['new-version-text'],
           )}
         >
-          有版本更新
+          {dict('PC.Components.PageCard.newVersion')}
         </div>
       )}
       {extra}
@@ -87,7 +88,7 @@ const PageCard: React.FC<PageCardProps> = ({
               styles['no-screenshot'],
             )}
           >
-            无可用预览图
+            {dict('PC.Components.PageCard.noPreview')}
           </div>
         )}
         {/* 阴影覆盖区域 */}
@@ -100,7 +101,7 @@ const PageCard: React.FC<PageCardProps> = ({
           )}
         >
           <span className={cx(styles['image-overlay-text'])}>
-            {overlayText || '开始使用'}
+            {overlayText || dict('PC.Components.PageCard.startUsing')}
           </span>
         </div>
       </div>
@@ -133,7 +134,8 @@ const PageCard: React.FC<PageCardProps> = ({
             {/* 创建时间 */}
             <ConditionRender condition={created}>
               <span className={cx(styles.time, 'text-ellipsis')}>
-                创建于 {dayjs(created).format('YYYY-MM-DD')}
+                {dict('PC.Components.PageCard.createdAt')}{' '}
+                {dayjs(created).format('YYYY-MM-DD')}
               </span>
             </ConditionRender>
           </div>

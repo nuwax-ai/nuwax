@@ -5,8 +5,8 @@ import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
-import { GUID_QUESTION_SET_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentConfigUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
 import {
   AgentConfigUpdateParams,
@@ -31,7 +31,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -71,7 +71,9 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     manual: true,
     debounceInterval: 1000,
     onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
-      message.success('更新成功');
+      message.success(
+        t('PC.Pages.AgentArrangeGuidQuestionSetModal.updateSuccess'),
+      );
       const { guidQuestionDtos } = params[0];
       onConfirm?.(guidQuestionDtos);
       setLoading(false);
@@ -188,7 +190,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       );
       if (requireArgEmptyItem) {
         message.error(
-          `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
+          t(
+            'PC.Pages.AgentArrangeGuidQuestionSetModal.requiredParamEmpty',
+            requireArgEmptyItem.name,
+          ),
         );
         return;
       }
@@ -271,10 +276,28 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     }
   };
 
+  const guidQuestionTypeOptions = useMemo(
+    () => [
+      {
+        value: GuidQuestionSetTypeEnum.Question,
+        label: t('PC.Pages.AgentArrangeGuidQuestionSetModal.typeQuestion'),
+      },
+      {
+        value: GuidQuestionSetTypeEnum.Page,
+        label: t('PC.Pages.AgentArrangeGuidQuestionSetModal.typePage'),
+      },
+      {
+        value: GuidQuestionSetTypeEnum.Link,
+        label: t('PC.Pages.AgentArrangeGuidQuestionSetModal.typeLink'),
+      },
+    ],
+    [],
+  );
+
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名',
+      title: t('PC.Pages.AgentArrangeGuidQuestionSetModal.paramName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -290,24 +313,38 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     {
       title: () => (
         <div className={cx('h-full', 'flex', 'items-center')}>
-          <span>参数值</span>
+          <span>
+            {t('PC.Pages.AgentArrangeGuidQuestionSetModal.paramValue')}
+          </span>
           <TooltipIcon
             title={
               <>
                 <div>
-                  可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+                  {t('PC.Pages.AgentArrangeGuidQuestionSetModal.paramValueTip')}
                 </div>
                 <div>
-                  智能体ID {'{{'}AGENT_ID{'}}'}
+                  {t(
+                    'PC.Pages.AgentArrangeGuidQuestionSetModal.agentIdVariable',
+                  )}{' '}
+                  {'{{'}AGENT_ID{'}}'}
                 </div>
                 <div>
-                  系统用户ID {'{{'}SYS_USER_ID{'}}'}
+                  {t(
+                    'PC.Pages.AgentArrangeGuidQuestionSetModal.systemUserIdVariable',
+                  )}{' '}
+                  {'{{'}SYS_USER_ID{'}}'}
                 </div>
                 <div>
-                  用户UID {'{{'}USER_UID{'}}'}
+                  {t(
+                    'PC.Pages.AgentArrangeGuidQuestionSetModal.userUidVariable',
+                  )}{' '}
+                  {'{{'}USER_UID{'}}'}
                 </div>
                 <div>
-                  用户名 {'{{'}USER_NAME{'}}'}
+                  {t(
+                    'PC.Pages.AgentArrangeGuidQuestionSetModal.userNameVariable',
+                  )}{' '}
+                  {'{{'}USER_NAME{'}}'}
                 </div>
               </>
             }
@@ -320,7 +357,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
             allowClear
-            placeholder={`请输入${record.description}`}
+            placeholder={t(
+              'PC.Pages.AgentArrangeGuidQuestionSetModal.paramValuePlaceholder',
+              record.description || '',
+            )}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)
@@ -334,7 +374,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="预置问题设置"
+      title={t('PC.Pages.AgentArrangeGuidQuestionSetModal.title')}
       open={open}
       loading={loading}
       onCancel={onCancel}
@@ -351,7 +391,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         autoComplete="off"
         preserve={false}
       >
-        <Form.Item name="icon" label="图标">
+        <Form.Item
+          name="icon"
+          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.icon')}
+        >
           <UploadAvatar
             onUploadSuccess={handleUploadSuccess}
             defaultImage={''}
@@ -360,26 +403,53 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         </Form.Item>
         <Form.Item
           name="info"
-          label="展示信息"
-          rules={[{ required: true, message: '请输入展示信息' }]}
+          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfo')}
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfoRequired',
+              ),
+            },
+          ]}
         >
-          <Input placeholder="这里是问题内容" showCount maxLength={30} />
+          <Input
+            placeholder={t(
+              'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfoPlaceholder',
+            )}
+            showCount
+            maxLength={30}
+          />
         </Form.Item>
-        <Form.Item name="type" label="类型">
+        <Form.Item
+          name="type"
+          label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.type')}
+        >
           <SelectList
-            placeholder="请选择类型"
-            options={GUID_QUESTION_SET_OPTIONS}
+            placeholder={t(
+              'PC.Pages.AgentArrangeGuidQuestionSetModal.typePlaceholder',
+            )}
+            options={guidQuestionTypeOptions}
             onChange={handleChangeType}
           />
         </Form.Item>
         {type === GuidQuestionSetTypeEnum.Page ? (
           <Form.Item
             name="pageUriId"
-            label="页面路径"
-            rules={[{ required: true, message: '请选择页面路径' }]}
+            label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.pagePath')}
+            rules={[
+              {
+                required: true,
+                message: t(
+                  'PC.Pages.AgentArrangeGuidQuestionSetModal.pagePathRequired',
+                ),
+              },
+            ]}
           >
             <SelectList
-              placeholder="请选择页面路径"
+              placeholder={t(
+                'PC.Pages.AgentArrangeGuidQuestionSetModal.pagePathPlaceholder',
+              )}
               options={pathList as any}
               onChange={changePagePath}
             />
@@ -388,9 +458,14 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           type === GuidQuestionSetTypeEnum.Link && (
             <Form.Item
               name="url"
-              label="链接地址"
+              label={t('PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrl')}
               rules={[
-                { required: true, message: '请输入链接地址' },
+                {
+                  required: true,
+                  message: t(
+                    'PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrlRequired',
+                  ),
+                },
                 {
                   validator(_, value) {
                     if (!value || isHttp(value)) {
@@ -398,7 +473,9 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
                     }
                     return Promise.reject(
                       new Error(
-                        '请输入正确格式的链接地址，必须以http://或https://开头!',
+                        t(
+                          'PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrlInvalid',
+                        ),
                       ),
                     );
                   },
@@ -421,8 +498,15 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
                 style={{ color: token.colorTextTertiary }}
                 onClick={() => setIsActive(!isActive)}
               />
-              <span className={cx('user-select-none')}>输入</span>
-              <TooltipIcon title="配置输入参数" icon={<InfoCircleOutlined />} />
+              <span className={cx('user-select-none')}>
+                {t('PC.Pages.AgentArrangeGuidQuestionSetModal.input')}
+              </span>
+              <TooltipIcon
+                title={t(
+                  'PC.Pages.AgentArrangeGuidQuestionSetModal.configInputArgs',
+                )}
+                icon={<InfoCircleOutlined />}
+              />
             </div>
             <div
               className={cx(

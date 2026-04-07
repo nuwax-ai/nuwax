@@ -1,4 +1,5 @@
 import { VISIBLE_TO_LLM_OPTIONS } from '@/constants/agent.constants';
+import { dict } from '@/services/i18nRuntime';
 import { VisibleToLLMProps } from '@/types/interfaces/agentConfig';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
@@ -30,7 +31,9 @@ const VisibleToLLM: React.FC<VisibleToLLMProps> = ({
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1')}>
-        <h3 className={cx('mb-12')}>是否模型可见</h3>
+        <h3 className={cx('mb-12')}>
+          {dict('PC.Pages.EditAgent.isModelVisible')}
+        </h3>
         <Radio.Group
           options={VISIBLE_TO_LLM_OPTIONS}
           onChange={handleChangeType}
@@ -39,7 +42,7 @@ const VisibleToLLM: React.FC<VisibleToLLMProps> = ({
       </div>
       <footer className={cx(styles.footer)}>
         <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
+          {dict('PC.Pages.EditAgent.save')}
         </Button>
       </footer>
     </div>

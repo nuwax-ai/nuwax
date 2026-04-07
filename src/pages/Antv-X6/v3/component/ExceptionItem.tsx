@@ -2,10 +2,7 @@ import CodeEditor from '@/components/CodeEditor';
 import NewMonaco from '@/components/CodeEditor/NewMonaco';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { useSpecificContent } from '@/hooks/useSpecificContent';
-import {
-  EXCEPTION_HANDLE_OPTIONS,
-  RETRY_COUNT_OPTIONS,
-} from '@/pages/Antv-X6/v3/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { ExceptionItemProps } from '@/types/interfaces/graph';
@@ -21,11 +18,10 @@ import {
 } from '../utils/graphV3';
 import styles from './ExceptionItem.less';
 
-// 默认的JSON格式内容
+// Default JSON content.
 const DEFAULT_JSON_CONTENT = '';
 /**
- * 异常处理配置组件
- * 用于配置节点的异常处理策略，包括超时、重试、异常处理方式
+ * Exception handling config component.
  */
 export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
   ({
@@ -39,23 +35,59 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
   }) => {
     const { setIsModified } = useModel('workflowV3');
     const outerForm = Form.useFormInstance();
-    // 异常处理方式选项
-    const exceptionHandleOptions = useMemo(() => EXCEPTION_HANDLE_OPTIONS, []);
+    // Exception handling options.
+    const exceptionHandleOptions = useMemo(
+      () => [
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.interruptFlow'),
+          value: ExceptionHandleTypeEnum.INTERRUPT,
+        },
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.returnSpecificContent'),
+          value: ExceptionHandleTypeEnum.SPECIFIC_CONTENT,
+        },
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.executeExceptionFlow'),
+          value: ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW,
+        },
+      ],
+      [],
+    );
 
-    // 重试次数选项
-    const retryOptions = useMemo(() => RETRY_COUNT_OPTIONS, []);
+    // Retry options.
+    const retryOptions = useMemo(
+      () => [
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.noRetry'),
+          value: 0,
+        },
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.retryOnce'),
+          value: 1,
+        },
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.retryTwice'),
+          value: 2,
+        },
+        {
+          label: t('PC.Pages.AntvX6ExceptionItem.retryThrice'),
+          value: 3,
+        },
+      ],
+      [],
+    );
 
     const [currentExceptionHandleType, setCurrentExceptionHandleType] =
       useState<ExceptionHandleTypeEnum>(exceptionHandleType);
 
-    // 用于存储编辑器的值，避免直接从表单读取导致的问题
+    // Keep editor value in local state to avoid read timing issues.
     const [jsonContent, setJsonContent] = useState<string>(
       convertValueToEditorValue(specificContent) || DEFAULT_JSON_CONTENT,
     );
 
     const [show, setShow] = useState(false);
 
-    // 初始化表单值
+    // Initialize form values.
     useEffect(() => {
       if (!outerForm) return;
       const initialValue = {
@@ -94,7 +126,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
       setJsonContent(convertValueToEditorValue(calcSpecificContent));
     }, [calcSpecificContent]);
 
-    // 处理异常处理类型变化
+    // Sync exception handling type.
     useEffect(() => {
       if (!outerForm) return;
       setCurrentExceptionHandleType(exceptionHandleType);
@@ -125,14 +157,13 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
       debounceSetIsModified();
     };
 
-    // 处理异常处理类型变更
+    // Handle exception type change.
     const handleExceptionTypeChange = (value: ExceptionHandleTypeEnum) => {
       setCurrentExceptionHandleType(value);
 
-      // 当切换到特定内容时，确保JSON内容有效
+      // Ensure JSON content is valid when switching to specific content mode.
       if (value === ExceptionHandleTypeEnum.SPECIFIC_CONTENT) {
         try {
-          // 尝试解析当前内容，如果无效则使用默认内容
           handleChange(specificContent || '');
         } catch (e) {}
       } else {
@@ -140,43 +171,41 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
       }
     };
 
-    // 处理JSON内容变更
+    // Handle JSON content change.
     const handleJsonContentChange = (value: string) => {
       if (!outerForm) return;
       try {
-        // 尝试解析JSON，确保有效
         JSON.parse(value);
         handleChange(value);
-        // 更新表单值
       } catch (e) {
-        // JSON无效时不更新表单，但保留编辑器内容
-        // message.error('JSON格式无效');
-        // console.warn('JSON格式无效:', e);
+        // Keep editor content when JSON is invalid.
       }
     };
 
     return (
       <div className={cx(styles.exceptionItem)}>
-        {/* 标题 */}
+        {/* Header */}
         <div className={cx(styles.exceptionItemHeader)}>
-          <span className={cx(styles.exceptionItemTitle)}>异常处理</span>
+          <span className={cx(styles.exceptionItemTitle)}>
+            {t('PC.Pages.AntvX6ExceptionItem.title')}
+          </span>
           <TooltipIcon
-            title="可设置异常处理，包括超时、重试、异常处理方式。开启流式输出后，一旦开始输出数据，即使出现异常也无法重试或者跳转异常分支。"
+            title={t('PC.Pages.AntvX6ExceptionItem.titleTooltip')}
             icon={<InfoCircleOutlined />}
           />
         </div>
 
-        {/* 表单配置项 */}
+        {/* Form fields */}
         <div className={cx(styles.exceptionItemForm)}>
           <div className={cx(styles.exceptionItemRow)}>
-            {/* 超时时间 - 30% 宽度 */}
+            {/* Timeout - 30% width */}
             <Form.Item
               name={[name, 'timeout']}
               label={
                 <span className="flex items-center">
-                  超时时间
+                  {t('PC.Pages.AntvX6ExceptionItem.timeoutLabel')}
                   <TooltipIcon
-                    title="设置节点执行的最大等待时间"
+                    title={t('PC.Pages.AntvX6ExceptionItem.timeoutTooltip')}
                     icon={<InfoCircleOutlined />}
                   />
                 </span>
@@ -185,7 +214,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
               rules={[
                 {
                   required: true,
-                  message: '请输入超时时间',
+                  message: t('PC.Pages.AntvX6ExceptionItem.timeoutRequired'),
                 },
               ]}
             >
@@ -197,10 +226,10 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
               />
             </Form.Item>
 
-            {/* 重试次数 - 30% 宽度 */}
+            {/* Retry count - 30% width */}
             <Form.Item
               name={[name, 'retryCount']}
-              label="重试次数"
+              label={t('PC.Pages.AntvX6ExceptionItem.retryCountLabel')}
               className={cx(styles.exceptionItemFormItem, styles.retryItem)}
             >
               <Select
@@ -210,14 +239,14 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                   [styles.disabled]: disabled,
                 })}
                 disabled={disabled}
-                placeholder="不重试"
+                placeholder={t('PC.Pages.AntvX6ExceptionItem.noRetry')}
               />
             </Form.Item>
 
-            {/* 异常处理方式 - 40% 宽度 */}
+            {/* Exception handling mode - 40% width */}
             <Form.Item
               name={[name, 'exceptionHandleType']}
-              label="异常处理方式"
+              label={t('PC.Pages.AntvX6ExceptionItem.handleTypeLabel')}
               className={cx(
                 styles.exceptionItemFormItem,
                 styles.handleTypeItem,
@@ -230,18 +259,20 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                   [styles.disabled]: disabled,
                 })}
                 disabled={disabled}
-                placeholder="中断流程"
+                placeholder={t('PC.Pages.AntvX6ExceptionItem.interruptFlow')}
                 onChange={handleExceptionTypeChange}
               />
             </Form.Item>
           </div>
 
-          {/* 当异常处理方式为返回特定内容时，显示返回内容 */}
+          {/* Show custom return content when the mode is specific content. */}
           {currentExceptionHandleType ===
             ExceptionHandleTypeEnum.SPECIFIC_CONTENT && (
             <div className={cx(styles.exceptionItemContentWrapper)}>
               <div className={cx(styles.exceptionItemContentLabel)}>
-                <span>自定义返回内容</span>
+                <span>
+                  {t('PC.Pages.AntvX6ExceptionItem.customReturnContent')}
+                </span>
                 <Button
                   icon={<ExpandAltOutlined />}
                   size="small"
@@ -258,7 +289,9 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                 rules={[
                   {
                     required: true,
-                    message: '请输入自定义返回内容',
+                    message: t(
+                      'PC.Pages.AntvX6ExceptionItem.customReturnContentRequired',
+                    ),
                   },
                   {
                     validator: (_, value) => {
@@ -268,7 +301,9 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
                         return Promise.resolve();
                       } catch (error) {
                         return Promise.reject(
-                          new Error('请输入有效的JSON格式'),
+                          new Error(
+                            t('PC.Pages.AntvX6ExceptionItem.validJsonRequired'),
+                          ),
                         );
                       }
                     },

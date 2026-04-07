@@ -1,5 +1,6 @@
 import Loading from '@/components/custom/Loading';
 import { apiOperationLogDetail } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
 import { OperationLogInfo } from '@/types/interfaces/agent';
 import { CopyOutlined } from '@ant-design/icons';
 import { ProDescriptions } from '@ant-design/pro-components';
@@ -54,7 +55,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
     }
   };
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(t('PC.Pages.SystemOperationLog.copySuccess'));
   };
 
   useEffect(() => {
@@ -64,7 +65,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
   return (
     <Drawer
       className={styles.drawer}
-      title="日志详情"
+      title={t('PC.Pages.SystemOperationLog.detailTitle')}
       placement="right"
       open={open}
       onClose={onClose}
@@ -80,38 +81,38 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
       ) : !!operationLogInfoDetail ? (
         <>
           <ProDescriptions
-            title="基本信息"
+            title={t('PC.Pages.SystemOperationLog.basicInfo')}
             column={1}
             dataSource={operationLogInfoDetail}
             style={{ padding: '14px' }}
             columns={[
               {
-                title: '类型',
+                title: t('PC.Pages.SystemOperationLog.columnType'),
                 dataIndex: 'systemName',
                 render: (text: any) => text || '-',
               },
               {
-                title: '操作方式',
+                title: t('PC.Pages.SystemOperationLog.columnActionType'),
                 dataIndex: 'action',
                 render: (text: any) => text || '-',
               },
               {
-                title: '对象名称',
+                title: t('PC.Pages.SystemOperationLog.columnObjectName'),
                 dataIndex: 'object',
                 render: (text: any) => text || '-',
               },
               {
-                title: '对象子类',
+                title: t('PC.Pages.SystemOperationLog.columnObjectSubtype'),
                 dataIndex: 'operateContent',
                 render: (text: any) => text || '-',
               },
               {
-                title: '创建人',
+                title: t('PC.Pages.SystemOperationLog.columnCreator'),
                 dataIndex: 'creator',
                 render: (text: any) => text || '-',
               },
               {
-                title: '创建时间',
+                title: t('PC.Pages.SystemOperationLog.columnCreated'),
                 dataIndex: 'created',
                 render: (text: any) => {
                   if (!text) return '-';
@@ -123,7 +124,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
 
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>
-              请求参数&nbsp;
+              {t('PC.Pages.SystemOperationLog.columnRequestParams')}&nbsp;
               <CopyToClipboard
                 text={operationLogInfoDetail?.extraContent || ''}
                 onCopy={handleCopy}
@@ -136,7 +137,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
         </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-          <Empty description="暂无数据" />
+          <Empty description={t('PC.Pages.SystemOperationLog.noData')} />
         </div>
       )}
     </Drawer>

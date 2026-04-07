@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
@@ -172,7 +173,10 @@ export const SkillList: React.FC<SkillProps> = ({
                         <InfoCircleOutlined className={cx('white')} />
                       </Popover>
                     )}
-                  <Popover content={'编辑参数'} trigger="hover">
+                  <Popover
+                    content={dict('PC.Pages.AntvX6Skill.editParams')}
+                    trigger="hover"
+                  >
                     <SettingOutlined
                       className={cx('ml-12 cursor-pointer white')}
                       onClick={() => {
@@ -182,7 +186,10 @@ export const SkillList: React.FC<SkillProps> = ({
                     />
                   </Popover>
                   {!disabled && (
-                    <Popover content={'移除'} trigger="hover">
+                    <Popover
+                      content={dict('PC.Pages.AntvX6Skill.remove')}
+                      trigger="hover"
+                    >
                       <DeleteOutlined
                         className={cx('ml-12  white')}
                         onClick={() => handleDelete(item)}

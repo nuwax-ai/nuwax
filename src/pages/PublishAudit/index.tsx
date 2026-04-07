@@ -5,6 +5,7 @@ import {
 } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiPageGetProjectInfoByAgent } from '@/services/pageDev';
 import { apiPassAudit, apiPublishApplyList } from '@/services/publishManage';
 import styles from '@/styles/systemManage.less';
@@ -84,7 +85,7 @@ const PublishAudit: React.FC = () => {
   const handlePassAudit = useCallback(async (record: PublishApplyListInfo) => {
     const res = await apiPassAudit({ id: record.id });
     if (res.code === SUCCESS_CODE) {
-      message.success('通过审核成功');
+      message.success(dict('PC.Pages.PublishAudit.passAuditSuccess'));
       // 恢复到初始化状态，便于在request中覆盖状态为默认值：待审核
       isInitializeOrReset.current = true;
       actionRef.current?.reload();
@@ -103,21 +104,21 @@ const PublishAudit: React.FC = () => {
       return [
         {
           key: 'pass',
-          label: '通过',
-          visible: record.publishStatus === PublishStatusEnum.Applying,
+          label: dict('PC.Pages.PublishAudit.actionPass'),
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_pass'),
           onClick: handlePassAudit,
         },
         {
           key: 'reject',
-          label: '拒绝',
-          visible: record.publishStatus === PublishStatusEnum.Applying,
+          label: dict('PC.Pages.PublishAudit.actionReject'),
+          isShow: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_reject'),
           onClick: (r) => handleRejectAudit(r.id),
         },
         {
           key: 'view',
-          label: '查看',
+          label: dict('PC.Pages.PublishAudit.actionView'),
           disabled: !hasPermission('publish_audit_query_detail'),
           onClick: handleView,
         },
@@ -128,56 +129,72 @@ const PublishAudit: React.FC = () => {
 
   const columns: ProColumns<PublishApplyListInfo>[] = [
     {
-      title: '发布名称',
+      title: dict('PC.Pages.PublishAudit.colPublishName'),
       dataIndex: 'name',
       width: 200,
-      fieldProps: { placeholder: '请输入插件工作流或智能体名称' },
+      fieldProps: {
+        placeholder: dict('PC.Pages.PublishAudit.colPublishNamePlaceholder'),
+      },
       ellipsis: true,
     },
     {
-      title: '类型',
+      title: dict('PC.Pages.PublishAudit.colType'),
       dataIndex: 'targetType',
       width: 100,
       valueType: 'select',
       valueEnum: {
-        [SquareAgentTypeEnum.Agent]: { text: '智能体' },
+        [SquareAgentTypeEnum.Agent]: {
+          text: dict('PC.Pages.PublishAudit.typeAgent'),
+        },
         // [SquareAgentTypeEnum.PageApp]: { text: '网页应用' },
-        [SquareAgentTypeEnum.Plugin]: { text: '插件' },
-        [SquareAgentTypeEnum.Workflow]: { text: '工作流' },
-        [SquareAgentTypeEnum.Skill]: { text: '技能' },
+        [SquareAgentTypeEnum.Plugin]: {
+          text: dict('PC.Pages.PublishAudit.typePlugin'),
+        },
+        [SquareAgentTypeEnum.Workflow]: {
+          text: dict('PC.Pages.PublishAudit.typeWorkflow'),
+        },
+        [SquareAgentTypeEnum.Skill]: {
+          text: dict('PC.Pages.PublishAudit.typeSkill'),
+        },
       },
     },
     {
-      title: '描述信息',
+      title: dict('PC.Pages.PublishAudit.colDescription'),
       dataIndex: 'description',
       width: 200,
       hideInSearch: true,
       ellipsis: true,
     },
     {
-      title: '版本信息',
+      title: dict('PC.Pages.PublishAudit.colVersionInfo'),
       dataIndex: 'remark',
       width: 200,
       hideInSearch: true,
       ellipsis: true,
     },
     {
-      title: '发布者',
+      title: dict('PC.Pages.PublishAudit.colPublisher'),
       dataIndex: ['applyUser', 'userName'],
       width: 150,
       hideInSearch: true,
     },
     {
-      title: '状态',
+      title: dict('PC.Pages.PublishAudit.colStatus'),
       dataIndex: 'publishStatus',
       width: 100,
       valueType: 'select',
       // 默认待审核
       initialValue: PublishStatusEnum.Applying,
       valueEnum: {
-        [PublishStatusEnum.Applying]: { text: '待审核' },
-        [PublishStatusEnum.Published]: { text: '通过' },
-        [PublishStatusEnum.Rejected]: { text: '拒绝' },
+        [PublishStatusEnum.Applying]: {
+          text: dict('PC.Pages.PublishAudit.statusApplying'),
+        },
+        [PublishStatusEnum.Published]: {
+          text: dict('PC.Pages.PublishAudit.statusPassed'),
+        },
+        [PublishStatusEnum.Rejected]: {
+          text: dict('PC.Pages.PublishAudit.statusRejected'),
+        },
       },
       render: (_, record) => {
         const publishStatus = record.publishStatus;
@@ -185,15 +202,15 @@ const PublishAudit: React.FC = () => {
         let dotStyle = '';
         switch (publishStatus) {
           case PublishStatusEnum.Published:
-            statusText = '通过';
+            statusText = dict('PC.Pages.PublishAudit.statusPassed');
             dotStyle = styles['dot-green'];
             break;
           case PublishStatusEnum.Rejected:
-            statusText = '拒绝';
+            statusText = dict('PC.Pages.PublishAudit.statusRejected');
             dotStyle = styles['dot-red'];
             break;
           case PublishStatusEnum.Applying:
-            statusText = '待审核';
+            statusText = dict('PC.Pages.PublishAudit.statusApplying');
             dotStyle = styles['dot-blue'];
             break;
           default:
@@ -208,14 +225,14 @@ const PublishAudit: React.FC = () => {
       },
     },
     {
-      title: '发布时间',
+      title: dict('PC.Pages.PublishAudit.colPublishTime'),
       dataIndex: 'created',
       width: 180,
       hideInSearch: true,
       valueType: 'dateTime',
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.PublishAudit.colAction'),
       valueType: 'option',
       width: 150,
       align: 'center',
@@ -271,7 +288,7 @@ const PublishAudit: React.FC = () => {
   }, [location.state]);
 
   return (
-    <WorkspaceLayout title="发布审核" hideScroll>
+    <WorkspaceLayout title={dict('PC.Pages.PublishAudit.pageTitle')} hideScroll>
       <XProTable<PublishApplyListInfo>
         actionRef={actionRef}
         formRef={formRef}

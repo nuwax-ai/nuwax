@@ -2,6 +2,7 @@
  * ant design 自定义方法
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Modal } from 'antd';
 
@@ -20,9 +21,9 @@ export const modalConfirm = (
     title,
     icon: <ExclamationCircleFilled />,
     content,
-    okText: '确定',
+    okText: dict('PC.Utils.AntCustom.okText'),
     maskClosable: true,
-    cancelText: '取消',
+    cancelText: dict('PC.Utils.AntCustom.cancelText'),
     centered: true,
     onOk,
     onCancel,

@@ -9,6 +9,8 @@ import dayjs from 'dayjs';
 import { useCallback, useRef } from 'react';
 import { useModel } from 'umi';
 
+import { dict } from '@/services/i18nRuntime';
+
 interface UseAutoErrorHandlingProps {
   /** 添加日志到聊天框的回调 */
   onAddToChat: (
@@ -126,10 +128,10 @@ export const useAutoErrorHandling = ({
       modelStateRef.current.setHasShownConfirmModal(true);
 
       Modal.confirm({
-        title: '自动错误处理已达上限',
-        content: '是否继续自动处理当前问题？',
-        okText: '继续',
-        cancelText: '取消',
+        title: dict('PC.Hooks.UseAutoErrorHandling.limitReached'),
+        content: dict('PC.Hooks.UseAutoErrorHandling.continueAutoHandling'),
+        okText: dict('PC.Common.Global.continue'),
+        cancelText: dict('PC.Common.Global.cancel'),
         onOk: () => {
           handleUserConfirmContinue(formattedContent);
           confirmModalRef.current = false;
@@ -157,15 +159,21 @@ export const useAutoErrorHandling = ({
       switch (errorType) {
         case 'whiteScreen':
           // 白屏错误格式
-          return `检测到预览页面白屏，捕获到以下错误，请分析并修复：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+          return dict(
+            'PC.Hooks.UseAutoErrorHandling.whiteScreenError',
+            trimmedContent,
+          );
 
         case 'log':
           // 日志错误格式
-          return `分析以下日志并修复错误：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+          return dict('PC.Hooks.UseAutoErrorHandling.logError', trimmedContent);
 
         case 'iframe':
           // iframe 加载错误格式
-          return `预览页面加载失败，请分析并修复：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+          return dict(
+            'PC.Hooks.UseAutoErrorHandling.iframeError',
+            trimmedContent,
+          );
 
         default:
           // 默认格式（保持原有逻辑）
@@ -190,14 +198,16 @@ export const useAutoErrorHandling = ({
       // 检查是否启用
       if (!enabled || !model.isAutoHandlingEnabled) {
         console.warn(
-          '[AutoErrorHandling] 自动错误处理未启用，跳过自定义错误处理',
+          '[AutoErrorHandling] Auto error handling is disabled. Skip custom error handling',
         );
         return;
       }
 
       // 检查聊天是否正在加载
       if (isChatLoading) {
-        console.warn('[AutoErrorHandling] AI 正在处理中，跳过自定义错误处理');
+        console.warn(
+          '[AutoErrorHandling] AI is processing. Skip custom error handling',
+        );
         return;
       }
 
@@ -212,7 +222,7 @@ export const useAutoErrorHandling = ({
       const errorHash = formattedContent.trim();
       const isDuplicate = errorHash === model.lastCustomErrorHash;
       if (isDuplicate) {
-        console.info('[AutoErrorHandling] 跳过重复的自定义错误');
+        console.info('[AutoErrorHandling] Skip duplicated custom error');
         return;
       }
 
@@ -225,7 +235,7 @@ export const useAutoErrorHandling = ({
       // 更新错误哈希到 model
       model.setLastCustomErrorHash(errorHash);
       console.info(
-        `[AutoErrorHandling] 当前自动发送次数为${model.autoRetryCount}`,
+        `[AutoErrorHandling] Current auto-send count: ${model.autoRetryCount}`,
         formattedContent,
         dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss'),
       );

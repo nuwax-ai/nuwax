@@ -1,22 +1,24 @@
+import { dict } from '@/services/i18nRuntime';
+
 export const DRAG_TYPES = {
   CATEGORY: 'CATEGORY',
   AGENT: 'AGENT',
 } as const;
 
 export const HOVER_TEXTS = {
-  CATEGORY: '可拖拽更换栏目顺序',
-  AGENT: '可拖拽更换智能体顺序',
+  CATEGORY: dict('PC.Pages.HomeDrag.hoverCategory'),
+  AGENT: dict('PC.Pages.HomeDrag.hoverAgent'),
 } as const;
 
 // 添加其他可能的常量
 export const LOADING_MESSAGES = {
-  UPDATING_SORT: '正在更新排序...',
+  UPDATING_SORT: dict('PC.Pages.HomeDrag.updatingSort'),
 } as const;
 
 export const SUCCESS_MESSAGES = {
-  SORT_SUCCESS: '排序更新成功',
+  SORT_SUCCESS: dict('PC.Pages.HomeDrag.sortSuccess'),
 } as const;
 
 export const ERROR_MESSAGES = {
-  SORT_FAILED: '排序更新失败，请重试',
+  SORT_FAILED: dict('PC.Pages.HomeDrag.sortFailed'),
 } as const;

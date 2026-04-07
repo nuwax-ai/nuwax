@@ -1,6 +1,7 @@
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import CollapseComponentItem from '@/components/CollapseComponentItem';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum, InvokeTypeEnum } from '@/types/enums/agent';
 import { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { KnowledgeTextListProps } from '@/types/interfaces/agentConfig';
@@ -52,7 +53,7 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
 
   return !list?.length ? (
     <p className={cx(textClassName)}>
-      将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。
+      {t('PC.Pages.AgentArrangeKnowledgeTextList.emptyDescription')}
     </p>
   ) : (
     <>
@@ -72,12 +73,12 @@ const KnowledgeTextList: React.FC<KnowledgeTextListProps> = ({
                 onClick={() => handleClick(item)}
               >
                 {item?.bindConfig?.invokeType === InvokeTypeEnum.AUTO
-                  ? '自动调用'
-                  : '按需调用'}
+                  ? t('PC.Pages.AgentArrangeInvokeType.optionAuto')
+                  : t('PC.Pages.AgentArrangeInvokeType.optionOnDemand')}
                 <CaretDownOutlined />
               </span>
               <TooltipIcon
-                title="取消知识库"
+                title={t('PC.Pages.AgentArrangeKnowledgeTextList.remove')}
                 icon={
                   isDeling(item.targetId, item.type) ? (
                     <LoadingOutlined />

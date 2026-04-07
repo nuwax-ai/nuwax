@@ -14,6 +14,7 @@ import {
   getClientConfigDetail,
   updateAndEnableClientConfig,
 } from '@/services/ecosystem';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   ClientConfigQueryRequest,
@@ -223,8 +224,9 @@ export default function EcosystemMcp() {
     const isAll = activeTab === TabTypeEnum.ALL;
     return {
       icon: config.icon || '',
-      title: config.name || '未命名插件',
-      description: config.description || '暂无描述',
+      title: config.name || dict('PC.Pages.EcosystemMcp.unnamedMcp'),
+      description:
+        config.description || dict('PC.Pages.EcosystemMcp.noDescription'),
       isNewVersion: config.isNewVersion,
       author: config.author || '',
       targetType: config.targetType as AgentComponentTypeEnum,
@@ -252,7 +254,7 @@ export default function EcosystemMcp() {
           setDrawerVisible(true);
         }
       } catch (error) {
-        message.error('获取插件详情失败');
+        message.error(dict('PC.Pages.EcosystemMcp.fetchDetailFailed'));
       }
     }
   };
@@ -262,8 +264,9 @@ export default function EcosystemMcp() {
   ): EcosystemDetailDrawerData => {
     return {
       icon: config.icon || '',
-      title: config.name || '未命名插件',
-      description: config.description || '暂无描述',
+      title: config.name || dict('PC.Pages.EcosystemMcp.unnamedMcp'),
+      description:
+        config.description || dict('PC.Pages.EcosystemMcp.noDescription'),
       // isNewVersion: true,
       isNewVersion: config.isNewVersion || false,
       author: config.author || '',
@@ -303,13 +306,13 @@ export default function EcosystemMcp() {
         configJson,
       });
     } catch (error) {
-      message.error('操作失败');
+      message.error(dict('PC.Pages.EcosystemMcp.operationFailed'));
       return false;
     }
 
     if (result) {
       setDrawerVisible(false);
-      message.success('启用成功');
+      message.success(dict('PC.Pages.EcosystemMcp.enableSuccess'));
       handleMcpList();
       return true;
     }
@@ -328,11 +331,11 @@ export default function EcosystemMcp() {
       // 如果是已发布状态，调用下线接口
       result = await disableClientConfig(selectedDetailInfo.uid);
     } catch (error) {
-      message.error('停用失败');
+      message.error(dict('PC.Pages.EcosystemMcp.disableFailed'));
       return false;
     }
     if (result) {
-      message.success('已成功停用');
+      message.success(dict('PC.Pages.EcosystemMcp.disableSuccess'));
       setDrawerVisible(false);
       handleMcpList();
       return true;
@@ -353,7 +356,9 @@ export default function EcosystemMcp() {
       >
         <header className={cx(styles.header)}>
           <Space>
-            <h3 className={cx(styles.title)}>MCP</h3>
+            <h3 className={cx(styles.title)}>
+              {dict('PC.Pages.EcosystemMcp.title')}
+            </h3>
             <Segmented
               className={cx(styles.segmented)}
               options={SPACE_SQUARE_SEGMENTED_LIST}
@@ -369,7 +374,7 @@ export default function EcosystemMcp() {
           </Space>
           <Search
             className={cx(styles.searchInput)}
-            placeholder="搜索MCP"
+            placeholder={dict('PC.Pages.EcosystemMcp.searchPlaceholder')}
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             // 点击搜索图标、清除图标，或按下回车键时的回调
@@ -411,7 +416,7 @@ export default function EcosystemMcp() {
           <div
             className={cx('flex', 'flex-1', 'items-center', 'content-center')}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.emptyData')} />
           </div>
         )}
       </div>

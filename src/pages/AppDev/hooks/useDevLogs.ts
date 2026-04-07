@@ -206,7 +206,7 @@ export const useDevLogs = (
       },
       onError: () => {
         // 错误处理，不显示错误提示（已在 common.ts 中配置为静默请求）
-        // console.error('获取日志失败');
+        // console.error('Failed to fetch logs');
       },
     },
   );
@@ -228,7 +228,7 @@ export const useDevLogs = (
         devLogsPollingRef.current.cancel();
       } catch (error) {
         // 静默处理cancel错误，避免控制台警告
-        console.debug('取消轮询时出错:', error);
+        console.debug('Failed to cancel polling:', error);
       }
     }
     setIsPolling(false);

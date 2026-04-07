@@ -13,6 +13,7 @@ import {
   apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
 } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -252,30 +253,24 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         return item;
       });
     });
-    message.success('保存成功');
+    message.success(t('PC.Toast.Global.savedSuccessfully'));
   };
 
   const getTooltip = () => {
     if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
       return (
         <div>
-          <p>按需调用：由模型根据任务情况决定是否需要调用</p>
-          <p>
-            手动选择：用户可在会话页面中对该技能进行选择，选中后会让模型优先使用该技能
-          </p>
+          <p>{t('PC.Pages.AgentArrangeInvokeType.onDemandDescription')}</p>
+          <p>{t('PC.Pages.AgentArrangeInvokeType.skillManualDescription')}</p>
         </div>
       );
     }
     return (
       <div>
-        <p>自动调用：用户每次发送消息后都会触发调用一次</p>
-        <p>按需调用：由模型根据任务情况决定是否需要调用</p>
-        <p>
-          手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
-        </p>
-        <p>
-          手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
-        </p>
+        <p>{t('PC.Pages.AgentArrangeInvokeType.autoDescription')}</p>
+        <p>{t('PC.Pages.AgentArrangeInvokeType.onDemandDescription')}</p>
+        <p>{t('PC.Pages.AgentArrangeInvokeType.manualDescription')}</p>
+        <p>{t('PC.Pages.AgentArrangeInvokeType.manualOnDemandDescription')}</p>
       </div>
     );
   };
@@ -361,7 +356,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
           <div className={cx(styles.left)}>
-            <h3>设置</h3>
+            <h3>{t('PC.Pages.AgentArrangeComponentSetting.title')}</h3>
             <ul>
               {settingActionList.map((item) => {
                 // 数据表组件不展示方法调用

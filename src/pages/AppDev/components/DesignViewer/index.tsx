@@ -1,4 +1,5 @@
 import SelectList from '@/components/custom/SelectList';
+import { dict, t } from '@/services/i18nRuntime';
 import {
   CompressOutlined,
   ExpandOutlined,
@@ -151,9 +152,9 @@ const fontSizeOptions = generateTailwindFontSizeOptions();
 
 // 更多操作菜单
 // const moreMenuItems = [
-//   { key: 'copy', label: '复制属性' },
-//   { key: 'reset', label: '重置' },
-//   { key: 'delete', label: '删除' },
+//   { key: 'copy', label: 'Copy Attributes' },
+//   { key: 'reset', label: 'Reset' },
+//   { key: 'delete', label: 'Delete' },
 // ];
 
 // Typography 选项
@@ -248,7 +249,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     /** 编辑中的文本装饰 */
     // const [textDecoration, setTextDecoration] = useState<string[]>([]);
     /** 编辑中的边框样式 */
-    // borderStyle 存储 Tailwind 类名（如 'border-solid'）或 'Default'
+    // borderStyle stores Tailwind class names (for example 'border-solid') or 'Default'
     const [borderStyle, setBorderStyle] = useState<string>('Default');
     /** 编辑中的边框颜色 */
     const [borderColor, setBorderColor] = useState<string>('Default');
@@ -655,7 +656,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     // 处理添加选中元素到会话
     const handleAddToChat = (payload: any) => {
       if (pendingChanges?.length > 0) {
-        message.error('请先保存或重置修改, 再添加选中元素到会话');
+        message.error(
+          t('PC.Pages.AppDevDesignViewer.saveOrResetBeforeAddToChat'),
+        );
         return;
       }
       if (payload?.context?.sourceInfo) {
@@ -828,8 +831,8 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     ) => {
       const currentClasses = editingClass.split(' ').filter((c) => c.trim());
 
-      // 获取字体大小相关的类名列表（从 fontSizeOptions 中提取）
-      // fontSizeOptions 中的 value 是 'xs', 'sm' 等，需要转换为 'text-xs', 'text-sm' 等
+      // Build class list related to font size from fontSizeOptions.
+      // Values such as 'xs' and 'sm' are converted to 'text-xs' and 'text-sm'.
       const fontSizeClasses = fontSizeOptions
         .filter((option) => option.value !== 'Default')
         .map((option) => `text-${option.value}`);
@@ -908,13 +911,13 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       const sizeValue = value as string;
       setFontSize(sizeValue);
 
-      // 通过 toggleStyle 方法将 font size 样式写入 editingClass
+      // Write font size style into editingClass via toggleStyle.
       if (sizeValue === 'Default') {
-        // 如果是 Default，移除所有字体大小类名
-        // 字体大小类名格式是 text-xs, text-sm, text-base 等
+        // Remove all font-size class names when value is Default.
+        // Font-size classes include text-xs, text-sm, text-base, etc.
         toggleStyle('', FONT_SIZE_REGEXP, 'fontSize');
       } else {
-        // 将 value（如 'lg'）转换为 Tailwind 类名（如 'text-lg'）
+        // Convert values like 'lg' to Tailwind class names like 'text-lg'.
         const fontSizeClass = `text-${sizeValue}`;
         toggleStyle(fontSizeClass, FONT_SIZE_REGEXP, 'fontSize');
       }
@@ -927,12 +930,12 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       const heightValue = value as string;
       setLineHeight(heightValue);
 
-      // 通过 toggleStyle 方法将 line height 样式写入 editingClass
+      // Write line-height style into editingClass via toggleStyle.
       // if (heightValue === 'None') {
       //   // 如果是 None，移除所有行高类名
       //   toggleStyle('', LINE_HEIGHT_REGEXP);
       // } else {
-      // value 是 rem 值（如 '1.5rem'），需要转换为 Tailwind 类名（如 'leading-6'）
+      // Convert rem values like '1.5rem' to Tailwind class names like 'leading-6'.
       const lineHeightClass = convertRemToLineHeightClass(heightValue);
       if (lineHeightClass) {
         toggleStyle(lineHeightClass, LINE_HEIGHT_REGEXP);
@@ -950,12 +953,12 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       const spacingValue = value as string;
       setLetterSpacing(spacingValue);
 
-      // 通过 toggleStyle 方法将 letter spacing 样式写入 editingClass
+      // Write letter-spacing style into editingClass via toggleStyle.
       if (spacingValue === 'None') {
         // 如果是 None，移除所有字母间距类名
         toggleStyle('', LETTER_SPACING_REGEXP);
       } else {
-        // value 是 em 值（如 '0.05em'），需要转换为 Tailwind 类名（如 'tracking-wider'）
+        // Convert em values like '0.05em' to Tailwind class names like 'tracking-wider'.
         const letterSpacingClass = convertEmToLetterSpacingClass(spacingValue);
         if (letterSpacingClass) {
           toggleStyle(letterSpacingClass, LETTER_SPACING_REGEXP);
@@ -990,12 +993,12 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       const radiusValue = value as string;
       setRadius(radiusValue);
 
-      // 通过 toggleStyle 方法将 radius 样式写入 editingClass
+      // Write radius style into editingClass via toggleStyle.
       if (radiusValue === 'Default' || radiusValue === 'None') {
         // 如果是 Default 或 None，移除所有圆角类名
         toggleStyle('', RADIUS_REGEXP);
       } else {
-        // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'rounded-sm'）
+        // Convert user-friendly labels like 'Small' to Tailwind class names like 'rounded-sm'.
         const radiusClass = convertLabelToRadiusClass(radiusValue);
         if (radiusClass) {
           toggleStyle(radiusClass, RADIUS_REGEXP);
@@ -1013,12 +1016,12 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       const shadowValue = value as string;
       setShadowType(shadowValue);
 
-      // 通过 toggleStyle 方法将 shadow 样式写入 editingClass
+      // Write shadow style into editingClass via toggleStyle.
       if (shadowValue === 'Default' || shadowValue === 'None') {
         // 如果是 Default 或 None，移除所有阴影类名
         toggleStyle('', SHADOW_REGEXP);
       } else {
-        // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'shadow-sm'）
+        // Convert user-friendly labels like 'Small' to Tailwind class names like 'shadow-sm'.
         const shadowClass = convertLabelToShadowClass(shadowValue);
         if (shadowClass) {
           toggleStyle(shadowClass, SHADOW_REGEXP);
@@ -1220,8 +1223,8 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
         }
         setLocalBorderWidth(newBorderWidth);
         // onChange?.('borderWidth', newBorderWidth);
-        // 正则表达式：精确匹配 border 和 border-数字 类名（如 border, border-0, border-2, border-4, border-8）
-        // 注意：value 为 '1' 时，类名是 'border'（无数字后缀），其他值是 'border-数字'
+        // Regex matches border and border-N class names, e.g. border, border-0, border-2.
+        // For value '1', the class name is 'border' without numeric suffix.
         const borderClass = value === '1' ? 'border' : `border-${value}`;
         toggleStyle(borderClass, /^border(-\d+)?$/);
       }
@@ -1239,8 +1242,8 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
         toggleStyle('', TEXT_ALIGN_REGEXP, 'textAlign');
       } else {
         setTextAlign(align);
-        // 通过 toggleStyle 方法将 text align 样式写入 editingClass
-        // value 是用户友好的标签（如 'left'），需要转换为 Tailwind 类名（如 'text-left'）
+        // Write text-align style into editingClass via toggleStyle.
+        // Convert user-friendly labels like 'left' to Tailwind class names like 'text-left'.
         const textAlignClass = convertLabelToTextAlignClass(align);
         if (textAlignClass) {
           toggleStyle(textAlignClass, TEXT_ALIGN_REGEXP, 'textAlign');
@@ -1309,7 +1312,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
             styles.empty,
           )}
         >
-          请选中右侧页面元素进行编辑
+          {dict('PC.Pages.AppDev.DesignViewer.selectElementTip')}
         </div>
       );
     }
@@ -1353,7 +1356,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
           {/* Text Content 配置 */}
           {selectedElement?.isStaticText && (
             <div className={cx(styles.propertySection)}>
-              <div className={cx(styles.propertyLabel)}>文本内容</div>
+              <div className={cx(styles.propertyLabel)}>
+                {dict('PC.Pages.AppDev.DesignViewer.textContent')}
+              </div>
               <Input.TextArea
                 className={cx('w-full')}
                 value={localTextContent}
@@ -1365,7 +1370,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Typography 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>字体</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.fontFamily')}
+            </div>
             {/* <SelectList
             className={cx(styles.propertyInput)}
             value={localTypography}
@@ -1378,7 +1385,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
               {/* Font Weight 和 Font Size */}
               <div className={cx(styles.typographyRow)}>
                 <div className={cx(styles.typographyInputGroup)}>
-                  <div className={cx(styles.typographyInputLabel)}>字重</div>
+                  <div className={cx(styles.typographyInputLabel)}>
+                    {dict('PC.Pages.AppDev.DesignViewer.fontWeight')}
+                  </div>
                   <SelectList
                     className={cx(styles.typographySelect)}
                     value={fontWeight}
@@ -1388,7 +1397,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                 </div>
                 <div className={cx(styles.typographyInputGroup)}>
                   <div className={cx(styles.typographyInputLabel)}>
-                    字体大小
+                    {dict('PC.Pages.AppDev.DesignViewer.fontSize')}
                   </div>
                   <SelectList
                     className={cx(styles.typographySelect)}
@@ -1402,7 +1411,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
               {/* Line Height 和 Letter Spacing */}
               <div className={cx(styles.typographyRow)}>
                 <div className={cx(styles.typographyInputGroup)}>
-                  <div className={cx(styles.typographyInputLabel)}>行高</div>
+                  <div className={cx(styles.typographyInputLabel)}>
+                    {dict('PC.Pages.AppDev.DesignViewer.lineHeight')}
+                  </div>
                   <SelectList
                     className={cx(styles.typographySelect)}
                     value={lineHeight}
@@ -1411,7 +1422,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                   />
                 </div>
                 <div className={cx(styles.typographyInputGroup)}>
-                  <div className={cx(styles.typographyInputLabel)}>字间距</div>
+                  <div className={cx(styles.typographyInputLabel)}>
+                    {dict('PC.Pages.AppDev.DesignViewer.letterSpacing')}
+                  </div>
                   <SelectList
                     className={cx(styles.typographySelect)}
                     value={letterSpacing}
@@ -1425,7 +1438,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                 {/* Alignment */}
                 <div className={cx(styles.typographyInputGroup)}>
                   <div className={cx(styles.typographyInputLabel)}>
-                    对齐方式
+                    {dict('PC.Pages.AppDev.DesignViewer.textAlign')}
                   </div>
                   <div className={cx(styles.buttonGroup)}>
                     {TEXT_ALIGN_OPTIONS.map((option) => (
@@ -1513,7 +1526,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Color 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>文字颜色</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.textColor')}
+            </div>
             <Select
               className={cx('w-full')}
               value={localColor}
@@ -1551,7 +1566,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Background 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>背景</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.background')}
+            </div>
             <Select
               className={cx('w-full')}
               value={localBackground}
@@ -1589,11 +1606,15 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Layout 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>布局</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.layout')}
+            </div>
 
             {/* Margin */}
             <div className={cx(styles.layoutSubSection)}>
-              <div className={cx(styles.layoutLabel)}>外边距</div>
+              <div className={cx(styles.layoutLabel)}>
+                {dict('PC.Pages.AppDev.DesignViewer.margin')}
+              </div>
               {!isMarginExpanded ? (
                 // 折叠状态：根据锁定状态显示一个或两个输入框
                 <div className={cx(styles.layoutInputs)}>
@@ -1800,7 +1821,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
             {/* Padding */}
             <div className={cx(styles.layoutSubSection)}>
-              <div className={cx(styles.layoutLabel)}>内边距</div>
+              <div className={cx(styles.layoutLabel)}>
+                {dict('PC.Pages.AppDev.DesignViewer.padding')}
+              </div>
               {!isPaddingExpanded ? (
                 // 折叠状态：根据锁定状态显示一个或两个下拉选择
                 <div className={cx(styles.layoutInputs)}>
@@ -2010,11 +2033,15 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Border 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>边框</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.border')}
+            </div>
             {/* Border Style 和 Border Color */}
             <div className={cx(styles.typographyRow)}>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>边框颜色</div>
+                <div className={cx(styles.typographyInputLabel)}>
+                  {dict('PC.Pages.AppDev.DesignViewer.borderColor')}
+                </div>
                 <Select
                   className={cx(styles.typographySelect)}
                   value={borderColor}
@@ -2050,7 +2077,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                 />
               </div>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>边框样式</div>
+                <div className={cx(styles.typographyInputLabel)}>
+                  {dict('PC.Pages.AppDev.DesignViewer.borderStyle')}
+                </div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={borderStyle}
@@ -2061,7 +2090,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
             </div>
             {/* Border Width */}
             <div className={cx(styles.layoutSubSection)}>
-              <div className={cx(styles.layoutLabel)}>边框宽度</div>
+              <div className={cx(styles.layoutLabel)}>
+                {dict('PC.Pages.AppDev.DesignViewer.borderWidth')}
+              </div>
               {!isBorderWidthExpanded ? (
                 // 折叠状态：显示单个下拉选择
                 <div className={cx(styles.layoutInputs)}>
@@ -2169,11 +2200,15 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Appearance 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>外观</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.appearance')}
+            </div>
             <div className={cx(styles.typographyRow)}>
               {/* Opacity */}
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>透明度</div>
+                <div className={cx(styles.typographyInputLabel)}>
+                  {dict('PC.Pages.AppDev.DesignViewer.opacity')}
+                </div>
                 <Select
                   className={cx('w-full')}
                   value={opacity}
@@ -2184,7 +2219,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
               </div>
               {/* Radius */}
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>圆角</div>
+                <div className={cx(styles.typographyInputLabel)}>
+                  {dict('PC.Pages.AppDev.DesignViewer.borderRadius')}
+                </div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={radius}
@@ -2198,7 +2235,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           {/* Shadow 配置 */}
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>阴影</div>
+            <div className={cx(styles.propertyLabel)}>
+              {dict('PC.Pages.AppDev.DesignViewer.shadow')}
+            </div>
             <SelectList
               className={cx(styles.shadowSelect)}
               value={shadowType}

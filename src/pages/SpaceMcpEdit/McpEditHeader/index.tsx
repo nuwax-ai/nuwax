@@ -1,4 +1,5 @@
 import { MCP_EDIT_HEAD_MENU_LIST } from '@/constants/mcp.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   DeployStatusEnum,
   McpEditHeadMenusEnum,
@@ -65,7 +66,9 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           onClick={() => jumpBack(`/space/${spaceId}/mcp`)}
         >
           <LeftOutlined className={cx('hover-box', styles.icon)} />
-          <span className={styles.name}>编辑MCP服务</span>
+          <span className={styles.name}>
+            {dict('PC.Pages.SpaceMcpEdit.editMcpService')}
+          </span>
         </div>
         <div className={cx('flex', 'items-center', 'gap-10')}>
           <span className={cx(styles['deploy-status'])}>
@@ -107,7 +110,9 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
           ) &&
           mcpInfo.deployed !== null &&
           dayjs(mcpInfo.deployed).isBefore(mcpInfo.modified) && (
-            <span className={cx(styles.text)}>有更新未部署</span>
+            <span className={cx(styles.text)}>
+              {dict('PC.Pages.SpaceMcpEdit.updateNotDeployed')}
+            </span>
           )}
         <Button
           className={cx({
@@ -121,7 +126,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
             !mcpInfo?.permissions?.includes(McpPermissionsEnum.EditOrDeploy)
           }
         >
-          保存
+          {dict('PC.Pages.SpaceMcpEdit.save')}
         </Button>
         <Button
           type="primary"
@@ -131,7 +136,7 @@ const McpEditHeader: React.FC<McpEditHeaderProps> = ({
             !mcpInfo?.permissions?.includes(McpPermissionsEnum.EditOrDeploy)
           }
         >
-          保存并部署
+          {dict('PC.Pages.SpaceMcpEdit.saveAndDeploy')}
         </Button>
       </div>
     </header>

@@ -1,5 +1,6 @@
 import { apiTemplateExport } from '@/services/agentDev';
 import { apiExportExcel } from '@/services/dataTable';
+import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import { request } from 'umi';
@@ -33,7 +34,7 @@ export interface ExportFileBlobResponse {
  */
 async function handleBlobResponse(
   response: any,
-  defaultErrorMessage: string = '导出失败',
+  defaultErrorMessage: string = dict('PC.Utils.ExportImport.exportFailed'),
 ): Promise<ExportFileBlobResponse> {
   const { data, headers } = response;
   const contentType = headers?.['content-type'] || '';
@@ -69,7 +70,7 @@ async function handleBlobResponse(
         error: {
           code: 'PARSE_ERROR',
           displayCode: 'PARSE_ERROR',
-          message: '无法解析服务器响应',
+          message: dict('PC.Utils.ExportImport.cannotParseResponse'),
           data: null,
           success: false,
           tid: '',
@@ -101,7 +102,10 @@ function handleExportError(error: any): ExportFileBlobResponse {
     error: {
       code: error?.info?.code || 'NETWORK_ERROR',
       displayCode: error?.info?.displayCode || 'NETWORK_ERROR',
-      message: error?.info?.message || error?.message || '网络请求失败',
+      message:
+        error?.info?.message ||
+        error?.message ||
+        dict('PC.Utils.ExportImport.networkRequestFailed'),
       data: null,
       success: false,
       tid: error?.info?.tid || '',
@@ -143,7 +147,8 @@ export const exportConfigFile = async (
     // 判断是否成功
     if (!res.success) {
       // 导出失败，显示错误信息
-      const errorMessage = res.error?.message || '导出失败';
+      const errorMessage =
+        res.error?.message || dict('PC.Utils.ExportImport.exportFailed');
       message.warning(errorMessage);
       return;
     }
@@ -204,7 +209,8 @@ export const exportTableExcel = async (tableId: number, fileName: string) => {
     // 判断是否成功
     if (!res.success) {
       // 导出失败，显示错误信息
-      const errorMessage = res.error?.message || '导出失败';
+      const errorMessage =
+        res.error?.message || dict('PC.Utils.ExportImport.exportFailed');
       message.warning(errorMessage);
       return;
     }

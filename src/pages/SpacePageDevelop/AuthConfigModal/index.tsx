@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { dict } from '@/services/i18nRuntime';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import {
   AuthConfigModalProps,
@@ -52,7 +53,9 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
     // 页面ID和页面名称
     const { projectId, name: projectName } = pageInfo || {};
     if (!projectId) {
-      message.error('页面ID不存在');
+      message.error(
+        dict('PC.Pages.SpacePageDevelop.AuthConfigModal.pageIdNotExist'),
+      );
       return;
     }
     setLoading(true);
@@ -73,7 +76,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
     <CustomFormModal
       form={form}
       open={open}
-      title="认证配置"
+      title={dict('PC.Pages.SpacePageDevelop.AuthConfigModal.authConfig')}
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerConfirm}
@@ -86,7 +89,12 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="allowAccessWithoutLogin" label="免登录访问">
+        <Form.Item
+          name="allowAccessWithoutLogin"
+          label={dict(
+            'PC.Pages.SpacePageDevelop.AuthConfigModal.allowAccessWithoutLogin',
+          )}
+        >
           <Switch />
         </Form.Item>
       </Form>

@@ -2,6 +2,7 @@ import ParamsNameLabel from '@/components/ParamsNameLabel';
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { ICON_ADD_TR } from '@/constants/images.constants';
 import useTryRun from '@/hooks/useTryRun';
+import { dict } from '@/services/i18nRuntime';
 import { apiPluginTest } from '@/services/plugin';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
@@ -89,7 +90,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: dict('PC.Components.PluginTryRunModal.paramName'),
       dataIndex: 'name',
       key: 'name',
       className: 'flex',
@@ -102,7 +103,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
       ),
     },
     {
-      title: '参数值',
+      title: dict('PC.Components.PluginTryRunModal.paramValue'),
       dataIndex: 'description',
       key: 'description',
       render: (_: string, record: BindConfigWithSub) => (
@@ -113,7 +114,9 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
             <Input
               value={record.bindValue}
               onChange={(e) => handleChangeInputValue(record, e.target.value)}
-              placeholder="请输入参数值"
+              placeholder={dict(
+                'PC.Components.PluginTryRunModal.pleaseInputParamValue',
+              )}
             />
           )}
           <p className={cx(styles['param-desc'])}>{record.description}</p>
@@ -121,7 +124,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Common.Global.operation'),
       key: 'action',
       width: 60,
       align: 'center',
@@ -183,7 +186,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
               styles.header,
             )}
           >
-            <h3>试运行</h3>
+            <h3>{dict('PC.Components.PluginTryRunModal.tryRun')}</h3>
             <CloseOutlined
               className={cx('cursor-pointer')}
               onClick={handleCancel}
@@ -195,7 +198,10 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
           >
             {/*左侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col')}>
-              <h3 className={cx(styles['p-title'])}>{pluginName} 输入参数</h3>
+              <h3 className={cx(styles['p-title'])}>
+                {pluginName}{' '}
+                {dict('PC.Components.PluginTryRunModal.inputParams')}
+              </h3>
               <Table<BindConfigWithSub>
                 className={cx(styles['table-wrap'])}
                 columns={inputColumns}
@@ -218,7 +224,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
                       onClick={handleRunTest}
                       loading={loading}
                     >
-                      运行
+                      {dict('PC.Components.PluginTryRunModal.run')}
                     </Button>
                   </div>
                 )}
@@ -226,7 +232,10 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
             </div>
             {/*右侧内容*/}
             <div className={cx('flex-1', 'flex', 'flex-col', 'overflow-hide')}>
-              <h3 className={cx(styles['p-title'])}>{pluginName} 调试结果</h3>
+              <h3 className={cx(styles['p-title'])}>
+                {pluginName}{' '}
+                {dict('PC.Components.PluginTryRunModal.debugResult')}
+              </h3>
               <div
                 className={cx(
                   'flex-1',
@@ -246,7 +255,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
                     )}
                   >
                     <LoadingOutlined />
-                    <span>加载中...</span>
+                    <span>{dict('PC.Common.Global.loading')}</span>
                   </div>
                 ) : result ? (
                   <div
@@ -270,7 +279,9 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
                       'content-center',
                     )}
                   >
-                    调试结果将展示在此处
+                    {dict(
+                      'PC.Components.PluginTryRunModal.debugResultPlaceholder',
+                    )}
                   </div>
                 )}
               </div>

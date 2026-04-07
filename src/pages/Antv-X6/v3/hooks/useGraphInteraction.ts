@@ -180,7 +180,7 @@ export const useGraphInteraction = ({
         return true;
       }
 
-      console.error('[V3] 节点更新失败:', proxyResult.message);
+      console.error('[V3] Failed to update node:', proxyResult.message);
       return false;
     },
     [

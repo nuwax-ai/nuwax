@@ -1,0 +1,4768 @@
+import type { SystemLangMap } from '@/types/interfaces/i18n';
+
+export const ZH_TW: SystemLangMap = {
+  'PC.Common.Global.confirm': '確認',
+  'PC.Common.Global.cancel': '取消',
+  'PC.Common.Global.save': '保存',
+  'PC.Common.Global.loading': '加載中...',
+  'PC.Common.Global.copy': '複製',
+  'PC.Common.Global.refresh': '刷新',
+  'PC.Common.Global.emptyData': '暫無數據',
+  'PC.Common.Global.error': '錯誤',
+  'PC.Common.Global.pleaseSelect': '請選擇',
+  'PC.Common.Global.backHome': '返回首頁',
+  'PC.Common.Global.pending': '處理中',
+  'PC.Toast.Global.savedSuccessfully': '保存成功',
+  'PC.Toast.Global.copiedSuccessfully': '複製成功',
+  'PC.Toast.Global.networkError': '網絡錯誤',
+  'PC.Toast.Global.serverTimeout': '服務器超時，請重試',
+  'PC.Toast.Global.serverUnreachable': '網絡異常，無法連接',
+  'PC.Toast.Global.languageSavedReload': '語言已保存，正在刷新...',
+  'PC.Pages.Setting.profileTitle': '個人資料',
+  'PC.Pages.Setting.accountTitle': '賬戶信息',
+  'PC.Pages.Setting.emailBind': '郵箱綁定',
+  'PC.Pages.Setting.phoneBind': '手機號綁定',
+  'PC.Pages.Setting.resetPassword': '重置密碼',
+  'PC.Pages.Setting.themeSwitch': '主題切換',
+  'PC.Pages.Setting.usageStatistics': '使用統計',
+  'PC.Pages.Setting.themeLoadFailed': '主題配置加載失敗',
+  'PC.Pages.Setting.userName': '用戶名',
+  'PC.Pages.Setting.nickName': '暱稱',
+  'PC.Pages.Setting.inputUserName': '請輸入用戶名',
+  'PC.Pages.Setting.inputNickName': '請輸入暱稱',
+  'PC.Pages.Setting.phone': '手機號',
+  'PC.Pages.Setting.email': '郵箱',
+  'PC.Pages.Setting.dynamicCode': '動態口令',
+  'PC.Pages.Setting.expiresAt': '{0}過期',
+  'PC.Pages.Setting.alreadyDefault': '當前已選中該語言',
+  'PC.Pages.Setting.saveSuccess': '語言設置更新成功',
+  'PC.Pages.Setting.language': '語言',
+  'PC.Pages.Setting.selectLanguage': '請選擇語言',
+  'PC.Pages.Setting.bindPending': '待綁定',
+  'PC.Pages.SystemConfigI18n.manageTitle': '多語言管理',
+  'PC.Pages.SystemConfigI18n.columnName': '語言名稱',
+  'PC.Pages.SystemConfigI18n.columnLang': '語言標識',
+  'PC.Pages.SystemConfigI18n.columnDefault': '默認語言',
+  'PC.Pages.SystemConfigI18n.columnStatus': '狀態',
+  'PC.Pages.SystemConfigI18n.columnSort': '排序',
+  'PC.Pages.SystemConfigI18n.columnModified': '更新時間',
+  'PC.Pages.SystemConfigI18n.columnCreated': '創建時間',
+  'PC.Pages.SystemConfigI18n.columnAction': '操作',
+  'PC.Pages.SystemConfigI18n.addLang': '新增語言',
+  'PC.Pages.SystemConfigI18n.editLang': '編輯語言',
+  'PC.Pages.SystemConfigI18n.defaultYes': '是',
+  'PC.Pages.SystemConfigI18n.defaultNo': '否',
+  'PC.Pages.SystemConfigI18n.statusEnabled': '啟用',
+  'PC.Pages.SystemConfigI18n.statusDisabled': '停用',
+  'PC.Components.UserMenu.defaultUserName': '用戶名',
+  'PC.Components.UserMenu.profile': '個人中心',
+  'PC.Components.UserMenu.logout': '退出登錄',
+  'PC.Components.UserOperate.documents': '文檔中心',
+  'PC.Components.UserOperate.myComputer': '我的電腦',
+  'PC.Components.UserOperate.noUnreadMessage': '暫無未讀消息',
+  'PC.Components.UserOperate.unreadMessageCount': '{0} 條未讀消息',
+  'PC.Components.AppDevEmptyState.viewFullText': '查看完整內容',
+  'PC.Components.AppDevEmptyState.loadingTitle': '加載中...',
+  'PC.Components.AppDevEmptyState.loadingDescription': '正在加載，請稍候...',
+  'PC.Components.AppDevEmptyState.errorTitle': '出現錯誤',
+  'PC.Components.AppDevEmptyState.errorDescription':
+    '加载过程中出现错误，请重试',
+  'PC.Components.AppDevEmptyState.networkErrorTitle': '網絡連接失敗',
+  'PC.Components.AppDevEmptyState.networkErrorDescription':
+    '网络连接异常，请检查网络设置后重试',
+  'PC.Components.AppDevEmptyState.permissionDeniedTitle': '權限不足',
+  'PC.Components.AppDevEmptyState.permissionDeniedDescription':
+    '你没有访问此资源的权限，请联系管理员',
+  'PC.Components.AppDevEmptyState.emptyTitle': '暫無內容',
+  'PC.Components.AppDevEmptyState.emptyDescription': '當前沒有可顯示的內容',
+  'PC.Components.AppDevEmptyState.noDataTitle': '暫無數據',
+  'PC.Components.AppDevEmptyState.noDataDescription': '當前沒有可用的數據',
+  'PC.Components.AppDevEmptyState.serverStartingTitle': '等待開發服務器啟動',
+  'PC.Components.AppDevEmptyState.serverStartingDescription':
+    '正在启动开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.serverRestartingTitle': '重啟中',
+  'PC.Components.AppDevEmptyState.serverRestartingDescription':
+    '正在重启开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.developingTitle': '開發中',
+  'PC.Components.AppDevEmptyState.developingDescription':
+    '正在启动开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.importingProjectTitle': '導入項目中',
+  'PC.Components.AppDevEmptyState.importingProjectDescription':
+    '正在启动开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.serverErrorTitle': '服務器錯誤',
+  'PC.Components.AppDevEmptyState.serverErrorDescription':
+    '预览页面加载失败，请检查开发服务器状态或网络连接',
+  'PC.Components.AppDevEmptyState.previewLoadFailedTitle': '預覽加載失敗',
+  'PC.Components.AppDevEmptyState.previewLoadFailedDescription':
+    '预览页面加载失败，请检查开发服务器状态或网络连接',
+  'PC.Components.AppDevEmptyState.serverStartFailedTitle': '開發服務器啟動失敗',
+  'PC.Components.AppDevEmptyState.serverStartFailedDescription':
+    '正在启动开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.noPreviewUrlTitle': '暫無預覽地址',
+  'PC.Components.AppDevEmptyState.noPreviewUrlDescription':
+    '正在启动开发服务器，请稍候⋯',
+  'PC.Components.AppDevEmptyState.conversationEmptyTitle': '開始新對話',
+  'PC.Components.AppDevEmptyState.conversationEmptyDescription':
+    '向 AI 助手提问，开始你的项目开发',
+  'PC.Components.AppDevEmptyState.addDataDescription': '點擊“+“添加數據資源',
+  'PC.Components.AppDevEmptyState.noFileTitle': '暫無文件',
+  'PC.Components.AppDevEmptyState.noFileDescription': '當前目錄下暫無文件',
+  'PC.Components.AppDevEmptyState.close': '關閉',
+  'PC.Components.HistoryConversationList.renameTitleEmpty': '標題不能為空',
+  'PC.Components.HistoryConversationList.renameTitleTooLong':
+    '标题长度不能超过 50 个字符',
+  'PC.Components.HistoryConversationList.renameSuccess': '修改成功',
+  'PC.Components.HistoryConversationList.deleteSuccess': '刪除成功',
+  'PC.Components.HistoryConversationList.pageTitle': '歷史會話',
+  'PC.Components.HistoryConversationList.searchPlaceholder': '搜索歷史會話',
+  'PC.Components.HistoryConversationList.renameModalTitle': '修改名稱',
+  'PC.Components.HistoryConversationList.renamePlaceholder': '請輸入新名稱',
+  'PC.Components.HistoryConversationList.deleteModalTitle': '永久刪除會話',
+  'PC.Components.HistoryConversationList.deleteModalContent':
+    '本条会话数据将被永久删除，不可恢复及撤销。确定要删除吗？',
+  'PC.Components.HistoryConversationList.editTitleTooltip': '編輯標題',
+  'PC.Components.HistoryConversationList.dateTimeFormat':
+    'YYYY年MM月DD日 HH:mm:ss',
+  'PC.Components.HistoryConversationList.deleteTooltip': '刪除',
+  'PC.Components.HistoryConversationList.summaryEmpty': '暫無內容摘要',
+  'PC.Components.HistoryConversationList.agentFallback': '智能體',
+  'PC.Components.HistoryConversationList.noMoreData': '已加載全部數據',
+  'PC.Components.PagePreviewIframe.copyTemplate': '複製模板',
+  'PC.Components.PagePreviewIframe.defaultPageTitle': '頁面預覽',
+  'PC.Components.PagePreviewIframe.unableToReadData': '無法讀取數據',
+  'PC.Components.PagePreviewIframe.tooltipRefresh': '刷新',
+  'PC.Components.PagePreviewIframe.tooltipBack': '後退',
+  'PC.Components.PagePreviewIframe.tooltipForward': '前進',
+  'PC.Components.PagePreviewIframe.tooltipCopyLink': '複製鏈接',
+  'PC.Components.VncPreview.missingConfig': '缺少必要配置（服務地址或容器 ID）',
+  'PC.Components.VncPreview.desktopUnavailable':
+    '智能体电脑暂时不可用，请稍后手动刷新重试。',
+  'PC.Components.VncPreview.forbidden':
+    '访问被拒绝 (403 Forbidden)，请检查权限配置。',
+  'PC.Components.VncPreview.serviceUnavailableWithStatus':
+    '服务暂时不可用 ({0})，请稍后重试。',
+  'PC.Components.VncPreview.requestFailedWithStatus':
+    '请求失败 (HTTP {0})，请检查服务状态。',
+  'PC.Components.VncPreview.cannotConnectDesktop': '無法連接到智能體電腦',
+  'PC.Components.VncPreview.connectionClosed': '連接已斷開',
+  'PC.Components.VncPreview.shareExpired': '分享已過期',
+  'PC.Components.VncPreview.autoCloseCanceled': '已取消自動關閉',
+  'PC.Components.VncPreview.autoClosedByIdleTimeout':
+    '由于长时间未操作，已自动关闭智能体电脑连接',
+  'PC.Components.VncPreview.connected': '已連接',
+  'PC.Components.VncPreview.connecting': '連接中...',
+  'PC.Components.VncPreview.disconnected': '未連接',
+  'PC.Components.VncPreview.preparingConnection': '準備連接',
+  'PC.Components.VncPreview.desktopConnecting': '智能體電腦連接中...',
+  'PC.Components.VncPreview.connectionError': '連接錯誤',
+  'PC.Components.VncPreview.cannotEstablish': '無法建立連接',
+  'PC.Components.VncPreview.retry': '重試',
+  'PC.Components.VncIdleWarningModal.title': '你已長時間未操作',
+  'PC.Components.VncIdleWarningModal.description':
+    '系统将自动关闭智能体电脑连接，以节省资源。',
+  'PC.Components.VncIdleWarningModal.confirmText': '繼續使用',
+  'PC.Components.VncIdleWarningModal.countdownAutoClose': '{0} 秒後自動關閉',
+  'PC.Components.VncIdleWarningModal.hintAction': '任意鍵鼠操作將{0}',
+  'PC.Components.FilePreview.errorInvalidPptx':
+    '文件格式无效或已损坏，请确认是否为有效的 PPTX 文件',
+  'PC.Components.FilePreview.errorNetwork':
+    '网络请求失败，请检查网络连接后重试',
+  'PC.Components.FilePreview.errorFileLoad': '文件加載失敗，請重試',
+  'PC.Components.FilePreview.errorFileParse':
+    '文件解析失败，文件可能已损坏或格式不支持',
+  'PC.Components.FilePreview.errorDocxPreview':
+    '文档预览失败，请确认文件格式正确',
+  'PC.Components.FilePreview.errorXlsxPreview':
+    '表格预览失败，请确认文件格式正确',
+  'PC.Components.FilePreview.errorPdfPreview':
+    'PDF 预览失败，请确认文件格式正确',
+  'PC.Components.FilePreview.errorPptxPreview':
+    '演示文稿预览失败，请确认文件格式正确',
+  'PC.Components.FilePreview.errorImageLoad': '圖片加載失敗',
+  'PC.Components.FilePreview.errorDefaultPreview': '文件預覽失敗，請重試',
+  'PC.Components.FilePreview.errorLoadFileContent': '文件內容加載失敗，請重試',
+  'PC.Components.FilePreview.errorLoadHtmlContent': 'HTML 內容加載失敗，請重試',
+  'PC.Components.FilePreview.errorImageLoadCheckFile':
+    '图片加载失败，请检查文件是否有效',
+  'PC.Components.FilePreview.tooltipRefresh': '刷新',
+  'PC.Components.FilePreview.tooltipDownload': '下載',
+  'PC.Components.FilePreview.emptyNoFile': '暫無文件可預覽',
+  'PC.Components.FilePreview.loadingPreview': '正在加載預覽...',
+  'PC.Components.FilePreview.alertPreviewFailed': '預覽失敗',
+  'PC.Components.FilePreview.alertCannotPreview': '無法預覽此文件',
+  'PC.Components.FilePreview.retry': '重試',
+  'PC.Components.FilePreview.unsupportedType': '暫不支持預覽此文件類型',
+  'PC.Components.FilePreview.fileTypeLabel': '文件類型: .{0}',
+  'PC.Components.FilePreview.downloadFile': '下載文件',
+  'PC.Components.ConversationDetails.pagePreviewName': '頁面預覽',
+  'PC.Components.ConversationDetails.requiredParamsWarning': '請填寫必填參數',
+  'PC.Components.ConversationDetails.startConversationWithAgent':
+    '和{0}开始会话',
+  'PC.Components.ConversationDetails.expandNavigation': '展開導航',
+  'PC.Components.ConversationDetails.viewAgentDetails': '查看智能體詳情',
+  'PC.Components.ConversationDetails.openPreviewPage': '打開預覽頁面',
+  'PC.Components.ConversationDetails.noAgentPermission': '您無該智能體權限',
+  'PC.Components.ThemeConfigNavigationStylePanel.panelTitle': '導航欄',
+  'PC.Components.ThemeConfigNavigationStylePanel.styleSectionTitle': '風格樣式',
+  'PC.Components.ThemeConfigNavigationStylePanel.colorSectionTitle': '深淺色',
+  'PC.Components.ThemeConfigNavigationStylePanel.style1Name': '風格1',
+  'PC.Components.ThemeConfigNavigationStylePanel.style1Description':
+    '紧凑模式：60px宽度，无文字显示，页面容器有外边距和圆角',
+  'PC.Components.ThemeConfigNavigationStylePanel.style2Name': '風格2',
+  'PC.Components.ThemeConfigNavigationStylePanel.style2Description':
+    '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
+  'PC.Components.ThemeConfigNavigationStylePanel.lightMode': '淺色',
+  'PC.Components.ThemeConfigNavigationStylePanel.darkMode': '深色',
+  'PC.Components.ThemeConfigBackgroundImagePanel.panelTitle': '背景圖片',
+  'PC.Components.ThemeConfigBackgroundImagePanel.systemSectionTitle':
+    '系统自带背景图片',
+  'PC.Components.ThemeConfigBackgroundImagePanel.emptyAvailable':
+    '暂无可用背景图',
+  'PC.Components.ThemeConfigBackgroundImagePanel.customSectionTitle':
+    '自定义背景图片',
+  'PC.Components.ThemeConfigBackgroundImagePanel.uploadImage': '上傳圖片',
+  'PC.Components.ThemeConfigThemeColorPanel.panelTitle': '主題色',
+  'PC.Components.ThemeConfigThemeColorPanel.customName': '自定義',
+  'PC.Components.CopyToSpaceComponent.pageCopySuccess': '頁面複製成功',
+  'PC.Components.CopyToSpaceComponent.templateCopySuccess': '模板複製成功',
+  'PC.Components.DataResourceManagement.fetchListFailed':
+    '获取数据资源列表失败',
+  'PC.Components.DataResourceManagement.createSuccess': '創建成功',
+  'PC.Components.DataResourceManagement.createFailed': '創建失敗',
+  'PC.Components.DataResourceManagement.updateSuccess': '更新成功',
+  'PC.Components.DataResourceManagement.updateFailed': '更新失敗',
+  'PC.Components.DataResourceManagement.deleteSuccess': '刪除成功',
+  'PC.Components.DataResourceManagement.deleteFailed': '刪除失敗',
+  'PC.Components.DataResourceManagement.enableSuccess': '啟用成功',
+  'PC.Components.DataResourceManagement.disableSuccess': '停用成功',
+  'PC.Components.DataResourceManagement.switchStatusFailed': '切換資源狀態失敗',
+  'PC.Components.DataResourceManagement.operationFailed': '操作失敗',
+  'PC.Components.DataResourceManagement.connectionTestSuccess': '連接測試成功',
+  'PC.Components.DataResourceManagement.connectionTestFailed': '連接測試失敗',
+  'PC.Components.DataResourceManagement.testFailed': '測試失敗',
+  'PC.Pages.Login.inputEmailRequired': '請輸入郵箱',
+  'PC.Pages.Login.inputPhoneRequired': '請輸入手機號',
+  'PC.Pages.Login.invalidEmail': '請輸入有效郵箱',
+  'PC.Pages.Login.invalidPhone': '請輸入有效手機號',
+  'PC.Pages.Login.passwordRequired': '請輸入不少於 6 位的密碼',
+  'PC.Pages.Login.invalidPassword': '請輸入有效密碼',
+  'PC.Pages.Login.serviceAgreementTitle': '服務協議與隱私保護',
+  'PC.Pages.Login.serviceAgreementAgree': '同意',
+  'PC.Pages.Login.serviceAgreementDisagree': '不同意',
+  'PC.Pages.Login.passwordLogin': '密碼登錄',
+  'PC.Pages.Login.codeLoginOrRegister': '驗證碼登錄/註冊',
+  'PC.Pages.Login.welcome': '歡迎來到{0}',
+  'PC.Pages.Login.inputEmailPlaceholder': '請輸入郵箱',
+  'PC.Pages.Login.inputPhonePlaceholder': '請輸入手機號',
+  'PC.Pages.Login.inputPasswordPlaceholder': '請輸入不少於 6 位的密碼',
+  'PC.Pages.Login.login': '登錄',
+  'PC.Pages.Login.nextStep': '下一步',
+  'PC.Pages.VerifyCode.inputEmailCode': '請輸入郵箱驗證碼',
+  'PC.Pages.VerifyCode.inputSmsCode': '請輸入短信驗證碼',
+  'PC.Pages.VerifyCode.codeSentTo': '驗證碼已發送至 {0}{1}',
+  'PC.Pages.VerifyCode.yourEmail': '你的郵箱',
+  'PC.Pages.VerifyCode.yourPhone': '手機號',
+  'PC.Pages.VerifyCode.countdownSuffix': ' 秒後',
+  'PC.Pages.VerifyCode.resend': '重新發送',
+  'PC.Pages.SetPassword.title': '設置密碼',
+  'PC.Pages.SetPassword.description':
+    '请至少使用 6 位字符，并避免与其他网站重复密码。',
+  'PC.Pages.SetPassword.passwordRequired': '請輸入不少於 6 位的密碼',
+  'PC.Pages.SetPassword.invalidPassword': '請輸入有效密碼',
+  'PC.Pages.SetPassword.passwordPlaceholder': '請輸入不少於 6 位的密碼',
+  'PC.Pages.SetPassword.confirmPasswordRequired': '請確認密碼',
+  'PC.Pages.SetPassword.passwordMismatch': '兩次輸入的密碼不一致',
+  'PC.Pages.SetPassword.confirmPasswordInvalid': '請輸入有效密碼',
+  'PC.Pages.SetPassword.confirmPasswordPlaceholder': '請再次輸入密碼',
+  'PC.Pages.AgentEdit.showStand': '展示臺',
+  'PC.Pages.AgentEdit.versionHistory': '版本記錄',
+  'PC.Pages.AgentEdit.draftAutoSavedAt': '草稿自動保存於 {0}',
+  'PC.Pages.AgentEdit.unpublishedChanges': '有未發佈的更改',
+  'PC.Pages.AgentEdit.publish': '發佈',
+  'PC.Pages.AgentArrangeComponentSetting.title': '設置',
+  'PC.Pages.AgentArrangeAsyncRun.title': '異步運行',
+  'PC.Pages.AgentArrangeAsyncRun.description':
+    '任务进入异步运行时默认返回一条回复内容，用户可以继续对话，任务在后台运行完成后会通知用户',
+  'PC.Pages.AgentArrangeAsyncRun.defaultReplyContent':
+    '已经开始为你处理，请耐心等待运行结果',
+  'PC.Pages.AgentArrangeAsyncRun.replyContent': '回覆內容',
+  'PC.Pages.AgentArrangeAsyncRun.replyContentPlaceholder':
+    '你可以在这里设置消息回复,任务运行时将自动回复,比如: 任务已在进行中,一旦完成我将第一时间向你报告结果,你还有其他需要我协助的事项吗?',
+  'PC.Pages.AgentArrangeAsyncRun.replyContentRequired': '回覆內容必須設置',
+  'PC.Pages.AgentArrangeOutputWay.title': '是否直接輸出',
+  'PC.Pages.AgentArrangeOutputWay.tooltip':
+    '如果选择“是”，将会把工作流运行结果直接输出到会话框中，不会再经过大模型总结输出。',
+  'PC.Pages.AgentArrangeOutputWay.optionNo': '否',
+  'PC.Pages.AgentArrangeOutputWay.optionYes': '是',
+  'PC.Pages.AgentArrangeInvokeType.title': '調用方式',
+  'PC.Pages.AgentArrangeInvokeType.optionAuto': '自動調用',
+  'PC.Pages.AgentArrangeInvokeType.optionOnDemand': '按需調用',
+  'PC.Pages.AgentArrangeInvokeType.optionManual': '手動選擇',
+  'PC.Pages.AgentArrangeInvokeType.optionManualOnDemand': '手動選擇+按需調用',
+  'PC.Pages.AgentArrangeInvokeType.optionNo': '否',
+  'PC.Pages.AgentArrangeInvokeType.optionYes': '是',
+  'PC.Pages.AgentArrangeInvokeType.autoDescription':
+    '自动调用：用户每次发送消息后都会触发调用一次',
+  'PC.Pages.AgentArrangeInvokeType.onDemandDescription':
+    '按需调用：由模型根据任务情况决定是否需要调用',
+  'PC.Pages.AgentArrangeInvokeType.manualDescription':
+    '手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样',
+  'PC.Pages.AgentArrangeInvokeType.manualOnDemandDescription':
+    '手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用',
+  'PC.Pages.AgentArrangeInvokeType.skillManualDescription':
+    '手动选择：用户可在会话页面中对该技能进行选择，选中后会让模型优先使用该技能',
+  'PC.Pages.AgentArrangeInvokeType.defaultSelected': '是否默認選中',
+  'PC.Pages.AgentArrangeInvokeType.alias': '展示別名',
+  'PC.Pages.AgentArrangeInvokeType.aliasTooltip':
+    '可选，若填写，前端优先展示该名称',
+  'PC.Pages.AgentArrangeInvokeType.aliasPlaceholder': '請輸入展示別名',
+  'PC.Pages.AgentArrangeCardBindDataSource.selectStyle': '選擇卡片樣式',
+  'PC.Pages.AgentArrangeCardBindDataSource.optionSingle': '單張卡片',
+  'PC.Pages.AgentArrangeCardBindDataSource.optionList': '豎向列表',
+  'PC.Pages.AgentArrangeCardBindDataSource.cardListMaxLength':
+    '卡片列表最大长度',
+  'PC.Pages.AgentArrangeCardBindDataSource.cardListMaxLengthPlaceholder':
+    '请输入卡片列表最大长度',
+  'PC.Pages.AgentArrangeCardBindDataSource.bindArray': '為卡片整體綁定一個數組',
+  'PC.Pages.AgentArrangeCardBindDataSource.bindArrayPlaceholder':
+    '请为卡片整体绑定一个数组',
+  'PC.Pages.AgentArrangeCardBindDataSource.bindListItemData':
+    '为卡片内的列表项绑定数据',
+  'PC.Pages.AgentArrangeCardBindDataSource.cardClickJump': '點擊卡片跳轉',
+  'PC.Pages.AgentArrangeCardBindDataSource.cardClickJumpTooltip':
+    '绑定后，用户在智能体对话流中点击 卡片可跳转至其他页面',
+  'PC.Pages.AgentArrangeCardBindDataSource.urlDataSourcePlaceholder':
+    '为url选择数据来源',
+  'PC.Pages.AgentArrangeCreateVariableModal.title': '編輯或添加變量',
+  'PC.Pages.AgentArrangeCreateVariableModal.fieldName': '字段名稱',
+  'PC.Pages.AgentArrangeCreateVariableModal.fieldNameRequired':
+    '请输入字段名称',
+  'PC.Pages.AgentArrangeCreateVariableModal.fieldNamePlaceholder':
+    '请输入字段名称，符合字段命名规划',
+  'PC.Pages.AgentArrangeCreateVariableModal.displayName': '展示名稱',
+  'PC.Pages.AgentArrangeCreateVariableModal.displayNameRequired':
+    '请输入字段展示名称',
+  'PC.Pages.AgentArrangeCreateVariableModal.displayNamePlaceholder':
+    '请输入字段展示名称，供前端展示使用',
+  'PC.Pages.AgentArrangeCreateVariableModal.description': '描述',
+  'PC.Pages.AgentArrangeCreateVariableModal.descriptionPlaceholder':
+    '请输入字段描述',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputType': '輸入方式',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeText': '單行文本',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeParagraph': '段落',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeNumber': '數字',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeSelect': '單選',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeMultipleSelect': '多選',
+  'PC.Pages.AgentArrangeCreateVariableModal.inputTypeAutoRecognition':
+    '智能识别',
+  'PC.Pages.AgentArrangeCreateVariableModal.manualCreate': '手動創建',
+  'PC.Pages.AgentArrangeCreateVariableModal.addOption': '添加選項',
+  'PC.Pages.AgentArrangeCreateVariableModal.dataBinding': '數據綁定',
+  'PC.Pages.AgentArrangeCreateVariableModal.addOptionRequired': '請添加選項',
+  'PC.Pages.AgentArrangeCreateVariableModal.optionValueRequired':
+    '请填写选项值',
+  'PC.Pages.AgentArrangeCreateVariableModal.selectBindingComponent':
+    '请选择绑定组件',
+  'PC.Pages.AgentArrangeCreateVariableModal.defaultValue': '默認值',
+  'PC.Pages.AgentArrangeCreateVariableModal.defaultValuePlaceholder':
+    '请输入默认值',
+  'PC.Pages.AgentArrangeCreateVariableModal.required': '必填',
+  'PC.Toast.AgentArrangeCreateVariableModal.updateSuccess': '變量更新成功',
+  'PC.Pages.AgentArrangeCreateVariables.title': '變量',
+  'PC.Pages.AgentArrangeCreateVariables.add': '新增',
+  'PC.Pages.AgentArrangeCreateVariables.name': '名稱',
+  'PC.Pages.AgentArrangeCreateVariables.description': '描述',
+  'PC.Pages.AgentArrangeCreateVariables.type': '類型',
+  'PC.Pages.AgentArrangeCreateVariables.systemVariable': '系統變量',
+  'PC.Pages.AgentArrangeCreateVariables.customVariable': '自定義變量',
+  'PC.Pages.AgentArrangeCreateVariables.inputType': '輸入方式',
+  'PC.Pages.AgentArrangeCreateVariables.required': '是否必須',
+  'PC.Pages.AgentArrangeCreateVariables.yes': '是',
+  'PC.Pages.AgentArrangeCreateVariables.no': '否',
+  'PC.Pages.AgentArrangeCreateVariables.deleteSuccess': '刪除成功',
+  'PC.Pages.AgentArrangeCreateVariables.updateSuccess': '更新成功',
+  'PC.Pages.AgentArrangeExceptionHandling.title': '異常時中斷流程',
+  'PC.Pages.AgentArrangeExceptionHandling.description':
+    '异常时输出给大模型的默认信息',
+  'PC.Pages.AgentArrangeExceptionHandling.defaultInfo': '默認信息',
+  'PC.Pages.AgentArrangeExceptionHandling.defaultInfoPlaceholder':
+    '请输入异常时输出给大模型的默认信息',
+  'PC.Pages.AgentArrangeEventBindModal.title': '事件綁定',
+  'PC.Pages.AgentArrangeEventBindModal.updateSuccess': '更新成功',
+  'PC.Pages.AgentArrangeEventBindModal.eventName': '事件名稱',
+  'PC.Pages.AgentArrangeEventBindModal.eventNameRequired': '請輸入事件名稱',
+  'PC.Pages.AgentArrangeEventBindModal.eventNamePlaceholder': '請輸入事件名稱',
+  'PC.Pages.AgentArrangeEventBindModal.eventCode':
+    '事件标识（用于区分具体事件）',
+  'PC.Pages.AgentArrangeEventBindModal.eventCodeRequired': '請輸入事件標識',
+  'PC.Pages.AgentArrangeEventBindModal.eventCodePlaceholder':
+    '请输入事件标识,只能包含字母、数字和下划线',
+  'PC.Pages.AgentArrangeEventBindModal.eventCodeInvalid':
+    '事件标识只能包含字母、数字和下划线,且必须以字母或下划线开头!',
+  'PC.Pages.AgentArrangeEventBindModal.responseAction': '響應動作',
+  'PC.Pages.AgentArrangeEventBindModal.responseActionPlaceholder':
+    '请选择响应动作',
+  'PC.Pages.AgentArrangeEventBindModal.responseActionPage': '擴展頁面打開',
+  'PC.Pages.AgentArrangeEventBindModal.responseActionLink': '外部鏈接跳轉',
+  'PC.Pages.AgentArrangeEventBindModal.pagePath': '頁面路徑',
+  'PC.Pages.AgentArrangeEventBindModal.pagePathRequired': '請選擇頁面路徑',
+  'PC.Pages.AgentArrangeEventBindModal.pagePathPlaceholder': '請選擇頁面路徑',
+  'PC.Pages.AgentArrangeEventBindModal.linkUrl': '鏈接地址',
+  'PC.Pages.AgentArrangeEventBindModal.linkUrlRequired': '請輸入鏈接地址',
+  'PC.Pages.AgentArrangeEventBindModal.linkUrlInvalid':
+    '请输入正确格式的链接地址，必须以http://或https://开头!',
+  'PC.Pages.AgentArrangeEventBindModal.input': '輸入',
+  'PC.Pages.AgentArrangeEventBindModal.configInputArgs': '配置輸入參數',
+  'PC.Pages.AgentArrangeEventBindModal.paramName': '參數名',
+  'PC.Pages.AgentArrangeEventBindModal.paramValue': '參數值(非必填)',
+  'PC.Pages.AgentArrangeEventBindModal.paramValueTip':
+    '以下参数非必填，不填写时由模型补充, 可以在输入框中动态引用参数，留空的参数将由大模型自动补充',
+  'PC.Pages.AgentArrangeEventBindModal.agentIdVariable': '智能體ID',
+  'PC.Pages.AgentArrangeEventBindModal.systemUserIdVariable': '系統用戶ID',
+  'PC.Pages.AgentArrangeEventBindModal.userUidVariable': '用戶UID',
+  'PC.Pages.AgentArrangeEventBindModal.userNameVariable': '用戶名',
+  'PC.Pages.AgentArrangeEventBindModal.paramValuePlaceholder': '請輸入{0}',
+  'PC.Pages.AgentArrangeKnowledgeSetting.title': '知識庫設置',
+  'PC.Pages.AgentArrangeKnowledgeSetting.recallSection': '召回',
+  'PC.Pages.AgentArrangeKnowledgeSetting.invokeType': '調用方式',
+  'PC.Pages.AgentArrangeKnowledgeSetting.invokeTypeTip':
+    '选择是否每轮对话自动召回或按需从特定知识库召回',
+  'PC.Pages.AgentArrangeKnowledgeSetting.searchStrategy': '搜索策略',
+  'PC.Pages.AgentArrangeKnowledgeSetting.searchStrategyTip':
+    '从知识库中获取知识的检索方式,不同的检索策略可以更有效地找到正确的信息,提高其生成的答案的准确性和可用性。',
+  'PC.Pages.AgentArrangeKnowledgeSetting.searchMixed': '混合',
+  'PC.Pages.AgentArrangeKnowledgeSetting.searchSemantic': '語義',
+  'PC.Pages.AgentArrangeKnowledgeSetting.searchFullText': '全文',
+  'PC.Pages.AgentArrangeKnowledgeSetting.maxRecallCount': '最大召回數量',
+  'PC.Pages.AgentArrangeKnowledgeSetting.maxRecallCountTip':
+    '从知识库中返回给大模型的最大段落数,数值越大返回的内容越多',
+  'PC.Pages.AgentArrangeKnowledgeSetting.minMatchingDegree': '最小匹配度',
+  'PC.Pages.AgentArrangeKnowledgeSetting.minMatchingDegreeTip':
+    '根据设置的匹配度选取段落返回给大模型,低于设定匹配度的内容不会被召回',
+  'PC.Pages.AgentArrangeKnowledgeSetting.replySection': '回覆',
+  'PC.Pages.AgentArrangeKnowledgeSetting.noRecallReply': '無召回回覆',
+  'PC.Pages.AgentArrangeKnowledgeSetting.noRecallReplyTip':
+    '当知识库没有召回有效切片时的回复话术',
+  'PC.Pages.AgentArrangeKnowledgeSetting.noRecallDefault': '默認',
+  'PC.Pages.AgentArrangeKnowledgeSetting.noRecallCustom': '自定義',
+  'PC.Pages.AgentArrangeKnowledgeSetting.noRecallReplyPlaceholder': '請輸入',
+  'PC.Pages.AgentArrangeKnowledgeTextList.emptyDescription':
+    '将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。',
+  'PC.Pages.AgentArrangeKnowledgeTextList.remove': '取消知識庫',
+  'PC.Pages.AgentArrangeLongMemoryContent.description':
+    '总结聊天对话的内容，并用于更好的响应用户的消息。',
+  'PC.Pages.AgentArrangeMcpGroupComponentItem.toolsWithCount': '工具（{0}）',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.title': '預置問題設置',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.updateSuccess': '更新成功',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.requiredParamEmpty':
+    '参数名：{0}是必填参数，参数值不能为空',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.typeQuestion': '問題引導',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.typePage': '擴展頁面路徑',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.typeLink': '外鏈地址',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.paramName': '參數名',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.paramValue': '參數值',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.paramValueTip':
+    '可以在输入框中动态引用参数，留空的参数将由大模型自动补充',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.agentIdVariable': '智能體ID',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.systemUserIdVariable':
+    '系统用户ID',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.userUidVariable': '用戶UID',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.userNameVariable': '用戶名',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.paramValuePlaceholder':
+    '请输入{0}',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.icon': '圖標',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfo': '展示信息',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfoRequired':
+    '请输入展示信息',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.displayInfoPlaceholder':
+    '这里是问题内容',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.type': '類型',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.typePlaceholder': '請選擇類型',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.pagePath': '頁面路徑',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.pagePathRequired':
+    '请选择页面路径',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.pagePathPlaceholder':
+    '请选择页面路径',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrl': '鏈接地址',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrlRequired': '請輸入鏈接地址',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.linkUrlInvalid':
+    '请输入正确格式的链接地址，必须以http://或https://开头!',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.input': '輸入',
+  'PC.Pages.AgentArrangeGuidQuestionSetModal.configInputArgs': '配置輸入參數',
+  'PC.Pages.AgentArrangeOpenRemarks.headerTitle': '開場白文案',
+  'PC.Pages.AgentArrangeOpenRemarks.placeholder': '請輸入開場白',
+  'PC.Pages.AgentArrangeOpenRemarks.guidQuestionTitle': '開場白預置問題',
+  'PC.Pages.AgentArrangeOpenRemarks.addGuidQuestion': '添加預置問題',
+  'PC.Pages.AgentArrangeOpenRemarks.guidQuestionPlaceholder':
+    '输入开场白引导问题',
+  'PC.Pages.AgentArrangeOpenRemarks.deleteGuidQuestion': '刪除預置問題',
+  'PC.Pages.AgentArrangeOpenRemarks.settings': '設置',
+  'PC.Pages.AgentArrangePageSettingModal.title': '設置',
+  'PC.Pages.AgentArrangePageSettingModal.visibleToLlm': '是否模型可見',
+  'PC.Pages.AgentArrangePageSettingModal.homeIndex': '是否默認首頁',
+  'PC.Pages.AgentArrangePageSettingModal.updateOtherPageFailed':
+    '更新其他页面失败:',
+  'PC.Pages.AgentArrangePageSettingModal.saveConfigFailed': '保存配置失敗:',
+  'PC.Pages.AgentArrangePageSettingModal.saveFailed': '保存失敗，請重試',
+  'PC.Pages.AgentArrangeSubAgentConfig.empty':
+    '暂无子智能体配置，点击右上角添加',
+  'PC.Pages.AgentArrangeSubAgentConfig.defaultNameWithIndex': '子智能體 {0}',
+  'PC.Pages.AgentArrangeSubAgentConfig.edit': '編輯',
+  'PC.Pages.AgentArrangeSubAgentConfig.delete': '刪除',
+  'PC.Pages.AgentArrangeSubAgentEditModal.cancelTitle': '確認取消',
+  'PC.Pages.AgentArrangeSubAgentEditModal.cancelContent':
+    '你有未保存的修改，确定要取消吗？',
+  'PC.Pages.AgentArrangeSubAgentEditModal.cancelConfirm': '確定取消',
+  'PC.Pages.AgentArrangeSubAgentEditModal.keepEditing': '繼續編輯',
+  'PC.Pages.AgentArrangeSubAgentEditModal.editTitle': '編輯子智能體',
+  'PC.Pages.AgentArrangeSubAgentEditModal.createTitle': '新建子智能體',
+  'PC.Pages.AgentArrangeSubAgentEditModal.viewDoc': '查看文檔',
+  'PC.Pages.AgentArrangeSubAgentEditModal.exitFullscreen': '退出全屏',
+  'PC.Pages.AgentArrangeSubAgentEditModal.enterFullscreen': '全屏編輯',
+  'PC.Pages.AgentArrangeSubAgentEditModal.promptPlaceholder':
+    '请输入子智能体 Prompt',
+  'PC.Pages.AgentArrangeConfig.plan': '規劃',
+  'PC.Pages.AgentArrangeConfig.tools': '工具',
+  'PC.Pages.AgentArrangeConfig.skills': '技能',
+  'PC.Pages.AgentArrangeConfig.knowledge': '知識',
+  'PC.Pages.AgentArrangeConfig.memory': '記憶',
+  'PC.Pages.AgentArrangeConfig.conversation': '對話',
+  'PC.Pages.AgentArrangeConfig.interface': '界面',
+  'PC.Pages.AgentArrangeConfig.deleteSuccess': '已成功刪除',
+  'PC.Pages.AgentArrangeConfig.addSuccess': '已成功添加',
+  'PC.Pages.AgentArrangeConfig.createSubAgentFailed': '創建子智能體組件失敗',
+  'PC.Pages.AgentArrangeConfig.deleteSuccessSimple': '刪除成功',
+  'PC.Pages.AgentArrangeConfig.insertPromptSuccess': '已插入到系統提示詞',
+  'PC.Pages.AgentArrangeConfig.insertPromptUnavailable':
+    '插入系统提示词功能不可用',
+  'PC.Pages.AgentArrangeConfig.plugin': '插件',
+  'PC.Pages.AgentArrangeConfig.addPlugin': '添加插件',
+  'PC.Pages.AgentArrangeConfig.workflow': '工作流',
+  'PC.Pages.AgentArrangeConfig.addWorkflow': '添加工作流',
+  'PC.Pages.AgentArrangeConfig.mcpDescription':
+    '智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。',
+  'PC.Pages.AgentArrangeConfig.addMcp': '添加MCP',
+  'PC.Pages.AgentArrangeConfig.text': '文本',
+  'PC.Pages.AgentArrangeConfig.addKnowledge': '添加知識庫',
+  'PC.Pages.AgentArrangeConfig.skill': '技能',
+  'PC.Pages.AgentArrangeConfig.addSkill': '添加技能',
+  'PC.Pages.AgentArrangeConfig.subAgent': '子智能體',
+  'PC.Pages.AgentArrangeConfig.addSubAgent': '添加子智能體',
+  'PC.Pages.AgentArrangeConfig.variable': '變量',
+  'PC.Pages.AgentArrangeConfig.addVariable': '添加變量',
+  'PC.Pages.AgentArrangeConfig.table': '數據表',
+  'PC.Pages.AgentArrangeConfig.addTable': '添加數據表',
+  'PC.Pages.AgentArrangeConfig.longMemory': '長期記憶',
+  'PC.Pages.AgentArrangeConfig.userQuestionSuggestion': '用戶問題建議',
+  'PC.Pages.AgentArrangeConfig.userQuestionSuggestionEnabled':
+    '在智能体回复后，根据 Prompt 提供多条用户提问建议',
+  'PC.Pages.AgentArrangeConfig.userQuestionSuggestionDisabled':
+    '在每次智能体回复后，不会提供任何用户问题建议',
+  'PC.Pages.AgentArrangeConfig.scheduledTask': '定時任務',
+  'PC.Pages.AgentArrangeConfig.scheduledTaskDescription':
+    '开启后，用户可以通过设置定时任务的方式让智能体执行任务',
+  'PC.Pages.AgentArrangeConfig.hideRemoteDesktop': '隱藏遠程桌面',
+  'PC.Pages.AgentArrangeConfig.hideRemoteDesktopEnabled':
+    '在智能体对话框右侧隐藏远程桌面',
+  'PC.Pages.AgentArrangeConfig.hideRemoteDesktopDisabled':
+    '在智能体对话框右侧显示远程桌面',
+  'PC.Pages.AgentArrangeConfig.openingRemarks': '開場白',
+  'PC.Pages.AgentArrangeConfig.page': '頁面',
+  'PC.Pages.AgentArrangeConfig.addPage': '添加頁面',
+  'PC.Pages.AgentArrangeConfig.defaultExpandPageArea': '展開頁面區',
+  'PC.Pages.AgentArrangeConfig.defaultExpandPageAreaDesc':
+    '当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面',
+  'PC.Pages.AgentArrangeConfig.addPageFirst': '請先添加頁面',
+  'PC.Pages.AgentArrangeConfig.eventBinding': '事件綁定',
+  'PC.Pages.AgentArrangeConfig.addEventBinding': '添加事件綁定',
+  'PC.Pages.AgentArrangeConfig.dynamicJsonParameter': '動態JSON參數',
+  'PC.Pages.AgentArrangeConfig.referenceNumber': '#引用編號',
+  'PC.Pages.AgentArrangeConfig.appendReferenceInfo':
+    '返回内容后面追加引用信息如下',
+  'PC.Pages.AgentArrangeConfig.dynamicJsonSchemaPrefix':
+    '{0}的动态JSON参数JsonSchema如下',
+  'PC.Pages.AgentArrangeConfig.conversationExperience': '對話體驗',
+  'PC.Pages.AgentArrangeConfig.interfaceConfig': '界面配置',
+  'PC.Pages.SystemConfigCategoryManage.pageTitle': '分類管理',
+  'PC.Pages.SystemConfigCategoryManage.agent': '智能體',
+  'PC.Pages.SystemConfigCategoryManage.webApp': '網頁應用',
+  'PC.Pages.SystemConfigCategoryManage.component': '組件',
+  'PC.Pages.SystemConfigCategoryManage.categoryType': '{0}分類',
+  'PC.Pages.SystemConfigCategoryManage.itemCount': '{0} 項',
+  'PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle': '確認刪除',
+  'PC.Pages.SystemConfigCategoryManage.confirmDeleteContent':
+    '确定要删除此分类吗？此操作无法撤销。',
+  'PC.Pages.SystemConfigCategoryManage.deletedSuccessfully': '分類已刪除',
+  'PC.Pages.SystemConfigCategoryManage.deleteFailed': '刪除分類失敗:',
+  'PC.Pages.SystemConfigCategoryManage.addSuccessWithType': '{0}分類添加成功',
+  'PC.Pages.SystemConfigCategoryManage.editSuccessWithType': '{0}分類修改成功',
+  'PC.Pages.SystemConfigCategoryManage.saveFailed': '保存分類失敗:',
+  'PC.Pages.SystemConfigCategoryManage.add': '添加',
+  'PC.Pages.SystemConfigCategoryModal.addTitle': '添加{0}分類',
+  'PC.Pages.SystemConfigCategoryModal.editTitle': '編輯{0}分類',
+  'PC.Pages.SystemConfigCategoryModal.name': '分類名稱',
+  'PC.Pages.SystemConfigCategoryModal.namePlaceholder': '請輸入分類名稱',
+  'PC.Pages.SystemConfigCategoryModal.nameRequired': '請輸入分類名稱',
+  'PC.Pages.SystemConfigCategoryModal.nameMaxLength':
+    '分类名称不能超过100个字符',
+  'PC.Pages.SystemConfigCategoryModal.code': '分類編碼',
+  'PC.Pages.SystemConfigCategoryModal.codePlaceholder': '請輸入分類編碼',
+  'PC.Pages.SystemConfigCategoryModal.codeRequired': '請輸入分類編碼',
+  'PC.Pages.SystemConfigCategoryModal.codeMaxLength':
+    '分类编码不能超过100个字符',
+  'PC.Pages.SystemConfigCategoryModal.codePatternInvalid':
+    '分类编码只能包含字母、数字、下划线(_)或美元符号($)，且不能以数字开头',
+  'PC.Pages.SystemConfigCategoryModal.description': '描述',
+  'PC.Pages.SystemConfigCategoryModal.descriptionPlaceholder':
+    '请输入分类描述（可选）',
+  'PC.Pages.SystemConfigCategoryModal.descriptionMaxLength':
+    '描述不能超过100个字符',
+  'PC.Pages.SystemConfigSandboxModal.addTitle': '添加沙盒',
+  'PC.Pages.SystemConfigSandboxModal.editTitle': '編輯沙盒',
+  'PC.Pages.SystemConfigSandboxModal.name': '沙盒名稱',
+  'PC.Pages.SystemConfigSandboxModal.namePlaceholder': '例如：AGENT沙箱',
+  'PC.Pages.SystemConfigSandboxModal.nameRequired': '請輸入沙盒名稱',
+  'PC.Pages.SystemConfigSandboxModal.nameMaxLength':
+    '沙盒名称不能超过 100 个字符',
+  'PC.Pages.SystemConfigSandboxModal.host': '沙盒根地址',
+  'PC.Pages.SystemConfigSandboxModal.hostPlaceholder':
+    '例如：http://192.168.1.21',
+  'PC.Pages.SystemConfigSandboxModal.hostRequired': '請輸入沙盒根地址',
+  'PC.Pages.SystemConfigSandboxModal.hostMaxLength':
+    '地址长度不能超过 255 个字符',
+  'PC.Pages.SystemConfigSandboxModal.hostInvalid':
+    '请输入正确的地址格式，需包含 http:// 或 https://',
+  'PC.Pages.SystemConfigSandboxModal.agentPort': 'Agent端口',
+  'PC.Pages.SystemConfigSandboxModal.agentPortRequired': '請輸入Agent端口',
+  'PC.Pages.SystemConfigSandboxModal.vncPort': 'VNC端口',
+  'PC.Pages.SystemConfigSandboxModal.vncPortRequired': '請輸入VNC端口',
+  'PC.Pages.SystemConfigSandboxModal.fileServerPort': '文件服務端口',
+  'PC.Pages.SystemConfigSandboxModal.fileServerPortRequired':
+    '请输入文件服务端口',
+  'PC.Pages.SystemConfigSandboxModal.apiKey': '通信key (可選)',
+  'PC.Pages.SystemConfigSandboxModal.apiKeyPlaceholder':
+    '留空表示不使用通信密钥',
+  'PC.Pages.SystemConfigSandboxModal.maxUsers': '最大併發用戶數',
+  'PC.Pages.SystemConfigSandboxModal.maxUsersRequired': '請輸入最大併發用戶數',
+  'PC.Pages.SystemConfigSandboxModal.maxUsersMax':
+    '最大并发用户数不能超过 9999',
+  'PC.Pages.SystemConfigSandboxConfig.pageTitle': '沙盒配置',
+  'PC.Pages.SystemConfigSandboxConfig.connectivitySuccess':
+    '测试成功，沙盒连接正常',
+  'PC.Pages.SystemConfigSandboxConfig.connectivityFailed': '測試失敗：{0}',
+  'PC.Pages.SystemConfigSandboxConfig.connectionException': '連接異常',
+  'PC.Pages.SystemConfigSandboxConfig.disable': '停用',
+  'PC.Pages.SystemConfigSandboxConfig.enable': '啟用',
+  'PC.Pages.SystemConfigSandboxConfig.toggleConfirmTitle': '{0}確認',
+  'PC.Pages.SystemConfigSandboxConfig.toggleConfirmContent':
+    '确定要{0}沙盒{1}吗？',
+  'PC.Pages.SystemConfigSandboxConfig.toggleSuccess': '{0}成功',
+  'PC.Pages.SystemConfigSandboxConfig.addSuccess': '添加成功',
+  'PC.Pages.SystemConfigSandboxConfig.columnName': '沙盒名稱',
+  'PC.Pages.SystemConfigSandboxConfig.columnUsage': '使用情況',
+  'PC.Pages.SystemConfigSandboxConfig.usagePercentInUse': '{0}% 使用中',
+  'PC.Pages.SystemConfigSandboxConfig.columnOnlineStatus': '在線狀態',
+  'PC.Pages.SystemConfigSandboxConfig.online': '在線',
+  'PC.Pages.SystemConfigSandboxConfig.offline': '離線',
+  'PC.Pages.SystemConfigSandboxConfig.columnActiveStatus': '啟用狀態',
+  'PC.Pages.SystemConfigSandboxConfig.enabled': '已啟用',
+  'PC.Pages.SystemConfigSandboxConfig.disabled': '已停用',
+  'PC.Pages.SystemConfigSandboxConfig.columnAction': '操作',
+  'PC.Pages.SystemConfigSandboxConfig.connectivityTest': '連通性測試',
+  'PC.Pages.SystemConfigSandboxConfig.edit': '編輯',
+  'PC.Pages.SystemConfigSandboxConfig.delete': '刪除',
+  'PC.Pages.SystemConfigSandboxConfig.deleteConfirmTitle': '刪除確認',
+  'PC.Pages.SystemConfigSandboxConfig.deleteConfirmContent':
+    '确定要删除此沙盒吗？',
+  'PC.Pages.SystemConfigSandboxConfig.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemConfigSandboxConfig.addSandbox': '添加沙盒',
+  'PC.Pages.SystemConfigSandboxConfig.globalConfig': '全局配置',
+  'PC.Pages.SystemConfigSandboxConfig.perUserMemory': '每用戶內存',
+  'PC.Pages.SystemConfigSandboxConfig.perUserCpu': '每用戶CPU核心',
+  'PC.Pages.SystemConfigSandboxConfig.unitGb': 'GB',
+  'PC.Pages.SystemConfigSandboxConfig.unitCore': '核',
+  'PC.Pages.SystemConfigSandboxConfig.totalSandboxCount': '共 {0} 個沙盒',
+  'PC.Pages.SystemConfigSandboxConfig.onlineSandboxCount': '{0} 個在線',
+  'PC.Pages.SystemMenuBindUser.userNotFoundBySearch': '未搜索到相關用戶',
+  'PC.Pages.SystemMenuBindUser.bindUserWithName': '綁定用戶 - {0}',
+  'PC.Pages.SystemMenuBindUser.close': '關閉',
+  'PC.Pages.SystemMenuBindUser.leftSearchPlaceholder':
+    '输入用户名、邮箱或手机号码，回车搜索',
+  'PC.Pages.SystemMenuBindUser.rightSearchPlaceholder':
+    '通过关键字搜索已绑定成员',
+  'PC.Pages.Error403.licenseExpired': '抱歉，您的許可證授權已過期',
+  'PC.Pages.Error404.pageNotFound': '抱歉，訪問的頁面不存在',
+  'PC.Pages.HomeDrag.errorTitle': '拖拽功能暫時不可用',
+  'PC.Pages.HomeDrag.errorDescription': '請刷新頁面後重試',
+  'PC.Pages.HomeDrag.refreshPage': '刷新頁面',
+  'PC.Pages.HomeDrag.hoverCategory': '可拖拽更換欄目順序',
+  'PC.Pages.HomeDrag.hoverAgent': '可拖拽更換智能體順序',
+  'PC.Pages.HomeDrag.updatingSort': '正在更新排序...',
+  'PC.Pages.HomeDrag.sortSuccess': '排序更新成功',
+  'PC.Pages.HomeDrag.sortFailed': '排序更新失敗，請重試',
+  'PC.Pages.HomeDrag.unknownUser': '未知用戶',
+  'PC.Pages.HomeDrag.noDescription': '暫無描述',
+  'PC.Pages.HomeDrag.agent': '智能體',
+  'PC.Pages.HomeDrag.agentAvatar': '智能體頭像',
+  'PC.Pages.HomeDrag.agentName': '智能體名稱',
+  'PC.Pages.HomeDrag.unnamedAgent': '未命名智能體',
+  'PC.Pages.HomeDrag.from': '來自',
+  'PC.Pages.HomeDrag.cancelCollect': '取消收藏',
+  'PC.Pages.HomeDrag.collect': '收藏',
+  'PC.Pages.HomeDrag.dragAgentTip': '拖拽智能體卡片可交換位置',
+  'PC.Pages.HomeDrag.emptyExplore': '暫無數據，立即探索',
+  'PC.Pages.Home.noTenantInfo': '租戶信息不存在',
+  'PC.Pages.Home.linkConfigError': '鏈接地址配置錯誤',
+  'PC.Pages.AppDevFileOperatingMask.defaultTip': '文件操作進行中，請稍候...',
+  'PC.Pages.AppDevImageViewer.previewPath': '圖片預覽：{0}',
+  'PC.Pages.AppDevImageViewer.base64Tag': '（Base64）',
+  'PC.Components.NoMoreDivider.noMoreData': '沒有更多數據了',
+  'PC.Components.WorkspaceSearch.placeholder': '請輸入搜索內容',
+  'PC.Components.CreatedMcpItem.avatarAlt': '用戶頭像',
+  'PC.Components.CreatedMcpItem.deployedAt': '部署於{0}',
+  'PC.Components.CreatedMcpTools.noDescription': '暫無描述',
+  'PC.Components.CreatedMcpTools.added': '已添加',
+  'PC.Components.CreatedMcpTools.add': '添加',
+  'PC.Components.CreatedPageItem.avatarAlt': '用戶頭像',
+  'PC.Components.CreatedPageItem.createdAt': '創建於{0}',
+  'PC.Components.CreatedPageItem.added': '已添加',
+  'PC.Components.CreatedPageItem.add': '添加',
+  'PC.Components.Created.tabPlugin': '插件',
+  'PC.Components.Created.tabWorkflow': '工作流',
+  'PC.Components.Created.tabKnowledge': '知識庫',
+  'PC.Components.Created.tabTable': '數據表',
+  'PC.Components.Created.tabAgent': '智能體',
+  'PC.Components.Created.tabMcp': 'MCP服務',
+  'PC.Components.Created.tabPage': '頁面',
+  'PC.Components.Created.tabSkill': '技能',
+  'PC.Components.Created.all': '全部',
+  'PC.Components.Created.libraryWithLabel': '組件庫{0}',
+  'PC.Components.Created.collect': '收藏',
+  'PC.Components.Created.officialOnlyWithLabel': '僅查看官方{0}',
+  'PC.Components.Created.currentSpaceAgent': '當前空間智能體',
+  'PC.Components.Created.document': '文檔',
+  'PC.Components.Created.libraryDataTable': '組件庫數據表',
+  'PC.Components.Created.customService': '自定義服務',
+  'PC.Components.Created.addTitle': '添加',
+  'PC.Components.Created.userAvatar': '用戶頭像',
+  'PC.Components.Created.publishedAt': '發佈於{0}',
+  'PC.Components.Created.added': '已添加',
+  'PC.Components.Created.add': '添加',
+  'PC.Components.Created.search': '搜索',
+  'PC.Components.Created.createWithLabel': '創建{0}',
+  'PC.Components.Created.emptyWithSearch': '暫無數據，請重新搜索',
+  'PC.Components.Created.empty': '暫無數據',
+  'PC.Components.ChatInputHomeAtMentionIcon.tryMentionSkill': '試試 @ 提及技能',
+  'PC.Components.ChatInputHomeManualComponentItem.keywordNetwork': '聯網',
+  'PC.Components.ChatInputHomeManualComponentItem.keywordSearch': '搜索',
+  'PC.Components.ChatInputHomeManualComponentItem.keywordReasoning': '推理',
+  'PC.Components.ChatInputHomeManualComponentItem.keywordThinking': '思考',
+  'PC.Components.ChatInputHomeMentionPopup.tabAll': '全部',
+  'PC.Components.ChatInputHomeMentionPopup.tabRecent': '最近使用',
+  'PC.Components.ChatInputHomeMentionPopup.tabFavorite': '我的收藏',
+  'PC.Components.ChatInputHomeMentionPopup.searchSkill': '搜索技能',
+  'PC.Components.ChatInputHomeMentionPopup.loading': '加載中...',
+  'PC.Components.ChatInputHomeMentionPopup.emptyFavorite': '暫無收藏',
+  'PC.Components.ChatInputHomeMentionPopup.emptyNotFound': '未找到匹配項',
+  'PC.Components.ChatInputHomeMentionPopup.loadingMore': '加載更多中...',
+  'PC.Components.ChatInputHome.pastedImageFileName': '粘貼圖片-{0}-{1}.png',
+  'PC.Components.ChatInputHome.uploadFailedWithName': '{0} 上傳失敗',
+  'PC.Components.ChatInputHome.conversationDisabled': '會話已禁用',
+  'PC.Components.ChatInputHome.enterQuestion': '請輸入你的問題',
+  'PC.Components.ChatInputHome.clickStopConversation': '點擊停止當前會話',
+  'PC.Components.ChatInputHome.clickSendMessage': '點擊發送消息',
+  'PC.Components.ChatInputHome.stoppingTask': '正在停止任務...',
+  'PC.Components.ChatInputHome.clickStopAgentTask': '點擊停止Agent任務',
+  'PC.Components.ChatInputHome.noActiveConversation': '當前無進行中的會話',
+  'PC.Components.ChatInputHome.stoppingConversation': '正在停止會話...',
+  'PC.Components.ChatInputHome.noAgentPermission': '無智能體使用權限',
+  'PC.Components.ChatInputHome.agentComputerUnavailable':
+    '会话关联的智能体电脑不可用',
+  'PC.Components.ChatInputHome.clearRecord': '清空會話記錄',
+  'PC.Components.ChatInputHome.uploadAttachment': '上傳附件',
+  'PC.Components.ChatInputHome.switchToNormalMode': '切換到普通模式',
+  'PC.Components.ChatInputHome.useAgentComputerTask':
+    '使用我的智能体电脑执行任务',
+  'PC.Components.ChatInputHome.generatedByAiNotice': '內容由AI生成，請仔細甄別',
+  'PC.Components.ChatInputHomeMentionEditor.placeholderWithMention':
+    '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持输入@唤起技能；支持粘贴图片',
+  'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention':
+    '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片',
+  'PC.Pages.SkillDetailsMoreActionsMenu.importSkill': '導入技能',
+  'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview': '全屏預覽',
+  'PC.Pages.SkillDetailsMoreActionsMenu.exportSkill': '導出技能',
+  'PC.Pages.SkillDetailsHeader.published': '已發佈',
+  'PC.Pages.SkillDetailsHeader.updatesNotPublished': '有更新未發佈',
+  'PC.Pages.SkillDetailsHeader.publish': '發佈',
+  'PC.Pages.SkillDetails.actionPublish': '發佈',
+  'PC.Pages.SkillDetails.saveBeforeAction':
+    '你有未保存的文件修改，请先保存后再{0}',
+  'PC.Pages.SkillDetails.saveSuccess': '保存成功',
+  'PC.Pages.SkillDetails.unsavedTitle': '未保存的文件修改',
+  'PC.Pages.SkillDetails.unsavedLeaveMessage':
+    '你有未保存的文件修改，是否保存后离开？',
+  'PC.Pages.SkillDetails.saveAndLeave': '保存並離開',
+  'PC.Pages.SkillDetails.leaveWithoutSaving': '不保存離開',
+  'PC.Pages.SkillDetails.importSuccess': '導入成功',
+  'PC.Pages.SkillDetails.skillIdRequired': '技能ID不能為空',
+  'PC.Pages.SkillDetails.spaceIdRequired': '空間ID不能為空',
+  'PC.Pages.SkillDetails.uploadSizeLimitExceeded': '上傳文件總大小不能超過20MB',
+  'PC.Pages.SkillDetails.uploadSuccess': '上傳成功',
+  'PC.Pages.SkillDetails.invalidSkillIdForExport':
+    '技能ID不存在或无效，无法导出',
+  'PC.Pages.SkillDetails.exportFailed': '導出失敗',
+  'PC.Pages.SkillDetails.exportSuccess': '導出成功！',
+  'PC.Pages.SkillDetails.confirmDeleteFile': '你確定要刪除此文件嗎?',
+  'PC.Pages.SkillDetails.fileNotFound': '文件不存在，無法刪除',
+  'PC.Pages.SkillDetails.deleteSuccess': '刪除成功',
+  'PC.Pages.SkillDetails.skillInfoMissing': '技能信息不存在，無法新建文件',
+  'PC.Pages.SkillDetails.actionEdit': '編輯技能',
+  'PC.Pages.SkillDetails.exporting': '正在導出',
+  'PC.Pages.ApiKeyFormModal.updateSuccess': '更新成功',
+  'PC.Pages.ApiKeyFormModal.createSuccess': '創建成功',
+  'PC.Pages.ApiKeyFormModal.editTitle': '編輯 API Key',
+  'PC.Pages.ApiKeyFormModal.createTitle': '新建 API Key',
+  'PC.Pages.ApiKeyFormModal.keyName': '密匙名稱',
+  'PC.Pages.ApiKeyFormModal.keyNamePlaceholder': '例如:生產環境API',
+  'PC.Pages.ApiKeyFormModal.enterKeyName': '請輸入密匙名稱',
+  'PC.Pages.ApiKeyFormModal.expireTime': '過期時間',
+  'PC.Pages.ApiKeyFormModal.expireTimeTooltip': '留空表示永不過期',
+  'PC.Pages.ApiKeyFormModal.apiKey': 'API Key',
+  'PC.Pages.ApiKeyFormModal.autoGenerated': '自動生成',
+  'PC.Pages.ApiKeyFormModal.status': '狀態',
+  'PC.Pages.ApiKeyFormModal.statusEnabled': '啟用',
+  'PC.Pages.ApiKeyFormModal.statusDisabled': '停用',
+  'PC.Pages.ApiKeyStatsModal.apiName': '接口名稱',
+  'PC.Pages.ApiKeyStatsModal.apiPath': '接口地址',
+  'PC.Pages.ApiKeyStatsModal.totalCalls': '調用總次數',
+  'PC.Pages.ApiKeyStatsModal.monthCalls': '本月調用',
+  'PC.Pages.ApiKeyStatsModal.todayCalls': '今日調用',
+  'PC.Pages.ApiKeyStatsModal.actions': '操作',
+  'PC.Pages.ApiKeyStatsModal.viewRecords': '查看記錄',
+  'PC.Pages.ApiKeyStatsModal.callStatsWithName': '調用統計 - {0}',
+  'PC.Pages.ApiKeyStatsModal.close': '關閉',
+  'PC.Pages.ApiKeyLogsLogProTable.type': '類型',
+  'PC.Pages.ApiKeyLogsLogProTable.selectType': '請選擇類型',
+  'PC.Pages.ApiKeyLogsLogProTable.targetId': '對象ID',
+  'PC.Pages.ApiKeyLogsLogProTable.enterTargetId': '請輸入對象ID',
+  'PC.Pages.ApiKeyLogsLogProTable.targetName': '對象名稱',
+  'PC.Pages.ApiKeyLogsLogProTable.enterTargetName': '請輸入對象名稱',
+  'PC.Pages.ApiKeyLogsLogProTable.requestId': '請求ID',
+  'PC.Pages.ApiKeyLogsLogProTable.enterRequestId': '請輸入請求ID',
+  'PC.Pages.ApiKeyLogsLogProTable.conversationId': '會話ID',
+  'PC.Pages.ApiKeyLogsLogProTable.enterConversationId': '請輸入會話ID',
+  'PC.Pages.ApiKeyLogsLogProTable.inputContent': '輸入內容',
+  'PC.Pages.ApiKeyLogsLogProTable.outputContent': '輸出內容',
+  'PC.Pages.ApiKeyLogsLogProTable.enterContentByKeywords':
+    '多个关键字以空格分隔，请输入内容',
+  'PC.Pages.ApiKeyLogsLogProTable.timeRange': '時間範圍',
+  'PC.Pages.ApiKeyLogsLogProTable.inputToken': '輸入token',
+  'PC.Pages.ApiKeyLogsLogProTable.outputToken': '輸出token',
+  'PC.Pages.ApiKeyLogsLogProTable.requestTime': '請求時間',
+  'PC.Pages.ApiKeyLogsLogProTable.totalDuration': '整體耗時',
+  'PC.Pages.ApiKeyLogsLogProTable.queryFailed': '查詢失敗',
+  'PC.Pages.ApiKeyLogsLogProTable.recordMissingRequestId':
+    '该条记录缺少 requestId，无法查看详情',
+  'PC.Pages.ApiKeyLogsLogProTable.actions': '操作',
+  'PC.Pages.ApiKeyLogsLogProTable.detail': '詳情',
+  'PC.Pages.Chat.conversationIdMissingCreateFile': '會話ID不存在，無法新建文件',
+  'PC.Pages.Chat.confirmDeleteFile': '你確定要刪除此文件嗎?',
+  'PC.Pages.Chat.fileNotFoundDelete': '文件不存在，無法刪除',
+  'PC.Pages.Chat.deleteSuccess': '刪除成功',
+  'PC.Pages.Chat.conversationIdMissingUpload': '會話ID不存在，無法上傳文件',
+  'PC.Pages.Chat.uploadSizeLimitExceeded': '上傳文件總大小不能超過{0}MB',
+  'PC.Pages.Chat.uploadSuccess': '上傳成功',
+  'PC.Pages.Chat.invalidConversationIdExport': '會話ID不存在或無效，無法導出',
+  'PC.Pages.Chat.exportFailed': '導出失敗',
+  'PC.Pages.Chat.exportSuccess': '導出成功！',
+  'PC.Pages.Chat.expandNavigation': '展開導航',
+  'PC.Pages.Chat.newConversation': '新建會話',
+  'PC.Pages.Chat.viewAgentDetails': '查看智能體詳情',
+  'PC.Pages.Chat.openPreviewPage': '打開預覽頁面',
+  'PC.Pages.Chat.closeFilePreview': '關閉文件預覽',
+  'PC.Pages.Chat.openFilePreview': '打開文件預覽',
+  'PC.Pages.Chat.closeAgentDesktop': '關閉智能體電腦',
+  'PC.Pages.Chat.openAgentDesktop': '打開智能體電腦',
+  'PC.Pages.Chat.loadingHistoryConversation': '正在加載歷史會話',
+  'PC.Pages.Chat.agentExecutingWait': '智能體正在執行，請稍等',
+  'PC.Pages.Chat.taskExecuting': '任務執行中',
+  'PC.Pages.Chat.leaveTaskWarning':
+    '目前有任務正在執行，離開頁面可能會中斷任務，確定要離開嗎？',
+  'PC.Pages.Chat.confirmLeave': '仍要離開',
+  'PC.Pages.Chat.noAgentPermission': '您無該智能體權限',
+  'PC.Pages.Chat.copyTemplate': '複製模板',
+  'PC.Toast.UploadAvatar.invalidType': '請上傳 JPG、JPEG 或 PNG 圖片文件',
+  'PC.Toast.UploadAvatar.invalidSize': '圖片大小不能超過 2MB',
+  'PC.Pages.SystemDashboard.resourceOverview': '資源概覽',
+  'PC.Pages.SystemDashboard.newSession': '新增會話',
+  'PC.Pages.SystemDashboard.sevenDayTrend': '近 7 天新增會話趨勢',
+  'PC.Pages.SystemDashboard.period7d': '7 天',
+  'PC.Pages.SystemDashboard.period30d': '30 天',
+  'PC.Pages.SystemDashboard.periodMonth': '按月',
+  'PC.Pages.SystemDashboard.chartTooltipData': '數據',
+  'PC.Pages.SystemLog.runningLog': '運行日誌',
+  'PC.Pages.SystemLog.operationLog': '操作日誌',
+  'PC.Pages.SystemTaskManage.pageTitle': '任務管理',
+  'PC.Pages.SystemTaskManage.selectTargetRequired': '請選擇{0}',
+  'PC.Pages.SystemTaskCreateTimedTask.createSuccess': '定時任務已創建成功',
+  'PC.Pages.SystemTaskCreateTimedTask.updateSuccess': '定時任務更新成功',
+  'PC.Pages.SystemTaskCreateTimedTask.createTitle': '創建定時任務',
+  'PC.Pages.SystemTaskCreateTimedTask.updateTitle': '更新定時任務',
+  'PC.Pages.SystemTaskCreateTimedTask.timedPeriod': '定時週期',
+  'PC.Pages.SystemTaskCreateTimedTask.taskName': '任務名稱',
+  'PC.Pages.SystemTaskCreateTimedTask.enterTaskName': '請輸入任務名稱',
+  'PC.Pages.SystemTaskCreateTimedTask.taskTarget': '任務對象',
+  'PC.Pages.SystemTaskCreateTimedTask.keepConversation': '保持會話',
+  'PC.Pages.SystemTaskCreateTimedTask.keepConversationTooltip':
+    '选择“否”时将为每次任务执行创建一个全新的会话',
+  'PC.Pages.SystemTaskCreateTimedTask.selectKeepConversation':
+    '请选择是否保持会话',
+  'PC.Pages.SystemTaskCreateTimedTask.yes': '是',
+  'PC.Pages.SystemTaskCreateTimedTask.no': '否',
+  'PC.Pages.SystemTaskCreateTimedTask.taskContent': '任務內容',
+  'PC.Pages.SystemTaskCreateTimedTask.enterTaskContent': '請輸入任務內容',
+  'PC.Pages.SystemTaskCreateTimedTask.taskContentPlaceholder':
+    '请输入你要执行的任务信息，信息提供的越详细执行成功率越高',
+  'PC.Pages.SystemTaskCreateTimedTask.parameterConfig': '參數配置',
+  'PC.Pages.SystemTaskCreateTimedTask.fillParameterConfig': '請填寫參數配置',
+  'PC.Pages.SystemTaskSelectTarget.addItem': '添加{0}',
+  'PC.Pages.SystemTaskSelectTargetFormItem.selectLabel': '請選擇{0}',
+  'PC.Pages.SystemTaskSelectTargetFormItemTarget.delete': '刪除',
+  'PC.Pages.SystemTaskTimedPeriodSelector.enter': '請輸入',
+  'PC.Pages.SystemTaskTimedPeriodSelector.specificTime': '指定時間',
+  'PC.Pages.SystemTaskTimedPeriodSelector.selectSpecificTime': '請選擇指定時間',
+  'PC.Pages.SystemTaskTimedPeriodSelector.specificTimeMustBeFuture':
+    '指定时间必须在当前时间之后',
+  'PC.Pages.SystemTaskTimedPeriodSelector.selectDateTime': '請選擇日期時間',
+  'PC.Pages.SystemTaskCreateTimedTask.specificTimeMustBeFuture':
+    '指定时间必须在当前时间之后',
+  'PC.Pages.SystemConfig.pageTitle': '系統設置',
+  'PC.Pages.SystemConfig.saveSuccess': '保存成功',
+  'PC.Pages.SystemConfigBaseFormItem.enterDomain': '請輸入域名',
+  'PC.Pages.SystemThemeConfig.pageTitle': '主題配置',
+  'PC.Pages.SystemThemeConfig.saveConfig': '保存配置',
+  'PC.Pages.SystemThemeConfig.resetDefault': '重置默認',
+  'PC.Pages.SystemThemeConfig.saveSuccess': '主題配置保存成功',
+  'PC.Pages.SystemThemeConfig.resetPreview': '已重置為默認配置（預覽效果）',
+  'PC.Pages.SystemThemeConfig.darkMode': '深色',
+  'PC.Pages.SystemThemeConfig.lightMode': '淺色',
+  'PC.Pages.SystemThemeConfig.autoSwitchedNavModePreview':
+    '已自动切换为{0}导航栏（预览效果）',
+  'PC.Pages.SystemThemeConfig.autoSwitchedBackgroundPreview':
+    '已自动切换为{0}以匹配{1}导航栏（预览效果）',
+  'PC.Pages.SystemTaskCenterProTable.statusExecuting': '執行中',
+  'PC.Pages.SystemTaskCenterProTable.statusCreatedWaiting':
+    '任务创建，等待执行',
+  'PC.Pages.SystemTaskCenterProTable.statusSuccessWaitingNext':
+    '执行成功，待下次执行',
+  'PC.Pages.SystemTaskCenterProTable.statusFailedWaitingNext':
+    '执行失败，待下次执行',
+  'PC.Pages.SystemTaskCenterProTable.statusEndedNoMore': '已結束，不再執行',
+  'PC.Pages.SystemTaskCenterProTable.executeTaskSuccess': '執行任務成功',
+  'PC.Pages.SystemTaskCenterProTable.enableTaskSuccess': '啟用任務成功',
+  'PC.Pages.SystemTaskCenterProTable.disableTaskSuccess': '停用任務成功',
+  'PC.Pages.SystemTaskCenterProTable.deleteTaskSuccess': '刪除任務成功',
+  'PC.Pages.SystemTaskCenterProTable.taskType': '任務類型',
+  'PC.Pages.SystemTaskCenterProTable.agent': '智能體',
+  'PC.Pages.SystemTaskCenterProTable.workflow': '工作流',
+  'PC.Pages.SystemTaskCenterProTable.selectTaskType': '請選擇任務類型',
+  'PC.Pages.SystemTaskCenterProTable.taskName': '任務名稱',
+  'PC.Pages.SystemTaskCenterProTable.enterTaskName': '請輸入任務名稱',
+  'PC.Pages.SystemTaskCenterProTable.taskTarget': '任務對象',
+  'PC.Pages.SystemTaskCenterProTable.taskStatus': '任務狀態',
+  'PC.Pages.SystemTaskCenterProTable.executionTimes': '執行次數',
+  'PC.Pages.SystemTaskCenterProTable.latestExecutionTime': '最近執行時間',
+  'PC.Pages.SystemTaskCenterProTable.nextExecutionTime': '下次執行時間',
+  'PC.Pages.SystemTaskCenterProTable.creator': '創建人',
+  'PC.Pages.SystemTaskCenterProTable.enterCreator': '請輸入創建人',
+  'PC.Pages.SystemTaskCenterProTable.createdTime': '創建時間',
+  'PC.Pages.SystemTaskCenterProTable.actions': '操作',
+  'PC.Pages.SystemTaskCenterProTable.manualExecute': '手動執行',
+  'PC.Pages.SystemTaskCenterProTable.enable': '啟用',
+  'PC.Pages.SystemTaskCenterProTable.confirmEnableTask': '確認啟用該任務？',
+  'PC.Pages.SystemTaskCenterProTable.disable': '停用',
+  'PC.Pages.SystemTaskCenterProTable.confirmDisableTask': '確認停用該任務？',
+  'PC.Pages.SystemTaskCenterProTable.edit': '編輯',
+  'PC.Pages.SystemTaskCenterProTable.executionRecord': '執行記錄',
+  'PC.Pages.SystemTaskCenterProTable.delete': '刪除',
+  'PC.Pages.SystemTaskCenterProTable.confirmDeleteTask': '確認刪除該任務？',
+  'PC.Pages.SpaceTaskCreateTimedTask.createSuccess': '定時任務已創建成功',
+  'PC.Pages.SpaceTaskCreateTimedTask.updateSuccess': '定時任務更新成功',
+  'PC.Pages.SpaceTaskCreateTimedTask.createTitle': '創建定時任務',
+  'PC.Pages.SpaceTaskCreateTimedTask.updateTitle': '更新定時任務',
+  'PC.Pages.SpaceTaskCreateTimedTask.timedPeriod': '定時週期',
+  'PC.Pages.SpaceTaskCreateTimedTask.taskName': '任務名稱',
+  'PC.Pages.SpaceTaskCreateTimedTask.enterTaskName': '請輸入任務名稱',
+  'PC.Pages.SpaceTaskCreateTimedTask.taskTarget': '任務對象',
+  'PC.Pages.SpaceTaskCreateTimedTask.keepConversation': '保持會話',
+  'PC.Pages.SpaceTaskCreateTimedTask.keepConversationTooltip':
+    '选择“否”时将为每次任务执行创建一个全新的会话',
+  'PC.Pages.SpaceTaskCreateTimedTask.selectKeepConversation':
+    '请选择是否保持会话',
+  'PC.Pages.SpaceTaskCreateTimedTask.yes': '是',
+  'PC.Pages.SpaceTaskCreateTimedTask.no': '否',
+  'PC.Pages.SpaceTaskCreateTimedTask.taskContent': '任務內容',
+  'PC.Pages.SpaceTaskCreateTimedTask.enterTaskContent': '請輸入任務內容',
+  'PC.Pages.SpaceTaskCreateTimedTask.taskContentPlaceholder':
+    '请输入你要执行的任务信息，信息提供的越详细执行成功率越高',
+  'PC.Pages.SpaceTaskCreateTimedTask.parameterConfig': '參數配置',
+  'PC.Pages.SpaceTaskCreateTimedTask.fillParameterConfig': '請填寫參數配置',
+  'PC.Pages.SpaceTaskSelectTarget.addItem': '添加{0}',
+  'PC.Pages.SpaceTaskSelectTargetFormItem.selectLabel': '請選擇{0}',
+  'PC.Pages.SpaceTaskSelectTargetFormItemTarget.delete': '刪除',
+  'PC.Pages.SpaceTaskTimedPeriodSelector.enter': '請輸入',
+  'PC.Pages.SpaceTaskTimedPeriodSelector.specificTime': '指定時間',
+  'PC.Pages.SpaceTaskTimedPeriodSelector.selectSpecificTime': '請選擇指定時間',
+  'PC.Pages.SpaceTaskTimedPeriodSelector.specificTimeMustBeFuture':
+    '指定时间必须在当前时间之后',
+  'PC.Pages.SpaceTaskTimedPeriodSelector.selectDateTime': '請選擇日期時間',
+  'PC.Pages.SpaceTaskCreateTimedTask.specificTimeMustBeFuture':
+    '指定时间必须在当前时间之后',
+  'PC.Pages.AppDevChatArea.chatTab': '對話',
+  'PC.Pages.AppDevChatArea.designTab': '設計',
+  'PC.Pages.AppDevChatArea.dataTab': '數據',
+  'PC.Pages.AppDevFilePathHeader.modified': '已修改',
+  'PC.Pages.AppDevHeader.defaultProjectName': '項目',
+  'PC.Pages.AppDevHeader.projectId': '項目ID: {0}',
+  'PC.Pages.AppDevHeader.published': '已發佈',
+  'PC.Pages.AppDevHeader.lastUpdated': '最後更新 {0}',
+  'PC.Pages.AppDevHeader.updatesNotPublished': '有更新未發佈',
+  'PC.Pages.AppDevHeader.versionHistory': '版本歷史',
+  'PC.Pages.AppDevHeader.publishing': '發佈中...',
+  'PC.Pages.AppDevHeader.publish': '發佈',
+  'PC.Pages.AppDevFileTreePanel.expand': '展開文件樹',
+  'PC.Pages.AppDevFileTreePanel.collapse': '收起文件樹',
+  'PC.Pages.AppDevFileTreePanel.loadingTitle': '正在加載...',
+  'PC.Pages.AppDevFileTreePanel.loadingDescription': '請稍候',
+  'PC.Pages.AppDevFileTreePanel.importProject': '導入項目',
+  'PC.Pages.AppDevFileTreeContextMenu.rename': '重命名',
+  'PC.Pages.AppDevFileTreeContextMenu.uploadFile': '上傳文件',
+  'PC.Pages.AppDevFileTreeContextMenu.delete': '刪除',
+  'PC.Pages.AppDevFileTreeContextMenu.importProject': '導入項目',
+  'PC.Pages.AppDevPlanProcess.completed': '已完成',
+  'PC.Pages.AppDevPlanProcess.inProgress': '執行中',
+  'PC.Pages.AppDevPlanProcess.partialFailed': '部分失敗',
+  'PC.Pages.AppDevPlanProcess.pending': '待執行',
+  'PC.Pages.AppDevPlanProcess.executionPlanProgress':
+    '执行计划（{0}/{1} 已完成）',
+  'PC.Pages.SystemContentAgent.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentAgent.deleteFailed': '刪除失敗',
+  'PC.Toast.SystemTargetAuthModal.authorized': '授權成功',
+  'PC.Pages.SystemTargetAuthModal.roleTab': '角色',
+  'PC.Pages.SystemTargetAuthModal.userGroupTab': '用戶組',
+  'PC.Pages.SystemTargetAuthModal.emptyPrefix': '暫無數據，請前往',
+  'PC.Pages.SystemTargetAuthModal.roleManagement': '角色管理',
+  'PC.Pages.SystemTargetAuthModal.createRole': '新建角色',
+  'PC.Pages.SystemTargetAuthModal.userGroupManagement': '用戶組管理',
+  'PC.Pages.SystemTargetAuthModal.createUserGroup': '新建用戶組',
+  'PC.Pages.SystemTargetAuthModal.authorize': '授權',
+  'PC.Pages.SystemTargetAuthModal.authorizeWithName': '授權 - {0}',
+  'PC.Pages.SystemTargetAuthModal.selectAll': '全選',
+  'PC.Pages.SystemTargetAuthModal.clearAll': '取消全選',
+  'PC.Toast.SystemRoleFormModal.createSuccess': '角色創建成功',
+  'PC.Toast.SystemRoleFormModal.editSuccess': '角色編輯成功',
+  'PC.Pages.SystemRoleFormModal.roleSourceSystemBuiltIn': '系統內置',
+  'PC.Pages.SystemRoleFormModal.roleSourceUserDefined': '用戶自定義',
+  'PC.Pages.SystemRoleFormModal.formValidateFailed': '表單驗證失敗',
+  'PC.Pages.SystemRoleFormModal.editTitle': '編輯角色',
+  'PC.Pages.SystemRoleFormModal.createTitle': '新增角色',
+  'PC.Pages.SystemRoleFormModal.save': '保存',
+  'PC.Pages.SystemRoleFormModal.create': '創建',
+  'PC.Pages.SystemRoleFormModal.roleName': '角色名稱',
+  'PC.Pages.SystemRoleFormModal.roleNameRequired': '請輸入角色名稱',
+  'PC.Pages.SystemRoleFormModal.roleNamePlaceholder': '請輸入角色名稱',
+  'PC.Pages.SystemRoleFormModal.source': '來源',
+  'PC.Pages.SystemRoleFormModal.sourcePlaceholder': '請選擇來源',
+  'PC.Pages.SystemRoleFormModal.sort': '排序',
+  'PC.Pages.SystemRoleFormModal.sortPlaceholder': '請輸入排序',
+  'PC.Pages.SystemRoleFormModal.status': '狀態',
+  'PC.Pages.SystemRoleFormModal.statusTooltip': '啟用或禁用此角色',
+  'PC.Pages.SystemRoleFormModal.enabled': '啟用',
+  'PC.Pages.SystemRoleFormModal.disabled': '禁用',
+  'PC.Pages.SystemRoleFormModal.description': '描述',
+  'PC.Pages.SystemRoleFormModal.descriptionPlaceholder': '請輸入角色描述',
+  'PC.Pages.SystemRunningLogDetailDrawer.title': '日誌詳情',
+  'PC.Pages.SystemRunningLogDetailDrawer.duration': '耗時',
+  'PC.Pages.SystemRunningLogDetailDrawer.messageId': '消息ID:',
+  'PC.Pages.SystemRunningLogDetailDrawer.calledComponents': '調用組件',
+  'PC.Pages.SystemRunningLogDetailDrawer.nodeDetails': '節點詳情',
+  'PC.Pages.SystemRunningLogDetailDrawer.input': '輸入',
+  'PC.Pages.SystemRunningLogDetailDrawer.output': '輸出',
+  'PC.Pages.SystemRunningLogDetailDrawer.executionProcess': '執行過程',
+  'PC.Pages.SystemRunningLogDetailDrawer.empty': '暫無數據',
+  'PC.Pages.SystemRoleManage.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemRoleManage.deleteRoleTitle': '刪除角色',
+  'PC.Pages.SystemRoleManage.deleteRoleConfirm': '確認刪除角色 "{0}" 嗎？',
+  'PC.Pages.SystemRoleManage.sortUpdated': '排序更新成功',
+  'PC.Pages.SystemRoleManage.columnSort': '排序',
+  'PC.Pages.SystemRoleManage.columnRoleName': '角色名稱',
+  'PC.Pages.SystemRoleManage.columnCode': '編碼',
+  'PC.Pages.SystemRoleManage.columnDescription': '描述',
+  'PC.Pages.SystemRoleManage.columnStatus': '狀態',
+  'PC.Pages.SystemRoleManage.statusTooltip': '啟用或禁用此角色',
+  'PC.Pages.SystemRoleManage.builtInCannotDisable': '系統內置的角色不能禁用',
+  'PC.Pages.SystemRoleManage.enabled': '啟用',
+  'PC.Pages.SystemRoleManage.disabled': '禁用',
+  'PC.Pages.SystemRoleManage.columnAction': '操作',
+  'PC.Pages.SystemRoleManage.builtInCannotEdit': '系統內置的角色不能編輯',
+  'PC.Pages.SystemRoleManage.noPermission': '無此資源權限',
+  'PC.Pages.SystemRoleManage.builtInCannotDelete': '系統內置的角色不能刪除',
+  'PC.Pages.SystemRoleManage.edit': '編輯',
+  'PC.Pages.SystemRoleManage.delete': '刪除',
+  'PC.Pages.SystemRoleManage.bindUser': '綁定用戶',
+  'PC.Pages.SystemRoleManage.menuPermission': '菜單權限',
+  'PC.Pages.SystemRoleManage.dataPermission': '數據權限',
+  'PC.Pages.SystemRoleManage.pageTitle': '角色管理',
+  'PC.Pages.SystemRoleManage.addRole': '新增角色',
+  'PC.Pages.SystemRoleManage.emptyData': '暫無角色數據',
+  'PC.Toast.SystemUserGroupFormModal.createSuccess': '新增用戶組成功',
+  'PC.Toast.SystemUserGroupFormModal.updateSuccess': '更新用戶組成功',
+  'PC.Pages.SystemUserGroupFormModal.sourceSystemBuiltIn': '系統內置',
+  'PC.Pages.SystemUserGroupFormModal.sourceUserDefined': '用戶自定義',
+  'PC.Pages.SystemUserGroupFormModal.formValidateFailed': '表單驗證失敗',
+  'PC.Pages.SystemUserGroupFormModal.editTitle': '編輯用戶組',
+  'PC.Pages.SystemUserGroupFormModal.createTitle': '新增用戶組',
+  'PC.Pages.SystemUserGroupFormModal.save': '保存',
+  'PC.Pages.SystemUserGroupFormModal.create': '創建',
+  'PC.Pages.SystemUserGroupFormModal.name': '用戶組名稱',
+  'PC.Pages.SystemUserGroupFormModal.nameRequired': '請輸入用戶組名稱',
+  'PC.Pages.SystemUserGroupFormModal.namePlaceholder': '請輸入用戶組名稱',
+  'PC.Pages.SystemUserGroupFormModal.maxUserCount': '最大用戶數',
+  'PC.Pages.SystemUserGroupFormModal.maxUserCountRequired': '請輸入最大用戶數',
+  'PC.Pages.SystemUserGroupFormModal.maxValueTip': '最大值為2147483647',
+  'PC.Pages.SystemUserGroupFormModal.maxUserCountPlaceholder':
+    '请输入最大用户数',
+  'PC.Pages.SystemUserGroupFormModal.source': '來源',
+  'PC.Pages.SystemUserGroupFormModal.sourcePlaceholder': '請選擇來源',
+  'PC.Pages.SystemUserGroupFormModal.sort': '排序',
+  'PC.Pages.SystemUserGroupFormModal.sortPlaceholder': '請輸入排序',
+  'PC.Pages.SystemUserGroupFormModal.status': '狀態',
+  'PC.Pages.SystemUserGroupFormModal.statusTip': '啟用或禁用此用戶組',
+  'PC.Pages.SystemUserGroupFormModal.enabled': '啟用',
+  'PC.Pages.SystemUserGroupFormModal.disabled': '禁用',
+  'PC.Pages.SystemUserGroupFormModal.description': '描述',
+  'PC.Pages.SystemUserGroupFormModal.descriptionPlaceholder':
+    '请输入用户组描述',
+  'PC.Pages.SystemUserGroupManage.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemUserGroupManage.deleteTitle': '刪除用戶組',
+  'PC.Pages.SystemUserGroupManage.deleteConfirm': '確認刪除用戶組 "{0}" 嗎？',
+  'PC.Pages.SystemUserGroupManage.sortUpdated': '排序更新成功',
+  'PC.Pages.SystemUserGroupManage.columnSort': '排序',
+  'PC.Pages.SystemUserGroupManage.columnName': '用戶組名稱',
+  'PC.Pages.SystemUserGroupManage.columnCode': '編碼',
+  'PC.Pages.SystemUserGroupManage.columnDescription': '描述',
+  'PC.Pages.SystemUserGroupManage.columnStatus': '狀態',
+  'PC.Pages.SystemUserGroupManage.statusTip': '啟用或禁用此用戶組',
+  'PC.Pages.SystemUserGroupManage.builtInCannotDisable':
+    '系统内置的用户组不能禁用',
+  'PC.Pages.SystemUserGroupManage.enabled': '啟用',
+  'PC.Pages.SystemUserGroupManage.disabled': '禁用',
+  'PC.Pages.SystemUserGroupManage.columnAction': '操作',
+  'PC.Pages.SystemUserGroupManage.builtInCannotEdit':
+    '系统内置的用户组不能编辑',
+  'PC.Pages.SystemUserGroupManage.noPermission': '無此資源權限',
+  'PC.Pages.SystemUserGroupManage.builtInCannotDelete':
+    '系统内置的用户组不能删除',
+  'PC.Pages.SystemUserGroupManage.edit': '編輯',
+  'PC.Pages.SystemUserGroupManage.delete': '刪除',
+  'PC.Pages.SystemUserGroupManage.bindUser': '綁定用戶',
+  'PC.Pages.SystemUserGroupManage.menuPermission': '菜單權限',
+  'PC.Pages.SystemUserGroupManage.dataPermission': '數據權限',
+  'PC.Pages.SystemUserGroupManage.pageTitle': '用戶組管理',
+  'PC.Pages.SystemUserGroupManage.add': '新增用戶組',
+  'PC.Pages.SystemUserGroupManage.empty': '暫無用戶組數據',
+  'PC.Pages.SystemContentAgent.view': '查看',
+  'PC.Pages.SystemContentAgent.authorize': '授權',
+  'PC.Pages.SystemContentAgent.delete': '刪除',
+  'PC.Pages.SystemContentAgent.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentAgent.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentAgent.columnName': '名稱',
+  'PC.Pages.SystemContentAgent.searchName': '請輸入智能體名稱',
+  'PC.Pages.SystemContentAgent.columnDescription': '描述',
+  'PC.Pages.SystemContentAgent.columnCreator': '創建人',
+  'PC.Pages.SystemContentAgent.columnPublishStatus': '發佈狀態',
+  'PC.Pages.SystemContentAgent.statusDeveloping': '待發布',
+  'PC.Pages.SystemContentAgent.statusApplying': '待審核',
+  'PC.Pages.SystemContentAgent.statusPublished': '已發佈',
+  'PC.Pages.SystemContentAgent.statusRejected': '已拒絕',
+  'PC.Pages.SystemContentAgent.columnCreated': '創建時間',
+  'PC.Pages.SystemContentAgent.columnAccessControl': '管控',
+  'PC.Pages.SystemContentAgent.accessControlTooltip':
+    '若开启管控，发布到系统广场的智能体需授权才能使用',
+  'PC.Pages.SystemContentAgent.accessControlOff': '關閉',
+  'PC.Pages.SystemContentAgent.accessControlOn': '開啟',
+  'PC.Pages.SystemContentAgent.columnAction': '操作',
+  'PC.Pages.SystemContentAgent.pageTitle': '智能體管理',
+  'PC.Pages.SystemContentDataTable.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentDataTable.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentDataTable.view': '查看',
+  'PC.Pages.SystemContentDataTable.delete': '刪除',
+  'PC.Pages.SystemContentDataTable.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentDataTable.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentDataTable.columnName': '名稱',
+  'PC.Pages.SystemContentDataTable.searchName': '請輸入數據表名稱',
+  'PC.Pages.SystemContentDataTable.columnDescription': '描述',
+  'PC.Pages.SystemContentDataTable.columnCreator': '創建人',
+  'PC.Pages.SystemContentDataTable.columnCreated': '創建時間',
+  'PC.Pages.SystemContentDataTable.columnAction': '操作',
+  'PC.Pages.SystemContentDataTable.pageTitle': '數據表管理',
+  'PC.Pages.SystemContentKnowledgeBase.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentKnowledgeBase.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentKnowledgeBase.view': '查看',
+  'PC.Pages.SystemContentKnowledgeBase.delete': '刪除',
+  'PC.Pages.SystemContentKnowledgeBase.deleteConfirmTitle':
+    '确定要删除 {0} 吗？',
+  'PC.Pages.SystemContentKnowledgeBase.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentKnowledgeBase.columnName': '名稱',
+  'PC.Pages.SystemContentKnowledgeBase.searchName': '請輸入知識庫名稱',
+  'PC.Pages.SystemContentKnowledgeBase.columnDescription': '描述',
+  'PC.Pages.SystemContentKnowledgeBase.columnCreator': '創建人',
+  'PC.Pages.SystemContentKnowledgeBase.columnCreated': '創建時間',
+  'PC.Pages.SystemContentKnowledgeBase.columnAction': '操作',
+  'PC.Pages.SystemContentKnowledgeBase.pageTitle': '知識庫管理',
+  'PC.Pages.SystemContentMcp.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentMcp.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentMcp.view': '查看',
+  'PC.Pages.SystemContentMcp.delete': '刪除',
+  'PC.Pages.SystemContentMcp.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentMcp.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentMcp.columnName': '名稱',
+  'PC.Pages.SystemContentMcp.searchName': '請輸入 MCP 名稱',
+  'PC.Pages.SystemContentMcp.columnDescription': '描述',
+  'PC.Pages.SystemContentMcp.columnCreator': '創建人',
+  'PC.Pages.SystemContentMcp.columnCreated': '創建時間',
+  'PC.Pages.SystemContentMcp.columnAction': '操作',
+  'PC.Pages.SystemContentMcp.pageTitle': 'MCP 管理',
+  'PC.Pages.SystemContentPlugin.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentPlugin.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentPlugin.view': '查看',
+  'PC.Pages.SystemContentPlugin.delete': '刪除',
+  'PC.Pages.SystemContentPlugin.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentPlugin.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentPlugin.columnName': '名稱',
+  'PC.Pages.SystemContentPlugin.searchName': '請輸入插件名稱',
+  'PC.Pages.SystemContentPlugin.columnDescription': '描述',
+  'PC.Pages.SystemContentPlugin.columnCreator': '創建人',
+  'PC.Pages.SystemContentPlugin.columnCreated': '創建時間',
+  'PC.Pages.SystemContentPlugin.columnAction': '操作',
+  'PC.Pages.SystemContentPlugin.pageTitle': '插件管理',
+  'PC.Pages.SystemContentWorkflow.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentWorkflow.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentWorkflow.view': '查看',
+  'PC.Pages.SystemContentWorkflow.delete': '刪除',
+  'PC.Pages.SystemContentWorkflow.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentWorkflow.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentWorkflow.columnName': '名稱',
+  'PC.Pages.SystemContentWorkflow.searchName': '請輸入工作流名稱',
+  'PC.Pages.SystemContentWorkflow.columnDescription': '描述',
+  'PC.Pages.SystemContentWorkflow.columnCreator': '創建人',
+  'PC.Pages.SystemContentWorkflow.columnCreated': '創建時間',
+  'PC.Pages.SystemContentWorkflow.columnAction': '操作',
+  'PC.Pages.SystemContentWorkflow.pageTitle': '工作流管理',
+  'PC.Pages.SystemContentSkill.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentSkill.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentSkill.view': '查看',
+  'PC.Pages.SystemContentSkill.delete': '刪除',
+  'PC.Pages.SystemContentSkill.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentSkill.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentSkill.columnName': '名稱',
+  'PC.Pages.SystemContentSkill.searchName': '請輸入技能名稱',
+  'PC.Pages.SystemContentSkill.columnDescription': '描述',
+  'PC.Pages.SystemContentSkill.columnCreator': '創建人',
+  'PC.Pages.SystemContentSkill.columnCreated': '創建時間',
+  'PC.Pages.SystemContentSkill.columnAction': '操作',
+  'PC.Pages.SystemContentSkill.pageTitle': '技能管理',
+  'PC.Pages.SystemContentSpace.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentSpace.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentSpace.view': '查看',
+  'PC.Pages.SystemContentSpace.delete': '刪除',
+  'PC.Pages.SystemContentSpace.deleteConfirmTitle': '確定要刪除 {0} 嗎？',
+  'PC.Pages.SystemContentSpace.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentSpace.columnName': '名稱',
+  'PC.Pages.SystemContentSpace.searchName': '請輸入名稱',
+  'PC.Pages.SystemContentSpace.columnDescription': '描述',
+  'PC.Pages.SystemContentSpace.columnCreator': '創建人',
+  'PC.Pages.SystemContentSpace.columnCreated': '創建時間',
+  'PC.Pages.SystemContentSpace.columnAction': '操作',
+  'PC.Pages.SystemContentSpace.pageTitle': '空間管理',
+  'PC.Pages.AppDevToolCallProcess.updatePrefix': '[更新] ',
+  'PC.Pages.AppDevToolCallProcess.readFile': '讀取文件 {0}',
+  'PC.Pages.AppDevToolCallProcess.editFile': '編輯文件 {0}',
+  'PC.Pages.AppDevToolCallProcess.createFile': '創建文件 {0}',
+  'PC.Pages.AppDevToolCallProcess.executeCommand': '執行命令 {0}',
+  'PC.Pages.AppDevToolCallProcess.executeCommandDefault': '執行命令',
+  'PC.Pages.AppDevToolCallProcess.genericCall': '{0} {1}',
+  'PC.Pages.AppDevToolCallProcess.toolCallDefault': '工具調用',
+  'PC.Pages.AppDevToolCallProcess.statusCompleted': '已完成',
+  'PC.Pages.AppDevToolCallProcess.statusInProgress': '執行中',
+  'PC.Pages.AppDevToolCallProcess.statusFailed': '失敗',
+  'PC.Pages.AppDevToolCallProcess.statusPending': '待執行',
+  'PC.Pages.AppDevToolCallProcess.statusLabel': '狀態:',
+  'PC.Pages.AppDevToolCallProcess.timeLabel': '時間:',
+  'PC.Pages.AppDevToolCallProcess.typeLabel': '類型:',
+  'PC.Pages.AppDevToolCallProcess.toolCallUpdateType': '工具調用更新',
+  'PC.Pages.AppDevMessageAttachment.imageAlt': '圖片',
+  'PC.Pages.AppDevMessageAttachment.fileTypeText': '文本文件',
+  'PC.Pages.AppDevMessageAttachment.fileTypeDocument': '文檔',
+  'PC.Pages.AppDevMessageAttachment.fileTypeAudio': '音頻文件',
+  'PC.Pages.AppDevMessageAttachment.fileTypeFile': '文件',
+  'PC.Pages.AppDevMessageAttachment.dataSourcePlugin': '插件',
+  'PC.Pages.AppDevMessageAttachment.dataSourceWorkflow': '工作流',
+  'PC.Pages.AppDevMessageAttachment.dataSourceDefault': '數據源',
+  'PC.Pages.AppDevChatInput.placeholderAbility1':
+    '一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力',
+  'PC.Pages.AppDevChatInput.placeholderAbility2':
+    '可以通过 @ 提及文件、目录、数据资源，以增强提示词的准确性',
+  'PC.Pages.AppDevChatInput.pendingChangesError':
+    '请先保存或重置修改, 再发送消息',
+  'PC.Pages.AppDevChatInput.maxPrototypeImageWarning':
+    '原型图片最多上传{0}张，当前已有{1}张，最多还能上传{2}张',
+  'PC.Pages.AppDevChatInput.pasteImageFileName': '粘貼圖片-{0}-{1}.png',
+  'PC.Pages.AppDevChatInput.uploadResultSummary':
+    '{0}张图片上传成功，{1}张上传失败',
+  'PC.Pages.AppDevChatInput.codingModel': '編碼模型',
+  'PC.Pages.AppDevChatInput.visionModelOptional': '視覺模型（可選）',
+  'PC.Pages.AppDevChatInput.attachmentFiles': '附件文件',
+  'PC.Pages.AppDevChatInput.prototypeImages': '原型圖片',
+  'PC.Pages.AppDevChatInput.mentionsTitle': '@ 提及',
+  'PC.Pages.AppDevChatInput.uploadFile': '上傳附件',
+  'PC.Pages.AppDevChatInput.uploadPrototypeImage': '上傳原型圖片',
+  'PC.Pages.AppDevChatInput.model': '模型',
+  'PC.Pages.AppDevChatInput.stopping': '正在停止...',
+  'PC.Pages.AppDevChatInput.cancelAiTask': '取消AI任務',
+  'PC.Pages.AppDevMentionSelector.filesAndFolders': '文件/文件夾',
+  'PC.Pages.AppDevMentionSelector.dataSources': '數據資源',
+  'PC.Pages.AppDevMentionSelector.recent': '最近使用',
+  'PC.Pages.AppDevMentionSelector.recommended': '推薦',
+  'PC.Pages.AppDevMentionSelector.browseProjectFiles': '瀏覽項目文件',
+  'PC.Pages.AppDevMentionSelector.workflowPluginEtc': '工作流、插件等',
+  'PC.Pages.AppDevMentionSelector.noMatchedResult': '未找到匹配的結果',
+  'PC.Pages.AppDevMentionSelector.files': '文件',
+  'PC.Pages.AppDevMentionSelector.folders': '文件夾',
+  'PC.Pages.AppDevMentionSelector.back': '\u2190 返回',
+  'PC.Pages.AppDevMentionSelector.fileList': '文件列表',
+  'PC.Pages.AppDevMentionSelector.noMatchedFileOrFolder':
+    '未找到匹配的文件或目录',
+  'PC.Pages.AppDevMentionSelector.noDataSourcesFound': '未找到數據資源',
+  'PC.Pages.AppDevMentionSelector.categoryItemCount': '{0} 項',
+  'PC.Pages.AppDevMentionSelector.dataSourceTypeWorkflow': '工作流',
+  'PC.Pages.AppDevMentionSelector.dataSourceTypePlugin': '插件',
+  'PC.Pages.AppDevMentionSelector.dataSourceTypeReverseProxy': '反向代理',
+  'PC.Pages.AppDevMentionSelector.defaultDescPlugin':
+    '插件资源，提供特定功能和服务',
+  'PC.Pages.AppDevMentionSelector.defaultDescWorkflow':
+    '工作流资源，支持复杂的业务流程编排',
+  'PC.Pages.AppDevMentionSelector.defaultDescReverseProxy':
+    '反向代理资源，提供网络代理服务',
+  'PC.Pages.AppDevMentionSelector.defaultDescDataSource': '數據資源',
+  'PC.Pages.AntvX6Published.title': '發佈工作流',
+  'PC.Pages.AntvX6Published.scope': '發佈範圍',
+  'PC.Pages.AntvX6Published.releaseNote': '發佈記錄',
+  'PC.Pages.AntvX6Published.releaseNotePlaceholder':
+    '这里填写详细的发布记录，如果范围选择了全局，审核通过后，所有工作空间均可引用该工作流',
+  'PC.Pages.AntvX6VersionAction.restoreSuccess': '版本恢復成功',
+  'PC.Pages.AntvX6VersionAction.restore': '恢復',
+  'PC.Pages.AntvX6Data.input': '輸入',
+  'PC.Pages.AntvX6Data.output': '輸出',
+  'PC.Pages.AntvX6Header.published': '已發佈',
+  'PC.Pages.AntvX6Header.autoSavedAt': '自動保存於 {0}',
+  'PC.Pages.AntvX6Header.unpublished': '未發佈',
+  'PC.Pages.AntvX6Header.updatedNotPublished': '已更新但未發佈',
+  'PC.Pages.AntvX6Header.saving': '保存中...',
+  'PC.Pages.AntvX6Header.saveFailed': '保存失敗',
+  'PC.Pages.AntvX6Header.saveFailedCheckNetwork': '保存失敗，請檢查網絡連接',
+  'PC.Pages.AntvX6Header.retrySave': '點擊重試保存',
+  'PC.Pages.AntvX6Header.unsavedChanges': '有未保存的更改',
+  'PC.Pages.AntvX6Header.saveNow': '點擊立即保存',
+  'PC.Pages.AntvX6Header.undoWithShortcut': '撤銷 ({0})',
+  'PC.Pages.AntvX6Header.redoWithShortcut': '重做 ({0})',
+  'PC.Pages.AntvX6Header.validating': '校驗中',
+  'PC.Pages.AntvX6Header.publish': '發佈',
+  'PC.Pages.AntvX6NodePanel.loopContinueDescription':
+    '结束当前循环并继续下一次迭代',
+  'PC.Pages.AntvX6NodePanel.loopBreakDescription':
+    '立即终止当前循环并退出循环体',
+  'PC.Pages.AntvX6Skill.editParams': '編輯參數',
+  'PC.Pages.AntvX6Skill.remove': '移除',
+  'PC.Pages.AntvX6Condition.branchTitle': '條件分支',
+  'PC.Pages.AntvX6Condition.priority': '優先級{0}',
+  'PC.Pages.AntvX6Condition.if': '如果',
+  'PC.Pages.AntvX6Condition.elseIf': '否則如果',
+  'PC.Pages.AntvX6Condition.and': '且',
+  'PC.Pages.AntvX6Condition.or': '或',
+  'PC.Pages.AntvX6Condition.referencePlaceholder': '請引用參數',
+  'PC.Pages.AntvX6Condition.add': '新增',
+  'PC.Pages.AntvX6Condition.else': '否則',
+  'PC.Pages.AntvX6Stencil.nodeSelectorTitle': '節點選擇',
+  'PC.Pages.AntvX6ControlPanel.zoomIn10Percent': '放大 10%',
+  'PC.Pages.AntvX6ControlPanel.zoomOut10Percent': '縮小 10%',
+  'PC.Pages.AntvX6ControlPanel.fitCanvas': '縮放到適配畫布',
+  'PC.Pages.AntvX6ControlPanel.zoom50Percent': '縮放到 50%',
+  'PC.Pages.AntvX6ControlPanel.zoom100Percent': '縮放到 100%',
+  'PC.Pages.AntvX6ControlPanel.zoom150Percent': '縮放到 150%',
+  'PC.Pages.AntvX6ControlPanel.zoom200Percent': '縮放到 200%',
+  'PC.Pages.AntvX6ControlPanel.addNode': '添加節點',
+  'PC.Pages.AntvX6ControlPanel.debug': '調試',
+  'PC.Pages.AntvX6ControlPanel.testRun': '試運行',
+  'PC.Pages.AntvX6ErrorList.title': '錯誤列表',
+  'PC.Pages.AntvX6ErrorList.empty': '暫無',
+  'PC.Pages.AntvX6Graph.cannotQuickAddNodeForLoopBoundary':
+    '循环节点的开始和结束节点不能快捷添加其他节点',
+  'PC.Pages.AntvX6Workflow.cannotNestLoop': '循環體裡請不要再添加循環體',
+  'PC.Pages.AntvX6Workflow.unsupportedComponentType': '暫不支持該類型組件',
+  'PC.Pages.AntvX6Workflow.loadingV3Version': '加載 V3 版本...',
+  'PC.Pages.AntvX6NodeOperations.addNodeFailed': '添加節點失敗',
+  'PC.Pages.AntvX6NodeOperations.addNodeNetworkError': '網絡異常，添加節點失敗',
+  'PC.Pages.AntvX6NodeOperations.copyNodeFailed': '複製失敗',
+  'PC.Pages.AntvX6NodeOperations.copyNodeNetworkError':
+    '网络异常，复制节点失败',
+  'PC.Pages.AntvX6NodeOperations.deleteNodeFailed': '刪除失敗',
+  'PC.Pages.AntvX6History.noUndoAvailable': '沒有可撤銷的操作',
+  'PC.Pages.AntvX6History.noRedoAvailable': '沒有可重做的操作',
+  'PC.Pages.AntvX6Persistence.versionConflict': '版本衝突',
+  'PC.Pages.AntvX6Persistence.versionConflictTitle': '版本衝突',
+  'PC.Pages.AntvX6Persistence.versionConflictContent':
+    '工作流已在其他窗口修改，是否强制覆盖？',
+  'PC.Pages.AntvX6Persistence.forceOverwrite': '強制覆蓋',
+  'PC.Pages.AntvX6Persistence.cancel': '取消',
+  'PC.Pages.AntvX6Persistence.saveFailed': '保存失敗',
+  'PC.Pages.AntvX6Persistence.networkSaveFailed': '網絡異常，保存失敗',
+  'PC.Pages.AntvX6Params.nodeLlmName': '大模型',
+  'PC.Pages.AntvX6Params.nodeLlmDescription':
+    '调用大语言模型，使用变量和提示词生成回复',
+  'PC.Pages.AntvX6Params.nodePluginName': '插件',
+  'PC.Pages.AntvX6Params.nodePluginDescription':
+    '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
+  'PC.Pages.AntvX6Params.nodeWorkflowName': '工作流',
+  'PC.Pages.AntvX6Params.nodeWorkflowDescription':
+    '必应搜索引擎。当你需要搜索你不知道的信息，比如天气...',
+  'PC.Pages.AntvX6Params.nodeMcpName': 'MCP',
+  'PC.Pages.AntvX6Params.nodeMcpDescription': 'MCP 組件',
+  'PC.Pages.AntvX6Params.groupBusinessLogic': '業務邏輯',
+  'PC.Pages.AntvX6Params.nodeCodeName': '代碼',
+  'PC.Pages.AntvX6Params.nodeCodeDescription':
+    '编写代码，处理输入变量来生成返回值',
+  'PC.Pages.AntvX6Params.nodeConditionName': '條件分支',
+  'PC.Pages.AntvX6Params.nodeConditionDescription':
+    '连接多个下游分支，若设定的条件成立则仅运行对应的分支，若均不成立则只运行“否则”分支',
+  'PC.Pages.AntvX6Params.nodeIntentRecognitionName': '意圖識別',
+  'PC.Pages.AntvX6Params.nodeIntentRecognitionDescription':
+    '用于用户输入的意图识别，并将其与预设意图选项进行匹配。',
+  'PC.Pages.AntvX6Params.nodeLoopName': '循環',
+  'PC.Pages.AntvX6Params.nodeLoopDescription':
+    '用于通过设定循环次数和逻辑，重复执行一系列任务。',
+  'PC.Pages.AntvX6Params.nodeLoopContinueName': '繼續循環',
+  'PC.Pages.AntvX6Params.nodeLoopBreakName': '終止循環',
+  'PC.Pages.AntvX6Params.groupKnowledgeData': '知識&數據',
+  'PC.Pages.AntvX6Params.nodeKnowledgeBaseName': '知識庫',
+  'PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription':
+    '在选定的知识中，根据输入变量召回最匹配的信息',
+  'PC.Pages.AntvX6Params.nodeVariableName': '變量',
+  'PC.Pages.AntvX6Params.nodeVariableDescription':
+    '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
+  'PC.Pages.AntvX6Params.nodeVariableAggregationName': '變量聚合',
+  'PC.Pages.AntvX6Params.nodeVariableAggregationDescription':
+    '将多个分支或变量聚合成分组输出',
+  'PC.Pages.AntvX6Params.nodeLongTermMemoryName': '長期記憶',
+  'PC.Pages.AntvX6Params.nodeLongTermMemoryDescription':
+    '用于调用长期记忆，获取用户的个性化信息',
+  'PC.Pages.AntvX6Params.groupDataTable': '數據表',
+  'PC.Pages.AntvX6Params.nodeTableDataAddName': '數據新增',
+  'PC.Pages.AntvX6Params.nodeTableDataAddDescription':
+    '对选定的数据表进行数据写入',
+  'PC.Pages.AntvX6Params.nodeTableDataDeleteName': '數據刪除',
+  'PC.Pages.AntvX6Params.nodeTableDataDeleteDescription':
+    '对选定的数据表根据指定ID进行数据删除',
+  'PC.Pages.AntvX6Params.nodeTableDataUpdateName': '數據更新',
+  'PC.Pages.AntvX6Params.nodeTableDataUpdateDescription':
+    '对选定的数据表根据指定条件进行数据更新',
+  'PC.Pages.AntvX6Params.nodeTableDataQueryName': '數據查詢',
+  'PC.Pages.AntvX6Params.nodeTableDataQueryDescription':
+    '对选定的数据表根据指定条件进行数据查询',
+  'PC.Pages.AntvX6Params.nodeTableSqlName': 'SQL自定義',
+  'PC.Pages.AntvX6Params.nodeTableSqlDescription':
+    '可支持对数据表的查询控制，用户可查询其他用户提交的数据，由开发者控制',
+  'PC.Pages.AntvX6Params.groupComponentTool': '組件&工具',
+  'PC.Pages.AntvX6Params.nodeQaName': '問答',
+  'PC.Pages.AntvX6Params.nodeQaDescription': '支持中間向用戶提問問題',
+  'PC.Pages.AntvX6Params.nodeTextProcessingName': '文本處理',
+  'PC.Pages.AntvX6Params.nodeTextProcessingDescription':
+    '用于处理多个字符串类型变量的格式',
+  'PC.Pages.AntvX6Params.nodeDocumentExtractionName': '文檔提取',
+  'PC.Pages.AntvX6Params.nodeDocumentExtractionDescription':
+    '用于提取文档内容，支持的文件类型: txt、markdown、pdf、html、xlsx、xls、docx、csv、md、htm',
+  'PC.Pages.AntvX6Params.nodeHttpRequestName': 'http請求',
+  'PC.Pages.AntvX6Params.nodeHttpRequestDescription':
+    '用于配置http请求调用已有的服务',
+  'PC.Pages.AntvX6Params.groupOutput': '輸出',
+  'PC.Pages.AntvX6Params.nodeProcessOutputName': '過程輸出',
+  'PC.Pages.AntvX6Params.nodeProcessOutputDescription':
+    '支持中间过程的消息输出，支持流式和非流式两种方式',
+  'PC.Pages.AntvX6Params.modelTypeTitleGeneration': '標題生成',
+  'PC.Pages.AntvX6Params.cycleArrayLoop': '使用數組循環',
+  'PC.Pages.AntvX6Params.cycleSpecifyTimesLoop': '指定次數循環',
+  'PC.Pages.AntvX6Params.cycleInfiniteLoop': '無限循環',
+  'PC.Pages.AntvX6Params.inputVariableName': '變量名',
+  'PC.Pages.AntvX6Params.inputVariableNameRequired': '請輸入變量名',
+  'PC.Pages.AntvX6Params.selectType': '選擇類型',
+  'PC.Pages.AntvX6Params.inputVariableType': '變量類型',
+  'PC.Pages.AntvX6Params.inputVariableTypeRequired': '請選擇變量類型',
+  'PC.Pages.AntvX6Params.description': '描述',
+  'PC.Pages.AntvX6Params.descriptionRequired': '請輸入描述',
+  'PC.Pages.AntvX6Params.paramName': '參數名',
+  'PC.Pages.AntvX6Params.paramNameRequired': '請輸入參數名',
+  'PC.Pages.AntvX6Params.inputOrReferenceParamValue': '輸入或引用參數值',
+  'PC.Pages.AntvX6Params.paramValue': '參數值',
+  'PC.Pages.AntvX6Params.paramValueRequired': '請輸入參數值',
+  'PC.Pages.AntvX6Params.inputParamValue': '輸入參數值',
+  'PC.Pages.AntvX6Params.intentDescriptionRequired': '請輸入用戶意圖的描述',
+  'PC.Pages.AntvX6Params.inputOrReferenceVariableValue': '輸入或引用變量值',
+  'PC.Pages.AntvX6Params.variableValue': '變量值',
+  'PC.Pages.AntvX6Params.variableValueRequired': '請輸入變量值',
+  'PC.Pages.AntvX6Params.resourceWorkflow': '資源庫工作流',
+  'PC.Pages.AntvX6Params.officialExample': '官方示例',
+  'PC.Pages.AntvX6Params.operatorEqual': '等於',
+  'PC.Pages.AntvX6Params.operatorNotEqual': '不等於',
+  'PC.Pages.AntvX6Params.operatorGreaterThan': '大於',
+  'PC.Pages.AntvX6Params.operatorGreaterThanOrEqual': '大於等於',
+  'PC.Pages.AntvX6Params.operatorLessThan': '小於',
+  'PC.Pages.AntvX6Params.operatorLessThanOrEqual': '小於等於',
+  'PC.Pages.AntvX6Params.operatorLengthGreaterThan': '長度大於',
+  'PC.Pages.AntvX6Params.operatorLengthGreaterThanOrEqual': '長度大於等於',
+  'PC.Pages.AntvX6Params.operatorLengthLessThan': '長度小於',
+  'PC.Pages.AntvX6Params.operatorLengthLessThanOrEqual': '長度小於等於',
+  'PC.Pages.AntvX6Params.operatorContains': '包含',
+  'PC.Pages.AntvX6Params.operatorNotContains': '不包含',
+  'PC.Pages.AntvX6Params.operatorMatchRegex': '匹配正則表達式',
+  'PC.Pages.AntvX6Params.operatorIsNull': '為空',
+  'PC.Pages.AntvX6Params.operatorNotNull': '不為空',
+  'PC.Pages.AntvX6Params.operatorIn': '屬於',
+  'PC.Pages.AntvX6Params.operatorNotIn': '不屬於',
+  'PC.Pages.SystemDashboard.pageTitle': '系統概覽',
+  'PC.Pages.SystemDashboard.totalUsers': '總用戶數',
+  'PC.Pages.SystemDashboard.todayNewUsers': '今日新增用戶',
+  'PC.Pages.SystemDashboard.todayVisits': '今日訪問量',
+  'PC.Pages.SystemDashboard.last30DaysVisits': '30日總訪問量',
+  'PC.Pages.SystemDashboard.resourceSpace': '工作空間',
+  'PC.Pages.SystemDashboard.resourceAgent': '智能體',
+  'PC.Pages.SystemDashboard.resourceKnowledgeBase': '知識庫',
+  'PC.Pages.SystemDashboard.resourceWorkflow': '工作流',
+  'PC.Pages.SystemDashboard.resourceDataTable': '數據表',
+  'PC.Pages.SystemDashboard.resourceWebApplication': '網頁應用',
+  'PC.Pages.SystemDashboard.resourceModel': '模型',
+  'PC.Pages.SystemDashboard.resourcePlugin': '插件',
+  'PC.Pages.SystemDashboard.resourceSkill': '技能',
+  'PC.Pages.SystemDashboard.totalConversations': '總會話數',
+  'PC.Pages.SystemDashboard.todayNewConversations': '今日新增會話',
+  'PC.Pages.SystemDashboard.userTrendTitle': '用戶新增趨勢',
+  'PC.Pages.SystemDashboard.userTrendTooltip': '新增用戶',
+  'PC.Pages.SystemDashboard.visitTrendTitle': '七日訪問趨勢',
+  'PC.Pages.SystemDashboard.visitTrendTooltip': '訪問量',
+  'PC.Pages.SystemDashboard.last7Days': '7天',
+  'PC.Pages.SystemContentWebApplication.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemContentWebApplication.deleteFailed': '刪除失敗',
+  'PC.Pages.SystemContentWebApplication.view': '查看',
+  'PC.Pages.SystemContentWebApplication.authorize': '授權',
+  'PC.Pages.SystemContentWebApplication.delete': '刪除',
+  'PC.Pages.SystemContentWebApplication.deleteConfirmTitle':
+    '确定要删除 {0} 吗？',
+  'PC.Pages.SystemContentWebApplication.deleteConfirmDescription':
+    '此操作无法撤销，所有相关数据将被永久删除。',
+  'PC.Pages.SystemContentWebApplication.columnName': '名稱',
+  'PC.Pages.SystemContentWebApplication.searchName': '請輸入網頁應用名稱',
+  'PC.Pages.SystemContentWebApplication.columnDescription': '描述',
+  'PC.Pages.SystemContentWebApplication.columnCreator': '創建人',
+  'PC.Pages.SystemContentWebApplication.columnPublishStatus': '發佈狀態',
+  'PC.Pages.SystemContentWebApplication.statusDeveloping': '待發布',
+  'PC.Pages.SystemContentWebApplication.statusApplying': '待審核',
+  'PC.Pages.SystemContentWebApplication.statusPublished': '已發佈',
+  'PC.Pages.SystemContentWebApplication.statusRejected': '已拒絕',
+  'PC.Pages.SystemContentWebApplication.columnCreated': '創建時間',
+  'PC.Pages.SystemContentWebApplication.columnAccessControl': '管控',
+  'PC.Pages.SystemContentWebApplication.accessControlTooltip':
+    '若开启管控，发布到系统广场的网页应用需授权才能使用',
+  'PC.Pages.SystemContentWebApplication.accessControlOff': '關閉',
+  'PC.Pages.SystemContentWebApplication.accessControlOn': '開啟',
+  'PC.Pages.SystemContentWebApplication.columnAction': '操作',
+  'PC.Pages.SystemContentWebApplication.pageTitle': '網頁應用管理',
+  'PC.Pages.SystemOperationLog.columnType': '類型',
+  'PC.Pages.SystemOperationLog.placeholderType': '請選擇類型',
+  'PC.Pages.SystemOperationLog.columnActionType': '操作方式',
+  'PC.Pages.SystemOperationLog.placeholderActionType': '請選擇操作方式',
+  'PC.Pages.SystemOperationLog.columnObjectName': '對象名稱',
+  'PC.Pages.SystemOperationLog.placeholderObjectName': '請輸入對象名稱',
+  'PC.Pages.SystemOperationLog.columnObjectSubtype': '對象子類',
+  'PC.Pages.SystemOperationLog.placeholderObjectSubtype': '請輸入對象子類',
+  'PC.Pages.SystemOperationLog.columnRequestParams': '請求參數',
+  'PC.Pages.SystemOperationLog.placeholderRequestParams':
+    '多个关键字以空格分隔，请输入内容',
+  'PC.Pages.SystemOperationLog.columnCreator': '創建人',
+  'PC.Pages.SystemOperationLog.placeholderCreator': '請輸入用戶名',
+  'PC.Pages.SystemOperationLog.columnTimeRange': '時間範圍',
+  'PC.Pages.SystemOperationLog.columnCreated': '創建時間',
+  'PC.Pages.SystemOperationLog.queryFailed': '查詢失敗',
+  'PC.Pages.SystemOperationLog.missingRequestIdForDetail':
+    '该条记录缺少 requestId，无法查看详情',
+  'PC.Pages.SystemOperationLog.columnAction': '操作',
+  'PC.Pages.SystemOperationLog.detail': '詳情',
+  'PC.Pages.SystemOperationLog.copySuccess': '複製成功',
+  'PC.Pages.SystemOperationLog.detailTitle': '日誌詳情',
+  'PC.Pages.SystemOperationLog.basicInfo': '基本信息',
+  'PC.Pages.SystemOperationLog.noData': '暫無數據',
+  'PC.Pages.AppDevChatArea.agentTaskCancelled': 'Agent 任務已取消',
+  'PC.Pages.AppDevChatArea.cancelAgentTaskFailed': '取消 Agent 任務失敗: {0}',
+  'PC.Pages.AppDevChatArea.unknownError': '未知錯誤',
+  'PC.Pages.AppDevChatArea.noPermissionForAiChat': '您沒有權限使用AI聊天功能',
+  'PC.Pages.AppDevChatArea.sendMessageFailed': '發送消息失敗',
+  'PC.Pages.AppDevChatArea.thinking': '正在思考...',
+  'PC.Pages.AppDevChatArea.messageSendFailed': '消息發送失敗',
+  'PC.Pages.AppDevChatArea.aiThinkingProcess': 'AI 思考過程',
+  'PC.Pages.AppDevChatArea.dataResources': '數據資源',
+  'PC.Pages.AppDevChatArea.addDataResource': '添加數據資源',
+  'PC.Pages.AppDevChatArea.loadingHistorySessions': '正在加載歷史會話',
+  'PC.Pages.AppDevChatArea.loadingDescription': '請稍候...',
+  'PC.Pages.AppDevChatArea.startNewConversation': '開始新對話',
+  'PC.Pages.AppDevChatArea.startNewConversationDescription':
+    '向 AI 助手提问，开始你的项目开发',
+  'PC.Pages.AppDevChatArea.autoFixingProgress': '({0}/{1}) 嘗試自動修復中...',
+  'PC.Pages.AppDevChat.toolCall': '工具調用',
+  'PC.Pages.AppDevChat.toolCallUpdate': '工具調用更新',
+  'PC.Pages.AppDevChat.errorMessageTitle': '錯誤消息',
+  'PC.Pages.AppDevChat.stopAgentAndRestartDialog':
+    '服务异常，请停止Agent服务并重新开始对话',
+  'PC.Pages.AppDevChat.agentServiceStopped': 'Agent服務已停止',
+  'PC.Pages.AppDevChat.stopAgentServiceFailedWithReason':
+    '停止Agent服务失败: {0}',
+  'PC.Pages.AppDevChat.stopAgentServiceFailed': '停止Agent服務失敗',
+  'PC.Pages.AppDevChat.agentServiceRunningDetected':
+    '检测到后台Agent服务正在运行',
+  'PC.Pages.AppDevChat.stopRunningAgentServiceConfirm':
+    '是否停止当前运行的Agent服务？',
+  'PC.Pages.AppDevChat.sendCancelled': '已取消發送',
+  'PC.Pages.AppDevChat.serviceExceptionTryLater': '服務異常，請稍後再試',
+  'PC.Pages.AppDevChat.aiAssistantConnectionFailed': 'AI助手連接失敗',
+  'PC.Pages.AppDevChat.inputMessageRequired': '請輸入消息內容',
+  'PC.Pages.AppDevDevLogConsole.clickToAddToChat': '點擊添加到聊天框',
+  'PC.Pages.AppDevDevLogConsole.headerTitle': '開發服務器日誌',
+  'PC.Pages.AppDevDevLogConsole.latestLogsContainErrors': '最新日誌包含錯誤',
+  'PC.Pages.AppDevDevLogConsole.quickIssueFix': '一鍵問題處理',
+  'PC.Pages.AppDevDevLogConsole.refreshLogs': '刷新日誌',
+  'PC.Pages.AppDevDevLogConsole.clearLogs': '清空日誌',
+  'PC.Pages.AppDevDevLogConsole.closeLogConsole': '關閉日誌控制檯',
+  'PC.Pages.AppDevDevLogConsole.loadingLogs': '正在加載日誌...',
+  'PC.Pages.AppDevDevLogConsole.noLogData': '暫無日誌數據',
+  'PC.Pages.AppDevContentViewer.loadingFileContentTitle': '正在加載文件內容',
+  'PC.Pages.AppDevContentViewer.loadingDescription': '請稍候...',
+  'PC.Pages.AppDevContentViewer.loadFileFailedTitle': '加載文件失敗',
+  'PC.Pages.AppDevContentViewer.retry': '重試',
+  'PC.Pages.AppDevContentViewer.noSelectedFileTitle': '暫無選中文件',
+  'PC.Pages.AppDevContentViewer.noSelectedFileDescription':
+    '请从左侧文件树选择一个文件进行预览',
+  'PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle': '無法預覽此文件類型',
+  'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription':
+    '当前不支持预览 {0} 格式的文件。',
+  'PC.Pages.AppDevContentViewer.previewDisabledDescription':
+    '请恢复或切换到最新版本以查看预览',
+  'PC.Pages.AppDevDesignViewer.saveOrResetBeforeAddToChat':
+    '请先保存或重置修改, 再添加选中元素到会话',
+  'PC.Pages.AntvX6ExceptionItem.title': '異常處理',
+  'PC.Pages.AntvX6ExceptionItem.titleTooltip':
+    '可设置异常处理，包括超时、重试、异常处理方式。开启流式输出后，一旦开始输出数据，即使出现异常也无法重试或者跳转异常分支。',
+  'PC.Pages.AntvX6ExceptionItem.timeoutLabel': '超時時間',
+  'PC.Pages.AntvX6ExceptionItem.timeoutTooltip': '設置節點執行的最大等待時間',
+  'PC.Pages.AntvX6ExceptionItem.timeoutRequired': '請輸入超時時間',
+  'PC.Pages.AntvX6ExceptionItem.retryCountLabel': '重試次數',
+  'PC.Pages.AntvX6ExceptionItem.noRetry': '不重試',
+  'PC.Pages.AntvX6ExceptionItem.retryOnce': '1次',
+  'PC.Pages.AntvX6ExceptionItem.retryTwice': '2次',
+  'PC.Pages.AntvX6ExceptionItem.retryThrice': '3次',
+  'PC.Pages.AntvX6ExceptionItem.handleTypeLabel': '異常處理方式',
+  'PC.Pages.AntvX6ExceptionItem.interruptFlow': '中斷流程',
+  'PC.Pages.AntvX6ExceptionItem.returnSpecificContent': '返回特定內容',
+  'PC.Pages.AntvX6ExceptionItem.executeExceptionFlow': '執行異常流程',
+  'PC.Pages.AntvX6ExceptionItem.customReturnContent': '自定義返回內容',
+  'PC.Pages.AntvX6ExceptionItem.customReturnContentRequired':
+    '请输入自定义返回内容',
+  'PC.Pages.AntvX6ExceptionItem.validJsonRequired': '請輸入有效的JSON格式',
+  'PC.Pages.SystemRunningLogTable.columnType': '類型',
+  'PC.Pages.SystemRunningLogTable.targetTypeAgent': '智能體',
+  'PC.Pages.SystemRunningLogTable.targetTypePlugin': '插件',
+  'PC.Pages.SystemRunningLogTable.targetTypeWorkflow': '工作流',
+  'PC.Pages.SystemRunningLogTable.placeholderType': '請選擇類型',
+  'PC.Pages.SystemRunningLogTable.columnObjectId': '對象ID',
+  'PC.Pages.SystemRunningLogTable.placeholderObjectId': '請輸入對象ID',
+  'PC.Pages.SystemRunningLogTable.columnObjectName': '對象名稱',
+  'PC.Pages.SystemRunningLogTable.placeholderObjectName': '請輸入對象名稱',
+  'PC.Pages.SystemRunningLogTable.columnRequestId': '請求ID',
+  'PC.Pages.SystemRunningLogTable.placeholderRequestId': '請輸入請求ID',
+  'PC.Pages.SystemRunningLogTable.columnUserId': '用戶ID',
+  'PC.Pages.SystemRunningLogTable.placeholderUserIdIntegerOnly':
+    '请输入用户ID，仅支持输入整数',
+  'PC.Pages.SystemRunningLogTable.columnUserName': '用戶名',
+  'PC.Pages.SystemRunningLogTable.placeholderUserName': '請輸入用戶名',
+  'PC.Pages.SystemRunningLogTable.columnConversationId': '會話ID',
+  'PC.Pages.SystemRunningLogTable.placeholderConversationId': '請輸入會話ID',
+  'PC.Pages.SystemRunningLogTable.columnInput': '輸入內容',
+  'PC.Pages.SystemRunningLogTable.columnOutput': '輸出內容',
+  'PC.Pages.SystemRunningLogTable.placeholderKeywords':
+    '多个关键字以空格分隔，请输入内容',
+  'PC.Pages.SystemRunningLogTable.columnTimeRange': '時間範圍',
+  'PC.Pages.SystemRunningLogTable.columnInputToken': '輸入token',
+  'PC.Pages.SystemRunningLogTable.columnOutputToken': '輸出token',
+  'PC.Pages.SystemRunningLogTable.columnRequestTime': '請求時間',
+  'PC.Pages.SystemRunningLogTable.columnElapsedTime': '整體耗時',
+  'PC.Pages.SystemRunningLogTable.queryFailed': '查詢失敗',
+  'PC.Pages.SystemRunningLogTable.missingRequestIdForDetail':
+    '该条记录缺少 requestId，无法查看详情',
+  'PC.Pages.SystemRunningLogTable.columnAction': '操作',
+  'PC.Pages.SystemRunningLogTable.detail': '詳情',
+  'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': '切換到 v{0} 版本',
+  'PC.Pages.AppDevEditorHeaderRight.cancel': '取消',
+  'PC.Pages.AppDevEditorHeaderRight.devServerConnected': '開發服務器已連接',
+  'PC.Pages.AppDevEditorHeaderRight.loading': '加載中...',
+  'PC.Pages.AppDevEditorHeaderRight.starting': '啟動中...',
+  'PC.Pages.AppDevEditorHeaderRight.restarting': '重啟中...',
+  'PC.Pages.AppDevEditorHeaderRight.importing': '導入中...',
+  'PC.Pages.AppDevEditorHeaderRight.lastUpdated': '最後更新: {0}',
+  'PC.Pages.AppDevEditorHeaderRight.closeLog': '關閉日誌',
+  'PC.Pages.AppDevEditorHeaderRight.viewLog': '查看日誌',
+  'PC.Pages.AppDevEditorHeaderRight.currentTag': '當前',
+  'PC.Pages.AppDevEditorHeaderRight.menuImportProject': '導入項目',
+  'PC.Pages.AppDevEditorHeaderRight.menuRestartServer': '重啟服務器',
+  'PC.Pages.AppDevEditorHeaderRight.menuFullscreenPreview': '全屏頁面預覽',
+  'PC.Pages.AppDevEditorHeaderRight.menuExportProject': '導出項目',
+  'PC.Pages.AppDevEditorHeaderRight.refreshPreview': '刷新預覽',
+  'PC.Pages.AntvX6CommonNode.columnParamName': '參數名',
+  'PC.Pages.AntvX6CommonNode.columnVariableValue': '變量值',
+  'PC.Pages.AntvX6CommonNode.fieldParamName': '參數名',
+  'PC.Pages.AntvX6CommonNode.placeholderParamName': '請輸入參數名',
+  'PC.Pages.AntvX6CommonNode.fieldVariableName': '變量名',
+  'PC.Pages.AntvX6CommonNode.placeholderParamValue': '請輸入參數值',
+  'PC.Pages.AntvX6CommonNode.columnParamValue': '參數值',
+  'PC.Pages.AntvX6CommonNode.noDescription': '暫無描述',
+  'PC.Pages.AntvX6CommonNode.otherBranchHint':
+    '此选项用户不可见，用户回复无关内容时走此分支',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeAgent': '智能體',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypePlugin': '插件',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeWorkflow': '工作流',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeKnowledge': '知識庫',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeVariable': '變量',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeTable': '數據表',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeModel': '模型',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypeToolCall': '工具調用',
+  'PC.Pages.SystemRunningLogNodeDetails.targetTypePlan': '計劃',
+  'PC.Pages.SystemRunningLogNodeDetails.labelType': '類型',
+  'PC.Pages.SystemRunningLogNodeDetails.labelStatus': '狀態',
+  'PC.Pages.SystemRunningLogNodeDetails.statusSuccess': '成功',
+  'PC.Pages.SystemRunningLogNodeDetails.labelName': '名稱',
+  'PC.Pages.SystemRunningLogNodeDetails.labelElapsed': '耗時',
+  'PC.Pages.SystemRunningLogNodeDetails.labelStartTime': '發起時間',
+  'PC.Pages.SystemRunningLogNodeDetails.labelEndTime': '結束時間',
+  'PC.Pages.AppDevDataResourceList.defaultDescPlugin':
+    '插件资源，提供特定功能和服务',
+  'PC.Pages.AppDevDataResourceList.defaultDescWorkflow':
+    '工作流资源，支持复杂的业务流程编排',
+  'PC.Pages.AppDevDataResourceList.defaultDescDataSource': '數據資源',
+  'PC.Pages.AppDevDataResourceList.deleteTargetNotFound':
+    '未找到要删除的数据源',
+  'PC.Pages.AppDevDataResourceList.deleteConfirmContent':
+    '数据资源一旦删除，页面将失去对该资源的访问权限',
+  'PC.Pages.AppDevDataResourceList.confirmDelete': '確認刪除',
+  'PC.Pages.AppDevDataResourceList.cancel': '取消',
+  'PC.Pages.AppDevDataResourceList.delete': '刪除',
+  'PC.Pages.AntvX6EventHandlers.cannotPasteLoopNode': '不能粘貼循環節點',
+  'PC.Pages.AntvX6EventHandlers.cannotPasteStartNode': '不能粘貼開始節點',
+  'PC.Pages.AntvX6EventHandlers.cannotPasteEndNode': '不能粘貼結束節點',
+  'PC.Pages.AntvX6EventHandlers.unsupportedCopyNodeType':
+    '该节点类型不支持复制',
+  'PC.Pages.AntvX6EventHandlers.nodeCopied': '已複製節點',
+  'PC.Pages.AntvX6EventHandlers.copyNodeFirst': '請先複製一個節點',
+  'PC.Pages.AntvX6EventHandlers.cannotDeleteLoopEdge': '不能刪除循環節點連線',
+  'PC.Pages.AntvX6EventHandlers.cannotDeleteStartEndNodes':
+    '不能删除开始节点和结束节点',
+  'PC.Pages.AntvX6EventHandlers.deleteLoopNodeConfirmTitle':
+    '确定要删除循环节点吗？',
+  'PC.Pages.AntvX6EventHandlers.confirm': '確認',
+  'PC.Pages.AntvX6EventHandlers.cancel': '取消',
+  'PC.Pages.SystemMenuFormModal.addSuccess': '新增菜單成功',
+  'PC.Pages.SystemMenuFormModal.updateSuccess': '更新菜單成功',
+  'PC.Pages.SystemMenuFormModal.sourceSystemBuiltIn': '系統內置',
+  'PC.Pages.SystemMenuFormModal.sourceUserDefined': '用戶自定義',
+  'PC.Pages.SystemMenuFormModal.openInCurrentTab': '應用內打開',
+  'PC.Pages.SystemMenuFormModal.openInNewTab': '新標籤頁打開',
+  'PC.Pages.SystemMenuFormModal.imageTypeInvalid':
+    '请上传 JPG、JPEG、PNG、SVG 类型图片文件',
+  'PC.Pages.SystemMenuFormModal.imageSizeInvalid': '圖片大小不能超過2MB',
+  'PC.Pages.SystemMenuFormModal.editTitle': '編輯菜單',
+  'PC.Pages.SystemMenuFormModal.createTitle': '新增菜單',
+  'PC.Pages.SystemMenuFormModal.save': '保存',
+  'PC.Pages.SystemMenuFormModal.create': '創建',
+  'PC.Pages.SystemMenuFormModal.icon': '圖標',
+  'PC.Pages.SystemMenuFormModal.menuName': '菜單名稱',
+  'PC.Pages.SystemMenuFormModal.menuNameRequired': '請輸入菜單名稱',
+  'PC.Pages.SystemMenuFormModal.menuNamePlaceholder': '請輸入菜單名稱',
+  'PC.Pages.SystemMenuFormModal.parentMenu': '父菜單',
+  'PC.Pages.SystemMenuFormModal.parentMenuPlaceholder': '請選擇父菜單（無）',
+  'PC.Pages.SystemMenuFormModal.routePath': '路由路徑',
+  'PC.Pages.SystemMenuFormModal.routePathPatternInvalid':
+    '路由路径/URL地址只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格），例如 /system/menu 或 https://example.com',
+  'PC.Pages.SystemMenuFormModal.routePathLengthInvalid':
+    '路由路径长度不能超过500个字符',
+  'PC.Pages.SystemMenuFormModal.routePathTipStatic':
+    '静态路由，例如：/system/menu',
+  'PC.Pages.SystemMenuFormModal.routePathTipDynamic':
+    '动态路由，例如：/space/:spaceId/develop',
+  'PC.Pages.SystemMenuFormModal.routePathTipExternal':
+    '外部URL地址，例如：https://example.com',
+  'PC.Pages.SystemMenuFormModal.routePathPlaceholder':
+    '请输入路由路径，例如：/system/menu',
+  'PC.Pages.SystemMenuFormModal.externalOpenType': '外鏈打開方式',
+  'PC.Pages.SystemMenuFormModal.openTypePlaceholder': '請選擇打開方式',
+  'PC.Pages.SystemMenuFormModal.source': '來源',
+  'PC.Pages.SystemMenuFormModal.sourcePlaceholder': '請選擇來源',
+  'PC.Pages.SystemMenuFormModal.sort': '排序',
+  'PC.Pages.SystemMenuFormModal.sortPlaceholder': '請輸入排序',
+  'PC.Pages.SystemMenuFormModal.enable': '是否啟用',
+  'PC.Pages.SystemMenuFormModal.enableTooltip': '啟用或禁用此菜單',
+  'PC.Pages.SystemMenuFormModal.enabled': '啟用',
+  'PC.Pages.SystemMenuFormModal.disabled': '禁用',
+  'PC.Pages.SystemMenuFormModal.description': '描述',
+  'PC.Pages.SystemMenuFormModal.descriptionPlaceholder': '請輸入描述',
+  'PC.Pages.SystemMenuFormModal.bindResourceCode': '關聯資源碼',
+  'PC.Pages.SystemMenuFormModal.bindResourceCodeTooltip':
+    '选择该菜单可以访问的资源权限',
+  'PC.Pages.SystemMenuManage.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemMenuManage.deleteMenuTitle': '刪除菜單',
+  'PC.Pages.SystemMenuManage.deleteMenuConfirm': '確認刪除菜單 "{0}" 嗎？',
+  'PC.Pages.SystemMenuManage.sortUpdateSuccess': '排序更新成功',
+  'PC.Pages.SystemMenuManage.dragFailedRetry': '拖拽失敗，請重試',
+  'PC.Pages.SystemMenuManage.columnSort': '排序',
+  'PC.Pages.SystemMenuManage.columnMenuName': '菜單名稱',
+  'PC.Pages.SystemMenuManage.columnCode': '編碼',
+  'PC.Pages.SystemMenuManage.columnRoutePath': '路由路徑',
+  'PC.Pages.SystemMenuManage.columnDescription': '描述',
+  'PC.Pages.SystemMenuManage.columnEnabled': '是否啟用',
+  'PC.Pages.SystemMenuManage.enabled': '啟用',
+  'PC.Pages.SystemMenuManage.disabled': '禁用',
+  'PC.Pages.SystemMenuManage.columnAction': '操作',
+  'PC.Pages.SystemMenuManage.noPermission': '無此資源權限',
+  'PC.Pages.SystemMenuManage.actionAdd': '新增',
+  'PC.Pages.SystemMenuManage.actionEdit': '編輯',
+  'PC.Pages.SystemMenuManage.actionDelete': '刪除',
+  'PC.Pages.SystemMenuManage.systemBuiltinDeleteDisabled':
+    '系统内置的菜单不能删除',
+  'PC.Pages.SystemMenuManage.pageTitle': '菜單管理',
+  'PC.Pages.SystemMenuManage.addMenu': '新增菜單',
+  'PC.Pages.SystemMenuManage.noMenuData': '暫無菜單數據',
+  'PC.Pages.SystemMenuPermissionModal.saveSuccess': '菜單權限保存成功',
+  'PC.Pages.SystemMenuPermissionModal.titleWithName': '菜單權限配置-{0}',
+  'PC.Pages.SystemMenuPermissionModal.emptyMenuData': '暫無菜單數據',
+  'PC.Pages.SystemMenuPermissionModal.resourceLabelWithId': '資源 {0}',
+  'PC.Pages.SystemMenuDataPermissionModal.tabModel': '模型',
+  'PC.Pages.SystemMenuDataPermissionModal.tabModelTip': '模型需要授權後才可用',
+  'PC.Pages.SystemMenuDataPermissionModal.tabAgent': '智能體',
+  'PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip':
+    '在内容管理中开启管控并发布到系统广场后可在此处进行授权',
+  'PC.Pages.SystemMenuDataPermissionModal.tabWebApp': '網頁應用',
+  'PC.Pages.SystemMenuDataPermissionModal.tabDevPermission': '開發權限',
+  'PC.Pages.SystemMenuDataPermissionModal.saveSuccess': '數據權限保存成功',
+  'PC.Pages.SystemMenuDataPermissionModal.missingTargetId':
+    'ID缺失，无法保存数据权限',
+  'PC.Pages.SystemMenuDataPermissionModal.emptySelectedModel': '暫無已選模型',
+  'PC.Pages.SystemMenuDataPermissionModal.searchAgentPlaceholder': '搜索智能體',
+  'PC.Pages.SystemMenuDataPermissionModal.emptySelectedAgent': '暫無已選智能體',
+  'PC.Pages.SystemMenuDataPermissionModal.searchWebAppPlaceholder':
+    '搜索网页应用',
+  'PC.Pages.SystemMenuDataPermissionModal.emptySelectedWebApp':
+    '暂无已选网页应用',
+  'PC.Pages.SystemMenuDataPermissionModal.tokenLimitLabel': '每日token限制',
+  'PC.Pages.SystemMenuDataPermissionModal.tokenLimitTip':
+    '每日 token 限制，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.tokenLimitPlaceholder':
+    '请输入每日token限制数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxSpaceCountLabel':
+    '可创建工作空间数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxSpaceCountTip':
+    '可创建工作空间数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.maxAgentCountLabel':
+    '可创建智能体数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxAgentCountTip':
+    '可创建智能体数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.maxWebAppCountLabel':
+    '可创建网页应用数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxWebAppCountTip':
+    '可创建网页应用数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.maxKnowledgeCountLabel':
+    '可创建知识库数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxKnowledgeCountTip':
+    '可创建知识库数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.knowledgeStorageLimitGbLabel':
+    '知识库存储空间上限 (GB)',
+  'PC.Pages.SystemMenuDataPermissionModal.knowledgeStorageLimitGbTip':
+    '-1表示不限制, 0表示无权限, 精度为0.001GB, 1GB=1024MB, 1MB=1024KB',
+  'PC.Pages.SystemMenuDataPermissionModal.maxDataTableCountLabel':
+    '可创建数据表数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxDataTableCountTip':
+    '可创建数据表数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.maxScheduledTaskCountLabel':
+    '可创建定时任务数量',
+  'PC.Pages.SystemMenuDataPermissionModal.maxScheduledTaskCountTip':
+    '可创建定时任务数量，-1 表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.agentMemoryGbLabel':
+    '智能体电脑内存(GB)',
+  'PC.Pages.SystemMenuDataPermissionModal.agentMemoryGbTip':
+    '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+  'PC.Pages.SystemMenuDataPermissionModal.agentCpuCoresLabel':
+    '智能体电脑 CPU 核心数',
+  'PC.Pages.SystemMenuDataPermissionModal.agentCpuCoresTip':
+    '智能体电脑 CPU 核心数（留空表示使用默认值）',
+  'PC.Pages.SystemMenuDataPermissionModal.agentDailyPromptLimitLabel':
+    '通用智能体每天对话次数限制',
+  'PC.Pages.SystemMenuDataPermissionModal.agentDailyPromptLimitTip':
+    '通用智能体每天对话次数，-1表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.webAppDailyPromptLimitLabel':
+    '网页应用开发每天对话次数',
+  'PC.Pages.SystemMenuDataPermissionModal.webAppDailyPromptLimitTip':
+    '网页应用开发每天对话次数，-1表示不限制',
+  'PC.Pages.SystemMenuDataPermissionModal.titleWithName': '數據權限設置 - {0}',
+  'PC.Pages.SystemMenuDataPermissionModal.itemAdd': '添加',
+  'PC.Pages.SystemMenuDataPermissionModal.itemAdded': '已添加',
+  'PC.Pages.SystemMenuDataPermissionModal.itemRemove': '移除',
+  'PC.Pages.AppDevPreview.devServerUrlUnavailable': '開發服務器URL不可用',
+  'PC.Pages.AppDevPreview.retryFailedCheckNetwork': '重試失敗，請檢查網絡連接',
+  'PC.Pages.AppDevPreview.serverErrorWithCode': '服務器錯誤 ({0})',
+  'PC.Pages.AppDevPreview.serverStartFailedWithCode':
+    '开发服务器启动失败 ({0})',
+  'PC.Pages.AppDevPreview.starting': '啟動中',
+  'PC.Pages.AppDevPreview.importingAndRestarting':
+    '正在导入项目并重启开发服务器，请稍候...',
+  'PC.Pages.AppDevPreview.startingEnvironment': '正在啟動開發環境，請稍候...',
+  'PC.Pages.AppDevPreview.developingPleaseWait': '正在生成，請稍候...',
+  'PC.Pages.AppDevPreview.refreshing': '刷新中...',
+  'PC.Pages.AppDevPreview.refresh': '刷新',
+  'PC.Pages.AppDevPreview.restartServer': '重啟服務器',
+  'PC.Pages.AppDevPreview.restarting': '重啟中...',
+  'PC.Pages.AppDevPreview.restartService': '重啟服務',
+  'PC.Pages.AppDevPreview.saveOrResetBeforeRefresh':
+    '请先保存或重置修改, 再刷新预览',
+  'PC.Pages.AppDevPreview.previewLoadFailedCheckServerNetwork':
+    '预览加载失败，请检查开发服务器状态或网络连接',
+  'PC.Pages.AppDevPreview.projectIdMissingCannotSave': '缺少項目ID，無法保存',
+  'PC.Pages.AppDevPreview.noPendingChanges': '沒有待保存的更改',
+  'PC.Pages.AppDevPreview.processFileError': '處理文件 {0} 時出錯',
+  'PC.Pages.AppDevPreview.saveSuccess': '成功保存',
+  'PC.Pages.AppDevPreview.saveFailedCheckConsole':
+    '保存失败，请查看控制台错误信息',
+  'PC.Pages.AppDevPreview.viewFullErrorInfo': '查看完整錯誤信息',
+  'PC.Pages.AppDevPreview.unsavedChanges': '未保存的更改',
+  'PC.Pages.AppDevPreview.reset': '重置',
+  'PC.Pages.AppDevPreview.save': '保存',
+  'PC.Pages.AntvX6ComplexNode.none': '無',
+  'PC.Pages.AntvX6ComplexNode.skills': '技能',
+  'PC.Pages.AntvX6ComplexNode.input': '輸入',
+  'PC.Pages.AntvX6ComplexNode.systemPromptTitle': '系統提示詞',
+  'PC.Pages.AntvX6ComplexNode.systemPromptTooltip':
+    '为对话提供系统级指导，如设定人设和回复逻辑。',
+  'PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder':
+    '系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量',
+  'PC.Pages.AntvX6ComplexNode.userPromptTitle': '用戶提示詞',
+  'PC.Pages.AntvX6ComplexNode.userPromptTooltip':
+    '向模型提供用户指令，如查询或任何基于文本输入的提问。',
+  'PC.Pages.AntvX6ComplexNode.userPromptPlaceholder':
+    '用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量',
+  'PC.Pages.AntvX6ComplexNode.output': '輸出',
+  'PC.Pages.AntvX6ComplexNode.promptOptimizeTitle': '提示詞優化',
+  'PC.Pages.AntvX6ComplexNode.intentMatchTitle': '意圖匹配',
+  'PC.Pages.AntvX6ComplexNode.extraPromptTitle': '補充提示詞',
+  'PC.Pages.AntvX6ComplexNode.extraPromptPlaceholder':
+    '支持额外的系统提示词，如对意图选项做更详细的例子以增强用户输出与意图匹配的成功率。',
+  'PC.Pages.AntvX6ComplexNode.questionTitle': '提問問題',
+  'PC.Pages.AntvX6ComplexNode.questionPlaceholder':
+    '可使用{{变量名}}的方式引用输入参数中的变量',
+  'PC.Pages.AntvX6ComplexNode.answerTypeLabel': '回答類型',
+  'PC.Pages.AntvX6ComplexNode.answerTypeText': '直接回答',
+  'PC.Pages.AntvX6ComplexNode.answerTypeSelect': '選項回答',
+  'PC.Pages.AntvX6ComplexNode.optionContentTitle': '設置選項內容',
+  'PC.Pages.AntvX6ComplexNode.requestMethodAndPath': '請求方法與路徑',
+  'PC.Pages.AntvX6ComplexNode.requestMethodPlaceholder': '請求方法',
+  'PC.Pages.AntvX6ComplexNode.urlPlaceholder': '請輸入url地址',
+  'PC.Pages.AntvX6ComplexNode.requestContentTypeLabel': '請求內容格式',
+  'PC.Pages.AntvX6ComplexNode.requestTimeoutLabel': '請求超時配置',
+  'PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder': '請輸入超時配置時長',
+  'PC.Pages.AntvX6ComplexNode.inputParams': '入參',
+  'PC.Pages.AntvX6ComplexNode.outputParams': '出參',
+  'PC.Pages.AntvX6Database.addCondition': '添加條件',
+  'PC.Pages.AntvX6Database.and': '且',
+  'PC.Pages.AntvX6Database.deleteCondition': '刪除條件',
+  'PC.Pages.AntvX6Database.emptyConditionData': '當前查詢數據為空',
+  'PC.Pages.AntvX6Database.generateSqlTitle': '生成sql語句',
+  'PC.Pages.AntvX6Database.or': '或',
+  'PC.Pages.AntvX6Database.queryCondition': '查詢條件',
+  'PC.Pages.AntvX6Database.queryLimit': '查詢上限',
+  'PC.Pages.AntvX6Database.queryLimitPlaceholder': '請輸入查詢上限',
+  'PC.Pages.AntvX6Database.selectPlaceholder': '請選擇',
+  'PC.Pages.AntvX6Database.selectUpdateFields': '選擇更新字段',
+  'PC.Pages.AntvX6Database.sqlPlaceholder':
+    '可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量',
+  'PC.Pages.AntvX6Database.table': '數據表',
+  'PC.Pages.AntvX6Database.updateCondition': '更新條件',
+  'PC.Pages.AntvX6Database.variableValue': '變量值',
+  'PC.Pages.AntvX6VariableAggregation.noDescription': '暫無描述',
+  'PC.Pages.AntvX6VariableAggregation.noUpstreamNodeOrParams':
+    '未添加上级节点连线或上级节点无参数',
+  'PC.Pages.AntvX6VariableAggregation.selectVariable': '選擇變量',
+  'PC.Pages.AntvX6VariableAggregation.groupNamePlaceholder': '分組名稱',
+  'PC.Pages.AntvX6VariableAggregation.emptyGroupInputHint':
+    '点击 + 添加变量引用',
+  'PC.Pages.AntvX6VariableAggregation.strategyFirstNonNull':
+    '返回每个分组中第一个非空的值',
+  'PC.Pages.AntvX6VariableAggregation.strategyTitle': '聚合策略',
+  'PC.Pages.AntvX6VariableAggregation.groupConfigTitle': '分組配置',
+  'PC.Pages.AntvX6VariableAggregation.emptyGroupHint': '點擊 + 添加分組',
+  'PC.Pages.AntvX6VariableAggregation.outputTitle': '輸出',
+  'PC.Pages.AntvX6NodeItem.add': '添加',
+  'PC.Pages.AntvX6NodeItem.addGroup': '新增分組',
+  'PC.Pages.AntvX6NodeItem.aggregationStrategy': '聚合策略',
+  'PC.Pages.AntvX6NodeItem.arrayJoinSymbolDescription':
+    '使用以下符号来自动连接数组中的每个项目',
+  'PC.Pages.AntvX6NodeItem.arrayJoinSymbolSetting': '數組連接符設置',
+  'PC.Pages.AntvX6NodeItem.code': '代碼',
+  'PC.Pages.AntvX6NodeItem.comma': '逗號 (,)',
+  'PC.Pages.AntvX6NodeItem.delimiter': '分隔符',
+  'PC.Pages.AntvX6NodeItem.firstNonNullOfEachGroup':
+    '返回每个分组中第一个非空的值',
+  'PC.Pages.AntvX6NodeItem.fullStop': '句號 (。)',
+  'PC.Pages.AntvX6NodeItem.groupConfig': '分組配置',
+  'PC.Pages.AntvX6NodeItem.inputVariablePlaceholder':
+    '可以使用{{变量名}}的方式引用输入参数中的变量',
+  'PC.Pages.AntvX6NodeItem.intermediateVariable': '中間變量',
+  'PC.Pages.AntvX6NodeItem.intermediateVariableTooltip':
+    '变量可在多次循环中实现共享，可用于在多次循环中传递变量。',
+  'PC.Pages.AntvX6NodeItem.joinSymbol': '連接符',
+  'PC.Pages.AntvX6NodeItem.loopArray': '循環數組',
+  'PC.Pages.AntvX6NodeItem.loopSetting': '循環設置',
+  'PC.Pages.AntvX6NodeItem.loopSettingTooltip':
+    '如果引用数组，循环次数为数组的长度；如果指定次数，循环次数为指定的次数；如果选择无限循环，需配合“终止循环”节点完成循环流程。',
+  'PC.Pages.AntvX6NodeItem.loopTimes': '循環次數',
+  'PC.Pages.AntvX6NodeItem.loopTimesPlaceholder':
+    '请输入循环次数，并且值为正整数',
+  'PC.Pages.AntvX6NodeItem.newline': '換行 (\\n)',
+  'PC.Pages.AntvX6NodeItem.optionNamePlaceholder': '選項名稱',
+  'PC.Pages.AntvX6NodeItem.optionValuePlaceholder': '選項值',
+  'PC.Pages.AntvX6NodeItem.outputContent': '輸出內容',
+  'PC.Pages.AntvX6NodeItem.outputContentPlaceholder':
+    '可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量',
+  'PC.Pages.AntvX6NodeItem.outputContentTooltip':
+    '可以在以下输入框中重新组织输出内容，大模型将优先使用输入框中的内容。',
+  'PC.Pages.AntvX6NodeItem.outputVariable': '輸出變量',
+  'PC.Pages.AntvX6NodeItem.returnText': '返回文本',
+  'PC.Pages.AntvX6NodeItem.returnVariable': '返回變量',
+  'PC.Pages.AntvX6NodeItem.selectJoinSymbol': '請選擇連接符號',
+  'PC.Pages.AntvX6NodeItem.selectSplitSymbol': '請選擇分割符號',
+  'PC.Pages.AntvX6NodeItem.semicolon': '分號 (;)',
+  'PC.Pages.AntvX6NodeItem.setVariable': '設置變量',
+  'PC.Pages.AntvX6NodeItem.getVariable': '獲取變量',
+  'PC.Pages.AntvX6NodeItem.space': '空格 ( )',
+  'PC.Pages.AntvX6NodeItem.stringConcat': '字符串拼接',
+  'PC.Pages.AntvX6NodeItem.stringSplit': '字符串分割',
+  'PC.Pages.AntvX6NodeItem.tab': '製表符 (\\t)',
+  'PC.Pages.AntvX6NodeConstants.defaultNodeName': '測試',
+  'PC.Pages.AntvX6NodeConstants.defaultNodeDescription': '測試',
+  'PC.Pages.AntvX6AutoSave.versionConflictMessage':
+    '版本冲突，工作流已在其他窗口修改',
+  'PC.Pages.SystemPermissionResourceFormModal.addSuccess': '新增資源成功',
+  'PC.Pages.SystemPermissionResourceFormModal.code': '資源碼',
+  'PC.Pages.SystemPermissionResourceFormModal.codePatternInvalid':
+    '资源码必须以英文字母开头，只能包含字母、数字和下划线',
+  'PC.Pages.SystemPermissionResourceFormModal.codePlaceholder': '請輸入資源碼',
+  'PC.Pages.SystemPermissionResourceFormModal.codeTooltip':
+    '资源码用于标识资源，可以为空，为空时系统默认生成，只能包含字母、数字和下划线',
+  'PC.Pages.SystemPermissionResourceFormModal.create': '創建',
+  'PC.Pages.SystemPermissionResourceFormModal.createTitle': '新增資源',
+  'PC.Pages.SystemPermissionResourceFormModal.description': '描述',
+  'PC.Pages.SystemPermissionResourceFormModal.descriptionPlaceholder':
+    '请输入描述',
+  'PC.Pages.SystemPermissionResourceFormModal.editTitle': '編輯資源',
+  'PC.Pages.SystemPermissionResourceFormModal.enabled': '是否啟用',
+  'PC.Pages.SystemPermissionResourceFormModal.enabledTooltip': '是否啟用此資源',
+  'PC.Pages.SystemPermissionResourceFormModal.name': '資源名稱',
+  'PC.Pages.SystemPermissionResourceFormModal.namePlaceholder':
+    '请输入资源名称',
+  'PC.Pages.SystemPermissionResourceFormModal.nameRequired': '請輸入資源名稱',
+  'PC.Pages.SystemPermissionResourceFormModal.parentNode': '父節點',
+  'PC.Pages.SystemPermissionResourceFormModal.parentNodePlaceholder':
+    '请选择父节点（无）',
+  'PC.Pages.SystemPermissionResourceFormModal.routePath': '路由路徑',
+  'PC.Pages.SystemPermissionResourceFormModal.routePathLengthInvalid':
+    '路由路径长度不能超过500个字符',
+  'PC.Pages.SystemPermissionResourceFormModal.routePathPatternInvalid':
+    '路由路径必须以斜杠开头，只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格）',
+  'PC.Pages.SystemPermissionResourceFormModal.routePathPlaceholder':
+    '请输入路由路径，例如：/system/menu',
+  'PC.Pages.SystemPermissionResourceFormModal.routePathTooltip':
+    '静态路由，例如：/system/menu; 动态路由，例如：/system/menu/:id',
+  'PC.Pages.SystemPermissionResourceFormModal.save': '保存',
+  'PC.Pages.SystemPermissionResourceFormModal.sort': '排序',
+  'PC.Pages.SystemPermissionResourceFormModal.sortPlaceholder': '請輸入排序',
+  'PC.Pages.SystemPermissionResourceFormModal.source': '來源',
+  'PC.Pages.SystemPermissionResourceFormModal.sourcePlaceholder': '請選擇來源',
+  'PC.Pages.SystemPermissionResourceFormModal.sourceSystemBuiltIn': '系統內置',
+  'PC.Pages.SystemPermissionResourceFormModal.sourceUserDefined': '用戶自定義',
+  'PC.Pages.SystemPermissionResourceFormModal.switchDisabled': '禁用',
+  'PC.Pages.SystemPermissionResourceFormModal.switchEnabled': '啟用',
+  'PC.Pages.SystemPermissionResourceFormModal.type': '資源類型',
+  'PC.Pages.SystemPermissionResourceFormModal.typeComponent': '組件',
+  'PC.Pages.SystemPermissionResourceFormModal.typeModule': '模塊',
+  'PC.Pages.SystemPermissionResourceFormModal.typePlaceholder':
+    '请选择资源类型',
+  'PC.Pages.SystemPermissionResourceFormModal.typeRequired': '請選擇資源類型',
+  'PC.Pages.SystemPermissionResourceFormModal.updateSuccess': '更新資源成功',
+  'PC.Pages.SystemPermissionResources.actionAdd': '新增',
+  'PC.Pages.SystemPermissionResources.actionDelete': '刪除',
+  'PC.Pages.SystemPermissionResources.actionEdit': '編輯',
+  'PC.Pages.SystemPermissionResources.addResource': '新增資源',
+  'PC.Pages.SystemPermissionResources.columnAction': '操作',
+  'PC.Pages.SystemPermissionResources.columnCode': '編碼',
+  'PC.Pages.SystemPermissionResources.columnDescription': '描述',
+  'PC.Pages.SystemPermissionResources.columnEnabled': '是否啟用',
+  'PC.Pages.SystemPermissionResources.columnResourceName': '資源名稱',
+  'PC.Pages.SystemPermissionResources.columnRoutePath': '路由路徑',
+  'PC.Pages.SystemPermissionResources.columnSort': '排序',
+  'PC.Pages.SystemPermissionResources.columnType': '類型',
+  'PC.Pages.SystemPermissionResources.deleteResourceConfirm':
+    '确认删除资源 "{0}" 吗？',
+  'PC.Pages.SystemPermissionResources.deleteResourceTitle': '刪除資源',
+  'PC.Pages.SystemPermissionResources.deleteSuccess': '刪除成功',
+  'PC.Pages.SystemPermissionResources.disabled': '禁用',
+  'PC.Pages.SystemPermissionResources.dragFailedRetry': '拖拽失敗，請重試',
+  'PC.Pages.SystemPermissionResources.enabled': '啟用',
+  'PC.Pages.SystemPermissionResources.noPermission': '無此資源權限',
+  'PC.Pages.SystemPermissionResources.noResourceData': '暫無資源數據',
+  'PC.Pages.SystemPermissionResources.pageTitle': '權限資源管理',
+  'PC.Pages.SystemPermissionResources.sortUpdateSuccess': '排序更新成功',
+  'PC.Pages.SystemPermissionResources.systemBuiltinDeleteDenied':
+    '系统内置的资源不能删除',
+  'PC.Pages.SystemPermissionResources.systemBuiltinDisableDenied':
+    '系统内置资源不能禁用',
+  'PC.Pages.SystemPermissionResources.systemBuiltinEditDenied':
+    '系统内置的资源不能编辑',
+  'PC.Pages.SystemPermissionResources.typeComponent': '組件',
+  'PC.Pages.SystemPermissionResources.typeModule': '模塊',
+  'PC.Pages.AntvX6Library.defaultInputArgsDesc': '檢索關鍵詞',
+  'PC.Pages.AntvX6Library.knowledgeBase': '知識庫',
+  'PC.Pages.AntvX6Library.maxRecallCount': '最大召回數量',
+  'PC.Pages.AntvX6Library.maxRecallCountTooltip':
+    '从知识库中返回给大模型的最大段落数，数值越大返回的内容越多',
+  'PC.Pages.AntvX6Library.minMatchScore': '最小匹配度',
+  'PC.Pages.AntvX6Library.minMatchScoreTooltip':
+    '根据设置的匹配度选取段落返回给大模型，低于设定匹配度的内容不会被召回',
+  'PC.Pages.AntvX6Library.searchStrategy': '搜索策略',
+  'PC.Pages.AntvX6Library.searchStrategyFullText': '全文',
+  'PC.Pages.AntvX6Library.searchStrategyMixed': '混合',
+  'PC.Pages.AntvX6Library.searchStrategySemantic': '語義',
+  'PC.Pages.AntvX6Library.searchStrategyTooltip':
+    '从知识库中获取知识的检索方式，不同的检索策略可以更有效地找到正确的信息，提高其生成的答案的准确性和可用性',
+  'PC.Pages.AntvX6RegisterNodes.exceptionWhen': '異常時',
+  'PC.Pages.AntvX6RegisterNodes.failed': '運行失敗',
+  'PC.Pages.AntvX6RegisterNodes.input': '輸入',
+  'PC.Pages.AntvX6RegisterNodes.optionLabel': '選項 {0}',
+  'PC.Pages.AntvX6RegisterNodes.qaType': '問答類型',
+  'PC.Pages.AntvX6RegisterNodes.questionContent': '提問內容',
+  'PC.Pages.AntvX6RegisterNodes.replyQuestion': '請答覆問題',
+  'PC.Pages.AntvX6RegisterNodes.running': '運行中',
+  'PC.Pages.AntvX6RegisterNodes.success': '運行成功',
+  'PC.Pages.AntvX6RegisterNodes.unconfiguredContent': '未配置內容',
+  'PC.Pages.AntvX6RegisterNodes.unconfiguredInput': '未配置輸入內容',
+  'PC.Pages.AntvX6RegisterNodes.unconfiguredIntent': '未配置意圖',
+  'PC.Pages.AntvX6RegisterNodes.unconfiguredQuestion': '未配置提問內容',
+  'PC.Pages.AntvX6RunResult.totalCount': '總數: {0}',
+  'PC.Pages.AntvX6RunResult.onlyShowErrors': '只看錯誤',
+  'PC.Pages.AntvX6RunResult.batchVariables': '本次批處理變量',
+  'PC.Pages.AppDevIndex.application': '應用',
+  'PC.Pages.AppDevIndex.back': '返回',
+  'PC.Pages.AppDevIndex.bindDataSourceFailed': '綁定數據源失敗',
+  'PC.Pages.AppDevIndex.bindDataSourceSuccess': '數據源綁定成功',
+  'PC.Pages.AppDevIndex.bindDataSourceUnknownError': '綁定數據源時發生未知錯誤',
+  'PC.Pages.AppDevIndex.clear': '清除',
+  'PC.Pages.AppDevIndex.clickToPreview': '點擊預覽',
+  'PC.Pages.AppDevIndex.code': '代碼',
+  'PC.Pages.AppDevIndex.confirmDeleteContent': '確定要刪除 {0} "{1}" 嗎？',
+  'PC.Pages.AppDevIndex.confirmDeleteTitle': '確認刪除',
+  'PC.Pages.AppDevIndex.confirmImport': '確認導入',
+  'PC.Pages.AppDevIndex.currentProjectId': '當前項目ID',
+  'PC.Pages.AppDevIndex.delete': '刪除',
+  'PC.Pages.AppDevIndex.deleteFolderWarning':
+    '注意：删除文件夹将同时删除其内部的所有文件和子文件夹，此操作不可恢复！',
+  'PC.Pages.AppDevIndex.deleteSuccessWithType': '成功刪除 {0}: {1}',
+  'PC.Pages.AppDevIndex.deployingSubtitle': '請稍候，發佈完成後將自動關閉',
+  'PC.Pages.AppDevIndex.deployingTip': '項目發佈中…',
+  'PC.Pages.AppDevIndex.exportFailed': '導出失敗',
+  'PC.Pages.AppDevIndex.exportFailedWithError': '導出失敗: {0}',
+  'PC.Pages.AppDevIndex.exportSuccess': '項目導出成功！',
+  'PC.Pages.AppDevIndex.exportUnknownError': '導出過程中發生未知錯誤',
+  'PC.Pages.AppDevIndex.filePath': '文件路徑',
+  'PC.Pages.AppDevIndex.filePathPlaceholder':
+    '如：src/components/NewComponent.tsx',
+  'PC.Pages.AppDevIndex.filePathTip':
+    '请输入文件路径（带文件名和后缀），例如：src/components/NewComponent.tsx',
+  'PC.Pages.AppDevIndex.fileSize': '文件大小',
+  'PC.Pages.AppDevIndex.fileTypeFile': '文件',
+  'PC.Pages.AppDevIndex.fileTypeFolder': '文件夾',
+  'PC.Pages.AppDevIndex.fileUploadFailed': '文件上傳失敗',
+  'PC.Pages.AppDevIndex.fileUploadFailedWithError': '文件上傳失敗: {0}',
+  'PC.Pages.AppDevIndex.fileUploadSuccess': '文件上傳成功: {0}',
+  'PC.Pages.AppDevIndex.importProjectSuccess': '項目導入成功',
+  'PC.Pages.AppDevIndex.importProjectTitle': '導入項目',
+  'PC.Pages.AppDevIndex.inputContentEmpty': '輸入內容為空',
+  'PC.Pages.AppDevIndex.invalidProjectIdCannotBindDataSource':
+    '项目ID不存在或无效，无法绑定数据源',
+  'PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy':
+    '项目ID不存在或无效，无法部署',
+  'PC.Pages.AppDevIndex.invalidProjectIdCannotExport':
+    '项目ID不存在或无效，无法导出',
+  'PC.Pages.AppDevIndex.logAddedWaitingSend': '日誌已添加,等待發送',
+  'PC.Pages.AppDevIndex.missingProjectIdDesc':
+    '请在 URL 中添加 projectId 参数，例如：',
+  'PC.Pages.AppDevIndex.missingProjectIdExample':
+    '/space/你的空间ID/app-dev/你的项目ID',
+  'PC.Pages.AppDevIndex.missingProjectIdMessage': '缺少項目ID參數',
+  'PC.Pages.AppDevIndex.notSet': '未設置',
+  'PC.Pages.AppDevIndex.onlyPluginWorkflowSupported':
+    '仅支持绑定插件和工作流类型的数据源',
+  'PC.Pages.AppDevIndex.preview': '預覽',
+  'PC.Pages.AppDevIndex.publishComponentSuccessDesc': '項目已成功構建併發布！',
+  'PC.Pages.AppDevIndex.publishComponentSuccessTitle': '成功發佈成組件',
+  'PC.Pages.AppDevIndex.publishFailed': '發佈失敗',
+  'PC.Pages.AppDevIndex.publishFailedRetryAfterFix':
+    '发布失败,先尝试解决错误后重试',
+  'PC.Pages.AppDevIndex.selectFile': '選擇文件',
+  'PC.Pages.AppDevIndex.selectFileFirst': '請先選擇文件',
+  'PC.Pages.AppDevIndex.selectedFile': '已選擇文件',
+  'PC.Pages.AppDevIndex.selectedFileWithName': '已選擇文件: {0}',
+  'PC.Pages.AppDevIndex.singleFileUploadHint':
+    '支持任意文件格式，文件将被添加到指定路径',
+  'PC.Pages.AppDevIndex.singleFileUploadTitle': '上傳單個文件',
+  'PC.Pages.AppDevIndex.targetPathRequired': '目標路徑不能為空',
+  'PC.Pages.AppDevIndex.unknownError': '未知錯誤',
+  'PC.Pages.AppDevIndex.unnamedProject': '未命名項目',
+  'PC.Pages.AppDevIndex.upload': '上傳',
+  'PC.Pages.AppDevIndex.uploadDragText': '點擊或拖拽文件到此區域選擇',
+  'PC.Pages.AppDevIndex.uploadProject': '上傳項目',
+  'PC.Pages.AppDevIndex.uploadSizeLimitExceeded': '上傳文件總大小不能超過{0}MB',
+  'PC.Pages.AppDevIndex.uploadZipHint':
+    '仅支持 .zip 压缩文件格式（将更新当前项目）',
+  'PC.Pages.AppDevIndex.zipOnly': '僅支持 .zip 壓縮文件格式',
+  'PC.Pages.AppDevDesignViewerTextAlign.reset': '重置',
+  'PC.Pages.AppDevDesignViewerTextAlign.left': '靠左',
+  'PC.Pages.AppDevDesignViewerTextAlign.center': '居中',
+  'PC.Pages.AppDevDesignViewerTextAlign.right': '靠右',
+  'PC.Pages.AppDevDesignViewerTextAlign.justify': '兩端對齊',
+  'PC.Pages.AppDevPageEditModal.coverImage': '封面圖片',
+  'PC.Pages.AppDevPageEditModal.coverImageTip':
+    '建议尺寸356px * 200px, 比例16:9',
+  'PC.Pages.AppDevPageEditModal.description': '描述',
+  'PC.Pages.AppDevPageEditModal.descriptionPlaceholder': '請輸入描述',
+  'PC.Pages.AppDevPageEditModal.editSuccess': '編輯成功',
+  'PC.Pages.AppDevPageEditModal.icon': '圖標',
+  'PC.Pages.AppDevPageEditModal.modalTitle': '編輯應用',
+  'PC.Pages.AppDevPageEditModal.name': '名稱',
+  'PC.Pages.AppDevPageEditModal.namePlaceholder': '請輸入名稱',
+  'PC.Pages.AppDevPageEditModal.nameRequired': '請輸入名稱',
+  'PC.Components.FileContextMenu.newFile': '新建文件',
+  'PC.Components.FileContextMenu.newFolder': '新建文件夾',
+  'PC.Components.FileContextMenu.rename': '重命名',
+  'PC.Components.FileContextMenu.uploadFile': '上傳文件',
+  'PC.Components.FileContextMenu.delete': '刪除',
+  'PC.Components.FileContextMenu.download': '下載',
+  'PC.Components.FileContextMenu.exportPdf': '導出為 PDF',
+  'PC.Components.FileContextMenu.importSkill': '導入技能',
+  'PC.Components.MoreActionsMenu.importProject': '導入項目',
+  'PC.Components.MoreActionsMenu.restartComputer': '重啟智能體電腦',
+  'PC.Components.MoreActionsMenu.restartComputerTooltip':
+    '当前用户正在运行的所有智能体将全部被重启',
+  'PC.Components.MoreActionsMenu.restartAgent': '重啟智能體',
+  'PC.Components.MoreActionsMenu.restartAgentTooltip':
+    '当前会话对应的智能体将重启',
+  'PC.Components.MoreActionsMenu.exportResult': '導出結果',
+  'PC.Components.ShareDesktopModal.permanent': '永久',
+  'PC.Components.ShareDesktopModal.minute1': '1分鐘',
+  'PC.Components.ShareDesktopModal.minute5': '5分鐘',
+  'PC.Components.ShareDesktopModal.minute10': '10分鐘',
+  'PC.Components.ShareDesktopModal.minute20': '20分鐘',
+  'PC.Components.ShareDesktopModal.minute30': '30分鐘',
+  'PC.Components.ShareDesktopModal.minute40': '40分鐘',
+  'PC.Components.ShareDesktopModal.minute50': '50分鐘',
+  'PC.Components.ShareDesktopModal.hour1': '1小時',
+  'PC.Components.ShareDesktopModal.hour2': '2小時',
+  'PC.Components.ShareDesktopModal.hour4': '4小時',
+  'PC.Components.ShareDesktopModal.hour8': '8小時',
+  'PC.Components.ShareDesktopModal.hour16': '16小時',
+  'PC.Components.ShareDesktopModal.day1': '1天',
+  'PC.Components.ShareDesktopModal.conversationIdMissing':
+    '会话ID不存在，无法分享',
+  'PC.Components.ShareDesktopModal.desktopShareSuccess':
+    '远程桌面分享成功，链接已复制到剪切板',
+  'PC.Components.ShareDesktopModal.shareFailedRetry': '分享失敗，請稍後重試',
+  'PC.Components.ShareDesktopModal.fileShareSuccess':
+    '分享成功，链接已复制到剪切板',
+  'PC.Components.ShareDesktopModal.titleDesktop': '分享遠程桌面',
+  'PC.Components.ShareDesktopModal.titleFile': '分享文件',
+  'PC.Components.ShareDesktopModal.generateShareLink': '生成分享鏈接',
+  'PC.Components.ShareDesktopModal.validDuration': '有效時間',
+  'PC.Components.ShareDesktopModal.selectValidDuration': '請選擇有效時間',
+  'PC.Components.ShareDesktopModal.linkExpiresIn': '鏈接將在 {0} 後失效',
+  'PC.Components.ShareDesktopModal.linkPermanent': '鏈接永久有效',
+  'PC.Components.ShareDesktopModal.secondsUnit': '{0}秒',
+  'PC.Components.ShareDesktopModal.noticeTitle': '溫馨提示：',
+  'PC.Components.ShareDesktopModal.noticeDescription':
+    '分享链接生成后将自动复制到剪切板；互联网上得到该分享链接的用户均可访问，请谨慎分享，注意数据风险。',
+  'PC.Components.FilePathHeader.filePreview': '文件預覽',
+  'PC.Components.FilePathHeader.collapseFileTree': '點擊收起文件樹',
+  'PC.Components.FilePathHeader.expandFileTree': '點擊展開文件樹',
+  'PC.Components.FilePathHeader.preview': '預覽',
+  'PC.Components.FilePathHeader.code': '代碼',
+  'PC.Components.FilePathHeader.remote': '遠程',
+  'PC.Components.FilePathHeader.agentComputerSuffix': '的智能體電腦',
+  'PC.Components.FilePathHeader.exporting': '導出中...',
+  'PC.Components.FilePathHeader.exportPdf': '導出為 PDF',
+  'PC.Components.FilePathHeader.downloading': '下載中...',
+  'PC.Components.FilePathHeader.download': '下載',
+  'PC.Components.FilePathHeader.share': '分享',
+  'PC.Components.FilePathHeader.exitFullscreen': '退出全屏',
+  'PC.Components.FilePathHeader.fullscreen': '全屏',
+  'PC.Components.FilePathHeader.copy': '複製',
+  'PC.Components.FilePathHeader.close': '關閉',
+  'PC.Components.SearchView.searchPlaceholder': '搜索文件...',
+  'PC.Components.SearchView.noMatchingFiles': '暫無匹配文件',
+  'PC.Components.FileTree.noFiles': '暫無文件',
+  'PC.Components.FileTreeView.noFilesToPreview': '當前沒有可預覽的文件',
+  'PC.Components.FileTreeView.noMatchingFile':
+    '没有匹配到对应的文件，请从左侧文件树选择一个文件进行预览',
+  'PC.Components.FileTreeView.selectFileToPreview':
+    '请从左侧文件树选择一个文件进行预览',
+  'PC.Components.FileTreeView.cannotPreviewType': '無法預覽此文件類型',
+  'PC.Components.FileTreeView.unsupportedFormat':
+    '当前不支持预览【{0}】格式的文件。',
+  'PC.Components.FileTreeView.fileRenaming': '文件正在重命名中，請稍後再試',
+  'PC.Components.FileTreeView.unsavedChangesSwitchFile':
+    '你有未保存的文件修改，请先保存后再切换文件',
+  'PC.Components.FileTreeView.unsavedChangesRename':
+    '你有未保存的文件修改，请先保存后再重命名',
+  'PC.Components.FileTreeView.unsavedChangesUpload':
+    '你有未保存的文件修改，请先保存后再上传文件',
+  'PC.Components.FileTreeView.unsavedChangesDelete':
+    '你有未保存的文件修改，请先保存后再删除文件',
+  'PC.Components.FileTreeView.unsavedChangesCreateFile':
+    '你有未保存的文件修改，请先保存后再新建文件',
+  'PC.Components.FileTreeView.unsavedChangesCreateFolder':
+    '你有未保存的文件修改，请先保存后再新建文件夹',
+  'PC.Components.FileTreeView.downloading': '正在下載',
+  'PC.Components.FileTreeView.uploading': '正在上傳',
+  'PC.Components.FileTreeView.exporting': '正在導出',
+  'PC.Components.FileTreeView.importing': '正在導入',
+  'PC.Components.FileTreeView.files': '文件',
+  'PC.Components.FileTreeView.refreshing': '刷新中...',
+  'PC.Components.FileTreeView.refreshFileTree': '刷新文件樹',
+  'PC.Components.FileTreeView.restarting': '重啟中...',
+  'PC.Hooks.UseEcoMarket.confirmDelete': '你確定要刪除此分享嗎?',
+  'PC.Hooks.UseEventPolling.newVersionFound': '發現新版本',
+  'PC.Hooks.UseEventPolling.updatePrompt': '檢測到新版本 {0}，是否立即更新？',
+  'PC.Hooks.UseEventPolling.update': '更新',
+  'PC.Hooks.UseFileImport.unsupportedFileType':
+    '仅支持 .zip 压缩文件、.skill 文件或 SKILL.md 文件',
+  'PC.Hooks.UseFileImport.importSuccess': '導入成功',
+  'PC.Hooks.UseFileImport.importFailed': '導入失敗',
+  'PC.Hooks.UseNavigationGuard.confirmLeave': '確認離開',
+  'PC.Hooks.UseNavigationGuard.confirmLeaveMessage': '你確定要離開當前頁面嗎？',
+  'PC.Hooks.UseNavigationGuard.discard': '放棄',
+  'PC.Hooks.UsePluginConfig.saveSuccess': '插件保存成功',
+  'PC.Hooks.UseRestartDevServer.invalidProjectId':
+    '项目ID不存在或无效，无法重启服务',
+  'PC.Hooks.UseRestartDevServer.restartFailed': '重啟開發服務器失敗',
+  'PC.Hooks.UseMcp.addItem': '添加{0}',
+  'PC.Hooks.UseTryRun.reconfigureParams': '請重新配置入參,添加子級',
+  'PC.Hooks.UseMessageEventDelegate.pagePathConfigError': '頁面路徑配置錯誤',
+  'PC.Hooks.UseMessageEventDelegate.pagePathParamConfigError':
+    '页面路径参数配置错误',
+  'PC.Hooks.UseMessageEventDelegate.linkUrlConfigError': '鏈接地址配置錯誤',
+  'PC.Hooks.UseMessageEventDelegate.page': '頁面',
+  'PC.Hooks.UseSendCode.codeSent': '驗證碼已發送',
+
+  // SpaceKnowledge
+  'PC.Pages.SpaceKnowledge.DocItem.analyzing': '分析中',
+  'PC.Pages.SpaceKnowledge.DocItem.segmentGenerating': '分段生成中',
+  'PC.Pages.SpaceKnowledge.DocItem.buildSuccess': '構建成功',
+  'PC.Pages.SpaceKnowledge.DocItem.buildFailedRetry': '構建失敗,重新構建',
+  'PC.Pages.SpaceKnowledge.DocItem.building': '構建中',
+  'PC.Pages.SpaceKnowledge.DocWrap.search': '搜索',
+  'PC.Pages.SpaceKnowledge.DocWrap.documentList': '文檔列表',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount': '{0}個文檔',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.doc': '文檔',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.qa': 'QA問答',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent': '添加內容',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa': '添加QA問答',
+  'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean': '自動分段與清洗',
+  'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc':
+    '自动分段与预处理规则',
+  'PC.Pages.SpaceKnowledge.CreateSet.custom': '自定義',
+  'PC.Pages.SpaceKnowledge.CreateSet.customDesc':
+    '自定义分段规则，分段长度及预处理规则',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentDelimiter': '分段標識符',
+  'PC.Pages.SpaceKnowledge.CreateSet.inputSegmentDelimiter': '輸入分段標識符',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentDelimiterPlaceholder':
+    '输入分段标识符，例如 \\n 换行',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentMaxLength': '分段最大長度',
+  'PC.Pages.SpaceKnowledge.CreateSet.inputRange100To5000':
+    '请输入100-5000的数值',
+  'PC.Pages.SpaceKnowledge.CreateSet.inputValidNumber': '請輸入正確的數字!',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentMaxLengthRange':
+    '分段最大长度不得小于100，大于5000!',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentOverlapPercent': '分段重疊度%',
+  'PC.Pages.SpaceKnowledge.CreateSet.inputRange0To100': '請輸入0-100的數值',
+  'PC.Pages.SpaceKnowledge.CreateSet.segmentOverlapRange':
+    '分段重叠度不得小于0，大于100!',
+  'PC.Pages.SpaceKnowledge.TextFill.docName': '文檔名稱',
+  'PC.Pages.SpaceKnowledge.TextFill.inputDocName': '請輸入文檔名稱',
+  'PC.Pages.SpaceKnowledge.TextFill.docNamePlaceholder': '輸入文檔名稱',
+  'PC.Pages.SpaceKnowledge.TextFill.docContent': '文檔內容',
+  'PC.Pages.SpaceKnowledge.TextFill.inputDocContent': '請輸入文檔內容',
+  'PC.Pages.SpaceKnowledge.TextFill.docContentPlaceholder': '輸入文檔內容',
+  'PC.Pages.SpaceKnowledge.UploadFile.correctFileType': '請上傳正確的文件類型',
+  'PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes':
+    '请上传 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 类型文件!',
+  'PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB':
+    '文件大小不能超过100MB!',
+  'PC.Pages.SpaceKnowledge.UploadFile.clickOrDragToUpload':
+    '点击上传或拖拽文档到这里',
+  'PC.Pages.SpaceKnowledge.UploadFile.uploadHint':
+    '支持 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上传 300 个文件，每个文件不超过 100MB， PDF 最多 500 页',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess': '文檔添加成功',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': '添加內容',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep': '下一步',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep': '上一步',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.uploadFailedCheckFormat':
+    '上传失败，请检查文件格式是否正确',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.excelOnly':
+    '仅支持Excel文件(.xlsx/.xls)',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.fileSizeLimit10MB':
+    '文件大小不能超过10MB',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.pleaseUploadFile': '請上傳文件',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.batchImportSuccess': '批量導入成功',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.exportFailed': '導出失敗',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplateFailed':
+    '下载QA批量excel模板失败',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.qaBatchImport': 'QA批量導入',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.downloadExcelTemplate':
+    '下载Excel导入模板',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplate': '下載模板',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.confirmUpload': '確認上傳',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.clickOrDragToUpload':
+    '点击或拖拽文件到此区域上传',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.excelUploadHint':
+    '仅支持Excel文件(.xlsx/.xls)，大小不超过10MB',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplateHint':
+    '请先下载导入模板，按照格式填写后上传',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.templateFileName':
+    'QA批量excel模板.xlsx',
+  'PC.Pages.SpaceKnowledge.QaModal.editQa': '編輯QA問答',
+  'PC.Pages.SpaceKnowledge.QaModal.addQa': '添加QA問答',
+  'PC.Pages.SpaceKnowledge.QaModal.question': '問題',
+  'PC.Pages.SpaceKnowledge.QaModal.inputQuestion': '請輸入問題',
+  'PC.Pages.SpaceKnowledge.QaModal.inputQuestionContent': '請輸入問題內容',
+  'PC.Pages.SpaceKnowledge.QaModal.answer': '答案',
+  'PC.Pages.SpaceKnowledge.QaModal.inputAnswer': '請輸入答案',
+  'PC.Pages.SpaceKnowledge.QaModal.inputAnswerContent': '請輸入答案內容',
+  'PC.Pages.SpaceKnowledge.QaTableList.question': '問題',
+  'PC.Pages.SpaceKnowledge.QaTableList.answer': '答案',
+  'PC.Pages.SpaceKnowledge.QaTableList.vectorized': '向量化',
+  'PC.Pages.SpaceKnowledge.QaTableList.completed': '已完成',
+  'PC.Pages.SpaceKnowledge.QaTableList.building': '構建中',
+  'PC.Pages.SpaceKnowledge.QaTableList.action': '操作',
+  'PC.Pages.SpaceKnowledge.QaTableList.confirmDeleteQa':
+    '你确定要删除此QA问答吗?',
+  'PC.Pages.SpaceKnowledge.DocRename.updateSuccess': '更新成功',
+  'PC.Pages.SpaceKnowledge.DocRename.rename': '重命名',
+  'PC.Pages.SpaceKnowledge.DocRename.docNameRequired': '文檔名稱不能為空',
+  'PC.Pages.SpaceKnowledge.DocRename.inputDocName': '請輸入文檔名稱',
+  'PC.Pages.SpaceKnowledge.RawSegmentEditModal.editRawSegment': '編輯原始分段',
+  'PC.Pages.SpaceKnowledge.RawSegmentEditModal.segmentContent': '分段內容',
+  'PC.Pages.SpaceKnowledge.RawSegmentEditModal.inputSegmentContent':
+    '请输入分段内容',
+  'PC.Pages.SpaceKnowledge.RawSegmentInfo.modifySuccess': '修改成功',
+  'PC.Pages.SpaceKnowledge.RawSegmentInfo.previewRawDoc': '預覽原始文檔',
+  'PC.Pages.SpaceKnowledge.RawSegmentInfo.segmentProcessing': '分段正在處理中',
+  'PC.Pages.SpaceKnowledge.RawSegmentInfo.edit': '編輯',
+  'PC.Pages.SpaceKnowledge.RawSegmentInfo.noSegment': '暫無分段',
+  'PC.Pages.SpaceKnowledge.Index.deleteDocSuccess': '刪除文檔成功',
+  'PC.Pages.SpaceKnowledge.Index.confirmDeleteDoc': '你確定要刪除此文檔嗎?',
+  'PC.Pages.SpaceKnowledge.Index.deleteQaSuccess': '刪除QA問答成功',
+  'PC.Pages.SpaceKnowledge.Index.searchQuestion': '請輸入問題搜索',
+  'PC.Pages.SpaceKnowledge.Index.qaUpdateSuccess': 'QA問答更新成功',
+  'PC.Pages.SpaceKnowledge.Index.qaAddSuccess': '添加QA問答成功',
+
+  // SpaceLibrary - Index
+  'PC.Pages.SpaceLibrary.Index.pageTitle': '組件庫',
+  'PC.Pages.SpaceLibrary.Index.searchComponent': '搜索組件',
+  'PC.Pages.SpaceLibrary.Index.addComponent': '組件',
+  'PC.Pages.SpaceLibrary.Index.noResults': '未能找到相關結果',
+  'PC.Pages.SpaceLibrary.Index.pluginCopySuccess': '插件複製成功',
+  'PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess': '插件刪除成功',
+  'PC.Pages.SpaceLibrary.Index.modelDeleteSuccess': '模型刪除成功',
+  'PC.Pages.SpaceLibrary.Index.workflowCopySuccess': '工作流複製成功',
+  'PC.Pages.SpaceLibrary.Index.workflowDeleteSuccess': '工作流刪除成功',
+  'PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess': '知識庫刪除成功',
+  'PC.Pages.SpaceLibrary.Index.tableDeleteSuccess': '數據表刪除成功',
+  'PC.Pages.SpaceLibrary.Index.tableCopySuccess': '數據表複製成功',
+  'PC.Pages.SpaceLibrary.Index.confirmDeleteComponent': '你確定要刪除此組件嗎?',
+  'PC.Pages.SpaceLibrary.Index.exportConfigTitle': '導出配置 - {0}',
+  'PC.Pages.SpaceLibrary.Index.exportWorkflowConfigDesc':
+    '如果内部包含数据表或知识库，数据本身不会导出',
+  'PC.Pages.SpaceLibrary.Index.exportTableConfigDesc':
+    '仅导出数据表结构，数据本身不会导出',
+
+  // SpaceLibrary - ComponentItem
+  'PC.Pages.SpaceLibrary.ComponentItem.lastEdited': '最近編輯',
+  'PC.Pages.SpaceLibrary.ComponentItem.enabled': '已啟用',
+  'PC.Pages.SpaceLibrary.ComponentItem.disabled': '已禁用',
+  'PC.Pages.SpaceLibrary.ComponentItem.published': '已發佈',
+
+  // SpaceLibrary - CreateModel
+  'PC.Pages.SpaceLibrary.CreateModel.addModel': '新增模型',
+  'PC.Pages.SpaceLibrary.CreateModel.updateModel': '更新模型',
+  'PC.Pages.SpaceLibrary.CreateModel.testConnection': '模型連通性測試',
+  'PC.Pages.SpaceLibrary.CreateModel.testConnectionSuccess': '模型檢測連接成功',
+  'PC.Pages.SpaceLibrary.CreateModel.modelCreateSuccess': '模型已創建成功',
+  'PC.Pages.SpaceLibrary.CreateModel.modelUpdateSuccess': '模型已更新成功',
+  'PC.Pages.SpaceLibrary.CreateModel.modelName': '模型名稱',
+  'PC.Pages.SpaceLibrary.CreateModel.inputModelName': '輸入模型名稱',
+  'PC.Pages.SpaceLibrary.CreateModel.modelIdentifier': '模型標識',
+  'PC.Pages.SpaceLibrary.CreateModel.inputModelIdentifier': '輸入模型標識',
+  'PC.Pages.SpaceLibrary.CreateModel.modelDescription': '模型介紹',
+  'PC.Pages.SpaceLibrary.CreateModel.inputModelDescription': '輸入模型介紹',
+  'PC.Pages.SpaceLibrary.CreateModel.modelType': '模型類型',
+  'PC.Pages.SpaceLibrary.CreateModel.selectModelType': '請選擇模型類型',
+  'PC.Pages.SpaceLibrary.CreateModel.reasoningModel': '推理模型',
+  'PC.Pages.SpaceLibrary.CreateModel.yes': '是',
+  'PC.Pages.SpaceLibrary.CreateModel.no': '否',
+  'PC.Pages.SpaceLibrary.CreateModel.vectorDimension': '向量維度',
+  'PC.Pages.SpaceLibrary.CreateModel.inputVectorDimension': '填寫向量維度',
+  'PC.Pages.SpaceLibrary.CreateModel.maxOutputTokens': '最大輸出token數',
+  'PC.Pages.SpaceLibrary.CreateModel.inputMaxOutputTokens':
+    '请输入最大输出token数',
+  'PC.Pages.SpaceLibrary.CreateModel.maxContextLength': '最大上下文長度',
+  'PC.Pages.SpaceLibrary.CreateModel.inputMaxContextLength':
+    '请输入最大上下文长度',
+  'PC.Pages.SpaceLibrary.CreateModel.functionCallSupport': '函數調用支持',
+  'PC.Pages.SpaceLibrary.CreateModel.selectFunctionCallSupport':
+    '选择函数调用支持',
+  'PC.Pages.SpaceLibrary.CreateModel.enableModel': '是否啟用',
+  'PC.Pages.SpaceLibrary.CreateModel.disableTooltip':
+    '禁用后，将不可再被选择，正在使用中的智能体不受影响',
+  'PC.Pages.SpaceLibrary.CreateModel.enable': '啟用',
+  'PC.Pages.SpaceLibrary.CreateModel.disable': '禁用',
+  'PC.Pages.SpaceLibrary.CreateModel.apiProtocol': '接口協議',
+  'PC.Pages.SpaceLibrary.CreateModel.selectApiProtocol': '請選擇模型接口協議',
+  'PC.Pages.SpaceLibrary.CreateModel.apiConfig': '接口配置',
+  'PC.Pages.SpaceLibrary.CreateModel.callStrategy': '調用策略',
+  'PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy': '請選擇調用策略',
+  'PC.Pages.SpaceLibrary.CreateModel.weight': '權重',
+  'PC.Pages.SpaceLibrary.CreateModel.inputWeight': '輸入權重值',
+  'PC.Pages.SpaceLibrary.CreateModel.inputUrl': '輸入URL',
+  'PC.Pages.SpaceLibrary.CreateModel.inputApiKey': '輸入API KEY',
+
+  // SpaceLibrary - IntranetModel
+  'PC.Pages.SpaceLibrary.IntranetModel.description':
+    '选择"内网模型"可以把你局域网内的模型通过配置暴露给平台使用，你只需要在内网服务器执行一行命令，即可在下面的接口配置URL中配置你的内网地址',
+  'PC.Pages.SpaceLibrary.IntranetModel.viewCommand': '查看內網服務器執行命令',
+  'PC.Pages.SpaceLibrary.IntranetModel.offlineStatus': '當前狀態為離線',
+  'PC.Pages.SpaceLibrary.IntranetModel.refreshStatus': '刷新狀態',
+
+  // SpaceLibrary - IntranetServerCommand
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.modalTitle':
+    '内网服务器执行命令',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.windowsTitle':
+    'Windows（在CMD窗口中执行）',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.windowsDownload':
+    'Windows 64位 客户端下载',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.macTitle':
+    'Mac（在终端命令行中执行）',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.macDownload':
+    'Mac OS 64位 客户下载',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.linuxTitle':
+    'Linux（在终端命令行中执行）',
+  'PC.Pages.SpaceLibrary.IntranetServerCommand.linuxDownload':
+    'Linux 64位 客户端下载',
+
+  // UserManage - Common
+  'PC.Common.Global.noData': '暫無數據',
+
+  // UserManage - MessageSendModal
+  'PC.Pages.UserManage.MessageSendModal.messageSendSuccess': '消息發送成功',
+  'PC.Pages.UserManage.MessageSendModal.noUserFound': '未搜索到相關用戶',
+  'PC.Pages.UserManage.MessageSendModal.pleaseInputMessage': '請輸入消息內容',
+  'PC.Pages.UserManage.MessageSendModal.pleaseSelectMembers':
+    '请选择要添加的成员',
+  'PC.Pages.UserManage.MessageSendModal.addMessageUser': '添加接受消息用戶',
+  'PC.Pages.UserManage.MessageSendModal.sendMessage': '發送消息',
+  'PC.Pages.UserManage.MessageSendModal.inputMessageContent': '輸入消息內容',
+  'PC.Pages.UserManage.MessageSendModal.searchUserPlaceholder':
+    '输入用户名、邮箱或手机号码，回车搜索',
+  'PC.Pages.UserManage.MessageSendModal.selectAll': '全部',
+  'PC.Pages.UserManage.MessageSendModal.selectedMembers': '已選成員 ({0})',
+
+  // UserManage - DataPermissionModal
+  'PC.Pages.UserManage.DataPermissionModal.dataPermissionTitle':
+    '数据权限 - {0}',
+  'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimit': '每日token限制',
+  'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimitTooltip':
+    '每日 token 限制，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.dailyTokenLimitPlaceholder':
+    '请输入每日token限制数量',
+  'PC.Pages.UserManage.DataPermissionModal.maxSpaceCount': '可創建工作空間數量',
+  'PC.Pages.UserManage.DataPermissionModal.maxSpaceCountTooltip':
+    '可创建工作空间数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.maxAgentCount': '可創建智能體數量',
+  'PC.Pages.UserManage.DataPermissionModal.maxAgentCountTooltip':
+    '可创建智能体数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.maxPageAppCount':
+    '可创建网页应用数量',
+  'PC.Pages.UserManage.DataPermissionModal.maxPageAppCountTooltip':
+    '可创建网页应用数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.maxKnowledgeCount':
+    '可创建知识库数量',
+  'PC.Pages.UserManage.DataPermissionModal.maxKnowledgeCountTooltip':
+    '可创建知识库数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.knowledgeStorageLimitGb':
+    '知识库存储空间上限 (GB)',
+  'PC.Pages.UserManage.DataPermissionModal.knowledgeStorageLimitGbTooltip':
+    '知识库存储空间上限(GB)，-1表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.maxDataTableCount':
+    '可创建数据表数量',
+  'PC.Pages.UserManage.DataPermissionModal.maxDataTableCountTooltip':
+    '可创建数据表数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCount':
+    '可创建定时任务数量',
+  'PC.Pages.UserManage.DataPermissionModal.maxScheduledTaskCountTooltip':
+    '可创建定时任务数量，-1 表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.agentComputerMemoryGb':
+    '智能体电脑内存(GB)',
+  'PC.Pages.UserManage.DataPermissionModal.agentComputerMemoryGbTooltip':
+    '智能体电脑内存 (GB，留空表示使用默认值4GB)',
+  'PC.Pages.UserManage.DataPermissionModal.agentComputerCpuCores':
+    '智能体电脑 CPU 核心数',
+  'PC.Pages.UserManage.DataPermissionModal.agentComputerCpuCoresTooltip':
+    '智能体电脑 CPU 核心数（留空表示使用默认值）',
+  'PC.Pages.UserManage.DataPermissionModal.agentDailyPromptLimit':
+    '通用智能体每天对话次数限制',
+  'PC.Pages.UserManage.DataPermissionModal.agentDailyPromptLimitTooltip':
+    '通用智能体每天对话次数，-1表示不限制',
+  'PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimit':
+    '网页应用开发每天对话次数',
+  'PC.Pages.UserManage.DataPermissionModal.pageDailyPromptLimitTooltip':
+    '网页应用开发每天对话次数，-1表示不限制',
+
+  // UserManage - UserAuthModal
+  'PC.Pages.UserManage.UserAuthModal.role': '角色',
+  'PC.Pages.UserManage.UserAuthModal.userGroup': '用戶組',
+  'PC.Pages.UserManage.UserAuthModal.authTitle': '授權 - {0}',
+  'PC.Pages.UserManage.UserAuthModal.selectAll': '全選',
+  'PC.Pages.UserManage.UserAuthModal.deselectAll': '取消全選',
+
+  // UserManage - UserFormModal
+  'PC.Pages.UserManage.UserFormModal.editUser': '修改用戶信息',
+  'PC.Pages.UserManage.UserFormModal.addUser': '新增用戶',
+  'PC.Pages.UserManage.UserFormModal.userName': '用戶名',
+  'PC.Pages.UserManage.UserFormModal.inputUserName': '請輸入用戶名',
+  'PC.Pages.UserManage.UserFormModal.nickName': '用戶暱稱',
+  'PC.Pages.UserManage.UserFormModal.inputNickName': '請輸入用戶暱稱（姓名）',
+  'PC.Pages.UserManage.UserFormModal.phoneNumber': '手機號碼',
+  'PC.Pages.UserManage.UserFormModal.inputPhoneNumber': '請輸入手機號碼',
+  'PC.Pages.UserManage.UserFormModal.emailAddress': '郵箱地址',
+  'PC.Pages.UserManage.UserFormModal.inputEmailAddress': '請輸入郵箱地址',
+  'PC.Pages.UserManage.UserFormModal.loginPassword': '登錄密碼',
+  'PC.Pages.UserManage.UserFormModal.inputLoginPassword': '請輸入登錄密碼',
+  'PC.Pages.UserManage.UserFormModal.userType': '用戶類型',
+  'PC.Pages.UserManage.UserFormModal.admin': '管理員',
+  'PC.Pages.UserManage.UserFormModal.normalUser': '普通用戶',
+
+  // UserManage - UserViewMenuModal
+  'PC.Pages.UserManage.UserViewMenuModal.viewMenuResourcePermission':
+    '查看菜单资源权限',
+  'PC.Pages.UserManage.UserViewMenuModal.resourceId': '資源 {0}',
+  'PC.Pages.UserManage.UserViewMenuModal.menuId': '菜單 {0}',
+
+  // UserManage - Index
+  'PC.Pages.UserManage.Index.enableSuccess': '啟用成功',
+  'PC.Pages.UserManage.Index.disableSuccess': '禁用成功',
+  'PC.Pages.UserManage.Index.edit': '修改',
+  'PC.Pages.UserManage.Index.disable': '禁用',
+  'PC.Pages.UserManage.Index.enable': '啟用',
+  'PC.Pages.UserManage.Index.auth': '授權',
+  'PC.Pages.UserManage.Index.viewMenuResourcePermission': '查看菜單資源權限',
+  'PC.Pages.UserManage.Index.viewDataPermission': '查看數據權限',
+  'PC.Pages.UserManage.Index.userName': '用戶名',
+  'PC.Pages.UserManage.Index.userFullName': '用戶姓名',
+  'PC.Pages.UserManage.Index.nickName': '暱稱',
+  'PC.Pages.UserManage.Index.phoneNumber': '手機號碼',
+  'PC.Pages.UserManage.Index.email': '郵箱',
+  'PC.Pages.UserManage.Index.type': '類型',
+  'PC.Pages.UserManage.Index.admin': '管理員',
+  'PC.Pages.UserManage.Index.member': '成員',
+  'PC.Pages.UserManage.Index.status': '狀態',
+  'PC.Pages.UserManage.Index.normal': '正常',
+  'PC.Pages.UserManage.Index.disabled': '禁用',
+  'PC.Pages.UserManage.Index.joinTime': '加入時間',
+  'PC.Pages.UserManage.Index.action': '操作',
+  'PC.Pages.UserManage.Index.userManage': '用戶管理',
+  'PC.Pages.UserManage.Index.addUser': '添加用戶',
+  'PC.Pages.UserManage.Index.sendMessage': '消息發送',
+  'PC.Pages.UserManage.MessageSendModal.broadcast': '指定用戶發送',
+  'PC.Pages.UserManage.MessageSendModal.systemMessage': '系統消息（全部用戶）',
+
+  // Layouts - Setting
+  // Layouts - Setting > ResetPassword
+  'PC.Layouts.Setting.ResetPassword.title': '重置密碼',
+  'PC.Layouts.Setting.ResetPassword.newPassword': '新密碼',
+  'PC.Layouts.Setting.ResetPassword.inputNewPassword': '請輸入新密碼!',
+  'PC.Layouts.Setting.ResetPassword.inputCorrectPassword':
+    '请输入正确的新密码!',
+  'PC.Layouts.Setting.ResetPassword.confirmPassword': '確認密碼',
+  'PC.Layouts.Setting.ResetPassword.inputConfirmPassword': '請再次輸入新密碼!',
+  'PC.Layouts.Setting.ResetPassword.passwordMismatch': '兩次密碼不一致!',
+  'PC.Layouts.Setting.ResetPassword.inputCorrectNewPassword':
+    '请输入正确的密码!',
+  'PC.Layouts.Setting.ResetPassword.placeholderNewPassword': '請輸入新密碼',
+  'PC.Layouts.Setting.ResetPassword.placeholderConfirmPassword':
+    '请再次输入新密码',
+  'PC.Layouts.Setting.ResetPassword.verificationCode': '驗證碼',
+  'PC.Layouts.Setting.ResetPassword.inputVerificationCode': '請輸入驗證碼',
+  'PC.Layouts.Setting.ResetPassword.inputCorrectCode': '請輸入正確的驗證碼!',
+  'PC.Layouts.Setting.ResetPassword.placeholderCode': '請輸入驗證碼',
+  'PC.Layouts.Setting.ResetPassword.sendCode': '發送驗證碼',
+  'PC.Layouts.Setting.ResetPassword.submit': '確定修改',
+  'PC.Layouts.Setting.ResetPassword.resetSuccess': '重置成功',
+
+  // Layouts - Setting > SettingEmail
+  'PC.Layouts.Setting.SettingEmail.emailBindTitle': '郵箱綁定',
+  'PC.Layouts.Setting.SettingEmail.phoneBindTitle': '手機號綁定',
+  'PC.Layouts.Setting.SettingEmail.emailAddress': '郵箱地址',
+  'PC.Layouts.Setting.SettingEmail.phoneNumber': '手機號碼',
+  'PC.Layouts.Setting.SettingEmail.inputEmailAddress': '請輸入郵箱地址',
+  'PC.Layouts.Setting.SettingEmail.inputPhoneNumber': '請輸入手機號碼',
+  'PC.Layouts.Setting.SettingEmail.inputCorrectEmail': '請輸入正確的郵箱地址!',
+  'PC.Layouts.Setting.SettingEmail.inputCorrectPhone': '請輸入正確的手機號碼!',
+  'PC.Layouts.Setting.SettingEmail.verificationCode': '驗證碼',
+  'PC.Layouts.Setting.SettingEmail.inputVerificationCode': '請輸入驗證碼',
+  'PC.Layouts.Setting.SettingEmail.inputCorrectCode': '請輸入正確的驗證碼!',
+  'PC.Layouts.Setting.SettingEmail.placeholderCode': '請輸入驗證碼',
+  'PC.Layouts.Setting.SettingEmail.sendCode': '發送驗證碼',
+  'PC.Layouts.Setting.SettingEmail.bind': '綁定',
+  'PC.Layouts.Setting.SettingEmail.bindSuccess': '綁定成功',
+
+  // Layouts - Setting > ThemeSwitchPanel
+  'PC.Layouts.Setting.ThemeSwitchPanel.title': '主題切換',
+  'PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateFailed': '主題色更新失敗',
+  'PC.Layouts.Setting.ThemeSwitchPanel.autoSwitchNav': '已自動切換為{0}導航欄',
+  'PC.Layouts.Setting.ThemeSwitchPanel.dark': '深色',
+  'PC.Layouts.Setting.ThemeSwitchPanel.light': '淺色',
+  'PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateFailed':
+    '背景图更新失败',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateFailed':
+    '导航风格更新失败',
+  'PC.Layouts.Setting.ThemeSwitchPanel.autoSwitchBackground':
+    '已自动切换为{0}以匹配{1}导航栏',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleFailed':
+    '导航主题切换失败',
+
+  // Layouts - Setting > UsageStatistics
+  'PC.Layouts.Setting.UsageStatistics.title': '用量統計',
+  'PC.Layouts.Setting.UsageStatistics.query': '查詢',
+  'PC.Layouts.Setting.UsageStatistics.columnType': '類型',
+  'PC.Layouts.Setting.UsageStatistics.columnDaily': '每日',
+  'PC.Layouts.Setting.UsageStatistics.columnOther': '其他數量',
+  'PC.Layouts.Setting.UsageStatistics.tokenLimit': '使用TOKEN上限',
+  'PC.Layouts.Setting.UsageStatistics.agentPrompt': '通用智能體對話次數',
+  'PC.Layouts.Setting.UsageStatistics.pagePrompt': '網頁應用開發對話次數',
+  'PC.Layouts.Setting.UsageStatistics.workspace': '可創建工作空間數量',
+  'PC.Layouts.Setting.UsageStatistics.agent': '可創建智能體數量',
+  'PC.Layouts.Setting.UsageStatistics.pageApp': '可創建網頁應用數量',
+  'PC.Layouts.Setting.UsageStatistics.knowledgeBase': '可創建知識庫數量',
+  'PC.Layouts.Setting.UsageStatistics.kbStorage': '知識庫存儲上限',
+  'PC.Layouts.Setting.UsageStatistics.table': '可創建數據表數量',
+  'PC.Layouts.Setting.UsageStatistics.task': '可創建定時任務數量',
+  'PC.Layouts.Setting.UsageStatistics.sandboxMemory': '智能體電腦最大內存',
+
+  // Common - additional keys
+  'PC.Common.Global.submit': '提交',
+  'PC.Common.Global.syncFailed': '同步失敗',
+  'PC.Common.Global.operation': '操作',
+  'PC.Common.Global.edit': '編輯',
+  'PC.Common.Global.delete': '刪除',
+  'PC.Common.Global.add': '新增',
+  'PC.Common.Global.import': '導入',
+  'PC.Common.Global.export': '導出',
+  'PC.Common.Global.pleaseInput': '請輸入',
+  'PC.Common.Global.nameEmpty': '名稱不能為空',
+  'PC.Common.Global.deleteConfirmTitle': '刪除確認',
+  'PC.Common.Global.deleteConfirmContent': '確定要刪除嗎？',
+  'PC.Common.Global.selectTime': '請選擇時間',
+  'PC.Toast.Global.deletedSuccessfully': '刪除成功',
+  'PC.Toast.Global.modifiedSuccessfully': '修改成功',
+  'PC.Toast.Global.clearedSuccessfully': '清除成功',
+  'PC.Toast.Global.importedSuccessfully': '導入成功',
+  'PC.Toast.Global.importFailedRetry': '導入失敗，請重試',
+  'PC.Toast.Global.fileUploadFailedRetry': '文件上傳失敗，請重試',
+
+  // Pages - SpaceTable
+  'PC.Pages.SpaceTable.Index.fieldNameValidate':
+    '字段名只能包含字母、数字、下划线，且必须以字母开头',
+  'PC.Pages.SpaceTable.Index.hint': '提示',
+  'PC.Pages.SpaceTable.Index.structureModified': '當前表結構已修改，是否保存？',
+  'PC.Pages.SpaceTable.Index.discardChanges': '放棄變更',
+  'PC.Pages.SpaceTable.Index.confirmSave': '確定保存',
+  'PC.Pages.SpaceTable.Index.modifyData': '修改數據',
+  'PC.Pages.SpaceTable.Index.addData': '新增數據',
+  'PC.Pages.SpaceTable.Index.clearConfirm': '清除確認',
+  'PC.Pages.SpaceTable.AddAndModify.inputPlaceholder': '請輸入{0}',
+  'PC.Pages.SpaceTable.AddAndModify.defaultPlaceholder': '請輸入{0}默認值',
+  'PC.Pages.SpaceTable.AddAndModify.integerRange':
+    '数值范围：[-2147483648, 2147483647]',
+  'PC.Pages.SpaceTable.AddAndModify.numberPrecision':
+    '精度20位,整数部分最多14位,小数部分最多6位',
+  'PC.Pages.SpaceTable.DataTable.totalCount': '共 {0} 條',
+  'PC.Pages.SpaceTable.DataTable.itemsPerPage': '條 / 頁',
+  'PC.Pages.SpaceTable.DataTable.tabStructure': '表結構',
+  'PC.Pages.SpaceTable.DataTable.tabData': '表數據',
+  'PC.Pages.SpaceTable.DeleteSure.warning':
+    '请谨慎删除，点击确定后将丢失所有数据！',
+  'PC.Pages.SpaceTable.DeleteSure.confirmAgain': '請再次確認',
+  'PC.Pages.SpaceTable.DeleteSure.matchValidation': '輸入必須與"{0}"完全匹配',
+  'PC.Pages.SpaceTable.DeleteSure.inputPlaceholder': '請輸入"{0}"確認刪除',
+  'PC.Pages.SpaceTable.StructureTable.systemVariable': '系統變量',
+  'PC.Pages.SpaceTable.StructureTable.serial': '序號',
+  'PC.Pages.SpaceTable.StructureTable.fieldName': '字段名',
+  'PC.Pages.SpaceTable.StructureTable.fieldDescription': '字段詳細描述',
+  'PC.Pages.SpaceTable.StructureTable.fieldType': '字段類型',
+  'PC.Pages.SpaceTable.StructureTable.dataLength': '數據長度',
+  'PC.Pages.SpaceTable.StructureTable.required': '是否必須',
+  'PC.Pages.SpaceTable.StructureTable.unique': '是否唯一',
+  'PC.Pages.SpaceTable.StructureTable.enabled': '是否啟用',
+  'PC.Pages.SpaceTable.StructureTable.defaultValue': '默認值',
+  'PC.Pages.SpaceTable.StructureTable.inputFieldName': '請輸入字段名',
+  'PC.Pages.SpaceTable.StructureTable.inputFieldDescription':
+    '请输入字段详细描述',
+  'PC.Pages.SpaceTable.StructureTable.shortText': '短文本（0-255）',
+  'PC.Pages.SpaceTable.StructureTable.mediumText': '長文本（0-16M）',
+  'PC.Pages.SpaceTable.TableHeader.recordCount': '{0}條記錄',
+  'PC.Pages.SpaceTable.TableOperationBar.excelFileOnly':
+    '请上传 Excel 文件（.xlsx 或 .xls 格式）',
+  'PC.Pages.SpaceTable.TableOperationBar.fileSizeLimit':
+    '文件大小不能超过 100MB',
+  'PC.Pages.SpaceTable.TableOperationBar.addField': '新增字段',
+  'PC.Pages.SpaceTable.TableOperationBar.clearAllData': '清除所有數據',
+  'PC.Pages.SpaceTable.ClearDataTooltip.clearDataToModify':
+    '清空表数据后,可修改',
+  'PC.Pages.EditAgent.EventList.emptyDescription':
+    '通过事件绑定可给大模型返回的内容指定点击操作响应',
+  'PC.Pages.EditAgent.PreviewAndDebug.fillRequiredParams': '請填寫必填參數',
+  'PC.Pages.EditAgent.PreviewAndDebug.convIdNotFoundFilePreview':
+    '会话ID不存在，无法打开文件预览',
+  'PC.Pages.EditAgent.PreviewAndDebug.convIdNotFoundDesktop':
+    '会话ID不存在，无法打开智能体电脑',
+  'PC.Pages.EditAgent.DebugDetails.title': '調試詳情',
+  'PC.Pages.EditAgent.DebugDetails.elapsedTime': '耗時{0} ms',
+  'PC.Pages.EditAgent.DebugDetails.calledComponents': '調用組件',
+  'PC.Pages.EditAgent.DebugDetails.output': '輸出',
+
+  // Pages - EditAgent (main index)
+  'PC.Pages.EditAgent.convIdNotFoundCreateFile': '會話ID不存在，無法新建文件',
+  'PC.Pages.EditAgent.deleteFileConfirmTitle': '你確定要刪除此文件嗎?',
+  'PC.Pages.EditAgent.convIdNotFoundDeleteFile': '會話ID不存在，無法刪除文件',
+  'PC.Pages.EditAgent.fileNotFoundDelete': '文件不存在，無法刪除',
+  'PC.Pages.EditAgent.convIdNotFoundRenameFile': '會話ID不存在，無法重命名文件',
+  'PC.Pages.EditAgent.convIdNotFoundSaveFile': '會話ID不存在，無法保存文件',
+  'PC.Pages.EditAgent.convIdNotFoundUploadFile': '會話ID不存在，無法上傳文件',
+  'PC.Pages.EditAgent.uploadFileSizeExceed': '上傳文件總大小不能超過{0}MB',
+  'PC.Pages.EditAgent.uploadSuccess': '上傳成功',
+  'PC.Pages.EditAgent.convIdNotFoundExport': '開發會話ID不存在或無效，無法導出',
+  'PC.Pages.EditAgent.exportFailed': '導出失敗',
+  'PC.Pages.EditAgent.exportSuccess': '導出成功！',
+  'PC.Pages.EditAgent.statUserCount': '對話人數',
+  'PC.Pages.EditAgent.statConvCount': '對話次數',
+  'PC.Pages.EditAgent.statCollectCount': '收藏用戶數',
+  'PC.Pages.EditAgent.statLikeCount': '點贊次數',
+  'PC.Pages.EditAgent.exportConfigTitle': '導出配置 - {0}',
+  'PC.Pages.EditAgent.exportConfigContent':
+    '如果内部包含数据表或知识库，数据本身不会导出',
+  'PC.Pages.EditAgent.agentOverview': '智能體概覽',
+
+  // Pages - EditAgent > ArrangeTitle
+  'PC.Pages.EditAgent.ArrangeTitle.selectChatModel': '請選擇會話模型',
+  'PC.Pages.EditAgent.ArrangeTitle.arrange': '編排',
+
+  // Pages - EditAgent > PreviewAndDebug > PreviewAndDebugHeader
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.previewAndDebug':
+    '预览与调试',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.debug': '調試',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openPreviewPage':
+    '打开预览页面',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeFilePreview':
+    '关闭文件预览',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openFilePreview':
+    '打开文件预览',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop':
+    '关闭智能体电脑',
+  'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop':
+    '打开智能体电脑',
+
+  // Pages - EditAgent > DebugDetails > NodeDetails
+  'PC.Pages.EditAgent.NodeDetails.typePlugin': '插件',
+  'PC.Pages.EditAgent.NodeDetails.typeWorkflow': '工作流',
+  'PC.Pages.EditAgent.NodeDetails.typeKnowledge': '知識庫',
+  'PC.Pages.EditAgent.NodeDetails.typeVariable': '變量',
+  'PC.Pages.EditAgent.NodeDetails.typeTable': '數據表',
+  'PC.Pages.EditAgent.NodeDetails.typeModel': '模型',
+  'PC.Pages.EditAgent.NodeDetails.typeMCP': 'MCP',
+  'PC.Pages.EditAgent.NodeDetails.labelType': '類型',
+  'PC.Pages.EditAgent.NodeDetails.labelStatus': '狀態',
+  'PC.Pages.EditAgent.NodeDetails.statusSuccess': '成功',
+  'PC.Pages.EditAgent.NodeDetails.labelName': '名稱',
+  'PC.Pages.EditAgent.NodeDetails.labelDuration': '耗時',
+  'PC.Pages.EditAgent.NodeDetails.labelStartTime': '發起時間',
+  'PC.Pages.EditAgent.NodeDetails.labelEndTime': '結束時間',
+
+  // Pages - EditAgent > AgentModelSetting
+  'PC.Pages.EditAgent.AgentModelSetting.modelSetting': '模型設置',
+  'PC.Pages.EditAgent.AgentModelSetting.selectChatModel': '請選擇會話模型',
+  'PC.Pages.EditAgent.AgentModelSetting.chatModel': '會話模型',
+  'PC.Pages.EditAgent.AgentModelSetting.reasoningModelOptional':
+    '推理模型(可选)',
+  'PC.Pages.EditAgent.AgentModelSetting.selectReasoningModel': '請選擇推理模型',
+  'PC.Pages.EditAgent.AgentModelSetting.generateDiversity': '生成多樣性',
+  'PC.Pages.EditAgent.AgentModelSetting.precisionModeTitle': '精確模式:',
+  'PC.Pages.EditAgent.AgentModelSetting.precisionModeDesc1':
+    '严格遵循指令生成内容',
+  'PC.Pages.EditAgent.AgentModelSetting.precisionModeDesc2':
+    '适用于需准确无误的场合，如正式文档、代码等',
+  'PC.Pages.EditAgent.AgentModelSetting.balanceModeTitle': '平衡模式:',
+  'PC.Pages.EditAgent.AgentModelSetting.balanceModeDesc1':
+    '在创新和精确之间寻求平衡',
+  'PC.Pages.EditAgent.AgentModelSetting.balanceModeDesc2':
+    '适用于大多数日常应用场景，生成有趣但不失严谨的内容',
+  'PC.Pages.EditAgent.AgentModelSetting.creativeModeTitle': '創意模式:',
+  'PC.Pages.EditAgent.AgentModelSetting.creativeModeDesc1':
+    '激发创意，提供新颖独特的想法',
+  'PC.Pages.EditAgent.AgentModelSetting.creativeModeDesc2':
+    '适合需要灵感和独特观点的场景，如头脑风暴、创意写作等',
+  'PC.Pages.EditAgent.AgentModelSetting.customModeTitle': '自定義模式:',
+  'PC.Pages.EditAgent.AgentModelSetting.customModeDesc1':
+    '通过高级设置，自定义生成方式',
+  'PC.Pages.EditAgent.AgentModelSetting.customModeDesc2':
+    '根据需求，进行精细调整，实现个性化优化',
+  'PC.Pages.EditAgent.AgentModelSetting.generateRandomness': '生成隨機性',
+  'PC.Pages.EditAgent.AgentModelSetting.generateRandomnessTooltip':
+    'temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 "Top p" 同时调整',
+  'PC.Pages.EditAgent.AgentModelSetting.topPTooltip':
+    'Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 "生成随机性" 同时调整。',
+  'PC.Pages.EditAgent.AgentModelSetting.inputOutputSettings': '輸入及輸出設置',
+  'PC.Pages.EditAgent.AgentModelSetting.contextRoundsLabel': '攜帶上下文輪數',
+  'PC.Pages.EditAgent.AgentModelSetting.contextRoundsTooltip':
+    '设置带入模型上下文的对话历史轮数。轮数越多，多轮对话的相关性越高，但消耗的 Token 也越多',
+  'PC.Pages.EditAgent.AgentModelSetting.maxReplyLengthLabel': '最大回復長度',
+  'PC.Pages.EditAgent.AgentModelSetting.maxReplyLengthTooltip':
+    '控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。',
+
+  // Pages - EditAgent > SystemTipsWord
+  'PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder':
+    '输入系统提示词，对大模型进行角色塑造',
+  'PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder':
+    '输入用户提示词，预置指令、问题或请求',
+  'PC.Pages.EditAgent.SystemTipsWord.systemPrompt': '系統提示詞',
+  'PC.Pages.EditAgent.SystemTipsWord.userPrompt': '用戶提示詞',
+  'PC.Pages.EditAgent.SystemTipsWord.exitFullscreen': '退出全屏',
+  'PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit': '全屏編輯',
+  'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip': '自動優化提示詞',
+  'PC.Pages.EditAgent.SystemTipsWord.optimize': '優化',
+
+  // Pages - SpacePageDevelop
+  'PC.Pages.SpacePageDevelop.ReverseProxyModal.title': '反向代理',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.path': '路徑',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.pathPlaceholder':
+    '请输入路径',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.backendAddress':
+    '后端地址',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.backendAddressPlaceholder':
+    '请输入后端地址',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.addConfig': '新增配置',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.savedSuccessfully':
+    '保存成功',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.duplicatePathError':
+    '路径不能相同',
+  'PC.Pages.SpacePageDevelop.ReverseProxyContentConfig.rootPathError':
+    '根路径/是系统内置，无需配置',
+  'PC.Pages.SpacePageDevelop.AddPathModal.addPath': '添加路徑',
+  'PC.Pages.SpacePageDevelop.AddPathModal.editPath': '修改路徑',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathName': '路徑名稱',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pleaseEnterPathName':
+    '请输入路径名称',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathUri': '路徑URI',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pleaseEnterPathUri': '請輸入路徑URI',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathUriFormatError':
+    '请输入正确的路径URI，必须以/开头',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathUriPlaceholder':
+    '路径URI，例如 /detail/view 或 /detail/view/{id}',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathDescription': '路徑功能描述',
+  'PC.Pages.SpacePageDevelop.AddPathModal.pathDescriptionPlaceholder':
+    '路径功能描述信息，例如 获取详情信息',
+  'PC.Pages.SpacePageDevelop.AddPathModal.actionSuccess': '{0}成功',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigModal.title': '路徑參數配置',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigModal.addPath': '新增路徑',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.title': '域名綁定管理',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameTitle':
+    '请将域名解析到以下 CNAME 地址（二选一）',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameCnValue':
+    'cn-cname.nuwax.com',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameCnDesc':
+    '对中国用户提供服务，需有 ICP 备案',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameEnValue':
+    'en-cname.nuwax.com',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameEnDesc':
+    '对海外用户提供服务，请遵守你所服务国家或地区的法律法规',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.boundDomains': '已綁定域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.domainCount': '{0} 個域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.addDomain': '添加新域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.addSuccess': '添加成功',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.modifySuccess': '修改成功',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.deleteSuccess': '刪除成功',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.pleaseEnterDomain':
+    '请输入域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.invalidDomainFormat':
+    '请输入有效的域名格式',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.editDomain': '修改域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.domainInputPlaceholder':
+    '请输入域名，如 example.com',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.cnameResolveHint':
+    '请确保域名已完成 CNAME 解析',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.removeDomainTitle':
+    '移除域名绑定',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.removeDomainContent':
+    '确定要移除域名',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.removeDomainHint':
+    '移除后，用户将无法通过该域名访问此项目。需重新绑定并解析。',
+  'PC.Pages.SpacePageDevelop.DomainBindingModal.confirmRemove': '確認移除',
+
+  // Pages - SpacePageDevelop - AuthConfigModal
+  'PC.Pages.SpacePageDevelop.AuthConfigModal.authConfig': '認證配置',
+  'PC.Pages.SpacePageDevelop.AuthConfigModal.allowAccessWithoutLogin':
+    '允许免登录访问',
+  'PC.Pages.SpacePageDevelop.AuthConfigModal.pageIdNotExist': '頁面ID不存在',
+
+  // Pages - SpacePageDevelop - PageCreateModal
+  'PC.Pages.SpacePageDevelop.PageCreateModal.createApp': '創建應用',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.name': '名稱',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.pleaseEnterName': '請輸入名稱',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.description': '描述',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.pleaseEnterDescription':
+    '请输入描述',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.icon': '圖標',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.pleaseUploadZip':
+    '请上传项目压缩包',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.zipOnly': '僅支持 ZIP 文件',
+  'PC.Pages.SpacePageDevelop.PageCreateModal.uploadDragText':
+    '点击或拖拽文件到此区域上传',
+
+  // Pages - SpacePageDevelop - PathParamsConfigContent
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramName': '參數名稱',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramNamePlaceholder':
+    '请输入参数名称',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramDescription':
+    '参数描述',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.paramDescriptionPlaceholder':
+    '请输入参数描述',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.inputType': '入參類型',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.isRequired': '是否必填',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.defaultValue': '默認值',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.defaultValuePlaceholder':
+    '请输入默认值',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.enable': '啟用',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.action': '操作',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.noPathParams':
+    '暂无路径参数',
+  'PC.Pages.SpacePageDevelop.PathParamsConfigContent.addParam': '添加參數',
+
+  // Pages - SpacePageDevelop - Index
+  'PC.Pages.SpacePageDevelop.Index.pageTitle': '頁面開發',
+  'PC.Pages.SpacePageDevelop.Index.searchPlaceholder': '搜索頁面名稱',
+  'PC.Pages.SpacePageDevelop.Index.create': '創建',
+  'PC.Pages.SpacePageDevelop.Index.viewDetails': '查看詳情',
+  'PC.Pages.SpacePageDevelop.Index.published': '已發佈',
+  'PC.Pages.SpacePageDevelop.Index.unpublished': '未發佈',
+  'PC.Pages.SpacePageDevelop.Index.noResultsFound': '未能找到相關結果',
+  'PC.Pages.SpacePageDevelop.Index.pageUrlNotExist': '頁面地址不存在',
+  'PC.Pages.SpacePageDevelop.Index.projectIdInvalidCannotExport':
+    '项目ID无效，无法导出',
+  'PC.Pages.SpacePageDevelop.Index.exportFailed': '導出失敗',
+  'PC.Pages.SpacePageDevelop.Index.exportSuccess': '導出成功',
+  'PC.Pages.SpacePageDevelop.Index.exportUnknownError': '未知導出錯誤',
+  'PC.Pages.SpacePageDevelop.Index.exportFailedWithError': '導出失敗: {0}',
+  'PC.Pages.SpacePageDevelop.Index.domainBindingConditionWarning':
+    '域名绑定仅在发布类型为"应用"且认证配置为"免登录访问"开启时可用',
+  'PC.Pages.SpacePageDevelop.Index.confirmDeletePage': '你確定要刪除此頁面嗎?',
+
+  // Models
+  'PC.Models.ConversationInfo.restartAgentSuccess': '重啟智能體成功',
+  'PC.Models.ConversationInfo.networkTimeoutError':
+    '网络超时或服务不可用，请稍后再试',
+  'PC.Models.ConversationInfo.taskConflictTitle': '提示',
+  'PC.Models.ConversationInfo.taskConflictContent':
+    '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+  'PC.Models.DevCollectAgent.uncollectSuccess': '取消收藏成功',
+  'PC.Models.UserInfo.getUserInfoFailed': '獲取用戶信息失敗',
+  'PC.Models.UserInfo.refreshUserInfoFailed': '刷新用戶信息失敗',
+  'PC.Models.WorkflowV3.defaultNodeName': '測試',
+  'PC.Models.WorkflowV3.defaultNodeDescription': '測試',
+  'PC.Models.Workflow.defaultNodeName': '測試',
+  'PC.Models.Workflow.defaultNodeDescription': '測試',
+
+  // Pages - IMChannel - Index
+  'PC.Pages.IMChannel.Index.title': 'IM 機器人',
+  'PC.Pages.IMChannel.Index.searchPlaceholder': '搜索智能體名稱',
+  'PC.Pages.IMChannel.Index.add': '新增',
+  'PC.Pages.IMChannel.Index.addBot': '新增機器人',
+  'PC.Pages.IMChannel.Index.addApp': '新增應用',
+
+  // Pages - IMChannel - PlatformList
+  'PC.Pages.IMChannel.PlatformList.platformList': '平臺列表',
+  'PC.Pages.IMChannel.PlatformList.robotCount': '{0} 個機器人',
+
+  // Pages - IMChannel - CreateIMChannel
+  'PC.Pages.IMChannel.CreateIMChannel.addSuccess': '新增成功',
+  'PC.Pages.IMChannel.CreateIMChannel.editSuccess': '編輯成功',
+  'PC.Pages.IMChannel.CreateIMChannel.testConnectionSuccess': '測試連接成功',
+  'PC.Pages.IMChannel.CreateIMChannel.edit': '編輯',
+  'PC.Pages.IMChannel.CreateIMChannel.add': '新增',
+  'PC.Pages.IMChannel.CreateIMChannel.app': '應用',
+  'PC.Pages.IMChannel.CreateIMChannel.bot': '機器人',
+  'PC.Pages.IMChannel.CreateIMChannel.testConnectivity': '測試連通性',
+  'PC.Pages.IMChannel.CreateIMChannel.agent': '智能體',
+  'PC.Pages.IMChannel.CreateIMChannel.agentTooltip':
+    '通用智能体将使用你的沙箱（电脑）环境执行任务，切勿将对应的机器人分享给他人使用。',
+  'PC.Pages.IMChannel.CreateIMChannel.outputMode': '輸出方式',
+  'PC.Pages.IMChannel.CreateIMChannel.outputModeTooltip':
+    '机器人回复消息时，是逐字逐句显示还是全部一次性显示。',
+  'PC.Pages.IMChannel.CreateIMChannel.streamOutput': '流式輸出（打字機效果）',
+  'PC.Pages.IMChannel.CreateIMChannel.onceOutput': '一次性輸出',
+  'PC.Pages.IMChannel.CreateIMChannel.enabledStatus': '啟用狀態',
+
+  // Pages - IMChannel - DynamicChannelForm
+  'PC.Pages.IMChannel.DynamicChannelForm.requiredField': '此項為必填項',
+
+  // Pages - IMChannel - WechatIlinkForm
+  'PC.Pages.IMChannel.WechatIlinkForm.qrTimeoutWarning':
+    '本次扫码已由于超时停止，请重新获取二维码',
+  'PC.Pages.IMChannel.WechatIlinkForm.connectionSuccess': '連接成功',
+  'PC.Pages.IMChannel.WechatIlinkForm.scanConfirmSuccess': '掃碼確認成功',
+  'PC.Pages.IMChannel.WechatIlinkForm.qrExpired': '二維碼已過期，請重新獲取',
+  'PC.Pages.IMChannel.WechatIlinkForm.getQrSuccess': '獲取二維碼成功',
+  'PC.Pages.IMChannel.WechatIlinkForm.statusNone': '未開始',
+  'PC.Pages.IMChannel.WechatIlinkForm.statusWait': '等待掃碼',
+  'PC.Pages.IMChannel.WechatIlinkForm.statusScanned': '已掃碼，請在手機上確認',
+  'PC.Pages.IMChannel.WechatIlinkForm.statusConnected': '已連接',
+  'PC.Pages.IMChannel.WechatIlinkForm.statusExpired': '已過期',
+  'PC.Pages.IMChannel.WechatIlinkForm.scanToConnect': '掃碼連接',
+  'PC.Pages.IMChannel.WechatIlinkForm.scanTooltip':
+    '点击获取二维码并使用手机微信扫码。',
+  'PC.Pages.IMChannel.WechatIlinkForm.fetchingQr': '正在獲取二維碼...',
+  'PC.Pages.IMChannel.WechatIlinkForm.scanSuccess': '掃碼成功',
+  'PC.Pages.IMChannel.WechatIlinkForm.clickConfirmToSave':
+    "请点击下方'确定'按钮保存",
+  'PC.Pages.IMChannel.WechatIlinkForm.qrExpiredRefresh': '二維碼過期，點擊刷新',
+  'PC.Pages.IMChannel.WechatIlinkForm.clickToGetQr': '請點擊下方按鈕獲取二維碼',
+  'PC.Pages.IMChannel.WechatIlinkForm.status': '狀態',
+  'PC.Pages.IMChannel.WechatIlinkForm.importantNotice': '重要提示',
+  'PC.Pages.IMChannel.WechatIlinkForm.importantNoticeDesc':
+    '同一个微信在第二次扫码确认后，原有的机器人连接将立即失效。请务必点击下方的"确定"按钮以保存并生效当前配置。',
+  'PC.Pages.IMChannel.WechatIlinkForm.reGetQr': '重新獲取二維碼',
+  'PC.Pages.IMChannel.WechatIlinkForm.getQr': '獲取二維碼',
+
+  // Pages - IMChannel - CardList
+  'PC.Pages.IMChannel.CardList.deleteContent': '刪除後將無法恢復，請謹慎操作。',
+  'PC.Pages.IMChannel.CardList.smartBot': '智能機器人',
+  'PC.Pages.IMChannel.CardList.enterpriseApp': '企業應用',
+  'PC.Pages.IMChannel.CardList.unboundAgent': '未綁定智能體',
+  'PC.Pages.IMChannel.CardList.bot': '機器人',
+  'PC.Pages.IMChannel.CardList.app': '應用',
+  'PC.Pages.IMChannel.CardList.lastEdited': '最近編輯',
+  'PC.Pages.IMChannel.CardList.edit': '編輯',
+  'PC.Pages.IMChannel.CardList.delete': '刪除',
+  'PC.Pages.IMChannel.CardList.confirmDelete': '確認刪除{0}{1}？',
+  'PC.Pages.IMChannel.CardList.noMatchingResults': '未能找到匹配的結果',
+  'PC.Pages.IMChannel.CardList.noResultsFound': '未能找到相關結果',
+  'PC.Pages.IMChannel.CardList.noKeywordResults':
+    '未找到包含 "{0}" 的机器人或配置',
+  'PC.Pages.IMChannel.CardList.noRobotsDesc':
+    '当前平台下暂无机器人，请点击上方"新增机器人"按钮开始创建',
+  'PC.Pages.IMChannel.CardList.defaultPlatformName': '該',
+
+  // Pages - TeamSetting
+  'PC.Pages.TeamSetting.roleOwner': '創建人',
+  'PC.Pages.TeamSetting.roleAdmin': '管理員',
+  'PC.Pages.TeamSetting.roleMember': '成員',
+  'PC.Pages.TeamSetting.myStatus': '我的狀態：{0}',
+  'PC.Pages.TeamSetting.memberManagement': '成員管理',
+  'PC.Pages.TeamSetting.spaceSetting': '空間設置',
+
+  // Pages - TeamSetting - TransferSpace
+  'PC.Pages.TeamSetting.TransferSpace.transferSuccess': '轉讓成功',
+  'PC.Pages.TeamSetting.TransferSpace.transferOwnershipTitle': '轉移團隊所有權',
+  'PC.Pages.TeamSetting.TransferSpace.transferDescription':
+    '转让所有权后，你的状态将更改为管理员。',
+  'PC.Pages.TeamSetting.TransferSpace.transferToLabel': '將所有權轉讓給',
+  'PC.Pages.TeamSetting.TransferSpace.selectTeamMember': '請選擇團隊成員',
+
+  // Pages - TeamSetting - ModifyTeam
+  'PC.Pages.TeamSetting.ModifyTeam.editTeamProfile': '編輯團隊簡介',
+  'PC.Pages.TeamSetting.ModifyTeam.teamDescription':
+    '通过创建团队空间，将支持智能体、插件、工作流、大模型和知识库在团队内进行协作和分享。',
+  'PC.Pages.TeamSetting.ModifyTeam.teamNameLabel': '團隊名稱',
+  'PC.Pages.TeamSetting.ModifyTeam.teamNameRequired': '請輸入團隊名稱',
+  'PC.Pages.TeamSetting.ModifyTeam.descriptionLabel': '描述',
+  'PC.Pages.TeamSetting.ModifyTeam.descriptionPlaceholder': '描述團隊',
+
+  // Pages - TeamSetting - MemberManageTab
+  'PC.Pages.TeamSetting.MemberManageTab.keyword': '關鍵字',
+  'PC.Pages.TeamSetting.MemberManageTab.search': '搜索',
+  'PC.Pages.TeamSetting.MemberManageTab.nickname': '暱稱',
+  'PC.Pages.TeamSetting.MemberManageTab.username': '用戶名',
+  'PC.Pages.TeamSetting.MemberManageTab.role': '角色',
+  'PC.Pages.TeamSetting.MemberManageTab.joinTime': '加入時間',
+  'PC.Pages.TeamSetting.MemberManageTab.action': '操作',
+  'PC.Pages.TeamSetting.MemberManageTab.delete': '刪除',
+  'PC.Pages.TeamSetting.MemberManageTab.confirmDelete': '確認刪除',
+  'PC.Pages.TeamSetting.MemberManageTab.confirmDeleteUser':
+    '你确定要删除该用户吗？',
+  'PC.Pages.TeamSetting.MemberManageTab.addMember': '添加成員',
+
+  // Pages - TeamSetting - AddMember
+  'PC.Pages.TeamSetting.AddMember.addSuccess': '添加成功',
+  'PC.Pages.TeamSetting.AddMember.noUserFound': '未搜索到相關用戶',
+  'PC.Pages.TeamSetting.AddMember.selectMemberWarning': '請選擇要添加的成員',
+  'PC.Pages.TeamSetting.AddMember.addNewMember': '添加新成員',
+  'PC.Pages.TeamSetting.AddMember.searchPlaceholder':
+    '输入用户名、邮箱或手机号码，回车搜索',
+  'PC.Pages.TeamSetting.AddMember.all': '全部',
+  'PC.Pages.TeamSetting.AddMember.selectedMembers': '已選成員 ({0})',
+
+  // Pages - TeamSetting - RemoveSpace
+  'PC.Pages.TeamSetting.RemoveSpace.deleteTeamTitle': '刪除團隊',
+  'PC.Pages.TeamSetting.RemoveSpace.deleteWarning':
+    '请谨慎删除，删除后，团队内的所有数据都将丢失。',
+  'PC.Pages.TeamSetting.RemoveSpace.enterTeamNameLabel':
+    '请输入需要删除的团队名称',
+  'PC.Pages.TeamSetting.RemoveSpace.enterTeamNameRequired':
+    '请输入需要删除的团队名称',
+  'PC.Pages.TeamSetting.RemoveSpace.teamNameMismatch':
+    '输入的团队名称与要删除的团队名称不匹配',
+  'PC.Pages.TeamSetting.RemoveSpace.teamNamePlaceholder': '請輸入團隊名稱',
+
+  // Pages - TeamSetting - SpaceSettingTab
+  'PC.Pages.TeamSetting.SpaceSettingTab.transferSpace': '轉讓空間',
+  'PC.Pages.TeamSetting.SpaceSettingTab.transferSpaceDescription':
+    '将空间所有权转移给其他成员，转让后将成为管理员身份',
+  'PC.Pages.TeamSetting.SpaceSettingTab.transferSpaceBtn': '轉讓空間',
+  'PC.Pages.TeamSetting.SpaceSettingTab.deleteSpace': '刪除空間',
+  'PC.Pages.TeamSetting.SpaceSettingTab.deleteSpaceDescription':
+    '空间删除后所有资产将无法恢复，请谨慎操作',
+  'PC.Pages.TeamSetting.SpaceSettingTab.deleteSpaceBtn': '刪除空間',
+  'PC.Pages.TeamSetting.SpaceSettingTab.developerFeatures': '開發者功能',
+  'PC.Pages.TeamSetting.SpaceSettingTab.developerFeaturesTooltip':
+    '关闭后，用户将无法看见"智能体开发"和"组件库"，创建者和管理员不受影响',
+  'PC.Pages.TeamSetting.SpaceSettingTab.receiveExternalPublish':
+    '接受来自外部空间的发布',
+  'PC.Pages.TeamSetting.SpaceSettingTab.receiveExternalPublishTooltip':
+    '打开后，拥有该空间权限的用户在其他空间完成开发的智能体、插件、工作流，可以发布到该空间的广场上',
+  // Pages - SpaceLibraryLog
+  'PC.Pages.SpaceLibraryLog.Index.pageTitle': '日誌查詢',
+
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.title': '日誌詳情',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.elapsedTime': '耗時 {0} ms',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.tokenCount': '{0} Tokens',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.messageId': '消息ID:',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.calledComponents': '調用組件',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.nodeDetails': '節點詳情',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.input': '輸入',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.output': '輸出',
+  'PC.Pages.SpaceLibraryLog.LogDetailDrawer.executionProcess': '執行過程',
+
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeAgent': '智能體',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typePlugin': '插件',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeWorkflow': '工作流',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeKnowledge': '知識庫',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeVariable': '變量',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeTable': '數據表',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeModel': '模型',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeMCP': 'MCP',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typeToolCall': '工具調用',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.typePlan': '計劃',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelType': '類型',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelStatus': '狀態',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.statusSuccess': '成功',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelName': '名稱',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelElapsedTime': '耗時',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelStartTime': '發起時間',
+  'PC.Pages.SpaceLibraryLog.NodeDetails.labelEndTime': '結束時間',
+
+  'PC.Pages.SpaceLibraryLog.LogProTable.colType': '類型',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colTargetId': '對象ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colTargetName': '對象名稱',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colRequestId': '請求ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colUserId': '用戶ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colUserName': '用戶名',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colConversationId': '會話ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colInput': '輸入內容',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colOutput': '輸出內容',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colTimeRange': '時間範圍',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colInputToken': '輸入token',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colOutputToken': '輸出token',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colRequestTime': '請求時間',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colElapsedTime': '整體耗時',
+  'PC.Pages.SpaceLibraryLog.LogProTable.colActions': '操作',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phSelectType': '請選擇類型',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phTargetId': '請輸入對象ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phTargetName': '請輸入對象名稱',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phRequestId': '請輸入請求ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phUserId':
+    '请输入用户ID，仅支持输入整数',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phUserName': '請輸入用戶名',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phConversationId': '請輸入會話ID',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phInputContent':
+    '多个关键字以空格分隔，请输入内容',
+  'PC.Pages.SpaceLibraryLog.LogProTable.phOutputContent':
+    '多个关键字以空格分隔，请输入内容',
+  'PC.Pages.SpaceLibraryLog.LogProTable.viewConversationDetail': '查看會話詳情',
+  'PC.Pages.SpaceLibraryLog.LogProTable.queryFailed': '查詢失敗',
+  'PC.Pages.SpaceLibraryLog.LogProTable.noRequestIdWarning':
+    '该条记录缺少 requestId，无法查看详情',
+  'PC.Pages.SpaceLibraryLog.LogProTable.actionDetail': '詳情',
+
+  // Pages - Square
+  'PC.Pages.Square.Square.agent': '智能體',
+  'PC.Pages.Square.Square.pageApp': '網頁應用',
+  'PC.Pages.Square.Square.skill': '技能',
+  'PC.Pages.Square.Square.plugin': '插件',
+  'PC.Pages.Square.Square.workflow': '工作流',
+  'PC.Pages.Square.Square.template': '模板',
+  'PC.Pages.Square.Square.all': '全部',
+  'PC.Pages.Square.Square.onlyOfficial': '僅查看官方{0}',
+  'PC.Pages.Square.Square.defaultAgentNotConfigured':
+    '站点默认通用型智能体未配置',
+  'PC.Pages.Square.Square.bannerTitle': '人人都是智能設計師',
+  'PC.Pages.Square.Square.bannerSubtitle':
+    '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API',
+  'PC.Pages.Square.Square.selectCategory': '請選擇分類',
+  'PC.Pages.Square.Square.search': '搜索',
+
+  'PC.Pages.Square.SingleAgent.startUsing': '開始使用',
+
+  'PC.Pages.Square.SquareComponentInfo.publishedAt': '發佈於 {0}',
+
+  'PC.Pages.Square.TemplateItem.publishedAt': '發佈於 {0}',
+
+  'PC.Pages.Square.WorkflowIdDetail.templateCopySuccess': '模板複製成功',
+  'PC.Pages.Square.WorkflowIdDetail.paramName': '參數名稱',
+  'PC.Pages.Square.WorkflowIdDetail.paramDescription': '參數描述',
+  'PC.Pages.Square.WorkflowIdDetail.paramType': '參數類型',
+  'PC.Pages.Square.WorkflowIdDetail.inputMethod': '傳入方式',
+  'PC.Pages.Square.WorkflowIdDetail.required': '是否必須',
+  'PC.Pages.Square.WorkflowIdDetail.yes': '是',
+  'PC.Pages.Square.WorkflowIdDetail.no': '否',
+  'PC.Pages.Square.WorkflowIdDetail.defaultValue': '默認值',
+  'PC.Pages.Square.WorkflowIdDetail.enabled': '開啟',
+  'PC.Pages.Square.WorkflowIdDetail.workflowDescription': '工作流描述',
+  'PC.Pages.Square.WorkflowIdDetail.copyTemplate': '複製模板',
+  'PC.Pages.Square.WorkflowIdDetail.inputConfig': '入參配置',
+  'PC.Pages.Square.WorkflowIdDetail.outputConfig': '出參配置',
+
+  'PC.Pages.Square.SkillDetail.templateCopySuccess': '模板複製成功',
+  'PC.Pages.Square.SkillDetail.skillIdInvalid': '技能ID不存在或無效，無法導出',
+  'PC.Pages.Square.SkillDetail.exportFailed': '導出失敗',
+  'PC.Pages.Square.SkillDetail.exportSuccess': '導出成功！',
+  'PC.Pages.Square.SkillDetail.exportFailedRetry': '導出失敗，請重試',
+  'PC.Pages.Square.SkillDetail.copyTemplate': '複製模板',
+  'PC.Pages.Square.SkillDetail.downloadExport': '下載導出',
+
+  'PC.Pages.Square.PluginDetail.paramName': '參數名稱',
+  'PC.Pages.Square.PluginDetail.paramDescription': '參數描述',
+  'PC.Pages.Square.PluginDetail.paramType': '參數類型',
+  'PC.Pages.Square.PluginDetail.inputMethod': '傳入方式',
+  'PC.Pages.Square.PluginDetail.required': '是否必須',
+  'PC.Pages.Square.PluginDetail.yes': '是',
+  'PC.Pages.Square.PluginDetail.no': '否',
+  'PC.Pages.Square.PluginDetail.defaultValue': '默認值',
+  'PC.Pages.Square.PluginDetail.enabled': '開啟',
+  'PC.Pages.Square.PluginDetail.pluginDescription': '插件描述',
+  'PC.Pages.Square.PluginDetail.inputConfig': '入參配置',
+  'PC.Pages.Square.PluginDetail.outputConfig': '出參配置',
+
+  'PC.Pages.Square.PluginHeader.cancelCollectSuccess': '取消收藏成功',
+  'PC.Pages.Square.PluginHeader.collectSuccess': '收藏成功',
+  'PC.Pages.Square.PluginHeader.publishedAt': '發佈於{0}',
+  'PC.Pages.Square.PluginHeader.collectCount': '收藏 ({0})',
+
+  // Pages - SpaceDevelop
+  'PC.Pages.SpaceDevelop.Index.copySuccess': '已成功創建副本',
+  'PC.Pages.SpaceDevelop.Index.deleteSuccess': '已成功刪除',
+  'PC.Pages.SpaceDevelop.Index.transferSuccess': '遷移成功',
+  'PC.Pages.SpaceDevelop.Index.statUserCount': '對話人數',
+  'PC.Pages.SpaceDevelop.Index.statConvCount': '對話次數',
+  'PC.Pages.SpaceDevelop.Index.statCollectCount': '收藏用戶數',
+  'PC.Pages.SpaceDevelop.Index.statLikeCount': '點贊次數',
+  'PC.Pages.SpaceDevelop.Index.exportConfigTitle': '導出配置 - {0}',
+  'PC.Pages.SpaceDevelop.Index.exportConfigContent':
+    '如果内部包含数据表或知识库，数据本身不会导出',
+  'PC.Pages.SpaceDevelop.Index.deleteConfirmText': '你確定要刪除此智能體嗎?',
+  'PC.Pages.SpaceDevelop.Index.agentFileOnly': '請上傳.agent類型的文件!',
+  'PC.Pages.SpaceDevelop.Index.agentDevelop': '智能體開發',
+  'PC.Pages.SpaceDevelop.Index.searchAgent': '搜索智能體',
+  'PC.Pages.SpaceDevelop.Index.createAgent': '創建智能體',
+  'PC.Pages.SpaceDevelop.Index.noResults': '未能找到相關結果',
+  'PC.Pages.SpaceDevelop.Index.agentOverview': '智能體概覽',
+
+  // Pages - SpaceDevelop > ApplicationItem
+  'PC.Pages.SpaceDevelop.ApplicationItem.lastEdited': '最近編輯',
+  'PC.Pages.SpaceDevelop.ApplicationItem.published': '已發佈',
+  'PC.Pages.SpaceDevelop.ApplicationItem.taskType': '通用型',
+  'PC.Pages.SpaceDevelop.ApplicationItem.chatType': '問答型',
+  'PC.Pages.SpaceDevelop.ApplicationItem.privateComputer': '個人電腦',
+
+  // Pages - SpaceDevelop > CreateApiKeyModal
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.deleteConfirmText':
+    '你确定要删除此API Key吗?',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.modalTitle': '{0}-API Key',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.creator': '創建人',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.createdTime': '創建時間',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.devMode': '開發模式',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.devModeTooltip':
+    '开启开发模式后，未发布的变更也将实时体现。',
+  'PC.Pages.SpaceDevelop.CreateApiKeyModal.addApiKey': '新增API Key',
+
+  // Pages - SpaceDevelop > CreateTempChatModal
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.deleteConfirmText':
+    '你确定要删除该链接吗?',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.modalTitle':
+    '{0}-临时会话链接管理',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.linkAddress': '鏈接地址',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.qrCode': '二維碼',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.loginRequired': '登錄可用',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.validity': '有效期',
+  'PC.Pages.SpaceDevelop.CreateTempChatModal.addLink': '新增鏈接',
+
+  // Pages - SpaceDevelop > CopyChatWidgetCode
+  'PC.Pages.SpaceDevelop.CopyChatWidgetCode.iframeCodeCopy': 'iframe代碼複製',
+  'PC.Pages.SpaceDevelop.CopyChatWidgetCode.copySuccess': 'iframe代碼複製成功',
+  'PC.Pages.SpaceDevelop.CopyChatWidgetCode.copyCode': '複製代碼',
+
+  // Pages - SpaceLog
+  'PC.Pages.SpaceLog.colMessageId': '消息ID',
+  'PC.Pages.SpaceLog.colConversationId': '會話ID',
+  'PC.Pages.SpaceLog.colUserUid': '用戶UID',
+  'PC.Pages.SpaceLog.colUserName': '用戶暱稱（用戶名）',
+  'PC.Pages.SpaceLog.colUserInput': '用戶輸入',
+  'PC.Pages.SpaceLog.colOutput': '輸出',
+  'PC.Pages.SpaceLog.colInputToken': '輸入token',
+  'PC.Pages.SpaceLog.colOutputToken': '輸出token',
+  'PC.Pages.SpaceLog.colRequestTime': '請求時間',
+  'PC.Pages.SpaceLog.colElapsedTime': '整體耗時',
+  'PC.Pages.SpaceLog.lblMessageId': '消息ID',
+  'PC.Pages.SpaceLog.phMessageId': '請輸入消息ID',
+  'PC.Pages.SpaceLog.lblUserUid': '用戶UID',
+  'PC.Pages.SpaceLog.phUserUid': '請輸入用戶UID',
+  'PC.Pages.SpaceLog.lblConversationId': '會話ID',
+  'PC.Pages.SpaceLog.phConversationId': '請輸入會話ID',
+  'PC.Pages.SpaceLog.lblUserInput': '用戶輸入',
+  'PC.Pages.SpaceLog.phUserInput': '多個關鍵字以空格分隔，請輸入用戶消息',
+  'PC.Pages.SpaceLog.lblTimeRange': '時間範圍',
+  'PC.Pages.SpaceLog.lblOutput': '輸出',
+  'PC.Pages.SpaceLog.phOutput': '多個關鍵字以空格分隔，請輸入要查詢的輸出消息',
+  'PC.Pages.SpaceLog.btnSearch': '查詢',
+  'PC.Pages.SpaceLog.btnReset': '重置',
+  'PC.Pages.SpaceLog.paginationTotal': '共 {0} 條',
+  'PC.Pages.SpaceLog.itemsPerPage': '條 / 頁',
+
+  // Pages - SpaceLog > LogDetails
+  'PC.Pages.SpaceLog.LogDetails.title': '日誌詳情',
+  'PC.Pages.SpaceLog.LogDetails.elapsedTime': '耗時{0} ms',
+  'PC.Pages.SpaceLog.LogDetails.messageIdLabel': '消息ID:',
+  'PC.Pages.SpaceLog.LogDetails.calledComponents': '調用組件',
+  'PC.Pages.SpaceLog.LogDetails.nodeDetails': '節點詳情',
+  'PC.Pages.SpaceLog.LogDetails.input': '輸入',
+  'PC.Pages.SpaceLog.LogDetails.output': '輸出',
+
+  // Pages - SpaceLog > NodeDetails
+  'PC.Pages.SpaceLog.NodeDetails.lblType': '類型',
+  'PC.Pages.SpaceLog.NodeDetails.lblStatus': '狀態',
+  'PC.Pages.SpaceLog.NodeDetails.statusSuccess': '成功',
+  'PC.Pages.SpaceLog.NodeDetails.lblName': '名稱',
+  'PC.Pages.SpaceLog.NodeDetails.lblElapsedTime': '耗時',
+  'PC.Pages.SpaceLog.NodeDetails.lblStartTime': '發起時間',
+  'PC.Pages.SpaceLog.NodeDetails.lblEndTime': '結束時間',
+  'PC.Pages.SpaceLog.NodeDetails.labelSeparator': '：',
+  'PC.Pages.SpaceLog.NodeDetails.typePlugin': '插件',
+  'PC.Pages.SpaceLog.NodeDetails.typeWorkflow': '工作流',
+  'PC.Pages.SpaceLog.NodeDetails.typeKnowledge': '知識庫',
+  'PC.Pages.SpaceLog.NodeDetails.typeVariable': '變量',
+  'PC.Pages.SpaceLog.NodeDetails.typeTable': '數據表',
+  'PC.Pages.SpaceLog.NodeDetails.typeModel': '模型',
+
+  // Pages - SpaceTaskCenter
+  'PC.Pages.SpaceTaskCenter.title': '任務中心',
+  'PC.Pages.SpaceTaskCenter.createTask': '創建任務',
+
+  // Components - FormListItem
+  'PC.Components.FormListItem.conditionEqual': '等於',
+  'PC.Components.FormListItem.conditionNotEqual': '不等於',
+  'PC.Components.FormListItem.conditionGreaterThan': '大於',
+  'PC.Components.FormListItem.conditionGreaterThanOrEqual': '大於等於',
+  'PC.Components.FormListItem.conditionLessThan': '小於',
+  'PC.Components.FormListItem.conditionLessThanOrEqual': '小於等於',
+  'PC.Components.FormListItem.conditionLengthGreaterThan': '長度大於',
+  'PC.Components.FormListItem.conditionLengthGreaterThanOrEqual':
+    '长度大于等于',
+  'PC.Components.FormListItem.conditionLengthLessThan': '長度小於',
+  'PC.Components.FormListItem.conditionLengthLessThanOrEqual': '長度小於等於',
+  'PC.Components.FormListItem.conditionContains': '包含',
+  'PC.Components.FormListItem.conditionNotContains': '不包含',
+  'PC.Components.FormListItem.conditionMatchRegex': '匹配正則表達式',
+  'PC.Components.FormListItem.conditionIsNull': '為空',
+  'PC.Components.FormListItem.conditionNotNull': '不為空',
+  'PC.Components.FormListItem.noDescription': '暫無描述',
+  'PC.Components.FormListItem.noPreviousNodesOrParams':
+    '未添加上级节点连线或上级节点无参数',
+  'PC.Components.FormListItem.inputOrReferenceParam': '請輸入或引用參數',
+  'PC.Components.FormListItem.variableName': '變量名',
+  'PC.Components.FormListItem.variableType': '變量類型',
+  'PC.Components.FormListItem.outputFormat': '輸出格式',
+  'PC.Components.FormListItem.outputFormatText': '文本',
+  'PC.Components.FormListItem.outputFormatTextDesc':
+    '文本: 使用普通文本格式回复',
+  'PC.Components.FormListItem.outputFormatMarkdownDesc':
+    'Markdown: 将引导模型使用 Markdown 格式输出回复',
+  'PC.Components.FormListItem.outputFormatJsonDesc':
+    'JSON: 将引导模型使用 JSON 格式输出',
+  'PC.Components.FormListItem.outputResult': '輸出結果',
+  'PC.Components.FormListItem.paramNamePlaceholder': '請輸入參數名稱',
+  'PC.Components.FormListItem.dataTypePlaceholder': '請選擇數據類型',
+  'PC.Components.FormListItem.addChildNode': '新增子節點',
+  'PC.Components.FormListItem.addDescription': '添加描述',
+  'PC.Components.FormListItem.isRequired': '是否必須',
+  'PC.Components.FormListItem.descriptionPlaceholder': '請輸入描述',
+
+  // Pages - MyComputerManage
+  'PC.Pages.MyComputerManage.pageTitle': '我的電腦管理',
+  'PC.Pages.MyComputerManage.filterAll': '全部',
+  'PC.Pages.MyComputerManage.filterOnline': '在線',
+  'PC.Pages.MyComputerManage.filterOffline': '離線',
+  'PC.Pages.MyComputerManage.filterDeactivated': '已停用',
+  'PC.Pages.MyComputerManage.addComputer': '新增電腦',
+  'PC.Pages.MyComputerManage.statusDeactivated': '已停用',
+  'PC.Pages.MyComputerManage.statusOnline': '在線',
+  'PC.Pages.MyComputerManage.statusOffline': '離線',
+  'PC.Pages.MyComputerManage.deactivateTooltip':
+    '停用后将无法再通过智能体操控该电脑',
+  'PC.Pages.MyComputerManage.sessionTooltip': '會話',
+  'PC.Pages.MyComputerManage.connectionKeyTooltip':
+    '连接密钥，用于独立客户端容器部署，点击可复制',
+  'PC.Pages.MyComputerManage.editTooltip': '編輯',
+  'PC.Pages.MyComputerManage.emptyComputerConfig': '暫無電腦配置',
+  'PC.Pages.MyComputerManage.deleteConfirmTitle': '確認刪除該電腦？',
+  'PC.Pages.MyComputerManage.deleteConfirmContent':
+    '删除后将无法恢复，请谨慎操作。',
+
+  // Pages - MyComputerManage > EditComputerModal
+  'PC.Pages.MyComputerManage.EditComputerModal.editTitle': '修改電腦名稱',
+  'PC.Pages.MyComputerManage.EditComputerModal.addTitle': '新增電腦',
+  'PC.Pages.MyComputerManage.EditComputerModal.nameLabel': '電腦名稱',
+  'PC.Pages.MyComputerManage.EditComputerModal.namePlaceholder':
+    '请输入电脑名称',
+  'PC.Pages.MyComputerManage.EditComputerModal.nameRequired': '請輸入電腦名稱',
+  'PC.Pages.MyComputerManage.EditComputerModal.nameMaxLength':
+    '名称不能超过 100 个字符',
+  'PC.Pages.MyComputerManage.EditComputerModal.maxAgentCountLabel':
+    '最大存活Agent会话数量',
+  'PC.Pages.MyComputerManage.EditComputerModal.maxAgentCountPlaceholder':
+    '请输入',
+  'PC.Pages.MyComputerManage.EditComputerModal.maxAgentCountTooltip':
+    '每个Agent会话占用数百兆内存，请根据电脑实际的内存进行调整，超过配置的数量后，系统会自动停止未再使用的会话（再次向已停止的会话发送消息时会重新激活）',
+  'PC.Pages.MyComputerManage.EditComputerModal.maxAgentCountRequired':
+    '请输入最大存活Agent会话数量',
+  'PC.Pages.MyComputerManage.EditComputerModal.maxAgentCountRange':
+    '取值范围为1～99999999',
+  'PC.Pages.MyComputerManage.EditComputerModal.descriptionLabel': '描述',
+  'PC.Pages.MyComputerManage.EditComputerModal.descriptionPlaceholder':
+    '请输入描述',
+
+  // Toast - MyComputerManage
+  'PC.Toast.MyComputerManage.enabled': '已啟用',
+  'PC.Toast.MyComputerManage.disabled': '已禁用',
+  'PC.Toast.MyComputerManage.operationFailed': '操作失敗',
+  'PC.Toast.MyComputerManage.modifiedSuccessfully': '修改成功',
+  'PC.Toast.MyComputerManage.createdSuccessfully': '新增成功',
+  'PC.Toast.MyComputerManage.modifyFailed': '修改失敗',
+  'PC.Toast.MyComputerManage.createFailed': '新增失敗',
+  'PC.Toast.MyComputerManage.connectionKeyCopied': '客戶端連接密鑰已複製',
+
+  // Pages - SpaceSkillManage
+  'PC.Pages.SpaceSkillManage.pageTitle': '技能管理',
+  'PC.Pages.SpaceSkillManage.deleteConfirmText': '你確定要刪除此技能嗎?',
+  'PC.Pages.SpaceSkillManage.skillInfoNotFound': '技能信息不存在',
+  'PC.Pages.SpaceSkillManage.skillCopiedSuccessfully': '技能複製成功',
+  'PC.Pages.SpaceSkillManage.skillIdInvalidForExport':
+    '技能ID不存在或无效，无法导出',
+  'PC.Pages.SpaceSkillManage.exportFailed': '導出失敗',
+  'PC.Pages.SpaceSkillManage.exportSucceeded': '導出成功！',
+  'PC.Pages.SpaceSkillManage.exportFailedRetry': '導出失敗，請重試',
+  'PC.Pages.SpaceSkillManage.importSucceeded': '導入成功',
+  'PC.Pages.SpaceSkillManage.importFailed': '導入失敗',
+  'PC.Pages.SpaceSkillManage.exporting': '正在導出',
+
+  // Pages - SpaceSkillManage > CreateSkill
+  'PC.Pages.SpaceSkillManage.CreateSkill.skillCreatedSuccessfully':
+    '技能已创建成功',
+  'PC.Pages.SpaceSkillManage.CreateSkill.skillUpdatedSuccessfully':
+    '技能更新成功',
+  'PC.Pages.SpaceSkillManage.CreateSkill.createSkill': '創建技能',
+  'PC.Pages.SpaceSkillManage.CreateSkill.updateSkill': '更新技能',
+  'PC.Pages.SpaceSkillManage.CreateSkill.nameLabel': '名稱',
+  'PC.Pages.SpaceSkillManage.CreateSkill.pleaseInputSkillName':
+    '请输入技能名称',
+  'PC.Pages.SpaceSkillManage.CreateSkill.nameMaxLength':
+    '名称不能超过30个字符!',
+  'PC.Pages.SpaceSkillManage.CreateSkill.inputSkillName': '輸入技能名稱!',
+  'PC.Pages.SpaceSkillManage.CreateSkill.inputSkillNamePlaceholder':
+    '输入技能名称',
+  'PC.Pages.SpaceSkillManage.CreateSkill.descriptionLabel': '描述',
+  'PC.Pages.SpaceSkillManage.CreateSkill.descriptionPlaceholder':
+    '请输入描述，让大模型理解什么情况下应该调用此技能',
+
+  // Pages - SpaceSkillManage > SkillStatus
+  'PC.Pages.SpaceSkillManage.SkillStatus.published': '已發佈',
+  'PC.Pages.SpaceSkillManage.SkillStatus.reviewing': '審核中',
+  'PC.Pages.SpaceSkillManage.SkillStatus.developing': '開發中',
+  'PC.Pages.SpaceSkillManage.SkillStatus.rejected': '已拒絕',
+
+  // Pages - SpaceSkillManage > ComponentItem
+  'PC.Pages.SpaceSkillManage.ComponentItem.lastEdited': '最近編輯',
+
+  // Pages - SpaceSkillManage > HeaderRightSlot
+  'PC.Pages.SpaceSkillManage.HeaderRightSlot.skill': '技能',
+
+  // Pages - SpaceSkillManage > ImportSkillProjectModal
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.pleaseSelectFile':
+    '请选择要导入的文件',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileGetFailed':
+    '文件获取失败，请重新选择',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileTypeUnsupported':
+    '仅支持 .zip,.skill 压缩文件格式或SKILL.md文件',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileSizeExceeded':
+    '文件大小不能超过20MB',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.importSkill': '導入技能',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.confirmImport': '確認導入',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.dragOrClickToSelect':
+    '点击或拖拽文件到此区域选择',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.uploadHint':
+    '仅支持 .zip,.skill 压缩文件格式 或 SKILL.md 文件',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileSizeHint':
+    '文件大小不超过20MB',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.selectedFile':
+    '已选择文件：',
+  'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.fileSize': '文件大小：',
+
+  // Pages - SpaceSkillManage > type
+  'PC.Pages.SpaceSkillManage.type.copyToSpace': '複製到空間',
+  'PC.Pages.SpaceSkillManage.type.exportSkill': '導出技能',
+
+  // Pages - SpaceSkillManage > MainContent
+  'PC.Pages.SpaceSkillManage.MainContent.noResultsFound': '未能找到相關結果',
+
+  // Pages - PublishAudit
+  'PC.Pages.PublishAudit.pageTitle': '發佈審核',
+  'PC.Pages.PublishAudit.colPublishName': '發佈名稱',
+  'PC.Pages.PublishAudit.colPublishNamePlaceholder':
+    '请输入插件工作流或智能体名称',
+  'PC.Pages.PublishAudit.colType': '類型',
+  'PC.Pages.PublishAudit.typeAgent': '智能體',
+  'PC.Pages.PublishAudit.typePlugin': '插件',
+  'PC.Pages.PublishAudit.typeWorkflow': '工作流',
+  'PC.Pages.PublishAudit.typeSkill': '技能',
+  'PC.Pages.PublishAudit.colDescription': '描述信息',
+  'PC.Pages.PublishAudit.colVersionInfo': '版本信息',
+  'PC.Pages.PublishAudit.colPublisher': '發佈者',
+  'PC.Pages.PublishAudit.colStatus': '狀態',
+  'PC.Pages.PublishAudit.statusApplying': '待審核',
+  'PC.Pages.PublishAudit.statusPassed': '通過',
+  'PC.Pages.PublishAudit.statusRejected': '拒絕',
+  'PC.Pages.PublishAudit.colPublishTime': '發佈時間',
+  'PC.Pages.PublishAudit.colAction': '操作',
+  'PC.Pages.PublishAudit.actionPass': '通過',
+  'PC.Pages.PublishAudit.actionReject': '拒絕',
+  'PC.Pages.PublishAudit.actionView': '查看',
+  'PC.Pages.PublishAudit.passAuditSuccess': '通過審核成功',
+
+  // Pages - PublishAudit > RejectAuditModal
+  'PC.Pages.PublishAudit.RejectAuditModal.title': '拒絕審核',
+  'PC.Pages.PublishAudit.RejectAuditModal.rejectSuccess': '拒絕審核成功',
+  'PC.Pages.PublishAudit.RejectAuditModal.reasonLabel': '請輸入拒絕原因',
+  'PC.Pages.PublishAudit.RejectAuditModal.reasonRequired': '請輸入拒絕原因',
+  'PC.Pages.PublishAudit.RejectAuditModal.reasonPlaceholder': '請輸入拒絕原因',
+
+  // Pages - GlobalModelManage
+  'PC.Pages.GlobalModelManage.pageTitle': '公共模型管理',
+  'PC.Pages.GlobalModelManage.addModel': '添加模型',
+  'PC.Pages.GlobalModelManage.all': '全部',
+  'PC.Pages.GlobalModelManage.chatText': '聊天對話-純文本',
+  'PC.Pages.GlobalModelManage.embeddings': '向量嵌入',
+  'PC.Pages.GlobalModelManage.chatMultiModal': '聊天對話-多模態',
+  'PC.Pages.GlobalModelManage.deleteFailed': '刪除失敗',
+  'PC.Pages.GlobalModelManage.accessControlUpdateFailed': '更新管控狀態失敗',
+  'PC.Pages.GlobalModelManage.edit': '編輯',
+  'PC.Pages.GlobalModelManage.auth': '授權',
+  'PC.Pages.GlobalModelManage.deleteModel': '刪除模型',
+  'PC.Pages.GlobalModelManage.confirmDeleteModel': '確認刪除模型 {0}?',
+  'PC.Pages.GlobalModelManage.columnModelName': '模型名稱',
+  'PC.Pages.GlobalModelManage.columnType': '類型',
+  'PC.Pages.GlobalModelManage.columnModelId': '模型標識',
+  'PC.Pages.GlobalModelManage.columnDescription': '模型介紹',
+  'PC.Pages.GlobalModelManage.columnStatus': '狀態',
+  'PC.Pages.GlobalModelManage.statusEnabled': '已啟用',
+  'PC.Pages.GlobalModelManage.statusDisabled': '已禁用',
+  'PC.Pages.GlobalModelManage.columnCreator': '創建者',
+  'PC.Pages.GlobalModelManage.columnUpdateTime': '更新時間',
+  'PC.Pages.GlobalModelManage.columnAccessControl': '管控',
+  'PC.Pages.GlobalModelManage.accessControlTooltip':
+    '若开启管控，需授权才能使用',
+  'PC.Pages.GlobalModelManage.accessControlOff': '關閉',
+  'PC.Pages.GlobalModelManage.accessControlOn': '開啟',
+  'PC.Pages.GlobalModelManage.columnActions': '操作',
+  'PC.Pages.GlobalModelManage.fetchDataFailed': '獲取數據失敗',
+
+  // Pages - SpacePluginTool
+  'PC.Pages.SpacePluginTool.paramName': '參數名稱',
+  'PC.Pages.SpacePluginTool.inputParamName': '請輸入參數名稱，確保含義清晰',
+  'PC.Pages.SpacePluginTool.paramDescription': '參數描述',
+  'PC.Pages.SpacePluginTool.inputParamDescription':
+    '请输入参数描述，确保描述详细便于大模型更好的理解',
+  'PC.Pages.SpacePluginTool.paramType': '參數類型',
+  'PC.Pages.SpacePluginTool.selectDataType': '請選擇數據類型',
+  'PC.Pages.SpacePluginTool.inputMode': '傳入方式',
+  'PC.Pages.SpacePluginTool.required': '是否必須',
+  'PC.Pages.SpacePluginTool.defaultValue': '默認值',
+  'PC.Pages.SpacePluginTool.inputDefaultValue': '請輸入默認值',
+  'PC.Pages.SpacePluginTool.enable': '開啟',
+  'PC.Pages.SpacePluginTool.requiredParamTooltip':
+    '此参数是必填参数，填写默认值后，此开关可用',
+  'PC.Pages.SpacePluginTool.action': '操作',
+  'PC.Pages.SpacePluginTool.requestConfig': '請求配置',
+  'PC.Pages.SpacePluginTool.requestMethodAndPath': '請求方法與路徑',
+  'PC.Pages.SpacePluginTool.selectRequestMethod': '請選擇請求方法',
+  'PC.Pages.SpacePluginTool.inputRequestPath': '請輸入請求路徑',
+  'PC.Pages.SpacePluginTool.requestContentFormat': '請求內容格式',
+  'PC.Pages.SpacePluginTool.selectRequestContentFormat': '請選擇請求內容格式',
+  'PC.Pages.SpacePluginTool.requestTimeoutConfig': '請求超時配置',
+  'PC.Pages.SpacePluginTool.inputTimeoutConfig': '請輸入超時配置',
+  'PC.Pages.SpacePluginTool.requestTimeoutPlaceholder':
+    '请求超时配置，以秒为单位',
+  'PC.Pages.SpacePluginTool.inputConfig': '入參配置',
+  'PC.Pages.SpacePluginTool.outputConfig': '出參配置',
+  'PC.Pages.SpacePluginTool.autoAnalysis': '自動解析',
+
+  // Pages - SpacePluginTool > PluginHeader
+  'PC.Pages.SpacePluginTool.PluginHeader.code': '代碼',
+  'PC.Pages.SpacePluginTool.PluginHeader.published': '已發佈',
+  'PC.Pages.SpacePluginTool.PluginHeader.unpublished': '未發佈',
+  'PC.Pages.SpacePluginTool.PluginHeader.configSavedAt': '配置保存於{0}',
+  'PC.Pages.SpacePluginTool.PluginHeader.updateUnpublished': '有更新未發佈',
+  'PC.Pages.SpacePluginTool.PluginHeader.tryRun': '試運行',
+  'PC.Pages.SpacePluginTool.PluginHeader.publish': '發佈',
+
+  // Layouts - DynamicMenusLayout
+  'PC.Layouts.DynamicMenusLayout.newConversation': '新對話',
+  'PC.Layouts.DynamicMenusLayout.home': '主頁',
+  'PC.Layouts.DynamicMenusLayout.more': '更多',
+
+  // Layouts - DynamicMenusLayout > CollapseButton
+  'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu': '展開菜單',
+  'PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu': '收起菜單',
+
+  // Layouts - DynamicMenusLayout > HomeSection
+  'PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed': '最近使用',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed':
+    '你还没有使用任何智能体',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare':
+    '现在去广场开启你的探索之旅吧～',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory': '會話記錄',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.viewAll': '查看全部',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.lookRight': '右邊看👉',
+  'PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation':
+    '在会话框中输入指令开始你的第一次会话吧～',
+
+  // Layouts - DynamicMenusLayout > ConversationItem
+  'PC.Layouts.DynamicMenusLayout.ConversationItem.executing': '執行中',
+
+  // Layouts - DynamicMenusLayout > SpaceSection
+  'PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace': '個人空間',
+  'PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited': '最近編輯',
+
+  // Layouts - DynamicMenusLayout > DevCollect
+  'PC.Layouts.DynamicMenusLayout.DevCollect.noCollection': '還沒有收藏任何內容',
+  'PC.Layouts.DynamicMenusLayout.DevCollect.addByStar':
+    '点击⭐️按钮可将内容添加到这里~',
+
+  // Layouts - DynamicMenusLayout > CreateNewTeam
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.createSuccess': '新建成功',
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace': '創建團隊空間',
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips':
+    '通过创建团队空间，将支持项目、智能体、插件、工作流和知识库在团队内进行协作和共享。',
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName': '團隊名稱',
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName':
+    '请输入团队名称',
+  'PC.Layouts.DynamicMenusLayout.CreateNewTeam.description': '描述',
+
+  // Layouts - DynamicMenusLayout > SquareSection
+  'PC.Layouts.DynamicMenusLayout.SquareSection.agent': '智能體',
+  'PC.Layouts.DynamicMenusLayout.SquareSection.pageApp': '網頁應用',
+  'PC.Layouts.DynamicMenusLayout.SquareSection.skill': '技能',
+  'PC.Layouts.DynamicMenusLayout.SquareSection.plugin': '插件',
+  'PC.Layouts.DynamicMenusLayout.SquareSection.workflow': '工作流',
+  'PC.Layouts.DynamicMenusLayout.SquareSection.template': '模板',
+
+  // Layouts - DynamicMenusLayout > DynamicSecondMenu
+  'PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed':
+    '处理路径跳转失败，请检查菜单路径是否存在',
+
+  // Common - Global (additional)
+  'PC.Common.Global.unknownError': '未知錯誤',
+  'PC.Common.Global.continue': '繼續',
+
+  // Hooks - UseAppDevVersionCompare
+  'PC.Hooks.UseAppDevVersionCompare.projectIdNotExist': '項目ID不存在',
+  'PC.Hooks.UseAppDevVersionCompare.versionCompareFailed': '版本對比失敗: {0}',
+  'PC.Hooks.UseAppDevVersionCompare.projectIdOrVersionNotExist':
+    '项目ID或目标版本不存在',
+  'PC.Hooks.UseAppDevVersionCompare.versionSwitchSuccess': '版本切換成功',
+  'PC.Hooks.UseAppDevVersionCompare.versionSwitchFailed': '版本切換失敗: {0}',
+
+  // Hooks - UseAppDevModelSelector
+  'PC.Hooks.UseAppDevModelSelector.notice': '提示',
+  'PC.Hooks.UseAppDevModelSelector.configCodingModel':
+    '请先在系统管理或组件库中配置编码模型，请选择支持 Anthropic 协议的模型。推荐：智谱编码方案 https://bigmodel.cn/glm-coding',
+  'PC.Hooks.UseAppDevModelSelector.loadModelListFailed':
+    '加载模型列表失败，请刷新后重试',
+
+  // Hooks - UseAppDevFileManagement
+  'PC.Hooks.UseAppDevFileManagement.loadFileFailed': '加載文件 {0} 失敗',
+  'PC.Hooks.UseAppDevFileManagement.editCanceled': '已取消編輯',
+  'PC.Hooks.UseAppDevFileManagement.renameFailed': '重命名失敗',
+  'PC.Hooks.UseAppDevFileManagement.renameFailedWithError': '重命名失敗: {0}',
+
+  // Hooks - UseAppDevServer
+  'PC.Hooks.UseAppDevServer.devEnvStarted': '開發環境啟動成功',
+  'PC.Hooks.UseAppDevServer.devServerRestarted': '開發服務器重啟成功',
+  'PC.Hooks.UseAppDevServer.startDevEnvFailed': '開發環境啟動失敗',
+  'PC.Hooks.UseAppDevServer.restartDevServerFailed': '重啟開發服務器失敗',
+  'PC.Hooks.UseAppDevServer.keepaliveFailed': '保活請求失敗',
+  'PC.Hooks.UseAppDevServer.projectIdMissing': '項目ID缺失或無效，無法重啟',
+
+  // Hooks - UseAppDevProjectInfo
+  'PC.Hooks.UseAppDevProjectInfo.noPermission': '您沒有權限訪問該項目',
+  'PC.Hooks.UseAppDevProjectInfo.fetchProjectFailed':
+    '获取项目详情时发生未知错误',
+  'PC.Hooks.UseAppDevProjectInfo.actionChat': 'AI對話',
+  'PC.Hooks.UseAppDevProjectInfo.actionFileUpdate': '文件更新',
+  'PC.Hooks.UseAppDevProjectInfo.actionUploadSingleFile': '上傳單個文件',
+  'PC.Hooks.UseAppDevProjectInfo.actionCreateProject': '創建項目',
+  'PC.Hooks.UseAppDevProjectInfo.actionBuild': '構建',
+  'PC.Hooks.UseAppDevProjectInfo.actionDeploy': '部署',
+  'PC.Hooks.UseAppDevProjectInfo.actionUploadProject': '上傳項目',
+  'PC.Hooks.UseAppDevProjectInfo.actionVersionRollback': '版本回滾',
+  'PC.Hooks.UseAppDevProjectInfo.actionUnknown': '未知操作',
+
+  // Hooks - UseAutoErrorHandling
+  'PC.Hooks.UseAutoErrorHandling.limitReached': '自動錯誤處理已達上限',
+  'PC.Hooks.UseAutoErrorHandling.continueAutoHandling':
+    '是否继续自动处理此问题？',
+  'PC.Hooks.UseAutoErrorHandling.whiteScreenError':
+    '预览页面检测到白屏，请分析并修复以下错误：\n\n```\n{0}\n```',
+  'PC.Hooks.UseAutoErrorHandling.logError':
+    '请分析以下日志并修复错误：\n\n```\n{0}\n```',
+  'PC.Hooks.UseAutoErrorHandling.iframeError':
+    '预览页面加载失败，请分析并修复错误：\n\n```\n{0}\n```',
+
+  // Hooks - UseCopyTemplate
+  'PC.Hooks.UseCopyTemplate.copySuccess': '模板複製成功',
+
+  // Pages - SpaceMcpEdit
+  'PC.Pages.SpaceMcpEdit.editMcpService': '編輯MCP服務',
+  'PC.Pages.SpaceMcpEdit.updateNotDeployed': '有更新未部署',
+  'PC.Pages.SpaceMcpEdit.save': '保存',
+  'PC.Pages.SpaceMcpEdit.saveAndDeploy': '保存並部署',
+  'PC.Pages.SpaceMcpEdit.saveSuccess': '保存MCP服務成功',
+  'PC.Pages.SpaceMcpEdit.saveAndDeploySuccess': '已完成保存並提交部署',
+  'PC.Pages.SpaceMcpEdit.selectComponent': '請選擇組件',
+  'PC.Pages.SpaceMcpEdit.inputServerConfig': '請輸入MCP服務配置',
+  'PC.Pages.SpaceMcpEdit.serviceName': '服務名稱',
+  'PC.Pages.SpaceMcpEdit.inputServiceName': '請輸入MCP服務名稱',
+  'PC.Pages.SpaceMcpEdit.serviceNamePlaceholder': 'MCP服務名稱',
+  'PC.Pages.SpaceMcpEdit.description': '描述',
+  'PC.Pages.SpaceMcpEdit.inputDescription': '請輸入描述你的MCP服務',
+  'PC.Pages.SpaceMcpEdit.descriptionPlaceholder': '描述你的MCP服務',
+  'PC.Pages.SpaceMcpEdit.installMethod': '安裝方式',
+  'PC.Pages.SpaceMcpEdit.selectInstallMethod': '請選擇安裝方式',
+  'PC.Pages.SpaceMcpEdit.mcpServiceConfig': 'MCP服務配置',
+  'PC.Pages.SpaceMcpEdit.mcpConfigJsonTip':
+    'MCP服务使用json配置，提交前确保格式正确',
+  'PC.Pages.SpaceMcpEdit.invalidJsonFormat': '請輸入有效的JSON格式',
+  'PC.Pages.SpaceMcpEdit.componentSelect': '組件選擇',
+  'PC.Pages.SpaceMcpEdit.tryRun': '試運行',
+  'PC.Pages.SpaceMcpEdit.paramName': '參數名稱',
+  'PC.Pages.SpaceMcpEdit.paramValue': '參數值',
+  'PC.Pages.SpaceMcpEdit.inputParamValue': '請輸入參數值',
+  'PC.Pages.SpaceMcpEdit.operation': '操作',
+  'PC.Pages.SpaceMcpEdit.inputParams': '輸入參數',
+  'PC.Pages.SpaceMcpEdit.run': '運行',
+  'PC.Pages.SpaceMcpEdit.debugResult': '調試結果',
+  'PC.Pages.SpaceMcpEdit.debugResultPlaceholder': '調試結果將展示在此處',
+
+  // Pages - SpaceMcpCreate
+  'PC.Pages.SpaceMcpCreate.createMcpService': '創建MCP服務',
+
+  // Pages - SpaceMcpManage
+  'PC.Pages.SpaceMcpManage.title': 'MCP管理',
+  'PC.Pages.SpaceMcpManage.stopSuccess': '停用成功',
+  'PC.Pages.SpaceMcpManage.confirmStopService': '你確定要停止此服務嗎?',
+  'PC.Pages.SpaceMcpManage.confirmDeleteService': '你確定要刪除此服務嗎?',
+  'PC.Pages.SpaceMcpManage.searchPlaceholder': '搜索MCP服務',
+  'PC.Pages.SpaceMcpManage.createMcpService': '創建MCP服務',
+  'PC.Pages.SpaceMcpManage.noResults': '未能找到相關結果',
+  'PC.Pages.SpaceMcpManage.publishedAt': '發佈於',
+  'PC.Pages.SpaceMcpManage.createdAt': '創建於',
+  'PC.Pages.SpaceMcpManage.confirmRebuildConfig': '你確定要重新生成配置嗎?',
+  'PC.Pages.SpaceMcpManage.serviceExportTitle': '服務導出管理',
+  'PC.Pages.SpaceMcpManage.configService': '配置服務',
+  'PC.Pages.SpaceMcpManage.configCopyTip':
+    '复制以下配置，可以在任意支持mcp的客户端中使用，若有需要你可以点击',
+  'PC.Pages.SpaceMcpManage.rebuildConfig': '重新生成配置',
+
+  // Pages - MorePage.ApiKey
+  'PC.Pages.MorePage.ApiKey.statusEnabled': '啟用',
+  'PC.Pages.MorePage.ApiKey.statusDisabled': '停用',
+  'PC.Pages.MorePage.ApiKey.copiedToClipboard': 'API KEY 已成功複製到剪貼板',
+  'PC.Pages.MorePage.ApiKey.keyName': '密鑰名稱',
+  'PC.Pages.MorePage.ApiKey.hide': '隱藏',
+  'PC.Pages.MorePage.ApiKey.show': '顯示',
+  'PC.Pages.MorePage.ApiKey.createdTime': '創建時間',
+  'PC.Pages.MorePage.ApiKey.expireTime': '過期時間',
+  'PC.Pages.MorePage.ApiKey.neverExpire': '永不過期',
+  'PC.Pages.MorePage.ApiKey.status': '狀態',
+  'PC.Pages.MorePage.ApiKey.unknownStatus': '未知',
+  'PC.Pages.MorePage.ApiKey.actions': '操作',
+  'PC.Pages.MorePage.ApiKey.callStats': '調用統計',
+  'PC.Pages.MorePage.ApiKey.permissionConfig': '權限配置',
+  'PC.Pages.MorePage.ApiKey.edit': '編輯',
+  'PC.Pages.MorePage.ApiKey.delete': '刪除',
+  'PC.Pages.MorePage.ApiKey.confirmDeleteKey': '確認刪除密鑰 "{0}" 嗎？',
+  'PC.Pages.MorePage.ApiKey.deleteWarning': '刪除後將無法恢復，請謹慎操作。',
+  'PC.Pages.MorePage.ApiKey.deleteSuccess': '刪除成功',
+  'PC.Pages.MorePage.ApiKey.pageTitle': 'API 密鑰管理',
+  'PC.Pages.MorePage.ApiKey.pageTips': '管理您的API密鑰與訪問權限',
+  'PC.Pages.MorePage.ApiKey.createKey': '新增密鑰',
+
+  // Pages - MorePage.ApiKeyPermission
+  'PC.Pages.MorePage.ApiKeyPermission.permissionSaved': '權限配置保存成功',
+  'PC.Pages.MorePage.ApiKeyPermission.title': '權限配置 - {0}',
+  'PC.Pages.MorePage.ApiKeyPermission.selectAll': '全選所有權限',
+  'PC.Pages.MorePage.ApiKeyPermission.expandAll': '展開全部',
+  'PC.Pages.MorePage.ApiKeyPermission.collapseAll': '收起全部',
+  'PC.Pages.MorePage.ApiKeyPermission.noPermissionDefs': '暫無權限定義',
+
+  // Pages - MorePage.ApiKeyLogs
+  'PC.Pages.MorePage.ApiKeyLogs.pageTitle': 'Api調用日誌',
+
+  // Pages - EcosystemTemplate
+  'PC.Pages.EcosystemTemplate.title': '模板',
+  'PC.Pages.EcosystemTemplate.unnamedTemplate': '未命名插件',
+  'PC.Pages.EcosystemTemplate.noDescription': '暫無描述',
+  'PC.Pages.EcosystemTemplate.fetchListFailed': '獲取模板列表失敗',
+  'PC.Pages.EcosystemTemplate.updateFailed': '更新失敗',
+  'PC.Pages.EcosystemTemplate.updateSuccess': '更新成功',
+  'PC.Pages.EcosystemTemplate.offlineFailed': '下線失敗',
+  'PC.Pages.EcosystemTemplate.offlineSuccess': '已下線',
+  'PC.Pages.EcosystemTemplate.createSuccess': '創建成功',
+  'PC.Pages.EcosystemTemplate.fetchDataFailed': '獲取數據失敗',
+  'PC.Pages.EcosystemTemplate.agent': '智能體',
+  'PC.Pages.EcosystemTemplate.workflow': '工作流',
+  'PC.Pages.EcosystemTemplate.pageApp': '網頁應用',
+  'PC.Pages.EcosystemTemplate.fetchDetailFailed': '獲取詳情失敗',
+  'PC.Pages.EcosystemTemplate.templateOffline': '模板已下線',
+  'PC.Pages.EcosystemTemplate.templateWithdrawn': '模板已撤銷發佈',
+  'PC.Pages.EcosystemTemplate.searchPlaceholder': '搜索模板',
+  'PC.Pages.EcosystemTemplate.createShare': '創建分享',
+  'PC.Pages.EcosystemTemplate.viewDetail': '查看詳情',
+
+  // Pages - EcosystemPlugin
+  'PC.Pages.EcosystemPlugin.title': '插件',
+  'PC.Pages.EcosystemPlugin.unnamedPlugin': '未命名插件',
+  'PC.Pages.EcosystemPlugin.noDescription': '暫無描述',
+  'PC.Pages.EcosystemPlugin.fetchListFailed': '獲取插件列表失敗',
+  'PC.Pages.EcosystemPlugin.operationFailed': '操作失敗',
+  'PC.Pages.EcosystemPlugin.updateSuccess': '更新成功',
+  'PC.Pages.EcosystemPlugin.updateFailed': '更新失敗',
+  'PC.Pages.EcosystemPlugin.offlineFailed': '下線失敗',
+  'PC.Pages.EcosystemPlugin.offlineSuccess': '已下線',
+  'PC.Pages.EcosystemPlugin.createSuccess': '創建成功',
+  'PC.Pages.EcosystemPlugin.fetchDataFailed': '獲取數據失敗',
+  'PC.Pages.EcosystemPlugin.fetchDetailFailed': '獲取插件詳情失敗',
+  'PC.Pages.EcosystemPlugin.pluginOffline': '插件已下線',
+  'PC.Pages.EcosystemPlugin.pluginWithdrawn': '插件已撤銷發佈',
+  'PC.Pages.EcosystemPlugin.searchPlaceholder': '搜索插件',
+  'PC.Pages.EcosystemPlugin.createShare': '創建分享',
+
+  // Pages - PublishedManage
+  'PC.Pages.PublishedManage.pageTitle': '已發佈管理',
+  'PC.Pages.PublishedManage.view': '查看',
+  'PC.Pages.PublishedManage.offShelf': '下架',
+  'PC.Pages.PublishedManage.publishName': '發佈名稱',
+  'PC.Pages.PublishedManage.searchNamePlaceholder':
+    '请输入插件工作流或智能体名称',
+  'PC.Pages.PublishedManage.type': '類型',
+  'PC.Pages.PublishedManage.typeAgent': '智能體',
+  'PC.Pages.PublishedManage.typePlugin': '插件',
+  'PC.Pages.PublishedManage.typeWorkflow': '工作流',
+  'PC.Pages.PublishedManage.typeSkill': '技能',
+  'PC.Pages.PublishedManage.description': '描述信息',
+  'PC.Pages.PublishedManage.versionInfo': '版本信息',
+  'PC.Pages.PublishedManage.publisher': '發佈者',
+  'PC.Pages.PublishedManage.publishTime': '發佈時間',
+  'PC.Pages.PublishedManage.actions': '操作',
+  'PC.Pages.PublishedManage.fetchDataFailed': '獲取數據失敗',
+
+  // Pages - PublishedManage.OffshelfModal
+  'PC.Pages.PublishedManage.OffshelfModal.offShelfSuccess': '下架成功',
+  'PC.Pages.PublishedManage.OffshelfModal.title': '下架',
+  'PC.Pages.PublishedManage.OffshelfModal.reasonLabel': '請輸入下架原因',
+  'PC.Pages.PublishedManage.OffshelfModal.reasonRequired': '請輸入下架原因',
+  'PC.Pages.PublishedManage.OffshelfModal.reasonPlaceholder': '請輸入下架原因',
+
+  // Pages - SpaceSquare
+  'PC.Pages.SpaceSquare.title': '空間廣場',
+  'PC.Pages.SpaceSquare.confirmOffShelf': '你確定要下架此{0}嗎?',
+  'PC.Pages.SpaceSquare.offShelf': '下架',
+  'PC.Pages.SpaceSquare.agent': '智能體',
+  'PC.Pages.SpaceSquare.template': '模板',
+  'PC.Pages.SpaceSquare.plugin': '插件',
+  'PC.Pages.SpaceSquare.workflow': '工作流',
+  'PC.Pages.SpaceSquare.skill': '技能',
+
+  // Pages - EcosystemMcp
+  'PC.Pages.EcosystemMcp.title': 'MCP',
+  'PC.Pages.EcosystemMcp.unnamedMcp': '未命名插件',
+  'PC.Pages.EcosystemMcp.noDescription': '暫無描述',
+  'PC.Pages.EcosystemMcp.fetchDetailFailed': '獲取插件詳情失敗',
+  'PC.Pages.EcosystemMcp.operationFailed': '操作失敗',
+  'PC.Pages.EcosystemMcp.enableSuccess': '啟用成功',
+  'PC.Pages.EcosystemMcp.disableFailed': '停用失敗',
+  'PC.Pages.EcosystemMcp.disableSuccess': '已成功停用',
+  'PC.Pages.EcosystemMcp.searchPlaceholder': '搜索MCP',
+
+  // Components - ParamsSetting
+  'PC.Components.ParamsSetting.paramName': '參數名稱',
+  'PC.Components.ParamsSetting.paramType': '參數類型',
+  'PC.Components.ParamsSetting.required': '必填',
+  'PC.Components.ParamsSetting.notRequired': '非必填',
+  'PC.Components.ParamsSetting.defaultValue': '默認值',
+  'PC.Components.ParamsSetting.pleaseFill': '請填寫',
+  'PC.Components.ParamsSetting.enable': '開啟',
+  'PC.Components.ParamsSetting.enableTooltip':
+    '当参数设置为关闭时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用时，智能体会默认只使用这个设定值',
+  'PC.Components.ParamsSetting.requiredParamTooltip':
+    '此参数是必填参数，填写默认值后，此开关可用',
+
+  // Components - CollapseComponentList
+  'PC.Components.CollapseComponentList.pluginDesc':
+    '插件能够让智能体调用外部API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。',
+  'PC.Components.CollapseComponentList.workflowDesc':
+    '工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。',
+  'PC.Components.CollapseComponentList.mcpDesc':
+    '智能体可以通过标准化协议（MCP）连接各类服务API并发起调用。',
+  'PC.Components.CollapseComponentList.tableDesc':
+    '以表格结构组织数据，可实现类似书签和图书管理等功能。',
+  'PC.Components.CollapseComponentList.pageDesc':
+    '页面是智能体的可视化界面，用户可以通过页面与智能体进行交互。',
+  'PC.Components.CollapseComponentList.skillDesc':
+    '技能是智能体的技能，用户可以通过技能与智能体进行交互。',
+  'PC.Components.CollapseComponentList.settings': '設置',
+  'PC.Components.CollapseComponentList.delete': '刪除',
+
+  // Components - McpCollapseComponentList
+  'PC.Components.McpCollapseComponentList.agentDesc':
+    '智能体负责接收用户任务请求，进行智能分析和决策，协调各个模块的协同工作，并最终给出响应结果。',
+  'PC.Components.McpCollapseComponentList.pluginDesc':
+    '插件能够让智能体调用外部API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。',
+  'PC.Components.McpCollapseComponentList.workflowDesc':
+    '工作流支持通过可视化的方式，对插件、大语言模型、代码块等功能进行组合，从而实现复杂、稳定的业务流程编排，例如旅行规划、报告分析等。',
+  'PC.Components.McpCollapseComponentList.knowledgeDesc':
+    '将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。',
+  'PC.Components.McpCollapseComponentList.tableDesc':
+    '以表格结构组织数据，可实现类似书签和图书管理等功能。',
+  'PC.Components.McpCollapseComponentList.delete': '刪除',
+
+  // Components - EcosystemSelectCategory
+  'PC.Components.EcosystemSelectCategory.all': '全部',
+  'PC.Components.EcosystemSelectCategory.pleaseSelectCategory': '請選擇分類',
+
+  // Components - FoldWrap
+  'PC.Components.FoldWrap.pleaseInputNodeName': '請輸入節點名稱',
+  'PC.Components.FoldWrap.pleaseInputNodeDesc': '請輸入節點描述',
+  'PC.Components.FoldWrap.noContent': '暫無內容',
+
+  // Components - ShowStand
+  'PC.Components.ShowStand.title': '展示臺',
+
+  // Components - SlateVariableEditor
+  'PC.Components.SlateVariableEditor.variable': '變量',
+  'PC.Components.SlateVariableEditor.placeholder': '請輸入內容...',
+
+  // Components - NewConversationSet
+  'PC.Components.NewConversationSet.conversationSettings': '對話設置',
+  'PC.Components.NewConversationSet.startConversation': '開始對話',
+  'PC.Components.NewConversationSet.settingsLockedHint':
+    '对话开始后，对话设置将无法修改。',
+  'PC.Components.NewConversationSet.pleaseSelectField': '請選擇{0}',
+  'PC.Components.NewConversationSet.pleaseInputField': '請輸入{0}',
+
+  // Components - UploadImportConfig
+  'PC.Components.UploadImportConfig.importSuccess': '已成功導入配置',
+  'PC.Components.UploadImportConfig.uploadFailed': '{0} 上傳失敗',
+  'PC.Components.UploadImportConfig.notice': '提示',
+  'PC.Components.UploadImportConfig.checkConfigHint':
+    '配置中若包含插件、MCP，导入成功后请检查相关配置，以确保能正确运行',
+  'PC.Components.UploadImportConfig.invalidFileType':
+    '请上传 .table, .workflow 或 .plugin 类型的文件!',
+  'PC.Components.UploadImportConfig.importConfig': '導入配置',
+
+  // Components - ComputerTypeSelector
+  'PC.Components.ComputerTypeSelector.noComputerAvailable': '無可用電腦',
+  'PC.Components.ComputerTypeSelector.computerUnavailable': '電腦不可用',
+  'PC.Components.ComputerTypeSelector.personalComputerUnavailable':
+    '个人电脑不可用',
+  'PC.Components.ComputerTypeSelector.selectComputer': '選擇電腦',
+
+  // Components - PluginCardDetail
+  'PC.Components.PluginCardDetail.back': '返回',
+  'PC.Components.PluginCardDetail.newVersion': '有新版本',
+  'PC.Components.PluginCardDetail.version': '版本',
+  'PC.Components.PluginCardDetail.publishDate': '發佈日期',
+  'PC.Components.PluginCardDetail.author': '作者',
+  'PC.Components.PluginCardDetail.uninstall': '卸載',
+  'PC.Components.PluginCardDetail.install': '安裝',
+  'PC.Components.PluginCardDetail.pluginDescription': '插件描述',
+  'PC.Components.PluginCardDetail.detailedInfo': '詳細信息',
+  'PC.Components.PluginCardDetail.pluginName': '插件名稱',
+  'PC.Components.PluginCardDetail.supportedPlatforms': '支持的平臺',
+
+  // Components - XProTable
+  'PC.Components.XProTable.index': '序號',
+  'PC.Components.XProTable.reset': '重置',
+  'PC.Components.XProTable.query': '查詢',
+
+  // Components - OperationBtn
+  'PC.Components.OperationBtn.confirmAction': '確認操作',
+  'PC.Components.OperationBtn.confirmActionDesc': '確定執行該操作嗎？',
+
+  // Components - CodeEditor
+  'PC.Components.CodeEditor.loadingEditor': '加載編輯器...',
+  'PC.Components.CodeEditor.codeAssistant': '代碼助手',
+
+  // Components - PluginTryRunModal
+  'PC.Components.PluginTryRunModal.paramName': '參數名稱',
+  'PC.Components.PluginTryRunModal.paramValue': '參數值',
+  'PC.Components.PluginTryRunModal.pleaseInputParamValue': '請輸入參數值',
+  'PC.Components.PluginTryRunModal.tryRun': '試運行',
+  'PC.Components.PluginTryRunModal.inputParams': '輸入參數',
+  'PC.Components.PluginTryRunModal.run': '運行',
+  'PC.Components.PluginTryRunModal.debugResult': '調試結果',
+  'PC.Components.PluginTryRunModal.debugResultPlaceholder':
+    '调试结果将展示在此处',
+
+  // Components - PluginAutoAnalysis
+  'PC.Components.PluginAutoAnalysis.paramName': '參數名稱',
+  'PC.Components.PluginAutoAnalysis.paramValue': '參數值',
+  'PC.Components.PluginAutoAnalysis.pleaseInputParamValue': '請輸入參數值',
+  'PC.Components.PluginAutoAnalysis.autoAnalysis': '自動解析',
+  'PC.Components.PluginAutoAnalysis.inputParams': '輸入參數',
+
+  // Components - RecommendList
+  'PC.Components.RecommendList.pagePreview': '頁面預覽',
+  'PC.Components.RecommendList.pagePathParamError': '頁面路徑參數配置錯誤',
+  'PC.Components.RecommendList.pagePathConfigError': '頁面路徑配置錯誤',
+  'PC.Components.RecommendList.linkAddressConfigError': '鏈接地址配置錯誤',
+
+  // Components - ExampleNavigation
+  'PC.Components.ExampleNavigation.exampleCenter': '示例中心',
+  'PC.Components.ExampleNavigation.backgroundStyle': '背景風格切換',
+  'PC.Components.ExampleNavigation.navigationTokenGuide': '導航Token指南',
+  'PC.Components.ExampleNavigation.antdShowcase': 'Ant Design展示',
+  'PC.Components.ExampleNavigation.home': '首頁',
+  'PC.Components.ExampleNavigation.back': '返回',
+
+  // Components - PromptOptimizeModal
+  'PC.Components.PromptOptimizeModal.replace': '替換',
+  'PC.Components.PromptOptimizeModal.exit': '退出',
+  'PC.Components.PromptOptimizeModal.defaultOptimizePrompt':
+    '一个能为你提供工作帮助和建议的智能机器人',
+  'PC.Components.PromptOptimizeModal.autoOptimize': '自動優化',
+  'PC.Components.PromptOptimizeModal.promptPlaceholder':
+    '请描述你的提示词需求，比如角色定义、技能要求等',
+
+  // Components - OtherAction
+  'PC.Components.OtherAction.confirmDeleteLoopNode': '確定要刪除循環節點嗎？',
+  'PC.Components.OtherAction.rename': '重命名',
+  'PC.Components.OtherAction.createCopy': '創建副本',
+  'PC.Components.OtherAction.testNode': '測試該節點',
+
+  // Components - ModelSetting
+  'PC.Components.ModelSetting.pleaseSelectModel': '請選擇模型',
+  'PC.Components.ModelSetting.precisionMode': '精確模式',
+  'PC.Components.ModelSetting.balancedMode': '平衡模式',
+  'PC.Components.ModelSetting.creativeMode': '創意模式',
+  'PC.Components.ModelSetting.customMode': '自定義',
+  'PC.Components.ModelSetting.model': '模型',
+  'PC.Components.ModelSetting.generateDiversity': '生成多樣性',
+  'PC.Components.ModelSetting.advancedSettings': '高級設置',
+  'PC.Components.ModelSetting.generateRandomness': '生成隨機性',
+  'PC.Components.ModelSetting.temperatureDesc':
+    "temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 'Top p' 同时调整。",
+  'PC.Components.ModelSetting.topPDesc':
+    "Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 '生成随机性' 同时调整。",
+  'PC.Components.ModelSetting.inputOutputSettings': '輸入及輸出設置',
+  'PC.Components.ModelSetting.maxReplyLength': '最大回復長度',
+  'PC.Components.ModelSetting.maxTokensDesc':
+    '控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。',
+
+  // Components - MoveCopyComponent
+  'PC.Components.MoveCopyComponent.move': '遷移',
+  'PC.Components.MoveCopyComponent.copy': '複製',
+  'PC.Components.MoveCopyComponent.agent': '智能體',
+  'PC.Components.MoveCopyComponent.page': '頁面',
+  'PC.Components.MoveCopyComponent.plugin': '插件',
+  'PC.Components.MoveCopyComponent.workflow': '工作流',
+  'PC.Components.MoveCopyComponent.skill': '技能',
+  'PC.Components.MoveCopyComponent.component': '組件',
+  'PC.Components.MoveCopyComponent.selectTargetSpace': '選擇要',
+
+  // Components - SelectComponent
+  'PC.Components.SelectComponent.add': '添加',
+  'PC.Components.SelectComponent.userAvatar': '用戶頭像',
+  'PC.Components.SelectComponent.publishedAt': '發佈於',
+  'PC.Components.SelectComponent.added': '已添加',
+  'PC.Components.SelectComponent.addBtn': '添加',
+  'PC.Components.SelectComponent.search': '搜索',
+
+  // Components - Skill
+  'PC.Components.Skill.settings': '設置',
+  'PC.Components.Skill.configInputParams': '配置輸入參數',
+  'PC.Components.Skill.paramName': '參數名稱',
+  'PC.Components.Skill.defaultValue': '默認值',
+  'PC.Components.Skill.enable': '開啟',
+  'PC.Components.Skill.enableDesc':
+    '当参数设置为不可见时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用插件时，智能体会默认只使用这个设定值',
+  'PC.Components.Skill.remove': '移除',
+
+  // Components - AgentContent
+  'PC.Components.AgentContent.from': '來自於',
+
+  // Components - TimedTask
+  'PC.Components.TimedTask.taskCancelled': '定時任務已取消',
+  'PC.Components.TimedTask.inProgress': '進行中',
+  'PC.Components.TimedTask.cancelled': '已取消',
+  'PC.Components.TimedTask.timedTask': '定時任務',
+  'PC.Components.TimedTask.addTask': '添加',
+
+  // Components - HistoryConversation
+  'PC.Components.HistoryConversation.title': '歷史會話',
+
+  // Components - EcosystemCard
+  'PC.Components.EcosystemCard.enabled': '已啟用',
+  'PC.Components.EcosystemCard.versionUpdate': '有版本更新',
+
+  // Components - EcosystemDetailDrawer
+  'PC.Components.EcosystemDetailDrawer.updateConfig': '更新配置',
+  'PC.Components.EcosystemDetailDrawer.update': '更新',
+  'PC.Components.EcosystemDetailDrawer.saveConfigAndEnable': '保存配置並啟用',
+  'PC.Components.EcosystemDetailDrawer.enable': '啟用',
+  'PC.Components.EcosystemDetailDrawer.enablePublishOfficialTip':
+    '启用后将发布到官方服务列表',
+  'PC.Components.EcosystemDetailDrawer.enablePublishSquareTip':
+    '启用后将发布到系统广场',
+  'PC.Components.EcosystemDetailDrawer.disableOfficialTip':
+    '停用后，官方服务列表中将不可见',
+  'PC.Components.EcosystemDetailDrawer.disableSquareTip':
+    '停用后，广场{0}中将不可见',
+  'PC.Components.EcosystemDetailDrawer.disable': '停用',
+  'PC.Components.EcosystemDetailDrawer.pleaseInput': '請輸入{0}',
+  'PC.Components.EcosystemDetailDrawer.newVersionUpdate': '新版本更新',
+  'PC.Components.EcosystemDetailDrawer.fromAuthor': '來自{0}',
+  'PC.Components.EcosystemDetailDrawer.usageDoc': '使用文檔',
+
+  // Components - EcosystemShareModal
+  'PC.Components.EcosystemShareModal.paramName': '參數名稱',
+  'PC.Components.EcosystemShareModal.paramDesc': '參數描述',
+  'PC.Components.EcosystemShareModal.required': '啟用必填',
+  'PC.Components.EcosystemShareModal.saveAndPublish': '保存併發布分享',
+  'PC.Components.EcosystemShareModal.offline': '下線',
+  'PC.Components.EcosystemShareModal.withdrawPublish': '撤銷發佈',
+  'PC.Components.EcosystemShareModal.saveDraft': '保存草稿',
+  'PC.Components.EcosystemShareModal.editShare': '編輯分享',
+  'PC.Components.EcosystemShareModal.createShare': '創建分享',
+  'PC.Components.EcosystemShareModal.componentInfo': '{0}信息',
+  'PC.Components.EcosystemShareModal.addComponent': '添加{0}',
+  'PC.Components.EcosystemShareModal.pleaseSelectComponent': '請選擇{0}',
+  'PC.Components.EcosystemShareModal.pleaseSelectComponentFirst': '請先選擇{0}',
+  'PC.Components.EcosystemShareModal.publisherInfo': '發佈者信息',
+  'PC.Components.EcosystemShareModal.pleaseInputPublisherInfo':
+    '请输入发布者信息',
+  'PC.Components.EcosystemShareModal.publisherInfoPlaceholder':
+    '请输入发布者信息，比如：女娲官方',
+  'PC.Components.EcosystemShareModal.pluginParams': '插件參數',
+  'PC.Components.EcosystemShareModal.usageDoc': '使用文檔',
+  'PC.Components.EcosystemShareModal.pleaseInputUsageDoc': '請輸入使用文檔',
+  'PC.Components.EcosystemShareModal.usageDocPlaceholder':
+    '请输入使用文档，支持markdown格式',
+
+  // Components - ChatTitleActions
+  'PC.Components.ChatTitleActions.incompleteAgentInfo': '智能體信息不完整',
+  'PC.Components.ChatTitleActions.uncollected': '已取消收藏',
+  'PC.Components.ChatTitleActions.uncollectFailed': '取消收藏失敗',
+  'PC.Components.ChatTitleActions.collected': '已添加到收藏',
+  'PC.Components.ChatTitleActions.collectFailed': '添加收藏失敗',
+  'PC.Components.ChatTitleActions.shareLinkCopied': '分享鏈接已複製到剪貼板',
+  'PC.Components.ChatTitleActions.noShareLink': '暫無分享鏈接',
+  'PC.Components.ChatTitleActions.templateCopySuccess': '模板複製成功',
+  'PC.Components.ChatTitleActions.share': '分享',
+  'PC.Components.ChatTitleActions.collect': '收藏',
+  'PC.Components.ChatTitleActions.copyTemplate': '複製模板',
+
+  // Components - AgentConversation
+  'PC.Components.AgentConversation.title': '相關會話',
+  'PC.Components.AgentConversation.viewMore': '查看更多',
+  'PC.Components.AgentConversation.emptyDesc': '暫無相關會話',
+
+  // Components - CreateTimedTask
+  'PC.Components.CreateTimedTask.createSuccess': '定時任務創建成功',
+  'PC.Components.CreateTimedTask.updateSuccess': '定時任務更新成功',
+  'PC.Components.CreateTimedTask.createTitle': '創建定時任務',
+  'PC.Components.CreateTimedTask.updateTitle': '更新定時任務',
+  'PC.Components.CreateTimedTask.timedPeriod': '定時週期',
+  'PC.Components.CreateTimedTask.taskName': '任務名稱',
+  'PC.Components.CreateTimedTask.pleaseInputTaskName': '請輸入任務名稱',
+  'PC.Components.CreateTimedTask.taskContent': '任務內容',
+  'PC.Components.CreateTimedTask.pleaseInputTaskContent': '請輸入任務內容',
+  'PC.Components.CreateTimedTask.taskContentPlaceholder':
+    '请输入你要执行的任务信息，信息提供的越详细执行成功率越高',
+
+  // Components - TaskList
+  'PC.Components.TaskList.noInProgressTasks': '暫無進行中的任務',
+  'PC.Components.TaskList.noCancelledTasks': '暫無已取消的任務',
+  'PC.Components.TaskList.confirmCancelTask': '你確定要取消此定時任務嗎?',
+
+  // Components - NewMonaco
+  'PC.Components.NewMonaco.code': '代碼',
+  'PC.Components.NewMonaco.pleaseSelectLanguage': '請選擇語言',
+
+  // Components - Monaco
+  'PC.Components.Monaco.code': '代碼',
+  'PC.Components.Monaco.pleaseSelectLanguage': '請選擇語言',
+
+  // Components - CodeOptimizeModal
+  'PC.Components.CodeOptimizeModal.replace': '替換',
+  'PC.Components.CodeOptimizeModal.exit': '退出',
+  'PC.Components.CodeOptimizeModal.placeholder':
+    '请描述你的具体业务需求，逻辑尽量描述详细',
+
+  // Components - MonacoEditor
+  'PC.Components.MonacoEditor.loadingEditor': '正在加載編輯器...',
+  'PC.Components.MonacoEditor.loadingEditorDesc':
+    '请稍候，Monaco Editor正在初始化',
+  'PC.Components.MonacoEditor.selectFileToEdit': '選擇文件進行編輯',
+  'PC.Components.MonacoEditor.selectFileToEditDesc':
+    '从左侧文件树中选择一个文件，或创建新文件开始编辑',
+
+  // Components - CreateNewPlugin
+  'PC.Components.CreateNewPlugin.pluginCreated': '插件已創建',
+  'PC.Components.CreateNewPlugin.pluginUpdated': '插件更新成功',
+  'PC.Components.CreateNewPlugin.createPlugin': '新建插件',
+  'PC.Components.CreateNewPlugin.updatePlugin': '更新插件',
+  'PC.Components.CreateNewPlugin.pluginName': '插件名稱',
+  'PC.Components.CreateNewPlugin.pleaseInputPluginName': '請輸入插件名稱',
+  'PC.Components.CreateNewPlugin.nameMaxChars': '名稱不能超過30個字符!',
+  'PC.Components.CreateNewPlugin.pleaseInputPluginNameBang': '請輸入插件名稱!',
+  'PC.Components.CreateNewPlugin.placeholderPluginName':
+    '请输入插件名称，确保名称含义清晰且符合平台规范',
+  'PC.Components.CreateNewPlugin.pluginDescription': '插件描述',
+  'PC.Components.CreateNewPlugin.pleaseInputPluginDesc':
+    '请输入插件的主要功能和使用场景',
+  'PC.Components.CreateNewPlugin.placeholderPluginDesc':
+    '请输入插件的主要功能和使用场景，确保内容符合平台规范。帮助用户/大模型更好地理解',
+  'PC.Components.CreateNewPlugin.pluginCreateTool': '插件工具創建方式',
+  'PC.Components.CreateNewPlugin.pleaseSelectPluginCreateTool':
+    '请选择插件工具创建方式',
+  'PC.Components.CreateNewPlugin.ideRuntime': 'IDE 運行時',
+  'PC.Components.CreateNewPlugin.pleaseSelectPluginMode': '請選擇插件模式',
+
+  // Components - CreateWorkflow
+  'PC.Components.CreateWorkflow.workflowCreated': '工作流已創建成功',
+  'PC.Components.CreateWorkflow.workflowUpdated': '工作流更新成功',
+  'PC.Components.CreateWorkflow.createWorkflow': '創建工作流',
+  'PC.Components.CreateWorkflow.updateWorkflow': '更新工作流',
+  'PC.Components.CreateWorkflow.name': '名稱',
+  'PC.Components.CreateWorkflow.pleaseInputWorkflowName': '請輸入工作流名稱',
+  'PC.Components.CreateWorkflow.nameMaxChars': '名稱不能超過30個字符!',
+  'PC.Components.CreateWorkflow.pleaseInputWorkflowNameBang': '輸入工作流名稱!',
+  'PC.Components.CreateWorkflow.placeholderWorkflowName': '輸入工作流名稱',
+  'PC.Components.CreateWorkflow.description': '描述',
+  'PC.Components.CreateWorkflow.placeholderWorkflowDesc':
+    '请输入描述，让大模型理解什么情况下应该调用此工作流',
+  'PC.Components.CreateWorkflow.icon': '圖標',
+
+  // Components - CreatedItem
+  'PC.Components.CreatedItem.create': '創建',
+  'PC.Components.CreatedItem.update': '編輯',
+  'PC.Components.CreatedItem.dataTable': '數據表',
+  'PC.Components.CreatedItem.knowledge': '知識庫',
+  'PC.Components.CreatedItem.plugin': '插件',
+  'PC.Components.CreatedItem.workflow': '工作流',
+  'PC.Components.CreatedItem.name': '名稱',
+  'PC.Components.CreatedItem.pleaseInputName': '請輸入名稱',
+  'PC.Components.CreatedItem.nameMaxChars': '名稱不能超過30個字符!',
+  'PC.Components.CreatedItem.pleaseInputNameBang': '請輸入名稱!',
+  'PC.Components.CreatedItem.placeholderName': '請輸入名稱',
+  'PC.Components.CreatedItem.description': '描述',
+  'PC.Components.CreatedItem.placeholderDesc': '請輸入描述',
+  'PC.Components.CreatedItem.toolCreateMethod': '工具創建方式',
+  'PC.Components.CreatedItem.ideRuntime': 'IDE 運行時',
+
+  // Components - TiptapVariableInput
+  'PC.Components.TiptapVariableInput.placeholder': '輸入 @ 或 { 開始使用',
+
+  // Components - VariableList
+  'PC.Components.VariableList.noMatchingVariable': '未找到匹配變量',
+  'PC.Components.VariableList.tabVariables': '變量',
+  'PC.Components.VariableList.tabTools': '工具',
+  'PC.Components.VariableList.tabSkills': '技能',
+
+  // Components - MarkdownCustomProcess
+  'PC.Components.MarkdownCustomProcess.noData': '暫無數據',
+  'PC.Components.MarkdownCustomProcess.noName': '暫無名稱',
+  'PC.Components.MarkdownCustomProcess.viewDetail': '查看詳情',
+  'PC.Components.MarkdownCustomProcess.closePreview': '關閉預覽',
+  'PC.Components.MarkdownCustomProcess.previewPage': '預覽頁面',
+  'PC.Components.MarkdownCustomProcess.collapse': '收起',
+  'PC.Components.MarkdownCustomProcess.expand': '展開',
+  'PC.Components.MarkdownCustomProcess.copyDetailData': '複製詳情數據',
+  'PC.Components.MarkdownCustomProcess.copyFailedRetry':
+    '详情数据复制失败，请重试',
+
+  // Components - SharedIcon
+  'PC.Components.SharedIcon.published': '已發佈',
+  'PC.Components.SharedIcon.reviewing': '審核中',
+  'PC.Components.SharedIcon.offline': '已下線',
+  'PC.Components.SharedIcon.draft': '草稿',
+  'PC.Components.SharedIcon.rejected': '已駁回',
+
+  // Components - ActivatedIcon
+  'PC.Components.ActivatedIcon.activated': '已啟用',
+
+  // Components - ChatView
+  'PC.Components.ChatView.copy': '複製',
+
+  // Components - CustomFormModal
+  'PC.Components.CustomFormModal.cancel': '取消',
+
+  // Components - MarkdownRenderer
+  'PC.Components.MarkdownRenderer.thinking': '正在思考',
+  'PC.Components.MarkdownRenderer.thought': '已思考',
+
+  // Components - PageCard
+  'PC.Components.PageCard.activated': '已啟用',
+  'PC.Components.PageCard.newVersion': '有版本更新',
+  'PC.Components.PageCard.noPreview': '無可用預覽圖',
+  'PC.Components.PageCard.startUsing': '開始使用',
+  'PC.Components.PageCard.createdAt': '創建於',
+
+  // Components - PluginConfigTitle
+  'PC.Components.PluginConfigTitle.addParam': '新增參數',
+
+  // Components - genCustomPlugin
+  'PC.Components.genCustomPlugin.table': '表格',
+
+  // Components - Skill database
+  'PC.Components.Skill.database.collapse': '收起',
+
+  // Components - SqlOptimizeModal
+  'PC.Components.SqlOptimizeModal.replace': '替換',
+  'PC.Components.SqlOptimizeModal.exit': '退出',
+  'PC.Components.SqlOptimizeModal.placeholder':
+    '请输入你的SQL查询需求，逻辑尽量描述详细',
+
+  // Components - SubmitButton
+  'PC.Components.SubmitButton.confirm': '確定',
+
+  // Components - MentionList
+  'PC.Components.MentionList.noMatch': '未找到匹配項',
+
+  // Components - TiptapVariableInput - useVariableTree
+  'PC.Components.useVariableTree.tools': '工具',
+  'PC.Components.useVariableTree.skills': '技能',
+
+  // Components - CurrentPublishItem
+  'PC.Components.CurrentPublishItem.publishedAt': '發佈於',
+  'PC.Components.CurrentPublishItem.offShelf': '下架',
+  'PC.Components.CurrentPublishItem.reviewing': '審核中',
+  'PC.Components.CurrentPublishItem.hasBeenOffShelf': '已下架',
+
+  // Components - VersionHistory
+  'PC.Components.VersionHistory.agent': '智能體',
+  'PC.Components.VersionHistory.plugin': '插件',
+  'PC.Components.VersionHistory.workflow': '工作流',
+  'PC.Components.VersionHistory.offShelfSuccess': '已成功下架',
+  'PC.Components.VersionHistory.confirmOffShelf': '你確定要下架此{0}嗎?',
+  'PC.Components.VersionHistory.currentPublish': '當前發佈',
+  'PC.Components.VersionHistory.arrangeAndPublishRecord': '編排與發佈記錄',
+  'PC.Components.VersionHistory.noVersionHistory': '暫無版本歷史記錄',
+  'PC.Components.VersionHistory.versionHistoryTip':
+    '当你对项目进行修改时，系统会自动保存版本历史',
+  'PC.Components.VersionHistory.versionHistory': '版本歷史',
+
+  // Components - SelectList
+  'PC.Components.SelectList.pleaseSelect': '請選擇',
+
+  // Components - PublishComponentModal
+  'PC.Components.PublishComponentModal.agent': '智能體',
+  'PC.Components.PublishComponentModal.allowCopyTemplate': '允許複製（模板）',
+  'PC.Components.PublishComponentModal.allowCopyTemplateTip':
+    '選中後將出現在廣場模板中，用戶可直接複製到自己的工作空間中去。複製可選的前提是發佈已選。',
+  'PC.Components.PublishComponentModal.categorySelect': '分類選擇',
+  'PC.Components.PublishComponentModal.onlyTemplate': '僅模板',
+  'PC.Components.PublishComponentModal.onlyTemplateTip':
+    '選擇後僅在模板廣場展示，僅模板只有在允許複製選擇後才可選',
+  'PC.Components.PublishComponentModal.plugin': '插件',
+  'PC.Components.PublishComponentModal.publishRecord': '發佈記錄',
+  'PC.Components.PublishComponentModal.publishRecordPlaceholder':
+    '請輸入發佈記錄',
+  'PC.Components.PublishComponentModal.publishScope': '發佈空間',
+  'PC.Components.PublishComponentModal.publishSubmitted':
+    '發佈申請已提交，等待審核中',
+  'PC.Components.PublishComponentModal.publishTitle': '發佈{0}',
+  'PC.Components.PublishComponentModal.selectPublishScope': '選擇發佈範圍',
+  'PC.Components.PublishComponentModal.skill': '技能',
+  'PC.Components.PublishComponentModal.space': '空間',
+  'PC.Components.PublishComponentModal.spaceSquareTip':
+    '2. 空間廣場：智能體將出現在選擇的空間廣場中。',
+  'PC.Components.PublishComponentModal.systemSquare': '系統廣場',
+  'PC.Components.PublishComponentModal.systemSquareTip':
+    '1. 系統廣場：智能體將出现在系統廣場中。',
+  'PC.Components.PublishComponentModal.workflow': '工作流',
+  'PC.Components.RunOver.calling': '正在調用',
+  'PC.Components.RunOver.called': '已調用 {0}',
+  'PC.Components.RunOver.runComplete': '運行完畢',
+  'PC.Components.RunOver.runError': '運行錯誤',
+  'PC.Components.RunOver.thinking': '正在思考',
+  'PC.Components.TestRun.input': '輸入',
+  'PC.Components.TestRun.noInputRequired': '本次試運行無需輸入',
+  'PC.Components.TestRun.output': '輸出',
+  'PC.Components.TestRun.pleaseInput': '請輸入',
+  'PC.Components.TestRun.pleaseSelect': '請選擇',
+  'PC.Components.TestRun.qa': '問答',
+  'PC.Components.TestRun.replyToContinue': '回覆以下問題後繼續試運行',
+  'PC.Components.TestRun.robot': '機器人',
+  'PC.Components.TestRun.run': '運行',
+  'PC.Components.TestRun.runResult': '運行結果',
+  'PC.Components.TestRun.testRun': '試運行',
+  'PC.Components.TestRun.testRunInput': '試運行輸入',
+  'PC.Components.TestRun.uploadFile': '上傳文件',
+  'PC.Components.TestRun.uploadFailed': '上傳失敗: {0}',
+
+  // Layouts - HistoryConversation
+  'PC.Layouts.HistoryConversation.title': '歷史會話',
+
+  // Layouts - InfiniteList
+  'PC.Layouts.InfiniteList.allDataLoaded': '已加載全部數據',
+
+  // Pages - AppDev DesignViewer
+  'PC.Pages.AppDevDesignViewer.selectElementToEdit':
+    '请选中右侧页面元素进行编辑',
+  'PC.Pages.AppDevDesignViewer.textContent': '文本內容',
+  'PC.Pages.AppDevDesignViewer.font': '字體',
+  'PC.Pages.AppDevDesignViewer.fontWeight': '字重',
+  'PC.Pages.AppDevDesignViewer.fontSize': '字體大小',
+  'PC.Pages.AppDevDesignViewer.lineHeight': '行高',
+  'PC.Pages.AppDevDesignViewer.letterSpacing': '字間距',
+  'PC.Pages.AppDevDesignViewer.alignment': '對齊方式',
+  'PC.Pages.AppDevDesignViewer.textColor': '文字顏色',
+  'PC.Pages.AppDevDesignViewer.background': '背景',
+  'PC.Pages.AppDevDesignViewer.layout': '佈局',
+  'PC.Pages.AppDevDesignViewer.margin': '外邊距',
+  'PC.Pages.AppDevDesignViewer.padding': '內邊距',
+  'PC.Pages.AppDevDesignViewer.border': '邊框',
+  'PC.Pages.AppDevDesignViewer.borderColor': '邊框顏色',
+  'PC.Pages.AppDevDesignViewer.borderStyle': '邊框樣式',
+  'PC.Pages.AppDevDesignViewer.borderWidth': '邊框寬度',
+  'PC.Pages.AppDevDesignViewer.appearance': '外觀',
+  'PC.Pages.AppDevDesignViewer.opacity': '透明度',
+  'PC.Pages.AppDevDesignViewer.borderRadius': '圓角',
+  'PC.Pages.AppDevDesignViewer.shadow': '陰影',
+
+  // Pages - SpacePluginCloudTool
+  'PC.Pages.SpacePluginCloudTool.inputConfig': '入參配置',
+  'PC.Pages.SpacePluginCloudTool.outputConfig': '出參配置',
+  'PC.Pages.SpacePluginCloudTool.autoAnalysis': '自動解析',
+  'PC.Pages.SpacePluginCloudTool.paramName': '參數名稱',
+  'PC.Pages.SpacePluginCloudTool.paramDesc': '參數描述',
+  'PC.Pages.SpacePluginCloudTool.paramType': '參數類型',
+  'PC.Pages.SpacePluginCloudTool.paramNamePlaceholder':
+    '请输入参数名称，确保含义清晰',
+  'PC.Pages.SpacePluginCloudTool.paramDescPlaceholder':
+    '请输入参数描述，确保描述详细便于大模型更好的理解',
+  'PC.Pages.SpacePluginCloudTool.selectDataType': '請選擇數據類型',
+  'PC.Pages.SpacePluginCloudTool.isRequired': '是否必須',
+  'PC.Pages.SpacePluginCloudTool.defaultValue': '默認值',
+  'PC.Pages.SpacePluginCloudTool.inputDefaultValue': '請輸入默認值',
+  'PC.Pages.SpacePluginCloudTool.enable': '開啟',
+  'PC.Pages.SpacePluginCloudTool.requiredParamTip':
+    '此参数是必填参数，填写默认值后，此开关可用',
+  'PC.Pages.SpacePluginCloudTool.operation': '操作',
+
+  // Layouts - MobileMenu
+  'PC.Layouts.MobileMenu.menuMask': '菜單遮罩',
+
+  // Layouts - Message
+  'PC.Layouts.Message.noMessages': '暫無消息',
+
+  // Utils - PptxFallbackRenderer
+  'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 文件解析失敗',
+  'PC.Utils.PptxFallbackRenderer.previewAlt': '演示文稿預覽',
+  'PC.Utils.PptxFallbackRenderer.coverPreview': '演示文稿封面預覽',
+  'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 張幻燈片',
+  'PC.Utils.PptxFallbackRenderer.complexFormatNotice':
+    '该 PPTX 文件格式较为复杂，暂不支持完整预览。<br>建议下载后在 PowerPoint 中查看完整内容。',
+
+  // Utils - Clipboard
+  'PC.Utils.Clipboard.copyFailed': '複製失敗，請手動複製',
+  'PC.Utils.Clipboard.copySuccess': '複製成功',
+  'PC.Utils.Clipboard.noContent': '沒有可複製的內容',
+
+  // Utils - FetchEventSource
+  'PC.Utils.FetchEventSource.sseConnectionFailed': 'SSE連接失敗',
+
+  // Utils - HtmlToPdf
+  'PC.Utils.HtmlToPdf.cannotCreatePrintEnv': '無法創建打印環境',
+  'PC.Utils.HtmlToPdf.cannotAccessIframeDoc': '無法訪問 iframe 文檔',
+
+  // Utils - FileTree
+  'PC.Utils.FileTree.emptyFileCannotExportPdf': '文件內容為空，無法導出 PDF',
+  'PC.Utils.FileTree.pdfExportSuccess': 'PDF 導出成功',
+  'PC.Utils.FileTree.downloadFailed': '下載失敗',
+  'PC.Utils.FileTree.downloadFailedRetry': '下載文件失敗，請重試',
+
+  // Utils - AntCustom
+  'PC.Utils.AntCustom.okText': '確定',
+  'PC.Utils.AntCustom.cancelText': '取消',
+
+  // Utils - Mcp
+  'PC.Utils.Mcp.pendingDeploy': '待部署',
+  'PC.Utils.Mcp.deploying': '部署中',
+  'PC.Utils.Mcp.deployed': '已部署',
+  'PC.Utils.Mcp.deployFailed': '部署失敗',
+  'PC.Utils.Mcp.stopped': '已停止',
+
+  // Utils - ChatUtils
+  'PC.Utils.ChatUtils.errorOccurred': '已出錯',
+  'PC.Utils.ChatUtils.cancelled': '已取消',
+  'PC.Utils.ChatUtils.newConversation': '新會話',
+
+  // Utils - Common
+  'PC.Utils.Common.yearsAgo': '{0}年前',
+  'PC.Utils.Common.lastYear': '去年',
+  'PC.Utils.Common.monthsAgo': '{0} 月前',
+  'PC.Utils.Common.daysAgo': '{0}天前',
+  'PC.Utils.Common.dayBeforeYesterday': '前天',
+  'PC.Utils.Common.yesterday': '昨天',
+  'PC.Utils.Common.hoursAgo': '{0}小時前',
+  'PC.Utils.Common.minutesAgo': '{0}分鐘前',
+  'PC.Utils.Common.justNow': '剛剛',
+  'PC.Utils.Common.emptyInput': '輸入為空或不是字符串',
+  'PC.Utils.Common.invalidJsonFormat': 'JSON格式錯誤',
+
+  // Utils - MermaidExporter
+  'PC.Utils.MermaidExporter.svgExportSuccess': 'SVG 導出成功',
+  'PC.Utils.MermaidExporter.svgExportFailed': 'SVG 導出失敗',
+  'PC.Utils.MermaidExporter.pngExportSuccess': 'PNG 導出成功',
+  'PC.Utils.MermaidExporter.pngExportFailed': 'PNG 導出失敗',
+
+  // Components - PermissionMask
+  'PC.Components.PermissionMask.noAgentPermission': '無智能體使用權限',
+
+  // Components - EcosystemDetailDrawer
+  'PC.Components.EcosystemDetailDrawer.plugin': '插件',
+
+  // Components - EcosystemShareModal
+  'PC.Components.EcosystemShareModal.plugin': '插件',
+
+  // Components - ModelBox
+  'PC.Components.ModelBox.search': '搜索',
+
+  // Components - ModelSelector
+  'PC.Components.ModelSelector.loadingModels': '加載模型中...',
+  'PC.Components.ModelSelector.noAvailableModels': '暫無可用自有模型',
+  'PC.Components.ModelSelector.loading': '加載中...',
+  'PC.Components.ModelSelector.selectModel': '選擇模型',
+  'PC.Components.ModelSelector.addModel': '模型',
+
+  // Components - SkillCopy
+  'PC.Components.SkillCopy.editParams': '編輯參數',
+
+  // Components - TiptapVariableInput
+  'PC.Components.TiptapVariableInput.tools': '工具',
+  'PC.Components.TiptapVariableInput.skills': '技能',
+
+  // Constants - Theme
+  'PC.Constants.Theme.colorBlue': '藍色',
+  'PC.Constants.Theme.colorRed': '紅色',
+  'PC.Constants.Theme.colorOrange': '橙色',
+  'PC.Constants.Theme.colorGreen': '綠色',
+  'PC.Constants.Theme.colorPurple': '紫色',
+  'PC.Constants.Theme.colorPink': '粉色',
+  'PC.Constants.Theme.bgStarryNight': '星空夜景',
+  'PC.Constants.Theme.bgStarryNightDesc': '深色背景，適合深色佈局風格',
+  'PC.Constants.Theme.bgCloudyDay': '雲朵白天',
+  'PC.Constants.Theme.bgCloudyDayDesc': '淺色背景，適合淺色佈局風格',
+  'PC.Constants.Theme.bgForestDawn': '森林晨光',
+  'PC.Constants.Theme.bgForestDawnDesc': '明亮背景，適合淺色佈局風格',
+  'PC.Constants.Theme.bgDeepSeaNight': '深海夜色',
+  'PC.Constants.Theme.bgDeepSeaNightDesc': '深色背景，適合深色佈局風格',
+  'PC.Constants.Theme.bgDreamyPurple': '夢幻紫色',
+  'PC.Constants.Theme.bgDreamyPurpleDesc': '深色調背景，適合深色佈局風格',
+  'PC.Constants.Theme.bgWarmSunshine': '溫暖陽光',
+  'PC.Constants.Theme.bgWarmSunshineDesc': '溫暖色調，適合淺色佈局風格',
+  'PC.Constants.Theme.bgNightCity': '夜晚都市',
+  'PC.Constants.Theme.bgNightCityDesc': '都市夜景，適合深色佈局風格',
+  'PC.Constants.Theme.bgFreshBlueSky': '清新藍天',
+  'PC.Constants.Theme.bgFreshBlueSkyDesc': '清新明亮，適合淺色佈局風格',
+};

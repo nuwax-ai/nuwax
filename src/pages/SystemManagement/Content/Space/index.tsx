@@ -11,6 +11,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemResourceSpaceDelete,
   apiSystemResourceSpaceList,
@@ -63,10 +64,12 @@ const Space: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemSpaceInfo) => {
     const response = await apiSystemResourceSpaceDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemContentSpace.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error('删除失败');
+      message.error(
+        response.message || t('PC.Pages.SystemContentSpace.deleteFailed'),
+      );
     }
   }, []);
 
@@ -77,20 +80,21 @@ const Space: React.FC = () => {
     (record: SystemSpaceInfo): ActionItem<SystemSpaceInfo>[] => [
       {
         key: 'view',
-        label: '查看',
+        label: t('PC.Pages.SystemContentSpace.view'),
         disabled: !hasPermission('content_space_query_detail'),
         onClick: handleView,
       },
       {
         key: 'delete',
-        label: '删除',
+        label: t('PC.Pages.SystemContentSpace.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: t(
+            'PC.Pages.SystemContentSpace.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: t(
+            'PC.Pages.SystemContentSpace.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_space_delete'),
         onClick: handleDelete,
@@ -104,31 +108,31 @@ const Space: React.FC = () => {
    */
   const columns: ProColumns<SystemSpaceInfo>[] = [
     {
-      title: '名称',
+      title: t('PC.Pages.SystemContentSpace.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入名称',
+        placeholder: t('PC.Pages.SystemContentSpace.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemContentSpace.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true, // 不参与搜索
     },
     {
-      title: '创建人',
+      title: t('PC.Pages.SystemContentSpace.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '创建时间',
+      title: t('PC.Pages.SystemContentSpace.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -136,7 +140,7 @@ const Space: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemContentSpace.columnAction'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',
@@ -174,7 +178,10 @@ const Space: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="空间管理" hideScroll>
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentSpace.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemSpaceInfo>
         actionRef={actionRef}
         formRef={formRef}

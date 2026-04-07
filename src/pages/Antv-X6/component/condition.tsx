@@ -1,5 +1,6 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { branchTypeMap } from '@/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
@@ -46,7 +47,9 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {/* 标题 */}
                 <div className="dis-sb margin-bottom">
-                  <span className="node-title-style">条件分支</span>
+                  <span className="node-title-style">
+                    {t('PC.Pages.AntvX6Condition.branchTitle')}
+                  </span>
                   <Button
                     icon={<PlusOutlined />}
                     type={'text'}
@@ -103,7 +106,12 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                 <span className="margin-right">
                                   {branchTypeMap[itemData.branchType]}
                                 </span>
-                                <Tag color="#C9CDD4">优先级{index + 1}</Tag>
+                                <Tag color="#C9CDD4">
+                                  {t(
+                                    'PC.Pages.AntvX6Condition.priority',
+                                    String(index + 1),
+                                  )}
+                                </Tag>
                               </div>
                               {fields.length > 2 && (
                                 <Button
@@ -173,11 +181,15 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                             }}
                                             options={[
                                               {
-                                                label: '且',
+                                                label: t(
+                                                  'PC.Pages.AntvX6Condition.and',
+                                                ),
                                                 value: 'AND',
                                               },
                                               {
-                                                label: '或',
+                                                label: t(
+                                                  'PC.Pages.AntvX6Condition.or',
+                                                ),
                                                 value: 'OR',
                                               },
                                             ]}
@@ -249,7 +261,9 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                                           'firstArg',
                                                           'bindValue',
                                                         ]}
-                                                        placeholder="请引用参数"
+                                                        placeholder={t(
+                                                          'PC.Pages.AntvX6Condition.referencePlaceholder',
+                                                        )}
                                                         style={{
                                                           width:
                                                             subFields.length > 1
@@ -316,7 +330,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                           }}
                                           icon={<PlusOutlined />}
                                         >
-                                          新增
+                                          {t('PC.Pages.AntvX6Condition.add')}
                                         </Button>
                                       </div>
                                     );
@@ -331,7 +345,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   }
                   return (
                     <div key={item.name} className="condition-card-style">
-                      否则
+                      {t('PC.Pages.AntvX6Condition.else')}
                     </div>
                   );
                 })}

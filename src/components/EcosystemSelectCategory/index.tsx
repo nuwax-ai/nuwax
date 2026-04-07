@@ -2,6 +2,7 @@
 // 通过异步调用获取分类列表
 
 import { getCategoryListApi } from '@/services/ecosystem';
+import { dict } from '@/services/i18nRuntime';
 import { Select } from 'antd';
 import { useEffect, useState } from 'react';
 
@@ -13,7 +14,7 @@ export default function SelectCategory({
   targetType: string;
 }) {
   const [categoryList, setCategoryList] = useState<any[]>([
-    { label: '全部', value: '' },
+    { label: dict('PC.Components.EcosystemSelectCategory.all'), value: '' },
   ]);
   const [loading, setLoading] = useState(false);
   const getCategoryList = async (theTargetType: string) => {
@@ -29,7 +30,10 @@ export default function SelectCategory({
           label: item.label,
           value: item.key,
         })) || [];
-      list.unshift({ label: '全部', value: '' });
+      list.unshift({
+        label: dict('PC.Components.EcosystemSelectCategory.all'),
+        value: '',
+      });
       setCategoryList(list);
     }
   };
@@ -54,7 +58,9 @@ export default function SelectCategory({
       options={categoryList}
       onChange={handleChange}
       defaultValue={''}
-      placeholder="请选择分类"
+      placeholder={dict(
+        'PC.Components.EcosystemSelectCategory.pleaseSelectCategory',
+      )}
     />
   );
 }

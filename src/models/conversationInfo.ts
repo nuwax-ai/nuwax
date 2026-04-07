@@ -12,6 +12,7 @@ import {
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiEnsurePod,
   apiGetStaticFileList,
@@ -242,7 +243,9 @@ export default () => {
       onSuccess: (result: RequestResponse<null>) => {
         const { code } = result;
         if (code === SUCCESS_CODE) {
-          message.success('重启智能体成功');
+          message.success(
+            dict('PC.Models.ConversationInfo.restartAgentSuccess'),
+          );
         }
       },
     },
@@ -979,8 +982,8 @@ export default () => {
           (!data?.success && data?.error?.includes('正在执行任务'))
         ) {
           modalConfirm(
-            '提示',
-            '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+            dict('PC.Models.ConversationInfo.taskConflictTitle'),
+            dict('PC.Models.ConversationInfo.taskConflictContent'),
             () => {
               if (params?.conversationId) {
                 runStopConversation(params?.conversationId.toString());
@@ -1118,7 +1121,7 @@ export default () => {
                 lastMessage.processingList = updatedProcessingList;
 
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
-                handleChatProcessingList(updatedProcessingList);
+                // handleChatProcessingList(updatedProcessingList); // 暂时不需要，通过对象引用已经修改了最后一条数据的状态
               }
             }
 
@@ -1137,7 +1140,7 @@ export default () => {
         perfLifecycle.onCloseRenderComplete();
       },
       onError: () => {
-        message.error('网络超时或服务不可用，请稍后再试');
+        message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
         // 将当前会话的loading状态的消息改为Error状态
         const list =
           messageListRef.current?.map((info: MessageInfo) => {

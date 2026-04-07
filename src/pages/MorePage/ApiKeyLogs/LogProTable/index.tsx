@@ -6,6 +6,7 @@ import {
 import { AGENT_COMPONENT_TYPE_MAP } from '@/constants/agent.constants';
 import LogDetailDrawer from '@/pages/SystemManagement/LogQuery/RunningLog/LogDetailDrawer';
 import { apiApiKeyLogList } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
 import type {
   SpaceLogInfo,
   SpaceLogQueryFilter,
@@ -64,49 +65,59 @@ const LogProTable: React.FC = () => {
     () => [
       {
         width: 100,
-        title: '类型',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.type'),
         dataIndex: 'targetType',
         valueType: 'select',
         valueEnum: AGENT_COMPONENT_TYPE_MAP,
         hideInTable: false,
-        search: false,
+        initialValue: targetTypeFromUrl,
+        fieldProps: {
+          placeholder: t('PC.Pages.ApiKeyLogsLogProTable.selectType'),
+          allowClear: true,
+        },
       },
       {
-        title: '对象ID',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.targetId'),
         dataIndex: 'targetId',
         width: 140,
         ellipsis: true,
         initialValue: targetIdFromUrl,
         fieldProps: {
-          placeholder: '请输入对象ID',
+          placeholder: t('PC.Pages.ApiKeyLogsLogProTable.enterTargetId'),
         },
       },
       {
-        title: '对象名称',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.targetName'),
         dataIndex: 'targetName',
         width: 140,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入对象名称' },
+        fieldProps: {
+          placeholder: t('PC.Pages.ApiKeyLogsLogProTable.enterTargetName'),
+        },
       },
       {
-        title: '请求ID',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.requestId'),
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
         hideInTable: false,
         initialValue: requestIdFromUrl,
-        fieldProps: { placeholder: '请输入请求ID' },
+        fieldProps: {
+          placeholder: t('PC.Pages.ApiKeyLogsLogProTable.enterRequestId'),
+        },
       },
       {
-        title: '会话ID',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.conversationId'),
         dataIndex: 'conversationId',
         width: 140,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入会话ID' },
+        fieldProps: {
+          placeholder: t('PC.Pages.ApiKeyLogsLogProTable.enterConversationId'),
+        },
       },
 
       {
-        title: '输入内容',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.inputContent'),
         dataIndex: 'input',
         minWidth: 150,
         width: 220,
@@ -115,10 +126,14 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.input}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.ApiKeyLogsLogProTable.enterContentByKeywords',
+          ),
+        },
       },
       {
-        title: '输出内容',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.outputContent'),
         dataIndex: 'output',
         minWidth: 150,
         width: 220,
@@ -127,31 +142,35 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.output}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.ApiKeyLogsLogProTable.enterContentByKeywords',
+          ),
+        },
       },
 
       {
-        title: '时间范围',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.timeRange'),
         dataIndex: 'createTimeRange',
         valueType: 'dateTimeRange',
         hideInTable: true,
       },
       {
-        title: '输入token',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.inputToken'),
         dataIndex: 'inputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '输出token',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.outputToken'),
         dataIndex: 'outputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '请求时间',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.requestTime'),
         dataIndex: 'requestStartTime',
         width: 180,
         valueType: 'dateTime',
@@ -162,7 +181,7 @@ const LogProTable: React.FC = () => {
         // },
       },
       {
-        title: '整体耗时',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.totalDuration'),
         key: 'elapsedTimeMs',
         width: 110,
         align: 'center',
@@ -248,7 +267,9 @@ const LogProTable: React.FC = () => {
           'success' in resp &&
           !resp.success
         ) {
-          message.error(resp.message || '查询失败');
+          message.error(
+            resp.message || t('PC.Pages.ApiKeyLogsLogProTable.queryFailed'),
+          );
           return { data: [], total: 0, success: false };
         }
 
@@ -261,7 +282,7 @@ const LogProTable: React.FC = () => {
         return { data: records, total, success: true };
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.error('查询日志失败', e);
+        console.error('Failed to query logs:', e);
         return { data: [], total: 0, success: false };
       }
     },
@@ -274,7 +295,9 @@ const LogProTable: React.FC = () => {
    */
   const handleOpenDetails = useCallback((record: SpaceLogInfo) => {
     if (!record?.id) {
-      message.warning('该条记录缺少 requestId，无法查看详情');
+      message.warning(
+        t('PC.Pages.ApiKeyLogsLogProTable.recordMissingRequestId'),
+      );
       return;
     }
 
@@ -286,7 +309,7 @@ const LogProTable: React.FC = () => {
     return [
       ...columns,
       {
-        title: '操作',
+        title: t('PC.Pages.ApiKeyLogsLogProTable.actions'),
         valueType: 'option',
         width: 90,
         fixed: 'right',
@@ -298,7 +321,7 @@ const LogProTable: React.FC = () => {
               actions={[
                 {
                   key: 'detail',
-                  label: '详情',
+                  label: t('PC.Pages.ApiKeyLogsLogProTable.detail'),
                   disabled: !hasPermission('system_running_log_query_detail'),
                   onClick: () => handleOpenDetails(record),
                 },

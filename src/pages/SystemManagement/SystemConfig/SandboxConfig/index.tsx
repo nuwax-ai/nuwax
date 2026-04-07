@@ -2,6 +2,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   apiCreateSandboxConfig,
   apiDeleteSandboxConfig,
@@ -54,7 +55,7 @@ const SandboxConfig: React.FC = () => {
   const [testingIds, setTestingIds] = useState<Set<number | string>>(new Set());
   const location = useLocation();
 
-  // 获取全局配置
+  // Fetch global configuration
   const fetchGlobalConfig = async () => {
     form.resetFields();
     setGlobalConfigLoading(true);
@@ -68,7 +69,7 @@ const SandboxConfig: React.FC = () => {
     }
   };
 
-  // 获取沙盒列表
+  // Fetch sandbox list
   const fetchSandboxList = async () => {
     setTableLoading(true);
     try {
@@ -86,7 +87,7 @@ const SandboxConfig: React.FC = () => {
     fetchSandboxList();
   }, []);
 
-  // 监听 location.state 变化
+  // Watch location.state changes
   useEffect(() => {
     const state = location.state as any;
     if (state?._t) {
@@ -101,7 +102,7 @@ const SandboxConfig: React.FC = () => {
       setSavingLoading(true);
       const res = await apiUpdateSandboxGlobalConfig(values);
       if (res.code === SUCCESS_CODE) {
-        message.success('保存成功');
+        message.success(t('PC.Toast.Global.savedSuccessfully'));
       }
     } finally {
       setSavingLoading(false);
@@ -113,9 +114,17 @@ const SandboxConfig: React.FC = () => {
     try {
       const res = await apiTestSandboxConnectivity(id);
       if (res.code === SUCCESS_CODE) {
-        message.success('测试成功，沙盒连接正常');
+        message.success(
+          t('PC.Pages.SystemConfigSandboxConfig.connectivitySuccess'),
+        );
       } else {
-        message.error(`测试失败：${res.message || '连接异常'}`);
+        message.error(
+          t(
+            'PC.Pages.SystemConfigSandboxConfig.connectivityFailed',
+            res.message ||
+              t('PC.Pages.SystemConfigSandboxConfig.connectionException'),
+          ),
+        );
       }
     } finally {
       setTestingIds((prev) => {
@@ -126,25 +135,36 @@ const SandboxConfig: React.FC = () => {
     }
   };
 
-  // 启用/停用沙盒配置
+  // Enable/disable sandbox configuration
   const handleToggleSandbox = (record: SandboxItem) => {
-    const actionText = record.isActive ? '停用' : '启用';
+    const actionText = record.isActive
+      ? t('PC.Pages.SystemConfigSandboxConfig.disable')
+      : t('PC.Pages.SystemConfigSandboxConfig.enable');
     Modal.confirm({
-      title: `${actionText}确认`,
-      content: `确定要${actionText}沙盒${record.name}吗？`,
-      okText: '确定',
-      cancelText: '取消',
+      title: t(
+        'PC.Pages.SystemConfigSandboxConfig.toggleConfirmTitle',
+        actionText,
+      ),
+      content: t(
+        'PC.Pages.SystemConfigSandboxConfig.toggleConfirmContent',
+        actionText,
+        record.name,
+      ),
+      okText: t('PC.Common.Global.confirm'),
+      cancelText: t('PC.Common.Global.cancel'),
       onOk: async () => {
         const res = await apiToggleSystemSandboxConfig(record.id);
         if (res.code === SUCCESS_CODE) {
-          message.success(`${actionText}成功`);
+          message.success(
+            t('PC.Pages.SystemConfigSandboxConfig.toggleSuccess', actionText),
+          );
           fetchSandboxList();
         }
       },
     });
   };
 
-  // 新增/编辑沙盒提交
+  // Submit add/edit sandbox
   const handleSandboxSubmit = async (values: any) => {
     try {
       const payload =
@@ -155,7 +175,11 @@ const SandboxConfig: React.FC = () => {
         modalMode === 'add' ? apiCreateSandboxConfig : apiUpdateSandboxConfig;
       const res = await apiCall(payload);
       if (res.code === SUCCESS_CODE) {
-        message.success(modalMode === 'add' ? '添加成功' : '保存成功');
+        message.success(
+          modalMode === 'add'
+            ? t('PC.Pages.SystemConfigSandboxConfig.addSuccess')
+            : t('PC.Toast.Global.savedSuccessfully'),
+        );
         setModalVisible(false);
         fetchSandboxList();
         return true;
@@ -168,7 +192,7 @@ const SandboxConfig: React.FC = () => {
 
   const columns: ProColumns<SandboxItem>[] = [
     {
-      title: '沙盒名称',
+      title: t('PC.Pages.SystemConfigSandboxConfig.columnName'),
       dataIndex: 'name',
       render: (_: any, record: SandboxItem) => (
         <div className={styles['sandbox-item']}>
@@ -185,10 +209,10 @@ const SandboxConfig: React.FC = () => {
       ),
     },
     {
-      title: '使用情况',
+      title: t('PC.Pages.SystemConfigSandboxConfig.columnUsage'),
       dataIndex: 'usage',
       render: (_: any, record: SandboxItem) => {
-        // 由于正式结构中没有当前使用人数，这里暂时硬编码一个比例或者显示最大用户数
+        // Current user count is not fully returned by backend; use available values.
         const percent =
           record.configValue.maxUsers > 0
             ? ((record.usingCount || 0) / record.configValue.maxUsers) * 100
@@ -213,14 +237,17 @@ const SandboxConfig: React.FC = () => {
               />
             </div>
             <div className={styles['usage-label']}>
-              {Math.round(percent)}% 使用中
+              {t(
+                'PC.Pages.SystemConfigSandboxConfig.usagePercentInUse',
+                String(Math.round(percent)),
+              )}
             </div>
           </div>
         );
       },
     },
     {
-      title: '在线状态',
+      title: t('PC.Pages.SystemConfigSandboxConfig.columnOnlineStatus'),
       dataIndex: 'online',
       minWidth: 120,
       render: (_, record) => (
@@ -231,12 +258,16 @@ const SandboxConfig: React.FC = () => {
           })}
         >
           <span className={styles.dot} />
-          {record.online ? <span>在线</span> : <span>离线</span>}
+          {record.online ? (
+            <span>{t('PC.Pages.SystemConfigSandboxConfig.online')}</span>
+          ) : (
+            <span>{t('PC.Pages.SystemConfigSandboxConfig.offline')}</span>
+          )}
         </div>
       ),
     },
     {
-      title: '启用状态',
+      title: t('PC.Pages.SystemConfigSandboxConfig.columnActiveStatus'),
       dataIndex: 'isActive',
       minWidth: 120,
       render: (_, record) => (
@@ -247,17 +278,27 @@ const SandboxConfig: React.FC = () => {
           })}
         >
           <span className={styles.dot} />
-          {record.isActive ? <span>已启用</span> : <span>已停用</span>}
+          {record.isActive ? (
+            <span>{t('PC.Pages.SystemConfigSandboxConfig.enabled')}</span>
+          ) : (
+            <span>{t('PC.Pages.SystemConfigSandboxConfig.disabled')}</span>
+          )}
         </div>
       ),
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemConfigSandboxConfig.columnAction'),
       valueType: 'option',
       width: 190,
       render: (_, record) => (
         <div className={styles['action-btns']}>
-          <Tooltip title={record.isActive ? '停用' : '启用'}>
+          <Tooltip
+            title={
+              record.isActive
+                ? t('PC.Pages.SystemConfigSandboxConfig.disable')
+                : t('PC.Pages.SystemConfigSandboxConfig.enable')
+            }
+          >
             <div
               className={cx(styles['action-btn'], {
                 [styles.disabled]: !hasPermission('sandbox_config_modify'),
@@ -270,7 +311,9 @@ const SandboxConfig: React.FC = () => {
               {record.isActive ? <StopOutlined /> : <CheckCircleOutlined />}
             </div>
           </Tooltip>
-          <Tooltip title="连通性测试">
+          <Tooltip
+            title={t('PC.Pages.SystemConfigSandboxConfig.connectivityTest')}
+          >
             <div
               className={cx(styles['action-btn'], {
                 [styles['btn-loading']]: testingIds.has(record.id),
@@ -286,7 +329,7 @@ const SandboxConfig: React.FC = () => {
               )}
             </div>
           </Tooltip>
-          <Tooltip title="编辑">
+          <Tooltip title={t('PC.Pages.SystemConfigSandboxConfig.edit')}>
             <div
               className={cx(styles['action-btn'], {
                 [styles.disabled]: !hasPermission('sandbox_config_modify'),
@@ -301,7 +344,7 @@ const SandboxConfig: React.FC = () => {
               <EditOutlined />
             </div>
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip title={t('PC.Pages.SystemConfigSandboxConfig.delete')}>
             <div
               className={cx(styles['action-btn'], {
                 [styles.disabled]: !hasPermission('sandbox_config_delete'),
@@ -309,14 +352,20 @@ const SandboxConfig: React.FC = () => {
               onClick={() => {
                 if (!hasPermission('sandbox_config_delete')) return;
                 Modal.confirm({
-                  title: '删除确认',
-                  content: '确定要删除此沙盒吗？',
-                  okText: '确定',
-                  cancelText: '取消',
+                  title: t(
+                    'PC.Pages.SystemConfigSandboxConfig.deleteConfirmTitle',
+                  ),
+                  content: t(
+                    'PC.Pages.SystemConfigSandboxConfig.deleteConfirmContent',
+                  ),
+                  okText: t('PC.Common.Global.confirm'),
+                  cancelText: t('PC.Common.Global.cancel'),
                   onOk: async () => {
                     const res = await apiDeleteSandboxConfig(record.id);
                     if (res.code === SUCCESS_CODE) {
-                      message.success('删除成功');
+                      message.success(
+                        t('PC.Pages.SystemConfigSandboxConfig.deleteSuccess'),
+                      );
                       fetchSandboxList();
                     }
                   },
@@ -333,7 +382,7 @@ const SandboxConfig: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="沙盒配置"
+      title={t('PC.Pages.SystemConfigSandboxConfig.pageTitle')}
       rightSlot={
         hasPermission('sandbox_config_add') && (
           <Button
@@ -345,29 +394,33 @@ const SandboxConfig: React.FC = () => {
               setModalVisible(true);
             }}
           >
-            添加沙盒
+            {t('PC.Pages.SystemConfigSandboxConfig.addSandbox')}
           </Button>
         )
       }
     >
       <div className={styles['sandbox-container']}>
-        {/* 全局配置区域 */}
+        {/* Global configuration section */}
         <div className={styles['config-section']}>
           <Spin spinning={globalConfigLoading}>
             <div className={styles['config-header']}>
-              <div className={styles['section-title']}>全局配置</div>
+              <div className={styles['section-title']}>
+                {t('PC.Pages.SystemConfigSandboxConfig.globalConfig')}
+              </div>
               {hasPermission('sandbox_config_save') && (
                 <Button
                   type="primary"
                   loading={savingLoading}
                   onClick={handleGlobalSave}
                 >
-                  保存
+                  {t('PC.Common.Global.save')}
                 </Button>
               )}
             </div>
             <Form form={form} layout="inline">
-              <Form.Item label="每用户内存">
+              <Form.Item
+                label={t('PC.Pages.SystemConfigSandboxConfig.perUserMemory')}
+              >
                 <Space>
                   <Form.Item name="perUserMemoryGB" noStyle initialValue={4}>
                     <InputNumber
@@ -377,10 +430,15 @@ const SandboxConfig: React.FC = () => {
                       style={{ width: 100 }}
                     />
                   </Form.Item>
-                  <span style={{ color: '#999' }}>GB</span>
+                  <span style={{ color: '#999' }}>
+                    {t('PC.Pages.SystemConfigSandboxConfig.unitGb')}
+                  </span>
                 </Space>
               </Form.Item>
-              <Form.Item label="每用户CPU核心" style={{ marginLeft: 40 }}>
+              <Form.Item
+                label={t('PC.Pages.SystemConfigSandboxConfig.perUserCpu')}
+                style={{ marginLeft: 40 }}
+              >
                 <Space>
                   <Form.Item name="perUserCpuCores" noStyle initialValue={2}>
                     <InputNumber
@@ -390,7 +448,9 @@ const SandboxConfig: React.FC = () => {
                       style={{ width: 100 }}
                     />
                   </Form.Item>
-                  <span style={{ color: '#999' }}>核</span>
+                  <span style={{ color: '#999' }}>
+                    {t('PC.Pages.SystemConfigSandboxConfig.unitCore')}
+                  </span>
                 </Space>
               </Form.Item>
             </Form>
@@ -409,8 +469,18 @@ const SandboxConfig: React.FC = () => {
             showQueryButtons={false}
           />
           <div className={styles['footer-info']}>
-            <span>共 {sandboxList.length} 个沙盒</span>
-            <span>{sandboxList.filter((i) => i.online).length} 个在线</span>
+            <span>
+              {t(
+                'PC.Pages.SystemConfigSandboxConfig.totalSandboxCount',
+                String(sandboxList.length),
+              )}
+            </span>
+            <span>
+              {t(
+                'PC.Pages.SystemConfigSandboxConfig.onlineSandboxCount',
+                String(sandboxList.filter((i) => i.online).length),
+              )}
+            </span>
           </div>
         </div>
       </div>

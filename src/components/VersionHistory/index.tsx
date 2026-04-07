@@ -1,5 +1,6 @@
 import ToggleWrap from '@/components/ToggleWrap';
 import { apiAgentConfigHistoryList } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
 import { apiSkillConfigHistoryList } from '@/services/skill';
@@ -49,10 +50,10 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   // 组件类型
   const componentType =
     targetType === AgentComponentTypeEnum.Agent
-      ? '智能体'
+      ? dict('PC.Components.VersionHistory.agent')
       : targetType === AgentComponentTypeEnum.Plugin
-      ? '插件'
-      : '工作流';
+      ? dict('PC.Components.VersionHistory.plugin')
+      : dict('PC.Components.VersionHistory.workflow');
 
   // 请求接口
   const apiUrl =
@@ -100,7 +101,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: PublishOffShelfParams[]) => {
-      message.success('已成功下架');
+      message.success(dict('PC.Components.VersionHistory.offShelfSuccess'));
       offShelfSuccess(params[0].publishId);
     },
   });
@@ -129,12 +130,15 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     }
 
     Modal.confirm({
-      title: `你确定要下架此${componentType}吗?`,
+      title: dict(
+        'PC.Components.VersionHistory.confirmOffShelf',
+        componentType,
+      ),
       icon: <ExclamationCircleFilled />,
       content: targetName,
-      okText: '确定',
+      okText: dict('PC.Components.SubmitButton.confirm'),
       maskClosable: true,
-      cancelText: '取消',
+      cancelText: dict('PC.Common.Global.cancel'),
       onOk() {
         runOffShelf({
           targetType,
@@ -155,7 +159,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           permissions?.includes(PermissionsEnum.Publish) && publishList?.length
         }
       >
-        <h5 className={cx(styles.title)}>当前发布</h5>
+        <h5 className={cx(styles.title)}>
+          {dict('PC.Components.VersionHistory.currentPublish')}
+        </h5>
         {publishList?.map((info: PublishItemInfo) => (
           <CurrentPublishItem
             key={info.publishId}
@@ -164,7 +170,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           />
         ))}
       </ConditionRender>
-      <h5 className={cx(styles.title)}>编排与发布记录</h5>
+      <h5 className={cx(styles.title)}>
+        {dict('PC.Components.VersionHistory.arrangeAndPublishRecord')}
+      </h5>
       {versionHistoryList?.map((item) => (
         <PublishRecordItem
           key={item.id}
@@ -176,11 +184,11 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   ) : (
     <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
       <Empty
-        description="暂无版本历史记录"
+        description={dict('PC.Components.VersionHistory.noVersionHistory')}
         image={Empty.PRESENTED_IMAGE_SIMPLE}
       >
         <div style={{ color: '#8c8c8c', fontSize: '12px', marginTop: '8px' }}>
-          当你对项目进行修改时，系统会自动保存版本历史
+          {dict('PC.Components.VersionHistory.versionHistoryTip')}
         </div>
       </Empty>
     </div>
@@ -196,7 +204,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
         closable
         title={
           <div>
-            <div style={{ fontSize: '16px', fontWeight: 600 }}>版本历史</div>
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>
+              {dict('PC.Components.VersionHistory.versionHistory')}
+            </div>
             <div
               style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}
             >
@@ -216,7 +226,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
   return (
     <ToggleWrap
-      title={'版本历史'}
+      title={dict('PC.Components.VersionHistory.versionHistory')}
       visible={visible}
       onClose={onClose}
       headerClassName={headerClassName}

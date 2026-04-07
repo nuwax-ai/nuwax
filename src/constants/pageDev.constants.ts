@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
@@ -10,11 +11,11 @@ import {
 export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
   {
     value: PageDevelopCreateTypeEnum.Online_Develop,
-    label: '在线创建',
+    label: dict('PC.Constants.PageDev.onlineCreate'),
   },
   {
     value: PageDevelopCreateTypeEnum.Import_Project,
-    label: '本地导入',
+    label: dict('PC.Constants.PageDev.localImport'),
   },
   // {
   //   value: PageDevelopCreateTypeEnum.Reverse_Proxy,
@@ -26,15 +27,15 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
 export const PAGE_DEVELOP_ALL_TYPE = [
   {
     value: PageDevelopSelectTypeEnum.All_Type,
-    label: '所有类型',
+    label: dict('PC.Constants.Space.allTypes'),
   },
   {
     value: PageDevelopSelectTypeEnum.AGENT,
-    label: '智能应用',
+    label: dict('PC.Constants.PageDev.smartApp'),
   },
   {
     value: PageDevelopSelectTypeEnum.PAGE,
-    label: '页面组件',
+    label: dict('PC.Constants.PageDev.pageComponent'),
   },
 ];
 
@@ -42,11 +43,11 @@ export const PAGE_DEVELOP_ALL_TYPE = [
 export const REVERSE_PROXY_ACTIONS = [
   {
     type: ReverseProxyEnum.Dev,
-    label: '开发调试',
+    label: dict('PC.Constants.PageDev.devDebug'),
   },
   {
     type: ReverseProxyEnum.Production,
-    label: '正式环境',
+    label: dict('PC.Constants.PageDev.production'),
   },
 ];
 
@@ -58,31 +59,31 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
   // },
   {
     value: PageDevelopMoreActionEnum.Path_Params_Config,
-    label: '路径参数配置',
+    label: dict('PC.Constants.PageDev.pathParamsConfig'),
   },
   {
     value: PageDevelopMoreActionEnum.Auth_Config,
-    label: '认证配置',
+    label: dict('PC.Constants.PageDev.authConfig'),
   },
   {
     value: PageDevelopMoreActionEnum.Domain_Binding,
-    label: '域名绑定',
+    label: dict('PC.Constants.PageDev.domainBinding'),
   },
   {
     value: PageDevelopMoreActionEnum.Page_Preview,
-    label: '页面预览',
+    label: dict('PC.Constants.PageDev.pagePreview'),
   },
   {
     value: PageDevelopMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
+    label: dict('PC.Constants.Space.copyToSpace'),
   },
   {
     value: PageDevelopMoreActionEnum.Export_Project,
-    label: '导出项目',
+    label: dict('PC.Constants.PageDev.exportProject'),
   },
   {
     value: PageDevelopMoreActionEnum.Delete,
-    label: '删除',
+    label: dict('PC.Common.Global.delete'),
   },
 ];
 
@@ -90,10 +91,10 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
 export const PAGE_DEVELOP_PUBLISH_TYPE_LIST = [
   {
     value: PageDevelopPublishTypeEnum.PAGE,
-    label: '发布成组件',
+    label: dict('PC.Constants.PageDev.publishAsComponent'),
   },
   {
     value: PageDevelopPublishTypeEnum.AGENT,
-    label: '发布成应用',
+    label: dict('PC.Constants.PageDev.publishAsApp'),
   },
 ];

@@ -5,6 +5,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemResourcePluginDelete,
   apiSystemResourcePluginList,
@@ -57,10 +58,12 @@ const Plugin: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemPluginInfo) => {
     const response = await apiSystemResourcePluginDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(t('PC.Pages.SystemContentPlugin.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error(response.message || '删除失败');
+      message.error(
+        response.message || t('PC.Pages.SystemContentPlugin.deleteFailed'),
+      );
     }
   }, []);
 
@@ -71,20 +74,21 @@ const Plugin: React.FC = () => {
     (record: SystemPluginInfo): ActionItem<SystemPluginInfo>[] => [
       {
         key: 'view',
-        label: '查看',
+        label: t('PC.Pages.SystemContentPlugin.view'),
         disabled: !hasPermission('content_plugin_query_detail'),
         onClick: handleView,
       },
       {
         key: 'delete',
-        label: '删除',
+        label: t('PC.Pages.SystemContentPlugin.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: t(
+            'PC.Pages.SystemContentPlugin.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: t(
+            'PC.Pages.SystemContentPlugin.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_plugin_delete'),
         onClick: handleDelete,
@@ -98,31 +102,31 @@ const Plugin: React.FC = () => {
    */
   const columns: ProColumns<SystemPluginInfo>[] = [
     {
-      title: '名称',
+      title: t('PC.Pages.SystemContentPlugin.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入插件名称',
+        placeholder: t('PC.Pages.SystemContentPlugin.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: t('PC.Pages.SystemContentPlugin.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true,
     },
     {
-      title: '创建人',
+      title: t('PC.Pages.SystemContentPlugin.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '创建时间',
+      title: t('PC.Pages.SystemContentPlugin.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -130,7 +134,7 @@ const Plugin: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '操作',
+      title: t('PC.Pages.SystemContentPlugin.columnAction'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',
@@ -168,7 +172,10 @@ const Plugin: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="插件管理" hideScroll>
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentPlugin.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemPluginInfo>
         actionRef={actionRef}
         formRef={formRef}

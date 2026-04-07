@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { BackgroundImage } from '@/types/background';
 import { PlusOutlined } from '@ant-design/icons';
 import { Empty, Upload } from 'antd';
@@ -36,18 +37,24 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
       onUpload(file);
     } else {
       // 默认处理逻辑
-      console.log('上传文件:', file);
+      console.log('Upload file:', file);
     }
     return false; // 阻止默认上传行为
   };
 
   return (
     <div className={cx(styles.backgroundImagePanel)}>
-      <h3 className={cx(styles.panelTitle)}>背景图片</h3>
+      <h3 className={cx(styles.panelTitle)}>
+        {t('PC.Components.ThemeConfigBackgroundImagePanel.panelTitle')}
+      </h3>
 
       {/* 系统自带背景图片 */}
       <div className={cx(styles.systemBackgroundsSection)}>
-        <h4>系统自带背景图片</h4>
+        <h4>
+          {t(
+            'PC.Components.ThemeConfigBackgroundImagePanel.systemSectionTitle',
+          )}
+        </h4>
         {backgroundImages.length > 0 ? (
           <div className={cx(styles.backgroundGrid)}>
             {backgroundImages.map((bg) => (
@@ -68,7 +75,9 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
           </div>
         ) : (
           <Empty
-            description="暂无可用背景图"
+            description={t(
+              'PC.Components.ThemeConfigBackgroundImagePanel.emptyAvailable',
+            )}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         )}
@@ -77,7 +86,11 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
       {/* 自定义背景图片 */}
       {(enableCustomUpload || customBackgroundImages.length > 0) && (
         <div className={cx(styles.customBackgroundsSection)}>
-          <h4>自定义背景图片</h4>
+          <h4>
+            {t(
+              'PC.Components.ThemeConfigBackgroundImagePanel.customSectionTitle',
+            )}
+          </h4>
           <div className={cx(styles.customBackgroundGrid)}>
             {/* 上传按钮 - 根据 enableCustomUpload 决定是否显示 */}
             {enableCustomUpload && (
@@ -90,7 +103,11 @@ const BackgroundImagePanel: React.FC<BackgroundImagePanelProps> = ({
                   <div className={cx(styles.uploadButton)}>
                     <div className={cx(styles.uploadContainer)}>
                       <PlusOutlined className={cx(styles.uploadIcon)} />
-                      <span className={cx(styles.uploadText)}>上传图片</span>
+                      <span className={cx(styles.uploadText)}>
+                        {t(
+                          'PC.Components.ThemeConfigBackgroundImagePanel.uploadImage',
+                        )}
+                      </span>
                     </div>
                   </div>
                 </Upload>

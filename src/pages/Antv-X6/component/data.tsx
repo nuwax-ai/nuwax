@@ -1,4 +1,5 @@
 import TreeInput from '@/components/FormListItem/TreeInput';
+import { dict } from '@/services/i18nRuntime';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { Form } from 'antd';
 import React from 'react';
@@ -11,7 +12,7 @@ const DataAdd: React.FC<NodeDisposeProps> = ({ form }) => {
     <div>
       <div className="node-item-style">
         <TreeInput
-          title={'输入'}
+          title={dict('PC.Pages.AntvX6Data.input')}
           form={form}
           params={form.getFieldValue('inputArgs')}
         />
@@ -21,7 +22,9 @@ const DataAdd: React.FC<NodeDisposeProps> = ({ form }) => {
         {() =>
           form.getFieldValue('outputArgs') && (
             <>
-              <div className="node-title-style margin-bottom">输出</div>
+              <div className="node-title-style margin-bottom">
+                {dict('PC.Pages.AntvX6Data.output')}
+              </div>
               <TreeOutput treeData={form.getFieldValue('outputArgs')} />
             </>
           )

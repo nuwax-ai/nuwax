@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
+import { t } from '@/services/i18nRuntime';
 import type { FileType } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
@@ -58,18 +59,6 @@ interface MenuFormModalProps {
   onSuccess: () => void;
 }
 
-// 菜单来源选项 来源 1:系统内置 2:用户自定义
-const MENU_SOURCE_OPTIONS = [
-  { label: '系统内置', value: MenuSourceEnum.SystemBuiltIn },
-  { label: '用户自定义', value: MenuSourceEnum.UserDefined },
-];
-
-// 打开方式选项
-const OPEN_TYPE_OPTIONS = [
-  { label: '应用内打开', value: OpenTypeEnum.CurrentTab },
-  { label: '新标签页打开', value: OpenTypeEnum.NewTab },
-];
-
 /**
  * 菜单表单Modal组件
  * 用于新增或编辑菜单信息
@@ -95,13 +84,39 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   );
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
+  const menuSourceOptions = useMemo(
+    () => [
+      {
+        label: t('PC.Pages.SystemMenuFormModal.sourceSystemBuiltIn'),
+        value: MenuSourceEnum.SystemBuiltIn,
+      },
+      {
+        label: t('PC.Pages.SystemMenuFormModal.sourceUserDefined'),
+        value: MenuSourceEnum.UserDefined,
+      },
+    ],
+    [],
+  );
+  const openTypeOptions = useMemo(
+    () => [
+      {
+        label: t('PC.Pages.SystemMenuFormModal.openInCurrentTab'),
+        value: OpenTypeEnum.CurrentTab,
+      },
+      {
+        label: t('PC.Pages.SystemMenuFormModal.openInNewTab'),
+        value: OpenTypeEnum.NewTab,
+      },
+    ],
+    [],
+  );
 
   // 新增菜单
   const { run: runAddMenu, loading: addLoading } = useRequest(apiAddMenu, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('新增菜单成功');
+      message.success(t('PC.Pages.SystemMenuFormModal.addSuccess'));
       onSuccess();
     },
   });
@@ -113,7 +128,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: () => {
-        message.success('更新菜单成功');
+        message.success(t('PC.Pages.SystemMenuFormModal.updateSuccess'));
         onSuccess();
       },
     },
@@ -400,7 +415,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         await runAddMenu(formData);
       }
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('[MenuFormModal] form validation failed:', error);
     }
   };
 
@@ -413,11 +428,11 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
       type === 'image/png' ||
       type === 'image/svg+xml';
     if (!isJpgOrPng) {
-      message.error('请上传 JPG、JPEG、PNG、SVG 类型图片文件!');
+      message.error(t('PC.Pages.SystemMenuFormModal.imageTypeInvalid'));
     }
     const isLt2M = size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('图片大小不能超过2MB!');
+      message.error(t('PC.Pages.SystemMenuFormModal.imageSizeInvalid'));
     }
     return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
   };
@@ -425,10 +440,18 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={isEdit ? '编辑菜单' : '新增菜单'}
+      title={
+        isEdit
+          ? t('PC.Pages.SystemMenuFormModal.editTitle')
+          : t('PC.Pages.SystemMenuFormModal.createTitle')
+      }
       open={open}
       loading={loading}
-      okText={isEdit ? '保存' : '创建'}
+      okText={
+        isEdit
+          ? t('PC.Pages.SystemMenuFormModal.save')
+          : t('PC.Pages.SystemMenuFormModal.create')
+      }
       width={650}
       onCancel={onCancel}
       onConfirm={handleSubmit}
@@ -443,7 +466,7 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         className={cx(styles.form)}
       >
         {/* 基本信息 */}
-        <Form.Item name="icon" label="图标">
+        <Form.Item name="icon" label={t('PC.Pages.SystemMenuFormModal.icon')}>
           <UploadAvatar
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
@@ -454,18 +477,34 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="菜单名称"
+              label={t('PC.Pages.SystemMenuFormModal.menuName')}
               name="name"
-              rules={[{ required: true, message: '请输入菜单名称' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t('PC.Pages.SystemMenuFormModal.menuNameRequired'),
+                },
+              ]}
             >
-              <Input placeholder="请输入菜单名称" maxLength={50} showCount />
+              <Input
+                placeholder={t(
+                  'PC.Pages.SystemMenuFormModal.menuNamePlaceholder',
+                )}
+                maxLength={50}
+                showCount
+              />
             </Form.Item>
           </Col>
 
           <Col span={12}>
-            <Form.Item label="父菜单" name="parentId">
+            <Form.Item
+              label={t('PC.Pages.SystemMenuFormModal.parentMenu')}
+              name="parentId"
+            >
               <TreeSelect
-                placeholder="请选择父菜单（无）"
+                placeholder={t(
+                  'PC.Pages.SystemMenuFormModal.parentMenuPlaceholder',
+                )}
                 treeData={menuTreeSelectData}
                 allowClear
                 showSearch
@@ -481,57 +520,83 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label="路由路径"
+              label={t('PC.Pages.SystemMenuFormModal.routePath')}
               name="path"
               rules={[
                 {
                   pattern: /^[a-zA-Z0-9/?#&=._:@%+ -]+$/,
-                  message:
-                    '路由路径/URL地址只能包含英文字母、数字、斜杠和URL常见特殊字符（?、#、&、=、.、_、-、:、%、@、+、空格），例如 /system/menu 或 https://example.com',
+                  message: t(
+                    'PC.Pages.SystemMenuFormModal.routePathPatternInvalid',
+                  ),
                 },
                 {
                   max: 500,
-                  message: '路由路径长度不能超过500个字符',
+                  message: t(
+                    'PC.Pages.SystemMenuFormModal.routePathLengthInvalid',
+                  ),
                 },
               ]}
               tooltip={{
                 title: (
                   <>
-                    <div>静态路由，例如：/system/menu</div>
-                    <div>动态路由，例如：/space/:spaceId/develop</div>
-                    <div>外部URL地址，例如：https://example.com</div>
+                    <div>
+                      {t('PC.Pages.SystemMenuFormModal.routePathTipStatic')}
+                    </div>
+                    <div>
+                      {t('PC.Pages.SystemMenuFormModal.routePathTipDynamic')}
+                    </div>
+                    <div>
+                      {t('PC.Pages.SystemMenuFormModal.routePathTipExternal')}
+                    </div>
                   </>
                 ),
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Input placeholder="请输入路由路径，例如：/system/menu" />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            <Form.Item label="外链打开方式" name="openType">
-              <Select
-                placeholder="请选择打开方式"
-                options={OPEN_TYPE_OPTIONS}
+              <Input
+                placeholder={t(
+                  'PC.Pages.SystemMenuFormModal.routePathPlaceholder',
+                )}
               />
             </Form.Item>
           </Col>
 
           <Col span={12}>
-            <Form.Item label="来源" name="source">
+            <Form.Item
+              label={t('PC.Pages.SystemMenuFormModal.externalOpenType')}
+              name="openType"
+            >
+              <Select
+                placeholder={t(
+                  'PC.Pages.SystemMenuFormModal.openTypePlaceholder',
+                )}
+                options={openTypeOptions}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={12}>
+            <Form.Item
+              label={t('PC.Pages.SystemMenuFormModal.source')}
+              name="source"
+            >
               <Select
                 disabled
-                placeholder="请选择来源"
-                options={MENU_SOURCE_OPTIONS}
+                placeholder={t(
+                  'PC.Pages.SystemMenuFormModal.sourcePlaceholder',
+                )}
+                options={menuSourceOptions}
               />
             </Form.Item>
           </Col>
 
           <Col span={12}>
-            <Form.Item label="排序" name="sortIndex">
+            <Form.Item
+              label={t('PC.Pages.SystemMenuFormModal.sort')}
+              name="sortIndex"
+            >
               <InputNumber
-                placeholder="请输入排序"
+                placeholder={t('PC.Pages.SystemMenuFormModal.sortPlaceholder')}
                 className={cx('w-full')}
                 min={1}
                 max={10000}
@@ -541,22 +606,30 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label="是否启用"
+              label={t('PC.Pages.SystemMenuFormModal.enable')}
               name="status"
               valuePropName="checked"
               tooltip={{
-                title: '启用或禁用此菜单',
+                title: t('PC.Pages.SystemMenuFormModal.enableTooltip'),
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              <Switch
+                checkedChildren={t('PC.Pages.SystemMenuFormModal.enabled')}
+                unCheckedChildren={t('PC.Pages.SystemMenuFormModal.disabled')}
+              />
             </Form.Item>
           </Col>
         </Row>
 
-        <Form.Item label="描述" name="description">
+        <Form.Item
+          label={t('PC.Pages.SystemMenuFormModal.description')}
+          name="description"
+        >
           <TextArea
-            placeholder="请输入描述"
+            placeholder={t(
+              'PC.Pages.SystemMenuFormModal.descriptionPlaceholder',
+            )}
             className="dispose-textarea-count"
             autoSize={{ minRows: 3, maxRows: 5 }}
             showCount
@@ -566,9 +639,9 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
 
         {/* 关联资源码 */}
         <Form.Item
-          label="关联资源码"
+          label={t('PC.Pages.SystemMenuFormModal.bindResourceCode')}
           tooltip={{
-            title: '选择该菜单可以访问的资源权限',
+            title: t('PC.Pages.SystemMenuFormModal.bindResourceCodeTooltip'),
             icon: <InfoCircleOutlined />,
           }}
         >

@@ -1,3 +1,5 @@
+import { dict } from '@/services/i18nRuntime';
+
 /**
  * PPTX 降级渲染工具
  * 当 pptx-preview 库无法解析 PPTX 文件时，使用此工具显示友好提示
@@ -42,7 +44,7 @@ export async function parsePPTX(pptxData: any): Promise<PPTXParseResult> {
     };
   } catch (error) {
     console.error('[PPTX Fallback] Parse error:', error);
-    throw new Error('PPTX 文件解析失败');
+    throw new Error(dict('PC.Utils.PptxFallbackRenderer.parseFailed'));
   }
 }
 
@@ -85,7 +87,7 @@ export function renderFallback(
 
     const img = document.createElement('img');
     img.src = parseResult.thumbnail;
-    img.alt = '演示文稿预览';
+    img.alt = dict('PC.Utils.PptxFallbackRenderer.previewAlt');
     img.style.cssText = `
       max-width: 100%;
       max-height: 500px;
@@ -96,7 +98,9 @@ export function renderFallback(
     `;
 
     const thumbnailLabel = document.createElement('div');
-    thumbnailLabel.textContent = '演示文稿封面预览';
+    thumbnailLabel.textContent = dict(
+      'PC.Utils.PptxFallbackRenderer.coverPreview',
+    );
     thumbnailLabel.style.cssText = `
       color: #666;
       font-size: 13px;
@@ -122,7 +126,9 @@ export function renderFallback(
   `;
 
   const slideCountText = document.createElement('div');
-  slideCountText.textContent = `共 ${parseResult.slideCount} 张幻灯片`;
+  slideCountText.textContent = dict(
+    'PC.Utils.PptxFallbackRenderer.slideCount',
+  ).replace('{0}', String(parseResult.slideCount));
   slideCountText.style.cssText = `
     color: #262626;
     font-size: 14px;
@@ -130,10 +136,7 @@ export function renderFallback(
   `;
 
   const notice = document.createElement('div');
-  notice.innerHTML = `
-    该 PPTX 文件格式较为复杂，暂不支持完整预览。
-    <br>建议下载后在 PowerPoint 中查看完整内容。
-  `;
+  notice.innerHTML = dict('PC.Utils.PptxFallbackRenderer.complexFormatNotice');
   notice.style.cssText = `
     color: #8c8c8c;
     font-size: 12px;

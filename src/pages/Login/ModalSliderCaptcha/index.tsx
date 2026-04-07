@@ -1,4 +1,5 @@
 import pic from '@/assets/images/pic.jpeg';
+import { dict } from '@/services/i18nRuntime';
 import type { ModalSliderCaptchaType } from '@/types/interfaces/login';
 import {
   LoadingOutlined,
@@ -62,7 +63,7 @@ const ModalSliderCaptcha: React.FC<ModalSliderCaptchaType> = ({
     <Modal
       open={open}
       onCancel={() => onCancel(false)}
-      title="请完成下列验证后继续"
+      title={dict('PC.Pages.Login.captchaTitle')}
       footer={false}
       destroyOnHidden
       width={318}
@@ -83,11 +84,11 @@ const ModalSliderCaptcha: React.FC<ModalSliderCaptchaType> = ({
           refresh: <RedditOutlined />,
         }}
         tipText={{
-          default: '向右拖动完成拼图',
-          loading: '努力中...',
-          moving: '向右拖动至拼图位置',
-          verifying: '验证中...',
-          error: '验证失败',
+          default: dict('PC.Pages.Login.captchaDefault'),
+          loading: dict('PC.Pages.Login.captchaLoading'),
+          moving: dict('PC.Pages.Login.captchaMoving'),
+          verifying: dict('PC.Pages.Login.captchaVerifying'),
+          error: dict('PC.Pages.Login.captchaError'),
         }}
       />
     </Modal>

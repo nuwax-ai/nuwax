@@ -1,4 +1,5 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import { t } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { ImportOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
@@ -169,7 +170,13 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       />
 
       {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
-      <Tooltip title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}>
+      <Tooltip
+        title={
+          isFileTreeCollapsed
+            ? t('PC.Pages.AppDevFileTreePanel.expand')
+            : t('PC.Pages.AppDevFileTreePanel.collapse')
+        }
+      >
         <Button
           shape="circle"
           size="small"
@@ -203,8 +210,10 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 {isFileTreeInitializing ? (
                   <AppDevEmptyState
                     type="loading"
-                    title="正在加载..."
-                    description="请稍候"
+                    title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
+                    description={t(
+                      'PC.Pages.AppDevFileTreePanel.loadingDescription',
+                    )}
                   />
                 ) : files.length === 0 ? (
                   <AppDevEmptyState
@@ -213,7 +222,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       !isComparing
                         ? [
                             {
-                              text: '导入项目',
+                              text: t(
+                                'PC.Pages.AppDevFileTreePanel.importProject',
+                              ),
                               icon: <ImportOutlined />,
                               onClick: onUploadProject,
                               disabled: isChatLoading,

@@ -1,5 +1,6 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { branchTypeMap } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
@@ -17,20 +18,20 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
     const items = form.getFieldValue('conditionBranchConfigs');
     const lastIndex = items.length - 2;
 
-    // 禁止拖拽到最后一个元素之后
+    // Prevent dropping after the final branch.
     if (result.destination.index > lastIndex) return;
 
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // 更新branchType
+    // Recompute branchType after reorder.
     const updatedItems = items.map((item: any, index: number) => ({
       ...item,
       branchType:
         index === 0 ? 'IF' : index === items.length - 1 ? 'ELSE' : 'ELSE_IF',
     }));
 
-    // 强制更新表单值并触发重新渲染
+    // Force update and rerender.
     form.setFieldsValue({
       conditionBranchConfigs: updatedItems,
     });
@@ -44,16 +45,18 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
           <Droppable droppableId="conditionBranches">
             {(provided: any) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-                {/* 标题 */}
+                {/* Header */}
                 <div className="dis-sb margin-bottom">
-                  <span className="node-title-style">条件分支</span>
+                  <span className="node-title-style">
+                    {t('PC.Pages.AntvX6Condition.branchTitle')}
+                  </span>
                   <Button
                     icon={<PlusOutlined />}
                     type={'text'}
                     onClick={() => {
                       const currentFields =
                         form.getFieldValue('conditionBranchConfigs') || [];
-                      const insertIndex = Math.max(0, currentFields.length - 1); // 计算插入位置
+                      const insertIndex = Math.max(0, currentFields.length - 1);
                       add(
                         {
                           uuid: uuidv4(),
@@ -68,7 +71,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                           nextNodeIds: [],
                           branchType: 'ELSE_IF',
                         },
-                        insertIndex, // 指定插入位置
+                        insertIndex,
                       );
                       form.submit();
                     }}
@@ -83,8 +86,8 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                     );
                     return (
                       <Draggable
-                        key={itemData.uuid} // 使用表单中的uuid作为key
-                        draggableId={itemData.uuid} // 使用表单中的uuid作为draggableId
+                        key={itemData.uuid}
+                        draggableId={itemData.uuid}
                         index={index}
                       >
                         {(provided: any) => (
@@ -93,7 +96,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                             {...provided.draggableProps}
                             className="condition-card-style"
                           >
-                            {/* 修改拖拽手柄实现 */}
+                            {/* Drag handle */}
                             <div className="dis-sb">
                               <div
                                 className="dis-left"
@@ -103,7 +106,12 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                 <span className="margin-right">
                                   {branchTypeMap[itemData.branchType]}
                                 </span>
-                                <Tag color="#C9CDD4">优先级{index + 1}</Tag>
+                                <Tag color="#C9CDD4">
+                                  {t(
+                                    'PC.Pages.AntvX6Condition.priority',
+                                    index + 1,
+                                  )}
+                                </Tag>
                               </div>
                               {fields.length > 2 && (
                                 <Button
@@ -111,7 +119,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                   type="text"
                                   onClick={() => {
                                     remove(item.name);
-                                    // 这里删除了以后，需要重新理一下branchType,index为0的变为IF，index为1的变为ELSE_IF，index为fields.length - 1的变为ELSE
+                                    // Recompute branchType after deletion.
                                     if (item.name === 0) {
                                       const currentFields =
                                         form.getFieldValue(
@@ -132,7 +140,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                               : 'ELSE_IF',
                                         }),
                                       );
-                                      // 更新表单值
+                                      // Update form values.
                                       form.setFieldsValue({
                                         conditionBranchConfigs: updatedFields,
                                       });
@@ -173,11 +181,15 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                             }}
                                             options={[
                                               {
-                                                label: '且',
+                                                label: t(
+                                                  'PC.Pages.AntvX6Condition.and',
+                                                ),
                                                 value: 'AND',
                                               },
                                               {
-                                                label: '或',
+                                                label: t(
+                                                  'PC.Pages.AntvX6Condition.or',
+                                                ),
                                                 value: 'OR',
                                               },
                                             ]}
@@ -249,7 +261,9 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                                           'firstArg',
                                                           'bindValue',
                                                         ]}
-                                                        placeholder="请引用参数"
+                                                        placeholder={t(
+                                                          'PC.Pages.AntvX6Condition.referencePlaceholder',
+                                                        )}
                                                         style={{
                                                           width:
                                                             subFields.length > 1
@@ -316,7 +330,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                                           }}
                                           icon={<PlusOutlined />}
                                         >
-                                          新增
+                                          {t('PC.Pages.AntvX6Condition.add')}
                                         </Button>
                                       </div>
                                     );
@@ -331,7 +345,7 @@ const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   }
                   return (
                     <div key={item.name} className="condition-card-style">
-                      否则
+                      {t('PC.Pages.AntvX6Condition.else')}
                     </div>
                   );
                 })}

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { apiPageDeletePath } from '@/services/pageDev';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
@@ -163,9 +164,17 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                   styles.header,
                 )}
               >
-                <h3>路径参数配置</h3>
+                <h3>
+                  {dict(
+                    'PC.Pages.SpacePageDevelop.PathParamsConfigModal.title',
+                  )}
+                </h3>
                 {/* 新增路径 */}
-                <Tooltip title="新增路径">
+                <Tooltip
+                  title={dict(
+                    'PC.Pages.SpacePageDevelop.PathParamsConfigModal.addPath',
+                  )}
+                >
                   <Button
                     type="text"
                     size="small"

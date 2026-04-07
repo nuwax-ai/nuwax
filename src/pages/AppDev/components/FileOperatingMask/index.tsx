@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { SyncOutlined } from '@ant-design/icons';
 import React from 'react';
 
@@ -82,7 +83,7 @@ const FileOperatingMask: React.FC<FileOperatingMaskProps> = ({
               lineHeight: '24px',
             }}
           >
-            {tip || '正在执行文件操作，请稍候...'}
+            {tip || dict('PC.Pages.AppDevFileOperatingMask.defaultTip')}
           </div>
           {subtitle && (
             <div

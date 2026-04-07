@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { t } from '@/services/i18nRuntime';
 import {
   apiSystemCategoryCreate,
   apiSystemCategoryDelete,
@@ -54,9 +55,18 @@ const CategoryManage: React.FC = () => {
   }, [location.state, refreshList]);
 
   const segmentedOptions = [
-    { label: '智能体', value: CategoryTypeEnum.Agent },
-    { label: '网页应用', value: CategoryTypeEnum.PageApp },
-    { label: '组件', value: CategoryTypeEnum.Component },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.agent'),
+      value: CategoryTypeEnum.Agent,
+    },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.webApp'),
+      value: CategoryTypeEnum.PageApp,
+    },
+    {
+      label: t('PC.Pages.SystemConfigCategoryManage.component'),
+      value: CategoryTypeEnum.Component,
+    },
   ];
 
   // 获取当前分类标签
@@ -68,12 +78,17 @@ const CategoryManage: React.FC = () => {
     const label = getCurrentCategoryLabel();
     return (
       <Space align="baseline">
-        <span style={{ fontSize: 14 }}>{label}分类</span>
+        <span style={{ fontSize: 14 }}>
+          {t('PC.Pages.SystemConfigCategoryManage.categoryType', label)}
+        </span>
         <span
           className="ant-pro-list-header-sub-title"
           style={{ fontSize: 14 }}
         >
-          {dataSource.length} 项
+          {t(
+            'PC.Pages.SystemConfigCategoryManage.itemCount',
+            String(dataSource.length),
+          )}
         </span>
       </Space>
     );
@@ -96,20 +111,25 @@ const CategoryManage: React.FC = () => {
   // 删除分类
   const handleDelete = (record: CategoryItem) => {
     confirm({
-      title: '确认删除',
+      title: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteTitle'),
       icon: <ExclamationCircleOutlined />,
-      content: `确定要删除此分类吗？此操作无法撤销。`,
-      okText: '确认',
-      cancelText: '取消',
+      content: t('PC.Pages.SystemConfigCategoryManage.confirmDeleteContent'),
+      okText: t('PC.Common.Global.confirm'),
+      cancelText: t('PC.Common.Global.cancel'),
       onOk: async () => {
         try {
           const res = await apiSystemCategoryDelete({ id: record.id });
           if (res.success) {
-            message.success('分类已删除');
+            message.success(
+              t('PC.Pages.SystemConfigCategoryManage.deletedSuccessfully'),
+            );
             refreshList();
           }
         } catch (error) {
-          console.error('删除分类失败:', error);
+          console.error(
+            t('PC.Pages.SystemConfigCategoryManage.deleteFailed'),
+            error,
+          );
         }
       },
     });
@@ -130,23 +150,29 @@ const CategoryManage: React.FC = () => {
 
       if (res.success) {
         message.success(
-          `${getCurrentCategoryLabel()}分类${
-            modalMode === 'add' ? '添加' : '修改'
-          }成功`,
+          modalMode === 'add'
+            ? t(
+                'PC.Pages.SystemConfigCategoryManage.addSuccessWithType',
+                getCurrentCategoryLabel(),
+              )
+            : t(
+                'PC.Pages.SystemConfigCategoryManage.editSuccessWithType',
+                getCurrentCategoryLabel(),
+              ),
         );
         refreshList();
         setModalOpen(false);
         return true;
       }
     } catch (error) {
-      console.error('保存分类失败:', error);
+      console.error(t('PC.Pages.SystemConfigCategoryManage.saveFailed'), error);
     }
     return false;
   };
 
   return (
     <WorkspaceLayout
-      title="分类管理"
+      title={t('PC.Pages.SystemConfigCategoryManage.pageTitle')}
       leftSlot={
         <Segmented
           options={segmentedOptions}
@@ -171,7 +197,7 @@ const CategoryManage: React.FC = () => {
                   className={styles['add-btn']}
                   onClick={handleAdd}
                 >
-                  添加
+                  {t('PC.Pages.SystemConfigCategoryManage.add')}
                 </Button>
               ),
             ]}

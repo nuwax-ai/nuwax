@@ -4,6 +4,7 @@
 
 import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -88,7 +89,9 @@ export const useAppDevServer = ({
 
         const successMessage =
           response?.message ||
-          (operation === 'start' ? '开发环境启动成功' : '开发服务器重启成功');
+          (operation === 'start'
+            ? dict('PC.Hooks.UseAppDevServer.devEnvStarted')
+            : dict('PC.Hooks.UseAppDevServer.devServerRestarted'));
 
         let messageText = '';
         if (shouldShowMessage) {
@@ -110,7 +113,9 @@ export const useAppDevServer = ({
         const errorMessage =
           response?.message ||
           `${
-            operation === 'start' ? '启动开发环境失败' : '重启开发服务器失败'
+            operation === 'start'
+              ? dict('PC.Hooks.UseAppDevServer.startDevEnvFailed')
+              : dict('PC.Hooks.UseAppDevServer.restartDevServerFailed')
           }`;
         const errorCode = response?.code || 'UNKNOWN_ERROR';
         setServerMessage(errorMessage);
@@ -187,7 +192,8 @@ export const useAppDevServer = ({
 
     if (!isSuccess) {
       // 【关键变更】接口返回非成功状态码，设置错误信息和错误码
-      const errorMessage = response?.message || '保活请求失败';
+      const errorMessage =
+        response?.message || dict('PC.Hooks.UseAppDevServer.keepaliveFailed');
       const errorCode = response?.code || 'KEEPALIVE_ERROR';
       console.warn('[useAppDevServer] keepAlive failed:', {
         code: errorCode,
@@ -348,7 +354,9 @@ export const useAppDevServer = ({
     } catch (error: any) {
       setIsStarting(false);
       setIsRunning(false);
-      setServerMessage(error?.message || '启动开发环境失败');
+      setServerMessage(
+        error?.message || dict('PC.Hooks.UseAppDevServer.startDevEnvFailed'),
+      );
       setServerErrorCode(error?.code || 'START_ERROR');
       onServerStatusChange?.(false);
 
@@ -372,9 +380,12 @@ export const useAppDevServer = ({
     async (shouldSwitchTab: boolean = false) => {
       if (!projectId) {
         if (shouldSwitchTab) {
-          message.error('项目ID不存在或无效，无法重启服务');
+          message.error(dict('PC.Hooks.UseAppDevServer.projectIdMissing'));
         }
-        return { success: false, message: '项目ID不存在或无效' };
+        return {
+          success: false,
+          message: dict('PC.Hooks.UseAppDevServer.projectIdMissing'),
+        };
       }
       let finalResult;
 
@@ -420,7 +431,9 @@ export const useAppDevServer = ({
         setIsRestarting(false);
         setIsRunning(false);
 
-        const errorMessage = error?.message || '重启开发服务器失败';
+        const errorMessage =
+          error?.message ||
+          dict('PC.Hooks.UseAppDevServer.restartDevServerFailed');
         const errorCode = error?.code || 'RESTART_ERROR';
         setServerMessage(errorMessage);
         setServerErrorCode(errorCode);

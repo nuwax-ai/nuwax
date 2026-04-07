@@ -2,6 +2,7 @@ import MoveCopyComponent from '@/components/MoveCopyComponent';
 import TipsBox from '@/components/TipsBox';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
 import { apiSkillImport } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -78,14 +79,18 @@ const SpaceSkillManage: React.FC = () => {
   // 删除技能
   const handleClickDelete = (info: SkillInfo) => {
     // 二次确认
-    modalConfirm('你确定要删除此技能吗?', info.name, () => {
-      apiDeleteSkill(info.id).then(() => {
-        // 提示删除成功
-        message.success('技能删除成功');
-        // 查询技能列表
-        mainContentRef.current?.exposeQueryComponentList();
-      });
-    });
+    modalConfirm(
+      dict('PC.Pages.SpaceSkillManage.deleteConfirmText'),
+      info.name,
+      () => {
+        apiDeleteSkill(info.id).then(() => {
+          // 提示删除成功
+          message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+          // 查询技能列表
+          mainContentRef.current?.exposeQueryComponentList();
+        });
+      },
+    );
   };
 
   // 复制到空间
@@ -98,7 +103,7 @@ const SpaceSkillManage: React.FC = () => {
   // 确认复制到空间
   const handlerConfirmCopyToSpace = async (targetSpaceId: number) => {
     if (!currentComponentInfo) {
-      message.error('技能信息不存在');
+      message.error(dict('PC.Pages.SpaceSkillManage.skillInfoNotFound'));
       return;
     }
     const data: SkillCopyToSpaceParams = {
@@ -111,7 +116,9 @@ const SpaceSkillManage: React.FC = () => {
       setLoadingSkill(true);
       const result = await apiSkillCopyToSpace(data);
       if (result.code === SUCCESS_CODE) {
-        message.success('技能复制成功');
+        message.success(
+          dict('PC.Pages.SpaceSkillManage.skillCopiedSuccessfully'),
+        );
         // 查询技能列表
         mainContentRef.current?.exposeQueryComponentList();
         // 关闭弹窗
@@ -126,7 +133,9 @@ const SpaceSkillManage: React.FC = () => {
   const handleExportProject = async (info: SkillInfo) => {
     // 检查项目ID是否有效
     if (!info?.id) {
-      message.warning('技能ID不存在或无效，无法导出');
+      message.warning(
+        dict('PC.Pages.SpaceSkillManage.skillIdInvalidForExport'),
+      );
       return;
     }
 
@@ -136,10 +145,10 @@ const SpaceSkillManage: React.FC = () => {
       const linkUrl = `${process.env.BASE_URL}/api/skill/export/${info.id}`;
       // 通过浏览器下载文件
       exportFileViaBrowserDownload(linkUrl);
-      message.success('导出成功！');
+      message.success(dict('PC.Pages.SpaceSkillManage.exportSucceeded'));
     } catch (error) {
-      console.error('导出项目失败:', error);
-      message.error('导出失败，请重试');
+      console.error(dict('PC.Pages.SpaceSkillManage.exportFailedRetry'), error);
+      message.error(dict('PC.Pages.SpaceSkillManage.exportFailedRetry'));
     } finally {
       setLoadingExportProject(false);
     }
@@ -197,18 +206,20 @@ const SpaceSkillManage: React.FC = () => {
     });
 
     if (code === SUCCESS_CODE) {
-      message.success('导入成功');
+      message.success(dict('PC.Pages.SpaceSkillManage.importSucceeded'));
       setOpenImportSkillProject(false);
       // 跳转到技能详情页
       history.push(`/space/${spaceId}/skill-details/${id}`);
     } else {
-      message.error(errorMessage || '导入失败');
+      message.error(
+        errorMessage || dict('PC.Pages.SpaceSkillManage.importFailed'),
+      );
     }
   };
 
   return (
     <WorkspaceLayout
-      title="技能管理"
+      title={dict('PC.Pages.SpaceSkillManage.pageTitle')}
       leftSlot={<HeaderLeftSlot />}
       rightSlot={
         <HeaderRightSlot
@@ -221,7 +232,7 @@ const SpaceSkillManage: React.FC = () => {
         <TipsBox
           className="mt-0"
           visible={loadingExportProject}
-          text="正在导出"
+          text={dict('PC.Pages.SpaceSkillManage.exporting')}
         />
       }
     >

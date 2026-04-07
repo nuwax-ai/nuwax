@@ -3,6 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiUpdateSpaceTeam } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import type {
@@ -61,7 +62,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
   const { run: runEdit } = useRequest(apiUpdateSpaceTeam, {
     manual: true,
     onSuccess: async () => {
-      message.success('修改成功');
+      message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
       onConfirmEdit?.();
       setLoading(false);
       // 更新空间列表
@@ -87,7 +88,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="编辑团队简介"
+      title={dict('PC.Pages.TeamSetting.ModifyTeam.editTeamProfile')}
       open={open}
       loading={loading}
       onCancel={cancelModal}
@@ -95,7 +96,7 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
     >
       <>
         <p className={cx(styles['team-setting-modal-description'])}>
-          通过创建团队空间，将支持智能体、插件、工作流、大模型和知识库在团队内进行协作和分享。
+          {dict('PC.Pages.TeamSetting.ModifyTeam.teamDescription')}
         </p>
         <Form
           form={form}
@@ -113,16 +114,31 @@ const ModifyTeam: React.FC<EditSpaceProps> = ({
           </Form.Item>
           <Form.Item
             name="name"
-            label="团队名称"
-            rules={[{ required: true, message: '请输入团队名称' }]}
+            label={dict('PC.Pages.TeamSetting.ModifyTeam.teamNameLabel')}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Pages.TeamSetting.ModifyTeam.teamNameRequired',
+                ),
+              },
+            ]}
           >
-            <Input placeholder="请输入团队名称" showCount maxLength={50} />
+            <Input
+              placeholder={dict(
+                'PC.Pages.TeamSetting.ModifyTeam.teamNameRequired',
+              )}
+              showCount
+              maxLength={50}
+            />
           </Form.Item>
           <OverrideTextArea
             name="description"
-            label="描述"
+            label={dict('PC.Pages.TeamSetting.ModifyTeam.descriptionLabel')}
             initialValue={spaceData?.description}
-            placeholder="描述团队"
+            placeholder={dict(
+              'PC.Pages.TeamSetting.ModifyTeam.descriptionPlaceholder',
+            )}
             maxLength={2000}
           />
         </Form>

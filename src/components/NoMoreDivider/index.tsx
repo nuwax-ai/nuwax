@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { Divider } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,7 +12,7 @@ export interface NoMoreDividerProps {
 }
 
 const NoMoreDivider: React.FC<NoMoreDividerProps> = ({
-  text = '没有更多了',
+  text = dict('PC.Components.NoMoreDivider.noMoreData'),
 }) => {
   return (
     <div className={cx(styles['no-more-divider'])}>

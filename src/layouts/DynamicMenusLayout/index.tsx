@@ -11,6 +11,7 @@ import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -556,13 +557,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    */
   const currentTitle = useMemo(() => {
     if (isClickNewConversation) {
-      return '新对话';
+      return dict('PC.Layouts.DynamicMenusLayout.newConversation');
     }
     if (activeTab === 'my_computer' || activeTab === 'documents') {
-      return '主页';
+      return dict('PC.Layouts.DynamicMenusLayout.home');
     }
     if (activeTab === 'more_page') {
-      return '更多';
+      return dict('PC.Layouts.DynamicMenusLayout.more');
     }
     const current = firstLevelMenus.find(
       (m: MenuItemDto) => m.code === activeTab,

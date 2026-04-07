@@ -2,6 +2,7 @@ import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
 import { optionsMap } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { t } from '@/services/i18nRuntime';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import type { InputAndOutConfig } from '@/types/interfaces/node';
@@ -36,7 +37,7 @@ import { v4 as uuidv4 } from 'uuid';
 import '../indexV3.less';
 import './commonNode.less';
 
-// 定义通用的输入输出
+// Shared input/output form list.
 export const InputAndOut: React.FC<NodeRenderProps> = ({
   title,
   fieldConfigs,
@@ -49,7 +50,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   isLoop,
 }) => {
   const { volid } = useModel('workflowV3');
-  // 根据传递的fieldConfigs生成表单项
+  // Build default item from field configs.
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {
       acc[field.name] = null;
@@ -90,25 +91,31 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
               ]);
               return (
                 <div key={item.name}>
-                  {/* 只在第一个输入框组旁边显示标签 */}
+                  {/* Show column labels once for the first row. */}
                   {index === 0 && (
                     <div className="font-color-gray07 font-12 mt-6">
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '22%' }}>变量值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '22%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnVariableValue')}
+                      </span>
                     </div>
                   )}
                   <Form.Item key={item.key}>
                     <div className="dis-left">
                       <Form.Item
-                        label="参数名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldParamName')}
                         name={[item.name, 'name']}
                         noStyle
-                        // rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: t('PC.Pages.AntvX6Params.inputVariableNameRequired') }]}
                       >
                         <Input
                           size="small"
                           style={{ width: '30%', marginRight: '10px' }}
-                          placeholder="请输入参数名"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamName',
+                          )}
                           disabled={disabledInput}
                         />
                       </Form.Item>
@@ -116,7 +123,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                         name={[item.name, 'bindValue']}
                         noStyle
                         // rules={[
-                        //   { required: true, message: '请选择或输入变量值' },
+                        //   { required: true, message: t('PC.Pages.AntvX6Params.inputOrReferenceVariableValue') },
                         // ]}
                       >
                         <InputOrReference
@@ -143,7 +150,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                           content={
                             <Form.Item
                               name={[item.name, 'description']}
-                              noStyle // 添加description的initialValue
+                              noStyle
                             >
                               <Input.TextArea
                                 autoSize={{ minRows: 3, maxRows: 5 }}
@@ -182,7 +189,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   );
 };
 
-// 定义其他的输出
+// Shared form list for custom outputs.
 export const OtherFormList: React.FC<NodeRenderProps> = ({
   title,
   inputItemName = 'conditionArgs',
@@ -218,35 +225,43 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
                 <div key={item.key}>
                   {index === 0 && (
                     <div className="font-color-gray07">
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '20%' }}>变量值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '20%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnVariableValue')}
+                      </span>
                     </div>
                   )}
                   <Form.Item key={item.key}>
                     <div className="dis-left">
                       <Form.Item
-                        label="参数名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldParamName')}
                         name={[item.name, 'name']}
                         noStyle
-                        // rules={[{ required: true, message: '请输入变量名' }]}
+                        // rules={[{ required: true, message: t('PC.Pages.AntvX6Params.inputVariableNameRequired') }]}
                       >
                         <Input
                           size="small"
                           style={{ width: '30%', marginRight: '10px' }}
-                          placeholder="请输入参数名"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamName',
+                          )}
                           disabled={disabledInput}
                         />
                       </Form.Item>
                       <Form.Item
-                        label="变量名"
+                        label={t('PC.Pages.AntvX6CommonNode.fieldVariableName')}
                         name={[item.name, 'bindValue']}
                         noStyle
                         // rules={[
-                        //   { required: true, message: '请选择或输入变量值' },
+                        //   { required: true, message: t('PC.Pages.AntvX6Params.inputOrReferenceVariableValue') },
                         // ]}
                       >
                         <Input
-                          placeholder="请输入参数值"
+                          placeholder={t(
+                            'PC.Pages.AntvX6CommonNode.placeholderParamValue',
+                          )}
                           size="small"
                           style={{ width: '55%', marginRight: '10px' }}
                         />
@@ -268,12 +283,12 @@ export const OtherFormList: React.FC<NodeRenderProps> = ({
   );
 };
 
-// 定义树结构的输出
+// Tree output renderer.
 export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
-    // 当 treeData 更新时，重新计算 expandedKeys
+    // Recalculate expanded keys whenever tree data changes.
     const getAllParentKeys = (data: InputAndOutConfig[]): React.Key[] => {
       const keys: React.Key[] = [];
       data.forEach((node) => {
@@ -287,14 +302,18 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
     setExpandedKeys(getAllParentKeys(treeData));
   }, [treeData]);
 
-  // 将树结构数据转换为 treeData 格式
+  // Convert workflow output config to Ant Design tree data.
   const convertToTreeData = (data: InputAndOutConfig[]): any[] => {
     return data.map((item) => ({
       ...item,
       title: (
         <div className="tree-custom-title-style">
           <span>{item.name}</span>
-          <Popover content={item.description || '暂无描述'}>
+          <Popover
+            content={
+              item.description || t('PC.Pages.AntvX6CommonNode.noDescription')
+            }
+          >
             <InfoCircleOutlined
               style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
             />
@@ -311,16 +330,16 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
   return (
     <Tree
       showLine
-      expandedKeys={expandedKeys} // 使用 expandedKeys 控制展开
-      onExpand={(keys) => setExpandedKeys(keys)} // 更新 expandedKeys
+      expandedKeys={expandedKeys}
+      onExpand={(keys) => setExpandedKeys(keys)}
       switcherIcon={<DownOutlined />}
-      treeData={convertToTreeData(treeData)} // 使用 treeData 替代 children
-      defaultExpandAll={true} // 初始时展开所有节点
+      treeData={convertToTreeData(treeData)}
+      defaultExpandAll={true}
     />
   );
 };
 
-// 带勾选的多选select
+// Multi-select with checkboxes.
 export const MultiSelectWithCheckbox: React.FC<
   MultiSelectWithCheckboxProps
 > = ({ options, placeholder, onChange }) => {
@@ -367,14 +386,14 @@ export const MultiSelectWithCheckbox: React.FC<
   );
 };
 
-// 封装一个formList
+// Shared simple form list.
 export const FormList: React.FC<FormListProps> = ({
   form,
   title,
   field,
   inputItemName = 'inputArgs',
   showIndex,
-  limitAddLength = -1, // 限制添加的个数，-1 不限制
+  limitAddLength = -1,
 }) => {
   const [disabledAdd, setDisabledAdd] = useState(false);
   const currentFields = Form.useWatch(inputItemName, {
@@ -425,7 +444,7 @@ export const FormList: React.FC<FormListProps> = ({
             }
             if (
               form.getFieldValue([inputItemName, item.name, 'content']) ===
-              '此选项用户不可见，用户回复无关内容时走此分支'
+              t('PC.Pages.AntvX6CommonNode.otherBranchHint')
             ) {
               fieldData = true;
             }
@@ -470,7 +489,7 @@ export const FormList: React.FC<FormListProps> = ({
   );
 };
 
-// 根据输入的list遍历创建输入框
+// Build inputs from the given list.
 
 export const InputList: React.FC<InputListProps> = ({
   form,
@@ -491,11 +510,15 @@ export const InputList: React.FC<InputListProps> = ({
               ]);
               return (
                 <div key={item.name}>
-                  {/* 只在第一个输入框组旁边显示标签 */}
+                  {/* Show column labels once for the first row. */}
                   {index === 0 && (
                     <>
-                      <span>参数名</span>
-                      <span style={{ marginLeft: '25%' }}>参数值</span>
+                      <span>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamName')}
+                      </span>
+                      <span style={{ marginLeft: '25%' }}>
+                        {t('PC.Pages.AntvX6CommonNode.columnParamValue')}
+                      </span>
                     </>
                   )}
                   <Form.Item key={item.key}>

@@ -1,4 +1,5 @@
 import { XModalForm } from '@/components/ProComponents';
+import { t } from '@/services/i18nRuntime';
 import { ProFormText, ProFormTextArea } from '@ant-design/pro-components';
 import { Form } from 'antd';
 import React, { useEffect } from 'react';
@@ -46,7 +47,11 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 
   return (
     <XModalForm
-      title={`${mode === 'add' ? '添加' : '编辑'}${categoryLabel}分类`}
+      title={
+        mode === 'add'
+          ? t('PC.Pages.SystemConfigCategoryModal.addTitle', categoryLabel)
+          : t('PC.Pages.SystemConfigCategoryModal.editTitle', categoryLabel)
+      }
       open={open}
       form={form}
       width={520}
@@ -57,19 +62,25 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
       }}
       submitter={{
         searchConfig: {
-          resetText: '取消',
-          submitText: '保存',
+          resetText: t('PC.Common.Global.cancel'),
+          submitText: t('PC.Common.Global.save'),
         },
       }}
       onFinish={onFinish}
     >
       <ProFormText
         name="name"
-        label="分类名称"
-        placeholder="请输入分类名称"
+        label={t('PC.Pages.SystemConfigCategoryModal.name')}
+        placeholder={t('PC.Pages.SystemConfigCategoryModal.namePlaceholder')}
         rules={[
-          { required: true, message: '请输入分类名称' },
-          { max: 100, message: '分类名称不能超过100个字符' },
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigCategoryModal.nameRequired'),
+          },
+          {
+            max: 100,
+            message: t('PC.Pages.SystemConfigCategoryModal.nameMaxLength'),
+          },
         ]}
         fieldProps={{
           maxLength: 100,
@@ -78,15 +89,20 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
       />
       <ProFormText
         name="code"
-        label="分类编码"
-        placeholder="请输入分类编码"
+        label={t('PC.Pages.SystemConfigCategoryModal.code')}
+        placeholder={t('PC.Pages.SystemConfigCategoryModal.codePlaceholder')}
         rules={[
-          { required: true, message: '请输入分类编码' },
-          { max: 100, message: '分类编码不能超过100个字符' },
+          {
+            required: true,
+            message: t('PC.Pages.SystemConfigCategoryModal.codeRequired'),
+          },
+          {
+            max: 100,
+            message: t('PC.Pages.SystemConfigCategoryModal.codeMaxLength'),
+          },
           {
             pattern: /^[a-zA-Z_$][a-zA-Z0-9_$]*$/,
-            message:
-              '分类编码只能包含字母、数字、下划线(_)或美元符号($)，且不能以数字开头',
+            message: t('PC.Pages.SystemConfigCategoryModal.codePatternInvalid'),
           },
         ]}
         fieldProps={{
@@ -96,9 +112,18 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
       />
       <ProFormTextArea
         name="description"
-        label="描述"
-        placeholder="请输入分类描述（可选）"
-        rules={[{ max: 100, message: '描述不能超过100个字符' }]}
+        label={t('PC.Pages.SystemConfigCategoryModal.description')}
+        placeholder={t(
+          'PC.Pages.SystemConfigCategoryModal.descriptionPlaceholder',
+        )}
+        rules={[
+          {
+            max: 100,
+            message: t(
+              'PC.Pages.SystemConfigCategoryModal.descriptionMaxLength',
+            ),
+          },
+        ]}
         fieldProps={{
           autoSize: { minRows: 4, maxRows: 6 },
           maxLength: 100,

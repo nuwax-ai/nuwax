@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import {
   AlignCenterSvg,
   AlignJustifySvg,
@@ -25,27 +26,27 @@ export const tailwindTextAlignMap: Record<string, string> = {
 export const TEXT_ALIGN_OPTIONS = [
   {
     type: 'reset',
-    label: '重置',
+    label: t('PC.Pages.AppDevDesignViewerTextAlign.reset'),
     icon: <ResetSvg />,
   },
   {
     type: 'left',
-    label: '靠左',
+    label: t('PC.Pages.AppDevDesignViewerTextAlign.left'),
     icon: <AlignLeftSvg />,
   },
   {
     type: 'center',
-    label: '居中',
+    label: t('PC.Pages.AppDevDesignViewerTextAlign.center'),
     icon: <AlignCenterSvg />,
   },
   {
     type: 'right',
-    label: '靠右',
+    label: t('PC.Pages.AppDevDesignViewerTextAlign.right'),
     icon: <AlignRightSvg />,
   },
   {
     type: 'justify',
-    label: '两端对齐',
+    label: t('PC.Pages.AppDevDesignViewerTextAlign.justify'),
     icon: <AlignJustifySvg />,
   },
 ];
@@ -73,7 +74,7 @@ export const convertLabelToTextAlignClass = (label: string): string | null => {
 /**
  * 生成 Tailwind CSS 文本对齐选项列表
  * 从 Tailwind CSS 中获取文本对齐选项
- * 返回格式：{ label: 'left', value: 'left' } 或 { label: 'Default', value: 'Default' }
+ * Returns: { label: 'left', value: 'left' } or { label: 'Default', value: 'Default' }
  * label 用于下拉展示，value 直接作为文本对齐值使用
  */
 export const generateTailwindTextAlignOptions = (): Array<{

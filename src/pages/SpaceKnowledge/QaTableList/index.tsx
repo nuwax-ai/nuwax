@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeQaList } from '@/services/knowledge';
 import {
   KnowledgeQAInfo,
@@ -37,7 +38,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
         fixed: 'left',
       },
       {
-        title: '问题',
+        title: dict('PC.Pages.SpaceKnowledge.QaTableList.question'),
         dataIndex: 'question',
         render: (text: string) => {
           return (
@@ -48,7 +49,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
         },
       },
       {
-        title: '答案',
+        title: dict('PC.Pages.SpaceKnowledge.QaTableList.answer'),
         dataIndex: 'answer',
         render: (text: string) => {
           return (
@@ -59,19 +60,27 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
         },
       },
       {
-        title: '向量化',
+        title: dict('PC.Pages.SpaceKnowledge.QaTableList.vectorized'),
         dataIndex: 'hasEmbedding',
         width: 100,
         fixed: 'right',
         render: (value: boolean) => {
           if (value) {
-            return <Tag color="success">已完成</Tag>;
+            return (
+              <Tag color="success">
+                {dict('PC.Pages.SpaceKnowledge.QaTableList.completed')}
+              </Tag>
+            );
           }
-          return <Tag color="processing">构建中</Tag>;
+          return (
+            <Tag color="processing">
+              {dict('PC.Pages.SpaceKnowledge.QaTableList.building')}
+            </Tag>
+          );
         },
       },
       {
-        title: '操作',
+        title: dict('PC.Pages.SpaceKnowledge.QaTableList.action'),
         dataIndex: 'action',
         width: 100,
         align: 'center',
@@ -85,12 +94,14 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
                 onClick={() => props.onEdit(record)}
               />
               <Popconfirm
-                title="你确定要删除此QA问答吗?"
+                title={dict(
+                  'PC.Pages.SpaceKnowledge.QaTableList.confirmDeleteQa',
+                )}
                 description={record.question}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => props.onDelete(record)}
-                okText="确定"
-                cancelText="取消"
+                okText={dict('PC.Common.Global.confirm')}
+                cancelText={dict('PC.Common.Global.cancel')}
               >
                 <Button type="text" icon={<DeleteOutlined />} />
               </Popconfirm>
@@ -213,7 +224,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
             }}
           />
         ) : (
-          <Empty description="暂无数据" />
+          <Empty description={dict('PC.Common.Global.noData')} />
         )}
       </div>
     );

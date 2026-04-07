@@ -1,4 +1,5 @@
 import { REVERSE_PROXY_ACTIONS } from '@/constants/pageDev.constants';
+import { dict } from '@/services/i18nRuntime';
 import { PageProjectTypeEnum, ReverseProxyEnum } from '@/types/enums/pageDev';
 import {
   ProxyConfig,
@@ -66,7 +67,7 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
           {/* 左侧部分 */}
           <div className={cx(styles.left)}>
-            <h3>反向代理</h3>
+            <h3>{dict('PC.Pages.SpacePageDevelop.ReverseProxyModal.title')}</h3>
             <ul>
               {list.map((item) => {
                 return (

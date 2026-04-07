@@ -69,16 +69,16 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
   // 检测 URL 是否可用
   const checkUrl = useCallback(
     async (url: string): Promise<{ ok: boolean; status?: number }> => {
-      console.log('[useUrlRetry] 🔍 开始检测 URL:', url);
+      console.log('[useUrlRetry] Start URL availability check:', url);
 
       // 如果提供了自定义检测函数，优先使用（用于后端 API 代理绕过 CORS）
       if (checkFn) {
         try {
           const result = await checkFn(url);
-          console.log('[useUrlRetry] 📡 检测结果 (via API):', result);
+          console.log('[useUrlRetry] Check result (via API):', result);
           return result;
         } catch (error) {
-          console.log('[useUrlRetry] ❌ API 检测失败:', error);
+          console.log('[useUrlRetry] API check failed:', error);
           return { ok: false, status: 500 };
         }
       }
@@ -86,13 +86,16 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
       // 回退到直接 fetch（可能受 CORS 限制）
       try {
         const response = await fetch(url, { method: 'HEAD' });
-        console.log('[useUrlRetry] 📡 检测结果 (via fetch):', {
+        console.log('[useUrlRetry] Check result (via fetch):', {
           ok: response.ok,
           status: response.status,
         });
         return { ok: response.ok, status: response.status };
       } catch (error) {
-        console.log('[useUrlRetry] ❌ 检测失败 (网络错误或 CORS):', error);
+        console.log(
+          '[useUrlRetry] Check failed (network error or CORS restriction):',
+          error,
+        );
         // 网络错误或 CORS 阻止，返回 ok 让调用者决定如何处理
         return { ok: true };
       }
@@ -114,10 +117,10 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
 
       if (shouldRetryStatus) {
         // 初始化重试开始时间
-        console.log('[useUrlRetry] ⚠️ 检测到需要重试的状态码:', result.status);
+        console.log('[useUrlRetry] Retryable status detected:', result.status);
         if (!retryStartTimeRef.current) {
           retryStartTimeRef.current = Date.now();
-          console.log('[useUrlRetry] ⏱️ 开始计时重试');
+          console.log('[useUrlRetry] Retry timer started.');
         }
 
         const currentElapsed = Date.now() - retryStartTimeRef.current;
@@ -125,9 +128,9 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
         if (currentElapsed >= maxRetryDuration) {
           // 超时，停止重试
           console.log(
-            '[useUrlRetry] ⏰ 重试超时！已耗时:',
+            '[useUrlRetry] Retry timeout exceeded. elapsed:',
             currentElapsed,
-            'ms，最大允许:',
+            'ms, max:',
             maxRetryDuration,
             'ms',
           );
@@ -143,9 +146,9 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
 
         // 设置下一次重试
         console.log(
-          `[useUrlRetry] 🔄 ${retryInterval}ms 后重试... 状态码: ${
+          `[useUrlRetry] Retry in ${retryInterval}ms. status: ${
             result.status
-          }, 已耗时: ${Math.round(currentElapsed / 1000)}s`,
+          }, elapsed: ${Math.round(currentElapsed / 1000)}s`,
         );
         retryTimerRef.current = setTimeout(onRetry, retryInterval);
 
@@ -159,7 +162,7 @@ export function useUrlRetry(options: UrlRetryOptions = {}): UseUrlRetryReturn {
       }
 
       // 不需要重试
-      console.log('[useUrlRetry] ✅ 验证通过，状态码:', result.status);
+      console.log('[useUrlRetry] Validation passed. status:', result.status);
       resetRetry();
       return {
         ok: result.ok,

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
@@ -22,7 +23,7 @@ const Loading: React.FC<LoadingProps> = ({ className }) => {
       )}
     >
       <LoadingOutlined />
-      <span>加载中...</span>
+      <span>{dict('PC.Common.Global.loading')}</span>
     </div>
   );
 };

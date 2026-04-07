@@ -1,5 +1,6 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import McpCollapseComponentItem from '@/components/McpCollapseComponentList/McpCollapseComponentItem';
+import { t } from '@/services/i18nRuntime';
 import { McpConfigComponentInfo } from '@/types/interfaces/mcp';
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -18,7 +19,7 @@ const SelectTargetFormItemTarget: React.FC<SelectTargetFormItemTargetProps> = ({
       extra={
         onDelete ? (
           <TooltipIcon
-            title="删除"
+            title={t('PC.Pages.SystemTaskSelectTargetFormItemTarget.delete')}
             icon={<DeleteOutlined className={'cursor-pointer'} />}
             onClick={() => onDelete?.(value)}
           />

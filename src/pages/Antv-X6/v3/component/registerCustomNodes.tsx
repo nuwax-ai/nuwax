@@ -12,6 +12,7 @@ import {
   returnBackgroundColor,
   returnImg,
 } from '@/pages/Antv-X6/v3/utils/workflowV3';
+import { t } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
   NodeShapeEnum,
@@ -88,23 +89,31 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   return (
     <div className="qa-node-content-style">
       <div className="dis-left">
-        <span className="text-right qa-title-style">输入</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.input')}
+        </span>
         {inputArgs?.slice(0, 2).map((item, index) => (
           <Tag key={`inputArgs-${item.name}-${index}`}>{item.name}</Tag>
         ))}
         {inputArgs && inputArgs.length > 2 && (
           <Tag>+{inputArgs.length - 2}</Tag>
         )}
-        {!inputArgs && <span>未配置输入内容</span>}
+        {!inputArgs && (
+          <span>{t('PC.Pages.AntvX6RegisterNodes.unconfiguredInput')}</span>
+        )}
       </div>
       <div className="dis-left">
-        <span className="text-right qa-title-style">提问内容</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.questionContent')}
+        </span>
         <span className="question-content-style">
-          {question || '未配置提问内容'}
+          {question || t('PC.Pages.AntvX6RegisterNodes.unconfiguredQuestion')}
         </span>
       </div>
       <div className="dis-left">
-        <span className="text-right qa-title-style">问答类型</span>
+        <span className="text-right qa-title-style">
+          {t('PC.Pages.AntvX6RegisterNodes.qaType')}
+        </span>
         <span>{answerTypeMap[answerType]}</span>
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
@@ -114,9 +123,12 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
             className="dis-left"
           >
             <span className="text-right qa-title-style"></span>
-            <Tag>{optionsMap[index]}</Tag>
+            <Tag>
+              {t('PC.Pages.AntvX6RegisterNodes.optionLabel', String(index + 1))}
+            </Tag>
             <span className="qa-content-style">
-              {item.content || '未配置内容'}
+              {item.content ||
+                t('PC.Pages.AntvX6RegisterNodes.unconfiguredContent')}
             </span>
           </div>
         ))}
@@ -131,9 +143,12 @@ const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
     <div className="qa-node-content-style">
       {intentConfigs?.map((item, index) => (
         <div className="dis-left" key={index}>
-          <span className="qa-title-style">选项{index + 1}</span>
+          <span className="qa-title-style">
+            {t('PC.Pages.AntvX6RegisterNodes.optionLabel', String(index + 1))}
+          </span>
           <span className="qa-content-style">
-            {item.intent || '未配置意图'}
+            {item.intent ||
+              t('PC.Pages.AntvX6RegisterNodes.unconfiguredIntent')}
           </span>
         </div>
       ))}
@@ -181,19 +196,16 @@ const NodeRunResult: React.FC<{
 
   // 处理页码变化
   const handlePageChange = (page: number) => {
-    console.log('页码变化：', page);
     setCurrent(page);
   };
 
   // 处理只看错误变化
   const handleOnlyErrorChange = (checked: boolean) => {
-    console.log('只看错误变化：', checked);
     setOnlyError(checked);
   };
 
   // 处理展开/收起变化
   const handleExpandChange = (expanded: boolean) => {
-    console.log('展开/收起变化：', expanded);
     setExpanded(expanded);
   };
 
@@ -223,19 +235,19 @@ const NodeRunResult: React.FC<{
       case statusList.some(
         (status) => status === RunResultStatusEnum.STOP_WAIT_ANSWER,
       ):
-        return '请答复问题';
+        return t('PC.Pages.AntvX6RegisterNodes.replyQuestion');
       case statusList.some(
         (status) => status === RunResultStatusEnum.EXECUTING,
       ):
-        return '运行中';
+        return t('PC.Pages.AntvX6RegisterNodes.running');
       case statusList.some((status) => status === RunResultStatusEnum.FAILED):
-        return '运行失败';
+        return t('PC.Pages.AntvX6RegisterNodes.failed');
       case statusList.every(
         (status) => status === RunResultStatusEnum.FINISHED,
       ):
-        return '运行成功';
+        return t('PC.Pages.AntvX6RegisterNodes.success');
       default:
-        return '运行失败';
+        return t('PC.Pages.AntvX6RegisterNodes.failed');
     }
   }, [data]);
 
@@ -267,7 +279,9 @@ const ExceptionHandle: React.FC<{
 }> = ({ data }) => {
   return (
     <div className="exception-handle-style">
-      <span className="exception-handle-title">异常时</span>
+      <span className="exception-handle-title">
+        {t('PC.Pages.AntvX6RegisterNodes.exceptionWhen')}
+      </span>
       <p className="exception-handle-content">
         {
           EXCEPTION_HANDLE_OPTIONS.find(

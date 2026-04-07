@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { BaseFormItemProps, TabKey } from '@/types/interfaces/systemManage';
 import {
   DeleteOutlined,
@@ -115,7 +116,9 @@ export default function BaseFormItem({
         required: true,
         validator: (_: any, value: string[]) => {
           if (value.length === 0 || value.some((item) => item === '')) {
-            return Promise.reject(new Error('请输入域名'));
+            return Promise.reject(
+              new Error(t('PC.Pages.SystemConfigBaseFormItem.enterDomain')),
+            );
           }
           return Promise.resolve();
         },

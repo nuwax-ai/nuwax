@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { dict } from '@/services/i18nRuntime';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -100,7 +101,11 @@ const CollapseButton: React.FC = () => {
 
   return (
     <Tooltip
-      title={isSecondMenuCollapsed ? '展开菜单' : '收起菜单'}
+      title={
+        isSecondMenuCollapsed
+          ? dict('PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu')
+          : dict('PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu')
+      }
       placement="right"
       arrow={false}
     >

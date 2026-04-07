@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import { ICON_WORKFLOW_CODE } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
 import { CloseOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import { Button, Form, Select, Space } from 'antd';
@@ -43,7 +44,7 @@ const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
                   display: 'inline-block',
                 }}
               >
-                代码
+                {dict('PC.Components.Monaco.code')}
               </span>
               <Form.Item name={'codeLanguage'}>
                 <Select
@@ -53,7 +54,9 @@ const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
                     { value: 'Python', label: 'Python' },
                   ]}
                   size="small"
-                  placeholder="请选择语言"
+                  placeholder={dict(
+                    'PC.Components.Monaco.pleaseSelectLanguage',
+                  )}
                 />
               </Form.Item>
             </Space>

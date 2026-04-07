@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { dict } from '@/services/i18nRuntime';
 import {
   MessageScopeEnum,
   SystemManageListEnum,
@@ -10,42 +11,42 @@ export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.User_Manage,
     icon: <SvgIcon name="icons-nav-user" />,
-    text: '用户管理',
+    text: dict('PC.Constants.System.userManage'),
   },
   {
     type: SystemManageListEnum.Publish_Audit,
     icon: <SvgIcon name="icons-nav-publish_audit" />,
-    text: '发布审核',
+    text: dict('PC.Constants.System.publishAudit'),
   },
   {
     type: SystemManageListEnum.Published_Manage,
     icon: <SvgIcon name="icons-nav-publish_manage" />,
-    text: '已发布管理',
+    text: dict('PC.Constants.System.publishedManage'),
   },
   {
     type: SystemManageListEnum.Global_Model_Manage,
     icon: <SvgIcon name="icons-nav-model" />,
-    text: '公共模型管理',
+    text: dict('PC.Constants.System.globalModelManage'),
   },
   {
     type: SystemManageListEnum.System_Config,
     icon: <SvgIcon name="icons-nav-settings" />,
-    text: '系统配置',
+    text: dict('PC.Constants.System.systemConfig'),
     list: [
       {
-        text: '系统设置',
+        text: dict('PC.Constants.System.systemSetting'),
         type: SystemManageListEnum.System_Setting,
       },
       {
-        text: '主题配置',
+        text: dict('PC.Constants.System.themeConfig'),
         type: SystemManageListEnum.Theme_Config,
       },
       {
-        text: '沙盒配置',
+        text: dict('PC.Constants.System.sandboxConfig'),
         type: SystemManageListEnum.Sandbox_Config,
       },
       {
-        text: '分类管理',
+        text: dict('PC.Constants.System.categoryManage'),
         type: SystemManageListEnum.Category_Manage,
       },
     ],
@@ -53,32 +54,32 @@ export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.Dashboard,
     icon: <SvgIcon name="icons-nav-dashboard" />,
-    text: '系统概览',
+    text: dict('PC.Constants.System.systemOverview'),
   },
   {
     type: SystemManageListEnum.Task_Manage,
     icon: <SvgIcon name="icons-nav-task-time" />,
-    text: '任务管理',
+    text: dict('PC.Constants.System.taskManage'),
   },
   {
     type: SystemManageListEnum.MenuPermission,
     icon: <SvgIcon name="icons-nav-permission" />,
-    text: '菜单权限',
+    text: dict('PC.Constants.System.menuPermission'),
     list: [
       {
-        text: '权限资源',
+        text: dict('PC.Constants.System.permissionResources'),
         type: SystemManageListEnum.Permission_Resources,
       },
       {
-        text: '菜单管理',
+        text: dict('PC.Constants.System.menuManage'),
         type: SystemManageListEnum.Menu_Manage,
       },
       {
-        text: '角色管理',
+        text: dict('PC.Constants.System.roleManage'),
         type: SystemManageListEnum.Role_Manage,
       },
       {
-        text: '用户组管理',
+        text: dict('PC.Constants.System.userGroupManage'),
         type: SystemManageListEnum.User_Group_Manage,
       },
     ],
@@ -86,7 +87,7 @@ export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.Log_Query,
     icon: <SvgIcon name="icons-nav-log" />,
-    text: '日志查询',
+    text: dict('PC.Constants.Space.logQuery'),
     list: [
       // {
       //   text: '操作日志',
@@ -94,7 +95,7 @@ export const SYSTEM_MANAGE_LIST = [
       //   // icon: <SvgIcon name="icons-nav-log-operation" />,
       // },
       {
-        text: '运行日志',
+        text: dict('PC.Constants.System.runningLog'),
         type: SystemManageListEnum.Running_Log,
         // icon: <SvgIcon name="icons-nav-log-running" />,
       },
@@ -103,34 +104,34 @@ export const SYSTEM_MANAGE_LIST = [
   {
     type: SystemManageListEnum.Content,
     icon: <SvgIcon name="icons-nav-cube" />,
-    text: '内容管理',
+    text: dict('PC.Constants.System.contentManage'),
     list: [
       {
-        text: '空间',
+        text: dict('PC.Constants.System.contentSpace'),
         type: SystemManageListEnum.Content_Space,
       },
       {
-        text: '智能体',
+        text: dict('PC.Common.Global.agent'),
         type: SystemManageListEnum.Content_Agent,
       },
       {
-        text: '网页应用',
+        text: dict('PC.Constants.Ecosystem.webApp'),
         type: SystemManageListEnum.Content_WebApplication,
       },
       {
-        text: '知识库',
+        text: dict('PC.Common.Global.knowledge'),
         type: SystemManageListEnum.Content_KnowledgeBase,
       },
       {
-        text: '数据表',
+        text: dict('PC.Common.Global.dataTable'),
         type: SystemManageListEnum.Content_DataTable,
       },
       {
-        text: '工作流',
+        text: dict('PC.Common.Global.workflow'),
         type: SystemManageListEnum.Content_Workflow,
       },
       {
-        text: '插件',
+        text: dict('PC.Common.Global.plugin'),
         type: SystemManageListEnum.Content_Plugin,
       },
       {
@@ -138,7 +139,7 @@ export const SYSTEM_MANAGE_LIST = [
         type: SystemManageListEnum.Content_Mcp,
       },
       {
-        text: '技能',
+        text: dict('PC.Common.Global.skill'),
         type: SystemManageListEnum.Content_Skill,
       },
     ],
@@ -148,11 +149,11 @@ export const SYSTEM_MANAGE_LIST = [
 // 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System
 export const MESSAGE_SCOPE_OPTIONS = [
   {
-    label: '指定用户发送',
+    label: dict('PC.Constants.System.sendToSpecifiedUser'),
     value: MessageScopeEnum.Broadcast,
   },
   {
-    label: '系统消息（全部用户）',
+    label: dict('PC.Constants.System.systemMessageAllUsers'),
     value: MessageScopeEnum.System,
   },
 ];
@@ -161,15 +162,15 @@ export const MESSAGE_SCOPE_OPTIONS = [
 export const SYSTEM_SETTING_TABS: TabsProps['items'] = [
   {
     key: 'BaseConfig',
-    label: '基础配置',
+    label: dict('PC.Constants.System.baseConfig'),
   },
   {
     key: 'ModelSetting',
-    label: '默认模型设置',
+    label: dict('PC.Constants.System.defaultModelSetting'),
   },
   {
     key: 'AgentSetting',
-    label: '站点智能体设置',
+    label: dict('PC.Constants.System.siteAgentSetting'),
   },
   // {
   //   key: 'DomainBind',

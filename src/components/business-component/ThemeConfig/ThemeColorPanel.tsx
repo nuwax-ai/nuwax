@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { THEME_COLOR_CONFIGS } from '@/constants/theme.constants';
+import { t } from '@/services/i18nRuntime';
 import { ColorPicker } from 'antd';
 import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
@@ -56,7 +57,7 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
           )
           .map((color) => ({
             color,
-            name: '自定义',
+            name: t('PC.Components.ThemeConfigThemeColorPanel.customName'),
             isCustom: true,
           }))),
   ];
@@ -72,7 +73,9 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
 
   return (
     <div className={cx(styles.themeColorPanel)}>
-      <h3 className={cx(styles.panelTitle)}>主题色</h3>
+      <h3 className={cx(styles.panelTitle)}>
+        {t('PC.Components.ThemeConfigThemeColorPanel.panelTitle')}
+      </h3>
 
       {/* 预设颜色选择 */}
       <div className={cx(styles.presetColorsSection)}>
@@ -146,7 +149,7 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
                   opacity: currentColor === customColor ? 1 : 0,
                 }}
               >
-                自定义
+                {t('PC.Components.ThemeConfigThemeColorPanel.customName')}
               </span>
             </div>
           )}

@@ -35,15 +35,16 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
         navigationStyles: [
           {
             id: 'style1',
-            name: '风格1',
+            name: 'Style 1',
             description:
-              '紧凑模式：60px宽度，无文字显示，页面容器有外边距和圆角',
+              'Compact mode: 60px width, text hidden, page container has margin and rounded corners',
             isDefault: true,
           },
           {
             id: 'style2',
-            name: '风格2',
-            description: '展开模式：73px宽度，显示文字，页面容器无外边距和圆角',
+            name: 'Style 2',
+            description:
+              'Expanded mode: 73px width, text visible, page container has no margin or rounded corners',
           },
         ],
         // 使用统一主题数据，如果没有则使用默认值
@@ -57,11 +58,11 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
 
       const mockTenantInfo: TenantInfo = {
         id: 'tenant-001',
-        name: '示例租户',
+        name: 'Demo Tenant',
         themeConfig: tenantThemeConfig,
       };
 
-      console.log('租户信息基于统一主题数据构建:', {
+      console.log('Tenant info built from unified theme data:', {
         currentData,
         tenantThemeConfig,
       });

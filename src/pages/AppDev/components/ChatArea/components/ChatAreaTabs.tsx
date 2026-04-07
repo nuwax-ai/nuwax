@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { SyncOutlined } from '@ant-design/icons';
 import { Segmented } from 'antd';
 import React, { useEffect } from 'react';
@@ -84,7 +85,10 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
           handleTabChange(value as 'chat' | 'data' | 'design')
         }
         options={[
-          { label: '对话', value: 'chat' },
+          {
+            label: dict('PC.Pages.AppDevChatArea.chatTab'),
+            value: 'chat',
+          },
           ...(isSupportDesignMode
             ? [
                 {
@@ -96,7 +100,7 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
                           style={{ fontSize: 12, marginRight: 4 }}
                         />
                       ) : null}
-                      设计
+                      {dict('PC.Pages.AppDevChatArea.designTab')}
                     </div>
                   ),
                   value: 'design',
@@ -104,7 +108,10 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
                 },
               ]
             : []),
-          { label: '数据', value: 'data' },
+          {
+            label: dict('PC.Pages.AppDevChatArea.dataTab'),
+            value: 'data',
+          },
         ]}
         block
       />

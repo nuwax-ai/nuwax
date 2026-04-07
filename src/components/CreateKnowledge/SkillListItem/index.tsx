@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
 import classNames from 'classnames';
@@ -25,7 +26,10 @@ const SkillListItem: React.FC<{
     </div>
     <div className={cx(styles['mask-layer-style'])}>
       <div style={{ color: '#fff', backgroundColor: 'transparent' }}>
-        <Popover content={'移除'} trigger="hover">
+        <Popover
+          content={dict('PC.Components.CreateKnowledge.remove')}
+          trigger="hover"
+        >
           <DeleteOutlined
             className="ml-12  white"
             style={{ cursor: 'pointer' }}

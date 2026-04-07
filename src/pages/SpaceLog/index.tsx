@@ -1,5 +1,6 @@
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import { apiAgentLogDetail, apiAgentLogList } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentConfigInfo,
   logInfo,
@@ -173,35 +174,35 @@ const SpaceLog: React.FC = () => {
   // 入参配置columns
   const inputColumns: TableColumnsType<logInfo> = [
     {
-      title: '消息ID',
+      title: dict('PC.Pages.SpaceLog.colMessageId'),
       dataIndex: 'messageId',
       key: 'messageId',
       width: 150,
       ellipsis: true,
     },
     {
-      title: '会话ID',
+      title: dict('PC.Pages.SpaceLog.colConversationId'),
       dataIndex: 'conversationId',
       key: 'conversationId',
       width: 100,
       ellipsis: true,
     },
     {
-      title: '用户UID',
+      title: dict('PC.Pages.SpaceLog.colUserUid'),
       dataIndex: 'userUid',
       key: 'userUid',
       width: 100,
       ellipsis: true,
     },
     {
-      title: '用户昵称（用户名）',
+      title: dict('PC.Pages.SpaceLog.colUserName'),
       dataIndex: 'userName',
       key: 'userName',
       width: 180,
       ellipsis: true,
     },
     {
-      title: '用户输入',
+      title: dict('PC.Pages.SpaceLog.colUserInput'),
       dataIndex: 'userInput',
       key: 'userInput',
       minWidth: 150,
@@ -211,7 +212,7 @@ const SpaceLog: React.FC = () => {
       },
     },
     {
-      title: '输出',
+      title: dict('PC.Pages.SpaceLog.colOutput'),
       dataIndex: 'output',
       key: 'output',
       minWidth: 150,
@@ -221,21 +222,21 @@ const SpaceLog: React.FC = () => {
       },
     },
     {
-      title: '输入token',
+      title: dict('PC.Pages.SpaceLog.colInputToken'),
       dataIndex: 'inputToken',
       key: 'inputToken',
       width: 100,
       align: 'center',
     },
     {
-      title: '输出token',
+      title: dict('PC.Pages.SpaceLog.colOutputToken'),
       dataIndex: 'outputToken',
       key: 'outputToken',
       width: 100,
       align: 'center',
     },
     {
-      title: '请求时间',
+      title: dict('PC.Pages.SpaceLog.colRequestTime'),
       dataIndex: 'requestStartTime',
       key: 'requestStartTime',
       width: 160,
@@ -244,7 +245,7 @@ const SpaceLog: React.FC = () => {
       },
     },
     {
-      title: '整体耗时',
+      title: dict('PC.Pages.SpaceLog.colElapsedTime'),
       dataIndex: 'elapsedTimeMs',
       key: 'elapsedTimeMs',
       width: 100,
@@ -289,41 +290,43 @@ const SpaceLog: React.FC = () => {
               <Col span={8}>
                 <Form.Item
                   name="messageId"
-                  label="消息ID"
+                  label={dict('PC.Pages.SpaceLog.lblMessageId')}
                   labelCol={{ flex: '70px' }}
                 >
-                  <Input placeholder="请输入消息ID" />
+                  <Input placeholder={dict('PC.Pages.SpaceLog.phMessageId')} />
                 </Form.Item>
                 <Form.Item
                   name="userUid"
-                  label="用户UID"
+                  label={dict('PC.Pages.SpaceLog.lblUserUid')}
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="请输入用户UID" />
+                  <Input placeholder={dict('PC.Pages.SpaceLog.phUserUid')} />
                 </Form.Item>
               </Col>
               <Col span={8}>
                 <Form.Item
                   name="conversationId"
-                  label="会话ID"
+                  label={dict('PC.Pages.SpaceLog.lblConversationId')}
                   labelCol={{ flex: '70px' }}
                 >
-                  <Input placeholder="请输入会话ID" />
+                  <Input
+                    placeholder={dict('PC.Pages.SpaceLog.phConversationId')}
+                  />
                 </Form.Item>
                 <Form.Item
                   name="userInputString"
-                  label="用户输入"
+                  label={dict('PC.Pages.SpaceLog.lblUserInput')}
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="多个关键字以空格分隔，请输入用户消息" />
+                  <Input placeholder={dict('PC.Pages.SpaceLog.phUserInput')} />
                 </Form.Item>
               </Col>
               <Col span={8}>
                 <Form.Item
                   name="timeRange"
-                  label="时间范围"
+                  label={dict('PC.Pages.SpaceLog.lblTimeRange')}
                   labelCol={{ flex: '70px' }}
                 >
                   <RangePicker
@@ -340,11 +343,11 @@ const SpaceLog: React.FC = () => {
                 </Form.Item>
                 <Form.Item
                   name="outputString"
-                  label="输出"
+                  label={dict('PC.Pages.SpaceLog.lblOutput')}
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="多个关键字以空格分隔，请输入要查询的输出消息" />
+                  <Input placeholder={dict('PC.Pages.SpaceLog.phOutput')} />
                 </Form.Item>
               </Col>
             </Row>
@@ -352,10 +355,10 @@ const SpaceLog: React.FC = () => {
           <div className={cx(styles.line)} />
           <div className={cx('flex', 'flex-col', 'content-between')}>
             <Button type="primary" htmlType="submit">
-              查询
+              {dict('PC.Pages.SpaceLog.btnSearch')}
             </Button>
             <Button htmlType="reset" onClick={handleReset}>
-              重置
+              {dict('PC.Pages.SpaceLog.btnReset')}
             </Button>
           </div>
         </Form>
@@ -378,9 +381,10 @@ const SpaceLog: React.FC = () => {
               ...pagination,
               showSizeChanger: true,
               onChange: handlePaginationChange,
-              showTotal: (total) => `共 ${total} 条`,
+              showTotal: (total) =>
+                dict('PC.Pages.SpaceLog.paginationTotal', total),
               locale: {
-                items_per_page: '条 / 页',
+                items_per_page: dict('PC.Pages.SpaceLog.itemsPerPage'),
               },
             }}
           />

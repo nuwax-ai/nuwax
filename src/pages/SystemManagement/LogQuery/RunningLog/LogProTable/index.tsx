@@ -3,8 +3,9 @@ import {
   TableActions,
   XProTable,
 } from '@/components/ProComponents';
-import { AGENT_COMPONENT_TYPE_MAP } from '@/constants/agent.constants';
 import { apiRunningLogList } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   SpaceLogInfo,
   SpaceLogQueryFilter,
@@ -66,69 +67,92 @@ const LogProTable: React.FC = () => {
     () => [
       {
         width: 100,
-        title: '类型',
+        title: t('PC.Pages.SystemRunningLogTable.columnType'),
         dataIndex: 'targetType',
         valueType: 'select',
-        valueEnum: AGENT_COMPONENT_TYPE_MAP,
+        valueEnum: {
+          [AgentComponentTypeEnum.Agent]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeAgent'),
+          },
+          [AgentComponentTypeEnum.Plugin]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypePlugin'),
+          },
+          [AgentComponentTypeEnum.Workflow]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeWorkflow'),
+          },
+          [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
+        },
         hideInTable: false,
         initialValue: targetTypeFromUrl,
         fieldProps: {
-          placeholder: '请选择类型',
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderType'),
           allowClear: true,
         },
       },
       {
-        title: '对象ID',
+        title: t('PC.Pages.SystemRunningLogTable.columnObjectId'),
         dataIndex: 'targetId',
         width: 140,
         ellipsis: true,
         initialValue: targetIdFromUrl,
         fieldProps: {
-          placeholder: '请输入对象ID',
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderObjectId'),
         },
       },
       {
-        title: '对象名称',
+        title: t('PC.Pages.SystemRunningLogTable.columnObjectName'),
         dataIndex: 'targetName',
         width: 140,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入对象名称' },
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.SystemRunningLogTable.placeholderObjectName',
+          ),
+        },
       },
       {
-        title: '请求ID',
+        title: t('PC.Pages.SystemRunningLogTable.columnRequestId'),
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
         hideInTable: false,
-        fieldProps: { placeholder: '请输入请求ID' },
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderRequestId'),
+        },
       },
       {
-        title: '用户ID',
+        title: t('PC.Pages.SystemRunningLogTable.columnUserId'),
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
         fieldProps: getIntegerOnlyFieldProps(
-          '请输入用户ID，仅支持输入整数',
+          t('PC.Pages.SystemRunningLogTable.placeholderUserIdIntegerOnly'),
           18,
         ),
       },
       {
-        title: '用户名',
+        title: t('PC.Pages.SystemRunningLogTable.columnUserName'),
         dataIndex: 'userName',
         width: 180,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入用户名' },
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderUserName'),
+        },
       },
       {
-        title: '会话ID',
+        title: t('PC.Pages.SystemRunningLogTable.columnConversationId'),
         dataIndex: 'conversationId',
         width: 140,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入会话ID' },
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.SystemRunningLogTable.placeholderConversationId',
+          ),
+        },
       },
 
       {
-        title: '输入内容',
+        title: t('PC.Pages.SystemRunningLogTable.columnInput'),
         dataIndex: 'input',
         minWidth: 150,
         width: 220,
@@ -137,10 +161,12 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.input}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
+        },
       },
       {
-        title: '输出内容',
+        title: t('PC.Pages.SystemRunningLogTable.columnOutput'),
         dataIndex: 'output',
         minWidth: 150,
         width: 220,
@@ -149,31 +175,33 @@ const LogProTable: React.FC = () => {
         render: (_: any, record: SpaceLogInfo) => (
           <LimitedTooltip formatJson>{record?.output}</LimitedTooltip>
         ),
-        fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
+        },
       },
 
       {
-        title: '时间范围',
+        title: t('PC.Pages.SystemRunningLogTable.columnTimeRange'),
         dataIndex: 'createTimeRange',
         valueType: 'dateTimeRange',
         hideInTable: true,
       },
       {
-        title: '输入token',
+        title: t('PC.Pages.SystemRunningLogTable.columnInputToken'),
         dataIndex: 'inputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '输出token',
+        title: t('PC.Pages.SystemRunningLogTable.columnOutputToken'),
         dataIndex: 'outputToken',
         width: 100,
         align: 'center',
         search: false,
       },
       {
-        title: '请求时间',
+        title: t('PC.Pages.SystemRunningLogTable.columnRequestTime'),
         dataIndex: 'requestStartTime',
         width: 180,
         valueType: 'dateTime',
@@ -184,7 +212,7 @@ const LogProTable: React.FC = () => {
         // },
       },
       {
-        title: '整体耗时',
+        title: t('PC.Pages.SystemRunningLogTable.columnElapsedTime'),
         key: 'elapsedTimeMs',
         width: 110,
         align: 'center',
@@ -276,7 +304,9 @@ const LogProTable: React.FC = () => {
           'success' in resp &&
           !resp.success
         ) {
-          message.error(resp.message || '查询失败');
+          message.error(
+            resp.message || t('PC.Pages.SystemRunningLogTable.queryFailed'),
+          );
           return { data: [], total: 0, success: false };
         }
 
@@ -289,7 +319,7 @@ const LogProTable: React.FC = () => {
         return { data: records, total, success: true };
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.error('查询日志失败', e);
+        console.error('[RunningLog] query failed', e);
         return { data: [], total: 0, success: false };
       }
     },
@@ -302,7 +332,9 @@ const LogProTable: React.FC = () => {
    */
   const handleOpenDetails = useCallback((record: SpaceLogInfo) => {
     if (!record?.id) {
-      message.warning('该条记录缺少 requestId，无法查看详情');
+      message.warning(
+        t('PC.Pages.SystemRunningLogTable.missingRequestIdForDetail'),
+      );
       return;
     }
 
@@ -314,7 +346,7 @@ const LogProTable: React.FC = () => {
     return [
       ...columns,
       {
-        title: '操作',
+        title: t('PC.Pages.SystemRunningLogTable.columnAction'),
         valueType: 'option',
         width: 90,
         fixed: 'right',
@@ -326,7 +358,7 @@ const LogProTable: React.FC = () => {
               actions={[
                 {
                   key: 'detail',
-                  label: '详情',
+                  label: t('PC.Pages.SystemRunningLogTable.detail'),
                   disabled: !hasPermission('system_running_log_query_detail'),
                   onClick: () => handleOpenDetails(record),
                 },

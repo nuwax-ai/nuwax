@@ -11,6 +11,7 @@ import {
   apiGetOpenApiList,
   OpenApiPermissionTargetTypeEnum,
 } from '@/services/account';
+import { t } from '@/services/i18nRuntime';
 import { apiPublishedAgentList } from '@/services/square';
 import {
   apiSystemModelList,
@@ -71,14 +72,15 @@ export type DataPermissionTabKey =
   | 'dataPermission'
   | 'apiPermission';
 
-// 数据权限标签页配置（只包含标签名称）
-export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
+export const getDataPermissionTabItems = (): TabsProps['items'] => [
   {
     key: 'model',
     label: (
       <span>
-        模型
-        <Tooltip title="模型需要授权后才可用">
+        {t('PC.Pages.SystemMenuDataPermissionModal.tabModel')}
+        <Tooltip
+          title={t('PC.Pages.SystemMenuDataPermissionModal.tabModelTip')}
+        >
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -90,8 +92,10 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     key: 'agent',
     label: (
       <span>
-        智能体
-        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
+        {t('PC.Pages.SystemMenuDataPermissionModal.tabAgent')}
+        <Tooltip
+          title={t('PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip')}
+        >
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -103,8 +107,10 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
     key: 'page',
     label: (
       <span>
-        网页应用
-        <Tooltip title="在内容管理中开启管控并发布到系统广场后可在此处进行授权">
+        {t('PC.Pages.SystemMenuDataPermissionModal.tabWebApp')}
+        <Tooltip
+          title={t('PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip')}
+        >
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -127,14 +133,18 @@ export const DATA_PERMISSION_TAB_ITEMS: TabsProps['items'] = [
   },
   {
     key: 'dataPermission',
-    label: '开发者权限',
+    label: t('PC.Pages.SystemMenuDataPermissionModal.tabDevPermission'),
   },
   {
     key: 'apiPermission',
     label: (
       <span>
-        API权限
-        <Tooltip title="开放API授权，可配置API接口调用频率限制，-1表示不限制">
+        {t('PC.Pages.SystemMenuDataPermissionModal.tabApiPermission')}
+        <Tooltip
+          title={t(
+            'PC.Pages.SystemMenuDataPermissionModal.tabApiPermissionTooltip',
+          )}
+        >
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />
@@ -671,7 +681,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
       manual: true,
       debounceInterval: 300,
       onSuccess: () => {
-        message.success('数据权限保存成功');
+        message.success(
+          t('PC.Pages.SystemMenuDataPermissionModal.saveSuccess'),
+        );
         onCancel();
       },
     },
@@ -680,7 +692,9 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
   // 保存数据权限
   const handleOk = async () => {
     if (!targetId) {
-      message.error('ID缺失，无法保存数据权限');
+      message.error(
+        t('PC.Pages.SystemMenuDataPermissionModal.missingTargetId'),
+      );
       return;
     }
 
@@ -869,12 +883,15 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
 
   return (
     <Modal
-      title={`数据权限设置 - ${name}`}
+      title={t(
+        'PC.Pages.SystemMenuDataPermissionModal.titleWithName',
+        name || '',
+      )}
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
-      okText="确定"
-      cancelText="取消"
+      okText={t('PC.Common.Global.confirm')}
+      cancelText={t('PC.Common.Global.cancel')}
       confirmLoading={bindLoading}
       width={1000}
     >
@@ -882,7 +899,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}
-          items={DATA_PERMISSION_TAB_ITEMS}
+          items={getDataPermissionTabItems()}
         />
         <div className={cx(styles.tabContent)}>{renderTabContent()}</div>
       </div>

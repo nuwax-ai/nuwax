@@ -3,6 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import {
@@ -175,7 +176,7 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
             onChange={(e) => setMessageInfo(e.target.value)}
             rootClassName={cx(styles.input, 'flex-1')}
             onPressEnter={handlePressEnter}
-            placeholder="直接输入指令；可通过回车换行"
+            placeholder={dict('PC.Pages.ChatTemp.enterInstruction')}
           />
           <span
             onClick={handleSendMessage}

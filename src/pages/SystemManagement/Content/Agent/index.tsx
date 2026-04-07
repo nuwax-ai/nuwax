@@ -2,6 +2,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import type { ActionItem } from '@/components/ProComponents/TableActions';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiSystemResourceAgentDelete,
   apiSystemResourceAgentList,
@@ -78,10 +79,12 @@ const Agent: React.FC = () => {
   const handleDelete = useCallback(async (record: SystemAgentInfo) => {
     const response = await apiSystemResourceAgentDelete({ id: record.id });
     if (response.code === SUCCESS_CODE) {
-      message.success('删除成功');
+      message.success(dict('PC.Pages.SystemContentAgent.deleteSuccess'));
       actionRef.current?.reload();
     } else {
-      message.error(response.message || '删除失败');
+      message.error(
+        response.message || dict('PC.Pages.SystemContentAgent.deleteFailed'),
+      );
     }
   }, []);
 
@@ -121,7 +124,7 @@ const Agent: React.FC = () => {
       const actions: ActionItem<SystemAgentInfo>[] = [
         {
           key: 'view',
-          label: '查看',
+          label: dict('PC.Pages.SystemContentAgent.view'),
           disabled: !hasPermission('content_agent_query_detail'),
           onClick: handleView,
         },
@@ -135,7 +138,7 @@ const Agent: React.FC = () => {
       ) {
         actions.push({
           key: 'auth',
-          label: '授权',
+          label: dict('PC.Pages.SystemContentAgent.authorize'),
           disabled: !hasPermission('content_agent_access_control'),
           onClick: handleAuth,
         });
@@ -143,14 +146,15 @@ const Agent: React.FC = () => {
 
       actions.push({
         key: 'delete',
-        label: '删除',
+        label: dict('PC.Pages.SystemContentAgent.delete'),
         confirm: {
-          title: (
-            <span>
-              确定要删除 <b>{record.name}</b> 吗？
-            </span>
+          title: dict(
+            'PC.Pages.SystemContentAgent.deleteConfirmTitle',
+            record.name,
           ),
-          description: '此操作无法撤销，所有相关数据将被永久删除。',
+          description: dict(
+            'PC.Pages.SystemContentAgent.deleteConfirmDescription',
+          ),
         },
         disabled: !hasPermission('content_agent_delete'),
         onClick: handleDelete,
@@ -166,47 +170,55 @@ const Agent: React.FC = () => {
    */
   const columns: ProColumns<SystemAgentInfo>[] = [
     {
-      title: '名称',
+      title: dict('PC.Pages.SystemContentAgent.columnName'),
       dataIndex: 'name',
       width: 180,
       ellipsis: true,
       fieldProps: {
-        placeholder: '请输入智能体名称',
+        placeholder: dict('PC.Pages.SystemContentAgent.searchName'),
         allowClear: true,
       },
     },
     {
-      title: '描述',
+      title: dict('PC.Pages.SystemContentAgent.columnDescription'),
       dataIndex: 'description',
       width: 250,
       ellipsis: true,
       hideInSearch: true,
     },
     {
-      title: '创建人',
+      title: dict('PC.Pages.SystemContentAgent.columnCreator'),
       dataIndex: 'creatorName',
       width: 120,
       ellipsis: true,
       hideInSearch: false,
     },
     {
-      title: '发布状态',
+      title: dict('PC.Pages.SystemContentAgent.columnPublishStatus'),
       dataIndex: 'publishStatus',
       align: 'center',
       width: 100,
       hideInSearch: true,
       render: (_, record: SystemAgentInfo) => {
         const statusMap: Record<PublishStatusEnum, string> = {
-          [PublishStatusEnum.Developing]: '待发布',
-          [PublishStatusEnum.Applying]: '待审核',
-          [PublishStatusEnum.Published]: '已发布',
-          [PublishStatusEnum.Rejected]: '已拒绝',
+          [PublishStatusEnum.Developing]: dict(
+            'PC.Pages.SystemContentAgent.statusDeveloping',
+          ),
+          [PublishStatusEnum.Applying]: dict(
+            'PC.Pages.SystemContentAgent.statusApplying',
+          ),
+          [PublishStatusEnum.Published]: dict(
+            'PC.Pages.SystemContentAgent.statusPublished',
+          ),
+          [PublishStatusEnum.Rejected]: dict(
+            'PC.Pages.SystemContentAgent.statusRejected',
+          ),
         };
         return statusMap[record.publishStatus] || '--';
       },
     },
     {
-      title: '创建时间',
+      title: dict('PC.Pages.SystemContentAgent.columnCreated'),
       dataIndex: 'created',
       align: 'center',
       width: 170,
@@ -214,15 +226,21 @@ const Agent: React.FC = () => {
       valueType: 'dateTime',
     },
     {
-      title: '管控',
-      tooltip: '若开启管控，发布到系统广场的智能体需授权才能使用',
+      title: dict('PC.Pages.SystemContentAgent.columnAccessControl'),
+      tooltip: dict('PC.Pages.SystemContentAgent.accessControlTooltip'),
       dataIndex: 'accessControl',
       align: 'center',
       width: 100,
       fixed: 'right',
       valueEnum: {
-        [AccessControlEnum.NoFilter]: { text: '关闭', status: 'Default' },
-        [AccessControlEnum.Filter]: { text: '开启', status: 'Processing' },
+        [AccessControlEnum.NoFilter]: {
+          text: dict('PC.Pages.SystemContentAgent.accessControlOff'),
+          status: 'Default',
+        },
+        [AccessControlEnum.Filter]: {
+          text: dict('PC.Pages.SystemContentAgent.accessControlOn'),
+          status: 'Processing',
+        },
       },
       valueType: 'select',
       render: (_, record: SystemAgentInfo) => {
@@ -240,7 +258,7 @@ const Agent: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SystemContentAgent.columnAction'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',
@@ -280,7 +298,10 @@ const Agent: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="智能体管理" hideScroll>
+    <WorkspaceLayout
+      title={dict('PC.Pages.SystemContentAgent.pageTitle')}
+      hideScroll
+    >
       <XProTable<SystemAgentInfo>
         actionRef={actionRef}
         formRef={formRef}

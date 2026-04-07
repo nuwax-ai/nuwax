@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import type {
   CreateDataResourceRequest,
   DataResource,
@@ -52,8 +53,10 @@ export const useDataResourceManagement = () => {
         setResources(convertedResources);
         setTotal(convertedResources.length);
       } catch (error) {
-        console.error('获取数据资源列表失败:', error);
-        message.error('获取数据资源列表失败');
+        console.error('Failed to fetch data resource list:', error);
+        message.error(
+          t('PC.Components.DataResourceManagement.fetchListFailed'),
+        );
       } finally {
         setLoading(false);
       }
@@ -92,20 +95,22 @@ export const useDataResourceManagement = () => {
         setResources((prev) => [newResource, ...prev]);
         setTotal((prev) => prev + 1);
 
-        message.success('数据资源创建成功');
+        message.success(
+          t('PC.Components.DataResourceManagement.createSuccess'),
+        );
 
         return {
           success: true,
-          message: '创建成功',
+          message: t('PC.Components.DataResourceManagement.createSuccess'),
           data: newResource,
         };
       } catch (error) {
-        console.error('创建数据资源失败:', error);
-        message.error('创建数据资源失败');
+        console.error('Failed to create data resource:', error);
+        message.error(t('PC.Components.DataResourceManagement.createFailed'));
 
         return {
           success: false,
-          message: '创建失败',
+          message: t('PC.Components.DataResourceManagement.createFailed'),
         };
       } finally {
         setLoading(false);
@@ -141,19 +146,21 @@ export const useDataResourceManagement = () => {
           ),
         );
 
-        message.success('数据资源更新成功');
+        message.success(
+          t('PC.Components.DataResourceManagement.updateSuccess'),
+        );
 
         return {
           success: true,
-          message: '更新成功',
+          message: t('PC.Components.DataResourceManagement.updateSuccess'),
         };
       } catch (error) {
-        console.error('更新数据资源失败:', error);
-        message.error('更新数据资源失败');
+        console.error('Failed to update data resource:', error);
+        message.error(t('PC.Components.DataResourceManagement.updateFailed'));
 
         return {
           success: false,
-          message: '更新失败',
+          message: t('PC.Components.DataResourceManagement.updateFailed'),
         };
       } finally {
         setLoading(false);
@@ -180,19 +187,21 @@ export const useDataResourceManagement = () => {
         );
         setTotal((prev) => prev - 1);
 
-        message.success('数据资源删除成功');
+        message.success(
+          t('PC.Components.DataResourceManagement.deleteSuccess'),
+        );
 
         return {
           success: true,
-          message: '删除成功',
+          message: t('PC.Components.DataResourceManagement.deleteSuccess'),
         };
       } catch (error) {
-        console.error('删除数据资源失败:', error);
-        message.error('删除数据资源失败');
+        console.error('Failed to delete data resource:', error);
+        message.error(t('PC.Components.DataResourceManagement.deleteFailed'));
 
         return {
           success: false,
-          message: '删除失败',
+          message: t('PC.Components.DataResourceManagement.deleteFailed'),
         };
       } finally {
         setLoading(false);
@@ -234,15 +243,19 @@ export const useDataResourceManagement = () => {
 
         return {
           success: true,
-          message: enabled ? '启用成功' : '停用成功',
+          message: enabled
+            ? t('PC.Components.DataResourceManagement.enableSuccess')
+            : t('PC.Components.DataResourceManagement.disableSuccess'),
         };
       } catch (error) {
-        console.error('切换资源状态失败:', error);
-        message.error('切换资源状态失败');
+        console.error('Failed to toggle data resource status:', error);
+        message.error(
+          t('PC.Components.DataResourceManagement.switchStatusFailed'),
+        );
 
         return {
           success: false,
-          message: '操作失败',
+          message: t('PC.Components.DataResourceManagement.operationFailed'),
         };
       } finally {
         setLoading(false);
@@ -268,25 +281,35 @@ export const useDataResourceManagement = () => {
         const success = Math.random() > 0.3; // 70% 成功率
 
         if (success) {
-          message.success('连接测试成功');
+          message.success(
+            t('PC.Components.DataResourceManagement.connectionTestSuccess'),
+          );
           return {
             success: true,
-            message: '连接测试成功',
+            message: t(
+              'PC.Components.DataResourceManagement.connectionTestSuccess',
+            ),
           };
         } else {
-          message.error('连接测试失败');
+          message.error(
+            t('PC.Components.DataResourceManagement.connectionTestFailed'),
+          );
           return {
             success: false,
-            message: '连接测试失败',
+            message: t(
+              'PC.Components.DataResourceManagement.connectionTestFailed',
+            ),
           };
         }
       } catch (error) {
-        console.error('测试资源连接失败:', error);
-        message.error('测试资源连接失败');
+        console.error('Failed to test data resource connection:', error);
+        message.error(
+          t('PC.Components.DataResourceManagement.connectionTestFailed'),
+        );
 
         return {
           success: false,
-          message: '测试失败',
+          message: t('PC.Components.DataResourceManagement.testFailed'),
         };
       } finally {
         setLoading(false);

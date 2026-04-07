@@ -7,6 +7,7 @@ import {
   CLOUD_BASE_CODE_OPTIONS,
   PLUGIN_CREATE_TOOL,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiPluginAdd, apiPluginHttpUpdate } from '@/services/plugin';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -74,7 +75,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       // 跳转到插件配置页面
       const { type } = params[0];
       handlePluginUrl(result, type);
-      message.success('插件已创建');
+      message.success(dict('PC.Components.CreateNewPlugin.pluginCreated'));
       setLoading(false);
     },
     onError: () => {
@@ -90,7 +91,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       setImageUrl('');
       const info = params[0];
       onConfirm?.(info);
-      message.success('插件更新成功');
+      message.success(dict('PC.Components.CreateNewPlugin.pluginUpdated'));
       setLoading(false);
     },
     onError: () => {
@@ -130,7 +131,11 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={mode === CreateUpdateModeEnum.Create ? '新建插件' : '更新插件'}
+      title={
+        mode === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateNewPlugin.createPlugin')
+          : dict('PC.Components.CreateNewPlugin.updatePlugin')
+      }
       open={open}
       classNames={classNames}
       loading={loading}
@@ -155,43 +160,74 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
         >
           <Form.Item
             name="name"
-            label="插件名称"
+            label={dict('PC.Components.CreateNewPlugin.pluginName')}
             rules={[
-              { required: true, message: '请输入插件名称' },
+              {
+                required: true,
+                message: dict(
+                  'PC.Components.CreateNewPlugin.pleaseInputPluginName',
+                ),
+              },
               {
                 validator(_, value) {
                   if (!value || value?.length <= 30) {
                     return Promise.resolve();
                   }
                   if (value?.length > 30) {
-                    return Promise.reject(new Error('名称不能超过30个字符!'));
+                    return Promise.reject(
+                      new Error(
+                        dict('PC.Components.CreateNewPlugin.nameMaxChars'),
+                      ),
+                    );
                   }
-                  return Promise.reject(new Error('请输入插件名称!'));
+                  return Promise.reject(
+                    new Error(
+                      dict(
+                        'PC.Components.CreateNewPlugin.pleaseInputPluginNameBang',
+                      ),
+                    ),
+                  );
                 },
               },
             ]}
           >
             <Input
-              placeholder="请输入插件名称，确保名称含义清晰且符合平台规范"
+              placeholder={dict(
+                'PC.Components.CreateNewPlugin.placeholderPluginName',
+              )}
               showCount
               maxLength={30}
             />
           </Form.Item>
           <OverrideTextArea
             name="description"
-            label="插件描述"
+            label={dict('PC.Components.CreateNewPlugin.pluginDescription')}
             initialValue={description}
             rules={[
-              { required: true, message: '请输入插件的主要功能和使用场景' },
+              {
+                required: true,
+                message: dict(
+                  'PC.Components.CreateNewPlugin.pleaseInputPluginDesc',
+                ),
+              },
             ]}
-            placeholder="请输入插件的主要功能和使用场景，确保内容符合平台规范。帮助用户/大模型更好地理解"
+            placeholder={dict(
+              'PC.Components.CreateNewPlugin.placeholderPluginDesc',
+            )}
             maxLength={10000}
           />
           <ConditionRender condition={mode === CreateUpdateModeEnum.Create}>
             <Form.Item
               name="type"
-              label="插件工具创建方式"
-              rules={[{ required: true, message: '请选择插件工具创建方式' }]}
+              label={dict('PC.Components.CreateNewPlugin.pluginCreateTool')}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Components.CreateNewPlugin.pleaseSelectPluginCreateTool',
+                  ),
+                },
+              ]}
             >
               <Radio.Group
                 options={PLUGIN_CREATE_TOOL}
@@ -202,8 +238,15 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
             <ConditionRender condition={pluginType === PluginTypeEnum.CODE}>
               <Form.Item
                 name="codeLang"
-                label="IDE 运行时"
-                rules={[{ required: true, message: '请选择插件模式' }]}
+                label={dict('PC.Components.CreateNewPlugin.ideRuntime')}
+                rules={[
+                  {
+                    required: true,
+                    message: dict(
+                      'PC.Components.CreateNewPlugin.pleaseSelectPluginMode',
+                    ),
+                  },
+                ]}
               >
                 <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
               </Form.Item>

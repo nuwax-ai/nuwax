@@ -3,6 +3,7 @@ import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/custom/SelectList';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useCategory from '@/hooks/useCategory';
+import { dict } from '@/services/i18nRuntime';
 import { apiPublishApply, apiPublishItemList } from '@/services/publish';
 import { apiSpaceList } from '@/services/workspace';
 import {
@@ -109,12 +110,12 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     const _dataSource: PublishScope[] = [
       {
         key: PluginPublishScopeEnum.Tenant,
-        name: '系统广场',
+        name: dict('PC.Components.PublishComponentModal.systemSquare'),
         scope: PluginPublishScopeEnum.Tenant,
       },
       {
         key: PluginPublishScopeEnum.Space,
-        name: '空间',
+        name: dict('PC.Components.PublishComponentModal.space'),
         scope: PluginPublishScopeEnum.Space,
         children: list,
       },
@@ -190,19 +191,21 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     switch (mode) {
       case AgentComponentTypeEnum.Agent:
         _classifyList = currentTitle ? pageAppInfoList : agentInfoList;
-        setTitle(currentTitle ?? '智能体');
+        setTitle(
+          currentTitle ?? dict('PC.Components.PublishComponentModal.agent'),
+        );
         break;
       case AgentComponentTypeEnum.Plugin:
         _classifyList = pluginInfoList;
-        setTitle('插件');
+        setTitle(dict('PC.Components.PublishComponentModal.plugin'));
         break;
       case AgentComponentTypeEnum.Workflow:
         _classifyList = workflowInfoList;
-        setTitle('工作流');
+        setTitle(dict('PC.Components.PublishComponentModal.workflow'));
         break;
       case AgentComponentTypeEnum.Skill:
         _classifyList = skillInfoList;
-        setTitle('技能');
+        setTitle(dict('PC.Components.PublishComponentModal.skill'));
         break;
     }
     // 分类选择列表 - 数据类型转换
@@ -240,7 +243,9 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       return res.data;
     },
     onSuccess: (data: string) => {
-      message.success(data || '发布申请已提交，等待审核中');
+      message.success(
+        data || dict('PC.Components.PublishComponentModal.publishSubmitted'),
+      );
       onConfirm();
     },
   });
@@ -474,11 +479,15 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       title: (
         <LabelIcon
           className={cx(styles['label-normal'])}
-          label="发布空间"
+          label={dict('PC.Components.PublishComponentModal.publishScope')}
           title={
             <>
-              <p>1. 系统广场：智能体将出现在系统广场中。</p>
-              <p>2. 空间广场：智能体将出现在选择的空间广场中。</p>
+              <p>
+                {dict('PC.Components.PublishComponentModal.systemSquareTip')}
+              </p>
+              <p>
+                {dict('PC.Components.PublishComponentModal.spaceSquareTip')}
+              </p>
             </>
           }
           type={TooltipTitleTypeEnum.White}
@@ -514,10 +523,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       title: (
         <LabelIcon
           className={cx(styles['label-normal'])}
-          label="允许复制（模板）"
+          label={dict('PC.Components.PublishComponentModal.allowCopyTemplate')}
           title={
             <p>
-              选中后将出现在广场模版中，用户可直接复制到自己的工作空间中去。复制可选的前提是发布已选。
+              {dict('PC.Components.PublishComponentModal.allowCopyTemplateTip')}
             </p>
           }
           type={TooltipTitleTypeEnum.White}
@@ -539,8 +548,8 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       title: (
         <LabelIcon
           className={cx(styles['label-normal'])}
-          label="仅模板"
-          title={'选择后仅在模板广场展示，仅模板只有在允许复制选择后才可选'}
+          label={dict('PC.Components.PublishComponentModal.onlyTemplate')}
+          title={dict('PC.Components.PublishComponentModal.onlyTemplateTip')}
           type={TooltipTitleTypeEnum.White}
         />
       ),
@@ -573,29 +582,39 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         body: styles['modal-body'],
       }}
       loading={loading}
-      title={`发布${title}`}
+      title={dict('PC.Components.PublishComponentModal.publishTitle', title)}
       centered={true}
       open={open}
       onConfirm={handlerConfirm}
       onCancel={onCancel}
     >
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item name="remark" label="发布记录">
+        <Form.Item
+          name="remark"
+          label={dict('PC.Components.PublishComponentModal.publishRecord')}
+        >
           <Input.TextArea
             rootClassName={cx(
               styles['input-textarea'],
               'dispose-textarea-count',
             )}
-            placeholder="这里填写详细的发布记录"
+            placeholder={dict(
+              'PC.Components.PublishComponentModal.publishRecordPlaceholder',
+            )}
             autoSize={{ minRows: 5, maxRows: 8 }}
             maxLength={200}
             showCount
           />
         </Form.Item>
-        <Form.Item name="category" label="分类选择">
+        <Form.Item
+          name="category"
+          label={dict('PC.Components.PublishComponentModal.categorySelect')}
+        >
           <SelectList className={styles.select} options={classifyList} />
         </Form.Item>
-        <Form.Item label="选择发布范围">
+        <Form.Item
+          label={dict('PC.Components.PublishComponentModal.selectPublishScope')}
+        >
           <Table<PublishScope>
             className={cx(styles['table-wrap'])}
             columns={inputColumns}

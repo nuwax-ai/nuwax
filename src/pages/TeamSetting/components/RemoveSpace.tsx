@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { dict } from '@/services/i18nRuntime';
 import { apiRemoveSpace } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
 import { customizeRequiredMark } from '@/utils/form';
@@ -37,7 +38,7 @@ const RemoveSpace: React.FC<RemoveSpaceProps> = ({
       setLoading(true);
     },
     onSuccess: () => {
-      message.success('删除成功');
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
       onConfirmRemove?.();
     },
     onFinally: () => {
@@ -60,7 +61,7 @@ const RemoveSpace: React.FC<RemoveSpaceProps> = ({
     <CustomFormModal
       loading={loading}
       form={form}
-      title="删除团队"
+      title={dict('PC.Pages.TeamSetting.RemoveSpace.deleteTeamTitle')}
       open={open}
       classNames={{
         footer: cx('team-setting-remove-modal-footer'),
@@ -75,7 +76,7 @@ const RemoveSpace: React.FC<RemoveSpaceProps> = ({
             styles['team-setting-modal-warning'],
           )}
         >
-          请谨慎删除，删除后，团队内的所有数据都将丢失。
+          {dict('PC.Pages.TeamSetting.RemoveSpace.deleteWarning')}
         </p>
         <Form
           form={form}
@@ -86,22 +87,34 @@ const RemoveSpace: React.FC<RemoveSpaceProps> = ({
         >
           <Form.Item
             name="name"
-            label="请输入需要删除的团队名称"
+            label={dict('PC.Pages.TeamSetting.RemoveSpace.enterTeamNameLabel')}
             rules={[
-              { message: '请输入需要删除的团队名称' },
+              {
+                message: dict(
+                  'PC.Pages.TeamSetting.RemoveSpace.enterTeamNameRequired',
+                ),
+              },
               {
                 validator: (_, value) => {
                   if (value === name) {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error('输入的团队名称与要删除的团队名称不匹配'),
+                    new Error(
+                      dict('PC.Pages.TeamSetting.RemoveSpace.teamNameMismatch'),
+                    ),
                   );
                 },
               },
             ]}
           >
-            <Input placeholder="请输入团队名称" showCount maxLength={50} />
+            <Input
+              placeholder={dict(
+                'PC.Pages.TeamSetting.RemoveSpace.teamNamePlaceholder',
+              )}
+              showCount
+              maxLength={50}
+            />
           </Form.Item>
         </Form>
       </>

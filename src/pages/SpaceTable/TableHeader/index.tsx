@@ -1,4 +1,5 @@
 import databaseImage from '@/assets/images/database_image.png';
+import { dict } from '@/services/i18nRuntime';
 import { TableHeaderProps } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
 import { FormOutlined, LeftOutlined } from '@ant-design/icons';
@@ -34,7 +35,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
             onClick={onClick}
             style={{ fontSize: 16 }}
           />
-          <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
+          <Tag className={cx(styles['tag-style'])}>
+            {dict('PC.Pages.SpaceTable.TableHeader.recordCount', String(total))}
+          </Tag>
         </div>
       </div>
     </header>

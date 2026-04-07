@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { EcosystemShareStatusEnum } from '@/types/interfaces/ecosystem';
 import classNames from 'classnames';
 import styles from './index.less';
@@ -10,19 +11,19 @@ interface EcoShareStatusProps {
 
 const EcoShareStatusMap = {
   [EcosystemShareStatusEnum.DRAFT]: {
-    title: '草稿',
+    title: dict('PC.Components.EcoShareStatus.draft'),
   },
   [EcosystemShareStatusEnum.REVIEWING]: {
-    title: '审核中',
+    title: dict('PC.Components.EcoShareStatus.reviewing'),
   },
   [EcosystemShareStatusEnum.PUBLISHED]: {
-    title: '已发布',
+    title: dict('PC.Components.EcoShareStatus.published'),
   },
   [EcosystemShareStatusEnum.OFFLINE]: {
-    title: '已下线',
+    title: dict('PC.Components.EcoShareStatus.offline'),
   },
   [EcosystemShareStatusEnum.REJECTED]: {
-    title: '已驳回',
+    title: dict('PC.Components.EcoShareStatus.rejected'),
   },
 };
 

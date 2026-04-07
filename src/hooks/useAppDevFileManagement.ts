@@ -14,6 +14,7 @@ import {
   submitFilesUpdate,
   uploadSingleFile,
 } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
 import type {
   FileContentState,
   FileNode,
@@ -193,7 +194,7 @@ export const useAppDevFileManagement = ({
             }
           }
         } else {
-          throw new Error('API返回数据格式异常');
+          throw new Error('Unexpected API response format');
         }
       } catch (error) {
         // fallback到空项目结构
@@ -313,7 +314,7 @@ export const useAppDevFileManagement = ({
         } else if (typeof response === 'string') {
           content = response;
         } else {
-          throw new Error('文件内容为空');
+          throw new Error('File content is empty');
         }
 
         setFileContentState((prev) => ({
@@ -330,8 +331,8 @@ export const useAppDevFileManagement = ({
 
         onFileContentChange?.(fileId, content);
       } catch (error) {
-        const errorMessage = `加载文件 ${fileId} 失败: ${
-          error instanceof Error ? error.message : '未知错误'
+        const errorMessage = `Failed to load file ${fileId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
         }`;
 
         setFileContentState((prev) => ({
@@ -343,7 +344,9 @@ export const useAppDevFileManagement = ({
         // 即使失败也要标记文件已尝试加载，避免重复调用
         setLoadedFiles((prev) => new Set(prev).add(fileId));
 
-        message.error(`加载文件 ${fileId} 失败`);
+        message.error(
+          dict('PC.Hooks.UseAppDevFileManagement.loadFileFailed', fileId),
+        );
       }
     },
     [projectId, fileTreeState.data, onFileSelect, onFileContentChange],
@@ -454,9 +457,9 @@ export const useAppDevFileManagement = ({
     } catch (error) {
       // 保存文件失败
       // message.error(
-      //   `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      //   `Failed to save file: ${error instanceof Error ? error.message : 'Unknown error'}`,
       // );
-      console.error('保存文件失败', error);
+      console.error('Failed to save file', error);
       setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       return false;
     }
@@ -478,7 +481,7 @@ export const useAppDevFileManagement = ({
       }));
 
       if (!silent) {
-        message.info('已取消编辑');
+        message.info(dict('PC.Hooks.UseAppDevFileManagement.editCanceled'));
       }
     },
     [fileContentState],
@@ -509,7 +512,7 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          // message.success(`上传成功到 ${filePath.trim()}`);
+          // message.success(`Uploaded to ${filePath.trim()}`);
 
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
@@ -519,12 +522,12 @@ export const useAppDevFileManagement = ({
 
           return true;
         } else {
-          console.error('上传失败', result);
+          console.error('Upload failed', result);
           return false;
         }
       } catch (error) {
         // 上传单个文件失败
-        console.error('上传失败', error);
+        console.error('Upload failed', error);
         return false;
       }
     },
@@ -800,19 +803,24 @@ export const useAppDevFileManagement = ({
             }
           }
 
-          // message.success(`重命名成功: ${fileNode.name} → ${newName.trim()}`);
+          // message.success(`Rename succeeded: ${fileNode.name} -> ${newName.trim()}`);
           return true;
         } else {
           // 重命名文件失败，重新加载文件树以恢复原状态
           await loadFileTree(true, true);
-          message.error('重命名失败');
+          message.error(dict('PC.Hooks.UseAppDevFileManagement.renameFailed'));
           return false;
         }
       } catch (error) {
         // 重命名文件异常，重新加载文件树以恢复原状态
         await loadFileTree(true, true);
         message.error(
-          `重命名失败: ${error instanceof Error ? error.message : '未知错误'}`,
+          dict(
+            'PC.Hooks.UseAppDevFileManagement.renameFailedWithError',
+            error instanceof Error
+              ? error.message
+              : dict('PC.Common.Global.unknownError'),
+          ),
         );
         return false;
       }

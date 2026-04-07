@@ -1,7 +1,7 @@
 import Created from '@/components/Created';
 import CustomFormModal from '@/components/CustomFormModal';
-import { AGENT_VARIABLES_INPUT_OPTIONS } from '@/constants/agent.constants';
 import { apiAgentComponentVariableUpdate } from '@/services/agentConfig';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -48,7 +48,7 @@ import {
   TabsProps,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import DragManualCreateItem from './DragManualCreateItem';
@@ -95,6 +95,39 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
   // 加载状态
   const [loading, setLoading] = useState<boolean>(false);
+  const variableInputTypeOptions = useMemo(
+    () => [
+      {
+        value: InputTypeEnum.Text,
+        label: t('PC.Pages.AgentArrangeCreateVariableModal.inputTypeText'),
+      },
+      {
+        value: InputTypeEnum.Paragraph,
+        label: t('PC.Pages.AgentArrangeCreateVariableModal.inputTypeParagraph'),
+      },
+      {
+        value: InputTypeEnum.Number,
+        label: t('PC.Pages.AgentArrangeCreateVariableModal.inputTypeNumber'),
+      },
+      {
+        value: InputTypeEnum.Select,
+        label: t('PC.Pages.AgentArrangeCreateVariableModal.inputTypeSelect'),
+      },
+      {
+        value: InputTypeEnum.MultipleSelect,
+        label: t(
+          'PC.Pages.AgentArrangeCreateVariableModal.inputTypeMultipleSelect',
+        ),
+      },
+      {
+        value: InputTypeEnum.AutoRecognition,
+        label: t(
+          'PC.Pages.AgentArrangeCreateVariableModal.inputTypeAutoRecognition',
+        ),
+      },
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (open) {
@@ -238,7 +271,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
   const items: TabsProps['items'] = [
     {
       key: OptionDataSourceEnum.MANUAL,
-      label: '手动创建',
+      label: t('PC.Pages.AgentArrangeCreateVariableModal.manualCreate'),
       children: (
         <div className={cx('flex', 'flex-col', 'gap-10')}>
           <DndContext
@@ -268,14 +301,14 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           </DndContext>
           <div className={cx(styles['add-item-btn'])} onClick={handleAddItem}>
             <PlusOutlined />
-            添加选项
+            {t('PC.Pages.AgentArrangeCreateVariableModal.addOption')}
           </div>
         </div>
       ),
     },
     {
       key: OptionDataSourceEnum.BINDING,
-      label: '数据绑定',
+      label: t('PC.Pages.AgentArrangeCreateVariableModal.dataBinding'),
       children: (
         <VariableDataBinding
           selectConfig={currentVariable?.selectConfig}
@@ -294,7 +327,9 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       debounceInterval: 300,
       onSuccess: () => {
         setLoading(false);
-        message.success('变量更新成功');
+        message.success(
+          t('PC.Toast.AgentArrangeCreateVariableModal.updateSuccess'),
+        );
         onConfirm(inputDataRef.current);
       },
       onError: () => {
@@ -312,13 +347,17 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     if (
       [InputTypeEnum.Select, InputTypeEnum.MultipleSelect].includes(inputType)
     ) {
-      // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
+      // When switching to binding mode, selecting a bound component is required
       if (activeTabKey === OptionDataSourceEnum.MANUAL) {
         if (!dataSource?.length) {
-          message.error('请添加选项');
+          message.error(
+            t('PC.Pages.AgentArrangeCreateVariableModal.addOptionRequired'),
+          );
           return;
         } else if (dataSource?.some((item) => !item.value)) {
-          message.error('请填写选项值');
+          message.error(
+            t('PC.Pages.AgentArrangeCreateVariableModal.optionValueRequired'),
+          );
           return;
         }
 
@@ -334,10 +373,14 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
         };
       } else {
         if (!targetComponentInfo && !currentVariable?.selectConfig?.targetId) {
-          message.error('请选择绑定组件');
+          message.error(
+            t(
+              'PC.Pages.AgentArrangeCreateVariableModal.selectBindingComponent',
+            ),
+          );
           return;
         }
-        // tabs切换到"插件绑定"时，需要选择绑定组件才能提交
+        // When switching to binding mode, selecting a bound component is required
         // 编辑时，如果没有重新绑定组件，则使用默认值（currentVariable）
         selectConfig = targetComponentInfo
           ? {
@@ -406,7 +449,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       open={open}
       loading={loading}
       classNames={{ body: cx(styles['modal-body-container']) }}
-      title="编辑或添加变量"
+      title={t('PC.Pages.AgentArrangeCreateVariableModal.title')}
       onCancel={onCancel}
       onConfirm={handleConfirm}
     >
@@ -420,39 +463,65 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       >
         <Form.Item
           name="name"
-          label="字段名称"
-          rules={[{ required: true, message: '请输入字段名称' }]}
+          label={t('PC.Pages.AgentArrangeCreateVariableModal.fieldName')}
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.AgentArrangeCreateVariableModal.fieldNameRequired',
+              ),
+            },
+          ]}
         >
           <Input
-            placeholder="请输入字段名称，符合字段命名规划"
+            placeholder={t(
+              'PC.Pages.AgentArrangeCreateVariableModal.fieldNamePlaceholder',
+            )}
             showCount
             maxLength={30}
           />
         </Form.Item>
         <Form.Item
           name="displayName"
-          label="展示名称"
-          rules={[{ required: true, message: '请输入字段展示名称' }]}
+          label={t('PC.Pages.AgentArrangeCreateVariableModal.displayName')}
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.AgentArrangeCreateVariableModal.displayNameRequired',
+              ),
+            },
+          ]}
         >
           <Input
-            placeholder="请输入字段展示名称，供前端展示使用"
+            placeholder={t(
+              'PC.Pages.AgentArrangeCreateVariableModal.displayNamePlaceholder',
+            )}
             showCount
             maxLength={30}
           />
         </Form.Item>
-        <Form.Item name="description" label="描述">
+        <Form.Item
+          name="description"
+          label={t('PC.Pages.AgentArrangeCreateVariableModal.description')}
+        >
           <Input.TextArea
             className="dispose-textarea-count"
-            placeholder="请输入字段描述"
+            placeholder={t(
+              'PC.Pages.AgentArrangeCreateVariableModal.descriptionPlaceholder',
+            )}
             showCount
             maxLength={200}
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
-        <Form.Item name="inputType" label="输入方式">
+        <Form.Item
+          name="inputType"
+          label={t('PC.Pages.AgentArrangeCreateVariableModal.inputType')}
+        >
           <Radio.Group
             className={cx(styles['radio-group'])}
-            options={AGENT_VARIABLES_INPUT_OPTIONS}
+            options={variableInputTypeOptions}
             value={inputType}
             onChange={(e) => setInputType(e.target.value as InputTypeEnum)}
           ></Radio.Group>
@@ -468,17 +537,24 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
             items={items}
           />
         ) : (
-          <Form.Item className={cx('mb-16')} label="默认值">
+          <Form.Item
+            className={cx('mb-16')}
+            label={t('PC.Pages.AgentArrangeCreateVariableModal.defaultValue')}
+          >
             <Input.TextArea
               value={bindValue}
               onChange={(e) => setBindValue(e.target.value)}
-              placeholder="请输入默认值"
+              placeholder={t(
+                'PC.Pages.AgentArrangeCreateVariableModal.defaultValuePlaceholder',
+              )}
               autoSize={{ minRows: 3, maxRows: 5 }}
             />
           </Form.Item>
         )}
         <Form.Item name="require" valuePropName="checked">
-          <Checkbox>必填</Checkbox>
+          <Checkbox>
+            {t('PC.Pages.AgentArrangeCreateVariableModal.required')}
+          </Checkbox>
         </Form.Item>
       </Form>
       {/*添加插件、工作流、知识库、数据库弹窗*/}

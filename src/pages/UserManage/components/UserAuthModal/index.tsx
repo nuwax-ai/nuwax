@@ -3,6 +3,7 @@ import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services
 import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
+import { dict } from '@/services/i18nRuntime';
 import { UserRoleEnum } from '@/types/enums/systemManage';
 import { Button, Checkbox, Empty, Form, Space, Tabs } from 'antd';
 import classNames from 'classnames';
@@ -229,7 +230,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       ? [
           {
             key: 'role',
-            label: '角色',
+            label: dict('PC.Pages.UserManage.UserAuthModal.role'),
             children: (
               <div className={cx(styles.tabContent)}>
                 {roleList && roleList.length > 0 ? (
@@ -252,7 +253,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
                   </Checkbox.Group>
                 ) : (
                   <div className={cx('py-16')}>
-                    <Empty description="暂无数据" />
+                    <Empty description={dict('PC.Common.Global.noData')} />
                   </div>
                 )}
               </div>
@@ -262,7 +263,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       : []),
     {
       key: 'group',
-      label: '用户组',
+      label: dict('PC.Pages.UserManage.UserAuthModal.userGroup'),
       children: (
         <div className={cx(styles.tabContent)}>
           {groupList && groupList.length > 0 ? (
@@ -281,7 +282,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
             </Checkbox.Group>
           ) : (
             <div className={cx('py-16')}>
-              <Empty description="暂无数据" />
+              <Empty description={dict('PC.Common.Global.noData')} />
             </div>
           )}
         </div>
@@ -292,7 +293,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   return (
     <CustomFormModal
       form={dummyForm}
-      title={`授权 - ${userName}`}
+      title={dict('PC.Pages.UserManage.UserAuthModal.authTitle', userName)}
       open={open}
       loading={loading}
       onCancel={onCancel}
@@ -323,7 +324,9 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
             size="small"
             onClick={selectAllConfig.onSelectAll}
           >
-            {selectAllConfig.isAllSelected ? '取消全选' : '全选'}
+            {selectAllConfig.isAllSelected
+              ? dict('PC.Pages.UserManage.UserAuthModal.deselectAll')
+              : dict('PC.Pages.UserManage.UserAuthModal.selectAll')}
           </Button>
         )}
       </div>

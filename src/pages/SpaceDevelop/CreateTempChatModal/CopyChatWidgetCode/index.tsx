@@ -1,4 +1,5 @@
 import iframeCopyImage from '@/assets/images/iframe-copy.png';
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -48,7 +49,7 @@ interface WidgetConfig {
 const CopyChatWidgetCode: React.FC<CopyChatWidgetCodeProps> = ({
   chatUrl,
   size = 16,
-  tooltipText = 'iframe代码复制',
+  tooltipText = dict('PC.Pages.SpaceDevelop.CopyChatWidgetCode.iframeCodeCopy'),
 }) => {
   // 小部件配置状态
   const config = {
@@ -160,7 +161,9 @@ const CopyChatWidgetCode: React.FC<CopyChatWidgetCodeProps> = ({
    * 复制成功回调
    */
   const handleCopy = () => {
-    message.success('iframe代码复制成功');
+    message.success(
+      dict('PC.Pages.SpaceDevelop.CopyChatWidgetCode.copySuccess'),
+    );
   };
 
   return (
@@ -168,7 +171,7 @@ const CopyChatWidgetCode: React.FC<CopyChatWidgetCodeProps> = ({
       <img
         className={cx('cursor-pointer')}
         src={iframeCopyImage}
-        alt="复制代码"
+        alt={dict('PC.Pages.SpaceDevelop.CopyChatWidgetCode.copyCode')}
         style={{ width: size, height: size }}
         title={tooltipText}
       />

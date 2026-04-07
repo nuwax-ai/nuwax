@@ -2,6 +2,7 @@ import { XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import type { UserMetricUsageInfo } from '@/services/account';
 import { apiGetUserMetricUsage } from '@/services/account';
+import { dict } from '@/services/i18nRuntime';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -64,67 +65,67 @@ const UsageStatistics: React.FC = () => {
       const rows: UsageTableItem[] = [
         {
           key: 'token',
-          type: '使用TOKEN上限',
+          type: dict('PC.Layouts.Setting.UsageStatistics.tokenLimit'),
           daily: formatUsageInfo(usage.todayTokenUsage),
           other: '--',
         },
         {
           key: 'agentPrompt',
-          type: '通用智能体对话次数',
+          type: dict('PC.Layouts.Setting.UsageStatistics.agentPrompt'),
           daily: formatUsageInfo(usage.todayAgentPromptUsage),
           other: '--',
         },
         {
           key: 'pagePrompt',
-          type: '网页应用开发对话次数',
+          type: dict('PC.Layouts.Setting.UsageStatistics.pagePrompt'),
           daily: formatUsageInfo(usage.todayPageAppPromptUsage),
           other: '--',
         },
         {
           key: 'workspace',
-          type: '可创建工作空间数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.workspace'),
           daily: '--',
           other: formatUsageInfo(usage.newWorkspaceUsage),
         },
         {
           key: 'agent',
-          type: '可创建智能体数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.agent'),
           daily: '--',
           other: formatUsageInfo(usage.newAgentUsage),
         },
         {
           key: 'pageApp',
-          type: '可创建网页应用数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.pageApp'),
           daily: '--',
           other: formatUsageInfo(usage.newPageAppUsage),
         },
         {
           key: 'knowledgeBase',
-          type: '可创建知识库数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.knowledgeBase'),
           daily: '--',
           other: formatUsageInfo(usage.newKnowledgeBaseUsage),
         },
         {
           key: 'kbStorage',
-          type: '知识库存储上限',
+          type: dict('PC.Layouts.Setting.UsageStatistics.kbStorage'),
           daily: '--',
           other: formatUsageInfo(usage.knowledgeBaseStorageUsage),
         },
         {
           key: 'table',
-          type: '可创建数据表数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.table'),
           daily: '--',
           other: formatUsageInfo(usage.newTableUsage),
         },
         {
           key: 'task',
-          type: '可创建定时任务数量',
+          type: dict('PC.Layouts.Setting.UsageStatistics.task'),
           daily: '--',
           other: formatUsageInfo(usage.newTaskUsage),
         },
         {
           key: 'sandboxMemory',
-          type: '智能体电脑最大内存',
+          type: dict('PC.Layouts.Setting.UsageStatistics.sandboxMemory'),
           daily: '--',
           other: formatUsageInfo(usage.sandboxMemoryLimit),
         },
@@ -145,19 +146,19 @@ const UsageStatistics: React.FC = () => {
 
   const columns: ProColumns<UsageTableItem>[] = [
     {
-      title: '类型',
+      title: dict('PC.Layouts.Setting.UsageStatistics.columnType'),
       dataIndex: 'type',
       key: 'type',
       width: 220,
     },
     {
-      title: '每日',
+      title: dict('PC.Layouts.Setting.UsageStatistics.columnDaily'),
       dataIndex: 'daily',
       key: 'daily',
       width: 200,
     },
     {
-      title: '其他数量',
+      title: dict('PC.Layouts.Setting.UsageStatistics.columnOther'),
       dataIndex: 'other',
       key: 'other',
       width: 200,
@@ -166,7 +167,7 @@ const UsageStatistics: React.FC = () => {
 
   return (
     <div className={cx(styles.container)}>
-      <h3>用量统计</h3>
+      <h3>{dict('PC.Layouts.Setting.UsageStatistics.title')}</h3>
       <div className={cx('text-right')}>
         <Button
           type="primary"
@@ -175,7 +176,7 @@ const UsageStatistics: React.FC = () => {
             actionRef.current?.reload?.();
           }}
         >
-          查询
+          {dict('PC.Layouts.Setting.UsageStatistics.query')}
         </Button>
       </div>
       <XProTable<UsageTableItem>

@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { t } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -30,43 +31,48 @@ const { TextArea } = Input;
 const cx = classNames.bind(styles);
 
 interface RoleFormModalProps {
-  /** 是否打开 */
+  /** Whether modal is open. */
   open: boolean;
-  /** 是否为编辑模式 */
+  /** Whether edit mode is enabled. */
   isEdit?: boolean;
-  /** 新增时，默认排序索引，默认1 */
+  /** Default sort index for create mode. */
   defaultSortIndex?: number;
-  /** 编辑时的角色数据 */
+  /** Role info for edit mode. */
   roleInfo?: RoleInfo | null;
-  /** 取消回调 */
+  /** Cancel callback. */
   onCancel: () => void;
-  /** 成功回调 */
+  /** Success callback. */
   onSuccess: () => void;
 }
 
-// 角色来源选项 来源 1:系统内置 2:用户自定义
+// Role source options. 1: System built-in, 2: User-defined.
 const ROLE_SOURCE_OPTIONS = [
-  { label: '系统内置', value: RoleSourceEnum.SystemBuiltIn },
-  { label: '用户自定义', value: RoleSourceEnum.UserDefined },
+  {
+    label: t('PC.Pages.SystemRoleFormModal.roleSourceSystemBuiltIn'),
+    value: RoleSourceEnum.SystemBuiltIn,
+  },
+  {
+    label: t('PC.Pages.SystemRoleFormModal.roleSourceUserDefined'),
+    value: RoleSourceEnum.UserDefined,
+  },
 ];
 
 /**
- * 角色表单Modal组件
- * 用于新增或编辑角色信息
+ * Role create/edit modal.
  */
 const RoleFormModal: React.FC<RoleFormModalProps> = ({
   open,
   isEdit = false,
-  /** 新增时，默认排序索引，默认1 */
+  /** Default sort index for create mode. */
   defaultSortIndex = 1,
-  /** 编辑时的角色数据 */
+  /** Role info for edit mode. */
   roleInfo,
   onCancel,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
 
-  // 根据ID查询角色
+  // Query role by ID.
   const { run: runGetRoleById } = useRequest(apiGetRoleById, {
     manual: true,
     onSuccess: (data: RoleInfo) => {
@@ -80,22 +86,22 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     },
   });
 
-  // 新增角色
+  // Create role.
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
     manual: true,
     onSuccess: () => {
-      message.success('角色创建成功');
+      message.success(t('PC.Toast.SystemRoleFormModal.createSuccess'));
       onSuccess();
     },
   });
 
-  // 更新角色
+  // Update role.
   const { run: runUpdateRole, loading: updateLoading } = useRequest(
     apiUpdateRole,
     {
       manual: true,
       onSuccess: () => {
-        message.success('角色编辑成功');
+        message.success(t('PC.Toast.SystemRoleFormModal.editSuccess'));
         onSuccess();
       },
     },
@@ -103,13 +109,13 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
 
   const loading = addLoading || updateLoading;
 
-  // 初始化表单数据
+  // Initialize form values.
   useEffect(() => {
     if (open) {
       if (isEdit && roleInfo) {
         runGetRoleById(roleInfo.id);
       } else {
-        // 新增模式：重置表单
+        // Create mode: reset form.
         form.resetFields();
         form.setFieldsValue({
           source: RoleSourceEnum.UserDefined,
@@ -120,7 +126,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     }
   }, [open, isEdit, roleInfo, defaultSortIndex]);
 
-  // 处理提交
+  // Submit form.
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -141,17 +147,28 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
         await runAddRole(formData);
       }
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error(
+        `${t('PC.Pages.SystemRoleFormModal.formValidateFailed')}:`,
+        error,
+      );
     }
   };
 
   return (
     <CustomFormModal
       form={form}
-      title={isEdit ? '编辑角色' : '新增角色'}
+      title={
+        isEdit
+          ? t('PC.Pages.SystemRoleFormModal.editTitle')
+          : t('PC.Pages.SystemRoleFormModal.createTitle')
+      }
       open={open}
       loading={loading}
-      okText={isEdit ? '保存' : '创建'}
+      okText={
+        isEdit
+          ? t('PC.Pages.SystemRoleFormModal.save')
+          : t('PC.Pages.SystemRoleFormModal.create')
+      }
       width={650}
       onCancel={onCancel}
       onConfirm={handleSubmit}
@@ -165,22 +182,38 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
         requiredMark={customizeRequiredMark}
         className={cx(styles.form)}
       >
-        {/* 基本信息 */}
+        {/* Basic information */}
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label="角色名称"
+              label={t('PC.Pages.SystemRoleFormModal.roleName')}
               name="name"
-              rules={[{ required: true, message: '请输入角色名称' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t('PC.Pages.SystemRoleFormModal.roleNameRequired'),
+                },
+              ]}
             >
-              <Input placeholder="请输入角色名称" maxLength={50} showCount />
+              <Input
+                placeholder={t(
+                  'PC.Pages.SystemRoleFormModal.roleNamePlaceholder',
+                )}
+                maxLength={50}
+                showCount
+              />
             </Form.Item>
           </Col>
 
           <Col span={12}>
-            <Form.Item label="来源" name="source">
+            <Form.Item
+              label={t('PC.Pages.SystemRoleFormModal.source')}
+              name="source"
+            >
               <Select
-                placeholder="请选择来源"
+                placeholder={t(
+                  'PC.Pages.SystemRoleFormModal.sourcePlaceholder',
+                )}
                 disabled
                 options={ROLE_SOURCE_OPTIONS}
               />
@@ -188,9 +221,12 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           </Col>
 
           <Col span={12}>
-            <Form.Item label="排序" name="sortIndex">
+            <Form.Item
+              label={t('PC.Pages.SystemRoleFormModal.sort')}
+              name="sortIndex"
+            >
               <InputNumber
-                placeholder="请输入排序"
+                placeholder={t('PC.Pages.SystemRoleFormModal.sortPlaceholder')}
                 className={cx('w-full')}
                 min={1}
                 max={10000}
@@ -200,21 +236,29 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label="状态"
+              label={t('PC.Pages.SystemRoleFormModal.status')}
               name="status"
               valuePropName="checked"
               tooltip={{
-                title: '启用或禁用此角色',
+                title: t('PC.Pages.SystemRoleFormModal.statusTooltip'),
                 icon: <InfoCircleOutlined />,
               }}
             >
-              <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+              <Switch
+                checkedChildren={t('PC.Pages.SystemRoleFormModal.enabled')}
+                unCheckedChildren={t('PC.Pages.SystemRoleFormModal.disabled')}
+              />
             </Form.Item>
           </Col>
         </Row>
-        <Form.Item label="描述" name="description">
+        <Form.Item
+          label={t('PC.Pages.SystemRoleFormModal.description')}
+          name="description"
+        >
           <TextArea
-            placeholder="请输入角色描述"
+            placeholder={t(
+              'PC.Pages.SystemRoleFormModal.descriptionPlaceholder',
+            )}
             className="dispose-textarea-count"
             autoSize={{ minRows: 3, maxRows: 5 }}
             showCount

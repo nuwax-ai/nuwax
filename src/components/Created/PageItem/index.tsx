@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
 import { Button, Divider } from 'antd';
@@ -45,13 +46,15 @@ const PageItem: React.FC<PageItemProps> = ({
             <img
               src={item?.creatorAvatar || require('@/assets/images/avatar.png')}
               style={{ borderRadius: '50%' }}
-              alt="用户头像"
+              alt={t('PC.Components.CreatedPageItem.avatarAlt')}
             />
             <span>{item.creatorNickName}</span>
             <Divider type="vertical" />
             <span>
-              {'创建于'}
-              {getTime(item.created!)}
+              {t(
+                'PC.Components.CreatedPageItem.createdAt',
+                getTime(item.created!),
+              )}
             </span>
           </div>
         </div>
@@ -67,7 +70,9 @@ const PageItem: React.FC<PageItemProps> = ({
         disabled={isCurrentLoading ? false : isAddedState}
         loading={isCurrentLoading}
       >
-        {isAddedState ? '已添加' : '添加'}
+        {isAddedState
+          ? t('PC.Components.CreatedPageItem.added')
+          : t('PC.Components.CreatedPageItem.add')}
       </Button>
     </div>
   );

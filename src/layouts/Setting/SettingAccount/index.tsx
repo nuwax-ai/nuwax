@@ -2,6 +2,9 @@ import avatarImage from '@/assets/images/avatar.png';
 import UploadAvatar from '@/components/UploadAvatar';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiGetUserDynamicCode, apiUserUpdate } from '@/services/account';
+import { apiI18nLangList, saveUserLang } from '@/services/i18n';
+import { dict, getCurrentLang, setCurrentLang } from '@/services/i18nRuntime';
+import type { I18nLangDto } from '@/types/interfaces/i18n';
 import type {
   SetUserAccountInfo,
   UserUpdateParams,
@@ -9,7 +12,7 @@ import type {
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
-import { Button, Form, Input, message, Tooltip } from 'antd';
+import { Button, Form, Input, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
@@ -28,13 +31,14 @@ const SettingAccount: React.FC = () => {
   // 动态验证码相关状态
   const [dynamicCode, setDynamicCode] = useState<number | null>(null);
   const [expireTime, setExpireTime] = useState<Date | null>(null);
+  const [language, setLanguage] = useState<string>('');
 
   // 更新用户信息
   const { run, loading } = useRequest(apiUserUpdate, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: UserUpdateParams[]) => {
-      message.success('保存成功');
+      message.success(dict('PC.Toast.Global.savedSuccessfully'));
       const _userInfo = cloneDeep(userInfo);
       if (params[0]?.avatar) {
         _userInfo.avatar = params[0].avatar;
@@ -46,6 +50,36 @@ const SettingAccount: React.FC = () => {
       localStorage.setItem(USER_INFO, JSON.stringify(_userInfo));
     },
   });
+
+  const { data: langList = [], loading: languageListLoading } = useRequest(
+    apiI18nLangList,
+    {
+      onSuccess: (result: any) => {
+        const items: I18nLangDto[] = Array.isArray(result)
+          ? result
+          : result?.data || [];
+        if (!language) {
+          const defaultLang =
+            userInfo?.lang ||
+            items.find((item) => item.isDefault === 1)?.lang ||
+            getCurrentLang();
+          setLanguage((defaultLang || '').toLowerCase());
+        }
+      },
+    },
+  );
+
+  const { run: runSaveLanguage, loading: languageSaving } = useRequest(
+    saveUserLang,
+    {
+      manual: true,
+      onSuccess: () => {
+        setCurrentLang(language);
+        message.success(dict('PC.Toast.Global.languageSavedReload'));
+        window.location.reload();
+      },
+    },
+  );
 
   // 获取动态验证码
   const { run: runGetDynamicCode, loading: dynamicCodeLoading } = useRequest(
@@ -69,7 +103,7 @@ const SettingAccount: React.FC = () => {
 
   // 复制成功回调
   const handleCopy = () => {
-    message.success('复制成功');
+    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
   };
 
   // 格式化过期时间
@@ -89,9 +123,16 @@ const SettingAccount: React.FC = () => {
       userName: userInfo?.userName,
       nickName: userInfo?.nickName,
     });
+    setLanguage((userInfo?.lang || getCurrentLang()).toLowerCase());
     // 初始化时获取动态验证码
     runGetDynamicCode();
   }, []);
+
+  useEffect(() => {
+    if (userInfo?.lang && userInfo.lang !== language) {
+      setLanguage(userInfo.lang.toLowerCase());
+    }
+  }, [userInfo?.lang]);
 
   // 上传头像成功后更新头像
   const handleSuccessUpload = (url: string) => {
@@ -108,9 +149,26 @@ const SettingAccount: React.FC = () => {
     run(values);
   };
 
+  const languageItems: I18nLangDto[] = Array.isArray(langList)
+    ? langList
+    : (langList as any)?.data || [];
+
+  const languageOptions = languageItems
+    .filter((item) => item.status === 1)
+    .sort((a, b) => a.sort - b.sort)
+    .map((item) => ({
+      label: item.name,
+      value: item.lang.toLowerCase(),
+    }));
+
+  const handleSaveLanguage = () => {
+    if (!language) return;
+    runSaveLanguage(language);
+  };
+
   return (
     <div className={cx(styles.container)}>
-      <h3>账号</h3>
+      <h3>{dict('PC.Pages.Setting.accountTitle')}</h3>
       <UploadAvatar
         imageUrl={userInfo?.avatar}
         className={cx(styles.avatar)}
@@ -123,54 +181,59 @@ const SettingAccount: React.FC = () => {
         requiredMark={customizeRequiredNoStarMark}
         onFinish={onSaveUsername}
       >
-        <Form.Item label="用户名">
+        <Form.Item label={dict('PC.Pages.Setting.userName')}>
           <Form.Item
             noStyle
             name="userName"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Pages.Setting.inputUserName'),
+              },
+            ]}
           >
             <Input
               rootClassName={cx(styles.input)}
-              placeholder="请输入用户名"
+              placeholder={dict('PC.Pages.Setting.inputUserName')}
               showCount
               maxLength={50}
             />
           </Form.Item>
           <Form.Item noStyle>
             <Button type="primary" loading={loading} htmlType="submit">
-              保存
+              {dict('PC.Common.Global.save')}
             </Button>
           </Form.Item>
         </Form.Item>
-        <Form.Item label="用户昵称">
+        <Form.Item label={dict('PC.Pages.Setting.nickName')}>
           <Form.Item noStyle name="nickName">
             <Input
               rootClassName={cx(styles.input)}
-              placeholder="请输入用户昵称"
+              placeholder={dict('PC.Pages.Setting.inputNickName')}
               showCount
               maxLength={50}
             />
           </Form.Item>
           <Form.Item noStyle>
             <Button type="primary" loading={loading} htmlType="submit">
-              保存
+              {dict('PC.Common.Global.save')}
             </Button>
           </Form.Item>
         </Form.Item>
       </Form>
-      <h4 className={cx(styles.name)}>手机号码</h4>
+      <h4 className={cx(styles.name)}>{dict('PC.Pages.Setting.phone')}</h4>
       <span className={cx(styles.text, styles['mb-30'])}>
         {userInfo?.phone}
       </span>
-      <h4 className={cx(styles.name)}>邮箱地址</h4>
+      <h4 className={cx(styles.name)}>{dict('PC.Pages.Setting.email')}</h4>
       <span className={cx(styles.text, styles['mb-30'])}>
-        {userInfo?.email || '待绑定'}
+        {userInfo?.email || dict('PC.Pages.Setting.bindPending')}
       </span>
       <h4 className={cx(styles.name)}>
-        动态认证码
+        {dict('PC.Pages.Setting.dynamicCode')}
         {expireTime && (
           <span className={cx(styles.expireTime)}>
-            （{formatExpireTime(expireTime)} 过期）
+            ({dict('PC.Pages.Setting.expiresAt', formatExpireTime(expireTime))})
           </span>
         )}
       </h4>
@@ -180,7 +243,7 @@ const SettingAccount: React.FC = () => {
           text={dynamicCode ? String(dynamicCode) : ''}
           onCopy={handleCopy}
         >
-          <Tooltip title="复制">
+          <Tooltip title={dict('PC.Common.Global.copy')}>
             <Button
               size="small"
               type="link"
@@ -189,7 +252,7 @@ const SettingAccount: React.FC = () => {
             />
           </Tooltip>
         </CopyToClipboard>
-        <Tooltip title="刷新">
+        <Tooltip title={dict('PC.Common.Global.refresh')}>
           <Button
             size="small"
             type="link"
@@ -199,6 +262,27 @@ const SettingAccount: React.FC = () => {
             className={cx(styles.btn)}
           />
         </Tooltip>
+      </div>
+      <h4 className={cx(styles.name, styles['mt-30'])}>
+        {dict('PC.Pages.Setting.language')}
+      </h4>
+      <div className={cx(styles['language-row'])}>
+        <Select
+          className={cx(styles['language-select'])}
+          placeholder={dict('PC.Pages.Setting.selectLanguage')}
+          options={languageOptions}
+          value={language || undefined}
+          onChange={(value) => setLanguage((value || '').toLowerCase())}
+          loading={languageListLoading}
+        />
+        <Button
+          type="primary"
+          onClick={handleSaveLanguage}
+          loading={languageSaving}
+          disabled={!language}
+        >
+          {dict('PC.Common.Global.save')}
+        </Button>
       </div>
     </div>
   );

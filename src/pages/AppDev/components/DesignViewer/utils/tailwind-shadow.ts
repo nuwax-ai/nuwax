@@ -27,10 +27,10 @@ export const SHADOW_REGEXP = /^shadow(-none|-sm|-md|-lg|-xl|-2xl|-inner)?$/;
  */
 export const convertLabelToShadowClass = (label: string): string | null => {
   // 创建反向映射：从标签到类名
-  // 注意：'Extra Large' 可能对应 'shadow-xl' 或 'shadow-2xl'，优先返回 'shadow-xl'
+  // Note: 'Extra Large' may map to 'shadow-xl' or 'shadow-2xl'; prefer 'shadow-xl'
   const labelToClass: Record<string, string> = {};
   Object.entries(tailwindShadowMap).forEach(([className, labelValue]) => {
-    // 如果标签已存在，且当前类名更具体（如 'shadow-xl' 比 'shadow-2xl' 更短，优先选择），则更新
+    // If the label already exists, prefer a more specific class name.
     if (
       !labelToClass[labelValue] ||
       (className.length < labelToClass[labelValue].length &&

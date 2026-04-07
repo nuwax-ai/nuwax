@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import MenuListItem from '@/components/base/MenuListItem';
+import { dict } from '@/services/i18nRuntime';
 import type { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
@@ -43,9 +44,11 @@ const DevCollect: React.FC = () => {
     </div>
   ) : (
     <>
-      <div className={cx(styles['no-dev-collect'])}>还没有收藏任何内容</div>
       <div className={cx(styles['no-dev-collect'])}>
-        点击⭐️按钮可将内容添加到这里~
+        {dict('PC.Layouts.DynamicMenusLayout.DevCollect.noCollection')}
+      </div>
+      <div className={cx(styles['no-dev-collect'])}>
+        {dict('PC.Layouts.DynamicMenusLayout.DevCollect.addByStar')}
       </div>
     </>
   );

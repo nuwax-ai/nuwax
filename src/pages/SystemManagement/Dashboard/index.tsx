@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { t } from '@/services/i18nRuntime';
 import {
   apiGetAccessStats,
   apiGetConversationStats,
@@ -112,7 +113,7 @@ const Dashboard: React.FC = () => {
 
     return [
       {
-        title: '总用户数',
+        title: t('PC.Pages.SystemDashboard.totalUsers'),
         value: userData?.totalUserCount || 0,
         icon: <TeamOutlined />,
         iconColor: '#1890ff',
@@ -120,7 +121,7 @@ const Dashboard: React.FC = () => {
         loading: isCoreStatsLoading,
       },
       {
-        title: '今日新增用户',
+        title: t('PC.Pages.SystemDashboard.todayNewUsers'),
         value: userData?.todayNewUserCount || 0,
         icon: <UserAddOutlined />,
         iconColor: '#52c41a',
@@ -128,7 +129,7 @@ const Dashboard: React.FC = () => {
         loading: isCoreStatsLoading,
       },
       {
-        title: '今日访问量',
+        title: t('PC.Pages.SystemDashboard.todayVisits'),
         value: data?.todayUserCount || 0,
         icon: <EyeOutlined />,
         iconColor: '#722ed1',
@@ -136,7 +137,7 @@ const Dashboard: React.FC = () => {
         loading: isCoreStatsLoading,
       },
       {
-        title: '30日总访问量',
+        title: t('PC.Pages.SystemDashboard.last30DaysVisits'),
         value: data?.last30DaysUserCount || 0,
         icon: <BarChartOutlined />,
         iconColor: '#fa8c16',
@@ -185,35 +186,35 @@ const Dashboard: React.FC = () => {
 
     return [
       {
-        name: '工作空间',
+        name: t('PC.Pages.SystemDashboard.resourceSpace'),
         count: data?.spaceCount || 0,
         icon: <FolderOutlined />,
         color: '#597ef7',
         bgColor: '#f0f5ff',
       },
       {
-        name: '智能体',
+        name: t('PC.Pages.SystemDashboard.resourceAgent'),
         count: data?.agentCount || 0,
         icon: <TeamOutlined />,
         color: '#1890ff',
         bgColor: '#e6f7ff',
       },
       {
-        name: '知识库',
+        name: t('PC.Pages.SystemDashboard.resourceKnowledgeBase'),
         count: data?.knowledgeCount || 0,
         icon: <BookOutlined />,
         color: '#13c2c2',
         bgColor: '#e6fffb',
       },
       {
-        name: '工作流',
+        name: t('PC.Pages.SystemDashboard.resourceWorkflow'),
         count: data?.workflowCount || 0,
         icon: <SyncOutlined />,
         color: '#52c41a',
         bgColor: '#f6ffed',
       },
       {
-        name: '数据表',
+        name: t('PC.Pages.SystemDashboard.resourceDataTable'),
         count: data?.tableCount || 0,
         icon: <TableOutlined />,
         color: '#faad14',
@@ -227,28 +228,28 @@ const Dashboard: React.FC = () => {
         bgColor: '#f9f0ff',
       },
       {
-        name: '网页应用',
+        name: t('PC.Pages.SystemDashboard.resourceWebApplication'),
         count: data?.pageCount || 0,
         icon: <AppstoreOutlined />,
         color: '#f5222d',
         bgColor: '#fff1f0',
       },
       {
-        name: '模型',
+        name: t('PC.Pages.SystemDashboard.resourceModel'),
         count: data?.modelCount || 0,
         icon: <DesktopOutlined />,
         color: '#2f54eb',
         bgColor: '#f0f5ff',
       },
       {
-        name: '插件',
+        name: t('PC.Pages.SystemDashboard.resourcePlugin'),
         count: data?.pluginCount || 0,
         icon: <ApiOutlined />,
         color: '#fa541c',
         bgColor: '#fff2e8',
       },
       {
-        name: '技能',
+        name: t('PC.Pages.SystemDashboard.resourceSkill'),
         count: data?.skillCount || 0,
         icon: <ThunderboltOutlined />,
         color: '#ffc53d',
@@ -264,14 +265,14 @@ const Dashboard: React.FC = () => {
 
     return [
       {
-        title: '总会话数',
+        title: t('PC.Pages.SystemDashboard.totalConversations'),
         value: data?.totalConversations || 0,
         icon: <CommentOutlined />,
         iconColor: '#722ed1',
         iconBgColor: '#f9f0ff',
       },
       {
-        title: '今日新增会话',
+        title: t('PC.Pages.SystemDashboard.todayNewConversations'),
         value: data?.todayNewConversations || 0,
         icon: <CommentOutlined />,
         iconColor: '#13c2c2',
@@ -302,7 +303,11 @@ const Dashboard: React.FC = () => {
   }, [conversationStats, conversationPeriod]);
 
   return (
-    <WorkspaceLayout title="系统概览" hideScroll={true} contentPadding="0">
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemDashboard.pageTitle')}
+      hideScroll={true}
+      contentPadding="0"
+    >
       <div className={cx(styles['dashboard-container'])}>
         {/* 核心统计卡片 */}
         <Row gutter={[16, 16]} className={cx(styles['stats-row'])}>
@@ -317,10 +322,10 @@ const Dashboard: React.FC = () => {
         <Row gutter={[16, 16]} className={cx(styles['trend-row'])}>
           <Col span={24}>
             <TrendChart
-              title="用户新增趋势"
+              title={t('PC.Pages.SystemDashboard.userTrendTitle')}
               data={userTrendData}
               color="#722ed1"
-              tooltipName="新增用户"
+              tooltipName={t('PC.Pages.SystemDashboard.userTrendTooltip')}
               loading={isCoreStatsLoading}
               period={userPeriod}
               onPeriodChange={setUserPeriod}
@@ -328,12 +333,17 @@ const Dashboard: React.FC = () => {
           </Col>
           <Col span={24}>
             <TrendChart
-              title="七日访问趋势"
+              title={t('PC.Pages.SystemDashboard.visitTrendTitle')}
               data={visitTrendData}
               color="#1890ff"
-              tooltipName="访问量"
+              tooltipName={t('PC.Pages.SystemDashboard.visitTrendTooltip')}
               loading={!hasAccessLoaded && accessLoading}
-              periods={[{ label: '7天', value: '7d' }]}
+              periods={[
+                {
+                  label: t('PC.Pages.SystemDashboard.last7Days'),
+                  value: '7d',
+                },
+              ]}
             />
           </Col>
         </Row>

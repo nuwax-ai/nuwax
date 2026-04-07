@@ -1,6 +1,7 @@
 import SelectList from '@/components/custom/SelectList';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { COMMON_TABLE_STYLE } from '@/constants/layout.constants';
+import { dict } from '@/services/i18nRuntime';
 import { BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
 import {
@@ -181,7 +182,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: dict('PC.Components.ParamsSetting.paramName'),
       dataIndex: 'name',
       key: 'name',
       className: 'flex items-center table-params-name-td',
@@ -202,7 +203,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
     },
     {
-      title: '参数类型',
+      title: dict('PC.Components.ParamsSetting.paramType'),
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
@@ -211,18 +212,20 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
     },
     {
-      title: '必填',
+      title: dict('PC.Components.ParamsSetting.required'),
       dataIndex: 'require',
       key: 'require',
       width: 85,
       render: (value: boolean) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
-          {value ? '必填' : '非必填'}
+          {value
+            ? dict('PC.Components.ParamsSetting.required')
+            : dict('PC.Components.ParamsSetting.notRequired')}
         </div>
       ),
     },
     {
-      title: '默认值',
+      title: dict('PC.Components.ParamsSetting.defaultValue'),
       key: 'default',
       width: 232,
       render: (_, record) => (
@@ -243,7 +246,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
             {isShowInput(record) ? (
               <Input
                 rootClassName={cx(styles.select)}
-                placeholder="请填写"
+                placeholder={dict('PC.Components.ParamsSetting.pleaseFill')}
                 disabled={isDefaultValueDisabled(record)}
                 value={record.bindValue}
                 onChange={(e) =>
@@ -252,7 +255,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
               />
             ) : (
               <Select
-                placeholder="请选择"
+                placeholder={dict('PC.Common.Global.pleaseSelect')}
                 disabled={isDefaultValueDisabled(record)}
                 rootClassName={cx(styles.select)}
                 popupMatchSelectWidth={false}
@@ -270,11 +273,9 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     {
       title: (
         <>
-          <span>开启</span>
+          <span>{dict('PC.Components.ParamsSetting.enable')}</span>
           <Popover
-            content={
-              '当参数设置为关闭时，大模型将无法看到该参数。如果该参数设置了默认值并且不可见，则在调用时，智能体会默认只使用这个设定值'
-            }
+            content={dict('PC.Components.ParamsSetting.enableTooltip')}
             styles={{
               body: { width: '300px' },
             }}
@@ -293,7 +294,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
             title={
               record.require &&
               !record.bindValue &&
-              '此参数是必填参数，填写默认值后，此开关可用'
+              dict('PC.Components.ParamsSetting.requiredParamTooltip')
             }
           >
             <Switch
@@ -344,7 +345,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
           className={cx({ [styles['btn-disabled']]: disabled })}
           disabled={disabled}
         >
-          保存
+          {dict('PC.Common.Global.save')}
         </Button>
       </footer>
     </div>

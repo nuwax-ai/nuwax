@@ -1,6 +1,7 @@
 import { SkillList } from '@/components/Skill';
 import { COMPONENT_LIST } from '@/constants/ecosystem.constants';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedPluginInfo,
   apiPublishedWorkflowInfo,
@@ -111,7 +112,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   const [form] = Form.useForm();
   const [configParam, setConfigParam] = useState<PluginParam[]>([]);
   const [suffixInfo, setSuffixInfo] = useState<any>({
-    name: '插件',
+    name: dict('PC.Components.EcosystemShareModal.plugin'),
     targetType: AgentComponentTypeEnum.Plugin,
   });
   const [pluginError, setPluginError] = useState(false);
@@ -261,7 +262,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
   // 入参配置columns
   const inputColumns: any = [
     {
-      title: '参数名称',
+      title: dict('PC.Components.EcosystemShareModal.paramName'),
       dataIndex: 'name',
       key: 'name',
       width: '30%',
@@ -270,7 +271,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       },
     },
     {
-      title: '参数描述',
+      title: dict('PC.Components.EcosystemShareModal.paramDesc'),
       dataIndex: 'description',
       key: 'description',
       width: '50%',
@@ -279,7 +280,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       },
     },
     {
-      title: '启用必填',
+      title: dict('PC.Components.EcosystemShareModal.required'),
       dataIndex: 'value',
       key: 'value',
       width: '20%',
@@ -364,9 +365,11 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
       if (!data) {
         return (
           <Space>
-            <Button onClick={handleClose}>取消</Button>
+            <Button onClick={handleClose}>
+              {dict('PC.Common.Global.cancel')}
+            </Button>
             <Button type="primary" onClick={() => handleSave(false)}>
-              保存并发布分享
+              {dict('PC.Components.EcosystemShareModal.saveAndPublish')}
             </Button>
           </Space>
         );
@@ -380,36 +383,38 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
 
       return (
         <Space>
-          <Button onClick={handleClose}>取消</Button>
+          <Button onClick={handleClose}>
+            {dict('PC.Common.Global.cancel')}
+          </Button>
           {isEdit && (isPublished || isReviewing) && (
             <Button
               onClick={() => {
                 if (data.uid) {
-                  // 修复类型错误
                   handleOffline(data.uid);
                 }
               }}
             >
-              下线
+              {dict('PC.Components.EcosystemShareModal.offline')}
             </Button>
           )}
           {isEdit && isReviewing && (
             <Button
               onClick={() => {
                 if (data.uid) {
-                  // 修复类型错误
                   handleWithdraw(data.uid);
                 }
               }}
             >
-              撤销发布
+              {dict('PC.Components.EcosystemShareModal.withdrawPublish')}
             </Button>
           )}
           {isDraft && (
-            <Button onClick={() => handleSave(true)}>保存草稿</Button>
+            <Button onClick={() => handleSave(true)}>
+              {dict('PC.Components.EcosystemShareModal.saveDraft')}
+            </Button>
           )}
           <Button type="primary" onClick={() => handleSave(false)}>
-            保存并发布分享
+            {dict('PC.Components.EcosystemShareModal.saveAndPublish')}
           </Button>
         </Space>
       );
@@ -428,7 +433,9 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     <Modal
       title={
         <div className={cx(styles.modalTitle)}>
-          {isEdit ? '编辑分享' : '创建分享'}
+          {isEdit
+            ? dict('PC.Components.EcosystemShareModal.editShare')
+            : dict('PC.Components.EcosystemShareModal.createShare')}
         </div>
       }
       centered
@@ -444,10 +451,22 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
               className={cx(styles.sectionTitle)}
               style={{ display: 'flex', alignItems: 'center' }}
             >
-              <div>{`${suffixInfo.name}信息`}</div>
+              <div>
+                {dict(
+                  'PC.Components.EcosystemShareModal.componentInfo',
+                  suffixInfo.name,
+                )}
+              </div>
               {!disabledSkill && (
                 <Popover
-                  content={<div>添加{suffixInfo.name}</div>}
+                  content={
+                    <div>
+                      {dict(
+                        'PC.Components.EcosystemShareModal.addComponent',
+                        suffixInfo.name,
+                      )}
+                    </div>
+                  }
                   trigger="hover"
                 >
                   <Button
@@ -470,7 +489,15 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             {/* 隐藏的表单项用于存储 plugin 值 */}
             <Form.Item
               name="plugin"
-              rules={[{ required: true, message: `请选择${suffixInfo.name}` }]}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Components.EcosystemShareModal.pleaseSelectComponent',
+                    suffixInfo.name,
+                  ),
+                },
+              ]}
               hidden
             >
               <Input type="hidden" />
@@ -495,14 +522,20 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
                           onAddComponent();
                         }}
                       >
-                        {`请先选择${suffixInfo.name}`}
+                        {dict(
+                          'PC.Components.EcosystemShareModal.pleaseSelectComponentFirst',
+                          suffixInfo.name,
+                        )}
                       </div>
                       {pluginError && (
                         <div
                           className={cx(styles.pluginError)}
                           style={{ marginBottom: 24 }}
                         >
-                          请先选择{suffixInfo.name}
+                          {dict(
+                            'PC.Components.EcosystemShareModal.pleaseSelectComponentFirst',
+                            suffixInfo.name,
+                          )}
                         </div>
                       )}
                     </>
@@ -543,13 +576,24 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
           </div>
 
           <div className={cx(styles.section)}>
-            <div className={cx(styles.sectionTitle)}>发布者信息</div>
+            <div className={cx(styles.sectionTitle)}>
+              {dict('PC.Components.EcosystemShareModal.publisherInfo')}
+            </div>
             <Form.Item
               name="author"
-              rules={[{ required: true, message: '请输入发布者信息' }]}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Components.EcosystemShareModal.pleaseInputPublisherInfo',
+                  ),
+                },
+              ]}
             >
               <Input
-                placeholder="请输入发布者信息，比如：女娲官方"
+                placeholder={dict(
+                  'PC.Components.EcosystemShareModal.publisherInfoPlaceholder',
+                )}
                 maxLength={30}
                 showCount
               />
@@ -557,7 +601,9 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
           </div>
           {isPlugin && (
             <div className={cx(styles.section)}>
-              <div className={cx(styles.sectionTitle)}>插件参数</div>
+              <div className={cx(styles.sectionTitle)}>
+                {dict('PC.Components.EcosystemShareModal.pluginParams')}
+              </div>
               <Table<BindConfigWithSub>
                 size="small"
                 className={cx(styles.tableWrap, 'overflow-hide')}
@@ -574,13 +620,24 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
           )}
 
           <div className={cx(styles.section)}>
-            <div className={cx(styles.sectionTitle)}>使用文档</div>
+            <div className={cx(styles.sectionTitle)}>
+              {dict('PC.Components.EcosystemShareModal.usageDoc')}
+            </div>
             <Form.Item
               name="publishDoc"
-              rules={[{ required: true, message: '请输入使用文档' }]}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Components.EcosystemShareModal.pleaseInputUsageDoc',
+                  ),
+                },
+              ]}
             >
               <Input.TextArea
-                placeholder="请输入使用文档，支持markdown格式"
+                placeholder={dict(
+                  'PC.Components.EcosystemShareModal.usageDocPlaceholder',
+                )}
                 autoSize={{ minRows: 5, maxRows: 5 }}
                 className={cx(styles.docTextarea)}
               />

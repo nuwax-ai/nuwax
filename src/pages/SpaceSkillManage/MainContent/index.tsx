@@ -1,5 +1,6 @@
 import Loading from '@/components/custom/Loading';
 import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
+import { dict } from '@/services/i18nRuntime';
 import { apiSkillList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { FilterStatusEnum } from '@/types/enums/space';
@@ -65,7 +66,11 @@ const MainContentCard: React.FC<MainContentCardProps> = ({
   if (skillList?.length === 0) {
     return (
       <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-        <Empty description="未能找到相关结果" />
+        <Empty
+          description={dict(
+            'PC.Pages.SpaceSkillManage.MainContent.noResultsFound',
+          )}
+        />
       </div>
     );
   }

@@ -1,5 +1,6 @@
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
+import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import '../index.less';
@@ -52,9 +53,9 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
 
   return (
     <div className="stencil-content">
-      {/* 输入框用于搜索功能 */}
-      {/* <Input placeholder="搜索" prefix={<SearchOutlined />} /> */}
-      <p className="stencil-title">节点选择</p>
+      <p className="stencil-title">
+        {t('PC.Pages.AntvX6Stencil.nodeSelectorTitle')}
+      </p>
       {/* 渲染 stencil 列表 */}
       <div className="stencil-list-style">
         {asideList.map((item) => (

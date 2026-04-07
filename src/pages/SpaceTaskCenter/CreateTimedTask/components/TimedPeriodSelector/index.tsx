@@ -1,5 +1,6 @@
 import SelectList from '@/components/custom/SelectList';
 import { apiTaskCronList } from '@/services/agentTask';
+import { t } from '@/services/i18nRuntime';
 import { TaskCronInfo, TaskCronItemDto } from '@/types/interfaces/agentTask';
 import { option } from '@/types/interfaces/common';
 import { DatePicker, Form, Space } from 'antd';
@@ -79,7 +80,7 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
     }));
     // 注入“指定时间”选项
     _typeNameList.push({
-      label: '指定时间',
+      label: t('PC.Pages.SpaceTaskTimedPeriodSelector.specificTime'),
       value: 'SpecificTime',
     });
     setTypeNameList(_typeNameList);
@@ -89,7 +90,7 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
       if (targetCron === 'SpecificTime') {
         setTypeName('SpecificTime');
         setTypeCronList([]);
-        setTypeCron('');
+        setTypeCron('SpecificTime');
         return;
       }
       const currentItem = data.find((info) =>
@@ -135,21 +136,28 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
     if (value === typeCron) {
       return;
     }
+    if (value === 'SpecificTime') {
+      setTypeName('SpecificTime');
+      setTypeCronList([]);
+      setTypeCron('SpecificTime');
+      return;
+    }
     handleTimedInfo(taskCronListRef.current, value);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   // 选择定时范围 - 名称
   const handleChangeTypeName = (value: React.Key) => {
-    setTypeName(value as string);
-    if (value === 'SpecificTime') {
+    const name = value as string;
+    setTypeName(name);
+    if (name === 'SpecificTime') {
       setTypeCronList([]);
-      setTypeCron('');
+      setTypeCron('SpecificTime');
       onChange?.('SpecificTime');
       return;
     }
     const currentItem = taskCronListRef.current?.find(
-      (item) => item.typeName === value,
+      (item) => item.typeName === name,
     );
     handleSetTypeCron(currentItem?.items || []);
   };
@@ -162,55 +170,78 @@ const TimedPeriodSelector: React.FC<TimedPeriodSelectorProps> = ({
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <Space>
-        <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
+    <Space>
+      <Form.Item
+        noStyle
+        rules={[
+          {
+            required: true,
+            message: t('PC.Pages.SpaceTaskTimedPeriodSelector.enter'),
+          },
+        ]}
+      >
+        <SelectList
+          className={cx(styles.select)}
+          options={typeNameList}
+          value={typeName}
+          onChange={handleChangeTypeName}
+        />
+      </Form.Item>
+      {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
+        <Form.Item
+          noStyle
+          rules={[
+            {
+              required: true,
+              message: t('PC.Pages.SpaceTaskTimedPeriodSelector.enter'),
+            },
+          ]}
+        >
           <SelectList
             className={cx(styles.select)}
-            options={typeNameList}
-            value={typeName}
-            onChange={handleChangeTypeName}
+            options={typeCronList}
+            value={typeCron}
+            onChange={handleChangeTypeCron}
           />
         </Form.Item>
-        {typeName !== 'SpecificTime' && typeCronList.length > 0 && (
-          <Form.Item noStyle rules={[{ required: true, message: '请输入' }]}>
-            <SelectList
-              className={cx(styles.select)}
-              options={typeCronList}
-              value={typeCron}
-              onChange={handleChangeTypeCron}
-            />
-          </Form.Item>
-        )}
-
-        {/* 指定时间选择器 */}
-        {typeName === 'SpecificTime' && (
-          <Form.Item
-            name="lockTime"
-            noStyle
-            rules={[
-              { required: true, message: '请选择指定时间' },
-              {
-                validator: (_, value) => {
-                  if (value && dayjs(value).isBefore(dayjs())) {
-                    return Promise.reject(
-                      new Error('指定时间必须在当前时间之后'),
-                    );
-                  }
-                  return Promise.resolve();
-                },
+      )}
+      {typeName === 'SpecificTime' && (
+        <Form.Item
+          name="lockTime"
+          noStyle
+          rules={[
+            {
+              required: true,
+              message: t(
+                'PC.Pages.SpaceTaskTimedPeriodSelector.selectSpecificTime',
+              ),
+            },
+            {
+              validator: (_, selectedValue) => {
+                if (selectedValue && dayjs(selectedValue).isBefore(dayjs())) {
+                  return Promise.reject(
+                    new Error(
+                      t(
+                        'PC.Pages.SpaceTaskTimedPeriodSelector.specificTimeMustBeFuture',
+                      ),
+                    ),
+                  );
+                }
+                return Promise.resolve();
               },
-            ]}
-          >
-            <DatePicker
-              showTime
-              placeholder="请选择日期时间"
-              style={{ width: 200 }}
-            />
-          </Form.Item>
-        )}
-      </Space>
-    </div>
+            },
+          ]}
+        >
+          <DatePicker
+            showTime
+            placeholder={t(
+              'PC.Pages.SpaceTaskTimedPeriodSelector.selectDateTime',
+            )}
+            style={{ width: 200 }}
+          />
+        </Form.Item>
+      )}
+    </Space>
   );
 };
 

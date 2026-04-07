@@ -1,4 +1,5 @@
 import { apiApiKeyUpdate, apiGetOpenApiDefinitions } from '@/services/account';
+import { dict } from '@/services/i18nRuntime';
 import type { ApiKeyInfo, OpenApiDefinition } from '@/types/interfaces/account';
 import {
   Button,
@@ -14,7 +15,7 @@ import {
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 interface ApiKeyPermissionModalProps {
   /** 是否打开 */
@@ -205,7 +206,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
       let expire: number | null = null;
       if (
         record.expire &&
-        record.expire !== '永不过期' &&
+        record.expire !== '永不过期' && // backend literal value comparison
         record.expire !== '0000-00-00 00:00:00'
       ) {
         // 使用 dayjs 统一转换为当天结束的 23:59:59
@@ -222,12 +223,14 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
       });
 
       if (res.success) {
-        message.success('权限配置保存成功');
+        message.success(
+          dict('PC.Pages.MorePage.ApiKeyPermission.permissionSaved'),
+        );
         onSuccess?.();
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('保存权限失败:', error);
+      console.error('保存权限失败:', error); // keep Chinese in console
     } finally {
       setSaveLoading(false);
     }
@@ -235,7 +238,11 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
 
   return (
     <Modal
-      title="权限配置"
+      title={
+        <Title level={4}>
+          {dict('PC.Pages.MorePage.ApiKeyPermission.title', record?.name || '')}
+        </Title>
+      }
       open={open}
       onCancel={() => onOpenChange(false)}
       onOk={handleSave}
@@ -260,14 +267,14 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
               checked={isAllChecked}
               onChange={(e) => handleSelectAll(e.target.checked)}
             >
-              全选所有权限
+              {dict('PC.Pages.MorePage.ApiKeyPermission.selectAll')}
             </Checkbox>
             <Space>
               <Button size="small" onClick={() => setExpandedKeys(allKeys)}>
-                展开全部
+                {dict('PC.Pages.MorePage.ApiKeyPermission.expandAll')}
               </Button>
               <Button size="small" onClick={() => setExpandedKeys([])}>
-                收起全部
+                {dict('PC.Pages.MorePage.ApiKeyPermission.collapseAll')}
               </Button>
             </Space>
           </div>
@@ -296,7 +303,13 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
                 blockNode
               />
             ) : (
-              !loading && <Empty description="暂无权限定义" />
+              !loading && (
+                <Empty
+                  description={dict(
+                    'PC.Pages.MorePage.ApiKeyPermission.noPermissionDefs',
+                  )}
+                />
+              )
             )}
           </div>
         </div>

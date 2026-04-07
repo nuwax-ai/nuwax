@@ -13,6 +13,7 @@ import {
 } from '@/constants/library.constants';
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
+import { dict } from '@/services/i18nRuntime';
 import { apiPluginHttpUpdate, apiPluginInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
@@ -135,25 +136,27 @@ const SpacePluginTool: React.FC = () => {
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: <LabelStar label="参数名称" />,
+      title: <LabelStar label={dict('PC.Pages.SpacePluginTool.paramName')} />,
       dataIndex: 'name',
       key: 'name',
       className: 'flex items-center',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数名称，确保含义清晰"
+          placeholder={dict('PC.Pages.SpacePluginTool.inputParamName')}
           value={value}
           onChange={(e) => handleInputValue(record.key, 'name', e.target.value)}
         />
       ),
     },
     {
-      title: <LabelStar label="参数描述" />,
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginTool.paramDescription')} />
+      ),
       dataIndex: 'description',
       key: 'description',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
+          placeholder={dict('PC.Pages.SpacePluginTool.inputParamDescription')}
           value={value}
           onChange={(e) =>
             handleInputValue(record.key, 'description', e.target.value)
@@ -162,7 +165,7 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: <LabelStar label="参数类型" />,
+      title: <LabelStar label={dict('PC.Pages.SpacePluginTool.paramType')} />,
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
@@ -177,12 +180,12 @@ const SpacePluginTool: React.FC = () => {
           onChange={(value) => {
             handleInputValue(record.key, 'dataType', CascaderChange(value));
           }}
-          placeholder="请选择数据类型"
+          placeholder={dict('PC.Pages.SpacePluginTool.selectDataType')}
         />
       ),
     },
     {
-      title: <LabelStar label="传入方式" />,
+      title: <LabelStar label={dict('PC.Pages.SpacePluginTool.inputMode')} />,
       dataIndex: 'inputType',
       key: 'inputType',
       width: 120,
@@ -199,7 +202,7 @@ const SpacePluginTool: React.FC = () => {
         ),
     },
     {
-      title: '是否必须',
+      title: dict('PC.Pages.SpacePluginTool.required'),
       dataIndex: 'require',
       key: 'require',
       width: 100,
@@ -214,13 +217,13 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: '默认值',
+      title: dict('PC.Pages.SpacePluginTool.defaultValue'),
       dataIndex: 'bindValue',
       key: 'bindValue',
       width: 150,
       render: (value, record) => (
         <Input
-          placeholder="请输入默认值"
+          placeholder={dict('PC.Pages.SpacePluginTool.inputDefaultValue')}
           disabled={
             DataTypeEnum.Object === record.dataType ||
             DataTypeEnum.Array_Object === record.dataType ||
@@ -235,7 +238,7 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: '开启',
+      title: dict('PC.Pages.SpacePluginTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
       width: 70,
@@ -245,7 +248,7 @@ const SpacePluginTool: React.FC = () => {
           title={
             record.require &&
             !record.bindValue &&
-            '此参数是必填参数，填写默认值后，此开关可用'
+            dict('PC.Pages.SpacePluginTool.requiredParamTooltip')
           }
         >
           <Checkbox
@@ -259,7 +262,7 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SpacePluginTool.action'),
       key: 'action',
       width: 80,
       align: 'right',
@@ -288,14 +291,14 @@ const SpacePluginTool: React.FC = () => {
   // 出参配置columns
   const outputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: <LabelStar label="参数名称" />,
+      title: <LabelStar label={dict('PC.Pages.SpacePluginTool.paramName')} />,
       dataIndex: 'name',
       key: 'name',
       width: 430,
       className: 'flex items-center',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数名称，确保含义清晰"
+          placeholder={dict('PC.Pages.SpacePluginTool.inputParamName')}
           value={value}
           onChange={(e) =>
             handleOutputValue(record.key, 'name', e.target.value)
@@ -304,12 +307,14 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: <LabelStar label="参数描述" />,
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginTool.paramDescription')} />
+      ),
       dataIndex: 'description',
       key: 'description',
       render: (value, record) => (
         <Input
-          placeholder="请输入参数描述，确保描述详细便于大模型更好的理解"
+          placeholder={dict('PC.Pages.SpacePluginTool.inputParamDescription')}
           onChange={(e) =>
             handleOutputValue(record.key, 'description', e.target.value)
           }
@@ -318,7 +323,7 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: <LabelStar label="参数类型" />,
+      title: <LabelStar label={dict('PC.Pages.SpacePluginTool.paramType')} />,
       dataIndex: 'dataType',
       key: 'dataType',
       width: 120,
@@ -333,12 +338,12 @@ const SpacePluginTool: React.FC = () => {
           onChange={(value) => {
             handleOutputValue(record.key, 'dataType', CascaderChange(value));
           }}
-          placeholder="请选择数据类型"
+          placeholder={dict('PC.Pages.SpacePluginTool.selectDataType')}
         />
       ),
     },
     {
-      title: '开启',
+      title: dict('PC.Pages.SpacePluginTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
       width: 70,
@@ -353,7 +358,7 @@ const SpacePluginTool: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SpacePluginTool.action'),
       key: 'action',
       width: 80,
       align: 'right',
@@ -431,7 +436,9 @@ const SpacePluginTool: React.FC = () => {
           onPublish={handlePublish}
         />
         <div className={cx(styles['main-container'], 'scroll-container')}>
-          <h3 className={cx(styles.title, 'mb-12')}>请求配置</h3>
+          <h3 className={cx(styles.title, 'mb-12')}>
+            {dict('PC.Pages.SpacePluginTool.requestConfig')}
+          </h3>
           <Form
             form={form}
             initialValues={{
@@ -442,40 +449,78 @@ const SpacePluginTool: React.FC = () => {
             layout="vertical"
             requiredMark={customizeRequiredMark}
           >
-            <Form.Item label={<LabelStar label="请求方法与路径" />}>
+            <Form.Item
+              label={
+                <LabelStar
+                  label={dict('PC.Pages.SpacePluginTool.requestMethodAndPath')}
+                />
+              }
+            >
               <div className={cx('flex')}>
                 <Form.Item name="method" noStyle>
                   <Select
                     rootClassName={cx(styles['request-select'])}
                     options={REQUEST_METHOD}
-                    placeholder="请选择请求方法"
+                    placeholder={dict(
+                      'PC.Pages.SpacePluginTool.selectRequestMethod',
+                    )}
                   />
                 </Form.Item>
                 <Form.Item
                   name="url"
-                  rules={[{ required: true, message: '请输入请求路径' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: dict(
+                        'PC.Pages.SpacePluginTool.inputRequestPath',
+                      ),
+                    },
+                  ]}
                   noStyle
                 >
-                  <Input placeholder="请输入请求路径" />
+                  <Input
+                    placeholder={dict(
+                      'PC.Pages.SpacePluginTool.inputRequestPath',
+                    )}
+                  />
                 </Form.Item>
               </div>
             </Form.Item>
             <Form.Item
               name="contentType"
-              label="请求内容格式"
-              rules={[{ required: true, message: '请选择请求内容格式' }]}
+              label={dict('PC.Pages.SpacePluginTool.requestContentFormat')}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.SpacePluginTool.selectRequestContentFormat',
+                  ),
+                },
+              ]}
             >
               <Radio.Group options={REQUEST_CONTENT_FORMAT} />
             </Form.Item>
             <Form.Item
               name="timeout"
-              label="请求超时配置"
-              rules={[{ required: true, message: '请输入超时配置' }]}
+              label={dict('PC.Pages.SpacePluginTool.requestTimeoutConfig')}
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Pages.SpacePluginTool.inputTimeoutConfig'),
+                },
+              ]}
             >
-              <Input placeholder="请求超时配置，以秒为单位" />
+              <Input
+                placeholder={dict(
+                  'PC.Pages.SpacePluginTool.requestTimeoutPlaceholder',
+                )}
+              />
             </Form.Item>
           </Form>
-          <PluginConfigTitle title="入参配置" onClick={handleInputConfigAdd} />
+          <PluginConfigTitle
+            title={dict('PC.Pages.SpacePluginTool.inputConfig')}
+            onClick={handleInputConfigAdd}
+          />
           <Table<BindConfigWithSub>
             className={cx(
               styles['table-wrap'],
@@ -493,9 +538,13 @@ const SpacePluginTool: React.FC = () => {
             }}
           />
           <PluginConfigTitle
-            title="出参配置"
+            title={dict('PC.Pages.SpacePluginTool.outputConfig')}
             onClick={handleOutputConfigAdd}
-            extra={<Button onClick={handleAutoResolve}>自动解析</Button>}
+            extra={
+              <Button onClick={handleAutoResolve}>
+                {dict('PC.Pages.SpacePluginTool.autoAnalysis')}
+              </Button>
+            }
           />
           <Table<BindConfigWithSub>
             className={cx(styles['table-wrap'], 'overflow-hide')}

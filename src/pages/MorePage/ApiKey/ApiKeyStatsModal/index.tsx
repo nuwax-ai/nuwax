@@ -1,10 +1,13 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { apiApiKeyStats } from '@/services/account';
+import { t } from '@/services/i18nRuntime';
 import type { ApiKeyInfo, ApiKeyStatsInfo } from '@/types/interfaces/account';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Modal } from 'antd';
+import { Button, Modal, Typography } from 'antd';
 import React from 'react';
 import { history } from 'umi';
+
+const { Title } = Typography;
 
 interface ApiKeyStatsModalProps {
   /** 是否显示弹窗 */
@@ -34,21 +37,21 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
 }) => {
   const columns: ProColumns<ApiKeyStatsInfo>[] = [
     {
-      title: '接口名称',
+      title: t('PC.Pages.ApiKeyStatsModal.apiName'),
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
       width: 200,
     },
     {
-      title: '接口地址',
+      title: t('PC.Pages.ApiKeyStatsModal.apiPath'),
       dataIndex: 'path',
       key: 'path',
       ellipsis: true,
       width: 300,
     },
     {
-      title: '调用总次数',
+      title: t('PC.Pages.ApiKeyStatsModal.totalCalls'),
       key: 'totalCount',
       align: 'center',
       render: (_, record) => (
@@ -58,7 +61,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       ),
     },
     {
-      title: '本月调用',
+      title: t('PC.Pages.ApiKeyStatsModal.monthCalls'),
       key: 'monthCount',
       align: 'center',
       render: (_, record) => (
@@ -68,7 +71,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       ),
     },
     {
-      title: '今日调用',
+      title: t('PC.Pages.ApiKeyStatsModal.todayCalls'),
       key: 'todayCount',
       align: 'center',
       render: (_, record) => (
@@ -78,7 +81,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       ),
     },
     {
-      title: '操作',
+      title: t('PC.Pages.ApiKeyStatsModal.actions'),
       key: 'action',
       width: 100,
       align: 'center',
@@ -89,7 +92,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
           actions={[
             {
               key: 'view',
-              label: '查看记录',
+              label: t('PC.Pages.ApiKeyStatsModal.viewRecords'),
               onClick: () => {
                 onOpenChange(false);
                 history.push(
@@ -105,13 +108,17 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
 
   return (
     <Modal
-      title="调用统计"
+      title={
+        <Title level={4}>
+          {t('PC.Pages.ApiKeyStatsModal.callStatsWithName', record?.name || '')}
+        </Title>
+      }
       open={open}
       onCancel={() => onOpenChange(false)}
       width={1000}
       footer={[
         <Button key="close" onClick={() => onOpenChange(false)}>
-          关闭
+          {t('PC.Pages.ApiKeyStatsModal.close')}
         </Button>,
       ]}
       destroyOnHidden

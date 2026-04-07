@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Dropdown } from 'antd';
 import classNames from 'classnames';
@@ -31,7 +32,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onRestartServer,
   onRestartAgent,
   onExportProject,
-  isCloudComputer = true,
 }) => {
   // 菜单项配置
   const menuItems = useMemo(
@@ -44,7 +44,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               icon: (
                 <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />
               ),
-              label: '导入项目',
+              label: dict('PC.Components.MoreActionsMenu.importProject'),
               onClick: onImportProject,
             },
             {
@@ -66,10 +66,12 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               label: (
                 <div className="flex items-center">
                   <span>
-                    {isCloudComputer ? '重启智能体电脑' : '重启客户端'}
+                    {dict('PC.Components.MoreActionsMenu.restartComputer')}
                   </span>
                   <TooltipIcon
-                    title="当前用户正在运行的所有智能体将全部被重启"
+                    title={dict(
+                      'PC.Components.MoreActionsMenu.restartComputerTooltip',
+                    )}
                     icon={<InfoCircleOutlined />}
                   />
                 </div>
@@ -89,9 +91,13 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: (
                 <div className="flex items-center">
-                  <span>重启智能体</span>
+                  <span>
+                    {dict('PC.Components.MoreActionsMenu.restartAgent')}
+                  </span>
                   <TooltipIcon
-                    title="当前会话对应的智能体将重启"
+                    title={dict(
+                      'PC.Components.MoreActionsMenu.restartAgentTooltip',
+                    )}
                     icon={<InfoCircleOutlined />}
                   />
                 </div>
@@ -115,7 +121,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                   style={{ fontSize: 16 }}
                 />
               ),
-              label: '导出结果',
+              label: dict('PC.Components.MoreActionsMenu.exportResult'),
               onClick: onExportProject,
             },
           ]

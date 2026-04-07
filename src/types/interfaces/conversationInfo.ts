@@ -211,7 +211,8 @@ export interface ProcessingInfo {
   executeId?: string;
   cardBindConfig: AgentCardInfo;
   name: string;
-  result: ExecuteResultInfo;
+  /** 执行结果；流式阶段或异常时后端可能返回 null */
+  result: ExecuteResultInfo | null;
   status: ProcessingEnum;
   targetId: number;
   type: AgentComponentTypeEnum;

@@ -1,4 +1,5 @@
 import { apiSendCode } from '@/services/account';
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useRequest } from 'umi';
 
@@ -8,7 +9,7 @@ const useSendCode = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('验证码已发送');
+      message.success(dict('PC.Hooks.UseSendCode.codeSent'));
     },
   });
 

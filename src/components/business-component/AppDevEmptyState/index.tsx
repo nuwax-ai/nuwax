@@ -21,6 +21,7 @@ import emptyStateIconPreviewError from '@/assets/images/empty_state_icon_preview
 import emptyStateIconServerError from '@/assets/images/empty_state_icon_server_error.svg';
 // 空数据状态图标
 import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
+import { t } from '@/services/i18nRuntime';
 
 /**
  * 空状态类型枚举
@@ -131,7 +132,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
   allowDescriptionWrap = false, // 默认不允许换行
   maxLines = 3, // 默认最大显示 3 行
   clickableDescription = false, // 默认不支持点击查看
-  viewFullTextButtonText = '查看完整内容', // 默认按钮文本
+  viewFullTextButtonText = t('PC.Components.AppDevEmptyState.viewFullText'), // 默认按钮文本
 }) => {
   // 弹窗状态管理
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -149,8 +150,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '加载中...',
-      description: '正在加载，请稍候...',
+      title: t('PC.Components.AppDevEmptyState.loadingTitle'),
+      description: t('PC.Components.AppDevEmptyState.loadingDescription'),
     },
     error: {
       icon: (
@@ -161,8 +162,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '出现错误',
-      description: '加载过程中出现错误，请重试',
+      title: t('PC.Components.AppDevEmptyState.errorTitle'),
+      description: t('PC.Components.AppDevEmptyState.errorDescription'),
     },
     'network-error': {
       icon: (
@@ -173,8 +174,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '网络连接失败',
-      description: '网络连接异常，请检查网络设置后重试',
+      title: t('PC.Components.AppDevEmptyState.networkErrorTitle'),
+      description: t('PC.Components.AppDevEmptyState.networkErrorDescription'),
     },
     'permission-denied': {
       icon: (
@@ -185,8 +186,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '权限不足',
-      description: '你没有访问此资源的权限，请联系管理员',
+      title: t('PC.Components.AppDevEmptyState.permissionDeniedTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.permissionDeniedDescription',
+      ),
     },
     empty: {
       icon: (
@@ -198,8 +201,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           />
         </div>
       ),
-      title: '暂无内容',
-      description: '当前没有可显示的内容',
+      title: t('PC.Components.AppDevEmptyState.emptyTitle'),
+      description: t('PC.Components.AppDevEmptyState.emptyDescription'),
     },
     'no-data': {
       icon: (
@@ -211,8 +214,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           />
         </div>
       ),
-      title: '暂无数据',
-      description: '当前没有可用的数据',
+      title: t('PC.Components.AppDevEmptyState.noDataTitle'),
+      description: t('PC.Components.AppDevEmptyState.noDataDescription'),
     },
     'server-starting': {
       icon: (
@@ -223,8 +226,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '等待开发服务器启动',
-      description: '正在启动开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.serverStartingTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.serverStartingDescription',
+      ),
     },
     'server-restarting': {
       icon: (
@@ -235,8 +240,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '重启中',
-      description: '正在重启开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.serverRestartingTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.serverRestartingDescription',
+      ),
     },
     developing: {
       icon: (
@@ -247,8 +254,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '开发中',
-      description: '正在启动开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.developingTitle'),
+      description: t('PC.Components.AppDevEmptyState.developingDescription'),
     },
     'importing-project': {
       icon: (
@@ -259,8 +266,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '导入项目中',
-      description: '正在启动开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.importingProjectTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.importingProjectDescription',
+      ),
     },
     'server-error': {
       icon: (
@@ -271,8 +280,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '服务器错误',
-      description: '预览页面加载失败，请检查开发服务器状态或网络连接',
+      title: t('PC.Components.AppDevEmptyState.serverErrorTitle'),
+      description: t('PC.Components.AppDevEmptyState.serverErrorDescription'),
     },
     'preview-load-failed': {
       icon: (
@@ -283,8 +292,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '预览加载失败',
-      description: '预览页面加载失败，请检查开发服务器状态或网络连接',
+      title: t('PC.Components.AppDevEmptyState.previewLoadFailedTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.previewLoadFailedDescription',
+      ),
     },
     'server-start-failed': {
       icon: (
@@ -295,8 +306,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '开发服务器启动失败',
-      description: '正在启动开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.serverStartFailedTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.serverStartFailedDescription',
+      ),
     },
     'no-preview-url': {
       icon: (
@@ -307,8 +320,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           </div>
         </div>
       ),
-      title: '暂无预览地址',
-      description: '正在启动开发服务器，请稍候⋯',
+      title: t('PC.Components.AppDevEmptyState.noPreviewUrlTitle'),
+      description: t('PC.Components.AppDevEmptyState.noPreviewUrlDescription'),
     },
     'conversation-empty': {
       icon: (
@@ -320,8 +333,10 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           />
         </div>
       ),
-      title: '开始新对话',
-      description: '向 AI 助手提问，开始你的项目开发',
+      title: t('PC.Components.AppDevEmptyState.conversationEmptyTitle'),
+      description: t(
+        'PC.Components.AppDevEmptyState.conversationEmptyDescription',
+      ),
     },
     'add-data': {
       icon: (
@@ -334,7 +349,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
         </div>
       ),
       title: '', // Figma 设计中没有标题
-      description: '点击“+“添加数据资源',
+      description: t('PC.Components.AppDevEmptyState.addDataDescription'),
     },
     'no-file': {
       icon: (
@@ -342,8 +357,8 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
           <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
         </div>
       ),
-      title: '暂无文件',
-      description: '当前目录下暂无文件',
+      title: t('PC.Components.AppDevEmptyState.noFileTitle'),
+      description: t('PC.Components.AppDevEmptyState.noFileDescription'),
     },
   };
 
@@ -489,7 +504,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
         onCancel={handleCloseModal}
         footer={[
           <Button key="close" onClick={handleCloseModal}>
-            关闭
+            {t('PC.Components.AppDevEmptyState.close')}
           </Button>,
         ]}
         width={600}

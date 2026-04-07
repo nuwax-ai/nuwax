@@ -3,6 +3,7 @@ import Created from '@/components/Created';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import McpCollapseComponentList from '@/components/McpCollapseComponentList';
 import { MCP_COLLAPSE_COMPONENT_LIST } from '@/constants/mcp.constants';
+import { t } from '@/services/i18nRuntime';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -122,7 +123,7 @@ const SelectTarget: React.FC<SelectTargetProps> = ({ value, onChange }) => {
       ),
       extra: (
         <TooltipIcon
-          title={`添加${item.label}`}
+          title={t('PC.Pages.SpaceTaskSelectTarget.addItem', item.label)}
           onClick={(e) => handlerComponentPlus(e, item.type)}
         />
       ),

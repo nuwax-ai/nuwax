@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { McpInstallTypeEnum } from '@/types/enums/mcp';
 import classNames from 'classnames';
 import styles from './index.less';
@@ -30,7 +31,7 @@ const McpInstallTypeMap: Record<
     styleClassName: styles['streamable-http'],
   },
   [McpInstallTypeEnum.COMPONENT]: {
-    title: '组件库',
+    title: dict('PC.Components.McpInstallType.componentLibrary'),
     styleClassName: styles.component,
   },
 };

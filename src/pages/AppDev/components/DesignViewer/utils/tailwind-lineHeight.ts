@@ -39,7 +39,7 @@ export const convertRemToLineHeightClass = (
 
 /**
  * 生成 Tailwind CSS 行高选项列表
- * 返回格式：{ label: '1.5rem', value: '1.5rem' } 或 { label: 'None', value: 'None' }
+ * Returns: { label: '1.5rem', value: '1.5rem' } or { label: 'None', value: 'None' }
  * label 用于下拉展示，value 直接作为行高值使用
  */
 export const generateTailwindLineHeightOptions = (): Array<{

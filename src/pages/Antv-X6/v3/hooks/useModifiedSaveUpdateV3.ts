@@ -3,12 +3,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useModel } from 'umi';
 
 /**
- * 自定义Hook：处理修改后的自动保存更新
- * 使用节流确保最后一次保存必须执行
+ * Custom hook for autosave updates after modifications.
+ * Uses throttling to ensure the last save is always executed.
  *
- * @param run 执行保存的函数
- * @param doNext 保存成功后的回调函数
- * @param delay 节流延迟时间（毫秒），默认 300ms
+ * @param run Save executor
+ * @param doNext Callback after successful save
+ * @param delay Throttle delay in milliseconds, default 300ms
  */
 export default function useModifiedSaveUpdateV3({
   run,
@@ -21,77 +21,77 @@ export default function useModifiedSaveUpdateV3({
 }) {
   const { isModified, setUpdateLoading } = useModel('workflowV3');
 
-  // 使用 useRef 管理保存状态，避免模块级变量冲突
+  // Manage save status via refs to avoid module-level state conflicts.
   const isSavingRef = useRef<boolean>(false);
-  const isMountedRef = useRef<boolean>(true); // 追踪组件挂载状态
-  // const saveCountRef = useRef<number>(0); // 记录保存次数，用于调试
+  const isMountedRef = useRef<boolean>(true); // Track mount status.
+  // const saveCountRef = useRef<number>(0); // Track save count for debugging.
 
-  // 执行保存的核心函数
+  // Core save executor.
   const executeSave = useCallback(async () => {
     // const currentSaveCount = ++saveCountRef.current;
     // console.log(
-    // `🔄 useModifiedSaveUpdate: 节流执行保存 [第${currentSaveCount}次]`,
+    // `🔄 useModifiedSaveUpdate: throttled save [run #${currentSaveCount}]`,
     // );
 
-    // 检查组件是否还挂载
+    // Check whether the component is still mounted.
     if (!isMountedRef.current) {
       return;
     }
 
-    // 如果正在保存中，跳过本次保存（节流会确保最后一次调用被执行）
+    // Skip when saving is in progress (trailing throttled call will still run).
     if (isSavingRef.current) {
-      // console.log('⏸️ useModifiedSaveUpdate: 保存正在进行中，跳过本次调用');
+      // console.log('⏸️ useModifiedSaveUpdate: save in progress, skip this run');
       return;
     }
 
     try {
       isSavingRef.current = true;
-      // console.log('✅ useModifiedSaveUpdate: 开始执行保存操作');
+      // console.log('✅ useModifiedSaveUpdate: start save');
       setUpdateLoading(true);
 
       await run();
       doNext?.();
 
-      // console.log('🎉 useModifiedSaveUpdate: 保存成功完成');
+      // console.log('🎉 useModifiedSaveUpdate: save completed successfully');
     } catch (error) {
-      // console.error('❌ useModifiedSaveUpdate: 保存失败', error);
+      // console.error('❌ useModifiedSaveUpdate: save failed', error);
     } finally {
       setUpdateLoading(false);
       isSavingRef.current = false;
     }
   }, [run, doNext, setUpdateLoading]);
 
-  // 使用节流包装保存函数，确保最后一次调用必须执行
+  // Wrap save with throttle and keep trailing execution.
   const throttledSave = useThrottledCallback(
     () => {
-      // console.log('🚀 useModifiedSaveUpdate: 节流函数被调用');
+      // console.log('🚀 useModifiedSaveUpdate: throttled function invoked');
       return executeSave();
     },
     delay,
     {
-      leading: true, // 立即执行第一次调用
-      trailing: true, // 确保最后一次调用被执行
+      leading: true, // Execute the first call immediately.
+      trailing: true, // Ensure the last call is executed.
     },
   );
 
-  // 监听修改状态变化，触发节流保存
+  // Watch modification state and trigger throttled save.
   useEffect(() => {
-    // console.log('📝 useModifiedSaveUpdate: isModified 状态变化 =', isModified);
+    // console.log('📝 useModifiedSaveUpdate: isModified changed =', isModified);
 
     if (isModified && isMountedRef.current) {
-      // console.log('⚡ useModifiedSaveUpdate: 触发节流保存函数');
-      // 使用节流函数触发保存
+      // console.log('⚡ useModifiedSaveUpdate: trigger throttled save');
+      // Trigger save through throttled executor.
       throttledSave();
     }
   }, [isModified, throttledSave]);
 
-  // 组件卸载时的清理
+  // Cleanup on unmount.
   useEffect(() => {
     isMountedRef.current = true;
-    // console.log('🔗 useModifiedSaveUpdate: Hook 初始化完成');
+    // console.log('🔗 useModifiedSaveUpdate: hook initialized');
 
     return () => {
-      // console.log('🧹 useModifiedSaveUpdate: 清理 Hook 状态');
+      // console.log('🧹 useModifiedSaveUpdate: cleanup hook state');
       isMountedRef.current = false;
       isSavingRef.current = false;
     };

@@ -8,6 +8,7 @@ import { message } from 'antd';
 import { useCallback } from 'react';
 
 import Constant from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
 import * as service from '@/services/workflow';
 import { AddNodeResponse } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -288,7 +289,7 @@ export const useNodeOperations = ({
       // 如果 sourcePortId 为空，说明条件配置还未初始化，跳过连线
       if (!sourcePortId) {
         console.warn(
-          '[handleConditionalNodeConnection] sourcePortId 为空，跳过连线创建',
+          '[handleConditionalNodeConnection] sourcePortId is empty, skip edge creation',
         );
         return;
       }
@@ -485,7 +486,7 @@ export const useNodeOperations = ({
             debouncedSaveFullWorkflow();
           } else {
             console.warn(
-              '[handleTargetNodeConnection] 删除边失败:',
+              '[handleTargetNodeConnection] Failed to delete edge:',
               res.message,
               '| source:',
               edgeSource,
@@ -595,7 +596,10 @@ export const useNodeOperations = ({
           // 重新获取新节点的引用信息
           await getReference(nodeData.id);
         } catch (error) {
-          console.error('处理节点连接时发生错误:', error);
+          console.error(
+            'Error occurred while handling node connections:',
+            error,
+          );
           throw error;
         } finally {
           currentNodeRef.current = null;
@@ -651,7 +655,7 @@ export const useNodeOperations = ({
 
       if (foldWrapItem.type === NodeTypeEnum.Loop || foldWrapItem.loopNodeId) {
         if (_params.type === NodeTypeEnum.Loop) {
-          message.warning('循环体里请不要再添加循环体');
+          message.warning(t('PC.Pages.AntvX6Workflow.cannotNestLoop'));
           return;
         }
         _params.loopNodeId =
@@ -729,14 +733,16 @@ export const useNodeOperations = ({
           apiNodeData = apiRes.data;
         } else {
           // API 失败：显示错误消息并阻止添加节点
-          message.error(apiRes.message || '添加节点失败');
-          console.error('[V3] 添加节点 API 失败:', apiRes.message);
+          message.error(
+            apiRes.message || t('PC.Pages.AntvX6NodeOperations.addNodeFailed'),
+          );
+          console.error('[V3] Add node API failed:', apiRes.message);
           return;
         }
       } catch (error) {
         // 网络异常：显示错误消息并阻止添加节点
-        message.error('网络异常，添加节点失败');
-        console.error('[V3] 添加节点 API 异常:', error);
+        message.error(t('PC.Pages.AntvX6NodeOperations.addNodeNetworkError'));
+        console.error('[V3] Add node API exception:', error);
         return;
       }
 
@@ -809,11 +815,17 @@ export const useNodeOperations = ({
           await handleNodeCreationSuccess(_params as AddNodeResponse);
           debouncedSaveFullWorkflow();
         } catch (error) {
-          console.error('处理节点创建成功后的操作失败:', error);
+          console.error(
+            'Failed to process post-actions after successful node creation:',
+            error,
+          );
         }
       } else {
         // 静默异常消息，不弹出提示
-        console.warn('[V3] 添加节点代理层失败:', proxyResult.message);
+        console.warn(
+          '[V3] Failed to add node in proxy layer:',
+          proxyResult.message,
+        );
       }
     },
     [
@@ -869,14 +881,19 @@ export const useNodeOperations = ({
             graphRef.current?.graphSelectNode(String(newNode.id));
             changeUpdateTime();
           } else {
-            console.warn('[V3] 复制节点代理层添加失败:', proxyResult.message);
+            console.warn(
+              '[V3] Failed to add copied node in proxy layer:',
+              proxyResult.message,
+            );
           }
         } else {
-          message.error(_res.message || '复制失败');
+          message.error(
+            _res.message || t('PC.Pages.AntvX6NodeOperations.copyNodeFailed'),
+          );
         }
       } catch (error) {
-        console.error('[V3] 复制节点 API 异常:', error);
-        message.error('网络异常，复制节点失败');
+        console.error('[V3] Copy node API exception:', error);
+        message.error(t('PC.Pages.AntvX6NodeOperations.copyNodeNetworkError'));
       }
     },
     [graphRef, changeUpdateTime],
@@ -938,7 +955,9 @@ export const useNodeOperations = ({
           }
         }
       } else {
-        message.error(res.message || '删除失败');
+        message.error(
+          res.message || t('PC.Pages.AntvX6NodeOperations.deleteNodeFailed'),
+        );
       }
     },
     [
@@ -1016,7 +1035,7 @@ export const useNodeOperations = ({
           },
         };
       } else {
-        message.warning('暂不支持该类型组件');
+        message.warning(t('PC.Pages.AntvX6Workflow.unsupportedComponentType'));
         return;
       }
 
