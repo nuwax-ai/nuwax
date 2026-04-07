@@ -34,8 +34,17 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.Setting.email': '郵箱',
   'PC.Pages.Setting.dynamicCode': '動態口令',
   'PC.Pages.Setting.expiresAt': '{0}過期',
+  'PC.Pages.Setting.alreadyDefault': '當前已選中該語言',
+  'PC.Pages.Setting.saveSuccess': '語言設置更新成功',
   'PC.Pages.Setting.language': '語言',
   'PC.Pages.Setting.selectLanguage': '請選擇語言',
+  'PC.Pages.Setting.languageTitle': '語言切換',
+  'PC.Pages.Setting.saveButton': '保存',
+  'PC.Pages.Setting.defaultTag': '默認',
+  'PC.Pages.Setting.confirmTitle': '確認切換語言',
+  'PC.Pages.Setting.confirmContent':
+    '切換語言將更新系統所有界面文字，是否確認？',
+  'PC.Pages.Setting.saveSuccess': '語言設置更新成功',
   'PC.Pages.Setting.bindPending': '待綁定',
   'PC.Pages.SystemConfigI18n.manageTitle': '多語言管理',
   'PC.Pages.SystemConfigI18n.columnName': '語言名稱',
@@ -128,6 +137,16 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.PagePreviewIframe.tooltipBack': '後退',
   'PC.Components.PagePreviewIframe.tooltipForward': '前進',
   'PC.Components.PagePreviewIframe.tooltipCopyLink': '複製鏈接',
+  'PC.Components.AliyunCaptcha.blockedDoubleUsage': '驗證令牌已被使用或無效',
+  'PC.Components.AliyunCaptcha.verificationFailed': '驗證失敗',
+  'PC.Components.AliyunCaptcha.verificationSuccess': '驗證成功',
+  'PC.Components.AliyunCaptcha.loading': '加載中...',
+  'PC.Components.AliyunCaptcha.pleaseComplete': '請完成驗證',
+  'PC.Components.AliyunCaptcha.retry': '重試',
+  'PC.Components.AliyunCaptcha.slideToVerify': '滑動驗證',
+  'PC.Components.AliyunCaptcha.clickToVerify': '點擊驗證',
+  'PC.Components.AliyunCaptcha.verificationExpired': '驗證已過期',
+  'PC.Components.AliyunCaptcha.networkError': '網絡錯誤，請重試',
   'PC.Components.VncPreview.missingConfig': '缺少必要配置（服務地址或容器 ID）',
   'PC.Components.VncPreview.desktopUnavailable':
     '智能体电脑暂时不可用，请稍后手动刷新重试。',
@@ -234,6 +253,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.DataResourceManagement.connectionTestSuccess': '連接測試成功',
   'PC.Components.DataResourceManagement.connectionTestFailed': '連接測試失敗',
   'PC.Components.DataResourceManagement.testFailed': '測試失敗',
+  'PC.Components.Base.CopyButton.copyFailed': '複製失敗',
+  'PC.Components.Base.CopyIconButton.copyFailed': '複製失敗',
   'PC.Pages.Login.inputEmailRequired': '請輸入郵箱',
   'PC.Pages.Login.inputPhoneRequired': '請輸入手機號',
   'PC.Pages.Login.invalidEmail': '請輸入有效郵箱',
@@ -243,6 +264,16 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.Login.serviceAgreementTitle': '服務協議與隱私保護',
   'PC.Pages.Login.serviceAgreementAgree': '同意',
   'PC.Pages.Login.serviceAgreementDisagree': '不同意',
+  'PC.Pages.Login.and': '、',
+  'PC.Pages.Login.captchaDefault': '向右拖動完成拼圖',
+  'PC.Pages.Login.captchaError': '驗證失敗',
+  'PC.Pages.Login.captchaLoading': '努力中...',
+  'PC.Pages.Login.captchaMoving': '向右拖動至拼圖位置',
+  'PC.Pages.Login.captchaTitle': '請完成下列驗證後繼續',
+  'PC.Pages.Login.captchaVerifying': '驗證中...',
+  'PC.Pages.Login.privacyAgreement': '隱私協議',
+  'PC.Pages.Login.readAndAgree': '已閱讀並同意協議：',
+  'PC.Pages.Login.serviceAgreement': '服務使用協議',
   'PC.Pages.Login.passwordLogin': '密碼登錄',
   'PC.Pages.Login.codeLoginOrRegister': '驗證碼登錄/註冊',
   'PC.Pages.Login.welcome': '歡迎來到{0}',
@@ -782,6 +813,10 @@ export const ZH_TW: SystemLangMap = {
     '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持输入@唤起技能；支持粘贴图片',
   'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention':
     '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片',
+  'PC.Components.ChatInputHome.fetchComputerListFailed': '獲取電腦列表失敗:',
+  'PC.Components.ChatInputHome.saveComputerSelectionFailed':
+    '保存電腦選擇失敗:',
+  'PC.Components.ChatInputHome.fetchModelListFailed': '獲取智能體模型列表失敗:',
   'PC.Pages.SkillDetailsMoreActionsMenu.importSkill': '導入技能',
   'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview': '全屏預覽',
   'PC.Pages.SkillDetailsMoreActionsMenu.exportSkill': '導出技能',
@@ -2305,6 +2340,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.ShareDesktopModal.desktopShareSuccess':
     '远程桌面分享成功，链接已复制到剪切板',
   'PC.Components.ShareDesktopModal.shareFailedRetry': '分享失敗，請稍後重試',
+  'PC.Components.ShareDesktopModal.desktopShareFailed': '分享遠程桌面失敗',
+  'PC.Components.ShareDesktopModal.fileShareFailed': '分享文件失敗',
   'PC.Components.ShareDesktopModal.fileShareSuccess':
     '分享成功，链接已复制到剪切板',
   'PC.Components.ShareDesktopModal.titleDesktop': '分享遠程桌面',
@@ -2366,6 +2403,13 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.FileTreeView.refreshing': '刷新中...',
   'PC.Components.FileTreeView.refreshFileTree': '刷新文件樹',
   'PC.Components.FileTreeView.restarting': '重啟中...',
+  'PC.Components.FileTreeView.renameFailed': '重命名失敗',
+  'PC.Components.FileTreeView.refreshContentFailed': '刷新文件內容失敗',
+  'PC.Components.FileTreeView.refreshFileTreeFailed': '刷新文件樹失敗',
+  'PC.Components.FileTreeView.uploadFileFailed': '上傳文件失敗',
+  'PC.Components.FileTreeView.refreshContentOnModeSwitchFailed':
+    '切換預覽模式時刷新文件內容失敗',
+  'PC.Components.FileTreeView.downloadFileFailed': '下載文件失敗',
   'PC.Hooks.UseEcoMarket.confirmDelete': '你確定要刪除此分享嗎?',
   'PC.Hooks.UseEventPolling.newVersionFound': '發現新版本',
   'PC.Hooks.UseEventPolling.updatePrompt': '檢測到新版本 {0}，是否立即更新？',
@@ -2793,6 +2837,17 @@ export const ZH_TW: SystemLangMap = {
   'PC.Layouts.Setting.UsageStatistics.table': '可創建數據表數量',
   'PC.Layouts.Setting.UsageStatistics.task': '可創建定時任務數量',
   'PC.Layouts.Setting.UsageStatistics.sandboxMemory': '智能體電腦最大內存',
+  'PC.Layouts.Setting.UsageStatistics.fetchFailed': '獲取用量統計失敗',
+  'PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateConsoleError':
+    '更新主題色失敗:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateConsoleError':
+    '更新背景圖失敗:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateConsoleError':
+    '更新導航風格失敗:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.previewBackgroundConsoleError':
+    '預覽背景圖失敗:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleConsoleError':
+    '切換導航主題失敗:',
 
   // Common - additional keys
   'PC.Common.Global.submit': '提交',
@@ -2985,6 +3040,28 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit': '全屏編輯',
   'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip': '自動優化提示詞',
   'PC.Pages.EditAgent.SystemTipsWord.optimize': '優化',
+  'PC.Pages.EditAgent.SystemTipsWord.replaceTextMethodNotFound':
+    'replaceText 方法不存在',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModel':
+    '允許用戶選擇自有模型',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModelDesc':
+    '開啟後用戶可以在會話中選擇自己的模型',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkill': '允許用戶@技能',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkillDesc':
+    '開啟後用戶可以在會話中添加任意技能',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandbox':
+    '允許用戶選擇個人電腦',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandboxDesc':
+    '開啟後用戶可以選擇智能體在自己的Claw客戶端中執行',
+  'PC.Pages.EditAgent.PreviewAndDebug.reset': '重置',
+  'PC.Pages.EditAgent.configNotLoadedSkipUpdate': '配置信息尚未加載，跳過更新:',
+  'PC.Pages.EditAgent.arrayValueUnchangedSkipApi': '數組值無變化，跳過API調用:',
+  'PC.Pages.EditAgent.booleanValueUnchangedSkipApi':
+    '布爾值無變化，跳過API調用:',
+  'PC.Pages.EditAgent.numberValueUnchangedSkipApi':
+    '數字值無變化，跳過API調用:',
+  'PC.Pages.EditAgent.deleteFileFailed': '刪除文件失敗:',
+  'PC.Pages.EditAgent.uploadFailed': '上傳失敗',
 
   // Pages - SpacePageDevelop
   'PC.Pages.SpacePageDevelop.ReverseProxyModal.title': '反向代理',
@@ -3114,13 +3191,59 @@ export const ZH_TW: SystemLangMap = {
   // Models
   'PC.Models.ConversationInfo.restartAgentSuccess': '重啟智能體成功',
   'PC.Models.ConversationInfo.networkTimeoutError':
-    '网络超时或服务不可用，请稍后再试',
+    '網絡超時或服務不可用，請稍後再試',
   'PC.Models.ConversationInfo.taskConflictTitle': '提示',
   'PC.Models.ConversationInfo.taskConflictContent':
-    '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+    '智能體正在執行任務中，需要先暫停當前任務後才能發送新請求，是否暫停當前任務？',
+  'PC.Models.ConversationInfo.questionAnswer': '問答',
+  'PC.Models.ConversationInfo.executingTask': '正在執行任務',
+  'PC.Models.ConversationInfo.agentExecutingTask':
+    'Agent正在執行任務，請等待當前任務完成後再發送新請求',
+  'PC.Models.ConversationInfo.userCancelledTask': '用戶主動取消任務',
+  'PC.Models.ConversationInfo.openRemoteDesktopFailed': '打開遠程桌面視圖失敗',
+  'PC.Models.ConversationInfo.updateTopicFailed': '更新會話主題失敗:',
+  'PC.Models.ConversationInfo.loadMoreMessagesFailed': '加載更多消息失敗:',
+  'PC.Models.ConversationInfo.keepalivePageVisible':
+    '[keepalive] 頁面可見，調用 apiEnsurePod 確保容器運行',
+  'PC.Models.ConversationInfo.keepaliveApiEnsurePodFailed':
+    '[keepalive] apiEnsurePod 失敗:',
   'PC.Models.DevCollectAgent.uncollectSuccess': '取消收藏成功',
-  'PC.Models.UserInfo.getUserInfoFailed': '獲取用戶信息失敗',
-  'PC.Models.UserInfo.refreshUserInfoFailed': '刷新用戶信息失敗',
+  'PC.Models.SpaceAgent.saveSuccess': '保存成功',
+  'PC.Models.AutoErrorHandling.recordAutoHandling':
+    '[AutoErrorHandling] 📊 記錄自動處理: 會話次數={0}, 總次數={1}',
+  'PC.Models.AutoErrorHandling.resetSessionCount':
+    '[AutoErrorHandling] 🔄 重置會話計數',
+  'PC.Models.AutoErrorHandling.enabled': '啟用',
+  'PC.Models.AutoErrorHandling.disabled': '禁用',
+  'PC.Models.AutoErrorHandling.autoRetryCount':
+    '[AutoErrorHandling] 📊 自動重試次數: {0}',
+  'PC.Models.AutoErrorHandling.resetAutoRetryCount':
+    '[AutoErrorHandling] 🔄 重置自動重試計數',
+  'PC.Models.AutoErrorHandling.resetAndEnableAutoHandling':
+    '[AutoErrorHandling] 🔄 重置並啟用自動處理',
+  'PC.Models.AutoErrorHandling.userCancelledAutoHandling':
+    '[AutoErrorHandling] ❌ 用戶取消自動處理',
+  'PC.Models.AutoErrorHandling.autoHandlingFeatureEnabled':
+    '[AutoErrorHandling] {0} 自動處理功能已{1}',
+  'PC.Models.AutoErrorHandling.resetAllStates':
+    '[AutoErrorHandling] 🔄 重置所有狀態',
+  'PC.Models.MenuModel.loadMenuDataFailed': '加載菜單數據失敗:',
+  'PC.Models.TenantConfigInfo.tenantConfigApiReturnedEmpty':
+    '租戶配置接口返回空數據',
+  'PC.Models.TenantConfigInfo.tenantConfigIsEmpty': '租戶配置為空',
+  'PC.Models.TenantConfigInfo.tenantConfigSavedReinitTheme':
+    '租戶配置保存完成，重新初始化統一主題服務',
+  'PC.Models.TenantConfigInfo.syncedTenantThemeConfig':
+    '已同步租戶主題配置（本地無配置）:',
+  'PC.Models.TenantConfigInfo.syncTenantThemeColorFailed':
+    '同步租戶主題顏色失敗:',
+  'PC.Models.TenantConfigInfo.detectedLocalThemeConfig':
+    '檢測到本地主題配置，跳過租戶配置同步',
+  'PC.Models.TenantConfigInfo.tenantInfoApiFailed': '租戶信息接口失敗',
+  'PC.Models.UserInfo.getUserInfoFailed': '獲取用戶信息失敗:',
+  'PC.Models.UserInfo.refreshUserInfoFailed': '刷新用戶信息失敗:',
+  'PC.Models.UserInfo.updateUserInfoFailed': '更新用戶信息失敗:',
+  'PC.Models.WorkflowV3.useModelInsteadOf': ') 代替 useModel(',
   'PC.Models.WorkflowV3.defaultNodeName': '測試',
   'PC.Models.WorkflowV3.defaultNodeDescription': '測試',
   'PC.Models.Workflow.defaultNodeName': '測試',
@@ -3429,6 +3552,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SpaceDevelop.Index.createAgent': '創建智能體',
   'PC.Pages.SpaceDevelop.Index.noResults': '未能找到相關結果',
   'PC.Pages.SpaceDevelop.Index.agentOverview': '智能體概覽',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkSuccess': '已複製獨立會話路徑',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkFailed': '複製獨立會話路徑失敗',
 
   // Pages - SpaceDevelop > ApplicationItem
   'PC.Pages.SpaceDevelop.ApplicationItem.lastEdited': '最近編輯',
@@ -3436,6 +3561,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SpaceDevelop.ApplicationItem.taskType': '通用型',
   'PC.Pages.SpaceDevelop.ApplicationItem.chatType': '問答型',
   'PC.Pages.SpaceDevelop.ApplicationItem.privateComputer': '個人電腦',
+  'PC.Pages.SpaceDevelop.ApplicationItem.collectSuccess': '收藏成功',
+  'PC.Pages.SpaceDevelop.ApplicationItem.noPermission': '無此資源權限',
 
   // Pages - SpaceDevelop > CreateApiKeyModal
   'PC.Pages.SpaceDevelop.CreateApiKeyModal.deleteConfirmText':
@@ -4314,6 +4441,11 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.EcosystemDetailDrawer.newVersionUpdate': '新版本更新',
   'PC.Components.EcosystemDetailDrawer.fromAuthor': '來自{0}',
   'PC.Components.EcosystemDetailDrawer.usageDoc': '使用文檔',
+  'PC.Components.EcosystemDetailDrawer.jsonParseFailed': 'JSON解析失敗:',
+  'PC.Components.EcosystemDetailDrawer.updateMcpConfigFailed':
+    '更新MCP配置失敗:',
+  'PC.Components.EcosystemDetailDrawer.updateConfigParamFailed':
+    '更新配置參數失敗:',
 
   // Components - EcosystemShareModal
   'PC.Components.EcosystemShareModal.paramName': '參數名稱',
@@ -4397,6 +4529,16 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.MonacoEditor.selectFileToEdit': '選擇文件進行編輯',
   'PC.Components.MonacoEditor.selectFileToEditDesc':
     '从左侧文件树中选择一个文件，或创建新文件开始编辑',
+  'PC.Components.MonacoEditor.cannotLoadLanguageSupport':
+    '無法加載語言支持: {0}',
+  'PC.Components.MonacoEditor.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] 加載語言支持失敗 ({0}):',
+  'PC.Components.MonacoEditor.htmlLanguageSupportLoadFailed':
+    '⚠️ [MonacoEditor] HTML語言支持加載失敗，使用默認配置:',
+  'PC.Components.MonacoEditor.monacoEditorInitFailed':
+    '❌ [MonacoEditor] Monaco Editor初始化失敗:',
+  'PC.Components.MonacoEditor.updateEditorContentFailed':
+    '❌ [MonacoEditor] 更新編輯器內容失敗:',
 
   // Components - CreateNewPlugin
   'PC.Components.CreateNewPlugin.pluginCreated': '插件已創建',
@@ -4472,6 +4614,9 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.MarkdownCustomProcess.copyDetailData': '複製詳情數據',
   'PC.Components.MarkdownCustomProcess.copyFailedRetry':
     '详情数据复制失败，请重试',
+  'PC.Components.MarkdownCustomProcess.dataFormatError': '數據格式錯誤',
+  'PC.Components.MarkdownCustomProcess.pagePathNotExists': '頁面路徑不存在',
+  'PC.Components.MarkdownCustomProcess.copy': '複製',
 
   // Components - SharedIcon
   'PC.Components.SharedIcon.published': '已發佈',
@@ -4492,6 +4637,14 @@ export const ZH_TW: SystemLangMap = {
   // Components - MarkdownRenderer
   'PC.Components.MarkdownRenderer.thinking': '正在思考',
   'PC.Components.MarkdownRenderer.thought': '已思考',
+  'PC.Components.MarkdownRenderer.clickTaskResultEvent':
+    '點擊會話中TaskResult事件處理:',
+  'PC.Components.MarkdownRenderer.extractTableCellFailed':
+    '提取表格單元格內容失敗:',
+  'PC.Components.MarkdownRenderer.extractTableRowFailed': '提取表格行內容失敗:',
+  'PC.Components.MarkdownRenderer.extractTableSectionFailed':
+    '提取表格區域內容失敗:',
+  'PC.Components.MarkdownRenderer.extractTableFailed': '提取表格內容失敗:',
 
   // Components - PageCard
   'PC.Components.PageCard.activated': '已啟用',
@@ -4592,6 +4745,14 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.TestRun.testRunInput': '試運行輸入',
   'PC.Components.TestRun.uploadFile': '上傳文件',
   'PC.Components.TestRun.uploadFailed': '上傳失敗: {0}',
+  'PC.Components.TestRun.fieldRequired': '{0} 為必填項',
+  'PC.Components.TestRun.jsonParseFailed': 'JSON 解析失敗:',
+  'PC.Components.TestRun.uploadFileInfo': '上傳文件信息:',
+  'PC.Components.TestRun.fileUploadFailed': '文件上傳失敗:',
+  'PC.Components.TestRun.processedFileInfo': '處理後的文件信息:',
+  'PC.Components.TestRun.finalFileList': '最終文件列表:',
+  'PC.Components.TestRun.mockOption1': '角色陪伴-蘇瑤',
+  'PC.Components.TestRun.mockOption2': '智慧家具管家',
 
   // Layouts - HistoryConversation
   'PC.Layouts.HistoryConversation.title': '歷史會話',
@@ -4648,6 +4809,9 @@ export const ZH_TW: SystemLangMap = {
 
   // Layouts - Message
   'PC.Layouts.Message.noMessages': '暫無消息',
+  'PC.Layouts.Message.clearedAllUnread': '已清除所有未讀消息',
+  'PC.Layouts.Message.clearAllUnread': '清除所有未讀消息',
+  'PC.Layouts.Message.noUnreadMessages': '暫無未讀消息',
 
   // Utils - PptxFallbackRenderer
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 文件解析失敗',
@@ -4752,4 +4916,118 @@ export const ZH_TW: SystemLangMap = {
   'PC.Constants.Theme.bgNightCityDesc': '都市夜景，適合深色佈局風格',
   'PC.Constants.Theme.bgFreshBlueSky': '清新藍天',
   'PC.Constants.Theme.bgFreshBlueSkyDesc': '清新明亮，適合淺色佈局風格',
+
+  // Hooks - UseEventPolling
+  'PC.Hooks.UseEventPolling.skipDuplicateEvent': '跳過重複的事件處理',
+  'PC.Hooks.UseEventPolling.eventHandlingError': '處理事件時出錯:',
+
+  // Hooks - UseIdleDetection
+  'PC.Hooks.UseIdleDetection.or': ' 或 ',
+  'PC.Hooks.UseIdleDetection.userIdle': '用戶已空閒',
+  'PC.Hooks.UseIdleDetection.userIsIdle': '用戶已空閒',
+  'PC.Hooks.UseIdleDetection.pauseIdleDetection': '⏸️ 暫停空閒檢測',
+  'PC.Hooks.UseIdleDetection.resumeIdleDetection': '▶️ 恢復空閒檢測',
+  'PC.Hooks.UseIdleDetection.cannotAccessIframe':
+    '⚠️ 無法訪問 iframe（可能是跨域）',
+  'PC.Hooks.UseIdleDetection.idleDetectionNotEnabled': '🚫 空閒檢測未啟用',
+  'PC.Hooks.UseIdleDetection.idleDetectionPaused':
+    '⏸️ 空閒檢測已暫停，跳過事件監聽器設置',
+  'PC.Hooks.UseIdleDetection.idleDetectionEnabled': '✅ 空閒檢測已啟用',
+  'PC.Hooks.UseIdleDetection.cleanupIdleDetection': '🧹 清理空閒檢測事件監聽器',
+  'PC.Hooks.UseIdleDetection.detectedIframeActivity':
+    '🖥️ 檢測到 iframe 內用戶活動',
+  'PC.Hooks.UseIdleDetection.bindIframeListeners': '🔗 綁定 iframe 事件監聽器',
+  'PC.Hooks.UseIdleDetection.scanIframe': '🔍 掃描 iframe',
+  'PC.Hooks.UseIdleDetection.detectedNewIframe': '🔄 檢測到新 iframe，重新掃描',
+  'PC.Hooks.UseIdleDetection.cleanupIframeListeners':
+    '🧹 清理 iframe 事件監聽器',
+  'PC.Hooks.UseIdleDetection.pageHiddenPause': '👁️ 頁面切出，暫停空閒計時器',
+  'PC.Hooks.UseIdleDetection.pageVisibleReset': '👁️ 頁面切回，重置空閒計時器',
+
+  // Hooks - UseMessageEventDelegate
+  'PC.Hooks.UseMessageEventDelegate.triggerEvent': '[Event Delegate] 觸發事件:',
+  'PC.Hooks.UseMessageEventDelegate.dataParseFailed':
+    '[Event Delegate] 數據解析失敗:',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigNotFound':
+    '[Event Delegate] 未找到事件配置: ',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigFound':
+    '[Event Delegate] 找到事件配置:',
+  'PC.Hooks.UseMessageEventDelegate.openPage': '[Event Delegate] 打開頁面:',
+  'PC.Hooks.UseMessageEventDelegate.openLink': '[Event Delegate] 打開外鏈:',
+  'PC.Hooks.UseMessageEventDelegate.unknownEventType':
+    '[Event Delegate] 未知的事件類型: ',
+  'PC.Hooks.UseMessageEventDelegate.missingRequiredAttributes':
+    '[Event Delegate] 缺少必要的屬性:',
+  'PC.Hooks.UseMessageEventDelegate.delegateInitialized':
+    '[Event Delegate] 事件代理已初始化',
+  'PC.Hooks.UseMessageEventDelegate.delegateCleaned':
+    '[Event Delegate] 事件代理已清理',
+
+  // Hooks - UseModifiedSaveUpdate
+  'PC.Hooks.UseModifiedSaveUpdate.throttledSave':
+    '🔄 useModifiedSaveUpdate: 節流執行保存 [第{0}次]',
+  'PC.Hooks.UseModifiedSaveUpdate.saveInProgress':
+    '⏸️ useModifiedSaveUpdate: 保存正在進行中，跳過本次調用',
+  'PC.Hooks.UseModifiedSaveUpdate.startSave':
+    '✅ useModifiedSaveUpdate: 開始執行保存操作',
+  'PC.Hooks.UseModifiedSaveUpdate.saveSuccess':
+    '🎉 useModifiedSaveUpdate: 保存成功完成',
+  'PC.Hooks.UseModifiedSaveUpdate.saveFailed':
+    '❌ useModifiedSaveUpdate: 保存失敗',
+  'PC.Hooks.UseModifiedSaveUpdate.throttleCalled':
+    '🚀 useModifiedSaveUpdate: 節流函數被調用',
+  'PC.Hooks.UseModifiedSaveUpdate.isModifiedChanged':
+    '📝 useModifiedSaveUpdate: isModified 狀態變化 =',
+  'PC.Hooks.UseModifiedSaveUpdate.triggerThrottle':
+    '⚡ useModifiedSaveUpdate: 觸發節流保存函數',
+  'PC.Hooks.UseModifiedSaveUpdate.hookInitialized':
+    '🔗 useModifiedSaveUpdate: Hook 初始化完成',
+  'PC.Hooks.UseModifiedSaveUpdate.cleanupHook':
+    '🧹 useModifiedSaveUpdate: 清理 Hook 狀態',
+
+  // Hooks - UseScrollSync
+  'PC.Hooks.UseScrollSync.tabClickNavigate': '🎯 標籤點擊：導航到 {0}',
+  'PC.Hooks.UseScrollSync.scrollSyncSwitch': '🔄 滾動同步：自動切換到標籤 {0}',
+
+  // Hooks - UseUnifiedTheme
+  'PC.Hooks.UseUnifiedTheme.themeUpdateFailed': '主題更新失敗:',
+
+  // Man - User
+  'PC.man.user.add': '增加用戶',
+
+  // Utils - Skill
+  'PC.Utils.Skill.fetchContentFailedWithStatus': '獲取文件內容失敗: {0}',
+  'PC.Utils.Skill.fetchContentFailed': '獲取文件內容失敗: ',
+
+  // Components - CodeViewer
+  'PC.Components.CodeViewer.cannotLoadLanguageSupport': '無法加載語言支持: {0}',
+  'PC.Components.CodeViewer.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] 加載語言支持失敗 ({0}):',
+  'PC.Components.CodeViewer.htmlLanguageLoadFailed':
+    '⚠️ [MonacoEditor] HTML語言支持加載失敗，使用默認配置:',
+  'PC.Components.CodeViewer.monacoInitFailed':
+    '❌ [MonacoEditor] Monaco Editor初始化失敗:',
+  'PC.Components.CodeViewer.updateEditorContentFailed':
+    '❌ [MonacoEditor] 更新編輯器內容失敗:',
+  'PC.Components.CodeViewer.loadingEditor': '正在加載編輯器...',
+  'PC.Components.CodeViewer.loadingEditorDesc':
+    '請稍候，Monaco Editor正在初始化',
+  'PC.Components.CodeViewer.selectFileToEdit': '選擇文件進行編輯',
+  'PC.Components.CodeViewer.selectFileToEditDesc':
+    '從左側文件樹中選擇一個文件，或創建新文件開始編輯',
+
+  // Components - AliyunCaptcha
+  'PC.Components.AliyunCaptcha.verifyParamsGenerated':
+    '[AliyunCaptcha] 驗證參數生成:',
+  'PC.Components.AliyunCaptcha.consumeToken': '[AliyunCaptcha] 消費 Token:',
+  'PC.Components.AliyunCaptcha.refreshInstance':
+    '[AliyunCaptcha] 刷新實例以重置狀態',
+  'PC.Components.AliyunCaptcha.cleanupResources': '[AliyunCaptcha] 清理資源',
+  'PC.Components.AliyunCaptcha.destroyInstance': '[AliyunCaptcha] 銷毀實例',
+  'PC.Components.AliyunCaptcha.getInstance': '[AliyunCaptcha] 獲取實例:',
+  'PC.Components.AliyunCaptcha.componentMounted': '[AliyunCaptcha] 組件掛載',
+  'PC.Components.AliyunCaptcha.instanceExistsSkip':
+    '[AliyunCaptcha] 實例已存在，跳過初始化',
+  'PC.Components.AliyunCaptcha.initSDK': '[AliyunCaptcha] 初始化 SDK...',
+  'PC.Components.AliyunCaptcha.initComplete': '驗證碼初始化完成，onReady已調用',
 };

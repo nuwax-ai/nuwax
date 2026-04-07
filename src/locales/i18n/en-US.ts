@@ -42,6 +42,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.Setting.confirmTitle': 'Confirm Language Switch',
   'PC.Pages.Setting.confirmContent':
     'Switching languages will update all UI text. Are you sure?',
+  'PC.Pages.Setting.alreadyDefault':
+    'The current language is already selected.',
   'PC.Pages.Setting.saveSuccess': 'Language setting updated successfully',
   'PC.Pages.Setting.bindPending': 'Pending binding',
   'PC.Pages.SystemConfigI18n.manageTitle': 'Language Management',
@@ -148,6 +150,17 @@ export const EN_US: SystemLangMap = {
   'PC.Components.PagePreviewIframe.tooltipBack': 'Back',
   'PC.Components.PagePreviewIframe.tooltipForward': 'Forward',
   'PC.Components.PagePreviewIframe.tooltipCopyLink': 'Copy link',
+  'PC.Components.AliyunCaptcha.blockedDoubleUsage':
+    'Token already consumed or invalid',
+  'PC.Components.AliyunCaptcha.verificationFailed': 'Verification failed',
+  'PC.Components.AliyunCaptcha.verificationSuccess': 'Verification successful',
+  'PC.Components.AliyunCaptcha.loading': 'Loading...',
+  'PC.Components.AliyunCaptcha.pleaseComplete': 'Please complete verification',
+  'PC.Components.AliyunCaptcha.retry': 'Retry',
+  'PC.Components.AliyunCaptcha.slideToVerify': 'Slide to verify',
+  'PC.Components.AliyunCaptcha.clickToVerify': 'Click to verify',
+  'PC.Components.AliyunCaptcha.verificationExpired': 'Verification expired',
+  'PC.Components.AliyunCaptcha.networkError': 'Network error, please retry',
   'PC.Components.VncPreview.missingConfig':
     'Missing required configuration (service URL or container ID).',
   'PC.Components.VncPreview.desktopUnavailable':
@@ -888,6 +901,12 @@ export const EN_US: SystemLangMap = {
     'Type commands directly, use Shift+Enter for a new line and Enter to send; supports @ to mention skills and image paste.',
   'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention':
     'Type commands directly, use Shift+Enter for a new line and Enter to send; supports image paste.',
+  'PC.Components.ChatInputHome.fetchComputerListFailed':
+    'Failed to fetch computer list:',
+  'PC.Components.ChatInputHome.saveComputerSelectionFailed':
+    'Failed to save computer selection:',
+  'PC.Components.ChatInputHome.fetchModelListFailed':
+    'Failed to fetch agent model list:',
   'PC.Pages.SkillDetailsMoreActionsMenu.importSkill': 'Import Skill',
   'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview':
     'Fullscreen Preview',
@@ -2562,6 +2581,9 @@ export const EN_US: SystemLangMap = {
     'Desktop share successful, link copied to clipboard',
   'PC.Components.ShareDesktopModal.shareFailedRetry':
     'Share failed, please retry later',
+  'PC.Components.ShareDesktopModal.desktopShareFailed':
+    'Failed to share desktop',
+  'PC.Components.ShareDesktopModal.fileShareFailed': 'Failed to share file',
   'PC.Components.ShareDesktopModal.fileShareSuccess':
     'Share successful, link copied to clipboard',
   'PC.Components.ShareDesktopModal.titleDesktop': 'Share Desktop',
@@ -2576,6 +2598,9 @@ export const EN_US: SystemLangMap = {
   'PC.Components.ShareDesktopModal.noticeTitle': 'Notice:',
   'PC.Components.ShareDesktopModal.noticeDescription':
     'The share link will be automatically copied to clipboard. Anyone with this link can access it. Share carefully and be aware of data risks.',
+  'PC.Components.ShareDesktopModal.allowDownload': 'Allow Download',
+  'PC.Components.ShareDesktopModal.allowDownloadTooltip':
+    'When enabled, users with the share link can download the original file from the preview page',
   'PC.Components.FilePathHeader.filePreview': 'File Preview',
   'PC.Components.FilePathHeader.collapseFileTree':
     'Click to collapse file tree',
@@ -2628,6 +2653,15 @@ export const EN_US: SystemLangMap = {
   'PC.Components.FileTreeView.refreshing': 'Refreshing...',
   'PC.Components.FileTreeView.refreshFileTree': 'Refresh File Tree',
   'PC.Components.FileTreeView.restarting': 'Restarting...',
+  'PC.Components.FileTreeView.renameFailed': 'Rename failed',
+  'PC.Components.FileTreeView.refreshContentFailed':
+    'Failed to refresh file content',
+  'PC.Components.FileTreeView.refreshFileTreeFailed':
+    'Failed to refresh file tree',
+  'PC.Components.FileTreeView.uploadFileFailed': 'Failed to upload file',
+  'PC.Components.FileTreeView.refreshContentOnModeSwitchFailed':
+    'Failed to refresh file content when switching preview mode',
+  'PC.Components.FileTreeView.downloadFileFailed': 'Failed to download file',
   'PC.Hooks.UseEcoMarket.confirmDelete':
     'Are you sure you want to delete this share?',
   'PC.Hooks.UseEventPolling.newVersionFound': 'New Version Available',
@@ -3134,6 +3168,18 @@ export const EN_US: SystemLangMap = {
   'PC.Layouts.Setting.UsageStatistics.task': 'Scheduled Task Creation Limit',
   'PC.Layouts.Setting.UsageStatistics.sandboxMemory':
     'Agent Computer Max Memory',
+  'PC.Layouts.Setting.UsageStatistics.fetchFailed':
+    'Failed to fetch usage statistics',
+  'PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateConsoleError':
+    'Failed to update theme color:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateConsoleError':
+    'Failed to update background image:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateConsoleError':
+    'Failed to update navigation style:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.previewBackgroundConsoleError':
+    'Failed to preview background image:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleConsoleError':
+    'Failed to toggle navigation theme:',
 
   // Common - additional keys
   'PC.Common.Global.submit': 'Submit',
@@ -3347,6 +3393,31 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip':
     'Auto-optimize prompt',
   'PC.Pages.EditAgent.SystemTipsWord.optimize': 'Optimize',
+  'PC.Pages.EditAgent.SystemTipsWord.replaceTextMethodNotFound':
+    'replaceText method does not exist',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModel':
+    'Allow users to select their own models',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModelDesc':
+    'After enabling, users can select their own models in conversations',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkill':
+    'Allow users to @skills',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkillDesc':
+    'After enabling, users can add any skills in conversations',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandbox':
+    'Allow users to select personal computer',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandboxDesc':
+    'After enabling, users can choose to have the agent execute in their own Claw client',
+  'PC.Pages.EditAgent.PreviewAndDebug.reset': 'Reset',
+  'PC.Pages.EditAgent.configNotLoadedSkipUpdate':
+    'Configuration not loaded yet, skipping update:',
+  'PC.Pages.EditAgent.arrayValueUnchangedSkipApi':
+    'Array value unchanged, skipping API call:',
+  'PC.Pages.EditAgent.booleanValueUnchangedSkipApi':
+    'Boolean value unchanged, skipping API call:',
+  'PC.Pages.EditAgent.numberValueUnchangedSkipApi':
+    'Number value unchanged, skipping API call:',
+  'PC.Pages.EditAgent.deleteFileFailed': 'Failed to delete file:',
+  'PC.Pages.EditAgent.uploadFailed': 'Upload failed',
 
   // Pages - SpacePageDevelop
   'PC.Pages.SpacePageDevelop.ReverseProxyModal.title': 'Reverse Proxy',
@@ -3425,9 +3496,58 @@ export const EN_US: SystemLangMap = {
   'PC.Models.ConversationInfo.taskConflictTitle': 'Notice',
   'PC.Models.ConversationInfo.taskConflictContent':
     'The agent is currently executing a task. Do you want to pause the current task before sending a new request. Do you want to pause?',
+  'PC.Models.ConversationInfo.questionAnswer': 'Q&A',
+  'PC.Models.ConversationInfo.executingTask': 'Executing task',
+  'PC.Models.ConversationInfo.agentExecutingTask':
+    'Agent is executing a task, please wait for the current task to complete before sending a new request',
+  'PC.Models.ConversationInfo.userCancelledTask': 'User cancelled the task',
+  'PC.Models.ConversationInfo.openRemoteDesktopFailed':
+    'Failed to open remote desktop view',
+  'PC.Models.ConversationInfo.updateTopicFailed':
+    'Failed to update conversation topic:',
+  'PC.Models.ConversationInfo.loadMoreMessagesFailed':
+    'Failed to load more messages:',
+  'PC.Models.ConversationInfo.keepalivePageVisible':
+    '[keepalive] Page visible, calling apiEnsurePod to ensure container is running',
+  'PC.Models.ConversationInfo.keepaliveApiEnsurePodFailed':
+    '[keepalive] apiEnsurePod failed:',
   'PC.Models.DevCollectAgent.uncollectSuccess': 'Uncollected successfully',
-  'PC.Models.UserInfo.getUserInfoFailed': 'Failed to get user info',
-  'PC.Models.UserInfo.refreshUserInfoFailed': 'Failed to refresh user info',
+  'PC.Models.SpaceAgent.saveSuccess': 'Saved successfully',
+  'PC.Models.AutoErrorHandling.recordAutoHandling':
+    '[AutoErrorHandling] 📊 Record auto-handling: Session count={0}, Total count={1}',
+  'PC.Models.AutoErrorHandling.resetSessionCount':
+    '[AutoErrorHandling] 🔄 Reset session count',
+  'PC.Models.AutoErrorHandling.enabled': 'Enabled',
+  'PC.Models.AutoErrorHandling.disabled': 'Disabled',
+  'PC.Models.AutoErrorHandling.autoRetryCount':
+    '[AutoErrorHandling] 📊 Auto-retry count: {0}',
+  'PC.Models.AutoErrorHandling.resetAutoRetryCount':
+    '[AutoErrorHandling] 🔄 Reset auto-retry count',
+  'PC.Models.AutoErrorHandling.resetAndEnableAutoHandling':
+    '[AutoErrorHandling] 🔄 Reset and enable auto-handling',
+  'PC.Models.AutoErrorHandling.userCancelledAutoHandling':
+    '[AutoErrorHandling] ❌ User cancelled auto-handling',
+  'PC.Models.AutoErrorHandling.autoHandlingFeatureEnabled':
+    '[AutoErrorHandling] {0} Auto-handling feature has been {1}',
+  'PC.Models.AutoErrorHandling.resetAllStates':
+    '[AutoErrorHandling] 🔄 Reset all states',
+  'PC.Models.MenuModel.loadMenuDataFailed': 'Failed to load menu data:',
+  'PC.Models.TenantConfigInfo.tenantConfigApiReturnedEmpty':
+    'Tenant config API returned empty data',
+  'PC.Models.TenantConfigInfo.tenantConfigIsEmpty': 'Tenant config is empty',
+  'PC.Models.TenantConfigInfo.tenantConfigSavedReinitTheme':
+    'Tenant config saved, re-initializing unified theme service',
+  'PC.Models.TenantConfigInfo.syncedTenantThemeConfig':
+    'Synced tenant theme config (no local config):',
+  'PC.Models.TenantConfigInfo.syncTenantThemeColorFailed':
+    'Failed to sync tenant theme color:',
+  'PC.Models.TenantConfigInfo.detectedLocalThemeConfig':
+    'Detected local theme config, skipping tenant config sync',
+  'PC.Models.TenantConfigInfo.tenantInfoApiFailed': 'Tenant info API failed',
+  'PC.Models.UserInfo.getUserInfoFailed': 'Failed to get user info:',
+  'PC.Models.UserInfo.refreshUserInfoFailed': 'Failed to refresh user info:',
+  'PC.Models.UserInfo.updateUserInfoFailed': 'Failed to update user info:',
+  'PC.Models.WorkflowV3.useModelInsteadOf': ') instead of useModel(',
   'PC.Models.WorkflowV3.defaultNodeName': 'Test',
   'PC.Models.WorkflowV3.defaultNodeDescription': 'Test',
   'PC.Models.Workflow.defaultNodeName': 'Test',
@@ -3828,6 +3948,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceDevelop.Index.createAgent': 'Create Agent',
   'PC.Pages.SpaceDevelop.Index.noResults': 'No relevant results found',
   'PC.Pages.SpaceDevelop.Index.agentOverview': 'Agent Overview',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkSuccess':
+    'Independent session path copied',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkFailed':
+    'Failed to copy independent session path',
 
   // Pages - SpaceDevelop > ApplicationItem
   'PC.Pages.SpaceDevelop.ApplicationItem.lastEdited': 'Last edited',
@@ -3835,6 +3959,9 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceDevelop.ApplicationItem.taskType': 'General',
   'PC.Pages.SpaceDevelop.ApplicationItem.chatType': 'Q&A',
   'PC.Pages.SpaceDevelop.ApplicationItem.privateComputer': 'Private Computer',
+  'PC.Pages.SpaceDevelop.ApplicationItem.collectSuccess': 'Added to favorites',
+  'PC.Pages.SpaceDevelop.ApplicationItem.noPermission':
+    'No permission for this resource',
 
   // Pages - SpaceDevelop > CreateApiKeyModal
   'PC.Pages.SpaceDevelop.CreateApiKeyModal.deleteConfirmText':
@@ -4740,6 +4867,11 @@ export const EN_US: SystemLangMap = {
   'PC.Components.SelectComponent.added': 'Added',
   'PC.Components.SelectComponent.addBtn': 'Add',
   'PC.Components.SelectComponent.search': 'Search',
+  'PC.Components.SelectComponent.all': 'All',
+  'PC.Components.SelectComponent.documents': 'Documents',
+  'PC.Components.SelectComponent.tables': 'Tables',
+  'PC.Components.SelectComponent.componentLibraryDataTable':
+    'Component Library Data Table',
 
   // Components - Skill
   'PC.Components.Skill.settings': 'Settings',
@@ -4788,6 +4920,11 @@ export const EN_US: SystemLangMap = {
     'New version available',
   'PC.Components.EcosystemDetailDrawer.fromAuthor': 'From {0}',
   'PC.Components.EcosystemDetailDrawer.usageDoc': 'Documentation',
+  'PC.Components.EcosystemDetailDrawer.jsonParseFailed': 'JSON parse failed:',
+  'PC.Components.EcosystemDetailDrawer.updateMcpConfigFailed':
+    'Failed to update MCP config:',
+  'PC.Components.EcosystemDetailDrawer.updateConfigParamFailed':
+    'Failed to update config params:',
 
   // Components - EcosystemShareModal
   'PC.Components.EcosystemShareModal.paramName': 'Parameter Name',
@@ -4882,6 +5019,16 @@ export const EN_US: SystemLangMap = {
   'PC.Components.MonacoEditor.selectFileToEdit': 'Select a file to edit',
   'PC.Components.MonacoEditor.selectFileToEditDesc':
     'Select a file from the file tree on the left, or create a new file to start editing',
+  'PC.Components.MonacoEditor.cannotLoadLanguageSupport':
+    'Cannot load language support: {0}',
+  'PC.Components.MonacoEditor.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] Failed to load language support ({0}):',
+  'PC.Components.MonacoEditor.htmlLanguageSupportLoadFailed':
+    '⚠️ [MonacoEditor] HTML language support loading failed, using default configuration:',
+  'PC.Components.MonacoEditor.monacoEditorInitFailed':
+    '❌ [MonacoEditor] Monaco Editor initialization failed:',
+  'PC.Components.MonacoEditor.updateEditorContentFailed':
+    '❌ [MonacoEditor] Failed to update editor content:',
 
   // Components - CreateNewPlugin
   'PC.Components.CreateNewPlugin.pluginCreated': 'Plugin created',
@@ -4967,6 +5114,10 @@ export const EN_US: SystemLangMap = {
   'PC.Components.MarkdownCustomProcess.copyDetailData': 'Copy detail data',
   'PC.Components.MarkdownCustomProcess.copyFailedRetry':
     'Failed to copy detail data, please retry',
+  'PC.Components.MarkdownCustomProcess.dataFormatError': 'Data format error',
+  'PC.Components.MarkdownCustomProcess.pagePathNotExists':
+    'Page path does not exist',
+  'PC.Components.MarkdownCustomProcess.copy': 'Copy',
 
   // Components - SharedIcon
   'PC.Components.SharedIcon.published': 'Published',
@@ -4987,6 +5138,16 @@ export const EN_US: SystemLangMap = {
   // Components - MarkdownRenderer
   'PC.Components.MarkdownRenderer.thinking': 'Thinking',
   'PC.Components.MarkdownRenderer.thought': 'Thought',
+  'PC.Components.MarkdownRenderer.clickTaskResultEvent':
+    'TaskResult click event in conversation:',
+  'PC.Components.MarkdownRenderer.extractTableCellFailed':
+    'Failed to extract table cell content:',
+  'PC.Components.MarkdownRenderer.extractTableRowFailed':
+    'Failed to extract table row content:',
+  'PC.Components.MarkdownRenderer.extractTableSectionFailed':
+    'Failed to extract table section content:',
+  'PC.Components.MarkdownRenderer.extractTableFailed':
+    'Failed to extract table content:',
 
   // Components - PageCard
   'PC.Components.PageCard.activated': 'Activated',
@@ -5104,6 +5265,9 @@ export const EN_US: SystemLangMap = {
 
   // Layouts - Message
   'PC.Layouts.Message.noMessages': 'No messages',
+  'PC.Layouts.Message.clearedAllUnread': 'Cleared all unread messages',
+  'PC.Layouts.Message.clearAllUnread': 'Clear all unread messages',
+  'PC.Layouts.Message.noUnreadMessages': 'No unread messages',
 
   // Utils - PptxFallbackRenderer
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX file parse failed',
@@ -5447,6 +5611,8 @@ export const EN_US: SystemLangMap = {
   'PC.Components.ChatBottomDebug.debug': 'Debug',
   'PC.Components.ChatView.guest': 'Guest',
   'PC.Components.CopyIconButton.copy': 'Copy',
+  'PC.Components.Base.CopyButton.copyFailed': 'Copy failed',
+  'PC.Components.Base.CopyIconButton.copyFailed': 'Copy failed',
   'PC.Components.CreateAgent.createSuccess': 'Agent created successfully',
   'PC.Components.CreateAgent.createTitle': 'Create Agent',
   'PC.Components.CreateAgent.descriptionLabel': 'Agent Description',
@@ -5540,6 +5706,15 @@ export const EN_US: SystemLangMap = {
   'PC.Components.TestRun.testRun': 'Test Run',
   'PC.Components.TestRun.testRunInput': 'Test Run Input',
   'PC.Components.TestRun.uploadFile': 'Upload File',
+  'PC.Components.TestRun.uploadFailed': 'Upload Failed: {0}',
+  'PC.Components.TestRun.fieldRequired': '{0} is required',
+  'PC.Components.TestRun.jsonParseFailed': 'JSON parse failed:',
+  'PC.Components.TestRun.uploadFileInfo': 'Upload file info:',
+  'PC.Components.TestRun.fileUploadFailed': 'File upload failed:',
+  'PC.Components.TestRun.processedFileInfo': 'Processed file info:',
+  'PC.Components.TestRun.finalFileList': 'Final file list:',
+  'PC.Components.TestRun.mockOption1': 'Role Companion - Su Yao',
+  'PC.Components.TestRun.mockOption2': 'Smart Home Manager',
   'PC.Constants.Agent.autoInvoke': 'Auto Invoke',
   'PC.Constants.Agent.balancedMode': 'Balanced Mode',
   'PC.Constants.Agent.creativeMode': 'Creative Mode',
@@ -5886,4 +6061,133 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemContentKnowledgeBase.accessControlOn': 'On',
   'PC.Pages.SystemContentKnowledgeBase.accessControlOff': 'Off',
   'PC.Pages.SystemContentKnowledgeBase.grantAuth': 'Grant Auth',
+
+  // Hooks - UseEventPolling
+  'PC.Hooks.UseEventPolling.skipDuplicateEvent':
+    'Skip duplicate event handling',
+  'PC.Hooks.UseEventPolling.eventHandlingError': 'Error handling event:',
+
+  // Hooks - UseIdleDetection
+  'PC.Hooks.UseIdleDetection.or': ' or ',
+  'PC.Hooks.UseIdleDetection.userIdle': 'User is idle',
+  'PC.Hooks.UseIdleDetection.userIsIdle': 'User is idle',
+  'PC.Hooks.UseIdleDetection.pauseIdleDetection': '⏸️ Pause idle detection',
+  'PC.Hooks.UseIdleDetection.resumeIdleDetection': '▶️ Resume idle detection',
+  'PC.Hooks.UseIdleDetection.cannotAccessIframe':
+    '⚠️ Cannot access iframe (possibly cross-origin)',
+  'PC.Hooks.UseIdleDetection.idleDetectionNotEnabled':
+    '🚫 Idle detection not enabled',
+  'PC.Hooks.UseIdleDetection.idleDetectionPaused':
+    '⏸️ Idle detection paused, skipping event listener setup',
+  'PC.Hooks.UseIdleDetection.idleDetectionEnabled': '✅ Idle detection enabled',
+  'PC.Hooks.UseIdleDetection.cleanupIdleDetection':
+    '🧹 Cleanup idle detection event listeners',
+  'PC.Hooks.UseIdleDetection.detectedIframeActivity':
+    '🖥️ Detected user activity in iframe',
+  'PC.Hooks.UseIdleDetection.bindIframeListeners':
+    '🔗 Bind iframe event listeners',
+  'PC.Hooks.UseIdleDetection.scanIframe': '🔍 Scan iframe',
+  'PC.Hooks.UseIdleDetection.detectedNewIframe':
+    '🔄 Detected new iframe, rescanning',
+  'PC.Hooks.UseIdleDetection.cleanupIframeListeners':
+    '🧹 Cleanup iframe event listeners',
+  'PC.Hooks.UseIdleDetection.pageHiddenPause':
+    '👁️ Page hidden, pausing idle timer',
+  'PC.Hooks.UseIdleDetection.pageVisibleReset':
+    '👁️ Page visible, resetting idle timer',
+
+  // Hooks - UseMessageEventDelegate
+  'PC.Hooks.UseMessageEventDelegate.triggerEvent':
+    '[Event Delegate] Trigger event:',
+  'PC.Hooks.UseMessageEventDelegate.dataParseFailed':
+    '[Event Delegate] Data parse failed:',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigNotFound':
+    '[Event Delegate] Event config not found: ',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigFound':
+    '[Event Delegate] Event config found:',
+  'PC.Hooks.UseMessageEventDelegate.openPage': '[Event Delegate] Open page:',
+  'PC.Hooks.UseMessageEventDelegate.openLink': '[Event Delegate] Open link:',
+  'PC.Hooks.UseMessageEventDelegate.unknownEventType':
+    '[Event Delegate] Unknown event type: ',
+  'PC.Hooks.UseMessageEventDelegate.missingRequiredAttributes':
+    '[Event Delegate] Missing required attributes:',
+  'PC.Hooks.UseMessageEventDelegate.delegateInitialized':
+    '[Event Delegate] Event delegate initialized',
+  'PC.Hooks.UseMessageEventDelegate.delegateCleaned':
+    '[Event Delegate] Event delegate cleaned',
+
+  // Hooks - UseModifiedSaveUpdate
+  'PC.Hooks.UseModifiedSaveUpdate.throttledSave':
+    '🔄 useModifiedSaveUpdate: Throttled save [attempt {0}]',
+  'PC.Hooks.UseModifiedSaveUpdate.saveInProgress':
+    '⏸️ useModifiedSaveUpdate: Save in progress, skipping this call',
+  'PC.Hooks.UseModifiedSaveUpdate.startSave':
+    '✅ useModifiedSaveUpdate: Starting save operation',
+  'PC.Hooks.UseModifiedSaveUpdate.saveSuccess':
+    '🎉 useModifiedSaveUpdate: Save completed successfully',
+  'PC.Hooks.UseModifiedSaveUpdate.saveFailed':
+    '❌ useModifiedSaveUpdate: Save failed',
+  'PC.Hooks.UseModifiedSaveUpdate.throttleCalled':
+    '🚀 useModifiedSaveUpdate: Throttle function called',
+  'PC.Hooks.UseModifiedSaveUpdate.isModifiedChanged':
+    '📝 useModifiedSaveUpdate: isModified state changed =',
+  'PC.Hooks.UseModifiedSaveUpdate.triggerThrottle':
+    '⚡ useModifiedSaveUpdate: Trigger throttle save function',
+  'PC.Hooks.UseModifiedSaveUpdate.hookInitialized':
+    '🔗 useModifiedSaveUpdate: Hook initialized',
+  'PC.Hooks.UseModifiedSaveUpdate.cleanupHook':
+    '🧹 useModifiedSaveUpdate: Cleanup hook state',
+
+  // Hooks - UseScrollSync
+  'PC.Hooks.UseScrollSync.tabClickNavigate': '🎯 Tab click: Navigate to {0}',
+  'PC.Hooks.UseScrollSync.scrollSyncSwitch':
+    '🔄 Scroll sync: Auto switch to tab {0}',
+
+  // Hooks - UseUnifiedTheme
+  'PC.Hooks.UseUnifiedTheme.themeUpdateFailed': 'Theme update failed:',
+
+  // Man - User
+  'PC.man.user.add': 'add user',
+
+  // Utils - Skill
+  'PC.Utils.Skill.fetchContentFailedWithStatus':
+    'Failed to fetch file content: {0}',
+  'PC.Utils.Skill.fetchContentFailed': 'Failed to fetch file content: ',
+
+  // Components - CodeViewer
+  'PC.Components.CodeViewer.cannotLoadLanguageSupport':
+    'Cannot load language support: {0}',
+  'PC.Components.CodeViewer.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] Failed to load language support ({0}):',
+  'PC.Components.CodeViewer.htmlLanguageLoadFailed':
+    '⚠️ [MonacoEditor] HTML language support loading failed, using default configuration:',
+  'PC.Components.CodeViewer.monacoInitFailed':
+    '❌ [MonacoEditor] Monaco Editor initialization failed:',
+  'PC.Components.CodeViewer.updateEditorContentFailed':
+    '❌ [MonacoEditor] Failed to update editor content:',
+  'PC.Components.CodeViewer.loadingEditor': 'Loading editor...',
+  'PC.Components.CodeViewer.loadingEditorDesc':
+    'Please wait while Monaco Editor is initializing',
+  'PC.Components.CodeViewer.selectFileToEdit': 'Select a file to edit',
+  'PC.Components.CodeViewer.selectFileToEditDesc':
+    'Choose a file from the file tree on the left, or create a new file to start editing',
+
+  // Components - AliyunCaptcha
+  'PC.Components.AliyunCaptcha.verifyParamsGenerated':
+    '[AliyunCaptcha] Verify params generated:',
+  'PC.Components.AliyunCaptcha.consumeToken': '[AliyunCaptcha] Consume Token:',
+  'PC.Components.AliyunCaptcha.refreshInstance':
+    '[AliyunCaptcha] Refresh instance to reset state',
+  'PC.Components.AliyunCaptcha.cleanupResources':
+    '[AliyunCaptcha] Cleanup resources',
+  'PC.Components.AliyunCaptcha.destroyInstance':
+    '[AliyunCaptcha] Destroy instance',
+  'PC.Components.AliyunCaptcha.getInstance': '[AliyunCaptcha] Get instance:',
+  'PC.Components.AliyunCaptcha.componentMounted':
+    '[AliyunCaptcha] Component mounted',
+  'PC.Components.AliyunCaptcha.instanceExistsSkip':
+    '[AliyunCaptcha] Instance exists, skip initialization',
+  'PC.Components.AliyunCaptcha.initSDK': '[AliyunCaptcha] Initialize SDK...',
+  'PC.Components.AliyunCaptcha.initComplete':
+    'Captcha initialization complete, onReady called',
 };

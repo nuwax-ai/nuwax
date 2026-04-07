@@ -42,6 +42,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.Setting.confirmTitle': '确认切换语言',
   'PC.Pages.Setting.confirmContent':
     '切换语言将更新系统所有界面文字，是否确认？',
+  'PC.Pages.Setting.alreadyDefault': '当前已选中该语言',
   'PC.Pages.Setting.saveSuccess': '语言设置更新成功',
   'PC.Pages.Setting.bindPending': '待绑定',
   'PC.Pages.SystemConfigI18n.manageTitle': '多语言管理',
@@ -135,6 +136,16 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.PagePreviewIframe.tooltipBack': '后退',
   'PC.Components.PagePreviewIframe.tooltipForward': '前进',
   'PC.Components.PagePreviewIframe.tooltipCopyLink': '复制链接',
+  'PC.Components.AliyunCaptcha.blockedDoubleUsage': '验证令牌已被使用或无效',
+  'PC.Components.AliyunCaptcha.verificationFailed': '验证失败',
+  'PC.Components.AliyunCaptcha.verificationSuccess': '验证成功',
+  'PC.Components.AliyunCaptcha.loading': '加载中...',
+  'PC.Components.AliyunCaptcha.pleaseComplete': '请完成验证',
+  'PC.Components.AliyunCaptcha.retry': '重试',
+  'PC.Components.AliyunCaptcha.slideToVerify': '滑动验证',
+  'PC.Components.AliyunCaptcha.clickToVerify': '点击验证',
+  'PC.Components.AliyunCaptcha.verificationExpired': '验证已过期',
+  'PC.Components.AliyunCaptcha.networkError': '网络错误，请重试',
   'PC.Components.VncPreview.missingConfig': '缺少必要配置（服务地址或容器 ID）',
   'PC.Components.VncPreview.desktopUnavailable':
     '智能体电脑暂时不可用，请稍后手动刷新重试。',
@@ -789,6 +800,10 @@ export const ZH_CN: SystemLangMap = {
     '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持输入@唤起技能；支持粘贴图片',
   'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention':
     '直接输入指令, 可通过Shift+Enter换行, 通过回车发送消息；支持粘贴图片',
+  'PC.Components.ChatInputHome.fetchComputerListFailed': '获取电脑列表失败:',
+  'PC.Components.ChatInputHome.saveComputerSelectionFailed':
+    '保存电脑选择失败:',
+  'PC.Components.ChatInputHome.fetchModelListFailed': '获取智能体模型列表失败:',
   'PC.Pages.SkillDetailsMoreActionsMenu.importSkill': '导入技能',
   'PC.Pages.SkillDetailsMoreActionsMenu.fullscreenPreview': '全屏预览',
   'PC.Pages.SkillDetailsMoreActionsMenu.exportSkill': '导出技能',
@@ -1937,6 +1952,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemMenuDataPermissionModal.itemAdd': '添加',
   'PC.Pages.SystemMenuDataPermissionModal.itemAdded': '已添加',
   'PC.Pages.SystemMenuDataPermissionModal.itemRemove': '移除',
+  'PC.Pages.SystemMenuDataPermissionModal.knowledgeBaseTooltip':
+    '在内容管理中开启管控后可在此处进行授权，若开启管控，需授权才能使用该知识库',
   'PC.Pages.AppDevPreview.devServerUrlUnavailable': '开发服务器URL不可用',
   'PC.Pages.AppDevPreview.retryFailedCheckNetwork': '重试失败，请检查网络连接',
   'PC.Pages.AppDevPreview.serverErrorWithCode': '服务器错误 ({0})',
@@ -2312,6 +2329,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.ShareDesktopModal.desktopShareSuccess':
     '远程桌面分享成功，链接已复制到剪切板',
   'PC.Components.ShareDesktopModal.shareFailedRetry': '分享失败，请稍后重试',
+  'PC.Components.ShareDesktopModal.desktopShareFailed': '分享远程桌面失败',
+  'PC.Components.ShareDesktopModal.fileShareFailed': '分享文件失败',
   'PC.Components.ShareDesktopModal.fileShareSuccess':
     '分享成功，链接已复制到剪切板',
   'PC.Components.ShareDesktopModal.titleDesktop': '分享远程桌面',
@@ -2325,6 +2344,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.ShareDesktopModal.noticeTitle': '温馨提示：',
   'PC.Components.ShareDesktopModal.noticeDescription':
     '分享链接生成后将自动复制到剪切板；互联网上得到该分享链接的用户均可访问，请谨慎分享，注意数据风险。',
+  'PC.Components.ShareDesktopModal.allowDownload': '允许下载',
+  'PC.Components.ShareDesktopModal.allowDownloadTooltip':
+    '开启后，获得分享链接的用户可以在预览页面下载原文件',
   'PC.Components.FilePathHeader.filePreview': '文件预览',
   'PC.Components.FilePathHeader.collapseFileTree': '点击收起文件树',
   'PC.Components.FilePathHeader.expandFileTree': '点击展开文件树',
@@ -2373,6 +2395,13 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.FileTreeView.refreshing': '刷新中...',
   'PC.Components.FileTreeView.refreshFileTree': '刷新文件树',
   'PC.Components.FileTreeView.restarting': '重启中...',
+  'PC.Components.FileTreeView.renameFailed': '重命名失败',
+  'PC.Components.FileTreeView.refreshContentFailed': '刷新文件内容失败',
+  'PC.Components.FileTreeView.refreshFileTreeFailed': '刷新文件树失败',
+  'PC.Components.FileTreeView.uploadFileFailed': '上传文件失败',
+  'PC.Components.FileTreeView.refreshContentOnModeSwitchFailed':
+    '切换预览模式时刷新文件内容失败',
+  'PC.Components.FileTreeView.downloadFileFailed': '下载文件失败',
   'PC.Hooks.UseEcoMarket.confirmDelete': '你确定要删除此分享吗?',
   'PC.Hooks.UseEventPolling.newVersionFound': '发现新版本',
   'PC.Hooks.UseEventPolling.updatePrompt': '检测到新版本 {0}，是否立即更新？',
@@ -2449,6 +2478,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': '添加内容',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep': '下一步',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep': '上一步',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.segmentDelimiter': '分段标识符',
+  'PC.Pages.SpaceKnowledge.LocalCustomDocModal.segmentDelimiterCustom':
+    '自定义分段标识符',
   'PC.Pages.SpaceKnowledge.QaBatchModal.uploadFailedCheckFormat':
     '上传失败，请检查文件格式是否正确',
   'PC.Pages.SpaceKnowledge.QaBatchModal.excelOnly':
@@ -2473,6 +2505,7 @@ export const ZH_CN: SystemLangMap = {
     '请先下载导入模板，按照格式填写后上传',
   'PC.Pages.SpaceKnowledge.QaBatchModal.templateFileName':
     'QA批量excel模板.xlsx',
+  'PC.Pages.SpaceKnowledge.QaBatchModal.uploadFileError': '上传文件出错:',
   'PC.Pages.SpaceKnowledge.QaModal.editQa': '编辑QA问答',
   'PC.Pages.SpaceKnowledge.QaModal.addQa': '添加QA问答',
   'PC.Pages.SpaceKnowledge.QaModal.question': '问题',
@@ -2481,6 +2514,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.QaModal.answer': '答案',
   'PC.Pages.SpaceKnowledge.QaModal.inputAnswer': '请输入答案',
   'PC.Pages.SpaceKnowledge.QaModal.inputAnswerContent': '请输入答案内容',
+  'PC.Pages.SpaceKnowledge.QaModal.formValidationError': '表单验证失败:',
   'PC.Pages.SpaceKnowledge.QaTableList.question': '问题',
   'PC.Pages.SpaceKnowledge.QaTableList.answer': '答案',
   'PC.Pages.SpaceKnowledge.QaTableList.vectorized': '向量化',
@@ -2497,6 +2531,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.RawSegmentEditModal.segmentContent': '分段内容',
   'PC.Pages.SpaceKnowledge.RawSegmentEditModal.inputSegmentContent':
     '请输入分段内容',
+  'PC.Pages.SpaceKnowledge.RawSegmentEditModal.segmentContentMaxLength':
+    '分段内容不能超过2000个字符',
   'PC.Pages.SpaceKnowledge.RawSegmentInfo.modifySuccess': '修改成功',
   'PC.Pages.SpaceKnowledge.RawSegmentInfo.previewRawDoc': '预览原始文档',
   'PC.Pages.SpaceKnowledge.RawSegmentInfo.segmentProcessing': '分段正在处理中',
@@ -2508,6 +2544,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.Index.searchQuestion': '请输入问题搜索',
   'PC.Pages.SpaceKnowledge.Index.qaUpdateSuccess': 'QA问答更新成功',
   'PC.Pages.SpaceKnowledge.Index.qaAddSuccess': '添加QA问答成功',
+  'PC.Pages.SpaceKnowledge.Index.qaUpdateFailed': 'QA问答更新失败',
+  'PC.Pages.SpaceKnowledge.Index.qaAddFailed': '添加QA问答失败',
 
   // SpaceLibrary - Index
   'PC.Pages.SpaceLibrary.Index.pageTitle': '组件库',
@@ -2578,6 +2616,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceLibrary.CreateModel.inputWeight': '输入权重值',
   'PC.Pages.SpaceLibrary.CreateModel.inputUrl': '输入URL',
   'PC.Pages.SpaceLibrary.CreateModel.inputApiKey': '输入API KEY',
+  'PC.Pages.SpaceLibrary.CreateModel.usageScenarios': '可用范围',
+  'PC.Pages.SpaceLibrary.CreateModel.selectUsageScenarios': '请选择可用范围',
 
   // SpaceLibrary - IntranetModel
   'PC.Pages.SpaceLibrary.IntranetModel.description':
@@ -2800,6 +2840,17 @@ export const ZH_CN: SystemLangMap = {
   'PC.Layouts.Setting.UsageStatistics.table': '可创建数据表数量',
   'PC.Layouts.Setting.UsageStatistics.task': '可创建定时任务数量',
   'PC.Layouts.Setting.UsageStatistics.sandboxMemory': '智能体电脑最大内存',
+  'PC.Layouts.Setting.UsageStatistics.fetchFailed': '获取用量统计失败',
+  'PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateConsoleError':
+    '更新主题色失败:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateConsoleError':
+    '更新背景图失败:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateConsoleError':
+    '更新导航风格失败:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.previewBackgroundConsoleError':
+    '预览背景图失败:',
+  'PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleConsoleError':
+    '切换导航主题失败:',
 
   // Common - additional keys
   'PC.Common.Global.submit': '提交',
@@ -2992,6 +3043,28 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit': '全屏编辑',
   'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip': '自动优化提示词',
   'PC.Pages.EditAgent.SystemTipsWord.optimize': '优化',
+  'PC.Pages.EditAgent.SystemTipsWord.replaceTextMethodNotFound':
+    'replaceText 方法不存在',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModel':
+    '允许用户选择自有模型',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowOtherModelDesc':
+    '开启后用户可以在会话中选择自己的模型',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkill': '允许用户@技能',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowAtSkillDesc':
+    '开启后用户可以在会话中添加任意技能',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandbox':
+    '允许用户选择个人电脑',
+  'PC.Pages.EditAgent.AgentArrangeConfig.allowPrivateSandboxDesc':
+    '开启后用户可以选择智能体在自己的Claw客户端中执行',
+  'PC.Pages.EditAgent.PreviewAndDebug.reset': '重置',
+  'PC.Pages.EditAgent.configNotLoadedSkipUpdate': '配置信息尚未加载，跳过更新:',
+  'PC.Pages.EditAgent.arrayValueUnchangedSkipApi': '数组值无变化，跳过API调用:',
+  'PC.Pages.EditAgent.booleanValueUnchangedSkipApi':
+    '布尔值无变化，跳过API调用:',
+  'PC.Pages.EditAgent.numberValueUnchangedSkipApi':
+    '数字值无变化，跳过API调用:',
+  'PC.Pages.EditAgent.deleteFileFailed': '删除文件失败:',
+  'PC.Pages.EditAgent.uploadFailed': '上传失败',
 
   // Pages - SpacePageDevelop
   'PC.Pages.SpacePageDevelop.ReverseProxyModal.title': '反向代理',
@@ -3125,9 +3198,55 @@ export const ZH_CN: SystemLangMap = {
   'PC.Models.ConversationInfo.taskConflictTitle': '提示',
   'PC.Models.ConversationInfo.taskConflictContent':
     '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+  'PC.Models.ConversationInfo.questionAnswer': '问答',
+  'PC.Models.ConversationInfo.executingTask': '正在执行任务',
+  'PC.Models.ConversationInfo.agentExecutingTask':
+    'Agent正在执行任务，请等待当前任务完成后再发送新请求',
+  'PC.Models.ConversationInfo.userCancelledTask': '用户主动取消任务',
+  'PC.Models.ConversationInfo.openRemoteDesktopFailed': '打开远程桌面视图失败',
+  'PC.Models.ConversationInfo.updateTopicFailed': '更新会话主题失败:',
+  'PC.Models.ConversationInfo.loadMoreMessagesFailed': '加载更多消息失败:',
+  'PC.Models.ConversationInfo.keepalivePageVisible':
+    '[keepalive] 页面可见，调用 apiEnsurePod 确保容器运行',
+  'PC.Models.ConversationInfo.keepaliveApiEnsurePodFailed':
+    '[keepalive] apiEnsurePod 失败:',
   'PC.Models.DevCollectAgent.uncollectSuccess': '取消收藏成功',
-  'PC.Models.UserInfo.getUserInfoFailed': '获取用户信息失败',
-  'PC.Models.UserInfo.refreshUserInfoFailed': '刷新用户信息失败',
+  'PC.Models.SpaceAgent.saveSuccess': '保存成功',
+  'PC.Models.AutoErrorHandling.recordAutoHandling':
+    '[AutoErrorHandling] 📊 记录自动处理: 会话次数={0}, 总次数={1}',
+  'PC.Models.AutoErrorHandling.resetSessionCount':
+    '[AutoErrorHandling] 🔄 重置会话计数',
+  'PC.Models.AutoErrorHandling.enabled': '启用',
+  'PC.Models.AutoErrorHandling.disabled': '禁用',
+  'PC.Models.AutoErrorHandling.autoRetryCount':
+    '[AutoErrorHandling] 📊 自动重试次数: {0}',
+  'PC.Models.AutoErrorHandling.resetAutoRetryCount':
+    '[AutoErrorHandling] 🔄 重置自动重试计数',
+  'PC.Models.AutoErrorHandling.resetAndEnableAutoHandling':
+    '[AutoErrorHandling] 🔄 重置并启用自动处理',
+  'PC.Models.AutoErrorHandling.userCancelledAutoHandling':
+    '[AutoErrorHandling] ❌ 用户取消自动处理',
+  'PC.Models.AutoErrorHandling.autoHandlingFeatureEnabled':
+    '[AutoErrorHandling] {0} 自动处理功能已{1}',
+  'PC.Models.AutoErrorHandling.resetAllStates':
+    '[AutoErrorHandling] 🔄 重置所有状态',
+  'PC.Models.MenuModel.loadMenuDataFailed': '加载菜单数据失败:',
+  'PC.Models.TenantConfigInfo.tenantConfigApiReturnedEmpty':
+    '租户配置接口返回空数据',
+  'PC.Models.TenantConfigInfo.tenantConfigIsEmpty': '租户配置为空',
+  'PC.Models.TenantConfigInfo.tenantConfigSavedReinitTheme':
+    '租户配置保存完成，重新初始化统一主题服务',
+  'PC.Models.TenantConfigInfo.syncedTenantThemeConfig':
+    '已同步租户主题配置（本地无配置）:',
+  'PC.Models.TenantConfigInfo.syncTenantThemeColorFailed':
+    '同步租户主题颜色失败:',
+  'PC.Models.TenantConfigInfo.detectedLocalThemeConfig':
+    '检测到本地主题配置，跳过租户配置同步',
+  'PC.Models.TenantConfigInfo.tenantInfoApiFailed': '租户信息接口失败',
+  'PC.Models.UserInfo.getUserInfoFailed': '获取用户信息失败:',
+  'PC.Models.UserInfo.refreshUserInfoFailed': '刷新用户信息失败:',
+  'PC.Models.UserInfo.updateUserInfoFailed': '更新用户信息失败:',
+  'PC.Models.WorkflowV3.useModelInsteadOf': ') 代替 useModel(',
   'PC.Models.WorkflowV3.defaultNodeName': '测试',
   'PC.Models.WorkflowV3.defaultNodeDescription': '测试',
   'PC.Models.Workflow.defaultNodeName': '测试',
@@ -3436,6 +3555,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceDevelop.Index.createAgent': '创建智能体',
   'PC.Pages.SpaceDevelop.Index.noResults': '未能找到相关结果',
   'PC.Pages.SpaceDevelop.Index.agentOverview': '智能体概览',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkSuccess': '已复制独立会话路径',
+  'PC.Pages.SpaceDevelop.Index.copySessionLinkFailed': '复制独立会话路径失败',
 
   // Pages - SpaceDevelop > ApplicationItem
   'PC.Pages.SpaceDevelop.ApplicationItem.lastEdited': '最近编辑',
@@ -3443,6 +3564,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceDevelop.ApplicationItem.taskType': '通用型',
   'PC.Pages.SpaceDevelop.ApplicationItem.chatType': '问答型',
   'PC.Pages.SpaceDevelop.ApplicationItem.privateComputer': '个人电脑',
+  'PC.Pages.SpaceDevelop.ApplicationItem.collectSuccess': '收藏成功',
+  'PC.Pages.SpaceDevelop.ApplicationItem.noPermission': '无此资源权限',
 
   // Pages - SpaceDevelop > CreateApiKeyModal
   'PC.Pages.SpaceDevelop.CreateApiKeyModal.deleteConfirmText':
@@ -4275,6 +4398,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.SelectComponent.added': '已添加',
   'PC.Components.SelectComponent.addBtn': '添加',
   'PC.Components.SelectComponent.search': '搜索',
+  'PC.Components.SelectComponent.all': '全部',
+  'PC.Components.SelectComponent.documents': '文档',
+  'PC.Components.SelectComponent.tables': '表格',
+  'PC.Components.SelectComponent.componentLibraryDataTable': '组件库数据表',
 
   // Components - Skill
   'PC.Components.Skill.settings': '设置',
@@ -4321,6 +4448,11 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.EcosystemDetailDrawer.newVersionUpdate': '新版本更新',
   'PC.Components.EcosystemDetailDrawer.fromAuthor': '来自{0}',
   'PC.Components.EcosystemDetailDrawer.usageDoc': '使用文档',
+  'PC.Components.EcosystemDetailDrawer.jsonParseFailed': 'JSON解析失败:',
+  'PC.Components.EcosystemDetailDrawer.updateMcpConfigFailed':
+    '更新MCP配置失败:',
+  'PC.Components.EcosystemDetailDrawer.updateConfigParamFailed':
+    '更新配置参数失败:',
 
   // Components - EcosystemShareModal
   'PC.Components.EcosystemShareModal.paramName': '参数名称',
@@ -4404,6 +4536,16 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.MonacoEditor.selectFileToEdit': '选择文件进行编辑',
   'PC.Components.MonacoEditor.selectFileToEditDesc':
     '从左侧文件树中选择一个文件，或创建新文件开始编辑',
+  'PC.Components.MonacoEditor.cannotLoadLanguageSupport':
+    '无法加载语言支持: {0}',
+  'PC.Components.MonacoEditor.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] 加载语言支持失败 ({0}):',
+  'PC.Components.MonacoEditor.htmlLanguageSupportLoadFailed':
+    '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
+  'PC.Components.MonacoEditor.monacoEditorInitFailed':
+    '❌ [MonacoEditor] Monaco Editor初始化失败:',
+  'PC.Components.MonacoEditor.updateEditorContentFailed':
+    '❌ [MonacoEditor] 更新编辑器内容失败:',
 
   // Components - CreateNewPlugin
   'PC.Components.CreateNewPlugin.pluginCreated': '插件已创建',
@@ -4479,6 +4621,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.MarkdownCustomProcess.copyDetailData': '复制详情数据',
   'PC.Components.MarkdownCustomProcess.copyFailedRetry':
     '详情数据复制失败，请重试',
+  'PC.Components.MarkdownCustomProcess.dataFormatError': '数据格式错误',
+  'PC.Components.MarkdownCustomProcess.pagePathNotExists': '页面路径不存在',
+  'PC.Components.MarkdownCustomProcess.copy': '复制',
 
   // Components - SharedIcon
   'PC.Components.SharedIcon.published': '已发布',
@@ -4499,6 +4644,14 @@ export const ZH_CN: SystemLangMap = {
   // Components - MarkdownRenderer
   'PC.Components.MarkdownRenderer.thinking': '正在思考',
   'PC.Components.MarkdownRenderer.thought': '已思考',
+  'PC.Components.MarkdownRenderer.clickTaskResultEvent':
+    '点击会话中TaskResult事件处理:',
+  'PC.Components.MarkdownRenderer.extractTableCellFailed':
+    '提取表格单元格内容失败:',
+  'PC.Components.MarkdownRenderer.extractTableRowFailed': '提取表格行内容失败:',
+  'PC.Components.MarkdownRenderer.extractTableSectionFailed':
+    '提取表格区域内容失败:',
+  'PC.Components.MarkdownRenderer.extractTableFailed': '提取表格内容失败:',
 
   // Components - PageCard
   'PC.Components.PageCard.activated': '已启用',
@@ -4612,6 +4765,9 @@ export const ZH_CN: SystemLangMap = {
 
   // Layouts - Message
   'PC.Layouts.Message.noMessages': '暂无消息',
+  'PC.Layouts.Message.clearedAllUnread': '已清除所有未读消息',
+  'PC.Layouts.Message.clearAllUnread': '清除所有未读消息',
+  'PC.Layouts.Message.noUnreadMessages': '暂无未读消息',
 
   // Utils - PptxFallbackRenderer
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 文件解析失败',
@@ -4936,6 +5092,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.ChatBottomDebug.debug': '调试',
   'PC.Components.ChatView.guest': '游客',
   'PC.Components.CopyIconButton.copy': '复制',
+  'PC.Components.Base.CopyButton.copyFailed': '复制失败',
+  'PC.Components.Base.CopyIconButton.copyFailed': '复制失败',
   'PC.Components.CreateAgent.createSuccess': '智能体已创建',
   'PC.Components.CreateAgent.createTitle': '创建智能体',
   'PC.Components.CreateAgent.descriptionLabel': '智能体功能介绍',
@@ -5021,6 +5179,14 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.TestRun.testRunInput': '试运行输入',
   'PC.Components.TestRun.uploadFile': '上传文件',
   'PC.Components.TestRun.uploadFailed': '上传失败: {0}',
+  'PC.Components.TestRun.fieldRequired': '{0} 是必填项',
+  'PC.Components.TestRun.jsonParseFailed': 'JSON 解析失败:',
+  'PC.Components.TestRun.uploadFileInfo': '上传文件信息:',
+  'PC.Components.TestRun.fileUploadFailed': '文件上传失败:',
+  'PC.Components.TestRun.processedFileInfo': '处理后的文件信息:',
+  'PC.Components.TestRun.finalFileList': '最终文件列表:',
+  'PC.Components.TestRun.mockOption1': '角色陪伴-苏瑶',
+  'PC.Components.TestRun.mockOption2': '智慧家具管家',
   'PC.Constants.Agent.autoInvoke': '自动调用',
   'PC.Constants.Agent.balancedMode': '平衡模式',
   'PC.Constants.Agent.creativeMode': '创意模式',
@@ -5262,6 +5428,13 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.Login.privacyAgreement': '隐私协议',
   'PC.Pages.Login.readAndAgree': '已阅读并同意协议：',
   'PC.Pages.Login.serviceAgreement': '服务使用协议',
+  'PC.Pages.Login.ModalSliderCaptcha.tempSignature': '临时签名',
+  'PC.Pages.Login.ModalSliderCaptcha.tempToken': '临时token',
+  'PC.Pages.Login.ModalSliderCaptcha.captchaVerifyParam': '验证码验证参数:',
+  'PC.Pages.Login.passwordLoginUsingCaptcha': '[Login] 密码登录使用验证码参数:',
+  'PC.Pages.Login.codeLoginUsingCaptcha': '[Login] 验证码登录使用验证码参数:',
+  'PC.Pages.Login.captchaVerifySuccess': '[Login] 验证码验证成功回调:',
+  'PC.Pages.Login.executeLoginCheck': '[Login] 执行登录检查:',
   'PC.Pages.PreviewAndDebug.convIdNotFoundDesktop':
     '会话ID不存在，无法打开智能体电脑',
   'PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview':
@@ -5352,4 +5525,118 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemContentKnowledgeBase.accessControlOn': '开启',
   'PC.Pages.SystemContentKnowledgeBase.accessControlOff': '关闭',
   'PC.Pages.SystemContentKnowledgeBase.grantAuth': '授权',
+
+  // Hooks - UseEventPolling
+  'PC.Hooks.UseEventPolling.skipDuplicateEvent': '跳过重复的事件处理',
+  'PC.Hooks.UseEventPolling.eventHandlingError': '处理事件时出错:',
+
+  // Hooks - UseIdleDetection
+  'PC.Hooks.UseIdleDetection.or': ' 或 ',
+  'PC.Hooks.UseIdleDetection.userIdle': '用户已空闲',
+  'PC.Hooks.UseIdleDetection.userIsIdle': '用户已空闲',
+  'PC.Hooks.UseIdleDetection.pauseIdleDetection': '⏸️ 暂停空闲检测',
+  'PC.Hooks.UseIdleDetection.resumeIdleDetection': '▶️ 恢复空闲检测',
+  'PC.Hooks.UseIdleDetection.cannotAccessIframe':
+    '⚠️ 无法访问 iframe（可能是跨域）',
+  'PC.Hooks.UseIdleDetection.idleDetectionNotEnabled': '🚫 空闲检测未启用',
+  'PC.Hooks.UseIdleDetection.idleDetectionPaused':
+    '⏸️ 空闲检测已暂停，跳过事件监听器设置',
+  'PC.Hooks.UseIdleDetection.idleDetectionEnabled': '✅ 空闲检测已启用',
+  'PC.Hooks.UseIdleDetection.cleanupIdleDetection': '🧹 清理空闲检测事件监听器',
+  'PC.Hooks.UseIdleDetection.detectedIframeActivity':
+    '🖥️ 检测到 iframe 内用户活动',
+  'PC.Hooks.UseIdleDetection.bindIframeListeners': '🔗 绑定 iframe 事件监听器',
+  'PC.Hooks.UseIdleDetection.scanIframe': '🔍 扫描 iframe',
+  'PC.Hooks.UseIdleDetection.detectedNewIframe': '🔄 检测到新 iframe，重新扫描',
+  'PC.Hooks.UseIdleDetection.cleanupIframeListeners':
+    '🧹 清理 iframe 事件监听器',
+  'PC.Hooks.UseIdleDetection.pageHiddenPause': '👁️ 页面切出，暂停空闲计时器',
+  'PC.Hooks.UseIdleDetection.pageVisibleReset': '👁️ 页面切回，重置空闲计时器',
+
+  // Hooks - UseMessageEventDelegate
+  'PC.Hooks.UseMessageEventDelegate.triggerEvent': '[Event Delegate] 触发事件:',
+  'PC.Hooks.UseMessageEventDelegate.dataParseFailed':
+    '[Event Delegate] 数据解析失败:',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigNotFound':
+    '[Event Delegate] 未找到事件配置: ',
+  'PC.Hooks.UseMessageEventDelegate.eventConfigFound':
+    '[Event Delegate] 找到事件配置:',
+  'PC.Hooks.UseMessageEventDelegate.openPage': '[Event Delegate] 打开页面:',
+  'PC.Hooks.UseMessageEventDelegate.openLink': '[Event Delegate] 打开外链:',
+  'PC.Hooks.UseMessageEventDelegate.unknownEventType':
+    '[Event Delegate] 未知的事件类型: ',
+  'PC.Hooks.UseMessageEventDelegate.missingRequiredAttributes':
+    '[Event Delegate] 缺少必要的属性:',
+  'PC.Hooks.UseMessageEventDelegate.delegateInitialized':
+    '[Event Delegate] 事件代理已初始化',
+  'PC.Hooks.UseMessageEventDelegate.delegateCleaned':
+    '[Event Delegate] 事件代理已清理',
+
+  // Hooks - UseModifiedSaveUpdate
+  'PC.Hooks.UseModifiedSaveUpdate.throttledSave':
+    '🔄 useModifiedSaveUpdate: 节流执行保存 [第{0}次]',
+  'PC.Hooks.UseModifiedSaveUpdate.saveInProgress':
+    '⏸️ useModifiedSaveUpdate: 保存正在进行中，跳过本次调用',
+  'PC.Hooks.UseModifiedSaveUpdate.startSave':
+    '✅ useModifiedSaveUpdate: 开始执行保存操作',
+  'PC.Hooks.UseModifiedSaveUpdate.saveSuccess':
+    '🎉 useModifiedSaveUpdate: 保存成功完成',
+  'PC.Hooks.UseModifiedSaveUpdate.saveFailed':
+    '❌ useModifiedSaveUpdate: 保存失败',
+  'PC.Hooks.UseModifiedSaveUpdate.throttleCalled':
+    '🚀 useModifiedSaveUpdate: 节流函数被调用',
+  'PC.Hooks.UseModifiedSaveUpdate.isModifiedChanged':
+    '📝 useModifiedSaveUpdate: isModified 状态变化 =',
+  'PC.Hooks.UseModifiedSaveUpdate.triggerThrottle':
+    '⚡ useModifiedSaveUpdate: 触发节流保存函数',
+  'PC.Hooks.UseModifiedSaveUpdate.hookInitialized':
+    '🔗 useModifiedSaveUpdate: Hook 初始化完成',
+  'PC.Hooks.UseModifiedSaveUpdate.cleanupHook':
+    '🧹 useModifiedSaveUpdate: 清理 Hook 状态',
+
+  // Hooks - UseScrollSync
+  'PC.Hooks.UseScrollSync.tabClickNavigate': '🎯 标签点击：导航到 {0}',
+  'PC.Hooks.UseScrollSync.scrollSyncSwitch': '🔄 滚动同步：自动切换到标签 {0}',
+
+  // Hooks - UseUnifiedTheme
+  'PC.Hooks.UseUnifiedTheme.themeUpdateFailed': '主题更新失败:',
+
+  // Man - User
+  'PC.man.user.add': '增加用户',
+
+  // Utils - Skill
+  'PC.Utils.Skill.fetchContentFailedWithStatus': '获取文件内容失败: {0}',
+  'PC.Utils.Skill.fetchContentFailed': '获取文件内容失败: ',
+
+  // Components - CodeViewer
+  'PC.Components.CodeViewer.cannotLoadLanguageSupport': '无法加载语言支持: {0}',
+  'PC.Components.CodeViewer.loadLanguageSupportFailed':
+    '❌ [MonacoEditor] 加载语言支持失败 ({0}):',
+  'PC.Components.CodeViewer.htmlLanguageLoadFailed':
+    '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
+  'PC.Components.CodeViewer.monacoInitFailed':
+    '❌ [MonacoEditor] Monaco Editor初始化失败:',
+  'PC.Components.CodeViewer.updateEditorContentFailed':
+    '❌ [MonacoEditor] 更新编辑器内容失败:',
+  'PC.Components.CodeViewer.loadingEditor': '正在加载编辑器...',
+  'PC.Components.CodeViewer.loadingEditorDesc':
+    '请稍候，Monaco Editor正在初始化',
+  'PC.Components.CodeViewer.selectFileToEdit': '选择文件进行编辑',
+  'PC.Components.CodeViewer.selectFileToEditDesc':
+    '从左侧文件树中选择一个文件，或创建新文件开始编辑',
+
+  // Components - AliyunCaptcha
+  'PC.Components.AliyunCaptcha.verifyParamsGenerated':
+    '[AliyunCaptcha] 验证参数生成:',
+  'PC.Components.AliyunCaptcha.consumeToken': '[AliyunCaptcha] 消费 Token:',
+  'PC.Components.AliyunCaptcha.refreshInstance':
+    '[AliyunCaptcha] 刷新实例以重置状态',
+  'PC.Components.AliyunCaptcha.cleanupResources': '[AliyunCaptcha] 清理资源',
+  'PC.Components.AliyunCaptcha.destroyInstance': '[AliyunCaptcha] 销毁实例',
+  'PC.Components.AliyunCaptcha.getInstance': '[AliyunCaptcha] 获取实例:',
+  'PC.Components.AliyunCaptcha.componentMounted': '[AliyunCaptcha] 组件挂载',
+  'PC.Components.AliyunCaptcha.instanceExistsSkip':
+    '[AliyunCaptcha] 实例已存在，跳过初始化',
+  'PC.Components.AliyunCaptcha.initSDK': '[AliyunCaptcha] 初始化 SDK...',
+  'PC.Components.AliyunCaptcha.initComplete': '验证码初始化完成，onReady已调用',
 };

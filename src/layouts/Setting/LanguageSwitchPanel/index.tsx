@@ -30,6 +30,12 @@ const LanguageSwitchPanel: React.FC = () => {
           // 只显示状态为 1 (启用) 的语言
           const enabledLangs = res.data.filter((item) => item.status === 1);
           setLanguages(enabledLangs);
+
+          // 默认选中后端返回的默认语言
+          const defaultLang = res.data.find((item) => item.isDefault === 1);
+          if (defaultLang) {
+            setSelectedLang(defaultLang.lang);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch languages:', error);
@@ -48,6 +54,13 @@ const LanguageSwitchPanel: React.FC = () => {
   // 保存并更新语言
   const handleSave = () => {
     if (!selectedLang) return;
+
+    // 判断当前选中的语言是否已经是默认语言
+    const target = languages.find((item) => item.lang === selectedLang);
+    if (target?.isDefault === 1) {
+      message.info(dict('PC.Pages.Setting.alreadyDefault'));
+      return;
+    }
 
     Modal.confirm({
       title: dict('PC.Pages.Setting.confirmTitle'),
