@@ -1,3 +1,4 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -22,7 +23,6 @@ import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
-import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteResource,
   apiGetResourceList,
@@ -39,8 +39,8 @@ import {
   type UpdateResourceParams,
   type UpdateResourceSortItem,
 } from '../types/permission-resources';
-import ResourceFormModal from './components/ResourceFormModal';
 import styles from './index.less';
+import ResourceFormModal from './ResourceFormModal';
 
 const cx = classNames.bind(styles);
 
@@ -217,7 +217,7 @@ const PermissionResources: React.FC = () => {
       t('PC.Pages.SystemPermissionResources.deleteResourceTitle'),
       t(
         'PC.Pages.SystemPermissionResources.deleteResourceConfirm',
-        resource.name,
+        resource.name || '',
       ),
       () => {
         runDelete(resource?.id);

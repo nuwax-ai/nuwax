@@ -1,3 +1,4 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -22,7 +23,6 @@ import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
-import { DragHandle, Row } from '../components/DraggableTableRow';
 import {
   apiDeleteMenu,
   apiGetMenuList,
@@ -37,8 +37,8 @@ import {
   type UpdateMenuParams,
   type UpdateMenuSortItem,
 } from '../types/menu-manage';
-import MenuFormModal from './components/MenuFormModal';
 import styles from './index.less';
+import MenuFormModal from './MenuFormModal';
 
 const cx = classNames.bind(styles);
 

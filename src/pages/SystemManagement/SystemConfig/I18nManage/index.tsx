@@ -1,7 +1,8 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import {
+  apiI18nAllLangList,
   apiI18nDeleteLang,
-  apiI18nLangList,
   apiI18nLangUpdate,
   apiI18nSetLangDefault,
   apiI18nUpdateLangSort,
@@ -22,21 +23,18 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Space, Switch, Table, Tooltip } from 'antd';
+import { Button, Space, Switch, Table, Tooltip } from 'antd';
 import { ColumnType } from 'antd/lib/table';
-import React, { useEffect, useRef, useState } from 'react';
-import { useRequest } from 'umi';
-import {
-  DragHandle,
-  Row,
-} from '../../MenuPermission/components/DraggableTableRow';
+import dayjs from 'dayjs';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { history, useRequest } from 'umi';
 import AddLangModal from './AddLangModal';
 
 /**
  * 语言列表管理页面
  */
 const I18nManage: React.FC = () => {
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState<boolean>(false);
   const [langInfo, setLangInfo] = useState<I18nLangDto | null>(null);
   const [langList, setLangList] = useState<I18nLangDto[]>([]);
   const originalDragDataRef = useRef<I18nLangDto[] | null>(null);
@@ -45,10 +43,17 @@ const I18nManage: React.FC = () => {
   // 设置启用状态的loading id
   const [statusLoadingId, setStatusLoadingId] = useState<number | null>(null);
 
+  // 格式化日期时间
+  const formatDateTime = (value?: string) => {
+    if (!value) return '-';
+    const date = dayjs(value);
+    if (!date.isValid()) return '-';
+    return date.format('YYYY-MM-DD HH:mm:ss');
+  };
+
   // 查看语言
   const handleView = (record: I18nLangDto) => {
-    // TODO: 查看详情逻辑
-    console.log('view', record);
+    history.push(`/system/config/lang-content/${record.lang}`);
   };
 
   // 编辑语言
@@ -64,11 +69,11 @@ const I18nManage: React.FC = () => {
   };
 
   // 查询语言列表
-  const { loading, run: runQuery } = useRequest(apiI18nLangList, {
+  const { loading, run: runQuery } = useRequest(apiI18nAllLangList, {
     manual: true,
     onSuccess: (list: I18nLangDto[]) => {
-      const nextList = list || [];
-      setLangList(nextList);
+      const _langList = list || [];
+      setLangList(_langList);
     },
   });
 
@@ -101,7 +106,6 @@ const I18nManage: React.FC = () => {
     manual: true,
     debounceWait: 300,
     onSuccess: () => {
-      message.success(dict('PC.Pages.SystemConfigI18n.setLangDefaultSuccess'));
       setDefaultLoadingId(null);
       runQuery();
     },
@@ -142,6 +146,18 @@ const I18nManage: React.FC = () => {
         : I18nLangStatusEnum.Disabled,
     });
   };
+
+  // 新增语言默认排序值：优先使用当前最大 sort + 1，否则使用列表长度 + 1
+  const addSortIndex = useMemo(() => {
+    if (!langList.length) return 1;
+    const maxSort = Math.max(
+      ...langList.map((item) =>
+        typeof item.sort === 'number' ? item.sort : 0,
+      ),
+    );
+    if (maxSort > 0) return maxSort + 1;
+    return langList.length + 1;
+  }, [langList]);
 
   // 拖拽排序
   const { run: runUpdateLangSort } = useRequest(apiI18nUpdateLangSort, {
@@ -223,16 +239,17 @@ const I18nManage: React.FC = () => {
     {
       title: dict('PC.Pages.SystemConfigI18n.columnModified'),
       dataIndex: 'modified',
-      render: (modified) => new Date(modified).toLocaleString(),
+      render: (modified) => formatDateTime(modified),
     },
     {
       title: dict('PC.Pages.SystemConfigI18n.columnCreated'),
       dataIndex: 'created',
-      render: (created) => new Date(created).toLocaleString(),
+      render: (created) => formatDateTime(created),
     },
     {
       title: dict('PC.Pages.SystemConfigI18n.columnAction'),
       key: 'actions',
+      align: 'center',
       width: 140,
       render: (_value, record) => {
         const isDefaultLang = record.isDefault === I18nLangIsDefaultEnum.Yes;
@@ -304,6 +321,7 @@ const I18nManage: React.FC = () => {
       <AddLangModal
         open={addModalOpen}
         langInfo={langInfo}
+        sortIndex={addSortIndex}
         onCancel={() => {
           setAddModalOpen(false);
           setLangInfo(null);

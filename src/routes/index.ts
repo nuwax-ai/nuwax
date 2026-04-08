@@ -225,6 +225,11 @@ const routes = [
                 name: 'Language Management',
                 component: '@/pages/SystemManagement/SystemConfig/I18nManage',
               },
+              {
+                path: 'lang-content/:lang',
+                name: 'Language Content',
+                component: '@/pages/SystemManagement/SystemConfig/LangContent',
+              },
             ],
           },
           {

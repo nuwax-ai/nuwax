@@ -25,18 +25,18 @@ import {
   apiGetMenuById,
   apiGetMenuList,
   apiUpdateMenu,
-} from '../../../services/menu-manage';
-import { apiGetResourceList } from '../../../services/permission-resources';
+} from '../../services/menu-manage';
+import { apiGetResourceList } from '../../services/permission-resources';
 import {
   MenuEnabledEnum,
   MenuSourceEnum,
   OpenTypeEnum,
   type MenuNodeInfo,
-} from '../../../types/menu-manage';
+} from '../../types/menu-manage';
 import {
   ResourceBindTypeEnum,
   ResourceTreeNode,
-} from '../../../types/permission-resources';
+} from '../../types/permission-resources';
 import styles from './index.less';
 
 const { TextArea } = Input;

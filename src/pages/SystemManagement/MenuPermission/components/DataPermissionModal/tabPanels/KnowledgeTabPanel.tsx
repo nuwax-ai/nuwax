@@ -16,7 +16,7 @@ import type {
 import { Input } from 'antd';
 import classNames from 'classnames';
 import React, { RefObject } from 'react';
-import ResourceItem from '../components/ResourceItem';
+import ResourceItem from '../ResourceItem';
 import styles from '../index.less';
 
 const cx = classNames.bind(styles);

@@ -19,12 +19,12 @@ import {
   apiAddRole,
   apiGetRoleById,
   apiUpdateRole,
-} from '../../../services/role-manage';
+} from '../../services/role-manage';
 import {
   RoleSourceEnum,
   RoleStatusEnum,
   type RoleInfo,
-} from '../../../types/role-manage';
+} from '../../types/role-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

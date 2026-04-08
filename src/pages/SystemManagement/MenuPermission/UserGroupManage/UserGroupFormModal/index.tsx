@@ -19,12 +19,12 @@ import {
   apiAddUserGroup,
   apiGetUserGroupById,
   apiUpdateUserGroup,
-} from '../../../services/user-group-manage';
+} from '../../services/user-group-manage';
 import {
   UserGroupSourceEnum,
   UserGroupStatusEnum,
   type UserGroupInfo,
-} from '../../../types/user-group-manage';
+} from '../../types/user-group-manage';
 import styles from './index.less';
 
 const { TextArea } = Input;

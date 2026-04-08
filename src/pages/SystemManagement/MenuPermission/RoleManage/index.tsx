@@ -1,3 +1,4 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import CustomPopover from '@/components/CustomPopover';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
@@ -30,7 +31,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
-import { DragHandle, Row } from '../components/DraggableTableRow';
 import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteRole,
@@ -46,8 +46,8 @@ import {
   type UpdateRoleParams,
   type UpdateRoleSortItem,
 } from '../types/role-manage';
-import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
+import RoleFormModal from './RoleFormModal';
 
 const cx = classNames.bind(styles);
 

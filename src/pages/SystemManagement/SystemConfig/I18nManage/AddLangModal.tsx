@@ -15,6 +15,8 @@ import { useRequest } from 'umi';
 interface AddLangModalProps {
   open: boolean;
   langInfo?: I18nLangDto | null;
+  /** 新增语言时的默认排序值（优先使用外部计算的最大 sort + 1） */
+  sortIndex?: number;
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -36,11 +38,15 @@ interface AddLangFormValues {
 const AddLangModal: React.FC<AddLangModalProps> = ({
   open,
   langInfo,
+  sortIndex,
   onCancel,
   onSuccess,
 }) => {
   const isEdit = Boolean(langInfo?.id);
   const [form] = Form.useForm<AddLangFormValues>();
+  // 是否禁用默认语言开关
+  const disableDefaultSwitch =
+    isEdit && langInfo?.isDefault === I18nLangIsDefaultEnum.Yes;
 
   // 新增语言
   const { run: runAddLang, loading: addingLang } = useRequest(apiI18nLangAdd, {
@@ -80,11 +86,11 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
         form.setFieldsValue({
           isDefault: false,
           status: true,
-          sort: 0,
+          sort: sortIndex || 0,
         });
       }
     }
-  }, [open, isEdit, langInfo, form]);
+  }, [open, isEdit, langInfo, sortIndex, form]);
 
   // 提交表单
   const handleOk = async () => {
@@ -118,14 +124,14 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
     <Modal
       title={
         isEdit
-          ? dict('PC.Pages.SystemConfigI18n.editLang') || '编辑语言'
+          ? dict('PC.Pages.SystemConfigI18n.editLang')
           : dict('PC.Pages.SystemConfigI18n.addLang')
       }
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
-      okText={dict('PC.Common.Global.save') || '保存'}
-      cancelText={dict('PC.Common.Global.cancel') || '取消'}
+      okText={dict('PC.Common.Global.confirm')}
+      cancelText={dict('PC.Common.Global.cancel')}
       confirmLoading={addingLang || updatingLang}
       destroyOnHidden
     >
@@ -140,7 +146,7 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           rules={[
             {
               required: true,
-              message: dict('PC.Common.Form.pleaseInput') || '请输入语言名称',
+              message: dict('PC.Pages.SystemConfigI18n.inputLangName'),
             },
           ]}
         >
@@ -152,7 +158,7 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           rules={[
             {
               required: true,
-              message: dict('PC.Common.Form.pleaseInput') || '请输入语言标识',
+              message: dict('PC.Pages.SystemConfigI18n.inputLangCode'),
             },
           ]}
           tooltip="code格式：语言代码 - 国家代码"
@@ -176,9 +182,16 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           label="设为默认语言"
           name="isDefault"
           valuePropName="checked"
-          tooltip="默认语言将作为翻译的源语言"
+          tooltip={
+            isEdit && disableDefaultSwitch
+              ? {
+                  title:
+                    '编辑语言时，如果当前语言是默认语言，则需要在语言列表中通过切换设置其他语言为默认语言，来取消当前语言为默认语言。',
+                }
+              : undefined
+          }
         >
-          <Switch />
+          <Switch disabled={disableDefaultSwitch} />
         </Form.Item>
         <Form.Item label="启用状态" name="status" valuePropName="checked">
           <Switch />

@@ -29,7 +29,7 @@ export async function apiI18nQuery(
   });
 }
 
-// 查询语言列表
+// 查询语言列表 (用户端)
 export async function apiI18nLangList(): Promise<
   RequestResponse<I18nLangDto[]>
 > {
@@ -135,6 +135,32 @@ export async function apiI18nLangAdd(
 }
 
 /**
+ * 翻译单个key
+ */
+export async function apiI18nConfigTranslate(
+  data: I18nSlideLangInfo,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/i18n/config/translateKey', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 翻译所有key
+ */
+export async function apiI18nConfigTranslateAll(
+  lang: string,
+): Promise<RequestResponse<I18nSlideLangInfo>> {
+  return request('/api/system/i18n/config/translateAll', {
+    method: 'POST',
+    data: {
+      lang,
+    },
+  });
+}
+
+/**
  * 批量新增或更新多语言配置
  */
 export async function apiI18nConfigBatchAddOrUpdate(
@@ -175,32 +201,6 @@ export async function apiI18nAllLangList(): Promise<
 > {
   return request('/api/system/i18n/lang/list', {
     method: 'GET',
-  });
-}
-
-/**
- * 翻译指定配置（会覆盖原有的）
- */
-export async function apiI18nConfigTranslate(
-  params: I18nSlideLangInfo,
-): Promise<RequestResponse<I18nSlideLangInfo>> {
-  return request('/api/system/i18n/config/translate', {
-    method: 'GET',
-    params,
-  });
-}
-
-/**
- * 翻译全部配置（不为空的不会翻译）
- */
-export async function apiI18nConfigTranslateAll(
-  lang: string,
-): Promise<RequestResponse<I18nSlideLangInfo>> {
-  return request('/api/system/i18n/config/translateAll', {
-    method: 'GET',
-    params: {
-      lang,
-    },
   });
 }
 

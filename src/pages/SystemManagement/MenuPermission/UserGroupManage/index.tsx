@@ -1,3 +1,4 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import CustomPopover from '@/components/CustomPopover';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
@@ -30,7 +31,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import BindUser from '../components/BindUser';
 import DataPermissionModal from '../components/DataPermissionModal';
-import { DragHandle, Row } from '../components/DraggableTableRow';
 import MenuPermissionModal from '../components/MenuPermissionModal';
 import {
   apiDeleteUserGroup,
@@ -48,8 +48,8 @@ import {
   UserGroupSourceEnum,
   UserGroupStatusEnum,
 } from '../types/user-group-manage';
-import UserGroupFormModal from './components/UserGroupFormModal';
 import styles from './index.less';
+import UserGroupFormModal from './UserGroupFormModal';
 
 const cx = classNames.bind(styles);
 
