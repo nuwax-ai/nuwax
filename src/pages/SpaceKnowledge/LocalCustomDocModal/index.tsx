@@ -77,6 +77,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   const [autoSegmentConfigFlag, setAutoSegmentConfigFlag] =
     useState<boolean>(true);
+  // 智能分段标识(新增)
+  const [isAiSegment, setIsAiSegment] = useState<boolean>(false);
   const fileConfigRef = useRef<{
     name: string;
     fileContent: string;
@@ -98,6 +100,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill);
     setAllUploadFileList([]);
     setAutoSegmentConfigFlag(true);
+    setIsAiSegment(false);
     form.resetFields();
     formText.resetFields();
     segmentConfigModelRef.current = null;
@@ -140,8 +143,33 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       autoSegmentConfigFlag: autoSegmentConfigFlag,
     };
     // 自动分段与清洗
+    /*
     if (autoSegmentConfigFlag) {
       runDocAdd(data);
+    } else {
+      runDocAdd({
+        ...data,
+        segmentConfig: {
+          segment: KnowledgeSegmentTypeEnum.DELIMITER,
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
+    }*/
+    //console.log("autoSegmentConfigFlag===>", autoSegmentConfigFlag);
+    //console.log("isAiSegment===>", isAiSegment);
+
+    if (autoSegmentConfigFlag) {
+      runDocAdd(data);
+    } else if (isAiSegment) {
+      runDocAdd({
+        ...data,
+        segmentConfig: {
+          segment: 'SMART',
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
     } else {
       runDocAdd({
         ...data,
@@ -397,6 +425,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
           form={form}
           autoSegmentConfigFlag={autoSegmentConfigFlag}
           onChoose={(flag) => setAutoSegmentConfigFlag(flag)}
+          isAiSegment={isAiSegment}
+          onAiSegmentChoose={(flag) => setIsAiSegment(flag)}
         />
       ) : type === KnowledgeTextImportEnum.Local_Doc ? (
         <DataProcess uploadFileList={uploadFileList} />

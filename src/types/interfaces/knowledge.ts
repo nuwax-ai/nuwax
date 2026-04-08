@@ -435,6 +435,8 @@ export interface CreateSetProps {
   form: FormInstance;
   autoSegmentConfigFlag: boolean;
   onChoose: (flag: boolean) => void;
+  isAiSegment?: boolean;
+  onAiSegmentChoose?: (flag: boolean) => void;
 }
 
 // 数据处理组件

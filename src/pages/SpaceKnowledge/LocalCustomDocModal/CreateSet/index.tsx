@@ -20,6 +20,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
   form,
   autoSegmentConfigFlag,
   onChoose,
+  isAiSegment = false,
+  onAiSegmentChoose,
 }) => {
   const [segmentDelimiter, setSegmentDelimiter] =
     useState<KnowledgeSegmentIdentifierEnum>(
@@ -30,6 +32,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
     const _value = value as KnowledgeSegmentIdentifierEnum;
     setSegmentDelimiter(_value);
   };
+
+  //console.log("2===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
 
   return (
     <>
@@ -44,22 +48,42 @@ const CreateSet: React.FC<CreateSetProps> = ({
           },
           styles['mt-50'],
         )}
-        onClick={() => onChoose(true)}
+        onClick={() => {
+          // console.log("1===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
+          onChoose(true);
+          onAiSegmentChoose?.(false);
+        }}
       >
         <h3>自动分段与清洗</h3>
         <p>自动分段与预处理规则</p>
       </div>
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
-          [styles.active]: !autoSegmentConfigFlag,
+          [styles.active]: isAiSegment,
         })}
-        onClick={() => onChoose(false)}
+        onClick={() => {
+          onChoose(false);
+          onAiSegmentChoose?.(true);
+        }}
+      >
+        <h3>智能分段</h3>
+        <p>基于AI模型智能识别文档结构，自动优化分段效果</p>
+      </div>
+      <div
+        className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
+          [styles.active]: !autoSegmentConfigFlag && !isAiSegment,
+        })}
+        onClick={() => {
+          // console.log("3===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
+          onChoose(false);
+          onAiSegmentChoose?.(false);
+        }}
       >
         <h3>自定义</h3>
         <p>自定义分段规则，分段长度及预处理规则</p>
         <div
           className={cx({
-            [styles['custom-set-hide']]: autoSegmentConfigFlag,
+            [styles['custom-set-hide']]: autoSegmentConfigFlag || isAiSegment,
           })}
         >
           <div className={cx(styles['divider-horizontal'])} />
