@@ -52,10 +52,10 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
               tooltipTitle={dict(
                 'PC.Components.MarkdownCustomProcess.copyDetailData',
               )}
-              successMessage={dict('PC.Toast.Global.copiedSuccessfully')}
-              errorMessage={dict(
-                'PC.Components.MarkdownCustomProcess.copyFailedRetry',
-              )}
+              // successMessage={dict('PC.Toast.Global.copiedSuccessfully')}
+              // errorMessage={dict(
+              //   'PC.Components.MarkdownCustomProcess.copyFailedRetry',
+              // )}
             />
           </div>
         </div>

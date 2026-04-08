@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { VariableListProps } from '@/types/interfaces/agentConfig';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import classNames from 'classnames';
@@ -43,7 +44,7 @@ const VariableList: React.FC<VariableListProps> = ({
         </div>
       ) : (
         <p className={cx(textClassName)}>
-          用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。
+          {dict('PC.Components.VariableList.description')}
         </p>
       )}
     </>

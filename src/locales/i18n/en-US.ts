@@ -4970,6 +4970,8 @@ export const EN_US: SystemLangMap = {
   'PC.Components.VariableList.tabVariables': 'Variables',
   'PC.Components.VariableList.tabTools': 'Tools',
   'PC.Components.VariableList.tabSkills': 'Skills',
+  'PC.Components.VariableList.description':
+    'Used to save user personal information, allowing the agent to remember user characteristics and make responses more personalized.',
 
   // Components - MarkdownCustomProcess
   'PC.Components.MarkdownCustomProcess.noData': 'No data available',
@@ -5497,8 +5499,22 @@ export const EN_US: SystemLangMap = {
   'PC.Components.CreateKnowledge.selectWorkflow': 'Select Workflow',
   'PC.Components.CreateKnowledge.systemDefault': 'System Default',
   'PC.Components.CreateKnowledge.updateSuccess':
-    'Knowledge base updated successfully',
+    'Knowledge Base updated successful',
   'PC.Components.CreateKnowledge.updateTitle': 'Update Knowledge Base',
+  'PC.Components.CreateKnowledge.namePlaceholder':
+    'Give the knowledge base a clear name',
+  'PC.Components.CreateKnowledge.descriptionPlaceholder':
+    'Describe the content of the knowledge base to help the model better understand its purpose',
+  'PC.Components.CreateKnowledge.embeddingModelRequired':
+    'Please select an embedding model',
+  'PC.Components.CreateKnowledge.embeddingModelTooltip':
+    'Embedding models are used to convert text to vectors, which is the basis for retrieval',
+  'PC.Components.CreateKnowledge.embeddingModelPlaceholder':
+    'Please select an embedding model',
+  'PC.Components.CreateKnowledge.dataParsingMethodTooltip':
+    'Choose how to extract content from documents, supporting system default or custom workflows',
+  'PC.Components.CreateKnowledge.dataParsingMethodPlaceholder':
+    'Please select a data parsing method',
   'PC.Components.EcoShareStatus.draft': 'Draft',
   'PC.Components.EcoShareStatus.offline': 'Offline',
   'PC.Components.EcoShareStatus.published': 'Published',

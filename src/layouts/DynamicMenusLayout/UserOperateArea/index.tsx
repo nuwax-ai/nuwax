@@ -103,7 +103,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
           </Badge>
         ) : (
           <div className={cx(styles['active-icon-container'])}>
-            {item.icon ? <SvgIcon name={item.icon} /> : null}
+            <SvgIcon name={item.icon || 'icons-common-more'} />
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { CopyOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';

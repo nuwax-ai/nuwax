@@ -4481,6 +4481,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.VariableList.tabVariables': '变量',
   'PC.Components.VariableList.tabTools': '工具',
   'PC.Components.VariableList.tabSkills': '技能',
+  'PC.Components.VariableList.description':
+    '用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。',
 
   // Components - MarkdownCustomProcess
   'PC.Components.MarkdownCustomProcess.noData': '暂无数据',
@@ -4982,6 +4984,17 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.CreateKnowledge.systemDefault': '系统默认',
   'PC.Components.CreateKnowledge.updateSuccess': '知识库更新成功',
   'PC.Components.CreateKnowledge.updateTitle': '更新知识库',
+  'PC.Components.CreateKnowledge.namePlaceholder': '给知识库起一个清晰的名字',
+  'PC.Components.CreateKnowledge.descriptionPlaceholder':
+    '对该知识库的内容进行描述，以便于大模型更好的理解其用途',
+  'PC.Components.CreateKnowledge.embeddingModelRequired': '请选择向量模型',
+  'PC.Components.CreateKnowledge.embeddingModelTooltip':
+    '向量模型用于将文本转换为向量，是检索的基础',
+  'PC.Components.CreateKnowledge.embeddingModelPlaceholder': '请选择向量模型',
+  'PC.Components.CreateKnowledge.dataParsingMethodTooltip':
+    '选择如何从文档中提取内容，支持系统默认或自定义工作流',
+  'PC.Components.CreateKnowledge.dataParsingMethodPlaceholder':
+    '请选择数据解析方式',
   'PC.Components.EcoShareStatus.draft': '草稿',
   'PC.Components.EcoShareStatus.offline': '已下线',
   'PC.Components.EcoShareStatus.published': '已发布',

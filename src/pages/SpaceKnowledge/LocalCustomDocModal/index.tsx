@@ -3,7 +3,6 @@ import {
   KNOWLEDGE_CUSTOM_DOC_LIST,
   KNOWLEDGE_LOCAL_DOC_LIST,
 } from '@/constants/library.constants';
-import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeDocumentAdd,
   apiKnowledgeDocumentCustomAdd,
@@ -78,6 +77,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
   const [autoSegmentConfigFlag, setAutoSegmentConfigFlag] =
     useState<boolean>(true);
+  // 智能分段标识(新增)
+  const [isAiSegment, setIsAiSegment] = useState<boolean>(false);  
   const fileConfigRef = useRef<{
     name: string;
     fileContent: string;
@@ -99,6 +100,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill);
     setAllUploadFileList([]);
     setAutoSegmentConfigFlag(true);
+    setIsAiSegment(false)
     form.resetFields();
     formText.resetFields();
     segmentConfigModelRef.current = null;
@@ -109,9 +111,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success(
-        dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
-      );
+      message.success('文档添加成功');
       handleClear();
       onConfirm();
     },
@@ -122,9 +122,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success(
-        dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
-      );
+      message.success('文档添加成功');
       handleClear();
       onConfirm();
     },
@@ -145,8 +143,33 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       autoSegmentConfigFlag: autoSegmentConfigFlag,
     };
     // 自动分段与清洗
+    /*
     if (autoSegmentConfigFlag) {
       runDocAdd(data);
+    } else {
+      runDocAdd({
+        ...data,
+        segmentConfig: {
+          segment: KnowledgeSegmentTypeEnum.DELIMITER,
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
+    }*/
+    //console.log("autoSegmentConfigFlag===>", autoSegmentConfigFlag);
+    //console.log("isAiSegment===>", isAiSegment);
+
+    if (autoSegmentConfigFlag) {
+      runDocAdd(data);
+    } else if (isAiSegment) {
+      runDocAdd({
+        ...data,
+        segmentConfig: {
+          segment: 'SMART',
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
     } else {
       runDocAdd({
         ...data,
@@ -238,9 +261,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       case KnowledgeTextStepEnum.Upload_Or_Text_Fill:
         return (
           <div className={cx('flex', 'content-end', styles.gap)}>
-            <Button onClick={onCancel}>
-              {dict('PC.Common.Global.cancel')}
-            </Button>
+            <Button onClick={onCancel}>取消</Button>
             <Button
               onClick={handleUploadOrTextInput}
               type="primary"
@@ -250,7 +271,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                   : false
               }
             >
-              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep')}
+              下一步
             </Button>
           </div>
         );
@@ -262,10 +283,10 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill)
               }
             >
-              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep')}
+              上一步
             </Button>
             <Button onClick={handleConfirmCreateSet} type="primary">
-              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep')}
+              下一步
             </Button>
           </div>
         );
@@ -277,7 +298,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set)
               }
             >
-              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep')}
+              上一步
             </Button>
             <Button
               onClick={
@@ -287,7 +308,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
               }
               type="primary"
             >
-              {dict('PC.Common.Global.confirm')}
+              确认
             </Button>
           </div>
         );
@@ -325,7 +346,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   }, []);
   return (
     <Modal
-      title={dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent')}
+      title="添加内容"
       destroyOnHidden
       classNames={{
         content: cx(styles.container),
@@ -404,6 +425,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
           form={form}
           autoSegmentConfigFlag={autoSegmentConfigFlag}
           onChoose={(flag) => setAutoSegmentConfigFlag(flag)}
+          isAiSegment={isAiSegment}
+          onAiSegmentChoose={(flag) => setIsAiSegment(flag)}
         />
       ) : type === KnowledgeTextImportEnum.Local_Doc ? (
         <DataProcess uploadFileList={uploadFileList} />

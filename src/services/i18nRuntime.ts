@@ -152,7 +152,7 @@ const buildZhValueToKeyMap = (map: SystemLangMap): void => {
 
 export const fetchAndApplyLangMap = async (
   lang?: string,
-  side?: string,
+  side: string = 'PC',
 ): Promise<boolean> => {
   const isInitialCall = !lang;
   try {

@@ -1,4 +1,5 @@
 import SubmitButton from '@/components/SubmitButton';
+import { dict } from '@/services/i18nRuntime';
 import type { CustomFormModalProps } from '@/types/interfaces/common';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
@@ -37,7 +38,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
       footer={
         <>
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
-            取消
+            {dict('PC.Components.CustomFormModal.cancel')}
           </Button>
           <SubmitButton
             okPrefixIcon={okPrefixIcon}

@@ -12,7 +12,6 @@ import {
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
-  PlusOutlined,
   TranslationOutlined,
 } from '@ant-design/icons';
 import type {
@@ -24,6 +23,7 @@ import { Button, Space, Tag, message } from 'antd';
 import React, { useRef, useState } from 'react';
 import { history, useParams } from 'umi';
 import AddKeyValueModal from './AddKeyValueModal';
+import BatchKeyValueModal from './BatchKeyValueModal';
 
 /**
  * 语言内容页面
@@ -46,6 +46,9 @@ const LangContent: React.FC = () => {
   // 翻译全部 loading 状态
   const [translateAllLoading, setTranslateAllLoading] =
     useState<boolean>(false);
+
+  // ====================== 批量新增或更新键值对弹窗 ======================
+  const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
 
   // ====================== 多语言端 ======================
   const side = String(history.location.query?.side || 'PC');
@@ -211,11 +214,10 @@ const LangContent: React.FC = () => {
           >
             翻译全部
           </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenAddModal}
-          >
+          <Button type="primary" onClick={() => setBatchModalOpen(true)}>
+            批量新增或更新键值对
+          </Button>
+          <Button type="primary" onClick={handleOpenAddModal}>
             添加键值对
           </Button>
         </>
@@ -242,6 +244,18 @@ const LangContent: React.FC = () => {
         onSuccess={() => {
           setAddModalOpen(false);
           setCurrentItem(null);
+          actionRef.current?.reload();
+        }}
+      />
+
+      {/* 批量新增或更新键值对弹窗 */}
+      <BatchKeyValueModal
+        side={side}
+        lang={lang}
+        open={batchModalOpen}
+        onCancel={() => setBatchModalOpen(false)}
+        onSuccess={() => {
+          setBatchModalOpen(false);
           actionRef.current?.reload();
         }}
       />

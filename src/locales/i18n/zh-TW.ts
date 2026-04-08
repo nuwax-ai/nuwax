@@ -4465,6 +4465,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.VariableList.tabVariables': '變量',
   'PC.Components.VariableList.tabTools': '工具',
   'PC.Components.VariableList.tabSkills': '技能',
+  'PC.Components.VariableList.description':
+    '用於保存用戶個人信息，讓智能體記住用戶的特徵，使回覆更加個性化。',
 
   // Components - MarkdownCustomProcess
   'PC.Components.MarkdownCustomProcess.noData': '暫無數據',
@@ -4717,6 +4719,19 @@ export const ZH_TW: SystemLangMap = {
 
   // Components - PermissionMask
   'PC.Components.PermissionMask.noAgentPermission': '無智能體使用權限',
+
+  // Components - CreateKnowledge
+  'PC.Components.CreateKnowledge.namePlaceholder': '給知識庫起一個清晰的名字',
+  'PC.Components.CreateKnowledge.descriptionPlaceholder':
+    '對該知識庫內容進行描述，以便於大模型更好的理解其用途',
+  'PC.Components.CreateKnowledge.embeddingModelRequired': '請選擇向量模型',
+  'PC.Components.CreateKnowledge.embeddingModelTooltip':
+    '向量模型用於將文本轉換為向量，是檢索的基礎',
+  'PC.Components.CreateKnowledge.embeddingModelPlaceholder': '請選擇向量模型',
+  'PC.Components.CreateKnowledge.dataParsingMethodTooltip':
+    '選擇如何從文檔中提取內容，支持系統默認或自定義工作流',
+  'PC.Components.CreateKnowledge.dataParsingMethodPlaceholder':
+    '請選擇數據解析方式',
 
   // Components - EcosystemDetailDrawer
   'PC.Components.EcosystemDetailDrawer.plugin': '插件',
