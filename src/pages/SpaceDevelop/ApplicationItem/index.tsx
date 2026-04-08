@@ -4,7 +4,6 @@ import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
-// import { apiDevCollectAgent } from '@/services/agentDev';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -13,7 +12,6 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-// import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -27,25 +25,6 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
   // onCollect,
   onClickMore,
 }) => {
-  // const { handleCancelCollect, runDevCollect } = useModel('devCollectAgent');
-  // // 权限检查
-  // const { hasPermission: hasPermissionMenu } = useModel('menuModel');
-
-  // 开发智能体收藏
-  // const { run: runCollect } = useRequest(apiDevCollectAgent, {
-  //   manual: true,
-  //   debounceInterval: 300,
-  //   onSuccess: () => {
-  //     message.success('收藏成功');
-  //     onCollect(!agentConfigInfo?.devCollected);
-  //     // 更新开发智能体收藏列表
-  //     runDevCollect({
-  //       page: 1,
-  //       size: 8,
-  //     });
-  //   },
-  // });
-
   // 提取权限检查逻辑
   const hasPermission = (permission: PermissionsEnum) => {
     return agentConfigInfo?.permissions?.includes(permission);
@@ -89,90 +68,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     });
 
     return list;
-
-    // return list.map((item) => {
-    //   switch (item.type) {
-    //     // 迁移
-    //     case ApplicationMoreActionEnum.Move: {
-    //       const isHasPermission = hasPermissionMenu('agent_migrate');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     // 导出配置
-    //     case ApplicationMoreActionEnum.Export_Config: {
-    //       const isHasPermission = hasPermissionMenu('agent_export');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     // API Key
-    //     case ApplicationMoreActionEnum.API_Key: {
-    //       const isHasPermission = hasPermissionMenu('agent_api_key');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     // 删除
-    //     case ApplicationMoreActionEnum.Del: {
-    //       const isHasPermission = hasPermissionMenu('agent_delete');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     // 复制到空间
-    //     case ApplicationMoreActionEnum.Copy_To_Space: {
-    //       const isHasPermission = hasPermissionMenu('agent_copy_to_space');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     // 临时会话
-    //     case ApplicationMoreActionEnum.Temporary_Session: {
-    //       const isHasPermission = hasPermissionMenu('agent_temp_conversation');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     default:
-    //       return item;
-    //   }
-    // });
   }, [agentConfigInfo]);
-
-  // 权限检查：如果没有收藏权限
-  // const hasCollectPermission = hasPermissionMenu('agent_collect');
-
-  // 收藏、取消收藏事件
-  // const handlerCollect = async (e: React.MouseEvent<HTMLSpanElement>) => {
-  //   e.stopPropagation();
-
-  //   // 权限检查：如果没有收藏权限，提示并阻止操作
-  //   // if (!hasCollectPermission) {
-  //   //   return;
-  //   // }
-
-  //   const { id, devCollected } = agentConfigInfo;
-  //   if (devCollected) {
-  //     await handleCancelCollect(id, () => {
-  //       onCollect(!devCollected);
-  //     });
-  //   } else {
-  //     await runCollect(id);
-  //   }
-  // };
 
   // 点击更多操作
   const handlerClickMore = (item: CustomPopoverItem) => {
@@ -234,20 +130,6 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             )}
           </div>
           <div className={cx('flex', 'items-center', 'gap-10')}>
-            {/* <Tooltip title={hasCollectPermission ? '' : '无此资源权限'}> */}
-            {/* <span
-              onClick={handlerCollect}
-              // className={cx({
-              //   [styles['collect-disabled']]: !hasCollectPermission,
-              // })}
-            >
-              {agentConfigInfo.devCollected ? (
-                <ICON_STAR_FILL />
-              ) : (
-                <ICON_STAR />
-              )}
-            </span> */}
-            {/* </Tooltip> */}
             {/*更多操作*/}
             <CustomPopover onClick={handlerClickMore} list={actionList}>
               <Button size="small" type="text" icon={<ICON_MORE />}></Button>

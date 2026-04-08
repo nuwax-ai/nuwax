@@ -1146,11 +1146,6 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemUserGroupFormModal.name': '用户组名称',
   'PC.Pages.SystemUserGroupFormModal.nameRequired': '请输入用户组名称',
   'PC.Pages.SystemUserGroupFormModal.namePlaceholder': '请输入用户组名称',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCount': '最大用户数',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountRequired': '请输入最大用户数',
-  'PC.Pages.SystemUserGroupFormModal.maxValueTip': '最大值为2147483647',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountPlaceholder':
-    '请输入最大用户数',
   'PC.Pages.SystemUserGroupFormModal.source': '来源',
   'PC.Pages.SystemUserGroupFormModal.sourcePlaceholder': '请选择来源',
   'PC.Pages.SystemUserGroupFormModal.sort': '排序',
@@ -3659,6 +3654,7 @@ export const ZH_CN: SystemLangMap = {
     '技能更新成功',
   'PC.Pages.SpaceSkillManage.CreateSkill.createSkill': '创建技能',
   'PC.Pages.SpaceSkillManage.CreateSkill.updateSkill': '更新技能',
+  'PC.Pages.SpaceSkillManage.CreateSkill.iconLabel': '图标',
   'PC.Pages.SpaceSkillManage.CreateSkill.nameLabel': '名称',
   'PC.Pages.SpaceSkillManage.CreateSkill.pleaseInputSkillName':
     '请输入技能名称',
@@ -4823,6 +4819,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Routes.themeConfig': '主题配置',
   'PC.Routes.sandboxConfig': '沙盒配置',
   'PC.Routes.categoryManagement': '分类管理',
+  'PC.Routes.i18nLangManagement': '语言管理',
+  'PC.Routes.i18nLangContent': '语言内容',
   'PC.Routes.contentManagement': '内容管理',
   'PC.Routes.contentSpace': '空间',
   'PC.Routes.contentAgent': '智能体',

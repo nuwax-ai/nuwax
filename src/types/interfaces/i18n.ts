@@ -94,7 +94,7 @@ export interface I18nSlideLangInfo {
   lang?: string;
 
   /*键 */
-  key?: string;
+  key: string;
 
   /*值 */
   value?: string;
@@ -105,3 +105,24 @@ export interface I18nSlideLangInfo {
 
 // 批量新增或更新多语言配置参数
 export type I18nConfigBatchAddOrUpdateParams = I18nSlideLangInfo;
+
+// 查询多语言配置列表参数
+export interface LangConfigListParams {
+  /*端，如 Backend */
+  side?: string;
+
+  /*具体语言，中文：zh-cn，英文：en-us，等 */
+  lang?: string;
+
+  /*业务模块，精确匹配 */
+  module?: string;
+
+  /*配置键 fieldKey，模糊匹配 */
+  key?: string;
+
+  /*页码，从 1 开始 */
+  pageNo?: number;
+
+  /*每页条数 */
+  pageSize?: number;
+}

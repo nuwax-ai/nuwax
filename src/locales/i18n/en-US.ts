@@ -1298,13 +1298,6 @@ export const EN_US: SystemLangMap = {
     'Please enter user group name',
   'PC.Pages.SystemUserGroupFormModal.namePlaceholder':
     'Please enter user group name',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCount': 'Max User Count',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountRequired':
-    'Please enter max user count',
-  'PC.Pages.SystemUserGroupFormModal.maxValueTip':
-    'Maximum value is 2147483647',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountPlaceholder':
-    'Please enter max user count',
   'PC.Pages.SystemUserGroupFormModal.source': 'Source',
   'PC.Pages.SystemUserGroupFormModal.sourcePlaceholder': 'Please select source',
   'PC.Pages.SystemUserGroupFormModal.sort': 'Sort',
@@ -4067,6 +4060,7 @@ export const EN_US: SystemLangMap = {
     'Skill updated successfully',
   'PC.Pages.SpaceSkillManage.CreateSkill.createSkill': 'Create Skill',
   'PC.Pages.SpaceSkillManage.CreateSkill.updateSkill': 'Update Skill',
+  'PC.Pages.SpaceSkillManage.CreateSkill.iconLabel': 'Icon',
   'PC.Pages.SpaceSkillManage.CreateSkill.nameLabel': 'Name',
   'PC.Pages.SpaceSkillManage.CreateSkill.pleaseInputSkillName':
     'Please enter skill name',
@@ -5332,6 +5326,8 @@ export const EN_US: SystemLangMap = {
   'PC.Routes.themeConfig': 'Theme Configuration',
   'PC.Routes.sandboxConfig': 'Sandbox Configuration',
   'PC.Routes.categoryManagement': 'Category Management',
+  'PC.Routes.i18nLangManagement': 'Language Management',
+  'PC.Routes.i18nLangContent': 'Language Content',
   'PC.Routes.contentManagement': 'Content Management',
   'PC.Routes.contentSpace': 'Space',
   'PC.Routes.contentAgent': 'Agent',

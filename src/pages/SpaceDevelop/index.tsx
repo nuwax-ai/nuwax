@@ -40,7 +40,14 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
+import {
+  history,
+  useLocation,
+  useModel,
+  useParams,
+  useRequest,
+  useSearchParams,
+} from 'umi';
 import ApplicationItem from './ApplicationItem';
 import CreateApiKeyModal from './CreateApiKeyModal';
 import CreateTempChatModal from './CreateTempChatModal';
@@ -56,6 +63,7 @@ const cx = classNames.bind(styles);
 const SpaceDevelop: React.FC = () => {
   // ✅ umi 中的 useSearchParams
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   // ✅ 当 select 改变时同步 URL
   const handleChange = (key: IQuery, value: string) => {
@@ -214,18 +222,6 @@ const SpaceDevelop: React.FC = () => {
       runEdit({
         size: 5,
       });
-      // const id = params[0];
-      // 如果智能体开发收藏列表包含此删除智能体, 重新查询
-      // const index = devCollectAgentList?.findIndex(
-      //   (item: AgentInfo) => item.agentId === id,
-      // );
-      // if (index > -1) {
-      //   // 更新开发智能体收藏列表
-      //   runDevCollect({
-      //     page: 1,
-      //     size: 5,
-      //   });
-      // }
     },
   });
 
@@ -378,7 +374,7 @@ const SpaceDevelop: React.FC = () => {
         // 之所以使用try catch，是因为navigator.clipboard.writeText在某些浏览器或NuwaClaw中可能不支持
         try {
           // 这里实现复制路径到浏览器地址栏
-          const path = `${process.env.BASE_URL}/app/details/${agentInfo.id}`;
+          const path = `${location.origin}/app/details/${agentInfo.id}`;
           navigator.clipboard.writeText(path);
           message.success('已复制独立会话路径');
         } catch (error) {

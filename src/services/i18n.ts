@@ -7,10 +7,11 @@ import type {
   I18nLangDto,
   I18nSlideLangInfo,
   I18nUpdateLangParams,
+  LangConfigListParams,
   SystemLangMap,
 } from '@/types/interfaces/i18n';
 import type { UserUpdateParams } from '@/types/interfaces/login';
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
 // 查询指定语言信息
@@ -154,7 +155,7 @@ export async function apiI18nConfigTranslateAll(
 ): Promise<RequestResponse<I18nSlideLangInfo>> {
   return request('/api/system/i18n/config/translateAll', {
     method: 'POST',
-    data: {
+    params: {
       lang,
     },
   });
@@ -208,14 +209,10 @@ export async function apiI18nAllLangList(): Promise<
  * 查询多语言配置列表
  */
 export async function apiI18nConfigList(
-  side: string,
-  lang: string,
-): Promise<RequestResponse<I18nSlideLangInfo[]>> {
+  data: LangConfigListParams,
+): Promise<RequestResponse<Page<I18nSlideLangInfo>>> {
   return request('/api/system/i18n/config/list', {
-    method: 'GET',
-    params: {
-      side,
-      lang,
-    },
+    method: 'POST',
+    data,
   });
 }

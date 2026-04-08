@@ -100,11 +100,6 @@ const SpaceSection: React.FC<{
     runEdit({
       size: 5,
     });
-    // 开发收藏
-    // runDevCollect({
-    //   page: 1,
-    //   size: 5,
-    // });
   }, []);
 
   // 点击进入"工作空间智能体"

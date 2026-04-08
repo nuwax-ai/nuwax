@@ -1,5 +1,7 @@
+import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
+import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiAddSkill, apiUpdateSkill } from '@/services/library';
@@ -126,6 +128,17 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
+        <Form.Item
+          name="icon"
+          label={dict('PC.Pages.SpaceSkillManage.CreateSkill.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
         <Form.Item
           name="name"
           label={dict('PC.Pages.SpaceSkillManage.CreateSkill.nameLabel')}

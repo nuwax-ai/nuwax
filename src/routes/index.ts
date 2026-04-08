@@ -222,12 +222,12 @@ const routes = [
               },
               {
                 path: 'i18n-lang',
-                name: 'Language Management',
+                name: getRouteLabel('PC.Routes.i18nLangManagement'),
                 component: '@/pages/SystemManagement/SystemConfig/I18nManage',
               },
               {
                 path: 'lang-content/:lang',
-                name: 'Language Content',
+                name: getRouteLabel('PC.Routes.i18nLangContent'),
                 component: '@/pages/SystemManagement/SystemConfig/LangContent',
               },
             ],

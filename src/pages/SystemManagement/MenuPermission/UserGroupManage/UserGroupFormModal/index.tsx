@@ -211,34 +211,6 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label={t('PC.Pages.SystemUserGroupFormModal.maxUserCount')}
-              name="maxUserCount"
-              rules={[
-                {
-                  required: true,
-                  message: t(
-                    'PC.Pages.SystemUserGroupFormModal.maxUserCountRequired',
-                  ),
-                },
-              ]}
-              tooltip={{
-                title: t('PC.Pages.SystemUserGroupFormModal.maxValueTip'),
-                icon: <InfoCircleOutlined />,
-              }}
-            >
-              <InputNumber
-                placeholder={t(
-                  'PC.Pages.SystemUserGroupFormModal.maxUserCountPlaceholder',
-                )}
-                className={cx('w-full')}
-                min={1}
-                max={2147483647}
-              />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            <Form.Item
               label={t('PC.Pages.SystemUserGroupFormModal.source')}
               name="source"
             >

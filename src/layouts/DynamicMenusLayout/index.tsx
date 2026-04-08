@@ -314,6 +314,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       return;
     }
 
+    // 多语言内容特殊处理，如果路径是/system/config/lang-content/:lang，则设置一级菜单选中系统管理
+    if (location.pathname.startsWith('/system/config/lang-content')) {
+      setActiveTab('system_manage');
+      return;
+    }
+
     // 如果点击了一级菜单，并且没有悬浮菜单，则不触发刷新
     // if (isClickMenu.current && !showHoverMenu) {
     if (isClickMenu.current) {
@@ -385,12 +391,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     runEdit({
       size: 5,
     });
-    // 开发收藏
-    // runDevCollect({
-    //   page: 1,
-    //   size: 5,
-    // });
-  }, [runEdit]);
+  }, []);
 
   /**
    * 递归查找第一个有 path 的子菜单

@@ -1131,11 +1131,6 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemUserGroupFormModal.name': '用戶組名稱',
   'PC.Pages.SystemUserGroupFormModal.nameRequired': '請輸入用戶組名稱',
   'PC.Pages.SystemUserGroupFormModal.namePlaceholder': '請輸入用戶組名稱',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCount': '最大用戶數',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountRequired': '請輸入最大用戶數',
-  'PC.Pages.SystemUserGroupFormModal.maxValueTip': '最大值為2147483647',
-  'PC.Pages.SystemUserGroupFormModal.maxUserCountPlaceholder':
-    '请输入最大用户数',
   'PC.Pages.SystemUserGroupFormModal.source': '來源',
   'PC.Pages.SystemUserGroupFormModal.sourcePlaceholder': '請選擇來源',
   'PC.Pages.SystemUserGroupFormModal.sort': '排序',
@@ -4769,4 +4764,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Constants.Theme.bgNightCityDesc': '都市夜景，適合深色佈局風格',
   'PC.Constants.Theme.bgFreshBlueSky': '清新藍天',
   'PC.Constants.Theme.bgFreshBlueSkyDesc': '清新明亮，適合淺色佈局風格',
+
+  // Routes
+  'PC.Routes.i18nLangManagement': '語言管理',
+  'PC.Routes.i18nLangContent': '語言內容',
 };
