@@ -74,7 +74,7 @@ const ApiKeyPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      width: 300,
+      width: 260,
     },
     {
       title: 'API Key',
@@ -121,12 +121,14 @@ const ApiKeyPage: React.FC = () => {
       key: 'created',
       search: false,
       valueType: 'dateTime',
+      width: 260,
     },
     {
       title: dict('PC.Pages.MorePage.ApiKey.expireTime'),
       dataIndex: 'expire',
       key: 'expire',
       search: false,
+      width: 260,
       render: (_, record) => {
         const val = record.expire;
         const isNever =
@@ -146,6 +148,7 @@ const ApiKeyPage: React.FC = () => {
       title: dict('PC.Pages.MorePage.ApiKey.status'),
       dataIndex: 'status',
       key: 'status',
+      width: 260,
       search: false,
       valueEnum: STATUS_MAP,
       render: (_, record) => {
@@ -236,7 +239,7 @@ const ApiKeyPage: React.FC = () => {
       }
     >
       <XProTable<ApiKeyInfo>
-        key={location.state?._t || 'api-key-table'}
+        key={'api-key-table'}
         actionRef={actionRef}
         request={async (params) => {
           const { current = 1, pageSize = 15 } = params;

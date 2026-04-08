@@ -589,6 +589,15 @@ export const ZH_CN: SystemLangMap = {
     '{0}的动态JSON参数JsonSchema如下',
   'PC.Pages.AgentArrangeConfig.conversationExperience': '对话体验',
   'PC.Pages.AgentArrangeConfig.interfaceConfig': '界面配置',
+  'PC.Pages.AgentArrangeConfig.allowOtherModel': '允许用户选择自有模型',
+  'PC.Pages.AgentArrangeConfig.allowOtherModelDesc':
+    '开启后，用户可以在会话中选择自己的模型',
+  'PC.Pages.AgentArrangeConfig.allowAtSkill': '允许用户@技能',
+  'PC.Pages.AgentArrangeConfig.allowAtSkillDesc':
+    '开启后，用户可以在会话中添加任意技能',
+  'PC.Pages.AgentArrangeConfig.allowPrivateSandbox': '允许用户选择个人电脑',
+  'PC.Pages.AgentArrangeConfig.allowPrivateSandboxDesc':
+    '开启后，用户可以选择智能体在自己的Claw客户端中执行',
   'PC.Pages.SystemConfigCategoryManage.pageTitle': '分类管理',
   'PC.Pages.SystemConfigCategoryManage.agent': '智能体',
   'PC.Pages.SystemConfigCategoryManage.webApp': '网页应用',

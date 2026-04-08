@@ -774,7 +774,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             className={cx(styles['select-list'])}
             options={getModeOptions(modelSelector?.models?.chatModelList)}
             value={modelSelector?.selectedModelId}
-            onChange={modelSelector?.selectModel}
+            onChange={(val) => {
+              modelSelector?.selectModel?.(val);
+              setOpen(false);
+            }}
           />
         </div>
         <div
@@ -786,7 +789,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             allowClear
             options={getModeOptions(modelSelector?.models?.multiModelList)}
             value={modelSelector?.selectedMultiModelId}
-            onChange={modelSelector?.selectMultiModel}
+            onChange={(val) => {
+              modelSelector?.selectMultiModel?.(val);
+              setOpen(false);
+            }}
           />
         </div>
       </div>
@@ -795,6 +801,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     modelSelector?.models,
     modelSelector?.selectedModelId,
     modelSelector?.selectedMultiModelId,
+    modelSelector?.selectModel,
+    modelSelector?.selectMultiModel,
   ]);
 
   return (

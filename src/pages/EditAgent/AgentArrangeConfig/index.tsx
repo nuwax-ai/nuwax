@@ -899,9 +899,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // 允许用户选择自有模型
     {
       key: AgentArrangeConfigEnum.Allow_Other_Model,
-      label: '允许用户选择自有模型',
+      label: t('PC.Pages.AgentArrangeConfig.allowOtherModel'),
       children: (
-        <p className={cx(styles.text)}>开启后用户可以在会话中选择自己的模型</p>
+        <p className={cx(styles.text)}>
+          {t('PC.Pages.AgentArrangeConfig.allowOtherModelDesc')}
+        </p>
       ),
       extra: (
         <Switch
@@ -929,10 +931,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ? [
           {
             key: AgentArrangeConfigEnum.Allow_At_Skill,
-            label: '允许用户@技能',
+            label: t('PC.Pages.AgentArrangeConfig.allowAtSkill'),
             children: (
               <p className={cx(styles.text)}>
-                开启后用户可以在会话中添加任意技能
+                {t('PC.Pages.AgentArrangeConfig.allowAtSkillDesc')}
               </p>
             ),
             extra: (
@@ -963,10 +965,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             : [
                 {
                   key: AgentArrangeConfigEnum.Allow_Private_Sandbox,
-                  label: '允许用户选择个人电脑',
+                  label: t('PC.Pages.AgentArrangeConfig.allowPrivateSandbox'),
                   children: (
                     <p className={cx(styles.text)}>
-                      开启后用户可以选择智能体在自己的Claw客户端中执行
+                      {t('PC.Pages.AgentArrangeConfig.allowPrivateSandboxDesc')}
                     </p>
                   ),
                   extra: (

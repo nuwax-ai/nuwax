@@ -666,6 +666,17 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AgentArrangeConfig.conversationExperience':
     'Conversation Experience',
   'PC.Pages.AgentArrangeConfig.interfaceConfig': 'Interface Config',
+  'PC.Pages.AgentArrangeConfig.allowOtherModel':
+    'Allow users to select their own models',
+  'PC.Pages.AgentArrangeConfig.allowOtherModelDesc':
+    'When enabled, users can select their own models in the session',
+  'PC.Pages.AgentArrangeConfig.allowAtSkill': 'Allow users to @ skills',
+  'PC.Pages.AgentArrangeConfig.allowAtSkillDesc':
+    'When enabled, users can add any skills in the session',
+  'PC.Pages.AgentArrangeConfig.allowPrivateSandbox':
+    'Allow users to select private computer',
+  'PC.Pages.AgentArrangeConfig.allowPrivateSandboxDesc':
+    'When enabled, users can choose to execute the agent in their own Claw client',
   'PC.Pages.SystemConfigCategoryManage.pageTitle': 'Category Management',
   'PC.Pages.SystemConfigCategoryManage.agent': 'Agent',
   'PC.Pages.SystemConfigCategoryManage.webApp': 'Web App',

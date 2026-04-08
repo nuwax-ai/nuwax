@@ -140,6 +140,8 @@ const Created: React.FC<CreatedProp> = ({
   const justReturnSpaceDataRef = useRef<boolean>(false);
   // 知识库数据类型, 暂时用于滚动加载事件保存dataType，如果是全部，则不传dataType
   const dataTypeRef = useRef<number | null>(null);
+  // 请求版本号，用于处理竞态逻辑
+  const requestVersionRef = useRef(0);
 
   // 左侧菜单栏
   const items: MenuItem[] = [
@@ -249,13 +251,22 @@ const Created: React.FC<CreatedProp> = ({
     //   //如果是MCP 并且是有搜索词 则不调用接口
     //   return;
     // }
+    const isFresh = params.page === 1;
     setDoSearching({ list: [], searching: false });
+    let localVersion = 0;
     try {
       if (spaceId === 0) return;
-      if ((params.page > sizes && params.page !== 1) || isRequesting.current)
+      // 分页加载时（page > 1）由 isRequesting 拦截。
+      // 切换 Tab/搜索（page === 1）则始终发起请求，由版本号逻辑拦截旧响应。
+      if (
+        (params.page > sizes && !isFresh) ||
+        (!isFresh && isRequesting.current)
+      )
         return;
+
+      localVersion = ++requestVersionRef.current;
       isRequesting.current = true;
-      if (params.page === 1) {
+      if (isFresh) {
         // 设置loading状态为true
         setLoading(true);
       }
@@ -280,6 +291,10 @@ const Created: React.FC<CreatedProp> = ({
         data,
         message: messageText,
       } = await service.getList(type, { ...params, spaceId });
+
+      // 竞态逻辑：如果请求完成时版本号已变化，说明又有新的请求发出，丢弃本次结果
+      if (localVersion !== requestVersionRef.current) return;
+
       isRequesting.current = false;
       // 请求完成，设置loading状态为false
       setLoading(false);
@@ -313,22 +328,29 @@ const Created: React.FC<CreatedProp> = ({
         return newList;
       });
     } catch (error) {
-      isRequesting.current = false;
-      setLoading(false);
+      if (localVersion === requestVersionRef.current) {
+        isRequesting.current = false;
+        setLoading(false);
+      }
       setSizes(100);
     }
   };
 
   // 获取已经收藏的list
   const getCollectList = async (params: IGetList) => {
+    let localVersion = 0;
     try {
       setLoading(true);
+      localVersion = ++requestVersionRef.current;
       const _type = selected.key?.toLowerCase();
       const _res = await service.collectList(_type, params);
+      if (localVersion !== requestVersionRef.current) return;
       setList([..._res.data]);
       setLoading(false);
     } catch (error) {
-      setLoading(false);
+      if (localVersion === requestVersionRef.current) {
+        setLoading(false);
+      }
     }
   };
 
