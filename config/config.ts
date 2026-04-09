@@ -143,16 +143,8 @@ export default defineConfig({
 						return;
 					}
 
-          // 应用详情页
-          const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
-          if (matchAppDetails) {
-            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
-            window.location.replace(replaceUrl);
-            return;
-          }
-
-          // 应用会话页
-          const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
+          // 应用会话页 (这里必须要放在应用详情页匹配之前，否则会匹配到应用详情页)
+          const matchAppChat = href.match(new RegExp('/app/chat/([^/]+)/([^/]+)'));
           if (matchAppChat) {
             const agentId = matchAppChat[1];
             const conversationId = matchAppChat[2];
@@ -161,6 +153,13 @@ export default defineConfig({
             return;
           }
 
+          // 应用详情页
+          const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
+          if (matchAppDetails) {
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+            window.location.replace(replaceUrl);
+            return;
+          }
 
 					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
 					const matchChatTemp = href.match(new RegExp('/chat-temp/([^/?#]+)'));

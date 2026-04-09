@@ -40,14 +40,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  history,
-  useLocation,
-  useModel,
-  useParams,
-  useRequest,
-  useSearchParams,
-} from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ApplicationItem from './ApplicationItem';
 import CreateApiKeyModal from './CreateApiKeyModal';
 import CreateTempChatModal from './CreateTempChatModal';
@@ -63,7 +56,6 @@ const cx = classNames.bind(styles);
 const SpaceDevelop: React.FC = () => {
   // ✅ umi 中的 useSearchParams
   const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
 
   // ✅ 当 select 改变时同步 URL
   const handleChange = (key: IQuery, value: string) => {
@@ -373,10 +365,9 @@ const SpaceDevelop: React.FC = () => {
       case ApplicationMoreActionEnum.Independent_Session:
         // 之所以使用try catch，是因为navigator.clipboard.writeText在某些浏览器或NuwaClaw中可能不支持
         try {
-          const origin = location.origin || window.location.origin;
+          const origin = window.location.origin;
           // 这里实现复制路径到浏览器地址栏
           const path = `${origin}/app/${agentInfo.id}`;
-          console.log('这里实现复制路径到浏览器地址栏', path, location);
           navigator.clipboard.writeText(path);
           message.success(
             dict('PC.Pages.SpaceDevelop.copyIndependentSessionSuccess'),
