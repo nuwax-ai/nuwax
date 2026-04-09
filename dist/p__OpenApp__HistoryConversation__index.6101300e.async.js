@@ -1,0 +1,1 @@
+"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8963],{51514:function(E,a,n){n.r(a);var s=n(64006),v=n(75271),t=n(49909),o=n(52676),r=function(){var u=(0,t.useParams)(),i=Number(u.agentId),_=function(e,c){t.history.push("/app/chat/".concat(c,"/").concat(e))};return(0,o.jsx)(s.Z,{agentId:i,onClickLink:_})};a.default=r}}]);})();
