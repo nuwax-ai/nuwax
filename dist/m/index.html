@@ -32,7 +32,7 @@
 				}
 
 				// 应用详情页路径
-				const appDetailsPathMobile = '/pages/app-details/app-details';
+				const appDetailsPathMobile = '/subpackages/pages/app-details/app-details';
 
 				const { protocol, host, href, hash } = window.location;
 				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
@@ -74,10 +74,14 @@
 						}
 					}
 
+					console.log('应用详情页hash22222222', hash, hash.indexOf(appDetailsPathMobile));
+
 					// 应用详情页
 					if (hash && hash.indexOf(appDetailsPathMobile) !== -1) {
 						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
 						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+
+						console.log('应用详情页matchId22222222', matchId, matchConversationId);
 						if (matchId && matchId[1]) {
 							const agentId = matchId[1];
 							if (matchConversationId && matchConversationId[1]) {
@@ -112,6 +116,14 @@
 						return;
 					}
 
+					// 应用会话页 (这里必须要放在应用详情页匹配之前，否则会匹配到应用详情页)
+					const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
+					if (matchAppChat) {
+						const agentId = matchAppChat[1];
+						const conversationId = matchAppChat[2];
+						replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
+						return replaceUrl;
+					}
 
 					// 应用详情页
 					const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
@@ -120,14 +132,6 @@
 						return replaceUrl;
 					}
 
-					// 应用会话页
-					const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
-					if (matchAppChat) {
-						const agentId = matchAppChat[1];
-						const conversationId = matchAppChat[2];
-						replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
-						return replaceUrl;
-					}
 
 					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
 					const matchChatTemp = href.match(new RegExp('/chat-temp/([^/?#]+)'));
