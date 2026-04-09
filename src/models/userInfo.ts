@@ -28,7 +28,7 @@ export default () => {
           ? err.message
           : dict('PC.Models.UserInfo.getUserInfoFailed');
       setError(errorMessage);
-      console.error('获取用户信息失败:', err);
+      console.error('Failed to get user info:', err);
       return null;
     } finally {
       setLoading(false);
@@ -51,7 +51,7 @@ export default () => {
           ? err.message
           : dict('PC.Models.UserInfo.refreshUserInfoFailed');
       setError(errorMessage);
-      console.error('刷新用户信息失败:', err);
+      console.error('Failed to refresh user info:', err);
       return null;
     } finally {
       setLoading(false);
@@ -67,7 +67,7 @@ export default () => {
       // 更新本地状态
       setUserInfo((prev) => (prev ? { ...prev, ...updates } : null));
     } catch (err) {
-      console.error('更新用户信息失败:', err);
+      console.error('Failed to update user info:', err);
     }
   }, []);
 

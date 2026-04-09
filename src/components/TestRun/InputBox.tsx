@@ -43,14 +43,14 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   }, [item.dataType]);
   const handleUploadData = useCallback(
     (info: any): FileListItem[] | [] => {
-      console.log('上传文件信息:', info.fileList);
+      console.log('Upload file info:', info.fileList);
       const updateFileInfo = info.fileList
         .filter((file: any) => {
           // 只有文件状态为 done 且响应明确表示失败时才过滤
           if (file.status === UploadFileStatus.done) {
             // 检查是否有响应且响应明确失败（success === false）
             if (file.response && file.response.success === false) {
-              console.error('文件上传失败:', file.name, file.response);
+              console.error('File upload failed:', file.name, file.response);
               message.error(
                 dict('PC.Components.TestRun.uploadFailed', file.name),
               );
@@ -70,10 +70,10 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
             name, // 最url 地址最后一段作为文件名
             url,
           };
-          console.log('处理后的文件信息:', fileInfo);
+          console.log('Processed file info:', fileInfo);
           return fileInfo;
         });
-      console.log('最终文件列表:', updateFileInfo);
+      console.log('Final file list:', updateFileInfo);
       return updateFileInfo;
     },
     [message],

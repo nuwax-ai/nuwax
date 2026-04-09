@@ -386,11 +386,11 @@ const routes = [
     layout: false,
     routes: [
       {
-        path: 'details/:agentId',
+        path: ':agentId',
         component: '@/pages/OpenApp/AppDetails',
       },
       {
-        path: 'chat/:id/:agentId',
+        path: 'chat/:agentId/:id',
         component: '@/pages/Chat',
       },
       {

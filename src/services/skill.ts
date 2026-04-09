@@ -148,13 +148,13 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`获取文件内容失败: ${response.status}`);
+      throw new Error(`Failed to get file content: ${response.status}`);
     }
 
     // 关键：直接读取文本，避免自动 JSON 解析把超长数字转成 number
     return response.text();
   } catch (error) {
-    console.error('获取文件内容失败: ', error);
+    console.error('Failed to get file content: ', error);
     throw error;
   }
 }

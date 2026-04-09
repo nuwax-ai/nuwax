@@ -294,10 +294,12 @@ export default () => {
         // 如果是从不可见状态恢复，先调用 ensurePod
         if (document.visibilityState === 'visible' && params[0]) {
           try {
-            console.log('[keepalive] 页面可见，调用 apiEnsurePod 确保容器运行');
+            console.log(
+              '[keepalive] Page visible, calling apiEnsurePod to ensure container running',
+            );
             await apiEnsurePod(params[0]);
           } catch (error) {
-            console.error('[keepalive] apiEnsurePod 失败:', error);
+            console.error('[keepalive] apiEnsurePod failed:', error);
           }
         }
       },
@@ -319,7 +321,7 @@ export default () => {
         runKeepalivePodPolling(cId);
       }
     } catch (error) {
-      console.error('打开远程桌面视图失败', error);
+      console.error('Failed to open remote desktop view', error);
     }
   }, []);
 
@@ -492,7 +494,7 @@ export default () => {
             });
           }
         } catch (error) {
-          console.error('更新会话主题失败:', error);
+          console.error('Failed to update session theme:', error);
           // 更新失败时重置标志，允许下次重试
           needUpdateTopicRef.current = true;
         }
@@ -613,7 +615,7 @@ export default () => {
         }
       }
     } catch (error) {
-      console.error('加载更多消息失败:', error);
+      console.error('Failed to load more messages:', error);
     } finally {
       setLoadingMore(false);
     }

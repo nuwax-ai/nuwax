@@ -80,7 +80,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
         );
       }
     } catch (error) {
-      console.error('上传文件出错:', error);
+      console.error('Upload file error:', error);
       setUploading(false);
     }
   };

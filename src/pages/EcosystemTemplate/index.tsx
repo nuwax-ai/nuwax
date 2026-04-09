@@ -230,7 +230,7 @@ export default function EcosystemTemplate() {
         const result = await getClientConfigList(params);
         setPluginData(result);
       } catch (error) {
-        console.error('获取模板列表失败:', error);
+        console.error('Failed to get template list:', error);
         message.error(dict('PC.Pages.EcosystemTemplate.fetchListFailed'));
       } finally {
         setLoading(false);
@@ -501,7 +501,7 @@ export default function EcosystemTemplate() {
         return false;
       }
     } catch (error) {
-      console.error('保存分享失败:', error);
+      console.error('Failed to save sharing:', error);
       return false;
     }
   };
@@ -562,7 +562,7 @@ export default function EcosystemTemplate() {
         setPluginData(response);
       }
     } catch (error) {
-      console.error('获取数据失败:', error);
+      console.error('Failed to get data:', error);
       message.error(dict('PC.Pages.EcosystemTemplate.fetchDataFailed'));
     } finally {
       setLoading(false);

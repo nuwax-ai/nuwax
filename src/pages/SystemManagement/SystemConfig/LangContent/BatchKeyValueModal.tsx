@@ -7,7 +7,6 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
 interface BatchKeyValueModalProps {
-  side: string;
   lang: string;
   open: boolean;
   onCancel: () => void;
@@ -18,7 +17,7 @@ interface BatchKeyValueModalProps {
 const DefaultBatchCode = `
 /**
  * 批量新增或更新键值对
- * 格式：{ "key": "value" }
+ * JSON格式：{ "key": "value" }
  * key格式："端.模块.页面.组件.文本key", 文本key为小驼峰，其他为大驼峰
  * 注意：key值必须要由点号（.）分割，由英文大写字母开头，可以使用英文大写字母、下划线（_）、点号（.）组成，不能使用中文、特殊字符等
  * 示例：
@@ -34,7 +33,6 @@ const DefaultBatchCode = `
  * 批量新增或更新键值对弹窗
  */
 const BatchKeyValueModal: React.FC<BatchKeyValueModalProps> = ({
-  side,
   lang,
   open,
   onCancel,
@@ -95,7 +93,6 @@ const BatchKeyValueModal: React.FC<BatchKeyValueModalProps> = ({
     const payload = Object.entries(parsed as Record<string, string>).map(
       ([key, value]) =>
         ({
-          side,
           lang,
           key,
           value: typeof value === 'string' ? value : JSON.stringify(value),

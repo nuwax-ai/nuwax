@@ -230,7 +230,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('保存权限失败:', error); // keep Chinese in console
+      console.error('Failed to save permissions:', error); // keep Chinese in console
     } finally {
       setSaveLoading(false);
     }

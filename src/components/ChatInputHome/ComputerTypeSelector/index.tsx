@@ -97,7 +97,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
         initializedRef.current = true;
       }
     } catch (error) {
-      console.error('获取电脑列表失败:', error);
+      console.error('Failed to get computer list:', error);
     } finally {
       setLoading(false);
     }
@@ -232,7 +232,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
           try {
             await apiSaveSelectedSandbox(agentId, option.id);
           } catch (error) {
-            console.error('保存电脑选择失败:', error);
+            console.error('Failed to save computer selection:', error);
             // 保存失败时可以考虑回滚本地映射，但暂时不处理
           }
         }

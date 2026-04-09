@@ -33,7 +33,7 @@ const extractTableCell = (cellNode: any): string => {
     // 清理内容，移除多余的空白字符
     return content.replace(/\s+/g, ' ').trim();
   } catch (error) {
-    console.warn('提取表格单元格内容失败:', error);
+    console.warn('Failed to extract table cell content:', error);
     return '';
   }
 };
@@ -78,7 +78,7 @@ const extractTableRow = (rowNode: any): string => {
 
     return '';
   } catch (error) {
-    console.warn('提取表格行内容失败:', error);
+    console.warn('Failed to extract table row content:', error);
     return '';
   }
 };
@@ -114,7 +114,7 @@ const extractTableSection = (sectionNode: any): string[] => {
 
     return rows;
   } catch (error) {
-    console.warn('提取表格区域内容失败:', error);
+    console.warn('Failed to extract table area content:', error);
     return [];
   }
 };
@@ -193,7 +193,7 @@ const extractTableToMarkdown = (tableChildren: React.ReactNode): string => {
 
     return '';
   } catch (error) {
-    console.warn('提取表格内容失败:', error);
+    console.warn('Failed to extract table content:', error);
     return '';
   }
 };

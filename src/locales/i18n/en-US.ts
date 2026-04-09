@@ -2688,7 +2688,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa': 'Add QA',
   'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean': 'Auto Segment & Clean',
   'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc':
-    'Auto segmentation and preprocessing rules',
+    'Automatic segmentation and preprocessing rules',
+  'PC.Pages.SpaceKnowledge.CreateSet.isAiSegment': 'Intelligent Segmentation',
+  'PC.Pages.SpaceKnowledge.CreateSet.aiSegmentDesc':
+    'Intelligently identify document structure based on AI model, automatically optimize segmentation effect',
   'PC.Pages.SpaceKnowledge.CreateSet.custom': 'Custom',
   'PC.Pages.SpaceKnowledge.CreateSet.customDesc':
     'Custom segmentation rules, segment length and preprocessing rules',
@@ -5920,4 +5923,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemContentKnowledgeBase.accessControlOn': 'On',
   'PC.Pages.SystemContentKnowledgeBase.accessControlOff': 'Off',
   'PC.Pages.SystemContentKnowledgeBase.grantAuth': 'Grant Auth',
+  'PC.Pages.AntvX6RunResult.onlyError': 'Only Errors',
+  'PC.Pages.Chat.clearAndCreateFailed': 'Failed to clear and create',
+  'PC.Pages.Chat.createConversationFailed': 'Failed to create conversation',
+  'PC.Pages.Chat.pagePreview': 'Page Preview',
 };

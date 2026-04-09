@@ -132,7 +132,7 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
   // 处理标签点击
   const handleTabChange = useCallback(
     (activeKey: string) => {
-      console.log(`🎯 Tab点击事件: ${activeKey}`);
+      console.log(`🎯 Tab click event: ${activeKey}`);
       onTabClick(activeKey);
     },
     [onTabClick],

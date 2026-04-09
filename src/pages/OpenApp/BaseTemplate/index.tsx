@@ -99,7 +99,7 @@ const BaseTemplate: React.FC = () => {
 
   // 会话跳转
   const handleLink = (id: number, agentId: number) => {
-    history.push(`/app/chat/${id}/${agentId}`);
+    history.push(`/app/chat/${agentId}/${id}`);
   };
 
   /**

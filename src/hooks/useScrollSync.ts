@@ -77,7 +77,7 @@ export const useScrollSync = ({
    */
   const handleTabClick = useCallback(
     (type: string) => {
-      console.log(`🎯 标签点击：导航到 ${type}`);
+      console.log(`🎯 Tab click: navigating to ${type}`);
 
       // 标记为程序化滚动，避免在滚动过程中触发tab切换
       setIsProgrammaticScroll(true);
@@ -143,7 +143,9 @@ export const useScrollSync = ({
 
           // 只有当需要切换时才调用onTabClick，避免不必要的更新
           if (targetActive && targetActive !== activeTab) {
-            console.log(`🔄 滚动同步：自动切换到标签 ${targetActive}`);
+            console.log(
+              `🔄 Scroll sync: auto switching to tab ${targetActive}`,
+            );
             onTabClick(targetActive);
           }
         }

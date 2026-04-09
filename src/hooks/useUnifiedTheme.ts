@@ -114,7 +114,7 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
         try {
           await updateFn(...args);
         } catch (error) {
-          console.error('主题更新失败:', error);
+          console.error('Theme update failed:', error);
           setIsLoading(false);
           throw error;
         }

@@ -11,7 +11,7 @@ const HistoryConversation: React.FC = () => {
 
   // 跳转会话聊天页
   const handleLink = (id: number, agentId: number) => {
-    history.push(`/app/chat/${id}/${agentId}`);
+    history.push(`/app/chat/${agentId}/${id}`);
   };
 
   return <HistoryConversationList agentId={agentId} onClickLink={handleLink} />;

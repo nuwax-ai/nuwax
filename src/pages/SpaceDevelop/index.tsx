@@ -374,11 +374,11 @@ const SpaceDevelop: React.FC = () => {
         // 之所以使用try catch，是因为navigator.clipboard.writeText在某些浏览器或NuwaClaw中可能不支持
         try {
           // 这里实现复制路径到浏览器地址栏
-          const path = `${location.origin}/app/details/${agentInfo.id}`;
+          const path = `${location.origin}/app/${agentInfo.id}`;
           navigator.clipboard.writeText(path);
           message.success('已复制独立会话路径');
         } catch (error) {
-          console.error('复制独立会话路径失败:', error);
+          console.error('Failed to copy independent session path:', error);
           message.error('复制独立会话路径失败');
         }
         break;

@@ -64,7 +64,7 @@ const TaskResult: React.FC<TaskResultProps> = ({
        * conversationId: 1465924
        * fileId: workspace/2025-financial-statistics.pptx
        */
-      console.log('点击会话中TaskResult事件处理: ', fileName);
+      console.log('Processing TaskResult event in session: ', fileName);
       let fileId = fileName.split(`${conversationId}/`).pop();
 
       // 当点击的是文件夹时，如果文件ID以 / 结尾，则去掉 /

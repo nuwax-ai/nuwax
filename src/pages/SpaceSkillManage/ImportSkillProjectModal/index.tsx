@@ -87,7 +87,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       setLoading(true);
       await onConfirm(file);
     } catch (error) {
-      console.error('处理文件导入失败', error);
+      console.error('Failed to process file import', error);
     } finally {
       setLoading(false);
     }

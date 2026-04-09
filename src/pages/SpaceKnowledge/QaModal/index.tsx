@@ -37,7 +37,7 @@ const QaModal: React.FC<QaModalProps> = ({
       const values = await form.validateFields();
       await onConfirm({ ...values, id: data?.id });
     } catch (error) {
-      console.error('表单验证失败:', error);
+      console.error('Form validation failed:', error);
     } finally {
       setLoading(false);
     }

@@ -112,9 +112,9 @@ export default defineConfig({
 							// 若带 conversationId 则跳转到 PC 应用会话详情页，否则跳转到应用智能体详情页
 							if (matchConversationId && matchConversationId[1]) {
 								const conversationId = matchConversationId[1];
-								window.location.replace(baseUrl + '/app/chat/' + conversationId + '/' + agentId);
+								window.location.replace(baseUrl + '/app/chat/' + agentId + '/' + conversationId);
 							} else {
-								window.location.replace(baseUrl + '/app/details/' + agentId);
+								window.location.replace(baseUrl + '/app/' + agentId);
 							}
 							return;
 						}
@@ -144,7 +144,7 @@ export default defineConfig({
 					}
 
           // 应用详情页
-          const matchAppDetails = href.match(new RegExp('/app/details/([^/?#]+)'));
+          const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
           if (matchAppDetails) {
             replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
             window.location.replace(replaceUrl);
@@ -154,8 +154,8 @@ export default defineConfig({
           // 应用会话页
           const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
           if (matchAppChat) {
-            const conversationId = matchAppChat[1];
-            const agentId = matchAppChat[2];
+            const agentId = matchAppChat[1];
+            const conversationId = matchAppChat[2];
             replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
             window.location.replace(replaceUrl);
             return;

@@ -74,7 +74,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
         showMessage,
       );
     } catch (error) {
-      console.error('复制失败:', error);
+      console.error('Copy failed:', error);
       if (onCopy) {
         onCopy('', false);
       }

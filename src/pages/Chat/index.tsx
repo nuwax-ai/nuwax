@@ -679,10 +679,10 @@ const Chat: React.FC = () => {
         // 应用智能体模式下，跳转到应用智能体会话页面
         if (isAppSidebarMode) {
           // 会话发起后跳转的页面URL
-          const conversationUrl = '/app/chat/:id/:agentId';
+          const conversationUrl = '/app/chat/:agentId/:id';
           url = conversationUrl
-            .replace(':id', newConversationId?.toString() || '')
-            .replace(':agentId', newAgentId.toString());
+            .replace(':agentId', newAgentId.toString())
+            .replace(':id', newConversationId?.toString() || '');
         } else {
           url = `/home/chat/${newConversationId}/${newAgentId}`;
           // 如果是通用型智能体，则隐藏菜单

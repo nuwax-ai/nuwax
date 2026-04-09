@@ -394,7 +394,7 @@ const LogProTable: React.FC = () => {
         return { data: records, total, success: true };
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.error('查询日志失败', e);
+        console.error('Failed to query log', e);
         return { data: [], total: 0, success: false };
       }
     },

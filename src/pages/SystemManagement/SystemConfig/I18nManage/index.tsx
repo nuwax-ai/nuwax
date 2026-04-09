@@ -23,7 +23,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Space, Switch, Table, Tooltip } from 'antd';
+import { Button, message, Space, Switch, Table, Tooltip } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -53,7 +53,20 @@ const I18nManage: React.FC = () => {
 
   // 查看语言
   const handleView = (record: I18nLangDto) => {
-    history.push(`/system/config/lang-content/${record.lang}`);
+    const defaultLang = langList?.find(
+      (item) => item.isDefault === I18nLangIsDefaultEnum.Yes,
+    )?.lang;
+    if (defaultLang) {
+      if (record.lang === defaultLang) {
+        history.push(`/system/config/lang-content/${record.lang}`);
+      } else {
+        history.push(
+          `/system/config/lang-content/${record.lang}?defaultLang=${defaultLang}`,
+        );
+      }
+    } else {
+      message.warning('当前没有默认语言，请先设置默认语言');
+    }
   };
 
   // 编辑语言

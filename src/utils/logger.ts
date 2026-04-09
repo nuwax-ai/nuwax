@@ -83,11 +83,11 @@ if (isDev && typeof window !== 'undefined') {
   (window as any).__xagi_logger = {
     enable: () => {
       localStorage.removeItem('disableLogger');
-      console.log('日志已启用');
+      console.log('Log enabled');
     },
     disable: () => {
       localStorage.setItem('disableLogger', 'true');
-      console.log('日志已禁用');
+      console.log('Log disabled');
     },
   };
 }

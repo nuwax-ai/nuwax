@@ -52,14 +52,17 @@ export const useMessageEventDelegate = ({
         handledEventsRef.current.delete(eventKey);
       }, 3000);
 
-      console.log('[Event Delegate] 触发事件:', { eventType, data: dataStr });
+      console.log('[Event Delegate] Triggering event:', {
+        eventType,
+        data: dataStr,
+      });
 
       // 解析 data
       let parsedData: Record<string, any> = {};
       try {
         parsedData = JSON.parse(dataStr);
       } catch (error) {
-        console.error('[Event Delegate] 数据解析失败:', error);
+        console.error('[Event Delegate] Data parse failure:', error);
         return;
       }
 
@@ -69,11 +72,13 @@ export const useMessageEventDelegate = ({
       );
 
       if (!eventConfig) {
-        console.warn(`[Event Delegate] 未找到事件配置: ${eventType}`);
+        console.warn(
+          `[Event Delegate] Event configuration not found: ${eventType}`,
+        );
         return;
       }
 
-      console.log('[Event Delegate] 找到事件配置:', eventConfig);
+      console.log('[Event Delegate] Event configuration found:', eventConfig);
 
       // 根据配置类型执行相应动作
       switch (eventConfig.type) {
@@ -109,7 +114,7 @@ export const useMessageEventDelegate = ({
               ? `${eventConfig.basePath}${pageUrl}`
               : `${process.env.BASE_URL}${pageUrl}`;
 
-            console.log('[Event Delegate] 打开页面:', {
+            console.log('[Event Delegate] Opening page:', {
               uri: fullUri,
               params,
               name: eventConfig.name,
@@ -141,13 +146,18 @@ export const useMessageEventDelegate = ({
             return;
           }
 
-          console.log('[Event Delegate] 打开外链:', eventConfig.url);
+          console.log(
+            '[Event Delegate] Opening external link:',
+            eventConfig.url,
+          );
           window.open(eventConfig.url, '_blank');
           break;
         }
 
         default:
-          console.warn(`[Event Delegate] 未知的事件类型: ${eventConfig.type}`);
+          console.warn(
+            `[Event Delegate] Unknown event type: ${eventConfig.type}`,
+          );
       }
     },
     [eventBindConfig, showPagePreview],
@@ -180,7 +190,7 @@ export const useMessageEventDelegate = ({
         if (eventType && dataStr) {
           handleEventClick(eventType, dataStr);
         } else {
-          console.warn('[Event Delegate] 缺少必要的属性:', {
+          console.warn('[Event Delegate] Missing required properties:', {
             eventType,
             dataStr,
           });
@@ -191,12 +201,12 @@ export const useMessageEventDelegate = ({
     // 添加事件监听器
     container.addEventListener('click', handleClick);
 
-    console.log('[Event Delegate] 事件代理已初始化');
+    console.log('[Event Delegate] Event delegate initialized');
 
     // 清理函数
     return () => {
       container.removeEventListener('click', handleClick);
-      console.log('[Event Delegate] 事件代理已清理');
+      console.log('[Event Delegate] Event delegate cleaned up');
     };
   }, [containerRef, handleEventClick]);
 

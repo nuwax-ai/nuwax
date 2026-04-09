@@ -76,7 +76,7 @@ export async function createSSEConnection<T = any>(
         if (isAborted) {
           return;
         }
-        console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
+        console.log('🔌 [SSE Utils] Manual abortion of SSE connection');
         // 清除共享定时器
         markAborted();
         safeOnClose();
@@ -158,9 +158,9 @@ export async function createSSEConnection<T = any>(
 
       onopen: async (response) => {
         if (response.status >= 400) {
-          throw new Error(`SSE连接失败: ${response.statusText}`);
+          throw new Error(`SSE connection failed: ${response.statusText}`);
         }
-        console.log('✅ [SSE Utils] SSE 连接已建立');
+        console.log('✅ [SSE Utils] SSE connection established');
         // 连接建立时初始化时间戳并启动超时检查
         lastMessageTimestamp = Date.now();
         startTimeoutCheck();
@@ -181,7 +181,7 @@ export async function createSSEConnection<T = any>(
           // 聊天对话结束标志 completed = true
           if (subType === 'end_turn' || completed === true) {
             console.log(
-              `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接 subType:${subType} completed:${completed}`,
+              `✅ [SSE Utils] Page development or chat finished, disconnecting subType:${subType} completed:${completed}`,
             );
             abortFunction();
           }
@@ -193,7 +193,7 @@ export async function createSSEConnection<T = any>(
       },
 
       onclose: () => {
-        console.log('🔌 [SSE Utils] SSE 连接已关闭');
+        console.log('🔌 [SSE Utils] SSE connection closed');
         // 标记中止，防止重复处理
         if (!isAborted) {
           markAborted();
@@ -213,7 +213,7 @@ export async function createSSEConnection<T = any>(
         if (isAborted) {
           return;
         }
-        console.error('❌ [SSE Utils] SSE 连接错误:', error);
+        console.error('❌ [SSE Utils] SSE connection error:', error);
         markAborted();
         options.onError?.(error);
         controller.abort();
@@ -223,7 +223,7 @@ export async function createSSEConnection<T = any>(
   } catch (error) {
     const normalized =
       error instanceof Error ? error : new Error(String(error));
-    console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
+    console.error('❌ [SSE Utils] SSE connection anomaly:', normalized);
     markAborted();
     options.onError?.(normalized);
   }

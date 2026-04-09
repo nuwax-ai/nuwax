@@ -95,7 +95,7 @@ export default function useMenuModel() {
           initializedRef.current = true;
         }
       } catch (error) {
-        console.error('加载菜单数据失败:', error);
+        console.error('Failed to load menu data:', error);
       } finally {
         setLoading(false);
       }

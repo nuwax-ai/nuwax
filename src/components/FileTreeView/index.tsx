@@ -319,12 +319,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   : prevNode,
               );
             } catch (error) {
-              console.error('刷新文件内容失败: ', error);
+              console.error('Failed to refresh file content: ', error);
             }
           }
         }
       } catch (error) {
-        console.error('刷新文件树失败: ', error);
+        console.error('Failed to refresh file tree: ', error);
       } finally {
         setIsRefreshingFileTree(false);
       }
@@ -911,7 +911,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             setIsUploadingFiles(false);
           }, 1000);
         } catch (error) {
-          console.error('上传文件失败', error);
+          console.error('Failed to upload file', error);
           setIsUploadingFiles(false);
         } finally {
           document.body.removeChild(input);
@@ -1207,7 +1207,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 : prevNode,
             );
           } catch (error) {
-            console.error('切换预览模式时刷新文件内容失败: ', error);
+            console.error(
+              'Failed to refresh file content when switching preview mode: ',
+              error,
+            );
           }
         }
       }
@@ -1307,7 +1310,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setCurrentDownloadingFileId('');
         }, 1000);
       } catch (error) {
-        console.error('下载文件失败', error);
+        console.error('Failed to download file', error);
         setIsDownloadingFile(false);
         setCurrentDownloadingFileId('');
       }

@@ -21,7 +21,9 @@ export class StyleInitializer {
     forceDefault: boolean = false,
   ): Promise<void> {
     try {
-      console.log(`${context}，开始初始化 layout navigation CSS 变量`);
+      console.log(
+        `${context}, starting to initialize layout navigation CSS variables`,
+      );
 
       // 如果强制使用默认配置，或者没有已保存的样式配置
       const hasStyleConfig =
@@ -38,20 +40,25 @@ export class StyleInitializer {
             immediate: true,
           });
           const configKey = `${currentData.layoutStyle}-${currentData.navigationStyle}`;
-          console.log(`${context}：重新应用已保存的样式配置:`, configKey);
+          console.log(
+            `${context}: re-applying saved style configuration:`,
+            configKey,
+          );
         } catch (configError) {
           console.warn(
-            `${context}：应用已保存的样式配置失败，回退到默认配置:`,
+            `${context}: failed to apply saved style config, falling back to default:`,
             configError,
           );
           await StyleInitializer.applyDefaultStyleWithFallback(context);
         }
       }
 
-      console.log(`${context}：layout navigation CSS 变量初始化完成`);
+      console.log(
+        `${context}: layout navigation CSS variables initialization completed`,
+      );
     } catch (error) {
       console.error(
-        `${context}：初始化 layout navigation CSS 变量失败:`,
+        `${context}: failed to initialize layout navigation CSS variables:`,
         error,
       );
       // 最终兜底方案
@@ -71,9 +78,14 @@ export class StyleInitializer {
       const defaultConfigKey = `${DEFAULT_THEME_CONFIG.LAYOUT_STYLE}-${DEFAULT_THEME_CONFIG.NAVIGATION_STYLE}`;
       // 使用统一主题服务应用默认配置
       await unifiedThemeService.resetToDefault();
-      console.log(`${context}：使用默认样式配置: ${defaultConfigKey}`);
+      console.log(
+        `${context}: using default style config: ${defaultConfigKey}`,
+      );
     } catch (fallbackError) {
-      console.error(`${context}：应用默认样式配置失败:`, fallbackError);
+      console.error(
+        `${context}: failed to apply default style config:`,
+        fallbackError,
+      );
       // 最后的兜底方案：直接设置 CSS 变量
       this.setFallbackCSSVariables(context);
     }
@@ -159,10 +171,10 @@ export class StyleInitializer {
       document.body.classList.add('xagi-layout-light', 'xagi-nav-style1');
 
       console.log(
-        `${context}：已应用兜底 CSS 变量配置（包含主题色、导航栏风格、深浅色、背景图）`,
+        `${context}: fallback CSS variable configuration applied (includes theme color, navbar style, theme mode, background image)`,
       );
     } catch (error) {
-      console.error(`${context}：设置兜底 CSS 变量失败:`, error);
+      console.error(`${context}: failed to set fallback CSS variables:`, error);
     }
   }
 
@@ -195,9 +207,9 @@ export class StyleInitializer {
     try {
       // 使用统一主题服务应用默认样式
       await unifiedThemeService.resetToDefault();
-      console.log('已应用默认样式配置: light-style1');
+      console.log('Default style configuration applied: light-style1');
     } catch (error) {
-      console.error('应用默认样式配置失败:', error);
+      console.error('Failed to apply default style configuration:', error);
     }
   }
 
@@ -209,7 +221,9 @@ export class StyleInitializer {
   static async initializeWithFallback(
     context: string = '接口失败',
   ): Promise<void> {
-    console.log(`${context}，使用兜底方案初始化 layout navigation CSS 变量`);
+    console.log(
+      `${context}, using fallback plan to initialize layout navigation CSS variables`,
+    );
     await this.initializeLayoutStyle?.(context, true); // 强制使用默认配置
   }
 }

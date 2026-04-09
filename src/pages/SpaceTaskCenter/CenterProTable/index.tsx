@@ -177,7 +177,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
             return list;
           } catch (e) {
             // eslint-disable-next-line no-console
-            console.error('查询任务列表失败', e);
+            console.error('Failed to query task list', e);
             cacheRef.current = { spaceId: sid, list: [] };
             return [];
           } finally {

@@ -175,7 +175,7 @@ export default function EcosystemPlugin() {
         const result = await getClientConfigList(params);
         setPluginData(result);
       } catch (error) {
-        console.error('获取插件列表失败:', error);
+        console.error('Failed to get plugin list:', error);
         message.error(dict('PC.Pages.EcosystemPlugin.fetchListFailed'));
       } finally {
         setLoading(false);
@@ -391,7 +391,7 @@ export default function EcosystemPlugin() {
         return false;
       }
     } catch (error) {
-      console.error('保存分享失败:', error);
+      console.error('Failed to save sharing:', error);
       message.error(dict('PC.Pages.EcosystemPlugin.operationFailed'));
       return false;
     }
@@ -429,7 +429,7 @@ export default function EcosystemPlugin() {
         setPluginData(response);
       }
     } catch (error) {
-      console.error('获取数据失败:', error);
+      console.error('Failed to get data:', error);
       message.error(dict('PC.Pages.EcosystemPlugin.fetchDataFailed'));
     } finally {
       setLoading(false);

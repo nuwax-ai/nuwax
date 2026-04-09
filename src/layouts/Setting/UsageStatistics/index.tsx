@@ -136,7 +136,7 @@ const UsageStatistics: React.FC = () => {
         success: true,
       };
     } catch (error) {
-      console.error('获取用量统计失败:', error);
+      console.error('Failed to get usage statistics:', error);
       return {
         data: [] as UsageTableItem[],
         success: false,

@@ -87,7 +87,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
                     <p className="error-node-name">
                       {node.name || t('PC.Pages.AntvX6ErrorList.empty')}
                     </p>
-                    {item.error.length > 110 ? (
+                    {(item.error || '').length > 110 ? (
                       <Popover
                         content={<p>{getDisplayErrorContent(item.error)}</p>} // Popover 内容 超出 500 字符时 支持截断
                         trigger="hover" // 鼠标悬停触发
@@ -98,16 +98,19 @@ const ErrorList: React.FC<ErrorListProps> = ({
                         <p className="error-text">{item.error}</p>
                       </Popover>
                     ) : (
-                      <p className="error-text">{item.error}</p>
+                      <p className="error-text">{item.error || 'null'}</p>
                     )}
                   </div>
                 </div>
               );
             } else {
-              if (item) {
+              if (item && item.error) {
                 return (
-                  <div className="dis-left error-list-item" key={item.error}>
-                    {item.error.length > 3000 ? (
+                  <div
+                    className="dis-left error-list-item"
+                    key={item.error || item.nodeId || Math.random()}
+                  >
+                    {(item.error || '').length > 3000 ? (
                       <Popover
                         content={<p>{item.error}</p>} // Popover 内容
                         trigger="hover" // 鼠标悬停触发

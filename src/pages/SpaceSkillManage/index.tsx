@@ -95,7 +95,7 @@ const SpaceSkillManage: React.FC = () => {
 
   // 复制到空间
   const handleClickCopyToSpace = (info: SkillInfo) => {
-    console.log('复制到空间', info);
+    console.log('Copy to space', info);
     setOpenMove(true);
     setCurrentComponentInfo(info);
   };

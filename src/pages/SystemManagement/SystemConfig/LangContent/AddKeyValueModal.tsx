@@ -1,7 +1,8 @@
+import CustomFormModal from '@/components/CustomFormModal';
 import { apiI18nConfigAddOrUpdate } from '@/services/i18n';
 import type { I18nSlideLangInfo } from '@/types/interfaces/i18n';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, Modal, message } from 'antd';
+import { Form, Input, message } from 'antd';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
 
@@ -12,8 +13,6 @@ interface AddKeyValueModalProps {
   currentItem?: I18nSlideLangInfo | null;
   // 语言
   lang: string;
-  // 端
-  side: string;
   // 取消回调
   onCancel: () => void;
   onSuccess: () => void;
@@ -26,13 +25,12 @@ interface AddKeyValueFormValues {
 }
 
 /**
- * 添加键值对弹窗
+ * 新增或编辑键值对弹窗
  */
 const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
   open,
   currentItem,
   lang,
-  side,
   onCancel,
   onSuccess,
 }) => {
@@ -73,22 +71,20 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
     const keyText = values.key.trim();
     await runAddOrUpdate({
       ...values,
-      side,
       lang,
       key: keyText,
     });
   };
 
   return (
-    <Modal
-      title={isEdit ? '编辑键值对' : '添加键值对'}
+    <CustomFormModal
+      form={form}
+      title={isEdit ? '编辑键值对' : '新增键值对'}
       open={open}
       onCancel={onCancel}
-      onOk={handleOk}
+      onConfirm={handleOk}
       okText={isEdit ? '更新' : '添加'}
-      cancelText="取消"
-      confirmLoading={loading}
-      destroyOnHidden
+      loading={loading}
     >
       <Form form={form} layout="vertical" requiredMark={customizeRequiredMark}>
         <Form.Item
@@ -96,7 +92,7 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
           name="key"
           rules={[{ required: true, message: '请输入 Key' }]}
         >
-          <Input placeholder="例如：PC.User.submit" />
+          <Input placeholder="例如：PC.User.submit" disabled={isEdit} />
         </Form.Item>
         <Form.Item
           label="文本内容"
@@ -112,7 +108,7 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </CustomFormModal>
   );
 };
 

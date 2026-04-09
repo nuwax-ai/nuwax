@@ -2426,6 +2426,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean': '自动分段与清洗',
   'PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc':
     '自动分段与预处理规则',
+  'PC.Pages.SpaceKnowledge.CreateSet.isAiSegment': '智能分段',
+  'PC.Pages.SpaceKnowledge.CreateSet.aiSegmentDesc':
+    '基于AI模型智能识别文档结构，自动优化分段效果',
   'PC.Pages.SpaceKnowledge.CreateSet.custom': '自定义',
   'PC.Pages.SpaceKnowledge.CreateSet.customDesc':
     '自定义分段规则，分段长度及预处理规则',
@@ -5382,4 +5385,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemContentKnowledgeBase.accessControlOn': '开启',
   'PC.Pages.SystemContentKnowledgeBase.accessControlOff': '关闭',
   'PC.Pages.SystemContentKnowledgeBase.grantAuth': '授权',
+  'PC.Pages.AntvX6RunResult.onlyError': '只看错误',
+  'PC.Pages.Chat.clearAndCreateFailed': '清除并创建失败',
+  'PC.Pages.Chat.createConversationFailed': '创建会话失败',
+  'PC.Pages.Chat.pagePreview': '页面预览',
 };

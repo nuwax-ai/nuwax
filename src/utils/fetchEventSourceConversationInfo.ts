@@ -73,13 +73,15 @@ export function createSSEConnection<T = any>(
   const abortFunction = () => {
     if (!isAborted) {
       // 立即清除定时器并中断连接，防止页面切换后继续接收数据
-      console.log('🔌 [SSE Utils] 准备中止 SSE 连接，立即清除定时器并中断连接');
+      console.log(
+        '🔌 [SSE Utils] Preparing to abort SSE connection, clearing timers and interrupting connection',
+      );
       markAborted();
       controller.abort(); // 立即中断连接，停止数据传输
 
       // 延迟调用 onClose，避免状态更新问题
       setTimeout(() => {
-        console.log('🔌 [SSE Utils] 执行 onClose 回调');
+        console.log('🔌 [SSE Utils] Executing onClose callback');
         safeOnClose();
       }, 500);
     }
@@ -165,7 +167,7 @@ export function createSSEConnection<T = any>(
               }`,
             );
           }
-          console.log('✅ [SSE Utils] SSE 连接已建立');
+          console.log('✅ [SSE Utils] SSE connection established');
           // 连接建立时初始化时间戳并启动超时检查
           lastMessageTimestamp = Date.now();
           startTimeoutCheck();
@@ -186,7 +188,7 @@ export function createSSEConnection<T = any>(
             // 聊天对话结束标志 completed = true
             if (subType === 'end_turn' || completed === true) {
               console.log(
-                `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接 subType:${subType} completed:${completed}`,
+                `✅ [SSE Utils] Page development or chat finished, disconnecting subType:${subType} completed:${completed}`,
               );
               abortFunction();
             }
@@ -198,7 +200,7 @@ export function createSSEConnection<T = any>(
         },
 
         onclose: () => {
-          console.log('🔌 [SSE Utils] SSE 连接已关闭');
+          console.log('🔌 [SSE Utils] SSE connection closed');
           // 标记中止，防止重复处理
           if (!isAborted) {
             markAborted();
@@ -218,7 +220,7 @@ export function createSSEConnection<T = any>(
           if (isAborted) {
             return;
           }
-          console.error('❌ [SSE Utils] SSE 连接错误:', error);
+          console.error('❌ [SSE Utils] SSE connection error:', error);
           markAborted();
           options.onError?.(error);
           controller.abort();
@@ -228,7 +230,7 @@ export function createSSEConnection<T = any>(
     } catch (error) {
       const normalized =
         error instanceof Error ? error : new Error(String(error));
-      console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
+      console.error('❌ [SSE Utils] SSE connection anomaly:', normalized);
       markAborted();
       options.onError?.(normalized);
     }

@@ -87,7 +87,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       await updatePrimaryColor(color);
       setHasUserSwitchThemeFlag();
     } catch (error) {
-      console.error('更新主题色失败:', error);
+      console.error('Failed to update theme color:', error);
       message.error(
         dict('PC.Layouts.Setting.ThemeSwitchPanel.colorUpdateFailed'),
       );
@@ -116,7 +116,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         setHasUserSwitchThemeFlag();
       }
     } catch (error) {
-      console.error('更新背景图失败:', error);
+      console.error('Failed to update background image:', error);
       message.error(
         dict('PC.Layouts.Setting.ThemeSwitchPanel.backgroundUpdateFailed'),
       );
@@ -129,7 +129,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       await updateNavigationStyle(styleId as any);
       setHasUserSwitchThemeFlag();
     } catch (error) {
-      console.error('更新导航风格失败:', error);
+      console.error('Failed to update navigation style:', error);
       message.error(
         dict('PC.Layouts.Setting.ThemeSwitchPanel.navStyleUpdateFailed'),
       );
@@ -157,7 +157,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
           try {
             await updateBackground(matchingBackground.id);
           } catch (error) {
-            console.warn('预览背景图失败:', error);
+            console.warn('Failed to preview background image:', error);
           }
 
           // 显示背景自动匹配提示
@@ -176,7 +176,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         }
       }
     } catch (error) {
-      console.error('切换导航主题失败:', error);
+      console.error('Failed to switch navigation theme:', error);
       message.error(
         dict('PC.Layouts.Setting.ThemeSwitchPanel.navThemeToggleFailed'),
       );

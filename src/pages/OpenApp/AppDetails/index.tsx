@@ -11,7 +11,7 @@ const AppDetails: React.FC = () => {
   const agentId = Number(params.agentId);
 
   // 会话发起后跳转的页面URL
-  const conversationUrl = '/app/chat/:id/:agentId';
+  const conversationUrl = '/app/chat/:agentId/:id';
 
   return (
     <ConversationDetails agentId={agentId} conversationUrl={conversationUrl} />

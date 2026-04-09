@@ -118,7 +118,7 @@ export default function useEventPolling(): React.ReactElement | null {
 
         // 如果已经在处理事件，则跳过本次回调
         if (isProcessingRef.current) {
-          console.log('跳过重复的事件处理');
+          console.log('Skipping duplicate event processing');
           return;
         }
 
@@ -138,7 +138,7 @@ export default function useEventPolling(): React.ReactElement | null {
             // 事件处理完后清除
             await apiClearEvent();
           } catch (error) {
-            console.error('处理事件时出错:', error);
+            console.error('Error processing event:', error);
           } finally {
             // 重新开始轮询
             startPolling();

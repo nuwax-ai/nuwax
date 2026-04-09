@@ -100,7 +100,7 @@ const AuthWithLoading: React.FC = () => {
         }
       } catch (error) {
         console.timeLog('authWithLoading', 'catch', error);
-        console.error('验证登录状态失败:', error);
+        console.error('Failed to verify login status:', error);
 
         // 清除可能存在的无效缓存
         clearLoginStatusCache();

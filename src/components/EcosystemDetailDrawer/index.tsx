@@ -56,7 +56,7 @@ const safeParseJSON = <T,>(jsonString: string, defaultValue: T): T => {
   try {
     return JSON.parse(jsonString);
   } catch (error) {
-    console.error('JSON解析失败:', error);
+    console.error('JSON parse failure:', error);
     return defaultValue;
   }
 };
@@ -265,7 +265,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
       try {
         return await onUpdateAndEnable?.([], JSON.stringify(configJson));
       } catch (error) {
-        console.error('更新MCP配置失败:', error);
+        console.error('Failed to update MCP configuration:', error);
         return false;
       }
     }
@@ -285,7 +285,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
         }));
         return await onUpdateAndEnable?.(updatedConfigParam);
       } catch (error) {
-        console.error('更新配置参数失败:', error);
+        console.error('Failed to update configuration parameters:', error);
         return false;
       }
     }

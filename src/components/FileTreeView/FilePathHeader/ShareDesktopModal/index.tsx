@@ -188,7 +188,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         return false; // 返回 false 保持弹窗打开
       }
     } catch (error) {
-      console.error('分享远程桌面失败:', error);
+      console.error('Failed to share remote desktop:', error);
       message.error(dict('PC.Components.ShareDesktopModal.shareFailedRetry'));
       return false;
     }
@@ -233,7 +233,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         return false;
       }
     } catch (error) {
-      console.error('分享文件失败:', error);
+      console.error('Failed to share file:', error);
       message.error(dict('PC.Components.ShareDesktopModal.shareFailedRetry'));
       return false;
     }

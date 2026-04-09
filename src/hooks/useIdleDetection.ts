@@ -113,7 +113,7 @@ const ACTIVITY_EVENTS = [
  *   idleTimeoutMs: 60 * 60 * 1000, // 60分钟
  *   enabled: true,
  *   onIdle: () => {
- *     console.log('用户已空闲');
+ *     console.log('User is idle');
  *   },
  * });
  * ```

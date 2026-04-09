@@ -14,7 +14,7 @@ const useOpenApp = () => {
   useLayoutEffect(() => {
     if (
       location.pathname.startsWith('/app/chat/') ||
-      location.pathname.startsWith('/app/details/')
+      location.pathname.startsWith('/app/')
     ) {
       setIsAppSidebarMode(true);
     } else {
@@ -34,7 +34,7 @@ const useOpenApp = () => {
 
   // 创建应用智能体新会话
   const createAppNewConversation = (agentId: number) => {
-    history.push(`/app/details/${agentId}`);
+    history.push(`/app/${agentId}`);
   };
 
   return {

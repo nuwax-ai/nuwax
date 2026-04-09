@@ -21,7 +21,7 @@ export default () => {
 
       // 如果 result 为 null，走错误处理逻辑
       if (!result) {
-        console.warn('租户配置接口返回空数据');
+        console.warn('Tenant configuration interface returned empty data');
         await initializeWithFallback('租户配置为空');
         return;
       }
@@ -76,10 +76,12 @@ export default () => {
           );
           // console.log('已同步租户主题配置（本地无配置）:', templateConfig);
         } catch (error) {
-          console.warn('同步租户主题颜色失败:', error);
+          console.warn('Failed to sync tenant theme color:', error);
         }
       } else if (hasLocalThemeConfig) {
-        console.log('检测到本地主题配置，跳过租户配置同步');
+        console.log(
+          'Local theme configuration detected, skipping tenant configuration sync',
+        );
         unifiedThemeService.updateData(null, { immediate: true });
       }
     },

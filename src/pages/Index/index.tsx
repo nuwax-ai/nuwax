@@ -56,7 +56,9 @@ const Index: React.FC = () => {
         history.replace(firstPathMenu.path);
       }
     } else {
-      console.log('第一级菜单以及其子菜单都没有设置path路径');
+      console.log(
+        'Neither the first-level menu nor its submenus have a path set',
+      );
     }
   };
 

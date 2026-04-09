@@ -112,7 +112,7 @@ export const fillPathParams = (
 ): string => {
   return template.replace(/{(\w+)}/g, (_, key) => {
     if (params[key] === undefined) {
-      throw new Error(`缺少路径参数: ${key}`);
+      throw new Error(`Missing path parameter: ${key}`);
     }
     return String(params[key]);
   });

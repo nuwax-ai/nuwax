@@ -14,6 +14,7 @@ import { ReactComponent as ExportSvgFile } from '@/assets/icons/common/export.sv
 import { ReactComponent as IconFileCopySvgFile } from '@/assets/icons/common/file_copy.svg';
 import { ReactComponent as IconFilePreviewSvgFile } from '@/assets/icons/common/file_preview.svg';
 import { ReactComponent as FullscreenSvgFile } from '@/assets/icons/common/fullscreen.svg';
+import { ReactComponent as IconTranslateSvgFile } from '@/assets/icons/common/icon_translate.svg';
 import { ReactComponent as ImportSvgFile } from '@/assets/icons/common/import.svg';
 import { ReactComponent as LinkSvgIcon } from '@/assets/icons/common/link.svg';
 import { ReactComponent as MoreSvgFile } from '@/assets/icons/common/more.svg';
@@ -66,6 +67,7 @@ const IconFilePreviewSvg = wrapSvg(IconFilePreviewSvgFile);
 const IconUserInfoSvg = wrapSvg(IconUserInfoSvgFile);
 const IconTransformPdfFileSvg = wrapSvg(IconTransformPdfFileSvgFile);
 const IconFileCopySvg = wrapSvg(IconFileCopySvgFile);
+const IconTranslateSvg = wrapSvg(IconTranslateSvgFile);
 export default {
   'icons-common-attachments': AttachmentsSvg,
   'icons-common-book': BookSvg,
@@ -99,4 +101,5 @@ export default {
   'icons-common-user_info': IconUserInfoSvg,
   'icons-common-transform_pdf_file': IconTransformPdfFileSvg,
   'icons-common-file_copy': IconFileCopySvg,
+  'icons-common-icon_translate': IconTranslateSvg,
 } as Record<string, React.FC>;

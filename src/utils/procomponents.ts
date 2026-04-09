@@ -22,7 +22,7 @@ export const createOptionsRequest = <T>(
       }
       return [];
     } catch (error) {
-      console.error('获取选项数据失败', error);
+      console.error('Failed to get option data', error);
       return [];
     }
   };

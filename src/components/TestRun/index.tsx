@@ -250,7 +250,7 @@ const TestRun: React.FC<TestRunProps> = ({
               try {
                 results[item] = JSON.parse(values[item]);
               } catch (error) {
-                console.error('JSON 解析失败:', error);
+                console.error('JSON parse failure:', error);
               }
             }
           }
@@ -279,7 +279,7 @@ const TestRun: React.FC<TestRunProps> = ({
               try {
                 results[item] = JSON.parse(values[item]);
               } catch (error) {
-                console.error('JSON 解析失败:', error);
+                console.error('JSON parse failure:', error);
               }
             }
           }

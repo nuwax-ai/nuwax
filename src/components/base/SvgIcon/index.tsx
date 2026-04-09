@@ -76,7 +76,7 @@ const SvgIcon: React.FC<SvgIconProps> = ({
   if (!Comp) {
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
-      console.warn(`SvgIcon 未找到名称为 "${name}" 的图标组件`);
+      console.warn(`SvgIcon: icon component named "${name}" not found`);
     }
     return null;
   }

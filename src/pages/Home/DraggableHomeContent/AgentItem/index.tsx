@@ -29,7 +29,7 @@ const AgentItem: React.FC<AgentItemProps> = ({
       setIsCollecting(true);
       await onToggleCollect();
     } catch (error) {
-      console.error('收藏操作失败:', error);
+      console.error('Failed to mark as favorite:', error);
       // 这里可以添加错误提示
     } finally {
       setIsCollecting(false);

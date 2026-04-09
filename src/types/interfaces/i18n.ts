@@ -103,6 +103,18 @@ export interface I18nSlideLangInfo {
   remark?: string;
 }
 
+// 翻译单个key参数
+export interface I18nConfigTranslateParams {
+  /*源语言 */
+  sourceLang: string;
+
+  /*目标语言 */
+  targetLang: string;
+
+  /*键 */
+  i18nConfigDto: I18nSlideLangInfo;
+}
+
 // 批量新增或更新多语言配置参数
 export type I18nConfigBatchAddOrUpdateParams = I18nSlideLangInfo;
 

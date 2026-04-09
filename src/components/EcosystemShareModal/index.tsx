@@ -183,7 +183,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
             })),
           );
         } catch (error) {
-          console.error('解析配置参数失败:', error);
+          console.error('Failed to parse configuration parameters:', error);
           setConfigParam([]);
         }
       }

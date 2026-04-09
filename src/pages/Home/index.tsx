@@ -177,7 +177,9 @@ const Home: React.FC = () => {
 
   // 处理标签点击 - 只更新activeTab状态
   const handleTabClick = (type: string) => {
-    console.log(`🏠 Home Tab点击事件: ${type}, 当前activeTab: ${activeTab}`);
+    console.log(
+      `🏠 Home Tab click event: ${type}, current activeTab: ${activeTab}`,
+    );
     setActiveTab(type);
   };
 

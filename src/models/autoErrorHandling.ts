@@ -95,7 +95,7 @@ export default () => {
         const newRecords = [record, ...prev.records].slice(0, 100);
 
         console.log(
-          `[AutoErrorHandling] 📊 记录自动处理: 会话次数=${newCount}, 总次数=${newTotalCount}`,
+          `[AutoErrorHandling] 📊 Recording auto-handling: session count=${newCount}, total count=${newTotalCount}`,
         );
 
         return {
@@ -133,7 +133,7 @@ export default () => {
       ...prev,
       sessionCount: 0,
     }));
-    console.log('[AutoErrorHandling] 🔄 重置会话计数');
+    console.log('[AutoErrorHandling] 🔄 Resetting session count');
   }, []);
 
   /**
@@ -145,8 +145,8 @@ export default () => {
       isAutoHandlingEnabled: enabled,
     }));
     console.log(
-      `[AutoErrorHandling] ${enabled ? '✅' : '❌'} 自动处理功能已${
-        enabled ? '启用' : '禁用'
+      `[AutoErrorHandling] ${enabled ? '✅' : '❌'} Auto-handling feature ${
+        enabled ? 'enabled' : 'disabled'
       }`,
     );
   }, []);
@@ -186,7 +186,7 @@ export default () => {
       lastCustomErrorHash: null,
       hasShownConfirmModal: false,
     }));
-    console.log('[AutoErrorHandling] 🔄 重置自动重试计数');
+    console.log('[AutoErrorHandling] 🔄 Resetting auto-retry count');
   }, []);
 
   /**
@@ -231,7 +231,7 @@ export default () => {
       hasShownConfirmModal: false,
       isAutoHandlingEnabled: true,
     }));
-    console.log('[AutoErrorHandling] 🔄 重置并启用自动处理');
+    console.log('[AutoErrorHandling] 🔄 Resetting and enabling auto-handling');
   }, []);
 
   /**
@@ -242,7 +242,7 @@ export default () => {
       ...prev,
       isAutoHandlingEnabled: false,
     }));
-    console.log('[AutoErrorHandling] ❌ 用户取消自动处理');
+    console.log('[AutoErrorHandling] ❌ User cancelled auto-handling');
   }, []);
 
   /**
@@ -254,8 +254,8 @@ export default () => {
       isEnabled: enabled,
     }));
     console.log(
-      `[AutoErrorHandling] ${enabled ? '✅' : '❌'} 自动处理已${
-        enabled ? '启用' : '禁用'
+      `[AutoErrorHandling] ${enabled ? '✅' : '❌'} Auto-handling ${
+        enabled ? 'enabled' : 'disabled'
       }`,
     );
   }, []);
@@ -265,7 +265,7 @@ export default () => {
    */
   const resetAll = useCallback(() => {
     setState(initialState);
-    console.log('[AutoErrorHandling] 🔄 重置所有状态');
+    console.log('[AutoErrorHandling] 🔄 Resetting all states');
   }, []);
 
   /**

@@ -83,7 +83,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           initializedRef.current = true;
         }
       } catch (error) {
-        console.error('获取智能体模型列表失败:', error);
+        console.error('Failed to get agent model list:', error);
       } finally {
         setLoading(false);
       }
@@ -197,7 +197,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               }
             }
           } catch (error) {
-            console.error('删除模型失败:', error);
+            console.error('Failed to delete model:', error);
           }
         },
       );

@@ -85,7 +85,7 @@ const SystemTipsWord = forwardRef<
       try {
         // 检查编辑器是否有 replaceText 方法
         if (typeof editorRef.current?.replaceText !== 'function') {
-          throw new Error('replaceText 方法不存在');
+          throw new Error('replaceText method does not exist');
         }
 
         // 使用编辑器的 replaceText API 在光标位置插入文本

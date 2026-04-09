@@ -355,7 +355,10 @@ const EditAgent: React.FC = () => {
 
       // 如果配置信息还未加载，跳过处理
       if (!currentConfig) {
-        console.log('[EditAgent] 配置信息尚未加载，跳过更新:', attr);
+        console.log(
+          '[EditAgent] Configuration not yet loaded, skipping update:',
+          attr,
+        );
         return;
       }
 
@@ -373,7 +376,10 @@ const EditAgent: React.FC = () => {
       // 对于数组类型（如guidQuestionDtos），进行深度比较
       if (Array.isArray(value) && Array.isArray(currentValue)) {
         if (JSON.stringify(value) === JSON.stringify(currentValue)) {
-          console.log('[EditAgent] 数组值无变化，跳过API调用:', attr);
+          console.log(
+            '[EditAgent] Array value unchanged, skipping API call:',
+            attr,
+          );
           return;
         }
       }
@@ -381,7 +387,10 @@ const EditAgent: React.FC = () => {
       // 对于布尔值，直接比较
       if (typeof value === 'boolean' && typeof currentValue === 'boolean') {
         if (value === currentValue) {
-          console.log('[EditAgent] 布尔值无变化，跳过API调用:', attr);
+          console.log(
+            '[EditAgent] Boolean value unchanged, skipping API call:',
+            attr,
+          );
           return;
         }
       }
@@ -389,7 +398,10 @@ const EditAgent: React.FC = () => {
       // 对于数字类型，直接比较
       if (typeof value === 'number' && typeof currentValue === 'number') {
         if (value === currentValue) {
-          console.log('[EditAgent] 数字值无变化，跳过API调用:', attr);
+          console.log(
+            '[EditAgent] Number value unchanged, skipping API call:',
+            attr,
+          );
           return;
         }
       }
@@ -623,7 +635,7 @@ const EditAgent: React.FC = () => {
               resolve(false);
             }
           } catch (error) {
-            console.error('删除文件失败:', error);
+            console.error('Failed to delete file:', error);
             resolve(false);
           }
         },
@@ -740,7 +752,7 @@ const EditAgent: React.FC = () => {
         await handleRefreshFileList(devConversationId);
       }
     } catch (error) {
-      console.error('上传失败', error);
+      console.error('Upload failed', error);
     }
   };
 
