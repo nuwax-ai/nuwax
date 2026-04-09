@@ -1,8 +1,8 @@
 import { apiI18nLangList } from '@/services/i18n';
 import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
-import { GlobalOutlined } from '@ant-design/icons';
-import { Dropdown, MenuProps, message, Tag } from 'antd';
+import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
+import { Dropdown, MenuProps, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 
@@ -63,12 +63,17 @@ const LoginLangSwitcher: React.FC = () => {
   const menuItems: MenuProps['items'] = languages.map((item) => ({
     key: item.lang,
     label: (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>{`${item.name} ${item.lang}`}</span>
-        {item.isDefault === 1 && (
-          <Tag color="processing" bordered={false} style={{ margin: 0 }}>
-            {dict('PC.Pages.Setting.defaultTag')}
-          </Tag>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minWidth: 100,
+        }}
+      >
+        <span>{item.name}</span>
+        {item.lang === selectedLang && (
+          <CheckOutlined style={{ color: '#1890ff', marginLeft: 8 }} />
         )}
       </div>
     ),

@@ -1,7 +1,8 @@
 import { apiI18nLangList } from '@/services/i18n';
 import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
-import { Button, message, Modal, Select, Tag } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
+import { Button, message, Modal, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -101,19 +102,20 @@ const LanguageSwitchPanel: React.FC = () => {
               value={selectedLang}
               onChange={setSelectedLang}
               placeholder={dict('PC.Pages.Setting.selectLanguage')}
+              optionLabelProp="label"
             >
               {languages.map((item) => (
-                <Option key={item.lang} value={item.lang}>
-                  <div className={cx(styles.langOption)}>
-                    <span>{`${item.name} ${item.lang}`}</span>
+                <Option key={item.lang} value={item.lang} label={item.name}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span>{item.name}</span>
                     {item.isDefault === 1 && (
-                      <Tag
-                        color="blue"
-                        bordered={false}
-                        style={{ marginLeft: 8 }}
-                      >
-                        {dict('PC.Pages.Setting.defaultTag')}
-                      </Tag>
+                      <CheckOutlined style={{ color: '#1890ff' }} />
                     )}
                   </div>
                 </Option>
