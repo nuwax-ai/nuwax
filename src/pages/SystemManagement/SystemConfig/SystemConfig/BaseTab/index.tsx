@@ -75,6 +75,12 @@ const BaseTab = forwardRef(
           params[key] = value as any;
         }
       });
+
+      // 处理删除图片保存失效的问题
+      params.siteLogo ||= '';
+      params.faviconUrl ||= '';
+      params.squareBanner ||= '';
+
       await apiSystemConfigUpdate(params);
       message.success(t('PC.Pages.SystemConfig.saveSuccess'));
       refresh();

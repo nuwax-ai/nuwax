@@ -64,13 +64,13 @@ const LogProTable: React.FC = () => {
   const columns: ProColumns<SpaceLogInfo>[] = useMemo(
     () => [
       {
-        width: 100,
         title: t('PC.Pages.ApiKeyLogsLogProTable.type'),
         dataIndex: 'targetType',
+        width: 100,
         valueType: 'select',
         valueEnum: AGENT_COMPONENT_TYPE_MAP,
         hideInTable: false,
-        initialValue: targetTypeFromUrl,
+        search: false,
         fieldProps: {
           placeholder: t('PC.Pages.ApiKeyLogsLogProTable.selectType'),
           allowClear: true,

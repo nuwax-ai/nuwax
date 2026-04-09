@@ -1893,7 +1893,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AntvX6ExceptionItem.retryOnce': '1 time',
   'PC.Pages.AntvX6ExceptionItem.retryTwice': '2 times',
   'PC.Pages.AntvX6ExceptionItem.retryThrice': '3 times',
-  'PC.Pages.AntvX6ExceptionItem.handleTypeLabel': 'Exception Handling Mode',
+  'PC.Pages.AntvX6ExceptionItem.handleTypeLabel': 'Exception Handling',
   'PC.Pages.AntvX6ExceptionItem.interruptFlow': 'Interrupt Flow',
   'PC.Pages.AntvX6ExceptionItem.returnSpecificContent':
     'Return Specific Content',

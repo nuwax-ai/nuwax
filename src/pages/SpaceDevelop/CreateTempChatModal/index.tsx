@@ -220,7 +220,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       title: dict('PC.Pages.SpaceDevelop.CreateTempChatModal.loginRequired'),
       dataIndex: 'requireLogin',
       key: 'requireLogin',
-      width: 85,
+      width: 120,
       align: 'center',
       render: (_: boolean, record: AgentTempChatDto) => (
         <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
@@ -285,11 +285,14 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
         }}
         title={
           <div className={cx('text-ellipsis')} style={{ width: '400px' }}>
-            {dict('PC.Pages.SpaceDevelop.CreateTempChatModal.modalTitle', name)}
+            {dict(
+              'PC.Pages.SpaceDevelop.CreateTempChatModal.modalTitle',
+              name || '',
+            )}
           </div>
         }
         open={open}
-        width={710}
+        width={900}
         destroyOnHidden
         footer={null}
         onCancel={handleCancel}
