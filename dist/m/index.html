@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 
 <head>
-  <link rel="stylesheet" href="/m/assets/uni.70605606.css">
+  <link rel="stylesheet" href="/m/assets/uni.e5367e8f.css">
 
 	<meta charset="UTF-8" />
 	<script>
@@ -30,6 +30,9 @@
 					console.log('开发模式检测到，跳过双向跳转逻辑');
 					return;
 				}
+
+				// 应用详情页路径
+				const appDetailsPathMobile = '/pages/app-details/app-details';
 
 				const { protocol, host, href, hash } = window.location;
 				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
@@ -71,6 +74,22 @@
 						}
 					}
 
+					// 应用详情页
+					if (hash && hash.indexOf(appDetailsPathMobile) !== -1) {
+						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						if (matchId && matchId[1]) {
+							const agentId = matchId[1];
+							if (matchConversationId && matchConversationId[1]) {
+								const conversationId = matchConversationId[1];
+								replaceUrl = baseUrl + '/app/chat/' + agentId + '/' + conversationId;
+							} else {
+								replaceUrl = baseUrl + '/app/' + agentId;
+							}
+							return replaceUrl;
+						}
+					}
+
 					// 临时会话页面: PC 端访问 M 页面 => 跳转 PC
 					if (hash && hash.indexOf(chatTempPathMobile) !== -1) {
 						const matchChatTemp = hash.match(new RegExp('[?&]chatKey=([^&#]+)'));
@@ -91,6 +110,23 @@
 						const agentId = match[1];
 						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId);
 						return;
+					}
+
+
+					// 应用详情页
+					const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
+					if (matchAppDetails) {
+						replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+						return replaceUrl;
+					}
+
+					// 应用会话页
+					const matchAppChat = href.match(new RegExp('app/chat/([^/]+)/([^/]+)'));
+					if (matchAppChat) {
+						const agentId = matchAppChat[1];
+						const conversationId = matchAppChat[2];
+						replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
+						return replaceUrl;
 					}
 
 					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
@@ -115,8 +151,8 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-DX4Pc3hh.js"></script>
-  <link rel="stylesheet" crossorigin href="/m/assets/index-MIxPmWEn.css">
+  <script type="module" crossorigin src="/m/assets/index-D9vRRuG0.js"></script>
+  <link rel="stylesheet" crossorigin href="/m/assets/index-56vALlwu.css">
 </head>
 
 <body>
