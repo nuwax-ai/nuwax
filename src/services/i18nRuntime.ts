@@ -154,47 +154,29 @@ export const fetchAndApplyLangMap = async (
   lang?: string,
   side: string = 'PC',
 ): Promise<boolean> => {
-  const isInitialCall = !lang;
   try {
     const result = await apiI18nQuery(lang, side);
     const parsedMap = parseLangMapResult(result);
     if (!parsedMap) {
-      if (isInitialCall) {
-        // 首屏请求失败，启用本地英语兜底
-        langMap = { ...MIN_EN_I18N_MAP };
-        setCurrentLang('en-us');
-      }
+      // 请求失败（或数据异常），统一启用本地英语兜底
+      langMap = { ...MIN_EN_I18N_MAP };
+      setCurrentLang('en-us');
       return false;
     }
 
-    // --- 基于字典内容自动识别语种 ---
-    let detectedLang = lang; // 如果是手动切换，使用传入的 lang
-    if (!detectedLang) {
-      // 首次加载或未传参数，通过内容判定
-      const testValue = parsedMap['PC.man.user.add'];
-      if (testValue === '增加用户') {
-        detectedLang = 'zh-cn';
-      } else if (testValue === 'add user') {
-        detectedLang = 'en-us';
-      }
-    }
-
-    const finalLang = normalizeLang(detectedLang || currentLang);
+    const finalLang = normalizeLang(lang || currentLang);
     // 同步全局语种状态（确保 antd 等受控组件识别到正确语种）
     setCurrentLang(finalLang);
 
-    langMap = {
-      ...getLocalDefaultMapByLang(finalLang),
-      ...parsedMap,
-    };
+    // 使用接口返回的数据，替换原有合并本地 JSON 的逻辑
+    langMap = { ...parsedMap };
+
     persistMapCache(finalLang, langMap);
     return true;
   } catch {
-    if (isInitialCall) {
-      // 捕获异常：应用本地英语兜底
-      langMap = { ...MIN_EN_I18N_MAP };
-      setCurrentLang('en-us');
-    }
+    // 捕获异常：统一应用本地英语兜底
+    langMap = { ...MIN_EN_I18N_MAP };
+    setCurrentLang('en-us');
     return false;
   }
 };
@@ -252,18 +234,28 @@ export const dict = (key: string, ...values: (string | number)[]): string => {
     return normalizedKey;
   }
 
-  const template =
-    langMap[normalizedKey] ||
-    MIN_EN_I18N_MAP[normalizedKey] ||
-    MIN_ZH_I18N_MAP[normalizedKey];
-  if (!template) {
+  // 1. 优先使用接口返回的数据 (langMap)
+  if (normalizedKey in langMap) {
+    const remoteValue = langMap[normalizedKey];
+    // 如果接口返回的值为空字符串或仅包含空白字符，则视为显式空值，按用户要求显示原始 Key，不再回退
+    if (!remoteValue || !String(remoteValue).trim()) {
+      return normalizedKey;
+    }
+    return formatText(remoteValue, values);
+  }
+
+  // 2. 只有在接口完全没有回该 Key 时，才考虑使用本地包兜底
+  const localTemplate =
+    MIN_EN_I18N_MAP[normalizedKey] || MIN_ZH_I18N_MAP[normalizedKey];
+
+  if (!localTemplate || !String(localTemplate).trim()) {
     warnOnce(warnedMissingKeys, normalizedKey, (k) => {
       console.error(`[i18n] Missing translation entry for key: ${k}`);
     });
     return normalizedKey;
   }
 
-  return formatText(template, values);
+  return formatText(localTemplate, values);
 };
 
 export const t = (key: string, ...values: (string | number)[]): string =>

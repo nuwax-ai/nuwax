@@ -46,11 +46,6 @@ const LanguageSwitchPanel: React.FC = () => {
     fetchLangs();
   }, []);
 
-  // 监听当前系统语言变化，同步内部状态
-  // useEffect(() => {
-  //   setSelectedLang(getCurrentLang());
-  // }, [getCurrentLang()]);
-
   // 保存并更新语言
   const handleSave = () => {
     if (!selectedLang) return;

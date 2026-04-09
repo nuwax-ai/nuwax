@@ -132,7 +132,9 @@ const ApiKeyPage: React.FC = () => {
       render: (_, record) => {
         const val = record.expire;
         const isNever =
-          !val || val === '永不过期' || val === '0000-00-00 00:00:00'; // backend literal value comparison
+          !val ||
+          val === dict('PC.Pages.MorePage.ApiKey.neverExpires') ||
+          val === '0000-00-00 00:00:00'; // backend literal value comparison
 
         // 如果后端返回的是 ISO 格式字符串，使用 dayjs 格式化显示成标准的日期时间
         const display = val && !isNever ? dayjs(val).format('YYYY-MM-DD') : val;

@@ -319,8 +319,8 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
       {shareType === 'CONVERSATION' && (
         <ProFormSwitch
           name="allowDownload"
-          label="允许下载"
-          tooltip="开启后，获得分享链接的用户可以在预览页面下载原文件"
+          label={dict('PC.Components.ShareDesktopModal.allowDownload')}
+          tooltip={dict('PC.Components.ShareDesktopModal.allowDownloadTooltip')}
         />
       )}
 

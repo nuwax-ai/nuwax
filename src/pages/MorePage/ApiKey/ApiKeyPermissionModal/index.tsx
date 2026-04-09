@@ -206,7 +206,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
       let expire: number | null = null;
       if (
         record.expire &&
-        record.expire !== '永不过期' && // backend literal value comparison
+        record.expire !== dict('PC.Pages.MorePage.ApiKey.neverExpires') && // backend literal value comparison
         record.expire !== '0000-00-00 00:00:00'
       ) {
         // 使用 dayjs 统一转换为当天结束的 23:59:59

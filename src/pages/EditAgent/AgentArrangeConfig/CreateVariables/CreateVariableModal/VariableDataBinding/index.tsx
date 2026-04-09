@@ -41,7 +41,9 @@ const VariableDataBinding: React.FC<VariableDataBindingProps> = ({
             )}
             onClick={onClick}
           >
-            请选择符合数据规范的插件或工作流
+            {dict(
+              'PC.Pages.EditAgent.VariableDataBinding.pluginOrWorkflowRequired',
+            )}
           </div>
         ) : (
           <div

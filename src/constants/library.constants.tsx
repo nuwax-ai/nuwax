@@ -455,23 +455,23 @@ export const MODEL_API_PROTOCOL_LIST = [
 export const MODEL_USAGE_SCENARIO_LIST = [
   {
     value: ModelUsageScenarioEnum.PageApp,
-    label: '网页应用',
+    label: dict('PC.Constants.Library.webApp'),
   },
   {
     value: ModelUsageScenarioEnum.TaskAgent,
-    label: '通用智能体',
+    label: dict('PC.Constants.Library.generalAgent'),
   },
   {
     value: ModelUsageScenarioEnum.ChatBot,
-    label: '问答智能体',
+    label: dict('PC.Constants.Library.qaAgent'),
   },
   {
     value: ModelUsageScenarioEnum.Workflow,
-    label: '工作流',
+    label: dict('PC.Constants.Library.workflow'),
   },
   {
     value: ModelUsageScenarioEnum.OpenApi,
-    label: '外部API调用',
+    label: dict('PC.Constants.Library.externalApi'),
   },
 ];
 

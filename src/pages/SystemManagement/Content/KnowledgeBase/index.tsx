@@ -197,7 +197,7 @@ const KnowledgeBase: React.FC = () => {
       ),
     },
     {
-      title: '操作',
+      title: dict('PC.Common.Global.action'),
       valueType: 'option',
       fixed: 'right',
       align: 'center',

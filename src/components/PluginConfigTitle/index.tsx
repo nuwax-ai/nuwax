@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import type { PluginConfigTitleProps } from '@/types/interfaces/common';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
@@ -28,7 +29,7 @@ const PluginConfigTitle: React.FC<PluginConfigTitleProps> = ({
       <div className={cx(styles.extra, 'flex')}>
         {extra}
         <Button icon={<PlusOutlined />} onClick={onClick}>
-          新增参数
+          {dict('PC.Components.PluginConfigTitle.addParam')}
         </Button>
       </div>
     </div>

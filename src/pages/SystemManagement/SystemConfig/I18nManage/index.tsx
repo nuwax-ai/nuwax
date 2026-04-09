@@ -105,8 +105,8 @@ const I18nManage: React.FC = () => {
   // 删除语言
   const handleDelete = (record: I18nLangDto) => {
     modalConfirm(
-      '删除语言',
-      `您确定要删除语言「${record.name}」吗？删除后将无法恢复。`,
+      dict('PC.Pages.SystemConfig.I18nManage.deleteLangTitle'),
+      dict('PC.Pages.SystemConfig.I18nManage.deleteLangConfirm', record.name),
       async () => {
         await runDeleteLang(record.id);
         return Promise.resolve();
@@ -278,7 +278,15 @@ const I18nManage: React.FC = () => {
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
             />
-            <Tooltip title={isDefaultLang ? '默认语言不能删除' : ''}>
+            <Tooltip
+              title={
+                isDefaultLang
+                  ? dict(
+                      'PC.Pages.SystemConfig.I18nManage.defaultLangDeleteTip',
+                    )
+                  : ''
+              }
+            >
               <Button
                 type="text"
                 icon={<DeleteOutlined />}

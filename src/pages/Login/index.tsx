@@ -31,6 +31,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
 import styles from './index.less';
+import LoginLangSwitcher from './LoginLangSwitcher';
 import SiteProtocol from './SiteProtocol';
 
 const { Title } = Typography;
@@ -249,6 +250,7 @@ const Login: React.FC = () => {
         },
       }}
     >
+      <LoginLangSwitcher />
       <BasicLayout>
         <div>
           {loadEnd && (

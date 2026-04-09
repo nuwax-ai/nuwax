@@ -3020,6 +3020,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.UserManage.UserFormModal.loginPassword': 'Login Password',
   'PC.Pages.UserManage.UserFormModal.inputLoginPassword':
     'Please enter login password',
+  'PC.Pages.UserManage.UserFormModal.inputCorrectPassword':
+    'Invalid password, at least 6 characters!',
   'PC.Pages.UserManage.UserFormModal.userType': 'User Type',
   'PC.Pages.UserManage.UserFormModal.admin': 'Admin',
   'PC.Pages.UserManage.UserFormModal.normalUser': 'Normal User',
@@ -3067,7 +3069,7 @@ export const EN_US: SystemLangMap = {
   'PC.Layouts.Setting.ResetPassword.inputNewPassword':
     'Please enter new password!',
   'PC.Layouts.Setting.ResetPassword.inputCorrectPassword':
-    'Please enter a valid password!',
+    'Invalid new password format, at least 6 characters!',
   'PC.Layouts.Setting.ResetPassword.confirmPassword': 'Confirm Password',
   'PC.Layouts.Setting.ResetPassword.inputConfirmPassword':
     'Please enter the password again!',
@@ -3076,7 +3078,7 @@ export const EN_US: SystemLangMap = {
   'PC.Layouts.Setting.ResetPassword.inputCorrectNewPassword':
     'Please enter a valid new password!',
   'PC.Layouts.Setting.ResetPassword.placeholderNewPassword':
-    'Please enter new password',
+    'Please enter a new password (at least 6 characters)',
   'PC.Layouts.Setting.ResetPassword.placeholderConfirmPassword':
     'Please enter the password again',
   'PC.Layouts.Setting.ResetPassword.verificationCode': 'Verification Code',
@@ -5927,4 +5929,72 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.Chat.clearAndCreateFailed': 'Failed to clear and create',
   'PC.Pages.Chat.createConversationFailed': 'Failed to create conversation',
   'PC.Pages.Chat.pagePreview': 'Page Preview',
+
+  'PC.Constants.Library.webApp': 'Web App',
+  'PC.Constants.Library.generalAgent': 'General Agent',
+  'PC.Constants.Library.qaAgent': 'Q&A Agent',
+  'PC.Constants.Library.workflow': 'Workflow',
+  'PC.Constants.Library.externalApi': 'External API',
+  'PC.Components.ShareDesktopModal.allowDownload': 'Allow Download',
+  'PC.Components.ShareDesktopModal.allowDownloadTooltip':
+    'When enabled, users with the share link can download the original file on the preview page',
+  'PC.Pages.SystemManagement.DataPermission.knowledgeBase': 'Knowledge Base',
+  'PC.Pages.SystemManagement.DataPermission.knowledgeBaseTooltip':
+    'You can grant authorization here after enabling access control in content management. If access control is enabled, authorization is required to use this knowledge base.',
+  'PC.Common.Global.action': 'Action',
+  'PC.Pages.SystemConfig.I18nManage.namePlaceholder': 'e.g., English, Japanese',
+  'PC.Pages.SystemConfig.I18nManage.codeLabel': 'Language Code',
+  'PC.Pages.SystemConfig.I18nManage.codeTooltip':
+    'Code format: language code - country code',
+  'PC.Pages.SystemConfig.I18nManage.codePlaceholder': 'e.g., en-US, ja-JP',
+  'PC.Pages.SystemConfig.I18nManage.orderTooltip': 'Smaller value comes first',
+  'PC.Pages.SystemConfig.I18nManage.orderPlaceholder': 'e.g., 1',
+  'PC.Pages.SystemConfig.I18nManage.setDefaultLang': 'Set as Default Language',
+  'PC.Pages.SystemConfig.I18nManage.defaultLangTip':
+    'When editing a language, if the current language is the default language, you need to set another language as default in the language list to cancel the current default.',
+  'PC.Pages.SystemConfig.I18nManage.statusLabel': 'Status',
+  'PC.Pages.SystemConfig.I18nManage.deleteLangTitle': 'Delete Language',
+  'PC.Pages.SystemConfig.I18nManage.deleteLangConfirm':
+    'Are you sure you want to delete the language "{0}"? This cannot be undone.',
+  'PC.Pages.SystemConfig.I18nManage.defaultLangDeleteTip':
+    'Default language cannot be deleted',
+  'PC.Pages.SystemConfig.LangContent.updateSuccess': 'Update Successfully',
+  'PC.Pages.SystemConfig.LangContent.addSuccess': 'Add Successfully',
+  'PC.Pages.SystemConfig.LangContent.editKeyValTitle': 'Edit Key-Value Pair',
+  'PC.Pages.SystemConfig.LangContent.addKeyValTitle': 'Add Key-Value Pair',
+  'PC.Pages.SystemConfig.LangContent.updateBtn': 'Update',
+  'PC.Pages.SystemConfig.LangContent.addBtn': 'Add',
+  'PC.Pages.SystemConfig.LangContent.keyRequired': 'Please enter a Key',
+  'PC.Pages.SystemConfig.LangContent.keyPlaceholder': 'e.g., User.submit',
+  'PC.Pages.SystemConfig.LangContent.textContentLabel': 'Text Content',
+  'PC.Pages.SystemConfig.LangContent.textContentRequired':
+    'Please enter text content',
+  'PC.Pages.SystemConfig.LangContent.textContentPlaceholder': 'e.g., Submit',
+  'PC.Pages.SystemConfig.LangContent.remarkLabel': 'Remark',
+  'PC.Pages.SystemConfig.LangContent.remarkPlaceholder': 'e.g., Submit Button',
+  'PC.Pages.SystemConfig.LangContent.jsonFormatError':
+    'JSON format error, please check and try again',
+  'PC.Pages.SystemConfig.LangContent.jsonObjectRequired':
+    'Please enter key-value pair JSON in object format',
+  'PC.Pages.SystemConfig.LangContent.atLeastOnePair':
+    'Please enter at least one key-value pair',
+  'PC.Pages.SystemConfig.LangContent.batchProcessSuccess':
+    'Batch processing successfully',
+  'PC.Pages.SystemConfig.LangContent.batchAddOrUpdateTitle':
+    'Batch Add or Update',
+  'PC.Pages.SystemConfig.LangContent.translateSuccess':
+    'Translate Successfully',
+  'PC.Pages.SystemConfig.LangContent.moduleColumn': 'Side',
+  'PC.Pages.SystemConfig.LangContent.searchKey': 'Search Key...',
+  'PC.Pages.SystemConfig.LangContent.translateAllBtn': 'Translate All',
+  'PC.Pages.SystemConfig.LangContent.keyValMng': 'Key-Value Management',
+  'PC.Pages.SpaceDevelop.copyIndependentSessionSuccess':
+    'Independent session path copied',
+  'PC.Pages.AntvX6.systemPrompt': 'System Prompt',
+  'PC.Pages.AntvX6.userPrompt': 'User Prompt',
+  'PC.Pages.SpaceLibrary.availableScope': 'Available Scope',
+  'PC.Pages.SpaceLibrary.selectAvailableScope': 'Please select available scope',
+  'PC.Pages.MorePage.ApiKey.neverExpires': 'Never Expires',
+  'PC.Pages.EditAgent.VariableDataBinding.pluginOrWorkflowRequired':
+    'Please select a plugin or workflow that meets the standard',
 };

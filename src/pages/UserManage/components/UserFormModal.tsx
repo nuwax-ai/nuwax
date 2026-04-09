@@ -2,6 +2,7 @@ import { dict } from '@/services/i18nRuntime';
 import { apiAddSystemUser, apiUpdateSystemUser } from '@/services/systemManage';
 import { UserRoleEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { validatePassword } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Button, Form, Input, Modal, Radio } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -134,6 +135,20 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
                 message: dict(
                   'PC.Pages.UserManage.UserFormModal.inputLoginPassword',
                 ),
+              },
+              {
+                validator(_, value) {
+                  if (!value || validatePassword(value)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      dict(
+                        'PC.Pages.UserManage.UserFormModal.inputCorrectPassword',
+                      ),
+                    ),
+                  );
+                },
               },
             ]}
           >

@@ -398,7 +398,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
           >
-            <Empty description="暂无数据" />
+            <Empty description={dict('PC.Common.Global.emptyData')} />
           </div>
         );
       case 'dataPermission':

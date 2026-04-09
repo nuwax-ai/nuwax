@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 /*
  * MentionList Component
  * @ mentions 下拉列表组件
@@ -32,7 +33,7 @@ const MentionList: React.FC<MentionListProps> = ({
           textAlign: 'center',
         }}
       >
-        未找到匹配项
+        {dict('PC.Components.MentionList.noMatch')}
       </div>
     );
   }

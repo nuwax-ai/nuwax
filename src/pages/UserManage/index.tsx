@@ -140,7 +140,7 @@ const UserManage: React.FC = () => {
         {
           key: 'disable',
           label: dict('PC.Pages.UserManage.Index.disable'),
-          isShow: record.status === UserStatusEnum.Enabled,
+          visible: record.status === UserStatusEnum.Enabled,
           disabled: !hasPermissionByMenuCode(
             'user_manage',
             'user_manage_disable',
@@ -150,7 +150,7 @@ const UserManage: React.FC = () => {
         {
           key: 'enable',
           label: dict('PC.Pages.UserManage.Index.enable'),
-          isShow: record.status !== UserStatusEnum.Enabled,
+          visible: record.status !== UserStatusEnum.Enabled,
           disabled: !hasPermissionByMenuCode(
             'user_manage',
             'user_manage_enable',

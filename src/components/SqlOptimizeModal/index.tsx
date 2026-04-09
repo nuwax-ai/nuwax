@@ -151,7 +151,7 @@ const SqlOptimizeModal: React.FC<SqlOptimizeModalProps> = ({
               onReplace?.(messageList?.[messageList?.length - 1]?.text)
             }
           >
-            替换
+            {dict('PC.Components.SqlOptimizeModal.replace')}
           </Button>
           <Button
             onClick={(e) => {
@@ -160,7 +160,7 @@ const SqlOptimizeModal: React.FC<SqlOptimizeModalProps> = ({
             }}
             className={cx(styles['btn'], 'ml-10 ')}
           >
-            退出
+            {dict('PC.Components.SqlOptimizeModal.exit')}
           </Button>
         </div>
       )}

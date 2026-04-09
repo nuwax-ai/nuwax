@@ -47,7 +47,7 @@ const INSTALL_TYPE_DEFAULT_CONFIG: Record<McpInstallTypeEnum, string> = {
   "mcpServers": {
     "mcpServerName": {
       "type": "sse",
-      "url": "url地址",
+      "url": "url address",
       "headers": {}
     }
   }
@@ -56,7 +56,7 @@ const INSTALL_TYPE_DEFAULT_CONFIG: Record<McpInstallTypeEnum, string> = {
   "mcpServers": {
     "mcpServerName": {
       "type": "streamableHttp",
-      "url": "url地址",
+      "url": "url address",
       "headers": {}
     }
   }

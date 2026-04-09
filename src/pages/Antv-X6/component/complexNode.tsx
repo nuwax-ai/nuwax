@@ -257,7 +257,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         <ExpandableInputTextarea
           title={
             <>
-              系统提示词
+              {t('PC.Pages.AntvX6.systemPrompt')}
               <TooltipIcon
                 title={t('PC.Pages.AntvX6ComplexNode.systemPromptTooltip')}
                 icon={<ExclamationCircleOutlined />}
@@ -281,7 +281,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         <ExpandableInputTextarea
           title={
             <>
-              用户提示词
+              {t('PC.Pages.AntvX6.userPrompt')}
               <TooltipIcon
                 title={t('PC.Pages.AntvX6ComplexNode.userPromptTooltip')}
                 icon={<ExclamationCircleOutlined />}

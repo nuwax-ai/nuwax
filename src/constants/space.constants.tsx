@@ -182,7 +182,7 @@ export const APPLICATION_MORE_ACTION = [
   // 独立会话（已发布的智能体可独立会话）
   {
     type: ApplicationMoreActionEnum.Independent_Session,
-    label: dict('PC.Constants.Space.independentSession', '独立会话'),
+    label: dict('PC.Constants.Space.independentSession'),
   },
   { type: ApplicationMoreActionEnum.API_Key, label: 'API Key' },
   {

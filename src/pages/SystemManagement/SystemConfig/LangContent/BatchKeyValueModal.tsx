@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import { apiI18nConfigBatchAddOrUpdate } from '@/services/i18n';
+import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import type { I18nConfigBatchAddOrUpdateParams } from '@/types/interfaces/i18n';
 import { Modal, message } from 'antd';
@@ -9,6 +10,7 @@ import { useRequest } from 'umi';
 interface BatchKeyValueModalProps {
   lang: string;
   open: boolean;
+  sideList?: string[];
   onCancel: () => void;
   onSuccess: () => void;
 }
@@ -29,6 +31,9 @@ const DefaultBatchCode = `
   "key": "value"
 }`;
 
+// 默认端列表
+const DefaultSideList: string[] = ['PC', 'Mobile', 'Claw', 'Backend'];
+
 /**
  * 批量新增或更新键值对弹窗
  */
@@ -36,6 +41,7 @@ const BatchKeyValueModal: React.FC<BatchKeyValueModalProps> = ({
   lang,
   open,
   onCancel,
+  sideList = DefaultSideList,
   onSuccess,
 }) => {
   // JSON 代码
@@ -80,43 +86,66 @@ const BatchKeyValueModal: React.FC<BatchKeyValueModalProps> = ({
 
       parsed = JSON.parse(normalizedJsonText);
     } catch {
-      message.error('JSON 格式错误，请检查后重试');
+      message.warning(
+        dict('PC.Pages.SystemConfig.LangContent.jsonFormatError'),
+      );
       return;
     }
 
     if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-      message.error('请输入对象格式的键值对 JSON');
+      message.warning(
+        dict('PC.Pages.SystemConfig.LangContent.jsonObjectRequired'),
+      );
       return;
     }
 
     // 构建批量新增或更新多语言配置的请求参数
-    const payload = Object.entries(parsed as Record<string, string>).map(
-      ([key, value]) =>
-        ({
-          lang,
-          key,
-          value: typeof value === 'string' ? value : JSON.stringify(value),
-        } as I18nConfigBatchAddOrUpdateParams),
-    );
+    const entries = Object.entries(parsed as Record<string, string>);
+    const payload: I18nConfigBatchAddOrUpdateParams[] = [];
+
+    for (const [key, value] of entries) {
+      const firstDotIndex = key.indexOf('.');
+      if (firstDotIndex <= 0) {
+        message.warning(`Key 格式错误：${key}，必须包含端前缀，如 PC.xxx`);
+        return;
+      }
+
+      const side = key.slice(0, firstDotIndex);
+      if (!sideList.includes(side)) {
+        message.warning(
+          `Key 格式错误：${key}，端前缀必须是以下之一：${sideList.join(', ')}`,
+        );
+        return;
+      }
+
+      payload.push({
+        lang,
+        side,
+        key,
+        value: typeof value === 'string' ? value : JSON.stringify(value),
+      });
+    }
 
     if (!payload.length) {
-      message.error('请至少填写一条键值对');
+      message.warning(dict('PC.Pages.SystemConfig.LangContent.atLeastOnePair'));
       return;
     }
 
     await runBatchAddOrUpdate(payload);
-    message.success('批量处理成功');
+    message.success(
+      dict('PC.Pages.SystemConfig.LangContent.batchProcessSuccess'),
+    );
     onSuccess();
   };
 
   return (
     <Modal
-      title="批量新增或更新键值对"
+      title={dict('PC.Pages.SystemConfig.LangContent.batchAddOrUpdateTitle')}
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
-      okText="确定"
-      cancelText="取消"
+      okText={dict('PC.Common.Global.confirm')}
+      cancelText={dict('PC.Common.Global.cancel')}
       confirmLoading={loading}
       width={820}
       destroyOnHidden

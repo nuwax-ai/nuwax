@@ -11,7 +11,7 @@ import {
   apiGetOpenApiList,
   OpenApiPermissionTargetTypeEnum,
 } from '@/services/account';
-import { t } from '@/services/i18nRuntime';
+import { dict, t } from '@/services/i18nRuntime';
 import { apiPublishedAgentList } from '@/services/square';
 import {
   apiSystemModelList,
@@ -123,7 +123,11 @@ export const getDataPermissionTabItems = (): TabsProps['items'] => [
     label: (
       <span>
         知识库
-        <Tooltip title="在内容管理中开启管控后可在此处进行授权，若开启管控，需授权才能使用该知识库">
+        <Tooltip
+          title={dict(
+            'PC.Pages.SystemManagement.DataPermission.knowledgeBaseTooltip',
+          )}
+        >
           <InfoCircleOutlined
             style={{ marginLeft: 4, color: '#999', cursor: 'help' }}
           />

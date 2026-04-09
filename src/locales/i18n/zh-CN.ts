@@ -2706,6 +2706,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.UserManage.UserFormModal.inputEmailAddress': '请输入邮箱地址',
   'PC.Pages.UserManage.UserFormModal.loginPassword': '登录密码',
   'PC.Pages.UserManage.UserFormModal.inputLoginPassword': '请输入登录密码',
+  'PC.Pages.UserManage.UserFormModal.inputCorrectPassword':
+    '密码不正确，至少6位数！',
   'PC.Pages.UserManage.UserFormModal.userType': '用户类型',
   'PC.Pages.UserManage.UserFormModal.admin': '管理员',
   'PC.Pages.UserManage.UserFormModal.normalUser': '普通用户',
@@ -2750,13 +2752,14 @@ export const ZH_CN: SystemLangMap = {
   'PC.Layouts.Setting.ResetPassword.newPassword': '新密码',
   'PC.Layouts.Setting.ResetPassword.inputNewPassword': '请输入新密码!',
   'PC.Layouts.Setting.ResetPassword.inputCorrectPassword':
-    '请输入正确的新密码!',
+    '新密码格式不正确，至少6位数！',
   'PC.Layouts.Setting.ResetPassword.confirmPassword': '确认密码',
   'PC.Layouts.Setting.ResetPassword.inputConfirmPassword': '请再次输入新密码!',
   'PC.Layouts.Setting.ResetPassword.passwordMismatch': '两次密码不一致!',
   'PC.Layouts.Setting.ResetPassword.inputCorrectNewPassword':
     '请输入正确的密码!',
-  'PC.Layouts.Setting.ResetPassword.placeholderNewPassword': '请输入新密码',
+  'PC.Layouts.Setting.ResetPassword.placeholderNewPassword':
+    '请输入新密码，至少6位数',
   'PC.Layouts.Setting.ResetPassword.placeholderConfirmPassword':
     '请再次输入新密码',
   'PC.Layouts.Setting.ResetPassword.verificationCode': '验证码',
@@ -5389,4 +5392,65 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.Chat.clearAndCreateFailed': '清除并创建失败',
   'PC.Pages.Chat.createConversationFailed': '创建会话失败',
   'PC.Pages.Chat.pagePreview': '页面预览',
+
+  'PC.Constants.Library.webApp': '网页应用',
+  'PC.Constants.Library.generalAgent': '通用智能体',
+  'PC.Constants.Library.qaAgent': '问答智能体',
+  'PC.Constants.Library.workflow': '工作流',
+  'PC.Constants.Library.externalApi': '外部API调用',
+  'PC.Components.ShareDesktopModal.allowDownload': '允许下载',
+  'PC.Components.ShareDesktopModal.allowDownloadTooltip':
+    '开启后，获得分享链接的用户可以在预览页面下载原文件',
+  'PC.Pages.SystemManagement.DataPermission.knowledgeBase': '知识库',
+  'PC.Pages.SystemManagement.DataPermission.knowledgeBaseTooltip':
+    '在内容管理中开启管控后可在此处进行授权，若开启管控，需授权才能使用该知识库',
+  'PC.Common.Global.action': '操作',
+  'PC.Pages.SystemConfig.I18nManage.namePlaceholder': '例如：英语、日本语',
+  'PC.Pages.SystemConfig.I18nManage.codeLabel': '语言标识 (Code)',
+  'PC.Pages.SystemConfig.I18nManage.codeTooltip':
+    'code格式：语言代码 - 国家代码',
+  'PC.Pages.SystemConfig.I18nManage.codePlaceholder': '例如：en-US、ja-JP',
+  'PC.Pages.SystemConfig.I18nManage.orderTooltip': '值越小越靠前',
+  'PC.Pages.SystemConfig.I18nManage.orderPlaceholder': '例如：1',
+  'PC.Pages.SystemConfig.I18nManage.setDefaultLang': '设为默认语言',
+  'PC.Pages.SystemConfig.I18nManage.defaultLangTip':
+    '编辑语言时，如果当前语言是默认语言，则需要在语言列表中通过切换设置其他语言为默认语言，来取消当前语言为默认语言。',
+  'PC.Pages.SystemConfig.I18nManage.statusLabel': '启用状态',
+  'PC.Pages.SystemConfig.I18nManage.deleteLangTitle': '删除语言',
+  'PC.Pages.SystemConfig.I18nManage.deleteLangConfirm':
+    '您确定要删除语言「{0}」吗？删除后将无法恢复。',
+  'PC.Pages.SystemConfig.I18nManage.defaultLangDeleteTip': '默认语言不能删除',
+  'PC.Pages.SystemConfig.LangContent.updateSuccess': '更新成功',
+  'PC.Pages.SystemConfig.LangContent.addSuccess': '添加成功',
+  'PC.Pages.SystemConfig.LangContent.editKeyValTitle': '编辑键值对',
+  'PC.Pages.SystemConfig.LangContent.addKeyValTitle': '添加键值对',
+  'PC.Pages.SystemConfig.LangContent.updateBtn': '更新',
+  'PC.Pages.SystemConfig.LangContent.addBtn': '添加',
+  'PC.Pages.SystemConfig.LangContent.keyRequired': '请输入 Key',
+  'PC.Pages.SystemConfig.LangContent.keyPlaceholder': '例如：User.submit',
+  'PC.Pages.SystemConfig.LangContent.textContentLabel': '文本内容',
+  'PC.Pages.SystemConfig.LangContent.textContentRequired': '请输入文本内容',
+  'PC.Pages.SystemConfig.LangContent.textContentPlaceholder': '例如：提交',
+  'PC.Pages.SystemConfig.LangContent.remarkLabel': '备注',
+  'PC.Pages.SystemConfig.LangContent.remarkPlaceholder': '例如：Submit Button',
+  'PC.Pages.SystemConfig.LangContent.jsonFormatError':
+    'JSON 格式错误，请检查后重试',
+  'PC.Pages.SystemConfig.LangContent.jsonObjectRequired':
+    '请输入对象格式的键值对 JSON',
+  'PC.Pages.SystemConfig.LangContent.atLeastOnePair': '请至少填写一条键值对',
+  'PC.Pages.SystemConfig.LangContent.batchProcessSuccess': '批量处理成功',
+  'PC.Pages.SystemConfig.LangContent.batchAddOrUpdateTitle': '批量新增或更新',
+  'PC.Pages.SystemConfig.LangContent.translateSuccess': '翻译成功',
+  'PC.Pages.SystemConfig.LangContent.moduleColumn': '端',
+  'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
+  'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻译全部',
+  'PC.Pages.SystemConfig.LangContent.keyValMng': '键值管理',
+  'PC.Pages.SpaceDevelop.copyIndependentSessionSuccess': '已复制独立会话路径',
+  'PC.Pages.AntvX6.systemPrompt': '系统提示词',
+  'PC.Pages.AntvX6.userPrompt': '用户提示词',
+  'PC.Pages.SpaceLibrary.availableScope': '可用范围',
+  'PC.Pages.SpaceLibrary.selectAvailableScope': '请选择可用范围',
+  'PC.Pages.MorePage.ApiKey.neverExpires': '永不过期',
+  'PC.Pages.EditAgent.VariableDataBinding.pluginOrWorkflowRequired':
+    '请选择符合数据规范的插件或工作流',
 };

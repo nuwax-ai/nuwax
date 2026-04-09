@@ -150,10 +150,14 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
             },
           ]}
         >
-          <Input placeholder="例如：英语、日本语" />
+          <Input
+            placeholder={dict(
+              'PC.Pages.SystemConfig.I18nManage.namePlaceholder',
+            )}
+          />
         </Form.Item>
         <Form.Item
-          label="语言标识 (Code)"
+          label={dict('PC.Pages.SystemConfig.I18nManage.codeLabel')}
           name="lang"
           rules={[
             {
@@ -161,39 +165,51 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
               message: dict('PC.Pages.SystemConfigI18n.inputLangCode'),
             },
           ]}
-          tooltip="code格式：语言代码 - 国家代码"
+          tooltip={dict('PC.Pages.SystemConfig.I18nManage.codeTooltip')}
         >
-          <Input placeholder="例如：en-US、ja-JP" disabled={isEdit} />
+          <Input
+            placeholder={dict(
+              'PC.Pages.SystemConfig.I18nManage.codePlaceholder',
+            )}
+            disabled={isEdit}
+          />
         </Form.Item>
         <Form.Item
           label={dict('PC.Pages.SystemConfigI18n.columnSort')}
           name="sort"
-          tooltip="值越小越靠前"
+          tooltip={dict('PC.Pages.SystemConfig.I18nManage.orderTooltip')}
         >
           <InputNumber
             min={0}
             max={1000}
             precision={0}
             style={{ width: '100%' }}
-            placeholder="例如：1"
+            placeholder={dict(
+              'PC.Pages.SystemConfig.I18nManage.orderPlaceholder',
+            )}
           />
         </Form.Item>
         <Form.Item
-          label="设为默认语言"
+          label={dict('PC.Pages.SystemConfig.I18nManage.setDefaultLang')}
           name="isDefault"
           valuePropName="checked"
           tooltip={
             isEdit && disableDefaultSwitch
               ? {
-                  title:
-                    '编辑语言时，如果当前语言是默认语言，则需要在语言列表中通过切换设置其他语言为默认语言，来取消当前语言为默认语言。',
+                  title: dict(
+                    'PC.Pages.SystemConfig.I18nManage.defaultLangTip',
+                  ),
                 }
               : undefined
           }
         >
           <Switch disabled={disableDefaultSwitch} />
         </Form.Item>
-        <Form.Item label="启用状态" name="status" valuePropName="checked">
+        <Form.Item
+          label={dict('PC.Pages.SystemConfig.I18nManage.statusLabel')}
+          name="status"
+          valuePropName="checked"
+        >
           <Switch />
         </Form.Item>
       </Form>
