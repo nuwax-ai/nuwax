@@ -22,7 +22,7 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, Space, Tag, message } from 'antd';
+import { Button, Progress, Space, Tag, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest, useSearchParams } from 'umi';
 import AddKeyValueModal from './AddKeyValueModal';
@@ -55,6 +55,9 @@ const LangContent: React.FC = () => {
     useState<boolean>(false);
   // 翻译全部 SSE 连接中断函数
   const translateAllAbortRef = useRef<(() => void) | null>(null);
+
+  // 翻译全部进度
+  const [translateAllPercent, setTranslateAllPercent] = useState<number>(0);
 
   // ====================== 批量新增或更新键值对弹窗 ======================
   const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
@@ -126,6 +129,7 @@ const LangContent: React.FC = () => {
   // 翻译全部
   const handleTranslateAll = async () => {
     setTranslateAllLoading(true);
+    setTranslateAllPercent(0);
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // 避免重复点击导致并发 SSE
@@ -144,10 +148,26 @@ const LangContent: React.FC = () => {
           message.warning(res.message);
           return;
         }
-        // message.success(
-        //   dict('PC.Pages.SystemConfig.LangContent.translateSuccess'),
-        // );
-        // actionRef.current?.reload();
+
+        if (res.code === SUCCESS_CODE) {
+          const { data } = res;
+          // 翻译中
+          if (data?.phase === 'progress') {
+            const currentPercent = Number(data.percent || 0);
+            setTranslateAllPercent(currentPercent);
+          }
+
+          // 翻译完成
+          if (data?.phase === 'done') {
+            setTranslateAllPercent(100);
+            actionRef.current?.reload();
+
+            message.success(
+              dict('PC.Pages.SystemConfig.LangContent.translateSuccess'),
+            );
+            actionRef.current?.reload();
+          }
+        }
       },
       onClose: () => {
         translateAllAbortRef.current?.();
@@ -155,6 +175,7 @@ const LangContent: React.FC = () => {
         setTranslateAllLoading(false);
       },
       onError: () => {
+        setTranslateAllPercent(0);
         translateAllAbortRef.current?.();
         translateAllAbortRef.current = null;
         setTranslateAllLoading(false);
@@ -166,11 +187,7 @@ const LangContent: React.FC = () => {
   const handleTranslateAllWithConfirm = () => {
     modalConfirm(
       '翻译全部',
-      '翻译将会消耗您的token，您确认将默认语言(' +
-        defaultLang +
-        ')全部的键值对翻译成当前语言(' +
-        lang +
-        ')吗？',
+      `确认将默认语言（${defaultLang}）全部的键值对翻译成当前语言（${lang}）吗？已有内容的键值对将不再翻译。`,
       async () => {
         await handleTranslateAll();
         return Promise.resolve();
@@ -210,6 +227,7 @@ const LangContent: React.FC = () => {
         placeholder: dict('PC.Pages.SystemConfig.LangContent.searchKey'),
         allowClear: true,
       },
+      render: (_, record) => <span translate="no">{record.key}</span>,
     },
     {
       title: dict('PC.Pages.SystemConfig.LangContent.textContentLabel'),
@@ -300,7 +318,20 @@ const LangContent: React.FC = () => {
           {/* 只有非默认语言可以将默认语言的键值对翻译为当前语言 */}
           <ConditionRender condition={defaultLang}>
             <Button
-              loading={translateAllLoading}
+              loading={
+                translateAllLoading
+                  ? {
+                      icon: (
+                        <Progress
+                          type="circle"
+                          percent={translateAllPercent}
+                          size={16}
+                          showInfo={false}
+                        />
+                      ),
+                    }
+                  : false
+              }
               onClick={handleTranslateAllWithConfirm}
             >
               {dict('PC.Pages.SystemConfig.LangContent.translateAllBtn')}

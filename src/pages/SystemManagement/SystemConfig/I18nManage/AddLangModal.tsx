@@ -44,9 +44,13 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
 }) => {
   const isEdit = Boolean(langInfo?.id);
   const [form] = Form.useForm<AddLangFormValues>();
+  const isDefaultChecked = Form.useWatch('isDefault', form);
   // 是否禁用默认语言开关
   const disableDefaultSwitch =
     isEdit && langInfo?.isDefault === I18nLangIsDefaultEnum.Yes;
+
+  // 是否禁用状态开关
+  const disableStatusSwitch = Boolean(isDefaultChecked);
 
   // 新增语言
   const { run: runAddLang, loading: addingLang } = useRequest(apiI18nLangAdd, {
@@ -91,6 +95,14 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
       }
     }
   }, [open, isEdit, langInfo, sortIndex, form]);
+
+  // isDefault 为 true 时，status 必须自动开启且不可编辑
+  useEffect(() => {
+    if (!open || !isDefaultChecked) return;
+    if (form.getFieldValue('status') !== true) {
+      form.setFieldValue('status', true);
+    }
+  }, [open, isDefaultChecked, form]);
 
   // 提交表单
   const handleOk = async () => {
@@ -210,7 +222,7 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           name="status"
           valuePropName="checked"
         >
-          <Switch />
+          <Switch disabled={disableStatusSwitch} />
         </Form.Item>
       </Form>
     </Modal>

@@ -240,6 +240,10 @@ const I18nManage: React.FC = () => {
       render: (status, record) => (
         <Switch
           checked={status === I18nLangStatusEnum.Enabled}
+          disabled={
+            record.isDefault === I18nLangIsDefaultEnum.Yes &&
+            status === I18nLangStatusEnum.Enabled
+          }
           loading={statusLoadingId === record.id}
           onChange={(checked) => handleToggleStatus(checked, record)}
         />
