@@ -8,7 +8,6 @@ import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import { APP_NAME, APP_VERSION } from './constants/version';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
-import { startI18nDomTranslator } from './services/i18nDomTranslator';
 import {
   getCurrentLang,
   initI18n,
@@ -214,13 +213,6 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       );
     };
   }, [setAntdConfig]);
-
-  useEffect(() => {
-    const stop = startI18nDomTranslator();
-    return () => {
-      stop();
-    };
-  }, []);
 
   return (
     <>
