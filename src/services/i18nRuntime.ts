@@ -289,8 +289,8 @@ export const translateLiteralText = (rawText: string): string => {
   return originalText.replace(trimmedText, translated);
 };
 
-export const initI18n = async (): Promise<void> => {
-  if (initialized) return;
+export const initI18n = async (force: boolean = false): Promise<void> => {
+  if (initialized && !force) return;
 
   const cachedLang = readLangFromCache();
   const resolvedLang = normalizeLang(cachedLang || getBrowserLang());

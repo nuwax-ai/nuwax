@@ -72,7 +72,7 @@ const Login: React.FC = () => {
       // 登录成功后强制刷新菜单数据（可能切换了账号）
       await loadMenus(true);
       // 登录成功后重新初始化语言
-      await initI18n();
+      await initI18n(true);
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
       if (isWeakNumber(redirect)) {
         history.go(Number(redirect));
