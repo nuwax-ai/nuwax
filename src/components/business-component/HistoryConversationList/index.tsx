@@ -6,13 +6,10 @@ import { t } from '@/services/i18nRuntime';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
 import { Input, message, Modal } from 'antd';
-import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import ConversationList, { ConversationListRef } from './ConversationList';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import styles from './index.module.less';
 
 // 历史会话页面组件Props
 export interface HistoryConversationListProps {
@@ -140,20 +137,20 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   };
 
   return (
-    <div className={cx(styles.container)}>
+    <div className={styles.container}>
       <div
-        className={cx(styles['close-icon'])}
+        className={styles['close-icon']}
         onClick={() => {
           history.back();
         }}
       >
         <CloseOutlined />
       </div>
-      <div className={cx(styles['main-content'])}>
-        <div className={cx(styles.title)}>
+      <div className={styles['main-content']}>
+        <div className={styles.title}>
           {t('PC.Components.HistoryConversationList.pageTitle')}
         </div>
-        <div className={cx(styles['search-input'])}>
+        <div className={styles['search-input']}>
           <Input
             prefix={<SearchOutlined style={{ color: '#999', fontSize: 16 }} />}
             placeholder={t(
@@ -161,11 +158,11 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
             )}
             value={keyword}
             onChange={onStartSearch}
-            className={cx(styles['search-input-field'])}
+            className={styles['search-input-field']}
             allowClear
           />
         </div>
-        <div className={cx(styles['list-wrapper'])}>
+        <div className={styles['list-wrapper']}>
           <ConversationList
             ref={listRef}
             agentId={agentId}
