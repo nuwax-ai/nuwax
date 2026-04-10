@@ -32,6 +32,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onRestartServer,
   onRestartAgent,
   onExportProject,
+  isCloudComputer,
 }) => {
   // 菜单项配置
   const menuItems = useMemo(
@@ -67,6 +68,11 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                 <div className="flex items-center">
                   <span>
                     {dict('PC.Components.MoreActionsMenu.restartComputer')}
+                  </span>
+                  <span>
+                    {isCloudComputer
+                      ? dict('PC.Components.MoreActionsMenu.restartComputer')
+                      : dict('PC.Components.MoreActionsMenu.restartClient')}
                   </span>
                   <TooltipIcon
                     title={dict(

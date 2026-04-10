@@ -2556,6 +2556,7 @@ export const EN_US: SystemLangMap = {
   'PC.Components.MoreActionsMenu.restartComputer': 'Restart Agent Computer',
   'PC.Components.MoreActionsMenu.restartComputerTooltip':
     'All running agents will be restarted',
+  'PC.Components.MoreActionsMenu.restartClient': 'Restart Client',
   'PC.Components.MoreActionsMenu.restartAgent': 'Restart Agent',
   'PC.Components.MoreActionsMenu.restartAgentTooltip':
     'Current agent will restart',

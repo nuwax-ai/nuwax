@@ -226,6 +226,45 @@ function cloneArg(arg: InputAndOutConfig): InputAndOutConfig {
   return JSON.parse(JSON.stringify(arg)) as InputAndOutConfig;
 }
 
+/**
+ * 将循环内部节点输出递归转换为 Array_* 类型。
+ *
+ * 说明：
+ * - 循环节点对外暴露的是“每次迭代结果的集合”，不仅顶层参数是数组，
+ *   子属性也应对应数组后的属性集合类型（如 String -> Array_String）。
+ * - 历史实现只转换了第一层，导致子属性仍是 String/Object，进而在引用选择时被判定为非数组。
+ */
+function applyLoopArrayType(arg: InputAndOutConfig): void {
+  arg.originDataType = arg.dataType;
+
+  if (
+    !arg.dataType ||
+    (typeof arg.dataType === 'string' &&
+      !(arg.dataType as string).startsWith('Array_'))
+  ) {
+    const base =
+      typeof arg.dataType === 'string' && arg.dataType
+        ? arg.dataType
+        : 'Object';
+    arg.dataType = `Array_${base}` as DataTypeEnum;
+  } else {
+    arg.dataType = DataTypeEnum.Array_Object;
+  }
+
+  const children = arg.subArgs || arg.children;
+  if (Array.isArray(children) && children.length > 0) {
+    children.forEach((item) => applyLoopArrayType(item));
+    arg.subArgs = children;
+    arg.children = children;
+  }
+}
+
+function convertArgToLoopArrayType(arg: InputAndOutConfig): InputAndOutConfig {
+  const newArg = cloneArg(arg);
+  applyLoopArrayType(newArg);
+  return newArg;
+}
+
 function ensureVariableSuccessOutput(node: ChildNode): InputAndOutConfig[] {
   const outputs = [...(node.nodeConfig.outputArgs || [])];
   // 对于 Variable 节点，如果 configType 为空或者是 SET_VARIABLE，都应该添加 isSuccess
@@ -346,11 +385,25 @@ function flattenArgsToMap(
 
   args.forEach((arg) => {
     // 使用 arg.name 作为主要标识，如果为空则使用 arg.key (用于 variableArgs 等场景)
-    const argIdentifier = arg.name || arg.key || '';
-    const currentPath = [...parentPath, argIdentifier];
+    const nameIdentifier = arg.name || '';
+    const keyIdentifier = arg.key || '';
+    const primaryIdentifier = nameIdentifier || keyIdentifier;
+    const currentPath = [...parentPath, primaryIdentifier];
     const key = `${nodeIdOrPrefix}.${currentPath.join('.')}`;
 
     argMap[key] = arg;
+
+    /**
+     * 兼容历史 bindValue：
+     * 一些已保存数据使用 key 路径进行引用（如 nodeId.xxx.1212），
+     * 而新逻辑优先按 name 建立索引。这里补一个 key 路径别名，避免出现
+     * bindValueType=Reference 但无法命中 argMap 导致 dataType 回退的问题。
+     */
+    if (nameIdentifier && keyIdentifier && nameIdentifier !== keyIdentifier) {
+      const keyPath = [...parentPath, keyIdentifier];
+      const keyAlias = `${nodeIdOrPrefix}.${keyPath.join('.')}`;
+      argMap[keyAlias] = arg;
+    }
 
     // 如果有子参数，递归展开
     const subArgs = arg.subArgs || arg.children;
@@ -741,29 +794,10 @@ export function calculateNodePreviousArgs(
         const outputArgs = getNodeOutputArgs(innerNode, systemVariables);
         if (outputArgs.length === 0) return;
 
-        // 转换类型为 Array_ 前缀，并设置 originDataType (Line 119-138)
-        const transformed = outputArgs.map((arg) => {
-          const newArg = cloneArg(arg);
-          // 记录原始类型
-          newArg.originDataType = newArg.dataType;
-
-          // 转换为 Array 类型
-          if (
-            !newArg.dataType ||
-            (typeof newArg.dataType === 'string' &&
-              !(newArg.dataType as string).startsWith('Array_'))
-          ) {
-            const base =
-              typeof newArg.dataType === 'string' && newArg.dataType
-                ? newArg.dataType
-                : 'Object';
-            newArg.dataType = `Array_${base}` as DataTypeEnum;
-          } else {
-            // 已经是 Array 类型，转为 Array_Object
-            newArg.dataType = DataTypeEnum.Array_Object;
-          }
-          return newArg;
-        });
+        // 转换类型为 Array_ 前缀，并递归处理 subArgs/children
+        const transformed = outputArgs.map((arg) =>
+          convertArgToLoopArrayType(arg),
+        );
 
         const prefixedOutputArgs = prefixOutputArgsKeys(
           innerNode.id,

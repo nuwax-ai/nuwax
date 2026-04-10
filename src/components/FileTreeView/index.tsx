@@ -1691,7 +1691,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isFileTreePinned={isFileTreePinned}
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
-          hideDesktop={hideDesktop}
         />
       );
     };

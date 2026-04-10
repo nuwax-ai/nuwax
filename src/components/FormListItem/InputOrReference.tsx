@@ -112,24 +112,31 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
     };
   }, []);
 
+  /**
+   * 统一更新引用字段值。
+   *
+   * 关键约束：
+   * - 当用户选择 "Reference" 且能在 argMap 中命中目标变量时，才写入该变量的 dataType。
+   * - 当 argMap 暂时未命中（例如切换节点时序、旧数据残留）时，不再强制降级为 String，
+   *   以避免把 Loop 引用（Array_*）误写成 String。
+   * - 当用户切回 "Input" 模式时，保留当前 dataType，不做强制覆盖。
+   */
   const updateValues = (newValue: string, valueType: 'Input' | 'Reference') => {
     if (fieldName && form) {
       const basePath = fieldName.slice(0, -1);
       form.setFieldValue([...basePath, 'bindValueType'], valueType);
 
       if (valueType === 'Reference') {
-        const refDataType = referenceList?.argMap?.[newValue]?.dataType;
-        form.setFieldValue([...basePath, 'dataType'], refDataType || 'String');
+        const refInfo = referenceList?.argMap?.[newValue];
+        if (refInfo?.dataType) {
+          form.setFieldValue([...basePath, 'dataType'], refInfo.dataType);
+        }
         form.setFieldValue(fieldName, newValue);
         const _name = form.getFieldValue([...basePath, 'name']);
-        if (!_name || isDisabled) {
-          form.setFieldValue(
-            [...basePath, 'name'],
-            referenceList.argMap[newValue].name,
-          );
+        if (!_name) {
+          form.setFieldValue([...basePath, 'name'], refInfo?.name || '');
         }
       } else {
-        form.setFieldValue([...basePath, 'dataType'], 'String');
         form.setFieldValue(fieldName, newValue);
       }
     }
@@ -217,8 +224,13 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const handleTreeSelectChange = (key: React.Key[]) => {
     if (!key || !key.length) return;
     const selectedValue = key[0] as string;
+    const basePath = fieldName?.slice(0, -1) ?? [];
+    const currentDataType =
+      form && basePath.length > 0
+        ? form.getFieldValue([...basePath, 'dataType'])
+        : undefined;
     const refDataType =
-      referenceList?.argMap?.[selectedValue]?.dataType || 'String';
+      referenceList?.argMap?.[selectedValue]?.dataType || currentDataType;
     const refName = referenceList?.argMap?.[selectedValue]?.name || '';
 
     // 如果提供了 onReferenceSelect 回调，使用它（受控模式）

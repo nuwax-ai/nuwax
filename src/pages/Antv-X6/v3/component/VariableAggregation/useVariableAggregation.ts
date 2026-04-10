@@ -318,7 +318,20 @@ export const useVariableAggregation = ({
     const refInfo = referenceList?.argMap?.[selectedKey];
     if (!refInfo) return;
 
-    const refDataType = refInfo.dataType || DataTypeEnum.String;
+    const currentInput = group.inputs?.[inputIndex];
+    /**
+     * 引用类型优先级说明：
+     * 1. 优先使用当前选中引用在 argMap 中的真实类型；
+     * 2. 如果 argMap 临时未返回类型，则保留当前输入项/分组已有类型；
+     * 3. 最后才退回 String。
+     *
+     * 这样可以避免循环节点引用（Array_*）被误降级成 String。
+     */
+    const refDataType =
+      refInfo.dataType ||
+      currentInput?.dataType ||
+      group.dataType ||
+      DataTypeEnum.String;
     const refName = refInfo.name || '';
     const refSubArgs = refInfo.subArgs || refInfo.children || [];
 

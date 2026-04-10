@@ -340,6 +340,19 @@ export default () => {
         // 切换到智能体电脑 tab
         openDesktopView(cId);
       }
+
+      // 客户端电脑时，只重启容器，是否打开远程桌面视图由hideDesktop决定
+      if (sandboxId !== '-1') {
+        // 如果智能体配置的远程桌面不隐藏，则打开远程桌面视图
+        if (
+          conversationInfoRef.current?.agent?.hideDesktop !==
+          HideDesktopEnum.Yes
+        ) {
+          // 打开预览视图或远程桌面视图时修改状态值
+          openPreviewChangeState('desktop');
+        }
+      }
+
       const result = await apiRestartPod(cId);
       if (result.code === SUCCESS_CODE) {
         message.success(

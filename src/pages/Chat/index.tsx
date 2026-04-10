@@ -1183,8 +1183,7 @@ const Chat: React.FC = () => {
                   {/* 智能体电脑视图 */}
                   <ConditionRender
                     condition={
-                      conversationInfo?.agent.hideDesktop ===
-                        HideDesktopEnum.No && finalSelectedId === '-1'
+                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
                     }
                   >
                     <TooltipIcon

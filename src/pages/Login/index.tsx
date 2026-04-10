@@ -2,7 +2,7 @@ import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
-import { dict, syncLangFromUserInfo } from '@/services/i18nRuntime';
+import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { UserService } from '@/services/userService';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -71,6 +71,8 @@ const Login: React.FC = () => {
       }
       // 登录成功后强制刷新菜单数据（可能切换了账号）
       await loadMenus(true);
+      // 登录成功后重新初始化语言
+      await initI18n();
       const redirect = decodeURIComponent(searchParams.get('redirect') || '');
       if (isWeakNumber(redirect)) {
         history.go(Number(redirect));

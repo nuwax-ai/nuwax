@@ -599,12 +599,6 @@ const Workflow: React.FC = () => {
    */
   const saveCurrentNodeBeforeSwitch = useCallback(
     async (currentNode: ChildNode): Promise<ChildNode> => {
-      //  focus  blur
-      const activeElement = document.activeElement as HTMLElement;
-      if (activeElement && typeof activeElement.blur === 'function') {
-        activeElement.blur();
-      }
-
       const currentFormValues = form.getFieldsValue(true);
 
       const updatedNode = {
@@ -645,38 +639,54 @@ const Workflow: React.FC = () => {
       isNodeSwitchingRef.current = false;
     }, 600);
 
-    // Save current node before switching (with blur trigger).
+    /**
+     * 切换节点前保存当前节点：
+     * - 以前依赖 isModified 判断是否需要保存；
+     * - 但 isModified 由节流 onValuesChange 更新，存在”刚输入就切换节点”的时序窗口，
+     *   可能还是 false，从而跳过保存；
+     * - 这里改为直接用最新 Form 值与当前节点做深比较，避免节流时序导致丢值。
+     * - 先 blur + 等一个 tick，确保 blur/onChange 触发的表单写入完成后再比较和保存。
+     */
     if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
-      if (_isModified) {
-        const currentFormValues = form.getFieldsValue(true);
+      // 1) 先触发 blur，让组件内部把暂存值同步到 Form。
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
 
-        const hasChanges = checkNodeModified(_drawerForm, currentFormValues);
+      // 2) 等一个宏任务 tick，确保 blur/onChange 触发的表单写入完成。
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 0);
+      });
 
-        if (hasChanges) {
-          workflowLogger.log('[changeDrawer] save current node before switch');
+      // 3) 用最新 Form 值做深比较。
+      const currentFormValues = form.getFieldsValue(true);
+      const hasChanges = checkNodeModified(_drawerForm, currentFormValues);
 
-          // Trigger blur and persist latest form state.
-          const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(
-            _drawerForm,
-          );
+      if (hasChanges) {
+        workflowLogger.log('[changeDrawer] save current node before switch');
 
-          setIsModified(false);
-          onSaveWorkflow(updatedDrawerForm).then(() => {
+        // 触发 blur + 读取最新表单值并写回代理层/画布，再执行保存。
+        const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(
+          _drawerForm,
+        );
+
+        setIsModified(false);
+        onSaveWorkflow(updatedDrawerForm)
+          .then(() => {
             if (child && child.id !== 0) {
               getReference(child.id);
             }
+          })
+          .catch((error) => {
+            workflowLogger.log('[changeDrawer] save failed:', error);
           });
-        } else {
-          // ， flagged  modified， flag
-          setIsModified(false);
-          if (child && child.id !== 0) {
-            getReference(child.id);
-          }
-        }
       } else {
         if (child && child.id !== 0) {
           getReference(child.id);
         }
+        // 无变化则不保存，但重置 isModified，避免脏标记残留。
+        setIsModified(false);
       }
       if (timerRef.current) {
         clearTimeout(timerRef.current);

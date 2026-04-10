@@ -2311,6 +2311,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.MoreActionsMenu.restartComputer': '重啟智慧體電腦',
   'PC.Components.MoreActionsMenu.restartComputerTooltip':
     '當前使用者正在執行的所有智慧體將全部被重啟',
+  'PC.Components.MoreActionsMenu.restartClient': '重新啟動用戶端',
   'PC.Components.MoreActionsMenu.restartAgent': '重啟智慧體',
   'PC.Components.MoreActionsMenu.restartAgentTooltip':
     '當前會話對應的智慧體將重啟',
