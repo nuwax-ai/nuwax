@@ -5,7 +5,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { ApiKeyInfo } from '@/types/interfaces/account';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import {
-  BarChartOutlined,
+  BookOutlined,
   CopyOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -18,10 +18,9 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message, Space, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'umi';
+import { history, useLocation } from 'umi';
 import ApiKeyFormModal from './ApiKeyFormModal';
 import ApiKeyPermissionModal from './ApiKeyPermissionModal';
-import ApiKeyStatsModal from './ApiKeyStatsModal';
 
 export const STATUS_MAP: Record<number, { color: string; text: string }> = {
   1: { color: 'green', text: dict('PC.Pages.MorePage.ApiKey.statusEnabled') },
@@ -35,8 +34,6 @@ const ApiKeyPage: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [modalOpen, setModalOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<ApiKeyInfo | undefined>();
-  const [statsOpen, setStatsOpen] = useState(false);
-  const [statsRecord, setStatsRecord] = useState<ApiKeyInfo | undefined>();
   const [permissionOpen, setPermissionOpen] = useState(false);
   const [permissionRecord, setPermissionRecord] = useState<
     ApiKeyInfo | undefined
@@ -174,12 +171,11 @@ const ApiKeyPage: React.FC = () => {
           record={record}
           actions={[
             {
-              key: 'stats',
-              label: dict('PC.Pages.MorePage.ApiKey.callStats'),
-              icon: <BarChartOutlined />,
-              onClick: (r) => {
-                setStatsRecord(r);
-                setStatsOpen(true);
+              key: 'viewLogs',
+              label: dict('PC.Pages.MorePage.ApiKey.viewLogs'),
+              icon: <BookOutlined />,
+              onClick: (record) => {
+                history.push(`/more-page/api-key-logs?targetId=${record?.id}`);
               },
             },
             {
@@ -280,11 +276,6 @@ const ApiKeyPage: React.FC = () => {
           setModalOpen(false);
           actionRef.current?.reload();
         }}
-      />
-      <ApiKeyStatsModal
-        open={statsOpen}
-        onOpenChange={setStatsOpen}
-        record={statsRecord}
       />
       <ApiKeyPermissionModal
         open={permissionOpen}

@@ -225,7 +225,7 @@ export async function apiI18nAllLangList(): Promise<
 }
 
 /**
- * 查询多语言配置列表
+ * 分页查询多语言配置列表
  */
 export async function apiI18nConfigList(
   data: LangConfigListParams,

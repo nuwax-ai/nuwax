@@ -176,8 +176,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Components.VncIdleWarningModal.confirmText': '繼續使用',
   'PC.Components.VncIdleWarningModal.countdownAutoClose': '{0} 秒後自動關閉',
   'PC.Components.VncIdleWarningModal.hintAction': '任意鍵鼠操作將{0}',
-  'PC.Components.FilePreview.errorInvalidPptx':
-    '檔案格式無效或已損壞，請確認是否為有效的 PPTX 檔案',
+  'PC.Components.FilePreview.errorInvalid':
+    '檔案格式不支援預覽或檔案已損壞，請確認是否為有效的檔案',
   'PC.Components.FilePreview.errorNetwork':
     '網路請求失敗，請檢查網路連線後重試',
   'PC.Components.FilePreview.errorFileLoad': '檔案載入失敗，請重試',
@@ -3811,6 +3811,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.MorePage.ApiKey.unknownStatus': '未知',
   'PC.Pages.MorePage.ApiKey.actions': '操作',
   'PC.Pages.MorePage.ApiKey.callStats': '呼叫統計',
+  'PC.Pages.MorePage.ApiKey.viewLogs': '查看日誌',
   'PC.Pages.MorePage.ApiKey.permissionConfig': '許可權配置',
   'PC.Pages.MorePage.ApiKey.edit': '編輯',
   'PC.Pages.MorePage.ApiKey.delete': '刪除',

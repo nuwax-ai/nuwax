@@ -72,22 +72,29 @@
 
         .child-content {
           width: 50%;
-          // margin-top: 4px;
           cursor: pointer;
-          letter-spacing: 1px;
-          line-height: 22px;
-          margin: 6px 0;
+          letter-spacing: 0;
+          line-height: 1.2;
+          margin: 8px 0;
+          display: flex;
+          align-items: center;
 
           .icon-box-style {
+            flex-shrink: 0;
             width: 20px;
             height: 20px;
-            margin-right: 6px;
+            margin-right: 8px;
 
             svg {
               width: 20px;
               height: 20px;
               border-radius: 6px;
             }
+          }
+
+          span {
+            word-break: break-word;
+            overflow-wrap: break-word;
           }
         }
       }

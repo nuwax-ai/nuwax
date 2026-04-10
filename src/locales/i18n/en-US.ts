@@ -196,8 +196,8 @@ export const EN_US: SystemLangMap = {
   'PC.Components.VncIdleWarningModal.countdownAutoClose': 'Auto close in {0}s',
   'PC.Components.VncIdleWarningModal.hintAction':
     'Any keyboard or mouse action will {0}',
-  'PC.Components.FilePreview.errorInvalidPptx':
-    'The file format is invalid or corrupted. Please verify it is a valid PPTX file.',
+  'PC.Components.FilePreview.errorInvalid':
+    'The file format is not supported for preview or the file is corrupted. Please verify it is a valid file.',
   'PC.Components.FilePreview.errorNetwork':
     'Network request failed. Check your network and retry.',
   'PC.Components.FilePreview.errorFileLoad':
@@ -4437,6 +4437,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.ApiKey.unknownStatus': 'Unknown',
   'PC.Pages.MorePage.ApiKey.actions': 'Actions',
   'PC.Pages.MorePage.ApiKey.callStats': 'Call Statistics',
+  'PC.Pages.MorePage.ApiKey.viewLogs': 'View Logs',
   'PC.Pages.MorePage.ApiKey.permissionConfig': 'Permission Config',
   'PC.Pages.MorePage.ApiKey.edit': 'Edit',
   'PC.Pages.MorePage.ApiKey.delete': 'Delete',

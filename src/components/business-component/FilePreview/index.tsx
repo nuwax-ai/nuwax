@@ -259,7 +259,7 @@ const getLocalizedErrorMessage = (
     errorStr.includes('zip file') ||
     errorStr.includes('jszip')
   ) {
-    return t('PC.Components.FilePreview.errorInvalidPptx');
+    return t('PC.Components.FilePreview.errorInvalid');
   }
 
   // 网络相关错误
