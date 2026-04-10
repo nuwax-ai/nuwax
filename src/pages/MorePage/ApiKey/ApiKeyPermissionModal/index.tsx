@@ -102,14 +102,21 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     }
   }, [open, record]);
 
-  // 处理全选逻辑
-  const isAllChecked =
-    allLeafKeys.length > 0 && checkedKeys.length === allLeafKeys.length;
-  const isIndeterminate =
-    checkedKeys.length > 0 && checkedKeys.length < allLeafKeys.length;
+  // 处理项操作逻辑
+  const isAllChecked = useMemo(() => {
+    return (
+      allLeafKeys.length > 0 &&
+      allLeafKeys.every((key) => checkedKeys.includes(key))
+    );
+  }, [allLeafKeys, checkedKeys]);
+
+  const isIndeterminate = useMemo(() => {
+    if (isAllChecked) return false;
+    return allLeafKeys.some((key) => checkedKeys.includes(key));
+  }, [allLeafKeys, checkedKeys, isAllChecked]);
 
   const handleSelectAll = (checked: boolean) => {
-    setCheckedKeys(checked ? allLeafKeys : []);
+    setCheckedKeys(checked ? allKeys : []);
   };
 
   // 统计逻辑：计算某个节点下选中的子节点数量
@@ -239,7 +246,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
   return (
     <Modal
       title={
-        <Title level={4}>
+        <Title level={4} ellipsis={{ tooltip: true }}>
           {dict('PC.Pages.MorePage.ApiKeyPermission.title', record?.name || '')}
         </Title>
       }
@@ -296,7 +303,10 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
                 expandedKeys={expandedKeys}
                 onExpand={setExpandedKeys}
                 checkedKeys={checkedKeys}
-                onCheck={(keys: any) => setCheckedKeys(keys)}
+                onCheck={(keys: any) => {
+                  // checkStrictly={false} 时，keys 是一个数组
+                  setCheckedKeys(keys);
+                }}
                 treeData={treeData as any}
                 fieldNames={{ title: 'name', key: 'key', children: 'apiList' }}
                 titleRender={titleRender}

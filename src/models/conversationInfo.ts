@@ -159,6 +159,9 @@ export default () => {
   const [manualComponents, setManualComponents] = useState<
     AgentManualComponentInfo[]
   >([]);
+
+  // 当前选中的沙盒 ID（用于判断是否为云电脑）
+  const [currentSandboxId, setCurrentSandboxId] = useState<string | null>(null);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
 
@@ -1214,6 +1217,9 @@ export default () => {
     setRequiredNameList([]);
     setUserFillVariables(null);
 
+    // 重置当前沙盒 ID
+    setCurrentSandboxId(null);
+
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
   };
@@ -1318,6 +1324,9 @@ export default () => {
       // 模型ID
       modelId,
     };
+    // 同步当前沙盒 ID
+    setCurrentSandboxId(sandboxId || null);
+
     // 处理会话
     handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
   };
@@ -1433,5 +1442,9 @@ export default () => {
     setTaskAgentSelectTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
+    // 当前选中的沙盒 ID
+    currentSandboxId,
+    // 是否为云电脑 (sandboxId === "-1" 为云端电脑)
+    isCloudComputer: currentSandboxId === '-1',
   };
 };

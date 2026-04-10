@@ -208,7 +208,7 @@ const LangContent: React.FC = () => {
   // 列配置（使用表格内置搜索）
   const columns: ProColumns<I18nSlideLangInfo>[] = [
     {
-      title: dict('PC.Pages.SystemConfig.LangContent.moduleColumn'),
+      title: dict('PC.Pages.SystemConfig.LangContent.sideColumn'),
       dataIndex: 'side',
       key: 'side',
       width: 120,
@@ -218,6 +218,16 @@ const LangContent: React.FC = () => {
         options: sideSelectOptions,
       },
       render: (_, record) => <Tag>{record.side}</Tag>,
+    },
+    {
+      title: dict('PC.Pages.SystemConfig.LangContent.moduleColumn'),
+      dataIndex: 'module',
+      key: 'module',
+      width: 120,
+      fieldProps: {
+        placeholder: dict('PC.Pages.SystemConfig.LangContent.searchModule'),
+        allowClear: true,
+      },
     },
     {
       title: 'Key',
@@ -233,7 +243,6 @@ const LangContent: React.FC = () => {
       title: dict('PC.Pages.SystemConfig.LangContent.textContentLabel'),
       dataIndex: 'value',
       key: 'value',
-      hideInSearch: true,
     },
     {
       title: dict('PC.Pages.SystemConfig.LangContent.remarkLabel'),
@@ -289,12 +298,15 @@ const LangContent: React.FC = () => {
   const request = async (params: {
     current?: number;
     pageSize?: number;
+    module?: string;
     side?: string;
     key?: string;
     value?: string;
   }) => {
     const response = await apiI18nConfigList({
       lang,
+      module: params.module,
+      value: params.value,
       side: params.side,
       key: params.key,
       pageNo: params.current || 1,

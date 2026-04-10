@@ -1,16 +1,14 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
-import CustomPopover from '@/components/CustomPopover';
-import { XProTable } from '@/components/ProComponents';
+import {
+  TableActions,
+  XProTable,
+  type ActionItem,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  EllipsisOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
@@ -24,7 +22,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
+import { Button, Empty, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -413,149 +411,70 @@ const UserGroupManage: React.FC = () => {
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: UserGroupInfo & { key: number }) => {
-        // Built-in user-group checks.
         const isSystemBuiltIn =
           record.source === UserGroupSourceEnum.SystemBuiltIn;
 
-        // Edit permission checks.
-        const canEdit =
-          hasPermissionByMenuCode(
-            'user_group_manage',
-            'user_group_manage_modify',
-          ) && !isSystemBuiltIn;
-        const editTooltip = isSystemBuiltIn
-          ? t('PC.Pages.SystemUserGroupManage.builtInCannotEdit')
-          : !hasPermissionByMenuCode(
+        const actions: ActionItem<UserGroupInfo & { key: number }>[] = [
+          {
+            key: 'bindUser',
+            label: t('PC.Pages.SystemUserGroupManage.bindUser'),
+            onClick: () => handleBindUser(record),
+            visible: hasPermissionByMenuCode(
               'user_group_manage',
-              'user_group_manage_modify',
-            )
-          ? t('PC.Pages.SystemUserGroupManage.noPermission')
-          : '';
-
-        // Delete permission checks.
-        const canDelete =
-          hasPermissionByMenuCode(
-            'user_group_manage',
-            'user_group_manage_delete',
-          ) && !isSystemBuiltIn;
-        const deleteTooltip = isSystemBuiltIn
-          ? t('PC.Pages.SystemUserGroupManage.builtInCannotDelete')
-          : !hasPermissionByMenuCode(
+              'user_group_manage_bind_user',
+            ),
+          },
+          {
+            key: 'menuPermission',
+            label: t('PC.Pages.SystemUserGroupManage.menuPermission'),
+            onClick: () => handleMenuPermission(record),
+            visible: hasPermissionByMenuCode(
               'user_group_manage',
-              'user_group_manage_delete',
-            )
-          ? t('PC.Pages.SystemUserGroupManage.noPermission')
-          : '';
-
-        // Build more actions menu.
-        const moreActionList: CustomPopoverItem[] = [
+              'user_group_manage_bind_menu',
+            ),
+          },
+          {
+            key: 'dataPermission',
+            label: t('PC.Pages.SystemUserGroupManage.dataPermission'),
+            onClick: () => handleDataPermission(record),
+            visible: hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_bind_data',
+            ),
+          },
           {
             key: 'edit',
             label: t('PC.Pages.SystemUserGroupManage.edit'),
-            disabled: !canEdit,
-            tooltip: editTooltip,
+            onClick: () => handleEdit(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemUserGroupManage.builtInCannotEdit')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_modify',
+            ),
           },
           {
             key: 'delete',
             label: t('PC.Pages.SystemUserGroupManage.delete'),
-            disabled: !canDelete,
-            tooltip: deleteTooltip,
+            onClick: () => handleDeleteConfirm(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemUserGroupManage.builtInCannotDelete')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'user_group_manage',
+              'user_group_manage_delete',
+            ),
           },
         ];
 
-        // Handle more action click.
-        const handleMoreActionClick = (item: CustomPopoverItem) => {
-          if (item.disabled) {
-            return;
-          }
-          if (item.key === 'edit') {
-            handleEdit(record);
-          } else if (item.key === 'delete') {
-            handleDeleteConfirm(record);
-          }
-        };
-
         return (
-          <Space size={0}>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode(
-                  'user_group_manage',
-                  'user_group_manage_bind_user',
-                )
-                  ? t('PC.Pages.SystemUserGroupManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'user_group_manage',
-                    'user_group_manage_bind_user',
-                  )
-                }
-                onClick={() => handleBindUser(record)}
-              >
-                {t('PC.Pages.SystemUserGroupManage.bindUser')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode(
-                  'user_group_manage',
-                  'user_group_manage_bind_menu',
-                )
-                  ? t('PC.Pages.SystemUserGroupManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'user_group_manage',
-                    'user_group_manage_bind_menu',
-                  )
-                }
-                onClick={() => handleMenuPermission(record)}
-              >
-                {t('PC.Pages.SystemUserGroupManage.menuPermission')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode(
-                  'user_group_manage',
-                  'user_group_manage_bind_data',
-                )
-                  ? t('PC.Pages.SystemUserGroupManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'user_group_manage',
-                    'user_group_manage_bind_data',
-                  )
-                }
-                onClick={() => handleDataPermission(record)}
-              >
-                {t('PC.Pages.SystemUserGroupManage.dataPermission')}
-              </Button>
-            </Tooltip>
-            <CustomPopover
-              list={moreActionList}
-              onClick={handleMoreActionClick}
-            >
-              <Button type="link" size="small" icon={<EllipsisOutlined />} />
-            </CustomPopover>
-          </Space>
+          <TableActions<UserGroupInfo & { key: number }>
+            record={record}
+            actions={actions}
+          />
         );
       },
     },

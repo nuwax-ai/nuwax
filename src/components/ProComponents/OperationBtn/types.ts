@@ -14,6 +14,9 @@ export interface OperationBtnProps<T> {
   /** 按钮图标（可选） */
   icon?: ReactNode;
 
+  /** 自定义 Tooltip 内容（可选，未设置时默认使用 label） */
+  tooltip?: string;
+
   /** 按钮点击事件 */
   onClick?: (record: T) => void | Promise<any>;
 

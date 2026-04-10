@@ -1889,6 +1889,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip':
     '在内容管理中开启管控并发布到系统广场后可在此处进行授权',
   'PC.Pages.SystemMenuDataPermissionModal.tabWebApp': '网页应用',
+  'PC.Pages.SystemMenuDataPermissionModal.tabKnowledgeBase': '知识库',
   'PC.Pages.SystemMenuDataPermissionModal.tabDevPermission': '开发权限',
   'PC.Pages.SystemMenuDataPermissionModal.saveSuccess': '数据权限保存成功',
   'PC.Pages.SystemMenuDataPermissionModal.missingTargetId':
@@ -5414,6 +5415,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemConfig.I18nManage.codeTooltip':
     'code格式：语言代码 - 国家代码',
   'PC.Pages.SystemConfig.I18nManage.codePlaceholder': '例如：en-US、ja-JP',
+  'PC.Pages.SystemConfig.I18nManage.selectLangLabel': '语言',
+  'PC.Pages.SystemConfig.I18nManage.selectLangRequired': '请选择语言',
+  'PC.Pages.SystemConfig.I18nManage.switchToCustom': '没有想要的语言？手动新建',
+  'PC.Pages.SystemConfig.I18nManage.backToSelectLang': '返回语言选择',
   'PC.Pages.SystemConfig.I18nManage.orderTooltip': '值越小越靠前',
   'PC.Pages.SystemConfig.I18nManage.orderPlaceholder': '例如：1',
   'PC.Pages.SystemConfig.I18nManage.setDefaultLang': '设为默认语言',
@@ -5447,7 +5452,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.batchProcessSuccess': '批量处理成功',
   'PC.Pages.SystemConfig.LangContent.batchAddOrUpdateTitle': '批量新增或更新',
   'PC.Pages.SystemConfig.LangContent.translateSuccess': '翻译成功',
-  'PC.Pages.SystemConfig.LangContent.moduleColumn': '端',
+  'PC.Pages.SystemConfig.LangContent.moduleColumn': '模块',
+  'PC.Pages.SystemConfig.LangContent.sideColumn': '端',
+  'PC.Pages.SystemConfig.LangContent.searchModule': '搜索模块...',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻译全部',
   'PC.Pages.SystemConfig.LangContent.keyValMng': '键值管理',

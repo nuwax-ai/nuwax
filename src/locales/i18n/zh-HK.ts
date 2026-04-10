@@ -1889,6 +1889,7 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip':
     '在內容管理中開啓管控併發布到系統廣場後可在此處進行授權',
   'PC.Pages.SystemMenuDataPermissionModal.tabWebApp': '網頁應用',
+  'PC.Pages.SystemMenuDataPermissionModal.tabKnowledgeBase': '知識庫',
   'PC.Pages.SystemMenuDataPermissionModal.tabDevPermission': '開發權限',
   'PC.Pages.SystemMenuDataPermissionModal.saveSuccess': '數據權限保存成功',
   'PC.Pages.SystemMenuDataPermissionModal.missingTargetId':
@@ -4976,6 +4977,10 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SystemConfig.I18nManage.codeTooltip':
     'code格式：語言代碼 - 國家代碼',
   'PC.Pages.SystemConfig.I18nManage.codePlaceholder': '例如：en-US、ja-JP',
+  'PC.Pages.SystemConfig.I18nManage.selectLangLabel': '語言',
+  'PC.Pages.SystemConfig.I18nManage.selectLangRequired': '請選擇語言',
+  'PC.Pages.SystemConfig.I18nManage.switchToCustom': '沒有想要的語言？手動新建',
+  'PC.Pages.SystemConfig.I18nManage.backToSelectLang': '返回語言選擇',
   'PC.Pages.SystemConfig.I18nManage.orderTooltip': '值越小越靠前',
   'PC.Pages.SystemConfig.I18nManage.orderPlaceholder': '例如：1',
   'PC.Pages.SystemConfig.I18nManage.setDefaultLang': '設為預設語言',
@@ -5009,7 +5014,9 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.batchProcessSuccess': '批量處理成功',
   'PC.Pages.SystemConfig.LangContent.batchAddOrUpdateTitle': '批量新增或更新',
   'PC.Pages.SystemConfig.LangContent.translateSuccess': '翻譯成功',
-  'PC.Pages.SystemConfig.LangContent.moduleColumn': '端',
+  'PC.Pages.SystemConfig.LangContent.moduleColumn': '模塊',
+  'PC.Pages.SystemConfig.LangContent.sideColumn': '端',
+  'PC.Pages.SystemConfig.LangContent.searchModule': '搜索模塊...',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻譯全部',
   'PC.Pages.SystemConfig.LangContent.keyValMng': '鍵值管理',

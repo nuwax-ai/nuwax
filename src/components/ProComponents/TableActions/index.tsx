@@ -13,6 +13,8 @@ export interface ActionItem<T>
   key: string;
   /** 按钮文本，展示在文字链接或 Tooltip 下拉菜单中 */
   label: string;
+  /** 自定义 Tooltip 内容（可选，未设置时默认使用 label） */
+  tooltip?: string;
 }
 
 interface TableActionsProps<T> {

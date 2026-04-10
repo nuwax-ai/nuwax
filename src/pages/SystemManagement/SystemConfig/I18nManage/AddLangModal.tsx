@@ -1,6 +1,11 @@
-import { apiI18nLangAdd, apiI18nLangUpdate } from '@/services/i18n';
+import {
+  apiI18nBootstrapLangList,
+  apiI18nLangAdd,
+  apiI18nLangUpdate,
+} from '@/services/i18n';
 import { dict } from '@/services/i18nRuntime';
 import {
+  I18nBootstrapLangDto,
   I18nLangIsDefaultEnum,
   I18nLangStatusEnum,
   type I18nAddLangParams,
@@ -8,8 +13,18 @@ import {
   type I18nUpdateLangParams,
 } from '@/types/interfaces/i18n';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, InputNumber, message, Modal, Switch } from 'antd';
-import React, { useEffect } from 'react';
+import { PlusCircleOutlined, RollbackOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Modal,
+  Select,
+  Switch,
+} from 'antd';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
 interface AddLangModalProps {
@@ -25,6 +40,7 @@ interface AddLangModalProps {
  * 新增语言表单值
  */
 interface AddLangFormValues {
+  selectedLang?: string;
   name: string;
   lang: string;
   sort?: number;
@@ -52,6 +68,34 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
   // 是否禁用状态开关
   const disableStatusSwitch = Boolean(isDefaultChecked);
 
+  // 可选语言列表
+  const [bootstrapLangList, setBootstrapLangList] = useState<
+    I18nBootstrapLangDto[]
+  >([]);
+  // 是否手动输入语言
+  const [isCustomLangInput, setIsCustomLangInput] = useState<boolean>(false);
+
+  // 查询可选语言列表
+  const { run: runGetBootstrapLangList } = useRequest(
+    apiI18nBootstrapLangList,
+    {
+      manual: true,
+      onSuccess: (result: I18nBootstrapLangDto[]) => {
+        setBootstrapLangList(result);
+        // 编辑语言时，回显语言信息
+        if (isEdit && langInfo) {
+          form.setFieldsValue({
+            name: langInfo.name,
+            lang: langInfo.lang,
+            sort: langInfo.sort ?? 0,
+            isDefault: langInfo.isDefault === I18nLangIsDefaultEnum.Yes,
+            status: langInfo.status === I18nLangStatusEnum.Enabled,
+          });
+        }
+      },
+    },
+  );
+
   // 新增语言
   const { run: runAddLang, loading: addingLang } = useRequest(apiI18nLangAdd, {
     manual: true,
@@ -77,24 +121,17 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      // 查询可选语言列表
+      runGetBootstrapLangList();
+    } else {
       form.resetFields();
-      if (isEdit && langInfo) {
-        form.setFieldsValue({
-          name: langInfo.name,
-          lang: langInfo.lang,
-          sort: langInfo.sort ?? 0,
-          isDefault: langInfo.isDefault === I18nLangIsDefaultEnum.Yes,
-          status: langInfo.status === I18nLangStatusEnum.Enabled,
-        });
-      } else {
-        form.setFieldsValue({
-          isDefault: false,
-          status: true,
-          sort: sortIndex || 0,
-        });
-      }
+      form.setFieldsValue({
+        isDefault: false,
+        status: true,
+        sort: sortIndex || 0,
+      });
     }
-  }, [open, isEdit, langInfo, sortIndex, form]);
+  }, [open, sortIndex]);
 
   // isDefault 为 true 时，status 必须自动开启且不可编辑
   useEffect(() => {
@@ -107,14 +144,40 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
   // 提交表单
   const handleOk = async () => {
     const values = await form.validateFields();
+    let finalValues = values;
+
+    // 新增时默认使用下拉选择语言，提交时自动回填 name/lang
+    if (!isEdit && !isCustomLangInput) {
+      const selected = bootstrapLangList.find(
+        (item) => item.tag === values?.selectedLang,
+      );
+      if (!selected) {
+        form.setFields([
+          {
+            name: 'selectedLang',
+            errors: [
+              dict('PC.Pages.SystemConfig.I18nManage.selectLangRequired'),
+            ],
+          },
+        ]);
+        return;
+      }
+      finalValues = {
+        ...values,
+        name: selected.name,
+        lang: selected.tag,
+      };
+    }
 
     // 构建新增语言参数
     const addPayload: I18nAddLangParams = {
-      ...values,
-      isDefault: values.isDefault
+      name: finalValues.name,
+      lang: finalValues.lang,
+      sort: finalValues.sort,
+      isDefault: finalValues.isDefault
         ? I18nLangIsDefaultEnum.Yes
         : I18nLangIsDefaultEnum.No,
-      status: values.status
+      status: finalValues.status
         ? I18nLangStatusEnum.Enabled
         : I18nLangStatusEnum.Disabled,
     };
@@ -152,44 +215,93 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
         layout="vertical"
         requiredMark={customizeRequiredMark}
       >
-        <Form.Item
-          label={dict('PC.Pages.SystemConfigI18n.columnName')}
-          name="name"
-          rules={[
-            {
-              required: true,
-              message: dict('PC.Pages.SystemConfigI18n.inputLangName'),
-            },
-          ]}
-        >
-          <Input
-            maxLength={50}
-            showCount
-            placeholder={dict(
-              'PC.Pages.SystemConfig.I18nManage.namePlaceholder',
+        {!isEdit && !isCustomLangInput ? (
+          <Form.Item
+            label={dict('PC.Pages.SystemConfig.I18nManage.selectLangLabel')}
+            name="selectedLang"
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Pages.SystemConfig.I18nManage.selectLangRequired',
+                ),
+              },
+            ]}
+            extra={
+              <Button
+                type="link"
+                icon={<PlusCircleOutlined />}
+                style={{ paddingLeft: 0 }}
+                onClick={() => setIsCustomLangInput(true)}
+              >
+                {dict('PC.Pages.SystemConfig.I18nManage.switchToCustom')}
+              </Button>
+            }
+          >
+            <Select
+              showSearch
+              placeholder={dict(
+                'PC.Pages.SystemConfig.I18nManage.selectLangRequired',
+              )}
+              optionFilterProp="label"
+              options={bootstrapLangList.map((item) => ({
+                label: `${item.name} (${item.tag})`,
+                value: item.tag,
+              }))}
+            />
+          </Form.Item>
+        ) : (
+          <>
+            {!isEdit && (
+              <Button
+                type="link"
+                icon={<RollbackOutlined />}
+                style={{ paddingLeft: 0, marginBottom: 8 }}
+                onClick={() => setIsCustomLangInput(false)}
+              >
+                {dict('PC.Pages.SystemConfig.I18nManage.backToSelectLang')}
+              </Button>
             )}
-          />
-        </Form.Item>
-        <Form.Item
-          label={dict('PC.Pages.SystemConfig.I18nManage.codeLabel')}
-          name="lang"
-          rules={[
-            {
-              required: true,
-              message: dict('PC.Pages.SystemConfigI18n.inputLangCode'),
-            },
-          ]}
-          tooltip={dict('PC.Pages.SystemConfig.I18nManage.codeTooltip')}
-        >
-          <Input
-            maxLength={50}
-            showCount
-            placeholder={dict(
-              'PC.Pages.SystemConfig.I18nManage.codePlaceholder',
-            )}
-            disabled={isEdit}
-          />
-        </Form.Item>
+            <Form.Item
+              label={dict('PC.Pages.SystemConfigI18n.columnName')}
+              name="name"
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Pages.SystemConfigI18n.inputLangName'),
+                },
+              ]}
+            >
+              <Input
+                maxLength={50}
+                showCount
+                placeholder={dict(
+                  'PC.Pages.SystemConfig.I18nManage.namePlaceholder',
+                )}
+              />
+            </Form.Item>
+            <Form.Item
+              label={dict('PC.Pages.SystemConfig.I18nManage.codeLabel')}
+              name="lang"
+              rules={[
+                {
+                  required: true,
+                  message: dict('PC.Pages.SystemConfigI18n.inputLangCode'),
+                },
+              ]}
+              tooltip={dict('PC.Pages.SystemConfig.I18nManage.codeTooltip')}
+            >
+              <Input
+                maxLength={50}
+                showCount
+                placeholder={dict(
+                  'PC.Pages.SystemConfig.I18nManage.codePlaceholder',
+                )}
+                disabled={isEdit}
+              />
+            </Form.Item>
+          </>
+        )}
         <Form.Item
           label={dict('PC.Pages.SystemConfigI18n.columnSort')}
           name="sort"

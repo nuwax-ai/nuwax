@@ -1,16 +1,14 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
-import CustomPopover from '@/components/CustomPopover';
-import { XProTable } from '@/components/ProComponents';
+import {
+  TableActions,
+  XProTable,
+  type ActionItem,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
-import {
-  EllipsisOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
@@ -24,7 +22,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
+import { Button, Empty, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -398,129 +396,69 @@ const RoleManage: React.FC = () => {
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: RoleInfo & { key: number }) => {
-        // Built-in role checks.
         const isSystemBuiltIn = record.source === RoleSourceEnum.SystemBuiltIn;
 
-        // Edit permission checks.
-        const canEdit =
-          hasPermissionByMenuCode('role_manage', 'role_manage_modify') &&
-          !isSystemBuiltIn;
-        const editTooltip = isSystemBuiltIn
-          ? t('PC.Pages.SystemRoleManage.builtInCannotEdit')
-          : !hasPermissionByMenuCode('role_manage', 'role_manage_modify')
-          ? t('PC.Pages.SystemRoleManage.noPermission')
-          : '';
-
-        // Delete permission checks.
-        const canDelete =
-          hasPermissionByMenuCode('role_manage', 'role_manage_delete') &&
-          !isSystemBuiltIn;
-        const deleteTooltip = isSystemBuiltIn
-          ? t('PC.Pages.SystemRoleManage.builtInCannotDelete')
-          : !hasPermissionByMenuCode('role_manage', 'role_manage_delete')
-          ? t('PC.Pages.SystemRoleManage.noPermission')
-          : '';
-
-        // Build more actions menu.
-        const moreActionList: CustomPopoverItem[] = [
+        const actions: ActionItem<RoleInfo & { key: number }>[] = [
+          {
+            key: 'bindUser',
+            label: t('PC.Pages.SystemRoleManage.bindUser'),
+            onClick: () => handleBindUser(record),
+            visible: hasPermissionByMenuCode(
+              'role_manage',
+              'role_manage_bind_user',
+            ),
+          },
+          {
+            key: 'menuPermission',
+            label: t('PC.Pages.SystemRoleManage.menuPermission'),
+            onClick: () => handleMenuPermission(record),
+            visible: hasPermissionByMenuCode(
+              'role_manage',
+              'role_manage_bind_menu',
+            ),
+          },
+          {
+            key: 'dataPermission',
+            label: t('PC.Pages.SystemRoleManage.dataPermission'),
+            onClick: () => handleDataPermission(record),
+            visible: hasPermissionByMenuCode(
+              'role_manage',
+              'role_manage_bind_data',
+            ),
+          },
           {
             key: 'edit',
             label: t('PC.Pages.SystemRoleManage.edit'),
-            disabled: !canEdit,
-            tooltip: editTooltip,
+            onClick: () => handleEdit(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemRoleManage.builtInCannotEdit')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'role_manage',
+              'role_manage_modify',
+            ),
           },
           {
             key: 'delete',
             label: t('PC.Pages.SystemRoleManage.delete'),
-            disabled: !canDelete,
-            tooltip: deleteTooltip,
+            onClick: () => handleDeleteConfirm(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemRoleManage.builtInCannotDelete')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'role_manage',
+              'role_manage_delete',
+            ),
           },
         ];
 
-        // Handle more action click.
-        const handleMoreActionClick = (item: CustomPopoverItem) => {
-          if (item.disabled) {
-            return;
-          }
-          if (item.key === 'edit') {
-            handleEdit(record);
-          } else if (item.key === 'delete') {
-            handleDeleteConfirm(record);
-          }
-        };
-
         return (
-          <Space size={0}>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_user')
-                  ? t('PC.Pages.SystemRoleManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'role_manage',
-                    'role_manage_bind_user',
-                  )
-                }
-                onClick={() => handleBindUser(record)}
-              >
-                {t('PC.Pages.SystemRoleManage.bindUser')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_menu')
-                  ? t('PC.Pages.SystemRoleManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'role_manage',
-                    'role_manage_bind_menu',
-                  )
-                }
-                onClick={() => handleMenuPermission(record)}
-              >
-                {t('PC.Pages.SystemRoleManage.menuPermission')}
-              </Button>
-            </Tooltip>
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode('role_manage', 'role_manage_bind_data')
-                  ? t('PC.Pages.SystemRoleManage.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'role_manage',
-                    'role_manage_bind_data',
-                  )
-                }
-                onClick={() => handleDataPermission(record)}
-              >
-                {t('PC.Pages.SystemRoleManage.dataPermission')}
-              </Button>
-            </Tooltip>
-            <CustomPopover
-              list={moreActionList}
-              onClick={handleMoreActionClick}
-            >
-              <Button type="link" size="small" icon={<EllipsisOutlined />} />
-            </CustomPopover>
-          </Space>
+          <TableActions<RoleInfo & { key: number }>
+            record={record}
+            actions={actions}
+          />
         );
       },
     },

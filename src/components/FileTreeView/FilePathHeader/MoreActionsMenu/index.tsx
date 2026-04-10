@@ -5,6 +5,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Dropdown } from 'antd';
 import classNames from 'classnames';
 import { useMemo } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,6 +34,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onRestartAgent,
   onExportProject,
 }) => {
+  const { isCloudComputer } = useModel('conversationInfo');
+
   // 菜单项配置
   const menuItems = useMemo(
     () => [
@@ -52,8 +55,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
             },
           ]
         : []),
-      // 只有当 onRestartServer 存在时才显示重启服务器选项
-      ...(onRestartServer
+      // 只有当 onRestartServer 存在且为云电脑时才显示重启服务器选项
+      ...(onRestartServer && isCloudComputer
         ? [
             {
               key: 'restart',
@@ -127,7 +130,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
           ]
         : []),
     ],
-    [onImportProject, onRestartServer, onExportProject],
+    [onImportProject, onRestartServer, onExportProject, isCloudComputer],
   );
 
   // 如果没有菜单项，则不显示

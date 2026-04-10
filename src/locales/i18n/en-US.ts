@@ -2104,6 +2104,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemMenuDataPermissionModal.contentMgmtTip':
     'Enable access control in content management and publish to system square before authorizing here',
   'PC.Pages.SystemMenuDataPermissionModal.tabWebApp': 'Web Application',
+  'PC.Pages.SystemMenuDataPermissionModal.tabKnowledgeBase': 'Knowledge Base',
   'PC.Pages.SystemMenuDataPermissionModal.tabDevPermission':
     'Development Permissions',
   'PC.Pages.SystemMenuDataPermissionModal.saveSuccess':
@@ -5951,6 +5952,13 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemConfig.I18nManage.codeTooltip':
     'Code format: language code - country code',
   'PC.Pages.SystemConfig.I18nManage.codePlaceholder': 'e.g., en-US, ja-JP',
+  'PC.Pages.SystemConfig.I18nManage.selectLangLabel': 'Language',
+  'PC.Pages.SystemConfig.I18nManage.selectLangRequired':
+    'Please select a language',
+  'PC.Pages.SystemConfig.I18nManage.switchToCustom':
+    'Language not listed? Create manually',
+  'PC.Pages.SystemConfig.I18nManage.backToSelectLang':
+    'Back to language selection',
   'PC.Pages.SystemConfig.I18nManage.orderTooltip': 'Smaller value comes first',
   'PC.Pages.SystemConfig.I18nManage.orderPlaceholder': 'e.g., 1',
   'PC.Pages.SystemConfig.I18nManage.setDefaultLang': 'Set as Default Language',
@@ -5990,7 +5998,9 @@ export const EN_US: SystemLangMap = {
     'Batch Add or Update',
   'PC.Pages.SystemConfig.LangContent.translateSuccess':
     'Translate Successfully',
-  'PC.Pages.SystemConfig.LangContent.moduleColumn': 'Side',
+  'PC.Pages.SystemConfig.LangContent.moduleColumn': 'Module',
+  'PC.Pages.SystemConfig.LangContent.sideColumn': 'Side',
+  'PC.Pages.SystemConfig.LangContent.searchModule': 'Search module...',
   'PC.Pages.SystemConfig.LangContent.searchKey': 'Search Key...',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': 'Translate All',
   'PC.Pages.SystemConfig.LangContent.keyValMng': 'Key-Value Management',

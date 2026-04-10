@@ -62,7 +62,6 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
             ? dict('PC.Pages.SystemConfig.LangContent.updateSuccess')
             : dict('PC.Pages.SystemConfig.LangContent.addSuccess'),
         );
-        form.resetFields();
         onSuccess();
       },
     },

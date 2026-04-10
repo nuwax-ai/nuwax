@@ -1,5 +1,9 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
-import { XProTable } from '@/components/ProComponents';
+import {
+  TableActions,
+  XProTable,
+  type ActionItem,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
@@ -18,7 +22,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Switch, Tag, Tooltip } from 'antd';
+import { Button, Empty, message, Switch, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -962,94 +966,56 @@ const PermissionResources: React.FC = () => {
       width: 200,
       fixed: 'right',
       hideInSearch: true,
-      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => (
-        <Space size={0}>
-          {record.type !== ResourceTypeEnum.Component && (
-            <Tooltip
-              title={
-                !hasPermissionByMenuCode(
-                  'resource_manage',
-                  'resource_manage_add',
+      render: (_: ReactNode, record: ResourceTreeNode & { key: number }) => {
+        const isSystemBuiltIn =
+          record.source === ResourceSourceEnum.SystemBuiltIn;
+
+        const actions: ActionItem<ResourceTreeNode & { key: number }>[] = [
+          {
+            key: 'addChild',
+            label: t('PC.Pages.SystemPermissionResources.actionAdd'),
+            onClick: () => handleAddChild(record),
+            visible:
+              record.type !== ResourceTypeEnum.Component &&
+              hasPermissionByMenuCode('resource_manage', 'resource_manage_add'),
+          },
+          {
+            key: 'edit',
+            label: t('PC.Pages.SystemPermissionResources.actionEdit'),
+            onClick: () => handleEdit(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemPermissionResources.systemBuiltinEditDenied')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'resource_manage',
+              'resource_manage_modify',
+            ),
+          },
+          {
+            key: 'delete',
+            label: t('PC.Pages.SystemPermissionResources.actionDelete'),
+            onClick: () => handleDeleteConfirm(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t(
+                  'PC.Pages.SystemPermissionResources.systemBuiltinDeleteDenied',
                 )
-                  ? t('PC.Pages.SystemPermissionResources.noPermission')
-                  : ''
-              }
-            >
-              <Button
-                type="link"
-                size="small"
-                disabled={
-                  !hasPermissionByMenuCode(
-                    'resource_manage',
-                    'resource_manage_add',
-                  )
-                }
-                onClick={() => handleAddChild(record)}
-              >
-                {t('PC.Pages.SystemPermissionResources.actionAdd')}
-              </Button>
-            </Tooltip>
-          )}
-          {/* 系统内置的资源不能编辑和删除 */}
-          <Tooltip
-            title={
-              record.source === ResourceSourceEnum.SystemBuiltIn
-                ? t(
-                    'PC.Pages.SystemPermissionResources.systemBuiltinEditDenied',
-                  )
-                : !hasPermissionByMenuCode(
-                    'resource_manage',
-                    'resource_manage_modify',
-                  )
-                ? t('PC.Pages.SystemPermissionResources.noPermission')
-                : ''
-            }
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={
-                record.source === ResourceSourceEnum.SystemBuiltIn ||
-                !hasPermissionByMenuCode(
-                  'resource_manage',
-                  'resource_manage_modify',
-                )
-              }
-              onClick={() => handleEdit(record)}
-            >
-              {t('PC.Pages.SystemPermissionResources.actionEdit')}
-            </Button>
-          </Tooltip>
-          <Tooltip
-            title={
-              record.source === ResourceSourceEnum.SystemBuiltIn
-                ? t(
-                    'PC.Pages.SystemPermissionResources.systemBuiltinDeleteDenied',
-                  )
-                : !hasPermissionByMenuCode(
-                    'resource_manage',
-                    'resource_manage_delete',
-                  )
-                ? t('PC.Pages.SystemPermissionResources.noPermission')
-                : ''
-            }
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={
-                !hasPermissionByMenuCode(
-                  'resource_manage',
-                  'resource_manage_delete',
-                ) || record.source === ResourceSourceEnum.SystemBuiltIn
-              }
-              onClick={() => handleDeleteConfirm(record)}
-            >
-              {t('PC.Pages.SystemPermissionResources.actionDelete')}
-            </Button>
-          </Tooltip>
-        </Space>
-      ),
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'resource_manage',
+              'resource_manage_delete',
+            ),
+          },
+        ];
+
+        return (
+          <TableActions<ResourceTreeNode & { key: number }>
+            record={record}
+            actions={actions}
+          />
+        );
+      },
     },
   ];
 

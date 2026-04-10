@@ -1,5 +1,9 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
-import { XProTable } from '@/components/ProComponents';
+import {
+  TableActions,
+  XProTable,
+  type ActionItem,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
@@ -18,7 +22,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
+import { Button, Empty, message, Switch } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -920,70 +924,47 @@ const MenuManage: React.FC = () => {
       width: 180,
       fixed: 'right',
       hideInSearch: true,
-      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => (
-        <Space size={0}>
-          <Tooltip
-            title={
-              !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
-                ? t('PC.Pages.SystemMenuManage.noPermission')
-                : ''
-            }
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={
-                !hasPermissionByMenuCode('menu_manage', 'menu_manage_add')
-              }
-              onClick={() => handleAddChild(record)}
-            >
-              {t('PC.Pages.SystemMenuManage.actionAdd')}
-            </Button>
-          </Tooltip>
+      render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => {
+        const isSystemBuiltIn = record.source === MenuSourceEnum.SystemBuiltIn;
 
-          {/* 系统内置的资源不能编辑和删除 */}
-          <Tooltip
-            title={
-              !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
-                ? t('PC.Pages.SystemMenuManage.noPermission')
-                : ''
-            }
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={
-                !hasPermissionByMenuCode('menu_manage', 'menu_manage_modify')
-              }
-              onClick={() => handleEdit(record)}
-            >
-              {t('PC.Pages.SystemMenuManage.actionEdit')}
-            </Button>
-          </Tooltip>
+        const actions: ActionItem<MenuNodeInfo & { key: number }>[] = [
+          {
+            key: 'addChild',
+            label: t('PC.Pages.SystemMenuManage.actionAdd'),
+            onClick: () => handleAddChild(record),
+            visible: hasPermissionByMenuCode('menu_manage', 'menu_manage_add'),
+          },
+          {
+            key: 'edit',
+            label: t('PC.Pages.SystemMenuManage.actionEdit'),
+            onClick: () => handleEdit(record),
+            visible: hasPermissionByMenuCode(
+              'menu_manage',
+              'menu_manage_modify',
+            ),
+          },
+          {
+            key: 'delete',
+            label: t('PC.Pages.SystemMenuManage.actionDelete'),
+            onClick: () => handleDeleteConfirm(record),
+            disabled: isSystemBuiltIn,
+            tooltip: isSystemBuiltIn
+              ? t('PC.Pages.SystemMenuManage.systemBuiltinDeleteDisabled')
+              : undefined,
+            visible: hasPermissionByMenuCode(
+              'menu_manage',
+              'menu_manage_delete',
+            ),
+          },
+        ];
 
-          <Tooltip
-            title={
-              record.source === MenuSourceEnum.SystemBuiltIn
-                ? t('PC.Pages.SystemMenuManage.systemBuiltinDeleteDisabled')
-                : !hasPermissionByMenuCode('menu_manage', 'menu_manage_delete')
-                ? t('PC.Pages.SystemMenuManage.noPermission')
-                : ''
-            }
-          >
-            <Button
-              type="link"
-              size="small"
-              disabled={
-                record.source === MenuSourceEnum.SystemBuiltIn ||
-                !hasPermissionByMenuCode('menu_manage', 'menu_manage_delete')
-              }
-              onClick={() => handleDeleteConfirm(record)}
-            >
-              {t('PC.Pages.SystemMenuManage.actionDelete')}
-            </Button>
-          </Tooltip>
-        </Space>
-      ),
+        return (
+          <TableActions<MenuNodeInfo & { key: number }>
+            record={record}
+            actions={actions}
+          />
+        );
+      },
     },
   ];
 

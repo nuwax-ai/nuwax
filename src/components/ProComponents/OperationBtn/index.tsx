@@ -155,7 +155,7 @@ const OperationBtn = <T extends object>(props: OperationBtnProps<T>) => {
 
   return (
     <div className={styles['operation-btn-container']}>
-      <Tooltip title={label} mouseEnterDelay={0.5}>
+      <Tooltip title={props.tooltip || label} mouseEnterDelay={0.5}>
         {btnWithPopconfirm}
       </Tooltip>
     </div>

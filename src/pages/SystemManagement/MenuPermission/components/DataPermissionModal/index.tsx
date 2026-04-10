@@ -122,7 +122,7 @@ export const getDataPermissionTabItems = (): TabsProps['items'] => [
     key: 'knowledge',
     label: (
       <span>
-        知识库
+        {t('PC.Pages.SystemMenuDataPermissionModal.tabKnowledgeBase')}
         <Tooltip
           title={dict(
             'PC.Pages.SystemManagement.DataPermission.knowledgeBaseTooltip',

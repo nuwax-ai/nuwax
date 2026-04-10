@@ -2,6 +2,7 @@ import { I18N_IMPORT_DEFAULTS } from '@/constants/i18n.constants';
 import { apiUserUpdate } from '@/services/account';
 import type {
   I18nAddLangParams,
+  I18nBootstrapLangDto,
   I18nClient,
   I18nConfigBatchAddOrUpdateParams,
   I18nConfigTranslateParams,
@@ -209,6 +210,17 @@ export async function apiI18nConfigAddOrUpdate(
  */
 export async function apiI18nSideList(): Promise<RequestResponse<string[]>> {
   return request('/api/system/i18n/side/list', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 可选语言列表（用于前端初始化；与 Accept-Language 匹配项排在第 1 位）
+ */
+export async function apiI18nBootstrapLangList(): Promise<
+  RequestResponse<I18nBootstrapLangDto[]>
+> {
+  return request('/api/system/i18n/locale/bootstrap', {
     method: 'GET',
   });
 }
