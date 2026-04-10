@@ -5,14 +5,10 @@ import { dict } from '@/services/i18nRuntime';
 import type { ApiKeyInfo } from '@/types/interfaces/account';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import {
-  BookOutlined,
   CopyOutlined,
-  DeleteOutlined,
-  EditOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, message, Space, Tag, Tooltip, Typography } from 'antd';
@@ -167,13 +163,11 @@ const ApiKeyPage: React.FC = () => {
       align: 'center',
       render: (_, record) => (
         <TableActions
-          type="button"
           record={record}
           actions={[
             {
               key: 'viewLogs',
               label: dict('PC.Pages.MorePage.ApiKey.viewLogs'),
-              icon: <BookOutlined />,
               onClick: (record) => {
                 history.push(`/more-page/api-key-logs?targetId=${record?.id}`);
               },
@@ -181,7 +175,6 @@ const ApiKeyPage: React.FC = () => {
             {
               key: 'permission',
               label: dict('PC.Pages.MorePage.ApiKey.permissionConfig'),
-              icon: <SafetyCertificateOutlined />,
               onClick: (r) => {
                 setPermissionRecord(r);
                 setPermissionOpen(true);
@@ -190,7 +183,6 @@ const ApiKeyPage: React.FC = () => {
             {
               key: 'edit',
               label: dict('PC.Pages.MorePage.ApiKey.edit'),
-              icon: <EditOutlined />,
               onClick: (r) => {
                 setCurrentRecord(r);
                 setModalOpen(true);
@@ -199,7 +191,6 @@ const ApiKeyPage: React.FC = () => {
             {
               key: 'delete',
               label: dict('PC.Pages.MorePage.ApiKey.delete'),
-              icon: <DeleteOutlined />,
               danger: true,
               confirm: {
                 title: (r) =>
