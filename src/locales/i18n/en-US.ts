@@ -6011,6 +6011,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.sideColumn': 'Side',
   'PC.Pages.SystemConfig.LangContent.searchModule': 'Search module...',
   'PC.Pages.SystemConfig.LangContent.searchKey': 'Search Key...',
+  'PC.Pages.SystemConfig.LangContent.exportLangBtn': 'Export language pack',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': 'Translate All',
   'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent':
     'Are you sure you want to translate all key-value pairs from the default language ({0}) to the current language ({1})? Entries that already have content will not be translated.',

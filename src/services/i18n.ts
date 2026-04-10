@@ -14,6 +14,8 @@ import type {
 } from '@/types/interfaces/i18n';
 import type { UserUpdateParams } from '@/types/interfaces/login';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
+import type { I18nConfigExportBlobResult } from '@/utils/i18nConfigExportBlob';
+import { requestI18nConfigExportPostBlob } from '@/utils/i18nConfigExportBlob';
 import { request } from 'umi';
 
 // 查询指定语言信息
@@ -167,6 +169,19 @@ export async function apiI18nConfigTranslateAll(
       targetLang,
     },
   });
+}
+
+/**
+ * 导出多语言配置为 JSON 文件流（后端返回 Blob，非 JSON 包装的 RequestResponse）
+ * 请求体与后端约定一致，通常传查询条件（如 lang、module、side 等）
+ */
+export async function apiI18nConfigExport(
+  data: I18nSlideLangInfo,
+): Promise<I18nConfigExportBlobResult> {
+  return requestI18nConfigExportPostBlob(
+    '/api/system/i18n/config/export',
+    data,
+  );
 }
 
 /**

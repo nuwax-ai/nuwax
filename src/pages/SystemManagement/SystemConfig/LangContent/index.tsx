@@ -7,6 +7,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   apiI18nConfigBatchDelete,
+  apiI18nConfigExport,
   apiI18nConfigList,
   apiI18nConfigTranslate,
   apiI18nSideList,
@@ -16,6 +17,7 @@ import type { I18nSlideLangInfo } from '@/types/interfaces/i18n';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
+import { downloadI18nConfigExportBlob } from '@/utils/i18nConfigExportBlob';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type {
   ActionType,
@@ -58,6 +60,7 @@ const LangContent: React.FC = () => {
 
   // 翻译全部进度
   const [translateAllPercent, setTranslateAllPercent] = useState<number>(0);
+  const [exportLangLoading, setExportLangLoading] = useState<boolean>(false);
 
   // ====================== 批量新增或更新键值对弹窗 ======================
   const [batchModalOpen, setBatchModalOpen] = useState<boolean>(false);
@@ -181,6 +184,18 @@ const LangContent: React.FC = () => {
         setTranslateAllLoading(false);
       },
     });
+  };
+
+  // 导出当前语言多语言配置（后端返回 JSON 文件流，前端按 Blob 下载）
+  const handleExportLang = async () => {
+    if (!lang) return;
+    setExportLangLoading(true);
+    try {
+      const res = await apiI18nConfigExport({ lang, key: '' });
+      downloadI18nConfigExportBlob(res, `i18n-${lang}.json`);
+    } finally {
+      setExportLangLoading(false);
+    }
   };
 
   // 翻译全部（二次确认）
@@ -341,6 +356,13 @@ const LangContent: React.FC = () => {
       back={true}
       rightSlot={
         <>
+          <Button
+            loading={exportLangLoading}
+            disabled={!lang}
+            onClick={handleExportLang}
+          >
+            {dict('PC.Pages.SystemConfig.LangContent.exportLangBtn')}
+          </Button>
           {/* 只有非默认语言可以将默认语言的键值对翻译为当前语言 */}
           <ConditionRender condition={defaultLang}>
             <Button
