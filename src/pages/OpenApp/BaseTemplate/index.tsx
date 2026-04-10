@@ -3,6 +3,7 @@ import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
 import { dict } from '@/services/i18nRuntime';
@@ -33,7 +34,7 @@ const cx = classNames.bind(styles);
  */
 const BaseTemplate: React.FC = () => {
   const { id: cId, agentId } = useParams();
-  const { setOpenAdmin } = useModel('layout');
+  const { setOpenAdmin, isMobile } = useModel('layout');
   // 状态管理
   const { userInfo, getUserInfo } = useModel('userInfo');
 
@@ -131,13 +132,39 @@ const BaseTemplate: React.FC = () => {
     e.currentTarget.src = agentImage;
   };
 
+  /**
+   * 侧栏定位：窄屏与主 Layout 一致使用 fixed 全屏，并通过 transform 显隐；
+   * 桌面端仍用样式里的宽度与 collapsed 类。
+   */
+  const agentSidebarStyle = useMemo<React.CSSProperties>(() => {
+    if (isMobile) {
+      return {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100%',
+        transition: `transform ${ANIMATION_DURATION}ms ease-in-out`,
+        zIndex: 999,
+        pointerEvents: isAppSidebarVisible ? 'auto' : 'none',
+        transform: isAppSidebarVisible ? 'translateX(0)' : 'translateX(-100%)',
+        backgroundColor: '#f5f5f5',
+      };
+    }
+    return {
+      position: 'relative',
+      height: '100%',
+    };
+  }, [isMobile, isAppSidebarVisible]);
+
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       {/* 侧边菜单栏区域 */}
       <div
         className={cx(styles.agentSidebarContainer, {
-          [styles.agentSidebarContainerCollapsed]: !isAppSidebarVisible,
+          [styles.agentSidebarContainerCollapsed]:
+            !isAppSidebarVisible && !isMobile,
         })}
+        style={agentSidebarStyle}
       >
         {/* 智能体图标 + 收起导航按钮 */}
         <div className={styles.sidebarTop}>

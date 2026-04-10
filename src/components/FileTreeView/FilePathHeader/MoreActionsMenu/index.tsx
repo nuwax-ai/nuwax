@@ -67,9 +67,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               label: (
                 <div className="flex items-center">
                   <span>
-                    {dict('PC.Components.MoreActionsMenu.restartComputer')}
-                  </span>
-                  <span>
                     {isCloudComputer
                       ? dict('PC.Components.MoreActionsMenu.restartComputer')
                       : dict('PC.Components.MoreActionsMenu.restartClient')}
