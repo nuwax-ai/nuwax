@@ -205,6 +205,13 @@
   width: 300px;
   gap: @marginSm;
 
+  :global {
+    .ant-typography {
+      display: block; // 确保文本组件为块级，以使 ellipsis 生效
+      width: 100%;
+    }
+  }
+
   .select-list {
     width: 100% !important;
   }

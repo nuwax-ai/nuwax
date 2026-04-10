@@ -26,7 +26,15 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
+import {
+  Button,
+  Input,
+  message,
+  Popover,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -769,7 +777,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <div
           className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
         >
-          <h4>{t('PC.Pages.AppDevChatInput.codingModel')}</h4>
+          <Typography.Text
+            ellipsis={{ tooltip: t('PC.Pages.AppDevChatInput.codingModel') }}
+          >
+            {t('PC.Pages.AppDevChatInput.codingModel')}
+          </Typography.Text>
           <SelectList
             className={cx(styles['select-list'])}
             options={getModeOptions(modelSelector?.models?.chatModelList)}
@@ -783,7 +795,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <div
           className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
         >
-          <h4>{t('PC.Pages.AppDevChatInput.visionModelOptional')}</h4>
+          <Typography.Text
+            ellipsis={{
+              tooltip: t('PC.Pages.AppDevChatInput.visionModelOptional'),
+            }}
+          >
+            {t('PC.Pages.AppDevChatInput.visionModelOptional')}
+          </Typography.Text>
           <SelectList
             className={cx(styles['select-list'])}
             allowClear
