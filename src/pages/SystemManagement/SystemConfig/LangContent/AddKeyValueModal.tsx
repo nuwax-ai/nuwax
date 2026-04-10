@@ -150,19 +150,30 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
               name="key"
               noStyle
               rules={[
-                { required: true, message: '请输入 Key' },
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.SystemConfig.LangContent.keyRequired',
+                  ),
+                },
                 {
                   validator: async (_, value?: string) => {
                     const keyText = String(value || '').trim();
                     if (!keyText) return;
                     if (!keyText.includes('.')) {
-                      throw new Error('Key 必须包含点号（.）');
+                      throw new Error(
+                        dict(
+                          'PC.Pages.SystemConfig.LangContent.keyMustContainDot',
+                        ),
+                      );
                     }
                   },
                 },
               ]}
             >
               <Input
+                maxLength={100}
+                showCount
                 placeholder={dict(
                   'PC.Pages.SystemConfig.LangContent.keyPlaceholder',
                 )}
@@ -184,6 +195,8 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
           ]}
         >
           <Input
+            maxLength={100}
+            showCount
             placeholder={dict(
               'PC.Pages.SystemConfig.LangContent.textContentPlaceholder',
             )}
@@ -194,6 +207,9 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
           name="remark"
         >
           <Input.TextArea
+            maxLength={200}
+            showCount
+            className="dispose-textarea-count"
             placeholder={dict(
               'PC.Pages.SystemConfig.LangContent.remarkPlaceholder',
             )}

@@ -562,7 +562,6 @@ const RoleManage: React.FC = () => {
             dataSource={draggableData}
             pagination={false}
             scroll={{ x: 1090 }}
-            className={cx(styles.table)}
             showQueryButtons={hasPermissionByMenuCode(
               'role_manage',
               'role_manage_query',

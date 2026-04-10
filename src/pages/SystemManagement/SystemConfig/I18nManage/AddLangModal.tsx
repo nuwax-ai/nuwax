@@ -163,6 +163,8 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           ]}
         >
           <Input
+            maxLength={50}
+            showCount
             placeholder={dict(
               'PC.Pages.SystemConfig.I18nManage.namePlaceholder',
             )}
@@ -180,6 +182,8 @@ const AddLangModal: React.FC<AddLangModalProps> = ({
           tooltip={dict('PC.Pages.SystemConfig.I18nManage.codeTooltip')}
         >
           <Input
+            maxLength={50}
+            showCount
             placeholder={dict(
               'PC.Pages.SystemConfig.I18nManage.codePlaceholder',
             )}

@@ -600,7 +600,6 @@ const UserGroupManage: React.FC = () => {
             dataSource={draggableData}
             pagination={false}
             scroll={{ x: 1090 }}
-            className={cx(styles.table)}
             showQueryButtons={hasPermissionByMenuCode(
               'user_group_manage',
               'user_group_manage_query',

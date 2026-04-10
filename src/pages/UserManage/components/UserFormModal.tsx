@@ -153,6 +153,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             ]}
           >
             <Input.Password
+              maxLength={50}
               placeholder={dict(
                 'PC.Pages.UserManage.UserFormModal.inputLoginPassword',
               )}

@@ -47,6 +47,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.Setting.saveSuccess': 'Language setting updated successfully',
   'PC.Pages.Setting.bindPending': 'Pending binding',
   'PC.Pages.SystemConfigI18n.manageTitle': 'Language Management',
+  'PC.Pages.SystemConfigI18n.empty': 'No data',
   'PC.Pages.SystemConfigI18n.columnName': 'Language Name',
   'PC.Pages.SystemConfigI18n.columnLang': 'Language Code',
   'PC.Pages.SystemConfigI18n.columnDefault': 'Default',
@@ -65,6 +66,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemConfigI18n.defaultNo': 'No',
   'PC.Pages.SystemConfigI18n.statusEnabled': 'Enabled',
   'PC.Pages.SystemConfigI18n.statusDisabled': 'Disabled',
+  'PC.Pages.SystemConfigI18n.noDefaultLang':
+    'There is currently no default language. Please set one first.',
   'PC.Components.UserMenu.defaultUserName': 'User Name',
   'PC.Components.UserMenu.profile': 'Profile',
   'PC.Components.UserMenu.logout': 'Logout',
@@ -5966,6 +5969,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.addBtn': 'Add',
   'PC.Pages.SystemConfig.LangContent.keyRequired': 'Please enter a Key',
   'PC.Pages.SystemConfig.LangContent.keyPlaceholder': 'e.g., User.submit',
+  'PC.Pages.SystemConfig.LangContent.keyMustContainDot':
+    'Key must contain a dot (.)',
   'PC.Pages.SystemConfig.LangContent.textContentLabel': 'Text Content',
   'PC.Pages.SystemConfig.LangContent.textContentRequired':
     'Please enter text content',

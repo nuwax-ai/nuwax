@@ -46,6 +46,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.Setting.saveSuccess': '語言設定更新成功',
   'PC.Pages.Setting.bindPending': '待繫結',
   'PC.Pages.SystemConfigI18n.manageTitle': '多語言管理',
+  'PC.Pages.SystemConfigI18n.empty': '暫無資料',
   'PC.Pages.SystemConfigI18n.columnName': '語言名稱',
   'PC.Pages.SystemConfigI18n.columnLang': '語言標識',
   'PC.Pages.SystemConfigI18n.columnDefault': '預設語言',
@@ -64,6 +65,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemConfigI18n.defaultNo': '否',
   'PC.Pages.SystemConfigI18n.statusEnabled': '啟用',
   'PC.Pages.SystemConfigI18n.statusDisabled': '停用',
+  'PC.Pages.SystemConfigI18n.noDefaultLang':
+    '當前沒有預設語言，請先設定預設語言',
   'PC.Components.UserMenu.defaultUserName': '使用者名稱',
   'PC.Components.UserMenu.profile': '個人中心',
   'PC.Components.UserMenu.logout': '退出登入',
@@ -4998,6 +5001,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.updateBtn': '更新',
   'PC.Pages.SystemConfig.LangContent.addBtn': '添加',
   'PC.Pages.SystemConfig.LangContent.keyRequired': '請輸入 Key',
+  'PC.Pages.SystemConfig.LangContent.keyMustContainDot':
+    'Key 必須包含點號（.）',
   'PC.Pages.SystemConfig.LangContent.keyPlaceholder': '例如：User.submit',
   'PC.Pages.SystemConfig.LangContent.textContentLabel': '文本內容',
   'PC.Pages.SystemConfig.LangContent.textContentRequired': '請輸入文本內容',
