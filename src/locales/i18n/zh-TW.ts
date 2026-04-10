@@ -3087,6 +3087,7 @@ export const ZH_TW: SystemLangMap = {
     '域名繫結僅在釋出型別為"應用"且認證配置為"免登入訪問"開啟時可用',
   'PC.Pages.SpacePageDevelop.Index.confirmDeletePage': '你確定要刪除此頁面嗎?',
   'PC.Models.ConversationInfo.restartAgentSuccess': '重啟智慧體成功',
+  'PC.Models.ConversationInfo.restartVncPodSuccess': '重啟智慧體電腦成功',
   'PC.Models.ConversationInfo.networkTimeoutError':
     '網路超時或服務不可用，請稍後再試',
   'PC.Models.ConversationInfo.taskConflictTitle': '提示',

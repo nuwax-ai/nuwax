@@ -3443,6 +3443,8 @@ export const EN_US: SystemLangMap = {
     'After removal, users will not be able to access this project via this domain. Re-binding and resolution required.',
   'PC.Models.ConversationInfo.restartAgentSuccess':
     'Agent restarted successfully',
+  'PC.Models.ConversationInfo.restartVncPodSuccess':
+    'Agent computer restarted successfully',
   'PC.Models.ConversationInfo.networkTimeoutError':
     'Network timeout or service unavailable, please try again later',
   'PC.Models.ConversationInfo.taskConflictTitle': 'Notice',

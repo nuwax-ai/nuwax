@@ -3080,6 +3080,7 @@ export const ZH_HK: SystemLangMap = {
     '域名綁定僅在發佈類型為"應用"且認證配置為"免登錄訪問"開啓時可用',
   'PC.Pages.SpacePageDevelop.Index.confirmDeletePage': '你確定要刪除此頁面嗎?',
   'PC.Models.ConversationInfo.restartAgentSuccess': '重啓智能體成功',
+  'PC.Models.ConversationInfo.restartVncPodSuccess': '重啓智能體電腦成功',
   'PC.Models.ConversationInfo.networkTimeoutError':
     '網絡超時或服務不可用，請稍後再試',
   'PC.Models.ConversationInfo.taskConflictTitle': '提示',

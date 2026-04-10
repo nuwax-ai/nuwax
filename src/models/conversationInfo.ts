@@ -310,8 +310,14 @@ export default () => {
   const openDesktopView = useCallback(async (cId: number) => {
     // 停止保活
     stopKeepalivePodPolling();
-    // 打开预览视图或远程桌面视图时修改状态值
-    openPreviewChangeState('desktop');
+
+    // 如果智能体配置的远程桌面不隐藏，则打开远程桌面视图
+    if (
+      conversationInfoRef.current?.agent?.hideDesktop !== HideDesktopEnum.Yes
+    ) {
+      // 打开预览视图或远程桌面视图时修改状态值
+      openPreviewChangeState('desktop');
+    }
     try {
       // 启动容器
       const { code, data } = await apiEnsurePod(cId);
@@ -328,12 +334,18 @@ export default () => {
 
   // 重启智能体电脑
   const restartVncPod = useCallback(
-    async (cId: number) => {
-      if (viewMode !== 'desktop') {
+    async (cId: number, sandboxId: string) => {
+      // 如果当前不是智能体电脑视图，并且用户选择是云端电脑（sandboxId === '-1'），则打开远程桌面视图
+      if (viewMode !== 'desktop' && sandboxId === '-1') {
         // 切换到智能体电脑 tab
         openDesktopView(cId);
       }
-      return await apiRestartPod(cId);
+      const result = await apiRestartPod(cId);
+      if (result.code === SUCCESS_CODE) {
+        message.success(
+          dict('PC.Models.ConversationInfo.restartVncPodSuccess'),
+        );
+      }
     },
     [viewMode],
   );

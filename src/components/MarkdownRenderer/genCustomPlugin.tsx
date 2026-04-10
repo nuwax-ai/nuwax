@@ -119,6 +119,9 @@ export default (conversationId: string | number = '') => {
           </TaskResult>
         );
       },
+      p: ({ children }: any) => {
+        return <div className={styles['markdown-paragraph']}>{children}</div>;
+      },
     },
     id: Symbol('custom-plugin'),
     type: 'custom',

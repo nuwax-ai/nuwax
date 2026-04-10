@@ -3143,6 +3143,7 @@ export const ZH_CN: SystemLangMap = {
 
   // Models
   'PC.Models.ConversationInfo.restartAgentSuccess': '重启智能体成功',
+  'PC.Models.ConversationInfo.restartVncPodSuccess': '重启智能体电脑成功',
   'PC.Models.ConversationInfo.networkTimeoutError':
     '网络超时或服务不可用，请稍后再试',
   'PC.Models.ConversationInfo.taskConflictTitle': '提示',

@@ -1,3 +1,4 @@
+import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { IdleDetectionConfig } from '../business-component/VncPreview/type';
 
@@ -97,7 +98,7 @@ export interface FileTreeViewProps {
    */
   idleDetection?: IdleDetectionConfig;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
-  hideDesktop?: number;
+  hideDesktop?: HideDesktopEnum;
   // 是否动态主题，默认不开启
   isDynamicTheme?: boolean;
   // 是否显示导出 PDF 按钮, 默认显示

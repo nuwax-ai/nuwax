@@ -1,6 +1,7 @@
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
 import { fetchContentFromUrl } from '@/services/skill';
+import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
   findBestMatchingFileNode,
@@ -109,7 +110,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showRefreshButton = true,
       // VNC 空闲检测配置
       idleDetection,
-      hideDesktop = 0,
+      hideDesktop = HideDesktopEnum.No,
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
@@ -1853,7 +1854,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               {renderContent()}
             </div>
             {/* 重启中 */}
-            {isRestarting && (
+            {isRestarting && hideDesktop !== HideDesktopEnum.Yes && (
               <div className={cx(styles['restart-container'])}>
                 {/* 背景占位符（清晰的背景图，按比例显示） */}
                 <div className={cx(styles['background-placeholder'])} />

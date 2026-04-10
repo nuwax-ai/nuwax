@@ -1407,7 +1407,7 @@ const Chat: React.FC = () => {
                   // 用户选择的智能体电脑名称
                   agentSandboxName={''}
                   // 重启容器
-                  onRestartServer={() => restartVncPod(id)}
+                  onRestartServer={() => restartVncPod(id, finalSelectedId)}
                   // 重启智能体
                   onRestartAgent={() => restartAgent(id)}
                   // 关闭整个面板

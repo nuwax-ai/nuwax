@@ -65,7 +65,13 @@ import { message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
@@ -159,6 +165,15 @@ const EditAgent: React.FC = () => {
     const result = await apiModelList(params);
     setOriginalModelConfigList(result?.data || []);
   };
+
+  // 最终选中的电脑ID
+  const finalSelectedComputerId = useMemo(() => {
+    return (
+      currentSelectedComputerId ||
+      conversationInfo?.agent?.sandboxId ||
+      conversationInfo?.sandboxServerId
+    );
+  }, [currentSelectedComputerId, conversationInfo]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -1114,15 +1129,15 @@ const EditAgent: React.FC = () => {
                           // 保存文件
                           onSaveFiles={handleSaveFiles}
                           // 用户选择的智能体电脑ID
-                          agentSandboxId={
-                            currentSelectedComputerId ||
-                            conversationInfo?.agent?.sandboxId
-                          }
+                          agentSandboxId={finalSelectedComputerId}
                           // 用户选择的智能体电脑名称
                           agentSandboxName={''}
                           // 重启容器
                           onRestartServer={() =>
-                            restartVncPod(devConversationId)
+                            restartVncPod(
+                              devConversationId,
+                              finalSelectedComputerId,
+                            )
                           }
                           // 重启智能体
                           onRestartAgent={() => restartAgent(devConversationId)}

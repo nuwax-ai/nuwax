@@ -25,6 +25,14 @@
     justify-content: center;
     cursor: pointer;
 
+    span {
+      display: inline-block;
+      max-width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     &:hover {
       background: @colorFillTertiary;
     }

@@ -583,7 +583,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 viewMode={'desktop'}
                 // 重启容器
                 onRestartServer={() =>
-                  restartVncPod(agentDetail?.conversationId)
+                  restartVncPod(agentDetail?.conversationId, selectedComputerId)
                 }
                 // 重启智能体
                 onRestartAgent={() => restartAgent(agentDetail?.conversationId)}
