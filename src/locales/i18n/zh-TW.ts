@@ -5033,7 +5033,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.sideColumn': '端',
   'PC.Pages.SystemConfig.LangContent.searchModule': '搜尋模組...',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
-  'PC.Pages.SystemConfig.LangContent.exportLangBtn': '匯出語言包',
+  'PC.Pages.SystemConfig.LangContent.exportLangBtn': '匯出配置項',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻譯全部',
   'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent':
     '確認將預設語言（{0}）全部的鍵值對翻譯成目前語言（{1}）嗎？已有內容的鍵值對將不再翻譯。',

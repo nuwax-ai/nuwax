@@ -5462,7 +5462,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.sideColumn': '端',
   'PC.Pages.SystemConfig.LangContent.searchModule': '搜索模块...',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
-  'PC.Pages.SystemConfig.LangContent.exportLangBtn': '导出语言包',
+  'PC.Pages.SystemConfig.LangContent.exportLangBtn': '导出配置项',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻译全部',
   'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent':
     '确认将默认语言（{0}）全部的键值对翻译成当前语言（{1}）吗？已有内容的键值对将不再翻译。',
