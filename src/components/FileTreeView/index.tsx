@@ -1519,8 +1519,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
-      // 文件类型不支持预览
-      if (!isPreviewable || selectedFileNode?.isLink) {
+      /**
+       * 文件类型不支持预览
+       * @js-preview/docx插件不支持.doc文件预览
+       */
+      if (
+        !isPreviewable ||
+        selectedFileNode?.isLink ||
+        selectedFileNode?.name?.endsWith('.doc')
+      ) {
         const fileExtension =
           selectedFileId?.split('.')?.pop() || selectedFileId;
         return (

@@ -549,47 +549,53 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           )}
+
           <ManualComponentItem
             manualComponents={manualComponents}
             selectedComponentList={selectedComponentList}
             onSelectComponent={onSelectComponent}
+            prefix={
+              <>
+                {/* 智能体电脑模式下显示电脑类型选择器 */}
+                {isTaskAgentActive && !readonly && (
+                  <ComputerTypeSelector
+                    value={
+                      agentSandboxId !== undefined && agentSandboxId !== null
+                        ? String(agentSandboxId)
+                        : conversationInfo?.sandboxServerId !== undefined &&
+                          conversationInfo?.sandboxServerId !== null
+                        ? String(conversationInfo.sandboxServerId)
+                        : selectedComputerId
+                    }
+                    onChange={(id: string) => onComputerSelect?.(id)}
+                    disabled={wholeDisabled}
+                    agentId={agentId}
+                    fixedSelection={
+                      fixedSelection ||
+                      isConversationActive ||
+                      conversationInfo?.taskStatus === TaskStatus.EXECUTING
+                    }
+                    unavailable={isSandboxUnavailable}
+                    autoSelect={autoSelectComputer}
+                    saveOnSelect={saveComputerOnSelect}
+                    isPersonalComputer={isPersonalComputer}
+                    readonly={readonly}
+                  />
+                )}
+                {/* 智能体模型选择器 */}
+                {allowOtherModel === DefaultSelectedEnum.Yes && (
+                  <ModelSelector
+                    agentId={agentId}
+                    selectedModelId={selectedModelId}
+                    onModelSelect={onModelSelect}
+                    agentType={agentType}
+                  />
+                )}
+              </>
+            }
           />
-          {/* 智能体模型选择器 */}
-          {allowOtherModel === DefaultSelectedEnum.Yes && (
-            <ModelSelector
-              agentId={agentId}
-              selectedModelId={selectedModelId}
-              onModelSelect={onModelSelect}
-              agentType={agentType}
-            />
-          )}
+
           <div className={cx('flex')} style={{ gap: 4 }}>
-            {/* 智能体电脑模式下显示电脑类型选择器 */}
-            {isTaskAgentActive && !readonly && (
-              <ComputerTypeSelector
-                value={
-                  agentSandboxId !== undefined && agentSandboxId !== null
-                    ? String(agentSandboxId)
-                    : conversationInfo?.sandboxServerId !== undefined &&
-                      conversationInfo?.sandboxServerId !== null
-                    ? String(conversationInfo.sandboxServerId)
-                    : selectedComputerId
-                }
-                onChange={(id: string) => onComputerSelect?.(id)}
-                disabled={wholeDisabled}
-                agentId={agentId}
-                fixedSelection={
-                  fixedSelection ||
-                  isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                }
-                unavailable={isSandboxUnavailable}
-                autoSelect={autoSelectComputer}
-                saveOnSelect={saveComputerOnSelect}
-                isPersonalComputer={isPersonalComputer}
-                readonly={readonly}
-              />
-            )}
             {/* 根据会话状态显示发送或停止按钮 */}
             {isConversationActive ||
             conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (

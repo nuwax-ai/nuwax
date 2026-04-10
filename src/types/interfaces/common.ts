@@ -502,6 +502,8 @@ export interface ManualComponentItemProps {
   manualComponents?: AgentManualComponentInfo[];
   selectedComponentList?: AgentSelectedComponentInfo[];
   onSelectComponent?: (infos: AgentSelectedComponentInfo) => void;
+  /** 前置插槽 */
+  prefix?: React.ReactNode;
 }
 
 // 聊天输入框组件

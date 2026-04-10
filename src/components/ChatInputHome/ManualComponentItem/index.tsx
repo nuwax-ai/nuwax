@@ -69,6 +69,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
   manualComponents,
   selectedComponentList,
   onSelectComponent,
+  prefix,
 }) => {
   const normalizeManualComponents = useMemo(() => {
     return manualComponents?.reduce((acc, item) => {
@@ -83,6 +84,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
     <div className={cx('flex-1')}>
       <HoverScrollbar bodyWidth="100%" height="40px" style={{ marginTop: 3 }}>
         <div className={cx('flex', 'items-center', styles['manual-container'])}>
+          {prefix && <div className={cx('flex', 'items-center')}>{prefix}</div>}
           {normalizeManualComponents?.map((item, index) => {
             return (
               <span

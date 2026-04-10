@@ -407,7 +407,8 @@ export const isDocumentFile = (fileName: string) => {
 
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   const documentExtensions = [
-    'doc',
+    // @js-preview/docx插件不支持.doc文件预览
+    // 'doc',
     'docx',
     'ppt',
     'pptx',
@@ -425,7 +426,7 @@ export const isDocumentFile = (fileName: string) => {
   }
 
   // 判断文件是否为DOC类型
-  const idDocExtensions = ['doc', 'docx'];
+  const idDocExtensions = ['docx'];
   const isIdDoc = idDocExtensions.includes(ext);
 
   if (isIdDoc) {

@@ -292,7 +292,7 @@ const BaseTemplate: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={'flex-1'}>
+      <div className={cx('flex-1', 'overflow-hide')}>
         <Outlet />
       </div>
 
