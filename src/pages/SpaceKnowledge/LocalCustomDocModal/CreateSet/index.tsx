@@ -49,7 +49,6 @@ const CreateSet: React.FC<CreateSetProps> = ({
           styles['mt-50'],
         )}
         onClick={() => {
-          // console.log("1===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
           onChoose(true);
           onAiSegmentChoose?.(false);
         }}
@@ -63,24 +62,9 @@ const CreateSet: React.FC<CreateSetProps> = ({
       </div>
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
-          [styles.active]: isAiSegment,
-        })}
-        onClick={() => {
-          onChoose(false);
-          onAiSegmentChoose?.(true);
-        }}
-      >
-        <div className={cx(styles.title)}>
-          <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.isAiSegment')}</h3>
-          <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.aiSegmentDesc')}</p>
-        </div>
-      </div>
-      <div
-        className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
           [styles.active]: !autoSegmentConfigFlag && !isAiSegment,
         })}
         onClick={() => {
-          // console.log("3===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
           onChoose(false);
           onAiSegmentChoose?.(false);
         }}
