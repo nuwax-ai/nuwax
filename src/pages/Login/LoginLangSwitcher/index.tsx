@@ -80,8 +80,8 @@ const LoginLangSwitcher: React.FC = () => {
     disabled: loading,
   }));
 
-  // 如果尚未获取到语言列表或未确定默认语言，则不渲染该组件，避免界面抖动
-  if (!selectedLang || languages.length === 0) {
+  // 如果尚未获取到语言列表、或只有一种语言（切换无意义），则不渲染该组件
+  if (!selectedLang || languages.length <= 1) {
     return null;
   }
 
