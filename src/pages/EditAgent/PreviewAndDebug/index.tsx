@@ -489,7 +489,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
     return true;
   }, [agentConfigInfo?.type, messageList]);
-
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
@@ -505,7 +504,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             }
             onShowPreview={onOpenPreview}
             // 是否显示智能体电脑
-            isShowDesktop={agentConfigInfo?.hideDesktop === HideDesktopEnum.No}
+            isShowDesktop={
+              agentConfigInfo?.hideDesktop === HideDesktopEnum.No &&
+              selectedComputerId === '-1'
+            }
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={isShowFilePanel}
             // 文件预览 / 智能体电脑切换

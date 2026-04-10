@@ -18,13 +18,19 @@ interface BatchKeyValueModalProps {
 // 批量新增或更新键值对默认代码
 const DefaultBatchCode = `
 /**
- * 批量新增或更新键值对
- * JSON格式：{ "key": "value" }
- * key格式："端.模块.页面.组件.文本key", 文本key为小驼峰，其他为大驼峰
- * 注意：key值必须要由点号（.）分割，由英文大写字母开头，可以使用英文大写字母、下划线（_）、点号（.）组成，不能使用中文、特殊字符等
- * 示例：
+ * Batch add or update key-value pairs
+ * JSON format: { "key": "value" }
+ * Key format: "Client.Module.Page.Component.textKey"
+ * - textKey should use lowerCamelCase
+ * - other segments should use PascalCase
+ * Note:
+ * - The key must be separated by dots (.)
+ * - It must start with an uppercase English letter
+ * - It can only contain uppercase/lowercase English letters, underscores (_), and dots (.)
+ * - Chinese characters and special symbols are not allowed
+ * Example:
  * {
- *   "PC.Pages.SystemConfig.LangContent.title": "键值对管理"
+ *   "PC.Pages.SystemConfig.LangContent.title": "Key-Value Management"
  * }
  */
 {

@@ -186,8 +186,12 @@ const LangContent: React.FC = () => {
   // 翻译全部（二次确认）
   const handleTranslateAllWithConfirm = () => {
     modalConfirm(
-      '翻译全部',
-      `确认将默认语言（${defaultLang}）全部的键值对翻译成当前语言（${lang}）吗？已有内容的键值对将不再翻译。`,
+      dict('PC.Pages.SystemConfig.LangContent.translateAllBtn'),
+      dict(
+        'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent',
+        defaultLang,
+        lang,
+      ),
       async () => {
         await handleTranslateAll();
         return Promise.resolve();
@@ -197,12 +201,18 @@ const LangContent: React.FC = () => {
 
   // 删除单个键值对（二次确认）
   const handleDeleteWithConfirm = (record: I18nSlideLangInfo) => {
-    modalConfirm('确认删除', '是否删除当前键值对？', async () => {
-      await apiI18nConfigBatchDelete([record]);
-      message.success('删除成功');
-      actionRef.current?.reload();
-      return Promise.resolve();
-    });
+    modalConfirm(
+      dict('PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmTitle'),
+      dict('PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmContent'),
+      async () => {
+        await apiI18nConfigBatchDelete([record]);
+        message.success(
+          dict('PC.Pages.SystemConfig.LangContent.deleteKeyValSuccess'),
+        );
+        actionRef.current?.reload();
+        return Promise.resolve();
+      },
+    );
   };
 
   // 列配置（使用表格内置搜索）
@@ -267,7 +277,11 @@ const LangContent: React.FC = () => {
           />
           <ConditionRender condition={defaultLang}>
             <TooltipIcon
-              title={`将默认语言(${defaultLang})的键值对翻译成当前语言(${lang})`}
+              title={dict(
+                'PC.Pages.SystemConfig.LangContent.translateKeyTooltip',
+                defaultLang,
+                lang,
+              )}
               icon={
                 <Button
                   type="text"

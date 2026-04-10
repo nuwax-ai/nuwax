@@ -132,11 +132,6 @@ const DropdownChangeName: React.FC<Porps> = ({
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
         message.success(dict('PC.Toast.Global.deletedSuccessfully'));
-        // 如果是会话聊天页（chat页），同步更新会话记录
-        // runHistory({
-        //   agentId: null,
-        // });
-        // message.success('删除成功');
         // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
         handleUpdateHistory();
         navigate('/', { replace: true });

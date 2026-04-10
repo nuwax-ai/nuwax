@@ -3,7 +3,6 @@ import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import ConversationItem from '@/layouts/DynamicMenusLayout/HomeSection/ConversationItem';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
 import { dict } from '@/services/i18nRuntime';
@@ -22,6 +21,7 @@ import React, {
   useState,
 } from 'react';
 import { history, Outlet, useModel, useParams } from 'umi';
+import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
 // 绑定 classNames，便于动态样式组合
@@ -168,14 +168,17 @@ const BaseTemplate: React.FC = () => {
         </div>
 
         {/* 新建会话按钮 */}
-        <button
+        <div
           className={styles.newSessionBtn}
-          type="button"
           onClick={() => createAppNewConversation(agentId)}
         >
-          <span className={styles.newSessionText}>
+          <span
+            className={cx(styles.newSessionText, 'flex-1', 'overflow-hide')}
+          >
             <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
-            {dict('PC.Pages.OpenApp.newConversation')}
+            <span className="text-ellipsis">
+              {dict('PC.Pages.OpenApp.newConversation')}
+            </span>
           </span>
           <div className={cx('flex', 'items-center', 'gap-4')}>
             <span className={styles.shortcutTag}>
@@ -183,7 +186,7 @@ const BaseTemplate: React.FC = () => {
             </span>
             <span className={styles.shortcutTag}>J</span>
           </div>
-        </button>
+        </div>
 
         {/* 历史会话列表区域 */}
         <div
@@ -204,9 +207,11 @@ const BaseTemplate: React.FC = () => {
           ) : (
             <>
               <div className={cx(styles['history-title'])}>
-                <span className={cx(styles.title)}>
+                <span className={cx(styles.title, 'flex-1', 'overflow-hide')}>
                   <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
-                  {dict('PC.Pages.OpenApp.historyConversation')}
+                  <span className="text-ellipsis">
+                    {dict('PC.Pages.OpenApp.historyConversation')}
+                  </span>
                 </span>
 
                 <ConditionRender condition={conversationList?.length}>

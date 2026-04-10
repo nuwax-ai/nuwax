@@ -5002,6 +5002,10 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemConfig.I18nManage.defaultLangDeleteTip': '預設語言不能刪除',
   'PC.Pages.SystemConfig.LangContent.updateSuccess': '更新成功',
   'PC.Pages.SystemConfig.LangContent.addSuccess': '添加成功',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmTitle': '確認刪除',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmContent':
+    '是否刪除目前鍵值對？',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValSuccess': '刪除成功',
   'PC.Pages.SystemConfig.LangContent.editKeyValTitle': '編輯鍵值對',
   'PC.Pages.SystemConfig.LangContent.addKeyValTitle': '添加鍵值對',
   'PC.Pages.SystemConfig.LangContent.updateBtn': '更新',
@@ -5028,6 +5032,10 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.searchModule': '搜尋模組...',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': '翻譯全部',
+  'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent':
+    '確認將預設語言（{0}）全部的鍵值對翻譯成目前語言（{1}）嗎？已有內容的鍵值對將不再翻譯。',
+  'PC.Pages.SystemConfig.LangContent.translateKeyTooltip':
+    '將預設語言({0})的鍵值對翻譯成目前語言({1})',
   'PC.Pages.SystemConfig.LangContent.keyValMng': '鍵值管理',
   'PC.Pages.SpaceDevelop.copyIndependentSessionSuccess': '已複製獨立會話路徑',
   'PC.Pages.AntvX6.systemPrompt': '系統提示詞',

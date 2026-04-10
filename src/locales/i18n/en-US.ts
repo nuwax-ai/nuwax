@@ -5972,6 +5972,12 @@ export const EN_US: SystemLangMap = {
     'Default language cannot be deleted',
   'PC.Pages.SystemConfig.LangContent.updateSuccess': 'Update Successfully',
   'PC.Pages.SystemConfig.LangContent.addSuccess': 'Add Successfully',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmTitle':
+    'Confirm Delete',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValConfirmContent':
+    'Are you sure you want to delete this key-value pair?',
+  'PC.Pages.SystemConfig.LangContent.deleteKeyValSuccess':
+    'Deleted successfully',
   'PC.Pages.SystemConfig.LangContent.editKeyValTitle': 'Edit Key-Value Pair',
   'PC.Pages.SystemConfig.LangContent.addKeyValTitle': 'Add Key-Value Pair',
   'PC.Pages.SystemConfig.LangContent.updateBtn': 'Update',
@@ -6003,6 +6009,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.searchModule': 'Search module...',
   'PC.Pages.SystemConfig.LangContent.searchKey': 'Search Key...',
   'PC.Pages.SystemConfig.LangContent.translateAllBtn': 'Translate All',
+  'PC.Pages.SystemConfig.LangContent.translateAllConfirmContent':
+    'Are you sure you want to translate all key-value pairs from the default language ({0}) to the current language ({1})? Entries that already have content will not be translated.',
+  'PC.Pages.SystemConfig.LangContent.translateKeyTooltip':
+    'Translate key-value pairs from default language ({0}) to current language ({1})',
   'PC.Pages.SystemConfig.LangContent.keyValMng': 'Key-Value Management',
   'PC.Pages.SpaceDevelop.copyIndependentSessionSuccess':
     'Independent session path copied',

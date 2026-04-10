@@ -1,53 +1,53 @@
 /**
- * 开发环境监控脚本
- * 提供错误监控、历史记录追踪、父窗口通信功能
+ * Development environment monitoring script.
+ * Provides error monitoring, history tracking, and parent-window communication.
  */
 
 (function () {
   'use strict';
 
-  // ⭐ 关键：立即保存原始 console 方法，防止被其他脚本覆盖
+  // Critical: capture original console methods immediately before other scripts override them.
   const _originalConsoleError = console.error;
   const _originalConsoleWarn = console.warn;
 
-  // 配置
+  // Configuration
   const config = {
     version: '1.0.7',
     enabled: true,
-    logLevel: 'error', // 只记录错误级别日志
-    maxErrors: 10, // 减少存储量
-    maxLogs: 20, // 减少存储量
-    mutationObserverEnabled: true, // 是否启用 MutationObserver
+    logLevel: 'error', // Only persist error-level logs
+    maxErrors: 10, // Cap stored errors
+    maxLogs: 20, // Cap stored history entries
+    mutationObserverEnabled: true, // Whether MutationObserver is enabled
   };
 
-  // 简化的监控数据存储
+  // Simplified monitoring data store
   const monitorData = {
     errors: [],
     basicInfo: {
       url: window.location.href,
-      userAgent: navigator.userAgent.split(' ')[0], // 只保留浏览器名称
+      userAgent: navigator.userAgent.split(' ')[0], // Browser name token only
     },
-    historyChanges: [], // 历史记录变化
+    historyChanges: [], // History change log
     ready: false,
-    detectedErrorElements: new Set(), // 已检测到的错误元素（避免重复报告）
-    recentErrors: new Map(), // 最近报告的错误（用于去重），key: 错误消息，value: 时间戳
+    detectedErrorElements: new Set(), // Seen error UI nodes (dedupe repeated reports)
+    recentErrors: new Map(), // Recent errors for dedupe: key = message prefix, value = timestamp
   };
 
   /**
-   * 检查白屏状态并获取 document 字符串
-   * 参考 Preview 组件的 checkWhiteScreen 逻辑
-   * @returns {{ isWhiteScreen: boolean, documentString?: string }} 白屏检查结果
+   * Check for blank/white screen and optionally capture document HTML snapshot.
+   * Mirrors Preview component checkWhiteScreen behavior.
+   * @returns {{ isWhiteScreen: boolean, documentString?: string }} White-screen check result
    */
   function checkWhiteScreen() {
     try {
       const doc = document;
 
-      // 获取 document 字符串的辅助函数
+      // Helper to build a snapshot string of the document HTML
       function getDocumentString() {
         try {
           let docString = '';
 
-          // 如果没有 body，获取整个 document 的 HTML
+          // No body: use full document HTML
           if (!doc || !doc.body) {
             if (doc && doc.documentElement) {
               docString = doc.documentElement.outerHTML || '';
@@ -59,8 +59,7 @@
               docString = '[Document not available]';
             }
           } else {
-            // 如果有 body，获取 body 的 HTML 结构
-            // 同时也获取 head 中的关键信息（如 script 标签）
+            // With body: include body HTML plus head scripts/styles for context
             const bodyHTML = doc.body.innerHTML || '';
             const headScripts = Array.from(doc.head.querySelectorAll('script'))
               .map((script) => script.outerHTML)
@@ -81,7 +80,7 @@
               .join('\n');
           }
 
-          // 限制长度，避免消息过大（限制为 5000 字符）
+          // Truncate to keep postMessage payload size reasonable (5000 chars)
           const maxLength = 5000;
           if (docString.length > maxLength) {
             docString =
@@ -93,12 +92,12 @@
 
           return docString;
         } catch (e) {
-          // 获取 document 字符串失败（静默处理）
+          // Failed to read document string (silent)
           return '[Failed to get document string: ' + String(e) + ']';
         }
       }
 
-      // 检查白屏状态
+      // White-screen check
       if (!doc || !doc.body) {
         return {
           isWhiteScreen: true,
@@ -106,7 +105,7 @@
         };
       }
 
-      // 检查是否空内容
+      // Empty body?
       const hasContent =
         doc.body.innerText.trim().length > 0 || doc.body.children.length > 0;
       if (!hasContent) {
@@ -116,7 +115,7 @@
         };
       }
 
-      // 检查是否存在根节点（React/Vue 挂载点）
+      // Root mount node (React/Vue)
       const appRoot = doc.querySelector('#root, #app');
       if (!appRoot) {
         return {
@@ -125,7 +124,7 @@
         };
       }
 
-      // 如果存在挂载点但内部为空，说明 React/Vite 崩溃了
+      // Mount exists but empty — likely app crashed before render
       if (appRoot.children.length === 0) {
         return {
           isWhiteScreen: true,
@@ -133,12 +132,12 @@
         };
       }
 
-      // 不是白屏，不返回 documentString
+      // Not blank: omit documentString
       return {
         isWhiteScreen: false,
       };
     } catch (error) {
-      // 检测失败时，保守处理，返回 false（不认为是白屏）
+      // On failure, assume not white screen to avoid false positives
       return {
         isWhiteScreen: false,
         documentString: '[White screen check failed: ' + String(error) + ']',
@@ -147,16 +146,16 @@
   }
 
   /**
-   * 检查错误是否应该被过滤（已知的非关键错误）
-   * @param {string} message - 错误消息
-   * @param {object} details - 错误详情
-   * @returns {boolean} 是否应该过滤
+   * Whether to filter out known non-critical errors.
+   * @param {string} message - Error message
+   * @param {object} details - Error details
+   * @returns {boolean} True if the error should be ignored
    */
   function shouldFilterError(message, details) {
     const messageStr = typeof message === 'string' ? message : String(message);
     const detailsStr = details ? JSON.stringify(details) : '';
 
-    // 过滤 Monaco Editor 的 CanceledError
+    // Filter Monaco Editor CanceledError
     if (
       messageStr.includes('Canceled') &&
       (messageStr.includes('Monaco') ||
@@ -166,7 +165,7 @@
       return true;
     }
 
-    // 过滤已知的 DevMonitor 自身日志
+    // Filter DevMonitor's own log lines
     if (
       messageStr.includes('[DevMonitor]') ||
       messageStr.includes('[Dev-Monitor') ||
@@ -175,10 +174,10 @@
       return true;
     }
 
-    // 过滤业务错误（如 "Failed to fetch blog info"）
+    // Filter expected business/API noise (e.g. fetch failures, missing data source)
     if (
       messageStr.includes('Failed to fetch') ||
-      messageStr.includes('请求的数据源不存在')
+      messageStr.includes('The requested data source does not exist')
     ) {
       return true;
     }
@@ -187,56 +186,55 @@
   }
 
   /**
-   * 检查错误是否应该被去重（短时间内相同错误不重复报告）
-   * @param {string} message - 错误消息
-   * @param {number} dedupWindow - 去重时间窗口（毫秒），默认 5 秒
-   * @returns {boolean} 是否应该去重（true 表示应该跳过）
+   * Whether to skip reporting a duplicate error within a time window.
+   * @param {string} message - Error message
+   * @param {number} dedupWindow - Dedupe window in ms (default 5s)
+   * @returns {boolean} True if this report should be skipped
    */
   function shouldDeduplicateError(message, dedupWindow = 5000) {
     const messageStr = typeof message === 'string' ? message : String(message);
     const now = Date.now();
 
-    // 生成错误标识（使用消息的前 100 个字符）
+    // Dedupe key: first 100 chars of message
     const errorKey = messageStr.substring(0, 100);
 
-    // 检查是否在时间窗口内
+    // Same error within window?
     const lastReportTime = monitorData.recentErrors.get(errorKey);
     if (lastReportTime && now - lastReportTime < dedupWindow) {
-      return true; // 应该去重
+      return true; // Skip duplicate
     }
 
-    // 更新最近报告时间
+    // Record last report time
     monitorData.recentErrors.set(errorKey, now);
 
-    // 清理过期的错误记录（保留最近 50 条）
+    // Trim map to last 50 entries by recency
     if (monitorData.recentErrors.size > 50) {
       const entries = Array.from(monitorData.recentErrors.entries());
-      entries.sort((a, b) => b[1] - a[1]); // 按时间戳降序排序
+      entries.sort((a, b) => b[1] - a[1]); // Newest first
       monitorData.recentErrors.clear();
       entries.slice(0, 50).forEach(([key, time]) => {
         monitorData.recentErrors.set(key, time);
       });
     }
 
-    return false; // 不需要去重
+    return false; // Not a duplicate
   }
 
-  // ⭐ 错误发送防抖配置
-  let errorSendTimer = null; // 错误发送定时器
-  let latestErrorData = null; // 最新的错误数据（用于防抖）
-  const ERROR_SEND_DELAY = 5000; // 错误发送延迟时间（5秒）
+  // Debounce sending errors to parent
+  let errorSendTimer = null; // Timer for batched send
+  let latestErrorData = null; // Latest payload while debouncing
+  const ERROR_SEND_DELAY = 5000; // Delay before send (5s)
 
   /**
-   * 发送错误消息到父窗口（延迟执行的实际发送逻辑）
-   * @param {object} errorData - 错误数据
+   * Post error payload to parent (actual send after debounce).
+   * @param {object} errorData - Error payload
    */
   function sendErrorToParent(errorData) {
-    // 检查是否在 iframe 中运行
+    // Only when running inside an iframe
     const isInIframe = window.self !== window.top;
 
     if (isInIframe && window.parent) {
       try {
-        // 检查白屏状态
         const { documentString, isWhiteScreen } = checkWhiteScreen();
 
         const errorMessage = {
@@ -251,28 +249,25 @@
           }),
         };
 
-        // 发送错误消息到父窗口
         window.parent.postMessage(errorMessage, '*');
 
-        // 关键日志：发送成功
         _originalConsoleError.call(
           console,
-          `[DevMonitor] ✓ 错误已发送 | ${errorData.message.substring(0, 80)}`,
+          `[DevMonitor] ✓ Error sent | ${errorData.message.substring(0, 80)}`,
         );
       } catch (e) {
-        // 关键日志：发送失败
         _originalConsoleError.call(
           console,
-          `[DevMonitor] ✗ 发送失败 | ${e.message}`,
+          `[DevMonitor] ✗ Send failed | ${e.message}`,
         );
       }
     }
   }
 
-  // 简化的日志函数 - 只记录错误
+  // Minimal logger — errors only
   const logger = {
     error: (message, details = null) => {
-      // 检查是否应该过滤
+      // Apply filters
       if (shouldFilterError(message, details)) {
         return;
       }
@@ -285,12 +280,11 @@
 
       monitorData.errors.push(errorData);
 
-      // 限制错误数量
       if (monitorData.errors.length > config.maxErrors) {
         monitorData.errors.shift();
       }
 
-      // 延迟发送错误消息到父窗口（防抖处理）
+      // Debounce parent notification
       const isUpdate = errorSendTimer !== null;
       if (errorSendTimer) {
         clearTimeout(errorSendTimer);
@@ -298,14 +292,13 @@
 
       latestErrorData = errorData;
 
-      // 关键日志：接收错误
       _originalConsoleError.call(
         console,
-        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${ERROR_SEND_DELAY / 1000
-        }s后发送 | ${errorData.message.substring(0, 80)}`,
+        `[DevMonitor] ${isUpdate ? '⟳' : '●'} Error received, sending in ${ERROR_SEND_DELAY / 1000
+        }s | ${errorData.message.substring(0, 80)}`,
       );
 
-      // 设置新的定时器，5秒后发送最新的错误
+      // Schedule send with latest error
       errorSendTimer = setTimeout(() => {
         if (latestErrorData) {
           sendErrorToParent(latestErrorData);
@@ -555,8 +548,6 @@
         'error-page',
         'error-page-container',
         'Something went wrong',
-        '出错了',
-        '错误',
       ];
 
       const hasErrorKeyword =
@@ -975,7 +966,7 @@
     }
     function sendMessageToMiniProgram() {
       const htmlTitle =
-        document.querySelector('head > title')?.textContent || '页面预览';
+        document.querySelector('head > title')?.textContent || 'Page preview';
 
       // 获取 body 的 HTML 内容
       const htmlDomString = document.body.innerHTML || '';
@@ -1016,7 +1007,7 @@
 
         return null;
       } catch (e) {
-        console.warn('无效 URL：', url);
+        console.warn('Invalid URL:', url);
         return null;
       }
     }
@@ -1029,7 +1020,7 @@
 
       if (!_ticket || !jump_type) {
         console.warn(
-          '[dev-monitor] 未检测到 _ticket 或 jump_type，跳过首页按钮渲染',
+          '[dev-monitor] Missing _ticket or jump_type; skipping home button',
         );
         return;
       }
@@ -1290,7 +1281,7 @@
       style.href = '/sdk/tailwind_design_mode.all.css?v=' + config.version;
       document.head.appendChild(style);
     } catch (error) {
-      console.warn('加载 tailwind_design_mode.all.css 失败', error);
+      console.warn('Failed to load tailwind_design_mode.all.css', error);
     }
   }
 

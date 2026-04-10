@@ -1,0 +1,42 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.row {
+  padding: @paddingXs;
+  margin-top: @marginXxs;
+  cursor: pointer;
+  color: @navSecondMenuTextSecondary;
+
+  &.first {
+    margin-top: 0;
+  }
+
+  .name {
+    color: @navSecondMenuTextSecondary;
+    font-weight: 400;
+    font-size: @fontSize;
+  }
+
+  &.active {
+    background-color: rgba(0, 0, 0, 5%);
+    color: rgba(0, 0, 0, 90%);
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+
+    .name {
+      color: rgba(0, 0, 0, 90%);
+    }
+  }
+
+  &:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 5%);
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+    color: @colorTextSecondary;
+  }
+
+  .status-text {
+    font-size: @fontSizeSm;
+    color: @colorTextTertiary;
+  }
+}

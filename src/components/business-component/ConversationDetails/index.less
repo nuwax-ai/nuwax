@@ -25,8 +25,12 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      padding: @paddingXs 8px @paddingXs 40px;
+      padding: @paddingXs @paddingXs @paddingXs 40px;
       box-sizing: content-box;
+
+      &.title-container-collapsed {
+        padding-left: @padding;
+      }
 
       .title {
         margin-bottom: 0;
