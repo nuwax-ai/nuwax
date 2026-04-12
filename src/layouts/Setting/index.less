@@ -3,6 +3,7 @@
 
 .modal-container {
   width: 1000px !important;
+  overflow-x: auto;
 }
 
 .container {
@@ -11,6 +12,10 @@
   background: @colorBgContainer;
   pointer-events: auto;
   position: relative;
+
+  &.container-mobile {
+    min-width: 750px;
+  }
 
   .left {
     width: 240px;

@@ -85,6 +85,11 @@ const useOpenApp = () => {
     setIsAppSidebarVisible(!isAppSidebarVisible);
   };
 
+  /** 窄屏下用于在点主内容或导航项后收起侧栏（不切换，避免与桌面手动收起语义混淆） */
+  const closeAppSidebar = useCallback(() => {
+    setIsAppSidebarVisible(false);
+  }, []);
+
   // 设置应用智能体详情
   const handleSetAppAgentDetail = (info: AgentDetailDto) => {
     setAppAgentDetail(info);
@@ -99,6 +104,7 @@ const useOpenApp = () => {
     isAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
+    closeAppSidebar,
     appAgentDetail,
     handleSetAppAgentDetail,
     createAppNewConversation,

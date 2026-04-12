@@ -17,6 +17,10 @@
     z-index: 10;
     transition: color 0.3s;
 
+    &.close-icon-mobile {
+      right: 15px;
+    }
+
     &:hover {
       color: #333;
     }
@@ -38,12 +42,20 @@
       font-weight: 600;
       color: #1f1f1f;
       line-height: 28px;
+
+      &.title-mobile {
+        padding: 0 15px;
+      }
     }
 
     .search-input {
       width: 100%;
       max-width: 800px;
       margin: 0 auto 24px;
+
+      &.search-input-mobile {
+        padding: 0 15px;
+      }
 
       :global {
         .ant-input-affix-wrapper {

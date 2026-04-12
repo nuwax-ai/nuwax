@@ -19,7 +19,7 @@ import UsageStatistics from './UsageStatistics';
 const cx = classNames.bind(styles);
 
 const Setting: React.FC = () => {
-  const { openSetting, setOpenSetting } = useModel('layout');
+  const { openSetting, setOpenSetting, isMobile } = useModel('layout');
   const [action, setAction] = useState<SettingActionEnum>(
     SettingActionEnum.Account,
   );
@@ -113,7 +113,11 @@ const Setting: React.FC = () => {
       onCancel={() => setOpenSetting(false)}
       className={cx(styles['modal-container'])}
       modalRender={() => (
-        <div className={cx(styles.container, 'flex', 'overflow-hide')}>
+        <div
+          className={cx(styles.container, 'flex', 'overflow-hide', {
+            [styles['container-mobile']]: isMobile,
+          })}
+        >
           <div className={cx(styles.left)}>
             <h3>{dict('PC.Pages.Setting.profileTitle')}</h3>
             <ul>

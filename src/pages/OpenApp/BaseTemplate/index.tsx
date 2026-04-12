@@ -45,9 +45,17 @@ const BaseTemplate: React.FC = () => {
   const {
     isAppSidebarVisible,
     toggleAppSidebarVisible,
+    closeAppSidebar,
     appAgentDetail,
     createAppNewConversation,
   } = useModel('useOpenApp');
+
+  /** 手机端且侧栏展开时收起侧栏（用于点主内容区、新建会话、历史项等） */
+  const closeSidebarIfMobileOpen = useCallback(() => {
+    if (isMobile && isAppSidebarVisible) {
+      closeAppSidebar();
+    }
+  }, [isMobile, isAppSidebarVisible, closeAppSidebar]);
 
   // =========================== footer 渐变 ===========================
   const historyListRef = useRef<HTMLDivElement | null>(null);
@@ -95,11 +103,13 @@ const BaseTemplate: React.FC = () => {
 
   // 查看全部历史会话
   const handleViewAllHistory = () => {
+    closeSidebarIfMobileOpen();
     history.push(`/app/history/conversation/${agentId}`);
   };
 
   // 会话跳转
   const handleLink = (id: number, agentId: number) => {
+    closeSidebarIfMobileOpen();
     history.push(`/app/chat/${agentId}/${id}`);
   };
 
@@ -118,13 +128,19 @@ const BaseTemplate: React.FC = () => {
 
       event.preventDefault();
       createAppNewConversation(agentId);
+      closeSidebarIfMobileOpen();
     };
 
     window.addEventListener('keydown', handleKeydown);
     return () => {
       window.removeEventListener('keydown', handleKeydown);
     };
-  }, [createAppNewConversation, isMacSystem, agentId]);
+  }, [
+    createAppNewConversation,
+    isMacSystem,
+    agentId,
+    closeSidebarIfMobileOpen,
+  ]);
 
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -197,7 +213,10 @@ const BaseTemplate: React.FC = () => {
         {/* 新建会话按钮 */}
         <div
           className={styles.newSessionBtn}
-          onClick={() => createAppNewConversation(agentId)}
+          onClick={() => {
+            createAppNewConversation(agentId);
+            closeSidebarIfMobileOpen();
+          }}
         >
           <span
             className={cx(styles.newSessionText, 'flex-1', 'overflow-hide')}
@@ -318,8 +337,11 @@ const BaseTemplate: React.FC = () => {
         </footer>
       </div>
 
-      {/* 主内容区 */}
-      <div className={cx('flex-1', 'overflow-hide')}>
+      {/* 主内容区：手机端侧栏打开时点右侧主区域收起侧栏 */}
+      <div
+        className={cx('flex-1', 'overflow-hide')}
+        onClick={closeSidebarIfMobileOpen}
+      >
         <Outlet />
       </div>
 

@@ -37,6 +37,8 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   const [currentDeleteId, setCurrentDeleteId] = useState<number | null>(null);
   const listRef = useRef<ConversationListRef>(null);
 
+  const { isMobile } = useModel('layout');
+
   // 防抖处理搜索逻辑
   const { run: handleSearch } = useDebounceFn(
     (val: string) => {
@@ -139,7 +141,9 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   return (
     <div className={styles.container}>
       <div
-        className={styles['close-icon']}
+        className={`${styles['close-icon']} ${
+          isMobile ? styles['close-icon-mobile'] : ''
+        }`}
         onClick={() => {
           history.back();
         }}
@@ -147,10 +151,18 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
         <CloseOutlined />
       </div>
       <div className={styles['main-content']}>
-        <div className={styles.title}>
+        <div
+          className={`${styles.title} ${
+            isMobile ? styles['title-mobile'] : ''
+          }`}
+        >
           {t('PC.Components.HistoryConversationList.pageTitle')}
         </div>
-        <div className={styles['search-input']}>
+        <div
+          className={`${styles['search-input']} ${
+            isMobile ? styles['search-input-mobile'] : ''
+          }`}
+        >
           <Input
             prefix={<SearchOutlined style={{ color: '#999', fontSize: 16 }} />}
             placeholder={t(
