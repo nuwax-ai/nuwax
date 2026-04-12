@@ -1,0 +1,1 @@
+"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[539],{50539:function(u,n,_){_.d(n,{createTreeViewServices:function(){return e.U}});var e=_(69638),c=_(79985)}}]);})();
