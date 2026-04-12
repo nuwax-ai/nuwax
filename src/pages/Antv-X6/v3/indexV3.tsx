@@ -38,8 +38,14 @@ import {
 } from '@/utils/updateNode';
 import { Graph } from '@antv/x6';
 import { Form } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel, useParams } from 'umi';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
 import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 import { calculateNodePosition } from './utils/graphV3';
@@ -84,6 +90,8 @@ const Workflow: React.FC = () => {
     handleInitLoading,
     globalLoadingTime,
   } = useModel('workflowV3');
+
+  const location = useLocation();
 
   const params = useParams();
   // id
@@ -166,7 +174,10 @@ const Workflow: React.FC = () => {
   const getDetailsRef = useRef<(() => Promise<void>) | null>(null);
   // V3:  getDetails  ref（getDetails ，）
   getDetailsRef.current = getDetails;
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState<boolean>(false);
+
+  // 是否隐藏返回箭头
+  const [hideBack, setHideBack] = useState<boolean>(false);
   const { setTestRun } = useModel('model');
   // useModel
   const {
@@ -206,6 +217,13 @@ const Workflow: React.FC = () => {
     },
     [graphRef],
   );
+
+  useLayoutEffect(() => {
+    const _hideBack = new URLSearchParams(location.search)?.get('hideBack');
+    const _hideBackValue = _hideBack ? Boolean(_hideBack) : false;
+
+    setHideBack(_hideBackValue);
+  }, [location]);
 
   /** -----------------    --------------------- */
   //  foldWrapItem  model  drawerForm
@@ -1024,6 +1042,7 @@ const Workflow: React.FC = () => {
   return (
     <WorkflowVersionProvider version="v3">
       <WorkflowLayout
+        hideBack={hideBack}
         isValidLoading={validationHook.isValidLoading}
         info={info}
         setShowCreateWorkflow={setShowCreateWorkflow}

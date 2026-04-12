@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { t } from '@/services/i18nRuntime';
@@ -20,6 +21,8 @@ import { Button, Popover, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import { useModel, useParams } from 'umi';
 interface HeaderProp {
+  // 是否隐藏返回箭头
+  hideBack?: boolean;
   isValidLoading?: boolean;
   info: {
     name?: string;
@@ -45,6 +48,8 @@ interface HeaderProp {
 }
 
 const Header: React.FC<HeaderProp> = ({
+  // 是否隐藏返回箭头, 默认不隐藏
+  hideBack = false,
   isValidLoading,
   info,
   onToggleVersionHistory,
@@ -195,16 +200,18 @@ const Header: React.FC<HeaderProp> = ({
   return (
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
-        <LeftOutlined
-          className="back-icon-style"
-          onClick={() => {
-            if (onBack) {
-              onBack();
-            } else {
-              jumpBack(`/space/${spaceId}/library`);
-            }
-          }}
-        />
+        <ConditionRender condition={!hideBack}>
+          <LeftOutlined
+            className="back-icon-style"
+            onClick={() => {
+              if (onBack) {
+                onBack();
+              } else {
+                jumpBack(`/space/${spaceId}/library`);
+              }
+            }}
+          />
+        </ConditionRender>
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
           alt=""

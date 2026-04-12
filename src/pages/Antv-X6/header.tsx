@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
@@ -15,6 +16,8 @@ import { Button, Popover, Tag } from 'antd';
 import React, { useMemo } from 'react';
 import { useParams } from 'umi';
 interface HeaderProp {
+  // 是否隐藏返回箭头
+  hideBack?: boolean;
   isValidLoading?: boolean;
   info: {
     name?: string;
@@ -34,6 +37,8 @@ interface HeaderProp {
 }
 
 const Header: React.FC<HeaderProp> = ({
+  // 是否隐藏返回箭头, 默认不隐藏
+  hideBack = false,
   isValidLoading,
   info,
   onToggleVersionHistory,
@@ -56,10 +61,12 @@ const Header: React.FC<HeaderProp> = ({
   return (
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
-        <LeftOutlined
-          className="back-icon-style"
-          onClick={() => jumpBack(`/space/${spaceId}/library`)}
-        />
+        <ConditionRender condition={!hideBack}>
+          <LeftOutlined
+            className="back-icon-style"
+            onClick={() => jumpBack(`/space/${spaceId}/library`)}
+          />
+        </ConditionRender>
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
           alt=""

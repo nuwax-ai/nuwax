@@ -34,6 +34,7 @@ import Header from './Header';
 
 export interface WorkflowLayoutProps {
   // Header Props
+  hideBack?: boolean;
   isValidLoading: boolean;
   info: any;
   setShowCreateWorkflow: (show: boolean) => void;
@@ -125,6 +126,7 @@ export interface WorkflowLayoutProps {
 }
 
 const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
+  hideBack = false,
   isValidLoading,
   info,
   setShowCreateWorkflow,
@@ -192,6 +194,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
       <Header
+        hideBack={hideBack}
         isValidLoading={isValidLoading}
         info={info ?? {}}
         onToggleVersionHistory={() => setShowVersionHistory(true)}

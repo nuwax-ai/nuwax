@@ -98,8 +98,14 @@ import {
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { Form, message, Spin } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel, useParams } from 'umi';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import NodePanelDrawer from './components/NodePanelDrawer';
 import VersionAction from './components/VersionAction';
@@ -130,6 +136,8 @@ const Workflow: React.FC = () => {
     handleInitLoading,
     globalLoadingTime,
   } = useModel('workflow');
+
+  const location = useLocation();
 
   const params = useParams();
   // id
@@ -180,6 +188,9 @@ const Workflow: React.FC = () => {
   // loading
   const [loading, setLoading] = useState(false);
   const { setTestRun } = useModel('model');
+
+  // 是否隐藏返回箭头
+  const [hideBack, setHideBack] = useState<boolean>(false);
   // useModel
   const {
     setReferenceList,
@@ -1574,6 +1585,13 @@ const Workflow: React.FC = () => {
     await dragChild(child, newPosition);
   };
 
+  useLayoutEffect(() => {
+    const _hideBack = new URLSearchParams(location.search)?.get('hideBack');
+    const _hideBackValue = _hideBack ? Boolean(_hideBack) : false;
+
+    setHideBack(_hideBackValue);
+  }, [location]);
+
   useEffect(() => {
     getDetails();
     return () => {
@@ -1704,6 +1722,7 @@ const Workflow: React.FC = () => {
     <div id="container">
       {/*  */}
       <Header
+        hideBack={hideBack}
         isValidLoading={isValidLoading}
         info={info ?? {}}
         onToggleVersionHistory={() => setShowVersionHistory(true)}
