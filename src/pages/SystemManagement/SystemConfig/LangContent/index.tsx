@@ -349,10 +349,11 @@ const LangContent: React.FC = () => {
       success: response.code === SUCCESS_CODE,
     };
   };
+  const langName = searchParams.get('name') || '';
 
   return (
     <WorkspaceLayout
-      title={`${lang} - ${dict('PC.Pages.SystemConfig.LangContent.keyValMng')}`}
+      title={langName}
       back={true}
       rightSlot={
         <>

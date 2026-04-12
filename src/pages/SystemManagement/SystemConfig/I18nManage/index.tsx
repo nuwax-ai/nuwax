@@ -68,10 +68,12 @@ const I18nManage: React.FC = () => {
     )?.lang;
     if (defaultLang) {
       if (record.lang === defaultLang) {
-        history.push(`/system/config/lang-content/${record.lang}`);
+        history.push(
+          `/system/config/lang-content/${record.lang}?name=${record.name}`,
+        );
       } else {
         history.push(
-          `/system/config/lang-content/${record.lang}?defaultLang=${defaultLang}`,
+          `/system/config/lang-content/${record.lang}?defaultLang=${defaultLang}&name=${record.name}`,
         );
       }
     } else {

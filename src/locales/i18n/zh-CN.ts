@@ -3387,7 +3387,6 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.keyPrefixInvalidError': 'Key 格式错误：{0}，端前缀必须是以下之一：{1}',
   'PC.Pages.SystemConfig.LangContent.keyPrefixMissingError': 'Key 格式错误：{0}，必须包含端前缀，如 PC.xxx',
   'PC.Pages.SystemConfig.LangContent.keyRequired': '请输入 Key',
-  'PC.Pages.SystemConfig.LangContent.keyValMng': '键值管理',
   'PC.Pages.SystemConfig.LangContent.moduleColumn': '模块',
   'PC.Pages.SystemConfig.LangContent.remarkLabel': '备注',
   'PC.Pages.SystemConfig.LangContent.remarkPlaceholder': '例如：Submit Button',
