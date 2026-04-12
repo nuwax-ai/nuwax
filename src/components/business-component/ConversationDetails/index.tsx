@@ -26,7 +26,11 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
+import {
+  AgentDetailDto,
+  AgentSelectedComponentInfo,
+  GuidQuestionDto,
+} from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
   MessageSourceType,
@@ -36,25 +40,25 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import {
-  arraysContainSameItems,
-  getUrlQueryParamValue,
-  parsePageAppProjectId,
-} from '@/utils/common';
+import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import omit from 'lodash/omit';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// 地址栏查询参数类型
-type UrlQueryParamsType = Record<string, string | number | boolean>;
 
 /**
  * 主页咨询聊天组件Props
@@ -123,6 +127,15 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
+
+  //======================================用户自带的url地址中的params参数======================================
+
+  /**
+   * url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
+   */
+  const [urlOtherParams, setUrlOtherParams] = useState<Record<string, unknown>>(
+    {},
+  );
 
   const {
     isFileTreeVisible,
@@ -201,60 +214,184 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     }
   };
 
+  /**
+   * 确认发送消息
+   * @param cId 会话ID
+   * @param args 传递的参数，包含：messageInfo, files, skillIds, modelId, variableParams, conversationId, agentDetail
+   */
+  const confirmSendMessage = (
+    args: any,
+    cId: number | null = conversationId,
+    info: AgentDetailDto | null = agentDetail || null,
+  ) => {
+    let url = '';
+
+    // 会话发起后跳转的页面URL
+    if (conversationUrl) {
+      url = conversationUrl
+        .replace(':id', cId?.toString() || '')
+        .replace(':agentId', agentId.toString());
+    } else {
+      url = `/home/chat/${cId}/${agentId}`;
+
+      // 如果是任务智能体，则隐藏菜单
+      if (info?.type === AgentTypeEnum.TaskAgent) {
+        url += '?hideMenu=true';
+      }
+    }
+
+    history.push(url, args);
+  };
+
+  // 已发布的智能体详情接口成功回调
+  const onResultSuccess = (result: AgentDetailDto) => {
+    // 获取用户自带的url参数
+    const queryParams = new URLSearchParams(location.search);
+    const paramsFromUrl = queryParams.get('params');
+    if (paramsFromUrl) {
+      try {
+        const parsed = JSON.parse(paramsFromUrl) as Record<string, unknown>;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // 删除用户自带的url参数中的conversationId字段
+          const urlPayload = omit(parsed, 'conversationId') as Record<
+            string,
+            unknown
+          >;
+          // 如果用户自带的url参数中是否存在message字段，且message字段不为空
+          const hasMessage =
+            'message' in urlPayload &&
+            urlPayload.message !== null &&
+            String(urlPayload.message).trim() !== '';
+          // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
+          if (hasMessage) {
+            const vpRaw = urlPayload.variableParams;
+            // 智能体变量参数
+            const agentVariables = result?.variables || [];
+            // 智能体必填变量参数name列表
+            const requiredNames = agentVariables
+              .filter(
+                (item: BindConfigWithSub) =>
+                  !item.systemVariable && item.require,
+              )
+              .map((item: BindConfigWithSub) => item.name);
+            // 用户自带的url参数中的变量参数
+            const vp =
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+                ? (vpRaw as Record<string, string | number>)
+                : null;
+
+            /**
+             * 判断用户自带的url参数中的变量参数是否存在且不为空
+             */
+            const urlVpValuePresent = (val: unknown): boolean => {
+              if (val === null || val === undefined) return false;
+              if (typeof val === 'string') return val.trim() !== '';
+              if (typeof val === 'number') return !Number.isNaN(val);
+              if (typeof val === 'boolean') return true;
+              return false;
+            };
+
+            /**
+             * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
+             */
+            const allRequiredInUrlParams =
+              requiredNames.length === 0 ||
+              (vp !== null &&
+                requiredNames.every(
+                  (name) =>
+                    Object.prototype.hasOwnProperty.call(vp, name) &&
+                    urlVpValuePresent(vp[name]),
+                ));
+
+            /**
+             * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
+             */
+            if (allRequiredInUrlParams) {
+              const attach = {
+                ...urlPayload,
+                defaultAgentDetail: result,
+                messageSourceType: 'agent' as MessageSourceType,
+              };
+              confirmSendMessage(attach, result?.conversationId, result);
+
+              setLoading(false);
+              return;
+            }
+            if (vp !== null) {
+              setVariableParams(vp);
+            }
+          } else {
+            const { variableParams: vpRaw, ...otherParams } = urlPayload;
+            if (
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+            ) {
+              setVariableParams(vpRaw as Record<string, string | number>);
+            }
+
+            // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
+            setUrlOtherParams(otherParams);
+          }
+        }
+      } catch {
+        // 忽略 ?params= 非合法 JSON
+      }
+    }
+
+    setLoading(false);
+    setAgentDetail(result);
+    // 设置应用智能体详情
+    handleSetAppAgentDetail(result);
+    handleOpenPreview(result);
+    setConversationId(result?.conversationId || null);
+    // 会话问题建议
+    const guidQuestionDtos = result?.guidQuestionDtos || [];
+    // 如果存在预置问题，显示预置问题
+    setChatSuggestList(guidQuestionDtos);
+    // 变量参数
+    const _variables = result?.variables || [];
+    setVariables(_variables);
+    // 必填参数name列表
+    const _requiredNameList = _variables
+      ?.filter(
+        (item: BindConfigWithSub) => !item.systemVariable && item.require,
+      )
+      ?.map((item: BindConfigWithSub) => item.name);
+    setRequiredNameList(_requiredNameList || []);
+    // 初始化会话信息: 开场白
+    if (result?.openingChatMsg) {
+      const currentMessage = {
+        role: AssistantRoleEnum.ASSISTANT,
+        type: MessageModeEnum.CHAT,
+        text: result?.openingChatMsg,
+        time: dayjs().toString(),
+        id: uuidv4(),
+        messageType: MessageTypeEnum.ASSISTANT,
+      } as MessageInfo;
+      setMessageList([currentMessage]);
+    }
+    setIsLoaded(true);
+  };
+
   // 已发布的智能体详情接口
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
     loadingDelay: 300, // 300ms内不显示loading
     onSuccess: (result: AgentDetailDto) => {
-      setLoading(false);
-      setAgentDetail(result);
-      // 设置应用智能体详情
-      handleSetAppAgentDetail(result);
-      handleOpenPreview(result);
-      setConversationId(result?.conversationId || null);
-      // 会话问题建议
-      const guidQuestionDtos = result?.guidQuestionDtos || [];
-      // 如果存在预置问题，显示预置问题
-      setChatSuggestList(guidQuestionDtos);
-      // 变量参数
-      const _variables = result?.variables || [];
-      setVariables(_variables);
-      // 必填参数name列表
-      const _requiredNameList = _variables
-        ?.filter(
-          (item: BindConfigWithSub) => !item.systemVariable && item.require,
-        )
-        ?.map((item: BindConfigWithSub) => item.name);
-      setRequiredNameList(_requiredNameList || []);
-      // 初始化会话信息: 开场白
-      if (result?.openingChatMsg) {
-        const currentMessage = {
-          role: AssistantRoleEnum.ASSISTANT,
-          type: MessageModeEnum.CHAT,
-          text: result?.openingChatMsg,
-          time: dayjs().toString(),
-          id: uuidv4(),
-          messageType: MessageTypeEnum.ASSISTANT,
-        } as MessageInfo;
-        setMessageList([currentMessage]);
-      }
-      setIsLoaded(true);
+      onResultSuccess(result);
     },
     onError: () => {
       setLoading(false);
     },
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setLoading(true);
     runDetail(agentId, true);
-
-    // 获取当前智能体的历史记录
-    runHistoryItem({
-      agentId,
-      limit: 20,
-    });
 
     return () => {
       // 关闭页面预览
@@ -270,6 +407,18 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       clearFilePanelInfo();
     };
   }, [agentId]);
+
+  useEffect(() => {
+    // 应用智能体模式下，不获取当前智能体的历史记录
+    if (isAppSidebarMode) {
+      return;
+    }
+    // 获取当前智能体的历史记录
+    runHistoryItem({
+      agentId,
+      limit: 20,
+    });
+  }, [agentId, isAppSidebarMode]);
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -289,17 +438,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       },
     };
   }, [agentDetail]);
-
-  /** （url中用户自带的参数）当前 URL `?` 后的查询参数；`&&` 等产生的空 key 会忽略；排除 `hideMenu`；值会做 boolean/number 收窄 */
-  const urlQueryParams = useMemo((): UrlQueryParamsType => {
-    const params = new URLSearchParams(location.search);
-    const out: UrlQueryParamsType = {};
-    params.forEach((rawValue, key) => {
-      if (!key || key === 'hideMenu') return;
-      out[key] = getUrlQueryParamValue(rawValue);
-    });
-    return out;
-  }, [location.search]);
 
   // 消息发送
   const handleMessageSend = (
@@ -321,37 +459,40 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       return;
     }
 
-    let url = '';
-
-    // 会话发起后跳转的页面URL
-    if (conversationUrl) {
-      url = conversationUrl
-        .replace(':id', conversationId?.toString() || '')
-        .replace(':agentId', agentId.toString());
-    } else {
-      url = `/home/chat/${conversationId}/${agentId}`;
-
-      // 如果是任务智能体，则隐藏菜单
-      if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
-    }
+    // 用户自带的url参数中的附件文件列表
+    const otherFiles = (urlOtherParams?.files || []) as UploadFileInfo[];
+    // 用户自带的url参数中的组件列表
+    const _selectedComponents = (urlOtherParams?.selectedComponents ||
+      []) as AgentSelectedComponentInfo[];
+    // 用户自带的url参数中的技能ID列表
+    const otherSkillIds = (urlOtherParams?.skillIds || []) as number[];
+    // 用户自带的url参数中的模型ID
+    const otherModelId = urlOtherParams?.modelId;
+    // 用户自带的url参数中的沙盒ID
+    const otherSandboxId = urlOtherParams?.sandboxId;
 
     // 传递的参数
     const attach = {
       message: messageInfo,
-      files,
-      infos: selectedComponentList,
+      // 附件文件列表
+      files: [...otherFiles, ...(files || [])],
+      // 组件列表
+      infos: [...selectedComponentList, ..._selectedComponents],
+      // 默认智能体详情
       defaultAgentDetail: agentDetail,
+      // 变量参数
       variableParams,
+      // 消息来源
       messageSourceType: 'agent' as MessageSourceType,
-      selectedComputerId,
-      skillIds,
-      modelId: modelId || selectedModelId,
-      // 用户自带的url参数，如果存在，需要在聊天页中将这些参数与variableParams合并，传给会话chat
-      urlQueryParams,
+      // 智能体电脑ID
+      selectedComputerId: selectedComputerId || otherSandboxId,
+      // 技能ID列表
+      skillIds: [...otherSkillIds, ...(skillIds || [])],
+      // 模型ID
+      modelId: modelId || selectedModelId || otherModelId,
     };
-    history.push(url, attach);
+
+    confirmSendMessage(attach);
   };
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息

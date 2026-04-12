@@ -93,8 +93,6 @@ const Chat: React.FC = () => {
   const infos = location.state?.infos;
   // 技能ID列表
   const skillIds = location.state?.skillIds;
-  // 用户自带的url参数，如果存在，需要在聊天页中将这些参数与variableParams合并，传给会话chat
-  const urlQueryParams = location.state?.urlQueryParams || {};
   // 消息来源
   const messageSourceType: MessageSourceType =
     (location.state?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
@@ -127,8 +125,6 @@ const Chat: React.FC = () => {
 
   // 当前选中的电脑 ID（通用型智能体）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
-  // 用户选择的智能体电脑名称
-  // const [selectedComputerName, setSelectedComputerName] = useState<string>('');
 
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
@@ -518,19 +514,13 @@ const Chat: React.FC = () => {
         if (isCanMessage && (message || files?.length > 0)) {
           const effectiveSandboxId = getEffectiveSandboxId(data);
 
-          // 合并用户自带的url参数与变量参数
-          const _variableParams = {
-            ...(firstVariableParams || {}),
-            ...urlQueryParams,
-          };
-
           // 发送消息参数
           const sendParams: SendMessageParams = {
             id,
             messageInfo: message,
             files,
             infos,
-            variableParams: _variableParams,
+            variableParams: firstVariableParams,
             sandboxId: effectiveSandboxId,
             data,
             skillIds,
@@ -745,19 +735,13 @@ const Chat: React.FC = () => {
     isSendMessageRef.current = true;
     const effectiveSandboxId = getEffectiveSandboxId();
 
-    // 合并用户自带的url参数与变量参数
-    const _variableParams = {
-      ...(variableParams || {}),
-      ...urlQueryParams,
-    };
-
     // 发送消息参数
     const sendParams: SendMessageParams = {
       id,
       messageInfo,
       files,
       infos: selectedComponentList,
-      variableParams: _variableParams,
+      variableParams: variableParams || undefined,
       sandboxId: effectiveSandboxId,
       skillIds,
       modelId: modelId || selectedModelId,
