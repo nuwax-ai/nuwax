@@ -163,31 +163,31 @@ v3/
 
 ### 4.2 各节点类型配置
 
-| 节点类型                   | V3 状态 | 测试结果 | 备注                       |
-| -------------------------- | ------- | -------- | -------------------------- |
-| **开始节点 (Start)**       | ✅      | 已验证   | nodeItem.tsx               |
-| **结束节点 (End)**         | ✅      | 已验证   | nodeItem.tsx               |
-| **过程输出 (Output)**      | ✅      | 已验证   | nodeItem.tsx               |
-| **LLM 大模型节点**         | ✅      | 已验证   | complexNode.tsx            |
-| - 技能组件选择             | ✅      |          | NewSkillV3 + form.submit() |
-| - 技能增删改保存           | ✅      |          | form.submit() 已添加       |
-| **知识库节点 (Knowledge)** | ✅      | 已验证   | library.tsx                |
-| - 知识库增删改保存         | ✅      |          | form.submit() 已添加       |
-| **意图识别节点**           | ✅      | 已验证   | complexNode.tsx            |
-| **问答节点 (QA)**          | ✅      | 已验证   | complexNode.tsx            |
-| **条件分支节点**           | ✅      | 已验证   | condition.tsx              |
-| **循环节点 (Loop)**        | ✅      | 已验证   | nodeItem.tsx               |
-| **代码节点 (Code)**        | ✅      | 已验证   | nodeItem.tsx               |
-| **变量节点 (Variable)**    | ✅      | 已验证   | nodeItem.tsx               |
-| **变量聚合节点**           | ✅      | 已验证   | useVariableAggregation.ts  |
-| **文本处理节点**           | ✅      | 已验证   | nodeItem.tsx               |
-| **文档提取节点**           | ✅      | 已验证   | nodeItem.tsx               |
-| **数据库节点**             | ✅      | 已验证   | database.tsx               |
-| **插件节点 (Plugin)**      | ✅      | 已验证   | pluginNode.tsx             |
-| **工作流节点**             | ✅      | 已验证   | pluginNode.tsx             |
-| **MCP 节点**               | ✅      | 已验证   | pluginNode.tsx             |
-| **长期记忆节点**           | ✅      | 已验证   | pluginNode.tsx             |
-| **HTTP 请求节点**          | ✅      | 已验证   | complexNode.tsx            |
+| 节点类型 | V3 状态 | 测试结果 | 备注 |
+| --- | --- | --- | --- |
+| **开始节点 (Start)** | ✅ | 已验证 | nodeItem.tsx |
+| **结束节点 (End)** | ✅ | 已验证 | nodeItem.tsx |
+| **过程输出 (Output)** | ✅ | 已验证 | nodeItem.tsx |
+| **LLM 大模型节点** | ✅ | 已验证 | complexNode.tsx |
+| - 技能组件选择 | ✅ |  | NewSkillV3 + form.submit() |
+| - 技能增删改保存 | ✅ |  | form.submit() 已添加 |
+| **知识库节点 (Knowledge)** | ✅ | 已验证 | library.tsx |
+| - 知识库增删改保存 | ✅ |  | form.submit() 已添加 |
+| **意图识别节点** | ✅ | 已验证 | complexNode.tsx |
+| **问答节点 (QA)** | ✅ | 已验证 | complexNode.tsx |
+| **条件分支节点** | ✅ | 已验证 | condition.tsx |
+| **循环节点 (Loop)** | ✅ | 已验证 | nodeItem.tsx |
+| **代码节点 (Code)** | ✅ | 已验证 | nodeItem.tsx |
+| **变量节点 (Variable)** | ✅ | 已验证 | nodeItem.tsx |
+| **变量聚合节点** | ✅ | 已验证 | useVariableAggregation.ts；已修复下拉空节点项 Bug (2026-04-12) |
+| **文本处理节点** | ✅ | 已验证 | nodeItem.tsx |
+| **文档提取节点** | ✅ | 已验证 | nodeItem.tsx |
+| **数据库节点** | ✅ | 已验证 | database.tsx |
+| **插件节点 (Plugin)** | ✅ | 已验证 | pluginNode.tsx |
+| **工作流节点** | ✅ | 已验证 | pluginNode.tsx |
+| **MCP 节点** | ✅ | 已验证 | pluginNode.tsx |
+| **长期记忆节点** | ✅ | 已验证 | pluginNode.tsx |
+| **HTTP 请求节点** | ✅ | 已验证 | complexNode.tsx |
 
 ### 4.3 变量引用功能
 
@@ -333,6 +333,11 @@ v3/
 - 对照 V1-FEATURES.md 建立基准
 - 记录已完成的架构重构和技能列表修复
 
+### 2026-04-12
+
+- 修复变量聚合节点变量引用下拉空节点项 Bug
+- `VariableSelector.tsx` `getMenu()` 新增空参数防御跳过逻辑（2 行 diff）
+
 ---
 
-_最后更新: 2025-12-17_
+_最后更新: 2026-04-12_

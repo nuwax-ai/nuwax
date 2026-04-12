@@ -122,53 +122,57 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
       ];
     }
 
-    return nodes.map((node) => {
-      const filteredOutputArgs = filterOutputArgs(
-        node.outputArgs || [],
-        allowedType,
-        selectedKeys,
-        String(node.id),
-      );
+    return nodes
+      .map((node) => {
+        const filteredOutputArgs = filterOutputArgs(
+          node.outputArgs || [],
+          allowedType,
+          selectedKeys,
+          String(node.id),
+        );
 
-      return {
-        key: node.id,
-        label:
-          node.name.length > 12 ? node.name.slice(0, 12) + '...' : node.name,
-        icon: returnImg(node.type),
-        popupClassName: 'inputOrReferencePopup',
-        children: [
-          {
-            key: `${node.id}-tree`,
-            label: (
-              <div
-                className="tree-container"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Tree
-                  onSelect={(_, info) => {
-                    const nodeData = info.node as unknown as FilteredArg;
-                    if (nodeData.originalKey) {
-                      onSelect(nodeData.originalKey);
-                      setDropdownOpen(false);
-                    }
-                  }}
-                  defaultExpandAll
-                  treeData={filteredOutputArgs}
-                  fieldNames={{
-                    title: 'name',
-                    key: 'key',
-                    children: 'children',
-                  }}
-                  titleRender={renderTitle}
-                  blockNode
-                  className="custom-tree-style custom-tree"
-                />
-              </div>
-            ),
-          },
-        ],
-      };
-    });
+        if (!filteredOutputArgs.length) return null;
+
+        return {
+          key: node.id,
+          label:
+            node.name.length > 12 ? node.name.slice(0, 12) + '...' : node.name,
+          icon: returnImg(node.type),
+          popupClassName: 'inputOrReferencePopup',
+          children: [
+            {
+              key: `${node.id}-tree`,
+              label: (
+                <div
+                  className="tree-container"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Tree
+                    onSelect={(_, info) => {
+                      const nodeData = info.node as unknown as FilteredArg;
+                      if (nodeData.originalKey) {
+                        onSelect(nodeData.originalKey);
+                        setDropdownOpen(false);
+                      }
+                    }}
+                    defaultExpandAll
+                    treeData={filteredOutputArgs}
+                    fieldNames={{
+                      title: 'name',
+                      key: 'key',
+                      children: 'children',
+                    }}
+                    titleRender={renderTitle}
+                    blockNode
+                    className="custom-tree-style custom-tree"
+                  />
+                </div>
+              ),
+            },
+          ],
+        };
+      })
+      .filter(Boolean);
   };
 
   return (
