@@ -38,6 +38,9 @@ import { PageArgConfig } from './pageDev';
 
 // 智能体header组件
 export interface AgentHeaderProps {
+  // 是否隐藏返回箭头
+  hideBack?: boolean;
+  // 智能体配置信息
   agentConfigInfo?: AgentConfigInfo;
   onToggleShowStand: () => void;
   onToggleVersionHistory: () => void;

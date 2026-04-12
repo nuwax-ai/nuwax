@@ -72,7 +72,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useModel, useParams } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
@@ -90,6 +90,8 @@ const cx = classNames.bind(styles);
  */
 const EditAgent: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
+
   // 系统/用户提示词组件引用
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
@@ -159,6 +161,9 @@ const EditAgent: React.FC = () => {
   // 当前选中的电脑ID（用于通用型智能体切换电脑时，保存当前选中的电脑ID）
   const [currentSelectedComputerId, setCurrentSelectedComputerId] =
     useState<string>('');
+
+  // 是否隐藏返回箭头
+  const [hideBack, setHideBack] = useState<boolean>(false);
 
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
@@ -290,7 +295,12 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     addBaseTarget();
-  }, []);
+
+    const _hideBack = new URLSearchParams(location.search)?.get('hideBack');
+    const _hideBackValue = _hideBack ? Boolean(_hideBack) : false;
+
+    setHideBack(_hideBackValue);
+  }, [location]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
@@ -939,6 +949,7 @@ const EditAgent: React.FC = () => {
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
+        hideBack={hideBack}
         agentConfigInfo={agentConfigInfo}
         onToggleShowStand={() =>
           handleClosePreview(EditAgentShowType.Show_Stand)

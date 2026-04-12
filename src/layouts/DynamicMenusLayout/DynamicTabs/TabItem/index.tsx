@@ -1,7 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { Tooltip } from 'antd';
+import { Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -71,14 +71,22 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
             <SvgIcon name={icon || 'icons-nav-task-time'} />
           )}
         </div>
-        <span
+        <Typography.Text
           className={cx(styles.text)}
           style={{
             display: isStyle2 ? 'block' : 'none',
+            color: 'inherit',
+          }}
+          ellipsis={{
+            tooltip: {
+              title: text,
+              placement: 'right',
+              color: '#fff',
+            },
           }}
         >
           {text}
-        </span>
+        </Typography.Text>
       </div>
     </div>
   );
@@ -90,14 +98,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
 
   // 二级菜单展开时，正常显示Tooltip
   return (
-    <Tooltip
-      title={text}
-      placement="right"
-      color={'#fff'}
-      styles={{
-        body: { color: '#000' },
-      }}
-    >
+    <Tooltip title={text} placement="right" color="#fff">
       {content}
     </Tooltip>
   );

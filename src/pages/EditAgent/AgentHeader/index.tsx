@@ -21,6 +21,8 @@ const cx = classNames.bind(styles);
  * 编辑智能体顶部header
  */
 const AgentHeader: React.FC<AgentHeaderProps> = ({
+  // 是否隐藏返回箭头, 默认不隐藏
+  hideBack = false,
   agentConfigInfo,
   onToggleShowStand,
   onToggleVersionHistory,
@@ -101,16 +103,18 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
-      <SvgIcon
-        name="icons-nav-backward"
-        className={cx(styles['icon-backward'])}
-        onClick={() => {
-          history.push(`/space/${spaceId}/develop`);
-          // jumpBack(`/space/${spaceId}/develop`)
-        }}
-      />
+      <ConditionRender condition={!hideBack}>
+        <SvgIcon
+          name="icons-nav-backward"
+          className={cx(styles['icon-backward'])}
+          onClick={() => {
+            history.push(`/space/${spaceId}/develop`);
+            // jumpBack(`/space/${spaceId}/develop`)
+          }}
+        />
+      </ConditionRender>
       <img
-        className={cx(styles.avatar)}
+        className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
         src={agentConfigInfo?.icon || (agentImage as string)}
         alt=""
       />
