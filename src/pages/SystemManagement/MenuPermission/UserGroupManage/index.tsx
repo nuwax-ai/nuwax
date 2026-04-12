@@ -363,7 +363,6 @@ const UserGroupManage: React.FC = () => {
       title: t('PC.Pages.SystemUserGroupManage.columnDescription'),
       dataIndex: 'description',
       key: 'description',
-      width: 300,
       hideInSearch: true,
       ellipsis: true,
     },
@@ -407,7 +406,7 @@ const UserGroupManage: React.FC = () => {
       title: t('PC.Pages.SystemUserGroupManage.columnAction'),
       key: 'action',
       align: 'center',
-      width: 260,
+      width: 300,
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: UserGroupInfo & { key: number }) => {

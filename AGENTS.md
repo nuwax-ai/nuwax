@@ -724,6 +724,37 @@ export const uploadAndStartProject = async (files: File[]) => { ... };
 export const startDev = async (projectId: string) => { ... };
 ```
 
+### I18n 规范
+
+#### 1. Key 命名规范
+
+遵循 `{Client}.{Scope}.{Domain}.{key}` 结构。
+
+- **Client**: `PC`, `Mobile`, `Claw`
+- **Scope**: `Pages`, `Components`, `Toast`, `Modal`, `Common`
+- **Domain**: 业务域 (PascalCase)
+- **key**: 语义化小驼峰 (camelCase)
+
+#### 2. UI 文本缩写规则
+
+在定义 I18n key 或 UI 文本时，统一遵循以下缩写规范以保证路径简洁：
+
+- **Mgmt/Manage**: Management (Mgmt 用于命名空间，Manage 用于动作)
+- **Config**: Configuration
+- **Auth**: Authentication/Authorization
+- **Perm**: Permission
+- **Dev**: Development
+- **Param/Params**: Parameter(s)
+- **Doc/Docs**: Document(s)
+- **Info**: Information
+- **Stats/Stat**: Statistics
+- **ID**: Identifier
+- **Conv**: Conversation
+- **Msg**: Message
+- **Admin**: Administrator
+- **QA**: Question & Answer
+- **Desc**: Description
+
 ## 项目分层规范
 
 ### 目录结构分层

@@ -887,7 +887,6 @@ const MenuManage: React.FC = () => {
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      width: 300,
       hideInSearch: true,
     },
     {
@@ -921,7 +920,7 @@ const MenuManage: React.FC = () => {
       title: t('PC.Pages.SystemMenuManage.columnAction'),
       key: 'action',
       align: 'center',
-      width: 180,
+      width: 200,
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: MenuNodeInfo & { key: number }) => {

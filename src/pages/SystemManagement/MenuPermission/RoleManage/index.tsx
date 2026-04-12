@@ -349,7 +349,7 @@ const RoleManage: React.FC = () => {
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
-      width: 300,
+      // width: 300,
       hideInSearch: true,
     },
     {
@@ -392,7 +392,7 @@ const RoleManage: React.FC = () => {
       title: t('PC.Pages.SystemRoleManage.columnAction'),
       key: 'action',
       align: 'center',
-      width: 260,
+      width: 300,
       fixed: 'right',
       hideInSearch: true,
       render: (_: ReactNode, record: RoleInfo & { key: number }) => {

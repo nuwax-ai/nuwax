@@ -32,6 +32,16 @@ interface TableActionsProps<T> {
   moreText?: string;
 }
 
+/** 估算字符串渲染宽度 */
+const getStringWidth = (text: string): number => {
+  let width = 0;
+  for (let i = 0; i < text.length; i++) {
+    // 简单的全角/半角判断：非 ASCII 字符估算为 14px，ASCII 估算为 8px
+    width += text.charCodeAt(i) > 255 ? 14 : 8;
+  }
+  return width;
+};
+
 /** 预估单个按钮宽度 */
 const estimateButtonWidth = (
   label: string,
@@ -41,11 +51,11 @@ const estimateButtonWidth = (
   if (mode === 'button') {
     return 32; // 固定图标按钮宽度
   }
-  // link 模式：文字约 14px + 间距/边距
-  const charWidth = 14;
+  // link 模式：基于字符编码估算宽度 + 间距/边距
+  const textWidth = getStringWidth(label);
   const padding = 12; // type=link size=small 左右各约 4px + 余裕
   const iconWidth = hasIcon ? 18 : 0;
-  return label.length * charWidth + padding + iconWidth;
+  return textWidth + padding + iconWidth;
 };
 
 /**
@@ -109,7 +119,7 @@ function TableActions<T extends object>({
 
     let totalWidth = 0;
     let count = 0;
-    const moreBtnWidth = moreText ? moreText.length * 14 + 16 : 32;
+    const moreBtnWidth = moreText ? getStringWidth(moreText) + 16 : 32;
 
     for (let i = 0; i < visibleActions.length; i++) {
       const action = visibleActions[i];
