@@ -112,14 +112,20 @@ const BatchKeyValueModal: React.FC<BatchKeyValueModalProps> = ({
     for (const [key, value] of entries) {
       const firstDotIndex = key.indexOf('.');
       if (firstDotIndex <= 0) {
-        message.warning(`Key 格式错误：${key}，必须包含端前缀，如 PC.xxx`);
+        message.warning(
+          dict('PC.Pages.SystemConfig.LangContent.keyPrefixMissingError', key),
+        );
         return;
       }
 
       const side = key.slice(0, firstDotIndex);
       if (!sideList.includes(side)) {
         message.warning(
-          `Key 格式错误：${key}，端前缀必须是以下之一：${sideList.join(', ')}`,
+          dict(
+            'PC.Pages.SystemConfig.LangContent.keyPrefixInvalidError',
+            key,
+            sideList.join(', '),
+          ),
         );
         return;
       }

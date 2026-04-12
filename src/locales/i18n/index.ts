@@ -22,16 +22,10 @@ export const I18N_LOCAL_IMPORT_DEFAULTS = {
 
 export const getLocalDefaultLangMap = (lang?: string): SystemLangMap => {
   const normalizedLang = String(lang || '').toLowerCase();
-  if (
-    normalizedLang.startsWith('zh-tw') ||
-    normalizedLang.startsWith('zh-hant')
-  ) {
+  if (normalizedLang.startsWith('zh-tw') || normalizedLang.startsWith('zh-hant')) {
     return { ...ZH_TW };
   }
-  if (
-    normalizedLang.startsWith('zh-hk') ||
-    normalizedLang.startsWith('zh-mo')
-  ) {
+  if (normalizedLang.startsWith('zh-hk') || normalizedLang.startsWith('zh-mo')) {
     return { ...ZH_HK };
   }
   if (normalizedLang.startsWith('zh')) {

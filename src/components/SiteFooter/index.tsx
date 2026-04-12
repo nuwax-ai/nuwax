@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { SiteFooterProps } from '@/types/interfaces/common';
 import classNames from 'classnames';
 import React from 'react';
@@ -15,7 +16,7 @@ const SiteFooter: React.FC<SiteFooterProps> = ({ text }) => {
         }}
       />
       <a href="https://nuwax.com" target="_blank" rel="noopener noreferrer">
-        Powered by nuwax
+        {dict('PC.Components.SiteFooter.poweredBy')}
       </a>
     </footer>
   );

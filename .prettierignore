@@ -10,3 +10,6 @@ devspace_start.sh
 
 # 忽略 public 目录下的所有文件
 public/**
+
+# 忽略 i18n 多语言翻译文件，防止大字典被格式化换行
+src/locales/i18n/*.ts
