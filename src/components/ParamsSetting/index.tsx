@@ -206,7 +206,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.paramType'),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
+      width: 130,
       render: (value) => (
         <div className={cx('h-full', 'flex', 'items-center')}>{value}</div>
       ),
@@ -215,7 +215,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.required'),
       dataIndex: 'require',
       key: 'require',
-      width: 85,
+      width: 100,
       render: (value: boolean) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           {value

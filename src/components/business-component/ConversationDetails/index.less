@@ -17,6 +17,10 @@
   min-width: 400px;
   animation: fade-in 0.4s ease-out forwards;
 
+  &.mobile-box {
+    min-width: 0;
+  }
+
   .title-box {
     background-color: transparent;
 
@@ -55,6 +59,10 @@
     display: flex;
     position: relative;
     gap: 40px;
+
+    &.mobile-content-box {
+      padding-left: @paddingXs;
+    }
 
     //隐藏滚动条
     &::-webkit-scrollbar {

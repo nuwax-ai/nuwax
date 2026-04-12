@@ -1061,10 +1061,36 @@ const Chat: React.FC = () => {
     apiDownloadAllFiles(id);
   };
 
+  useEffect(() => {
+    if (isMobile) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
+    // 设置最小宽度-扩展页面/文件树
+    if (pagePreviewData || isFileTreeVisible) {
+      document.documentElement.style.minWidth = '1660px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (isSidebarVisible) {
+        document.documentElement.style.minWidth = '1540px';
+      } else {
+        document.documentElement.style.minWidth = '1200px';
+      }
+    }
+    return () => {
+      // document.documentElement.style.minWidth = '1200px';
+      document.documentElement.style.minWidth = 'unset';
+    };
+  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible, isMobile]);
+
   // 左侧内容
   const LeftContent = () => {
     return (
-      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+      <div
+        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'], {
+          [styles['mobile-box']]: isMobile,
+        })}
+      >
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div
@@ -1212,7 +1238,11 @@ const Chat: React.FC = () => {
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div className={cx(styles['main-content-box'])}>
+        <div
+          className={cx(styles['main-content-box'], {
+            [styles['mobile-content-box']]: isMobile,
+          })}
+        >
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
@@ -1378,6 +1408,9 @@ const Chat: React.FC = () => {
                   'flex',
                   'w-full',
                   'overflow-hide',
+                  {
+                    [styles['mobile-file-tree-sidebar']]: isMobile,
+                  },
                 )}
               >
                 <FileTreeView
@@ -1437,23 +1470,6 @@ const Chat: React.FC = () => {
     );
   };
 
-  useEffect(() => {
-    // 设置最小宽度-扩展页面/文件树
-    if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '1660px';
-    } else {
-      // 设置最小宽度-调试详情
-      if (isSidebarVisible) {
-        document.documentElement.style.minWidth = '1540px';
-      } else {
-        document.documentElement.style.minWidth = '1200px';
-      }
-    }
-    return () => {
-      document.documentElement.style.minWidth = '1200px';
-    };
-  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
-
   return clearLoading ||
     loadingConversation ||
     loadingAsync ||
@@ -1476,7 +1492,13 @@ const Chat: React.FC = () => {
       <div
         style={{
           flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-          minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
+          minWidth: isMobile
+            ? 'unset'
+            : pagePreviewData || isFileTreeVisible
+            ? '900px'
+            : '430px',
+          // 移动端宽度100%
+          width: isMobile ? '100%' : '0',
         }}
       >
         <ResizableSplit

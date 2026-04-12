@@ -199,7 +199,7 @@ const Content: React.FC<ContentProps> = ({
         <TooltipIcon title={content} icon={<InfoCircleOutlined />} />
       </div>
       <Form.Item style={{ marginBottom: '0', flex: 1 }} noStyle>
-        <Flex gap="middle">
+        <Flex gap="middle" align="center">
           <Form.Item name={configKey} noStyle>
             <Slider
               min={min}
@@ -211,7 +211,7 @@ const Content: React.FC<ContentProps> = ({
               style={{ width: 280 }}
             />
           </Form.Item>
-          <Form.Item name={configKey}>
+          <Form.Item name={configKey} noStyle>
             <InputNumber
               min={min}
               max={max}

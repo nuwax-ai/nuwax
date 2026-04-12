@@ -383,7 +383,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   // 左侧内容
   const LeftContent = () => {
     return (
-      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+      <div
+        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'], {
+          [styles['mobile-box']]: isMobile,
+        })}
+      >
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div
@@ -475,7 +479,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div className={cx(styles['main-content-box'])}>
+        <div
+          className={cx(styles['main-content-box'], {
+            [styles['mobile-content-box']]: isMobile,
+          })}
+        >
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {

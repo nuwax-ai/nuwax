@@ -193,12 +193,12 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
             },
           ]}
         >
-          <Input
-            maxLength={100}
-            showCount
+          <Input.TextArea
+            className="dispose-textarea-count"
             placeholder={dict(
               'PC.Pages.SystemConfig.LangContent.textContentPlaceholder',
             )}
+            autoSize={{ minRows: 3, maxRows: 4 }}
           />
         </Form.Item>
         <Form.Item
