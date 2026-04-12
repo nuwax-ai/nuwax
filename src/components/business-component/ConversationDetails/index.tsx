@@ -36,18 +36,25 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import {
+  arraysContainSameItems,
+  getUrlQueryParamValue,
+  parsePageAppProjectId,
+} from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// 地址栏查询参数类型
+type UrlQueryParamsType = Record<string, string | number | boolean>;
 
 /**
  * 主页咨询聊天组件Props
@@ -75,6 +82,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   conversationUrl,
   skillInfo,
 }) => {
+  const location = useLocation();
   const [form] = Form.useForm();
   const { isMobile } = useModel('layout');
   const { runHistoryItem } = useModel('conversationHistory');
@@ -282,6 +290,17 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     };
   }, [agentDetail]);
 
+  /** （url中用户自带的参数）当前 URL `?` 后的查询参数；`&&` 等产生的空 key 会忽略；排除 `hideMenu`；值会做 boolean/number 收窄 */
+  const urlQueryParams = useMemo((): UrlQueryParamsType => {
+    const params = new URLSearchParams(location.search);
+    const out: UrlQueryParamsType = {};
+    params.forEach((rawValue, key) => {
+      if (!key || key === 'hideMenu') return;
+      out[key] = getUrlQueryParamValue(rawValue);
+    });
+    return out;
+  }, [location.search]);
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -329,6 +348,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       selectedComputerId,
       skillIds,
       modelId: modelId || selectedModelId,
+      // 用户自带的url参数，如果存在，需要在聊天页中将这些参数与variableParams合并，传给会话chat
+      urlQueryParams,
     };
     history.push(url, attach);
   };

@@ -117,6 +117,19 @@ const getURLParams = () => {
   return params;
 };
 
+/** 地址栏 query 单个 value 的类型收窄：`true`/`false`、纯数字（含小数）→ 对应类型，其余为 string */
+const getUrlQueryParamValue = (raw: string): string | number | boolean => {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  if (raw !== '' && /^-?(?:0|[1-9]\d*)$/.test(raw)) {
+    return Number(raw);
+  }
+  if (raw !== '' && /^-?(?:0|[1-9]\d*)\.\d+$/.test(raw)) {
+    return Number(raw);
+  }
+  return raw;
+};
+
 // 给页面head添加base标签: <base target="_blank">
 const addBaseTarget = () => {
   if (!document.head.querySelector('base')) {
@@ -289,6 +302,7 @@ export {
   getBase64,
   getNumbersOnly,
   getURLParams,
+  getUrlQueryParamValue,
   hasDuplicate,
   isEmptyObject,
   isHttp,
