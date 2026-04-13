@@ -5,10 +5,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const SiteProtocol: React.FC = () => {
+interface SiteProtocolProps {
+  onToggle?: () => void;
+}
+
+const SiteProtocol: React.FC<SiteProtocolProps> = ({ onToggle }) => {
   return (
-    <>
-      <span className={cx(styles.span)}>
+    <div>
+      <span className={cx(styles.span, styles.pointer)} onClick={onToggle}>
         {dict('PC.Pages.Login.readAndAgree')}
       </span>
       <a
@@ -28,7 +32,7 @@ const SiteProtocol: React.FC = () => {
       >
         {dict('PC.Pages.Login.privacyAgreement')}
       </a>
-    </>
+    </div>
   );
 };
 

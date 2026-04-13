@@ -26,6 +26,7 @@ import {
   Modal,
   Segmented,
   theme,
+  Tooltip,
   Typography,
 } from 'antd';
 import classNames from 'classnames';
@@ -38,11 +39,46 @@ import SiteProtocol from './SiteProtocol';
 
 const { Title } = Typography;
 
-type SegmentedItemType = { label: string; value: string };
+type SegmentedItemType = { label: React.ReactNode; value: string };
 
 const cx = classNames.bind(styles);
 
 const { confirm } = Modal;
+
+/**
+ * 智能溢出检测 Tooltip 组件
+ * 只有当文本宽度不足显示省略号时，鼠标移入才显示 Tooltip
+ */
+const EllipsisTooltip: React.FC<{ title: string; children: string }> = ({
+  title,
+  children,
+}) => {
+  const [isOverflow, setIsOverflow] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
+
+  const checkOverflow = () => {
+    const el = textRef.current;
+    if (el) {
+      setIsOverflow(el.scrollWidth > el.offsetWidth);
+    }
+  };
+
+  return (
+    <Tooltip
+      title={isOverflow ? title : null}
+      color="#fff"
+      styles={{ body: { color: '#000' } }}
+    >
+      <div
+        ref={textRef}
+        className={styles['segmented-item-text']}
+        onMouseEnter={checkOverflow}
+      >
+        {children}
+      </div>
+    </Tooltip>
+  );
+};
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -256,11 +292,19 @@ const Login: React.FC = () => {
   // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     {
-      label: dict('PC.Pages.Login.passwordLogin'),
+      label: (
+        <EllipsisTooltip title={dict('PC.Pages.Login.passwordLogin')}>
+          {dict('PC.Pages.Login.passwordLogin')}
+        </EllipsisTooltip>
+      ),
       value: LoginTypeEnum.Password + '',
     },
     {
-      label: dict('PC.Pages.Login.codeLoginOrRegister'),
+      label: (
+        <EllipsisTooltip title={dict('PC.Pages.Login.codeLoginOrRegister')}>
+          {dict('PC.Pages.Login.codeLoginOrRegister')}
+        </EllipsisTooltip>
+      ),
       value: LoginTypeEnum.Code + '',
     },
   ];
@@ -359,12 +403,21 @@ const Login: React.FC = () => {
                   className={cx('mb-16')}
                   style={{ marginTop: '-10px' }}
                 >
-                  <Checkbox
-                    checked={checked}
-                    onChange={(e) => setChecked(e.target.checked)}
+                  <div
+                    className={cx(
+                      'flex',
+                      'flex-row',
+                      'items-start',
+                      styles['protocol-wrapper'],
+                    )}
                   >
-                    <SiteProtocol />
-                  </Checkbox>
+                    <Checkbox
+                      checked={checked}
+                      style={{ marginRight: 5 }}
+                      onChange={(e) => setChecked(e.target.checked)}
+                    />
+                    <SiteProtocol onToggle={() => setChecked(!checked)} />
+                  </div>
                 </Form.Item>
               </Form>
 
