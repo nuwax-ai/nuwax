@@ -35,8 +35,8 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
   const navStyle: React.CSSProperties = useMemo(() => {
     return isStyle2
       ? {
-          width: '58px',
-          height: '58px',
+          width: '64px',
+          height: '64px',
         }
       : {
           width: '40px',
