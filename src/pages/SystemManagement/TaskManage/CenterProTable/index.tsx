@@ -317,7 +317,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         {
           title: t('PC.Pages.SystemTaskCenterProTable.executionTimes'),
           dataIndex: 'execTimes',
-          width: 90,
+          width: 110,
           hideInSearch: true,
         },
         {

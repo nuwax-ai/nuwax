@@ -50,6 +50,8 @@ const BaseTemplate: React.FC = () => {
     createAppNewConversation,
   } = useModel('useOpenApp');
 
+  const { runTenantConfig } = useModel('tenantConfigInfo');
+
   /** 手机端且侧栏展开时收起侧栏（用于点主内容区、新建会话、历史项等） */
   const closeSidebarIfMobileOpen = useCallback(() => {
     if (isMobile && isAppSidebarVisible) {
@@ -93,6 +95,9 @@ const BaseTemplate: React.FC = () => {
   useEffect(() => {
     // 获取用户信息
     getUserInfo();
+
+    // 租户配置信息查询接口
+    runTenantConfig();
 
     // 查询会话记录
     runHistory({
