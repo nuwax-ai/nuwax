@@ -54,7 +54,7 @@ export const COMMON_PRO_TABLE_PROPS = {
     showSizeChanger: true,
     pageSizeOptions: [15, 30, 50, 100],
     showTotal: (total: number) =>
-      `${dict('PC.Constants.DataTable.totalPrefix')}${total}${dict(
+      `${dict('PC.Constants.DataTable.totalPrefix')} ${total} ${dict(
         'PC.Constants.DataTable.totalSuffix',
       )}`,
     defaultPageSize: 15,
