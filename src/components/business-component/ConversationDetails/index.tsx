@@ -59,6 +59,8 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
+  'conversationDetails:skipDetailQueryOnPopBack';
 
 /**
  * 主页咨询聊天组件Props
@@ -245,99 +247,108 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 已发布的智能体详情接口成功回调
   const onResultSuccess = (result: AgentDetailDto) => {
-    // 获取用户自带的url参数
-    const queryParams = new URLSearchParams(location.search);
-    const paramsFromUrl = queryParams.get('params');
-    if (paramsFromUrl) {
-      try {
-        const parsed = JSON.parse(paramsFromUrl) as Record<string, unknown>;
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          // 删除用户自带的url参数中的conversationId字段
-          const urlPayload = omit(parsed, 'conversationId') as Record<
-            string,
-            unknown
-          >;
-          // 如果用户自带的url参数中是否存在message字段，且message字段不为空
-          const hasMessage =
-            'message' in urlPayload &&
-            urlPayload.message !== null &&
-            String(urlPayload.message).trim() !== '';
-          // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
-          if (hasMessage) {
-            const vpRaw = urlPayload.variableParams;
-            // 智能体变量参数
-            const agentVariables = result?.variables || [];
-            // 智能体必填变量参数name列表
-            const requiredNames = agentVariables
-              .filter(
-                (item: BindConfigWithSub) =>
-                  !item.systemVariable && item.require,
-              )
-              .map((item: BindConfigWithSub) => item.name);
-            // 用户自带的url参数中的变量参数
-            const vp =
-              vpRaw !== null &&
-              typeof vpRaw === 'object' &&
-              !Array.isArray(vpRaw)
-                ? (vpRaw as Record<string, string | number>)
-                : null;
+    const shouldSkipUrlParamsProcessing =
+      history.action === 'POP' &&
+      sessionStorage.getItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY) ===
+        String(agentId);
 
-            /**
-             * 判断用户自带的url参数中的变量参数是否存在且不为空
-             */
-            const urlVpValuePresent = (val: unknown): boolean => {
-              if (val === null || val === undefined) return false;
-              if (typeof val === 'string') return val.trim() !== '';
-              if (typeof val === 'number') return !Number.isNaN(val);
-              if (typeof val === 'boolean') return true;
-              return false;
-            };
+    if (shouldSkipUrlParamsProcessing) {
+      sessionStorage.removeItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY);
+    } else {
+      // 获取用户自带的url参数
+      const queryParams = new URLSearchParams(location.search);
+      const paramsFromUrl = queryParams.get('params');
+      if (paramsFromUrl) {
+        try {
+          const parsed = JSON.parse(paramsFromUrl) as Record<string, unknown>;
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            // 删除用户自带的url参数中的conversationId字段
+            const urlPayload = omit(parsed, 'conversationId') as Record<
+              string,
+              unknown
+            >;
+            // 如果用户自带的url参数中是否存在message字段，且message字段不为空
+            const hasMessage =
+              'message' in urlPayload &&
+              urlPayload.message !== null &&
+              String(urlPayload.message).trim() !== '';
+            // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
+            if (hasMessage) {
+              const vpRaw = urlPayload.variableParams;
+              // 智能体变量参数
+              const agentVariables = result?.variables || [];
+              // 智能体必填变量参数name列表
+              const requiredNames = agentVariables
+                .filter(
+                  (item: BindConfigWithSub) =>
+                    !item.systemVariable && item.require,
+                )
+                .map((item: BindConfigWithSub) => item.name);
+              // 用户自带的url参数中的变量参数
+              const vp =
+                vpRaw !== null &&
+                typeof vpRaw === 'object' &&
+                !Array.isArray(vpRaw)
+                  ? (vpRaw as Record<string, string | number>)
+                  : null;
 
-            /**
-             * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
-             */
-            const allRequiredInUrlParams =
-              requiredNames.length === 0 ||
-              (vp !== null &&
-                requiredNames.every(
-                  (name) =>
-                    Object.prototype.hasOwnProperty.call(vp, name) &&
-                    urlVpValuePresent(vp[name]),
-                ));
-
-            /**
-             * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
-             */
-            if (allRequiredInUrlParams) {
-              const attach = {
-                ...urlPayload,
-                defaultAgentDetail: result,
-                messageSourceType: 'agent' as MessageSourceType,
+              /**
+               * 判断用户自带的url参数中的变量参数是否存在且不为空
+               */
+              const urlVpValuePresent = (val: unknown): boolean => {
+                if (val === null || val === undefined) return false;
+                if (typeof val === 'string') return val.trim() !== '';
+                if (typeof val === 'number') return !Number.isNaN(val);
+                if (typeof val === 'boolean') return true;
+                return false;
               };
-              confirmSendMessage(attach, result?.conversationId, result);
 
-              setLoading(false);
-              return;
-            }
-            if (vp !== null) {
-              setVariableParams(vp);
-            }
-          } else {
-            const { variableParams: vpRaw, ...otherParams } = urlPayload;
-            if (
-              vpRaw !== null &&
-              typeof vpRaw === 'object' &&
-              !Array.isArray(vpRaw)
-            ) {
-              setVariableParams(vpRaw as Record<string, string | number>);
-            }
+              /**
+               * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
+               */
+              const allRequiredInUrlParams =
+                requiredNames.length === 0 ||
+                (vp !== null &&
+                  requiredNames.every(
+                    (name) =>
+                      Object.prototype.hasOwnProperty.call(vp, name) &&
+                      urlVpValuePresent(vp[name]),
+                  ));
 
-            // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
-            setUrlOtherParams(otherParams);
+              /**
+               * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
+               */
+              if (allRequiredInUrlParams) {
+                const attach = {
+                  ...urlPayload,
+                  defaultAgentDetail: result,
+                  messageSourceType: 'agent' as MessageSourceType,
+                };
+                confirmSendMessage(attach, result?.conversationId, result);
+
+                setLoading(false);
+                return;
+              }
+              if (vp !== null) {
+                setVariableParams(vp);
+              }
+            } else {
+              const { variableParams: vpRaw, ...otherParams } = urlPayload;
+              if (
+                vpRaw !== null &&
+                typeof vpRaw === 'object' &&
+                !Array.isArray(vpRaw)
+              ) {
+                setVariableParams(vpRaw as Record<string, string | number>);
+              }
+
+              // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
+              setUrlOtherParams(otherParams);
+            }
           }
+        } catch {
+          // 忽略 ?params= 非合法 JSON
         }
-      } catch {
-        // 忽略 ?params= 非合法 JSON
       }
     }
 
@@ -394,6 +405,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     runDetail(agentId, true);
 
     return () => {
+      // 记录当前详情页 agentId，供浏览器后退回到该页时跳过重复初始化。
+      sessionStorage.setItem(
+        SKIP_DETAIL_QUERY_ON_POP_BACK_KEY,
+        String(agentId),
+      );
       // 关闭页面预览
       hidePagePreview();
 
