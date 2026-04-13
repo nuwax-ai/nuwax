@@ -208,7 +208,7 @@ const Login: React.FC = () => {
       areaCode,
       password,
       captchaVerifyParam,
-    });
+    }).then(() => ({ skipRefresh: true } as CaptchaConsumeControl));
   };
 
   // 验证码登录

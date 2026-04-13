@@ -384,9 +384,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     // ==================== 计算属性 ====================
     /** 编辑器最小高度（基于行数） */
-    const minHeight = minRows * 22;
+    const minHeight = minRows * 26;
     /** 编辑器最大高度（基于行数） */
-    const maxHeight = maxRows * 22;
+    const maxHeight = maxRows * 26;
 
     // ==================== 暴露给父组件的方法 ====================
 
