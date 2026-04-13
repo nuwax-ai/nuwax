@@ -48,23 +48,14 @@
     line-height: @fontHeightSm;
     color: @colorTextPlaceholder;
     pointer-events: none; // 确保不阻挡输入框的交互
-    display: flex;
     align-items: flex-start;
     white-space: pre-wrap; // 支持多行显示
     word-wrap: break-word;
     opacity: 0; // 默认隐藏
     transition: opacity 0.3s ease-in-out; // 淡入淡出动画
-
     // 占位符可见时的样式
     &.placeholder-visible {
       opacity: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      word-break: break-all;
-      white-space: normal;
     }
   }
 

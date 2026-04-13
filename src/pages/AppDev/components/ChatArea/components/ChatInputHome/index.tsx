@@ -991,6 +991,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             <div
               className={cx(
                 styles['custom-placeholder'],
+                'text-ellipsis-2',
                 isPlaceholderVisible && styles['placeholder-visible'],
               )}
             >
