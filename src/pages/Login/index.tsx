@@ -1,6 +1,8 @@
 import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import type { CaptchaConsumeControl } from '@/hooks/useCaptchaConsume';
+import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
@@ -28,7 +30,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useRequest, useSearchParams } from 'umi';
+import { history, useModel, useSearchParams } from 'umi';
 import BasicLayout from './BasicLayout';
 import styles from './index.less';
 import LoginLangSwitcher from './LoginLangSwitcher';
@@ -55,40 +57,49 @@ const Login: React.FC = () => {
   // 菜单数据模型
   const { loadMenus } = useModel('menuModel');
 
-  const { run, loading } = useRequest(apiLogin, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-      const { expireDate, token, redirect: responseRedirectUrl } = result;
-      localStorage.setItem(ACCESS_TOKEN, token);
-      localStorage.setItem(EXPIRE_DATE, expireDate);
-      localStorage.setItem(PHONE, params[0].phoneOrEmail);
-      try {
-        const latestUserInfo = await UserService.refreshUserInfo();
-        await syncLangFromUserInfo(latestUserInfo);
-      } catch (error) {
-        console.error('[Login] Sync language after login failed:', error);
-      }
-      // 登录成功后强制刷新菜单数据（可能切换了账号）
-      await loadMenus(true);
-      // 登录成功后重新初始化语言
-      await initI18n(true);
-      const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-      if (isWeakNumber(redirect)) {
-        history.go(Number(redirect));
-      } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-        // 注意没有考虑 "//" url 的情况
-        window.location.href = responseRedirectUrl;
-      } else if (redirect) {
-        history.replace(redirect);
-      } else {
-        history.replace('/');
-      }
+  const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
+    apiLogin,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
+        console.info('[Login] password-login-onSuccess', {
+          account: params?.[0]?.phoneOrEmail,
+        });
+        const { expireDate, token, redirect: responseRedirectUrl } = result;
+        localStorage.setItem(ACCESS_TOKEN, token);
+        localStorage.setItem(EXPIRE_DATE, expireDate);
+        localStorage.setItem(PHONE, params[0].phoneOrEmail);
+        try {
+          const latestUserInfo = await UserService.refreshUserInfo();
+          await syncLangFromUserInfo(latestUserInfo);
+        } catch (error) {
+          console.error('[Login] Sync language after login failed:', error);
+        }
+        // 登录成功后强制刷新菜单数据（可能切换了账号）
+        await loadMenus(true);
+        // 登录成功后重新初始化语言
+        await initI18n(true);
+        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+        if (isWeakNumber(redirect)) {
+          history.go(Number(redirect));
+        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
+          // 注意没有考虑 "//" url 的情况
+          window.location.href = responseRedirectUrl;
+        } else if (redirect) {
+          history.replace(redirect);
+        } else {
+          history.replace('/');
+        }
+      },
+      onError: (error: any) => {
+        console.info('[Login] password-login-onError', {
+          errorMessage: error?.message || String(error),
+        });
+        console.error('[Login] Request Error:', error);
+      },
     },
-    onError: (error: any) => {
-      console.error('[Login] Request Error:', error);
-    },
-  });
+  );
 
   useEffect(() => {
     // 清除主题本地缓存
@@ -151,11 +162,23 @@ const Login: React.FC = () => {
       password,
     } = form.getFieldsValue() || {};
     // console.log('[Login] 密码登录使用验证码参数:', captchaVerifyParam);
-    run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
+    console.info('[Login] password-login-run', {
+      account: phoneOrEmail,
+      hasCaptchaVerifyParam: !!captchaVerifyParam,
+    });
+    // 返回请求 Promise，让验证码组件可在请求结束后再刷新实例
+    return runPasswordLogin({
+      phoneOrEmail,
+      areaCode,
+      password,
+      captchaVerifyParam,
+    });
   };
 
   // 验证码登录
-  const handlerCodeLogin = (captchaVerifyParam: string) => {
+  const handlerCodeLogin = (
+    captchaVerifyParam: string,
+  ): CaptchaConsumeControl => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
     // console.log('[Login] 验证码登录使用验证码参数:', captchaVerifyParam);
@@ -169,6 +192,12 @@ const Login: React.FC = () => {
       authType: tenantConfigInfo.authType,
       captchaVerifyParam,
     });
+    /**
+     * 验证码登录为跨页面消费场景：
+     * token 会在 VerifyCode 页真正调用发送验证码接口时才消费，
+     * 这里必须跳过当前页自动 refresh，避免 token 提前失效。
+     */
+    return { skipRefresh: true };
   };
 
   // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
@@ -176,9 +205,9 @@ const Login: React.FC = () => {
     // console.log('[Login] 验证码验证成功回调:', captchaVerifyParam);
     // 每次调用时都使用最新的 loginType 值
     if (loginTypeRef.current === LoginTypeEnum.Password) {
-      handlerPasswordLogin(captchaVerifyParam);
+      return handlerPasswordLogin(captchaVerifyParam);
     } else {
-      handlerCodeLogin(captchaVerifyParam);
+      return handlerCodeLogin(captchaVerifyParam);
     }
   }; // loginType 作为依赖项
 

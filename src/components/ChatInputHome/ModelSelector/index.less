@@ -3,6 +3,15 @@
 .model-selector-container {
   display: flex;
   align-items: flex-start;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+
+  &.show {
+    opacity: 1;
+    max-width: 200px;
+  }
 }
 
 .model-selector {

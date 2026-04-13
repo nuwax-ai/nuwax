@@ -16,7 +16,7 @@ import {
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, message, Spin } from 'antd';
+import { Button, Dropdown, MenuProps, message } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -205,25 +205,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [agentId, fetchModelOptions],
   );
 
-  // 构建菜单项
   const menuItems: MenuProps['items'] = useMemo(() => {
-    if (loading) {
-      return [
-        {
-          key: 'loading',
-          label: (
-            <div className={cx(styles['menu-item'])}>
-              <Spin size="small" />
-              <span style={{ marginLeft: 8 }}>
-                {dict('PC.Components.ModelSelector.loadingModels')}
-              </span>
-            </div>
-          ),
-          disabled: true,
-        },
-      ];
-    }
-
     if (modelList.length === 0 && initialized) {
       return [
         {
@@ -282,7 +264,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       };
     });
   }, [
-    loading,
     modelList,
     initialized,
     selectedModelId,
@@ -295,8 +276,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     return null;
   }
 
+  const isShow = initialized && !loading;
+
   return (
-    <div className={cx(styles['model-selector-container'], className)}>
+    <div
+      className={cx(styles['model-selector-container'], className, {
+        [styles.show]: isShow,
+      })}
+    >
       <Dropdown
         menu={{
           items: menuItems,
@@ -330,9 +317,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           >
             <span>
               {selectedModel?.name ||
-                (loading
-                  ? dict('PC.Components.ModelSelector.loading')
-                  : dict('PC.Components.ModelSelector.selectModel'))}
+                dict('PC.Components.ModelSelector.selectModel')}
             </span>
             <SvgIcon
               name="icons-common-caret_down"

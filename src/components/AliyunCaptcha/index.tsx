@@ -1,3 +1,6 @@
+import useCaptchaConsume, {
+  CaptchaConsumeControl,
+} from '@/hooks/useCaptchaConsume';
 import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
 
 // 阿里云验证码配置类型定义
@@ -39,7 +42,9 @@ declare global {
 interface AliyunCaptchaProps {
   config: AliyunCaptchaConfig;
   elementId: string;
-  doAction: (captchaVerifyParam: any) => void;
+  doAction: (
+    captchaVerifyParam: any,
+  ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
   onReady?: () => void; // 使用可选属性避免undefined调用
 }
 
@@ -63,10 +68,19 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   const captchaParamRef = useRef<any>(null);
   const captchaInstanceRef = useRef<any>(null);
 
+  const { onBizResultCallback } = useCaptchaConsume({
+    doAction,
+    captchaParamRef,
+    captchaInstanceRef,
+  });
+
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
   const captchaVerifyCallback = (captchaVerifyParam: any) => {
     // 保存验证参数到ref，供业务回调使用
-    // console.log('[AliyunCaptcha] 验证参数生成:', captchaVerifyParam);
+    console.info('[AliyunCaptcha] captcha-token-generated', {
+      elementId,
+      tokenType: typeof captchaVerifyParam,
+    });
     captchaParamRef.current = captchaVerifyParam;
     // 只返回验证结果，不在这里执行业务逻辑
     return {
@@ -74,33 +88,6 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       bizResult: true,
     };
   };
-
-  // 业务结果回调 - 在验证成功后执行业务逻辑
-  const onBizResultCallback = useCallback(() => {
-    // 检查验证参数是否存在，防止重复使用
-    if (!captchaParamRef.current) {
-      console.warn(
-        '[AliyunCaptcha] Blocked double usage: Token already consumed or invalid.',
-      );
-      return;
-    }
-
-    // 在业务回调中执行登录逻辑，从ref中读取验证参数
-    // console.log('[AliyunCaptcha] 消费 Token:', captchaParamRef.current);
-    doAction(captchaParamRef.current);
-
-    // 消费后刷新实例，确保下次验证生成新的token
-    if (
-      captchaInstanceRef.current &&
-      typeof captchaInstanceRef.current.refresh === 'function'
-    ) {
-      // console.log('[AliyunCaptcha] 刷新实例以重置状态');
-      captchaInstanceRef.current.refresh();
-    }
-
-    // 消费后立即置空，防止二次使用
-    captchaParamRef.current = null;
-  }, [doAction]);
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
@@ -161,6 +148,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         }, // 滑块验证码样式
         language: 'cn', // 验证码语言类型
       });
+      console.info('[AliyunCaptcha] sdk-init-triggered', { elementId });
     }
 
     // 组件卸载时清理DOM元素
@@ -172,7 +160,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     // 只有当captchaInited为true且onReady回调未被调用过时才调用
     if (captchaInited) {
       onReady?.();
-      // console.log('验证码初始化完成，onReady已调用');
+      console.info('[AliyunCaptcha] sdk-ready', { elementId });
     }
 
     // 组件卸载时重置状态

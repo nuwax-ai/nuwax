@@ -6,7 +6,7 @@ import {
   apiSaveSelectedSandbox,
 } from '@/services/systemManage';
 import { CheckOutlined } from '@ant-design/icons';
-import { Dropdown, MenuProps, Spin } from 'antd';
+import { Dropdown, MenuProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -245,20 +245,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
   const menuItems: MenuProps['items'] = useMemo(() => {
     const items: MenuProps['items'] = [];
 
-    if (loading) {
-      items.push({
-        key: 'loading',
-        label: (
-          <div className={cx(styles['menu-item'])}>
-            <Spin size="small" />
-            <span style={{ marginLeft: 8 }}>
-              {dict('PC.Common.Global.loading')}
-            </span>
-          </div>
-        ),
-        disabled: true,
-      });
-    } else if (computerList.length > 0) {
+    if (computerList.length > 0) {
       computerList.forEach((computer: ComputerOption) => {
         const isSelected = String(computer.id) === String(value);
         items.push({
@@ -305,7 +292,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     }
 
     return items;
-  }, [loading, computerList, initialized, handleSelect, value]);
+  }, [computerList, initialized, handleSelect, value]);
 
   // 计算是否真正禁用
   const isDisabled =
@@ -315,8 +302,14 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     selectedOption === UNAVAILABLE_OPTION ||
     selectedOption === PERSONAL_COMPUTER_UNAVAILABLE_OPTION;
 
+  const isShow = initialized && !loading;
+
   return (
-    <div className={cx(styles['computer-selector-container'], className)}>
+    <div
+      className={cx(styles['computer-selector-container'], className, {
+        [styles.show]: isShow,
+      })}
+    >
       <Dropdown
         menu={{
           items: menuItems,
@@ -342,7 +335,7 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
             })}
           >
             {/* <DesktopOutlined className={cx(styles['selector-icon'])} /> */}
-            <span>{loading || !initialized ? '' : selectedOption.name}</span>
+            <span>{selectedOption.name}</span>
             {!unavailable &&
               selectedOption !== UNAVAILABLE_OPTION &&
               selectedOption !== PERSONAL_COMPUTER_UNAVAILABLE_OPTION &&
