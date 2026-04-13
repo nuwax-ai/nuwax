@@ -12,6 +12,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface DynamicTabsProps {
+  isStyleOne?: boolean;
   /** 一级菜单列表 */
   menus: MenuItemDto[];
   /** 当前激活的菜单 code */
@@ -25,6 +26,7 @@ export interface DynamicTabsProps {
  * 复用现有的 TabItem 组件实现，保持 UI 样式一致
  */
 const DynamicTabs: React.FC<DynamicTabsProps> = ({
+  isStyleOne = false,
   menus,
   activeTab,
   onClick,
@@ -46,7 +48,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
   return (
     <div
       className={cx(
-        styles['dynamic-tabs-container'],
+        isStyleOne ? styles['dynamic-tabs-container'] : styles['style-two'],
         'flex',
         'flex-col',
         'flex-1',

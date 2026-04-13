@@ -40,6 +40,7 @@ import {
   OTHER_MENU_CODES,
 } from '@/constants/menus.constants';
 import useConversation from '@/hooks/useConversation';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import HomeSection from './HomeSection';
 import styles from './index.less';
@@ -683,6 +684,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         <Header />
         {/* 动态一级菜单 */}
         <DynamicTabs
+          isStyleOne={
+            navigationStyle === ThemeNavigationStyleType.STYLE1 || isMobile
+          }
           menus={firstLevelMenus}
           activeTab={activeTab}
           onClick={handleTabClick}

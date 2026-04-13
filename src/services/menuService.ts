@@ -79,6 +79,9 @@ const MENU_ICON_MAP: Record<string, string> = {
   // Adding leftovers from logs or standard mapping
   component_dev: 'icons-nav-cube',
   log_manage: 'icons-nav-log', // Captured: log_manage
+
+  // 更多
+  api_key: 'icons-nav-api_key',
 };
 
 /**

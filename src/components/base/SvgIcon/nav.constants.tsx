@@ -1,3 +1,4 @@
+import { ReactComponent as ApiKeySvgFile } from '@/assets/icons/nav/api_key.svg';
 import { ReactComponent as BackwardSvgFile } from '@/assets/icons/nav/backward.svg';
 import { ReactComponent as ComponentsSvgFile } from '@/assets/icons/nav/components.svg';
 import { ReactComponent as ComputerSvgFile } from '@/assets/icons/nav/computer.svg';
@@ -39,6 +40,7 @@ import { ReactComponent as IconComputerStarSvgFile } from '@/assets/icons/common
 import React from 'react';
 import { wrapSvg } from './utils';
 
+const ApiKeySvg = wrapSvg(ApiKeySvgFile, { viewBox: '0 0 1024 1024' });
 const HomeSvg = wrapSvg(HomeSvgFile);
 const LogSvg = wrapSvg(LogSvgFile);
 const LogOperationSvg = wrapSvg(LogOperationSvgFile);
@@ -74,6 +76,7 @@ const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
 export default {
+  'icons-nav-api_key': ApiKeySvg,
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
   'icons-nav-ecosystem': EcosystemSvg,
