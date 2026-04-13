@@ -99,6 +99,11 @@ const BaseTemplate: React.FC = () => {
       agentId,
       limit: 8,
     });
+
+    /**
+     * 因为在global.less中设置了最小宽度为1200px，所以需要重置为unset
+     */
+    document.documentElement.style.minWidth = 'unset';
   }, [agentId]);
 
   // 查看全部历史会话

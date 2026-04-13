@@ -643,7 +643,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         {/* 页面主体: 内容区域 */}
         <div
           className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile,
+            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
           })}
         >
           {/* 聊天内容区域 */}
@@ -661,6 +661,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   form={form}
                   isFilled
                   variables={variables}
+                  userFillVariables={variableParams}
                 />
                 {messageList?.length > 0 ? (
                   <>
