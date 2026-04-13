@@ -34,6 +34,25 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
   const { handleShowHoverMenu, handleHideHoverMenu, isSecondMenuCollapsed } =
     useModel('layout');
 
+  /**
+   * 判断是否是Safari浏览器
+   * 因为Safari浏览器不支持scrollbar-gutter: stable，所以需要特殊处理
+   */
+  const isSafariBrowser = useMemo(() => {
+    if (typeof navigator === 'undefined') {
+      return false;
+    }
+    const ua = navigator.userAgent.toLowerCase();
+    const isSafari = ua.includes('safari');
+    const isOtherWebkitBrowser =
+      ua.includes('chrome') ||
+      ua.includes('crios') ||
+      ua.includes('android') ||
+      ua.includes('edg') ||
+      ua.includes('fxios');
+    return isSafari && !isOtherWebkitBrowser;
+  }, []);
+
   // 将 MenuItemDto 转换为 TabItem 所需的格式
   const tabItems = useMemo(() => {
     return menus.map((menu) => ({
@@ -55,7 +74,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
         'overflow-y',
         'w-full',
         'py-8',
-        'scroll-container',
+        !isSafariBrowser && 'scroll-container',
       )}
     >
       {tabItems.map((item) => (
