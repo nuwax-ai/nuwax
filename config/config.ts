@@ -154,8 +154,23 @@ export default defineConfig({
           }
 
           // 应用详情页
+          // const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
+          // if (matchAppDetails) {
+          //   replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+          //   window.location.replace(replaceUrl);
+          //   return;
+          // }
+
+
           const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
           if (matchAppDetails) {
+            // url 中携带 params 参数时，保留当前地址，不做应用详情跳转
+            const hasParamsQuery = /[?&]params=/.test(href);
+            // 如果 url 中携带 params 参数，则不进行应用详情跳转
+            if (hasParamsQuery) {
+              return;
+            }
+
             replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
             window.location.replace(replaceUrl);
             return;

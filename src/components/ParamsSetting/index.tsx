@@ -206,7 +206,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.paramType'),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 130,
+      width: 150,
       render: (value) => (
         <div className={cx('h-full', 'flex', 'items-center')}>{value}</div>
       ),
@@ -215,7 +215,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.required'),
       dataIndex: 'require',
       key: 'require',
-      width: 100,
+      width: 90,
       render: (value: boolean) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           {value
@@ -227,7 +227,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     {
       title: dict('PC.Components.ParamsSetting.defaultValue'),
       key: 'default',
-      width: 232,
+      width: 220,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>
@@ -286,7 +286,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       ),
       dataIndex: 'enable',
       key: 'enable',
-      width: 100,
+      width: 110,
       align: 'center',
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
