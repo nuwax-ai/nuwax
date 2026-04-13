@@ -15,7 +15,11 @@ const SiteFooter: React.FC<SiteFooterProps> = ({ text }) => {
           __html: text || '',
         }}
       />
-      <a href="https://nuwax.com" target="_blank" rel="noopener noreferrer">
+      <a
+        href={dict('PC.Components.SiteFooter.homeLink')}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {dict('PC.Components.SiteFooter.poweredBy')}
       </a>
     </footer>

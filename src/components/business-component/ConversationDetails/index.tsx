@@ -260,7 +260,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       const paramsFromUrl = queryParams.get('params');
       if (paramsFromUrl) {
         try {
-          const parsed = JSON.parse(paramsFromUrl) as Record<string, unknown>;
+          const _paramsFromUrl = decodeURIComponent(paramsFromUrl);
+          const parsed = JSON.parse(_paramsFromUrl) as Record<string, unknown>;
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
             // 删除用户自带的url参数中的conversationId字段
             const urlPayload = omit(parsed, 'conversationId') as Record<

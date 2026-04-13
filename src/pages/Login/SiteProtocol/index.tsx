@@ -12,7 +12,7 @@ const SiteProtocol: React.FC = () => {
         {dict('PC.Pages.Login.readAndAgree')}
       </span>
       <a
-        href="https://nuwax.com/user-agreement.html"
+        href={dict('PC.Pages.Login.userAgreementLink')}
         target="_blank"
         rel="noreferrer"
         className={cx(styles.a)}
@@ -21,7 +21,7 @@ const SiteProtocol: React.FC = () => {
       </a>
       <span className={cx(styles.span)}>{dict('PC.Pages.Login.and')}</span>
       <a
-        href="https://nuwax.com/privacy.html"
+        href={dict('PC.Pages.Login.privacyAgreementLink')}
         target="_blank"
         rel="noreferrer"
         className={cx(styles.a)}
