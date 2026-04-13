@@ -55,6 +55,22 @@ const CodeEditor: React.FC<Props> = ({
         );
         await loader.init();
 
+        // 如果是 JSON 语言，则注册 JSON 语言服务,并允许注释：保留 json 语法高亮，不因 /** */、// 标红
+        if (codeLanguage === CodeLangEnum.JSON) {
+          // 确保 JSON 语言服务已注册，并允许注释：保留 json 语法高亮，不因 /** */、// 标红
+          await import(
+            'monaco-editor/esm/vs/language/json/monaco.contribution'
+          );
+          monaco.languages.json?.jsonDefaults?.setDiagnosticsOptions({
+            validate: true,
+            allowComments: true,
+            comments: 'ignore', // comments: 'ignore' 是关键：Monaco 默认里曾有 comments: "error"，会把 /** */ 标成问题；设为 'ignore' 后注释不再作为诊断错误。
+            trailingCommas: 'ignore',
+            schemas: [],
+            enableSchemaRequest: false,
+          });
+        }
+
         // 注册 Python 语言配置
         monaco.languages.register({ id: 'python' });
         monaco.languages.setMonarchTokensProvider('python', language);

@@ -29,9 +29,3 @@ export const IM_PLATFORM_ICON_MAP: Record<IMPlatformEnum, string> = {
   [IMPlatformEnum.Wework]: '/icon/brand/wework.png',
   [IMPlatformEnum.WechatIlink]: '/icon/brand/wechat_ilink.png',
 };
-
-/**
- * 二维码生成 API
- */
-export const QR_CODE_GENERATOR_URL =
-  'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=';

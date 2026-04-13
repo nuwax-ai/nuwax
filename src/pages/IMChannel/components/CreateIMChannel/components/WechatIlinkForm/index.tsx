@@ -1,5 +1,4 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { QR_CODE_GENERATOR_URL } from '@/constants/imChannel.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiGetWechatIlinkQrStatus,
@@ -16,11 +15,14 @@ import {
   Form,
   FormInstance,
   message,
+  QRCode,
   Space,
   Spin,
   Tag,
 } from 'antd';
+import cx from 'classnames';
 import React, { useState } from 'react';
+import styles from './index.less';
 
 interface WechatIlinkFormProps {
   form: FormInstance;
@@ -222,81 +224,34 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
         label={dict('PC.Pages.IMChannel.WechatIlinkForm.scanToConnect')}
         tooltip={dict('PC.Pages.IMChannel.WechatIlinkForm.scanTooltip')}
       >
-        <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              marginBottom: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              position: 'relative',
-              width: 216,
-              height: 216,
-              margin: '0 auto 16px',
-              border: '1px dashed #d9d9d9',
-              borderRadius: 8,
-              justifyContent: 'center',
-              backgroundColor: '#fafafa',
-              overflow: 'hidden',
-            }}
-          >
+        <div className={styles['wechat-qr-container']}>
+          <div className={styles['qr-wrapper']}>
             {/* 加载中状态 */}
             {qrLoading ? (
               <Spin
                 tip={dict('PC.Pages.IMChannel.WechatIlinkForm.fetchingQr')}
               />
             ) : qrInfo && (qrInfo.qrcode || qrInfo.qrcodeImgContent) ? (
-              <div style={{ position: 'relative', width: 216, height: 216 }}>
-                <img
-                  src={`${QR_CODE_GENERATOR_URL}${encodeURIComponent(
-                    qrInfo.qrcodeImgContent,
-                  )}`}
-                  alt="QR Code"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    padding: 8,
-                    opacity: qrInfo.status === 'expired' ? 0.3 : 1,
-                    transition: 'all 0.3s',
-                  }}
+              <div className={styles['qr-content']}>
+                <QRCode
+                  value={qrInfo.qrcodeImgContent}
+                  size={200}
+                  bordered={false}
+                  status={qrInfo.status === 'expired' ? 'expired' : 'active'}
+                  onRefresh={handleGetQr}
+                  className={cx(styles['qr-code'], {
+                    [styles.expired]: qrInfo.status === 'expired',
+                  })}
                 />
 
                 {/* 扫码成功蒙层 */}
                 {isSuccess && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(255,255,255,0.95)',
-                      zIndex: 10,
-                    }}
-                  >
-                    <CheckCircleFilled
-                      style={{
-                        fontSize: 48,
-                        color: '#52c41a',
-                        marginBottom: 12,
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 500,
-                        color: '#262626',
-                      }}
-                    >
+                  <div className={styles['overlay-success']}>
+                    <CheckCircleFilled className={styles['success-icon']} />
+                    <div className={styles['success-title']}>
                       {dict('PC.Pages.IMChannel.WechatIlinkForm.scanSuccess')}
                     </div>
-                    <div
-                      style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}
-                    >
+                    <div className={styles['success-desc']}>
                       {dict(
                         'PC.Pages.IMChannel.WechatIlinkForm.clickConfirmToSave',
                       )}
@@ -307,19 +262,7 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
                 {/* 过期蒙层 */}
                 {qrInfo.status === 'expired' && (
                   <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(255,255,255,0.7)',
-                      cursor: 'pointer',
-                      zIndex: 11,
-                    }}
+                    className={styles['overlay-expired']}
                     onClick={handleGetQr}
                   >
                     <Button type="link" icon={<ReloadOutlined />}>
@@ -332,30 +275,22 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
               </div>
             ) : (
               /* 初始占位状态 */
-              <div
-                style={{
-                  color: '#bfbfbf',
-                  textAlign: 'center',
-                  padding: '0 20px',
-                }}
-              >
-                <QrcodeOutlined
-                  style={{ fontSize: 48, marginBottom: 12, display: 'block' }}
-                />
-                <div style={{ fontSize: 13 }}>
+              <div className={styles['placeholder-area']}>
+                <QrcodeOutlined className={styles['placeholder-icon']} />
+                <div className={styles['placeholder-text']}>
                   {dict('PC.Pages.IMChannel.WechatIlinkForm.clickToGetQr')}
                 </div>
               </div>
             )}
           </div>
 
-          <div style={{ margin: '16px 0' }}>
+          <div className={styles['status-info']}>
             {dict('PC.Pages.IMChannel.WechatIlinkForm.status')}：
             {getStatusTag(qrInfo?.status || 'none')}
           </div>
 
           {isSuccess && (
-            <div style={{ marginBottom: 20, textAlign: 'left' }}>
+            <div className={styles['alert-area']}>
               <Alert
                 message={dict(
                   'PC.Pages.IMChannel.WechatIlinkForm.importantNotice',
