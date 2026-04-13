@@ -208,7 +208,10 @@ const WechatIlinkForm: React.FC<WechatIlinkFormProps> = ({ form }) => {
     if (isSuccess && qrInfo?.configData) {
       try {
         const config = JSON.parse(qrInfo.configData);
+        // 微信的 configData 配置
         form.setFieldsValue({ configData: config });
+        // 启用状态设置为启用
+        form.setFieldsValue({ enabled: true });
       } catch (e) {
         console.error('Parse configData failed:', e);
       }
