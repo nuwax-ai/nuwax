@@ -159,6 +159,26 @@ export const getDataPermissionTabItems = (): TabsProps['items'] => [
 ];
 
 /**
+ * 提交前过滤 openApiConfigs：剔除在开放 API 树中 path 为假值（null / undefined / '' 等）的节点。
+ * 树尚未加载时无法对照 path，返回原列表以免误删已回显的配置。
+ */
+const filterOpenApiConfigsWithValidPath = (
+  configs: OpenApiConfigInfo[],
+  tree: OpenApiDefinition[],
+): OpenApiConfigInfo[] => {
+  if (!tree.length) return configs;
+  const keyToPath = new Map<string, string | undefined>();
+  const walk = (nodes: OpenApiDefinition[]) => {
+    for (const n of nodes) {
+      keyToPath.set(n.key, n.path);
+      if (n.apiList?.length) walk(n.apiList);
+    }
+  };
+  walk(tree);
+  return configs.filter((c) => Boolean(keyToPath.get(c.key)));
+};
+
+/**
  * 数据权限设置弹窗组件
  * 用于配置角色的数据权限，包括模型、智能体、应用页面和数据权限
  */
@@ -734,6 +754,17 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
     const modelIds = selectedModelIds.length > 0 ? selectedModelIds : [];
 
     const idKey = type === 'role' ? 'roleId' : 'groupId';
+
+    /**
+     * 提交前过滤 openApiConfigs：剔除在开放 API 树中 path 为空或仅空白的节点（通常为分组父节点）。
+     * 树尚未加载时无法对照 path，返回原列表以免误删已回显的配置。
+     * 原因：如果提交了分组父节点后，会导致新增API接口后，回显错误，
+     * 因为分组父节点的数据返回后，tree回显父节点为选择状态，新增的API接口会作为子节点，也被选中状态，实际上并没有对应权限，导致回显错误。
+     */
+    const openApiConfigs = filterOpenApiConfigsWithValidPath(
+      openApiConfigsCache,
+      openApiTreeData,
+    );
     const params = {
       [idKey]: targetId,
       dataPermission: {
@@ -745,7 +776,7 @@ const DataPermissionModal: React.FC<DataPermissionModalProps> = ({
         agentIds: selectedAgentIds,
         pageAgentIds: selectedPageAgentIds,
         knowledgeIds: selectedKnowledgeIds,
-        openApiConfigs: openApiConfigsCache,
+        openApiConfigs,
       },
     };
 
