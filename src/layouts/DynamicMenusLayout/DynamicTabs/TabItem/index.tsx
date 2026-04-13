@@ -82,6 +82,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
               title: text,
               placement: 'right',
               color: '#fff',
+              styles: { body: { color: '#000' } },
             },
           }}
         >
@@ -98,7 +99,12 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
 
   // 二级菜单展开时，正常显示Tooltip
   return (
-    <Tooltip title={text} placement="right" color="#fff">
+    <Tooltip
+      title={text}
+      placement="right"
+      color="#fff"
+      styles={{ body: { color: '#000' } }}
+    >
       {content}
     </Tooltip>
   );
