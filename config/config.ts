@@ -154,24 +154,22 @@ export default defineConfig({
           }
 
           // 应用详情页
-          // const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
-          // if (matchAppDetails) {
-          //   replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
-          //   window.location.replace(replaceUrl);
-          //   return;
-          // }
-
-
           const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
           if (matchAppDetails) {
-            // url 中携带 params 参数时，保留当前地址，不做应用详情跳转
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+
+            // url 中携带 params 参数时，仅保留并追加 params 参数
             const hasParamsQuery = /[?&]params=/.test(href);
-            // 如果 url 中携带 params 参数，则不进行应用详情跳转
             if (hasParamsQuery) {
-              return;
+              const queryString = href.split('?')[1] || '';
+              const paramsQuery = queryString
+                .split('&')
+                .find((queryItem) => queryItem.startsWith('params='));
+              if (paramsQuery) {
+                replaceUrl += '&' + paramsQuery;
+              }
             }
 
-            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
             window.location.replace(replaceUrl);
             return;
           }
