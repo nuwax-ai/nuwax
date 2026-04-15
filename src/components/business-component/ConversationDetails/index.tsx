@@ -37,6 +37,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
+  AttachmentFile,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
@@ -477,6 +478,20 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     }
 
     // 用户自带的url参数中的附件文件列表
+    const otherAttachments = (urlOtherParams?.attachments ||
+      []) as AttachmentFile[];
+
+    // 用户自带的url参数中的附件文件列表转为file类型，方便统一处理
+    const otherAttachmentsFiles = otherAttachments.map((item) => ({
+      // 文件URL
+      url: item.fileUrl,
+      // 文件类型
+      type: item.mimeType,
+      name: item?.fileName || '',
+      key: item?.fileKey || '',
+    })) as UploadFileInfo[];
+
+    // 用户自带的url参数中的附件文件列表
     const otherFiles = (urlOtherParams?.files || []) as UploadFileInfo[];
     // 用户自带的url参数中的组件列表
     const _selectedComponents = (urlOtherParams?.selectedComponents ||
@@ -492,7 +507,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     const attach = {
       message: messageInfo,
       // 附件文件列表
-      files: [...otherFiles, ...(files || [])],
+      files: [...otherFiles, ...otherAttachmentsFiles, ...(files || [])],
       // 组件列表
       infos: [...selectedComponentList, ..._selectedComponents],
       // 默认智能体详情

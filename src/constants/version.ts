@@ -2,5 +2,5 @@
  * 应用版本信息
  * 此文件由 scripts/generate-version.js 自动生成，请勿手动修改
  */
-export const APP_VERSION = '1.1.3';
+export const APP_VERSION = '1.1.4';
 export const APP_NAME = 'nuwax-frontend';
