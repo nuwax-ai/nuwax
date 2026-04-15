@@ -570,9 +570,14 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div
-            className={cx(styles['title-container'], {
-              [styles['title-container-collapsed']]: isAppSidebarMode,
-            })}
+            className={cx(
+              styles['title-container'],
+              isAppSidebarMode && isAppSidebarVisible
+                ? styles['app-title-container']
+                : !isAppSidebarVisible
+                ? styles['app-title-container-collapsed']
+                : '',
+            )}
           >
             <div className={cx('flex', 'items-center', 'gap-4')}>
               {/* 应用智能体模式下，显示内容导航按钮 */}

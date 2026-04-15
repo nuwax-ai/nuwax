@@ -185,9 +185,10 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.paramName'),
       dataIndex: 'name',
       key: 'name',
+      width: 170,
       className: 'flex items-center table-params-name-td',
       render: (_, record) => (
-        <div className={cx('flex', 'flex-col', styles['params-td'])}>
+        <div className={cx('flex', 'flex-col', 'overflow-hide')}>
           <span className={cx(styles['params-name'], 'text-ellipsis-2')}>
             {record.name}
           </span>
@@ -227,7 +228,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     {
       title: dict('PC.Components.ParamsSetting.defaultValue'),
       key: 'default',
-      width: 220,
+      width: 232,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>

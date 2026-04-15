@@ -1,20 +1,53 @@
 @import '@/styles/color';
 
+// 仅选择器（rootClassName 挂在这层）：默认宽度；外部传入的 className 也合并在此，只影响触发区域
 .container {
   width: 120px;
+}
 
-  .option-icon-box {
-    width: 20px;
-    height: 20px;
+// 以下类名用在 portal 内的 optionRender 上，不能嵌套在 .container 下否则选择器匹配不到
+.option-icon-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
 
-    .icon {
-      color: @BLUE03;
-    }
+  .icon {
+    color: @BLUE03;
   }
+}
 
-  .image {
-    width: 18px;
-    height: 18px;
-    object-fit: cover;
+.image {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+}
+
+// 行宽随内容伸缩，便于 rc-select 计算下拉层宽度（popupMatchSelectWidth={false}）
+.option-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// 文案最长 300px，超出单行省略号（需非纯 inline 才能让 ellipsis 生效）
+.option-label {
+  display: inline-block;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.dropdown-popup {
+  // 解绑选择器宽度：rc-select 在 popupMatchSelectWidth={false} 时仍会用 rc-trigger 把下拉的 min-width 对齐到选择器；
+  // 用 max-content 覆盖，使下拉最小宽度由选项内容决定，而不随 styles.container / className 的宽度变化
+  min-width: max-content !important;
+
+  :global(.ant-select-item-option-content) {
+    // 避免 flex 默认 min-width:auto 卡住子项宽度测量
+    min-width: 0;
+    width: max-content;
   }
 }
