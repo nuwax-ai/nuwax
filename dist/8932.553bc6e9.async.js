@@ -1,1 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8932],{71354:function(e,n,_){_.d(n,{createPieServices:function(){return u.l}});var u=_(3015),c=_(79985)}}]);})();
