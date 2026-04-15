@@ -75,6 +75,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
+  const [isHoveringChat, setIsHoveringChat] = useState(false);
+
   const {
     conversationInfo,
     messageList,
@@ -539,6 +541,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 'flex-1',
               )}
               ref={messageViewRef}
+              onMouseEnter={() => setIsHoveringChat(true)}
+              onMouseLeave={() => setIsHoveringChat(false)}
             >
               {loadingConversation ? (
                 <div
@@ -648,7 +652,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               onEnter={handleMessageSend}
               onClear={handleClear}
               wholeDisabled={wholeDisabled}
-              visible={showScrollBtn}
+              visible={showScrollBtn && isHoveringChat}
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
