@@ -276,6 +276,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 return;
               }
 
+              // 检查是否是 html 文件
+              const isHtmlFile = fileName?.includes('.htm') || false;
+
+              if (isHtmlFile) {
+                fileRefreshTimestampRef.current = Date.now();
+              }
+
               // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
               if (isVideo || isAudio || isOfficeDocument || isImage) {
                 // 如果是新选中的文件（office文档），更新刷新时间戳

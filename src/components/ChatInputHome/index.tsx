@@ -697,7 +697,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           className={cx(styles['to-bottom'], {
             [styles.visible]: delayedVisible,
           })}
-          onClick={onScrollBottom}
+          onClick={() => {
+            setIsHoveringBtn(false);
+            setDelayedVisible(false);
+            onScrollBottom?.();
+          }}
           onMouseEnter={() => setIsHoveringBtn(true)}
           onMouseLeave={() => setIsHoveringBtn(false)}
         >
