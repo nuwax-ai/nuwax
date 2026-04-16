@@ -945,15 +945,15 @@ const ChatTemp: React.FC = () => {
               className={cx(
                 styles['welcome-text'],
                 'text-ellipsis',
-                'cursor-pointer',
                 'clip-path-animation',
               )}
-              onClick={handleSiteLink}
             >
-              {dict(
-                'PC.Pages.ChatTemp.welcomeText',
-                tenantConfigInfo?.siteName,
-              )}
+              <span className="cursor-pointer" onClick={handleSiteLink}>
+                {dict(
+                  'PC.Pages.ChatTemp.welcomeText',
+                  tenantConfigInfo?.siteName,
+                )}
+              </span>
             </p>
           </div>
           <button
