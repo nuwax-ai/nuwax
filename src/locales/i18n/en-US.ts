@@ -640,7 +640,7 @@ export const EN_US: SystemLangMap = {
   'PC.Components.RecommendList.pagePathConfigError': 'Page path configuration error',
   'PC.Components.RecommendList.pagePathParamError': 'Page path parameter configuration error',
   'PC.Components.RecommendList.pagePreview': 'Page Preview',
-  'PC.Components.RunOver.called': '{0} called',
+  'PC.Components.RunOver.called': '{0} Called',
   'PC.Components.RunOver.calling': 'Calling',
   'PC.Components.RunOver.runComplete': 'Run Complete',
   'PC.Components.RunOver.runError': 'Run Error',

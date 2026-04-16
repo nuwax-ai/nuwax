@@ -131,8 +131,8 @@ const RunOver: React.FC<RunOverProps> = ({
             {showStatusDesc && lastProcessInfo && (
               <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
-                  ? dict('PC.Components.RunOver.calling') + ' '
-                  : dict('PC.Components.RunOver.called', '')}
+                  ? `${dict('PC.Components.RunOver.calling', '')} `
+                  : `${dict('PC.Components.RunOver.called', '')} `}
                 {lastProcessInfo.name}
               </span>
             )}

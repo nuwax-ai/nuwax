@@ -1,15 +1,17 @@
 import { COMMON_PRO_TABLE_PROPS } from '@/constants/dataTable.constants';
 import { useTableAutoHeight } from '@/hooks/useTableAutoHeight';
-import { dict } from '@/services/i18nRuntime';
+import { dict, getCurrentLang } from '@/services/i18nRuntime';
+import { getUmiLocaleKey } from '@/utils/i18nAdapters';
 import type {
   ActionType,
   FormInstance,
   ParamsType,
   ProTableProps,
 } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
+import { ProConfigProvider, ProTable } from '@ant-design/pro-components';
 import { Button } from 'antd';
 import { useMemo, useRef } from 'react';
+import { useIntl } from 'umi';
 
 /**
  * XProTable - 预配置的 ProTable 封装组件
@@ -50,8 +52,14 @@ function XProTable<
     showIndex = false,
     ...restProps
   } = props;
+  const intl = useIntl();
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollY = useTableAutoHeight(tableRef, fullHeight, scrollYOffset);
+  /**
+   * 当前语言采用 Umi 的响应式 locale（优先），并回退到运行时语言快照。
+   * 这样在语言切换时组件会自动 re-render，确保 memo 内文案可重新计算。
+   */
+  const currentLang = intl.locale || getCurrentLang();
 
   // 合并 scroll 配置
   // 如果开启了 fullHeight，则使用计算出的 scrollY
@@ -97,7 +105,7 @@ function XProTable<
     }
 
     return cols;
-  }, [restProps.columns, showIndex]);
+  }, [restProps.columns, showIndex, currentLang]);
 
   // 合并 toolBarRender，添加查询/重置按钮
   const mergedToolBarRender = useMemo(() => {
@@ -136,14 +144,28 @@ function XProTable<
         </Button>,
       ];
     };
-  }, [restProps.toolBarRender, formRef, actionRef, onReset, showQueryButtons]);
+  }, [
+    restProps.toolBarRender,
+    formRef,
+    actionRef,
+    onReset,
+    showQueryButtons,
+    currentLang,
+  ]);
 
   // 合并 search 配置
   const searchConfig = useMemo(() => {
     if (restProps.search === false) return false;
     const baseSearch =
       typeof restProps.search === 'object' ? restProps.search : {};
-    const commonSearch = (COMMON_PRO_TABLE_PROPS.search as any) || {};
+    const commonSearch = {
+      ...(COMMON_PRO_TABLE_PROPS.search as any),
+      /**
+       * 避免使用模块初始化时的静态文案，改为运行时读取，确保语言切换后可见最新翻译。
+       */
+      searchText: dict('PC.Constants.DataTable.search'),
+      resetText: dict('PC.Constants.DataTable.reset'),
+    };
 
     const merged = {
       ...commonSearch,
@@ -157,7 +179,69 @@ function XProTable<
     }
 
     return merged;
-  }, [restProps.search]);
+  }, [restProps.search, currentLang]);
+
+  /**
+   * 分页文案同样采用运行时翻译，避免 COMMON_PRO_TABLE_PROPS 的静态快照问题。
+   */
+  const paginationConfig = useMemo(() => {
+    if (restProps.pagination === false) return false;
+    const basePagination =
+      typeof restProps.pagination === 'object' ? restProps.pagination : {};
+    const commonPagination =
+      (COMMON_PRO_TABLE_PROPS.pagination as Record<string, any>) || {};
+
+    return {
+      ...commonPagination,
+      ...basePagination,
+      showTotal:
+        basePagination.showTotal ||
+        ((total: number) =>
+          `${dict('PC.Constants.DataTable.totalPrefix')} ${total} ${dict(
+            'PC.Constants.DataTable.totalSuffix',
+          )}`),
+      locale: {
+        ...(commonPagination.locale || {}),
+        ...(basePagination.locale || {}),
+        items_per_page:
+          basePagination.locale?.items_per_page ||
+          dict('PC.Constants.DataTable.itemsPerPage'),
+      },
+    };
+  }, [restProps.pagination, currentLang]);
+
+  /**
+   * ProComponents 的国际化依赖 locale 标识。
+   * 使用统一适配层输出的 Umi locale key（如 en-US / zh-CN），
+   * 避免 lower-case 语言码导致 Pro 无法命中内置语言包而回退默认中文。
+   */
+  const proIntl = useMemo(
+    () => ({
+      locale: getUmiLocaleKey(currentLang),
+      /**
+       * ProTable 在运行期会直接调用 intl.getMessage。
+       * 若未提供该函数会抛出 "intl.getMessage is not a function"。
+       * 这里提供一个稳定实现：优先映射到项目 dict，其余回退 defaultMessage。
+       */
+      getMessage: (id: string, defaultMessage: string) => {
+        switch (id) {
+          case 'form.lightFilter.clear':
+            return dict('PC.Constants.DataTable.reset');
+          case 'form.lightFilter.confirm':
+            return dict('PC.Common.Global.confirm');
+          case 'tableForm.submit':
+            return dict('PC.Common.Global.confirm');
+          case 'tableForm.reset':
+            return dict('PC.Constants.DataTable.reset');
+          case 'tableForm.search':
+            return dict('PC.Constants.DataTable.search');
+          default:
+            return defaultMessage || id;
+        }
+      },
+    }),
+    [currentLang],
+  );
 
   return (
     <div ref={tableRef} style={{ width: '100%' }} className="x-pro-table">
@@ -194,16 +278,19 @@ function XProTable<
       `,
         }}
       />
-      <ProTable<DataType, Params, ValueType>
-        {...COMMON_PRO_TABLE_PROPS}
-        {...restProps}
-        formRef={formRef}
-        actionRef={actionRef}
-        columns={mergedColumns}
-        toolBarRender={mergedToolBarRender}
-        search={searchConfig}
-        scroll={scroll}
-      />
+      <ProConfigProvider intl={proIntl as any}>
+        <ProTable<DataType, Params, ValueType>
+          {...COMMON_PRO_TABLE_PROPS}
+          {...restProps}
+          formRef={formRef}
+          actionRef={actionRef}
+          columns={mergedColumns}
+          toolBarRender={mergedToolBarRender}
+          search={searchConfig}
+          pagination={paginationConfig}
+          scroll={scroll}
+        />
+      </ProConfigProvider>
     </div>
   );
 }

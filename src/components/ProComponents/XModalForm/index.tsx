@@ -1,9 +1,11 @@
+import { dict } from '@/services/i18nRuntime';
 import { ModalForm, ModalFormProps } from '@ant-design/pro-components';
 import React from 'react';
 
 function XModalForm<T = Record<string, any>>({
   children,
   requiredMark,
+  submitter,
   ...restProps
 }: ModalFormProps<T>) {
   // 默认 requiredMark 渲染函数，将必填标识放在后方
@@ -20,6 +22,13 @@ function XModalForm<T = Record<string, any>>({
   return (
     <ModalForm<T>
       requiredMark={requiredMark ?? defaultRequiredMark}
+      submitter={{
+        searchConfig: {
+          submitText: dict('PC.Common.Global.confirm'),
+          resetText: dict('PC.Common.Global.cancel'),
+        },
+        ...submitter,
+      }}
       {...restProps}
     >
       {children}
