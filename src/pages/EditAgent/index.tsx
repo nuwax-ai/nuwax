@@ -901,31 +901,47 @@ const EditAgent: React.FC = () => {
     /**
      * 设置最小宽度
      */
-    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-      // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
-      if (isFileTreeVisible) {
-        document.documentElement.style.minWidth = '1750px';
+    // if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+    //   // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
+    //   if (isFileTreeVisible) {
+    //     document.documentElement.style.minWidth = '1750px';
+    //   } else {
+    //     document.documentElement.style.minWidth = '1240px';
+    //   }
+    // } else {
+    //   // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
+    //   if (pagePreviewData) {
+    //     document.documentElement.style.minWidth = '2000px';
+    //   } else {
+    //     // 设置最小宽度-调试详情
+    //     if (showType === EditAgentShowType.Debug_Details) {
+    //       document.documentElement.style.minWidth = '1540px';
+    //     } else {
+    //       document.documentElement.style.minWidth = '1240px';
+    //     }
+    //   }
+    // }
+
+    // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
+    if (isFileTreeVisible) {
+      document.documentElement.style.minWidth = '1750px';
+    }
+    // 当扩展页面可见时，设置最小宽度为2000px
+    else if (pagePreviewData) {
+      document.documentElement.style.minWidth = '2000px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (showType === EditAgentShowType.Debug_Details) {
+        document.documentElement.style.minWidth = '1540px';
       } else {
         document.documentElement.style.minWidth = '1240px';
-      }
-    } else {
-      // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
-      if (pagePreviewData) {
-        document.documentElement.style.minWidth = '2000px';
-      } else {
-        // 设置最小宽度-调试详情
-        if (showType === EditAgentShowType.Debug_Details) {
-          document.documentElement.style.minWidth = '1540px';
-        } else {
-          document.documentElement.style.minWidth = '1240px';
-        }
       }
     }
 
     return () => {
       document.documentElement.style.minWidth = '1200px';
     };
-  }, [pagePreviewData, isFileTreeVisible, showType, agentConfigInfo?.type]);
+  }, [pagePreviewData, isFileTreeVisible, showType]);
 
   /**
    * 加载中
@@ -1081,7 +1097,8 @@ const EditAgent: React.FC = () => {
               }
               minRightWidth={530}
               defaultLeftWidth={
-                agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+                // agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+                50
               }
               left={
                 agentConfigInfo?.hideChatArea ? null : (
@@ -1099,83 +1116,84 @@ const EditAgent: React.FC = () => {
                 )
               }
               right={
-                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                  ? pagePreviewData && ( // 问答型
-                      <PagePreviewIframe
-                        pagePreviewData={pagePreviewData}
-                        showHeader={true}
-                        onClose={hidePagePreview}
-                        showCloseButton={!agentConfigInfo?.hideChatArea}
-                        titleClassName={cx(styles['title-style'])}
+                // agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                pagePreviewData ? ( // 问答型
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentConfigInfo?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                  />
+                ) : (
+                  isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                  devConversationId && (
+                    <div
+                      className={cx(
+                        styles['file-tree-sidebar'],
+                        'flex',
+                        'w-full',
+                      )}
+                    >
+                      {/*文件树侧边栏 - 只在文件树可见时显示 */}
+                      <FileTreeView
+                        taskAgentSelectedFileId={taskAgentSelectedFileId}
+                        taskAgentSelectTrigger={taskAgentSelectTrigger}
+                        originalFiles={fileTreeData}
+                        fileTreeDataLoading={fileTreeDataLoading}
+                        targetId={devConversationId.toString()}
+                        viewMode={viewMode}
+                        readOnly={false}
+                        // 导出项目
+                        onExportProject={handleExportProject}
+                        // 上传文件
+                        onUploadFiles={handleUploadMultipleFiles}
+                        // 重命名文件
+                        onRenameFile={handleConfirmRenameFile}
+                        // 新建文件、文件夹
+                        onCreateFileNode={handleCreateFileNode}
+                        // 删除文件
+                        onDeleteFile={handleDeleteFile}
+                        // 保存文件
+                        onSaveFiles={handleSaveFiles}
+                        // 用户选择的智能体电脑ID
+                        agentSandboxId={finalSelectedComputerId}
+                        // 用户选择的智能体电脑名称
+                        agentSandboxName={''}
+                        // 重启容器
+                        onRestartServer={() =>
+                          restartVncPod(
+                            devConversationId,
+                            finalSelectedComputerId,
+                          )
+                        }
+                        // 重启智能体
+                        onRestartAgent={() => restartAgent(devConversationId)}
+                        // 关闭整个面板
+                        onClose={closePreviewView}
+                        // 文件树是否固定（用户点击后固定）
+                        isFileTreePinned={isFileTreePinned}
+                        // 文件树固定状态变化回调
+                        onFileTreePinnedChange={setIsFileTreePinned}
+                        isCanDeleteSkillFile={true}
+                        // 刷新文件树回调
+                        onRefreshFileTree={() =>
+                          handleRefreshFileList(devConversationId)
+                        }
+                        // VNC 空闲检测配置（仅通用型智能体启用）
+                        idleDetection={{
+                          enabled:
+                            agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                          onIdleTimeout: () =>
+                            openPreviewView(devConversationId),
+                        }}
+                        hideDesktop={agentConfigInfo?.hideDesktop}
+                        // 静态资源文件基础路径
+                        staticFileBasePath={`/api/computer/static/${devConversationId}`}
                       />
-                    )
-                  : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
-                    devConversationId && (
-                      <div
-                        className={cx(
-                          styles['file-tree-sidebar'],
-                          'flex',
-                          'w-full',
-                        )}
-                      >
-                        {/*文件树侧边栏 - 只在文件树可见时显示 */}
-                        <FileTreeView
-                          taskAgentSelectedFileId={taskAgentSelectedFileId}
-                          taskAgentSelectTrigger={taskAgentSelectTrigger}
-                          originalFiles={fileTreeData}
-                          fileTreeDataLoading={fileTreeDataLoading}
-                          targetId={devConversationId.toString()}
-                          viewMode={viewMode}
-                          readOnly={false}
-                          // 导出项目
-                          onExportProject={handleExportProject}
-                          // 上传文件
-                          onUploadFiles={handleUploadMultipleFiles}
-                          // 重命名文件
-                          onRenameFile={handleConfirmRenameFile}
-                          // 新建文件、文件夹
-                          onCreateFileNode={handleCreateFileNode}
-                          // 删除文件
-                          onDeleteFile={handleDeleteFile}
-                          // 保存文件
-                          onSaveFiles={handleSaveFiles}
-                          // 用户选择的智能体电脑ID
-                          agentSandboxId={finalSelectedComputerId}
-                          // 用户选择的智能体电脑名称
-                          agentSandboxName={''}
-                          // 重启容器
-                          onRestartServer={() =>
-                            restartVncPod(
-                              devConversationId,
-                              finalSelectedComputerId,
-                            )
-                          }
-                          // 重启智能体
-                          onRestartAgent={() => restartAgent(devConversationId)}
-                          // 关闭整个面板
-                          onClose={closePreviewView}
-                          // 文件树是否固定（用户点击后固定）
-                          isFileTreePinned={isFileTreePinned}
-                          // 文件树固定状态变化回调
-                          onFileTreePinnedChange={setIsFileTreePinned}
-                          isCanDeleteSkillFile={true}
-                          // 刷新文件树回调
-                          onRefreshFileTree={() =>
-                            handleRefreshFileList(devConversationId)
-                          }
-                          // VNC 空闲检测配置（仅通用型智能体启用）
-                          idleDetection={{
-                            enabled:
-                              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-                            onIdleTimeout: () =>
-                              openPreviewView(devConversationId),
-                          }}
-                          hideDesktop={agentConfigInfo?.hideDesktop}
-                          // 静态资源文件基础路径
-                          staticFileBasePath={`/api/computer/static/${devConversationId}`}
-                        />
-                      </div>
-                    )
+                    </div>
+                  )
+                )
               }
             />
           </div>
