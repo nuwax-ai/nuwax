@@ -111,6 +111,33 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     useState<boolean>(false);
   // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  // 滚动按钮自身的悬停状态
+  const [isHoveringBtn, setIsHoveringBtn] = useState(false);
+  // 延迟显示的可见性状态，用于处理移出延时
+  const [delayedVisible, setDelayedVisible] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 处理可见性延迟逻辑
+  useEffect(() => {
+    if (visible || isHoveringBtn) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setDelayedVisible(true);
+    } else {
+      // 当外部不可见且按钮未悬停时，增加延时消失，防止闪烁
+      timerRef.current = setTimeout(() => {
+        setDelayedVisible(false);
+      }, 300); // 300ms 延时
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [visible, isHoveringBtn]);
 
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -667,8 +694,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       {/* 滚动到底部按钮 */}
       <div className={cx(styles['chat-action'])}>
         <div
-          className={cx(styles['to-bottom'], { [styles.visible]: visible })}
+          className={cx(styles['to-bottom'], {
+            [styles.visible]: delayedVisible,
+          })}
           onClick={onScrollBottom}
+          onMouseEnter={() => setIsHoveringBtn(true)}
+          onMouseLeave={() => setIsHoveringBtn(false)}
         >
           <ArrowDownOutlined />
         </div>
