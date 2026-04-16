@@ -267,6 +267,10 @@ const LangContent: React.FC = () => {
     {
       title: dict('PC.Pages.SystemConfig.LangContent.textContentLabel'),
       dataIndex: 'value',
+      fieldProps: {
+        placeholder: dict('PC.Pages.SystemConfig.LangContent.searchValue'),
+        allowClear: true,
+      },
       key: 'value',
     },
     {

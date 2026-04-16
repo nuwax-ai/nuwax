@@ -12,6 +12,7 @@ import { ProConfigProvider, ProTable } from '@ant-design/pro-components';
 import { Button } from 'antd';
 import { useMemo, useRef } from 'react';
 import { useIntl } from 'umi';
+import { getProIntlMessage } from './i18n';
 
 /**
  * XProTable - 预配置的 ProTable 封装组件
@@ -223,22 +224,7 @@ function XProTable<
        * 若未提供该函数会抛出 "intl.getMessage is not a function"。
        * 这里提供一个稳定实现：优先映射到项目 dict，其余回退 defaultMessage。
        */
-      getMessage: (id: string, defaultMessage: string) => {
-        switch (id) {
-          case 'form.lightFilter.clear':
-            return dict('PC.Constants.DataTable.reset');
-          case 'form.lightFilter.confirm':
-            return dict('PC.Common.Global.confirm');
-          case 'tableForm.submit':
-            return dict('PC.Common.Global.confirm');
-          case 'tableForm.reset':
-            return dict('PC.Constants.DataTable.reset');
-          case 'tableForm.search':
-            return dict('PC.Constants.DataTable.search');
-          default:
-            return defaultMessage || id;
-        }
-      },
+      getMessage: getProIntlMessage,
     }),
     [currentLang],
   );
