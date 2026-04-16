@@ -11,6 +11,26 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-CopyOutlined:before {
+  content: "\e65b";
+}
+
+.icon-MinusOutlined:before {
+  content: "\e65a";
+}
+
+.icon-ProfileOutlined:before {
+  content: "\e659";
+}
+
+.icon-api-key:before {
+  content: "\e658";
+}
+
+.icon-key:before {
+  content: "\e7e1";
+}
+
 .icon-restart:before {
   content: "\e656";
 }
