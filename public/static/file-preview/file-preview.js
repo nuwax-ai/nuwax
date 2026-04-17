@@ -15,10 +15,10 @@ let fileName = ''; // 文件名
 const params = getQueryParams();
 
 // 开发环境本地调试使用（不要删除）！！
-const baseUrl = getBaseUrl('https://testagent.xspaceagi.com');
+// const baseUrl = getBaseUrl('https://testagent.xspaceagi.com');
 
 // 正式环境动态获取地址！！
-// const baseUrl = getBaseUrl(params.fileUrl);
+const baseUrl = getBaseUrl(params.fileUrl);
 
 // ============================================
 // Preview Renderers (using local libraries)
