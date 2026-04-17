@@ -11,6 +11,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-BulbOutlined:before {
+  content: "\e65c";
+}
+
+
 .icon-CopyOutlined:before {
   content: "\e65b";
 }
