@@ -43,12 +43,18 @@ export const useConversationScrollDetection = (
       const { scrollTop, scrollHeight, clientHeight } = messageView;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-      // 如果用户向下滚动到离底部50px内，重新启用自动滚动
+      // 如果处于自动滚动模式，理论上不应该显示“回到底部”按钮，因为已经在追踪底部了
+      if (allowAutoScrollRef.current) {
+        setShowScrollBtn(false);
+        return;
+      }
+
+      // 如果用户向下滚动到离底部 50px 内，重新启用自动滚动
       if (distanceFromBottom <= 50) {
         allowAutoScrollRef.current = true;
         setShowScrollBtn(false);
       } else if (distanceFromBottom > 100) {
-        // 如果距离底部超过 100px，确保显示滚动按钮
+        // 只有在非自动滚动模式（被用户手动打断后）且距离底部超过 100px 时才显示滚动按钮
         setShowScrollBtn(true);
       }
     }, 100);
@@ -66,11 +72,12 @@ export const useConversationScrollDetection = (
       // 计算距离底部的距离
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-      // 如果已经在底部（距离小于等于50px），确保隐藏按钮
+      // 如果已经在底部（距离小于等于 50px），确保隐藏按钮并同步自动滚动状态
       if (distanceFromBottom <= 50) {
         setShowScrollBtn(false);
         allowAutoScrollRef.current = true;
       }
+
       const isProgrammatic = (messageView as any).__isProgrammaticScroll;
 
       // 如果是程序触发的滚动，忽略（不处理用户滚动逻辑）
@@ -95,6 +102,11 @@ export const useConversationScrollDetection = (
           // 更新位置
           lastScrollTopRef.current = scrollTop;
           return;
+        }
+
+        // 程序自动滚动过程中，如果已经是自动滚动模式且未被打断，确保按钮是隐藏的
+        if (allowAutoScrollRef.current) {
+          setShowScrollBtn(false);
         }
 
         // 记录程序滚动后的位置，确保下一次用户滚动对比的是最新位置

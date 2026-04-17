@@ -228,6 +228,8 @@ const Chat: React.FC = () => {
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
+  const [isHoveringChat, setIsHoveringChat] = useState(false);
+
   const { isMobile } = useModel('layout');
   // 会话记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -1250,6 +1252,8 @@ const Chat: React.FC = () => {
             <div
               className={cx(styles['chat-wrapper-content'])}
               ref={messageViewRef}
+              onMouseEnter={() => setIsHoveringChat(true)}
+              onMouseLeave={() => setIsHoveringChat(false)}
             >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
@@ -1348,7 +1352,7 @@ const Chat: React.FC = () => {
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
-              visible={showScrollBtn}
+              visible={showScrollBtn && isHoveringChat}
               wholeDisabled={wholeDisabled}
               clearLoading={clearLoading}
               onClear={handleClear}

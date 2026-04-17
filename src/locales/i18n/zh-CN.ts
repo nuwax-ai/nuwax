@@ -3394,6 +3394,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemConfig.LangContent.remarkPlaceholder': '例如：Submit Button',
   'PC.Pages.SystemConfig.LangContent.searchKey': '搜索 Key...',
   'PC.Pages.SystemConfig.LangContent.searchModule': '搜索模块...',
+  'PC.Pages.SystemConfig.LangContent.searchValue': '搜索文本内容',
   'PC.Pages.SystemConfig.LangContent.sideColumn': '端',
   'PC.Pages.SystemConfig.LangContent.textContentLabel': '文本内容',
   'PC.Pages.SystemConfig.LangContent.textContentPlaceholder': '例如：提交',
