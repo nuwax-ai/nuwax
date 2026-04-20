@@ -462,7 +462,8 @@ async function startPreview() {
                     break;
 
                 default:
-                    throw new Error(`不支持的文件类型: ${fileType}`);
+                    // throw new Error(`不支持的文件类型: ${fileType}`);
+                    throw new Error(`无法预览此文件类型，当前不支持预览【${originalFileType}】格式的文件。`);
             }
 
             hideLoading();
