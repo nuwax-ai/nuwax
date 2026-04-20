@@ -1,6 +1,6 @@
 /**
  * file-preview.js
- * 业务主逻辑：文件渲染引擎、主流程控制、下载逻辑
+ * Main business logic: file rendering engine, main process control, download logic
  */
 
 // ============================================
@@ -9,15 +9,15 @@
 let currentPreviewer = null;
 let fileUrl = '';
 let fileType = '';
-let originalFileType = ''; // 记录原始文件扩展名，用于精准提示
-let downloadUrl = ''; // 下载接口地址
-let fileName = ''; // 文件名
+let originalFileType = ''; // Record original file extension for precise notification
+let downloadUrl = ''; // Download API URL
+let fileName = ''; // File name
 const params = getQueryParams();
 
-// 开发环境本地调试使用（不要删除）！！
+// Local debugging for development environment (do not delete)!!
 // const baseUrl = getBaseUrl('https://testagent.xspaceagi.com');
 
-// 正式环境动态获取地址！！
+// Dynamically get URL for production environment!!
 const baseUrl = getBaseUrl(params.fileUrl);
 
 // ============================================
@@ -57,7 +57,7 @@ async function renderPdf(url, container) {
         throw new Error('Failed to load PDF preview library');
     }
 
-    // 使用设备像素比来提高 PDF 渲染清晰度
+    // Use device pixel ratio to improve PDF rendering clarity
     const scale = window.devicePixelRatio || 2;
     currentPreviewer = jsPreviewPdf.init(container, {
         width: container.clientWidth * scale,
@@ -94,7 +94,7 @@ async function renderPptx(url, container) {
 async function renderHtml(url, container) {
     container.className = 'preview-container html-preview';
 
-    // 尝试获取HTML内容以提取标题
+    // Try to fetch HTML content to extract the title
     try {
         const response = await fetch(url);
         if (response.ok) {
@@ -143,7 +143,7 @@ async function renderImage(url, container) {
 // ============================================
 async function renderVideo(url, container) {
     container.className = 'preview-container video-preview';
-    // 设置容器样式以实现垂直和水平居中
+    // Set container styles for vertical and horizontal centering
     container.style.display = 'flex';
     container.style.justifyContent = 'center';
     container.style.alignItems = 'center';
@@ -179,7 +179,7 @@ async function renderAudio(url, container) {
     container.style.alignItems = 'center';
     container.style.overflow = 'hidden';
     container.style.padding = '0px';
-    container.style.background = '#f5f5f5'; // 浅灰色背景
+    container.style.background = '#f5f5f5'; // Light gray background
 
     const audio = document.createElement('audio');
     audio.src = url;
@@ -288,7 +288,7 @@ async function renderMarkdown(url, container) {
 // ============================================
 async function startPreview() {
     const sk = params.sk || '';
-    // 1. 如果有sk参数，说明是分享操作
+    // 1. If sk parameter exists, it's a sharing operation
     if (sk) {
         const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
             method: 'GET',
@@ -299,11 +299,11 @@ async function startPreview() {
         const { data, code, message } = await response.json();
         if (code === '0000') {
             fileUrl = baseUrl + data.content + '?sk=' + sk;
-            // 从路径中提取文件名，排除查询参数
+            // Extract file name from path, excluding query parameters
             const purePath = data.content.split('?')[0];
             fileName = purePath.split('/').pop();
             fileType = purePath.split('.').pop().toLowerCase();
-            // 设置下载地址
+            // Set download URL
             downloadUrl = baseUrl + data.content + '?sk=' + sk;
             
         } else {
@@ -312,9 +312,9 @@ async function startPreview() {
         }
     } 
     
-    // 2. 如果有_ticket参数，说明是正常预览操作
+    // 2. If _ticket parameter exists, it's a normal preview operation
     if(params._ticket){
-        // 正常预览操作获取文件地址和类型
+        // Normal preview operation: get file URL and type
         fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
         // 从路径中提取文件名，排除查询参数
         const purePath = params.fileUrl.split('?')[0];
@@ -324,7 +324,7 @@ async function startPreview() {
         downloadUrl = params.fileUrl + "?sk=" + params._sk;
     }
 
-    // 3. 如果有docUrl参数，说明是知识库文档预览操作
+    // 3. If docUrl parameter exists, it's a knowledge base document preview operation
     if (params.docUrl) {
         fileUrl = params.docUrl;
         // 从路径中提取文件名，排除查询参数
@@ -350,7 +350,7 @@ async function startPreview() {
         }
     }
 
-    // 保存原始文件类型，用于后续精准提示
+    // Save original file type for subsequent precise notification
     originalFileType = fileType;
 
     // Normalize file types for renderer distribution
@@ -468,7 +468,7 @@ async function startPreview() {
 
             hideLoading();
 
-            // 只有当 dl=1 时才显示右下角下载按钮
+            // Show bottom-right download button only when dl=1
             if (params.dl === '1' && downloadUrl) {
                 const previewDownloadBtn = document.getElementById('previewDownloadBtn');
                 if (previewDownloadBtn) {
@@ -497,12 +497,12 @@ async function downloadFile() {
         return;
     }
 
-    // 检测是否在微信小程序 web-view 环境中
+    // Detect if in WeChat mini program web-view environment
     const isInMiniProgram = window.__wxjs_environment === 'miniprogram' || 
                             (typeof wx !== 'undefined' && wx.miniProgram);
     
     if (isInMiniProgram) {
-        // 小程序环境
+        // Mini program environment
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(downloadUrl);
