@@ -1,6 +1,6 @@
 /**
  * file-preview-utils.js
- * 纯工具方法：URL 解析、UI 状态管理、基础加载工具等
+ * Pure utility methods: URL parsing, UI state management, basic loading tools, etc.
  */
 
 // ============================================
@@ -20,7 +20,7 @@ function getQueryParams() {
     return params;
 }
 
-// 获取文件的 origin
+// Get file origin
 function getBaseUrl(url) {
     try {
         if (!url) return window.location.origin;
@@ -50,9 +50,9 @@ function hideLoading() {
 }
 
 /**
- * 显示错误信息
- * @param {string} message 错误标题
- * @param {string} downloadUrl 可选的下载地址，用于显示下载按钮
+ * Show error message
+ * @param {string} message Error title
+ * @param {string} downloadUrl Optional download URL for displaying the download button
  */
 function showError(message, downloadUrl = '') {
     hideLoading();
@@ -63,7 +63,7 @@ function showError(message, downloadUrl = '') {
     const overlay = document.getElementById('errorOverlay');
     if (overlay) overlay.classList.remove('hidden');
     
-    // 如果有下载地址，显示下载按钮
+    // If download URL exists, show download button
     const errorDownloadBtn = document.getElementById('errorDownloadBtn');
     if (downloadUrl && errorDownloadBtn) {
         errorDownloadBtn.classList.remove('hidden');

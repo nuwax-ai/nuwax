@@ -17,6 +17,9 @@ export default (conversationId: string | number = '') => {
   return createBuildInPlugin({
     rehypePlugin: [rehypeRaw, rehypeStringify],
     components: {
+      style: () => null, // 禁用 style 标签渲染，防止样式污染
+      script: () => null, // 禁用 script 标签，增强安全性
+      html: ({ children }: any) => <>{children}</>, // 处理可能存在的 html 标签包裹
       // 确保使用一致的组件名称格式
       'markdown-custom-process': ({
         node,
