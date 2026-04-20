@@ -38,7 +38,7 @@ function showLoading() {
     if (overlay) {
         overlay.classList.remove('hidden');
         const textField = overlay.querySelector('.loading-text');
-        if (textField) textField.textContent = '加载中...';
+        if (textField) textField.textContent = 'Loading...';
     }
     const errorOverlay = document.getElementById('errorOverlay');
     if (errorOverlay) errorOverlay.classList.add('hidden');
@@ -59,7 +59,7 @@ function showError(message, downloadUrl = '') {
     const icon = document.getElementById('errorIcon');
     if (icon) icon.textContent = '⚠️';
     const text = document.getElementById('errorText');
-    if (text) text.textContent = message || '加载失败';
+    if (text) text.textContent = message || 'Loading failed';
     const overlay = document.getElementById('errorOverlay');
     if (overlay) overlay.classList.remove('hidden');
     

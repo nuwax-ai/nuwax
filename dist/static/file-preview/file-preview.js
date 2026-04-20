@@ -27,7 +27,7 @@ async function renderDocx(url, container) {
     await loadScript('/libs/js-preview/docx.umd.js');
 
     if (typeof jsPreviewDocx === 'undefined') {
-        throw new Error('DOCX 预览库加载失败');
+        throw new Error('Failed to load DOCX preview library');
     }
 
     currentPreviewer = jsPreviewDocx.init(container);
@@ -35,7 +35,7 @@ async function renderDocx(url, container) {
         await currentPreviewer.preview(url);
     } catch (error) {
         console.error('[FilePreview] Docx core error:', error);
-        throw new Error(`无法预览此文件类型，当前不支持预览【${originalFileType}】格式的文件。`);
+        throw new Error(`Unable to preview this file type. Previewing [${originalFileType}] format is currently not supported.`);
     }
 }
 
@@ -43,7 +43,7 @@ async function renderXlsx(url, container) {
     await loadScript('/libs/js-preview/excel.umd.js');
 
     if (typeof jsPreviewExcel === 'undefined') {
-        throw new Error('Excel 预览库加载失败');
+        throw new Error('Failed to load Excel preview library');
     }
 
     currentPreviewer = jsPreviewExcel.init(container);
@@ -54,7 +54,7 @@ async function renderPdf(url, container) {
     await loadScript('/libs/js-preview/pdf.umd.js');
 
     if (typeof jsPreviewPdf === 'undefined') {
-        throw new Error('PDF 预览库加载失败');
+        throw new Error('Failed to load PDF preview library');
     }
 
     // 使用设备像素比来提高 PDF 渲染清晰度
@@ -70,7 +70,7 @@ async function renderPptx(url, container) {
     await loadScript('/libs/js-preview/pptx-preview.umd.js');
 
     if (typeof PptxPreview === 'undefined' && typeof pptxPreview === 'undefined') {
-        throw new Error('PPTX 预览库加载失败');
+        throw new Error('Failed to load PPTX preview library');
     }
 
     const PptxLib = typeof PptxPreview !== 'undefined' ? PptxPreview : pptxPreview;
@@ -82,7 +82,7 @@ async function renderPptx(url, container) {
     // Fetch file as ArrayBuffer
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`文件下载失败: ${response.status}`);
+        throw new Error(`File download failed: ${response.status}`);
     }
     const arrayBuffer = await response.arrayBuffer();
     await currentPreviewer.preview(arrayBuffer);
@@ -114,7 +114,7 @@ async function renderHtml(url, container) {
 
     // Handle iframe load error
     iframe.onerror = () => {
-        throw new Error('HTML 页面加载失败');
+        throw new Error('Failed to load HTML page');
     };
 
     container.appendChild(iframe);
@@ -128,11 +128,11 @@ async function renderImage(url, container) {
 
     const img = document.createElement('img');
     img.src = url;
-    img.alt = '图片预览';
+    img.alt = 'Image Preview';
 
     // Handle image load error
     img.onerror = () => {
-        throw new Error('图片加载失败');
+        throw new Error('Failed to load image');
     };
 
     container.appendChild(img);
@@ -162,7 +162,7 @@ async function renderVideo(url, container) {
 
     // Handle video load error
     video.onerror = () => {
-        throw new Error('视频加载失败');
+        throw new Error('Failed to load video');
     };
 
     container.appendChild(video);
@@ -191,7 +191,7 @@ async function renderAudio(url, container) {
 
     // Handle audio load error
     audio.onerror = () => {
-        throw new Error('音频加载失败');
+        throw new Error('Failed to load audio');
     };
 
     container.appendChild(audio);
@@ -241,7 +241,7 @@ async function renderMarkdown(url, container) {
     await loadScript('/libs/js-preview/highlight.min.js');
 
     if (typeof marked === 'undefined') {
-        throw new Error('Markdown 预览库加载失败');
+        throw new Error('Failed to load Markdown preview library');
     }
 
     // Fetch markdown content
@@ -360,12 +360,12 @@ async function startPreview() {
 
 
     if (!fileUrl) {
-        showError('未提供文件地址 (fileUrl 参数缺失)');
+        showError('File URL not provided (missing fileUrl parameter)');
         return;
     }
 
     if (!fileType) {
-        showError('未提供文件类型 (fileType 参数缺失)');
+        showError('File type not provided (missing fileType parameter)');
         return;
     }
 
@@ -463,7 +463,7 @@ async function startPreview() {
 
                 default:
                     // throw new Error(`不支持的文件类型: ${fileType}`);
-                    throw new Error(`无法预览此文件类型，当前不支持预览【${originalFileType}】格式的文件。`);
+                    throw new Error(`Unable to preview this file type. Previewing [${originalFileType}] format is currently not supported.`);
             }
 
             hideLoading();
@@ -481,7 +481,7 @@ async function startPreview() {
 
         } catch (error) {
             console.error('[FilePreview] Render error:', error);
-            showError(error.message || '文档渲染失败');
+            showError(error.message || 'Document rendering failed');
             notifyParent({ type: 'preview_error', error: error.message });
         }
     }
@@ -493,7 +493,7 @@ async function startPreview() {
 // ============================================
 async function downloadFile() {
     if (!downloadUrl) {
-        showError('下载地址不存在');
+        showError('Download URL does not exist');
         return;
     }
 
@@ -506,7 +506,7 @@ async function downloadFile() {
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(downloadUrl);
-                alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                alert('The mini program does not support direct file downloads yet.\n\nThe download link has been copied to the clipboard. Please open it in a browser to download.');
             } else {
                 const textArea = document.createElement('textarea');
                 textArea.value = downloadUrl;
@@ -519,14 +519,14 @@ async function downloadFile() {
                 document.body.removeChild(textArea);
                 
                 if (successful) {
-                    alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                    alert('The mini program does not support direct file downloads yet.\n\nThe download link has been copied to the clipboard. Please open it in a browser to download.');
                 } else {
-                    alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+                    alert('The mini program does not support direct file downloads yet.\n\nPlease long press to copy the following link:\n' + downloadUrl);
                 }
             }
         } catch (err) {
             console.error('[FilePreview] Copy failed:', err);
-            alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+            alert('The mini program does not support direct file downloads yet.\n\nPlease long press to copy the following link:\n' + downloadUrl);
         }
         return;
     }
@@ -543,7 +543,7 @@ async function downloadFile() {
         });
 
         if (!response.ok) {
-            throw new Error(`下载失败: ${response.status}`);
+            throw new Error(`Download failed: ${response.status}`);
         }
 
         const contentDisposition = response.headers.get('Content-Disposition');
@@ -581,7 +581,7 @@ async function downloadFile() {
         
     } catch (error) {
         console.error('[FilePreview] Download error:', error);
-        showError(error.message || '下载失败');
+        showError(error.message || 'Download failed');
     } finally {
         const downloadBtn = document.getElementById('errorDownloadBtn');
         if (downloadBtn) {
