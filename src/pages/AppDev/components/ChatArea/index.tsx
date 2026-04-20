@@ -59,6 +59,8 @@ interface ChatAreaProps {
   designViewerRef?: React.RefObject<DesignViewerRef>;
   onDeleteDataResource?: (resourceId: number) => Promise<void>;
   onAddDataResource?: () => void;
+  defaultActiveTab?: 'chat' | 'data' | 'design';
+  hiddenTabs?: Array<'chat' | 'data' | 'design'>;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -76,14 +78,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   designViewerRef,
   onDeleteDataResource,
   onAddDataResource,
+  defaultActiveTab = 'chat',
+  hiddenTabs = [],
 }) => {
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
   // 聊天Tab
   const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'design'>(
-    'chat',
+    defaultActiveTab,
   );
+
+  useEffect(() => {
+    setActiveTab(defaultActiveTab);
+  }, [defaultActiveTab]);
 
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
 
@@ -680,12 +688,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isSupportDesignMode={isSupportDesignMode}
+        hiddenTabs={hiddenTabs}
       />
 
       {/* 内容区域 */}
       <div className={'flex-1 flex flex-col relative overflow-hide'}>
         {/* 数据 Tab */}
-        {activeTab === 'data' && (
+        {activeTab === 'data' && !hiddenTabs.includes('data') && (
           <div
             style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
           >
@@ -728,7 +737,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         {/* 聊天消息区域 - 使用 display:none 保持状态 */}
         <div
           style={{
-            display: activeTab === 'chat' ? 'flex' : 'none',
+            display:
+              activeTab === 'chat' && !hiddenTabs.includes('chat')
+                ? 'flex'
+                : 'none',
             flexDirection: 'column',
             height: '100%',
           }}
