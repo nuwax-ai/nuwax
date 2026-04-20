@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>文档预览</title>
+    <title>Document Preview</title>
 
     <!-- Local library styles -->
     <link rel="stylesheet" href="/libs/js-preview/docx.css">
@@ -27,8 +27,8 @@
         <div id="errorIcon" class="error-icon"></div>
         <div id="errorText" class="error-text"></div>
         <div class="error-actions">
-            <button class="retry-action-btn" onclick="startPreview()">重试</button>
-            <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">下载</button>
+            <button class="retry-action-btn" onclick="startPreview()">Retry</button>
+            <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">Download</button>
         </div>
     </div>
 
@@ -36,7 +36,7 @@
     <div id="previewContainer" class="preview-container"></div>
 
     <!-- Float Download Button (Hidden by default) -->
-    <button id="previewDownloadBtn" class="preview-download-btn hidden" onclick="downloadFile()" title="下载文件">
+    <button id="previewDownloadBtn" class="preview-download-btn hidden" onclick="downloadFile()" title="Download File">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
         </svg>
