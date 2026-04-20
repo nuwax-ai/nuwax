@@ -299,9 +299,10 @@ async function startPreview() {
         const { data, code, message } = await response.json();
         if (code === '0000') {
             fileUrl = baseUrl + data.content + '?sk=' + sk;
-            // 从路径中提取文件名
-            fileName = data.content.split('/').pop();
-            fileType = data.content.split('.').pop().toLowerCase();
+            // 从路径中提取文件名，排除查询参数
+            const purePath = data.content.split('?')[0];
+            fileName = purePath.split('/').pop();
+            fileType = purePath.split('.').pop().toLowerCase();
             // 设置下载地址
             downloadUrl = baseUrl + data.content + '?sk=' + sk;
             
@@ -315,9 +316,10 @@ async function startPreview() {
     if(params._ticket){
         // 正常预览操作获取文件地址和类型
         fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
-        // 从路径中提取文件名
-        fileName = params.fileUrl.split('/').pop();
-        fileType = params.fileUrl.split('.').pop().toLowerCase();
+        // 从路径中提取文件名，排除查询参数
+        const purePath = params.fileUrl.split('?')[0];
+        fileName = purePath.split('/').pop();
+        fileType = purePath.split('.').pop().toLowerCase();
         // 设置下载地址
         downloadUrl = params.fileUrl + "?sk=" + params._sk;
     }
@@ -325,9 +327,10 @@ async function startPreview() {
     // 3. 如果有docUrl参数，说明是知识库文档预览操作
     if (params.docUrl) {
         fileUrl = params.docUrl;
-        // 从路径中提取文件名
-        fileName = params.docUrl.split('/').pop();
-        fileType = params.docUrl.split('.').pop().toLowerCase();
+        // 从路径中提取文件名，排除查询参数
+        const purePath = params.docUrl.split('?')[0];
+        fileName = purePath.split('/').pop();
+        fileType = purePath.split('.').pop().toLowerCase();
         // 设置下载地址
         downloadUrl = params.docUrl;
     }
