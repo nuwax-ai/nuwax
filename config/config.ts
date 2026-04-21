@@ -37,9 +37,10 @@ export default defineConfig({
   routes,
   npmClient: 'pnpm',
   // 排除不兼容模块联邦的包
-  mfsu: {
-    exclude: ['jspdf', 'html2canvas'],
-  },
+  // mfsu: {
+  //   exclude: ['jspdf', 'html2canvas'],
+  // },
+  mfsu: false,
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {

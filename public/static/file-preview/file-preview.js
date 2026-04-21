@@ -481,7 +481,7 @@ async function startPreview() {
 
         } catch (error) {
             console.error('[FilePreview] Render error:', error);
-            showError(error.message || 'Document rendering failed');
+            showError(error.message || 'Document rendering failed', downloadUrl);
             notifyParent({ type: 'preview_error', error: error.message });
         }
     }
