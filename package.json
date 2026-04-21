@@ -77,8 +77,8 @@
     "@tiptap/starter-kit": "^2.27.1",
     "@tiptap/suggestion": "^2.27.1",
     "@types/markdown-it": "^14.1.2",
-    "@umijs/max": "^4.4.2",
-    "@umijs/utils": "^4.4.11",
+    "@umijs/max": "^4.6.46",
+    "@umijs/utils": "^4.6.46",
     "ahooks": "^3.8.4",
     "antd": "^5.4.0",
     "classnames": "2.0.0",
@@ -150,6 +150,6 @@
   },
   "packageManager": "pnpm@10.27.0",
   "engines": {
-    "node": "> 18.0.0"
+    "node": ">=22"
   }
 }
