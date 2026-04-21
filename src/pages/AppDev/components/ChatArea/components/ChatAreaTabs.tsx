@@ -8,15 +8,35 @@ interface ChatAreaTabsProps {
   activeTab: 'chat' | 'data' | 'design';
   setActiveTab: (tab: 'chat' | 'data' | 'design') => void;
   isSupportDesignMode: boolean;
+  hiddenTabs?: Array<'chat' | 'data' | 'design'>;
 }
 
 const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
   activeTab,
   setActiveTab,
   isSupportDesignMode,
+  hiddenTabs = [],
 }) => {
   const { isIframeLoaded, iframeDesignMode, setIframeDesignMode } =
     useModel('appDevDesign');
+
+  /**
+   * 向预览 iframe 同步设计模式状态
+   * 说明：默认进入 design Tab 时并不会触发 onChange，因此需要在副作用里主动同步一次。
+   */
+  const syncIframeDesignMode = (enabled: boolean) => {
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'TOGGLE_DESIGN_MODE',
+          enabled,
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  };
 
   // 监听 iframe 发送的 DESIGN_MODE_CHANGED 消息
   // 将此监听放在 ChatAreaTabs 中，因为 DesignViewer 在切换到 data tab 时会被卸载
@@ -40,11 +60,26 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
     if (iframeDesignMode) {
       setActiveTab('design');
     } else if (activeTab === 'design') {
-      // 只有当前是 design 且 iframeDesignMode 变为 false 时才切回 chat
-      // 如果本来就在 data 或 chat，不需要切换
-      setActiveTab('chat');
+      // 只有当前是 design 且 iframeDesignMode 变为 false 时才切换
+      // 如果 chat 被隐藏，则回退到 data；两者都隐藏时保持 design
+      if (!hiddenTabs.includes('chat')) {
+        setActiveTab('chat');
+      } else if (!hiddenTabs.includes('data')) {
+        setActiveTab('data');
+      }
     }
-  }, [iframeDesignMode]);
+  }, [iframeDesignMode, activeTab, hiddenTabs, setActiveTab]);
+
+  /**
+   * 当 activeTab 或 iframe 就绪状态变化时，同步 iframe 设计模式。
+   * - 解决默认 tab=design 但未触发 onChange 导致 iframe 仍处于非设计态的问题。
+   */
+  useEffect(() => {
+    if (!isIframeLoaded) {
+      return;
+    }
+    syncIframeDesignMode(activeTab === 'design');
+  }, [activeTab, isIframeLoaded]);
 
   const handleTabChange = (value: 'chat' | 'data' | 'design') => {
     if (value === 'design') {
@@ -56,18 +91,8 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
     }
 
     // 切换 Tab 时，同步 iframe 的设计模式状态
-    const iframe = document.querySelector('iframe');
     // ... rest of logic
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage(
-        {
-          type: 'TOGGLE_DESIGN_MODE',
-          enabled: value === 'design',
-          timestamp: Date.now(),
-        },
-        '*',
-      );
-    }
+    syncIframeDesignMode(value === 'design');
   };
 
   return (
@@ -85,10 +110,14 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
           handleTabChange(value as 'chat' | 'data' | 'design')
         }
         options={[
-          {
-            label: dict('PC.Pages.AppDevChatArea.chatTab'),
-            value: 'chat',
-          },
+          ...(!hiddenTabs.includes('chat')
+            ? [
+                {
+                  label: dict('PC.Pages.AppDevChatArea.chatTab'),
+                  value: 'chat',
+                },
+              ]
+            : []),
           ...(isSupportDesignMode
             ? [
                 {
@@ -108,10 +137,14 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
                 },
               ]
             : []),
-          {
-            label: dict('PC.Pages.AppDevChatArea.dataTab'),
-            value: 'data',
-          },
+          ...(!hiddenTabs.includes('data')
+            ? [
+                {
+                  label: dict('PC.Pages.AppDevChatArea.dataTab'),
+                  value: 'data',
+                },
+              ]
+            : []),
         ]}
         block
       />
