@@ -231,16 +231,12 @@ export const useAppDevChat = ({
             if (chunkText) {
               flushTextBuffer(false);
               setChatMessages((prev) =>
-                appendThinkToStreamingMessage(
-                  prev,
-                  activeRequestId,
-                  chunkText,
-                  isFinal,
-                ),
+                appendThinkToStreamingMessage(prev, activeRequestId, chunkText),
               );
             }
+            // thought 的 is_final 只表示思考段结束，仍需继续收正文；仅刷新正文缓冲区
             if (isFinal) {
-              flushTextBuffer(true);
+              flushTextBuffer(false);
             }
           }
 

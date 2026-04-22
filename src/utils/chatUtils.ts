@@ -415,12 +415,13 @@ export const appendTextToStreamingMessage = (
 
 /**
  * 追加思考文本到当前流式 ASSISTANT 消息（与 appendTextToStreamingMessage 对称，写入 think）
+ * 不修改 isStreaming：流式结束仅由 agent_message_chunk / SESSION_PROMPT_END 等决定，
+ * 避免 thought 分片上的 is_final 误把正文后续 chunk 全部丢弃。
  */
 export const appendThinkToStreamingMessage = (
   messages: AppDevChatMessage[],
   requestId: string,
   chunkText: string,
-  isFinal: boolean = false,
 ): AppDevChatMessage[] => {
   const index = messages.findIndex(
     (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
@@ -435,7 +436,6 @@ export const appendThinkToStreamingMessage = (
     updated[index] = {
       ...updated[index],
       think: beforeThink ? beforeThink + chunkText : chunkText,
-      isStreaming: !isFinal,
     };
     return updated;
   }
