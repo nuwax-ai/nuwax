@@ -625,7 +625,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       );
     },
-    [expandedThinking, toggleThinkingExpansion],
+    [dict, expandedThinking, toggleThinkingExpansion],
   );
 
   /**
