@@ -113,7 +113,7 @@ const NewMonaco: React.FC<MonacoProps> = ({
               onChange={handleChange}
               codeLanguage={codeLanguage}
               minimap={true}
-              height="790px"
+              height="100%"
               codeOptimizeVisible={false}
             />
           </div>
