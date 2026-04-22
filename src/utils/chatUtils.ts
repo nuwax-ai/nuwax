@@ -2,14 +2,22 @@
  * 聊天相关工具函数
  */
 
+import {
+  insertPlanBlock,
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+} from '@/pages/AppDev/utils/markdownProcess';
 import { dict } from '@/services/i18nRuntime';
 import { MessageModeEnum } from '@/types/enums/agent';
-import type {
-  AppDevChatMessage,
-  Attachment,
-  DataSourceAttachment,
-  DataSourceSelection,
-  FileStreamAttachment,
+import {
+  AgentSessionUpdateSubType,
+  SessionMessageType,
+  type AppDevChatMessage,
+  type Attachment,
+  type DataSourceAttachment,
+  type DataSourceSelection,
+  type FileStreamAttachment,
+  type ToolCallInfo,
 } from '@/types/interfaces/appDev';
 
 /**
@@ -406,6 +414,36 @@ export const appendTextToStreamingMessage = (
 };
 
 /**
+ * 追加思考文本到当前流式 ASSISTANT 消息（与 appendTextToStreamingMessage 对称，写入 think）
+ */
+export const appendThinkToStreamingMessage = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+  chunkText: string,
+  isFinal: boolean = false,
+): AppDevChatMessage[] => {
+  const index = messages.findIndex(
+    (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
+  );
+
+  if (index >= 0) {
+    const updated = [...messages];
+    if (updated[index].isStreaming === false) {
+      return messages;
+    }
+    const beforeThink = updated[index].think || '';
+    updated[index] = {
+      ...updated[index],
+      think: beforeThink ? beforeThink + chunkText : chunkText,
+      isStreaming: !isFinal,
+    };
+    return updated;
+  }
+
+  return messages;
+};
+
+/**
  * 生成会话主题
  * @param messages 消息列表
  * @returns 会话主题
@@ -431,16 +469,357 @@ export const serializeChatMessages = (
 };
 
 /**
- * 解析聊天消息
+ * 解析聊天消息（旧格式：content 为 AppDevChatMessage[] 的 JSON 字符串）
  * @param content 序列化的消息内容
- * @returns 解析后的消息列表
+ * @returns 解析后的消息列表；非数组 JSON 一律返回空，避免误把新结构化 content 当数组遍历
  */
 export const parseChatMessages = (content: string): AppDevChatMessage[] => {
   try {
-    return JSON.parse(content) as AppDevChatMessage[];
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? (parsed as AppDevChatMessage[]) : [];
   } catch (error) {
     return [];
   }
+};
+
+/**
+ * 从持久化事件流合并为单条 ASSISTANT 历史消息（think / text / tool_call 等与 SSE 渲染一致）
+ */
+const buildAssistantMessageFromPersistedEvents = (
+  events: unknown[],
+  fallbackTime: string,
+  requestIdSeed: string,
+  /** 列表接口返回的会话行 id；内层 events 无 request_id 时用于 requestId / 消息 id 兜底 */
+  outerListRecordId?: string | number,
+): AppDevChatMessage => {
+  let think = '';
+  let text = '';
+  let sessionFromEvents = '';
+  let requestId = `history_${requestIdSeed}`;
+  let gotRequestFromSessionEnd = false;
+  let lastTimestamp =
+    (typeof fallbackTime === 'string' && fallbackTime.trim()) ||
+    '1970-01-01T00:00:00.000Z';
+
+  const normalizeTimestamp = (outer: any): string => {
+    const candidate =
+      (typeof outer?.timestamp === 'string' && outer.timestamp.trim()) ||
+      lastTimestamp;
+    const d = new Date(candidate);
+    return Number.isNaN(d.getTime()) ? lastTimestamp : candidate;
+  };
+
+  for (let i = 0; i < events.length; i++) {
+    const item = events[i] as any;
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+
+    // 兼容两种落库形态：{ event, data }（与 SSE 行一致）或扁平 UnifiedSessionMessage
+    const envelope = item.data !== undefined ? item.data : item;
+    const eventName =
+      (typeof item.event === 'string' && item.event) ||
+      (typeof envelope?.subType === 'string' && envelope.subType) ||
+      '';
+
+    const subType =
+      typeof envelope?.subType === 'string' ? envelope.subType : '';
+    const data = envelope?.data ?? {};
+    const effectiveSub = subType || eventName;
+
+    if (typeof envelope?.sessionId === 'string' && envelope.sessionId) {
+      sessionFromEvents = envelope.sessionId;
+    }
+
+    lastTimestamp = normalizeTimestamp(envelope);
+
+    if (
+      effectiveSub === 'agent_thought_chunk' ||
+      eventName === 'agent_thought_chunk'
+    ) {
+      const chunk = data?.content?.text ?? data?.text ?? '';
+      think += chunk;
+    } else if (
+      effectiveSub === AgentSessionUpdateSubType.AGENT_MESSAGE_CHUNK ||
+      eventName === 'agent_message_chunk'
+    ) {
+      const chunk = data?.content?.text ?? data?.text ?? '';
+      text += chunk;
+    } else if (
+      effectiveSub === AgentSessionUpdateSubType.TOOL_CALL ||
+      eventName === 'tool_call'
+    ) {
+      const toolCallId = data?.toolCallId || data?.tool_call_id;
+      if (toolCallId) {
+        const toolPayload: ToolCallInfo = {
+          toolCallId,
+          title: data?.title || dict('PC.Pages.AppDevChat.toolCall'),
+          kind: data?.kind || 'execute',
+          status: data?.status || 'pending',
+          content: data?.content,
+          locations: data?.locations,
+          rawInput: data?.rawInput,
+          timestamp: lastTimestamp,
+        };
+        text = insertToolCallBlock(text, toolCallId, toolPayload);
+      }
+    } else if (
+      effectiveSub === AgentSessionUpdateSubType.TOOL_CALL_UPDATE ||
+      eventName === 'tool_call_update'
+    ) {
+      const toolCallId = data?.toolCallId || data?.tool_call_id;
+      if (toolCallId) {
+        const toolPayload: ToolCallInfo = {
+          toolCallId,
+          title: data?.title || dict('PC.Pages.AppDevChat.toolCallUpdate'),
+          kind: data?.kind || 'execute',
+          status: data?.status || 'pending',
+          content: data?.content,
+          locations: data?.locations,
+          rawInput: data?.rawInput,
+          timestamp: lastTimestamp,
+        };
+        text = insertToolCallUpdateBlock(text, toolCallId, toolPayload);
+      }
+    } else if (
+      effectiveSub === AgentSessionUpdateSubType.PLAN ||
+      eventName === 'plan'
+    ) {
+      text = insertPlanBlock(text, {
+        planId: data?.planId || 'default-plan',
+        entries: data?.entries || [],
+      });
+    } else if (
+      effectiveSub === AgentSessionUpdateSubType.ERROR ||
+      eventName === 'error'
+    ) {
+      const errMsg = data?.message || '';
+      if (errMsg) {
+        text += errMsg;
+      }
+    } else if (
+      envelope?.messageType === SessionMessageType.SESSION_PROMPT_END ||
+      effectiveSub === 'end_turn' ||
+      eventName === 'session_prompt_end'
+    ) {
+      const rid = data?.request_id || data?.requestId;
+      if (typeof rid === 'string' && rid.trim()) {
+        requestId = rid.trim();
+        gotRequestFromSessionEnd = true;
+      }
+    }
+  }
+
+  const useOuterId =
+    outerListRecordId !== undefined &&
+    outerListRecordId !== null &&
+    String(outerListRecordId).trim() !== '';
+
+  const effectiveRequestId =
+    gotRequestFromSessionEnd && requestId
+      ? requestId
+      : useOuterId
+      ? String(outerListRecordId)
+      : requestId;
+
+  const effectiveMessageId = useOuterId
+    ? String(outerListRecordId)
+    : generateMessageId('assistant', effectiveRequestId);
+
+  return {
+    id: effectiveMessageId,
+    role: 'ASSISTANT',
+    type: MessageModeEnum.CHAT,
+    text,
+    think,
+    time: lastTimestamp,
+    status: null,
+    requestId: effectiveRequestId,
+    sessionId: sessionFromEvents || undefined,
+    isStreaming: false,
+    timestamp: new Date(lastTimestamp),
+  };
+};
+
+/**
+ * 新 USER 结构化 content -> 单条 AppDevChatMessage
+ */
+const buildUserMessageFromStructuredContent = (
+  obj: Record<string, unknown>,
+  fallbackTime: string,
+  requestIdSeed: string,
+  /** 列表行 id：content 内无 id / requestId 时兜底 */
+  outerListRecordId?: string | number,
+): AppDevChatMessage => {
+  const time =
+    (typeof obj.time === 'string' && obj.time.trim()) ||
+    (typeof obj.timestamp === 'string' && obj.timestamp.trim()) ||
+    (typeof fallbackTime === 'string' && fallbackTime.trim()) ||
+    '1970-01-01T00:00:00.000Z';
+
+  const useOuterId =
+    outerListRecordId !== undefined &&
+    outerListRecordId !== null &&
+    String(outerListRecordId).trim() !== '';
+
+  const innerRequestId =
+    typeof obj.requestId === 'string' && obj.requestId.trim()
+      ? obj.requestId.trim()
+      : '';
+  const requestId =
+    innerRequestId || (useOuterId ? String(outerListRecordId) : requestIdSeed);
+
+  const innerMessageId =
+    typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim() : '';
+  const messageId =
+    innerMessageId ||
+    (useOuterId
+      ? String(outerListRecordId)
+      : generateMessageId('user', requestId));
+
+  return {
+    id: messageId,
+    role: 'USER',
+    type: MessageModeEnum.CHAT,
+    text: typeof obj.text === 'string' ? obj.text : String(obj.text ?? ''),
+    think: '',
+    time,
+    status: null,
+    requestId,
+    isStreaming: false,
+    timestamp: new Date(time),
+    attachments: Array.isArray(obj.attachments)
+      ? (obj.attachments as Attachment[])
+      : [],
+    attachmentPrototypeImages: Array.isArray(obj.attachmentPrototypeImages)
+      ? (obj.attachmentPrototypeImages as FileStreamAttachment[])
+      : [],
+    dataSources: Array.isArray(obj.dataSources)
+      ? (obj.dataSources as DataSourceSelection[])
+      : [],
+  };
+};
+
+/**
+ * 解析单条会话记录的 content（统一入口，与后端落库格式对齐）：
+ * - ASSISTANT：{ events: [...] } -> 聚合成单条助手消息（think / text / tool 标记等）
+ * - USER：{ text, attachments, ... } -> 单条用户消息
+ * - 解析不到上述结构时返回 []，由调用方回退 parseChatMessages（旧版 JSON 数组存量）
+ */
+export const parseConversationHistoryContent = (
+  content: string | undefined | null,
+  conversationRole?: string,
+  fallbackTime?: string,
+  /** page-query 会话列表行的 id；新 content 内无消息级 id 时写入 AppDevChatMessage.id / requestId */
+  outerListRecordId?: string | number,
+): AppDevChatMessage[] => {
+  if (!content || typeof content !== 'string' || !content.trim()) {
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return [];
+  }
+
+  const fbTime =
+    (typeof fallbackTime === 'string' && fallbackTime.trim()) ||
+    '1970-01-01T00:00:00.000Z';
+  const roleUpper = String(conversationRole || '')
+    .trim()
+    .toUpperCase();
+
+  if (Array.isArray(parsed)) {
+    return [];
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    return [];
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const events = obj.events;
+
+  if (Array.isArray(events) && events.length > 0) {
+    return [
+      buildAssistantMessageFromPersistedEvents(
+        events,
+        fbTime,
+        `${fbTime}_${roleUpper || 'ASST'}`,
+        outerListRecordId,
+      ),
+    ];
+  }
+
+  const hasUserSignals =
+    typeof obj.text === 'string' ||
+    Array.isArray(obj.attachments) ||
+    Array.isArray(obj.dataSources) ||
+    Array.isArray(obj.attachmentPrototypeImages);
+
+  // 会话角色为 ASSISTANT，但 content 为扁平 text/think（无 events）时，按单条助手气泡处理，避免误判为 USER
+  if (
+    roleUpper === 'ASSISTANT' &&
+    hasUserSignals &&
+    (!Array.isArray(events) || events.length === 0)
+  ) {
+    const time =
+      (typeof obj.time === 'string' && obj.time.trim()) ||
+      (typeof obj.timestamp === 'string' && obj.timestamp.trim()) ||
+      fbTime;
+
+    const useOuterId =
+      outerListRecordId !== undefined &&
+      outerListRecordId !== null &&
+      String(outerListRecordId).trim() !== '';
+
+    const innerRequestId =
+      typeof obj.requestId === 'string' && obj.requestId.trim()
+        ? obj.requestId.trim()
+        : '';
+    const requestId =
+      innerRequestId ||
+      (useOuterId ? String(outerListRecordId) : `history_asst_${fbTime}`);
+
+    const innerMessageId =
+      typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim() : '';
+    const messageId =
+      innerMessageId ||
+      (useOuterId
+        ? String(outerListRecordId)
+        : generateMessageId('assistant', requestId));
+
+    return [
+      {
+        id: messageId,
+        role: 'ASSISTANT',
+        type: MessageModeEnum.CHAT,
+        text: typeof obj.text === 'string' ? obj.text : String(obj.text ?? ''),
+        think:
+          typeof obj.think === 'string' ? obj.think : String(obj.think ?? ''),
+        time,
+        status: null,
+        requestId,
+        isStreaming: false,
+        timestamp: new Date(time),
+      },
+    ];
+  }
+
+  if (hasUserSignals && (!Array.isArray(events) || events.length === 0)) {
+    return [
+      buildUserMessageFromStructuredContent(
+        obj,
+        fbTime,
+        `history_user_${fbTime}`,
+        outerListRecordId,
+      ),
+    ];
+  }
+
+  return [];
 };
 
 /**
@@ -527,10 +906,21 @@ export const isRequestIdMatch = (
 /**
  * 生成SSE连接URL
  * @param sessionId 会话ID
+ * @param projectId 项目ID（后端新要求：ai-session-sse 必须携带 project_id）
  * @returns SSE连接URL
  */
-export const generateSSEUrl = (sessionId: string): string => {
-  return `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+export const generateSSEUrl = (
+  sessionId: string,
+  projectId?: string,
+): string => {
+  const queryParams = new URLSearchParams({ session_id: sessionId });
+  // 仅在有值时附加 project_id，兼容历史链路并避免传空字符串污染请求参数。
+  if (projectId) {
+    queryParams.set('project_id', projectId);
+  }
+  return `${
+    process.env.BASE_URL
+  }/api/custom-page/ai-session-sse?${queryParams.toString()}`;
 };
 
 /**

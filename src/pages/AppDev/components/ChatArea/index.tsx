@@ -1,6 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
-import { t } from '@/services/i18nRuntime';
+import { dict, t } from '@/services/i18nRuntime';
 
 import SvgIcon from '@/components/base/SvgIcon';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
@@ -21,8 +21,9 @@ import {
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
-import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
+import { BulbOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -42,6 +43,7 @@ import ReactScrollToBottomContainer, {
 } from './components/ReactScrollToBottomContainer';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
 const { Text } = Typography;
 
 interface ChatAreaProps {
@@ -459,6 +461,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
       const isThinkingExpanded = expandedThinking.has(message.id);
+      // 与 MarkdownRenderer 一致：流式且尚无正文时显示「思考中」，否则「已思考」
+      const isThinkingFinished =
+        isHistoryMessage ||
+        !message.isStreaming ||
+        !!(message.text && message.text.trim());
 
       // 组合附件和数据源 - 只在用户消息中显示
       let allAttachments: Attachment[] = [];
@@ -501,6 +508,46 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }`}
         >
           <div className={styles.messageBubble}>
+            {/*
+              ASSISTANT：思考过程在正文之前渲染，与 SSE / 历史落库顺序一致
+              （先 agent_thought_chunk，再 agent_message_chunk），避免思考块固定出现在最下方
+            */}
+            {hasThinking && isAssistant && (
+              <div className={styles.assistantThinkingWrap}>
+                <div
+                  className={styles.assistantThinkingHeader}
+                  onClick={() => toggleThinkingExpansion(message.id)}
+                >
+                  <BulbOutlined className={styles.assistantThinkingIcon} />
+                  <span className={styles.assistantThinkingTitle}>
+                    {isThinkingFinished
+                      ? dict('PC.Components.MarkdownRenderer.thought')
+                      : dict('PC.Components.MarkdownRenderer.thinking')}
+                  </span>
+                  <DownOutlined
+                    className={cx(styles.assistantThinkingExpand, {
+                      [styles.assistantThinkingExpandExpanded]:
+                        isThinkingExpanded,
+                    })}
+                  />
+                </div>
+                {isThinkingExpanded && (
+                  <div className={styles.assistantThinkingBody}>
+                    {message.think
+                      ?.split('\n')
+                      .map((line: string, index: number) => (
+                        <div
+                          key={index}
+                          className={styles.assistantThinkingLine}
+                        >
+                          {line}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 消息内容 */}
             <div className={styles.messageContent}>
               {isUser ? (
@@ -564,34 +611,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isError && (
               <div className={styles.errorIndicator}>
                 <span>{t('PC.Pages.AppDevChatArea.messageSendFailed')}</span>
-              </div>
-            )}
-
-            {/* 思考过程区域 */}
-            {hasThinking && isAssistant && (
-              <div className={styles.thinkingArea}>
-                <div
-                  className={styles.thinkingHeader}
-                  onClick={() => toggleThinkingExpansion(message.id)}
-                >
-                  <span className={styles.thinkingTitle}>
-                    {t('PC.Pages.AppDevChatArea.aiThinkingProcess')}
-                  </span>
-                  <span className={styles.expandIcon}>
-                    {isThinkingExpanded ? '▼' : '▶'}
-                  </span>
-                </div>
-                {isThinkingExpanded && (
-                  <div className={styles.thinkingContent}>
-                    {message.think
-                      ?.split('\n')
-                      .map((line: string, index: number) => (
-                        <div key={index} className={styles.thinkingLine}>
-                          {line}
-                        </div>
-                      ))}
-                  </div>
-                )}
               </div>
             )}
 
