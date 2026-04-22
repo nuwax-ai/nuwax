@@ -21,9 +21,8 @@ import {
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
-import { BulbOutlined, DownOutlined, LoadingOutlined } from '@ant-design/icons';
+import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
-import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -35,6 +34,7 @@ import React, {
 import { useModel } from 'umi';
 import DesignViewer, { type DesignViewerRef } from '../DesignViewer';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
+import AssistantThinkingCollapsible from './components/AssistantThinkingCollapsible';
 import ChatAreaTabs from './components/ChatAreaTabs';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
@@ -43,7 +43,6 @@ import ReactScrollToBottomContainer, {
 } from './components/ReactScrollToBottomContainer';
 import styles from './index.less';
 
-const cx = classNames.bind(styles);
 const { Text } = Typography;
 
 interface ChatAreaProps {
@@ -118,11 +117,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // 滚动状态管理
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  // 思考过程展开状态
-  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
-    new Set(),
-  );
-
   // 到顶自动加载更多的侦测 Hook (提前 10px 触发)
   const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
     rootMargin: '10px 0px 0px 0px',
@@ -175,21 +169,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    */
   const handleScrollButtonClick = useCallback(() => {
     scrollContainerRef.current?.handleScrollButtonClick();
-  }, []);
-
-  /**
-   * 切换思考过程展开状态
-   */
-  const toggleThinkingExpansion = useCallback((messageId: string) => {
-    setExpandedThinking((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
   }, []);
 
   /**
@@ -460,7 +439,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const isLoading = false; // 历史消息永远不显示加载状态
       const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
-      const isThinkingExpanded = expandedThinking.has(message.id);
       // 与 MarkdownRenderer 一致：流式且尚无正文时显示「思考中」，否则「已思考」
       const isThinkingFinished =
         isHistoryMessage ||
@@ -513,39 +491,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               （先 agent_thought_chunk，再 agent_message_chunk），避免思考块固定出现在最下方
             */}
             {hasThinking && isAssistant && (
-              <div className={styles.assistantThinkingWrap}>
-                <div
-                  className={styles.assistantThinkingHeader}
-                  onClick={() => toggleThinkingExpansion(message.id)}
-                >
-                  <BulbOutlined className={styles.assistantThinkingIcon} />
-                  <span className={styles.assistantThinkingTitle}>
-                    {isThinkingFinished
-                      ? dict('PC.Components.MarkdownRenderer.thought')
-                      : dict('PC.Components.MarkdownRenderer.thinking')}
-                  </span>
-                  <DownOutlined
-                    className={cx(styles.assistantThinkingExpand, {
-                      [styles.assistantThinkingExpandExpanded]:
-                        isThinkingExpanded,
-                    })}
-                  />
-                </div>
-                {isThinkingExpanded && (
-                  <div className={styles.assistantThinkingBody}>
-                    {message.think
-                      ?.split('\n')
-                      .map((line: string, index: number) => (
-                        <div
-                          key={index}
-                          className={styles.assistantThinkingLine}
-                        >
-                          {line}
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
+              <AssistantThinkingCollapsible
+                think={message.think || ''}
+                isThinkingFinished={isThinkingFinished}
+              />
             )}
 
             {/* 消息内容 */}
@@ -625,7 +574,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       );
     },
-    [dict, expandedThinking, toggleThinkingExpansion],
+    [dict],
   );
 
   /**
