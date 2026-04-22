@@ -103,7 +103,7 @@ export const DataTypeMap = {
 };
 
 // 插件参数值设置默认下拉选项
-export const ParamsSettingDefaultOptions = [
+export const ParamsSettingDefaultOptionsFun = () => [
   {
     value: BindValueType.Input,
     label: dict('PC.Constants.Common.input'),
