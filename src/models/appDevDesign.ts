@@ -6,6 +6,9 @@ export default () => {
   const [iframeDesignMode, setIframeDesignMode] = useState<boolean>(false);
   // iframe是否加载完毕
   const [isIframeLoaded, setIsIframeLoaded] = useState<boolean>(false);
+  // 预览 iframe 实例，统一供各组件访问，避免 querySelector 带来的歧义
+  const [previewIframeElement, setPreviewIframeElement] =
+    useState<HTMLIFrameElement | null>(null);
   /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
     null,
@@ -25,6 +28,8 @@ export default () => {
     setIframeDesignMode,
     isIframeLoaded,
     setIsIframeLoaded,
+    previewIframeElement,
+    setPreviewIframeElement,
     selectedElement,
     setSelectedElement,
     pendingChanges,
