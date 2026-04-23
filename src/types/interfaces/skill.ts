@@ -55,6 +55,8 @@ export interface SkillDetailInfo {
   category: string;
   // 权限列表
   permissions: PermissionsEnum[];
+  // 适用范围
+  usageScenarios: string[];
 }
 
 // 修改技能
