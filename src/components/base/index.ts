@@ -11,6 +11,12 @@ export { default as HoverScrollbar } from './HoverScrollbar';
 export { default as McpInstallType } from './McpInstallType';
 export { default as McpStatus } from './McpStatus';
 export { default as MenuListItem } from './MenuListItem';
+export { default as SafeHtml, sanitizeHtml } from './SafeHtml';
+export type {
+  SafeHtmlOptions,
+  SafeHtmlProfile,
+  SafeHtmlProps,
+} from './SafeHtml';
 export { default as SecondMenuItem } from './SecondMenuItem';
 export { default as SvgIcon } from './SvgIcon';
 export { default as SvgIconGoodTheme } from './SvgIconGoodTheme';

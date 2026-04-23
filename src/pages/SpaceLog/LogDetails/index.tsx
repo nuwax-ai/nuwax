@@ -197,11 +197,6 @@ const LogDetails: React.FC<LogDetailsProps> = ({
               {dict('PC.Pages.SpaceLog.LogDetails.output')}
             </h5>
             <pre>{outputData}</pre>
-            {/* <pre
-              dangerouslySetInnerHTML={{
-                __html: md.render(outputData),
-              }}
-            /> */}
           </div>
         </>
       ) : (

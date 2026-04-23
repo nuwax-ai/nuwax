@@ -59,7 +59,7 @@ export function renderFallback(
 ) {
   if (!container) return;
 
-  container.innerHTML = '';
+  container.replaceChildren();
 
   // 创建主容器
   const wrapper = document.createElement('div');
@@ -136,7 +136,15 @@ export function renderFallback(
   `;
 
   const notice = document.createElement('div');
-  notice.innerHTML = dict('PC.Utils.PptxFallbackRenderer.complexFormatNotice');
+  const noticeLines = dict(
+    'PC.Utils.PptxFallbackRenderer.complexFormatNotice',
+  ).split(/<br\s*\/?>/i);
+  noticeLines.forEach((line, index) => {
+    if (index > 0) {
+      notice.appendChild(document.createElement('br'));
+    }
+    notice.appendChild(document.createTextNode(line));
+  });
   notice.style.cssText = `
     color: #8c8c8c;
     font-size: 12px;

@@ -3,6 +3,7 @@
  * Tiptap 变量输入组件测试示例
  */
 
+import SafeHtml from '@/components/base/SafeHtml';
 import {
   CodeOutlined,
   EyeOutlined,
@@ -34,6 +35,15 @@ import { VariableType } from '../../components/TiptapVariableInput/types';
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
+const SAFE_HTML_VARIABLE_ATTRIBUTES = [
+  'data-id',
+  'data-is-tool',
+  'data-key',
+  'data-label',
+  'data-name',
+  'data-type',
+  'data-type-id',
+];
 
 const TiptapVariableInputTestExample: React.FC = () => {
   // 基础状态
@@ -615,7 +625,12 @@ const TiptapVariableInputTestExample: React.FC = () => {
 
                 <div>
                   <Text strong>渲染预览：</Text>
-                  <div
+                  <SafeHtml
+                    as="div"
+                    allowedAttributes={SAFE_HTML_VARIABLE_ATTRIBUTES}
+                    allowedTags={['variable']}
+                    html={promptValue}
+                    profile="markdown-output"
                     style={{
                       background: '#f5f5f5',
                       padding: '10px',
@@ -624,7 +639,6 @@ const TiptapVariableInputTestExample: React.FC = () => {
                       minHeight: '50px',
                       border: '1px solid #d9d9d9',
                     }}
-                    dangerouslySetInnerHTML={{ __html: promptValue }}
                   />
                 </div>
 

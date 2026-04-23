@@ -1,3 +1,4 @@
+import SafeHtml from '@/components/base/SafeHtml';
 import {
   AGENT_NOT_EXIST,
   AGENT_SERVICE_RUNNING,
@@ -169,8 +170,10 @@ const errorHandler = (error: any, opts: any) => {
           // Modal 类型的错误提示通常需要显示，但也可以加入去重逻辑
           if (shouldShowErrorMessage(errorMessage)) {
             Modal.warning({
-              content: React.createElement('div', {
-                dangerouslySetInnerHTML: { __html: errorMessage },
+              content: React.createElement(SafeHtml, {
+                as: 'div',
+                html: errorMessage,
+                profile: 'markdown-output',
               }),
             });
           }

@@ -15,7 +15,7 @@ const useDrawerScroll = (visible: boolean): void => {
     // 创建新的样式元素
     const style = document.createElement('style');
     style.id = 'drawer-scroll-style';
-    style.innerHTML = `
+    style.textContent = `
         .${className} {
           overflow-x: hidden !important;
         }

@@ -1,3 +1,4 @@
+import SafeHtml from '@/components/base/SafeHtml';
 import ConditionRender from '@/components/ConditionRender';
 import classNames from 'classnames';
 import type { PropsWithChildren } from 'react';
@@ -29,17 +30,17 @@ const BasicLayout: React.FC<PropsWithChildren> = ({ children }) => {
           {/*  知识库与数据表存储能力，MCP接入以及开放能力*/}
           {/*</p>*/}
 
-          <p
+          <SafeHtml
+            as="p"
             className={cx(styles.title, 'text-ellipsis-2')}
-            dangerouslySetInnerHTML={{
-              __html: tenantConfigInfo?.loginPageText,
-            }}
+            html={tenantConfigInfo?.loginPageText}
+            profile="markdown-output"
           />
-          <p
+          <SafeHtml
+            as="p"
             className={cx(styles['sub-title'], 'text-ellipsis-2')}
-            dangerouslySetInnerHTML={{
-              __html: tenantConfigInfo?.loginPageSubText,
-            }}
+            html={tenantConfigInfo?.loginPageSubText}
+            profile="markdown-output"
           />
         </div>
       </div>

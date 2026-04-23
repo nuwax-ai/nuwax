@@ -1,4 +1,5 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import SafeHtml from '@/components/base/SafeHtml';
 import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -244,9 +245,11 @@ const Home: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       {/* 输入框区域 */}
       <div className={cx(styles.inputSection)}>
-        <h2
+        <SafeHtml
+          as="h2"
           className={cx(styles.title)}
-          dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
+          html={tenantConfigInfo?.homeSlogan}
+          profile="markdown-output"
         />
         {/*<div className={cx(styles.title)}>
           <PureMarkdownRenderer
