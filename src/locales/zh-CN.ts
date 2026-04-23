@@ -16,5 +16,6 @@ export default {
 
   // 语言切换相关
   'lang.en': '英文',
+  'lang.ja': '日语',
   'lang.zh': '中文',
 };
