@@ -46,7 +46,7 @@ export async function apiSkillUpdate(
 export async function apiSkillImport(
   params: SkillImportParams,
 ): Promise<RequestResponse<number>> {
-  const { file, targetSkillId, targetSpaceId } = params;
+  const { file, targetSkillId, targetSpaceId, usageScenarios } = params;
   const formData = new FormData();
   formData.append('file', file);
   if (targetSkillId) {
@@ -54,6 +54,11 @@ export async function apiSkillImport(
   }
   if (targetSpaceId) {
     formData.append('targetSpaceId', targetSpaceId.toString());
+  }
+  if (usageScenarios && usageScenarios.length > 0) {
+    usageScenarios.forEach((scenario) => {
+      formData.append('usageScenarios', scenario);
+    });
   }
 
   return request('/api/skill/import', {

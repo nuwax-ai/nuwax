@@ -603,6 +603,7 @@ const SkillDetails: React.FC = () => {
       {/* 导入技能项目弹窗 */}
       <ImportSkillProjectModal
         open={openImportSkillProject}
+        isCreate={false}
         onCancel={() => setOpenImportSkillProject(false)}
         onConfirm={handleImportSkillProjectConfirm}
       />
