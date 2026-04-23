@@ -1,8 +1,15 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .box {
   width: 26px;
   height: 26px;
   font-size: 14px;
   color: @GRAY32;
+
+  &:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: @paddingXxs;
+    border-radius: @borderRadiusSm;
+  }
 }

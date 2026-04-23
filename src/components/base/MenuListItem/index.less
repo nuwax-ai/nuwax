@@ -50,6 +50,12 @@
     }
   }
 
+  &:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: @paddingXxs;
+    border-radius: @borderRadius;
+  }
+
   .icon-box {
     font-size: 20px;
     border-radius: @borderRadiusSm;

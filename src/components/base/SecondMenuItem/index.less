@@ -62,6 +62,12 @@
     }
   }
 
+  &:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: @paddingXxs;
+    border-radius: @borderRadius;
+  }
+
   .title {
     font-size: @fontSize;
   }

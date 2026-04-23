@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import { HolderOutlined } from '@ant-design/icons';
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { useSortable } from '@dnd-kit/sortable';
@@ -25,6 +26,7 @@ export const DragHandle: React.FC = () => {
       type="text"
       size="small"
       icon={<HolderOutlined />}
+      aria-label={dict('PC.Pages.SystemConfigI18n.columnSort')}
       style={{ cursor: 'move' }}
       ref={setActivatorNodeRef}
       {...listeners}

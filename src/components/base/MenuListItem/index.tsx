@@ -1,5 +1,6 @@
 import CustomPopover from '@/components/CustomPopover';
 import { dict } from '@/services/i18nRuntime';
+import { isKeyboardActivation } from '@/utils/a11y';
 import { EllipsisOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -56,6 +57,16 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
       )}
       style={style}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (isKeyboardActivation(e)) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={name}
+      aria-current={isActive ? 'page' : undefined}
     >
       <span
         className={cx(

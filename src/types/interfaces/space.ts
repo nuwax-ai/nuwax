@@ -57,6 +57,7 @@ export interface TooltipIconProps {
   className?: string;
   type?: TooltipTitleTypeEnum;
   title?: React.ReactNode;
+  ariaLabel?: string;
   icon?: React.ReactNode;
   placement?: TooltipPlacement;
   onClick?: MouseEventHandler<HTMLSpanElement>;

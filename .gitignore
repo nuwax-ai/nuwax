@@ -9,6 +9,7 @@
 /.umi-production
 /.umi-test
 /dist
+/reports/a11y/*.json
 /.mfsu
 .swc
 /.idea
