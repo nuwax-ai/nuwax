@@ -3220,6 +3220,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.uploadHint': '仅支持 .zip,.skill 压缩文件格式 或 SKILL.md 文件',
   'PC.Pages.SpaceSkillManage.importSucceeded': '导入成功',
   'PC.Pages.SpaceSkillManage.MainContent.noResultsFound': '未能找到相关结果',
+  'PC.Pages.SpaceSkillManage.HeaderLeftSlot.allUsageScenarios': '所有适用范围',
   'PC.Pages.SpaceSkillManage.pageTitle': '技能管理',
   'PC.Pages.SpaceSkillManage.skillCopiedSuccessfully': '技能复制成功',
   'PC.Pages.SpaceSkillManage.skillIdInvalidForExport': '技能ID不存在或无效，无法导出',

@@ -3221,6 +3221,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceSkillManage.ImportSkillProjectModal.uploadHint': 'Only .zip, .skill compressed file formats or SKILL.md file are supported',
   'PC.Pages.SpaceSkillManage.importSucceeded': 'Import successful',
   'PC.Pages.SpaceSkillManage.MainContent.noResultsFound': 'No results found',
+  'PC.Pages.SpaceSkillManage.HeaderLeftSlot.allUsageScenarios': 'All Usage Scenarios',
   'PC.Pages.SpaceSkillManage.pageTitle': 'Skill Mgmt',
   'PC.Pages.SpaceSkillManage.skillCopiedSuccessfully': 'Skill copied successfully',
   'PC.Pages.SpaceSkillManage.skillIdInvalidForExport': 'Skill ID is invalid or missing, cannot export',
