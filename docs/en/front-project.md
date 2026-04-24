@@ -45,7 +45,7 @@ The project has been updated to an AI chat interface based on new OpenAPI specif
 - **State Persistence**: User-selected background images are saved to local storage
 - **Theme Adaptation**: Support for light/dark themes, background images display well under different themes
 - **Responsive Design**: Background images adapt to different screen sizes
-- **Multi-language Support**: Support for Chinese and English interfaces
+- **Multi-language Support**: Support for Chinese, English, and Japanese interfaces
 
 ###### 🚀 Usage Methods
 

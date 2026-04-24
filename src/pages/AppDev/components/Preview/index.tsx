@@ -1103,6 +1103,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const updatedContent = await applyDesignChanges(
                 fileContent,
                 changes,
+                filePath,
               );
               filesToUpdate.push({
                 name: filePath,

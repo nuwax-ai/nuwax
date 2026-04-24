@@ -2509,6 +2509,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.Login.nextStep': '下一步',
   'PC.Pages.Login.passwordLogin': '密碼登入',
   'PC.Pages.Login.passwordRequired': '請輸入不少於 6 位的密碼',
+  'PC.Pages.Login.privacyAgreement': '隱私協議',
   'PC.Pages.Login.privacyAgreementLink': 'https://nuwax.com/privacy.html',
   'PC.Pages.Login.readAndAgree': '已閱讀並同意協議：',
   'PC.Pages.Login.serviceAgreement': '服務使用協議',
