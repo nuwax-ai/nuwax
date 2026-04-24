@@ -80,6 +80,10 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     console.info('[AliyunCaptcha] captcha-token-generated', {
       elementId,
       tokenType: typeof captchaVerifyParam,
+      tokenLen: captchaVerifyParam?.length,
+      tokenPreview: captchaVerifyParam
+        ? `${captchaVerifyParam.slice(0, 4)}...${captchaVerifyParam.slice(-4)}`
+        : null,
     });
     captchaParamRef.current = captchaVerifyParam;
     // 只返回验证结果，不在这里执行业务逻辑
@@ -91,7 +95,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
-    // console.log('[AliyunCaptcha] 清理资源');
+    console.info('[AliyunCaptcha] sdk-cleanup', { elementId });
     document.getElementById('aliyunCaptcha-mask')?.remove();
     document.getElementById('aliyunCaptcha-window-popup')?.remove();
 
@@ -129,10 +133,14 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     ) {
       // 防止重复初始化
       if (captchaInstanceRef.current) {
-        // console.log('[AliyunCaptcha] 实例已存在，跳过初始化');
+        console.info('[AliyunCaptcha] sdk-init-skipped', {
+          elementId,
+          reason: 'instance already exists',
+        });
         return;
       }
-      // console.log('[AliyunCaptcha] 初始化 SDK...');
+      const initStartTime = Date.now();
+      console.info('[AliyunCaptcha] sdk-init-start', { elementId });
       window.initAliyunCaptcha({
         SceneId: config.captchaSceneId, // 场景ID
         prefix: config.captchaPrefix, // 身份标
@@ -148,7 +156,10 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         }, // 滑块验证码样式
         language: 'cn', // 验证码语言类型
       });
-      console.info('[AliyunCaptcha] sdk-init-triggered', { elementId });
+      console.info('[AliyunCaptcha] sdk-init-triggered', {
+        elementId,
+        durationMs: Date.now() - initStartTime,
+      });
     }
 
     // 组件卸载时清理DOM元素
