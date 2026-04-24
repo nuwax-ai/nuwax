@@ -536,6 +536,7 @@ const Login: React.FC = () => {
                   config={tenantConfigInfo}
                   doAction={handlerSuccess}
                   elementId="aliyun-captcha-login"
+                  refreshOnError={false}
                 />
               </div>
             </div>
