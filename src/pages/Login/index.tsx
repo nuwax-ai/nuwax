@@ -120,6 +120,25 @@ const Login: React.FC = () => {
     useModel('tenantConfigInfo');
   // 菜单数据模型
   const { loadMenus } = useModel('menuModel');
+  const getTokenFingerprint = (token: string): string => {
+    let hash = 0;
+    for (let i = 0; i < token.length; i += 1) {
+      hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
+    }
+    return `${token.length}-${hash.toString(16)}`;
+  };
+  const getTokenCertifyId = (token: string): string | null => {
+    if (!token) return null;
+    try {
+      const parsed = JSON.parse(token);
+      if (parsed && typeof parsed === 'object') {
+        return parsed.CertifyId || parsed.certifyId || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
 
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
@@ -311,6 +330,8 @@ const Login: React.FC = () => {
     console.info('[Login] password-login-run', {
       account: phoneOrEmail,
       captchaParamLen: normalizedCaptchaParam?.length,
+      captchaParamFp: getTokenFingerprint(normalizedCaptchaParam || ''),
+      certifyId: getTokenCertifyId(normalizedCaptchaParam || ''),
       captchaParamType: typeof normalizedCaptchaParam,
       captchaParamIsJSON: (() => {
         try {

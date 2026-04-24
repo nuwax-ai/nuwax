@@ -77,6 +77,25 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   // 记录 token 生成版本，确保每次生成可追踪
   const tokenVersionRef = useRef<number>(0);
   const captchaInstanceRef = useRef<any>(null);
+  const getTokenFingerprint = (token: string): string => {
+    let hash = 0;
+    for (let i = 0; i < token.length; i += 1) {
+      hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
+    }
+    return `${token.length}-${hash.toString(16)}`;
+  };
+  const getTokenCertifyId = (token: string): string | null => {
+    if (!token) return null;
+    try {
+      const parsed = JSON.parse(token);
+      if (parsed && typeof parsed === 'object') {
+        return parsed.CertifyId || parsed.certifyId || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
 
   const { onBizResultCallback } = useCaptchaConsume({
     doAction,
@@ -211,6 +230,8 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       elementId,
       version: snapshot.version,
       tokenLen: snapshot.token?.length ?? 0,
+      tokenFp: getTokenFingerprint(snapshot.token || ''),
+      certifyId: getTokenCertifyId(snapshot.token || ''),
       createdAt: snapshot.createdAt,
     });
     // 只返回验证结果，不在这里执行业务逻辑
