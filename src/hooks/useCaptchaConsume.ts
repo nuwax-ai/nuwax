@@ -53,6 +53,9 @@ const useCaptchaConsume = ({
   captchaInstanceRef,
   refreshOnError = true,
 }: UseCaptchaConsumeParams) => {
+  const getLoginFlowId = (): string =>
+    (typeof window !== 'undefined' && (window as any).__loginFlowId) ||
+    'unknown';
   const enableCaptchaDebugLog = process.env.NODE_ENV !== 'production';
   const logPrefix = '[AliyunCaptcha][Consume]';
 
@@ -107,19 +110,18 @@ const useCaptchaConsume = ({
    */
   const onBizResultCallback = useCallback(
     (bizParam?: any) => {
-      if (enableCaptchaDebugLog && bizParam !== undefined) {
-        console.info('[CaptchaKey][onbiz-param-seen]', {
-          paramType: typeof bizParam,
-          hasCaptchaVerifyParam:
-            !!bizParam &&
-            typeof bizParam === 'object' &&
-            'captchaVerifyParam' in bizParam,
-          hasCertifyId:
-            !!bizParam &&
-            typeof bizParam === 'object' &&
-            ('CertifyId' in bizParam || 'certifyId' in bizParam),
-        });
-      }
+      console.info('[CaptchaKey][onbiz-param-seen]', {
+        flowId: getLoginFlowId(),
+        paramType: typeof bizParam,
+        hasCaptchaVerifyParam:
+          !!bizParam &&
+          typeof bizParam === 'object' &&
+          'captchaVerifyParam' in bizParam,
+        hasCertifyId:
+          !!bizParam &&
+          typeof bizParam === 'object' &&
+          ('CertifyId' in bizParam || 'certifyId' in bizParam),
+      });
       const snapshot = captchaParamRef.current;
       if (!snapshot?.token) {
         console.warn(
@@ -136,6 +138,7 @@ const useCaptchaConsume = ({
         hasQueuedConsumeRef.current = true;
         // 关键日志：消费进行中再次触发，确认“新 token 已排队”而不是被丢弃
         console.info('[CaptchaKey][consume-queued]', {
+          flowId: getLoginFlowId(),
           queuedVersion: snapshot.version,
           consumingVersion: consumingVersionRef.current,
         });
@@ -158,6 +161,7 @@ const useCaptchaConsume = ({
       const consumeStartTime = Date.now();
       // 关键日志：每次消费入口
       console.info('[CaptchaKey][consume-start]', {
+        flowId: getLoginFlowId(),
         consumeId,
         enterVersion: consumeSnapshot.version,
         latestVersion: captchaParamRef.current?.version,
@@ -182,6 +186,7 @@ const useCaptchaConsume = ({
           consumingVersionRef.current = consumedVersion;
           // 关键日志：真正发请求前消费的是哪个版本
           console.info('[CaptchaKey][consume-dispatch]', {
+            flowId: getLoginFlowId(),
             consumeId,
             dispatchVersion: consumedVersion,
             tokenLen: latestAtDispatch.token?.length ?? 0,
@@ -254,6 +259,7 @@ const useCaptchaConsume = ({
           if (shouldDrainQueuedLatest) {
             // 关键日志：确认当前轮结束后切到“排队中的最新 token”
             console.info('[CaptchaKey][consume-drain-queued-latest]', {
+              flowId: getLoginFlowId(),
               consumeId,
               finishedVersion: consumedVersion,
               nextVersion: queuedSnapshot?.version,
@@ -293,6 +299,7 @@ const useCaptchaConsume = ({
           consumingVersionRef.current = null;
           // 关键日志：本轮消费闭环完成
           console.info('[CaptchaKey][consume-end]', {
+            flowId: getLoginFlowId(),
             consumeId,
             consumedVersion,
             shouldRefresh,
