@@ -107,19 +107,30 @@ const useCaptchaConsume = ({
         }
       })
       .catch((error) => {
-        // 业务 action 失败时不应刷新验证码，避免生成新的 scene 导致旧 token 失效
-        shouldRefresh = false;
-        skipReason = 'action failed';
+        // 业务 action 失败时允许刷新验证码，以便用户可以重试。
+        // cleanup 在 .finally() 中先于 refresh() 执行，因此下一次
+        // onBizResultCallback 不会被 isConsumingRef 阻挡，避免死循环。
         console.error('[AliyunCaptcha] Token consume failed:', error);
         log('consume-action-rejected', {
           consumeId,
           durationMs: Date.now() - consumeStartTime,
-          errorMessage: error instanceof Error ? error.message : String(error),
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : error
+              ? String(error)
+              : 'Unknown error',
         });
       })
       .finally(() => {
         const durationMs = Date.now() - consumeStartTime;
         log('consume-finally', { consumeId, durationMs, shouldRefresh });
+
+        // 先清理状态，再刷新实例，确保下一次 onBizResultCallback
+        // 不会因 isConsumingRef 仍为 true 而被阻塞。
+        captchaParamRef.current = null;
+        isConsumingRef.current = false;
+
         if (
           shouldRefresh &&
           captchaInstanceRef.current &&
@@ -131,8 +142,6 @@ const useCaptchaConsume = ({
           log('consume-skip-refresh', { consumeId, reason: skipReason });
         }
 
-        captchaParamRef.current = null;
-        isConsumingRef.current = false;
         log('consume-cleanup-done', { consumeId });
       });
   }, [captchaInstanceRef, captchaParamRef, doAction]);
