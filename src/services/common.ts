@@ -280,12 +280,6 @@ const responseInterceptors = [
     // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
       if (config?.skipErrorHandler) return response; // 跳过错误处理
-      console.info('[ResponseInterceptor] biz-error', {
-        url: config?.url,
-        code: data.code,
-        message: data.message,
-        displayCode: data.displayCode,
-      });
       const error = errorThrower?.(data);
 
       if (error) {
