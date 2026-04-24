@@ -77,7 +77,8 @@ const useCaptchaConsume = ({
   const isConsumingRef = useRef<boolean>(false);
   /**
    * 消费过程中如果又触发了 onBiz 回调，则标记“有排队任务”。
-   * 当前消费结束后会优先消费最新 token，避免“第二次拉取却仍用第一次”。
+   * 注意：是否继续消费最新 token 不再依赖该标记，
+   * 只要检测到 token 版本已变化就会衔接下一轮消费（latest-wins）。
    */
   const hasQueuedConsumeRef = useRef<boolean>(false);
   const consumingVersionRef = useRef<number | null>(null);
@@ -224,11 +225,13 @@ const useCaptchaConsume = ({
         log('consume-finally', { consumeId, durationMs, shouldRefresh });
 
         const queuedSnapshot = captchaParamRef.current;
-        const shouldDrainQueuedLatest = !!(
-          hasQueuedConsumeRef.current &&
-          queuedSnapshot?.token &&
-          queuedSnapshot.version !== consumedVersion
+        const wasExplicitlyQueued = hasQueuedConsumeRef.current;
+        const hasNewerToken = !!(
+          queuedSnapshot?.token && queuedSnapshot.version !== consumedVersion
         );
+        // 核心：不再强依赖“第二次 onBiz 回调”才能触发下一轮消费。
+        // 只要检测到更新版本 token，就自动衔接消费最新值，避免漏消费。
+        const shouldDrainQueuedLatest = hasNewerToken;
         hasQueuedConsumeRef.current = false;
 
         // 有更新版本排队时，直接衔接下一轮消费，不在此处 refresh/cleanup 新 token。
@@ -238,6 +241,7 @@ const useCaptchaConsume = ({
             consumeId,
             finishedVersion: consumedVersion,
             nextVersion: queuedSnapshot?.version,
+            wasExplicitlyQueued,
           });
           log('consume-drain-queued-latest', {
             consumeId,
