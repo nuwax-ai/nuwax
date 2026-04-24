@@ -86,6 +86,16 @@ const Login: React.FC = () => {
     LoginTypeEnum.Password,
   );
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
+  /**
+   * 记录最近一次提交到登录接口的验证码参数（脱敏日志用途）。
+   * 用于确认“请求时使用的是当前最新 token”，避免误复用旧值。
+   */
+  const latestSubmittedCaptchaRef = useRef<string>('');
+  /**
+   * 密码登录进行中的并发锁。
+   * 避免同一次验证码消费过程中因重复触发导致并发提交。
+   */
+  const passwordSubmittingRef = useRef<boolean>(false);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
@@ -97,6 +107,7 @@ const Login: React.FC = () => {
     apiLogin,
     {
       manual: true,
+      normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
         console.info('[Login] password-login-onSuccess', {
@@ -202,22 +213,80 @@ const Login: React.FC = () => {
       areaCode = '86',
       password,
     } = form.getFieldsValue() || {};
-    // console.log('[Login] 密码登录使用验证码参数:', captchaVerifyParam);
+    const normalizedCaptchaParam =
+      typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
+
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+
+    if (needAliyunCaptcha && !normalizedCaptchaParam) {
+      const emptyCaptchaError = new Error(
+        'Captcha token is empty while captcha is enabled.',
+      );
+      console.warn('[Login] password-login-blocked-empty-captcha', {
+        account: phoneOrEmail,
+        needAliyunCaptcha,
+      });
+      return Promise.reject(emptyCaptchaError);
+    }
+
+    if (passwordSubmittingRef.current) {
+      const duplicatedSubmitError = new Error(
+        'Password login request is already in progress.',
+      );
+      console.warn('[Login] password-login-duplicated-submit-blocked', {
+        account: phoneOrEmail,
+      });
+      return Promise.reject(duplicatedSubmitError);
+    }
+
+    passwordSubmittingRef.current = true;
+    latestSubmittedCaptchaRef.current = normalizedCaptchaParam;
+
+    // console.log('[Login] 密码登录使用验证码参数:', normalizedCaptchaParam);
     console.info('[Login] password-login-run', {
       account: phoneOrEmail,
-      hasCaptchaVerifyParam: !!captchaVerifyParam,
-      captchaParamId: captchaVerifyParam
-        ? `${captchaVerifyParam.slice(0, 4)}...${captchaVerifyParam.slice(-4)}`
+      hasCaptchaVerifyParam: !!normalizedCaptchaParam,
+      captchaParamId: normalizedCaptchaParam
+        ? `${normalizedCaptchaParam.slice(
+            0,
+            4,
+          )}...${normalizedCaptchaParam.slice(-4)}`
         : null,
-      captchaParamLen: captchaVerifyParam?.length,
+      captchaParamLen: normalizedCaptchaParam?.length,
+      // 输出最近提交的脱敏快照，便于与 captcha-token-generated 对照。
+      latestSubmittedCaptchaPreview: latestSubmittedCaptchaRef.current
+        ? `${latestSubmittedCaptchaRef.current.slice(
+            0,
+            4,
+          )}...${latestSubmittedCaptchaRef.current.slice(-4)}`
+        : null,
     });
     // 返回请求 Promise，让验证码组件可在请求结束后再刷新实例
     return runPasswordLogin({
       phoneOrEmail,
       areaCode,
       password,
-      captchaVerifyParam,
-    }).then(() => ({ skipRefresh: true } as CaptchaConsumeControl));
+      captchaVerifyParam: normalizedCaptchaParam,
+    })
+      .then((result: ILoginResult | undefined) => {
+        // 成功登录时 result 包含 { token, expireDate, ... }
+        // 业务错误时 formatResult(result => result?.data) 返回 undefined
+        if (!result || !result.token) {
+          throw new Error('Login failed');
+        }
+        return { skipRefresh: true } as CaptchaConsumeControl;
+      })
+      .finally(() => {
+        passwordSubmittingRef.current = false;
+      });
   };
 
   // 验证码登录
@@ -226,7 +295,27 @@ const Login: React.FC = () => {
   ): CaptchaConsumeControl => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
-    // console.log('[Login] 验证码登录使用验证码参数:', captchaVerifyParam);
+    const normalizedCaptchaParam =
+      typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+
+    if (needAliyunCaptcha && !normalizedCaptchaParam) {
+      console.warn('[Login] code-login-blocked-empty-captcha', {
+        account: phoneOrEmail,
+        needAliyunCaptcha,
+      });
+      throw new Error('Captcha token is empty while captcha is enabled.');
+    }
+
+    // console.log('[Login] 验证码登录使用验证码参数:', normalizedCaptchaParam);
     const redirect = searchParams.get('redirect');
     const path = redirect
       ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
@@ -235,7 +324,7 @@ const Login: React.FC = () => {
       phoneOrEmail,
       areaCode,
       authType: tenantConfigInfo.authType,
-      captchaVerifyParam,
+      captchaVerifyParam: normalizedCaptchaParam,
     });
     /**
      * 验证码登录为跨页面消费场景：
