@@ -75,6 +75,12 @@ const useCaptchaConsume = ({
    * 防止连续触发 onBizResultCallback 造成重复请求。
    */
   const isConsumingRef = useRef<boolean>(false);
+  /**
+   * 消费过程中如果又触发了 onBiz 回调，则标记“有排队任务”。
+   * 当前消费结束后会优先消费最新 token，避免“第二次拉取却仍用第一次”。
+   */
+  const hasQueuedConsumeRef = useRef<boolean>(false);
+  const consumingVersionRef = useRef<number | null>(null);
 
   /**
    * 业务消费回调：在验证码校验成功后由 SDK 触发。
@@ -91,46 +97,60 @@ const useCaptchaConsume = ({
 
     if (isConsumingRef.current) {
       console.warn(
-        '[AliyunCaptcha] Token is being consumed, skip duplicate call.',
+        '[AliyunCaptcha] Token is being consumed, queue latest consume.',
       );
-      log('blocked-consuming-token');
+      hasQueuedConsumeRef.current = true;
+      // 关键日志：消费进行中再次触发，确认“新 token 已排队”而不是被丢弃
+      console.info('[CaptchaKey][consume-queued]', {
+        queuedVersion: snapshot.version,
+        consumingVersion: consumingVersionRef.current,
+      });
+      log('queued-consuming-token', {
+        currentVersion: snapshot.version,
+        consumingVersion: consumingVersionRef.current,
+      });
       return;
     }
 
     isConsumingRef.current = true;
     const consumeSnapshot = snapshot;
-    const currentCaptchaParam = consumeSnapshot.token;
+    let consumedVersion = consumeSnapshot.version;
+    consumingVersionRef.current = consumedVersion;
     let shouldRefresh = true;
     let skipReason = '';
     const consumeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const consumeStartTime = Date.now();
+    // 关键日志：每次消费入口
+    console.info('[CaptchaKey][consume-start]', {
+      consumeId,
+      enterVersion: consumeSnapshot.version,
+      latestVersion: captchaParamRef.current?.version,
+    });
     // [使用] onBizResultCallback 触发，开始消费 token
     log('consume-start', {
       consumeId,
       hasCaptchaInstance: !!captchaInstanceRef.current,
       tokenVersion: consumeSnapshot.version,
-      tokenLen: currentCaptchaParam.length,
+      tokenLen: consumeSnapshot.token.length,
       refreshOnError,
     });
 
     // 关键：
-    // 1. 使用 Promise.resolve().then(...) 包装，确保 doAction 同步抛错时也会进入 finally；
-    // 2. 请求生命周期结束后再刷新，避免提前刷新导致后端校验失败。
+    // 1) 始终消费“调度时最新 token”，避免读取过旧快照；
+    // 2) 若消费过程中又来了 onBiz 回调，结束后排队消费最新 token（latest-wins）；
+    // 3) 请求生命周期结束后再刷新，避免提前刷新导致后端校验失败。
     Promise.resolve()
       .then(() => {
-        // 如果在真正消费前 token 已被更新，直接中止旧 token 消费。
-        if (captchaParamRef.current?.version !== consumeSnapshot.version) {
-          const staleTokenError = new Error(
-            'Captcha token version changed before consume.',
-          );
-          (staleTokenError as any).name = 'CaptchaTokenStaleError';
-          (staleTokenError as any).info = {
-            consumeVersion: consumeSnapshot.version,
-            latestVersion: captchaParamRef.current?.version,
-          };
-          throw staleTokenError;
-        }
-        return doAction(currentCaptchaParam);
+        const latestAtDispatch = captchaParamRef.current || consumeSnapshot;
+        consumedVersion = latestAtDispatch.version;
+        consumingVersionRef.current = consumedVersion;
+        // 关键日志：真正发请求前消费的是哪个版本
+        console.info('[CaptchaKey][consume-dispatch]', {
+          consumeId,
+          dispatchVersion: consumedVersion,
+          tokenLen: latestAtDispatch.token?.length ?? 0,
+        });
+        return doAction(latestAtDispatch.token);
       })
       .then((actionResult) => {
         // [登录成功] doAction resolved
@@ -161,7 +181,7 @@ const useCaptchaConsume = ({
         log('consume-action-rejected', {
           consumeId,
           flowId: error?._flowId, // 与 [Chain] 日志关联
-          tokenVersion: consumeSnapshot.version,
+          tokenVersion: consumedVersion,
           latestTokenVersion: captchaParamRef.current?.version,
           durationMs: Date.now() - consumeStartTime,
           refreshOnError,
@@ -182,9 +202,38 @@ const useCaptchaConsume = ({
         const durationMs = Date.now() - consumeStartTime;
         log('consume-finally', { consumeId, durationMs, shouldRefresh });
 
+        const queuedSnapshot = captchaParamRef.current;
+        const shouldDrainQueuedLatest = !!(
+          hasQueuedConsumeRef.current &&
+          queuedSnapshot?.token &&
+          queuedSnapshot.version !== consumedVersion
+        );
+        hasQueuedConsumeRef.current = false;
+
+        // 有更新版本排队时，直接衔接下一轮消费，不在此处 refresh/cleanup 新 token。
+        if (shouldDrainQueuedLatest) {
+          // 关键日志：确认当前轮结束后切到“排队中的最新 token”
+          console.info('[CaptchaKey][consume-drain-queued-latest]', {
+            consumeId,
+            finishedVersion: consumedVersion,
+            nextVersion: queuedSnapshot?.version,
+          });
+          log('consume-drain-queued-latest', {
+            consumeId,
+            finishedVersion: consumedVersion,
+            nextVersion: queuedSnapshot?.version,
+          });
+          isConsumingRef.current = false;
+          consumingVersionRef.current = null;
+          window.setTimeout(() => {
+            onBizResultCallback();
+          }, 0);
+          return;
+        }
+
         // 先清理状态，再刷新实例，确保下一次 onBizResultCallback
         // 不会因 isConsumingRef 仍为 true 而被阻塞。
-        if (captchaParamRef.current?.version === consumeSnapshot.version) {
+        if (captchaParamRef.current?.version === consumedVersion) {
           captchaParamRef.current = null;
         }
         isConsumingRef.current = false;
@@ -200,6 +249,14 @@ const useCaptchaConsume = ({
           log('consume-skip-refresh', { consumeId, reason: skipReason });
         }
 
+        consumingVersionRef.current = null;
+        // 关键日志：本轮消费闭环完成
+        console.info('[CaptchaKey][consume-end]', {
+          consumeId,
+          consumedVersion,
+          shouldRefresh,
+          latestVersion: captchaParamRef.current?.version,
+        });
         log('consume-cleanup-done', { consumeId });
       });
   }, [
