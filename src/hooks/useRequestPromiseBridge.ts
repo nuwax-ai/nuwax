@@ -6,6 +6,15 @@ interface PendingPromiseResolver<TData = any> {
   reject: (error?: any) => void;
 }
 
+interface UseRequestPromiseBridgeOptions {
+  /**
+   * 是否将非 Error 类型的异常统一包装成 Error。
+   * 默认 false，保持历史行为，避免影响既有调用方。
+   */
+  normalizeUnknownError?: boolean;
+  [key: string]: any;
+}
+
 /**
  * useRequest Promise 桥接 Hook
  *
@@ -18,9 +27,43 @@ interface PendingPromiseResolver<TData = any> {
  * @param options - useRequest 配置项
  * @returns 原 useRequest 返回值 + runWithPromise
  */
-const useRequestPromiseBridge = (service: any, options: any = {}) => {
+const useRequestPromiseBridge = (
+  service: any,
+  options: UseRequestPromiseBridgeOptions = {},
+) => {
   const pendingRef = useRef<PendingPromiseResolver | null>(null);
-  const { onSuccess, onError, ...restOptions } = options;
+  const {
+    onSuccess,
+    onError,
+    normalizeUnknownError = false,
+    ...restOptions
+  } = options;
+
+  /**
+   * 规范化请求错误对象，避免调用方只拿到 undefined。
+   *
+   * 场景：
+   * - 全局错误处理链路异常中断；
+   * - 第三方库在某些分支没有抛出标准 Error。
+   *
+   * @param rawError - 原始错误对象
+   * @returns 统一的 Error 实例（附带 info 便于日志排查）
+   */
+  const normalizeRequestError = (rawError: any): Error => {
+    if (rawError instanceof Error) {
+      return rawError;
+    }
+
+    const fallbackError = new Error(
+      rawError ? String(rawError) : 'API request failed with unknown error',
+    );
+    (fallbackError as any).name = 'UnknownRequestError';
+    (fallbackError as any).info = {
+      message: rawError ? String(rawError) : 'Unknown error from request layer',
+      serviceName: service?.name || 'anonymousService',
+    };
+    return fallbackError;
+  };
 
   const requestResult = useRequest(service, {
     ...restOptions,
@@ -42,9 +85,12 @@ const useRequestPromiseBridge = (service: any, options: any = {}) => {
     onError: async (error: any, ...args: any[]) => {
       const pending = pendingRef.current;
       pendingRef.current = null;
+      const normalizedError = normalizeUnknownError
+        ? normalizeRequestError(error)
+        : error;
       try {
-        await onError?.(error, ...args);
-        pending?.reject(error);
+        await onError?.(normalizedError, ...args);
+        pending?.reject(normalizedError);
       } catch (callbackError) {
         pending?.reject(callbackError);
       }
