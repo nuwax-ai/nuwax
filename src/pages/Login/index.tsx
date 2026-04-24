@@ -130,7 +130,11 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.info('[Login] password-login-onError', {
+          errorType: error?.constructor?.name,
+          errorName: error?.name,
           errorMessage: error?.message || String(error),
+          errorCode: error?.info?.code,
+          backendMessage: error?.info?.message,
         });
         console.error('[Login] Request Error:', error);
       },
@@ -201,6 +205,10 @@ const Login: React.FC = () => {
     console.info('[Login] password-login-run', {
       account: phoneOrEmail,
       hasCaptchaVerifyParam: !!captchaVerifyParam,
+      captchaParamId: captchaVerifyParam
+        ? `${captchaVerifyParam.slice(0, 4)}...${captchaVerifyParam.slice(-4)}`
+        : null,
+      captchaParamLen: captchaVerifyParam?.length,
     });
     // 返回请求 Promise，让验证码组件可在请求结束后再刷新实例
     return runPasswordLogin({
