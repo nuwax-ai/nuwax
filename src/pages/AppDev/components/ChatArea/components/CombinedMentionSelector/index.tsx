@@ -11,9 +11,10 @@ import {
   DatabaseOutlined,
   FileOutlined,
   FolderOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Empty, Spin } from 'antd';
+import { Empty, Input, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -63,14 +64,20 @@ const CombinedMentionSelector = React.forwardRef<
   ) => {
     // 视图状态：recent-最近使用, files-文件/文件夹, datasources-数据资源, skills-技能, favorite-我的收藏
     const [activeTab, setActiveTab] = useState<ViewType>('recent');
+    // 内部搜索输入框的值
+    const [searchInputValue, setSearchInputValue] = useState<string>('');
 
     // 当 visible 变为 false 时，重置视图状态
     useEffect(() => {
       if (!visible) {
         setActiveTab('recent');
+        setSearchInputValue('');
         onSelectedIndexChange?.(0);
       }
     }, [visible, onSelectedIndexChange]);
+
+    // 搜索值变化逻辑
+    const effectiveSearchText = searchInputValue || searchText || '';
 
     // 技能列表加载
     const {
@@ -98,21 +105,32 @@ const CombinedMentionSelector = React.forwardRef<
           fetchSkills({
             page: 1,
             pageSize: 50,
-            kw: searchText,
+            kw: effectiveSearchText,
             targetType: AgentComponentTypeEnum.Skill,
             usageScenarios: [AgentTypeEnum.PageApp],
           });
-        } else if (activeTab === 'favorite') {
+        }
+        if (activeTab === 'favorite') {
           fetchFavorites({
-            kw: searchText,
+            kw: effectiveSearchText,
             targetType: AgentComponentTypeEnum.Skill,
             usageScenarios: [AgentTypeEnum.PageApp],
           });
         }
       }
-    }, [activeTab, searchText, visible, fetchSkills, fetchFavorites]);
+    }, [activeTab, effectiveSearchText, visible, fetchSkills, fetchFavorites]);
 
-    // 最近使用的项（按 projectId 区分）
+    const searchInputRef = useRef<any>(null);
+
+    // 自动聚焦搜索框
+    useEffect(() => {
+      if (visible) {
+        const timer = setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [visible]);
     const recentFiles = useMemo(
       () => getRecentFiles(projectId),
       [projectId, visible],
@@ -173,8 +191,32 @@ const CombinedMentionSelector = React.forwardRef<
       });
 
       // 按时间排序
-      return items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 15);
-    }, [recentFiles, recentDataSources, recentSkills, files, dataSources]);
+      const sortedItems = items.sort((a, b) => b.timestamp - a.timestamp);
+
+      // 搜索过滤
+      if (effectiveSearchText && effectiveSearchText.trim()) {
+        const kw = effectiveSearchText.trim().toLowerCase();
+        return sortedItems.filter((item) => {
+          const name = item.data?.name || '';
+          const desc = item.data?.description || '';
+          const path = item.data?.path || '';
+          return (
+            name.toLowerCase().includes(kw) ||
+            desc.toLowerCase().includes(kw) ||
+            path.toLowerCase().includes(kw)
+          );
+        });
+      }
+
+      return sortedItems.slice(0, 15);
+    }, [
+      recentFiles,
+      recentDataSources,
+      recentSkills,
+      files,
+      dataSources,
+      effectiveSearchText,
+    ]);
 
     // 获取当前视图的列表项
     const currentItems = useMemo(() => {
@@ -183,11 +225,11 @@ const CombinedMentionSelector = React.forwardRef<
           return combinedRecentItems;
         case 'files':
           return [
-            ...flattenFiles(files, searchText).map((f) => ({
+            ...flattenFiles(files, effectiveSearchText).map((f) => ({
               type: 'file',
               data: f,
             })),
-            ...flattenFolders(files, searchText).map((f) => ({
+            ...flattenFolders(files, effectiveSearchText).map((f) => ({
               type: 'folder',
               data: f,
             })),
@@ -196,8 +238,10 @@ const CombinedMentionSelector = React.forwardRef<
           return dataSources
             .filter(
               (ds) =>
-                !searchText ||
-                ds.name.toLowerCase().includes(searchText.toLowerCase()),
+                !effectiveSearchText ||
+                ds.name
+                  .toLowerCase()
+                  .includes(effectiveSearchText.toLowerCase()),
             )
             .map((ds) => ({ type: 'datasource', data: ds }));
         case 'skills': {
@@ -217,7 +261,7 @@ const CombinedMentionSelector = React.forwardRef<
       combinedRecentItems,
       files,
       dataSources,
-      searchText,
+      effectiveSearchText,
       skillsData,
       favoritesData,
     ]);
@@ -328,6 +372,49 @@ const CombinedMentionSelector = React.forwardRef<
       [activeTab, selectedIndex, onSelectedIndexChange, handleItemSelect],
     );
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        onSelectedIndexChange?.((prev: number) => (prev > 0 ? prev - 1 : 0));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        onSelectedIndexChange?.((prev: number) => {
+          const maxIdx = currentItemsRef.current.length - 1;
+          return prev < maxIdx ? prev + 1 : maxIdx;
+        });
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const tabs: ViewType[] = [
+          'recent',
+          'files',
+          'datasources',
+          'skills',
+          'favorite',
+        ];
+        const prevIdx =
+          (tabs.indexOf(activeTab) - 1 + tabs.length) % tabs.length;
+        setActiveTab(tabs[prevIdx]);
+        onSelectedIndexChange?.(0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const tabs: ViewType[] = [
+          'recent',
+          'files',
+          'datasources',
+          'skills',
+          'favorite',
+        ];
+        const nextIdx = (tabs.indexOf(activeTab) + 1) % tabs.length;
+        setActiveTab(tabs[nextIdx]);
+        onSelectedIndexChange?.(0);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentItemsRef.current[selectedIndex]) {
+          handleItemSelect(currentItemsRef.current[selectedIndex]);
+        }
+      }
+    };
+
     const renderIcon = (item: any) => {
       switch (item.type) {
         case 'file':
@@ -374,7 +461,32 @@ const CombinedMentionSelector = React.forwardRef<
           left: position.left,
           top: position.top,
         }}
+        onMouseDown={(e) => {
+          // 点击搜索区域时不阻止默认行为，否则输入框无法获得焦点
+          if ((e.target as HTMLElement).closest?.('[data-mention-search]'))
+            return;
+          e.preventDefault();
+        }}
       >
+        {/* 搜索输入框 */}
+        <div className={styles['mention-search-wrap']} data-mention-search>
+          <Input
+            ref={searchInputRef}
+            className={styles['mention-search-input']}
+            placeholder={t(
+              'PC.Components.ChatInputHomeManualComponentItem.keywordSearch',
+            )}
+            allowClear
+            value={searchInputValue}
+            onChange={(e) => setSearchInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            prefix={
+              <SearchOutlined className={styles['mention-search-icon']} />
+            }
+            variant="borderless"
+          />
+        </div>
+
         <div className={styles['mention-tabs']}>
           {TABS.map((tab) => (
             <div
