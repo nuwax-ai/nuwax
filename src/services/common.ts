@@ -139,7 +139,7 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
-        return Promise.reject(errorInfo);
+        return Promise.reject(error);
       }
 
       // 根据错误码处理不同情况
@@ -162,7 +162,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          return Promise.reject();
+          return Promise.reject(error);
 
         // 沙箱测试异常
         case SANDBOX_TEST_ERROR:
@@ -175,7 +175,7 @@ const errorHandler = (error: any, opts: any) => {
             });
           }
 
-          return Promise.reject();
+          return Promise.reject(error);
 
         // 默认错误处理
         default:
@@ -184,8 +184,9 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          // 返回 rejected Promise，但不传递 errorInfo，避免被后续错误处理逻辑误判
-          return Promise.reject();
+          // 将 BizError 本身 reject 出去，保留 error.info（包含 code、message 等），
+          // 供 useRequest onError / 验证码消费流程使用。
+          return Promise.reject(error);
       }
 
       /**
@@ -280,12 +281,6 @@ const responseInterceptors = [
     // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
       if (config?.skipErrorHandler) return response; // 跳过错误处理
-      console.info('[ResponseInterceptor] biz-error', {
-        url: config?.url,
-        code: data.code,
-        message: data.message,
-        displayCode: data.displayCode,
-      });
       const error = errorThrower?.(data);
 
       if (error) {
