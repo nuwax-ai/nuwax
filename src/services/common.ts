@@ -101,8 +101,10 @@ const errorThrower = (res: RequestResponse<null>) => {
     tid,
   } = res;
   if (!success) {
+    const flowId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const error: any = new Error(errorMessage);
     error.name = 'BizError';
+    error._flowId = flowId;
     error.info = {
       code,
       displayCode,
@@ -111,6 +113,17 @@ const errorThrower = (res: RequestResponse<null>) => {
       debugInfo,
       tid,
     };
+    console.info('[Chain][1-errorThrower] BizError created', {
+      flowId,
+      // 后端原始响应字段
+      code,
+      displayCode,
+      errorMessage,
+      tid,
+      debugInfo,
+      success,
+      hasData: data !== undefined && data !== null,
+    });
     return error; // 返回错误对象，而不是直接抛出
   }
 };
@@ -120,6 +133,21 @@ const errorThrower = (res: RequestResponse<null>) => {
  * 处理所有请求的错误情况，并显示适当的错误消息
  */
 const errorHandler = (error: any, opts: any) => {
+  const _url = error?.config?.url || opts?.config?.url || 'unknown';
+  console.info('[Chain][3-errorHandler] called', {
+    flowId: error?._flowId,
+    url: _url,
+    errorName: error?.name,
+    errorIsBizError: error?.name === 'BizError',
+    bizCode: error?.info?.code,
+    bizDisplayCode: error?.info?.displayCode,
+    bizMessage: error?.info?.message,
+    bizTid: error?.info?.tid,
+    hasResponse: !!error?.response,
+    hasRequest: !!error?.request,
+    httpStatus: error?.response?.status,
+    optsKeys: opts ? Object.keys(opts) : null,
+  });
   if (!error) {
     return;
   }
@@ -186,6 +214,15 @@ const errorHandler = (error: any, opts: any) => {
           }
           // 将 BizError 本身 reject 出去，保留 error.info（包含 code、message 等），
           // 供 useRequest onError / 验证码消费流程使用。
+          console.info(
+            '[Chain][3-errorHandler] default-branch → reject(error)',
+            {
+              flowId: error?._flowId,
+              rejectWith: error?.name,
+              code,
+              errorMessage,
+            },
+          );
           return Promise.reject(error);
       }
 
@@ -285,7 +322,18 @@ const responseInterceptors = [
 
       if (error) {
         // 如果errorThrower返回了错误对象，使用errorHandler处理它
-        return errorHandler?.(error, { config }) || response;
+        console.info('[Chain][2-interceptor] calling errorHandler', {
+          flowId: error._flowId,
+          errorName: error.name,
+          bizCode: error.info?.code,
+        });
+        const handlerResult = errorHandler?.(error, { config });
+        console.info('[Chain][2-interceptor] errorHandler returned', {
+          flowId: error._flowId,
+          resultIsPromise: handlerResult instanceof Promise,
+          resultType: typeof handlerResult,
+        });
+        return handlerResult || response;
       }
     }
 

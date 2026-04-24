@@ -145,8 +145,9 @@ const Login: React.FC = () => {
           errorName: error?.name,
           errorMessage:
             error?.message || (error ? String(error) : 'Unknown error'),
-          errorCode: error?.info?.code,
-          backendMessage: error?.info?.message,
+          // 完整后端错误上下文
+          errorInfo: error?.info ?? null, // { code, displayCode, message, tid, debugInfo }
+          flowId: error?._flowId,
         });
         console.error('[Login] Request Error:', error);
       },
@@ -336,8 +337,12 @@ const Login: React.FC = () => {
 
   // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
   const handlerSuccess = (captchaVerifyParam: string = '') => {
-    // console.log('[Login] 验证码验证成功回调:', captchaVerifyParam);
-    // 每次调用时都使用最新的 loginType 值
+    // [使用→登录] captcha SDK 调用 doAction，进入业务逻辑
+    console.info('[CaptchaFlow][2-consume-dispatch]', {
+      loginType: loginTypeRef.current,
+      hasCaptchaParam: !!captchaVerifyParam,
+      captchaParamLen: captchaVerifyParam?.length,
+    });
     if (loginTypeRef.current === LoginTypeEnum.Password) {
       return handlerPasswordLogin(captchaVerifyParam);
     } else {
