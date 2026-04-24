@@ -69,12 +69,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 onClick={handleBack}
               />
             ))}
-          <h3 className={cx(styles.title)}>{title || ''}</h3>
-          {tips && (
-            <Tooltip title={tips}>
-              <QuestionCircleOutlined className={cx(styles['tips-icon'])} />
-            </Tooltip>
-          )}
+          <h3 className={cx(styles.title)}>
+            {title || ''}
+            {tips && (
+              <Tooltip title={tips}>
+                <QuestionCircleOutlined className={cx(styles['tips-icon'])} />
+              </Tooltip>
+            )}
+          </h3>
           {/* 标题右侧插槽 */}
           {leftSlot}
         </div>
