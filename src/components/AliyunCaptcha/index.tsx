@@ -1,5 +1,6 @@
 import useCaptchaConsume, {
   CaptchaConsumeControl,
+  CaptchaTokenSnapshot,
 } from '@/hooks/useCaptchaConsume';
 import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -43,7 +44,7 @@ interface AliyunCaptchaProps {
   config: AliyunCaptchaConfig;
   elementId: string;
   doAction: (
-    captchaVerifyParam: any,
+    captchaVerifyParam: string,
   ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
   onReady?: () => void; // 使用可选属性避免undefined调用
   /**
@@ -67,11 +68,14 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   onReady,
   refreshOnError = true,
 }) => {
+  const enableCaptchaDebugLog = process.env.NODE_ENV !== 'production';
   const [captchaInited, setCaptchaInited] = useState<boolean>(false);
   // 使用ref记录onReady是否已经调用过，避免重复调用
   const onReadyCalledRef = useRef<boolean>(false);
-  // 使用ref保存验证参数，避免闭包问题
-  const captchaParamRef = useRef<any>(null);
+  // 使用 ref 保存“最新 token 快照”，避免闭包导致消费旧 token
+  const captchaParamRef = useRef<CaptchaTokenSnapshot | null>(null);
+  // 记录 token 生成版本，确保每次生成可追踪
+  const tokenVersionRef = useRef<number>(0);
   const captchaInstanceRef = useRef<any>(null);
 
   const { onBizResultCallback } = useCaptchaConsume({
@@ -92,54 +96,116 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
    * @param rawParam - SDK 回调原始参数
    * @returns 归一化后的验证码参数字符串；无法使用时返回空字符串
    */
-  const normalizeCaptchaVerifyParam = useCallback((rawParam: any): string => {
-    if (typeof rawParam === 'string') {
-      const trimmed = rawParam.trim();
-      if (!trimmed) return '';
+  const normalizeCaptchaVerifyParam = useCallback(
+    (rawParam: any): string => {
+      const rawType = typeof rawParam;
 
-      // 兼容 "\"{...}\"" 这类“字符串再次序列化”场景，解一层后继续使用。
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (typeof parsed === 'string') {
-          return parsed.trim();
+      if (rawParam === null || rawParam === undefined) {
+        if (enableCaptchaDebugLog) {
+          console.warn('[CaptchaFlow][normalize] rawParam is null/undefined', {
+            elementId,
+          });
         }
-      } catch {
-        // 非 JSON 字符串按原样使用，不中断验证码流程。
+        return '';
       }
-      return trimmed;
-    }
 
-    if (rawParam === null || rawParam === undefined) {
-      return '';
-    }
+      if (typeof rawParam === 'string') {
+        const trimmed = rawParam.trim();
+        if (!trimmed) {
+          if (enableCaptchaDebugLog) {
+            console.warn('[CaptchaFlow][normalize] rawParam is empty string', {
+              elementId,
+            });
+          }
+          return '';
+        }
 
-    // SDK 若返回对象，则序列化为字符串后上送后端。
-    try {
-      return JSON.stringify(rawParam);
-    } catch {
-      return String(rawParam);
-    }
-  }, []);
+        // 兼容 “\”{...}\”” 这类”字符串再次序列化”场景，解一层后继续使用。
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (typeof parsed === 'string') {
+            if (enableCaptchaDebugLog) {
+              console.info('[CaptchaFlow][normalize] path=string→json-unwrap', {
+                elementId,
+                rawType,
+                rawLen: trimmed.length,
+                parsedLen: parsed.trim().length,
+              });
+            }
+            return parsed.trim();
+          }
+          // parsed 是对象，说明 SDK 把 JSON 对象序列化成了字符串传过来
+          if (enableCaptchaDebugLog) {
+            console.info(
+              '[CaptchaFlow][normalize] path=string→json-object(as-is)',
+              {
+                elementId,
+                rawType,
+                rawLen: trimmed.length,
+                parsedType: typeof parsed,
+                parsedKeys:
+                  parsed && typeof parsed === 'object'
+                    ? Object.keys(parsed)
+                    : null,
+              },
+            );
+          }
+        } catch {
+          // 非 JSON 字符串，按原样使用
+          if (enableCaptchaDebugLog) {
+            console.info(
+              '[CaptchaFlow][normalize] path=string→non-json(as-is)',
+              {
+                elementId,
+                rawType,
+                rawLen: trimmed.length,
+              },
+            );
+          }
+        }
+        return trimmed;
+      }
+
+      // SDK 直接返回对象
+      try {
+        const result = JSON.stringify(rawParam);
+        if (enableCaptchaDebugLog) {
+          console.info('[CaptchaFlow][normalize] path=object→stringify', {
+            elementId,
+            rawType,
+            rawKeys:
+              typeof rawParam === 'object' ? Object.keys(rawParam) : null,
+            resultLen: result.length,
+          });
+        }
+        return result;
+      } catch {
+        if (enableCaptchaDebugLog) {
+          console.warn(
+            '[CaptchaFlow][normalize] path=object→stringify-failed',
+            {
+              elementId,
+              rawType,
+            },
+          );
+        }
+        return String(rawParam);
+      }
+    },
+    [elementId, enableCaptchaDebugLog],
+  );
 
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
   const captchaVerifyCallback = (captchaVerifyParam: any) => {
     const normalizedCaptchaParam =
       normalizeCaptchaVerifyParam(captchaVerifyParam);
-
-    // [获取] 验证码 token 由 SDK 生成并交给前端
-    console.info('[CaptchaFlow][1-token-get] SDK 生成 token', {
-      elementId,
-      rawTokenType: typeof captchaVerifyParam,
-      normalizedType: typeof normalizedCaptchaParam,
-      tokenLen: normalizedCaptchaParam?.length,
-      tokenPreview: normalizedCaptchaParam
-        ? `${normalizedCaptchaParam.slice(
-            0,
-            6,
-          )}...${normalizedCaptchaParam.slice(-6)}`
-        : null,
-    });
-    captchaParamRef.current = normalizedCaptchaParam;
+    tokenVersionRef.current += 1;
+    const snapshot: CaptchaTokenSnapshot = {
+      token: normalizedCaptchaParam,
+      version: tokenVersionRef.current,
+      createdAt: Date.now(),
+    };
+    captchaParamRef.current = snapshot;
     // 只返回验证结果，不在这里执行业务逻辑
     return {
       captchaResult: true,
