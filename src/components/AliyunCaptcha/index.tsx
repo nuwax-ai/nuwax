@@ -96,6 +96,32 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     }
     return null;
   };
+  const extractTokenFromOnBizParam = (bizParam: any): string => {
+    if (!bizParam) return '';
+    if (typeof bizParam === 'string') {
+      return bizParam;
+    }
+    if (typeof bizParam === 'object') {
+      if (typeof bizParam.captchaVerifyParam === 'string') {
+        return bizParam.captchaVerifyParam;
+      }
+      if (typeof bizParam.verifyParam === 'string') {
+        return bizParam.verifyParam;
+      }
+      if (
+        'CertifyId' in bizParam ||
+        'certifyId' in bizParam ||
+        'CaptchaType' in bizParam
+      ) {
+        try {
+          return JSON.stringify(bizParam);
+        } catch {
+          return '';
+        }
+      }
+    }
+    return '';
+  };
 
   const { onBizResultCallback } = useCaptchaConsume({
     doAction,
@@ -240,6 +266,30 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       bizResult: true,
     };
   };
+  const onBizResultCallbackWithSync = (bizParam?: any) => {
+    const tokenFromOnBiz = extractTokenFromOnBizParam(bizParam);
+    const normalizedFromOnBiz = tokenFromOnBiz
+      ? normalizeCaptchaVerifyParam(tokenFromOnBiz)
+      : '';
+    const currentToken = captchaParamRef.current?.token || '';
+    if (normalizedFromOnBiz && normalizedFromOnBiz !== currentToken) {
+      tokenVersionRef.current += 1;
+      const syncedSnapshot: CaptchaTokenSnapshot = {
+        token: normalizedFromOnBiz,
+        version: tokenVersionRef.current,
+        createdAt: Date.now(),
+      };
+      captchaParamRef.current = syncedSnapshot;
+      console.info('[CaptchaKey][token-synced-from-onbiz]', {
+        elementId,
+        version: syncedSnapshot.version,
+        tokenLen: syncedSnapshot.token.length,
+        tokenFp: getTokenFingerprint(syncedSnapshot.token),
+        certifyId: getTokenCertifyId(syncedSnapshot.token),
+      });
+    }
+    onBizResultCallback(bizParam);
+  };
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
@@ -296,7 +346,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         element: '#captcha-element', // 渲染验证码的元素
         button: `#${elementId}`, // 触发验证码弹窗的元素
         captchaVerifyCallback, // 验证回调函数
-        onBizResultCallback, // 业务请求结果回调函数
+        onBizResultCallback: onBizResultCallbackWithSync, // 业务请求结果回调函数
         getInstance, // 绑定验证码实例函数
         slideStyle: {
           width: 360,
