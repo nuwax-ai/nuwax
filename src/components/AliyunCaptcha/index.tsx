@@ -68,6 +68,9 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   onReady,
   refreshOnError = true,
 }) => {
+  const getLoginFlowId = (): string =>
+    (typeof window !== 'undefined' && (window as any).__loginFlowId) ||
+    'unknown';
   const enableCaptchaDebugLog = process.env.NODE_ENV !== 'production';
   const [captchaInited, setCaptchaInited] = useState<boolean>(false);
   // 使用ref记录onReady是否已经调用过，避免重复调用
@@ -253,6 +256,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     captchaParamRef.current = snapshot;
     // 关键日志：确认 SDK 新 token 生成次数与版本递增是否符合预期
     console.info('[CaptchaKey][token-generated]', {
+      flowId: getLoginFlowId(),
       elementId,
       version: snapshot.version,
       tokenLen: snapshot.token?.length ?? 0,
@@ -281,6 +285,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       };
       captchaParamRef.current = syncedSnapshot;
       console.info('[CaptchaKey][token-synced-from-onbiz]', {
+        flowId: getLoginFlowId(),
         elementId,
         version: syncedSnapshot.version,
         tokenLen: syncedSnapshot.token.length,

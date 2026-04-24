@@ -86,6 +86,7 @@ const Login: React.FC = () => {
     LoginTypeEnum.Password,
   );
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
+  const loginFlowIdRef = useRef<string>('');
   /**
    * 记录最近一次提交到登录接口的验证码参数（脱敏日志用途）。
    * 用于确认“请求时使用的是当前最新 token”，避免误复用旧值。
@@ -139,6 +140,16 @@ const Login: React.FC = () => {
     }
     return null;
   };
+  const createLoginFlowId = (): string =>
+    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const traceLoginFlow = (stage: string, extra?: Record<string, unknown>) => {
+    const flowId = loginFlowIdRef.current || 'unknown';
+    if (extra) {
+      console.info(`[LoginTrace][${stage}]`, { flowId, ...extra });
+      return;
+    }
+    console.info(`[LoginTrace][${stage}]`, { flowId });
+  };
 
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
@@ -147,6 +158,9 @@ const Login: React.FC = () => {
       normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
+        traceLoginFlow('request-success', {
+          account: params?.[0]?.phoneOrEmail,
+        });
         console.info('[Login] password-login-onSuccess', {
           account: params?.[0]?.phoneOrEmail,
         });
@@ -177,6 +191,10 @@ const Login: React.FC = () => {
         }
       },
       onError: (error: any) => {
+        traceLoginFlow('request-error', {
+          errorName: error?.name,
+          errorMessage: error?.message,
+        });
         console.info('[Login] password-login-onError', {
           errorType: error?.constructor?.name,
           errorName: error?.name,
@@ -203,6 +221,7 @@ const Login: React.FC = () => {
   };
 
   const startCaptchaPopupWatcher = () => {
+    traceLoginFlow('popup-watcher-start');
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
@@ -216,6 +235,7 @@ const Login: React.FC = () => {
       }
 
       if (!hasCaptchaPopup) {
+        traceLoginFlow('popup-watcher-release-lock');
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
         return;
@@ -223,10 +243,26 @@ const Login: React.FC = () => {
 
       // 极端兜底：防止异常情况下 watcher 长驻。
       if (Date.now() - startedAt > 2 * 60 * 1000) {
+        traceLoginFlow('popup-watcher-timeout-release-lock');
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
       }
     }, 500);
+  };
+
+  const logCaptchaButtonState = (stage: string) => {
+    const btn = document.getElementById(
+      'aliyun-captcha-login',
+    ) as HTMLButtonElement | null;
+    const hasPopup = !!document.getElementById('aliyunCaptcha-window-popup');
+    const hasMask = !!document.getElementById('aliyunCaptcha-mask');
+    traceLoginFlow(`captcha-button-${stage}`, {
+      buttonExists: !!btn,
+      buttonDisabled: btn?.disabled ?? null,
+      buttonDisplay: btn ? window.getComputedStyle(btn).display : null,
+      hasPopup,
+      hasMask,
+    });
   };
 
   useEffect(() => {
@@ -283,6 +319,7 @@ const Login: React.FC = () => {
 
   // 账号密码登录
   const handlerPasswordLogin = (captchaVerifyParam: string) => {
+    traceLoginFlow('password-login-handler-enter');
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const {
       phoneOrEmail,
@@ -358,6 +395,7 @@ const Login: React.FC = () => {
         return { skipRefresh: true } as CaptchaConsumeControl;
       })
       .finally(() => {
+        traceLoginFlow('password-login-handler-finally');
         passwordSubmittingRef.current = false;
       });
   };
@@ -366,6 +404,7 @@ const Login: React.FC = () => {
   const handlerCodeLogin = (
     captchaVerifyParam: string,
   ): CaptchaConsumeControl => {
+    traceLoginFlow('code-login-handler-enter');
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
@@ -409,6 +448,11 @@ const Login: React.FC = () => {
 
   // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
   const handlerSuccess = (captchaVerifyParam: string = '') => {
+    traceLoginFlow('captcha-callback-enter', {
+      loginType: loginTypeRef.current,
+      hasCaptchaParam: !!captchaVerifyParam,
+      captchaParamLen: captchaVerifyParam?.length,
+    });
     loginTriggerLockRef.current = false;
     clearCaptchaPopupWatcher();
     // [使用→登录] captcha SDK 调用 doAction，进入业务逻辑
@@ -425,7 +469,20 @@ const Login: React.FC = () => {
   }; // loginType 作为依赖项
 
   const doLogin = () => {
+    loginFlowIdRef.current = createLoginFlowId();
+    if (typeof window !== 'undefined') {
+      (window as any).__loginFlowId = loginFlowIdRef.current;
+    }
+    traceLoginFlow('click-login', {
+      loginType: loginTypeRef.current,
+      loading,
+      passwordSubmitting: passwordSubmittingRef.current,
+    });
     if (passwordSubmittingRef.current || loading) {
+      traceLoginFlow('blocked-running-request', {
+        passwordSubmitting: passwordSubmittingRef.current,
+        useRequestLoading: loading,
+      });
       console.info('[Login] login-trigger-blocked-running-request', {
         passwordSubmitting: passwordSubmittingRef.current,
         useRequestLoading: loading,
@@ -437,6 +494,10 @@ const Login: React.FC = () => {
       loginTriggerLockRef.current ||
       now - lastLoginTriggerAtRef.current < 800
     ) {
+      traceLoginFlow('blocked-fast-repeat', {
+        lockActive: loginTriggerLockRef.current,
+        deltaMs: now - lastLoginTriggerAtRef.current,
+      });
       console.info('[Login] login-trigger-blocked-fast-repeat', {
         lockActive: loginTriggerLockRef.current,
         deltaMs: now - lastLoginTriggerAtRef.current,
@@ -458,11 +519,25 @@ const Login: React.FC = () => {
     // console.log('[Login] 执行登录检查:', { needAliyunCaptcha, openCaptcha });
     // 如果需要阿里云验证码，则点击按钮触发验证码
     if (needAliyunCaptcha) {
+      logCaptchaButtonState('before-click');
+      traceLoginFlow('trigger-captcha-click');
       document.getElementById('aliyun-captcha-login')?.click();
+      logCaptchaButtonState('after-click');
+      window.setTimeout(() => {
+        logCaptchaButtonState('after-click-100ms');
+      }, 100);
+      window.setTimeout(() => {
+        logCaptchaButtonState('after-click-500ms');
+      }, 500);
+      window.setTimeout(() => {
+        logCaptchaButtonState('after-click-1500ms');
+      }, 1500);
       startCaptchaPopupWatcher();
     } else {
+      traceLoginFlow('skip-captcha-direct-dispatch');
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       Promise.resolve(handlerSuccess()).finally(() => {
+        traceLoginFlow('direct-dispatch-finally-release-lock');
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
       });
@@ -474,6 +549,27 @@ const Login: React.FC = () => {
       clearCaptchaPopupWatcher();
     };
   }, []);
+
+  useEffect(() => {
+    const btn = document.getElementById('aliyun-captcha-login');
+    if (!btn) {
+      traceLoginFlow('captcha-button-listener-missing');
+      return;
+    }
+    const onCaptchaButtonClick = (event: Event) => {
+      const e = event as MouseEvent;
+      traceLoginFlow('captcha-button-click-observed', {
+        isTrusted: e.isTrusted,
+        detail: e.detail,
+      });
+    };
+    btn.addEventListener('click', onCaptchaButtonClick);
+    traceLoginFlow('captcha-button-listener-attached');
+    return () => {
+      btn.removeEventListener('click', onCaptchaButtonClick);
+      traceLoginFlow('captcha-button-listener-detached');
+    };
+  }, [loadEnd, tenantConfigInfo?.openCaptcha]);
 
   const onFinish: FormProps<LoginFieldType>['onFinish'] = () => {
     if (!checked) {
