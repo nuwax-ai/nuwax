@@ -1,5 +1,11 @@
 import { useCallback, useRef } from 'react';
 
+export interface CaptchaTokenSnapshot {
+  token: string;
+  version: number;
+  createdAt: number;
+}
+
 export interface CaptchaConsumeControl {
   /**
    * 为 true 时，跳过本次自动 refresh。
@@ -15,12 +21,12 @@ interface UseCaptchaConsumeParams {
    * - 支持同步或异步返回。
    */
   doAction: (
-    captchaVerifyParam: any,
+    captchaVerifyParam: string,
   ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
   /**
    * 当前验证码参数引用。
    */
-  captchaParamRef: React.MutableRefObject<any>;
+  captchaParamRef: React.MutableRefObject<CaptchaTokenSnapshot | null>;
   /**
    * 验证码实例引用，用于调用 refresh。
    */
@@ -47,12 +53,16 @@ const useCaptchaConsume = ({
   captchaInstanceRef,
   refreshOnError = true,
 }: UseCaptchaConsumeParams) => {
+  const enableCaptchaDebugLog = process.env.NODE_ENV !== 'production';
   const logPrefix = '[AliyunCaptcha][Consume]';
 
   /**
    * 统一输出调试日志，仅在非生产环境打印。
    */
   const log = (message: string, extra?: Record<string, unknown>) => {
+    if (!enableCaptchaDebugLog) {
+      return;
+    }
     if (extra) {
       console.info(logPrefix, message, extra);
       return;
@@ -70,7 +80,8 @@ const useCaptchaConsume = ({
    * 业务消费回调：在验证码校验成功后由 SDK 触发。
    */
   const onBizResultCallback = useCallback(() => {
-    if (!captchaParamRef.current) {
+    const snapshot = captchaParamRef.current;
+    if (!snapshot?.token) {
       console.warn(
         '[AliyunCaptcha] Blocked double usage: Token already consumed or invalid.',
       );
@@ -87,7 +98,8 @@ const useCaptchaConsume = ({
     }
 
     isConsumingRef.current = true;
-    const currentCaptchaParam = captchaParamRef.current;
+    const consumeSnapshot = snapshot;
+    const currentCaptchaParam = consumeSnapshot.token;
     let shouldRefresh = true;
     let skipReason = '';
     const consumeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -96,16 +108,8 @@ const useCaptchaConsume = ({
     log('consume-start', {
       consumeId,
       hasCaptchaInstance: !!captchaInstanceRef.current,
-      tokenLen:
-        typeof currentCaptchaParam === 'string'
-          ? currentCaptchaParam.length
-          : null,
-      tokenPreview:
-        typeof currentCaptchaParam === 'string' && currentCaptchaParam
-          ? `${currentCaptchaParam.slice(0, 6)}...${currentCaptchaParam.slice(
-              -6,
-            )}`
-          : null,
+      tokenVersion: consumeSnapshot.version,
+      tokenLen: currentCaptchaParam.length,
       refreshOnError,
     });
 
@@ -113,7 +117,21 @@ const useCaptchaConsume = ({
     // 1. 使用 Promise.resolve().then(...) 包装，确保 doAction 同步抛错时也会进入 finally；
     // 2. 请求生命周期结束后再刷新，避免提前刷新导致后端校验失败。
     Promise.resolve()
-      .then(() => doAction(currentCaptchaParam))
+      .then(() => {
+        // 如果在真正消费前 token 已被更新，直接中止旧 token 消费。
+        if (captchaParamRef.current?.version !== consumeSnapshot.version) {
+          const staleTokenError = new Error(
+            'Captcha token version changed before consume.',
+          );
+          (staleTokenError as any).name = 'CaptchaTokenStaleError';
+          (staleTokenError as any).info = {
+            consumeVersion: consumeSnapshot.version,
+            latestVersion: captchaParamRef.current?.version,
+          };
+          throw staleTokenError;
+        }
+        return doAction(currentCaptchaParam);
+      })
       .then((actionResult) => {
         // [登录成功] doAction resolved
         log('consume-action-resolved', {
@@ -143,6 +161,8 @@ const useCaptchaConsume = ({
         log('consume-action-rejected', {
           consumeId,
           flowId: error?._flowId, // 与 [Chain] 日志关联
+          tokenVersion: consumeSnapshot.version,
+          latestTokenVersion: captchaParamRef.current?.version,
           durationMs: Date.now() - consumeStartTime,
           refreshOnError,
           willRefresh: shouldRefresh,
@@ -164,7 +184,9 @@ const useCaptchaConsume = ({
 
         // 先清理状态，再刷新实例，确保下一次 onBizResultCallback
         // 不会因 isConsumingRef 仍为 true 而被阻塞。
-        captchaParamRef.current = null;
+        if (captchaParamRef.current?.version === consumeSnapshot.version) {
+          captchaParamRef.current = null;
+        }
         isConsumingRef.current = false;
 
         if (
@@ -180,7 +202,13 @@ const useCaptchaConsume = ({
 
         log('consume-cleanup-done', { consumeId });
       });
-  }, [captchaInstanceRef, captchaParamRef, doAction, refreshOnError]);
+  }, [
+    captchaInstanceRef,
+    captchaParamRef,
+    doAction,
+    refreshOnError,
+    enableCaptchaDebugLog,
+  ]);
 
   return {
     onBizResultCallback,
