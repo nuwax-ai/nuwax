@@ -100,6 +100,30 @@
       border-radius: 50%;
     }
 
+    .at-button {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: @colorBgContainerDisabled;
+      color: @colorTextDescription;
+      cursor: pointer;
+      font-size: @fontSize;
+      transition: all 0.2s ease;
+
+      &:hover:not(.disabled) {
+        background-color: @colorPrimaryBg;
+        color: @colorPrimary;
+      }
+
+      &.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+
     .box {
       padding: @paddingXs;
       border-radius: @borderRadius;
