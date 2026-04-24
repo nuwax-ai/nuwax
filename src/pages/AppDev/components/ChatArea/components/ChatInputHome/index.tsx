@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import type { SkillInfoForAt } from '@/components/ChatInputHome/MentionPopup/types';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
@@ -24,6 +25,7 @@ import {
   FileOutlined,
   FolderOutlined,
   LoadingOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import {
@@ -47,7 +49,7 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { useMentionSelectorKeyboard } from '../../hooks/useMentionSelectorKeyboard';
 import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
-import MentionSelector from '../MentionSelector';
+import CombinedMentionSelector from '../CombinedMentionSelector';
 import type {
   MentionPosition,
   MentionSelectorHandle,
@@ -75,7 +77,8 @@ const getModeOptions = (models?: ModelConfig[]) => {
 export type MentionItem =
   | { type: 'file'; data: FileNode }
   | { type: 'folder'; data: FileNode }
-  | { type: 'datasource'; data: DataResource };
+  | { type: 'datasource'; data: DataResource }
+  | { type: 'skill'; data: SkillInfoForAt };
 
 export interface ChatInputProps {
   // 聊天信息
@@ -99,6 +102,7 @@ export interface ChatInputProps {
     prototypeImages?: UploadFileInfo[],
     selectedMentions?: MentionItem[],
     requestId?: string,
+    skill_ids?: number[],
   ) => void;
   // 数据源列表
   dataSourceList?: DataResource[];
@@ -151,9 +155,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const mentionContainerRef = useRef<HTMLDivElement>(null);
   const mentionSelectorRef = useRef<MentionSelectorHandle>(null);
 
-  // 已选择的提及项（文件、目录和数据源）
-  // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource）
+  // 已选择的提及项（文件、目录、数据源和技能）
+  // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource、skill）
   const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
+  // 已选中的技能 ID 列表
+  const [skillIds, setSkillIds] = useState<number[]>([]);
 
   // 占位符消息轮播
   const placeholderMessages = [
@@ -341,6 +347,30 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   );
 
   /**
+   * 处理技能选择
+   */
+  const handleSelectSkill = useCallback(
+    (skill: SkillInfoForAt) => {
+      // 检查是否已经选择过该技能
+      const isDuplicate = selectedMentions.some(
+        (mention) => mention.type === 'skill' && mention.data.id === skill.id,
+      );
+      if (!isDuplicate) {
+        // 添加到已选择列表
+        setSelectedMentions((prev) => [
+          ...prev,
+          { type: 'skill', data: skill },
+        ]);
+        // 更新技能 ID 列表
+        setSkillIds((prev) => [...prev, skill.id]);
+      }
+      // 在输入框中插入提及文本
+      insertMention(skill.name);
+    },
+    [insertMention, selectedMentions],
+  );
+
+  /**
    * 处理输入变化，检测 @ 字符和提及删除
    */
   const handleInputChange = useCallback(
@@ -356,6 +386,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         const mentionText =
           mention.type === 'file'
             ? `@${mention.data.path}`
+            : mention.type === 'skill'
+            ? `@${mention.data.name}`
             : `@${mention.data.name}`;
         // 如果文本中不再包含该提及，标记为删除
         if (!value.includes(mentionText)) {
@@ -365,9 +397,22 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
       // 从上框中移除已删除的提及项
       if (mentionsToRemove.length > 0) {
+        const removedItems = selectedMentions.filter((_, index) =>
+          mentionsToRemove.includes(index),
+        );
+        const removedSkillIds = removedItems
+          .filter((item) => item.type === 'skill')
+          .map((item) => (item.data as SkillInfoForAt).id);
+
         setSelectedMentions((prev) =>
           prev.filter((_, index) => !mentionsToRemove.includes(index)),
         );
+
+        if (removedSkillIds.length > 0) {
+          setSkillIds((prev) =>
+            prev.filter((id) => !removedSkillIds.includes(id)),
+          );
+        }
       }
 
       const triggerResult = checkMentionTrigger(value, cursorPosition);
@@ -393,20 +438,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   /**
    * 滚动到选中的项（参考 Ant Design Mentions 的自动滚动）
    */
-  const scrollToSelectedItem = useCallback(() => {
-    const mentionSelector = mentionContainerRef.current;
-    if (!mentionSelector) return;
-
-    const selectedElement = mentionSelector.querySelector(
-      '[class*="mention-item"][class*="selected"]',
-    ) as HTMLElement;
-    if (selectedElement) {
-      selectedElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
-    }
-  }, []);
 
   /**
    * 关闭 mentionSelector 弹层
@@ -424,9 +455,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     mentionTrigger,
     mentionPosition,
     mentionSelectorRef,
-    onSelectedIndexChange: setMentionSelectedIndex,
     onCloseMenu: handleCloseMenu,
-    scrollToSelectedItem,
   });
 
   // 点击发送事件
@@ -452,8 +481,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           (item) =>
             item.status === UploadFileStatus.done && item.url && item.key,
         );
-        // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
-        onEnter(files, prototypeImages, selectedMentions, requestId);
+        // enter事件 - 传递上传的附件、原型图片、@ 提及的项目及技能 ID
+        onEnter(files, prototypeImages, selectedMentions, requestId, skillIds);
         // 退出设计模式，回到聊天模式
         setIframeDesignMode(false);
         // 清空输入框
@@ -464,6 +493,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         setAttachmentPrototypeImages([]);
         // 清空提及列表
         setSelectedMentions([]);
+        // 清空技能 ID 列表
+        setSkillIds([]);
       }
     },
     [
@@ -520,7 +551,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
       // enter事件
-      onEnter(files, prototypeImages, selectedMentionsParam);
+      onEnter(
+        files,
+        prototypeImages,
+        selectedMentionsParam,
+        undefined,
+        skillIds,
+      );
       // 退出设计模式，回到聊天模式
       setIframeDesignMode(false);
       // 清空输入框
@@ -531,6 +568,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       setAttachmentPrototypeImages([]);
       // 清空提及列表
       setSelectedMentions([]);
+      // 清空技能 ID 列表
+      setSkillIds([]);
     }
   };
 
@@ -741,6 +780,54 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, [chat.chatInput, handleSendMessage]);
 
   /**
+   * 处理点击 @ 按钮
+   */
+  const handleAtButtonClick = useCallback(() => {
+    if (chat.isChatLoading || isSendingMessage || isStoppingTask) {
+      return;
+    }
+
+    if (!textAreaRef.current) return;
+
+    const textarea =
+      textAreaRef.current.resizableTextArea?.textArea || textAreaRef.current;
+    if (!textarea) return;
+
+    const { selectionStart, selectionEnd, value } = textarea;
+
+    // 检查光标前一个字符是否已经是 @，避免重复插入
+    const charBefore = selectionStart > 0 ? value[selectionStart - 1] : '';
+    const alreadyHasAt = charBefore === '@';
+
+    let newCursorPos = selectionStart;
+
+    if (!alreadyHasAt) {
+      // 在当前光标位置插入 @
+      const newValue =
+        value.slice(0, selectionStart) + '@' + value.slice(selectionEnd);
+      chat.setChatInput(newValue);
+      newCursorPos = selectionStart + 1;
+    }
+
+    // 延迟聚焦和位置计算
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+      // 计算并设置提及弹窗位置
+      const position = calculateMentionPosition(textAreaRef);
+      setMentionPosition(position);
+      setMentionTrigger({
+        trigger: true,
+        triggerChar: '@',
+        searchText: '',
+        startIndex: alreadyHasAt ? selectionStart - 1 : selectionStart,
+      });
+      setMentionSelectedIndex(0);
+    }, 0);
+  }, [chat, isSendingMessage, isStoppingTask]);
+
+  /**
    * 处理点击外部关闭 MentionSelector
    */
   const handleCloseMentionSelector = useCallback(
@@ -875,19 +962,32 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 ) : (
                   <FileOutlined style={{ fontSize: '14px' }} />
                 );
-              } else {
+              } else if (mention.type === 'datasource') {
                 // 数据资源
                 const dataSourceData = mention.data as DataResource;
                 displayName = dataSourceData.name;
                 fullPath = dataSourceData.name;
                 itemType = 'datasource';
                 icon = <DatabaseOutlined style={{ fontSize: '14px' }} />;
+              } else {
+                // 技能
+                const skillData = mention.data as SkillInfoForAt;
+                displayName = skillData.name;
+                fullPath = skillData.name;
+                itemType = 'skill';
+                icon = (
+                  <ThunderboltOutlined
+                    style={{ fontSize: '14px', color: '#722ed1' }}
+                  />
+                );
               }
 
               const key =
                 mention.type === 'file'
                   ? `file-${mention.data.id}`
-                  : `datasource-${mention.data.id}`;
+                  : mention.type === 'datasource'
+                  ? `datasource-${mention.data.id}`
+                  : `skill-${mention.data.id}`;
 
               return (
                 <Tooltip key={key} title={fullPath}>
@@ -912,6 +1012,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                         ) {
                           onToggleSelectDataSource(
                             mentionToRemove.data as DataResource,
+                          );
+                        }
+
+                        // 如果是技能，也需要从 skillIds 中移除
+                        if (mentionToRemove.type === 'skill') {
+                          setSkillIds((prev) =>
+                            prev.filter((id) => id !== mentionToRemove.data.id),
                           );
                         }
 
@@ -1000,7 +1107,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           )}
         </div>
         {/* @ 提及下拉选择器 */}
-        <MentionSelector
+        <CombinedMentionSelector
           ref={mentionSelectorRef}
           visible={mentionTrigger.trigger && mentionPosition.visible}
           position={mentionPosition}
@@ -1014,6 +1121,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           }
           onSelectFile={handleSelectFile}
           onSelectDataSource={handleSelectDataSource}
+          onSelectSkill={handleSelectSkill}
           selectedIndex={mentionSelectedIndex}
           containerRef={mentionContainerRef}
           onSelectedIndexChange={setMentionSelectedIndex}
@@ -1021,6 +1129,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>
+            {/* @ 提及按钮 */}
+            <Tooltip title={t('PC.Pages.AppDevChatInput.mention')}>
+              <div
+                className={cx(styles['at-button'], {
+                  [styles.disabled]: chat.isChatLoading,
+                })}
+                onClick={handleAtButtonClick}
+              >
+                @
+              </div>
+            </Tooltip>
             {/*上传附件文件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}

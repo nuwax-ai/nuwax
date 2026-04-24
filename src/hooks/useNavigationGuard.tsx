@@ -9,7 +9,7 @@
  * 功能：
  * - 拦截应用内路由跳转
  * - 拦截浏览器刷新/关闭/前进后退
- * - 支持"确认"、"放弃"、"取消"三种操作
+ * - Supports "confirm", "discard", and "cancel" actions
  * - 支持异步确认操作（如保存文件）
  *
  * @example 基础用法
@@ -17,7 +17,7 @@
  * useNavigationGuard({
  *   condition: () => isDirty,
  *   onConfirm: async () => await save(),
- *   message: '你有未保存的更改',
+ *   message: 'You have unsaved changes',
  * });
  * ```
  *
@@ -26,8 +26,8 @@
  * useNavigationGuard({
  *   condition: () => hasChanges,
  *   onConfirm: handleSave,
- *   confirmText: '保存并离开',
- *   discardText: '不保存离开',
+ *   confirmText: 'Save and leave',
+ *   discardText: 'Leave without saving',
  * });
  * ```
  */
@@ -49,11 +49,11 @@ export interface UseNavigationGuardOptions {
   message?: string;
   /** 是否启用拦截，默认为 true */
   enabled?: boolean;
-  /** "确认"按钮文案，默认为"确认" */
+  /** Confirm button text. */
   confirmText?: string;
-  /** "放弃"按钮文案，默认为"放弃" */
+  /** Discard button text. */
   discardText?: string;
-  /** "取消"按钮文案，默认为"取消" */
+  /** Cancel button text. */
   cancelText?: string;
   /** 是否显示取消按钮，默认为 false */
   showCancelButton?: boolean;

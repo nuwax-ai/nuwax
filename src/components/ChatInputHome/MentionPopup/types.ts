@@ -5,6 +5,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PluginTypeEnum } from '@/types/enums/plugin';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentStatisticsInfo, CreatorInfo } from '@/types/interfaces/agent';
 
 // 已收藏的技能列表接口 - 参数接口
@@ -38,6 +39,9 @@ export interface SkillListForAtParams {
 
   /*是否只返回官方标识的内容 */
   official?: boolean;
+
+  /*可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 // @技能信息
@@ -145,6 +149,8 @@ export interface MentionPopupProps {
   onHeightChange?: (height: number) => void;
   /** 是否在 Tab 标签栏下方显示搜索输入框；为 true 时使用输入框关键字搜索列表，打开弹窗时自动聚焦 */
   showSearchInput?: boolean;
+  /**可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 /**

@@ -25,6 +25,12 @@ interface UseCaptchaConsumeParams {
    * 验证码实例引用，用于调用 refresh。
    */
   captchaInstanceRef: React.MutableRefObject<any>;
+  /**
+   * 业务 action 失败时是否自动刷新验证码实例。
+   * - true：保持现有行为，失败后立即 refresh，便于快速重试；
+   * - false：失败后不自动 refresh，避免同一登录流程额外触发一次验证码请求。
+   */
+  refreshOnError?: boolean;
 }
 
 /**
@@ -39,6 +45,7 @@ const useCaptchaConsume = ({
   doAction,
   captchaParamRef,
   captchaInstanceRef,
+  refreshOnError = true,
 }: UseCaptchaConsumeParams) => {
   const logPrefix = '[AliyunCaptcha][Consume]';
 
@@ -82,7 +89,9 @@ const useCaptchaConsume = ({
     isConsumingRef.current = true;
     const currentCaptchaParam = captchaParamRef.current;
     let shouldRefresh = true;
+    let skipReason = '';
     const consumeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const consumeStartTime = Date.now();
     log('consume-start', {
       consumeId,
       hasCaptchaInstance: !!captchaInstanceRef.current,
@@ -101,17 +110,38 @@ const useCaptchaConsume = ({
           actionResult.skipRefresh
         ) {
           shouldRefresh = false;
+          skipReason = 'action returned skipRefresh=true';
         }
       })
       .catch((error) => {
+        // 业务 action 失败时是否刷新由 refreshOnError 控制：
+        // 1) 默认 true，保持历史行为；
+        // 2) 登录场景可设置为 false，避免同一流程“多打一轮验证码请求”。
+        if (!refreshOnError) {
+          shouldRefresh = false;
+          skipReason = 'action rejected and refreshOnError=false';
+        }
         console.error('[AliyunCaptcha] Token consume failed:', error);
         log('consume-action-rejected', {
           consumeId,
-          errorMessage: error instanceof Error ? error.message : String(error),
+          durationMs: Date.now() - consumeStartTime,
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : error
+              ? String(error)
+              : 'Unknown error',
         });
       })
       .finally(() => {
-        log('consume-finally', { consumeId, shouldRefresh });
+        const durationMs = Date.now() - consumeStartTime;
+        log('consume-finally', { consumeId, durationMs, shouldRefresh });
+
+        // 先清理状态，再刷新实例，确保下一次 onBizResultCallback
+        // 不会因 isConsumingRef 仍为 true 而被阻塞。
+        captchaParamRef.current = null;
+        isConsumingRef.current = false;
+
         if (
           shouldRefresh &&
           captchaInstanceRef.current &&
@@ -119,13 +149,13 @@ const useCaptchaConsume = ({
         ) {
           captchaInstanceRef.current.refresh();
           log('consume-refresh-done', { consumeId });
+        } else if (!shouldRefresh) {
+          log('consume-skip-refresh', { consumeId, reason: skipReason });
         }
 
-        captchaParamRef.current = null;
-        isConsumingRef.current = false;
         log('consume-cleanup-done', { consumeId });
       });
-  }, [captchaInstanceRef, captchaParamRef, doAction]);
+  }, [captchaInstanceRef, captchaParamRef, doAction, refreshOnError]);
 
   return {
     onBizResultCallback,

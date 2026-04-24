@@ -46,6 +46,11 @@ interface AliyunCaptchaProps {
     captchaVerifyParam: any,
   ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
   onReady?: () => void; // 使用可选属性避免undefined调用
+  /**
+   * 业务 action 失败时是否自动刷新验证码实例。
+   * 默认 true（保持原行为）；登录页可按需关闭，避免失败后额外触发一次验证码请求。
+   */
+  refreshOnError?: boolean;
 }
 
 /**
@@ -60,6 +65,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   elementId,
   doAction,
   onReady,
+  refreshOnError = true,
 }) => {
   const [captchaInited, setCaptchaInited] = useState<boolean>(false);
   // 使用ref记录onReady是否已经调用过，避免重复调用
@@ -72,16 +78,68 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     doAction,
     captchaParamRef,
     captchaInstanceRef,
+    refreshOnError,
   });
+
+  /**
+   * 将 SDK 返回的验证码参数统一规范成后端约定的 string。
+   *
+   * 背景：
+   * 1. 密码登录接口要求 captchaVerifyParam 为字符串；
+   * 2. SDK 在边界场景可能返回对象、空值，或“被 JSON 包装过一层”的字符串；
+   * 3. 前端在这里做最小归一化，避免把不稳定形态直接带到请求层。
+   *
+   * @param rawParam - SDK 回调原始参数
+   * @returns 归一化后的验证码参数字符串；无法使用时返回空字符串
+   */
+  const normalizeCaptchaVerifyParam = useCallback((rawParam: any): string => {
+    if (typeof rawParam === 'string') {
+      const trimmed = rawParam.trim();
+      if (!trimmed) return '';
+
+      // 兼容 "\"{...}\"" 这类“字符串再次序列化”场景，解一层后继续使用。
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed === 'string') {
+          return parsed.trim();
+        }
+      } catch {
+        // 非 JSON 字符串按原样使用，不中断验证码流程。
+      }
+      return trimmed;
+    }
+
+    if (rawParam === null || rawParam === undefined) {
+      return '';
+    }
+
+    // SDK 若返回对象，则序列化为字符串后上送后端。
+    try {
+      return JSON.stringify(rawParam);
+    } catch {
+      return String(rawParam);
+    }
+  }, []);
 
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
   const captchaVerifyCallback = (captchaVerifyParam: any) => {
+    const normalizedCaptchaParam =
+      normalizeCaptchaVerifyParam(captchaVerifyParam);
+
     // 保存验证参数到ref，供业务回调使用
     console.info('[AliyunCaptcha] captcha-token-generated', {
       elementId,
-      tokenType: typeof captchaVerifyParam,
+      rawTokenType: typeof captchaVerifyParam,
+      tokenType: typeof normalizedCaptchaParam,
+      tokenLen: normalizedCaptchaParam?.length,
+      tokenPreview: normalizedCaptchaParam
+        ? `${normalizedCaptchaParam.slice(
+            0,
+            4,
+          )}...${normalizedCaptchaParam.slice(-4)}`
+        : null,
     });
-    captchaParamRef.current = captchaVerifyParam;
+    captchaParamRef.current = normalizedCaptchaParam;
     // 只返回验证结果，不在这里执行业务逻辑
     return {
       captchaResult: true,
@@ -91,7 +149,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
-    // console.log('[AliyunCaptcha] 清理资源');
+    console.info('[AliyunCaptcha] sdk-cleanup', { elementId });
     document.getElementById('aliyunCaptcha-mask')?.remove();
     document.getElementById('aliyunCaptcha-window-popup')?.remove();
 
@@ -129,10 +187,14 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     ) {
       // 防止重复初始化
       if (captchaInstanceRef.current) {
-        // console.log('[AliyunCaptcha] 实例已存在，跳过初始化');
+        console.info('[AliyunCaptcha] sdk-init-skipped', {
+          elementId,
+          reason: 'instance already exists',
+        });
         return;
       }
-      // console.log('[AliyunCaptcha] 初始化 SDK...');
+      const sdkInitStartTime = Date.now();
+      console.info('[AliyunCaptcha] sdk-init-start', { elementId });
       window.initAliyunCaptcha({
         SceneId: config.captchaSceneId, // 场景ID
         prefix: config.captchaPrefix, // 身份标
@@ -148,7 +210,10 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         }, // 滑块验证码样式
         language: 'cn', // 验证码语言类型
       });
-      console.info('[AliyunCaptcha] sdk-init-triggered', { elementId });
+      console.info('[AliyunCaptcha] sdk-init-triggered', {
+        elementId,
+        sdkInitDurationMs: Date.now() - sdkInitStartTime,
+      });
     }
 
     // 组件卸载时清理DOM元素

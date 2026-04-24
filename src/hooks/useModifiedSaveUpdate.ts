@@ -30,7 +30,7 @@ export default function useModifiedSaveUpdate({
   const executeSave = useCallback(async () => {
     // const currentSaveCount = ++saveCountRef.current;
     // console.log(
-    // `🔄 useModifiedSaveUpdate: 节流执行保存 [第${currentSaveCount}次]`,
+    // `[useModifiedSaveUpdate] Throttled save run #${currentSaveCount}`,
     // );
 
     // 检查组件是否还挂载
@@ -40,21 +40,21 @@ export default function useModifiedSaveUpdate({
 
     // 如果正在保存中，跳过本次保存（节流会确保最后一次调用被执行）
     if (isSavingRef.current) {
-      // console.log('⏸️ useModifiedSaveUpdate: 保存正在进行中，跳过本次调用');
+      // console.log('[useModifiedSaveUpdate] Save in progress; skip this call');
       return;
     }
 
     try {
       isSavingRef.current = true;
-      // console.log('✅ useModifiedSaveUpdate: 开始执行保存操作');
+      // console.log('[useModifiedSaveUpdate] Start save operation');
       setUpdateLoading(true);
 
       await run();
       doNext?.();
 
-      // console.log('🎉 useModifiedSaveUpdate: 保存成功完成');
+      // console.log('[useModifiedSaveUpdate] Save completed successfully');
     } catch (error) {
-      // console.error('❌ useModifiedSaveUpdate: 保存失败', error);
+      // console.error('[useModifiedSaveUpdate] Save failed', error);
     } finally {
       setUpdateLoading(false);
       isSavingRef.current = false;
@@ -64,7 +64,7 @@ export default function useModifiedSaveUpdate({
   // 使用节流包装保存函数，确保最后一次调用必须执行
   const throttledSave = useThrottledCallback(
     () => {
-      // console.log('🚀 useModifiedSaveUpdate: 节流函数被调用');
+      // console.log('[useModifiedSaveUpdate] Throttled function called');
       return executeSave();
     },
     delay,
@@ -76,10 +76,10 @@ export default function useModifiedSaveUpdate({
 
   // 监听修改状态变化，触发节流保存
   useEffect(() => {
-    // console.log('📝 useModifiedSaveUpdate: isModified 状态变化 =', isModified);
+    // console.log('[useModifiedSaveUpdate] isModified changed =', isModified);
 
     if (isModified && isMountedRef.current) {
-      // console.log('⚡ useModifiedSaveUpdate: 触发节流保存函数');
+      // console.log('[useModifiedSaveUpdate] Trigger throttled save');
       // 使用节流函数触发保存
       throttledSave();
     }
@@ -88,10 +88,10 @@ export default function useModifiedSaveUpdate({
   // 组件卸载时的清理
   useEffect(() => {
     isMountedRef.current = true;
-    // console.log('🔗 useModifiedSaveUpdate: Hook 初始化完成');
+    // console.log('[useModifiedSaveUpdate] Hook initialized');
 
     return () => {
-      // console.log('🧹 useModifiedSaveUpdate: 清理 Hook 状态');
+      // console.log('[useModifiedSaveUpdate] Clean up hook state');
       isMountedRef.current = false;
       isSavingRef.current = false;
     };
