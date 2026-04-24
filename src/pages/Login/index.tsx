@@ -132,7 +132,8 @@ const Login: React.FC = () => {
         console.info('[Login] password-login-onError', {
           errorType: error?.constructor?.name,
           errorName: error?.name,
-          errorMessage: error?.message || String(error),
+          errorMessage:
+            error?.message || (error ? String(error) : 'Unknown error'),
           errorCode: error?.info?.code,
           backendMessage: error?.info?.message,
         });
