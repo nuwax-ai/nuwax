@@ -25,6 +25,12 @@ interface UseCaptchaConsumeParams {
    * 验证码实例引用，用于调用 refresh。
    */
   captchaInstanceRef: React.MutableRefObject<any>;
+  /**
+   * 业务 action 失败时是否自动刷新验证码实例。
+   * - true：保持现有行为，失败后立即 refresh，便于快速重试；
+   * - false：失败后不自动 refresh，避免同一登录流程额外触发一次验证码请求。
+   */
+  refreshOnError?: boolean;
 }
 
 /**
@@ -39,6 +45,7 @@ const useCaptchaConsume = ({
   doAction,
   captchaParamRef,
   captchaInstanceRef,
+  refreshOnError = true,
 }: UseCaptchaConsumeParams) => {
   const logPrefix = '[AliyunCaptcha][Consume]';
 
@@ -107,9 +114,13 @@ const useCaptchaConsume = ({
         }
       })
       .catch((error) => {
-        // 业务 action 失败时允许刷新验证码，以便用户可以重试。
-        // cleanup 在 .finally() 中先于 refresh() 执行，因此下一次
-        // onBizResultCallback 不会被 isConsumingRef 阻挡，避免死循环。
+        // 业务 action 失败时是否刷新由 refreshOnError 控制：
+        // 1) 默认 true，保持历史行为；
+        // 2) 登录场景可设置为 false，避免同一流程“多打一轮验证码请求”。
+        if (!refreshOnError) {
+          shouldRefresh = false;
+          skipReason = 'action rejected and refreshOnError=false';
+        }
         console.error('[AliyunCaptcha] Token consume failed:', error);
         log('consume-action-rejected', {
           consumeId,
@@ -144,7 +155,7 @@ const useCaptchaConsume = ({
 
         log('consume-cleanup-done', { consumeId });
       });
-  }, [captchaInstanceRef, captchaParamRef, doAction]);
+  }, [captchaInstanceRef, captchaParamRef, doAction, refreshOnError]);
 
   return {
     onBizResultCallback,

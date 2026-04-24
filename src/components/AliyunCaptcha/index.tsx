@@ -46,6 +46,11 @@ interface AliyunCaptchaProps {
     captchaVerifyParam: any,
   ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
   onReady?: () => void; // 使用可选属性避免undefined调用
+  /**
+   * 业务 action 失败时是否自动刷新验证码实例。
+   * 默认 true（保持原行为）；登录页可按需关闭，避免失败后额外触发一次验证码请求。
+   */
+  refreshOnError?: boolean;
 }
 
 /**
@@ -60,6 +65,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   elementId,
   doAction,
   onReady,
+  refreshOnError = true,
 }) => {
   const [captchaInited, setCaptchaInited] = useState<boolean>(false);
   // 使用ref记录onReady是否已经调用过，避免重复调用
@@ -72,6 +78,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     doAction,
     captchaParamRef,
     captchaInstanceRef,
+    refreshOnError,
   });
 
   /**
