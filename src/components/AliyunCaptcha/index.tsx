@@ -139,7 +139,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         });
         return;
       }
-      const initStartTime = Date.now();
+      const sdkInitStartTime = Date.now();
       console.info('[AliyunCaptcha] sdk-init-start', { elementId });
       window.initAliyunCaptcha({
         SceneId: config.captchaSceneId, // 场景ID
@@ -158,7 +158,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       });
       console.info('[AliyunCaptcha] sdk-init-triggered', {
         elementId,
-        durationMs: Date.now() - initStartTime,
+        sdkInitDurationMs: Date.now() - sdkInitStartTime,
       });
     }
 
