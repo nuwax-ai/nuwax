@@ -20,6 +20,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type {
@@ -237,43 +238,95 @@ const CombinedMentionSelector = React.forwardRef<
       [onSelectFile, onSelectDataSource, onSelectSkill, projectId],
     );
 
-    // 暴露方法给键盘导航 Hook
-    useImperativeHandle(ref, () => ({
-      handleSelectCurrentItem: () => {
-        if (currentItems[selectedIndex]) {
-          handleItemSelect(currentItems[selectedIndex]);
+    // 使用 Ref 存储最新的列表项，避免 useImperativeHandle 频繁重载
+    const currentItemsRef = useRef(currentItems);
+    currentItemsRef.current = currentItems;
+
+    // 确保索引始终在有效范围内
+    useEffect(() => {
+      if (
+        visible &&
+        currentItems.length > 0 &&
+        selectedIndex >= currentItems.length
+      ) {
+        onSelectedIndexChange?.(currentItems.length - 1);
+      }
+    }, [currentItems.length, selectedIndex, visible, onSelectedIndexChange]);
+
+    // 自动滚动到选中项
+    useEffect(() => {
+      if (!visible) return;
+
+      // 延迟确保渲染完成
+      const timer = setTimeout(() => {
+        const container = containerRef?.current;
+        if (!container) return;
+
+        const selectedElement = container.querySelector(
+          `.${styles['mention-item']}.${styles.selected}`,
+        ) as HTMLElement;
+
+        if (selectedElement) {
+          selectedElement.scrollIntoView({
+            behavior: 'auto',
+            block: 'nearest',
+          });
         }
-      },
-      handleEscapeKey: () => false, // 顶层不处理 ESC
-      handleArrowRightKey: () => {
-        // Tab 切换逻辑
-        const tabs: ViewType[] = [
-          'recent',
-          'files',
-          'datasources',
-          'skills',
-          'favorite',
-        ];
-        const nextIdx = (tabs.indexOf(activeTab) + 1) % tabs.length;
-        setActiveTab(tabs[nextIdx]);
-        onSelectedIndexChange?.(0);
-        return true;
-      },
-      handleArrowLeftKey: () => {
-        const tabs: ViewType[] = [
-          'recent',
-          'files',
-          'datasources',
-          'skills',
-          'favorite',
-        ];
-        const prevIdx =
-          (tabs.indexOf(activeTab) - 1 + tabs.length) % tabs.length;
-        setActiveTab(tabs[prevIdx]);
-        onSelectedIndexChange?.(0);
-        return true;
-      },
-    }));
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }, [selectedIndex, visible, containerRef]);
+
+    // 暴露方法给键盘导航 Hook
+    useImperativeHandle(
+      ref,
+      () => ({
+        handleSelectCurrentItem: () => {
+          if (currentItemsRef.current[selectedIndex]) {
+            handleItemSelect(currentItemsRef.current[selectedIndex]);
+          }
+        },
+        handleEscapeKey: () => false, // 顶层不处理 ESC
+        handleArrowRightKey: () => {
+          // Tab 切换逻辑
+          const tabs: ViewType[] = [
+            'recent',
+            'files',
+            'datasources',
+            'skills',
+            'favorite',
+          ];
+          const nextIdx = (tabs.indexOf(activeTab) + 1) % tabs.length;
+          setActiveTab(tabs[nextIdx]);
+          onSelectedIndexChange?.(0);
+          return true;
+        },
+        handleArrowLeftKey: () => {
+          const tabs: ViewType[] = [
+            'recent',
+            'files',
+            'datasources',
+            'skills',
+            'favorite',
+          ];
+          const prevIdx =
+            (tabs.indexOf(activeTab) - 1 + tabs.length) % tabs.length;
+          setActiveTab(tabs[prevIdx]);
+          onSelectedIndexChange?.(0);
+          return true;
+        },
+        handleArrowUpKey: () => {
+          onSelectedIndexChange?.((prev: number) => (prev > 0 ? prev - 1 : 0));
+        },
+        handleArrowDownKey: () => {
+          onSelectedIndexChange?.((prev: number) => {
+            const maxIdx = currentItemsRef.current.length - 1;
+            return prev < maxIdx ? prev + 1 : maxIdx;
+          });
+        },
+      }),
+      [activeTab, selectedIndex, onSelectedIndexChange, handleItemSelect],
+    );
 
     const renderIcon = (item: any) => {
       switch (item.type) {

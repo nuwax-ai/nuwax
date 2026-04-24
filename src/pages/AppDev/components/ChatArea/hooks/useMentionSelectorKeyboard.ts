@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import type {
   MentionPosition,
   MentionSelectorHandle,
@@ -8,9 +8,7 @@ export interface UseMentionSelectorKeyboardParams {
   mentionTrigger: MentionTriggerResult;
   mentionPosition: MentionPosition;
   mentionSelectorRef: React.RefObject<MentionSelectorHandle>;
-  onSelectedIndexChange: (index: number) => void;
   onCloseMenu: () => void;
-  scrollToSelectedItem: () => void;
 }
 
 export interface UseMentionSelectorKeyboardReturn {
@@ -25,21 +23,19 @@ export const useMentionSelectorKeyboard = ({
   mentionTrigger,
   mentionPosition,
   mentionSelectorRef,
-  onSelectedIndexChange,
   onCloseMenu,
-  scrollToSelectedItem,
 }: UseMentionSelectorKeyboardParams): UseMentionSelectorKeyboardReturn => {
   /**
    * 处理键盘事件（参考 Ant Design Mentions 的键盘交互）
    */
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement> | KeyboardEvent) => {
       // 如果下拉菜单未显示，不处理键盘导航
       if (!mentionTrigger.trigger || !mentionPosition.visible) {
         return;
       }
 
-      const { key, keyCode } = e.nativeEvent;
+      const { key, keyCode } = e instanceof KeyboardEvent ? e : e.nativeEvent;
 
       // Esc 键：处理返回上一级或关闭下拉菜单
       if (key === 'Escape' || keyCode === 27) {
@@ -63,13 +59,7 @@ export const useMentionSelectorKeyboard = ({
       if (key === 'ArrowLeft' || keyCode === 37) {
         e.preventDefault();
         if (mentionSelectorRef.current) {
-          const handled = mentionSelectorRef.current.handleArrowLeftKey();
-          // 如果成功处理了左方向键，则触发滚动
-          if (handled) {
-            setTimeout(() => {
-              scrollToSelectedItem();
-            }, 0);
-          }
+          mentionSelectorRef.current.handleArrowLeftKey();
         }
         return;
       }
@@ -78,13 +68,7 @@ export const useMentionSelectorKeyboard = ({
       if (key === 'ArrowRight' || keyCode === 39) {
         e.preventDefault();
         if (mentionSelectorRef.current) {
-          const handled = mentionSelectorRef.current.handleArrowRightKey();
-          // 如果成功处理了右方向键，则触发滚动
-          if (handled) {
-            setTimeout(() => {
-              scrollToSelectedItem();
-            }, 0);
-          }
+          mentionSelectorRef.current.handleArrowRightKey();
         }
         return;
       }
@@ -92,27 +76,17 @@ export const useMentionSelectorKeyboard = ({
       // 上下箭头键：导航选择（参考 Ant Design Mentions）
       if (key === 'ArrowUp' || keyCode === 38) {
         e.preventDefault();
-        onSelectedIndexChange((prev) => {
-          const newIndex = prev > 0 ? prev - 1 : 0;
-          // 延迟滚动，确保 DOM 已更新
-          setTimeout(() => {
-            scrollToSelectedItem();
-          }, 0);
-          return newIndex;
-        });
+        if (mentionSelectorRef.current) {
+          mentionSelectorRef.current.handleArrowUpKey();
+        }
         return;
       }
 
       if (key === 'ArrowDown' || keyCode === 40) {
         e.preventDefault();
-        onSelectedIndexChange((prev) => {
-          const newIndex = prev + 1;
-          // 延迟滚动，确保 DOM 已更新
-          setTimeout(() => {
-            scrollToSelectedItem();
-          }, 0);
-          return newIndex;
-        });
+        if (mentionSelectorRef.current) {
+          mentionSelectorRef.current.handleArrowDownKey();
+        }
         return;
       }
 
@@ -127,18 +101,35 @@ export const useMentionSelectorKeyboard = ({
         return;
       }
     },
-    [
-      mentionTrigger,
-      mentionPosition,
-      mentionSelectorRef,
-      onSelectedIndexChange,
-      onCloseMenu,
-      scrollToSelectedItem,
-    ],
+    [mentionTrigger, mentionPosition, mentionSelectorRef, onCloseMenu],
   );
 
+  // 全局键盘事件监听，解决点击别处后方向键失效的问题
+  useEffect(() => {
+    if (mentionTrigger.trigger && mentionPosition.visible) {
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+        // 如果焦点在输入框中，让 Input.TextArea 的 onKeyDown 处理
+        const activeElement = document.activeElement;
+        if (
+          activeElement?.tagName === 'TEXTAREA' ||
+          activeElement?.tagName === 'INPUT'
+        ) {
+          return;
+        }
+        handleKeyDown(e);
+      };
+
+      window.addEventListener('keydown', handleGlobalKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleGlobalKeyDown);
+      };
+    }
+  }, [mentionTrigger.trigger, mentionPosition.visible, handleKeyDown]);
+
   return {
-    handleKeyDown,
+    handleKeyDown: handleKeyDown as (
+      e: React.KeyboardEvent<HTMLTextAreaElement>,
+    ) => void,
   };
 };
 
