@@ -23,7 +23,7 @@ export interface CopyButtonProps {
   disabled?: boolean;
   /** 自定义图标，如果不传则使用默认的复制图标 */
   icon?: React.ReactNode;
-  /** 按钮文本，默认为"复制" */
+  /** Button text, defaults to "Copy". */
   children?: React.ReactNode;
   /** 复制按钮的提示文本 */
   tooltipText?: string;
