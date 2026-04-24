@@ -82,7 +82,9 @@ const useCaptchaConsume = ({
     isConsumingRef.current = true;
     const currentCaptchaParam = captchaParamRef.current;
     let shouldRefresh = true;
+    let skipReason = '';
     const consumeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const consumeStartTime = Date.now();
     log('consume-start', {
       consumeId,
       hasCaptchaInstance: !!captchaInstanceRef.current,
@@ -101,17 +103,23 @@ const useCaptchaConsume = ({
           actionResult.skipRefresh
         ) {
           shouldRefresh = false;
+          skipReason = 'action returned skipRefresh=true';
         }
       })
       .catch((error) => {
+        // 业务 action 失败时不应刷新验证码，避免生成新的 scene 导致旧 token 失效
+        shouldRefresh = false;
+        skipReason = 'action failed';
         console.error('[AliyunCaptcha] Token consume failed:', error);
         log('consume-action-rejected', {
           consumeId,
+          durationMs: Date.now() - consumeStartTime,
           errorMessage: error instanceof Error ? error.message : String(error),
         });
       })
       .finally(() => {
-        log('consume-finally', { consumeId, shouldRefresh });
+        const durationMs = Date.now() - consumeStartTime;
+        log('consume-finally', { consumeId, durationMs, shouldRefresh });
         if (
           shouldRefresh &&
           captchaInstanceRef.current &&
@@ -119,6 +127,8 @@ const useCaptchaConsume = ({
         ) {
           captchaInstanceRef.current.refresh();
           log('consume-refresh-done', { consumeId });
+        } else if (!shouldRefresh) {
+          log('consume-skip-refresh', { consumeId, reason: skipReason });
         }
 
         captchaParamRef.current = null;
