@@ -796,6 +796,54 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, [chat.chatInput, handleSendMessage]);
 
   /**
+   * 处理点击 @ 按钮
+   */
+  const handleAtButtonClick = useCallback(() => {
+    if (chat.isChatLoading || isSendingMessage || isStoppingTask) {
+      return;
+    }
+
+    if (!textAreaRef.current) return;
+
+    const textarea =
+      textAreaRef.current.resizableTextArea?.textArea || textAreaRef.current;
+    if (!textarea) return;
+
+    const { selectionStart, selectionEnd, value } = textarea;
+
+    // 检查光标前一个字符是否已经是 @，避免重复插入
+    const charBefore = selectionStart > 0 ? value[selectionStart - 1] : '';
+    const alreadyHasAt = charBefore === '@';
+
+    let newCursorPos = selectionStart;
+
+    if (!alreadyHasAt) {
+      // 在当前光标位置插入 @
+      const newValue =
+        value.slice(0, selectionStart) + '@' + value.slice(selectionEnd);
+      chat.setChatInput(newValue);
+      newCursorPos = selectionStart + 1;
+    }
+
+    // 延迟聚焦和位置计算
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+      // 计算并设置提及弹窗位置
+      const position = calculateMentionPosition(textAreaRef);
+      setMentionPosition(position);
+      setMentionTrigger({
+        trigger: true,
+        triggerChar: '@',
+        searchText: '',
+        startIndex: alreadyHasAt ? selectionStart - 1 : selectionStart,
+      });
+      setMentionSelectedIndex(0);
+    }, 0);
+  }, [chat, isSendingMessage, isStoppingTask]);
+
+  /**
    * 处理点击外部关闭 MentionSelector
    */
   const handleCloseMentionSelector = useCallback(
@@ -1097,6 +1145,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>
+            {/* @ 提及按钮 */}
+            <Tooltip title={t('PC.Pages.AppDevChatInput.mention')}>
+              <div
+                className={cx(styles['at-button'], {
+                  [styles.disabled]: chat.isChatLoading,
+                })}
+                onClick={handleAtButtonClick}
+              >
+                @
+              </div>
+            </Tooltip>
             {/*上传附件文件*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
