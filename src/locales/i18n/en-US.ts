@@ -1918,6 +1918,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AppDevChatInput.cancelAiTask': 'Cancel AI Task',
   'PC.Pages.AppDevChatInput.codingModel': 'Coding Model',
   'PC.Pages.AppDevChatInput.maxPrototypeImageWarning': 'You can upload at most {0} prototype images. Currently {1} images exist, and up to {2} more can be uploaded.',
+  'PC.Pages.AppDevChatInput.mention': 'Mention ( @ )',
   'PC.Pages.AppDevChatInput.mentionsTitle': '@ Mentions',
   'PC.Pages.AppDevChatInput.model': 'Model',
   'PC.Pages.AppDevChatInput.pasteImageFileName': 'Pasted-Image-{0}-{1}.png',

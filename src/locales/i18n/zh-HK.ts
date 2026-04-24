@@ -1918,6 +1918,7 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.AppDevChatInput.cancelAiTask': '取消AI任務',
   'PC.Pages.AppDevChatInput.codingModel': '編碼模型',
   'PC.Pages.AppDevChatInput.maxPrototypeImageWarning': '原型圖片最多上傳{0}張，當前已有{1}張，最多還能上傳{2}張',
+  'PC.Pages.AppDevChatInput.mention': '提及 ( @ )',
   'PC.Pages.AppDevChatInput.mentionsTitle': '@ 提及',
   'PC.Pages.AppDevChatInput.model': '模型',
   'PC.Pages.AppDevChatInput.pasteImageFileName': '粘貼圖片-{0}-{1}.png',
