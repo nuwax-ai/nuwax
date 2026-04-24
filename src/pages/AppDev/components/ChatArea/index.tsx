@@ -258,6 +258,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       prototypeImages?: UploadFileInfo[],
       selectedMentions?: MentionItem[],
       requestId?: string,
+      skillIds?: number[],
     ) => {
       // 权限检查
       if (!hasPermissionByMenuCode('page_app_dev', 'page_app_ai_chat')) {
@@ -381,6 +382,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           aiChatPrototypeImages,
           requestId,
           selectedMentions, // 传递 @ 提及的项（包含通过 @ 选择的数据源）
+          skillIds, // 传递技能 ID 列表
         );
 
         // 只有手动发送（requestId 不存在）时才调用 onUserManualSendMessage

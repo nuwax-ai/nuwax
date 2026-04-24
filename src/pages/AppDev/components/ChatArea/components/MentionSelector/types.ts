@@ -2,6 +2,7 @@
  * MentionSelector 组件类型定义
  */
 
+import type { SkillInfoForAt } from '@/components/ChatInputHome/MentionPopup/types';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 
@@ -40,7 +41,10 @@ export type ViewType =
   | 'files'
   | 'datasources'
   | 'datasource-list'
-  | 'datasource-category';
+  | 'datasource-category'
+  | 'skills'
+  | 'favorite'
+  | 'recent';
 
 /**
  * MentionSelector 组件暴露的方法
@@ -74,6 +78,8 @@ export interface MentionSelectorProps {
   onSelectFile: (file: FileNode) => void;
   /** 选择数据源回调 */
   onSelectDataSource: (dataSource: DataResource) => void;
+  /** 选择技能回调 */
+  onSelectSkill: (skill: SkillInfoForAt) => void;
   /** 键盘导航选中的索引 */
   selectedIndex: number;
   /** 下拉菜单容器引用 */
