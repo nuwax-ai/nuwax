@@ -438,20 +438,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   /**
    * 滚动到选中的项（参考 Ant Design Mentions 的自动滚动）
    */
-  const scrollToSelectedItem = useCallback(() => {
-    const mentionSelector = mentionContainerRef.current;
-    if (!mentionSelector) return;
-
-    const selectedElement = mentionSelector.querySelector(
-      '[class*="mention-item"][class*="selected"]',
-    ) as HTMLElement;
-    if (selectedElement) {
-      selectedElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
-    }
-  }, []);
 
   /**
    * 关闭 mentionSelector 弹层
@@ -469,9 +455,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     mentionTrigger,
     mentionPosition,
     mentionSelectorRef,
-    onSelectedIndexChange: setMentionSelectedIndex,
     onCloseMenu: handleCloseMenu,
-    scrollToSelectedItem,
   });
 
   // 点击发送事件

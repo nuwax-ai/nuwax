@@ -5,6 +5,7 @@
 import type { SkillInfoForAt } from '@/components/ChatInputHome/MentionPopup/types';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
+import type React from 'react';
 
 /**
  * 提及触发检测结果
@@ -58,6 +59,10 @@ export interface MentionSelectorHandle {
   handleArrowRightKey: () => boolean;
   /** 处理左方向键返回上一级 */
   handleArrowLeftKey: () => boolean;
+  /** 处理上方向键 */
+  handleArrowUpKey: () => void;
+  /** 处理下方向键 */
+  handleArrowDownKey: () => void;
 }
 
 /**
@@ -85,7 +90,7 @@ export interface MentionSelectorProps {
   /** 下拉菜单容器引用 */
   containerRef?: React.RefObject<HTMLDivElement>;
   /** 键盘导航索引变化回调 */
-  onSelectedIndexChange?: (index: number) => void;
+  onSelectedIndexChange?: (val: number | ((prev: number) => number)) => void;
   /** 项目ID，用于区分不同项目的最近使用记录 */
   projectId?: string;
 }
