@@ -206,6 +206,13 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       createdAt: Date.now(),
     };
     captchaParamRef.current = snapshot;
+    // 关键日志：确认 SDK 新 token 生成次数与版本递增是否符合预期
+    console.info('[CaptchaKey][token-generated]', {
+      elementId,
+      version: snapshot.version,
+      tokenLen: snapshot.token?.length ?? 0,
+      createdAt: snapshot.createdAt,
+    });
     // 只返回验证结果，不在这里执行业务逻辑
     return {
       captchaResult: true,
