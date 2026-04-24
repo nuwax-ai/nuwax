@@ -741,6 +741,7 @@ export const useAppDevChat = ({
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId: string = generateRequestId(), // 生成临时request_id
       selectedMentions?: MentionItem[], // 新增：@ 提及的项（包含通过 @ 选择的数据源）
+      skillIds?: number[], // 新增：@ 提及的技能 ID 列表
     ) => {
       try {
         // 数据源数据结构提取
@@ -789,6 +790,7 @@ export const useAppDevChat = ({
           // 原型图片附件列表
           attachment_prototype_images: attachmentPrototypeImages,
           data_sources: _selectedDataResources,
+          skill_ids: skillIds, // 新增：传递技能 ID 列表
         };
 
         // 添加用户消息（包含附件和数据源）
@@ -852,6 +854,7 @@ export const useAppDevChat = ({
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId?: string,
       selectedMentions?: MentionItem[], // 新增：@ 提及的项
+      skillIds?: number[], // 新增：技能 ID 列表
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
@@ -866,6 +869,7 @@ export const useAppDevChat = ({
         attachmentPrototypeImages,
         requestId,
         selectedMentions, // 传递 @ 提及的项
+        skillIds, // 传递技能 ID 列表
       );
     },
     [chatInput, sendMessageAndConnectSSE],
