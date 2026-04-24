@@ -126,17 +126,17 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
     const normalizedCaptchaParam =
       normalizeCaptchaVerifyParam(captchaVerifyParam);
 
-    // 保存验证参数到ref，供业务回调使用
-    console.info('[AliyunCaptcha] captcha-token-generated', {
+    // [获取] 验证码 token 由 SDK 生成并交给前端
+    console.info('[CaptchaFlow][1-token-get] SDK 生成 token', {
       elementId,
       rawTokenType: typeof captchaVerifyParam,
-      tokenType: typeof normalizedCaptchaParam,
+      normalizedType: typeof normalizedCaptchaParam,
       tokenLen: normalizedCaptchaParam?.length,
       tokenPreview: normalizedCaptchaParam
         ? `${normalizedCaptchaParam.slice(
             0,
-            4,
-          )}...${normalizedCaptchaParam.slice(-4)}`
+            6,
+          )}...${normalizedCaptchaParam.slice(-6)}`
         : null,
     });
     captchaParamRef.current = normalizedCaptchaParam;

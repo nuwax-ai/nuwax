@@ -92,9 +92,21 @@ const useCaptchaConsume = ({
     let skipReason = '';
     const consumeId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const consumeStartTime = Date.now();
+    // [使用] onBizResultCallback 触发，开始消费 token
     log('consume-start', {
       consumeId,
       hasCaptchaInstance: !!captchaInstanceRef.current,
+      tokenLen:
+        typeof currentCaptchaParam === 'string'
+          ? currentCaptchaParam.length
+          : null,
+      tokenPreview:
+        typeof currentCaptchaParam === 'string' && currentCaptchaParam
+          ? `${currentCaptchaParam.slice(0, 6)}...${currentCaptchaParam.slice(
+              -6,
+            )}`
+          : null,
+      refreshOnError,
     });
 
     // 关键：
@@ -103,6 +115,12 @@ const useCaptchaConsume = ({
     Promise.resolve()
       .then(() => doAction(currentCaptchaParam))
       .then((actionResult) => {
+        // [登录成功] doAction resolved
+        log('consume-action-resolved', {
+          consumeId,
+          durationMs: Date.now() - consumeStartTime,
+          skipRefresh: !!(actionResult as any)?.skipRefresh,
+        });
         if (
           actionResult &&
           typeof actionResult === 'object' &&
@@ -114,23 +132,30 @@ const useCaptchaConsume = ({
         }
       })
       .catch((error) => {
+        // [登录失败] doAction rejected
         // 业务 action 失败时是否刷新由 refreshOnError 控制：
         // 1) 默认 true，保持历史行为；
-        // 2) 登录场景可设置为 false，避免同一流程“多打一轮验证码请求”。
+        // 2) 登录场景可设置为 false，避免同一流程”多打一轮验证码请求”。
         if (!refreshOnError) {
           shouldRefresh = false;
           skipReason = 'action rejected and refreshOnError=false';
         }
-        console.error('[AliyunCaptcha] Token consume failed:', error);
         log('consume-action-rejected', {
           consumeId,
+          flowId: error?._flowId, // 与 [Chain] 日志关联
           durationMs: Date.now() - consumeStartTime,
+          refreshOnError,
+          willRefresh: shouldRefresh,
+          // 完整错误上下文
+          errorName: error?.name,
+          errorInfo: error?.info ?? null, // { code, displayCode, message, tid, debugInfo }
           errorMessage:
-            error instanceof Error
+            error?.info?.message ||
+            (error instanceof Error
               ? error.message
               : error
               ? String(error)
-              : 'Unknown error',
+              : 'Unknown error'),
         });
       })
       .finally(() => {
