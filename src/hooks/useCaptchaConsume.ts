@@ -81,6 +81,25 @@ const useCaptchaConsume = ({
    */
   const hasQueuedConsumeRef = useRef<boolean>(false);
   const consumingVersionRef = useRef<number | null>(null);
+  const getTokenFingerprint = (token: string): string => {
+    let hash = 0;
+    for (let i = 0; i < token.length; i += 1) {
+      hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
+    }
+    return `${token.length}-${hash.toString(16)}`;
+  };
+  const getTokenCertifyId = (token: string): string | null => {
+    if (!token) return null;
+    try {
+      const parsed = JSON.parse(token);
+      if (parsed && typeof parsed === 'object') {
+        return parsed.CertifyId || parsed.certifyId || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
 
   /**
    * 业务消费回调：在验证码校验成功后由 SDK 触发。
@@ -149,6 +168,8 @@ const useCaptchaConsume = ({
           consumeId,
           dispatchVersion: consumedVersion,
           tokenLen: latestAtDispatch.token?.length ?? 0,
+          tokenFp: getTokenFingerprint(latestAtDispatch.token || ''),
+          certifyId: getTokenCertifyId(latestAtDispatch.token || ''),
         });
         return doAction(latestAtDispatch.token);
       })
