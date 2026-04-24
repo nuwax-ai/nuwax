@@ -95,18 +95,6 @@ const useRequestPromiseBridge = (
     onError: async (error: any, ...args: any[]) => {
       const pending = pendingRef.current;
       pendingRef.current = null;
-      console.info('[Chain][4-bridge] onError raw', {
-        flowId: error?._flowId,
-        service: service?.name,
-        // 原始错误完整信息
-        rawType: typeof error,
-        rawName: error?.name,
-        rawIsError: error instanceof Error,
-        rawInfo: error?.info ?? null, // 完整 info 对象（含 code/message/tid/debugInfo）
-        rawMessage: error?.message,
-        normalizeUnknownError,
-        hasPending: !!pendingRef.current,
-      });
       const normalizedError = normalizeUnknownError
         ? normalizeRequestError(error)
         : error;
@@ -114,7 +102,8 @@ const useRequestPromiseBridge = (
         await onError?.(normalizedError, ...args);
         pending?.reject(normalizedError);
       } catch (callbackError) {
-        pending?.reject(callbackError);
+        // onError 回调自身异常不覆盖主错误，避免丢失真实请求失败上下文。
+        pending?.reject(normalizedError);
       }
     },
   });
