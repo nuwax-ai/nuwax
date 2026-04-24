@@ -306,25 +306,15 @@ function getNodeOutputArgs(
     return [...outputFromInput, ...systemVariables, ...outputs];
   }
 
-  // Loop 节点：根据 JSON 示例，输出中包含带 -input 前缀的系统变量
-  // 注意：这里仅处理暴露给下游的输出，内部引用的逻辑在 calculateNodePreviousArgs 中处理
+  // Loop 节点：这里只返回可稳定暴露给下游的配置输出
+  // INDEX / *_item 属于循环迭代局部变量，只能在 currentNode.loopNodeId 分支中按循环内场景动态注入
+  // 这样可避免循环外节点通过普通前驱路径误拿到 INDEX 或 *_item
   if (node.type === NodeTypeEnum.Loop) {
-    const outputs = [...(node.nodeConfig.outputArgs || [])];
-    // 如果没有 INDEX，根据后端示例补充
-    if (!outputs.some((o) => o.name === 'INDEX')) {
-      outputs.push({
-        name: 'INDEX',
-        dataType: DataTypeEnum.Integer,
-        description: 'Array index',
-        require: false,
-        systemVariable: true,
-        bindValueType: undefined,
-        bindValue: '',
-        key: 'INDEX', // 这里暂时用简名，外部 prefixOutputArgsKeys 会处理
-        subArgs: [],
-      });
-    }
-    return outputs;
+    return (node.nodeConfig.outputArgs || []).filter((arg) => {
+      if (arg.name === INDEX_SYSTEM_NAME) return false;
+      if (arg.name?.endsWith('_item')) return false;
+      return true;
+    });
   }
 
   // Variable 节点：补充 isSuccess

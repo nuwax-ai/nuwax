@@ -62,7 +62,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import { type DesignViewerRef } from './components/DesignViewer';
@@ -85,6 +85,9 @@ const cx = classNames.bind(styles);
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
 const AppDev: React.FC = () => {
+  const location = useLocation();
+  const isPreviewCustomizePage =
+    location.pathname.includes('/app-dev-preview/');
   // 获取路由参数
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -1463,6 +1466,8 @@ const AppDev: React.FC = () => {
                   autoErrorHandling.handleUserCancelAuto();
                 }}
                 isComparing={versionCompare.isComparing}
+                defaultActiveTab={isPreviewCustomizePage ? 'design' : 'chat'}
+                hiddenTabs={isPreviewCustomizePage ? ['chat', 'data'] : []}
               />
             </div>
 

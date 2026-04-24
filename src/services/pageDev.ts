@@ -6,6 +6,7 @@ import type {
   PageBatchConfigProxyParams,
   PageCopyParams,
   PageCopyProjectInfo,
+  PageCreateParams,
   PageDeletePathParams,
   PageQueryListParams,
   PageUpdateParams,
@@ -26,7 +27,7 @@ export async function apiCustomPageUploadAndStart(
 
 // 创建用户前端页面项目
 export async function apiCustomPageCreate(
-  data: PageUploadAndStartParams,
+  data: PageCreateParams,
 ): Promise<RequestResponse<CreateCustomPageInfo>> {
   return request('/api/custom-page/create', {
     method: 'POST',

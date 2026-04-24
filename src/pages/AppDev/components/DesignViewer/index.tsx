@@ -1,6 +1,10 @@
 import SelectList from '@/components/custom/SelectList';
 import { dict, t } from '@/services/i18nRuntime';
 import {
+  getIframeTargetOrigin,
+  isValidIframeMessage,
+} from '@/utils/iframeMessageValidator';
+import {
   CompressOutlined,
   ExpandOutlined,
   LockOutlined,
@@ -57,6 +61,7 @@ import {
   generateFullTailwindColorOptions,
   getColorClassRegexp,
   getColorFromTailwindClass,
+  getHexFromColorValue,
   parseTailwindColor,
 } from './utils/tailwind-color';
 import {
@@ -283,6 +288,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     const {
       iframeDesignMode,
       setIframeDesignMode,
+      previewIframeElement,
       selectedElement,
       setSelectedElement,
       pendingChanges,
@@ -297,15 +303,16 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       setSelectedElement(null);
       // 清空文本内容
       setLocalTextContent('');
-      const iframe = document.querySelector('iframe');
+      const iframe = previewIframeElement;
       if (iframe && iframe.contentWindow) {
+        const targetOrigin = getIframeTargetOrigin(iframe);
         iframe.contentWindow.postMessage(
           {
             type: 'TOGGLE_DESIGN_MODE',
             enabled: false,
             timestamp: Date.now(),
           },
-          '*',
+          targetOrigin,
         );
       }
     };
@@ -678,15 +685,13 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     // 监听从iframe发送的消息
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
+        // 仅处理来自当前预览 iframe 的消息，避免被其他 postMessage 源干扰。
+        if (!isValidIframeMessage(event, previewIframeElement)) {
+          return;
+        }
+
         const { type, payload } = event.data;
         switch (type) {
-          case 'DESIGN_MODE_CHANGED':
-            // 清空选中元素
-            setSelectedElement(null);
-            // 设置设计模式状态
-            setIframeDesignMode(event.data.enabled);
-            break;
-
           case 'ELEMENT_SELECTED':
             {
               // console.log('[Parent] Element selected - full payload:', payload);
@@ -785,8 +790,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       }
       upsertPendingChange('content', newContent);
 
-      const iframe = document.querySelector('iframe');
+      const iframe = previewIframeElement;
       if (iframe && iframe.contentWindow) {
+        const targetOrigin = getIframeTargetOrigin(iframe);
         iframe.contentWindow.postMessage(
           {
             type: 'UPDATE_CONTENT',
@@ -797,7 +803,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
             },
             timestamp: Date.now(),
           },
-          '*',
+          targetOrigin,
         );
       }
     };
@@ -806,8 +812,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
     const handleStyleUpdate = (newClass: string) => {
       upsertPendingChange('style', newClass);
 
-      const iframe = document.querySelector('iframe');
+      const iframe = previewIframeElement;
       if (iframe && iframe.contentWindow) {
+        const targetOrigin = getIframeTargetOrigin(iframe);
         iframe.contentWindow.postMessage(
           {
             type: 'UPDATE_STYLE',
@@ -818,7 +825,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
             },
             timestamp: Date.now(),
           },
-          '*',
+          targetOrigin,
         );
       }
     };
@@ -1086,8 +1093,8 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
         // 例如 border- 前缀：已在 handleBorderColorChange 中特殊处理
         toggleStyle('', colorClassRegexp);
       } else {
-        const itemColor = colorOptions.find((item) => item.value === color);
-        const styleClass = `${prefix}-${itemColor?.label}`;
+        // color 现在是 label（如 "red-500", "black", "white"）
+        const styleClass = `${prefix}-${color}`;
         toggleStyle(styleClass, colorClassRegexp);
       }
     };
@@ -1540,7 +1547,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                 ) : (
                   <div
                     className={cx(styles.colorSwatch)}
-                    style={{ background: localColor }}
+                    style={{ background: getHexFromColorValue(localColor) }}
                   />
                 )
               }
@@ -1552,7 +1559,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                       style={{
                         width: 16,
                         height: 16,
-                        background: option.data.value,
+                        background: option.data.hex,
                       }}
                     />
                     <span className={cx('flex-1', 'text-ellipsis')}>
@@ -1580,7 +1587,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                 ) : (
                   <div
                     className={cx(styles.colorSwatch)}
-                    style={{ background: localBackground }}
+                    style={{
+                      background: getHexFromColorValue(localBackground),
+                    }}
                   />
                 )
               }
@@ -1592,7 +1601,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                       style={{
                         width: 16,
                         height: 16,
-                        background: option.data.value,
+                        background: option.data.hex,
                       }}
                     />
                     <span className={cx('flex-1', 'text-ellipsis')}>
@@ -2053,7 +2062,9 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                     ) : (
                       <div
                         className={cx(styles.colorSwatch)}
-                        style={{ background: borderColor }}
+                        style={{
+                          background: getHexFromColorValue(borderColor),
+                        }}
                       />
                     )
                   }
@@ -2065,7 +2076,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
                           style={{
                             width: 16,
                             height: 16,
-                            background: option.data.value,
+                            background: option.data.hex,
                           }}
                         />
                         <span className={cx('flex-1', 'text-ellipsis')}>

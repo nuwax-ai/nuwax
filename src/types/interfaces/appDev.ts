@@ -6,7 +6,7 @@
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { DataResource } from './dataResource';
 
 /**
@@ -446,6 +446,8 @@ export enum SessionMessageType {
 }
 
 export enum AgentSessionUpdateSubType {
+  /** 模型思考过程流式片段，对应 UI message.think */
+  AGENT_THOUGHT_CHUNK = 'agent_thought_chunk',
   AGENT_MESSAGE_CHUNK = 'agent_message_chunk',
   TOOL_CALL = 'tool_call',
   TOOL_CALL_UPDATE = 'tool_call_update',
@@ -966,16 +968,22 @@ export enum ProjectType {
 // ==================== 会话管理相关类型定义 ====================
 
 /**
- * 会话记录信息
+ * page-query-conversations 单条记录（与线上真实返回对齐）
+ * - USER：content 为 JSON 字符串，内含 text / attachments 等
+ * - ASSISTANT：content 为 JSON 字符串，内含 events 数组（与 SSE 事件形态一致）
  */
 export interface ConversationRecord {
+  /** 行主键；与 conversationId 在现网数据中一致 */
+  id: number;
   projectId: number;
+  conversationId: number;
   sessionId: string;
   content: string;
+  role: 'USER' | 'ASSISTANT' | string;
   topic: string;
-  summary?: string;
   created: string;
   creatorId: number;
+  summary?: string;
 }
 
 /**
@@ -990,9 +998,18 @@ export interface SaveConversationParams {
 }
 
 /**
- * 查询会话列表响应
+ * page-query-conversations 分页 data（与 Page 对齐；部分分页元字段后端可能省略，故用 Pick）
  */
-export type ListConversationsResponse = RequestResponse<ConversationRecord[]>;
+export type ListConversationsPageData = Pick<
+  Page<ConversationRecord>,
+  'records' | 'total' | 'size' | 'current' | 'pages'
+>;
+
+/**
+ * 查询会话列表完整响应（code / displayCode / message + data 分页）
+ */
+export type ListConversationsResponse =
+  RequestResponse<ListConversationsPageData>;
 
 // ==================== Agent服务管理相关类型定义 ====================
 
