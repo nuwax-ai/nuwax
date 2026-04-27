@@ -183,6 +183,7 @@ interface RecentDataSourceItem {
  */
 interface RecentSkillItem {
   id: number;
+  targetId: number;
   name: string;
   icon: string;
   description: string;
@@ -327,6 +328,7 @@ export const saveRecentSkill = (
     const filtered = items.filter((item) => item.id !== skill.id);
     const newItem: RecentSkillItem = {
       id: skill.id,
+      targetId: skill.targetId,
       name: skill.name,
       icon: skill.icon,
       description: skill.description || '',

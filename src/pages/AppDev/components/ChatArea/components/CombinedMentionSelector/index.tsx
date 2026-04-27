@@ -182,6 +182,7 @@ const CombinedMentionSelector = React.forwardRef<
           type: 'skill',
           data: {
             id: item.id,
+            targetId: item.targetId,
             name: item.name,
             icon: item.icon,
             description: item.description,
