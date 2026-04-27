@@ -103,6 +103,8 @@ export interface FileTreeViewProps {
   isDynamicTheme?: boolean;
   // 是否显示导出 PDF 按钮, 默认显示
   isShowExportPdfButton?: boolean;
+  // 是否显示下载按钮, 默认显示
+  isShowDownloadButton?: boolean;
   /** 静态资源文件基础路径 */
   staticFileBasePath?: string;
 }

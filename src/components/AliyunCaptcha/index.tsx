@@ -1,4 +1,12 @@
-import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 
 interface AliyunCaptchaConfig {
   captchaSceneId: string;
@@ -17,6 +25,10 @@ declare global {
     /** 验证码 initAliyunCaptcha 调用时间戳，用于保障 init 与验证 ≥2s */
     __captchaInitAt?: number;
   }
+}
+
+export interface AliyunCaptchaRef {
+  refresh: () => void;
 }
 
 interface AliyunCaptchaProps {
@@ -78,145 +90,151 @@ function normalizeCaptchaVerifyParam(captchaVerifyParam: any): string {
   return String(captchaVerifyParam);
 }
 
-const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
-  config,
-  elementId,
-  onVerify,
-  onBizResult,
-  onReady,
-}) => {
-  const captchaInstanceRef = useRef<any>(null);
-  const [captchaInited, setCaptchaInited] = useState(false);
+const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
+  ({ config, elementId, onVerify, onBizResult, onReady }, ref) => {
+    const captchaInstanceRef = useRef<any>(null);
+    const [captchaInited, setCaptchaInited] = useState(false);
 
-  // 解构 primitive 值，避免 config 对象引用变化触发 effect 重新初始化
-  const { captchaSceneId, captchaPrefix, openCaptcha } = config || {};
+    useImperativeHandle(
+      ref,
+      () => ({
+        refresh: () => {
+          captchaInstanceRef.current?.refresh?.();
+        },
+      }),
+      [],
+    );
 
-  // 使用 ref 持有最新回调，避免 SDK init 时捕获过期闭包
-  const onVerifyRef = useRef(onVerify);
-  onVerifyRef.current = onVerify;
-  const onBizResultRef = useRef(onBizResult);
-  onBizResultRef.current = onBizResult;
-  const onReadyRef = useRef(onReady);
-  onReadyRef.current = onReady;
+    // 解构 primitive 值，避免 config 对象引用变化触发 effect 重新初始化
+    const { captchaSceneId, captchaPrefix, openCaptcha } = config || {};
 
-  const getInstance = useCallback((instance: any) => {
-    captchaInstanceRef.current = instance;
-    if (instance) setCaptchaInited(true);
-  }, []);
+    // 使用 ref 持有最新回调，避免 SDK init 时捕获过期闭包
+    const onVerifyRef = useRef(onVerify);
+    onVerifyRef.current = onVerify;
+    const onBizResultRef = useRef(onBizResult);
+    onBizResultRef.current = onBizResult;
+    const onReadyRef = useRef(onReady);
+    onReadyRef.current = onReady;
 
-  /**
-   * SDK 验证通过后调用此函数。
-   *
-   * SDK 支持两种调用模式：
-   * - ES6 Promise 模式：captchaVerifyCallback(param) → 返回值作为验证结果
-   * - ES5 回调模式：captchaVerifyCallback(param, callback) → 调用 callback(result)
-   *
-   * 在无痕验证（TRACELESS）等场景下 SDK 可能使用 ES5 回调模式，
-   * 如果忽略 callback 参数会导致 SDK 收不到结果、超时后重新生成验证码。
-   */
-  const captchaVerifyCallback = useCallback(
-    (
-      captchaVerifyParam: any,
-      callback?: (result: CaptchaVerifyResult) => void,
-    ): Promise<CaptchaVerifyResult> | void => {
-      console.log('[Captcha CB] typeof:', typeof captchaVerifyParam);
-      if (typeof captchaVerifyParam === 'string') {
+    const getInstance = useCallback((instance: any) => {
+      captchaInstanceRef.current = instance;
+      if (instance) setCaptchaInited(true);
+    }, []);
+
+    /**
+     * SDK 验证通过后调用此函数。
+     *
+     * SDK 支持两种调用模式：
+     * - ES6 Promise 模式：captchaVerifyCallback(param) → 返回值作为验证结果
+     * - ES5 回调模式：captchaVerifyCallback(param, callback) → 调用 callback(result)
+     *
+     * 在无痕验证（TRACELESS）等场景下 SDK 可能使用 ES5 回调模式，
+     * 如果忽略 callback 参数会导致 SDK 收不到结果、超时后重新生成验证码。
+     */
+    const captchaVerifyCallback = useCallback(
+      (
+        captchaVerifyParam: any,
+        callback?: (result: CaptchaVerifyResult) => void,
+      ): Promise<CaptchaVerifyResult> | void => {
+        console.log('[Captcha CB] typeof:', typeof captchaVerifyParam);
+        if (typeof captchaVerifyParam === 'string') {
+          console.log(
+            '[Captcha CB] string preview:',
+            captchaVerifyParam.substring(0, 200),
+          );
+        } else {
+          console.log(
+            '[Captcha CB] object keys:',
+            Object.keys(captchaVerifyParam || {}),
+          );
+          console.log(
+            '[Captcha CB] object preview:',
+            JSON.stringify(captchaVerifyParam).substring(0, 500),
+          );
+        }
+        const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
         console.log(
-          '[Captcha CB] string preview:',
-          captchaVerifyParam.substring(0, 200),
+          '[Captcha CB] normalized length:',
+          param.length,
+          'preview:',
+          param.substring(0, 200),
         );
-      } else {
-        console.log(
-          '[Captcha CB] object keys:',
-          Object.keys(captchaVerifyParam || {}),
-        );
-        console.log(
-          '[Captcha CB] object preview:',
-          JSON.stringify(captchaVerifyParam).substring(0, 500),
-        );
-      }
-      const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
-      console.log(
-        '[Captcha CB] normalized length:',
-        param.length,
-        'preview:',
-        param.substring(0, 200),
-      );
-      const resultPromise = onVerifyRef.current(param);
+        const resultPromise = onVerifyRef.current(param);
 
-      if (typeof callback === 'function') {
-        // ES5 回调模式：通过 callback 传递验证结果给 SDK
-        // catch 确保业务异常时 SDK 也能收到反馈，避免 SDK 超时重试
-        resultPromise
-          .then((result) => callback(result))
-          .catch(() => callback({ captchaResult: true, bizResult: true }));
-        return;
-      }
+        if (typeof callback === 'function') {
+          // ES5 回调模式：通过 callback 传递验证结果给 SDK
+          // catch 确保业务异常时 SDK 也能收到反馈，避免 SDK 超时重试
+          resultPromise
+            .then((result) => callback(result))
+            .catch(() => callback({ captchaResult: true, bizResult: true }));
+          return;
+        }
 
-      // ES6 Promise 模式：通过返回值传递验证结果给 SDK
-      return resultPromise;
-    },
-    [],
-  );
+        // ES6 Promise 模式：通过返回值传递验证结果给 SDK
+        return resultPromise;
+      },
+      [],
+    );
 
-  const onBizResultCallback = useCallback((bizParam?: any) => {
-    onBizResultRef.current?.(bizParam === true);
-  }, []);
+    const onBizResultCallback = useCallback((bizParam?: any) => {
+      onBizResultRef.current?.(bizParam === true);
+    }, []);
 
-  const cleanupCaptchaElements = useCallback(() => {
-    document.getElementById('aliyunCaptcha-mask')?.remove();
-    document.getElementById('aliyunCaptcha-window-popup')?.remove();
-    captchaInstanceRef.current?.destroy?.();
-    captchaInstanceRef.current = null;
-  }, []);
+    const cleanupCaptchaElements = useCallback(() => {
+      document.getElementById('aliyunCaptcha-mask')?.remove();
+      document.getElementById('aliyunCaptcha-window-popup')?.remove();
+      captchaInstanceRef.current?.destroy?.();
+      captchaInstanceRef.current = null;
+    }, []);
 
-  useEffect(() => {
-    if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
-    if (captchaInstanceRef.current) return;
+    useEffect(() => {
+      if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
+      if (captchaInstanceRef.current) return;
 
-    console.log('[AliyunCaptcha] initAliyunCaptcha called at', Date.now(), {
+      console.log('[AliyunCaptcha] initAliyunCaptcha called at', Date.now(), {
+        captchaSceneId,
+        captchaPrefix,
+        elementId,
+      });
+
+      window.initAliyunCaptcha({
+        SceneId: captchaSceneId,
+        prefix: captchaPrefix,
+        mode: 'popup',
+        element: '#captcha-element',
+        button: `#${elementId}`,
+        captchaVerifyCallback,
+        onBizResultCallback,
+        getInstance,
+        slideStyle: { width: 360, height: 40 },
+        language: 'cn',
+      });
+
+      // 记录初始化时间戳，用于保障 init 与验证请求之间 ≥2s
+      window.__captchaInitAt = Date.now();
+
+      return cleanupCaptchaElements;
+    }, [
       captchaSceneId,
       captchaPrefix,
+      openCaptcha,
       elementId,
-    });
-
-    window.initAliyunCaptcha({
-      SceneId: captchaSceneId,
-      prefix: captchaPrefix,
-      mode: 'popup',
-      element: '#captcha-element',
-      button: `#${elementId}`,
       captchaVerifyCallback,
       onBizResultCallback,
       getInstance,
-      slideStyle: { width: 360, height: 40 },
-      language: 'cn',
-    });
+      cleanupCaptchaElements,
+    ]);
 
-    // 记录初始化时间戳，用于保障 init 与验证请求之间 ≥2s
-    window.__captchaInitAt = Date.now();
+    useEffect(() => {
+      if (captchaInited) onReadyRef.current?.();
+    }, [captchaInited]);
 
-    return cleanupCaptchaElements;
-  }, [
-    captchaSceneId,
-    captchaPrefix,
-    openCaptcha,
-    elementId,
-    captchaVerifyCallback,
-    onBizResultCallback,
-    getInstance,
-    cleanupCaptchaElements,
-  ]);
-
-  useEffect(() => {
-    if (captchaInited) onReadyRef.current?.();
-  }, [captchaInited]);
-
-  return (
-    <div className="captcha-a">
-      <div id="captcha-element"></div>
-    </div>
-  );
-};
+    return (
+      <div className="captcha-a">
+        <div id="captcha-element"></div>
+      </div>
+    );
+  },
+);
 
 export default memo(AliyunCaptcha);
