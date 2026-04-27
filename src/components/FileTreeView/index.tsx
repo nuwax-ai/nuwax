@@ -116,6 +116,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
+      /** 是否为项目技能模式 */
+      isProjectSkill = false,
     },
     ref,
   ) => {
@@ -597,18 +599,27 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (
         files &&
         files.length > 0 &&
-        isImportProjectTrigger &&
-        taskAgentSelectedFileId
+        (isImportProjectTrigger || isProjectSkill)
       ) {
+        // 优先使用当前选中的 ID，如果没有则尝试使用外部传入的 ID
+        const targetSyncId = selectedFileId || taskAgentSelectedFileId;
+        if (!targetSyncId) return;
+
         // 从新的 files 中查找对应的文件节点
-        const newFileNode = findFileNode(taskAgentSelectedFileId, files);
+        const newFileNode = findFileNode(targetSyncId, files);
 
         if (newFileNode) {
           setSelectedFileNode(newFileNode);
           setSelectedFileId(newFileNode?.id);
         }
       }
-    }, [files, isImportProjectTrigger, taskAgentSelectedFileId]);
+    }, [
+      files,
+      isImportProjectTrigger,
+      isProjectSkill,
+      selectedFileId,
+      taskAgentSelectedFileId,
+    ]);
 
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
@@ -1320,8 +1331,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
             : fileRefreshTimestampRef.current;
+        const separator = fileProxyUrl.includes('?') ? '&' : '?';
         const fileUrl = triggerValue
-          ? `${fileProxyUrl}?t=${triggerValue}`
+          ? `${fileProxyUrl}${separator}t=${triggerValue}`
           : fileProxyUrl;
 
         return { key: fileKey, url: fileUrl };
@@ -1406,9 +1418,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 获取文件代理URL
-      const fileProxyUrl = selectedFileNode?.fileProxyUrl
-        ? `${process.env.BASE_URL}${selectedFileNode?.fileProxyUrl}`
-        : '';
+      let fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+      // 如果是相对路径（不以 http://, https:// 或 // 开头），则添加 BASE_URL 前缀
+      if (fileProxyUrl && !/^(https?:)?\/\//i.test(fileProxyUrl)) {
+        fileProxyUrl = `${process.env.BASE_URL || ''}${fileProxyUrl}`;
+      }
 
       // 视频文件：使用FilePreview组件
       if (isVideo && fileProxyUrl) {
