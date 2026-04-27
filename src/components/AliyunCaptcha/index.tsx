@@ -104,13 +104,30 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
   /**
    * SDK 验证通过后调用此函数。
-   * 在此处直接发起业务请求，将真实结果返回给 SDK，
-   * SDK 据此决定是否显示验证码错误状态，并调用 onBizResultCallback。
+   *
+   * SDK 支持两种调用模式：
+   * - ES6 Promise 模式：captchaVerifyCallback(param) → 返回值作为验证结果
+   * - ES5 回调模式：captchaVerifyCallback(param, callback) → 调用 callback(result)
+   *
+   * 在无痕验证（TRACELESS）等场景下 SDK 可能使用 ES5 回调模式，
+   * 如果忽略 callback 参数会导致 SDK 收不到结果、超时后重新生成验证码。
    */
   const captchaVerifyCallback = useCallback(
-    async (captchaVerifyParam: any): Promise<CaptchaVerifyResult> => {
+    (
+      captchaVerifyParam: any,
+      callback?: (result: CaptchaVerifyResult) => void,
+    ): Promise<CaptchaVerifyResult> | void => {
       const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
-      return onVerifyRef.current(param);
+      const resultPromise = onVerifyRef.current(param);
+
+      if (typeof callback === 'function') {
+        // ES5 回调模式：通过 callback 传递验证结果给 SDK
+        resultPromise.then((result) => callback(result));
+        return;
+      }
+
+      // ES6 Promise 模式：通过返回值传递验证结果给 SDK
+      return resultPromise;
     },
     [],
   );
