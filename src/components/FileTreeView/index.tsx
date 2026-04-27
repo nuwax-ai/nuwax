@@ -94,6 +94,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isShowShare = true,
       // 是否显示导出 PDF 按钮, 默认显示
       isShowExportPdfButton = true,
+      // 是否显示下载按钮, 默认显示
+      isShowDownloadButton = true,
       onClose,
       showFullscreenIcon = true,
       // 是否隐藏文件树（外部控制）
@@ -1627,6 +1629,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
           // 是否显示分享按钮
           isShowShare={isShowShare}
+          // 是否显示下载按钮
+          isShowDownloadButton={isShowDownloadButton}
           // 分享回调
           onShare={onShare}
           // 是否显示导出 PDF 按钮, 默认显示

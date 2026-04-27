@@ -562,6 +562,10 @@ const SkillDetails: React.FC = () => {
           isFileTreePinned={true}
           // 技能不显示刷新按钮
           showRefreshButton={false}
+          // 技能不显示分享按钮
+          isShowShare={false}
+          // 技能不显示下载按钮
+          isShowDownloadButton={false}
           // 是否显示导出 PDF 按钮, 默认显示
           isShowExportPdfButton={false}
         />
