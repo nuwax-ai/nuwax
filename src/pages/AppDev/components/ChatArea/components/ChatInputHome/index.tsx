@@ -459,6 +459,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     setMentionTrigger({ trigger: false });
     setMentionPosition({ left: 0, top: 0, visible: false });
     setMentionSelectedIndex(0);
+    // 延迟聚焦，确保在弹框关闭后输入框能正确获取焦点
+    setTimeout(() => {
+      textAreaRef.current?.focus();
+    }, 0);
   }, []);
 
   /**
@@ -1143,6 +1147,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           containerRef={mentionContainerRef}
           onSelectedIndexChange={setMentionSelectedIndex}
           projectId={projectId}
+          // 关闭回调
+          onClose={handleCloseMenu}
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>

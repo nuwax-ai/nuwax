@@ -93,4 +93,6 @@ export interface MentionSelectorProps {
   onSelectedIndexChange?: (val: number | ((prev: number) => number)) => void;
   /** 项目ID，用于区分不同项目的最近使用记录 */
   projectId?: string;
+  /** 关闭回调 */
+  onClose?: () => void;
 }
