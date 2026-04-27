@@ -165,6 +165,15 @@ const VerifyCode: React.FC = () => {
     return handleSendCode(value);
   };
 
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    try {
+      await handleSendCode(captchaVerifyParam);
+      return { captchaResult: true, bizResult: true };
+    } catch {
+      return { captchaResult: true, bizResult: false };
+    }
+  };
+
   useEffect(() => {
     handleClick();
     // 发送验证码
@@ -310,7 +319,7 @@ const VerifyCode: React.FC = () => {
         <Button id="aliyun-captcha-sms" style={{ display: 'none' }} />
         <AliyunCaptcha
           config={tenantConfigInfo}
-          doAction={handlerSuccess}
+          onVerify={handleCaptchaVerify}
           onReady={handleReady}
           elementId="aliyun-captcha-sms"
         />
