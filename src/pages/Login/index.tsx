@@ -1,4 +1,4 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
+import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
@@ -22,6 +22,7 @@ import {
   Form,
   FormProps,
   Input,
+  message,
   Modal,
   Segmented,
   theme,
@@ -95,11 +96,14 @@ const Login: React.FC = () => {
    * 防止 SDK 多次调用 captchaVerifyCallback 导致并发登录请求。
    */
   const isVerifyingRef = useRef<boolean>(false);
+  /** 检测到 SDK 自动验证（deviceToken 格式）时跳过验证码校验 */
+  const captchaFallbackRef = useRef<boolean>(false);
   /**
    * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
+  const captchaRef = useRef<AliyunCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
@@ -138,6 +142,8 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
+        message.error(error?.message || dict('PC.Common.Global.error'));
+        captchaRef.current?.refresh();
       },
     },
   );
@@ -260,7 +266,8 @@ const Login: React.FC = () => {
       tenantConfigInfo &&
       captchaSceneId !== '' &&
       captchaPrefix !== '' &&
-      openCaptcha
+      openCaptcha &&
+      !captchaFallbackRef.current
     );
 
     if (needAliyunCaptcha && !normalizedCaptchaParam) {
@@ -337,6 +344,26 @@ const Login: React.FC = () => {
       'preview:',
       captchaVerifyParam?.substring(0, 150),
     );
+
+    // 检测 SDK 自动验证（deviceToken JSON 格式，非用户滑动验证）
+    const isDeviceTokenFallback =
+      captchaVerifyParam?.startsWith('{"sceneId"') &&
+      captchaVerifyParam.length > 500;
+    if (isDeviceTokenFallback) {
+      console.log(
+        '[Login handleCaptchaVerify] deviceToken auto-verify detected, fallback to captcha-less login',
+      );
+      captchaFallbackRef.current = true;
+      try {
+        if (loginTypeRef.current === LoginTypeEnum.Password) {
+          return await handlerPasswordLogin('');
+        }
+        return await handlerCodeLogin('');
+      } finally {
+        captchaFallbackRef.current = false;
+      }
+    }
+
     if (isVerifyingRef.current) {
       console.log('[Login handleCaptchaVerify] isVerifyingRef locked, skip');
       return { captchaResult: true, bizResult: true };
@@ -387,7 +414,7 @@ const Login: React.FC = () => {
         lastLoginTriggerAtRef.current = now;
         captchaDelayTimerRef.current = window.setTimeout(() => {
           captchaDelayTimerRef.current = null;
-          document.getElementById('aliyun-captcha-login')?.click();
+          captchaRef.current?.show?.();
           startCaptchaPopupWatcher();
         }, delay);
         return;
@@ -407,7 +434,7 @@ const Login: React.FC = () => {
     );
 
     if (needAliyunCaptcha) {
-      document.getElementById('aliyun-captcha-login')?.click();
+      captchaRef.current?.show?.();
       startCaptchaPopupWatcher();
     } else {
       const handler =
@@ -590,6 +617,7 @@ const Login: React.FC = () => {
                   config={tenantConfigInfo}
                   onVerify={handleCaptchaVerify}
                   elementId="aliyun-captcha-login"
+                  ref={captchaRef}
                 />
               </div>
             </div>
