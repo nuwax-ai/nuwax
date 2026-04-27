@@ -363,7 +363,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           { type: 'skill', data: skill },
         ]);
         // 更新技能 ID 列表
-        setSkillIds((prev) => [...prev, skill.id]);
+        setSkillIds((prev) => [...prev, skill.targetId]);
       }
       // 在输入框中插入提及文本
       insertMention(skill.name);
@@ -403,7 +403,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
         const removedSkillIds = removedItems
           .filter((item) => item.type === 'skill')
-          .map((item) => (item.data as SkillInfoForAt).id);
+          .map((item) => (item.data as SkillInfoForAt).targetId);
 
         setSelectedMentions((prev) =>
           prev.filter((_, index) => !mentionsToRemove.includes(index)),
