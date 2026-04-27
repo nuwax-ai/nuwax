@@ -350,15 +350,17 @@ const Login: React.FC = () => {
       captchaVerifyParam?.startsWith('{"sceneId"') &&
       captchaVerifyParam.length > 500;
     if (isDeviceTokenFallback) {
+      // deviceToken 格式走正常路径发送给后端（后端支持此格式），
+      // 仅跳过前端 needAliyunCaptcha 的空字符串拦截（captchaFallbackRef）
       console.log(
-        '[Login handleCaptchaVerify] deviceToken auto-verify detected, fallback to captcha-less login',
+        '[Login handleCaptchaVerify] deviceToken auto-verify, pass-through to backend',
       );
       captchaFallbackRef.current = true;
       try {
         if (loginTypeRef.current === LoginTypeEnum.Password) {
-          return await handlerPasswordLogin('');
+          return await handlerPasswordLogin(captchaVerifyParam);
         }
-        return await handlerCodeLogin('');
+        return await handlerCodeLogin(captchaVerifyParam);
       } finally {
         captchaFallbackRef.current = false;
       }
