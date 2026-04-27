@@ -99,6 +99,7 @@ const Login: React.FC = () => {
    * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
+  const captchaDelayTimerRef = useRef<number | null>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
@@ -178,6 +179,10 @@ const Login: React.FC = () => {
   useEffect(() => {
     return () => {
       clearCaptchaPopupWatcher();
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -368,7 +373,8 @@ const Login: React.FC = () => {
         const delay = 2000 - gap;
         loginTriggerLockRef.current = true;
         lastLoginTriggerAtRef.current = now;
-        window.setTimeout(() => {
+        captchaDelayTimerRef.current = window.setTimeout(() => {
+          captchaDelayTimerRef.current = null;
           document.getElementById('aliyun-captcha-login')?.click();
           startCaptchaPopupWatcher();
         }, delay);
