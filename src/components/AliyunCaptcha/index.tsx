@@ -122,7 +122,10 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
 
       if (typeof callback === 'function') {
         // ES5 回调模式：通过 callback 传递验证结果给 SDK
-        resultPromise.then((result) => callback(result));
+        // catch 确保业务异常时 SDK 也能收到反馈，避免 SDK 超时重试
+        resultPromise
+          .then((result) => callback(result))
+          .catch(() => callback({ captchaResult: true, bizResult: false }));
         return;
       }
 
