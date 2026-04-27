@@ -119,7 +119,29 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       captchaVerifyParam: any,
       callback?: (result: CaptchaVerifyResult) => void,
     ): Promise<CaptchaVerifyResult> | void => {
+      console.log('[Captcha CB] typeof:', typeof captchaVerifyParam);
+      if (typeof captchaVerifyParam === 'string') {
+        console.log(
+          '[Captcha CB] string preview:',
+          captchaVerifyParam.substring(0, 200),
+        );
+      } else {
+        console.log(
+          '[Captcha CB] object keys:',
+          Object.keys(captchaVerifyParam || {}),
+        );
+        console.log(
+          '[Captcha CB] object preview:',
+          JSON.stringify(captchaVerifyParam).substring(0, 500),
+        );
+      }
       const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
+      console.log(
+        '[Captcha CB] normalized length:',
+        param.length,
+        'preview:',
+        param.substring(0, 200),
+      );
       const resultPromise = onVerifyRef.current(param);
 
       if (typeof callback === 'function') {
@@ -151,6 +173,12 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   useEffect(() => {
     if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
     if (captchaInstanceRef.current) return;
+
+    console.log('[AliyunCaptcha] initAliyunCaptcha called at', Date.now(), {
+      captchaSceneId,
+      captchaPrefix,
+      elementId,
+    });
 
     window.initAliyunCaptcha({
       SceneId: captchaSceneId,
