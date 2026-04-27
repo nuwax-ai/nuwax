@@ -1,4 +1,4 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
+import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
@@ -22,6 +22,7 @@ import {
   Form,
   FormProps,
   Input,
+  message,
   Modal,
   Segmented,
   theme,
@@ -100,6 +101,7 @@ const Login: React.FC = () => {
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
   const captchaDelayTimerRef = useRef<number | null>(null);
+  const captchaRef = useRef<AliyunCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
@@ -138,6 +140,8 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
+        message.error(error?.message || dict('PC.Common.Global.error'));
+        captchaRef.current?.refresh();
       },
     },
   );
@@ -590,6 +594,7 @@ const Login: React.FC = () => {
                   config={tenantConfigInfo}
                   onVerify={handleCaptchaVerify}
                   elementId="aliyun-captcha-login"
+                  ref={captchaRef}
                 />
               </div>
             </div>
