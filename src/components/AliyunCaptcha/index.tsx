@@ -29,6 +29,7 @@ declare global {
 
 export interface AliyunCaptchaRef {
   refresh: () => void;
+  show: () => void;
 }
 
 interface AliyunCaptchaProps {
@@ -100,6 +101,9 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
       () => ({
         refresh: () => {
           captchaInstanceRef.current?.refresh?.();
+        },
+        show: () => {
+          captchaInstanceRef.current?.show?.();
         },
       }),
       [],
