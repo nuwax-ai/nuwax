@@ -134,12 +134,22 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         return;
       }
 
-      // 检查是否是WordHighlighter相关的取消错误
       if (
         event.reason &&
         (event.reason.stack?.includes('WordHighlighter') ||
           event.reason.stack?.includes('Delayer.cancel'))
       ) {
+        event.preventDefault();
+        return;
+      }
+
+      // 检查是否是 fetch 失败（通常是网络问题或被拦截）
+      if (
+        event.reason &&
+        (event.reason.message === 'Failed to fetch' ||
+          event.reason.message?.includes('NetworkError'))
+      ) {
+        // 阻止这个错误冒泡到控制台，从而避免在开发环境下弹出全屏错误弹框
         event.preventDefault();
         return;
       }
@@ -153,11 +163,20 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         return;
       }
 
-      // 检查是否是Monaco Editor相关的错误
       if (
         event.error &&
         (event.error.message?.includes('Canceled') ||
           event.error.stack?.includes('WordHighlighter'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+
+      // 检查是否是 fetch 失败（通常是网络问题或被拦截）
+      if (
+        event.error &&
+        (event.error.message === 'Failed to fetch' ||
+          event.error.message?.includes('NetworkError'))
       ) {
         event.preventDefault();
         return;
