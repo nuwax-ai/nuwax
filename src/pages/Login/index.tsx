@@ -99,6 +99,7 @@ const Login: React.FC = () => {
    * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
    */
   const captchaPopupWatcherTimerRef = useRef<number | null>(null);
+  const captchaDelayTimerRef = useRef<number | null>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
@@ -178,6 +179,10 @@ const Login: React.FC = () => {
   useEffect(() => {
     return () => {
       clearCaptchaPopupWatcher();
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -350,8 +355,6 @@ const Login: React.FC = () => {
     ) {
       return;
     }
-    loginTriggerLockRef.current = true;
-    lastLoginTriggerAtRef.current = now;
 
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
@@ -361,6 +364,26 @@ const Login: React.FC = () => {
       captchaPrefix !== '' &&
       openCaptcha
     );
+
+    // 保障 initAliyunCaptcha 与验证请求之间 ≥2s，确保图片资源预加载完成
+    if (needAliyunCaptcha) {
+      const initAt = window.__captchaInitAt || 0;
+      const gap = now - initAt;
+      if (gap < 2000) {
+        const delay = 2000 - gap;
+        loginTriggerLockRef.current = true;
+        lastLoginTriggerAtRef.current = now;
+        captchaDelayTimerRef.current = window.setTimeout(() => {
+          captchaDelayTimerRef.current = null;
+          document.getElementById('aliyun-captcha-login')?.click();
+          startCaptchaPopupWatcher();
+        }, delay);
+        return;
+      }
+    }
+
+    loginTriggerLockRef.current = true;
+    lastLoginTriggerAtRef.current = now;
 
     if (needAliyunCaptcha) {
       document.getElementById('aliyun-captcha-login')?.click();
