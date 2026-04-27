@@ -240,6 +240,12 @@ const Login: React.FC = () => {
   const handlerPasswordLogin = async (
     captchaVerifyParam: string,
   ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
+    console.log(
+      '[Login handlerPasswordLogin] raw param length:',
+      captchaVerifyParam?.length,
+      'preview:',
+      captchaVerifyParam?.substring(0, 100),
+    );
     const {
       phoneOrEmail,
       areaCode = '86',
@@ -325,8 +331,14 @@ const Login: React.FC = () => {
    * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
    */
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    console.log(
+      '[Login handleCaptchaVerify] param length:',
+      captchaVerifyParam?.length,
+      'preview:',
+      captchaVerifyParam?.substring(0, 150),
+    );
     if (isVerifyingRef.current) {
-      // 不返回 bizResult=false，避免触发 SDK 自动刷新验证码
+      console.log('[Login handleCaptchaVerify] isVerifyingRef locked, skip');
       return { captchaResult: true, bizResult: true };
     }
     isVerifyingRef.current = true;
@@ -384,6 +396,15 @@ const Login: React.FC = () => {
 
     loginTriggerLockRef.current = true;
     lastLoginTriggerAtRef.current = now;
+
+    console.log(
+      '[Login doLogin] needAliyunCaptcha:',
+      needAliyunCaptcha,
+      'captchaSceneId:',
+      captchaSceneId,
+      'openCaptcha:',
+      openCaptcha,
+    );
 
     if (needAliyunCaptcha) {
       document.getElementById('aliyun-captcha-login')?.click();
