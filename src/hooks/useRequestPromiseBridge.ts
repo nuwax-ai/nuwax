@@ -102,7 +102,8 @@ const useRequestPromiseBridge = (
         await onError?.(normalizedError, ...args);
         pending?.reject(normalizedError);
       } catch (callbackError) {
-        pending?.reject(callbackError);
+        // onError 回调自身异常不覆盖主错误，避免丢失真实请求失败上下文。
+        pending?.reject(normalizedError);
       }
     },
   });

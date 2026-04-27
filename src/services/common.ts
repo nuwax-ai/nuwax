@@ -184,8 +184,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          // 将 BizError 本身 reject 出去，保留 error.info（包含 code、message 等），
-          // 供 useRequest onError / 验证码消费流程使用。
+          // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
           return Promise.reject(error);
       }
 
@@ -202,21 +201,21 @@ const errorHandler = (error: any, opts: any) => {
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    return Promise.reject(error);
   } else if (error.request) {
     // 处理请求超时
     const timeoutErrorMsg = dict('PC.Toast.Global.serverTimeout');
     if (shouldShowErrorMessage(timeoutErrorMsg)) {
       message.error(timeoutErrorMsg);
     }
-    return Promise.reject();
+    return Promise.reject(error);
   } else {
     // 处理网络错误
     const networkErrorMsg = dict('PC.Toast.Global.serverUnreachable');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject();
+    return Promise.reject(error);
   }
 };
 
