@@ -394,6 +394,7 @@ const SkillDetails: React.FC = () => {
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE && skillId) {
       // 新建成功后，重新拉取技能详情以刷新文件树和文件列表
+      setFileTreeDataLoading(true);
       runSkillInfo(skillId);
       return true;
     }
@@ -423,6 +424,7 @@ const SkillDetails: React.FC = () => {
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE) {
       // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
+      setFileTreeDataLoading(true);
       runSkillInfo(skillId);
     }
     return code === SUCCESS_CODE;
@@ -452,6 +454,10 @@ const SkillDetails: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE && skillId) {
+      // 重新查询技能信息，刷新文件树和文件列表
+      setFileTreeDataLoading(true);
+      runSkillInfo(skillId);
+
       // 已发布的技能，修改时需要更新修改时间
       if (
         skillInfo &&
@@ -470,6 +476,7 @@ const SkillDetails: React.FC = () => {
   const handleEditSkillConfirm = () => {
     setEditSkillModalOpen(false);
     // 重新查询技能信息，因为更新了技能信息，需要刷新文件树和文件列表
+    setFileTreeDataLoading(true);
     runSkillInfo(skillId);
   };
 
@@ -529,6 +536,8 @@ const SkillDetails: React.FC = () => {
           taskAgentSelectedFileId={'SKILL.md'}
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}
+          // 是否为项目技能模式
+          isProjectSkill={true}
           ref={fileTreeViewRef}
           // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
@@ -562,6 +571,10 @@ const SkillDetails: React.FC = () => {
           isFileTreePinned={true}
           // 技能不显示刷新按钮
           showRefreshButton={false}
+          // 技能不显示分享按钮
+          isShowShare={false}
+          // 技能不显示下载按钮
+          isShowDownloadButton={false}
           // 是否显示导出 PDF 按钮, 默认显示
           isShowExportPdfButton={false}
         />

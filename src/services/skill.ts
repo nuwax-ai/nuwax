@@ -142,7 +142,9 @@ export async function apiSkillConfigHistoryList(
  */
 export async function fetchContentFromUrl(url: string): Promise<string> {
   try {
-    const fullUrl = `${process.env.BASE_URL || ''}${url}`;
+    // 判断是否为绝对路径（以 http://, https:// 或 // 开头）
+    const isAbsoluteUrl = /^(https?:)?\/\//i.test(url);
+    const fullUrl = isAbsoluteUrl ? url : `${process.env.BASE_URL || ''}${url}`;
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     const response = await fetch(fullUrl, {
       method: 'GET',

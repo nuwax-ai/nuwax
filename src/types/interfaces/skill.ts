@@ -15,6 +15,8 @@ export interface SkillFileInfo {
   operation?: 'create' | 'delete' | 'rename' | 'modify';
   // 是否为文件夹
   isDir?: boolean;
+  // 文件代理URL
+  fileProxyUrl?: string;
 }
 
 // 技能详情
