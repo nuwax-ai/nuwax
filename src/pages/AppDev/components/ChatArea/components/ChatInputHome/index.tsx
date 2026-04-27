@@ -154,6 +154,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionContainerRef = useRef<HTMLDivElement>(null);
   const mentionSelectorRef = useRef<MentionSelectorHandle>(null);
+  const lastValueRef = useRef<string>(chat.chatInput || '');
 
   // 已选择的提及项（文件、目录、数据源和技能）
   // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource、skill）
@@ -362,7 +363,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           { type: 'skill', data: skill },
         ]);
         // 更新技能 ID 列表
-        setSkillIds((prev) => [...prev, skill.id]);
+        setSkillIds((prev) => [...prev, skill.targetId]);
       }
       // 在输入框中插入提及文本
       insertMention(skill.name);
@@ -402,7 +403,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
         const removedSkillIds = removedItems
           .filter((item) => item.type === 'skill')
-          .map((item) => (item.data as SkillInfoForAt).id);
+          .map((item) => (item.data as SkillInfoForAt).targetId);
 
         setSelectedMentions((prev) =>
           prev.filter((_, index) => !mentionsToRemove.includes(index)),
@@ -415,7 +416,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         }
       }
 
+      const isInsertion = value.length > lastValueRef.current.length;
       const triggerResult = checkMentionTrigger(value, cursorPosition);
+
+      // 修复：只有在当前未处于提及状态、且操作为新增输入（非退格）、且光标前刚输入的是触发字符（@）时，才允许启动提及
+      // 这样用户在退格回溯到 @、或者在已关闭提及的状态下修改内容时，都不会意外触发选择框弹出
+      if (!mentionTrigger.trigger && triggerResult.trigger) {
+        if (!isInsertion || value[cursorPosition - 1] !== '@') {
+          triggerResult.trigger = false;
+        }
+      }
+
       setMentionTrigger(triggerResult);
 
       if (triggerResult.trigger) {
@@ -431,8 +442,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       } else {
         setMentionPosition({ left: 0, top: 0, visible: false });
       }
+      lastValueRef.current = value;
     },
-    [chat, checkMentionTrigger, selectedMentions],
+    [chat, checkMentionTrigger, selectedMentions, mentionTrigger],
   );
 
   /**
