@@ -59,6 +59,7 @@ const CombinedMentionSelector = React.forwardRef<
       containerRef,
       onSelectedIndexChange,
       projectId,
+      onClose,
     },
     ref,
   ) => {
@@ -413,6 +414,9 @@ const CombinedMentionSelector = React.forwardRef<
         if (currentItemsRef.current[selectedIndex]) {
           handleItemSelect(currentItemsRef.current[selectedIndex]);
         }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose?.();
       }
     };
 
