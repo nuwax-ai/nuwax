@@ -1145,7 +1145,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             <Tooltip title={t('PC.Pages.AppDevChatInput.mention')}>
               <div
                 className={cx(styles['at-button'], {
-                  [styles.disabled]: chat.isChatLoading,
+                  // [styles.disabled]: chat.isChatLoading,
                 })}
                 onClick={handleAtButtonClick}
               >
