@@ -1,7 +1,6 @@
 import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
-import type { CaptchaConsumeControl } from '@/hooks/useCaptchaConsume';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
@@ -87,20 +86,24 @@ const Login: React.FC = () => {
   );
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
   /**
-   * 记录最近一次提交到登录接口的验证码参数（脱敏日志用途）。
-   * 用于确认“请求时使用的是当前最新 token”，避免误复用旧值。
+   * 防止快速重复点击导致重复触发验证码弹窗。
+   * 在 captchaVerifyCallback 调用时释放，或由 popup watcher 在弹窗关闭后释放。
    */
-  const latestSubmittedCaptchaRef = useRef<string>('');
+  const loginTriggerLockRef = useRef<boolean>(false);
+  const lastLoginTriggerAtRef = useRef<number>(0);
   /**
-   * 密码登录进行中的并发锁。
-   * 避免同一次验证码消费过程中因重复触发导致并发提交。
+   * 防止 SDK 多次调用 captchaVerifyCallback 导致并发登录请求。
    */
-  const passwordSubmittingRef = useRef<boolean>(false);
+  const isVerifyingRef = useRef<boolean>(false);
+  /**
+   * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
+   */
+  const captchaPopupWatcherTimerRef = useRef<number | null>(null);
+  const captchaDelayTimerRef = useRef<number | null>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
-  // 菜单数据模型
   const { loadMenus } = useModel('menuModel');
 
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
@@ -110,9 +113,6 @@ const Login: React.FC = () => {
       normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        console.info('[Login] password-login-onSuccess', {
-          account: params?.[0]?.phoneOrEmail,
-        });
         const { expireDate, token, redirect: responseRedirectUrl } = result;
         localStorage.setItem(ACCESS_TOKEN, token);
         localStorage.setItem(EXPIRE_DATE, expireDate);
@@ -123,15 +123,12 @@ const Login: React.FC = () => {
         } catch (error) {
           console.error('[Login] Sync language after login failed:', error);
         }
-        // 登录成功后强制刷新菜单数据（可能切换了账号）
         await loadMenus(true);
-        // 登录成功后重新初始化语言
         await initI18n(true);
         const redirect = decodeURIComponent(searchParams.get('redirect') || '');
         if (isWeakNumber(redirect)) {
           history.go(Number(redirect));
         } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          // 注意没有考虑 "//" url 的情况
           window.location.href = responseRedirectUrl;
         } else if (redirect) {
           history.replace(redirect);
@@ -140,28 +137,55 @@ const Login: React.FC = () => {
         }
       },
       onError: (error: any) => {
-        console.info('[Login] password-login-onError', {
-          errorType: error?.constructor?.name,
-          errorName: error?.name,
-          errorMessage:
-            error?.message || (error ? String(error) : 'Unknown error'),
-          errorCode: error?.info?.code,
-          backendMessage: error?.info?.message,
-        });
         console.error('[Login] Request Error:', error);
       },
     },
   );
 
-  useEffect(() => {
-    // 清除主题本地缓存
-    unifiedThemeService.clearUserThemeConfig();
+  const clearCaptchaPopupWatcher = () => {
+    if (captchaPopupWatcherTimerRef.current !== null) {
+      window.clearInterval(captchaPopupWatcherTimerRef.current);
+      captchaPopupWatcherTimerRef.current = null;
+    }
+  };
 
-    // 租户配置信息查询接口
+  const startCaptchaPopupWatcher = () => {
+    clearCaptchaPopupWatcher();
+    const startedAt = Date.now();
+    captchaPopupWatcherTimerRef.current = window.setInterval(() => {
+      const hasCaptchaPopup =
+        !!document.getElementById('aliyunCaptcha-window-popup') ||
+        !!document.getElementById('aliyunCaptcha-mask');
+
+      if (!hasCaptchaPopup) {
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
+        return;
+      }
+
+      // 极端兜底：防止异常情况下 watcher 长驻
+      if (Date.now() - startedAt > 2 * 60 * 1000) {
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
+      }
+    }, 500);
+  };
+
+  useEffect(() => {
+    unifiedThemeService.clearUserThemeConfig();
     runTenantConfig();
   }, []);
 
-  // 表单验证规则 - 抽取为常量避免重复
+  useEffect(() => {
+    return () => {
+      clearCaptchaPopupWatcher();
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const getPhoneOrEmailRules = () => {
     const isEmailAuth = tenantConfigInfo?.authType === 3;
     return [
@@ -205,9 +229,17 @@ const Login: React.FC = () => {
     },
   ];
 
-  // 账号密码登录
-  const handlerPasswordLogin = (captchaVerifyParam: string) => {
-    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+  /**
+   * 密码登录：在 captchaVerifyCallback 内调用，直接发起登录请求。
+   *
+   * 参考阿里云官方 demo，captchaVerifyCallback 应始终返回
+   * { captchaResult: true, bizResult: true }，避免 SDK 因 bizResult=false
+   * 而自动刷新验证码（导致登录后仍产生新的校验码请求）。
+   * 业务成功/失败通过 onSuccess/onError 回调中的 UI 反馈（message、导航等）处理。
+   */
+  const handlerPasswordLogin = async (
+    captchaVerifyParam: string,
+  ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
     const {
       phoneOrEmail,
       areaCode = '86',
@@ -218,7 +250,6 @@ const Login: React.FC = () => {
 
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
-    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
     const needAliyunCaptcha = !!(
       tenantConfigInfo &&
       captchaSceneId !== '' &&
@@ -227,79 +258,40 @@ const Login: React.FC = () => {
     );
 
     if (needAliyunCaptcha && !normalizedCaptchaParam) {
-      const emptyCaptchaError = new Error(
-        'Captcha token is empty while captcha is enabled.',
-      );
       console.warn('[Login] password-login-blocked-empty-captcha', {
         account: phoneOrEmail,
-        needAliyunCaptcha,
       });
-      return Promise.reject(emptyCaptchaError);
+      return { captchaResult: false, bizResult: true };
     }
 
-    if (passwordSubmittingRef.current) {
-      const duplicatedSubmitError = new Error(
-        'Password login request is already in progress.',
-      );
-      console.warn('[Login] password-login-duplicated-submit-blocked', {
-        account: phoneOrEmail,
+    try {
+      await runPasswordLogin({
+        phoneOrEmail,
+        areaCode,
+        password,
+        captchaVerifyParam: normalizedCaptchaParam,
       });
-      return Promise.reject(duplicatedSubmitError);
+      // onSuccess 处理导航，登录成功
+      return { captchaResult: true, bizResult: true };
+    } catch {
+      // 登录失败由 onError 回调处理 UI 反馈，不通过 bizResult 通知 SDK
+      return { captchaResult: true, bizResult: true };
     }
-
-    passwordSubmittingRef.current = true;
-    latestSubmittedCaptchaRef.current = normalizedCaptchaParam;
-
-    // console.log('[Login] 密码登录使用验证码参数:', normalizedCaptchaParam);
-    console.info('[Login] password-login-run', {
-      account: phoneOrEmail,
-      hasCaptchaVerifyParam: !!normalizedCaptchaParam,
-      captchaParamId: normalizedCaptchaParam
-        ? `${normalizedCaptchaParam.slice(
-            0,
-            4,
-          )}...${normalizedCaptchaParam.slice(-4)}`
-        : null,
-      captchaParamLen: normalizedCaptchaParam?.length,
-      // 输出最近提交的脱敏快照，便于与 captcha-token-generated 对照。
-      latestSubmittedCaptchaPreview: latestSubmittedCaptchaRef.current
-        ? `${latestSubmittedCaptchaRef.current.slice(
-            0,
-            4,
-          )}...${latestSubmittedCaptchaRef.current.slice(-4)}`
-        : null,
-    });
-    // 返回请求 Promise，让验证码组件可在请求结束后再刷新实例
-    return runPasswordLogin({
-      phoneOrEmail,
-      areaCode,
-      password,
-      captchaVerifyParam: normalizedCaptchaParam,
-    })
-      .then((result: ILoginResult | undefined) => {
-        // 成功登录时 result 包含 { token, expireDate, ... }
-        // 业务错误时 formatResult(result => result?.data) 返回 undefined
-        if (!result || !result.token) {
-          throw new Error('Login failed');
-        }
-        return { skipRefresh: true } as CaptchaConsumeControl;
-      })
-      .finally(() => {
-        passwordSubmittingRef.current = false;
-      });
   };
 
-  // 验证码登录
-  const handlerCodeLogin = (
+  /**
+   * 验证码登录：获取 captchaVerifyParam 后跳转至验证码输入页，
+   * 由下一页真正消费 token。
+   */
+  const handlerCodeLogin = async (
     captchaVerifyParam: string,
-  ): CaptchaConsumeControl => {
-    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+  ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
     const normalizedCaptchaParam =
       typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
+
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
-    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
     const needAliyunCaptcha = !!(
       tenantConfigInfo &&
       captchaSceneId !== '' &&
@@ -310,12 +302,10 @@ const Login: React.FC = () => {
     if (needAliyunCaptcha && !normalizedCaptchaParam) {
       console.warn('[Login] code-login-blocked-empty-captcha', {
         account: phoneOrEmail,
-        needAliyunCaptcha,
       });
-      throw new Error('Captcha token is empty while captcha is enabled.');
+      return { captchaResult: false, bizResult: false };
     }
 
-    // console.log('[Login] 验证码登录使用验证码参数:', normalizedCaptchaParam);
     const redirect = searchParams.get('redirect');
     const path = redirect
       ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
@@ -326,42 +316,86 @@ const Login: React.FC = () => {
       authType: tenantConfigInfo.authType,
       captchaVerifyParam: normalizedCaptchaParam,
     });
-    /**
-     * 验证码登录为跨页面消费场景：
-     * token 会在 VerifyCode 页真正调用发送验证码接口时才消费，
-     * 这里必须跳过当前页自动 refresh，避免 token 提前失效。
-     */
-    return { skipRefresh: true };
+    return { captchaResult: true, bizResult: true };
   };
 
-  // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
-  const handlerSuccess = (captchaVerifyParam: string = '') => {
-    // console.log('[Login] 验证码验证成功回调:', captchaVerifyParam);
-    // 每次调用时都使用最新的 loginType 值
-    if (loginTypeRef.current === LoginTypeEnum.Password) {
-      return handlerPasswordLogin(captchaVerifyParam);
-    } else {
-      return handlerCodeLogin(captchaVerifyParam);
+  /**
+   * 传给 AliyunCaptcha 的 onVerify 回调。
+   * SDK 验证通过后调用此函数，在此处发起业务请求并返回真实结果。
+   * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
+   */
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    if (isVerifyingRef.current) {
+      // 不返回 bizResult=false，避免触发 SDK 自动刷新验证码
+      return { captchaResult: true, bizResult: true };
     }
-  }; // loginType 作为依赖项
+    isVerifyingRef.current = true;
+
+    // 验证码已通过，立即释放触发锁并清除 popup watcher
+    loginTriggerLockRef.current = false;
+    clearCaptchaPopupWatcher();
+
+    try {
+      if (loginTypeRef.current === LoginTypeEnum.Password) {
+        return await handlerPasswordLogin(captchaVerifyParam);
+      }
+      return await handlerCodeLogin(captchaVerifyParam);
+    } finally {
+      isVerifyingRef.current = false;
+    }
+  };
 
   const doLogin = () => {
+    if (loading) return;
+
+    const now = Date.now();
+    if (
+      loginTriggerLockRef.current ||
+      now - lastLoginTriggerAtRef.current < 800
+    ) {
+      return;
+    }
+
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
-    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
     const needAliyunCaptcha = !!(
       tenantConfigInfo &&
       captchaSceneId !== '' &&
       captchaPrefix !== '' &&
       openCaptcha
     );
-    // console.log('[Login] 执行登录检查:', { needAliyunCaptcha, openCaptcha });
-    // 如果需要阿里云验证码，则点击按钮触发验证码
+
+    // 保障 initAliyunCaptcha 与验证请求之间 ≥2s，确保图片资源预加载完成
+    if (needAliyunCaptcha) {
+      const initAt = window.__captchaInitAt || 0;
+      const gap = now - initAt;
+      if (gap < 2000) {
+        const delay = 2000 - gap;
+        loginTriggerLockRef.current = true;
+        lastLoginTriggerAtRef.current = now;
+        captchaDelayTimerRef.current = window.setTimeout(() => {
+          captchaDelayTimerRef.current = null;
+          document.getElementById('aliyun-captcha-login')?.click();
+          startCaptchaPopupWatcher();
+        }, delay);
+        return;
+      }
+    }
+
+    loginTriggerLockRef.current = true;
+    lastLoginTriggerAtRef.current = now;
+
     if (needAliyunCaptcha) {
       document.getElementById('aliyun-captcha-login')?.click();
+      startCaptchaPopupWatcher();
     } else {
-      //不需要阿里云验证码，直接执行登录/验证码逻辑
-      handlerSuccess();
+      const handler =
+        loginTypeRef.current === LoginTypeEnum.Password
+          ? handlerPasswordLogin('')
+          : handlerCodeLogin('');
+      handler.finally(() => {
+        loginTriggerLockRef.current = false;
+      });
     }
   };
 
@@ -387,7 +421,6 @@ const Login: React.FC = () => {
     loginTypeRef.current = Number(value);
   };
   const { token } = theme.useToken();
-  // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     {
       label: (
@@ -534,7 +567,7 @@ const Login: React.FC = () => {
                 <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
                 <AliyunCaptcha
                   config={tenantConfigInfo}
-                  doAction={handlerSuccess}
+                  onVerify={handleCaptchaVerify}
                   elementId="aliyun-captcha-login"
                 />
               </div>

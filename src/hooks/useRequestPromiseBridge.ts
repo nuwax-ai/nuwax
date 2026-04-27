@@ -43,24 +43,34 @@ const useRequestPromiseBridge = (
    * 规范化请求错误对象，避免调用方只拿到 undefined。
    *
    * 场景：
-   * - 全局错误处理链路异常中断；
+   * - errorHandler 的某些分支（如 BizError default）调用 Promise.reject()
+   *   时没有传 error，导致 reject(undefined)；
    * - 第三方库在某些分支没有抛出标准 Error。
    *
    * @param rawError - 原始错误对象
    * @returns 统一的 Error 实例（附带 info 便于日志排查）
    */
   const normalizeRequestError = (rawError: any): Error => {
+    // 已经是标准 Error 实例（包括 BizError），直接返回，保留 error.info
     if (rawError instanceof Error) {
       return rawError;
     }
 
+    // rawError 为 undefined 时，说明 errorHandler 的某些分支没有把原始 error
+    // 透传到 reject(undefined)，此时我们从 "错误已通过 message.warning 展示" 的事实出发，
+    // 构造一个带 serviceName 的 Error，确保 onError 日志有可追溯的上下文。
+    const serviceName = service?.name || 'anonymousService';
     const fallbackError = new Error(
-      rawError ? String(rawError) : 'API request failed with unknown error',
+      rawError
+        ? String(rawError)
+        : `API request failed with unknown error (service: ${serviceName})`,
     );
     (fallbackError as any).name = 'UnknownRequestError';
     (fallbackError as any).info = {
-      message: rawError ? String(rawError) : 'Unknown error from request layer',
-      serviceName: service?.name || 'anonymousService',
+      message: rawError
+        ? String(rawError)
+        : `Unknown error from request layer (service: ${serviceName})`,
+      serviceName,
     };
     return fallbackError;
   };
@@ -92,7 +102,8 @@ const useRequestPromiseBridge = (
         await onError?.(normalizedError, ...args);
         pending?.reject(normalizedError);
       } catch (callbackError) {
-        pending?.reject(callbackError);
+        // onError 回调自身异常不覆盖主错误，避免丢失真实请求失败上下文。
+        pending?.reject(normalizedError);
       }
     },
   });
