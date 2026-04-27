@@ -14,6 +14,8 @@ export interface CaptchaVerifyResult {
 declare global {
   interface Window {
     initAliyunCaptcha: (options: any) => void;
+    /** 验证码 initAliyunCaptcha 调用时间戳，用于保障 init 与验证 ≥2s */
+    __captchaInitAt?: number;
   }
 }
 
@@ -162,6 +164,9 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
       slideStyle: { width: 360, height: 40 },
       language: 'cn',
     });
+
+    // 记录初始化时间戳，用于保障 init 与验证请求之间 ≥2s
+    window.__captchaInitAt = Date.now();
 
     return cleanupCaptchaElements;
   }, [

@@ -350,8 +350,6 @@ const Login: React.FC = () => {
     ) {
       return;
     }
-    loginTriggerLockRef.current = true;
-    lastLoginTriggerAtRef.current = now;
 
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
@@ -361,6 +359,25 @@ const Login: React.FC = () => {
       captchaPrefix !== '' &&
       openCaptcha
     );
+
+    // 保障 initAliyunCaptcha 与验证请求之间 ≥2s，确保图片资源预加载完成
+    if (needAliyunCaptcha) {
+      const initAt = window.__captchaInitAt || 0;
+      const gap = now - initAt;
+      if (gap < 2000) {
+        const delay = 2000 - gap;
+        loginTriggerLockRef.current = true;
+        lastLoginTriggerAtRef.current = now;
+        window.setTimeout(() => {
+          document.getElementById('aliyun-captcha-login')?.click();
+          startCaptchaPopupWatcher();
+        }, delay);
+        return;
+      }
+    }
+
+    loginTriggerLockRef.current = true;
+    lastLoginTriggerAtRef.current = now;
 
     if (needAliyunCaptcha) {
       document.getElementById('aliyun-captcha-login')?.click();
