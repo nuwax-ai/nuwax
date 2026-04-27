@@ -1,384 +1,162 @@
-import useCaptchaConsume, {
-  CaptchaConsumeControl,
-  CaptchaTokenSnapshot,
-} from '@/hooks/useCaptchaConsume';
 import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
 
-// 阿里云验证码配置类型定义
 interface AliyunCaptchaConfig {
-  captchaSceneId: string; // 场景ID
-  captchaPrefix: string; // 身份标
-  openCaptcha?: boolean; // 是否开启验证码
-  // 其他可能的配置项
+  captchaSceneId: string;
+  captchaPrefix: string;
+  openCaptcha?: boolean;
 }
 
-// 阿里云验证码初始化选项
-interface CaptchaOptions {
-  SceneId: string; // 场景ID
-  prefix: string; // 身份标
-  mode: 'popup' | 'embed'; // 验证码模式：弹出式或嵌入式
-  element: string; // 渲染验证码的元素
-  button: string; // 触发验证码弹窗的元素
-  captchaVerifyCallback: (param: any) => {
-    captchaResult: boolean;
-    bizResult: boolean;
-    captchaVerifyParam?: any;
-  };
-  onBizResultCallback: (param?: any) => void;
-  getInstance: (instance: any) => void;
-  slideStyle?: {
-    width: number;
-    height: number;
-  };
-  language?: 'cn' | 'tw' | 'en'; // 验证码语言类型
+export interface CaptchaVerifyResult {
+  captchaResult: boolean;
+  bizResult: boolean;
 }
 
-// 全局类型声明
 declare global {
   interface Window {
-    initAliyunCaptcha: (options: CaptchaOptions) => void;
+    initAliyunCaptcha: (options: any) => void;
   }
 }
 
 interface AliyunCaptchaProps {
   config: AliyunCaptchaConfig;
   elementId: string;
-  doAction: (
-    captchaVerifyParam: string,
-  ) => void | CaptchaConsumeControl | Promise<void | CaptchaConsumeControl>;
-  onReady?: () => void; // 使用可选属性避免undefined调用
   /**
-   * 业务 action 失败时是否自动刷新验证码实例。
-   * 默认 true（保持原行为）；登录页可按需关闭，避免失败后额外触发一次验证码请求。
+   * 验证码通过后由 SDK 调用，在此处发起业务请求。
+   * 返回 captchaResult（验证码是否有效）和 bizResult（业务是否成功）给 SDK。
    */
-  refreshOnError?: boolean;
+  onVerify: (captchaVerifyParam: string) => Promise<CaptchaVerifyResult>;
+  /**
+   * SDK 根据 captchaVerifyCallback 的 bizResult 回调。
+   * 可用于处理业务失败时的 UI 重置，通常不需要实现。
+   */
+  onBizResult?: (bizResult: boolean) => void;
+  onReady?: () => void;
 }
 
 /**
- * 阿里云验证码组件
- * @param config - 验证码配置信息
- * @param elementId - 触发验证码的元素ID
- * @param doAction - 验证成功后的回调函数
- * @param onReady - 验证码准备就绪的回调函数
+ * 将 SDK 回调的验证码参数统一规范成后端约定的 string。
+ *
+ * SDK 在不同场景可能返回：
+ * - 纯字符串
+ * - null / undefined
+ * - JSON 对象（需 stringify）
+ * - 被 JSON.stringify 包裹过一层的字符串（需解一层）
+ * - 包含 captchaVerifyParam 属性的包装对象
  */
+function normalizeCaptchaVerifyParam(captchaVerifyParam: any): string {
+  if (captchaVerifyParam === null || captchaVerifyParam === undefined) {
+    return '';
+  }
+  if (typeof captchaVerifyParam === 'string') {
+    const trimmed = captchaVerifyParam.trim();
+    if (!trimmed) return '';
+    // 兼容 "\"{...}\"" 这类字符串二次序列化场景
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return normalizeCaptchaVerifyParam(parsed);
+      } catch {
+        /* 非 JSON，按原样使用 */
+      }
+    }
+    return trimmed;
+  }
+  if (typeof captchaVerifyParam === 'object') {
+    if ('captchaVerifyParam' in captchaVerifyParam) {
+      return normalizeCaptchaVerifyParam(
+        (captchaVerifyParam as any).captchaVerifyParam,
+      );
+    }
+    try {
+      return JSON.stringify(captchaVerifyParam);
+    } catch {
+      return '';
+    }
+  }
+  return String(captchaVerifyParam);
+}
+
 const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   config,
   elementId,
-  doAction,
+  onVerify,
+  onBizResult,
   onReady,
-  refreshOnError = true,
 }) => {
-  const getLoginFlowId = (): string =>
-    (typeof window !== 'undefined' && (window as any).__loginFlowId) ||
-    'unknown';
-  const enableCaptchaDebugLog = process.env.NODE_ENV !== 'production';
-  const [captchaInited, setCaptchaInited] = useState<boolean>(false);
-  // 使用ref记录onReady是否已经调用过，避免重复调用
-  const onReadyCalledRef = useRef<boolean>(false);
-  // 使用 ref 保存“最新 token 快照”，避免闭包导致消费旧 token
-  const captchaParamRef = useRef<CaptchaTokenSnapshot | null>(null);
-  // 记录 token 生成版本，确保每次生成可追踪
-  const tokenVersionRef = useRef<number>(0);
   const captchaInstanceRef = useRef<any>(null);
-  const getTokenFingerprint = (token: string): string => {
-    let hash = 0;
-    for (let i = 0; i < token.length; i += 1) {
-      hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
-    }
-    return `${token.length}-${hash.toString(16)}`;
-  };
-  const getTokenCertifyId = (token: string): string | null => {
-    if (!token) return null;
-    try {
-      const parsed = JSON.parse(token);
-      if (parsed && typeof parsed === 'object') {
-        return parsed.CertifyId || parsed.certifyId || null;
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  };
-  const extractTokenFromOnBizParam = (bizParam: any): string => {
-    if (!bizParam) return '';
-    if (typeof bizParam === 'string') {
-      return bizParam;
-    }
-    if (typeof bizParam === 'object') {
-      if (typeof bizParam.captchaVerifyParam === 'string') {
-        return bizParam.captchaVerifyParam;
-      }
-      if (typeof bizParam.verifyParam === 'string') {
-        return bizParam.verifyParam;
-      }
-      if (
-        'CertifyId' in bizParam ||
-        'certifyId' in bizParam ||
-        'CaptchaType' in bizParam
-      ) {
-        try {
-          return JSON.stringify(bizParam);
-        } catch {
-          return '';
-        }
-      }
-    }
-    return '';
-  };
+  const [captchaInited, setCaptchaInited] = useState(false);
 
-  const { onBizResultCallback } = useCaptchaConsume({
-    doAction,
-    captchaParamRef,
-    captchaInstanceRef,
-    refreshOnError,
-  });
+  // 解构 primitive 值，避免 config 对象引用变化触发 effect 重新初始化
+  const { captchaSceneId, captchaPrefix, openCaptcha } = config || {};
+
+  // 使用 ref 持有最新回调，避免 SDK init 时捕获过期闭包
+  const onVerifyRef = useRef(onVerify);
+  onVerifyRef.current = onVerify;
+  const onBizResultRef = useRef(onBizResult);
+  onBizResultRef.current = onBizResult;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+
+  const getInstance = useCallback((instance: any) => {
+    captchaInstanceRef.current = instance;
+    if (instance) setCaptchaInited(true);
+  }, []);
 
   /**
-   * 将 SDK 返回的验证码参数统一规范成后端约定的 string。
-   *
-   * 背景：
-   * 1. 密码登录接口要求 captchaVerifyParam 为字符串；
-   * 2. SDK 在边界场景可能返回对象、空值，或“被 JSON 包装过一层”的字符串；
-   * 3. 前端在这里做最小归一化，避免把不稳定形态直接带到请求层。
-   *
-   * @param rawParam - SDK 回调原始参数
-   * @returns 归一化后的验证码参数字符串；无法使用时返回空字符串
+   * SDK 验证通过后调用此函数。
+   * 在此处直接发起业务请求，将真实结果返回给 SDK，
+   * SDK 据此决定是否显示验证码错误状态，并调用 onBizResultCallback。
    */
-  const normalizeCaptchaVerifyParam = useCallback(
-    (rawParam: any): string => {
-      const rawType = typeof rawParam;
-
-      if (rawParam === null || rawParam === undefined) {
-        if (enableCaptchaDebugLog) {
-          console.warn('[CaptchaFlow][normalize] rawParam is null/undefined', {
-            elementId,
-          });
-        }
-        return '';
-      }
-
-      if (typeof rawParam === 'string') {
-        const trimmed = rawParam.trim();
-        if (!trimmed) {
-          if (enableCaptchaDebugLog) {
-            console.warn('[CaptchaFlow][normalize] rawParam is empty string', {
-              elementId,
-            });
-          }
-          return '';
-        }
-
-        // 兼容 “\”{...}\”” 这类”字符串再次序列化”场景，解一层后继续使用。
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (typeof parsed === 'string') {
-            if (enableCaptchaDebugLog) {
-              console.info('[CaptchaFlow][normalize] path=string→json-unwrap', {
-                elementId,
-                rawType,
-                rawLen: trimmed.length,
-                parsedLen: parsed.trim().length,
-              });
-            }
-            return parsed.trim();
-          }
-          // parsed 是对象，说明 SDK 把 JSON 对象序列化成了字符串传过来
-          if (enableCaptchaDebugLog) {
-            console.info(
-              '[CaptchaFlow][normalize] path=string→json-object(as-is)',
-              {
-                elementId,
-                rawType,
-                rawLen: trimmed.length,
-                parsedType: typeof parsed,
-                parsedKeys:
-                  parsed && typeof parsed === 'object'
-                    ? Object.keys(parsed)
-                    : null,
-              },
-            );
-          }
-        } catch {
-          // 非 JSON 字符串，按原样使用
-          if (enableCaptchaDebugLog) {
-            console.info(
-              '[CaptchaFlow][normalize] path=string→non-json(as-is)',
-              {
-                elementId,
-                rawType,
-                rawLen: trimmed.length,
-              },
-            );
-          }
-        }
-        return trimmed;
-      }
-
-      // SDK 直接返回对象
-      try {
-        const result = JSON.stringify(rawParam);
-        if (enableCaptchaDebugLog) {
-          console.info('[CaptchaFlow][normalize] path=object→stringify', {
-            elementId,
-            rawType,
-            rawKeys:
-              typeof rawParam === 'object' ? Object.keys(rawParam) : null,
-            resultLen: result.length,
-          });
-        }
-        return result;
-      } catch {
-        if (enableCaptchaDebugLog) {
-          console.warn(
-            '[CaptchaFlow][normalize] path=object→stringify-failed',
-            {
-              elementId,
-              rawType,
-            },
-          );
-        }
-        return String(rawParam);
-      }
+  const captchaVerifyCallback = useCallback(
+    async (captchaVerifyParam: any): Promise<CaptchaVerifyResult> => {
+      const param = normalizeCaptchaVerifyParam(captchaVerifyParam);
+      return onVerifyRef.current(param);
     },
-    [elementId, enableCaptchaDebugLog],
+    [],
   );
 
-  // 使用useCallback缓存回调函数，避免不必要的重新渲染
-  const captchaVerifyCallback = (captchaVerifyParam: any) => {
-    const normalizedCaptchaParam =
-      normalizeCaptchaVerifyParam(captchaVerifyParam);
-    tokenVersionRef.current += 1;
-    const snapshot: CaptchaTokenSnapshot = {
-      token: normalizedCaptchaParam,
-      version: tokenVersionRef.current,
-      createdAt: Date.now(),
-    };
-    captchaParamRef.current = snapshot;
-    // 关键日志：确认 SDK 新 token 生成次数与版本递增是否符合预期
-    console.info('[CaptchaKey][token-generated]', {
-      flowId: getLoginFlowId(),
-      elementId,
-      version: snapshot.version,
-      tokenLen: snapshot.token?.length ?? 0,
-      tokenFp: getTokenFingerprint(snapshot.token || ''),
-      certifyId: getTokenCertifyId(snapshot.token || ''),
-      createdAt: snapshot.createdAt,
-    });
-    // 只返回验证结果，不在这里执行业务逻辑
-    return {
-      captchaResult: true,
-      bizResult: true,
-    };
-  };
-  const onBizResultCallbackWithSync = (bizParam?: any) => {
-    const tokenFromOnBiz = extractTokenFromOnBizParam(bizParam);
-    const normalizedFromOnBiz = tokenFromOnBiz
-      ? normalizeCaptchaVerifyParam(tokenFromOnBiz)
-      : '';
-    const currentToken = captchaParamRef.current?.token || '';
-    if (normalizedFromOnBiz && normalizedFromOnBiz !== currentToken) {
-      tokenVersionRef.current += 1;
-      const syncedSnapshot: CaptchaTokenSnapshot = {
-        token: normalizedFromOnBiz,
-        version: tokenVersionRef.current,
-        createdAt: Date.now(),
-      };
-      captchaParamRef.current = syncedSnapshot;
-      console.info('[CaptchaKey][token-synced-from-onbiz]', {
-        flowId: getLoginFlowId(),
-        elementId,
-        version: syncedSnapshot.version,
-        tokenLen: syncedSnapshot.token.length,
-        tokenFp: getTokenFingerprint(syncedSnapshot.token),
-        certifyId: getTokenCertifyId(syncedSnapshot.token),
-      });
-    }
-    onBizResultCallback(bizParam);
-  };
+  const onBizResultCallback = useCallback((bizParam?: any) => {
+    onBizResultRef.current?.(bizParam === true);
+  }, []);
 
-  // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
-    console.info('[AliyunCaptcha] sdk-cleanup', { elementId });
     document.getElementById('aliyunCaptcha-mask')?.remove();
     document.getElementById('aliyunCaptcha-window-popup')?.remove();
-
-    // 尝试销毁实例
-    if (
-      captchaInstanceRef.current &&
-      typeof captchaInstanceRef.current.destroy === 'function'
-    ) {
-      // console.log('[AliyunCaptcha] 销毁实例');
-      captchaInstanceRef.current.destroy();
-    }
+    captchaInstanceRef.current?.destroy?.();
     captchaInstanceRef.current = null;
   }, []);
 
-  // 获取验证码实例
-  const getInstance = useCallback((instance: any) => {
-    // console.log('[AliyunCaptcha] 获取实例:', instance);
-    captchaInstanceRef.current = instance;
-    if (instance) {
-      setCaptchaInited(true);
-    }
-  }, []);
-
-  // 初始化验证码
   useEffect(() => {
-    // console.log('[AliyunCaptcha] 组件挂载');
-    // 重置onReady调用状态
-    onReadyCalledRef.current = false;
+    if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
+    if (captchaInstanceRef.current) return;
 
-    // 初始化阿里云验证码
-    if (
-      config?.captchaSceneId &&
-      config?.captchaPrefix &&
-      config?.openCaptcha
-    ) {
-      // 防止重复初始化
-      if (captchaInstanceRef.current) {
-        console.info('[AliyunCaptcha] sdk-init-skipped', {
-          elementId,
-          reason: 'instance already exists',
-        });
-        return;
-      }
-      const sdkInitStartTime = Date.now();
-      console.info('[AliyunCaptcha] sdk-init-start', { elementId });
-      window.initAliyunCaptcha({
-        SceneId: config.captchaSceneId, // 场景ID
-        prefix: config.captchaPrefix, // 身份标
-        mode: 'popup', // 验证码模式：弹出式
-        element: '#captcha-element', // 渲染验证码的元素
-        button: `#${elementId}`, // 触发验证码弹窗的元素
-        captchaVerifyCallback, // 验证回调函数
-        onBizResultCallback: onBizResultCallbackWithSync, // 业务请求结果回调函数
-        getInstance, // 绑定验证码实例函数
-        slideStyle: {
-          width: 360,
-          height: 40,
-        }, // 滑块验证码样式
-        language: 'cn', // 验证码语言类型
-      });
-      console.info('[AliyunCaptcha] sdk-init-triggered', {
-        elementId,
-        sdkInitDurationMs: Date.now() - sdkInitStartTime,
-      });
-    }
+    window.initAliyunCaptcha({
+      SceneId: captchaSceneId,
+      prefix: captchaPrefix,
+      mode: 'popup',
+      element: '#captcha-element',
+      button: `#${elementId}`,
+      captchaVerifyCallback,
+      onBizResultCallback,
+      getInstance,
+      slideStyle: { width: 360, height: 40 },
+      language: 'cn',
+    });
 
-    // 组件卸载时清理DOM元素
     return cleanupCaptchaElements;
-  }, [config, elementId]);
+  }, [
+    captchaSceneId,
+    captchaPrefix,
+    openCaptcha,
+    elementId,
+    captchaVerifyCallback,
+    onBizResultCallback,
+    getInstance,
+    cleanupCaptchaElements,
+  ]);
 
-  // 处理onReady回调
   useEffect(() => {
-    // 只有当captchaInited为true且onReady回调未被调用过时才调用
-    if (captchaInited) {
-      onReady?.();
-      console.info('[AliyunCaptcha] sdk-ready', { elementId });
-    }
-
-    // 组件卸载时重置状态
-    return () => {};
+    if (captchaInited) onReadyRef.current?.();
   }, [captchaInited]);
 
   return (
