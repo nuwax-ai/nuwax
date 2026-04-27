@@ -226,7 +226,11 @@ const Login: React.FC = () => {
 
   /**
    * 密码登录：在 captchaVerifyCallback 内调用，直接发起登录请求。
-   * 返回真实的 captchaResult/bizResult 给 SDK。
+   *
+   * 参考阿里云官方 demo，captchaVerifyCallback 应始终返回
+   * { captchaResult: true, bizResult: true }，避免 SDK 因 bizResult=false
+   * 而自动刷新验证码（导致登录后仍产生新的校验码请求）。
+   * 业务成功/失败通过 onSuccess/onError 回调中的 UI 反馈（message、导航等）处理。
    */
   const handlerPasswordLogin = async (
     captchaVerifyParam: string,
@@ -252,7 +256,7 @@ const Login: React.FC = () => {
       console.warn('[Login] password-login-blocked-empty-captcha', {
         account: phoneOrEmail,
       });
-      return { captchaResult: false, bizResult: false };
+      return { captchaResult: false, bizResult: true };
     }
 
     try {
@@ -265,7 +269,8 @@ const Login: React.FC = () => {
       // onSuccess 处理导航，登录成功
       return { captchaResult: true, bizResult: true };
     } catch {
-      return { captchaResult: true, bizResult: false };
+      // 登录失败由 onError 回调处理 UI 反馈，不通过 bizResult 通知 SDK
+      return { captchaResult: true, bizResult: true };
     }
   };
 
@@ -316,7 +321,8 @@ const Login: React.FC = () => {
    */
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
     if (isVerifyingRef.current) {
-      return { captchaResult: true, bizResult: false };
+      // 不返回 bizResult=false，避免触发 SDK 自动刷新验证码
+      return { captchaResult: true, bizResult: true };
     }
     isVerifyingRef.current = true;
 
