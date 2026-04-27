@@ -211,20 +211,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 获取文件内容并更新文件树
     const fetchFileContentUpdateFiles = useCallback(
       async (fileProxyUrl: string, fileId: string) => {
-        // 获取文件内容
-        const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        try {
+          // 获取文件内容
+          const fileContent = await fetchContentFromUrl(fileProxyUrl);
 
-        // 更新文件树中的文件内容
-        setFiles((prevFiles) => {
-          const updatedFiles: FileNode[] = updateFileTreeContent(
-            fileId,
-            fileContent,
-            prevFiles,
-          );
-          return updatedFiles;
-        });
+          // 更新文件树中的文件内容
+          setFiles((prevFiles) => {
+            const updatedFiles: FileNode[] = updateFileTreeContent(
+              fileId,
+              fileContent,
+              prevFiles,
+            );
+            return updatedFiles;
+          });
 
-        return fileContent;
+          return fileContent;
+        } catch (error) {
+          console.error('Failed to fetch file content:', error);
+          return '';
+        }
       },
       [],
     );
