@@ -168,10 +168,10 @@ const VerifyCode: React.FC = () => {
   const handleCaptchaVerify = async (captchaVerifyParam: string) => {
     try {
       await handleSendCode(captchaVerifyParam);
-      return { captchaResult: true, bizResult: true };
     } catch {
-      return { captchaResult: true, bizResult: false };
+      // 发送失败由 runSendCode 内部处理 UI 反馈
     }
+    return { captchaResult: true, bizResult: true };
   };
 
   useEffect(() => {

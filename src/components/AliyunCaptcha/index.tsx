@@ -125,7 +125,7 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         // catch 确保业务异常时 SDK 也能收到反馈，避免 SDK 超时重试
         resultPromise
           .then((result) => callback(result))
-          .catch(() => callback({ captchaResult: true, bizResult: false }));
+          .catch(() => callback({ captchaResult: true, bizResult: true }));
         return;
       }
 
