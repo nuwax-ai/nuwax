@@ -116,7 +116,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
-      /** 是否为项目技能模式 */
+      /**
+       * 是否为项目技能模式（主要适用于技能预览和编辑）：
+       * 在 SkillDetails 页面设置 isProjectSkill={true}，是为了确保当技能的文件列表数据发生任何变动时，
+       * 当前正在查看/编辑的文件内容能够立即、自动地同步更新，避免出现“数据已变但界面显示的还是旧代码”的情况。
+       */
       isProjectSkill = false,
     },
     ref,
@@ -1523,14 +1527,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
       // 如果是html、md文件，并且处于预览模式
+      const fileNameLower = fileName?.toLowerCase() || '';
+      // 兼容 .html 和 .htm 后缀，并处理可能存在的查询参数
+      const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
       if (
-        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
+        (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
         viewFileType === 'preview' &&
-        fileProxyUrl
+        (fileProxyUrl || selectedFileNode?.content)
       ) {
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-        const isHtml = fileName?.includes('.htm');
+        const isHtml = isHtmlInCondition;
 
         // 获取文件预览的 key 和 url
         const fileTypeForPreview = isHtml ? 'html' : 'markdown';
@@ -1545,6 +1552,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <FilePreview
             key={filePreviewKey}
             src={filePreviewUrl}
+            content={selectedFileNode?.content}
             fileType={fileTypeForPreview}
             staticFileBasePath={staticFileBasePath}
           />
