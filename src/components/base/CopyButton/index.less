@@ -10,6 +10,7 @@
   font-size: @fontSizeSm;
   transition: color 0.2s ease-in-out;
   user-select: none;
+  outline: none;
 
   &:hover:not(.disabled) {
     color: @colorText;
@@ -18,12 +19,6 @@
   &.disabled {
     color: @colorTextDisabled;
     cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    outline: @lineWidthBold solid @colorPrimary;
-    outline-offset: @paddingXxs;
-    border-radius: @borderRadiusSm;
   }
 }
 
