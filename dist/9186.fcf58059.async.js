@@ -1,3 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[9186],{89186:function(f,n,t){t.r(n),t.d(n,{default:function(){return e}});var s=t(75271),u=t(98166),E=t(52676);function e(){var o=(0,u.useOutletContext)();return(0,E.jsx)(u.Outlet,{context:o})}}}]);})();
-
-//# sourceMappingURL=9186.fcf58059.async.js.map
