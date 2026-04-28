@@ -140,6 +140,16 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
         captchaVerifyParam: any,
         callback?: (result: CaptchaVerifyResult) => void,
       ): Promise<CaptchaVerifyResult> | void => {
+        // 组件已卸载（cleanup 已将 instanceRef 置空），跳过回调避免触发无效请求
+        if (!captchaInstanceRef.current) {
+          console.log('[Captcha CB] instance destroyed, skip');
+          const result = { captchaResult: true, bizResult: true };
+          if (typeof callback === 'function') {
+            callback(result);
+            return;
+          }
+          return Promise.resolve(result);
+        }
         console.log('[Captcha CB] typeof:', typeof captchaVerifyParam);
         if (typeof captchaVerifyParam === 'string') {
           console.log(
@@ -181,6 +191,9 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
     );
 
     const onBizResultCallback = useCallback((bizParam?: any) => {
+      if (!captchaInstanceRef.current) {
+        return;
+      }
       onBizResultRef.current?.(bizParam === true);
     }, []);
 

@@ -141,7 +141,7 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
-        captchaRef.current?.refresh();
+        // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
       },
     },
   );
@@ -350,10 +350,17 @@ const Login: React.FC = () => {
     if (isDeviceTokenFallback) {
       // deviceToken 格式走正常路径发送给后端（后端支持此格式），
       // 仅跳过前端 needAliyunCaptcha 的空字符串拦截（captchaFallbackRef）
+      if (isVerifyingRef.current) {
+        console.log(
+          '[Login handleCaptchaVerify] deviceToken path locked, skip',
+        );
+        return { captchaResult: true, bizResult: true };
+      }
+      isVerifyingRef.current = true;
+      captchaFallbackRef.current = true;
       console.log(
         '[Login handleCaptchaVerify] deviceToken auto-verify, pass-through to backend',
       );
-      captchaFallbackRef.current = true;
       try {
         if (loginTypeRef.current === LoginTypeEnum.Password) {
           return await handlerPasswordLogin(captchaVerifyParam);
@@ -361,6 +368,10 @@ const Login: React.FC = () => {
         return await handlerCodeLogin(captchaVerifyParam);
       } finally {
         captchaFallbackRef.current = false;
+        isVerifyingRef.current = false;
+        // 释放触发锁并清理 popup watcher，避免登录按钮锁死
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
       }
     }
 
