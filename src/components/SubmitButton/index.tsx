@@ -33,7 +33,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
       icon={okPrefixIcon}
       loading={loading}
       onClick={onConfirm}
-      className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+      className={cx(!submittable && styles['confirm-btn'])}
       disabled={disabled || !submittable}
     >
       {okText || dict('PC.Components.SubmitButton.confirm')}
