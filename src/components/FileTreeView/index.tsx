@@ -1523,14 +1523,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
       // 如果是html、md文件，并且处于预览模式
+      const fileNameLower = fileName?.toLowerCase() || '';
+      // 兼容 .html 和 .htm 后缀，并处理可能存在的查询参数
+      const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
       if (
-        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
+        (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
         viewFileType === 'preview' &&
-        fileProxyUrl
+        (fileProxyUrl || selectedFileNode?.content)
       ) {
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-        const isHtml = fileName?.includes('.htm');
+        const isHtml = isHtmlInCondition;
 
         // 获取文件预览的 key 和 url
         const fileTypeForPreview = isHtml ? 'html' : 'markdown';
@@ -1545,6 +1548,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <FilePreview
             key={filePreviewKey}
             src={filePreviewUrl}
+            content={selectedFileNode?.content}
             fileType={fileTypeForPreview}
             staticFileBasePath={staticFileBasePath}
           />
