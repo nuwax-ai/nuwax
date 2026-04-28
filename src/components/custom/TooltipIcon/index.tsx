@@ -1,7 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { TooltipIconProps } from '@/types/interfaces/space';
-import { isKeyboardActivation } from '@/utils/a11y';
 import { theme, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -40,15 +39,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
           className,
         )}
         onClick={onClick}
-        onKeyDown={(e) => {
-          if (onClick && isKeyboardActivation(e)) {
-            e.preventDefault();
-            e.currentTarget.click();
-          }
-        }}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
-        aria-label={onClick ? accessibleLabel : undefined}
+        aria-label={accessibleLabel}
       >
         {/*默认加号（+）*/}
         {icon || (

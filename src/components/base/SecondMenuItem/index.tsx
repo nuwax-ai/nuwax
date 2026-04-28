@@ -1,4 +1,3 @@
-import { isKeyboardActivation } from '@/utils/a11y';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -38,23 +37,8 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         [styles.open]: isOpen,
       })}
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (isKeyboardActivation(e)) {
-          e.preventDefault();
-          onClick();
-          return;
-        }
-        if (isDown && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
-          e.preventDefault();
-          onToggle?.();
-        }
-      }}
       style={style}
-      role="button"
-      tabIndex={0}
       aria-label={name}
-      aria-current={isActive ? 'page' : undefined}
-      aria-expanded={isDown ? isOpen : undefined}
     >
       <span
         className={cx(
