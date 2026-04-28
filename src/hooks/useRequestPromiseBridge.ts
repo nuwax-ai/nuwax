@@ -6,6 +6,15 @@ interface PendingPromiseResolver<TData = any> {
   reject: (error?: any) => void;
 }
 
+interface UseRequestPromiseBridgeOptions {
+  /**
+   * 是否将非 Error 类型的异常统一包装成 Error。
+   * 默认 false，保持历史行为，避免影响既有调用方。
+   */
+  normalizeUnknownError?: boolean;
+  [key: string]: any;
+}
+
 /**
  * useRequest Promise 桥接 Hook
  *
@@ -18,9 +27,53 @@ interface PendingPromiseResolver<TData = any> {
  * @param options - useRequest 配置项
  * @returns 原 useRequest 返回值 + runWithPromise
  */
-const useRequestPromiseBridge = (service: any, options: any = {}) => {
+const useRequestPromiseBridge = (
+  service: any,
+  options: UseRequestPromiseBridgeOptions = {},
+) => {
   const pendingRef = useRef<PendingPromiseResolver | null>(null);
-  const { onSuccess, onError, ...restOptions } = options;
+  const {
+    onSuccess,
+    onError,
+    normalizeUnknownError = false,
+    ...restOptions
+  } = options;
+
+  /**
+   * 规范化请求错误对象，避免调用方只拿到 undefined。
+   *
+   * 场景：
+   * - errorHandler 的某些分支（如 BizError default）调用 Promise.reject()
+   *   时没有传 error，导致 reject(undefined)；
+   * - 第三方库在某些分支没有抛出标准 Error。
+   *
+   * @param rawError - 原始错误对象
+   * @returns 统一的 Error 实例（附带 info 便于日志排查）
+   */
+  const normalizeRequestError = (rawError: any): Error => {
+    // 已经是标准 Error 实例（包括 BizError），直接返回，保留 error.info
+    if (rawError instanceof Error) {
+      return rawError;
+    }
+
+    // rawError 为 undefined 时，说明 errorHandler 的某些分支没有把原始 error
+    // 透传到 reject(undefined)，此时我们从 "错误已通过 message.warning 展示" 的事实出发，
+    // 构造一个带 serviceName 的 Error，确保 onError 日志有可追溯的上下文。
+    const serviceName = service?.name || 'anonymousService';
+    const fallbackError = new Error(
+      rawError
+        ? String(rawError)
+        : `API request failed with unknown error (service: ${serviceName})`,
+    );
+    (fallbackError as any).name = 'UnknownRequestError';
+    (fallbackError as any).info = {
+      message: rawError
+        ? String(rawError)
+        : `Unknown error from request layer (service: ${serviceName})`,
+      serviceName,
+    };
+    return fallbackError;
+  };
 
   const requestResult = useRequest(service, {
     ...restOptions,
@@ -42,11 +95,15 @@ const useRequestPromiseBridge = (service: any, options: any = {}) => {
     onError: async (error: any, ...args: any[]) => {
       const pending = pendingRef.current;
       pendingRef.current = null;
+      const normalizedError = normalizeUnknownError
+        ? normalizeRequestError(error)
+        : error;
       try {
-        await onError?.(error, ...args);
-        pending?.reject(error);
+        await onError?.(normalizedError, ...args);
+        pending?.reject(normalizedError);
       } catch (callbackError) {
-        pending?.reject(callbackError);
+        // onError 回调自身异常不覆盖主错误，避免丢失真实请求失败上下文。
+        pending?.reject(normalizedError);
       }
     },
   });

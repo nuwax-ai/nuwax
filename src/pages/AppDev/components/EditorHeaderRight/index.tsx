@@ -192,7 +192,7 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
 
   const isLoadingState = useMemo(
     () => !isStarting && !isRestarting && !isProjectUploading && isLoading,
-    [isStarting, isRestarting, isProjectUploading],
+    [isStarting, isRestarting, isProjectUploading, isLoading],
   );
   const { setIsIframeLoaded } = useModel('appDevDesign');
   useEffect(() => {

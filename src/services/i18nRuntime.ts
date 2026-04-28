@@ -5,6 +5,7 @@ import {
   I18N_MAP_CACHE_TTL,
   I18N_STORAGE_KEYS,
   MIN_EN_I18N_MAP,
+  MIN_JA_I18N_MAP,
   MIN_ZH_HK_I18N_MAP,
   MIN_ZH_I18N_MAP,
   MIN_ZH_TW_I18N_MAP,
@@ -28,6 +29,9 @@ const normalizeLang = (lang?: string | null) =>
 const isZhLang = (lang?: string | null): boolean =>
   normalizeLang(lang).startsWith('zh');
 
+const isJaLang = (lang?: string | null): boolean =>
+  normalizeLang(lang).startsWith('ja');
+
 const getLocalDefaultMapByLang = (lang?: string | null): SystemLangMap => {
   const normalized = normalizeLang(lang);
   if (normalized.startsWith('zh-tw') || normalized.startsWith('zh-hant'))
@@ -35,6 +39,7 @@ const getLocalDefaultMapByLang = (lang?: string | null): SystemLangMap => {
   if (normalized.startsWith('zh-hk') || normalized.startsWith('zh-mo'))
     return MIN_ZH_HK_I18N_MAP;
   if (normalized.startsWith('zh')) return MIN_ZH_I18N_MAP;
+  if (normalized.startsWith('ja')) return MIN_JA_I18N_MAP;
   return MIN_EN_I18N_MAP;
 };
 
@@ -208,6 +213,8 @@ export const syncLangFromUserInfo = async (user?: {
   if (isZhLang(targetLang)) {
     zhBaseMap = { ...MIN_ZH_I18N_MAP };
     buildZhValueToKeyMap(zhBaseMap);
+  } else if (isJaLang(targetLang)) {
+    langMap = { ...MIN_JA_I18N_MAP };
   }
   initialized = true;
 };
@@ -245,8 +252,11 @@ export const dict = (key: string, ...values: (string | number)[]): string => {
   }
 
   // 2. 只有在接口完全没有回该 Key 时，才考虑使用本地包兜底
+  const localDefaultMap = getLocalDefaultMapByLang(currentLang);
   const localTemplate =
-    MIN_EN_I18N_MAP[normalizedKey] || MIN_ZH_I18N_MAP[normalizedKey];
+    localDefaultMap[normalizedKey] ||
+    MIN_EN_I18N_MAP[normalizedKey] ||
+    MIN_ZH_I18N_MAP[normalizedKey];
 
   if (!localTemplate || !String(localTemplate).trim()) {
     warnOnce(warnedMissingKeys, normalizedKey, (k) => {

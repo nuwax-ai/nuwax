@@ -810,12 +810,31 @@ const MentionSelector = React.forwardRef<
     };
 
     // 暴露方法给父组件
-    useImperativeHandle(ref, () => ({
-      handleSelectCurrentItem,
-      handleEscapeKey,
-      handleArrowRightKey,
-      handleArrowLeftKey,
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        handleSelectCurrentItem,
+        handleEscapeKey,
+        handleArrowRightKey,
+        handleArrowLeftKey,
+        handleArrowUpKey: () => {
+          onSelectedIndexChange?.((prev: number) => (prev > 0 ? prev - 1 : 0));
+        },
+        handleArrowDownKey: () => {
+          onSelectedIndexChange?.((prev: number) =>
+            prev < maxIndex ? prev + 1 : maxIndex,
+          );
+        },
+      }),
+      [
+        handleSelectCurrentItem,
+        handleEscapeKey,
+        handleArrowRightKey,
+        handleArrowLeftKey,
+        onSelectedIndexChange,
+        maxIndex,
+      ],
+    );
 
     /**
      * 限制 selectedIndex 在有效范围内，并自动滚动到选中项（参考 Ant Design Mentions）
@@ -827,11 +846,11 @@ const MentionSelector = React.forwardRef<
         // 自动滚动到选中项
         setTimeout(() => {
           const selectedElement = containerRef?.current?.querySelector(
-            '[class*="mention-item"][class*="selected"]',
+            `.${styles['mention-item']}.${styles.selected}`,
           ) as HTMLElement;
           if (selectedElement) {
             selectedElement.scrollIntoView({
-              behavior: 'smooth',
+              behavior: 'auto',
               block: 'nearest',
             });
           }

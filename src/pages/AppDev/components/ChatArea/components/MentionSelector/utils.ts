@@ -3,6 +3,7 @@
  * 包含文件扁平化、数据源分组、最近使用管理等工具函数
  */
 
+import type { SkillInfoForAt } from '@/components/ChatInputHome/MentionPopup/types';
 import { t } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type {
@@ -143,6 +144,7 @@ export const groupDataSourcesByType = (
  */
 const RECENT_FILES_KEY_PREFIX = 'mention_recent_files';
 const RECENT_DATA_SOURCES_KEY_PREFIX = 'mention_recent_data_sources';
+const RECENT_SKILLS_KEY_PREFIX = 'mention_recent_skills';
 const MAX_RECENT_ITEMS = 7;
 
 /**
@@ -174,6 +176,19 @@ interface RecentDataSourceItem {
   name: string;
   timestamp: number;
   projectId?: string; // 兼容旧数据，新数据会按 projectId 分别存储
+}
+
+/**
+ * 最近使用的技能项
+ */
+interface RecentSkillItem {
+  id: number;
+  targetId: number;
+  name: string;
+  icon: string;
+  description: string;
+  timestamp: number;
+  projectId?: string;
 }
 
 /**
@@ -277,6 +292,52 @@ export const saveRecentDataSource = (
     sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
     // console.error('Failed to save recent datasource:', error);
+  }
+};
+
+/**
+ * 获取最近使用的技能
+ * @param projectId 项目ID
+ */
+export const getRecentSkills = (projectId?: string): RecentSkillItem[] => {
+  try {
+    const storageKey = getStorageKey(projectId || '', RECENT_SKILLS_KEY_PREFIX);
+    const stored = sessionStorage.getItem(storageKey);
+    if (!stored) return [];
+    const items: RecentSkillItem[] = JSON.parse(stored);
+    return items
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, MAX_RECENT_ITEMS);
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * 保存最近使用的技能
+ * @param skill 技能信息
+ * @param projectId 项目ID
+ */
+export const saveRecentSkill = (
+  skill: SkillInfoForAt,
+  projectId?: string,
+): void => {
+  try {
+    const storageKey = getStorageKey(projectId || '', RECENT_SKILLS_KEY_PREFIX);
+    const items = getRecentSkills(projectId);
+    const filtered = items.filter((item) => item.id !== skill.id);
+    const newItem: RecentSkillItem = {
+      id: skill.id,
+      targetId: skill.targetId,
+      name: skill.name,
+      icon: skill.icon,
+      description: skill.description || '',
+      timestamp: Date.now(),
+    };
+    const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
+    sessionStorage.setItem(storageKey, JSON.stringify(updated));
+  } catch (error) {
+    // console.error('Failed to save recent skill:', error);
   }
 };
 

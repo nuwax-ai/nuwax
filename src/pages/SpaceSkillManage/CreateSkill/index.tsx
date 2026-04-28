@@ -3,9 +3,11 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { SKILL_USAGE_SCENARIO_LIST } from '@/constants/library.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiAddSkill, apiUpdateSkill } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AddSkillParams,
   CreateSkillProps,
@@ -13,7 +15,7 @@ import type {
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
-import { Form, Input, message } from 'antd';
+import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history } from 'umi';
@@ -32,7 +34,7 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const { id, name, description, icon } = skillInfo || {};
+  const { id, name, description, icon, usageScenarios } = skillInfo || {};
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -80,17 +82,20 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
       form.setFieldsValue({
         name,
         description,
+        usageScenarios,
       });
     }
-  }, [open, icon, name, description]);
+  }, [open, icon, name, description, usageScenarios]);
 
   const onFinish: FormProps<{
     name: string;
     description: string;
+    usageScenarios: string[];
   }>['onFinish'] = (values) => {
     const params = {
       name: values?.name,
       description: values?.description,
+      usageScenarios: values?.usageScenarios,
       icon: imageUrl,
     };
     if (type === CreateUpdateModeEnum.Create) {
@@ -180,6 +185,33 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
             )}
             showCount
             maxLength={30}
+          />
+        </Form.Item>
+        <Form.Item
+          name="usageScenarios"
+          label={dict(
+            'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioLabel',
+          )}
+          initialValue={
+            type === CreateUpdateModeEnum.Create
+              ? [AgentTypeEnum.TaskAgent]
+              : undefined
+          }
+          rules={[
+            {
+              required: true,
+              message: dict(
+                'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioRequired',
+              ),
+            },
+          ]}
+        >
+          <Select
+            mode="multiple"
+            placeholder={dict(
+              'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioPlaceholder',
+            )}
+            options={SKILL_USAGE_SCENARIO_LIST}
           />
         </Form.Item>
         <OverrideTextArea
