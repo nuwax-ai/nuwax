@@ -136,6 +136,8 @@ const SkillDetail: React.FC = ({}) => {
         taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态
         fileTreeDataLoading={loadingSkillInfo}
+        // 是否为项目技能模式
+        isProjectSkill={true}
         // 技能文件列表
         originalFiles={skillInfo?.files || []}
         // 是否只读

@@ -116,7 +116,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
-      /** 是否为项目技能模式 */
+      /**
+       * 是否为项目技能模式（主要适用于技能预览和编辑）：
+       * 在 SkillDetails 页面设置 isProjectSkill={true}，是为了确保当技能的文件列表数据发生任何变动时，
+       * 当前正在查看/编辑的文件内容能够立即、自动地同步更新，避免出现“数据已变但界面显示的还是旧代码”的情况。
+       */
       isProjectSkill = false,
     },
     ref,
