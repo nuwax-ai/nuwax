@@ -65,6 +65,8 @@ export interface FilePreviewProps {
   staticFileBasePath?: string;
   /** File source: URL string, ArrayBuffer, Blob, or File object */
   src?: string | ArrayBuffer | Blob | File;
+  /** File content string (alternative to src) */
+  content?: string;
   /** For multiple images: array of image sources */
   srcList?: Array<string | File>;
   /** File type (auto-detected if not provided) */
@@ -312,6 +314,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   onError,
   className,
   style,
+  content: propsContent,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewerRef = useRef<any>(null);
@@ -385,7 +388,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [src, fileName]);
 
   const initPreview = async () => {
-    if (!containerRef.current || (!src && !srcList?.length)) return;
+    if (!containerRef.current || (!src && !srcList?.length && !propsContent))
+      return;
 
     // Handle srcList for image gallery
     if (srcList && srcList.length > 0) {
@@ -437,6 +441,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
+      if (propsContent) {
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
       setStatus('loading');
       try {
         let content: string;
@@ -461,6 +471,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // HTML handling
     if (type === 'html') {
+      if (propsContent) {
+        setHtmlUrl(null);
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
       if (typeof src === 'string') {
         setHtmlUrl(src);
         setTextContent('');
@@ -578,7 +595,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   };
 
   useEffect(() => {
-    if (src || srcList?.length) {
+    if (src || srcList?.length || propsContent) {
       initPreview();
     } else {
       setStatus('idle');
@@ -594,7 +611,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, srcList, fileType]);
+  }, [src, srcList, fileType, propsContent]);
 
   // ResizeObserver 监听容器尺寸变化
   const lastSizeRef = useRef<{ width: number; height: number } | null>(null);
