@@ -16,12 +16,16 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
   type = TooltipTitleTypeEnum.Blank,
   icon,
   title,
+  ariaLabel,
   placement,
   onClick,
 }) => {
   const bg =
     type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
   const { token } = theme.useToken();
+  const accessibleLabel =
+    ariaLabel || (typeof title === 'string' ? title : undefined);
+
   return (
     <Tooltip title={title} classNames={{ root: bg }} placement={placement}>
       <span
@@ -35,6 +39,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
           className,
         )}
         onClick={onClick}
+        aria-label={accessibleLabel}
       >
         {/*默认加号（+）*/}
         {icon || (

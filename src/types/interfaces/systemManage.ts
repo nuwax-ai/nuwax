@@ -1,6 +1,9 @@
 import {
   AccessControlEnum,
   MessageScopeEnum,
+  SandboxBindTypeEnum,
+  SandboxIsolationEnum,
+  SandboxTypeEnum,
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
@@ -730,6 +733,18 @@ export interface ConversationTrendList {
 }
 
 /**
+ * 沙盒绑定信息项
+ */
+export interface SandboxBindItem {
+  /** 目标类型 (User/Space) */
+  targetType: SandboxBindTypeEnum;
+  /** 目标ID */
+  targetId: number;
+  /** 目标名称 */
+  targetName: string;
+}
+
+/**
  * 沙盒配置项
  */
 export interface SandboxConfigItem {
@@ -738,6 +753,12 @@ export interface SandboxConfigItem {
   userId: number;
   name: string;
   configKey: string;
+  /** 沙盒类型: Agent (智能体), PageApp (应用开发) */
+  type: SandboxTypeEnum;
+  /** 绑定信息 */
+  bindItems?: SandboxBindItem[];
+  /** 沙盒隔离: Tenant (租户), Space (空间), Project (项目) */
+  isolation?: SandboxIsolationEnum;
   configValue: {
     hostWithScheme: string;
     agentPort: number;
