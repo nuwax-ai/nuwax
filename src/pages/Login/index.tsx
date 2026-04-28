@@ -141,7 +141,7 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
-        captchaRef.current?.refresh();
+        // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
       },
     },
   );
@@ -361,6 +361,9 @@ const Login: React.FC = () => {
         return await handlerCodeLogin(captchaVerifyParam);
       } finally {
         captchaFallbackRef.current = false;
+        // 释放触发锁并清理 popup watcher，避免登录按钮锁死
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
       }
     }
 
