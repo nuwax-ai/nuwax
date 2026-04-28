@@ -22,7 +22,6 @@ import {
   Form,
   FormProps,
   Input,
-  message,
   Modal,
   Segmented,
   theme,
@@ -142,7 +141,6 @@ const Login: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
-        message.error(error?.message || dict('PC.Common.Global.error'));
         captchaRef.current?.refresh();
       },
     },
