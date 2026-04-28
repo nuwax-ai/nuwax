@@ -11,13 +11,10 @@ import { ZH_TW } from '@/locales/i18n/zh-TW';
 export const DEFAULT_I18N_LANG = 'en-us';
 
 export const I18N_STORAGE_KEYS = {
-  ACTIVE_LANG: 'XAGI_I18N_ACTIVE_LANG',
-  LANG_MAP_CACHE: 'XAGI_I18N_LANG_MAP_CACHE',
-  LANG_MAP_CACHE_AT: 'XAGI_I18N_LANG_MAP_CACHE_AT',
-  LANG_MAP_CACHE_LANG: 'XAGI_I18N_LANG_MAP_CACHE_LANG',
+  ACTIVE_LANG: 'umi_locale',
 } as const;
 
-export const I18N_MAP_CACHE_TTL = 24 * 60 * 60 * 1000;
+// I18N_MAP_CACHE_TTL removed as caching is disabled
 
 // Runtime fallback dictionaries
 export const MIN_EN_I18N_MAP: Record<string, string> = EN_US;
