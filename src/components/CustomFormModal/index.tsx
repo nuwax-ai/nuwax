@@ -2,11 +2,7 @@ import SubmitButton from '@/components/SubmitButton';
 import { dict } from '@/services/i18nRuntime';
 import type { CustomFormModalProps } from '@/types/interfaces/common';
 import { Button, Modal } from 'antd';
-import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * 自定义表单弹窗组件
@@ -37,7 +33,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
       destroyOnHidden
       footer={
         <>
-          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
+          <Button type="default" onClick={onCancel}>
             {dict('PC.Components.CustomFormModal.cancel')}
           </Button>
           <SubmitButton
