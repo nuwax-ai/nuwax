@@ -155,6 +155,7 @@ export interface AddSkillParams {
   name: string;
   description: string;
   icon: string;
+  usageScenarios: string[];
   files?: SkillFileInfo[];
 }
 
@@ -164,6 +165,7 @@ export interface UpdateSkillParams {
   name: string;
   description: string;
   icon: string;
+  usageScenarios: string[];
   files?: SkillFileInfo[];
   // 发布状态,可用值:Developing,Applying,Published,Rejected
   publishStatus?: PublishStatusEnum;
@@ -189,6 +191,7 @@ export interface SkillBaseInfo {
   name: string;
   description: string;
   icon: string;
+  usageScenarios: string[];
 }
 
 // 更新、创建技能弹窗
@@ -211,6 +214,7 @@ export interface AddSkillParams {
   name: string;
   description: string;
   icon: string;
+  usageScenarios: string[];
 }
 
 // 更新技能传入参数
@@ -219,6 +223,7 @@ export interface UpdateSkillParams {
   name: string;
   description: string;
   icon: string;
+  usageScenarios: string[];
 }
 
 // 组件信息
@@ -324,6 +329,8 @@ export interface SkillQueryFilter {
   name?: string;
   // 发布状态
   publishStatus?: PublishStatusEnum[];
+  // 适用范围
+  usageScenarios?: string[];
 }
 
 export enum SkillCopyTypeEnum {
@@ -353,6 +360,8 @@ export interface SkillInfo {
   description: string;
   // 技能图标
   icon: string;
+  // 适用范围
+  usageScenarios: string[];
   // 文件内容列表
   files: SkillFileInfo[];
   // 发布状态，可用值：Developing, Applying, Published, Rejected

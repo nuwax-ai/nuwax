@@ -5,6 +5,7 @@ import {
   PageDevelopCreateTypeEnum,
   PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
+  PageTemplateTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
 import { ProjectDetailData } from './appDev';
@@ -121,6 +122,14 @@ export interface PageUploadAndStartParams {
   coverImg: string;
   // 封面图片来源,可用值:SYSTEM,USER
   coverImgSourceType: CoverImgSourceTypeEnum;
+  // 在线创建项目模板类型，可用值:react,vue3
+  templateType?: PageTemplateTypeEnum;
+}
+
+// 在线创建项目参数（create接口专用）
+export interface PageCreateParams extends PageUploadAndStartParams {
+  // 在线创建项目模板类型，可用值:react,vue3（create接口必填）
+  templateType: PageTemplateTypeEnum;
 }
 
 // 查询前端页面列表参数

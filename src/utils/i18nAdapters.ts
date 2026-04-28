@@ -13,11 +13,13 @@
 
 import type { Locale } from 'antd/es/locale';
 import enUS from 'antd/es/locale/en_US';
+import jaJP from 'antd/es/locale/ja_JP';
 import zhCN from 'antd/es/locale/zh_CN';
 import zhHK from 'antd/es/locale/zh_HK';
 import zhTW from 'antd/es/locale/zh_TW';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';
+import 'dayjs/locale/ja';
 import 'dayjs/locale/zh-cn';
 import 'dayjs/locale/zh-tw';
 
@@ -29,6 +31,7 @@ export const supportedAppLocales = [
   'zh-CN',
   'zh-TW',
   'zh-HK',
+  'ja-JP',
   'en-US',
 ] as const;
 export type AppLocale = (typeof supportedAppLocales)[number];
@@ -46,31 +49,34 @@ interface LibraryLocaleEntry<T> {
 
 const libraryLocaleRegistry: Record<string, LibraryLocaleEntry<unknown>> = {
   antd: {
-    supported: ['zh-CN', 'zh-TW', 'zh-HK', 'en-US'],
+    supported: ['zh-CN', 'zh-TW', 'zh-HK', 'ja-JP', 'en-US'],
     map: {
       'zh-CN': zhCN,
       'zh-TW': zhTW,
       'zh-HK': zhHK,
+      'ja-JP': jaJP,
       'en-US': enUS,
     },
     fallback: 'en-US',
   },
   dayjs: {
-    supported: ['zh-cn', 'zh-tw', 'en'],
+    supported: ['zh-cn', 'zh-tw', 'ja', 'en'],
     map: {
       'zh-CN': 'zh-cn',
       'zh-TW': 'zh-tw',
       'zh-HK': 'zh-tw', // dayjs 无 zh-hk，降级到 zh-tw
+      'ja-JP': 'ja',
       'en-US': 'en',
     },
     fallback: 'en',
   },
   umi: {
-    supported: ['zh-CN', 'zh-TW', 'zh-HK', 'en-US'],
+    supported: ['zh-CN', 'zh-TW', 'zh-HK', 'ja-JP', 'en-US'],
     map: {
       'zh-CN': 'zh-CN',
       'zh-TW': 'zh-TW',
       'zh-HK': 'zh-HK',
+      'ja-JP': 'ja-JP',
       'en-US': 'en-US',
     },
     fallback: 'zh-CN',
@@ -103,6 +109,10 @@ export function resolveFallbackChain(lang: string): string[] {
     }
     // 简中系：zh-CN → zh-TW → en-US
     return ['zh-CN', 'zh-TW', 'en-US'];
+  }
+
+  if (normalized.startsWith('ja')) {
+    return ['ja-JP', 'en-US'];
   }
 
   // 非中文：直接回退到英文
@@ -145,7 +155,7 @@ export function pickSupportedLocale(
 export function getAntdLocale(lang: string): Locale {
   const registry = libraryLocaleRegistry.antd;
   const localeKey = pickSupportedLocale('antd', lang);
-  return (localeKey && registry.map[localeKey]) || enUS;
+  return ((localeKey && registry.map[localeKey]) || enUS) as Locale;
 }
 
 /**
@@ -200,6 +210,7 @@ const jsLocaleMap: Record<string, string> = {
   'zh-cn': 'zh-CN',
   'zh-tw': 'zh-TW',
   'zh-hk': 'zh-HK',
+  'ja-jp': 'ja-JP',
   'en-us': 'en-US',
 };
 

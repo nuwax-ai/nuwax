@@ -53,6 +53,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onViewFileTypeChange,
   onDownloadFileByUrl,
   isShowShare = true,
+  // 是否显示下载按钮, 默认显示
+  isShowDownloadButton = true,
   // 是否显示导出 PDF 按钮, 默认显示
   isShowExportPdfButton = true,
   onExportPdf,
@@ -310,31 +312,34 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               </Tooltip>
             )}
 
-          {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-          {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-            <Tooltip
-              title={
-                isDownloadingFile
-                  ? dict('PC.Components.FilePathHeader.downloading')
-                  : dict('PC.Components.FilePathHeader.download')
-              }
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={
-                  <SvgIcon
-                    name="icons-common-download"
-                    style={{ fontSize: 16 }}
-                  />
+          {/* 只有存在 fileProxyUrl 且 isShowDownloadButton 为 true 时，才显示下载文件按钮 */}
+          {targetNode?.fileProxyUrl &&
+            isShowDownloadButton &&
+            viewMode === 'preview' && (
+              <Tooltip
+                placement="bottom"
+                title={
+                  isDownloadingFile
+                    ? dict('PC.Components.FilePathHeader.downloading')
+                    : dict('PC.Components.FilePathHeader.download')
                 }
-                onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-                className={styles.actionButton}
-                loading={isDownloadingFile}
-                disabled={isDownloadingFile}
-              />
-            </Tooltip>
-          )}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon
+                      name="icons-common-download"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+                  className={styles.actionButton}
+                  loading={isDownloadingFile}
+                  disabled={isDownloadingFile}
+                />
+              </Tooltip>
+            )}
 
           {/* 复制内容 */}
           {!!targetNode?.content && viewMode === 'preview' && (

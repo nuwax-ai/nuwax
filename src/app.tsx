@@ -1,5 +1,5 @@
 import { RequestConfig } from '@@/plugin-request/request';
-import { theme as antdTheme } from 'antd';
+import { Modal, theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { history, useAntdConfigSetter } from 'umi';
 import { SUCCESS_CODE } from './constants/codes.constants';
@@ -9,6 +9,7 @@ import { APP_NAME, APP_VERSION } from './constants/version';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
 import {
+  dict,
   getCurrentLang,
   initI18n,
   syncLangFromUserInfo,
@@ -18,7 +19,6 @@ import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { getAntdLocale } from './utils/i18nAdapters';
-
 /**
  * 全局初始状态类型
  */
@@ -80,7 +80,49 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 
   // 全局错误处理，捕获Monaco Editor的CanceledError
   useEffect(() => {
+    const isChunkLoadError = (error: any): boolean => {
+      const msg = error?.message || '';
+      const name = error?.name || '';
+      return (
+        name === 'ChunkLoadError' ||
+        msg.includes('Loading chunk') ||
+        msg.includes('Loading CSS chunk') ||
+        msg.includes('error in async loading') ||
+        (msg.includes('dynamically imported module') && name === 'TypeError')
+      );
+    };
+
+    const handleChunkError = () => {
+      if (sessionStorage.getItem('__chunk_reload')) return;
+      sessionStorage.setItem('__chunk_reload', '1');
+
+      Modal.confirm({
+        // title: '发现新版本',
+        // content: '系统已更新，请刷新页面以加载最新版本。',
+        // okText: '立即刷新',
+        // cancelText: '稍后再说',
+        title: dict('PC.Hooks.UseEventPolling.newVersionFound'),
+        content: dict('PC.Hooks.UseEventPolling.updatePrompt', ''),
+        okText: dict('PC.Hooks.UseEventPolling.update'),
+        cancelText: dict('PC.Common.Global.cancel'),
+        onOk: () => {
+          sessionStorage.removeItem('__chunk_reload');
+          window.location.reload();
+        },
+        onCancel: () => {
+          sessionStorage.removeItem('__chunk_reload');
+        },
+      });
+    };
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // 检测 chunk 加载失败（部署新版本后旧 chunk 不存在）
+      if (isChunkLoadError(event.reason)) {
+        event.preventDefault();
+        handleChunkError();
+        return;
+      }
+
       // 检查是否是Monaco Editor的CanceledError
       if (
         event.reason &&
@@ -92,7 +134,6 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         return;
       }
 
-      // 检查是否是WordHighlighter相关的取消错误
       if (
         event.reason &&
         (event.reason.stack?.includes('WordHighlighter') ||
@@ -101,14 +142,41 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         event.preventDefault();
         return;
       }
+
+      // 检查是否是 fetch 失败（通常是网络问题或被拦截）
+      if (
+        event.reason &&
+        (event.reason.message === 'Failed to fetch' ||
+          event.reason.message?.includes('NetworkError'))
+      ) {
+        // 阻止这个错误冒泡到控制台，从而避免在开发环境下弹出全屏错误弹框
+        event.preventDefault();
+        return;
+      }
     };
 
     const handleError = (event: ErrorEvent) => {
-      // 检查是否是Monaco Editor相关的错误
+      // 检测 chunk 加载失败
+      if (isChunkLoadError(event.error)) {
+        event.preventDefault();
+        handleChunkError();
+        return;
+      }
+
       if (
         event.error &&
         (event.error.message?.includes('Canceled') ||
           event.error.stack?.includes('WordHighlighter'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+
+      // 检查是否是 fetch 失败（通常是网络问题或被拦截）
+      if (
+        event.error &&
+        (event.error.message === 'Failed to fetch' ||
+          event.error.message?.includes('NetworkError'))
       ) {
         event.preventDefault();
         return;

@@ -37,4 +37,4 @@ pnpm-lock.yaml
 .cursorrules
 .DS_Store
 .agent
-/deploy_test.sh
+# /deploy_test.sh
