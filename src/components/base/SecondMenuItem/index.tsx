@@ -38,6 +38,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
       })}
       onClick={onClick}
       style={style}
+      aria-label={name}
     >
       <span
         className={cx(
@@ -51,7 +52,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
           icon?.includes('.png') ||
           icon?.includes('.jpg') ||
           icon?.includes('.jpeg') ? (
-            <img className={cx(styles['icon-image'])} src={icon} />
+            <img className={cx(styles['icon-image'])} src={icon} alt={name} />
           ) : (
             <SvgIcon name={icon} />
           )
@@ -66,6 +67,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         <SvgIcon
           name="icons-common-caret_down"
           className={cx(styles['icon-dropdown'])}
+          aria-hidden="true"
           onClick={(e) => {
             e.stopPropagation();
             onToggle?.();

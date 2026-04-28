@@ -1,0 +1,32 @@
+@import '@/styles/token.less';
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: @paddingXs @paddingSm;
+  border-radius: @borderRadiusSm;
+  transition: all 0.3s;
+
+  &:hover {
+    background-color: @colorFillAlter;
+  }
+
+  .name-wrapper {
+    flex: 1;
+    min-width: 0;
+    margin-right: @marginSm;
+
+    .name-text {
+      font-size: @fontSize;
+      color: @colorText;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .action-wrapper {
+    flex-shrink: 0;
+  }
+}
