@@ -107,4 +107,6 @@ export interface FileTreeViewProps {
   isShowDownloadButton?: boolean;
   /** 静态资源文件基础路径 */
   staticFileBasePath?: string;
+  /** 是否为项目技能模式 */
+  isProjectSkill?: boolean;
 }

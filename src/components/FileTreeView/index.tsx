@@ -116,6 +116,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
+      /** 是否为项目技能模式 */
+      isProjectSkill = false,
     },
     ref,
   ) => {
@@ -597,18 +599,27 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (
         files &&
         files.length > 0 &&
-        isImportProjectTrigger &&
-        taskAgentSelectedFileId
+        (isImportProjectTrigger || isProjectSkill)
       ) {
+        // 优先使用当前选中的 ID，如果没有则尝试使用外部传入的 ID
+        const targetSyncId = selectedFileId || taskAgentSelectedFileId;
+        if (!targetSyncId) return;
+
         // 从新的 files 中查找对应的文件节点
-        const newFileNode = findFileNode(taskAgentSelectedFileId, files);
+        const newFileNode = findFileNode(targetSyncId, files);
 
         if (newFileNode) {
           setSelectedFileNode(newFileNode);
           setSelectedFileId(newFileNode?.id);
         }
       }
-    }, [files, isImportProjectTrigger, taskAgentSelectedFileId]);
+    }, [
+      files,
+      isImportProjectTrigger,
+      isProjectSkill,
+      selectedFileId,
+      taskAgentSelectedFileId,
+    ]);
 
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
@@ -1320,8 +1331,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
             : fileRefreshTimestampRef.current;
+        const separator = fileProxyUrl.includes('?') ? '&' : '?';
         const fileUrl = triggerValue
-          ? `${fileProxyUrl}?t=${triggerValue}`
+          ? `${fileProxyUrl}${separator}t=${triggerValue}`
           : fileProxyUrl;
 
         return { key: fileKey, url: fileUrl };
@@ -1406,9 +1418,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 获取文件代理URL
-      const fileProxyUrl = selectedFileNode?.fileProxyUrl
-        ? `${process.env.BASE_URL}${selectedFileNode?.fileProxyUrl}`
-        : '';
+      let fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+      // 如果是相对路径（不以 http://, https:// 或 // 开头），则添加 BASE_URL 前缀
+      if (fileProxyUrl && !/^(https?:)?\/\//i.test(fileProxyUrl)) {
+        fileProxyUrl = `${process.env.BASE_URL || ''}${fileProxyUrl}`;
+      }
 
       // 视频文件：使用FilePreview组件
       if (isVideo && fileProxyUrl) {
@@ -1509,14 +1523,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
       // 如果是html、md文件，并且处于预览模式
+      const fileNameLower = fileName?.toLowerCase() || '';
+      // 兼容 .html 和 .htm 后缀，并处理可能存在的查询参数
+      const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
       if (
-        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
+        (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
         viewFileType === 'preview' &&
-        fileProxyUrl
+        (fileProxyUrl || selectedFileNode?.content)
       ) {
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-        const isHtml = fileName?.includes('.htm');
+        const isHtml = isHtmlInCondition;
 
         // 获取文件预览的 key 和 url
         const fileTypeForPreview = isHtml ? 'html' : 'markdown';
@@ -1531,6 +1548,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <FilePreview
             key={filePreviewKey}
             src={filePreviewUrl}
+            content={selectedFileNode?.content}
             fileType={fileTypeForPreview}
             staticFileBasePath={staticFileBasePath}
           />

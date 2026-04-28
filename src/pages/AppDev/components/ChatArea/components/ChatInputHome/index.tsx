@@ -289,6 +289,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         value.slice(0, atIndex) + `@${mentionText}${space}` + textAfterCursor;
 
       chat.setChatInput(newValue);
+      lastValueRef.current = newValue;
 
       const newCursorPos =
         atIndex + mentionText.length + 1 + (appendSpace ? 1 : 0);
@@ -458,6 +459,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     setMentionTrigger({ trigger: false });
     setMentionPosition({ left: 0, top: 0, visible: false });
     setMentionSelectedIndex(0);
+    // 延迟聚焦，确保在弹框关闭后输入框能正确获取焦点
+    setTimeout(() => {
+      textAreaRef.current?.focus();
+    }, 0);
   }, []);
 
   /**
@@ -499,6 +504,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         setIframeDesignMode(false);
         // 清空输入框
         chat.setChatInput('');
+        lastValueRef.current = '';
         // 清空附件文件列表
         setAttachmentFiles([]);
         // 清空原型图片附件列表
@@ -574,6 +580,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       setIframeDesignMode(false);
       // 清空输入框
       chat.setChatInput('');
+      lastValueRef.current = '';
       // 清空附件文件列表
       setAttachmentFiles([]);
       // 清空原型图片附件列表
@@ -818,6 +825,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       const newValue =
         value.slice(0, selectionStart) + '@' + value.slice(selectionEnd);
       chat.setChatInput(newValue);
+      lastValueRef.current = newValue;
       newCursorPos = selectionStart + 1;
     }
 
@@ -1067,6 +1075,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
                         // 更新输入框内容
                         chat.setChatInput(newText.trim());
+                        lastValueRef.current = newText.trim();
                       }}
                     />
                   </div>
@@ -1138,6 +1147,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           containerRef={mentionContainerRef}
           onSelectedIndexChange={setMentionSelectedIndex}
           projectId={projectId}
+          // 关闭回调
+          onClose={handleCloseMenu}
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -1145,7 +1156,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             <Tooltip title={t('PC.Pages.AppDevChatInput.mention')}>
               <div
                 className={cx(styles['at-button'], {
-                  [styles.disabled]: chat.isChatLoading,
+                  // [styles.disabled]: chat.isChatLoading,
                 })}
                 onClick={handleAtButtonClick}
               >
