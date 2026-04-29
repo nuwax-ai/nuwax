@@ -498,13 +498,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
     return true;
   }, [agentConfigInfo?.type, messageList]);
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
       {agentConfigInfo?.hideChatArea ? null : (
         <div
-          className={cx('flex', 'flex-col')}
-          style={{ flex: 1, minWidth: 340 }}
+          className={cx('flex', 'flex-col', 'flex-1')}
+          style={{ minWidth: 340 }}
         >
           <PreviewAndDebugHeader
             onPressDebug={onPressDebug}
@@ -573,11 +574,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                       <div
                         ref={loadMoreRef}
                         className={cx(styles['load-more-container'])}
-                        style={{
-                          textAlign: 'center',
-                          padding: '16px 0',
-                          color: '#999',
-                        }}
                       >
                         {loadingMore ? (
                           <span>
