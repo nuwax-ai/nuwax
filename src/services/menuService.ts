@@ -59,8 +59,10 @@ const MENU_ICON_MAP: Record<string, string> = {
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"
   page_app_dev: 'icons-common-console',
-  // 组件库
+  // 组件库（保留兼容旧 code）
   component_lib_dev: 'icons-nav-components',
+  // 组件资源（新 code，替代组件库）
+  component_resource_dev: 'icons-nav-components',
   // 技能管理
   skill_dev: 'icons-nav-skill',
   // MCP管理
@@ -76,12 +78,31 @@ const MENU_ICON_MAP: Record<string, string> = {
   // IM 机器人
   im_channel: 'icons-nav-robot',
 
+  // 组件资源子菜单
+  // 插件与工作流
+  plugin_workflow_dev: 'icons-nav-cube',
+  // 知识与数据存储
+  knowledge_storage_dev: 'icons-nav-knowledge',
+  // 模型管理（工作空间级别）
+  space_model_manage: 'icons-nav-model',
+
+  // 资源定价
+  resource_pricing: 'icons-nav-pricing',
+  // 智能体用户订阅
+  agent_subscription: 'icons-nav-subscription',
+
   // Adding leftovers from logs or standard mapping
   component_dev: 'icons-nav-cube',
   log_manage: 'icons-nav-log', // Captured: log_manage
 
   // 更多
   api_key: 'icons-nav-api_key',
+  // 更多页面 - 我的订阅
+  my_subscriptions: 'icons-nav-my-subscription',
+  // 更多页面 - 我的订单
+  my_orders: 'icons-nav-my-orders',
+  // 更多页面 - 我的收益
+  my_earnings: 'icons-nav-my-earnings',
 };
 
 /**

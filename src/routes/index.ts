@@ -71,6 +71,29 @@ const routes = [
       },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      // 组件资源子页面
+      {
+        path: '/space/:spaceId/plugin-workflow',
+        component: '@/pages/SpaceResource/PluginWorkflow',
+      },
+      {
+        path: '/space/:spaceId/knowledge-storage',
+        component: '@/pages/SpaceResource/KnowledgeStorage',
+      },
+      {
+        path: '/space/:spaceId/model-manage',
+        component: '@/pages/SpaceResource/ModelManage',
+      },
+      // 资源定价
+      {
+        path: '/space/:spaceId/resource-pricing',
+        component: '@/pages/SpaceResource/Pricing',
+      },
+      // 智能体用户订阅
+      {
+        path: '/space/:spaceId/agent-subscriptions',
+        component: '@/pages/SpaceResource/AgentSubscriptions',
+      },
       // 插件、工作流、MCP日志
       {
         path: '/space/:spaceId/library-log',
@@ -155,6 +178,27 @@ const routes = [
             path: 'api-key-logs',
             name: 'API Call Logs',
             component: '@/pages/MorePage/ApiKeyLogs',
+            hideInMenu: true,
+          },
+          {
+            path: 'my-subscriptions',
+            name: getRouteLabel('PC.Routes.mySubscriptions'),
+            component: '@/pages/MorePage/MySubscriptions',
+          },
+          {
+            path: 'my-orders',
+            name: getRouteLabel('PC.Routes.myOrders'),
+            component: '@/pages/MorePage/MyOrders',
+          },
+          {
+            path: 'my-earnings',
+            name: getRouteLabel('PC.Routes.myEarnings'),
+            component: '@/pages/MorePage/MyEarnings',
+          },
+          {
+            path: 'credit-records',
+            name: getRouteLabel('PC.Routes.creditRecords'),
+            component: '@/pages/MorePage/CreditRecords',
             hideInMenu: true,
           },
         ],

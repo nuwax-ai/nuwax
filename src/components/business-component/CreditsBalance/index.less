@@ -1,0 +1,33 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  white-space: nowrap;
+  font-size: 13px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 4%);
+  }
+
+  .icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .balance {
+    font-weight: 500;
+    color: var(--ant-color-text);
+  }
+
+  .top-up-btn {
+    font-size: 12px;
+    padding: 0 6px;
+    margin-left: 2px;
+    height: 22px;
+    line-height: 22px;
+  }
+}

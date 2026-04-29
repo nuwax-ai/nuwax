@@ -1,0 +1,24 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid @BLANK12;
+  border-radius: @borderRadius;
+  padding: 8px 12px;
+  font-size: @fontSizeSm;
+  color: @BLANK04;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+
+  &:focus {
+    border-color: @colorPrimary;
+  }
+}

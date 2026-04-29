@@ -96,6 +96,54 @@ export const LIBRARY_ALL_TYPE = [
   ...LIBRARY_ALL_RESOURCE,
 ];
 
+// 插件与工作流 - 资源类型
+export const PLUGIN_WORKFLOW_RESOURCE = [
+  {
+    value: ComponentTypeEnum.Workflow,
+    label: dict('PC.Common.Global.workflow'),
+    icon: <ICON_WORKFLOW />,
+  },
+  {
+    value: ComponentTypeEnum.Plugin,
+    label: dict('PC.Common.Global.plugin'),
+    icon: <ICON_PLUGIN />,
+  },
+];
+
+// 插件与工作流 - 筛选类型（含全部）
+export const PLUGIN_WORKFLOW_TYPE = [
+  {
+    value: ComponentTypeEnum.All_Type,
+    label: dict('PC.Constants.Space.allTypes'),
+    icon: null,
+  },
+  ...PLUGIN_WORKFLOW_RESOURCE,
+];
+
+// 知识与数据存储 - 资源类型
+export const KNOWLEDGE_STORAGE_RESOURCE = [
+  {
+    value: ComponentTypeEnum.Knowledge,
+    label: dict('PC.Common.Global.knowledge'),
+    icon: <ICON_KNOWLEDGE />,
+  },
+  {
+    value: ComponentTypeEnum.Table,
+    label: dict('PC.Common.Global.dataTable'),
+    icon: <ICON_TABLE />,
+  },
+];
+
+// 知识与数据存储 - 筛选类型（含全部）
+export const KNOWLEDGE_STORAGE_TYPE = [
+  {
+    value: ComponentTypeEnum.All_Type,
+    label: dict('PC.Constants.Space.allTypes'),
+    icon: null,
+  },
+  ...KNOWLEDGE_STORAGE_RESOURCE,
+];
+
 // 任务库所有类型
 export const TASK_ALL_TYPE = [
   {

@@ -81,6 +81,7 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
+import SubscriptionSetting from './SubscriptionSetting';
 import SystemUserTipsWord, { SystemUserTipsWordRef } from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
@@ -957,6 +958,9 @@ const EditAgent: React.FC = () => {
         onToggleVersionHistory={() =>
           handleClosePreview(EditAgentShowType.Version_History)
         }
+        onToggleSubscriptionSetting={() =>
+          handleClosePreview(EditAgentShowType.Subscription_Setting)
+        }
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
@@ -1199,6 +1203,13 @@ const EditAgent: React.FC = () => {
           targetType={AgentComponentTypeEnum.Agent}
           permissions={agentConfigInfo?.permissions || []}
           visible={showType === EditAgentShowType.Version_History}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
+        />
+        {/*订阅设置*/}
+        <SubscriptionSetting
+          agentId={agentId}
+          spaceId={spaceId}
+          visible={showType === EditAgentShowType.Subscription_Setting}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>

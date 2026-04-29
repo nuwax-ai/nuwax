@@ -26,6 +26,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 import DynamicTabs from './DynamicTabs';
 // 复用原有组件
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import CollapseButton from './CollapseButton';
 import Header from './Header';
 import User from './User';
@@ -693,6 +694,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         />
         {/* 用户操作区域 */}
         <UserOperateArea onClick={handleUserClick} menus={otherMenus} />
+        {/* 积分余额 */}
+        <CreditsBalance />
         {/* 用户头像 */}
         <User />
       </div>

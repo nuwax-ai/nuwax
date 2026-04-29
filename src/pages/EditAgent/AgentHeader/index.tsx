@@ -26,6 +26,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   agentConfigInfo,
   onToggleShowStand,
   onToggleVersionHistory,
+  onToggleSubscriptionSetting,
   onEditAgent,
   onPublish,
   onOtherAction,
@@ -95,6 +96,14 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       label: (
         <div onClick={onToggleVersionHistory}>
           {dict('PC.Pages.AgentEdit.versionHistory')}
+        </div>
+      ),
+    },
+    {
+      key: 'subscriptionSetting',
+      label: (
+        <div onClick={onToggleSubscriptionSetting}>
+          {dict('PC.Pages.AgentEdit.subscriptionSetting')}
         </div>
       ),
     },

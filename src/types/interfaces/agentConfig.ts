@@ -44,6 +44,7 @@ export interface AgentHeaderProps {
   agentConfigInfo?: AgentConfigInfo;
   onToggleShowStand: () => void;
   onToggleVersionHistory: () => void;
+  onToggleSubscriptionSetting: () => void;
   onEditAgent: () => void;
   onPublish: () => void;
   onOtherAction: (key: ApplicationMoreActionEnum) => void;
