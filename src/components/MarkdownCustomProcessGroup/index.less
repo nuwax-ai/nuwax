@@ -66,8 +66,33 @@
 
   .group-content {
     border-top: @lineWidth solid @colorBorderSecondary;
-    padding: @paddingXs @paddingSm;
+    padding: 0 @paddingXxs 0 @padding;
     background-color: @colorBgContainer;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: @borderRadiusXs;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &:hover {
+      scrollbar-color: @colorFill transparent;
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFillSecondary;
+      }
+    }
 
     // 覆盖内部元素的 margin，使布局紧凑
     :global {
