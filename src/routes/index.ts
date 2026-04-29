@@ -94,6 +94,11 @@ const routes = [
         path: '/space/:spaceId/agent-subscriptions',
         component: '@/pages/SpaceResource/AgentSubscriptions',
       },
+      // 订阅设置
+      {
+        path: '/space/:spaceId/subscription-settings',
+        component: '@/pages/SpaceResource/SubscriptionSettings',
+      },
       // 插件、工作流、MCP日志
       {
         path: '/space/:spaceId/library-log',

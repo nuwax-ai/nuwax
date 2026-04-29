@@ -239,6 +239,35 @@ export interface MerchantInfoData {
 }
 
 // ──────────────────────────────────────────────
+// 订阅套餐（workspace 管理员 CRUD）
+// ──────────────────────────────────────────────
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  desc?: string;
+  cycle: '月' | '季' | '年';
+  price: number;
+  calls: number; // -1 = 不限
+  trialCalls: number;
+  funcOnly: boolean;
+  active: boolean;
+}
+
+// 用于智能体订阅页面的套餐展示
+export interface AgentSubscriptionPlan {
+  id: string;
+  name: string;
+  desc: string;
+  cycle: string;
+  price: number;
+  calls: string;
+  callsNum: number;
+  trialCalls: number;
+  recommend: boolean;
+}
+
+// ──────────────────────────────────────────────
 // 系统管理 - 开发者收款账户
 // ──────────────────────────────────────────────
 
@@ -266,6 +295,50 @@ export enum WithdrawalStatusEnum {
   Pending = 'pending',
   Approved = 'approved',
   Rejected = 'rejected',
+}
+
+// ──────────────────────────────────────────────
+// 资源定价（模型/工具/技能）
+// ──────────────────────────────────────────────
+
+export interface ModelPriceTier {
+  label: string; // e.g. "≤32K"
+  inputPrice: number;
+  outputPrice: number;
+  cachePrice: number;
+}
+
+export interface ModelPricingInfo {
+  id: number;
+  name: string;
+  provider: string;
+  tiers: ModelPriceTier[];
+  enabled: boolean;
+}
+
+export interface ToolPricingInfo {
+  id: number;
+  name: string;
+  category: 'plugin' | 'workflow' | 'mcp';
+  description: string;
+  price: number;
+  period: string;
+  calls: number;
+  trialCount: number;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface SkillPricingInfo {
+  id: number;
+  name: string;
+  category: 'voice' | 'vision' | 'text';
+  description: string;
+  pricingModel: 'buyout' | 'monthly';
+  price: number;
+  calls: number;
+  enabled: boolean;
+  createdAt: string;
 }
 
 export interface WithdrawalInfo {
