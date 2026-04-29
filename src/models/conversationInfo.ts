@@ -801,15 +801,25 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
         data.executeId = processingResult.executeId;
+        const processingList = [
+          ...(currentMessage?.processingList || []),
+        ] as ProcessingInfo[];
+        const existingIndex = processingList.findIndex(
+          (item) => item.executeId === data.executeId,
+        );
+        if (existingIndex > -1) {
+          processingList[existingIndex] = data;
+        } else {
+          processingList.push(data);
+        }
+
         newMessage = {
           ...currentMessage,
           text: getCustomBlock(currentMessage.text || '', data),
           status: MessageStatusEnum.Loading,
-          processingList: [
-            ...(currentMessage?.processingList || []),
-            data,
-          ] as ProcessingInfo[],
+          processingList,
         };
+
         // 添加处理扩展页面逻辑
         if (data.status === ProcessingEnum.EXECUTING) {
           // 判断页面类型
@@ -915,10 +925,7 @@ export default () => {
           handleRefreshFileList(params.conversationId);
         }
 
-        handleChatProcessingList([
-          ...(currentMessage?.processingList || []),
-          { ...data },
-        ] as ProcessingInfo[]);
+        handleChatProcessingList(processingList);
       }
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {

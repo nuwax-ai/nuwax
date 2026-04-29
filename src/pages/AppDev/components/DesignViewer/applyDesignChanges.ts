@@ -1,4 +1,4 @@
-import { smartReplaceInSource } from '@/utils/appDevUtils';
+import { smartReplaceInSource } from '@/utils/smartReplace';
 
 /**
  * 应用设计更改到文件内容
