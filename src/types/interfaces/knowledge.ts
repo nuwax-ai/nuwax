@@ -435,8 +435,6 @@ export interface CreateSetProps {
   form: FormInstance;
   autoSegmentConfigFlag: boolean;
   onChoose: (flag: boolean) => void;
-  isAiSegment?: boolean;
-  onAiSegmentChoose?: (flag: boolean) => void;
 }
 
 // 数据处理组件
@@ -494,4 +492,100 @@ export interface KnowledgeQaUploadParams {
   file: File;
   // 知识库ID
   kbId: number;
+}
+
+// 知识图谱 - 生成知识图谱请求参数
+export interface KnowledgeTripleGenerateParams {
+  // 知识库ID
+  knowledgeId: number;
+  // 文档ID
+  documentId: number;
+}
+
+// 知识图谱 - 查询知识图谱列表请求参数
+export interface KnowledgeTripleListParams {
+  // 知识库ID
+  knowledgeId: number;
+  // 文档名称（模糊搜索）
+  name?: string;
+  // 文件格式（如 pdf、docx、txt）
+  fileType?: string;
+  // 三元组解析状态：0-未开始，1-进行中，2-成功，3-禁用，10-失败
+  tripleStatus?: number;
+  // 创建时间排序：asc-升序，desc-降序，默认desc
+  createdOrder?: string;
+  // 更新时间排序：asc-升序，desc-降序
+  updatedOrder?: string;
+}
+
+// 知识图谱 - 三元组信息
+export interface KnowledgeTriple {
+  // 三元组ID
+  id: string;
+  // 主语
+  subject: string;
+  // 谓语（关系）
+  predicate: string;
+  // 宾语
+  object: string;
+  // 知识库ID
+  knowledgeId: number;
+  // 文档ID
+  documentId: number;
+  // 文档名称
+  documentName: string;
+  // 文件类型
+  fileType: string;
+  // 分段ID（可能为null）
+  segmentId?: number;
+  // 分段内容（可能为null）
+  segmentContent?: string;
+  // 相似度分数
+  similarityScore?: number;
+}
+
+// 知识图谱 - 按知识库ID分页查询三元组请求参数
+export interface KnowledgeTripleListByKnowledgeParams {
+  // 知识库ID
+  knowledgeId: number;
+  // 页码，从1开始，默认1
+  pageNum?: number;
+  // 每页条数，默认10
+  pageSize?: number;
+}
+
+// 知识图谱 - 分页响应数据
+export interface KnowledgeTriplePageResponse {
+  // 三元组列表
+  list: KnowledgeTriple[];
+  // 总条数
+  total: number;
+  // 页码
+  pageNum: number;
+  // 每页条数
+  pageSize: number;
+  // 总页数
+  totalPages: number;
+}
+
+// 知识图谱 - 文档信息
+export interface KnowledgeTripleDocumentInfo {
+  // 文档ID
+  documentId: number;
+  // 文档名称
+  documentName: string;
+  // 知识图谱状态：0-未开始，1-进行中，2-成功，3-禁用，10-失败
+  tripleStatus: number;
+  // 文件格式
+  fileType: string;
+  // 上传时间
+  createdTime: string;
+  // 更新时间
+  updatedTime: string;
+}
+
+// 知识图谱 - 查询响应数据
+export interface KnowledgeTripleListResponse {
+  // 知识图谱文档列表
+  data: KnowledgeTripleDocumentInfo[];
 }
