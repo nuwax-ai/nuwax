@@ -594,7 +594,15 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 : '',
             )}
           >
-            <div className={cx('flex', 'items-center', 'gap-4')}>
+            <div
+              className={cx(
+                'flex',
+                'items-center',
+                'gap-4',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
               {/* 应用智能体模式下，显示内容导航按钮 */}
               <ConditionRender
                 condition={isAppSidebarMode && !isAppSidebarVisible}
@@ -616,7 +624,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               {/* 左侧标题 */}
               <Typography.Title
                 level={5}
-                className={cx(styles.title)}
+                className={cx(styles.title, 'flex-1')}
                 ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
               >
                 {cachedAgentName
@@ -654,8 +662,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
-                !!agentDetail?.pageHomeIndex &&
-                !pagePreviewData && (
+                !!agentDetail?.pageHomeIndex && (
                   <TooltipIcon
                     title={t(
                       'PC.Components.ConversationDetails.openPreviewPage',
@@ -829,49 +836,44 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
         minLeftWidth={400}
-        defaultLeftWidth={
-          agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-        }
         left={agentDetail?.hideChatArea ? null : LeftContent()}
         right={
-          agentDetail?.type !== AgentTypeEnum.TaskAgent
-            ? pagePreviewData && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!agentDetail?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenPageCopyModal(true)}
-                    copyButtonText={t(
-                      'PC.Components.PagePreviewIframe.copyTemplate',
-                    )}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={agentDetail.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                      title={''}
-                      open={openPageCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenPageCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenPageCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            : null
+          pagePreviewData && (
+            <>
+              <PagePreviewIframe
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+                // 复制模板按钮相关 props
+                showCopyButton={showCopyButton}
+                allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                onCopyClick={() => setOpenPageCopyModal(true)}
+                copyButtonText={t(
+                  'PC.Components.PagePreviewIframe.copyTemplate',
+                )}
+                copyButtonClassName={styles['copy-btn']}
+              />
+              {/* 复制模板弹窗 */}
+              {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                <CopyToSpaceComponent
+                  spaceId={agentDetail.spaceId}
+                  mode={AgentComponentTypeEnum.Page}
+                  componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                  title={''}
+                  open={openPageCopyModal}
+                  isTemplate={true}
+                  onSuccess={(_: any, targetSpaceId: number) => {
+                    setOpenPageCopyModal(false);
+                    // 跳转
+                    jumpToPageDevelop(targetSpaceId);
+                  }}
+                  onCancel={() => setOpenPageCopyModal(false)}
+                />
+              )}
+            </>
+          )
         }
       />
 
