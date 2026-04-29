@@ -195,7 +195,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     );
   }, [innerProcessing.status, detailData]);
 
-  const handleSeeDetail = useCallback(() => {
+  const handleOpenFileTree = useCallback(() => {
     const result = innerProcessing.result as any;
     // 打开文件树
     if (result?.kind === 'edit') {
@@ -206,9 +206,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       setTaskAgentSelectedFileId(file_path);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());
-      return;
     }
+  }, [
+    innerProcessing.result,
+    props.conversationId,
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  ]);
 
+  const handleShowDetailModal = useCallback(() => {
     if (!detailData) {
       message.error(dict('PC.Components.MarkdownCustomProcess.noData'));
       return;
@@ -342,6 +349,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   ) {
     return null;
   }
+  console.log('innerProcessing', innerProcessing);
 
   return (
     <div
@@ -350,7 +358,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       data-key={props.dataKey}
     >
       <div className={cx(styles['process-header'])}>
-        <div className={cx(styles['process-title'])}>
+        <div
+          className={cx(styles['process-title'], {
+            [styles['is-edit']]:
+              (innerProcessing.result as any)?.kind === 'edit',
+          })}
+          onClick={handleOpenFileTree}
+        >
           {innerProcessing?.name ||
             dict('PC.Components.MarkdownCustomProcess.noName')}
         </div>
@@ -365,7 +379,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 type="text"
                 disabled={disabled}
                 icon={<ProfileOutlined />}
-                onClick={handleSeeDetail}
+                onClick={handleShowDetailModal}
               />
             </Tooltip>
             {isPageType ? (

@@ -283,4 +283,83 @@ function replaceMathBracket(text: string): string {
   return result;
 }
 
-export { extractTableToMarkdown, replaceMathBracket };
+/**
+ * 根据规则将连续的 markdown-custom-process 标签合并
+ * 规则：
+ * 1. 连续 2 个及以上的过程标签合并
+ * 2. 中间包含“执行计划”的不合并（作为分隔符）
+ * 3. 标签间只包含空白字符时不中断合并
+ * @param text - 待处理的 Markdown 文本
+ * @returns 处理后的文本
+ */
+function groupMarkdownProcesses(text: string): string {
+  if (!text) return '';
+
+  // 匹配模式：(可选的 div 包裹) + <markdown-custom-process ...> + (可选的闭合标签) + (可选的 div 闭合)
+  // 支持自闭合 <markdown-custom-process /> 或完整标签 <markdown-custom-process>...</markdown-custom-process>
+  // 匹配 markdown-custom-process 标签及其可选的 div/p 包装器
+  // 注意：[^>]*? 虽然简单，但在绝大多数情况下足够。如果以后有更复杂的属性需求（如带 > 的属性），再考虑更复杂的正则
+  const blockRegex =
+    /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-process\b[^>]*?>(?:<\/markdown-custom-process>)?)(?:\s*<\/(?:div|p)>\s*)?/g;
+
+  let result = '';
+  let lastIndex = 0;
+  let currentGroup: string[] = [];
+  let match;
+
+  const flushGroup = () => {
+    if (currentGroup.length > 0) {
+      if (currentGroup.length >= 2) {
+        // 合并为组标签
+        result += `\n<markdown-custom-process-group>\n${currentGroup.join(
+          '\n',
+        )}\n</markdown-custom-process-group>\n`;
+      } else {
+        // 只有一个，保持原样
+        result += `\n<div>${currentGroup[0]}</div>\n`;
+      }
+      currentGroup = [];
+    }
+  };
+
+  while ((match = blockRegex.exec(text)) !== null) {
+    const tagMatch = match[1];
+
+    // 规范化标签（确保有闭合）
+    let normalizedTag = tagMatch;
+    if (
+      !normalizedTag.endsWith('/>') &&
+      !normalizedTag.includes('</markdown-custom-process>')
+    ) {
+      normalizedTag += '</markdown-custom-process>';
+    }
+
+    // 检查是否为“执行计划”
+    const isPlan =
+      /type=["']Plan["']/.test(normalizedTag) ||
+      /name=["'][^"']*执行计划[^"']*["']/.test(normalizedTag);
+
+    // 处理匹配项之前的文本
+    const textBefore = text.slice(lastIndex, match.index);
+    if (textBefore.trim() !== '') {
+      flushGroup();
+      result += textBefore;
+    }
+
+    if (isPlan) {
+      flushGroup();
+      result += `\n<div>${normalizedTag}</div>\n`;
+    } else {
+      currentGroup.push(normalizedTag);
+    }
+
+    lastIndex = blockRegex.lastIndex;
+  }
+
+  flushGroup();
+  result += text.slice(lastIndex);
+
+  return result;
+}
+
+export { extractTableToMarkdown, groupMarkdownProcesses, replaceMathBracket };
