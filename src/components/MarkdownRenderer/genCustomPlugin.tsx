@@ -4,8 +4,8 @@ import classNames from 'classnames';
 import { CodeBlockActions, useThemeState } from 'ds-markdown';
 import { createBuildInPlugin } from 'ds-markdown/plugins';
 import rehypeRaw from 'rehype-raw';
-import rehypeStringify from 'rehype-stringify';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
+import MarkdownCustomProcessGroup from '../MarkdownCustomProcessGroup';
 import styles from './index.less';
 import OptimizedImage from './OptimizedImage';
 import TaskResult from './TaskResult';
@@ -15,7 +15,7 @@ const cx = classNames.bind(styles);
 // 用插件机制传递自定义components
 export default (conversationId: string | number = '') => {
   return createBuildInPlugin({
-    rehypePlugin: [rehypeRaw, rehypeStringify],
+    rehypePlugin: [rehypeRaw],
     components: {
       style: () => null, // 禁用 style 标签渲染，防止样式污染
       script: () => null, // 禁用 script 标签，增强安全性
@@ -51,6 +51,11 @@ export default (conversationId: string | number = '') => {
               }
             })()}
           />
+        );
+      },
+      'markdown-custom-process-group': ({ children }: any) => {
+        return (
+          <MarkdownCustomProcessGroup>{children}</MarkdownCustomProcessGroup>
         );
       },
       table: ({ children, node }: any) => {

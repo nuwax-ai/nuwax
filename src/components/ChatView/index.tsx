@@ -23,6 +23,7 @@ import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 // import RunOver from './RunOver';
+import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import styles from './index.less';
 import RunOver from './RunOver';
 
@@ -43,8 +44,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
+    const processedText = useMemo(() => {
+      return groupMarkdownProcesses(messageInfo?.text || '');
+    }, [messageInfo?.text]);
+
     const { markdownRef, messageIdRef } = useMarkdownRender({
-      answer: messageInfo?.text || '',
+      answer: processedText,
       thinking: messageInfo?.think || '',
       id: messageInfo?.id || '',
     });
@@ -204,7 +209,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
                     conversationId={conversationId}
-                    answer={messageInfo?.text}
+                    answer={processedText}
                     thinking={messageInfo?.think}
                     status={messageInfo?.status}
                   />

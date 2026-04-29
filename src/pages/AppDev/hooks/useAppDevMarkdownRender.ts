@@ -1,5 +1,6 @@
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import { useCallback, useEffect, useRef } from 'react';
+import { groupAppDevProcesses } from '../components/ChatArea/utils';
 
 /**
  * 使用 requestAnimationFrame 优化渲染
@@ -63,6 +64,8 @@ export default function useAppDevMarkdownRender({
   const markdownRef = useRef<MarkdownCMDRef>(null);
   const lastTextPos = useRef<number>(0);
   const lastRequestId = useRef<string | undefined>(requestId);
+  const lastRawContent = useRef<string>('');
+  const lastProcessedContent = useRef<string>('');
 
   // 使用 RAF 优化回调
   const { scheduleCallback, cleanup } = useRAFCallback();
@@ -72,6 +75,8 @@ export default function useAppDevMarkdownRender({
     if (lastRequestId.current !== requestId) {
       lastTextPos.current = 0;
       lastRequestId.current = requestId;
+      lastRawContent.current = '';
+      lastProcessedContent.current = '';
       markdownRef.current?.clear();
     }
   }, [requestId]);
@@ -80,9 +85,28 @@ export default function useAppDevMarkdownRender({
   useEffect(() => {
     scheduleCallback(() => {
       if (content && markdownRef.current) {
+        // 应用分组逻辑
+        const processedContent = groupAppDevProcesses(content);
+
+        // 判断是否是增量更新
+        // 核心修正：判断 processedContent 是否是以之前的 lastProcessedContent 开头
+        // 如果不是（例如分组结构发生了变化，从 <div> 变成了 <appdev-process-group>），
+        // 则必须清空渲染器并重新全量推送，否则会导致 slicing 出来的字符串是破碎的。
+        if (
+          lastProcessedContent.current &&
+          !processedContent.startsWith(lastProcessedContent.current)
+        ) {
+          markdownRef.current.clear();
+          lastTextPos.current = 0;
+        }
+
+        // 更新记录
+        lastRawContent.current = content;
+        lastProcessedContent.current = processedContent;
+
         // 取出差量部分
-        const diffText = content.slice(lastTextPos.current);
-        lastTextPos.current = content.length;
+        const diffText = processedContent.slice(lastTextPos.current);
+        lastTextPos.current = processedContent.length;
 
         // 推送增量内容
         if (diffText) {
