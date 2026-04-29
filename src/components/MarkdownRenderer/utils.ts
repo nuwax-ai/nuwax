@@ -335,9 +335,7 @@ function groupMarkdownProcesses(text: string): string {
     }
 
     // 检查是否为“执行计划”
-    const isPlan =
-      /type=["']Plan["']/.test(normalizedTag) ||
-      /name=["'][^"']*执行计划[^"']*["']/.test(normalizedTag);
+    const isPlan = /type=["']Plan["']/.test(normalizedTag);
 
     // 处理匹配项之前的文本
     const textBefore = text.slice(lastIndex, match.index);
