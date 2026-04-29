@@ -2,6 +2,8 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import {
   MessageScopeEnum,
+  SandboxIsolationEnum,
+  SandboxTypeEnum,
   SystemManageListEnum,
 } from '@/types/enums/systemManage';
 import { TabsProps } from 'antd';
@@ -176,4 +178,32 @@ export const SYSTEM_SETTING_TABS: TabsProps['items'] = [
   //   key: 'DomainBind',
   //   label: '域名绑定',
   // },
+];
+
+// 沙盒配置-隔离级别选项
+export const SANDBOX_ISOLATION_OPTIONS = [
+  {
+    label: dict('PC.Pages.SystemConfigSandboxModal.isolationTenant'),
+    value: SandboxIsolationEnum.Tenant,
+  },
+  {
+    label: dict('PC.Pages.SystemConfigSandboxModal.isolationSpace'),
+    value: SandboxIsolationEnum.Space,
+  },
+  {
+    label: dict('PC.Pages.SystemConfigSandboxModal.isolationProject'),
+    value: SandboxIsolationEnum.Project,
+  },
+];
+
+// 沙盒配置-类型选项
+export const SANDBOX_TYPE_OPTIONS = [
+  {
+    label: dict('PC.Pages.SystemConfigSandboxModal.typeAgent'),
+    value: SandboxTypeEnum.Agent,
+  },
+  {
+    label: dict('PC.Pages.SystemConfigSandboxModal.typePageApp'),
+    value: SandboxTypeEnum.PageApp,
+  },
 ];

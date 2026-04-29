@@ -1,0 +1,99 @@
+@import '@/styles/color';
+
+.container {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid @GRAY01;
+}
+
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusText {
+  font-size: 13px;
+  color: @BLANK04;
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docNameRow {
+  width: 100%;
+}
+
+.docName {
+  display: block;
+  color: #4f46e5;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: #6366f1;
+    text-decoration: underline;
+  }
+}
+
+.docNameDisabled {
+  display: block;
+  color: @BLANK04;
+  font-weight: 500;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    color: @BLANK04;
+    text-decoration: none;
+  }
+}
+
+.docIdRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docId {
+  color: @GRAY16;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyIcon {
+  font-size: 12px;
+  color: @GRAY05;
+  cursor: pointer;
+
+  &:hover {
+    color: @GRAY16;
+  }
+}

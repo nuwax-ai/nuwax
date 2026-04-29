@@ -14,9 +14,8 @@
   border-radius: @borderRadius;
   background-color: @colorPrimaryBg;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   user-select: none;
-  outline: none;
 
   &:hover {
     background-color: @colorPrimaryBgHover;
@@ -30,9 +29,14 @@
     background-color: @colorPrimaryBgHover;
   }
 
+  &:focus-visible {
+    outline: @lineWidthBold solid @colorPrimary;
+    outline-offset: @paddingXxs;
+  }
+
   .action-icon {
     color: inherit;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
     // width: 16px;
     // height: 16px;
     display: flex;
@@ -44,7 +48,7 @@
     font-size: @fontSize;
     color: @colorText;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
   }
 
   // 更多按钮样式
@@ -53,7 +57,7 @@
       font-size: @fontSizeSm;
       color: @colorText;
       margin-left: @marginXxs;
-      transition: all 0.2s ease;
+      transition: color 0.2s ease;
     }
 
     &:hover .more-arrow {

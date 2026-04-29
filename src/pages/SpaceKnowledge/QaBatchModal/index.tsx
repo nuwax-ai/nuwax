@@ -1,4 +1,3 @@
-import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeQaDownloadTemplate,
   apiKnowledgeQaUpload,
@@ -72,15 +71,10 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       if (res.code === '0000') {
         onSuccess();
       } else {
-        onError(
-          res.message ||
-            dict(
-              'PC.Pages.SpaceKnowledge.QaBatchModal.uploadFailedCheckFormat',
-            ),
-        );
+        onError(res.message || '上传失败，请检查文件格式是否正确');
       }
     } catch (error) {
-      console.error('Upload file error:', error);
+      console.error('上传文件出错:', error);
       setUploading(false);
     }
   };
@@ -103,16 +97,14 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
         file.name.endsWith('.xls');
 
       if (!isExcel) {
-        message.error(dict('PC.Pages.SpaceKnowledge.QaBatchModal.excelOnly'));
+        message.error('仅支持Excel文件(.xlsx/.xls)');
         return false;
       }
 
       // 校验文件大小（限制为10MB）
       const isLessThan10M = file.size / 1024 / 1024 < 10;
       if (!isLessThan10M) {
-        message.error(
-          dict('PC.Pages.SpaceKnowledge.QaBatchModal.fileSizeLimit10MB'),
-        );
+        message.error('文件大小不能超过10MB');
         return false;
       }
 
@@ -130,9 +122,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
    */
   const handleConfirm = debounce(() => {
     if (fileList.length === 0) {
-      message.warning(
-        dict('PC.Pages.SpaceKnowledge.QaBatchModal.pleaseUploadFile'),
-      );
+      message.warning('请上传文件');
       return;
     }
 
@@ -141,9 +131,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       fileList[0] as unknown as File,
       () => {
         setUploading(false);
-        message.success(
-          dict('PC.Pages.SpaceKnowledge.QaBatchModal.batchImportSuccess'),
-        );
+        message.success('批量导入成功');
         setFileList([]);
         onConfirm();
       },
@@ -168,9 +156,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       // 判断是否成功
       if (!result.success) {
         // 导出失败，显示错误信息
-        const errorMessage =
-          result.error?.message ||
-          dict('PC.Pages.SpaceKnowledge.QaBatchModal.exportFailed');
+        const errorMessage = result.error?.message || '导出失败';
         message.warning(errorMessage);
         return;
       }
@@ -179,38 +165,30 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = dict(
-        'PC.Pages.SpaceKnowledge.QaBatchModal.templateFileName',
-      );
+      a.download = 'QA批量excel模板.xlsx';
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error(error);
-      message.error(
-        dict('PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplateFailed'),
-      );
+      message.error('下载QA批量excel模板失败');
     }
   };
 
   return (
     <Modal
-      title={dict('PC.Pages.SpaceKnowledge.QaBatchModal.qaBatchImport')}
+      title="QA批量导入"
       open={open}
       confirmLoading={uploading}
       onCancel={handleCancel}
       footer={
         <Space>
-          <Tooltip
-            title={dict(
-              'PC.Pages.SpaceKnowledge.QaBatchModal.downloadExcelTemplate',
-            )}
-          >
+          <Tooltip title="下载Excel导入模板">
             <Button
               icon={<DownloadOutlined />}
               type="link"
               onClick={handleDownloadQaTemplate}
             >
-              {dict('PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplate')}
+              下载模板
             </Button>
           </Tooltip>
           <Button
@@ -219,7 +197,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
             onClick={handleConfirm}
             loading={uploading}
           >
-            {dict('PC.Pages.SpaceKnowledge.QaBatchModal.confirmUpload')}
+            确认上传
           </Button>
         </Space>
       }
@@ -231,11 +209,9 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">
-            {dict('PC.Pages.SpaceKnowledge.QaBatchModal.clickOrDragToUpload')}
-          </p>
+          <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
           <p className="ant-upload-hint">
-            {dict('PC.Pages.SpaceKnowledge.QaBatchModal.excelUploadHint')}
+            仅支持Excel文件(.xlsx/.xls)，大小不超过10MB
           </p>
         </Dragger>
       </div>
@@ -243,7 +219,7 @@ const QaBatchModal: React.FC<QaBatchModalProps> = ({
       {fileList.length === 0 && (
         <div style={{ marginTop: 16, textAlign: 'center' }}>
           <Typography.Text type="secondary">
-            {dict('PC.Pages.SpaceKnowledge.QaBatchModal.downloadTemplateHint')}
+            请先下载导入模板，按照格式填写后上传
           </Typography.Text>
         </div>
       )}

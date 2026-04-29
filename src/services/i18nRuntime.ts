@@ -2,7 +2,6 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   DEFAULT_I18N_LANG,
   I18N_KEY_REGEX,
-  I18N_MAP_CACHE_TTL,
   I18N_STORAGE_KEYS,
   MIN_EN_I18N_MAP,
   MIN_JA_I18N_MAP,
@@ -28,9 +27,6 @@ const normalizeLang = (lang?: string | null) =>
 
 const isZhLang = (lang?: string | null): boolean =>
   normalizeLang(lang).startsWith('zh');
-
-const isJaLang = (lang?: string | null): boolean =>
-  normalizeLang(lang).startsWith('ja');
 
 const getLocalDefaultMapByLang = (lang?: string | null): SystemLangMap => {
   const normalized = normalizeLang(lang);
@@ -93,31 +89,6 @@ const formatText = (template: string, values: (string | number)[]): string => {
   return text;
 };
 
-const readMapFromCache = (lang: string): SystemLangMap | null => {
-  const cacheAt = Number(safeGetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE_AT));
-  const cacheText = safeGetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE);
-  const cacheLangRaw = safeGetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE_LANG);
-  const cacheLang = cacheLangRaw ? normalizeLang(cacheLangRaw) : '';
-  if (!cacheText || !cacheAt) return null;
-  if (Date.now() - cacheAt > I18N_MAP_CACHE_TTL) return null;
-  if (cacheLang && cacheLang !== normalizeLang(lang)) return null;
-  try {
-    const cacheValue = JSON.parse(cacheText) as SystemLangMap;
-    if (cacheValue && typeof cacheValue === 'object') {
-      return cacheValue;
-    }
-  } catch {
-    // ignore invalid cache
-  }
-  return null;
-};
-
-const persistMapCache = (lang: string, map: SystemLangMap): void => {
-  safeSetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE, JSON.stringify(map));
-  safeSetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE_AT, String(Date.now()));
-  safeSetItem(I18N_STORAGE_KEYS.LANG_MAP_CACHE_LANG, normalizeLang(lang));
-};
-
 const readLangFromCache = (): string | null => {
   return safeGetItem(I18N_STORAGE_KEYS.ACTIVE_LANG);
 };
@@ -137,9 +108,13 @@ export const getCurrentLang = (): string => currentLang;
 export const getCurrentLangMap = (): SystemLangMap => ({ ...langMap });
 
 export const setCurrentLang = (lang?: string | null): void => {
-  const resolvedLang = normalizeLang(lang || getBrowserLang());
+  const inputLang = lang || getBrowserLang();
+  const resolvedLang = normalizeLang(inputLang);
   currentLang = resolvedLang;
-  safeSetItem(I18N_STORAGE_KEYS.ACTIVE_LANG, resolvedLang);
+
+  // 存储到 localStorage 时，尽量保留原始格式（如 en-US），以保证 Umi 框架兼容性
+  safeSetItem(I18N_STORAGE_KEYS.ACTIVE_LANG, inputLang);
+
   syncLocaleSystems(resolvedLang);
 };
 
@@ -176,7 +151,6 @@ export const fetchAndApplyLangMap = async (
     // 使用接口返回的数据，替换原有合并本地 JSON 的逻辑
     langMap = { ...parsedMap };
 
-    persistMapCache(finalLang, langMap);
     return true;
   } catch {
     // 捕获异常：统一应用本地英语兜底
@@ -208,15 +182,14 @@ export const syncLangFromUserInfo = async (user?: {
 }): Promise<void> => {
   if (!user?.lang) return;
   const targetLang = normalizeLang(user.lang);
-  // 只同步本地状态，不再发起网络请求，相信 initI18n 的第一次请求结果
-  setCurrentLang(targetLang);
-  if (isZhLang(targetLang)) {
-    zhBaseMap = { ...MIN_ZH_I18N_MAP };
-    buildZhValueToKeyMap(zhBaseMap);
-  } else if (isJaLang(targetLang)) {
-    langMap = { ...MIN_JA_I18N_MAP };
+
+  // 如果用户信息中的语种与当前运行时语种不一致，且系统已初始化，则重新拉取字典包以保证完整性
+  if (targetLang !== currentLang && initialized) {
+    await fetchAndApplyLangMap(targetLang);
+  } else {
+    // 同步本地语种状态
+    setCurrentLang(targetLang);
   }
-  initialized = true;
 };
 
 export const dict = (key: string, ...values: (string | number)[]): string => {
@@ -306,27 +279,19 @@ export const initI18n = async (force: boolean = false): Promise<void> => {
   const resolvedLang = normalizeLang(cachedLang || getBrowserLang());
   setCurrentLang(resolvedLang);
 
+  // 初始先用本地语种填充，随后会被接口数据覆盖
   langMap = { ...getLocalDefaultMapByLang(resolvedLang) };
 
-  const cachedMap = readMapFromCache(resolvedLang);
-  if (cachedMap) {
-    langMap = {
-      ...getLocalDefaultMapByLang(resolvedLang),
-      ...cachedMap,
-    };
-  }
-
-  // 首屏仅发起一次不带参数的请求，由后端自动识别
+  // 首屏仅发起一次不带参数的请求，作为查询模式，由后端自动识别
   await fetchAndApplyLangMap();
 
+  // 统一构建中文反向翻译字典
   if (isZhLang(getCurrentLang())) {
     zhBaseMap = { ...langMap };
-    buildZhValueToKeyMap(zhBaseMap);
   } else {
-    // 移除 init 时的额外基准包请求，严格遵守一次请求原则
-    // 如果需要中文反向翻译，使用本地默认提供的中文包作为备选
-    buildZhValueToKeyMap(MIN_ZH_I18N_MAP);
+    zhBaseMap = { ...MIN_ZH_I18N_MAP };
   }
+  buildZhValueToKeyMap(zhBaseMap);
 
   initialized = true;
 };

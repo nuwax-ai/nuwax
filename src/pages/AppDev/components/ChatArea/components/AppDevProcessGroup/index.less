@@ -1,0 +1,100 @@
+@import '@/styles/token.less';
+
+.process-group {
+  margin: @paddingSm 0;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  overflow: hidden;
+  background: @colorBgContainer;
+  box-shadow: @boxShadowTertiary;
+  transition: all @motionDurationMid;
+
+  &:hover {
+    border-color: @colorPrimaryHover;
+    box-shadow: @boxShadowSecondary;
+  }
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: @paddingXxs @paddingSm;
+  cursor: pointer;
+  user-select: none;
+  background: @colorFillQuaternary;
+  transition: background @motionDurationFast;
+
+  &:hover {
+    background: @colorFillTertiary;
+  }
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: @paddingXs;
+}
+
+.group-title {
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+  font-weight: @fontWeightStrong;
+}
+
+.expand-icon {
+  font-size: @fontSizeSm;
+  color: @colorTextQuaternary;
+  transition: transform @motionDurationMid;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+}
+
+.group-body {
+  padding: 0 @paddingXxs 0 @padding;
+  background: @colorBgContainer;
+  border-top: 1px solid @colorBorderSecondary;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow-y: auto;
+  animation: slide-down @motionDurationMid ease-out;
+
+  /* 自定义滚动条样式，使其更符合 UI 风格 */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent; /* Firefox 默认透明 */
+
+  &::-webkit-scrollbar {
+    width: 3px; /* 始终保留滚动条位置，避免抖动 */
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: @borderRadiusXs;
+  }
+
+  &:hover {
+    scrollbar-color: @colorFill transparent; /* Firefox 悬停显示 */
+    &::-webkit-scrollbar-thumb {
+      background: @colorFillSecondary;
+    }
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

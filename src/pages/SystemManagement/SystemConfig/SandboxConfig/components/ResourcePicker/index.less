@@ -1,0 +1,52 @@
+@import '@/styles/token.less';
+
+.tabs-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+
+  .tab-content {
+    display: flex;
+    flex: 1;
+    overflow-y: hidden;
+    overflow-x: hidden;
+    height: 100%;
+    min-width: 0;
+
+    .left-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+      padding-right: @paddingSm;
+      overflow: hidden;
+
+      .resource-list-scroll {
+        flex: 1;
+        overflow-y: auto;
+        height: 100%;
+      }
+    }
+
+    .right-separator {
+      border-right: @lineWidth solid @colorBorderSecondary;
+    }
+
+    .right-list {
+      padding: 0 @paddingSm;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      color: rgba(0, 0, 0, 45%);
+    }
+  }
+}

@@ -128,7 +128,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       // preview 模式：检查是否有 fileDetails 或 Segmented
       const hasFileDetails = !isFileTreeVisible && fileName;
       const hasSegmented =
-        targetNode?.fileProxyUrl &&
+        (targetNode?.fileProxyUrl ||
+          (targetNode?.content !== undefined &&
+            targetNode?.content !== null)) &&
         fileName &&
         (fileName?.includes('.htm') || isMarkdownFile(fileName));
       return hasFileDetails || hasSegmented;
@@ -204,8 +206,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   )}
                 </div>
               )}
-              {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
-              {targetNode?.fileProxyUrl &&
+              {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
+              {(targetNode?.fileProxyUrl ||
+                (targetNode?.content !== undefined &&
+                  targetNode?.content !== null)) &&
                 fileName &&
                 (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
                   <ConfigProvider
