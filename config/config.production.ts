@@ -5,5 +5,4 @@ export default defineConfig({
     'process.env.BASE_URL': '',
   },
   hash: true,
-  devtool: 'source-map',
 });
