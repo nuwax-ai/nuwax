@@ -696,7 +696,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               [styles['file-tree-visible']]: isFileTreeVisible,
             })}
           >
-            <div className={cx(styles['chat-wrapper-content'])}>
+            <div
+              className={cx(styles['chat-wrapper-content'], 'scroll-container')}
+            >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
                 <NewConversationSet
