@@ -808,6 +808,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Components.XProTable.index': '索引',
   'PC.Components.XProTable.query': 'クエリ',
   'PC.Components.XProTable.reset': 'リセット',
+  'PC.Components.CreditsBalance.topUp': 'チャージ',
   'PC.Constants.Agent.autoInvoke': '自動呼び出し',
   'PC.Constants.Agent.balancedMode': 'バランスモード',
   'PC.Constants.Agent.creativeMode': 'クリエイティブモード',

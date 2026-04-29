@@ -808,6 +808,7 @@ export const EN_US: SystemLangMap = {
   'PC.Components.XProTable.index': 'Index',
   'PC.Components.XProTable.query': 'Query',
   'PC.Components.XProTable.reset': 'Reset',
+  'PC.Components.CreditsBalance.topUp': 'Top Up',
   'PC.Constants.Agent.autoInvoke': 'Auto Invoke',
   'PC.Constants.Agent.balancedMode': 'Balanced Mode',
   'PC.Constants.Agent.creativeMode': 'Creative Mode',

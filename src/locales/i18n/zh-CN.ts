@@ -808,6 +808,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Components.XProTable.index': '序号',
   'PC.Components.XProTable.query': '查询',
   'PC.Components.XProTable.reset': '重置',
+  'PC.Components.CreditsBalance.topUp': '增购',
   'PC.Constants.Agent.autoInvoke': '自动调用',
   'PC.Constants.Agent.balancedMode': '平衡模式',
   'PC.Constants.Agent.creativeMode': '创意模式',
