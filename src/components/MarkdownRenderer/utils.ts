@@ -310,13 +310,13 @@ function groupMarkdownProcesses(text: string): string {
   const flushGroup = () => {
     if (currentGroup.length > 0) {
       if (currentGroup.length >= 2) {
-        // 合并为组标签
-        result += `\n<markdown-custom-process-group>\n${currentGroup.join(
+        // 合并为组标签，增加换行确保不影响后续 markdown 解析
+        result += `\n\n<markdown-custom-process-group>\n${currentGroup.join(
           '\n',
-        )}\n</markdown-custom-process-group>\n`;
+        )}\n</markdown-custom-process-group>\n\n`;
       } else {
         // 只有一个，保持原样
-        result += `\n<div>${currentGroup[0]}</div>\n`;
+        result += `\n\n<div>${currentGroup[0]}</div>\n\n`;
       }
       currentGroup = [];
     }
@@ -346,7 +346,7 @@ function groupMarkdownProcesses(text: string): string {
 
     if (isPlan) {
       flushGroup();
-      result += `\n<div>${normalizedTag}</div>\n`;
+      result += `\n\n<div>${normalizedTag}</div>\n\n`;
     } else {
       currentGroup.push(normalizedTag);
     }
