@@ -862,7 +862,11 @@ const EditAgent: React.FC = () => {
     }
   };
 
+  // 打开预览页面回调方法
   const handleOpenPreview = useCallback(() => {
+    // 隐藏文件预览
+    closePreviewView();
+
     // 判断是否默认展示页面首页
     if (
       agentConfigInfo &&
@@ -901,34 +905,9 @@ const EditAgent: React.FC = () => {
     /**
      * 设置最小宽度
      */
-    // if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-    //   // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
-    //   if (isFileTreeVisible) {
-    //     document.documentElement.style.minWidth = '1750px';
-    //   } else {
-    //     document.documentElement.style.minWidth = '1240px';
-    //   }
-    // } else {
-    //   // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
-    //   if (pagePreviewData) {
-    //     document.documentElement.style.minWidth = '2000px';
-    //   } else {
-    //     // 设置最小宽度-调试详情
-    //     if (showType === EditAgentShowType.Debug_Details) {
-    //       document.documentElement.style.minWidth = '1540px';
-    //     } else {
-    //       document.documentElement.style.minWidth = '1240px';
-    //     }
-    //   }
-    // }
-
-    // 通用型智能体才会存在文件树，当文件树可见时，设置最小宽度为1750px
-    if (isFileTreeVisible) {
+    // 通用型智能体才会存在文件树，当文件树可见、扩展页面可见时，设置最小宽度为1750px
+    if (isFileTreeVisible || pagePreviewData) {
       document.documentElement.style.minWidth = '1750px';
-    }
-    // 当扩展页面可见时，设置最小宽度为2000px
-    else if (pagePreviewData) {
-      document.documentElement.style.minWidth = '2000px';
     } else {
       // 设置最小宽度-调试详情
       if (showType === EditAgentShowType.Debug_Details) {
@@ -1096,10 +1075,7 @@ const EditAgent: React.FC = () => {
                 pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
               }
               minRightWidth={530}
-              defaultLeftWidth={
-                // agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-                50
-              }
+              defaultLeftWidth={33}
               left={
                 agentConfigInfo?.hideChatArea ? null : (
                   // 预览与调试
@@ -1116,8 +1092,8 @@ const EditAgent: React.FC = () => {
                 )
               }
               right={
-                // agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                pagePreviewData ? ( // 问答型
+                // 页面预览可见时，显示页面预览
+                pagePreviewData && !isFileTreeVisible ? (
                   <PagePreviewIframe
                     pagePreviewData={pagePreviewData}
                     showHeader={true}

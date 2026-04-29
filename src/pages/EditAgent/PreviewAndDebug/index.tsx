@@ -12,7 +12,11 @@ import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import { dict } from '@/services/i18nRuntime';
-import { HideDesktopEnum, TaskStatus } from '@/types/enums/agent';
+import {
+  ExpandPageAreaEnum,
+  HideDesktopEnum,
+  TaskStatus,
+} from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
@@ -73,9 +77,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 选中的电脑ID（用于通用型智能体模式）
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   // 记录用户是否已发送消息（用于锁定电脑选择）
-  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
 
-  const [isHoveringChat, setIsHoveringChat] = useState(false);
+  const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
 
   const {
     conversationInfo,
@@ -322,7 +326,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
         const agent = data?.agent || {};
         const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
         const pageHomeIndex = agent.pageHomeIndex;
-        if (expandPageArea === 0) {
+        if (expandPageArea === ExpandPageAreaEnum.No) {
           hidePagePreview();
         } else {
           showPagePreview({
@@ -408,6 +412,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       );
       return;
     }
+
+    // 关闭页面预览
+    showPagePreview(null);
 
     if (!isFileTreeVisible) {
       openPreviewView(convId);
@@ -501,9 +508,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
         >
           <PreviewAndDebugHeader
             onPressDebug={onPressDebug}
+            // 是否显示预览页面图标
             isShowPreview={
-              !pagePreviewData && !!agentConfigInfo?.expandPageArea
+              agentConfigInfo?.expandPageArea !== ExpandPageAreaEnum.No
             }
+            isPreviewPageActive={!!pagePreviewData && !isFileTreeVisible}
+            // 打开预览页面回调方法
             onShowPreview={onOpenPreview}
             // 是否显示智能体电脑
             isShowDesktop={

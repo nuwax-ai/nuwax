@@ -12,6 +12,8 @@ const cx = classNames.bind(styles);
 
 interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
+  // 预览页面是否激活展开状态
+  isPreviewPageActive?: boolean;
   onShowPreview?: () => void;
   /** 是否显示智能体电脑 */
   isShowDesktop?: boolean;
@@ -34,6 +36,7 @@ interface PreviewAndDebugHeaderProps {
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
+  isPreviewPageActive,
   isShowPreview,
   isShowDesktop,
   showFilePanel,
@@ -78,7 +81,10 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
             title={dict(
               'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openPreviewPage',
             )}
-            className={cx(styles['icon-box'])}
+            // className={cx(styles['icon-box'])}
+            className={cx(styles['icon-box'], {
+              [styles['active']]: isPreviewPageActive,
+            })}
             icon={<SvgIcon name="icons-nav-ecosystem" />}
             onClick={onShowPreview}
           />
