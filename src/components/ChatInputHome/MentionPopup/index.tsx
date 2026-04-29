@@ -27,6 +27,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { Page } from '@/types/interfaces/request';
 import { SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -140,6 +141,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       maxHeight,
       onHeightChange,
       showSearchInput = false,
+      usageScenarios = [AgentTypeEnum.TaskAgent],
     },
     ref,
   ) => {
@@ -260,6 +262,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const loadRecentTabData = useCallback(async () => {
       const response = await runRecentTabData({
         targetType: AgentComponentTypeEnum.Skill,
+        usageScenarios,
       });
 
       if (response?.code === SUCCESS_CODE) {
@@ -276,6 +279,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
     const loadFavoriteTabData = useCallback(async () => {
       const response = await runFavoriteTabData({
         targetType: AgentComponentTypeEnum.Skill,
+        usageScenarios,
       });
 
       if (response?.code === SUCCESS_CODE) {
@@ -296,6 +300,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           pageSize: PAGE_SIZE,
           kw: effectiveSearchText,
           targetType: AgentComponentTypeEnum.Skill,
+          usageScenarios,
         };
 
         const response = await runAllTabData(requestParams);

@@ -1,11 +1,13 @@
 import type { SystemLangMap } from '@/types/interfaces/i18n';
 import { EN_US } from './en-US';
+import { JA_JP } from './ja-JP';
 import { ZH_CN } from './zh-CN';
 import { ZH_HK } from './zh-HK';
 import { ZH_TW } from './zh-TW';
 
 export const I18N_LOCAL_DEFAULT_MAP: Record<string, SystemLangMap> = {
   'en-us': EN_US,
+  'ja-jp': JA_JP,
   'zh-cn': ZH_CN,
   'zh-tw': ZH_TW,
   'zh-hk': ZH_HK,
@@ -14,6 +16,7 @@ export const I18N_LOCAL_DEFAULT_MAP: Record<string, SystemLangMap> = {
 export const I18N_LOCAL_IMPORT_DEFAULTS = {
   PC: {
     'en-us': EN_US,
+    'ja-jp': JA_JP,
     'zh-cn': ZH_CN,
     'zh-tw': ZH_TW,
     'zh-hk': ZH_HK,
@@ -30,6 +33,9 @@ export const getLocalDefaultLangMap = (lang?: string): SystemLangMap => {
   }
   if (normalizedLang.startsWith('zh')) {
     return { ...ZH_CN };
+  }
+  if (normalizedLang.startsWith('ja')) {
+    return { ...JA_JP };
   }
   return { ...EN_US };
 };

@@ -1,4 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
+import defaultAvatar from '@/assets/images/avatar.png';
 import CardWrapper from '@/components/business-component/CardWrapper';
 import {
   ICON_MESSAGE,
@@ -72,12 +73,11 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
       runCollectAgent(targetId);
     }
   };
-
   return (
     <CardWrapper
       className={cx(styles['card-wrapper'])}
       title={name}
-      avatar={publishUser?.avatar || ''}
+      avatar={publishUser?.avatar || defaultAvatar}
       name={publishUser?.nickName || publishUser?.userName}
       content={description}
       icon={icon}

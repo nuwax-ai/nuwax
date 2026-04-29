@@ -53,6 +53,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onViewFileTypeChange,
   onDownloadFileByUrl,
   isShowShare = true,
+  // 是否显示下载按钮, 默认显示
+  isShowDownloadButton = true,
   // 是否显示导出 PDF 按钮, 默认显示
   isShowExportPdfButton = true,
   onExportPdf,
@@ -126,7 +128,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       // preview 模式：检查是否有 fileDetails 或 Segmented
       const hasFileDetails = !isFileTreeVisible && fileName;
       const hasSegmented =
-        targetNode?.fileProxyUrl &&
+        (targetNode?.fileProxyUrl ||
+          (targetNode?.content !== undefined &&
+            targetNode?.content !== null)) &&
         fileName &&
         (fileName?.includes('.htm') || isMarkdownFile(fileName));
       return hasFileDetails || hasSegmented;
@@ -202,8 +206,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   )}
                 </div>
               )}
-              {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
-              {targetNode?.fileProxyUrl &&
+              {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
+              {(targetNode?.fileProxyUrl ||
+                (targetNode?.content !== undefined &&
+                  targetNode?.content !== null)) &&
                 fileName &&
                 (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
                   <ConfigProvider
@@ -310,31 +316,34 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               </Tooltip>
             )}
 
-          {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-          {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-            <Tooltip
-              title={
-                isDownloadingFile
-                  ? dict('PC.Components.FilePathHeader.downloading')
-                  : dict('PC.Components.FilePathHeader.download')
-              }
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={
-                  <SvgIcon
-                    name="icons-common-download"
-                    style={{ fontSize: 16 }}
-                  />
+          {/* 只有存在 fileProxyUrl 且 isShowDownloadButton 为 true 时，才显示下载文件按钮 */}
+          {targetNode?.fileProxyUrl &&
+            isShowDownloadButton &&
+            viewMode === 'preview' && (
+              <Tooltip
+                placement="bottom"
+                title={
+                  isDownloadingFile
+                    ? dict('PC.Components.FilePathHeader.downloading')
+                    : dict('PC.Components.FilePathHeader.download')
                 }
-                onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-                className={styles.actionButton}
-                loading={isDownloadingFile}
-                disabled={isDownloadingFile}
-              />
-            </Tooltip>
-          )}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon
+                      name="icons-common-download"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+                  className={styles.actionButton}
+                  loading={isDownloadingFile}
+                  disabled={isDownloadingFile}
+                />
+              </Tooltip>
+            )}
 
           {/* 复制内容 */}
           {!!targetNode?.content && viewMode === 'preview' && (

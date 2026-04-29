@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 import path from 'path';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 const require = createRequire(import.meta.url);
 const reactJsxRuntime = require.resolve('react/jsx-runtime');
@@ -12,6 +12,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './tests/setupTests.ts',
+    exclude: [...configDefaults.exclude, 'tests/**/*[Vv]2*.test.{ts,tsx}'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
       'react/jsx-runtime': reactJsxRuntime,

@@ -23,7 +23,7 @@ export interface CopyButtonProps {
   disabled?: boolean;
   /** 自定义图标，如果不传则使用默认的复制图标 */
   icon?: React.ReactNode;
-  /** 按钮文本，默认为"复制" */
+  /** Button text, defaults to "Copy". */
   children?: React.ReactNode;
   /** 复制按钮的提示文本 */
   tooltipText?: string;
@@ -58,6 +58,11 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   successMessage,
   errorMessage,
 }) => {
+  const accessibleLabel =
+    typeof children === 'string'
+      ? children
+      : tooltipText || dict('PC.Common.Global.copy');
+
   // 处理复制
   const handleCopy = async () => {
     try {
@@ -112,7 +117,8 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   // 如果禁用，返回禁用状态的按钮
   if (disabled) {
     return (
-      <span
+      <button
+        type="button"
         className={cx(
           styles['copy-btn'],
           styles.disabled,
@@ -123,16 +129,19 @@ const CopyButton: React.FC<CopyButtonProps> = ({
         )}
         style={style}
         title={tooltipText}
+        aria-label={accessibleLabel}
+        disabled
       >
         {icon || defaultIcon}
         <span>{children}</span>
-      </span>
+      </button>
     );
   }
 
   // 可点击的复制按钮
   return (
-    <span
+    <button
+      type="button"
       className={cx(
         styles['copy-btn'],
         'flex',
@@ -142,11 +151,12 @@ const CopyButton: React.FC<CopyButtonProps> = ({
       )}
       style={style}
       title={tooltipText}
+      aria-label={accessibleLabel}
       onClick={handleCopy}
     >
       {icon || defaultIcon}
       <span>{children}</span>
-    </span>
+    </button>
   );
 };
 

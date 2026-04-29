@@ -10,6 +10,7 @@ import {
 import {
   CoverImgSourceTypeEnum,
   PageDevelopCreateTypeEnum,
+  PageTemplateTypeEnum,
 } from '@/types/enums/pageDev';
 import {
   CreateCustomPageInfo,
@@ -17,7 +18,15 @@ import {
 } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { InboxOutlined } from '@ant-design/icons';
-import { Form, FormProps, Input, message, Upload, UploadProps } from 'antd';
+import {
+  Form,
+  FormProps,
+  Input,
+  message,
+  Select,
+  Upload,
+  UploadProps,
+} from 'antd';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
@@ -251,6 +260,39 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
             maxLength={50}
           />
         </Form.Item>
+        {type === PageDevelopCreateTypeEnum.Online_Develop && (
+          <Form.Item
+            name="templateType"
+            label={dict(
+              'PC.Pages.SpacePageDevelop.PageCreateModal.templateType',
+            )}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Pages.SpacePageDevelop.PageCreateModal.pleaseSelectTemplateType',
+                ),
+              },
+            ]}
+          >
+            <Select
+              placeholder={dict(
+                'PC.Pages.SpacePageDevelop.PageCreateModal.pleaseSelectTemplateType',
+              )}
+              // 仅允许后端支持的模板值，避免非法参数提交到 create 接口
+              options={[
+                {
+                  label: 'React',
+                  value: PageTemplateTypeEnum.React,
+                },
+                {
+                  label: 'Vue3',
+                  value: PageTemplateTypeEnum.Vue3,
+                },
+              ]}
+            />
+          </Form.Item>
+        )}
         <OverrideTextArea
           name="projectDesc"
           label={dict('PC.Pages.SpacePageDevelop.PageCreateModal.description')}

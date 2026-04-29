@@ -20,8 +20,8 @@
 import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
-import { cloneDeep } from '@/utils/common';
 import { workflowLogger } from '@/utils/logger';
+import cloneDeep from 'lodash/cloneDeep';
 import { SpecialPortType } from '../types/enums';
 import type {
   EdgeV3,

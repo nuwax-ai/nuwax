@@ -95,7 +95,7 @@ const Monaco: React.FC<MonacoProps> = ({ form, isShow, close }) => {
                   form.getFieldValue('codeLanguage') || 'JavaScript'
                 }
                 minimap={true}
-                height="790px"
+                height="100%"
               />
             </Form.Item>
           </div>

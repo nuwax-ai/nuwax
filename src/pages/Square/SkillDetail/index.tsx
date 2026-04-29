@@ -136,6 +136,8 @@ const SkillDetail: React.FC = ({}) => {
         taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态
         fileTreeDataLoading={loadingSkillInfo}
+        // 是否为项目技能模式
+        isProjectSkill={true}
         // 技能文件列表
         originalFiles={skillInfo?.files || []}
         // 是否只读
@@ -148,6 +150,10 @@ const SkillDetail: React.FC = ({}) => {
         isFileTreePinned={true}
         // 不显示刷新按钮
         showRefreshButton={false}
+        // 技能不显示分享按钮
+        isShowShare={false}
+        // 技能不显示下载按钮
+        isShowDownloadButton={false}
         // 是否显示导出 PDF 按钮, 默认显示
         isShowExportPdfButton={false}
       />

@@ -3,6 +3,7 @@ import {
   I18N_LOCAL_IMPORT_DEFAULTS,
 } from '@/locales/i18n';
 import { EN_US } from '@/locales/i18n/en-US';
+import { JA_JP } from '@/locales/i18n/ja-JP';
 import { ZH_CN } from '@/locales/i18n/zh-CN';
 import { ZH_HK } from '@/locales/i18n/zh-HK';
 import { ZH_TW } from '@/locales/i18n/zh-TW';
@@ -10,16 +11,14 @@ import { ZH_TW } from '@/locales/i18n/zh-TW';
 export const DEFAULT_I18N_LANG = 'en-us';
 
 export const I18N_STORAGE_KEYS = {
-  ACTIVE_LANG: 'XAGI_I18N_ACTIVE_LANG',
-  LANG_MAP_CACHE: 'XAGI_I18N_LANG_MAP_CACHE',
-  LANG_MAP_CACHE_AT: 'XAGI_I18N_LANG_MAP_CACHE_AT',
-  LANG_MAP_CACHE_LANG: 'XAGI_I18N_LANG_MAP_CACHE_LANG',
+  ACTIVE_LANG: 'umi_locale',
 } as const;
 
-export const I18N_MAP_CACHE_TTL = 24 * 60 * 60 * 1000;
+// I18N_MAP_CACHE_TTL removed as caching is disabled
 
 // Runtime fallback dictionaries
 export const MIN_EN_I18N_MAP: Record<string, string> = EN_US;
+export const MIN_JA_I18N_MAP: Record<string, string> = JA_JP;
 export const MIN_ZH_I18N_MAP: Record<string, string> = ZH_CN;
 export const MIN_ZH_TW_I18N_MAP: Record<string, string> = ZH_TW;
 export const MIN_ZH_HK_I18N_MAP: Record<string, string> = ZH_HK;

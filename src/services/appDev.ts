@@ -13,6 +13,7 @@ import type {
   GetDevLogApiResponse,
   GetProjectContentResponse,
   KeepAliveResponse,
+  ListConversationsResponse,
   ListModelsResponse,
   PageFileInfo,
   ProjectDetailResponse,
@@ -496,43 +497,15 @@ export const rollbackVersion = async (
 // ==================== 会话管理相关API服务 ====================
 
 /**
- * 保存会话记录接口
- * @param params 保存会话参数
- * @returns Promise<any> 保存结果
- */
-export const saveConversation = async (params: {
-  projectId: string;
-  sessionId: string;
-  content: string;
-  topic: string;
-  summary?: string;
-}): Promise<any> => {
-  // console.log('📤 [API] Calling save conversation API:', {
-  //   url: '/api/custom-page/save-conversation',
-  //   method: 'POST',
-  //   params,
-  // });
-
-  const result = await request('/api/custom-page/save-conversation', {
-    method: 'POST',
-    data: params,
-  });
-
-  // console.log('📥 [API] Save conversation API response:', result);
-  return result;
-};
-
-/**
- * 查询会话记录列表接口
- * @param params 查询参数
- * @returns Promise<any> 会话列表
+ * 查询会话记录列表接口（page-query-conversations）
+ * @returns 标准 RequestResponse，data 为分页结构含 records
  */
 export const listConversations = async (
   projectId: string,
   page: number = 1,
   pageSize: number = 20,
-): Promise<any> => {
-  return request('/api/custom-page/page-query-conversations', {
+): Promise<ListConversationsResponse> => {
+  const response = await request('/api/custom-page/page-query-conversations', {
     method: 'POST',
     data: {
       queryFilter: {
@@ -542,6 +515,8 @@ export const listConversations = async (
       pageSize,
     },
   });
+
+  return response;
 };
 
 // ==================== Agent服务管理相关API服务 ====================

@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
+import { isKeyboardActivation } from '@/utils/a11y';
 import { DownOutlined } from '@ant-design/icons';
 import { Dropdown, theme } from 'antd';
 import classNames from 'classnames';
@@ -95,13 +96,15 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
         }
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !action.disabled && !disabled) {
+        if (isKeyboardActivation(e) && !action.disabled && !disabled) {
+          e.preventDefault();
           action.onClick();
         }
       }}
-      tabIndex={0}
+      tabIndex={action.disabled || disabled ? -1 : 0}
       role="button"
       aria-label={action.title}
+      aria-disabled={action.disabled || disabled}
     >
       <SvgIcon
         name={action.icon}
@@ -176,10 +179,16 @@ const ActionMenu: React.FC<ActionMenuProps> = ({
         >
           <div
             className={cx(styles['action-item'], styles['more-button'])}
-            tabIndex={0}
+            tabIndex={disabled ? -1 : 0}
             role="button"
             aria-label={moreText}
-            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.click()}
+            aria-disabled={disabled}
+            onKeyDown={(e) => {
+              if (isKeyboardActivation(e) && !disabled) {
+                e.preventDefault();
+                e.currentTarget.click();
+              }
+            }}
             style={{
               marginLeft: normalizeGap,
             }}

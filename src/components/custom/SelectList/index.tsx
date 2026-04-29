@@ -20,6 +20,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     options,
     onChange,
     size = 'middle',
+    style,
   } = props;
 
   return (
@@ -30,6 +31,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
       placeholder={placeholder || dict('PC.Components.SelectList.pleaseSelect')}
       disabled={disabled}
       onChange={onChange}
+      style={style}
       allowClear={allowClear}
       // 阻止冒泡事件
       onClick={(e) => {

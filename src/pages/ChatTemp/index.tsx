@@ -706,6 +706,11 @@ const ChatTemp: React.FC = () => {
     }
   };
 
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    await asyncFun(captchaVerifyParam);
+    return { captchaResult: true, bizResult: true } as const;
+  };
+
   useEffect(() => {
     if (tenantConfigInfo) {
       const { captchaSceneId, captchaPrefix, openCaptcha } = tenantConfigInfo;
@@ -963,7 +968,7 @@ const ChatTemp: React.FC = () => {
           />
           <AliyunCaptcha
             config={tenantConfigInfo}
-            doAction={asyncFun}
+            onVerify={handleCaptchaVerify}
             elementId={buttonId}
             onReady={handleCaptchaReady}
           />

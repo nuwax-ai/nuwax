@@ -87,6 +87,7 @@ const CopyIconButton: React.FC<CopyIconButtonProps> = ({
         type={buttonType}
         size={buttonSize}
         icon={<CopyOutlined />}
+        aria-label={tooltipTitle}
         onClick={handleCopy}
         style={style}
         className={className}

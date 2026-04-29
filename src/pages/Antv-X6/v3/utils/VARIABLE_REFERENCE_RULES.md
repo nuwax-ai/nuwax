@@ -265,6 +265,8 @@ Start → Variable → Loop → End
 | Variable | outputArgs + `isSuccess`       |
 | 其他     | outputArgs                     |
 
+说明：`INDEX` 与 `*_item` 仅在 `calculateNodePreviousArgs()` 的 `currentNode.loopNodeId` 分支按“循环内部节点”场景动态注入，不通过 Loop 的普通前驱输出透出。
+
 ### `prefixOutputArgsKeys(nodeIdOrPrefix, args)`
 
 为参数添加节点 ID 前缀的 key。

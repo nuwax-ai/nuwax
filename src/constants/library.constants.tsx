@@ -35,6 +35,7 @@ import {
   PluginTypeEnum,
 } from '@/types/enums/plugin';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
 } from '@/types/enums/space';
@@ -526,5 +527,17 @@ export const KNOWLEDGE_SEGMENT_IDENTIFIER_LIST = [
   {
     label: dict('PC.Common.Global.custom'),
     value: KnowledgeSegmentIdentifierEnum.Custom,
+  },
+];
+
+// 技能适用范围列表
+export const SKILL_USAGE_SCENARIO_LIST = [
+  {
+    label: dict('PC.Constants.Library.generalAgent'),
+    value: AgentTypeEnum.TaskAgent,
+  },
+  {
+    label: dict('PC.Constants.Space.webAppDev'),
+    value: AgentTypeEnum.PageApp,
   },
 ];

@@ -380,6 +380,12 @@ const routes = [
     layout: false,
   },
   {
+    path: '/space/:spaceId/app-dev-preview/:projectId',
+    component: '@/pages/AppDev',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
     path: '/app',
     component: '@/pages/OpenApp/BaseTemplate',
     wrappers: ['@/wrappers/authWithLoading'],

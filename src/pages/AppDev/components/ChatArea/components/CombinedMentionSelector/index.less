@@ -1,0 +1,183 @@
+@import '@/styles/token.less';
+
+.mention-selector {
+  border: 1px solid @colorBorder;
+  border-radius: @borderRadius;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  width: 380px; // 稍微加宽以容纳 6 个 tab
+  height: 400px;
+  overflow: hidden;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  background-color: @colorBgContainer;
+  animation: fade-in 0.2s ease-in-out;
+
+  // 搜索输入框
+  .mention-search-wrap {
+    padding: @paddingXs;
+    background: @colorBgContainer;
+    border-bottom: 1px solid @colorBorderSecondary;
+    flex-shrink: 0;
+
+    .ant-input-affix-wrapper {
+      padding-left: 0;
+      background: transparent !important;
+      border: none;
+      box-shadow: none;
+    }
+
+    .ant-input {
+      font-size: @fontSizeSm;
+      background: transparent !important;
+
+      &::placeholder {
+        color: @colorTextTertiary;
+      }
+    }
+  }
+
+  .mention-search-icon {
+    color: @colorTextTertiary;
+    font-size: 14px;
+  }
+
+  .mention-search-input {
+    width: 100%;
+  }
+
+  .mention-tabs {
+    display: flex;
+    padding: @paddingXs @paddingXs;
+    background-color: @colorBgContainer;
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: @marginXxs;
+
+    &::-webkit-scrollbar {
+      height: 0; // 隐藏滚动条
+    }
+
+    .mention-tab {
+      flex: 1;
+      padding: @paddingXxs @paddingXs;
+      font-size: @fontSizeSm;
+      cursor: pointer;
+      color: @colorTextSecondary;
+      border-radius: @borderRadius;
+      transition: all 0.2s;
+      white-space: nowrap;
+      text-align: center;
+
+      &:hover {
+        color: @colorText;
+        background: @colorFillSecondary;
+      }
+
+      &.active {
+        color: @colorText;
+        background: @colorFillSecondary;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .mention-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 0;
+    min-height: 0;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 2px;
+    }
+
+    .mention-loading {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mention-empty {
+      padding: 40px 0;
+    }
+
+    .mention-list {
+      .mention-item {
+        display: flex;
+        align-items: center;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: all 0.15s;
+        gap: 8px;
+
+        &:hover {
+          background-color: @colorFillQuaternary;
+        }
+
+        &.selected {
+          background-color: @colorPrimaryBg;
+          color: @colorPrimary;
+        }
+
+        .mention-item-icon {
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          color: @colorTextSecondary;
+          flex-shrink: 0;
+
+          img {
+            border-radius: 2px;
+          }
+        }
+
+        .mention-item-content {
+          flex: 1;
+          min-width: 0;
+
+          .mention-item-title {
+            font-size: 13px;
+            color: @colorText;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mention-item-desc {
+            font-size: 11px;
+            color: @colorTextSecondary;
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

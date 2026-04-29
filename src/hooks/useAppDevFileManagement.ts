@@ -39,10 +39,12 @@ interface UseAppDevFileManagementProps {
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
-// design模式支持的开发框架
+// design 模式支持的开发框架（拆分字段）
 const DESIGN_DEV_FRAMEWORK = 'vite';
-// design模式支持的前端框架
-const DESIGN_FRONTEND_FRAMEWORK = 'react';
+// design 模式支持的前端框架（拆分字段）
+const DESIGN_FRONTEND_FRAMEWORKS = new Set(['react', 'vue3']);
+// design 模式支持的组合框架标识（兼容后端直接返回组合值）
+const DESIGN_FRAMEWORK_COMBINATIONS = new Set(['react-vite', 'vue3-vite']);
 
 export const useAppDevFileManagement = ({
   projectId,
@@ -132,10 +134,13 @@ export const useAppDevFileManagement = ({
 
         if (response && response.code === '0000' && response.data) {
           const { files, devFramework, frontendFramework } = response.data;
-          // 是否支持设计模式
+          // 是否支持设计模式：
+          // 1) 兼容拆分字段：devFramework=vite 且 frontendFramework in [react, vue3]
+          // 2) 兼容组合字段：frontendFramework in [react-vite, vue3-vite]
           const _isSupportDesignMode =
-            devFramework === DESIGN_DEV_FRAMEWORK &&
-            frontendFramework === DESIGN_FRONTEND_FRAMEWORK;
+            (devFramework === DESIGN_DEV_FRAMEWORK &&
+              DESIGN_FRONTEND_FRAMEWORKS.has(frontendFramework)) ||
+            DESIGN_FRAMEWORK_COMBINATIONS.has(frontendFramework);
           // 设置是否支持设计模式
           setIsSupportDesignMode(_isSupportDesignMode);
 
