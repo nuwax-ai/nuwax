@@ -356,6 +356,87 @@ const routes = [
             ],
           },
           {
+            path: 'payment-earnings',
+            name: getRouteLabel('PC.Routes.devPaymentEarnings'),
+            routes: [
+              {
+                path: 'config',
+                name: '支付配置',
+                component: '@/pages/SystemManagement/PaymentEarnings/Config',
+              },
+              {
+                path: 'merchant-info',
+                name: '支付进件信息',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/MerchantInfo',
+              },
+              {
+                path: 'dev-payment',
+                name: '开发者付款信息',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/DevPayment',
+              },
+              {
+                path: 'earnings-stats',
+                name: '开发者收益统计',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/EarningsStats',
+              },
+              {
+                path: 'withdrawal',
+                name: '开发者提现管理',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/Withdrawal',
+              },
+              {
+                path: 'orders',
+                name: '支付订单查询',
+                component: '@/pages/SystemManagement/PaymentEarnings/Orders',
+              },
+            ],
+          },
+          {
+            path: 'subscription-credits',
+            name: getRouteLabel('PC.Routes.adminSubscriptionCredits'),
+            routes: [
+              {
+                path: 'basic-config',
+                name: '基础配置',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/BasicConfig',
+              },
+              {
+                path: 'plans',
+                name: '基础订阅套餐',
+                component: '@/pages/SystemManagement/SubscriptionCredits/Plans',
+              },
+              {
+                path: 'credit-packages',
+                name: '积分增购套餐',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/CreditPackages',
+              },
+              {
+                path: 'user-credits',
+                name: '用户积分查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/UserCredits',
+              },
+              {
+                path: 'credit-records',
+                name: '积分明细查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/CreditRecords',
+              },
+              {
+                path: 'orders',
+                name: '业务订单查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/Orders',
+              },
+            ],
+          },
+          {
             path: 'log-query',
             name: getRouteLabel('PC.Routes.logQuery'),
             routes: [

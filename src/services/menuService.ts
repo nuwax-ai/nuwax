@@ -53,6 +53,10 @@ const MENU_ICON_MAP: Record<string, string> = {
   system_log_query: 'icons-nav-log',
   // 内容管理
   content_manage: 'icons-nav-cube',
+  // 支付与收益（开发者）
+  dev_payment_earnings: 'icons-nav-my-earnings',
+  // 订阅与积分（管理员）
+  admin_subscription_credits: 'icons-nav-subscription',
 
   // 二级菜单 - 工作空间
   // 智能体开发
@@ -103,6 +107,22 @@ const MENU_ICON_MAP: Record<string, string> = {
   my_orders: 'icons-nav-my-orders',
   // 更多页面 - 我的收益
   my_earnings: 'icons-nav-my-earnings',
+
+  // 系统管理 - 支付与收益子菜单
+  payment_config: 'icons-nav-settings',
+  payment_merchant_info: 'icons-nav-info',
+  dev_payment_info: 'icons-nav-earnings',
+  dev_earnings_stats: 'icons-nav-chart',
+  dev_withdrawal: 'icons-nav-withdraw',
+  payment_orders: 'icons-nav-orders',
+
+  // 系统管理 - 订阅与积分子菜单
+  subs_basic_config: 'icons-nav-settings',
+  subs_plans: 'icons-nav-subscription',
+  credits_packages: 'icons-nav-credits',
+  user_credits_query: 'icons-nav-user',
+  credits_records_query: 'icons-nav-history',
+  subs_orders: 'icons-nav-orders',
 };
 
 /**

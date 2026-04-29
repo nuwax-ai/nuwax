@@ -17,6 +17,46 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const MOCK_CHECK_RESULT: CheckSubscriptionResult = {
+  hasSubscription: false,
+  trialRemaining: 3,
+  plans: [
+    {
+      id: 1,
+      spaceId: 1,
+      name: 'Basic Plan',
+      description: '基础订阅计划，包含核心功能',
+      price: 99,
+      cycle: PricingCycleEnum.Monthly,
+      enabled: true,
+      createdAt: '',
+      updatedAt: '',
+    },
+    {
+      id: 2,
+      spaceId: 1,
+      name: 'Pro Plan',
+      description: '专业计划，包含高级功能和更高限额',
+      price: 269,
+      cycle: PricingCycleEnum.Quarterly,
+      enabled: true,
+      createdAt: '',
+      updatedAt: '',
+    },
+    {
+      id: 3,
+      spaceId: 1,
+      name: 'Enterprise Plan',
+      description: '企业级计划，无限访问量和专属支持',
+      price: 999,
+      cycle: PricingCycleEnum.Yearly,
+      enabled: true,
+      createdAt: '',
+      updatedAt: '',
+    },
+  ],
+};
+
 interface Props {
   agentId: number;
   open: boolean;
@@ -32,7 +72,7 @@ const SubscriptionDrawer: React.FC<Props> = ({
 }) => {
   const [subscribingId, setSubscribingId] = useState<number | null>(null);
   const [checkResult, setCheckResult] =
-    useState<CheckSubscriptionResult | null>(null);
+    useState<CheckSubscriptionResult | null>(MOCK_CHECK_RESULT);
 
   const cycleLabel = useMemo(
     () => ({
@@ -53,7 +93,7 @@ const SubscriptionDrawer: React.FC<Props> = ({
     () => apiCheckSubscription(agentId),
     {
       manual: true,
-      onSuccess: (res) => setCheckResult(res?.data ?? null),
+      onSuccess: (res) => setCheckResult(res?.data ?? MOCK_CHECK_RESULT),
     },
   );
 

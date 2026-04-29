@@ -1,0 +1,324 @@
+import { TableActions, XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
+import {
+  apiApproveWithdrawal,
+  apiListWithdrawals,
+  apiRejectWithdrawal,
+} from '@/services/subscriptionService';
+import type { WithdrawalInfo } from '@/types/interfaces/subscription';
+import {
+  DevPaymentTypeEnum,
+  WithdrawalStatusEnum,
+} from '@/types/interfaces/subscription';
+import { formatDateTime } from '@/utils/dateUtils';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { Input, Modal, Statistic, Tag, message } from 'antd';
+import React, { useMemo, useRef, useState } from 'react';
+
+const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
+  {
+    id: 1,
+    developerName: 'Alice Wang',
+    amount: 1580,
+    accountType: DevPaymentTypeEnum.Alipay,
+    accountNo: 'alice@example.com',
+    realName: '王丽',
+    status: WithdrawalStatusEnum.Pending,
+    createdAt: '2026-04-28T10:30:00Z',
+  },
+  {
+    id: 2,
+    developerName: 'Bob Li',
+    amount: 3200,
+    accountType: DevPaymentTypeEnum.BankCard,
+    accountNo: '6222 **** **** 1234',
+    realName: '李明',
+    status: WithdrawalStatusEnum.Approved,
+    createdAt: '2026-04-20T14:20:00Z',
+    processedAt: '2026-04-21T09:00:00Z',
+  },
+  {
+    id: 3,
+    developerName: 'Carlos Dev',
+    amount: 500,
+    accountType: DevPaymentTypeEnum.Alipay,
+    accountNo: 'carlos@dev.com',
+    realName: 'Carlos',
+    status: WithdrawalStatusEnum.Rejected,
+    rejectReason: '账户信息不匹配',
+    createdAt: '2026-04-15T09:00:00Z',
+    processedAt: '2026-04-16T10:00:00Z',
+  },
+  {
+    id: 4,
+    developerName: 'Diana Chen',
+    amount: 2100,
+    accountType: DevPaymentTypeEnum.Alipay,
+    accountNo: 'diana@example.com',
+    realName: '陈迪',
+    status: WithdrawalStatusEnum.Pending,
+    createdAt: '2026-04-29T07:00:00Z',
+  },
+];
+
+const Withdrawal: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const pendingCount = MOCK_WITHDRAWALS.filter(
+    (w) => w.status === WithdrawalStatusEnum.Pending,
+  ).length;
+  const totalApproved = MOCK_WITHDRAWALS.filter(
+    (w) => w.status === WithdrawalStatusEnum.Approved,
+  ).reduce((s, w) => s + w.amount, 0);
+
+  const statusConfig = useMemo(
+    () => ({
+      [WithdrawalStatusEnum.Pending]: {
+        color: 'processing',
+        label: dict('PC.Pages.SystemWithdrawal.statusPending'),
+      },
+      [WithdrawalStatusEnum.Approved]: {
+        color: 'success',
+        label: dict('PC.Pages.SystemWithdrawal.statusApproved'),
+      },
+      [WithdrawalStatusEnum.Rejected]: {
+        color: 'error',
+        label: dict('PC.Pages.SystemWithdrawal.statusRejected'),
+      },
+    }),
+    [],
+  );
+
+  const handleApprove = async (id: number) => {
+    await apiApproveWithdrawal(id);
+    message.success(dict('PC.Pages.SystemWithdrawal.approveSuccess'));
+    actionRef.current?.reload();
+  };
+
+  const handleReject = async () => {
+    if (!rejectId) return;
+    await apiRejectWithdrawal(rejectId, rejectReason);
+    message.success(dict('PC.Pages.SystemWithdrawal.rejectSuccess'));
+    setRejectModalOpen(false);
+    setRejectReason('');
+    actionRef.current?.reload();
+  };
+
+  const columns: ProColumns<WithdrawalInfo>[] = [
+    {
+      title: dict('PC.Pages.SystemWithdrawal.colDeveloper'),
+      dataIndex: 'developerName',
+      key: 'developerName',
+      ellipsis: true,
+    },
+    {
+      title: dict('PC.Pages.SystemWithdrawal.colAmount'),
+      dataIndex: 'amount',
+      key: 'amount',
+      search: false,
+      render: (_, record) => (
+        <span style={{ fontWeight: 600, color: '#1677ff' }}>
+          ¥{record.amount.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      title: dict('PC.Pages.SystemWithdrawal.colAccount'),
+      key: 'account',
+      search: false,
+      render: (_, record) => (
+        <span>
+          {record.realName} · {record.accountNo}
+          {record.bankName && (
+            <span style={{ color: '#999', marginLeft: 4 }}>
+              ({record.bankName})
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      title: dict('PC.Pages.SystemWithdrawal.colCreatedAt'),
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      search: false,
+      render: (val) => formatDateTime(val),
+    },
+    {
+      title: dict('PC.Pages.SystemWithdrawal.colStatus'),
+      dataIndex: 'status',
+      key: 'status',
+      render: (_, record) => {
+        const cfg = statusConfig[record.status];
+        return (
+          <div>
+            <Tag color={cfg?.color}>{cfg?.label}</Tag>
+            {record.rejectReason && (
+              <div style={{ color: '#ff4d4f', fontSize: 12, marginTop: 2 }}>
+                {record.rejectReason}
+              </div>
+            )}
+          </div>
+        );
+      },
+      valueEnum: {
+        [WithdrawalStatusEnum.Pending]: {
+          text: dict('PC.Pages.SystemWithdrawal.statusPending'),
+        },
+        [WithdrawalStatusEnum.Approved]: {
+          text: dict('PC.Pages.SystemWithdrawal.statusApproved'),
+        },
+        [WithdrawalStatusEnum.Rejected]: {
+          text: dict('PC.Pages.SystemWithdrawal.statusRejected'),
+        },
+      },
+    },
+    {
+      title: dict('PC.Common.Global.action'),
+      key: 'action',
+      search: false,
+      width: 140,
+      render: (_, record) =>
+        record.status === WithdrawalStatusEnum.Pending ? (
+          <TableActions
+            record={record}
+            actions={[
+              {
+                key: 'approve',
+                label: dict('PC.Pages.SystemWithdrawal.approve'),
+                confirm: {
+                  title: dict('PC.Pages.SystemWithdrawal.confirmApprove'),
+                },
+                onClick: (r) => handleApprove(r.id),
+              },
+              {
+                key: 'reject',
+                label: dict('PC.Pages.SystemWithdrawal.reject'),
+                danger: true,
+                onClick: (r) => {
+                  setRejectId(r.id);
+                  setRejectModalOpen(true);
+                },
+              },
+            ]}
+          />
+        ) : null,
+    },
+  ];
+
+  return (
+    <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
+      {/* 统计概览 */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            padding: '20px 24px',
+            borderRadius: 8,
+            background: '#fff7e6',
+          }}
+        >
+          <Statistic
+            title={dict('PC.Pages.SystemWithdrawal.statPending')}
+            value={pendingCount}
+            suffix={dict('PC.Common.Global.items')}
+          />
+        </div>
+        <div
+          style={{
+            padding: '20px 24px',
+            borderRadius: 8,
+            background: '#f6ffed',
+          }}
+        >
+          <Statistic
+            title={dict('PC.Pages.SystemWithdrawal.statApproved')}
+            value={totalApproved}
+            precision={2}
+            prefix="¥"
+          />
+        </div>
+        <div
+          style={{
+            padding: '20px 24px',
+            borderRadius: 8,
+            background: '#f0f5ff',
+          }}
+        >
+          <Statistic
+            title={dict('PC.Pages.SystemWithdrawal.statTotal')}
+            value={MOCK_WITHDRAWALS.length}
+            suffix={dict('PC.Common.Global.items')}
+          />
+        </div>
+      </div>
+
+      <XProTable<WithdrawalInfo>
+        rowKey="id"
+        actionRef={actionRef}
+        columns={columns}
+        request={async (params) => {
+          try {
+            const res = await apiListWithdrawals({
+              keyword: params.developerName,
+              status: params.status,
+              pageNum: params.current,
+              pageSize: params.pageSize,
+            });
+            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+              return {
+                data: res.data.list,
+                total: res.data.total,
+                success: true,
+              };
+            }
+          } catch {}
+          return {
+            data: MOCK_WITHDRAWALS,
+            total: MOCK_WITHDRAWALS.length,
+            success: true,
+          };
+        }}
+      />
+
+      <Modal
+        title={dict('PC.Pages.SystemWithdrawal.rejectModalTitle')}
+        open={rejectModalOpen}
+        onCancel={() => {
+          setRejectModalOpen(false);
+          setRejectReason('');
+        }}
+        onOk={handleReject}
+        okButtonProps={{ danger: true }}
+        okText={dict('PC.Pages.SystemWithdrawal.reject')}
+      >
+        <p style={{ marginBottom: 12 }}>
+          {dict('PC.Pages.SystemWithdrawal.rejectReasonLabel')}
+        </p>
+        <Input.TextArea
+          rows={3}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder={dict(
+            'PC.Pages.SystemWithdrawal.rejectReasonPlaceholder',
+          )}
+          maxLength={200}
+          showCount
+        />
+      </Modal>
+    </WorkspaceLayout>
+  );
+};
+
+export default Withdrawal;

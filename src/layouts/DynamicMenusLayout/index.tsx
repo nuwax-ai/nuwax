@@ -694,8 +694,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         />
         {/* 用户操作区域 */}
         <UserOperateArea onClick={handleUserClick} menus={otherMenus} />
-        {/* 积分余额 */}
-        <CreditsBalance />
         {/* 用户头像 */}
         <User />
       </div>
@@ -712,38 +710,45 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           backgroundColor: secondaryBackgroundColor,
         }}
       >
-        <HoverScrollbar
-          className={cx('w-full', 'h-full')}
-          bodyWidth={
-            NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-          }
-          style={{
-            padding: `${token.paddingSM}px 0`,
-          }}
-        >
-          <div
-            className={cx('flex', 'flex-col', 'h-full')}
+        <div className={cx(styles['nav-menus-scroll'])}>
+          <HoverScrollbar
+            className={cx('w-full', 'h-full')}
+            bodyWidth={
+              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+            }
             style={{
-              minHeight: 0,
+              padding: `${token.paddingSM}px 0`,
             }}
           >
-            {/* 标题 */}
-            <ConditionRender condition={isShowTitle && currentTitle}>
-              <div style={{ padding: '0 12px 12px' }}>
-                <Typography.Title
-                  level={5}
-                  style={{ marginBottom: 0 }}
-                  className={cx(styles['menu-title'])}
-                >
-                  {currentTitle}
-                </Typography.Title>
-              </div>
-            </ConditionRender>
+            <div
+              className={cx('flex', 'flex-col', 'h-full')}
+              style={{
+                minHeight: 0,
+              }}
+            >
+              {/* 标题 */}
+              <ConditionRender condition={isShowTitle && currentTitle}>
+                <div style={{ padding: '0 12px 12px' }}>
+                  <Typography.Title
+                    level={5}
+                    style={{ marginBottom: 0 }}
+                    className={cx(styles['menu-title'])}
+                  >
+                    {currentTitle}
+                  </Typography.Title>
+                </div>
+              </ConditionRender>
 
-            {/* 二级/三级菜单 */}
-            {renderSecondMenu}
-          </div>
-        </HoverScrollbar>
+              {/* 二级/三级菜单 */}
+              {renderSecondMenu}
+            </div>
+          </HoverScrollbar>
+        </div>
+
+        {/* 积分相关入口：放到二级导航栏底部固定展示 */}
+        <div className={cx(styles['integral-footer'])}>
+          <CreditsBalance />
+        </div>
       </div>
 
       {/* 收起/展开按钮 */}

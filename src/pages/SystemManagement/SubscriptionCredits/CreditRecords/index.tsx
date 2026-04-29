@@ -1,61 +1,65 @@
-import SvgIcon from '@/components/base/SvgIcon';
-import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetUserCredits,
-  apiListCreditRecords,
-} from '@/services/subscriptionService';
-import type { CreditRecordInfo } from '@/types/interfaces/subscription';
+import { apiListAdminCreditRecords } from '@/services/subscriptionService';
+import type { AdminCreditRecordInfo } from '@/types/interfaces/subscription';
 import { CreditRecordTypeEnum } from '@/types/interfaces/subscription';
 import { formatDateTime } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Tag } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRequest } from 'umi';
+import { Tag } from 'antd';
+import React, { useMemo } from 'react';
 
-const MOCK_CREDIT_RECORDS: CreditRecordInfo[] = [
+const MOCK_RECORDS: AdminCreditRecordInfo[] = [
   {
     id: 1,
+    userName: 'Alice Wang',
     recordType: CreditRecordTypeEnum.Recharge,
-    description: '购买 500 积分包',
+    description: '购买标准包 500 积分',
     amount: 500,
-    balance: 500,
-    createdAt: '2026-04-10T08:00:00Z',
+    balance: 1250,
+    createdAt: '2026-04-28T10:30:00Z',
   },
   {
     id: 2,
+    userName: 'Bob Li',
     recordType: CreditRecordTypeEnum.Consume,
     description: 'AI 智能体使用 - 代码助手',
     amount: -50,
-    balance: 450,
-    createdAt: '2026-04-12T10:30:00Z',
+    balance: 350,
+    createdAt: '2026-04-27T14:20:00Z',
   },
   {
     id: 3,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: 'AI 智能体使用 - 数据分析师',
-    amount: -30,
-    balance: 420,
-    createdAt: '2026-04-14T14:00:00Z',
+    userName: 'Eric Zhang',
+    recordType: CreditRecordTypeEnum.Recharge,
+    description: '购买企业包 10000 积分',
+    amount: 10000,
+    balance: 4800,
+    createdAt: '2026-04-26T09:00:00Z',
   },
   {
     id: 4,
+    userName: 'Fiona Liu',
+    recordType: CreditRecordTypeEnum.Refund,
+    description: '退款 - 订单 ORD20260220001',
+    amount: 100,
+    balance: 99,
+    createdAt: '2026-04-25T16:00:00Z',
+  },
+  {
+    id: 5,
+    userName: 'Alice Wang',
     recordType: CreditRecordTypeEnum.Consume,
-    description: 'AI 智能体使用 - 代码助手',
-    amount: -70,
-    balance: 350,
-    createdAt: '2026-04-18T09:20:00Z',
+    description: 'AI 智能体使用 - 数据分析师',
+    amount: -30,
+    balance: 750,
+    createdAt: '2026-04-24T11:00:00Z',
   },
 ];
 
 const CreditRecords: React.FC = () => {
-  const [balance, setBalance] = useState<number>(350);
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
-
-  const recordTypeConfig = useMemo(
+  const typeConfig = useMemo(
     () => ({
       [CreditRecordTypeEnum.Recharge]: {
         color: 'success',
@@ -73,25 +77,20 @@ const CreditRecords: React.FC = () => {
     [],
   );
 
-  const { run: fetchCredits } = useRequest(apiGetUserCredits, {
-    manual: true,
-    onSuccess: (res) => {
-      if (res?.data) setBalance(res.data.balance);
+  const columns: ProColumns<AdminCreditRecordInfo>[] = [
+    {
+      title: dict('PC.Pages.SystemCreditRecords.colUser'),
+      dataIndex: 'userName',
+      key: 'userName',
+      ellipsis: true,
     },
-  });
-
-  useEffect(() => {
-    fetchCredits();
-  }, []);
-
-  const columns: ProColumns<CreditRecordInfo>[] = [
     {
       title: dict('PC.Pages.MorePage.CreditRecords.colType'),
       dataIndex: 'recordType',
       key: 'recordType',
       render: (_, record) => {
-        const config = recordTypeConfig[record.recordType];
-        return <Tag color={config?.color}>{config?.label}</Tag>;
+        const cfg = typeConfig[record.recordType];
+        return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
       },
       valueEnum: {
         [CreditRecordTypeEnum.Recharge]: {
@@ -109,6 +108,7 @@ const CreditRecords: React.FC = () => {
       title: dict('PC.Pages.MorePage.CreditRecords.colDescription'),
       dataIndex: 'description',
       key: 'description',
+      search: false,
       ellipsis: true,
     },
     {
@@ -146,43 +146,15 @@ const CreditRecords: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}>
-      {/* 余额卡片 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '24px 32px',
-          borderRadius: 8,
-          marginBottom: 16,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: '#fff',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <SvgIcon name="icons-nav-credits" style={{ fontSize: 32 }} />
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.85 }}>
-              {dict('PC.Pages.MorePage.CreditRecords.currentBalance')}
-            </div>
-            <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.2 }}>
-              {balance.toLocaleString()}
-            </div>
-          </div>
-        </div>
-        <Button type="primary" ghost onClick={() => setPurchaseOpen(true)}>
-          {dict('PC.Pages.MorePage.CreditRecords.buyCredits')}
-        </Button>
-      </div>
-
-      <XProTable<CreditRecordInfo>
+    <WorkspaceLayout title={dict('PC.Routes.creditsRecordsQuery')}>
+      <XProTable<AdminCreditRecordInfo>
         rowKey="id"
         columns={columns}
         request={async (params) => {
           try {
-            const res = await apiListCreditRecords({
-              recordType: params.recordType as CreditRecordTypeEnum,
+            const res = await apiListAdminCreditRecords({
+              keyword: params.userName,
+              recordType: params.recordType,
               pageNum: params.current,
               pageSize: params.pageSize,
             });
@@ -195,17 +167,11 @@ const CreditRecords: React.FC = () => {
             }
           } catch {}
           return {
-            data: MOCK_CREDIT_RECORDS,
-            total: MOCK_CREDIT_RECORDS.length,
+            data: MOCK_RECORDS,
+            total: MOCK_RECORDS.length,
             success: true,
           };
         }}
-      />
-
-      <CreditsPurchaseModal
-        open={purchaseOpen}
-        onCancel={() => setPurchaseOpen(false)}
-        onSuccess={fetchCredits}
       />
     </WorkspaceLayout>
   );

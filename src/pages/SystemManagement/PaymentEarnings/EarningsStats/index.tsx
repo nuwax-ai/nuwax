@@ -3,13 +3,10 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiGetEarningsSummary,
-  apiListMyEarnings,
+  apiGetDevEarningsSummary,
+  apiListDevEarnings,
 } from '@/services/subscriptionService';
-import type {
-  EarningRecordInfo,
-  EarningsSummaryInfo,
-} from '@/types/interfaces/subscription';
+import type { EarningRecordInfo } from '@/types/interfaces/subscription';
 import {
   PricingCycleEnum,
   SettlementStatusEnum,
@@ -20,18 +17,19 @@ import { Statistic, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 
-const MOCK_EARNINGS_SUMMARY: EarningsSummaryInfo = {
-  totalEarnings: 12800,
-  monthlyEarnings: 2450,
-  subscriberCount: 38,
-  pendingSettlement: 1200,
+const MOCK_DEV_SUMMARY = {
+  totalEarnings: 86400,
+  monthlyEarnings: 12800,
+  pendingSettlement: 5600,
+  developerCount: 47,
 };
 
-const MOCK_EARNINGS: EarningRecordInfo[] = [
+const MOCK_DEV_EARNINGS: EarningRecordInfo[] = [
   {
     id: 1,
+    developerName: 'Alice Wang',
     agentName: '代码助手',
-    userName: 'Alice Wang',
+    userName: 'User001',
     planName: 'Basic Plan',
     cycle: PricingCycleEnum.Monthly,
     earnings: 79,
@@ -40,8 +38,9 @@ const MOCK_EARNINGS: EarningRecordInfo[] = [
   },
   {
     id: 2,
+    developerName: 'Bob Li',
     agentName: '数据分析师',
-    userName: 'Bob Li',
+    userName: 'User002',
     planName: 'Pro Plan',
     cycle: PricingCycleEnum.Quarterly,
     earnings: 215,
@@ -50,8 +49,9 @@ const MOCK_EARNINGS: EarningRecordInfo[] = [
   },
   {
     id: 3,
+    developerName: 'Carlos Dev',
     agentName: '写作助手',
-    userName: 'Diana Chen',
+    userName: 'User003',
     planName: 'Enterprise Plan',
     cycle: PricingCycleEnum.Yearly,
     earnings: 799,
@@ -60,10 +60,13 @@ const MOCK_EARNINGS: EarningRecordInfo[] = [
   },
 ];
 
-const MyEarnings: React.FC = () => {
-  const [summary, setSummary] = useState<EarningsSummaryInfo | null>(
-    MOCK_EARNINGS_SUMMARY,
-  );
+const PaymentEarnings: React.FC = () => {
+  const [summary, setSummary] = useState<{
+    totalEarnings: number;
+    monthlyEarnings: number;
+    pendingSettlement: number;
+    developerCount: number;
+  } | null>(MOCK_DEV_SUMMARY);
 
   const cycleLabel = useMemo(
     () => ({
@@ -94,9 +97,9 @@ const MyEarnings: React.FC = () => {
     [],
   );
 
-  const { run: fetchSummary } = useRequest(apiGetEarningsSummary, {
+  const { run: fetchSummary } = useRequest(apiGetDevEarningsSummary, {
     manual: true,
-    onSuccess: (res) => setSummary(res?.data ?? MOCK_EARNINGS_SUMMARY),
+    onSuccess: (res) => setSummary(res?.data ?? MOCK_DEV_SUMMARY),
   });
 
   useEffect(() => {
@@ -104,6 +107,12 @@ const MyEarnings: React.FC = () => {
   }, []);
 
   const columns: ProColumns<EarningRecordInfo>[] = [
+    {
+      title: dict('PC.Pages.SystemPaymentEarnings.colDeveloper'),
+      dataIndex: 'developerName',
+      key: 'developerName',
+      ellipsis: true,
+    },
     {
       title: dict('PC.Pages.MorePage.MyEarnings.colAgent'),
       dataIndex: 'agentName',
@@ -160,7 +169,7 @@ const MyEarnings: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.MorePage.MyEarnings.pageTitle')}>
+    <WorkspaceLayout title={dict('PC.Routes.devEarningsStats')}>
       {/* 统计卡片 */}
       <div
         style={{
@@ -178,7 +187,7 @@ const MyEarnings: React.FC = () => {
           }}
         >
           <Statistic
-            title={dict('PC.Pages.MorePage.MyEarnings.totalEarnings')}
+            title={dict('PC.Pages.SystemPaymentEarnings.totalEarnings')}
             value={summary?.totalEarnings ?? 0}
             precision={2}
             prefix={dict('PC.Common.Global.currencySymbol')}
@@ -192,8 +201,22 @@ const MyEarnings: React.FC = () => {
           }}
         >
           <Statistic
-            title={dict('PC.Pages.MorePage.MyEarnings.monthlyEarnings')}
+            title={dict('PC.Pages.SystemPaymentEarnings.monthlyEarnings')}
             value={summary?.monthlyEarnings ?? 0}
+            precision={2}
+            prefix={dict('PC.Common.Global.currencySymbol')}
+          />
+        </div>
+        <div
+          style={{
+            padding: '20px 24px',
+            borderRadius: 8,
+            background: '#fff7e6',
+          }}
+        >
+          <Statistic
+            title={dict('PC.Pages.SystemPaymentEarnings.pendingSettlement')}
+            value={summary?.pendingSettlement ?? 0}
             precision={2}
             prefix={dict('PC.Common.Global.currencySymbol')}
           />
@@ -206,22 +229,8 @@ const MyEarnings: React.FC = () => {
           }}
         >
           <Statistic
-            title={dict('PC.Pages.MorePage.MyEarnings.subscriberCount')}
-            value={summary?.subscriberCount ?? 0}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#fff7e6',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.MorePage.MyEarnings.pendingSettlement')}
-            value={summary?.pendingSettlement ?? 0}
-            precision={2}
-            prefix={dict('PC.Common.Global.currencySymbol')}
+            title={dict('PC.Pages.SystemPaymentEarnings.developerCount')}
+            value={summary?.developerCount ?? 0}
           />
         </div>
       </div>
@@ -231,7 +240,8 @@ const MyEarnings: React.FC = () => {
         columns={columns}
         request={async (params) => {
           try {
-            const res = await apiListMyEarnings({
+            const res = await apiListDevEarnings({
+              keyword: params.developerName,
               pageNum: params.current,
               pageSize: params.pageSize,
             });
@@ -244,8 +254,8 @@ const MyEarnings: React.FC = () => {
             }
           } catch {}
           return {
-            data: MOCK_EARNINGS,
-            total: MOCK_EARNINGS.length,
+            data: MOCK_DEV_EARNINGS,
+            total: MOCK_DEV_EARNINGS.length,
             success: true,
           };
         }}
@@ -254,4 +264,4 @@ const MyEarnings: React.FC = () => {
   );
 };
 
-export default MyEarnings;
+export default PaymentEarnings;

@@ -6,6 +6,7 @@ import {
   apiTogglePricingPlan,
 } from '@/services/subscriptionService';
 import type { PricingPlanInfo } from '@/types/interfaces/subscription';
+import { PricingCycleEnum } from '@/types/interfaces/subscription';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
@@ -18,6 +19,42 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const MOCK_PRICING_PLANS: PricingPlanInfo[] = [
+  {
+    id: 1,
+    spaceId: 0,
+    name: 'Basic Plan',
+    description: '基础订阅计划，包含核心功能',
+    price: 99,
+    cycle: PricingCycleEnum.Monthly,
+    enabled: true,
+    createdAt: '2026-01-15T08:00:00Z',
+    updatedAt: '2026-04-01T08:00:00Z',
+  },
+  {
+    id: 2,
+    spaceId: 0,
+    name: 'Pro Plan',
+    description: '专业计划，包含高级功能和更高限额',
+    price: 269,
+    cycle: PricingCycleEnum.Quarterly,
+    enabled: true,
+    createdAt: '2026-01-15T08:00:00Z',
+    updatedAt: '2026-04-01T08:00:00Z',
+  },
+  {
+    id: 3,
+    spaceId: 0,
+    name: 'Enterprise Plan',
+    description: '企业级计划，无限访问量和专属支持',
+    price: 999,
+    cycle: PricingCycleEnum.Yearly,
+    enabled: false,
+    createdAt: '2026-01-15T08:00:00Z',
+    updatedAt: '2026-04-01T08:00:00Z',
+  },
+];
+
 const SpaceResourcePricing: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -25,13 +62,15 @@ const SpaceResourcePricing: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [openModal, setOpenModal] = useState(false);
   const [editPlan, setEditPlan] = useState<PricingPlanInfo | null>(null);
-  const [planList, setPlanList] = useState<PricingPlanInfo[]>([]);
+  const [planList, setPlanList] =
+    useState<PricingPlanInfo[]>(MOCK_PRICING_PLANS);
 
   const { loading, run: runList } = useRequest(
     () => apiListPricingPlans(spaceId),
     {
       manual: true,
-      onSuccess: (res) => setPlanList(res?.data ?? []),
+      onSuccess: (res) =>
+        setPlanList(res?.data?.length ? res.data : MOCK_PRICING_PLANS),
     },
   );
 

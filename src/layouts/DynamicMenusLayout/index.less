@@ -26,6 +26,9 @@
   }
 
   .nav-menus {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     padding-top: @padding;
     // width: 200px;
     box-sizing: border-box;
@@ -36,6 +39,16 @@
     position: relative;
     background: @navSecondMenuBg;
     border-radius: @borderRadiusLg 0 0 @borderRadiusLg;
+
+    .nav-menus-scroll {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .integral-footer {
+      padding: 12px 0;
+      border-top: 1px solid var(--xagi-layout-border-primary);
+    }
 
     .menu-title {
       color: @navSecondMenuText;

@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -19,9 +20,58 @@ import { Button, Tag, message } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';
 
+const MOCK_MY_SUBSCRIPTIONS: UserSubscriptionInfo[] = [
+  {
+    id: 1,
+    userId: 1001,
+    userName: '当前用户',
+    agentId: 1,
+    agentName: '代码助手',
+    planId: 1,
+    planName: 'Basic Plan',
+    price: 99,
+    cycle: PricingCycleEnum.Monthly,
+    status: SubscriptionStatusEnum.Active,
+    startAt: '2026-04-01T00:00:00Z',
+    expireAt: '2026-05-01T00:00:00Z',
+    createdAt: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    userId: 1001,
+    userName: '当前用户',
+    agentId: 2,
+    agentName: '数据分析师',
+    planId: 2,
+    planName: 'Pro Plan',
+    price: 269,
+    cycle: PricingCycleEnum.Quarterly,
+    status: SubscriptionStatusEnum.Expired,
+    startAt: '2026-01-15T00:00:00Z',
+    expireAt: '2026-04-15T00:00:00Z',
+    createdAt: '2026-01-15T00:00:00Z',
+  },
+  {
+    id: 3,
+    userId: 1001,
+    userName: '当前用户',
+    agentId: 3,
+    agentName: '写作助手',
+    planId: 3,
+    planName: 'Enterprise Plan',
+    price: 999,
+    cycle: PricingCycleEnum.Yearly,
+    status: SubscriptionStatusEnum.Cancelled,
+    startAt: '2026-02-01T00:00:00Z',
+    expireAt: '2027-02-01T00:00:00Z',
+    createdAt: '2026-02-01T00:00:00Z',
+  },
+];
+
 const MySubscriptions: React.FC = () => {
   const actionRef = useRef<ActionType>();
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(350);
+  const [purchaseOpen, setPurchaseOpen] = useState<boolean>(false);
 
   const cycleLabel = useMemo(
     () => ({
@@ -186,10 +236,7 @@ const MySubscriptions: React.FC = () => {
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.MySubscriptions.pageTitle')}
       rightSlot={
-        <Button
-          type="primary"
-          onClick={() => history.push('/more-page/credit-records')}
-        >
+        <Button type="primary" onClick={() => setPurchaseOpen(true)}>
           {dict('PC.Pages.MorePage.MySubscriptions.buyCredits')}
         </Button>
       }
@@ -232,21 +279,34 @@ const MySubscriptions: React.FC = () => {
         actionRef={actionRef}
         columns={columns}
         request={async (params) => {
-          const res = await apiListMySubscriptions({
-            keyword: params.agentName,
-            status: params.status,
-            pageNum: params.current,
-            pageSize: params.pageSize,
-          });
-          if (res?.code === SUCCESS_CODE) {
-            return {
-              data: res.data?.list ?? [],
-              total: res.data?.total ?? 0,
-              success: true,
-            };
-          }
-          return { data: [], total: 0, success: false };
+          try {
+            const res = await apiListMySubscriptions({
+              keyword: params.agentName,
+              status: params.status,
+              pageNum: params.current,
+              pageSize: params.pageSize,
+            });
+            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+              return {
+                data: res.data.list,
+                total: res.data.total,
+                success: true,
+              };
+            }
+          } catch {}
+          return {
+            data: MOCK_MY_SUBSCRIPTIONS,
+            total: MOCK_MY_SUBSCRIPTIONS.length,
+            success: true,
+          };
         }}
+      />
+
+      {/* 侧边“增购积分”入口：由我的订阅页统一弹出购买弹框 */}
+      <CreditsPurchaseModal
+        open={purchaseOpen}
+        onCancel={() => setPurchaseOpen(false)}
+        onSuccess={fetchCredits}
       />
     </WorkspaceLayout>
   );

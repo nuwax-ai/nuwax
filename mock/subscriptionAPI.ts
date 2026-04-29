@@ -539,4 +539,119 @@ export default {
       ),
     );
   },
+
+  // ── 系统管理 - 支付与收益（开发者） ──
+
+  'GET /api/system/dev-earnings-summary': (_req: any, res: any) => {
+    res.json(
+      S({
+        totalEarnings: 85600,
+        monthlyEarnings: 12400,
+        pendingSettlement: 3600,
+        developerCount: 12,
+      }),
+    );
+  },
+
+  'GET /api/system/dev-earnings': (req: any, res: any) => {
+    const earnings = [
+      {
+        id: 1,
+        developerName: 'TechStudio',
+        agentName: 'Code Assistant',
+        userName: 'Alice Wang',
+        planName: 'Basic Plan',
+        cycle: 'monthly',
+        earnings: 79,
+        settlementStatus: 'settled',
+        createdAt: '2026-04-01T00:00:00Z',
+      },
+      {
+        id: 2,
+        developerName: 'DataViz Inc.',
+        agentName: 'Data Analyst',
+        userName: 'Bob Li',
+        planName: 'Pro Plan',
+        cycle: 'quarterly',
+        earnings: 215,
+        settlementStatus: 'settled',
+        createdAt: '2026-03-15T00:00:00Z',
+      },
+      {
+        id: 3,
+        developerName: 'AI Writer Co.',
+        agentName: 'Writing Assistant',
+        userName: 'Diana Chen',
+        planName: 'Enterprise Plan',
+        cycle: 'yearly',
+        earnings: 799,
+        settlementStatus: 'pending',
+        createdAt: '2026-04-10T00:00:00Z',
+      },
+      {
+        id: 4,
+        developerName: 'TechStudio',
+        agentName: 'Code Assistant',
+        userName: 'Charlie Zhang',
+        planName: 'Basic Plan',
+        cycle: 'monthly',
+        earnings: 79,
+        settlementStatus: 'settled',
+        createdAt: '2026-03-01T00:00:00Z',
+      },
+      {
+        id: 5,
+        developerName: 'DataViz Inc.',
+        agentName: 'Smart Report',
+        userName: 'Eve Liu',
+        planName: 'Pro Plan',
+        cycle: 'monthly',
+        earnings: 215,
+        settlementStatus: 'pending',
+        createdAt: '2026-04-20T00:00:00Z',
+      },
+      {
+        id: 6,
+        developerName: 'CloudBot Labs',
+        agentName: 'Customer Support AI',
+        userName: 'Frank Wang',
+        planName: 'Enterprise Plan',
+        cycle: 'yearly',
+        earnings: 799,
+        settlementStatus: 'settled',
+        createdAt: '2026-02-01T00:00:00Z',
+      },
+    ];
+    const { keyword } = req.query;
+    let filtered = [...earnings];
+    if (keyword)
+      filtered = filtered.filter(
+        (e) =>
+          e.developerName.includes(keyword) ||
+          e.agentName.includes(keyword) ||
+          e.userName.includes(keyword),
+      );
+    res.json(
+      S(
+        paginate(
+          filtered,
+          Number(req.query.pageNum || 1),
+          Number(req.query.pageSize || 20),
+        ),
+      ),
+    );
+  },
+
+  // ── 系统管理 - 订阅与积分（管理员） ──
+
+  'GET /api/system/subscription-summary': (_req: any, res: any) => {
+    res.json(
+      S({
+        activeSubscriptions: 38,
+        totalUsers: 156,
+        monthlyRevenue: 24500,
+        totalCredits: 125000,
+      }),
+    );
+  },
 };

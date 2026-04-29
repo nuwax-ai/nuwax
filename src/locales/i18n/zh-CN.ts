@@ -4423,6 +4423,20 @@ export const ZH_CN: SystemLangMap = {
   'PC.Routes.themeConfig': '主题配置',
   'PC.Routes.userGroupManage': '用户组管理',
   'PC.Routes.userManagement': '用户管理',
+  'PC.Routes.devPaymentEarnings': '支付与收益（开发者）',
+  'PC.Routes.adminSubscriptionCredits': '订阅与积分（管理员）',
+  'PC.Routes.paymentConfig': '支付配置',
+  'PC.Routes.paymentMerchantInfo': '支付进件信息',
+  'PC.Routes.devPaymentInfo': '开发者付款信息',
+  'PC.Routes.devEarningsStats': '开发者收益统计',
+  'PC.Routes.devWithdrawal': '开发者提现管理',
+  'PC.Routes.paymentOrders': '支付订单查询',
+  'PC.Routes.subsBasicConfig': '基础配置',
+  'PC.Routes.subsPlans': '基础订阅套餐',
+  'PC.Routes.creditsPackages': '积分增购套餐',
+  'PC.Routes.userCreditsQuery': '用户积分查询',
+  'PC.Routes.creditsRecordsQuery': '积分明细查询',
+  'PC.Routes.subsOrders': '业务订单查询',
   'PC.Toast.AgentArrangeCreateVariableModal.updateSuccess': '变量更新成功',
   'PC.Toast.Global.clearedSuccessfully': '清除成功',
   'PC.Toast.Global.copiedSuccessfully': '复制成功',
@@ -4501,5 +4515,124 @@ export const ZH_CN: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.coverPreview': '演示文稿封面预览',
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 文件解析失败',
   'PC.Utils.PptxFallbackRenderer.previewAlt': '演示文稿预览',
-  'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 张幻灯片'
+  'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 张幻灯片',
+
+  // ── Common Global（补充）──────────────────────────────
+  'PC.Common.Global.confirmDelete': '确定要删除吗？',
+  'PC.Common.Global.createSuccess': '创建成功',
+  'PC.Common.Global.days': '天',
+  'PC.Common.Global.deleteSuccess': '删除成功',
+  'PC.Common.Global.disableSuccess': '已停用',
+  'PC.Common.Global.enableSuccess': '已启用',
+  'PC.Common.Global.items': '条',
+  'PC.Common.Global.saveSuccess': '保存成功',
+  'PC.Common.Global.saving': '保存中...',
+
+  // ── 系统管理 - 订阅基础配置 ────────────────────────────
+  'PC.Pages.SystemSubscriptionBasicConfig.sectionSubscription': '订阅功能配置',
+  'PC.Pages.SystemSubscriptionBasicConfig.sectionCredits': '积分功能配置',
+  'PC.Pages.SystemSubscriptionBasicConfig.sectionWithdrawal': '提现配置',
+  'PC.Pages.SystemSubscriptionBasicConfig.platformFeeRate': '平台分成比例',
+  'PC.Pages.SystemSubscriptionBasicConfig.developerFeeRate': '开发者分成比例',
+  'PC.Pages.SystemSubscriptionBasicConfig.defaultTrialCount': '默认免费试用次数',
+  'PC.Pages.SystemSubscriptionBasicConfig.refundWindowDays': '退款窗口期',
+  'PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate': '积分汇率（积分/元）',
+  'PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRateHint': '1 元人民币可兑换的积分数量',
+  'PC.Pages.SystemSubscriptionBasicConfig.withdrawalFeeRate': '提现手续费率',
+
+  // ── 系统管理 - 积分增购套餐 ────────────────────────────
+  'PC.Pages.SystemCreditPackages.colName': '套餐名称',
+  'PC.Pages.SystemCreditPackages.colCredits': '积分数量',
+  'PC.Pages.SystemCreditPackages.colPrice': '售价',
+  'PC.Pages.SystemCreditPackages.colStatus': '状态',
+  'PC.Pages.SystemCreditPackages.createPackage': '新建套餐',
+  'PC.Pages.SystemCreditPackages.editPackage': '编辑套餐',
+  'PC.Pages.SystemCreditPackages.fieldName': '套餐名称',
+  'PC.Pages.SystemCreditPackages.fieldCredits': '积分数量',
+  'PC.Pages.SystemCreditPackages.fieldPrice': '售价（元）',
+  'PC.Pages.SystemCreditPackages.fieldOriginalPrice': '原价（元）',
+  'PC.Pages.SystemCreditPackages.fieldTag': '推荐标签',
+  'PC.Pages.SystemCreditPackages.fieldTagPlaceholder': '如：热门、最划算',
+  'PC.Pages.SystemCreditPackages.fieldEnabled': '上架状态',
+
+  // ── 系统管理 - 用户积分查询 ────────────────────────────
+  'PC.Pages.SystemUserCredits.colUser': '用户',
+  'PC.Pages.SystemUserCredits.colBalance': '当前余额',
+  'PC.Pages.SystemUserCredits.colTotalRecharge': '累计充值',
+  'PC.Pages.SystemUserCredits.colTotalConsume': '累计消耗',
+  'PC.Pages.SystemUserCredits.colLastUpdated': '最后操作时间',
+
+  // ── 系统管理 - 积分流水查询 ────────────────────────────
+  'PC.Pages.SystemCreditRecords.colUser': '用户',
+
+  // ── 系统管理 - 业务订单查询 ────────────────────────────
+  'PC.Pages.SystemSubsOrders.colUser': '用户',
+
+  // ── 系统管理 - 支付配置 ────────────────────────────────
+  'PC.Pages.SystemPaymentConfig.tabAlipay': '支付宝',
+  'PC.Pages.SystemPaymentConfig.tabWechat': '微信支付',
+  'PC.Pages.SystemPaymentConfig.privateKey': '应用私钥',
+  'PC.Pages.SystemPaymentConfig.privateKeyPlaceholder': '请粘贴 RSA 私钥内容',
+  'PC.Pages.SystemPaymentConfig.alipayPublicKey': '支付宝公钥',
+  'PC.Pages.SystemPaymentConfig.alipayPublicKeyPlaceholder': '请粘贴支付宝公钥内容',
+  'PC.Pages.SystemPaymentConfig.notifyUrl': '回调通知地址',
+  'PC.Pages.SystemPaymentConfig.mchId': '商户号',
+  'PC.Pages.SystemPaymentConfig.apiKey': 'API 密钥',
+  'PC.Pages.SystemPaymentConfig.apiKeyPlaceholder': '请输入 API v3 密钥',
+
+  // ── 系统管理 - 商户进件信息 ────────────────────────────
+  'PC.Pages.SystemMerchantInfo.companyName': '公司名称',
+  'PC.Pages.SystemMerchantInfo.creditCode': '统一社会信用代码',
+  'PC.Pages.SystemMerchantInfo.legalPerson': '法人代表',
+  'PC.Pages.SystemMerchantInfo.contactName': '联系人',
+  'PC.Pages.SystemMerchantInfo.contactPhone': '联系电话',
+  'PC.Pages.SystemMerchantInfo.contactEmail': '联系邮箱',
+  'PC.Pages.SystemMerchantInfo.statusPending': '审核中',
+  'PC.Pages.SystemMerchantInfo.statusApproved': '审核通过',
+  'PC.Pages.SystemMerchantInfo.statusRejected': '审核未通过',
+  'PC.Pages.SystemMerchantInfo.rejectedHint': '请修改信息后重新提交审核',
+
+  // ── 系统管理 - 开发者收款账户 ─────────────────────────
+  'PC.Pages.SystemDevPayment.colDeveloper': '开发者',
+  'PC.Pages.SystemDevPayment.colAccountType': '账户类型',
+  'PC.Pages.SystemDevPayment.colAccountNo': '账号',
+  'PC.Pages.SystemDevPayment.colRealName': '真实姓名',
+  'PC.Pages.SystemDevPayment.colBankName': '开户行',
+  'PC.Pages.SystemDevPayment.colCreatedAt': '添加时间',
+  'PC.Pages.SystemDevPayment.typeAlipay': '支付宝',
+  'PC.Pages.SystemDevPayment.typeBankCard': '银行卡',
+
+  // ── 系统管理 - 提现管理 ────────────────────────────────
+  'PC.Pages.SystemWithdrawal.colDeveloper': '开发者',
+  'PC.Pages.SystemWithdrawal.colAmount': '申请金额',
+  'PC.Pages.SystemWithdrawal.colAccount': '收款账户',
+  'PC.Pages.SystemWithdrawal.colCreatedAt': '申请时间',
+  'PC.Pages.SystemWithdrawal.colStatus': '状态',
+  'PC.Pages.SystemWithdrawal.statusPending': '待审核',
+  'PC.Pages.SystemWithdrawal.statusApproved': '已通过',
+  'PC.Pages.SystemWithdrawal.statusRejected': '已拒绝',
+  'PC.Pages.SystemWithdrawal.approve': '通过',
+  'PC.Pages.SystemWithdrawal.reject': '拒绝',
+  'PC.Pages.SystemWithdrawal.confirmApprove': '确认通过该提现申请？',
+  'PC.Pages.SystemWithdrawal.approveSuccess': '已审核通过',
+  'PC.Pages.SystemWithdrawal.rejectSuccess': '已拒绝',
+  'PC.Pages.SystemWithdrawal.rejectModalTitle': '填写拒绝原因',
+  'PC.Pages.SystemWithdrawal.rejectReasonLabel': '请填写拒绝原因（将通知给开发者）',
+  'PC.Pages.SystemWithdrawal.rejectReasonPlaceholder': '请输入拒绝原因',
+  'PC.Pages.SystemWithdrawal.statPending': '待审核',
+  'PC.Pages.SystemWithdrawal.statApproved': '本月已提现',
+  'PC.Pages.SystemWithdrawal.statTotal': '申请总数',
+
+  // ── 系统管理 - 开发者收益统计 ─────────────────────────
+  'PC.Pages.SystemPaymentEarnings.colDeveloper': '开发者',
+  'PC.Pages.SystemPaymentEarnings.totalEarnings': '平台总分成',
+  'PC.Pages.SystemPaymentEarnings.monthlyEarnings': '本月分成',
+  'PC.Pages.SystemPaymentEarnings.pendingSettlement': '待结算',
+  'PC.Pages.SystemPaymentEarnings.developerCount': '开发者数',
+
+  // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
+  'PC.Pages.SystemSubscriptionCredits.activeSubscriptions': '有效订阅数',
+  'PC.Pages.SystemSubscriptionCredits.totalUsers': '订阅用户数',
+  'PC.Pages.SystemSubscriptionCredits.monthlyRevenue': '本月订阅收入',
+  'PC.Pages.SystemSubscriptionCredits.totalCredits': '积分总量'
 };

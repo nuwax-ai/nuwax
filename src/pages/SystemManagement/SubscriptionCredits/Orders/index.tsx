@@ -1,12 +1,9 @@
-import { TableActions, XProTable } from '@/components/ProComponents';
+import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiListMyOrders,
-  apiRefundOrder,
-} from '@/services/subscriptionService';
-import type { OrderInfo } from '@/types/interfaces/subscription';
+import { apiListAdminOrders } from '@/services/subscriptionService';
+import type { AdminOrderInfo } from '@/types/interfaces/subscription';
 import {
   OrderStatusEnum,
   OrderTypeEnum,
@@ -14,13 +11,14 @@ import {
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { formatDateTime } from '@/utils/dateUtils';
 import { CopyOutlined } from '@ant-design/icons';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
 import { Button, Tag, Tooltip, message } from 'antd';
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 
-const MOCK_ORDERS: OrderInfo[] = [
+const MOCK_ADMIN_ORDERS: AdminOrderInfo[] = [
   {
     id: 1,
+    userName: 'Alice Wang',
     orderNo: 'ORD20260401001',
     productName: 'Basic Plan',
     orderType: OrderTypeEnum.Subscription,
@@ -31,6 +29,7 @@ const MOCK_ORDERS: OrderInfo[] = [
   },
   {
     id: 2,
+    userName: 'Bob Li',
     orderNo: 'ORD20260315001',
     productName: 'Pro Plan',
     orderType: OrderTypeEnum.Subscription,
@@ -41,38 +40,39 @@ const MOCK_ORDERS: OrderInfo[] = [
   },
   {
     id: 3,
+    userName: 'Diana Chen',
     orderNo: 'ORD20260220001',
     productName: '100 积分包',
     orderType: OrderTypeEnum.Credits,
-    amount: 50,
+    amount: 10,
     payMethod: '微信支付',
     status: OrderStatusEnum.Refunded,
     createdAt: '2026-02-20T09:00:00Z',
   },
   {
     id: 4,
+    userName: 'Eric Zhang',
     orderNo: 'ORD20260415001',
-    productName: '500 积分包',
+    productName: '企业包 10000 积分',
     orderType: OrderTypeEnum.Credits,
-    amount: 200,
-    status: OrderStatusEnum.Pending,
+    amount: 600,
+    payMethod: '支付宝',
+    status: OrderStatusEnum.Paid,
     createdAt: '2026-04-15T16:00:00Z',
+  },
+  {
+    id: 5,
+    userName: 'Fiona Liu',
+    orderNo: 'ORD20260429001',
+    productName: 'Enterprise Plan',
+    orderType: OrderTypeEnum.Subscription,
+    amount: 999,
+    status: OrderStatusEnum.Pending,
+    createdAt: '2026-04-29T08:30:00Z',
   },
 ];
 
-const MyOrders: React.FC = () => {
-  const actionRef = useRef<ActionType>();
-
-  const orderTypeLabel = useMemo(
-    () => ({
-      [OrderTypeEnum.Subscription]: dict(
-        'PC.Pages.MorePage.MyOrders.typeSubscription',
-      ),
-      [OrderTypeEnum.Credits]: dict('PC.Pages.MorePage.MyOrders.typeCredits'),
-    }),
-    [],
-  );
-
+const SubsOrders: React.FC = () => {
   const statusConfig = useMemo(
     () => ({
       [OrderStatusEnum.Paid]: {
@@ -91,23 +91,13 @@ const MyOrders: React.FC = () => {
     [],
   );
 
-  const handleCopyOrderNo = (orderNo: string) => {
-    copyTextToClipboard(orderNo, () => {
-      message.success(dict('PC.Pages.MorePage.MyOrders.copied'));
-    });
-  };
-
-  const handleRefund = async (id: number) => {
-    try {
-      await apiRefundOrder(id);
-      message.success(dict('PC.Pages.MorePage.MyOrders.refundSuccess'));
-      actionRef.current?.reload();
-    } catch {
-      message.error(dict('PC.Pages.MorePage.MyOrders.refundFailed'));
-    }
-  };
-
-  const columns: ProColumns<OrderInfo>[] = [
+  const columns: ProColumns<AdminOrderInfo>[] = [
+    {
+      title: dict('PC.Pages.SystemSubsOrders.colUser'),
+      dataIndex: 'userName',
+      key: 'userName',
+      ellipsis: true,
+    },
     {
       title: dict('PC.Pages.MorePage.MyOrders.colOrderNo'),
       dataIndex: 'orderNo',
@@ -122,7 +112,11 @@ const MyOrders: React.FC = () => {
               type="text"
               size="small"
               icon={<CopyOutlined />}
-              onClick={() => handleCopyOrderNo(record.orderNo)}
+              onClick={() =>
+                copyTextToClipboard(record.orderNo, () =>
+                  message.success(dict('PC.Pages.MorePage.MyOrders.copied')),
+                )
+              }
               style={{ marginLeft: 4 }}
             />
           </Tooltip>
@@ -141,7 +135,9 @@ const MyOrders: React.FC = () => {
       key: 'orderType',
       search: false,
       render: (_, record) =>
-        orderTypeLabel[record.orderType] || record.orderType,
+        record.orderType === OrderTypeEnum.Subscription
+          ? dict('PC.Pages.MorePage.MyOrders.typeSubscription')
+          : dict('PC.Pages.MorePage.MyOrders.typeCredits'),
       valueEnum: {
         [OrderTypeEnum.Subscription]: {
           text: dict('PC.Pages.MorePage.MyOrders.typeSubscription'),
@@ -156,15 +152,14 @@ const MyOrders: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
-      render: (_, record) =>
-        `${dict('PC.Common.Global.currencySymbol')}${record.amount}`,
+      render: (_, record) => `¥${record.amount}`,
     },
     {
       title: dict('PC.Pages.MorePage.MyOrders.colPayMethod'),
       dataIndex: 'payMethod',
       key: 'payMethod',
       search: false,
-      render: (val) => val || dict('PC.Common.Global.emptyPlaceholder'),
+      render: (val) => val || '-',
     },
     {
       title: dict('PC.Pages.MorePage.MyOrders.colCreatedAt'),
@@ -179,8 +174,8 @@ const MyOrders: React.FC = () => {
       key: 'status',
       search: false,
       render: (_, record) => {
-        const config = statusConfig[record.status];
-        return <Tag color={config?.color}>{config?.label}</Tag>;
+        const cfg = statusConfig[record.status];
+        return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
       },
       valueEnum: {
         [OrderStatusEnum.Paid]: {
@@ -194,43 +189,17 @@ const MyOrders: React.FC = () => {
         },
       },
     },
-    {
-      title: dict('PC.Pages.MorePage.MyOrders.colAction'),
-      key: 'action',
-      search: false,
-      width: 120,
-      render: (_, record) =>
-        record.status === OrderStatusEnum.Paid ? (
-          <TableActions
-            record={record}
-            actions={[
-              {
-                key: 'refund',
-                label: dict('PC.Pages.MorePage.MyOrders.applyRefund'),
-                danger: true,
-                confirm: {
-                  title: dict('PC.Pages.MorePage.MyOrders.confirmRefund'),
-                },
-                onClick: async (r) => {
-                  await handleRefund(r.id);
-                },
-              },
-            ]}
-          />
-        ) : null,
-    },
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.MorePage.MyOrders.pageTitle')}>
-      <XProTable<OrderInfo>
+    <WorkspaceLayout title={dict('PC.Routes.subsOrders')}>
+      <XProTable<AdminOrderInfo>
         rowKey="id"
-        actionRef={actionRef}
         columns={columns}
         request={async (params) => {
           try {
-            const res = await apiListMyOrders({
-              keyword: params.productName,
+            const res = await apiListAdminOrders({
+              keyword: params.userName,
               orderType: params.orderType,
               status: params.status,
               pageNum: params.current,
@@ -245,8 +214,8 @@ const MyOrders: React.FC = () => {
             }
           } catch {}
           return {
-            data: MOCK_ORDERS,
-            total: MOCK_ORDERS.length,
+            data: MOCK_ADMIN_ORDERS,
+            total: MOCK_ADMIN_ORDERS.length,
             success: true,
           };
         }}
@@ -255,4 +224,4 @@ const MyOrders: React.FC = () => {
   );
 };
 
-export default MyOrders;
+export default SubsOrders;

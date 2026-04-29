@@ -9,13 +9,38 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const FALLBACK_PLANS: PricingPlanInfo[] = [
+  {
+    id: 1,
+    spaceId: 1,
+    name: 'Basic Plan',
+    description: '',
+    price: 99,
+    cycle: PricingCycleEnum.Monthly,
+    enabled: true,
+    createdAt: '',
+    updatedAt: '',
+  },
+  {
+    id: 2,
+    spaceId: 1,
+    name: 'Pro Plan',
+    description: '',
+    price: 269,
+    cycle: PricingCycleEnum.Quarterly,
+    enabled: true,
+    createdAt: '',
+    updatedAt: '',
+  },
+];
+
 interface Props {
   plans: PricingPlanInfo[];
   onViewPlans: () => void;
 }
 
 const SubscriptionPrompt: React.FC<Props> = ({ plans, onViewPlans }) => {
-  const displayPlans = plans.slice(0, 2);
+  const displayPlans = (plans.length > 0 ? plans : FALLBACK_PLANS).slice(0, 2);
 
   const cycleLabel = useMemo(
     () => ({
