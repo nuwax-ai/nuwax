@@ -1,0 +1,3 @@
+"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[2401],{23288:function(h,a,_){_.r(a);var s=_(48305),t=_.n(s),o=_(85052),v=_(75271),e=_(7892),r=_(52676),u=function(){var d=(0,e.useSearchParams)(),i=t()(d,1),m=i[0],n=m.get("agentId"),l=n&&!isNaN(Number(n))?Number(n):null,E=function(P,c){e.history.push("/home/chat/".concat(P,"/").concat(c))};return(0,r.jsx)(o.Z,{agentId:l,onClickLink:E})};a.default=u}}]);})();
+
+//# sourceMappingURL=p__HistoryConversation__index.1b207430.async.js.map
