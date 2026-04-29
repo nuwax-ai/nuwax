@@ -349,7 +349,6 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   ) {
     return null;
   }
-  console.log('innerProcessing', innerProcessing);
 
   return (
     <div
