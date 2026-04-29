@@ -1,6 +1,6 @@
 {
   "name": "nuwax-frontend",
-  "version": "1.1.6",
+  "version": "1.1.1",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -13,14 +13,12 @@
   "license": "Apache-2.0",
   "author": "Nuwax AI FE Team",
   "scripts": {
-    "audit:a11y": "node scripts/a11y-audit.js",
     "prebuild:dev": "node scripts/generate-version.js",
     "build:dev": "cross-env UMI_ENV=development max build",
     "build:m": "node scripts/download-mobile-build.js",
     "prebuild:prod": "node scripts/generate-version.js",
     "build:prod": "cross-env UMI_ENV=production max build",
     "build:prod:m": "cross-env UMI_ENV=production max build && node scripts/download-mobile-build.js",
-    "check:i18n-hardcoded": "node scripts/check-hardcoded-i18n.js",
     "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development max dev",
     "format": "prettier --cache --write .",
@@ -32,7 +30,6 @@
     "release:major": "standard-version --release-as major",
     "release:minor": "standard-version --release-as minor",
     "release:patch": "standard-version --release-as patch",
-    "report:i18n-governance": "node scripts/i18n-governance-report.js",
     "serve": "http-server ./dist",
     "setup": "max setup",
     "start": "npm run dev",
@@ -53,6 +50,7 @@
     "@ant-design/plots": "^2.6.8",
     "@ant-design/pro-components": "2.8.10",
     "@ant-design/x": "^1.0.5",
+    "@antv/g6": "^4.8.25",
     "@antv/x6": "^2.18.1",
     "@antv/x6-plugin-clipboard": "^2.1.6",
     "@antv/x6-plugin-history": "^2.2.4",
@@ -78,8 +76,8 @@
     "@tiptap/starter-kit": "^2.27.1",
     "@tiptap/suggestion": "^2.27.1",
     "@types/markdown-it": "^14.1.2",
-    "@umijs/max": "^4.6.46",
-    "@umijs/utils": "^4.6.46",
+    "@umijs/max": "^4.4.2",
+    "@umijs/utils": "^4.4.11",
     "ahooks": "^3.8.4",
     "antd": "^5.4.0",
     "classnames": "2.0.0",
@@ -120,15 +118,14 @@
     "turndown": "^7.2.1",
     "unist-util-visit": "^5.0.0",
     "ut2": "^1.15.0",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@axe-core/cli": "^4.11.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/clean-css": "^4.2.11",
-    "@types/jest-axe": "^3.5.9",
     "@types/lodash": "^4.17.16",
     "@types/prismjs": "^1.26.5",
     "@types/qs": "^6.14.0",
@@ -142,7 +139,6 @@
     "cross-env": "^7.0.3",
     "esbuild": "^0.27.0",
     "husky": "^9.1.7",
-    "jest-axe": "^10.0.0",
     "jsdom": "^27.3.0",
     "lint-staged": "^13.2.0",
     "prettier": "^2.8.7",
@@ -154,6 +150,6 @@
   },
   "packageManager": "pnpm@10.27.0",
   "engines": {
-    "node": ">=22"
+    "node": "> 18.0.0"
   }
 }
