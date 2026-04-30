@@ -11,7 +11,8 @@ import {
 import { formatDate } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Card, Col, Row, Statistic, Tag } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import OrderDetailDrawer from './OrderDetailDrawer';
 
 interface SubsOrderExt extends AdminOrderInfo {
   startAt?: string;
@@ -85,6 +86,13 @@ const MOCK_STATS = {
 };
 
 const SubsOrders: React.FC = () => {
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<any>();
+  const handleCloseDetails = useCallback(() => {
+    setDetailsVisible(false);
+    setCurrentRecord(undefined);
+  }, []);
+
   const statusConfig = useMemo(
     () => ({
       [OrderStatusEnum.Paid]: {
@@ -201,7 +209,10 @@ const SubsOrders: React.FC = () => {
             {
               key: 'detail',
               label: dict('PC.Pages.SystemSubsOrders.viewDetail'),
-              onClick: () => {},
+              onClick: (r) => {
+                setCurrentRecord(r);
+                setDetailsVisible(true);
+              },
             },
           ]}
         />
@@ -210,75 +221,82 @@ const SubsOrders: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Routes.subsOrders')}>
-      {/* 统计卡 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.statTotalRecords')}
-              value={MOCK_STATS.totalRecords}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.statSubscriptionCount')}
-              value={MOCK_STATS.subscriptionCount}
-              valueStyle={{ color: '#1677ff' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.statCreditsCount')}
-              value={MOCK_STATS.creditsCount}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.statTotalAmount')}
-              value={MOCK_STATS.totalAmount}
-              precision={0}
-              prefix={dict('PC.Common.Global.currencySymbol')}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <>
+      <WorkspaceLayout title={dict('PC.Routes.subsOrders')}>
+        {/* 统计卡 */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemSubsOrders.statTotalRecords')}
+                value={MOCK_STATS.totalRecords}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemSubsOrders.statSubscriptionCount')}
+                value={MOCK_STATS.subscriptionCount}
+                valueStyle={{ color: '#1677ff' }}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemSubsOrders.statCreditsCount')}
+                value={MOCK_STATS.creditsCount}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemSubsOrders.statTotalAmount')}
+                value={MOCK_STATS.totalAmount}
+                precision={0}
+                prefix={dict('PC.Common.Global.currencySymbol')}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-      <XProTable<SubsOrderExt>
-        rowKey="id"
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListAdminOrders({
-              keyword: params.userName,
-              orderType: params.orderType,
-              status: params.status,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_ADMIN_ORDERS,
-            total: MOCK_ADMIN_ORDERS.length,
-            success: true,
-          };
-        }}
+        <XProTable<SubsOrderExt>
+          rowKey="id"
+          columns={columns}
+          request={async (params) => {
+            try {
+              const res = await apiListAdminOrders({
+                keyword: params.userName,
+                orderType: params.orderType,
+                status: params.status,
+                pageNum: params.current,
+                pageSize: params.pageSize,
+              });
+              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+                return {
+                  data: res.data.list,
+                  total: res.data.total,
+                  success: true,
+                };
+              }
+            } catch {}
+            return {
+              data: MOCK_ADMIN_ORDERS,
+              total: MOCK_ADMIN_ORDERS.length,
+              success: true,
+            };
+          }}
+        />
+      </WorkspaceLayout>
+      <OrderDetailDrawer
+        open={detailsVisible}
+        record={currentRecord}
+        onClose={handleCloseDetails}
       />
-    </WorkspaceLayout>
+    </>
   );
 };
 

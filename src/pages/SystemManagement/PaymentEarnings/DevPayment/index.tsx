@@ -8,7 +8,8 @@ import { DevPaymentTypeEnum } from '@/types/interfaces/subscription';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
+import PaymentDetailDrawer from './PaymentDetailDrawer';
 
 interface DevPaymentExt extends DevPaymentAccountInfo {
   email: string;
@@ -53,6 +54,13 @@ const MOCK_ACCOUNTS: DevPaymentExt[] = [
 ];
 
 const DevPayment: React.FC = () => {
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<any>();
+  const handleCloseDetails = useCallback(() => {
+    setDetailsVisible(false);
+    setCurrentRecord(undefined);
+  }, []);
+
   const columns: ProColumns<DevPaymentExt>[] = [
     {
       title: dict('PC.Pages.SystemDevPayment.colDeveloperId'),
@@ -110,7 +118,10 @@ const DevPayment: React.FC = () => {
             {
               key: 'detail',
               label: dict('PC.Pages.SystemDevPayment.viewDetail'),
-              onClick: () => {},
+              onClick: (r) => {
+                setCurrentRecord(r);
+                setDetailsVisible(true);
+              },
             },
           ]}
         />
@@ -119,33 +130,40 @@ const DevPayment: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Routes.devPaymentInfo')}>
-      <XProTable<DevPaymentExt>
-        rowKey="id"
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListDevPaymentAccounts({
-              keyword: params.developerName,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_ACCOUNTS,
-            total: MOCK_ACCOUNTS.length,
-            success: true,
-          };
-        }}
+    <>
+      <WorkspaceLayout title={dict('PC.Routes.devPaymentInfo')}>
+        <XProTable<DevPaymentExt>
+          rowKey="id"
+          columns={columns}
+          request={async (params) => {
+            try {
+              const res = await apiListDevPaymentAccounts({
+                keyword: params.developerName,
+                pageNum: params.current,
+                pageSize: params.pageSize,
+              });
+              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+                return {
+                  data: res.data.list,
+                  total: res.data.total,
+                  success: true,
+                };
+              }
+            } catch {}
+            return {
+              data: MOCK_ACCOUNTS,
+              total: MOCK_ACCOUNTS.length,
+              success: true,
+            };
+          }}
+        />
+      </WorkspaceLayout>
+      <PaymentDetailDrawer
+        open={detailsVisible}
+        record={currentRecord}
+        onClose={handleCloseDetails}
       />
-    </WorkspaceLayout>
+    </>
   );
 };
 

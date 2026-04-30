@@ -351,6 +351,7 @@ export interface SkillPricingInfo {
 
 export interface WithdrawalInfo {
   id: number;
+  developerId?: number;
   developerName: string;
   amount: number;
   accountType: DevPaymentTypeEnum;

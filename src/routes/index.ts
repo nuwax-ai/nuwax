@@ -398,6 +398,12 @@ const routes = [
                 name: '支付订单查询',
                 component: '@/pages/SystemManagement/PaymentEarnings/Orders',
               },
+              {
+                path: 'earnings-detail',
+                name: '收益明细',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/EarningsDetail',
+              },
             ],
           },
           {

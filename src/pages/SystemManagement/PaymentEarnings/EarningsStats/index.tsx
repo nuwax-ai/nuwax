@@ -11,7 +11,7 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Card, Col, Row, Select, Statistic, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 
 interface DevEarningSummary {
   id: number;
@@ -147,7 +147,12 @@ const EarningsStats: React.FC = () => {
             {
               key: 'detail',
               label: dict('PC.Pages.SystemPaymentEarnings.viewDetail'),
-              onClick: () => {},
+              onClick: (r) =>
+                history.push(
+                  `/system/payment-earnings/earnings-detail?developerId=${
+                    r.id
+                  }&developerName=${encodeURIComponent(r.developerName)}`,
+                ),
             },
           ]}
         />

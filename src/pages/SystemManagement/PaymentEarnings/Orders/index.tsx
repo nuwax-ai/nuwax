@@ -1,4 +1,4 @@
-import { XProTable } from '@/components/ProComponents';
+import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -13,7 +13,8 @@ import { formatDateTime } from '@/utils/dateUtils';
 import { CopyOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Button, Card, Col, Row, Statistic, Tag, Tooltip, message } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import OrderDetailDrawer from './OrderDetailDrawer';
 
 interface PaymentOrderExt extends AdminOrderInfo {
   netAmount: number;
@@ -101,6 +102,13 @@ const MOCK_STATS = {
 };
 
 const Orders: React.FC = () => {
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<any>();
+  const handleCloseDetails = useCallback(() => {
+    setDetailsVisible(false);
+    setCurrentRecord(undefined);
+  }, []);
+
   const statusConfig = useMemo(
     () => ({
       [OrderStatusEnum.Paid]: {
@@ -243,83 +251,111 @@ const Orders: React.FC = () => {
         },
       },
     },
+    {
+      title: dict('PC.Common.Global.action'),
+      key: 'action',
+      search: false,
+      width: 100,
+      render: (_, record) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'detail',
+              label: dict('PC.Pages.SystemPaymentOrders.viewDetail'),
+              onClick: (r) => {
+                setCurrentRecord(r);
+                setDetailsVisible(true);
+              },
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
-      {/* 统计卡 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentOrders.statTotalOrders')}
-              value={MOCK_STATS.totalOrders}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentOrders.statTotalAmount')}
-              value={MOCK_STATS.totalAmount}
-              precision={0}
-              prefix="¥"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentOrders.statNetAmount')}
-              value={MOCK_STATS.netAmount}
-              precision={0}
-              prefix="¥"
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentOrders.statServiceFee')}
-              value={MOCK_STATS.serviceFee}
-              precision={0}
-              prefix="¥"
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <>
+      <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
+        {/* 统计卡 */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemPaymentOrders.statTotalOrders')}
+                value={MOCK_STATS.totalOrders}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemPaymentOrders.statTotalAmount')}
+                value={MOCK_STATS.totalAmount}
+                precision={0}
+                prefix="¥"
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemPaymentOrders.statNetAmount')}
+                value={MOCK_STATS.netAmount}
+                precision={0}
+                prefix="¥"
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card>
+              <Statistic
+                title={dict('PC.Pages.SystemPaymentOrders.statServiceFee')}
+                value={MOCK_STATS.serviceFee}
+                precision={0}
+                prefix="¥"
+                valueStyle={{ color: '#ff4d4f' }}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-      <XProTable<PaymentOrderExt>
-        rowKey="id"
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListAdminPaymentOrders({
-              keyword: params.userName,
-              status: params.status,
-              orderType: params.orderType,
-              payMethod: params.payMethod,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_PAYMENT_ORDERS,
-            total: MOCK_PAYMENT_ORDERS.length,
-            success: true,
-          };
-        }}
+        <XProTable<PaymentOrderExt>
+          rowKey="id"
+          columns={columns}
+          request={async (params) => {
+            try {
+              const res = await apiListAdminPaymentOrders({
+                keyword: params.userName,
+                status: params.status,
+                orderType: params.orderType,
+                payMethod: params.payMethod,
+                pageNum: params.current,
+                pageSize: params.pageSize,
+              });
+              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+                return {
+                  data: res.data.list,
+                  total: res.data.total,
+                  success: true,
+                };
+              }
+            } catch {}
+            return {
+              data: MOCK_PAYMENT_ORDERS,
+              total: MOCK_PAYMENT_ORDERS.length,
+              success: true,
+            };
+          }}
+        />
+      </WorkspaceLayout>
+      <OrderDetailDrawer
+        open={detailsVisible}
+        record={currentRecord}
+        onClose={handleCloseDetails}
       />
-    </WorkspaceLayout>
+    </>
   );
 };
 

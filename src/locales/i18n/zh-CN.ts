@@ -4853,6 +4853,33 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemPaymentOrders.payMethodWechat': '微信',
   'PC.Pages.SystemPaymentOrders.payMethodAlipay': '支付宝',
   'PC.Pages.SystemPaymentOrders.payMethodBank': '银行转账',
+  'PC.Pages.SystemPaymentOrders.drawerTitle': '支付订单详情',
+  'PC.Pages.SystemPaymentOrders.viewDetail': '详情',
+
+  // ── 系统管理 - 开发者付款信息 Drawer ────────────────────
+  'PC.Pages.SystemDevPayment.drawerTitle': '收款账户',
+
+  // ── 系统管理 - 收益明细子页面 ──────────────────────────
+  'PC.Pages.SystemEarningsDetail.title': '收益明细',
+  'PC.Pages.SystemEarningsDetail.subtitle': '{name} - 收益明细',
+  'PC.Pages.SystemEarningsDetail.btnBack': '返回收益列表',
+  'PC.Pages.SystemEarningsDetail.filterAll': '全部',
+  'PC.Pages.SystemEarningsDetail.filterSettled': '已结算',
+  'PC.Pages.SystemEarningsDetail.filterUnsettled': '未结算',
+  'PC.Pages.SystemEarningsDetail.colOrderNo': '订单编号/流水号',
+  'PC.Pages.SystemEarningsDetail.colItemName': '收益项名称',
+  'PC.Pages.SystemEarningsDetail.colEarningsAmount': '收益金额',
+  'PC.Pages.SystemEarningsDetail.colEarningsType': '收益类型',
+  'PC.Pages.SystemEarningsDetail.colEarningsTime': '收益时间',
+  'PC.Pages.SystemEarningsDetail.statTotal': '收益总额',
+  'PC.Pages.SystemEarningsDetail.statWithdrawn': '已提现',
+  'PC.Pages.SystemEarningsDetail.statAvailable': '可提现',
+  'PC.Pages.SystemEarningsDetail.statCount': '明细笔数',
+
+  // ── 系统管理 - 订阅详情 Drawer ──────────────────────────
+  'PC.Pages.SystemSubsOrders.drawerTitle': '订阅详情',
+  'PC.Pages.SystemSubsOrders.detailDeveloperInfo': '开发者信息',
+  'PC.Pages.SystemSubsOrders.detailSubscriptionInfo': '订阅信息',
 
   // ── 系统管理 - 积分订阅管理 ────────────────────────────
   'PC.Pages.SystemSubscriptionCredits.activeSubscriptions': '有效订阅数',

@@ -27,10 +27,12 @@ import {
   message,
 } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
+import { history } from 'umi';
 
 const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
   {
     id: 1,
+    developerId: 1,
     applicationNo: 'WD20260428001',
     developerName: 'Alice Wang',
     amount: 1580,
@@ -42,6 +44,7 @@ const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
   },
   {
     id: 2,
+    developerId: 2,
     applicationNo: 'WD20260420001',
     developerName: 'Bob Li',
     amount: 3200,
@@ -54,6 +57,7 @@ const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
   },
   {
     id: 3,
+    developerId: 3,
     applicationNo: 'WD20260415001',
     developerName: 'Carlos Dev',
     amount: 500,
@@ -67,6 +71,7 @@ const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
   },
   {
     id: 4,
+    developerId: 4,
     applicationNo: 'WD20260429001',
     developerName: 'Diana Chen',
     amount: 2100,
@@ -201,7 +206,12 @@ const Withdrawal: React.FC = () => {
             {
               key: 'earnings',
               label: dict('PC.Pages.SystemWithdrawal.viewEarnings'),
-              onClick: () => {},
+              onClick: (r) =>
+                history.push(
+                  `/system/payment-earnings/earnings-detail?developerId=${
+                    r.developerId ?? r.id
+                  }&developerName=${encodeURIComponent(r.developerName)}`,
+                ),
             },
           ]}
         />
