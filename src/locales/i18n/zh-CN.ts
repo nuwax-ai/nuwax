@@ -4855,9 +4855,22 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemPaymentOrders.payMethodBank': '银行转账',
   'PC.Pages.SystemPaymentOrders.drawerTitle': '支付订单详情',
   'PC.Pages.SystemPaymentOrders.viewDetail': '详情',
+  'PC.Pages.SystemPaymentOrders.orderNo': '订单编号',
+  'PC.Pages.SystemPaymentOrders.payMethod': '支付方式',
+  'PC.Pages.SystemPaymentOrders.amount': '订单金额',
+  'PC.Pages.SystemPaymentOrders.netAmount': '实收金额',
+  'PC.Pages.SystemPaymentOrders.serviceFee': '支付服务费',
+  'PC.Pages.SystemPaymentOrders.status': '订单状态',
+  'PC.Pages.SystemPaymentOrders.createdAt': '创建时间',
+  'PC.Pages.SystemPaymentOrders.paidAt': '支付完成时间',
+  'PC.Pages.SystemPaymentOrders.remark': '备注',
 
   // ── 系统管理 - 开发者付款信息 Drawer ────────────────────
   'PC.Pages.SystemDevPayment.drawerTitle': '收款账户',
+  'PC.Pages.SystemDevPayment.sectionDeveloperInfo': '开发者信息',
+  'PC.Pages.SystemDevPayment.sectionPaymentAccount': '收款账户信息',
+  'PC.Pages.SystemDevPayment.settlementMethod': '结算方式',
+  'PC.Pages.SystemDevPayment.colBankCard': '银行卡号',
 
   // ── 系统管理 - 收益明细子页面 ──────────────────────────
   'PC.Pages.SystemEarningsDetail.title': '收益明细',
