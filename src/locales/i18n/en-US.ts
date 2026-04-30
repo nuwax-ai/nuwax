@@ -32,6 +32,7 @@ export const EN_US: SystemLangMap = {
   'PC.Common.Global.no': 'No',
   'PC.Common.Global.noData': 'No data',
   'PC.Common.Global.operation': 'Action',
+  'PC.Common.Global.operationFailed': 'Operation failed, please try again later',
   'PC.Common.Global.other': 'Other',
   'PC.Common.Global.pending': 'Pending',
   'PC.Common.Global.pleaseInput': 'Please enter',
@@ -3317,6 +3318,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceResourcePricing.categoryText': 'Text',
   'PC.Pages.SpaceResourcePricing.selectPlaceholder': 'Please select',
   'PC.Pages.SpaceResourcePricing.description': 'Description',
+  'PC.Pages.SpaceResourcePricing.searchToolPlaceholder': 'Search tool name...',
+  'PC.Pages.SpaceResourcePricing.periodOnce': 'per call',
 
   'PC.Pages.SpaceAgentSubscriptions.pageTitle': 'Agent Subscriptions',
   'PC.Pages.SpaceAgentSubscriptions.statusActive': 'Active',
@@ -3346,7 +3349,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceAgentSubscriptions.unlimited': 'Unlimited',
   'PC.Pages.SpaceAgentSubscriptions.callsPerDay': 'calls/day',
   'PC.Pages.SpaceAgentSubscriptions.confirmSubTitle': 'Confirm Subscription',
-  'PC.Pages.SpaceAgentSubscriptions.confirmSubDesc': 'Subscribe to {name}, amount {price}/{cycle}',
+  'PC.Pages.SpaceAgentSubscriptions.confirmSubDesc': 'Subscribe to {0}, amount {1}/{2}',
   'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeTitle': 'Upgrade Plan',
   'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeDesc': 'Upgrade to unlock more capabilities and resources',
   'PC.Pages.SpaceAgentSubscriptions.confirmDowngradeTitle': 'Downgrade Plan',
@@ -3362,6 +3365,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceAgentSubscriptions.toastUpgradeSuccess': 'Upgraded successfully',
   'PC.Pages.SpaceAgentSubscriptions.toastDowngradeSuccess': 'Downgraded',
   'PC.Pages.SpaceAgentSubscriptions.toastRenewSuccess': 'Renewed successfully, validity extended 30 days',
+  'PC.Pages.SpaceAgentSubscriptions.operationFailed': 'Operation failed, please try again later',
+  'PC.Pages.SpaceAgentSubscriptions.cycleMonthly': 'Monthly',
+  'PC.Pages.SpaceAgentSubscriptions.cycleQuarterly': 'Quarterly',
+  'PC.Pages.SpaceAgentSubscriptions.cycleYearly': 'Yearly',
 
   // ── Subscription Settings (admin CRUD) ──
   'PC.Pages.SpaceSubscriptionSettings.pageTitle': 'Subscription Settings',

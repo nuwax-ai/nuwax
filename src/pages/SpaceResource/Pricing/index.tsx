@@ -1,4 +1,6 @@
-import { XProTable } from '@/components/ProComponents';
+import CustomFormModal from '@/components/CustomFormModal';
+import { TableActions, XProTable } from '@/components/ProComponents';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiCreateModelPricing,
@@ -22,23 +24,23 @@ import type {
   SkillPricingInfo,
   ToolPricingInfo,
 } from '@/types/interfaces/subscription';
-import { modalConfirm } from '@/utils/ant-custom';
+import { formatPrice } from '@/utils/format';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   Button,
   Form,
   Input,
   InputNumber,
-  message,
-  Modal,
   Segmented,
   Select,
   Switch,
   Tag,
 } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useParams } from 'umi';
+import styles from './index.less';
+import { useCrudTab } from './useCrudTab';
 
 // ─── Category helpers ───
 
@@ -74,11 +76,7 @@ function getCatTag(cat: string) {
   return c ? <Tag color={c.color}>{c.label}</Tag> : <Tag>{cat}</Tag>;
 }
 
-function formatPrice(v: number) {
-  return v < 0.01 ? v.toFixed(4) : v.toFixed(2);
-}
-
-// ─── Tool modal selector data ───
+// ─── Modal selector catalogs ───
 
 const TOOL_CATALOG: { name: string; category: string; description: string }[] =
   [
@@ -220,10 +218,6 @@ const MODEL_CATALOG: { name: string; provider: string }[] = [
 // ═══════════════════════════════════════════
 
 const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
-  const [list, setList] = useState<ModelPricingInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState<ModelPricingInfo | null>(null);
   const [selectedModelTiers, setSelectedModelTiers] = useState<
     {
       label: string;
@@ -232,67 +226,19 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       cachePrice: number;
     }[]
   >([]);
-  const [form] = Form.useForm();
+  const actionRef = useRef<ActionType>();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await apiListModelPricing(spaceId);
-      if (res?.data) setList(res.data);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const crud = useCrudTab<ModelPricingInfo>({
+    spaceId,
+    listApi: apiListModelPricing,
+    createApi: apiCreateModelPricing,
+    updateApi: apiUpdateModelPricing,
+    deleteApi: apiDeleteModelPricing,
+    toggleApi: apiToggleModelPricing,
+  });
 
-  useEffect(() => {
-    load();
-  }, [spaceId]);
-
-  const openAdd = () => {
-    setEditItem(null);
-    setSelectedModelTiers([]);
-    form.resetFields();
-    setModalOpen(true);
-  };
-
-  const openEdit = (item: ModelPricingInfo) => {
-    setEditItem(item);
-    form.setFieldsValue(item);
-    setModalOpen(true);
-  };
-
-  const handleSave = async () => {
-    const values = await form.validateFields();
-    const payload = { ...values, tiers: editItem?.tiers || selectedModelTiers };
-    if (editItem) {
-      await apiUpdateModelPricing(editItem.id, payload);
-      message.success(dict('PC.Pages.SpaceResourcePricing.editSuccess'));
-    } else {
-      await apiCreateModelPricing(spaceId, payload);
-      message.success(dict('PC.Pages.SpaceResourcePricing.addSuccess'));
-    }
-    setModalOpen(false);
-    load();
-  };
-
-  const handleDelete = (item: ModelPricingInfo) => {
-    modalConfirm(
-      dict('PC.Common.Global.confirmDelete'),
-      item.name,
-      async () => {
-        await apiDeleteModelPricing(item.id);
-        message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-        load();
-      },
-    );
-  };
-
-  const handleToggle = async (item: ModelPricingInfo, enabled: boolean) => {
-    await apiToggleModelPricing(item.id, enabled);
-    setList((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, enabled } : p)),
-    );
-    message.success(dict('PC.Pages.SpaceResourcePricing.toggleSuccess'));
+  const handleSave = () => {
+    crud.handleSave({ tiers: crud.editItem?.tiers || selectedModelTiers });
   };
 
   const columns: ProColumns<ModelPricingInfo>[] = [
@@ -314,16 +260,19 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       key: 'tiers',
       width: 340,
       render: (_, record) => (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div className={styles.tierTags}>
           {record.tiers?.map((t, i) => (
-            <Tag
-              key={i}
-              color="blue"
-              style={{ fontSize: 11, whiteSpace: 'nowrap' }}
-            >
-              {t.label} | 入¥{formatPrice(t.inputPrice)} | 出¥
+            <Tag key={i} color="blue" className={styles.tierTag}>
+              {t.label} |{' '}
+              {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
+              {formatPrice(t.inputPrice)} |{' '}
+              {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
               {formatPrice(t.outputPrice)}
-              {t.cachePrice > 0 ? ` | 缓存¥{formatPrice(t.cachePrice)}` : ''}
+              {t.cachePrice > 0
+                ? ` | ${dict(
+                    'PC.Pages.SpaceResourcePricing.cachePriceLabel',
+                  )}¥${formatPrice(t.cachePrice)}`
+                : ''}
             </Tag>
           ))}
         </div>
@@ -338,7 +287,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <Switch
           size="small"
           checked={record.enabled}
-          onChange={(v) => handleToggle(record, v)}
+          onChange={(v) => crud.handleToggle(record, v)}
         />
       ),
     },
@@ -348,66 +297,66 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 120,
       align: 'center',
       render: (_, record) => (
-        <span>
-          <a onClick={() => openEdit(record)} style={{ marginRight: 12 }}>
-            {dict('PC.Common.Global.edit')}
-          </a>
-          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
-            {dict('PC.Common.Global.delete')}
-          </a>
-        </span>
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: dict('PC.Common.Global.edit'),
+              onClick: (r) => crud.openEdit(r),
+            },
+            {
+              key: 'delete',
+              label: dict('PC.Common.Global.delete'),
+              danger: true,
+              confirm: { title: dict('PC.Common.Global.confirmDelete') },
+              onClick: (r) => crud.handleDelete(r),
+            },
+          ]}
+        />
       ),
     },
   ];
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-        }}
-      >
-        <h4 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+      <div className={styles.tabHeader}>
+        <h4 className={styles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.modelTitle')}
         </h4>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={crud.openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
       </div>
       <XProTable<ModelPricingInfo>
+        actionRef={actionRef}
         rowKey="id"
         columns={columns}
-        dataSource={list}
-        loading={loading}
+        dataSource={crud.list}
+        loading={crud.loading}
         pagination={false}
-        request={async () => ({
-          data: list,
-          total: list.length,
-          success: true,
-        })}
         search={false}
       />
-      <Modal
+      <CustomFormModal
+        form={crud.form}
         title={
-          editItem
+          crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editModelPricing')
             : dict('PC.Pages.SpaceResourcePricing.addModel')
         }
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
+        open={crud.modalOpen}
+        onCancel={() => crud.setModalOpen(false)}
+        onConfirm={handleSave}
+        loading={crud.saving}
         width={520}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={crud.form} layout="vertical">
           <Form.Item
             name="name"
             label={dict('PC.Pages.SpaceResourcePricing.modelName')}
             rules={[{ required: true }]}
           >
-            {editItem ? (
+            {crud.editItem ? (
               <Input disabled />
             ) : (
               <Select
@@ -417,7 +366,10 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
                 onChange={(v) => {
                   const m = MODEL_CATALOG.find((c) => c.name === v);
                   if (m) {
-                    form.setFieldsValue({ name: m.name, provider: m.provider });
+                    crud.form.setFieldsValue({
+                      name: m.name,
+                      provider: m.provider,
+                    });
                     setSelectedModelTiers([
                       {
                         label: '≤32K',
@@ -442,10 +394,10 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             label={dict('PC.Pages.SpaceResourcePricing.provider')}
             rules={[{ required: true }]}
           >
-            <Input disabled={!editItem} />
+            <Input disabled={!crud.editItem} />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomFormModal>
     </div>
   );
 };
@@ -455,75 +407,21 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
 // ═══════════════════════════════════════════
 
 const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
-  const [list, setList] = useState<ToolPricingInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState<ToolPricingInfo | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [form] = Form.useForm();
+  const actionRef = useRef<ActionType>();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await apiListToolPricing(spaceId);
-      if (res?.data) setList(res.data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, [spaceId]);
+  const crud = useCrudTab<ToolPricingInfo>({
+    spaceId,
+    listApi: apiListToolPricing,
+    createApi: apiCreateToolPricing,
+    updateApi: apiUpdateToolPricing,
+    deleteApi: apiDeleteToolPricing,
+    toggleApi: apiToggleToolPricing,
+  });
 
   const filteredList = keyword
-    ? list.filter((t) => t.name.includes(keyword))
-    : list;
-
-  const openAdd = () => {
-    setEditItem(null);
-    form.resetFields();
-    setModalOpen(true);
-  };
-
-  const openEdit = (item: ToolPricingInfo) => {
-    setEditItem(item);
-    form.setFieldsValue(item);
-    setModalOpen(true);
-  };
-
-  const handleSave = async () => {
-    const values = await form.validateFields();
-    if (editItem) {
-      await apiUpdateToolPricing(editItem.id, values);
-      message.success(dict('PC.Pages.SpaceResourcePricing.editSuccess'));
-    } else {
-      await apiCreateToolPricing(spaceId, values);
-      message.success(dict('PC.Pages.SpaceResourcePricing.addSuccess'));
-    }
-    setModalOpen(false);
-    load();
-  };
-
-  const handleDelete = (item: ToolPricingInfo) => {
-    modalConfirm(
-      dict('PC.Common.Global.confirmDelete'),
-      item.name,
-      async () => {
-        await apiDeleteToolPricing(item.id);
-        message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-        load();
-      },
-    );
-  };
-
-  const handleToggle = async (item: ToolPricingInfo, enabled: boolean) => {
-    await apiToggleToolPricing(item.id, enabled);
-    setList((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, enabled } : p)),
-    );
-    message.success(dict('PC.Pages.SpaceResourcePricing.toggleSuccess'));
-  };
+    ? crud.list.filter((t) => t.name.includes(keyword))
+    : crud.list;
 
   const columns: ProColumns<ToolPricingInfo>[] = [
     {
@@ -546,7 +444,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 100,
       align: 'center',
       render: (v) => (
-        <span style={{ fontWeight: 600 }}>
+        <span className={styles.boldValue}>
           {(v as number)?.toLocaleString()}
         </span>
       ),
@@ -557,10 +455,8 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 120,
       render: (_, record) => (
         <span>
-          <span style={{ fontWeight: 600 }}>¥{formatPrice(record.price)}</span>
-          <span style={{ color: '#999', marginLeft: 4 }}>
-            / {record.period}
-          </span>
+          <span className={styles.boldValue}>¥{formatPrice(record.price)}</span>
+          <span className={styles.muted}> / {record.period}</span>
           {record.trialCount > 0 && (
             <Tag color="green" style={{ marginLeft: 6 }}>
               {dict('PC.Pages.SpaceResourcePricing.trialCount')}{' '}
@@ -579,7 +475,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <Switch
           size="small"
           checked={record.enabled}
-          onChange={(v) => handleToggle(record, v)}
+          onChange={(v) => crud.handleToggle(record, v)}
         />
       ),
     },
@@ -589,45 +485,42 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 120,
       align: 'center',
       render: (_, record) => (
-        <span>
-          <a onClick={() => openEdit(record)} style={{ marginRight: 12 }}>
-            {dict('PC.Common.Global.edit')}
-          </a>
-          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
-            {dict('PC.Common.Global.delete')}
-          </a>
-        </span>
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: dict('PC.Common.Global.edit'),
+              onClick: (r) => crud.openEdit(r),
+            },
+            {
+              key: 'delete',
+              label: dict('PC.Common.Global.delete'),
+              danger: true,
+              confirm: { title: dict('PC.Common.Global.confirmDelete') },
+              onClick: (r) => crud.handleDelete(r),
+            },
+          ]}
+        />
       ),
     },
   ];
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-        }}
-      >
-        <h4 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+      <div className={styles.tabHeader}>
+        <h4 className={styles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.toolTitle')}
         </h4>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={crud.openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addTool')}
         </Button>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 14,
-        }}
-      >
+      <div className={styles.searchBar}>
         <Input
-          placeholder="搜索工具名称..."
+          placeholder={dict(
+            'PC.Pages.SpaceResourcePricing.searchToolPlaceholder',
+          )}
           prefix={<SearchOutlined />}
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
@@ -636,52 +529,38 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         />
       </div>
       <XProTable<ToolPricingInfo>
+        actionRef={actionRef}
         rowKey="id"
         columns={columns}
         dataSource={filteredList}
-        loading={loading}
+        loading={crud.loading}
         pagination={false}
-        request={async () => ({
-          data: filteredList,
-          total: filteredList.length,
-          success: true,
-        })}
         search={false}
       />
-      <div
-        style={{
-          padding: '10px 16px',
-          borderTop: '1px solid #f0f0f0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 12,
-          color: '#999',
-          background: '#fffbe6',
-          borderRadius: '0 0 8px 8px',
-        }}
-      >
-        <span style={{ color: '#faad14' }}>ⓘ</span>
+      <div className={styles.billingNotice}>
+        <span className={styles.noticeIcon}>ⓘ</span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
       </div>
-      <Modal
+      <CustomFormModal
+        form={crud.form}
         title={
-          editItem
+          crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editTool')
             : dict('PC.Pages.SpaceResourcePricing.addTool')
         }
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
+        open={crud.modalOpen}
+        onCancel={() => crud.setModalOpen(false)}
+        onConfirm={() => crud.handleSave()}
+        loading={crud.saving}
         width={480}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={crud.form} layout="vertical">
           <Form.Item
             name="name"
             label={dict('PC.Pages.SpaceResourcePricing.toolName')}
             rules={[{ required: true }]}
           >
-            {editItem ? (
+            {crud.editItem ? (
               <Input disabled />
             ) : (
               <Select
@@ -691,7 +570,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
                 onChange={(v) => {
                   const t = TOOL_CATALOG.find((c) => c.name === v);
                   if (t)
-                    form.setFieldsValue({
+                    crud.form.setFieldsValue({
                       name: t.name,
                       category: t.category,
                       description: t.description,
@@ -733,14 +612,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             label={dict('PC.Pages.SpaceResourcePricing.price')}
             rules={[{ required: true }]}
           >
-            <InputNumber
-              min={0}
-              step={0.001}
-              style={{ width: '100%' }}
-              placeholder={dict(
-                'PC.Pages.SpaceResourcePricing.pricePlaceholder',
-              )}
-            />
+            <InputNumber min={0} step={0.001} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="period"
@@ -748,7 +620,9 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             initialValue="次"
           >
             <Select>
-              <Select.Option value="次">次</Select.Option>
+              <Select.Option value="次">
+                {dict('PC.Pages.SpaceResourcePricing.periodOnce')}
+              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -759,7 +633,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             <InputNumber min={0} precision={0} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomFormModal>
     </div>
   );
 };
@@ -769,75 +643,32 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
 // ═══════════════════════════════════════════
 
 const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
-  const [list, setList] = useState<SkillPricingInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState<SkillPricingInfo | null>(null);
   const [pricingModel, setPricingModel] = useState<'buyout' | 'monthly'>(
     'buyout',
   );
-  const [form] = Form.useForm();
+  const actionRef = useRef<ActionType>();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await apiListSkillPricing(spaceId);
-      if (res?.data) setList(res.data);
-    } finally {
-      setLoading(false);
-    }
+  const crud = useCrudTab<SkillPricingInfo>({
+    spaceId,
+    listApi: apiListSkillPricing,
+    createApi: apiCreateSkillPricing,
+    updateApi: apiUpdateSkillPricing,
+    deleteApi: apiDeleteSkillPricing,
+    toggleApi: apiToggleSkillPricing,
+  });
+
+  const handleSave = () => {
+    crud.handleSave({ pricingModel });
   };
 
-  useEffect(() => {
-    load();
-  }, [spaceId]);
-
   const openAdd = () => {
-    setEditItem(null);
     setPricingModel('buyout');
-    form.resetFields();
-    setModalOpen(true);
+    crud.openAdd();
   };
 
   const openEdit = (item: SkillPricingInfo) => {
-    setEditItem(item);
     setPricingModel(item.pricingModel);
-    form.setFieldsValue(item);
-    setModalOpen(true);
-  };
-
-  const handleSave = async () => {
-    const values = await form.validateFields();
-    const payload = { ...values, pricingModel };
-    if (editItem) {
-      await apiUpdateSkillPricing(editItem.id, payload);
-      message.success(dict('PC.Pages.SpaceResourcePricing.editSuccess'));
-    } else {
-      await apiCreateSkillPricing(spaceId, payload);
-      message.success(dict('PC.Pages.SpaceResourcePricing.addSuccess'));
-    }
-    setModalOpen(false);
-    load();
-  };
-
-  const handleDelete = (item: SkillPricingInfo) => {
-    modalConfirm(
-      dict('PC.Common.Global.confirmDelete'),
-      item.name,
-      async () => {
-        await apiDeleteSkillPricing(item.id);
-        message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-        load();
-      },
-    );
-  };
-
-  const handleToggle = async (item: SkillPricingInfo, enabled: boolean) => {
-    await apiToggleSkillPricing(item.id, enabled);
-    setList((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, enabled } : p)),
-    );
-    message.success(dict('PC.Pages.SpaceResourcePricing.toggleSuccess'));
+    crud.openEdit(item);
   };
 
   const columns: ProColumns<SkillPricingInfo>[] = [
@@ -861,7 +692,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 100,
       align: 'center',
       render: (v) => (
-        <span style={{ fontWeight: 600 }}>
+        <span className={styles.boldValue}>
           {(v as number)?.toLocaleString()}
         </span>
       ),
@@ -872,9 +703,11 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 160,
       render: (_, record) => (
         <span>
-          <span style={{ fontWeight: 600 }}>¥{record.price.toFixed(2)}</span>
+          <span className={styles.boldValue}>¥{formatPrice(record.price)}</span>
           {record.pricingModel === 'monthly' && (
-            <span style={{ color: '#999', marginLeft: 2 }}>/月</span>
+            <span className={styles.muted}>
+              /{dict('PC.Pages.SpaceAgentSubscriptions.cycleMonthly')}
+            </span>
           )}
           <Tag
             color={record.pricingModel === 'monthly' ? 'cyan' : 'orange'}
@@ -896,7 +729,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <Switch
           size="small"
           checked={record.enabled}
-          onChange={(v) => handleToggle(record, v)}
+          onChange={(v) => crud.handleToggle(record, v)}
         />
       ),
     },
@@ -906,29 +739,31 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 120,
       align: 'center',
       render: (_, record) => (
-        <span>
-          <a onClick={() => openEdit(record)} style={{ marginRight: 12 }}>
-            {dict('PC.Common.Global.edit')}
-          </a>
-          <a onClick={() => handleDelete(record)} style={{ color: '#ff4d4f' }}>
-            {dict('PC.Common.Global.delete')}
-          </a>
-        </span>
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: dict('PC.Common.Global.edit'),
+              onClick: (r) => openEdit(r),
+            },
+            {
+              key: 'delete',
+              label: dict('PC.Common.Global.delete'),
+              danger: true,
+              confirm: { title: dict('PC.Common.Global.confirmDelete') },
+              onClick: (r) => crud.handleDelete(r),
+            },
+          ]}
+        />
       ),
     },
   ];
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 14,
-        }}
-      >
-        <h4 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+      <div className={styles.tabHeader}>
+        <h4 className={styles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.skillTitle')}
         </h4>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
@@ -936,36 +771,34 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         </Button>
       </div>
       <XProTable<SkillPricingInfo>
+        actionRef={actionRef}
         rowKey="id"
         columns={columns}
-        dataSource={list}
-        loading={loading}
+        dataSource={crud.list}
+        loading={crud.loading}
         pagination={false}
-        request={async () => ({
-          data: list,
-          total: list.length,
-          success: true,
-        })}
         search={false}
       />
-      <Modal
+      <CustomFormModal
+        form={crud.form}
         title={
-          editItem
+          crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editSkill')
             : dict('PC.Pages.SpaceResourcePricing.addSkill')
         }
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
+        open={crud.modalOpen}
+        onCancel={() => crud.setModalOpen(false)}
+        onConfirm={handleSave}
+        loading={crud.saving}
         width={480}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={crud.form} layout="vertical">
           <Form.Item
             name="name"
             label={dict('PC.Pages.SpaceResourcePricing.skillName')}
             rules={[{ required: true }]}
           >
-            {editItem ? (
+            {crud.editItem ? (
               <Input disabled />
             ) : (
               <Select
@@ -975,7 +808,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
                 onChange={(v) => {
                   const s = SKILL_CATALOG.find((c) => c.name === v);
                   if (s)
-                    form.setFieldsValue({
+                    crud.form.setFieldsValue({
                       name: s.name,
                       category: s.category,
                       description: s.description,
@@ -1016,7 +849,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             label={dict('PC.Pages.SpaceResourcePricing.pricingMode')}
             required
           >
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className={styles.pricingModelBtns}>
               <Button
                 type={pricingModel === 'buyout' ? 'primary' : 'default'}
                 onClick={() => setPricingModel('buyout')}
@@ -1032,7 +865,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
                 {dict('PC.Pages.SpaceResourcePricing.pricingModeMonthly')}
               </Button>
             </div>
-            <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+            <div className={styles.pricingModeHint}>
               {pricingModel === 'buyout'
                 ? dict('PC.Pages.SpaceResourcePricing.buyoutHint')
                 : dict('PC.Pages.SpaceResourcePricing.monthlyHint')}
@@ -1048,13 +881,10 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
               precision={2}
               style={{ width: '100%' }}
               prefix="¥"
-              placeholder={dict(
-                'PC.Pages.SpaceResourcePricing.pricePlaceholder',
-              )}
             />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomFormModal>
     </div>
   );
 };
@@ -1101,41 +931,18 @@ const SpaceResourcePricing: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '16px 16px 16px 24px' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 4,
-        }}
-      >
-        <h3
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            margin: 0,
-            background: 'linear-gradient(135deg, #1a6bff, #0d9488)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          {dict('PC.Pages.SpaceResourcePricing.pageTitle')}
-        </h3>
-        <span style={{ fontSize: 13, color: '#8a9bb0', fontWeight: 400 }}>
-          {dict('PC.Pages.SpaceResourcePricing.pageSubtitle')}
-        </span>
-      </div>
-
+    <WorkspaceLayout
+      title={dict('PC.Pages.SpaceResourcePricing.pageTitle')}
+      hideScroll
+    >
       <Segmented
         options={tabOptions}
         value={activeTab}
         onChange={(v) => setActiveTab(v as string)}
-        style={{ margin: '16px 0' }}
+        className={styles.segmented}
       />
-
       {renderTabContent()}
-    </div>
+    </WorkspaceLayout>
   );
 };
 

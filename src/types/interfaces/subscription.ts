@@ -267,6 +267,14 @@ export interface AgentSubscriptionPlan {
   recommend: boolean;
 }
 
+// 智能体用户当前订阅信息
+export interface AgentCurrentSubscription {
+  planId: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+}
+
 // ──────────────────────────────────────────────
 // 系统管理 - 开发者收款账户
 // ──────────────────────────────────────────────

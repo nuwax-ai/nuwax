@@ -5,117 +5,131 @@ import {
   apiListAgentSubPlans,
   apiSubscribeAgentPlan,
 } from '@/services/subscriptionService';
+import type {
+  AgentCurrentSubscription,
+  AgentSubscriptionPlan,
+} from '@/types/interfaces/subscription';
+import { formatPrice } from '@/utils/format';
 import { CheckCircleFilled, ThunderboltOutlined } from '@ant-design/icons';
 import { Button, Card, message, Modal, Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'umi';
-import './index.less';
+import styles from './index.less';
 
-interface Plan {
-  id: string;
-  name: string;
-  desc: string;
-  cycle: string;
-  price: number;
-  calls: string;
-  callsNum: number;
-  trialCalls: number;
-  recommend: boolean;
+// ─── Cycle helpers ───
+
+const CYCLE_LABEL_MAP: Record<string, string> = {
+  monthly: 'PC.Pages.SpaceAgentSubscriptions.cycleMonthly',
+  quarterly: 'PC.Pages.SpaceAgentSubscriptions.cycleQuarterly',
+  yearly: 'PC.Pages.SpaceAgentSubscriptions.cycleYearly',
+  // 兼容中文值
+  月: 'PC.Pages.SpaceAgentSubscriptions.cycleMonthly',
+  季: 'PC.Pages.SpaceAgentSubscriptions.cycleQuarterly',
+  年: 'PC.Pages.SpaceAgentSubscriptions.cycleYearly',
+};
+
+function getCycleLabel(cycle: string): string {
+  const key = CYCLE_LABEL_MAP[cycle];
+  return key ? dict(key) : cycle;
 }
 
-interface CurrentSub {
-  planId: string;
-  startDate: string;
-  endDate: string;
-  status: string;
+// ─── Mock data factory ───
+
+function getMockPlans(): AgentSubscriptionPlan[] {
+  return [
+    {
+      id: 'plan_a',
+      name: '免费版',
+      desc: '适合轻度使用，体验基础智能体功能',
+      cycle: 'monthly',
+      price: 0,
+      calls: '50次/日',
+      callsNum: 50,
+      trialCalls: 0,
+      recommend: false,
+    },
+    {
+      id: 'plan_b',
+      name: '标准版',
+      desc: '适合个人开发者日常使用，性价比之选',
+      cycle: 'monthly',
+      price: 49.9,
+      calls: '500次/日',
+      callsNum: 500,
+      trialCalls: 50,
+      recommend: false,
+    },
+    {
+      id: 'plan_c',
+      name: '专业版',
+      desc: '适合专业开发者，更多调用和高级模型',
+      cycle: 'monthly',
+      price: 129,
+      calls: '2000次/日',
+      callsNum: 2000,
+      trialCalls: 100,
+      recommend: true,
+    },
+    {
+      id: 'plan_d',
+      name: '企业版',
+      desc: '适合团队使用，不限调用和专属资源',
+      cycle: 'monthly',
+      price: 399,
+      calls: '不限',
+      callsNum: -1,
+      trialCalls: 200,
+      recommend: false,
+    },
+    {
+      id: 'plan_e',
+      name: '季度标准',
+      desc: '按季度付费，享受标准版全部能力',
+      cycle: 'quarterly',
+      price: 129,
+      calls: '500次/日',
+      callsNum: 500,
+      trialCalls: 80,
+      recommend: false,
+    },
+    {
+      id: 'plan_f',
+      name: '年度专业',
+      desc: '按年付费优惠，专业版能力全覆盖',
+      cycle: 'yearly',
+      price: 999,
+      calls: '2000次/日',
+      callsNum: 2000,
+      trialCalls: 200,
+      recommend: false,
+    },
+  ];
 }
 
-const MOCK_PLANS: Plan[] = [
-  {
-    id: 'plan_a',
-    name: '免费版',
-    desc: '适合轻度使用，体验基础智能体功能',
-    cycle: '月',
-    price: 0,
-    calls: '50次/日',
-    callsNum: 50,
-    trialCalls: 0,
-    recommend: false,
-  },
-  {
-    id: 'plan_b',
-    name: '标准版',
-    desc: '适合个人开发者日常使用，性价比之选',
-    cycle: '月',
-    price: 49.9,
-    calls: '500次/日',
-    callsNum: 500,
-    trialCalls: 50,
-    recommend: false,
-  },
-  {
-    id: 'plan_c',
-    name: '专业版',
-    desc: '适合专业开发者，更多调用和高级模型',
-    cycle: '月',
-    price: 129,
-    calls: '2000次/日',
-    callsNum: 2000,
-    trialCalls: 100,
-    recommend: true,
-  },
-  {
-    id: 'plan_d',
-    name: '企业版',
-    desc: '适合团队使用，不限调用和专属资源',
-    cycle: '月',
-    price: 399,
-    calls: '不限',
-    callsNum: -1,
-    trialCalls: 200,
-    recommend: false,
-  },
-  {
-    id: 'plan_e',
-    name: '季度标准',
-    desc: '按季度付费，享受标准版全部能力',
-    cycle: '季',
-    price: 129,
-    calls: '500次/日',
-    callsNum: 500,
-    trialCalls: 80,
-    recommend: false,
-  },
-  {
-    id: 'plan_f',
-    name: '年度专业',
-    desc: '按年付费优惠，专业版能力全覆盖',
-    cycle: '年',
-    price: 999,
-    calls: '2000次/日',
-    callsNum: 2000,
-    trialCalls: 200,
-    recommend: false,
-  },
-];
-
-const MOCK_CURRENT: CurrentSub = {
+const MOCK_CURRENT: AgentCurrentSubscription = {
   planId: 'plan_b',
   startDate: '2026-03-15',
   endDate: '2026-04-15',
   status: 'active',
 };
 
+// ═══════════════════════════════════════════
+//  SpaceAgentSubscriptions
+// ═══════════════════════════════════════════
+
 const SpaceAgentSubscriptions: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
-  const [plans, setPlans] = useState<Plan[]>(MOCK_PLANS);
-  const [currentSub, setCurrentSub] = useState<CurrentSub>(MOCK_CURRENT);
+
+  const defaultPlans = useMemo(() => getMockPlans(), []);
+  const [plans, setPlans] = useState<AgentSubscriptionPlan[]>(defaultPlans);
+  const [currentSub, setCurrentSub] =
+    useState<AgentCurrentSubscription>(MOCK_CURRENT);
   const [loading, setLoading] = useState(false);
   const [modalState, setModalState] = useState<{
     visible: boolean;
     type: 'subscribe' | 'upgrade' | 'downgrade';
-    plan: Plan | null;
+    plan: AgentSubscriptionPlan | null;
   }>({ visible: false, type: 'subscribe', plan: null });
 
   const currentPlan = plans.find((p) => p.id === currentSub.planId);
@@ -127,10 +141,10 @@ const SpaceAgentSubscriptions: React.FC = () => {
         apiListAgentSubPlans(spaceId),
         apiGetCurrentAgentSub(spaceId),
       ]);
-      if (plansRes?.data) setPlans(plansRes.data as Plan[]);
-      if (subRes?.data) setCurrentSub(subRes.data as CurrentSub);
+      if (plansRes?.data) setPlans(plansRes.data as AgentSubscriptionPlan[]);
+      if (subRes?.data) setCurrentSub(subRes.data as AgentCurrentSubscription);
     } catch {
-      // fallback to mock
+      // fallback to mock data
     } finally {
       setLoading(false);
     }
@@ -140,24 +154,16 @@ const SpaceAgentSubscriptions: React.FC = () => {
     loadData();
   }, [spaceId]);
 
-  const formatPrice = (p: number) =>
-    p % 1 === 0 ? p.toFixed(0) : p.toFixed(1);
-
   const isCurrent = (planId: string) => planId === currentSub.planId;
 
-  const getButton = (plan: Plan) => {
+  const getButton = (plan: AgentSubscriptionPlan) => {
     if (isCurrent(plan.id)) {
       return (
         <Button
           type="primary"
           ghost
           size="small"
-          style={{
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            minWidth: 80,
-          }}
+          className={styles.planBtn}
           onClick={(e) => {
             e.stopPropagation();
             message.success(
@@ -176,12 +182,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
           <Button
             type="primary"
             size="small"
-            style={{
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 600,
-              minWidth: 80,
-            }}
+            className={styles.planBtn}
             onClick={(e) => {
               e.stopPropagation();
               setModalState({ visible: true, type: 'upgrade', plan });
@@ -195,15 +196,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
         return (
           <Button
             size="small"
-            style={{
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 600,
-              minWidth: 80,
-              background: 'rgba(245,158,11,0.1)',
-              color: '#d97706',
-              borderColor: 'transparent',
-            }}
+            className={`${styles.planBtn} ${styles.downgradeBtn}`}
             onClick={(e) => {
               e.stopPropagation();
               setModalState({ visible: true, type: 'downgrade', plan });
@@ -218,7 +211,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
       <Button
         type="primary"
         size="small"
-        style={{ borderRadius: 8, fontSize: 12, fontWeight: 600, minWidth: 80 }}
+        className={styles.planBtn}
         onClick={(e) => {
           e.stopPropagation();
           setModalState({ visible: true, type: 'subscribe', plan });
@@ -235,28 +228,12 @@ const SpaceAgentSubscriptions: React.FC = () => {
     try {
       const res = await apiSubscribeAgentPlan(spaceId, plan.id);
       if (res?.data) {
-        setCurrentSub(res.data as CurrentSub);
+        setCurrentSub(res.data as AgentCurrentSubscription);
       }
     } catch {
-      const now = new Date();
-      const endDate = new Date(now);
-      switch (plan.cycle) {
-        case '月':
-          endDate.setMonth(endDate.getMonth() + 1);
-          break;
-        case '季':
-          endDate.setMonth(endDate.getMonth() + 3);
-          break;
-        case '年':
-          endDate.setFullYear(endDate.getFullYear() + 1);
-          break;
-      }
-      setCurrentSub({
-        planId: plan.id,
-        startDate: now.toISOString().slice(0, 10),
-        endDate: endDate.toISOString().slice(0, 10),
-        status: 'active',
-      });
+      message.error(dict('PC.Pages.SpaceAgentSubscriptions.operationFailed'));
+      setModalState({ visible: false, type: 'subscribe', plan: null });
+      return;
     }
     setModalState({ visible: false, type: 'subscribe', plan: null });
     const toastMap: Record<string, string> = {
@@ -274,26 +251,15 @@ const SpaceAgentSubscriptions: React.FC = () => {
     const isDowngrade = type === 'downgrade';
 
     return (
-      <div style={{ textAlign: 'center' }}>
+      <div className={styles.modalContent}>
         <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            margin: '0 auto 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: isDowngrade
-              ? 'rgba(245,158,11,0.1)'
-              : 'rgba(13,148,136,0.1)',
-            color: isDowngrade ? '#d97706' : '#0d9488',
-            fontSize: 26,
-          }}
+          className={`${styles.modalIcon} ${
+            isDowngrade ? styles.modalIconDowngrade : ''
+          }`}
         >
           {isUpgrade ? <ThunderboltOutlined /> : <CheckCircleFilled />}
         </div>
-        <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>
+        <h3 className={styles.modalTitle}>
           {dict(
             isUpgrade
               ? 'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeTitle'
@@ -302,68 +268,42 @@ const SpaceAgentSubscriptions: React.FC = () => {
               : 'PC.Pages.SpaceAgentSubscriptions.confirmSubTitle',
           )}
         </h3>
-        <p
-          style={{
-            fontSize: 13,
-            color: '#4a5b6f',
-            marginBottom: 20,
-            lineHeight: 1.6,
-          }}
-        >
+        <p className={styles.modalDesc}>
           {isUpgrade
             ? dict('PC.Pages.SpaceAgentSubscriptions.confirmUpgradeDesc')
             : isDowngrade
             ? dict('PC.Pages.SpaceAgentSubscriptions.confirmDowngradeDesc')
-            : dict('PC.Pages.SpaceAgentSubscriptions.confirmSubDesc', {
-                name: plan.name,
-                price: `¥${formatPrice(plan.price)}`,
-                cycle: plan.cycle,
-              })}
+            : dict(
+                'PC.Pages.SpaceAgentSubscriptions.confirmSubDesc',
+                plan.name,
+                `¥${formatPrice(plan.price)}`,
+                getCycleLabel(plan.cycle),
+              )}
         </p>
         {(isUpgrade || isDowngrade) && currentPlan && (
-          <div
-            style={{
-              background: 'rgba(240,244,254,0.4)',
-              borderRadius: 10,
-              padding: '12px 16px',
-              marginBottom: 20,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-              gap: 12,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#8a9bb0', marginBottom: 2 }}>
+          <div className={styles.modalCompare}>
+            <div className={styles.modalCompareItem}>
+              <div className={styles.modalCompareLabel}>
                 {dict('PC.Pages.SpaceAgentSubscriptions.confirmCurrent')}
               </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: '#8a9bb0',
-                  textDecoration: 'line-through',
-                }}
-              >
+              <div className={styles.modalCompareOldName}>
                 {currentPlan.name}
               </div>
-              <div style={{ fontSize: 12, color: '#8a9bb0' }}>
+              <div className={styles.modalCompareOldPrice}>
                 ¥{formatPrice(currentPlan.price)}
               </div>
             </div>
-            <div style={{ color: '#8a9bb0', fontSize: 18 }}>→</div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#8a9bb0', marginBottom: 2 }}>
+            <div className={styles.modalCompareArrow}>→</div>
+            <div className={styles.modalCompareItem}>
+              <div className={styles.modalCompareLabel}>
                 {dict(
                   isUpgrade
                     ? 'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeTo'
                     : 'PC.Pages.SpaceAgentSubscriptions.confirmDowngradeTo',
                 )}
               </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#1a6bff' }}>
-                {plan.name}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#1a6bff' }}>
+              <div className={styles.modalCompareNewName}>{plan.name}</div>
+              <div className={styles.modalCompareNewPrice}>
                 ¥{formatPrice(plan.price)}
               </div>
             </div>
@@ -376,44 +316,20 @@ const SpaceAgentSubscriptions: React.FC = () => {
   return (
     <WorkspaceLayout
       title={dict('PC.Pages.SpaceAgentSubscriptions.pageTitle')}
-      hideScroll={true}
+      hideScroll
     >
-      <div style={{ padding: '16px 24px' }}>
-        <div style={{ marginBottom: 16 }}>
-          <h2
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              color: '#0b1a33',
-              marginBottom: 4,
-            }}
-          >
-            <span
-              style={{
-                width: 3,
-                height: 18,
-                background: 'linear-gradient(135deg, #1a6bff, #0d9488)',
-                borderRadius: 2,
-                flexShrink: 0,
-              }}
-            />
+      <div className={styles.container}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionBar} />
             {dict('PC.Pages.SpaceAgentSubscriptions.sectionTitle')}
           </h2>
-          <span style={{ fontSize: 12, color: '#8a9bb0' }}>
+          <span className={styles.sectionHint}>
             {dict('PC.Pages.SpaceAgentSubscriptions.sectionHint')}
           </span>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 14,
-          }}
-        >
+        <div className={styles.cardGrid}>
           {plans.map((plan) => {
             const subscribed = isCurrent(plan.id);
             return (
@@ -421,17 +337,10 @@ const SpaceAgentSubscriptions: React.FC = () => {
                 key={plan.id}
                 hoverable
                 loading={loading}
-                style={{
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  borderColor: subscribed ? '#1a6bff' : undefined,
-                  boxShadow: subscribed
-                    ? '0 0 0 1px #1a6bff, 0 8px 32px rgba(0,0,0,0.06)'
-                    : undefined,
-                  opacity: subscribed ? undefined : undefined,
-                }}
-                bodyStyle={{ padding: 0 }}
+                className={`${styles.planCard} ${
+                  subscribed ? styles.planCardSubscribed : ''
+                }`}
+                styles={{ body: { padding: 0 } }}
                 onClick={() => {
                   if (subscribed || plan.price === 0) return;
                   if (currentPlan && plan.price > currentPlan.price) {
@@ -448,130 +357,44 @@ const SpaceAgentSubscriptions: React.FC = () => {
                 }}
               >
                 <div
+                  className={styles.cardHeaderBar}
                   style={{
-                    height: 4,
                     background:
                       plan.id === 'plan_a'
                         ? 'linear-gradient(135deg, #f59e0b, #f97316)'
-                        : 'linear-gradient(135deg, #1a6bff, #0d9488)',
+                        : undefined,
                   }}
                 />
                 {subscribed && (
-                  <Tag
-                    color="blue"
-                    style={{
-                      position: 'absolute',
-                      top: 12,
-                      right: 12,
-                      zIndex: 2,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      lineHeight: '18px',
-                      boxShadow: '0 2px 10px rgba(26,107,255,0.25)',
-                    }}
-                  >
+                  <Tag color="blue" className={styles.tagCurrent}>
                     {dict('PC.Pages.SpaceAgentSubscriptions.currentSub')}
                   </Tag>
                 )}
                 {!subscribed && plan.recommend && (
-                  <Tag
-                    color="warning"
-                    style={{
-                      position: 'absolute',
-                      top: 12,
-                      right: 12,
-                      zIndex: 2,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      lineHeight: '18px',
-                    }}
-                  >
+                  <Tag color="warning" className={styles.tagRecommend}>
                     {dict('PC.Pages.SpaceAgentSubscriptions.recommend')}
                   </Tag>
                 )}
-                <div style={{ padding: '18px 18px 14px' }}>
-                  <div
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 700,
-                      marginBottom: 4,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
+                <div className={styles.cardBody}>
+                  <div className={styles.planName}>
                     {plan.name}
-                    {plan.cycle !== '月' && (
-                      <Tag
-                        color="orange"
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          borderRadius: 6,
-                          lineHeight: '18px',
-                        }}
-                      >
-                        {plan.cycle}
+                    {plan.cycle !== 'monthly' && plan.cycle !== '月' && (
+                      <Tag color="orange" className={styles.cycleTag}>
+                        {getCycleLabel(plan.cycle)}
                       </Tag>
                     )}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#4a5b6f',
-                      lineHeight: 1.5,
-                      marginBottom: 12,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {plan.desc}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                    <div
-                      style={{
-                        flex: 1,
-                        textAlign: 'center',
-                        background: 'rgba(240,244,254,0.5)',
-                        borderRadius: 8,
-                        padding: '6px 4px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 16,
-                          fontWeight: 800,
-                          color: '#0b1a33',
-                          letterSpacing: '-0.3px',
-                        }}
-                      >
-                        <span style={{ fontSize: 10, fontWeight: 600 }}>¥</span>
-                        {formatPrice(plan.price)}
-                        <span
-                          style={{
-                            fontSize: 9,
-                            color: '#8a9bb0',
-                            fontWeight: 500,
-                          }}
-                        >
-                          /{plan.cycle}
-                        </span>
-                      </div>
+                  <div className={styles.planDesc}>{plan.desc}</div>
+                  <div className={styles.priceBox}>
+                    <div className={styles.priceValue}>
+                      <span className={styles.priceSymbol}>¥</span>
+                      {formatPrice(plan.price)}
+                      <span className={styles.priceCycle}>
+                        /{getCycleLabel(plan.cycle)}
+                      </span>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: '#4a5b6f',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                    }}
-                  >
+                  <div className={styles.planMeta}>
                     <svg
                       width="12"
                       height="12"
@@ -584,24 +407,14 @@ const SpaceAgentSubscriptions: React.FC = () => {
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
                     {plan.callsNum === -1 ? (
-                      <span style={{ color: '#1a6bff', fontWeight: 600 }}>
+                      <span className={styles.callsUnlimited}>
                         {dict('PC.Pages.SpaceAgentSubscriptions.unlimited')}
                       </span>
                     ) : (
                       plan.calls
                     )}
                     {plan.trialCalls > 0 && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          color: '#0d9488',
-                          background: 'rgba(13,148,136,0.08)',
-                          padding: '1px 7px',
-                          borderRadius: 5,
-                          fontWeight: 500,
-                          marginLeft: 'auto',
-                        }}
-                      >
+                      <span className={styles.trialBadge}>
                         {dict('PC.Pages.SpaceAgentSubscriptions.trial')}{' '}
                         {plan.trialCalls}
                         {dict('PC.Pages.SpaceAgentSubscriptions.callsPerDay')}
@@ -609,38 +422,17 @@ const SpaceAgentSubscriptions: React.FC = () => {
                     )}
                   </div>
                   {subscribed && (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: '#8a9bb0',
-                        marginTop: 6,
-                        paddingTop: 6,
-                        borderTop: '1px solid rgba(229,236,246,0.6)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                      }}
-                    >
+                    <div className={styles.expireRow}>
                       <span>
                         {dict('PC.Pages.SpaceAgentSubscriptions.expireAt')}
                       </span>
-                      <span style={{ fontWeight: 600, color: '#4a5b6f' }}>
+                      <span className={styles.expireDate}>
                         {currentSub.endDate}
                       </span>
                     </div>
                   )}
                 </div>
-                <div
-                  style={{
-                    padding: '10px 18px',
-                    borderTop: '1px solid rgba(229,236,246,0.6)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: 8,
-                    background: 'rgba(229,236,246,0.15)',
-                  }}
-                >
-                  {getButton(plan)}
-                </div>
+                <div className={styles.cardFooter}>{getButton(plan)}</div>
               </Card>
             );
           })}
@@ -658,7 +450,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
             onClick={() =>
               setModalState({ visible: false, type: 'subscribe', plan: null })
             }
-            style={{ borderRadius: 10, fontWeight: 600, flex: 1 }}
+            className={styles.modalCancelBtn}
           >
             {dict('PC.Pages.SpaceAgentSubscriptions.confirmCancel')}
           </Button>,
@@ -666,13 +458,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
             key="confirm"
             type="primary"
             onClick={handleConfirm}
-            style={{
-              borderRadius: 10,
-              fontWeight: 600,
-              flex: 1,
-              background: 'linear-gradient(135deg, #1a6bff, #0d9488)',
-              border: 'none',
-            }}
+            className={styles.modalConfirmBtn}
           >
             {dict(
               modalState.type === 'upgrade'

@@ -32,6 +32,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Common.Global.no': '否',
   'PC.Common.Global.noData': '暂无数据',
   'PC.Common.Global.operation': '操作',
+  'PC.Common.Global.operationFailed': '操作失败，请稍后重试',
   'PC.Common.Global.other': '其他',
   'PC.Common.Global.pending': '处理中',
   'PC.Common.Global.pleaseInput': '请输入',
@@ -3317,6 +3318,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceResourcePricing.categoryText': '文本',
   'PC.Pages.SpaceResourcePricing.selectPlaceholder': '请选择',
   'PC.Pages.SpaceResourcePricing.description': '描述',
+  'PC.Pages.SpaceResourcePricing.searchToolPlaceholder': '搜索工具名称...',
+  'PC.Pages.SpaceResourcePricing.periodOnce': '次',
 
   'PC.Pages.SpaceAgentSubscriptions.pageTitle': '智能体用户订阅',
   'PC.Pages.SpaceAgentSubscriptions.statusActive': '有效',
@@ -3346,7 +3349,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceAgentSubscriptions.unlimited': '不限次数',
   'PC.Pages.SpaceAgentSubscriptions.callsPerDay': '次/日',
   'PC.Pages.SpaceAgentSubscriptions.confirmSubTitle': '确认订阅',
-  'PC.Pages.SpaceAgentSubscriptions.confirmSubDesc': '即将开通 {name}，金额 {price}/{cycle}',
+  'PC.Pages.SpaceAgentSubscriptions.confirmSubDesc': '即将开通 {0}，金额 {1}/{2}',
   'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeTitle': '升级套餐',
   'PC.Pages.SpaceAgentSubscriptions.confirmUpgradeDesc': '升级将为您的智能体解锁更多能力和资源',
   'PC.Pages.SpaceAgentSubscriptions.confirmDowngradeTitle': '降级套餐',
@@ -3362,6 +3365,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceAgentSubscriptions.toastUpgradeSuccess': '升级成功',
   'PC.Pages.SpaceAgentSubscriptions.toastDowngradeSuccess': '已降级',
   'PC.Pages.SpaceAgentSubscriptions.toastRenewSuccess': '续费成功，有效期延长30天',
+  'PC.Pages.SpaceAgentSubscriptions.operationFailed': '操作失败，请稍后重试',
+  'PC.Pages.SpaceAgentSubscriptions.cycleMonthly': '月',
+  'PC.Pages.SpaceAgentSubscriptions.cycleQuarterly': '季',
+  'PC.Pages.SpaceAgentSubscriptions.cycleYearly': '年',
 
   // ── 订阅设置（管理员套餐 CRUD） ──
   'PC.Pages.SpaceSubscriptionSettings.pageTitle': '订阅设置',

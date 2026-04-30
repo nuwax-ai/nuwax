@@ -1,21 +1,73 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-.container {
-  padding: 16px 16px 16px 24px;
+.segmented {
+  margin-bottom: 16px;
 }
 
-.title-gradient {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #1a6bff, #0d9488);
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
-.subtitle {
-  font-size: 13px;
-  color: @TEXT_MEDIUM;
-  font-weight: 400;
+.tabTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.billingNotice {
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #999;
+  background: #fffbe6;
+  border-radius: 0 0 8px 8px;
+}
+
+.noticeIcon {
+  color: #faad14;
+}
+
+.tierTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tierTag {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.boldValue {
+  font-weight: 600;
+}
+
+.muted {
+  color: #999;
+  margin-left: 4px;
+}
+
+.pricingModelBtns {
+  display: flex;
+  gap: 12px;
+}
+
+.pricingModeHint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
 }
