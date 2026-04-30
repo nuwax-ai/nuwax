@@ -151,10 +151,6 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
             <h3>{t('PC.Pages.AgentArrangePageSettingModal.title')}</h3>
             <ul>
               {PAGE_SETTING_ACTIONS.map((item) => {
-                const actionLabel =
-                  item.type === PageSettingEnum.Visible_To_LLM
-                    ? t('PC.Pages.AgentArrangePageSettingModal.visibleToLlm')
-                    : t('PC.Pages.AgentArrangePageSettingModal.homeIndex');
                 return (
                   <li
                     key={item.type}
@@ -163,7 +159,7 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
                     })}
                     onClick={() => setAction(item.type)}
                   >
-                    {actionLabel}
+                    {item.label}
                   </li>
                 );
               })}

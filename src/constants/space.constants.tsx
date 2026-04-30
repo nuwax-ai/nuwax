@@ -326,11 +326,11 @@ export const COMPONENT_SETTING_ACTIONS = [
 export const PAGE_SETTING_ACTIONS = [
   {
     type: PageSettingEnum.Visible_To_LLM,
-    label: dict('PC.Constants.Space.visibleToModel'),
+    label: dict('PC.Pages.AgentArrangePageSettingModal.visibleToLlm'),
   },
   {
     type: PageSettingEnum.Home_Index,
-    label: dict('PC.Constants.Space.defaultHome'),
+    label: dict('PC.Pages.AgentArrangePageSettingModal.homeIndex'),
   },
 ];
 
