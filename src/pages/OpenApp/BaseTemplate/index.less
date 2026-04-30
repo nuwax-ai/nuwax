@@ -39,6 +39,7 @@
     border-radius: @borderRadius;
     background-color: @colorBgContainer;
     overflow: hidden;
+    flex-shrink: 0;
 
     .logo {
       width: 100%;
@@ -80,6 +81,7 @@
     color: @colorText;
     font-size: @fontSize;
     font-weight: 500;
+    user-select: none;
   }
 
   .shortcutTag {
@@ -133,6 +135,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+
+  &.exist-page-nav {
+    padding-top: 0;
+  }
 
   .title {
     display: flex;
@@ -211,4 +217,9 @@
   .user-name {
     color: @colorTextSecondary;
   }
+}
+
+.messageContainer {
+  left: 13px !important;
+  bottom: 53px !important;
 }

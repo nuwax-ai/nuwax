@@ -193,7 +193,7 @@ const ConversationList = React.forwardRef<
             <Spin size="small" />
           </div>
         )}
-        {!hasMore && list.length > 0 && (
+        {!hasMore && list?.length > 8 && (
           <div className={styles.nomore}>
             {t('PC.Components.HistoryConversationList.noMoreData')}
           </div>
