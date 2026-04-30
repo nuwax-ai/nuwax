@@ -3321,6 +3321,9 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceResourcePricing.searchToolPlaceholder': '搜索工具名称...',
   'PC.Pages.SpaceResourcePricing.periodOnce': '次',
   'PC.Pages.SpaceResourcePricing.cycleMonthly': '月',
+  'PC.Pages.SpaceResourcePricing.tierHint': '（多档位 · ¥/百万 TOKENS）',
+  'PC.Pages.SpaceResourcePricing.removeTier': '删除此档位',
+  'PC.Pages.SpaceResourcePricing.filterAll': '全部',
 
   'PC.Pages.SpaceAgentSubscriptions.pageTitle': '智能体用户订阅',
   'PC.Pages.SpaceAgentSubscriptions.statusActive': '有效',

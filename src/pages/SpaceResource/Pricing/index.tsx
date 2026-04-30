@@ -1,4 +1,3 @@
-import CustomFormModal from '@/components/CustomFormModal';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
@@ -20,6 +19,7 @@ import {
   apiUpdateToolPricing,
 } from '@/services/subscriptionService';
 import type {
+  ModelPriceTier,
   ModelPricingInfo,
   SkillPricingInfo,
   ToolPricingInfo,
@@ -29,9 +29,11 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
   Button,
+  Drawer,
   Form,
   Input,
   InputNumber,
+  Radio,
   Segmented,
   Select,
   Switch,
@@ -218,14 +220,7 @@ const MODEL_CATALOG: { name: string; provider: string }[] = [
 // ═══════════════════════════════════════════
 
 const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
-  const [selectedModelTiers, setSelectedModelTiers] = useState<
-    {
-      label: string;
-      inputPrice: number;
-      outputPrice: number;
-      cachePrice: number;
-    }[]
-  >([]);
+  const [tiers, setTiers] = useState<ModelPriceTier[]>([]);
   const actionRef = useRef<ActionType>();
 
   const crud = useCrudTab<ModelPricingInfo>({
@@ -237,8 +232,46 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
     toggleApi: apiToggleModelPricing,
   });
 
+  const openAdd = () => {
+    crud.openAdd();
+    setTiers([
+      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
+      { label: '≤128K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
+    ]);
+  };
+
+  const openEdit = (item: ModelPricingInfo) => {
+    crud.openEdit(item);
+    setTiers(item.tiers || []);
+  };
+
   const handleSave = () => {
-    crud.handleSave({ tiers: crud.editItem?.tiers || selectedModelTiers });
+    crud.handleSave({ tiers });
+  };
+
+  const addTier = () => {
+    setTiers([
+      ...tiers,
+      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
+    ]);
+  };
+
+  const removeTier = (index: number) => {
+    setTiers(tiers.filter((_, i) => i !== index));
+  };
+
+  const updateTier = (
+    index: number,
+    field: keyof ModelPriceTier,
+    value: string | number,
+  ) => {
+    const newTiers = [...tiers];
+    if (field === 'label') {
+      newTiers[index] = { ...newTiers[index], label: value as string };
+    } else {
+      newTiers[index] = { ...newTiers[index], [field]: value };
+    }
+    setTiers(newTiers);
   };
 
   const columns: ProColumns<ModelPricingInfo>[] = [
@@ -303,7 +336,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             {
               key: 'edit',
               label: dict('PC.Common.Global.edit'),
-              onClick: (r) => crud.openEdit(r),
+              onClick: (r) => openEdit(r),
             },
             {
               key: 'delete',
@@ -324,7 +357,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <h4 className={styles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.modelTitle')}
         </h4>
-        <Button type="primary" icon={<PlusOutlined />} onClick={crud.openAdd}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
       </div>
@@ -337,18 +370,27 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         pagination={false}
         search={false}
       />
-      <CustomFormModal
-        form={crud.form}
+      <Drawer
         title={
           crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editModelPricing')
             : dict('PC.Pages.SpaceResourcePricing.addModel')
         }
         open={crud.modalOpen}
-        onCancel={() => crud.setModalOpen(false)}
-        onConfirm={handleSave}
-        loading={crud.saving}
+        onClose={() => crud.setModalOpen(false)}
         width={520}
+        footer={
+          <div className={styles.drawerFooter}>
+            <Button onClick={() => crud.setModalOpen(false)}>
+              {dict('PC.Common.Global.cancel')}
+            </Button>
+            <Button type="primary" onClick={handleSave} loading={crud.saving}>
+              {crud.editItem
+                ? dict('PC.Common.Global.save')
+                : dict('PC.Common.Global.confirm')}
+            </Button>
+          </div>
+        }
       >
         <Form form={crud.form} layout="vertical">
           <Form.Item
@@ -370,14 +412,6 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
                       name: m.name,
                       provider: m.provider,
                     });
-                    setSelectedModelTiers([
-                      {
-                        label: '≤32K',
-                        inputPrice: 0,
-                        outputPrice: 0,
-                        cachePrice: 0,
-                      },
-                    ]);
                   }
                 }}
               >
@@ -394,10 +428,95 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             label={dict('PC.Pages.SpaceResourcePricing.provider')}
             rules={[{ required: true }]}
           >
-            <Input disabled={!crud.editItem} />
+            <Input disabled />
           </Form.Item>
         </Form>
-      </CustomFormModal>
+
+        <div className={styles.tierSection}>
+          <div className={styles.tierSectionHeader}>
+            <span className={styles.tierSectionTitle}>
+              {dict('PC.Pages.SpaceResourcePricing.pricingTier')}
+              <span className={styles.tierSectionHint}>
+                {dict('PC.Pages.SpaceResourcePricing.tierHint')}
+              </span>
+            </span>
+            <Button size="small" icon={<PlusOutlined />} onClick={addTier}>
+              {dict('PC.Pages.SpaceResourcePricing.addTier')}
+            </Button>
+          </div>
+
+          {tiers.map((tier, index) => (
+            <div key={index} className={styles.tierCard}>
+              <div className={styles.tierCardHeader}>
+                <div className={styles.tierThreshold}>
+                  <span className={styles.tierThresholdPrefix}>≤</span>
+                  <InputNumber
+                    value={parseInt(tier.label.replace(/[^0-9]/g, '')) || 32}
+                    min={1}
+                    precision={0}
+                    size="small"
+                    className={styles.tierThresholdInput}
+                    onChange={(v) => updateTier(index, 'label', `≤${v || 32}K`)}
+                  />
+                  <span className={styles.tierThresholdSuffix}>K</span>
+                </div>
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<span>✕</span>}
+                  onClick={() => removeTier(index)}
+                  title={dict('PC.Pages.SpaceResourcePricing.removeTier')}
+                />
+              </div>
+              <div className={styles.tierPrices}>
+                <div className={styles.tierPriceItem}>
+                  <span className={styles.tierPriceLabel}>
+                    {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}
+                  </span>
+                  <InputNumber
+                    value={tier.inputPrice}
+                    min={0}
+                    step={0.001}
+                    precision={4}
+                    size="small"
+                    className={styles.tierPriceInput}
+                    onChange={(v) => updateTier(index, 'inputPrice', v || 0)}
+                  />
+                </div>
+                <div className={styles.tierPriceItem}>
+                  <span className={styles.tierPriceLabel}>
+                    {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}
+                  </span>
+                  <InputNumber
+                    value={tier.outputPrice}
+                    min={0}
+                    step={0.001}
+                    precision={4}
+                    size="small"
+                    className={styles.tierPriceInput}
+                    onChange={(v) => updateTier(index, 'outputPrice', v || 0)}
+                  />
+                </div>
+                <div className={styles.tierPriceItem}>
+                  <span className={styles.tierPriceLabel}>
+                    {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}
+                  </span>
+                  <InputNumber
+                    value={tier.cachePrice}
+                    min={0}
+                    step={0.001}
+                    precision={4}
+                    size="small"
+                    className={styles.tierPriceInput}
+                    onChange={(v) => updateTier(index, 'cachePrice', v || 0)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Drawer>
     </div>
   );
 };
@@ -408,6 +527,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
 
 const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   const [keyword, setKeyword] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   const actionRef = useRef<ActionType>();
 
   const crud = useCrudTab<ToolPricingInfo>({
@@ -419,9 +539,11 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
     toggleApi: apiToggleToolPricing,
   });
 
-  const filteredList = keyword
-    ? crud.list.filter((t) => t.name.includes(keyword))
-    : crud.list;
+  const filteredList = crud.list.filter((t) => {
+    const matchKeyword = !keyword || t.name.includes(keyword);
+    const matchCategory = !categoryFilter || t.category === categoryFilter;
+    return matchKeyword && matchCategory;
+  });
 
   const columns: ProColumns<ToolPricingInfo>[] = [
     {
@@ -429,6 +551,27 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      render: (_, record) => (
+        <div className={styles.toolNameCell}>
+          <span
+            className={styles.toolIcon}
+            style={{
+              background:
+                record.category === 'plugin'
+                  ? '#7c3aed'
+                  : record.category === 'workflow'
+                  ? '#ea580c'
+                  : '#0891b2',
+            }}
+          >
+            {record.name.charAt(0)}
+          </span>
+          <div>
+            <div className={styles.toolName}>{record.name}</div>
+            <div className={styles.toolDesc}>{record.description}</div>
+          </div>
+        </div>
+      ),
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.category'),
@@ -527,6 +670,38 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
           allowClear
           style={{ width: 260 }}
         />
+        <Button
+          type={categoryFilter === '' ? 'primary' : 'default'}
+          size="small"
+          onClick={() => setCategoryFilter('')}
+          className={styles.filterBtn}
+        >
+          {dict('PC.Pages.SpaceResourcePricing.filterAll')}
+        </Button>
+        <Button
+          type={categoryFilter === 'plugin' ? 'primary' : 'default'}
+          size="small"
+          onClick={() => setCategoryFilter('plugin')}
+          className={styles.filterBtn}
+        >
+          {dict('PC.Pages.SpaceResourcePricing.categoryPlugin')}
+        </Button>
+        <Button
+          type={categoryFilter === 'workflow' ? 'primary' : 'default'}
+          size="small"
+          onClick={() => setCategoryFilter('workflow')}
+          className={styles.filterBtn}
+        >
+          {dict('PC.Pages.SpaceResourcePricing.categoryWorkflow')}
+        </Button>
+        <Button
+          type={categoryFilter === 'mcp' ? 'primary' : 'default'}
+          size="small"
+          onClick={() => setCategoryFilter('mcp')}
+          className={styles.filterBtn}
+        >
+          {dict('PC.Pages.SpaceResourcePricing.categoryMCP')}
+        </Button>
       </div>
       <XProTable<ToolPricingInfo>
         actionRef={actionRef}
@@ -541,18 +716,31 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <span className={styles.noticeIcon}>ⓘ</span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
       </div>
-      <CustomFormModal
-        form={crud.form}
+      <Drawer
         title={
           crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editTool')
             : dict('PC.Pages.SpaceResourcePricing.addTool')
         }
         open={crud.modalOpen}
-        onCancel={() => crud.setModalOpen(false)}
-        onConfirm={() => crud.handleSave()}
-        loading={crud.saving}
+        onClose={() => crud.setModalOpen(false)}
         width={480}
+        footer={
+          <div className={styles.drawerFooter}>
+            <Button onClick={() => crud.setModalOpen(false)}>
+              {dict('PC.Common.Global.cancel')}
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => crud.handleSave()}
+              loading={crud.saving}
+            >
+              {crud.editItem
+                ? dict('PC.Common.Global.save')
+                : dict('PC.Common.Global.confirm')}
+            </Button>
+          </div>
+        }
       >
         <Form form={crud.form} layout="vertical">
           <Form.Item
@@ -633,7 +821,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             <InputNumber min={0} precision={0} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
-      </CustomFormModal>
+      </Drawer>
     </div>
   );
 };
@@ -677,6 +865,24 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       dataIndex: 'name',
       key: 'name',
       width: 180,
+      render: (_, record) => (
+        <div className={styles.toolNameCell}>
+          <span
+            className={styles.toolIcon}
+            style={{
+              background:
+                record.category === 'voice'
+                  ? '#7c3aed'
+                  : record.category === 'vision'
+                  ? '#2563eb'
+                  : '#16a34a',
+            }}
+          >
+            {record.name.charAt(0)}
+          </span>
+          <span className={styles.toolName}>{record.name}</span>
+        </div>
+      ),
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.category'),
@@ -779,18 +985,27 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         pagination={false}
         search={false}
       />
-      <CustomFormModal
-        form={crud.form}
+      <Drawer
         title={
           crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editSkill')
             : dict('PC.Pages.SpaceResourcePricing.addSkill')
         }
         open={crud.modalOpen}
-        onCancel={() => crud.setModalOpen(false)}
-        onConfirm={handleSave}
-        loading={crud.saving}
+        onClose={() => crud.setModalOpen(false)}
         width={480}
+        footer={
+          <div className={styles.drawerFooter}>
+            <Button onClick={() => crud.setModalOpen(false)}>
+              {dict('PC.Common.Global.cancel')}
+            </Button>
+            <Button type="primary" onClick={handleSave} loading={crud.saving}>
+              {crud.editItem
+                ? dict('PC.Common.Global.save')
+                : dict('PC.Common.Global.confirm')}
+            </Button>
+          </div>
+        }
       >
         <Form form={crud.form} layout="vertical">
           <Form.Item
@@ -849,22 +1064,18 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             label={dict('PC.Pages.SpaceResourcePricing.pricingMode')}
             required
           >
-            <div className={styles.pricingModelBtns}>
-              <Button
-                type={pricingModel === 'buyout' ? 'primary' : 'default'}
-                onClick={() => setPricingModel('buyout')}
-                style={{ flex: 1 }}
-              >
+            <Radio.Group
+              value={pricingModel}
+              onChange={(e) => setPricingModel(e.target.value)}
+              className={styles.pricingModelRadio}
+            >
+              <Radio value="buyout">
                 {dict('PC.Pages.SpaceResourcePricing.pricingModeBuyout')}
-              </Button>
-              <Button
-                type={pricingModel === 'monthly' ? 'primary' : 'default'}
-                onClick={() => setPricingModel('monthly')}
-                style={{ flex: 1 }}
-              >
+              </Radio>
+              <Radio value="monthly">
                 {dict('PC.Pages.SpaceResourcePricing.pricingModeMonthly')}
-              </Button>
-            </div>
+              </Radio>
+            </Radio.Group>
             <div className={styles.pricingModeHint}>
               {pricingModel === 'buyout'
                 ? dict('PC.Pages.SpaceResourcePricing.buyoutHint')
@@ -884,7 +1095,7 @@ const SkillPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             />
           </Form.Item>
         </Form>
-      </CustomFormModal>
+      </Drawer>
     </div>
   );
 };
