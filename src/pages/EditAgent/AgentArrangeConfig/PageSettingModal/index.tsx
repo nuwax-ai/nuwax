@@ -14,6 +14,7 @@ import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
+import CustomNameAndIcon from './CustomNameAndIcon';
 import HomeIndex from './HomeIndex';
 import styles from './index.less';
 import VisibleToLLM from './VisibleToLLM';
@@ -25,6 +26,8 @@ const cx = classNames.bind(styles);
  */
 const PageSettingModal: React.FC<PageSettingModalProps> = ({
   open,
+  // 是否为通用型智能体
+  isTaskAgent = false,
   currentComponentInfo,
   allPageComponentList,
   onCancel,
@@ -37,10 +40,15 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      setAction(PageSettingEnum.Visible_To_LLM);
+      // 通用型智能体不显示【是否模型可见】
+      if (isTaskAgent) {
+        setAction(PageSettingEnum.Home_Index);
+      } else {
+        setAction(PageSettingEnum.Visible_To_LLM);
+      }
       setComponentInfo(currentComponentInfo);
     }
-  }, [open, currentComponentInfo]);
+  }, [open, currentComponentInfo, isTaskAgent]);
 
   // 更新智能体页面配置
   const { runAsync: runUpdate } = useRequest(apiAgentPageUpdate, {
@@ -106,7 +114,7 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
   };
 
   // 更新智能体页面配置
-  const handleChangePageInfo = (attr: string, value: number) => {
+  const handleChangePageInfo = (attr: string, value: number | string) => {
     const _componentInfo = cloneDeep(componentInfo);
     if (_componentInfo) {
       _componentInfo.bindConfig[attr] = value;
@@ -135,6 +143,16 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
             onSaveSet={handleSaveSetting}
           />
         );
+      // 自定义名称与图标
+      case PageSettingEnum.Custom_Name_And_Icon:
+        return (
+          <CustomNameAndIcon
+            pageIcon={componentInfo?.bindConfig?.pageIcon}
+            pageName={componentInfo?.bindConfig?.pageName}
+            onChangePageInfo={handleChangePageInfo}
+            onSaveSet={handleSaveSetting}
+          />
+        );
     }
   };
 
@@ -151,10 +169,13 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
             <h3>{t('PC.Pages.AgentArrangePageSettingModal.title')}</h3>
             <ul>
               {PAGE_SETTING_ACTIONS.map((item) => {
-                const actionLabel =
+                // 通用型智能体不显示【是否模型可见】
+                if (
+                  isTaskAgent &&
                   item.type === PageSettingEnum.Visible_To_LLM
-                    ? t('PC.Pages.AgentArrangePageSettingModal.visibleToLlm')
-                    : t('PC.Pages.AgentArrangePageSettingModal.homeIndex');
+                ) {
+                  return null;
+                }
                 return (
                   <li
                     key={item.type}
@@ -163,7 +184,7 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
                     })}
                     onClick={() => setAction(item.type)}
                   >
-                    {actionLabel}
+                    {item.label}
                   </li>
                 );
               })}
