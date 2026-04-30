@@ -7,6 +7,7 @@ import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
 import { dict } from '@/services/i18nRuntime';
+import { CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   EllipsisOutlined,
@@ -27,12 +28,6 @@ import styles from './index.less';
 
 // 绑定 classNames，便于动态样式组合
 const cx = classNames.bind(styles);
-
-interface AppPageNavItem {
-  key: string;
-  name: string;
-  url: string;
-}
 
 /**
  * Layout 主布局组件
@@ -59,56 +54,18 @@ const BaseTemplate: React.FC = () => {
 
   const { runTenantConfig } = useModel('tenantConfigInfo');
 
+  // =========================== footer 渐变 ===========================
+  const historyListRef = useRef<HTMLDivElement | null>(null);
+  // 底部渐变显示状态
+  const [showFooterTopGradient, setShowFooterTopGradient] =
+    useState<boolean>(false);
+
   /** 手机端且侧栏展开时收起侧栏（用于点主内容区、新建会话、历史项等） */
   const closeSidebarIfMobileOpen = useCallback(() => {
     if (isMobile && isAppSidebarVisible) {
       closeAppSidebar();
     }
   }, [isMobile, isAppSidebarVisible, closeAppSidebar]);
-
-  // =========================== footer 渐变 ===========================
-  const historyListRef = useRef<HTMLDivElement | null>(null);
-  // 底部渐变显示状态
-  const [showFooterTopGradient, setShowFooterTopGradient] =
-    useState<boolean>(false);
-  // 页面导航列表
-  const [pageNavList] = useState<AppPageNavItem[]>([
-    {
-      key: 'ppt',
-      name: 'PPT',
-      url: 'https://nuwax.com/user-manual.html',
-    },
-    {
-      key: 'doc',
-      name: '文档',
-      url: 'https://nuwax.com/',
-    },
-    {
-      key: 'research',
-      name: '深度研究',
-      url: 'https://nuwax.com/nuwaclaw.html',
-    },
-    {
-      key: 'website',
-      name: '网站',
-      url: 'https://talent.baidu.com/jobs/list',
-    },
-    {
-      key: 'table',
-      name: '表格',
-      url: 'https://www.baidu.com',
-    },
-    {
-      key: 'agent-cluster',
-      name: 'Agent 集群',
-      url: 'https://uniapp.dcloud.net.cn/tutorial/app-splashscreen.html#common',
-    },
-    {
-      key: 'kimi-code',
-      name: 'Kimi Code',
-      url: 'https://www.baidu.com',
-    },
-  ]);
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -169,11 +126,14 @@ const BaseTemplate: React.FC = () => {
   };
 
   // 页面导航跳转
-  const handleOpenPage = (page: AppPageNavItem) => {
+  const handleOpenPage = (page: CustomPageNavItem) => {
     closeSidebarIfMobileOpen();
-    history.push(
-      `/app/open-iframe-page/${agentId}?url=${encodeURIComponent(page.url)}`,
-    );
+    const url = page.path ? `${process.env.BASE_URL}${page.path}` : '';
+    if (url) {
+      history.push(
+        `/app/open-iframe-page/${agentId}?url=${encodeURIComponent(url)}`,
+      );
+    }
   };
 
   /**
@@ -309,26 +269,33 @@ const BaseTemplate: React.FC = () => {
 
         {/* 页面导航 */}
         <div className={styles.pageNavList}>
-          {pageNavList?.map((item) => {
-            // 判断是否为当前页面
-            const isActive =
-              location.pathname.includes('/app/open-iframe-page/') &&
-              normalizeActiveUrl(currentIframeUrl) ===
-                normalizeActiveUrl(item.url);
+          {appAgentDetail?.customPageMenus?.map(
+            (item: CustomPageNavItem, index: number) => {
+              // 获取页面url: 如果path存在，则拼接base url
+              // path: "/page/6368147380375552-1590/prod/"
+              const url = item.path
+                ? `${process.env.BASE_URL}${item.path}`
+                : '';
+              // 判断是否为当前页面
+              const isActive =
+                location.pathname.includes('/app/open-iframe-page/') &&
+                normalizeActiveUrl(currentIframeUrl) ===
+                  normalizeActiveUrl(url);
 
-            return (
-              <div
-                key={item.key}
-                className={cx(styles.pageNavItem, {
-                  [styles['page-nav-item-active']]: isActive,
-                })}
-                onClick={() => handleOpenPage(item)}
-              >
-                <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
-                <span className="text-ellipsis">{item.name}</span>
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={`${item.name}-${index}`}
+                  className={cx(styles.pageNavItem, {
+                    [styles['page-nav-item-active']]: isActive,
+                  })}
+                  onClick={() => handleOpenPage(item)}
+                >
+                  <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
+                  <span className="text-ellipsis">{item.name}</span>
+                </div>
+              );
+            },
+          )}
         </div>
 
         {/* 历史会话列表区域 */}
