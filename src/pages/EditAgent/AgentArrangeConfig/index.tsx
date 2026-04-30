@@ -352,8 +352,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page);
     }
 
-    // 事件绑定
+    // 事件绑定（通用智能体不显示）
     if (
+      agentConfigInfo?.type !== AgentTypeEnum.TaskAgent &&
       isExistComponent(AgentComponentTypeEnum.Event) &&
       eventsInfo?.bindConfig?.eventConfigs?.length
     ) {
@@ -1180,7 +1181,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
 
-    // 通用型智能体不显示 【页面/展开页面区/事件绑定】
+    // ========================== 页面配置区域，显示页面组件列表 ==========================
     {
       key: AgentArrangeConfigEnum.Page,
       label: t('PC.Pages.AgentArrangeConfig.page'),
@@ -1243,31 +1244,36 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Page_Event_Binding,
-      label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
-      children: (
-        // 事件绑定列表
-        <EventList
-          textClassName={cx(styles.text)}
-          list={eventsInfo?.bindConfig?.eventConfigs || []}
-          onClick={handleClickEventBindingItem}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addEventBinding')}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddEventBinding();
-          }}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    // 通用型智能体不显示 【事件绑定】
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? []
+      : [
+          {
+            key: AgentArrangeConfigEnum.Page_Event_Binding,
+            label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
+            children: (
+              // 事件绑定列表
+              <EventList
+                textClassName={cx(styles.text)}
+                list={eventsInfo?.bindConfig?.eventConfigs || []}
+                onClick={handleClickEventBindingItem}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addEventBinding')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddEventBinding();
+                }}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
