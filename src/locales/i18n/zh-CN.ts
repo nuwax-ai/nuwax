@@ -2666,6 +2666,18 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.expired': ' 已到期',
   'PC.Pages.MorePage.MySubscriptions.renewSuccess': '续订成功',
   'PC.Pages.MorePage.MySubscriptions.upgradeSuccess': '升级成功',
+  'PC.Pages.MorePage.MySubscriptions.boughtOut': '已买断',
+  'PC.Pages.MorePage.MySubscriptions.permanentUse': '已买断 · 永久使用',
+  'PC.Pages.MorePage.MySubscriptions.buyoutPrice': '买断价 ¥{0}',
+  'PC.Pages.MorePage.MySubscriptions.monthlyPayment': '月付',
+  'PC.Pages.MorePage.MySubscriptions.totalCredits': '总积分',
+  'PC.Pages.MorePage.MySubscriptions.consumedCredits': '已消耗',
+  'PC.Pages.MorePage.MySubscriptions.expireTimeShort': '过期时间',
+  'PC.Pages.MorePage.MySubscriptions.purchaseAmount': '增购金额',
+  'PC.Pages.MorePage.MySubscriptions.remainingCredits': '剩余 {0} 积分',
+  'PC.Pages.MorePage.MySubscriptions.runningOut': '即将用完',
+  'PC.Pages.MorePage.MySubscriptions.usedUp': '已用完',
+  'PC.Pages.MorePage.MySubscriptions.validityPeriod': '有效期 1 年',
 
   // ── 我的订单 - 新增 ──
   'PC.Pages.MorePage.MyOrders.totalCount': '共 {0} 笔',
