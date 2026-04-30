@@ -1,0 +1,173 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.currentPlanCard {
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.planHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.planName {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.planStatus {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 25%);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.planMeta {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+
+.planMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.metaValue {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.metaHint {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.creditsBreakdown {
+  background: rgba(255, 255, 255, 12%);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.creditsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.creditsLabel {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.creditsValue {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.creditsLink {
+  color: rgba(255, 255, 255, 85%);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.addPurchaseBtn {
+  font-size: 12px;
+  padding: 2px 8px;
+  height: auto;
+  line-height: 1.4;
+}
+
+.subscribedSection {
+  margin-top: 8px;
+}
+
+.subscribedTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.subscribedTabs {
+  margin-bottom: 16px;
+}
+
+.subscribedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.subscribedCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.subscribedInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscribedName {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.subscribedProvider {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.subscribedMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #666;
+}
+
+.subscribedActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.subscribedStatus {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.statusActive {
+  color: #52c41a;
+  background: #f6ffed;
+}
+
+.statusExpired {
+  color: #ff4d4f;
+  background: #fff2f0;
+}

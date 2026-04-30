@@ -1,0 +1,82 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.planGrid {
+  margin-bottom: 24px;
+}
+
+.planGridTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.planGridRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.planCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 8%);
+  }
+}
+
+.planCardCurrent {
+  border-color: #667eea;
+}
+
+.currentBadge {
+  position: absolute;
+  top: -1px;
+  right: 16px;
+  background: #667eea;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 0 0 6px 6px;
+}
+
+.planCardName {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.planCardPrice {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+}
+
+.planCardCycle {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.planCardFeatures {
+  text-align: left;
+  margin-bottom: 16px;
+
+  li {
+    font-size: 13px;
+    color: #666;
+    padding: 3px 0;
+    list-style: none;
+
+    &::before {
+      content: '✓';
+      color: #52c41a;
+      margin-right: 6px;
+    }
+  }
+}

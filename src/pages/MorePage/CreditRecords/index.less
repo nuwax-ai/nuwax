@@ -1,0 +1,84 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  padding: 24px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+}
+
+.statHint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 6px;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.filterActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.amountCell {
+  font-weight: 600;
+}
+
+.amountPositive {
+  color: #52c41a;
+}
+
+.amountNegative {
+  color: #ff4d4f;
+}
+
+.typeTagIncrease {
+  color: #52c41a;
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.typeTagDecrease {
+  color: #ff4d4f;
+  background: #fff2f0;
+  border-color: #ffccc7;
+}

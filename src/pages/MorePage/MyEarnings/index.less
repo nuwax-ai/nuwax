@@ -1,0 +1,122 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  padding: 20px 24px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+}
+
+.statHint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.withdrawButtons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.filterActions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tableSource {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceMain {
+  font-size: 13px;
+  color: #333;
+}
+
+.sourceSub {
+  font-size: 11px;
+  color: #999;
+}
+
+.platformFee {
+  color: #999;
+}
+
+.withdrawDrawerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.withdrawRecordList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.withdrawRecordItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.withdrawRecordInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.withdrawRecordAmount {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.withdrawRecordTime {
+  font-size: 12px;
+  color: #999;
+}

@@ -1,110 +1,119 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
-import { TableActions, XProTable } from '@/components/ProComponents';
+import type { PlanInfo } from '@/components/business-component/SubscriptionPlanCards';
+import SubscriptionPlanCards from '@/components/business-component/SubscriptionPlanCards';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiCancelSubscription,
-  apiGetUserCredits,
-  apiListMySubscriptions,
-} from '@/services/subscriptionService';
-import type { UserSubscriptionInfo } from '@/types/interfaces/subscription';
-import {
-  PricingCycleEnum,
-  SubscriptionStatusEnum,
-} from '@/types/interfaces/subscription';
-import { formatDate } from '@/utils/dateUtils';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Tag, message } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { apiGetUserCredits } from '@/services/subscriptionService';
+import { Button, Segmented, message } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
+import styles from './index.less';
 
-const MOCK_MY_SUBSCRIPTIONS: UserSubscriptionInfo[] = [
+// Mock 订阅套餐数据
+const MOCK_PLANS: PlanInfo[] = [
   {
-    id: 1,
-    userId: 1001,
-    userName: '当前用户',
-    agentId: 1,
-    agentName: '代码助手',
-    planId: 1,
-    planName: 'Basic Plan',
+    id: 'basic',
+    name: '基础版',
     price: 99,
-    cycle: PricingCycleEnum.Monthly,
-    status: SubscriptionStatusEnum.Active,
-    startAt: '2026-04-01T00:00:00Z',
-    expireAt: '2026-05-01T00:00:00Z',
-    createdAt: '2026-04-01T00:00:00Z',
+    features: [
+      '500 积分/月',
+      '20个模型',
+      '全部工具',
+      '标准技术支持',
+      'API调用',
+    ],
   },
   {
-    id: 2,
-    userId: 1001,
-    userName: '当前用户',
-    agentId: 2,
-    agentName: '数据分析师',
-    planId: 2,
-    planName: 'Pro Plan',
-    price: 269,
-    cycle: PricingCycleEnum.Quarterly,
-    status: SubscriptionStatusEnum.Expired,
-    startAt: '2026-01-15T00:00:00Z',
-    expireAt: '2026-04-15T00:00:00Z',
-    createdAt: '2026-01-15T00:00:00Z',
+    id: 'pro',
+    name: '专业版',
+    price: 299,
+    features: [
+      '2,000 积分/月',
+      '50个模型',
+      '全部工具+技能',
+      '优先技术支持',
+      'API调用',
+    ],
   },
   {
-    id: 3,
-    userId: 1001,
-    userName: '当前用户',
-    agentId: 3,
-    agentName: '写作助手',
-    planId: 3,
-    planName: 'Enterprise Plan',
+    id: 'enterprise',
+    name: '旗舰版',
     price: 999,
-    cycle: PricingCycleEnum.Yearly,
-    status: SubscriptionStatusEnum.Cancelled,
-    startAt: '2026-02-01T00:00:00Z',
-    expireAt: '2027-02-01T00:00:00Z',
-    createdAt: '2026-02-01T00:00:00Z',
+    features: [
+      '10,000 积分/月',
+      '100+个模型',
+      '全部工具+技能',
+      '专属技术支持',
+      'API调用 + 私有部署',
+    ],
   },
 ];
 
+// Mock 已订阅内容
+const MOCK_SUBSCRIBED_AGENTS = [
+  {
+    id: 1,
+    name: '智能文档摘要',
+    provider: 'AI Labs · 文本处理',
+    price: 19.9,
+    expireAt: '2026-05-28',
+    status: 'active' as const,
+  },
+  {
+    id: 2,
+    name: 'AI绘画助手',
+    provider: 'CreativeAI · 图像处理',
+    price: 29.9,
+    expireAt: '2026-06-15',
+    status: 'active' as const,
+  },
+  {
+    id: 3,
+    name: '智能客服对话',
+    provider: 'ChatBot · 对话生成',
+    price: 9.9,
+    expireAt: '2026-04-30',
+    status: 'expired' as const,
+  },
+  {
+    id: 4,
+    name: '合同审查助手',
+    provider: 'LegalAI · 法律合规',
+    price: 39.9,
+    expireAt: '2026-07-01',
+    status: 'active' as const,
+  },
+  {
+    id: 5,
+    name: '数据可视化生成',
+    provider: 'DataViz · 数据分析',
+    price: 14.9,
+    expireAt: '2026-05-10',
+    status: 'active' as const,
+  },
+  {
+    id: 6,
+    name: '邮件智能撰写',
+    provider: 'MailGen · 办公效率',
+    price: 24.9,
+    expireAt: '2026-08-20',
+    status: 'active' as const,
+  },
+];
+
+// Mock 当前订阅信息
+const MOCK_CURRENT_PLAN = {
+  planName: '专业版',
+  price: 299,
+  expireAt: '2025-12-31',
+  monthlyCredits: 2000,
+  issuedCredits: 1500,
+};
+
 const MySubscriptions: React.FC = () => {
-  const actionRef = useRef<ActionType>();
-  const [balance, setBalance] = useState<number>(350);
-  const [purchaseOpen, setPurchaseOpen] = useState<boolean>(false);
-
-  const cycleLabel = useMemo(
-    () => ({
-      [PricingCycleEnum.Monthly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleMonthly',
-      ),
-      [PricingCycleEnum.Quarterly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleQuarterly',
-      ),
-      [PricingCycleEnum.Yearly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleYearly',
-      ),
-    }),
-    [],
-  );
-
-  const statusConfig = useMemo(
-    () => ({
-      [SubscriptionStatusEnum.Active]: {
-        color: 'success',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusActive'),
-      },
-      [SubscriptionStatusEnum.Expired]: {
-        color: 'default',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusExpired'),
-      },
-      [SubscriptionStatusEnum.Cancelled]: {
-        color: 'error',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusCancelled'),
-      },
-    }),
-    [],
-  );
+  const [balance, setBalance] = useState<number>(12580);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('智能体');
 
   const { run: fetchCredits } = useRequest(apiGetUserCredits, {
     manual: true,
@@ -117,192 +126,194 @@ const MySubscriptions: React.FC = () => {
     fetchCredits();
   }, []);
 
-  const handleCancel = async (id: number) => {
-    try {
-      await apiCancelSubscription(id);
-      message.success(dict('PC.Pages.MorePage.MySubscriptions.cancelSuccess'));
-      actionRef.current?.reload();
-    } catch {
-      message.error(dict('PC.Pages.MorePage.MySubscriptions.cancelFailed'));
-    }
+  const handleRenew = () => {
+    message.success(
+      dict('PC.Pages.MorePage.MySubscriptions.renewSuccess') || '续订成功',
+    );
   };
 
-  const columns: ProColumns<UserSubscriptionInfo>[] = [
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colAgent'),
-      dataIndex: 'agentName',
-      key: 'agentName',
-      ellipsis: true,
-      render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {record.userAvatar && (
-            <img
-              src={record.userAvatar}
-              alt=""
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: '50%',
-                objectFit: 'cover',
-              }}
-            />
-          )}
-          <span>{record.agentName}</span>
-        </div>
-      ),
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colPlan'),
-      dataIndex: 'planName',
-      key: 'planName',
-      ellipsis: true,
-      search: false,
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colPrice'),
-      dataIndex: 'price',
-      key: 'price',
-      search: false,
-      render: (_, record) =>
-        `${dict('PC.Common.Global.currencySymbol')}${record.price}/${
-          cycleLabel[record.cycle]
-        }`,
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colStartAt'),
-      dataIndex: 'startAt',
-      key: 'startAt',
-      search: false,
-      render: (val) => formatDate(val),
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colExpireAt'),
-      dataIndex: 'expireAt',
-      key: 'expireAt',
-      search: false,
-      render: (val) => formatDate(val),
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colStatus'),
-      dataIndex: 'status',
-      key: 'status',
-      search: false,
-      render: (_, record) => {
-        const config = statusConfig[record.status];
-        return <Tag color={config?.color}>{config?.label}</Tag>;
-      },
-      valueEnum: {
-        [SubscriptionStatusEnum.Active]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusActive'),
-        },
-        [SubscriptionStatusEnum.Expired]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusExpired'),
-        },
-        [SubscriptionStatusEnum.Cancelled]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusCancelled'),
-        },
-      },
-    },
-    {
-      title: dict('PC.Pages.MorePage.MySubscriptions.colAction'),
-      key: 'action',
-      search: false,
-      width: 140,
-      render: (_, record) =>
-        record.status === SubscriptionStatusEnum.Active ? (
-          <TableActions
-            record={record}
-            actions={[
-              {
-                key: 'cancel',
-                label: dict('PC.Pages.MorePage.MySubscriptions.cancelRenewal'),
-                danger: true,
-                confirm: {
-                  title: dict(
-                    'PC.Pages.MorePage.MySubscriptions.confirmCancel',
-                  ),
-                },
-                onClick: async (r) => {
-                  await handleCancel(r.id);
-                },
-              },
-            ]}
-          />
-        ) : null,
-    },
-  ];
+  const handleUpgrade = () => {
+    message.success(
+      dict('PC.Pages.MorePage.MySubscriptions.upgradeSuccess') || '升级成功',
+    );
+  };
+
+  // 积分明细数据
+  const creditsBreakdown = {
+    total: balance,
+    subscription: 8580,
+    purchase: 3500,
+    activity: 500,
+  };
 
   return (
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.MySubscriptions.pageTitle')}
-      rightSlot={
-        <Button type="primary" onClick={() => setPurchaseOpen(true)}>
-          {dict('PC.Pages.MorePage.MySubscriptions.buyCredits')}
-        </Button>
-      }
     >
-      {/* 积分余额横幅 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderRadius: 8,
-          marginBottom: 16,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: '#fff',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <SvgIcon name="icons-nav-credits" style={{ fontSize: 24 }} />
+      {/* 当前订阅卡片 */}
+      <div className={styles.currentPlanCard}>
+        <div className={styles.planHeader}>
           <div>
-            <div style={{ fontSize: 14, opacity: 0.85 }}>
-              {dict('PC.Pages.MorePage.MySubscriptions.creditBalance')}
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 600 }}>
-              {balance.toLocaleString()}
+            <div className={styles.planName}>{MOCK_CURRENT_PLAN.planName}</div>
+            <div className={styles.planStatus}>
+              {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
             </div>
           </div>
         </div>
-        <Button
-          type="default"
-          ghost
-          onClick={() => history.push('/more-page/credit-records')}
-        >
-          {dict('PC.Pages.MorePage.MySubscriptions.viewDetails')}
-        </Button>
+
+        <div className={styles.planMeta}>
+          <div className={styles.planMetaItem}>
+            <span className={styles.metaLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.monthlyFee')}
+            </span>
+            <span className={styles.metaValue}>¥{MOCK_CURRENT_PLAN.price}</span>
+            <span className={styles.metaHint}>
+              {dict(
+                'PC.Pages.MorePage.MySubscriptions.renewedTo',
+                MOCK_CURRENT_PLAN.expireAt.slice(0, 7),
+              )}
+            </span>
+          </div>
+          <div className={styles.planMetaItem}>
+            <span className={styles.metaLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.monthlyCredits')}
+            </span>
+            <span className={styles.metaValue}>
+              {MOCK_CURRENT_PLAN.monthlyCredits.toLocaleString()}
+            </span>
+            <span className={styles.metaHint}>
+              {dict(
+                'PC.Pages.MorePage.MySubscriptions.creditsIssued',
+                String(MOCK_CURRENT_PLAN.issuedCredits),
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* 积分明细 */}
+        <div className={styles.creditsBreakdown}>
+          <div className={styles.creditsRow}>
+            <span className={styles.creditsLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.totalCredits')}
+              <span
+                className={styles.creditsLink}
+                onClick={() => history.push('/more-page/credit-records')}
+              >
+                {' '}
+                {dict('PC.Pages.MorePage.MySubscriptions.detail')}
+              </span>
+            </span>
+            <span className={styles.creditsValue}>
+              {creditsBreakdown.total.toLocaleString()}
+            </span>
+          </div>
+          <div className={styles.creditsRow}>
+            <span className={styles.creditsLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.subscriptionCredits')}
+            </span>
+            <span className={styles.creditsValue}>
+              {creditsBreakdown.subscription.toLocaleString()}
+            </span>
+          </div>
+          <div className={styles.creditsRow}>
+            <span className={styles.creditsLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.purchaseCredits')}
+              <Button
+                type="link"
+                size="small"
+                className={styles.addPurchaseBtn}
+                onClick={() => setPurchaseOpen(true)}
+              >
+                {dict('PC.Pages.MorePage.MySubscriptions.addPurchase')}
+              </Button>
+            </span>
+            <span className={styles.creditsValue}>
+              {creditsBreakdown.purchase.toLocaleString()}
+            </span>
+          </div>
+          <div className={styles.creditsRow}>
+            <span className={styles.creditsLabel}>
+              {dict('PC.Pages.MorePage.MySubscriptions.activityCredits')}
+            </span>
+            <span className={styles.creditsValue}>
+              {creditsBreakdown.activity.toLocaleString()}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <XProTable<UserSubscriptionInfo>
-        rowKey="id"
-        actionRef={actionRef}
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListMySubscriptions({
-              keyword: params.agentName,
-              status: params.status,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_MY_SUBSCRIPTIONS,
-            total: MOCK_MY_SUBSCRIPTIONS.length,
-            success: true,
-          };
-        }}
+      {/* 订阅套餐网格 */}
+      <SubscriptionPlanCards
+        plans={MOCK_PLANS}
+        currentPlanId="pro"
+        onRenew={handleRenew}
+        onUpgrade={handleUpgrade}
       />
 
-      {/* 侧边“增购积分”入口：由我的订阅页统一弹出购买弹框 */}
+      {/* 已订阅内容 */}
+      <div className={styles.subscribedSection}>
+        <div className={styles.subscribedTitle}>
+          {dict('PC.Pages.MorePage.MySubscriptions.subscribedContent')}
+        </div>
+        <Segmented
+          className={styles.subscribedTabs}
+          value={activeTab}
+          onChange={(val) => setActiveTab(val as string)}
+          options={[
+            dict('PC.Pages.MorePage.MySubscriptions.tabAgents'),
+            dict('PC.Pages.MorePage.MySubscriptions.tabSkills'),
+            dict('PC.Pages.MorePage.MySubscriptions.tabCredits'),
+          ]}
+        />
+        <div className={styles.subscribedGrid}>
+          {MOCK_SUBSCRIBED_AGENTS.map((agent) => (
+            <div key={agent.id} className={styles.subscribedCard}>
+              <div className={styles.subscribedInfo}>
+                <div className={styles.subscribedName}>{agent.name}</div>
+                <div className={styles.subscribedProvider}>
+                  {agent.provider}
+                </div>
+                <div className={styles.subscribedMeta}>
+                  <span>
+                    {dict('PC.Pages.MorePage.MySubscriptions.subAmount')} ¥
+                    {agent.price}
+                    {dict('PC.Pages.MorePage.MySubscriptions.perMonth')}
+                  </span>
+                  <span>
+                    {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}{' '}
+                    {agent.expireAt}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.subscribedActions}>
+                <span
+                  className={`${styles.subscribedStatus} ${
+                    agent.status === 'active'
+                      ? styles.statusActive
+                      : styles.statusExpired
+                  }`}
+                >
+                  {agent.status === 'active'
+                    ? dict('PC.Pages.MorePage.MySubscriptions.subscribing')
+                    : dict('PC.Pages.MorePage.MySubscriptions.expired')}
+                </span>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    message.success(
+                      dict('PC.Pages.MorePage.MySubscriptions.renewSuccess') ||
+                        '续订成功',
+                    )
+                  }
+                >
+                  {dict('PC.Pages.MorePage.MySubscriptions.renew')}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <CreditsPurchaseModal
         open={purchaseOpen}
         onCancel={() => setPurchaseOpen(false)}
