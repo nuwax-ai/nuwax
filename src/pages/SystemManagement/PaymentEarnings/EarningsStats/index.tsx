@@ -13,7 +13,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { formatDateTime } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Statistic, Tag } from 'antd';
+import { Card, Col, Row, Statistic, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -170,70 +170,46 @@ const PaymentEarnings: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devEarningsStats')}>
-      {/* 统计卡片 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f5f5f5',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemPaymentEarnings.totalEarnings')}
-            value={summary?.totalEarnings ?? 0}
-            precision={2}
-            prefix={dict('PC.Common.Global.currencySymbol')}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f0f5ff',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemPaymentEarnings.monthlyEarnings')}
-            value={summary?.monthlyEarnings ?? 0}
-            precision={2}
-            prefix={dict('PC.Common.Global.currencySymbol')}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#fff7e6',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemPaymentEarnings.pendingSettlement')}
-            value={summary?.pendingSettlement ?? 0}
-            precision={2}
-            prefix={dict('PC.Common.Global.currencySymbol')}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f6ffed',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemPaymentEarnings.developerCount')}
-            value={summary?.developerCount ?? 0}
-          />
-        </div>
-      </div>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentEarnings.totalEarnings')}
+              value={summary?.totalEarnings ?? 0}
+              precision={2}
+              prefix={dict('PC.Common.Global.currencySymbol')}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentEarnings.monthlyEarnings')}
+              value={summary?.monthlyEarnings ?? 0}
+              precision={2}
+              prefix={dict('PC.Common.Global.currencySymbol')}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentEarnings.pendingSettlement')}
+              value={summary?.pendingSettlement ?? 0}
+              precision={2}
+              prefix={dict('PC.Common.Global.currencySymbol')}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentEarnings.developerCount')}
+              value={summary?.developerCount ?? 0}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       <XProTable<EarningRecordInfo>
         rowKey="id"

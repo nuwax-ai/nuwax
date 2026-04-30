@@ -7,7 +7,7 @@ import {
 } from '@/services/subscriptionService';
 import type { PaymentConfigInfo } from '@/types/interfaces/subscription';
 import { AlipayCircleFilled, WechatFilled } from '@ant-design/icons';
-import { Button, Form, Input, Tabs, message } from 'antd';
+import { Button, Card, Form, Input, Tabs, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const MOCK_CONFIG: PaymentConfigInfo = {
@@ -51,23 +51,15 @@ const Config: React.FC = () => {
     }
   };
 
-  const fieldStyle: React.CSSProperties = { marginBottom: 16 };
-
   const alipayTab = (
-    <div style={{ maxWidth: 560 }}>
-      <Form.Item
-        name="alipayAppId"
-        label="App ID"
-        rules={[{ required: true }]}
-        style={fieldStyle}
-      >
+    <Card style={{ maxWidth: 560 }}>
+      <Form.Item name="alipayAppId" label="App ID" rules={[{ required: true }]}>
         <Input placeholder="2021000000000000" />
       </Form.Item>
       <Form.Item
         name="alipayPrivateKey"
         label={dict('PC.Pages.SystemPaymentConfig.privateKey')}
         rules={[{ required: true }]}
-        style={fieldStyle}
       >
         <Input.TextArea
           rows={4}
@@ -80,7 +72,6 @@ const Config: React.FC = () => {
         name="alipayPublicKey"
         label={dict('PC.Pages.SystemPaymentConfig.alipayPublicKey')}
         rules={[{ required: true }]}
-        style={fieldStyle}
       >
         <Input.TextArea
           rows={4}
@@ -92,28 +83,21 @@ const Config: React.FC = () => {
       <Form.Item
         name="alipayNotifyUrl"
         label={dict('PC.Pages.SystemPaymentConfig.notifyUrl')}
-        style={fieldStyle}
       >
         <Input placeholder="https://yourdomain.com/api/payment/alipay/notify" />
       </Form.Item>
-    </div>
+    </Card>
   );
 
   const wechatTab = (
-    <div style={{ maxWidth: 560 }}>
-      <Form.Item
-        name="wechatAppId"
-        label="App ID"
-        rules={[{ required: true }]}
-        style={fieldStyle}
-      >
+    <Card style={{ maxWidth: 560 }}>
+      <Form.Item name="wechatAppId" label="App ID" rules={[{ required: true }]}>
         <Input placeholder="wx0000000000000000" />
       </Form.Item>
       <Form.Item
         name="wechatMchId"
         label={dict('PC.Pages.SystemPaymentConfig.mchId')}
         rules={[{ required: true }]}
-        style={fieldStyle}
       >
         <Input placeholder="1234567890" />
       </Form.Item>
@@ -121,7 +105,6 @@ const Config: React.FC = () => {
         name="wechatApiKey"
         label={dict('PC.Pages.SystemPaymentConfig.apiKey')}
         rules={[{ required: true }]}
-        style={fieldStyle}
       >
         <Input.Password
           placeholder={dict('PC.Pages.SystemPaymentConfig.apiKeyPlaceholder')}
@@ -130,11 +113,10 @@ const Config: React.FC = () => {
       <Form.Item
         name="wechatNotifyUrl"
         label={dict('PC.Pages.SystemPaymentConfig.notifyUrl')}
-        style={fieldStyle}
       >
         <Input placeholder="https://yourdomain.com/api/payment/wechat/notify" />
       </Form.Item>
-    </div>
+    </Card>
   );
 
   return (

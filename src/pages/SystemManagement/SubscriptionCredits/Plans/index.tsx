@@ -13,7 +13,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { formatDate } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Statistic, Tag } from 'antd';
+import { Card, Col, Row, Statistic, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -191,69 +191,45 @@ const SubscriptionCredits: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.subsPlans')}>
-      {/* 统计卡片 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f0f5ff',
-          }}
-        >
-          <Statistic
-            title={dict(
-              'PC.Pages.SystemSubscriptionCredits.activeSubscriptions',
-            )}
-            value={summary?.activeSubscriptions ?? 0}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f6ffed',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemSubscriptionCredits.totalUsers')}
-            value={summary?.totalUsers ?? 0}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f5f5f5',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemSubscriptionCredits.monthlyRevenue')}
-            value={summary?.monthlyRevenue ?? 0}
-            precision={2}
-            prefix={dict('PC.Common.Global.currencySymbol')}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#fff7e6',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemSubscriptionCredits.totalCredits')}
-            value={summary?.totalCredits ?? 0}
-            suffix="credits"
-          />
-        </div>
-      </div>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict(
+                'PC.Pages.SystemSubscriptionCredits.activeSubscriptions',
+              )}
+              value={summary?.activeSubscriptions ?? 0}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemSubscriptionCredits.totalUsers')}
+              value={summary?.totalUsers ?? 0}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemSubscriptionCredits.monthlyRevenue')}
+              value={summary?.monthlyRevenue ?? 0}
+              precision={2}
+              prefix={dict('PC.Common.Global.currencySymbol')}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemSubscriptionCredits.totalCredits')}
+              value={summary?.totalCredits ?? 0}
+              suffix="credits"
+            />
+          </Card>
+        </Col>
+      </Row>
 
       <XProTable<UserSubscriptionInfo>
         rowKey="id"

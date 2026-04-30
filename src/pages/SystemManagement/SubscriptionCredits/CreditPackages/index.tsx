@@ -1,3 +1,4 @@
+import CustomFormModal from '@/components/CustomFormModal';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -13,16 +14,7 @@ import type { CreditPackageAdminInfo } from '@/types/interfaces/subscription';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import {
-  Button,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Switch,
-  Tag,
-  message,
-} from 'antd';
+import { Button, Form, Input, InputNumber, Switch, Tag, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
 const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
@@ -269,7 +261,8 @@ const CreditPackages: React.FC = () => {
         })}
       />
 
-      <Modal
+      <CustomFormModal
+        form={form}
         title={
           editItem
             ? dict('PC.Pages.SystemCreditPackages.editPackage')
@@ -277,11 +270,11 @@ const CreditPackages: React.FC = () => {
         }
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        onOk={handleSave}
-        confirmLoading={saving}
+        onConfirm={handleSave}
+        loading={saving}
         width={480}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Form form={form} layout="vertical">
           <Form.Item
             name="name"
             label={dict('PC.Pages.SystemCreditPackages.fieldName')}
@@ -338,7 +331,7 @@ const CreditPackages: React.FC = () => {
             <Switch />
           </Form.Item>
         </Form>
-      </Modal>
+      </CustomFormModal>
     </WorkspaceLayout>
   );
 };

@@ -11,7 +11,7 @@ import {
   ClockCircleFilled,
   CloseCircleFilled,
 } from '@ant-design/icons';
-import { Alert, Button, Form, Input, message } from 'antd';
+import { Alert, Button, Card, Form, Input, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 const MOCK_MERCHANT: MerchantInfoData = {
@@ -94,7 +94,7 @@ const MerchantInfo: React.FC = () => {
     >
       <div style={{ maxWidth: 640 }}>
         <Alert
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 16 }}
           type={statusInfo.color as 'warning' | 'success' | 'error'}
           icon={statusInfo.icon}
           showIcon
@@ -105,51 +105,52 @@ const MerchantInfo: React.FC = () => {
               : undefined
           }
         />
-
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="companyName"
-            label={dict('PC.Pages.SystemMerchantInfo.companyName')}
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="creditCode"
-            label={dict('PC.Pages.SystemMerchantInfo.creditCode')}
-            rules={[{ required: true }]}
-          >
-            <Input maxLength={18} />
-          </Form.Item>
-          <Form.Item
-            name="legalPerson"
-            label={dict('PC.Pages.SystemMerchantInfo.legalPerson')}
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="contactName"
-            label={dict('PC.Pages.SystemMerchantInfo.contactName')}
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="contactPhone"
-            label={dict('PC.Pages.SystemMerchantInfo.contactPhone')}
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="contactEmail"
-            label={dict('PC.Pages.SystemMerchantInfo.contactEmail')}
-            rules={[{ required: true }, { type: 'email' }]}
-          >
-            <Input />
-          </Form.Item>
-        </Form>
+        <Card>
+          <Form form={form} layout="vertical">
+            <Form.Item
+              name="companyName"
+              label={dict('PC.Pages.SystemMerchantInfo.companyName')}
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="creditCode"
+              label={dict('PC.Pages.SystemMerchantInfo.creditCode')}
+              rules={[{ required: true }]}
+            >
+              <Input maxLength={18} />
+            </Form.Item>
+            <Form.Item
+              name="legalPerson"
+              label={dict('PC.Pages.SystemMerchantInfo.legalPerson')}
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="contactName"
+              label={dict('PC.Pages.SystemMerchantInfo.contactName')}
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="contactPhone"
+              label={dict('PC.Pages.SystemMerchantInfo.contactPhone')}
+              rules={[{ required: true }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="contactEmail"
+              label={dict('PC.Pages.SystemMerchantInfo.contactEmail')}
+              rules={[{ required: true }, { type: 'email' }]}
+            >
+              <Input />
+            </Form.Item>
+          </Form>
+        </Card>
       </div>
     </WorkspaceLayout>
   );

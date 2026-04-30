@@ -14,7 +14,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { formatDateTime } from '@/utils/dateUtils';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Input, Modal, Statistic, Tag, message } from 'antd';
+import { Card, Col, Input, Modal, Row, Statistic, Tag, message } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 
 const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
@@ -213,56 +213,36 @@ const Withdrawal: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
-      {/* 统计概览 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 16,
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#fff7e6',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemWithdrawal.statPending')}
-            value={pendingCount}
-            suffix={dict('PC.Common.Global.items')}
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f6ffed',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemWithdrawal.statApproved')}
-            value={totalApproved}
-            precision={2}
-            prefix="¥"
-          />
-        </div>
-        <div
-          style={{
-            padding: '20px 24px',
-            borderRadius: 8,
-            background: '#f0f5ff',
-          }}
-        >
-          <Statistic
-            title={dict('PC.Pages.SystemWithdrawal.statTotal')}
-            value={MOCK_WITHDRAWALS.length}
-            suffix={dict('PC.Common.Global.items')}
-          />
-        </div>
-      </div>
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemWithdrawal.statPending')}
+              value={pendingCount}
+              suffix={dict('PC.Common.Global.items')}
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemWithdrawal.statApproved')}
+              value={totalApproved}
+              precision={2}
+              prefix="¥"
+            />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemWithdrawal.statTotal')}
+              value={MOCK_WITHDRAWALS.length}
+              suffix={dict('PC.Common.Global.items')}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       <XProTable<WithdrawalInfo>
         rowKey="id"

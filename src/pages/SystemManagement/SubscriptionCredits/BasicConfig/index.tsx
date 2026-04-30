@@ -5,7 +5,16 @@ import {
   apiGetBasicConfig,
   apiSaveBasicConfig,
 } from '@/services/subscriptionService';
-import { Divider, Form, InputNumber, Switch, message } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  InputNumber,
+  Row,
+  Switch,
+  message,
+} from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -58,54 +67,22 @@ const BasicConfig: React.FC = () => {
     }
   };
 
-  const labelStyle: React.CSSProperties = { fontWeight: 500, minWidth: 160 };
-  const sectionStyle: React.CSSProperties = {
-    background: '#fafafa',
-    borderRadius: 8,
-    padding: '20px 24px',
-    marginBottom: 16,
-  };
-
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.subsBasicConfig')}
       rightSlot={
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            background: '#1677ff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 18px',
-            cursor: 'pointer',
-            fontSize: 14,
-          }}
-        >
-          {saving
-            ? dict('PC.Common.Global.saving')
-            : dict('PC.Common.Global.save')}
-        </button>
+        <Button type="primary" loading={saving} onClick={handleSave}>
+          {dict('PC.Common.Global.save')}
+        </Button>
       }
     >
       <Form form={form} layout="vertical" style={{ maxWidth: 720 }}>
         {/* 订阅功能配置 */}
-        <div style={sectionStyle}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <span style={{ fontSize: 15, fontWeight: 600 }}>
-              {dict(
-                'PC.Pages.SystemSubscriptionBasicConfig.sectionSubscription',
-              )}
-            </span>
+        <Card
+          title={dict(
+            'PC.Pages.SystemSubscriptionBasicConfig.sectionSubscription',
+          )}
+          extra={
             <Form.Item
               name="subscriptionEnabled"
               valuePropName="checked"
@@ -113,170 +90,148 @@ const BasicConfig: React.FC = () => {
             >
               <Switch onChange={setSubscriptionEnabled} />
             </Form.Item>
-          </div>
-          <Divider style={{ margin: '0 0 16px' }} />
+          }
+          style={{ marginBottom: 16 }}
+        >
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '0 32px',
               opacity: subscriptionEnabled ? 1 : 0.4,
               pointerEvents: subscriptionEnabled ? 'auto' : 'none',
             }}
           >
-            <Form.Item
-              name="platformFeeRate"
-              label={
-                <span style={labelStyle}>
-                  {dict(
+            <Row gutter={[32, 0]}>
+              <Col span={12}>
+                <Form.Item
+                  name="platformFeeRate"
+                  label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.platformFeeRate',
                   )}
-                </span>
-              }
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                min={0}
-                max={100}
-                precision={1}
-                suffix="%"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="developerFeeRate"
-              label={
-                <span style={labelStyle}>
-                  {dict(
+                  rules={[{ required: true }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={1}
+                    suffix="%"
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="developerFeeRate"
+                  label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.developerFeeRate',
                   )}
-                </span>
-              }
-              rules={[{ required: true }]}
-            >
-              <InputNumber
-                min={0}
-                max={100}
-                precision={1}
-                suffix="%"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="defaultTrialCount"
-              label={
-                <span style={labelStyle}>
-                  {dict(
+                  rules={[{ required: true }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={1}
+                    suffix="%"
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="defaultTrialCount"
+                  label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.defaultTrialCount',
                   )}
-                </span>
-              }
-            >
-              <InputNumber
-                min={0}
-                max={100}
-                precision={0}
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="refundWindowDays"
-              label={
-                <span style={labelStyle}>
-                  {dict(
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={0}
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="refundWindowDays"
+                  label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.refundWindowDays',
                   )}
-                </span>
-              }
-            >
-              <InputNumber
-                min={0}
-                precision={0}
-                suffix={dict('PC.Common.Global.days')}
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+                >
+                  <InputNumber
+                    min={0}
+                    precision={0}
+                    suffix={dict('PC.Common.Global.days')}
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
           </div>
-        </div>
+        </Card>
 
         {/* 积分功能配置 */}
-        <div style={sectionStyle}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <span style={{ fontSize: 15, fontWeight: 600 }}>
-              {dict('PC.Pages.SystemSubscriptionBasicConfig.sectionCredits')}
-            </span>
+        <Card
+          title={dict('PC.Pages.SystemSubscriptionBasicConfig.sectionCredits')}
+          extra={
             <Form.Item name="creditsEnabled" valuePropName="checked" noStyle>
               <Switch onChange={setCreditsEnabled} />
             </Form.Item>
-          </div>
-          <Divider style={{ margin: '0 0 16px' }} />
+          }
+          style={{ marginBottom: 16 }}
+        >
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '0 32px',
               opacity: creditsEnabled ? 1 : 0.4,
               pointerEvents: creditsEnabled ? 'auto' : 'none',
             }}
           >
-            <Form.Item
-              name="creditsExchangeRate"
-              label={
-                <span style={labelStyle}>
-                  {dict(
+            <Row gutter={[32, 0]}>
+              <Col span={12}>
+                <Form.Item
+                  name="creditsExchangeRate"
+                  label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate',
                   )}
-                </span>
-              }
-              extra={dict(
-                'PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRateHint',
-              )}
-            >
-              <InputNumber min={1} precision={0} style={{ width: '100%' }} />
-            </Form.Item>
+                  extra={dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRateHint',
+                  )}
+                >
+                  <InputNumber
+                    min={1}
+                    precision={0}
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
           </div>
-        </div>
+        </Card>
 
         {/* 提现配置 */}
-        <div style={sectionStyle}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
-            {dict('PC.Pages.SystemSubscriptionBasicConfig.sectionWithdrawal')}
-          </div>
-          <Divider style={{ margin: '0 0 16px' }} />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '0 32px',
-            }}
-          >
-            <Form.Item
-              name="withdrawalFeeRate"
-              label={
-                <span style={labelStyle}>
-                  {dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.withdrawalFeeRate',
-                  )}
-                </span>
-              }
-            >
-              <InputNumber
-                min={0}
-                max={100}
-                precision={2}
-                suffix="%"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-          </div>
-        </div>
+        <Card
+          title={dict(
+            'PC.Pages.SystemSubscriptionBasicConfig.sectionWithdrawal',
+          )}
+          style={{ marginBottom: 16 }}
+        >
+          <Row gutter={[32, 0]}>
+            <Col span={12}>
+              <Form.Item
+                name="withdrawalFeeRate"
+                label={dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.withdrawalFeeRate',
+                )}
+              >
+                <InputNumber
+                  min={0}
+                  max={100}
+                  precision={2}
+                  suffix="%"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
       </Form>
     </WorkspaceLayout>
   );
