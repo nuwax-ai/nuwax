@@ -21,18 +21,25 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, Outlet, useModel, useParams } from 'umi';
+import { history, Outlet, useLocation, useModel, useParams } from 'umi';
 import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
 // 绑定 classNames，便于动态样式组合
 const cx = classNames.bind(styles);
 
+interface AppPageNavItem {
+  key: string;
+  name: string;
+  url: string;
+}
+
 /**
  * Layout 主布局组件
  * 负责响应式菜单、历史会话、消息、设置弹窗的布局与展示
  */
 const BaseTemplate: React.FC = () => {
+  const location = useLocation();
   const { id: cId, agentId } = useParams();
   const { setOpenAdmin, isMobile } = useModel('layout');
   // 状态管理
@@ -64,6 +71,44 @@ const BaseTemplate: React.FC = () => {
   // 底部渐变显示状态
   const [showFooterTopGradient, setShowFooterTopGradient] =
     useState<boolean>(false);
+  // 页面导航列表
+  const [pageNavList] = useState<AppPageNavItem[]>([
+    {
+      key: 'ppt',
+      name: 'PPT',
+      url: 'https://nuwax.com/user-manual.html',
+    },
+    {
+      key: 'doc',
+      name: '文档',
+      url: 'https://nuwax.com/',
+    },
+    {
+      key: 'research',
+      name: '深度研究',
+      url: 'https://nuwax.com/nuwaclaw.html',
+    },
+    {
+      key: 'website',
+      name: '网站',
+      url: 'https://talent.baidu.com/jobs/list',
+    },
+    {
+      key: 'table',
+      name: '表格',
+      url: 'https://www.baidu.com',
+    },
+    {
+      key: 'agent-cluster',
+      name: 'Agent 集群',
+      url: 'https://uniapp.dcloud.net.cn/tutorial/app-splashscreen.html#common',
+    },
+    {
+      key: 'kimi-code',
+      name: 'Kimi Code',
+      url: 'https://www.baidu.com',
+    },
+  ]);
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -121,6 +166,14 @@ const BaseTemplate: React.FC = () => {
   const handleLink = (id: number, agentId: number) => {
     closeSidebarIfMobileOpen();
     history.push(`/app/chat/${agentId}/${id}`);
+  };
+
+  // 页面导航跳转
+  const handleOpenPage = (page: AppPageNavItem) => {
+    closeSidebarIfMobileOpen();
+    history.push(
+      `/app/open-iframe-page/${agentId}?url=${encodeURIComponent(page.url)}`,
+    );
   };
 
   /**
@@ -182,6 +235,16 @@ const BaseTemplate: React.FC = () => {
     };
   }, [isMobile, isAppSidebarVisible]);
 
+  // 当前页面导航url
+  const currentIframeUrl = useMemo(() => {
+    return new URLSearchParams(location.search).get('url') || '';
+  }, [location.search]);
+
+  // 规范化url，去除末尾的/，用于判断是否为当前页面
+  const normalizeActiveUrl = useCallback((url: string) => {
+    return (url || '').replace(/\/+$/, '');
+  }, []);
+
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       {/* 侧边菜单栏区域 */}
@@ -242,6 +305,30 @@ const BaseTemplate: React.FC = () => {
             </span>
             <span className={styles.shortcutTag}>J</span>
           </div>
+        </div>
+
+        {/* 页面导航 */}
+        <div className={styles.pageNavList}>
+          {pageNavList?.map((item) => {
+            // 判断是否为当前页面
+            const isActive =
+              location.pathname.includes('/app/open-iframe-page/') &&
+              normalizeActiveUrl(currentIframeUrl) ===
+                normalizeActiveUrl(item.url);
+
+            return (
+              <div
+                key={item.key}
+                className={cx(styles.pageNavItem, {
+                  [styles['page-nav-item-active']]: isActive,
+                })}
+                onClick={() => handleOpenPage(item)}
+              >
+                <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
+                <span className="text-ellipsis">{item.name}</span>
+              </div>
+            );
+          })}
         </div>
 
         {/* 历史会话列表区域 */}
