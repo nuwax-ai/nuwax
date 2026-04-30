@@ -1130,6 +1130,7 @@ const Chat: React.FC = () => {
                   }
                 />
               </ConditionRender>
+              {/* 下拉重命名会话、删除会话 */}
               <DropdownChangeName
                 agentId={agentId}
                 conversationInfo={conversationInfo}

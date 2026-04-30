@@ -146,7 +146,7 @@ const BaseTemplate: React.FC = () => {
       setAppAgentDetailLoading(true);
       runDetail(agentId);
     }
-  }, [location.pathname, appAgentDetail]);
+  }, [agentId, location.pathname, appAgentDetail]);
 
   // 查看全部历史会话
   const handleViewAllHistory = () => {
@@ -252,17 +252,22 @@ const BaseTemplate: React.FC = () => {
       >
         {/* 智能体图标 + 收起导航按钮 */}
         <div className={styles.sidebarTop}>
-          {/* 智能体图标 */}
-          <ConditionRender condition={appAgentDetail}>
-            <div className={cx(styles['logo-container'])}>
-              <img
-                src={appAgentDetail?.icon || agentImage}
-                className={cx(styles.logo)}
-                alt=""
-                onError={handleError}
-              />
-            </div>
-          </ConditionRender>
+          {/* 智能体图标 + 名称 */}
+          <div className={cx('flex', 'items-center', 'gap-4', 'overflow-hide')}>
+            {/* 智能体图标 */}
+            <ConditionRender condition={appAgentDetail}>
+              <div className={cx(styles['logo-container'])}>
+                <img
+                  src={appAgentDetail?.icon || agentImage}
+                  className={cx(styles.logo)}
+                  alt=""
+                  onError={handleError}
+                />
+              </div>
+              <span className="text-ellipsis">{appAgentDetail?.name}</span>
+            </ConditionRender>
+          </div>
+
           {/* 收起导航按钮 */}
           <TooltipIcon
             title={dict('PC.Pages.OpenApp.collapseNav')}
@@ -359,7 +364,12 @@ const BaseTemplate: React.FC = () => {
               )}
             >
               <>
-                <div className={cx(styles['history-title'])}>
+                <div
+                  className={cx(styles['history-title'], {
+                    [styles['exist-page-nav']]:
+                      appAgentDetail?.customPageMenus?.length > 0,
+                  })}
+                >
                   <span className={cx(styles.title, 'flex-1', 'overflow-hide')}>
                     <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
                     <span className="text-ellipsis">
