@@ -14,6 +14,7 @@ import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
+import CustomNameAndIcon from './CustomNameAndIcon';
 import HomeIndex from './HomeIndex';
 import styles from './index.less';
 import VisibleToLLM from './VisibleToLLM';
@@ -113,7 +114,7 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
   };
 
   // 更新智能体页面配置
-  const handleChangePageInfo = (attr: string, value: number) => {
+  const handleChangePageInfo = (attr: string, value: number | string) => {
     const _componentInfo = cloneDeep(componentInfo);
     if (_componentInfo) {
       _componentInfo.bindConfig[attr] = value;
@@ -138,6 +139,16 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
         return (
           <HomeIndex
             homeIndexType={componentInfo?.bindConfig?.homeIndex}
+            onChangePageInfo={handleChangePageInfo}
+            onSaveSet={handleSaveSetting}
+          />
+        );
+      // 自定义名称与图标
+      case PageSettingEnum.Custom_Name_And_Icon:
+        return (
+          <CustomNameAndIcon
+            pageIcon={componentInfo?.bindConfig?.pageIcon}
+            pageName={componentInfo?.bindConfig?.pageName}
             onChangePageInfo={handleChangePageInfo}
             onSaveSet={handleSaveSetting}
           />

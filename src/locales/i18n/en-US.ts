@@ -1475,6 +1475,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AgentArrangePageSettingModal.homeIndex': 'Default Home Page',
   'PC.Pages.AgentArrangePageSettingModal.customNameAndIcon':
     'Custom Name and Icon',
+  'PC.Pages.AgentArrangePageSettingModal.pageIcon': 'Page Icon',
+  'PC.Pages.AgentArrangePageSettingModal.pageName': 'Page Name',
+  'PC.Pages.AgentArrangePageSettingModal.pageNamePlaceholder':
+    'Please enter the page name',
   'PC.Pages.AgentArrangePageSettingModal.saveConfigFailed': 'Failed to save page settings:',
   'PC.Pages.AgentArrangePageSettingModal.saveFailed': 'Save failed. Please try again',
   'PC.Pages.AgentArrangePageSettingModal.title': 'Settings',
