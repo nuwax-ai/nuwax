@@ -20,13 +20,14 @@
 
 原始需求设计稿（需登录查看）：
 
-- 智能体订阅设置：`https://agent.nuwax.com/static/file-preview.html?sk=33c9e13c20264ce59fec77cab616f48e`
-- 智能体用户订阅：`https://agent.nuwax.com/static/file-preview.html?sk=98c813df31ca4486a40ae365aad0e972`
-- 工作空间菜单/资源定价：`https://agent.nuwax.com/static/file-preview.html?sk=cf1830c5017b4eb99ff0bee78707118c`
-- 我的订阅：`https://agent.nuwax.com/static/file-preview.html?sk=e0a1580c31d54fa78a784d086fb91874`
-- 我的订单：`https://agent.nuwax.com/static/file-preview.html?sk=10d1fa4846504044b97903f70e12973e`
-- 我的收益：`https://agent.nuwax.com/static/file-preview.html?sk=127149eb683f4c4b9674aad94fe81972`
-- 积分明细：`https://agent.nuwax.com/static/file-preview.html?sk=b7c882bd32da42488d0fcdac0d1ee406`
+- 后台管理（订阅/支付/积分全部页面）：`https://agent.nuwax.com/static/file-preview.html?sk=0319a0204649495aba73241eb7f923b1&dl=1`
+- 智能体订阅设置：`https://agent.nuwax.com/static/file-preview.html?sk=33c9e13c20264ce59fec77cab616f48e&dl=1`
+- 智能体用户订阅：`https://agent.nuwax.com/static/file-preview.html?sk=98c813df31ca4486a40ae365aad0e972&dl=1`
+- 工作空间菜单/资源定价：`https://agent.nuwax.com/static/file-preview.html?sk=cf1830c5017b4eb99ff0bee78707118c&dl=1`
+- 我的订阅：`https://agent.nuwax.com/static/file-preview.html?sk=e0a1580c31d54fa78a784d086fb91874&dl=1`
+- 我的订单：`https://agent.nuwax.com/static/file-preview.html?sk=10d1fa4846504044b97903f70e12973e&dl=1`
+- 我的收益：`https://agent.nuwax.com/static/file-preview.html?sk=127149eb683f4c4b9674aad94fe81972&dl=1`
+- 积分明细：`https://agent.nuwax.com/static/file-preview.html?sk=b7c882bd32da42488d0fcdac0d1ee406&dl=1`
 
 ---
 

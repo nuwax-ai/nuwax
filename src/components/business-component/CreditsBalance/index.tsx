@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserCredits } from '@/services/subscriptionService';
+import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -29,17 +30,24 @@ const CreditsBalance: React.FC = () => {
 
   const handleTopUp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // 顶部/侧边“增购”入口：跳转到我的订阅页，由我的订阅页弹出购买弹框
     history.push('/more-page/my-subscriptions');
   };
 
   return (
     <div className={cx(styles.container)} onClick={handleClickBalance}>
       <SvgIcon name="icons-nav-credits" className={cx(styles.icon)} />
-      <span className={cx(styles.balance)}>{balance.toLocaleString()}</span>
+      <span className={cx(styles.label)}>
+        {dict('PC.Components.CreditsBalance.credits')}:
+      </span>
+      <span className={cx(styles.balance)}>
+        {balance !== null && balance !== undefined
+          ? balance.toLocaleString()
+          : '--'}
+      </span>
       <Button
-        type="link"
+        type="primary"
         size="small"
+        icon={<PlusOutlined />}
         className={cx(styles['top-up-btn'])}
         onClick={handleTopUp}
       >

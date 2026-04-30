@@ -1,21 +1,27 @@
-import { XProTable } from '@/components/ProComponents';
+import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiListDevPaymentAccounts } from '@/services/subscriptionService';
 import type { DevPaymentAccountInfo } from '@/types/interfaces/subscription';
 import { DevPaymentTypeEnum } from '@/types/interfaces/subscription';
-import { formatDateTime } from '@/utils/dateUtils';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
 import React from 'react';
 
-const MOCK_ACCOUNTS: DevPaymentAccountInfo[] = [
+interface DevPaymentExt extends DevPaymentAccountInfo {
+  email: string;
+  phone: string;
+}
+
+const MOCK_ACCOUNTS: DevPaymentExt[] = [
   {
     id: 1,
     developerId: 101,
     developerName: 'Alice Wang',
+    email: 'alice@example.com',
+    phone: '138****1234',
     accountType: DevPaymentTypeEnum.Alipay,
     accountNo: 'alice@example.com',
     realName: '王丽',
@@ -25,6 +31,8 @@ const MOCK_ACCOUNTS: DevPaymentAccountInfo[] = [
     id: 2,
     developerId: 102,
     developerName: 'Bob Li',
+    email: 'bob@example.com',
+    phone: '139****5678',
     accountType: DevPaymentTypeEnum.BankCard,
     accountNo: '6222 **** **** 1234',
     realName: '李明',
@@ -35,6 +43,8 @@ const MOCK_ACCOUNTS: DevPaymentAccountInfo[] = [
     id: 3,
     developerId: 103,
     developerName: 'Carlos Dev',
+    email: 'carlos@dev.com',
+    phone: '137****9012',
     accountType: DevPaymentTypeEnum.Alipay,
     accountNo: 'carlos@dev.com',
     realName: 'Carlos',
@@ -43,7 +53,13 @@ const MOCK_ACCOUNTS: DevPaymentAccountInfo[] = [
 ];
 
 const DevPayment: React.FC = () => {
-  const columns: ProColumns<DevPaymentAccountInfo>[] = [
+  const columns: ProColumns<DevPaymentExt>[] = [
+    {
+      title: dict('PC.Pages.SystemDevPayment.colDeveloperId'),
+      dataIndex: 'developerId',
+      key: 'developerId',
+      width: 100,
+    },
     {
       title: dict('PC.Pages.SystemDevPayment.colDeveloper'),
       dataIndex: 'developerName',
@@ -51,53 +67,60 @@ const DevPayment: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colAccountType'),
-      dataIndex: 'accountType',
-      key: 'accountType',
-      search: false,
-      render: (_, record) =>
-        record.accountType === DevPaymentTypeEnum.Alipay ? (
-          <Tag icon={<AlipayCircleFilled />} color="blue">
-            {dict('PC.Pages.SystemDevPayment.typeAlipay')}
-          </Tag>
-        ) : (
-          <Tag icon={<BankFilled />} color="green">
-            {dict('PC.Pages.SystemDevPayment.typeBankCard')}
-          </Tag>
-        ),
-    },
-    {
-      title: dict('PC.Pages.SystemDevPayment.colAccountNo'),
-      dataIndex: 'accountNo',
-      key: 'accountNo',
-      search: false,
+      title: dict('PC.Pages.SystemDevPayment.colEmail'),
+      dataIndex: 'email',
+      key: 'email',
       ellipsis: true,
-    },
-    {
-      title: dict('PC.Pages.SystemDevPayment.colRealName'),
-      dataIndex: 'realName',
-      key: 'realName',
-      search: false,
-    },
-    {
-      title: dict('PC.Pages.SystemDevPayment.colBankName'),
-      dataIndex: 'bankName',
-      key: 'bankName',
-      search: false,
       render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colCreatedAt'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: dict('PC.Pages.SystemDevPayment.colPhone'),
+      dataIndex: 'phone',
+      key: 'phone',
+      render: (val) => val || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemDevPayment.colDefaultAccount'),
+      key: 'defaultAccount',
       search: false,
-      render: (val) => formatDateTime(val),
+      render: (_, record) => (
+        <span>
+          {record.accountType === DevPaymentTypeEnum.Alipay ? (
+            <Tag icon={<AlipayCircleFilled />} color="blue">
+              {dict('PC.Pages.SystemDevPayment.typeAlipay')}
+            </Tag>
+          ) : (
+            <Tag icon={<BankFilled />} color="green">
+              {dict('PC.Pages.SystemDevPayment.typeBankCard')}
+            </Tag>
+          )}
+          {record.accountNo || '-'}
+        </span>
+      ),
+    },
+    {
+      title: dict('PC.Common.Global.action'),
+      key: 'action',
+      search: false,
+      width: 120,
+      render: (_, record) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'detail',
+              label: dict('PC.Pages.SystemDevPayment.viewDetail'),
+              onClick: () => {},
+            },
+          ]}
+        />
+      ),
     },
   ];
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devPaymentInfo')}>
-      <XProTable<DevPaymentAccountInfo>
+      <XProTable<DevPaymentExt>
         rowKey="id"
         columns={columns}
         request={async (params) => {

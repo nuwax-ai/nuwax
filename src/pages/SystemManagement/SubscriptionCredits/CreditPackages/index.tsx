@@ -17,7 +17,7 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Input, InputNumber, Switch, Tag, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 
-const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
+const MOCK_PACKAGES: (CreditPackageAdminInfo & { validityPeriod: string })[] = [
   {
     id: 1,
     name: '入门包',
@@ -26,6 +26,7 @@ const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
     originalPrice: 15,
     tag: '',
     enabled: true,
+    validityPeriod: '永久',
     createdAt: '2026-01-10T08:00:00Z',
   },
   {
@@ -36,6 +37,7 @@ const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
     originalPrice: 50,
     tag: '热门',
     enabled: true,
+    validityPeriod: '90天',
     createdAt: '2026-01-10T08:00:00Z',
   },
   {
@@ -46,6 +48,7 @@ const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
     originalPrice: 200,
     tag: '最划算',
     enabled: true,
+    validityPeriod: '180天',
     createdAt: '2026-01-10T08:00:00Z',
   },
   {
@@ -56,6 +59,7 @@ const MOCK_PACKAGES: CreditPackageAdminInfo[] = [
     originalPrice: 1000,
     tag: '限时折扣',
     enabled: false,
+    validityPeriod: '365天',
     createdAt: '2026-02-01T08:00:00Z',
   },
 ];
@@ -178,6 +182,12 @@ const CreditPackages: React.FC = () => {
       render: (val) => `${val} 积分`,
     },
     {
+      title: dict('PC.Pages.SystemCreditPackages.colValidityPeriod'),
+      dataIndex: 'validityPeriod',
+      key: 'validityPeriod',
+      search: false,
+    },
+    {
       title: dict('PC.Pages.SystemCreditPackages.colPrice'),
       dataIndex: 'price',
       key: 'price',
@@ -206,11 +216,18 @@ const CreditPackages: React.FC = () => {
       key: 'enabled',
       search: false,
       render: (_, record) => (
-        <Switch
-          checked={record.enabled}
-          size="small"
-          onChange={(v) => handleToggle(record, v)}
-        />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Tag color={record.enabled ? 'success' : 'default'}>
+            {record.enabled
+              ? dict('PC.Pages.SystemCreditPackages.statusEnabled')
+              : dict('PC.Pages.SystemCreditPackages.statusDisabled')}
+          </Tag>
+          <Switch
+            checked={record.enabled}
+            size="small"
+            onChange={(v) => handleToggle(record, v)}
+          />
+        </span>
       ),
     },
     {
@@ -288,6 +305,17 @@ const CreditPackages: React.FC = () => {
             rules={[{ required: true }]}
           >
             <InputNumber min={1} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="validityPeriod"
+            label={dict('PC.Pages.SystemCreditPackages.fieldValidityPeriod')}
+            rules={[{ required: true }]}
+          >
+            <Input
+              placeholder={dict(
+                'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder',
+              )}
+            />
           </Form.Item>
           <Form.Item
             name="price"

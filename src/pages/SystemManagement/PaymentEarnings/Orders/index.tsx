@@ -12,10 +12,16 @@ import { copyTextToClipboard } from '@/utils/clipboard';
 import { formatDateTime } from '@/utils/dateUtils';
 import { CopyOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Tag, Tooltip, message } from 'antd';
+import { Button, Card, Col, Row, Statistic, Tag, Tooltip, message } from 'antd';
 import React, { useMemo } from 'react';
 
-const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
+interface PaymentOrderExt extends AdminOrderInfo {
+  netAmount: number;
+  serviceFee: number;
+  paidAt: string;
+}
+
+const MOCK_PAYMENT_ORDERS: PaymentOrderExt[] = [
   {
     id: 1,
     userName: 'Alice Wang',
@@ -23,9 +29,12 @@ const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
     productName: 'Basic Plan',
     orderType: OrderTypeEnum.Subscription,
     amount: 99,
+    netAmount: 97.02,
+    serviceFee: 1.98,
     payMethod: '微信支付',
     status: OrderStatusEnum.Paid,
     createdAt: '2026-04-01T10:30:00Z',
+    paidAt: '2026-04-01T10:31:22Z',
   },
   {
     id: 2,
@@ -34,9 +43,12 @@ const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
     productName: 'Pro Plan',
     orderType: OrderTypeEnum.Subscription,
     amount: 269,
+    netAmount: 263.62,
+    serviceFee: 5.38,
     payMethod: '支付宝',
     status: OrderStatusEnum.Paid,
     createdAt: '2026-03-15T14:20:00Z',
+    paidAt: '2026-03-15T14:21:05Z',
   },
   {
     id: 3,
@@ -45,9 +57,12 @@ const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
     productName: '100 积分包',
     orderType: OrderTypeEnum.Credits,
     amount: 10,
+    netAmount: 9.8,
+    serviceFee: 0.2,
     payMethod: '微信支付',
     status: OrderStatusEnum.Refunded,
     createdAt: '2026-02-20T09:00:00Z',
+    paidAt: '2026-02-20T09:01:30Z',
   },
   {
     id: 4,
@@ -56,9 +71,12 @@ const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
     productName: '企业包 10000 积分',
     orderType: OrderTypeEnum.Credits,
     amount: 600,
+    netAmount: 588.0,
+    serviceFee: 12.0,
     payMethod: '支付宝',
     status: OrderStatusEnum.Paid,
     createdAt: '2026-04-15T16:00:00Z',
+    paidAt: '2026-04-15T16:02:10Z',
   },
   {
     id: 5,
@@ -67,10 +85,20 @@ const MOCK_PAYMENT_ORDERS: AdminOrderInfo[] = [
     productName: 'Enterprise Plan',
     orderType: OrderTypeEnum.Subscription,
     amount: 999,
+    netAmount: 0,
+    serviceFee: 0,
     status: OrderStatusEnum.Pending,
     createdAt: '2026-04-29T08:30:00Z',
+    paidAt: '',
   },
 ];
+
+const MOCK_STATS = {
+  totalOrders: 1286,
+  totalAmount: 286500,
+  netAmount: 280770,
+  serviceFee: 5730,
+};
 
 const Orders: React.FC = () => {
   const statusConfig = useMemo(
@@ -91,7 +119,7 @@ const Orders: React.FC = () => {
     [],
   );
 
-  const columns: ProColumns<AdminOrderInfo>[] = [
+  const columns: ProColumns<PaymentOrderExt>[] = [
     {
       title: dict('PC.Pages.SystemSubsOrders.colUser'),
       dataIndex: 'userName',
@@ -145,7 +173,25 @@ const Orders: React.FC = () => {
       key: 'amount',
       search: false,
       render: (_, record) => (
-        <span style={{ fontWeight: 600 }}>¥{record.amount}</span>
+        <span style={{ fontWeight: 600 }}>¥{record.amount ?? 0}</span>
+      ),
+    },
+    {
+      title: dict('PC.Pages.SystemPaymentOrders.colNetAmount'),
+      dataIndex: 'netAmount',
+      key: 'netAmount',
+      search: false,
+      render: (val: any) => `¥${(Number(val) || 0).toFixed(2)}`,
+    },
+    {
+      title: dict('PC.Pages.SystemPaymentOrders.colServiceFee'),
+      dataIndex: 'serviceFee',
+      key: 'serviceFee',
+      search: false,
+      render: (val: any) => (
+        <span style={{ color: '#ff4d4f' }}>
+          ¥{(Number(val) || 0).toFixed(2)}
+        </span>
       ),
     },
     {
@@ -153,6 +199,13 @@ const Orders: React.FC = () => {
       dataIndex: 'payMethod',
       key: 'payMethod',
       search: false,
+      valueType: 'select',
+      valueEnum: {
+        '': { text: dict('PC.Common.Global.all') },
+        wechat: { text: dict('PC.Pages.SystemPaymentOrders.payMethodWechat') },
+        alipay: { text: dict('PC.Pages.SystemPaymentOrders.payMethodAlipay') },
+        bank: { text: dict('PC.Pages.SystemPaymentOrders.payMethodBank') },
+      },
       render: (val) => val || '-',
     },
     {
@@ -161,6 +214,13 @@ const Orders: React.FC = () => {
       key: 'createdAt',
       search: false,
       render: (val) => formatDateTime(val),
+    },
+    {
+      title: dict('PC.Pages.SystemPaymentOrders.colPaidAt'),
+      dataIndex: 'paidAt',
+      key: 'paidAt',
+      search: false,
+      render: (val) => (val ? formatDateTime(val) : '-'),
     },
     {
       title: dict('PC.Pages.MorePage.MyOrders.colStatus'),
@@ -187,7 +247,51 @@ const Orders: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
-      <XProTable<AdminOrderInfo>
+      {/* 统计卡 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentOrders.statTotalOrders')}
+              value={MOCK_STATS.totalOrders}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentOrders.statTotalAmount')}
+              value={MOCK_STATS.totalAmount}
+              precision={0}
+              prefix="¥"
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentOrders.statNetAmount')}
+              value={MOCK_STATS.netAmount}
+              precision={0}
+              prefix="¥"
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={dict('PC.Pages.SystemPaymentOrders.statServiceFee')}
+              value={MOCK_STATS.serviceFee}
+              precision={0}
+              prefix="¥"
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <XProTable<PaymentOrderExt>
         rowKey="id"
         columns={columns}
         request={async (params) => {
@@ -195,6 +299,8 @@ const Orders: React.FC = () => {
             const res = await apiListAdminPaymentOrders({
               keyword: params.userName,
               status: params.status,
+              orderType: params.orderType,
+              payMethod: params.payMethod,
               pageNum: params.current,
               pageSize: params.pageSize,
             });

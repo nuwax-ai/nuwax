@@ -1,264 +1,272 @@
-import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiGetSubscriptionSummary,
-  apiListUserSubscriptions,
-} from '@/services/subscriptionService';
-import type { UserSubscriptionInfo } from '@/types/interfaces/subscription';
+  CheckCircleFilled,
+  CrownOutlined,
+  RocketOutlined,
+  StarOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import {
-  PricingCycleEnum,
-  SubscriptionStatusEnum,
-} from '@/types/interfaces/subscription';
-import { formatDate } from '@/utils/dateUtils';
-import type { ProColumns } from '@ant-design/pro-components';
-import { Card, Col, Row, Statistic, Tag } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRequest } from 'umi';
+  Badge,
+  Button,
+  Card,
+  Col,
+  Row,
+  Statistic,
+  Switch,
+  Tag,
+  Typography,
+} from 'antd';
+import React, { useState } from 'react';
 
-const MOCK_SUBS_SUMMARY = {
-  activeSubscriptions: 128,
-  totalUsers: 312,
-  monthlyRevenue: 28650,
-  totalCredits: 158400,
-};
+const { Text, Title } = Typography;
 
-const MOCK_SUBS_LIST: UserSubscriptionInfo[] = [
+interface PlanTemplate {
+  id: number;
+  name: string;
+  icon: React.ReactNode;
+  price: number;
+  cycle: string;
+  features: string[];
+  enabled: boolean;
+  subscriberCount: number;
+  color: string;
+}
+
+const MOCK_PLANS: PlanTemplate[] = [
   {
     id: 1,
-    userId: 1001,
-    userName: 'Alice Wang',
-    agentId: 1,
-    agentName: '代码助手',
-    planId: 1,
-    planName: 'Basic Plan',
-    price: 99,
-    cycle: PricingCycleEnum.Monthly,
-    status: SubscriptionStatusEnum.Active,
-    startAt: '2026-04-01T00:00:00Z',
-    expireAt: '2026-05-01T00:00:00Z',
-    createdAt: '2026-04-01T00:00:00Z',
+    name: '免费版',
+    icon: <StarOutlined />,
+    price: 0,
+    cycle: '',
+    features: ['每日 10 次对话', '基础模型访问', '社区支持'],
+    enabled: true,
+    subscriberCount: 1280,
+    color: '#8c8c8c',
   },
   {
     id: 2,
-    userId: 1002,
-    userName: 'Bob Li',
-    agentId: 2,
-    agentName: '数据分析师',
-    planId: 2,
-    planName: 'Pro Plan',
-    price: 269,
-    cycle: PricingCycleEnum.Quarterly,
-    status: SubscriptionStatusEnum.Active,
-    startAt: '2026-03-01T00:00:00Z',
-    expireAt: '2026-06-01T00:00:00Z',
-    createdAt: '2026-03-01T00:00:00Z',
+    name: '进阶版',
+    icon: <ThunderboltOutlined />,
+    price: 99,
+    cycle: dict('PC.Pages.SpaceResourcePricing.cycleMonthly'),
+    features: ['无限对话', '高级模型访问', '知识库 5GB', '优先支持'],
+    enabled: true,
+    subscriberCount: 456,
+    color: '#1677ff',
   },
   {
     id: 3,
-    userId: 1003,
-    userName: 'Diana Chen',
-    agentId: 1,
-    agentName: '代码助手',
-    planId: 1,
-    planName: 'Basic Plan',
-    price: 99,
-    cycle: PricingCycleEnum.Monthly,
-    status: SubscriptionStatusEnum.Expired,
-    startAt: '2026-03-01T00:00:00Z',
-    expireAt: '2026-04-01T00:00:00Z',
-    createdAt: '2026-03-01T00:00:00Z',
+    name: '高阶版',
+    icon: <RocketOutlined />,
+    price: 299,
+    cycle: dict('PC.Pages.SpaceResourcePricing.cycleMonthly'),
+    features: [
+      '所有进阶版功能',
+      '知识库 50GB',
+      '自定义智能体',
+      'API 访问',
+      '专属客服',
+    ],
+    enabled: true,
+    subscriberCount: 128,
+    color: '#722ed1',
+  },
+  {
+    id: 4,
+    name: '旗舰版',
+    icon: <CrownOutlined />,
+    price: 999,
+    cycle: dict('PC.Pages.SpaceResourcePricing.cycleMonthly'),
+    features: [
+      '所有高阶版功能',
+      '无限知识库',
+      '私有化部署',
+      'SLA 保障',
+      '专属技术顾问',
+      '定制开发支持',
+    ],
+    enabled: false,
+    subscriberCount: 32,
+    color: '#faad14',
   },
 ];
 
-const SubscriptionCredits: React.FC = () => {
-  const [summary, setSummary] = useState<{
-    activeSubscriptions: number;
-    totalUsers: number;
-    monthlyRevenue: number;
-    totalCredits: number;
-  } | null>(MOCK_SUBS_SUMMARY);
+const MOCK_STATS = {
+  activePlans: 3,
+  totalSubscriptions: 1896,
+  monthlyNew: 234,
+  monthlyRevenue: 86500,
+};
 
-  const cycleLabel = useMemo(
-    () => ({
-      [PricingCycleEnum.Monthly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleMonthly',
-      ),
-      [PricingCycleEnum.Quarterly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleQuarterly',
-      ),
-      [PricingCycleEnum.Yearly]: dict(
-        'PC.Pages.SpaceResourcePricing.cycleYearly',
-      ),
-    }),
-    [],
-  );
+const Plans: React.FC = () => {
+  const [plans, setPlans] = useState(MOCK_PLANS);
 
-  const statusConfig = useMemo(
-    () => ({
-      [SubscriptionStatusEnum.Active]: {
-        color: 'success',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusActive'),
-      },
-      [SubscriptionStatusEnum.Expired]: {
-        color: 'default',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusExpired'),
-      },
-      [SubscriptionStatusEnum.Cancelled]: {
-        color: 'error',
-        label: dict('PC.Pages.SpaceAgentSubscriptions.statusCancelled'),
-      },
-    }),
-    [],
-  );
-
-  const { run: fetchSummary } = useRequest(apiGetSubscriptionSummary, {
-    manual: true,
-    onSuccess: (res) => setSummary(res?.data ?? MOCK_SUBS_SUMMARY),
-  });
-
-  useEffect(() => {
-    fetchSummary();
-  }, []);
-
-  const columns: ProColumns<UserSubscriptionInfo>[] = [
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colUser'),
-      dataIndex: 'userName',
-      key: 'userName',
-      ellipsis: true,
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colAgent'),
-      dataIndex: 'agentName',
-      key: 'agentName',
-      ellipsis: true,
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colPlan'),
-      dataIndex: 'planName',
-      key: 'planName',
-      ellipsis: true,
-      search: false,
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colPrice'),
-      dataIndex: 'price',
-      key: 'price',
-      search: false,
-      render: (_, record) =>
-        `${dict('PC.Common.Global.currencySymbol')}${record.price}/${
-          cycleLabel[record.cycle]
-        }`,
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colStartAt'),
-      dataIndex: 'startAt',
-      key: 'startAt',
-      search: false,
-      render: (val) => formatDate(val),
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colExpireAt'),
-      dataIndex: 'expireAt',
-      key: 'expireAt',
-      search: false,
-      render: (val) => formatDate(val),
-    },
-    {
-      title: dict('PC.Pages.SpaceAgentSubscriptions.colStatus'),
-      dataIndex: 'status',
-      key: 'status',
-      search: false,
-      render: (_, record) => {
-        const config = statusConfig[record.status];
-        return <Tag color={config?.color}>{config?.label}</Tag>;
-      },
-      valueEnum: {
-        [SubscriptionStatusEnum.Active]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusActive'),
-        },
-        [SubscriptionStatusEnum.Expired]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusExpired'),
-        },
-        [SubscriptionStatusEnum.Cancelled]: {
-          text: dict('PC.Pages.SpaceAgentSubscriptions.statusCancelled'),
-        },
-      },
-    },
-  ];
+  const handleToggle = (id: number, enabled: boolean) => {
+    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, enabled } : p)));
+  };
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.subsPlans')}>
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      {/* 统计卡 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col span={6}>
           <Card>
             <Statistic
-              title={dict(
-                'PC.Pages.SystemSubscriptionCredits.activeSubscriptions',
-              )}
-              value={summary?.activeSubscriptions ?? 0}
+              title={dict('PC.Pages.SystemPlans.statActivePlans')}
+              value={MOCK_STATS.activePlans}
+              suffix={`/ ${plans.length}`}
             />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
             <Statistic
-              title={dict('PC.Pages.SystemSubscriptionCredits.totalUsers')}
-              value={summary?.totalUsers ?? 0}
+              title={dict('PC.Pages.SystemPlans.statTotalSubscriptions')}
+              value={MOCK_STATS.totalSubscriptions}
             />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
             <Statistic
-              title={dict('PC.Pages.SystemSubscriptionCredits.monthlyRevenue')}
-              value={summary?.monthlyRevenue ?? 0}
-              precision={2}
-              prefix={dict('PC.Common.Global.currencySymbol')}
+              title={dict('PC.Pages.SystemPlans.statMonthlyNew')}
+              value={MOCK_STATS.monthlyNew}
+              valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
             <Statistic
-              title={dict('PC.Pages.SystemSubscriptionCredits.totalCredits')}
-              value={summary?.totalCredits ?? 0}
-              suffix="credits"
+              title={dict('PC.Pages.SystemPlans.statMonthlyRevenue')}
+              value={MOCK_STATS.monthlyRevenue}
+              precision={0}
+              prefix="¥"
             />
           </Card>
         </Col>
       </Row>
 
-      <XProTable<UserSubscriptionInfo>
-        rowKey="id"
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListUserSubscriptions({
-              spaceId: 0,
-              keyword: params.userName,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_SUBS_LIST,
-            total: MOCK_SUBS_LIST.length,
-            success: true,
-          };
-        }}
-      />
+      {/* 套餐卡片 */}
+      <Row gutter={[16, 16]}>
+        {plans.map((plan) => (
+          <Col span={6} key={plan.id}>
+            <Badge.Ribbon
+              text={
+                plan.enabled
+                  ? dict('PC.Pages.SystemPlans.statusActive')
+                  : dict('PC.Pages.SystemPlans.statusInactive')
+              }
+              color={plan.enabled ? 'green' : 'default'}
+            >
+              <Card
+                style={{
+                  height: '100%',
+                  opacity: plan.enabled ? 1 : 0.6,
+                }}
+                actions={[
+                  <Switch
+                    key="toggle"
+                    checked={plan.enabled}
+                    checkedChildren={dict('PC.Pages.SystemPlans.enable')}
+                    unCheckedChildren={dict('PC.Pages.SystemPlans.disable')}
+                    onChange={(v) => handleToggle(plan.id, v)}
+                  />,
+                  <Button key="edit" type="link" size="small">
+                    {dict('PC.Common.Global.edit')}
+                  </Button>,
+                ]}
+              >
+                <div
+                  style={{
+                    textAlign: 'center',
+                    marginBottom: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 32,
+                      color: plan.color,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {plan.icon}
+                  </div>
+                  <Title level={4} style={{ margin: 0 }}>
+                    {plan.name}
+                  </Title>
+                  <div style={{ marginTop: 8 }}>
+                    {plan.price === 0 ? (
+                      <Tag color="green">
+                        {dict('PC.Pages.SystemPlans.free')}
+                      </Tag>
+                    ) : (
+                      <span>
+                        <span
+                          style={{
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: plan.color,
+                          }}
+                        >
+                          ¥{plan.price}
+                        </span>
+                        {plan.cycle && (
+                          <Text type="secondary">/{plan.cycle}</Text>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    borderTop: '1px solid #f0f0f0',
+                    paddingTop: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {dict('PC.Pages.SystemPlans.subscriberCount')}:{' '}
+                    {plan.subscriberCount}
+                  </Text>
+                </div>
+
+                <ul
+                  style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                  }}
+                >
+                  {plan.features.map((f, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginBottom: 6,
+                        fontSize: 13,
+                      }}
+                    >
+                      <CheckCircleFilled
+                        style={{ color: plan.color, fontSize: 12 }}
+                      />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </Badge.Ribbon>
+          </Col>
+        ))}
+      </Row>
     </WorkspaceLayout>
   );
 };
 
-export default SubscriptionCredits;
+export default Plans;

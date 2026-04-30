@@ -1,16 +1,17 @@
 .container {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 4%));
   transition: background 0.2s;
   white-space: nowrap;
   font-size: 13px;
 
   &:hover {
-    background: rgba(0, 0, 0, 4%);
+    background: var(--ant-color-fill-tertiary, rgba(0, 0, 0, 6%));
   }
 
   .icon {
@@ -18,16 +19,22 @@
     line-height: 1;
   }
 
+  .label {
+    color: var(--ant-color-text-secondary);
+    font-size: 13px;
+  }
+
   .balance {
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
     color: var(--ant-color-text);
   }
 
   .top-up-btn {
+    margin-left: 4px;
+    height: 24px;
+    line-height: 24px;
     font-size: 12px;
-    padding: 0 6px;
-    margin-left: 2px;
-    height: 22px;
-    line-height: 22px;
+    border-radius: 12px;
   }
 }
