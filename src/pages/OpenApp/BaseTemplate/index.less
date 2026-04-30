@@ -95,6 +95,37 @@
   }
 }
 
+// ========================== 页面导航 ==========================
+.pageNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .pageNavItem {
+    height: 36px;
+    border-radius: @borderRadius;
+    padding: @paddingXs 0 @paddingXs 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      background-color: #e6e7e8;
+      color: @colorText;
+    }
+
+    &.page-nav-item-active {
+      background-color: #e6e7e8;
+      color: @colorText;
+    }
+  }
+}
+
+// ========================== 历史会话列表 ==========================
 // 历史会话标题
 .history-title {
   padding: @paddingXs 0 @paddingXs 13px;

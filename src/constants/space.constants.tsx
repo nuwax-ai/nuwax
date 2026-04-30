@@ -316,21 +316,21 @@ export const COMPONENT_SETTING_ACTIONS = [
     type: ComponentSettingEnum.Card_Bind,
     label: dict('PC.Constants.Space.cardBind'),
   },
-  // {
-  //   type: ComponentSettingEnum.SubAgent,
-  //   label: '子智能体',
-  // },
 ];
 
 // 智能体编排-组件设置列表
 export const PAGE_SETTING_ACTIONS = [
   {
     type: PageSettingEnum.Visible_To_LLM,
-    label: dict('PC.Constants.Space.visibleToModel'),
+    label: dict('PC.Pages.AgentArrangePageSettingModal.visibleToLlm'),
   },
   {
     type: PageSettingEnum.Home_Index,
-    label: dict('PC.Constants.Space.defaultHome'),
+    label: dict('PC.Pages.AgentArrangePageSettingModal.homeIndex'),
+  },
+  {
+    type: PageSettingEnum.Custom_Name_And_Icon,
+    label: dict('PC.Pages.AgentArrangePageSettingModal.customNameAndIcon'),
   },
 ];
 

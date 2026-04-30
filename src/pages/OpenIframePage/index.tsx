@@ -16,7 +16,7 @@ const OpenIframePage: React.FC = () => {
     if (iframeUrl) {
       setIframeUrl(decodeURIComponent(iframeUrl));
     }
-  }, [location.state]);
+  }, [location]);
 
   return (
     <div className="h-full w-full">
