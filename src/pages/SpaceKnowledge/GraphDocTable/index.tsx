@@ -3,7 +3,7 @@
  */
 import type { KnowledgeTripleDocumentInfo } from '@/types/interfaces/knowledge';
 import {
-  CopyOutlined,
+  //CopyOutlined,
   DeleteOutlined,
   ExclamationCircleFilled,
   PlayCircleOutlined,
@@ -84,13 +84,35 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
 
   // 批量删除
   const handleBatchDelete = () => {
+    // 检查选中的数据中是否有没有生成知识图谱的数据
+    const selectedRecords = documentList.filter((item) =>
+      selectedRowKeys.includes(item.documentId),
+    );
+
+    const hasUnavailable = selectedRecords.some(
+      (record) => record.tripleStatus !== 2,
+    );
+
+    if (hasUnavailable) {
+      message.warning('存在没有生成知识图谱的数据，不能进行删除操作');
+      return;
+    }
+
     onBatchDelete?.(selectedRowKeys as number[]);
     setSelectedRowKeys([]);
   };
 
   const columns: ColumnsType<KnowledgeTripleDocumentInfo> = [
     {
-      title: '文档名称/ID',
+      title: 'ID',
+      dataIndex: 'documentId',
+      key: 'documentId',
+      width: 100,
+      align: 'center',
+      render: (id: number) => <span>{id}</span>,
+    },
+    {
+      title: '文档名称',
       dataIndex: 'documentName',
       key: 'documentName',
       width: 240,
@@ -98,39 +120,22 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
         const isAvailable = record.tripleStatus === 2;
         return (
           <div className={styles.nameCell}>
-            <div className={styles.docNameRow}>
-              {isAvailable ? (
-                <a
-                  className={styles.docName}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRowClick?.(record);
-                  }}
-                  title={text}
-                >
-                  {text}
-                </a>
-              ) : (
-                <span className={styles.docNameDisabled} title={text}>
-                  {text}
-                </span>
-              )}
-            </div>
-            <div className={styles.docIdRow}>
-              <span className={styles.docId} title={`ID: ${record.documentId}`}>
-                ID: {record.documentId}
-              </span>
-              <Button
-                type="text"
-                size="small"
-                icon={<CopyOutlined className={styles.copyIcon} />}
+            {isAvailable ? (
+              <a
+                className={styles.docName}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigator.clipboard.writeText(String(record.documentId));
-                  message.success('已复制ID');
+                  onRowClick?.(record);
                 }}
-              />
-            </div>
+                title={text}
+              >
+                {text}
+              </a>
+            ) : (
+              <span className={styles.docNameDisabled} title={text}>
+                {text}
+              </span>
+            )}
           </div>
         );
       },
@@ -213,18 +218,20 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
                 </Tooltip>
               </Popconfirm>
             ) : null} */}
-            <Popconfirm
-              title="确定要删除此文档吗？"
-              description={record.documentName}
-              icon={<ExclamationCircleFilled />}
-              onConfirm={() => onDelete?.(record.documentId)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <Tooltip title="删除">
-                <Button type="text" danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
+            {record.tripleStatus === 2 && (
+              <Popconfirm
+                title="确定要删除此文档吗？"
+                description={record.documentName}
+                icon={<ExclamationCircleFilled />}
+                onConfirm={() => onDelete?.(record.documentId)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Tooltip title="删除">
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Tooltip>
+              </Popconfirm>
+            )}
           </Space>
         );
       },
@@ -237,6 +244,9 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys);
     },
+    getCheckboxProps: (record: KnowledgeTripleDocumentInfo) => ({
+      disabled: record.tripleStatus !== 2,
+    }),
   };
 
   return (

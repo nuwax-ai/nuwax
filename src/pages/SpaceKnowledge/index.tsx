@@ -466,7 +466,10 @@ const SpaceKnowledge: React.FC = () => {
     try {
       // 逐个删除知识图谱
       for (const id of ids) {
-        const response = await apiKnowledgeTripleDelete(id);
+        const response = await apiKnowledgeTripleDelete({
+          kbId: knowledgeId,
+          documentId: id,
+        });
         if (response.code !== SUCCESS_CODE) {
           throw new Error(`删除文档 ${id} 失败`);
         }
@@ -501,7 +504,10 @@ const SpaceKnowledge: React.FC = () => {
   // 单个文档删除
   const handleGraphDelete = async (id: number) => {
     try {
-      const response = await apiKnowledgeTripleDelete(id);
+      const response = await apiKnowledgeTripleDelete({
+        kbId: knowledgeId,
+        documentId: id,
+      });
       if (response.code === SUCCESS_CODE && response.data) {
         // 更新本地列表
         const newList = graphDocList.filter((d) => d.documentId !== id);
