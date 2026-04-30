@@ -1061,7 +1061,9 @@ const Chat: React.FC = () => {
     apiDownloadAllFiles(id);
   };
 
+  // 设置最小宽度
   useEffect(() => {
+    // 移动端不设置最小宽度
     if (isMobile) {
       document.documentElement.style.minWidth = 'unset';
       return;

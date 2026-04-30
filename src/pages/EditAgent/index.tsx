@@ -821,6 +821,7 @@ const EditAgent: React.FC = () => {
     setAgentStatistics(analyzeList);
   };
 
+  // 点击更多操作
   const handlerClickMore = (type: ApplicationMoreActionEnum) => {
     switch (type) {
       // 分析
