@@ -5,6 +5,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import User from '@/layouts/DynamicMenusLayout/User';
+import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
@@ -15,6 +16,7 @@ import {
   LoadingOutlined,
   RightOutlined,
 } from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -44,7 +46,7 @@ const cx = classNames.bind(styles);
 const BaseTemplate: React.FC = () => {
   const location = useLocation();
   const { id: cId, agentId } = useParams();
-  const { setOpenAdmin, isMobile } = useModel('layout');
+  const { setOpenAdmin, isMobile, setOpenMessage } = useModel('layout');
   // 状态管理
   const { userInfo, getUserInfo } = useModel('userInfo');
 
@@ -240,6 +242,12 @@ const BaseTemplate: React.FC = () => {
     return (url || '').replace(/\/+$/, '');
   }, []);
 
+  // 打开消息弹窗
+  const handleOpenMessage = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setOpenMessage(true);
+  };
+
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       {/* 侧边菜单栏区域 */}
@@ -433,26 +441,32 @@ const BaseTemplate: React.FC = () => {
         )}
 
         {/* 用户区域，固定在底部 */}
-        <footer
-          className={cx(
-            'flex',
-            'items-center',
-            'justify-between',
-            'gap-4',
-            styles['user-area'],
-          )}
-          onClick={() => setOpenAdmin(true)}
-        >
-          <div className={cx('cursor-pointer', styles['user-avatar'])}>
-            <img src={userInfo?.avatar || (avatarImage as string)} alt="" />
-          </div>
-          <span className={cx('flex-1', 'text-ellipsis', styles['user-name'])}>
-            {userInfo?.nickName || userInfo?.userName}
-          </span>
-          <User isAppDetails={true}>
-            <EllipsisOutlined className={styles.moreIcon} />
-          </User>
-        </footer>
+        <User isAppDetails={true} placement="topLeft">
+          <footer
+            className={cx(
+              'flex',
+              'items-center',
+              'justify-between',
+              'gap-4',
+              styles['user-area'],
+            )}
+            onClick={() => setOpenAdmin(true)}
+          >
+            <div className={cx('cursor-pointer', styles['user-avatar'])}>
+              <img src={userInfo?.avatar || (avatarImage as string)} alt="" />
+            </div>
+            <span
+              className={cx('flex-1', 'text-ellipsis', styles['user-name'])}
+            >
+              {userInfo?.nickName || userInfo?.userName}
+            </span>
+            <Button
+              type="text"
+              icon={<EllipsisOutlined />}
+              onClick={handleOpenMessage}
+            />
+          </footer>
+        </User>
       </div>
 
       {/* 主内容区：手机端侧栏打开时点右侧主区域收起侧栏 */}
@@ -465,6 +479,9 @@ const BaseTemplate: React.FC = () => {
 
       {/* 设置弹窗 */}
       <Setting />
+
+      {/* 消息弹窗 */}
+      <Message className={styles.messageContainer} />
     </div>
   );
 };
