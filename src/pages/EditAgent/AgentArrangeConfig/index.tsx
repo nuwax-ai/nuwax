@@ -1482,6 +1482,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*页面设置弹窗*/}
       <PageSettingModal
         open={openPageModel}
+        isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
         currentComponentInfo={currentComponentInfo}
         allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}

@@ -89,6 +89,8 @@ export interface ComponentSettingModalProps {
 
 // 页面设置弹窗Props
 export interface PageSettingModalProps {
+  // 是否为通用型智能体
+  isTaskAgent?: boolean;
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   allPageComponentList?: AgentComponentInfo[];

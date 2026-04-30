@@ -25,6 +25,8 @@ const cx = classNames.bind(styles);
  */
 const PageSettingModal: React.FC<PageSettingModalProps> = ({
   open,
+  // 是否为通用型智能体
+  isTaskAgent = false,
   currentComponentInfo,
   allPageComponentList,
   onCancel,
@@ -37,10 +39,15 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      setAction(PageSettingEnum.Visible_To_LLM);
+      // 通用型智能体不显示【是否模型可见】
+      if (isTaskAgent) {
+        setAction(PageSettingEnum.Home_Index);
+      } else {
+        setAction(PageSettingEnum.Visible_To_LLM);
+      }
       setComponentInfo(currentComponentInfo);
     }
-  }, [open, currentComponentInfo]);
+  }, [open, currentComponentInfo, isTaskAgent]);
 
   // 更新智能体页面配置
   const { runAsync: runUpdate } = useRequest(apiAgentPageUpdate, {
@@ -151,6 +158,13 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
             <h3>{t('PC.Pages.AgentArrangePageSettingModal.title')}</h3>
             <ul>
               {PAGE_SETTING_ACTIONS.map((item) => {
+                // 通用型智能体不显示【是否模型可见】
+                if (
+                  isTaskAgent &&
+                  item.type === PageSettingEnum.Visible_To_LLM
+                ) {
+                  return null;
+                }
                 return (
                   <li
                     key={item.type}

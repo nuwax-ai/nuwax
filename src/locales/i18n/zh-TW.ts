@@ -1473,6 +1473,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.AgentArrangeOutputWay.title': '是否直接輸出',
   'PC.Pages.AgentArrangeOutputWay.tooltip': '如果選擇“是”，將會把工作流執行結果直接輸出到會話框中，不會再經過大模型總結輸出。',
   'PC.Pages.AgentArrangePageSettingModal.homeIndex': '是否預設首頁',
+  'PC.Pages.AgentArrangePageSettingModal.customNameAndIcon': '自訂名稱與圖示',
   'PC.Pages.AgentArrangePageSettingModal.saveConfigFailed': '儲存設定失敗:',
   'PC.Pages.AgentArrangePageSettingModal.saveFailed': '儲存失敗，請重試',
   'PC.Pages.AgentArrangePageSettingModal.title': '設定',
