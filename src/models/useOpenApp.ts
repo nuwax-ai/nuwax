@@ -19,6 +19,9 @@ const useOpenApp = () => {
   const [isAppSidebarVisible, setIsAppSidebarVisible] = useState<boolean>(true);
   // 应用智能体详情
   const [appAgentDetail, setAppAgentDetail] = useState<AgentDetailDto | null>();
+  // 应用智能体详情加载状态
+  const [appAgentDetailLoading, setAppAgentDetailLoading] =
+    useState<boolean>(false);
 
   // 状态管理
   const { setIsMobile } = useModel('layout');
@@ -93,6 +96,7 @@ const useOpenApp = () => {
   // 设置应用智能体详情
   const handleSetAppAgentDetail = (info: AgentDetailDto) => {
     setAppAgentDetail(info);
+    setAppAgentDetailLoading(false);
   };
 
   // 创建应用智能体新会话
@@ -108,6 +112,8 @@ const useOpenApp = () => {
     appAgentDetail,
     handleSetAppAgentDetail,
     createAppNewConversation,
+    appAgentDetailLoading,
+    setAppAgentDetailLoading,
   };
 };
 

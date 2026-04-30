@@ -6,8 +6,9 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Setting from '@/layouts/Setting';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
-import { CustomPageNavItem } from '@/types/interfaces/agent';
+import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import {
   EllipsisOutlined,
@@ -22,7 +23,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, Outlet, useLocation, useModel, useParams } from 'umi';
+import {
+  history,
+  Outlet,
+  useLocation,
+  useModel,
+  useParams,
+  useRequest,
+} from 'umi';
 import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
@@ -50,6 +58,9 @@ const BaseTemplate: React.FC = () => {
     closeAppSidebar,
     appAgentDetail,
     createAppNewConversation,
+    handleSetAppAgentDetail,
+    appAgentDetailLoading,
+    setAppAgentDetailLoading,
   } = useModel('useOpenApp');
 
   const { runTenantConfig } = useModel('tenantConfigInfo');
@@ -112,6 +123,30 @@ const BaseTemplate: React.FC = () => {
      */
     document.documentElement.style.minWidth = 'unset';
   }, [agentId]);
+
+  // 已发布的智能体详情接口
+  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    loadingDelay: 300, // 300ms内不显示loading
+    onSuccess: (result: AgentDetailDto) => {
+      handleSetAppAgentDetail(result);
+    },
+    onError: () => {
+      setAppAgentDetailLoading(false);
+    },
+  });
+
+  useEffect(() => {
+    // 如果智能体详情不存在，则查询智能体详情
+    if (
+      !appAgentDetail &&
+      location.pathname.includes('/app/open-iframe-page/')
+    ) {
+      setAppAgentDetailLoading(true);
+      runDetail(agentId);
+    }
+  }, [location.pathname, appAgentDetail]);
 
   // 查看全部历史会话
   const handleViewAllHistory = () => {
@@ -267,116 +302,125 @@ const BaseTemplate: React.FC = () => {
           </div>
         </div>
 
-        {/* 页面导航 */}
-        <div className={styles.pageNavList}>
-          {appAgentDetail?.customPageMenus?.map(
-            (item: CustomPageNavItem, index: number) => {
-              // 获取页面url: 如果path存在，则拼接base url
-              // path: "/page/6368147380375552-1590/prod/"
-              const url = item.path
-                ? `${process.env.BASE_URL}${item.path}`
-                : '';
-              // 判断是否为当前页面
-              const isActive =
-                location.pathname.includes('/app/open-iframe-page/') &&
-                normalizeActiveUrl(currentIframeUrl) ===
-                  normalizeActiveUrl(url);
+        {/* 加载中状态 */}
+        {loadingHistory || appAgentDetailLoading ? (
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'content-center',
+              'py-8',
+              'flex-1',
+            )}
+          >
+            <LoadingOutlined />
+          </div>
+        ) : (
+          <>
+            {/* 页面导航 */}
+            <div className={styles.pageNavList}>
+              {appAgentDetail?.customPageMenus?.map(
+                (item: CustomPageNavItem, index: number) => {
+                  // 获取页面url: 如果path存在，则拼接base url
+                  // path: "/page/6368147380375552-1590/prod/"
+                  const url = item.path
+                    ? `${process.env.BASE_URL}${item.path}`
+                    : '';
+                  // 判断是否为当前页面
+                  const isActive =
+                    location.pathname.includes('/app/open-iframe-page/') &&
+                    normalizeActiveUrl(currentIframeUrl) ===
+                      normalizeActiveUrl(url);
 
-              return (
-                <div
-                  key={`${item.name}-${index}`}
-                  className={cx(styles.pageNavItem, {
-                    [styles['page-nav-item-active']]: isActive,
-                  })}
-                  onClick={() => handleOpenPage(item)}
-                >
-                  <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
-                  <span className="text-ellipsis">{item.name}</span>
-                </div>
-              );
-            },
-          )}
-        </div>
-
-        {/* 历史会话列表区域 */}
-        <div
-          className={cx(
-            'relative',
-            'flex-1',
-            'flex',
-            'flex-col',
-            'overflow-hide',
-          )}
-        >
-          {loadingHistory ? (
-            <div
-              className={cx('flex', 'items-center', 'content-center', 'h-full')}
-            >
-              <LoadingOutlined />
+                  return (
+                    <div
+                      key={`${item.name}-${index}`}
+                      className={cx(styles.pageNavItem, {
+                        [styles['page-nav-item-active']]: isActive,
+                      })}
+                      onClick={() => handleOpenPage(item)}
+                    >
+                      <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
+                      <span className="text-ellipsis">{item.name}</span>
+                    </div>
+                  );
+                },
+              )}
             </div>
-          ) : (
-            <>
-              <div className={cx(styles['history-title'])}>
-                <span className={cx(styles.title, 'flex-1', 'overflow-hide')}>
-                  <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
-                  <span className="text-ellipsis">
-                    {dict('PC.Pages.OpenApp.historyConversation')}
+
+            {/* 历史会话列表区域 */}
+            <div
+              className={cx(
+                'relative',
+                'flex-1',
+                'flex',
+                'flex-col',
+                'overflow-hide',
+              )}
+            >
+              <>
+                <div className={cx(styles['history-title'])}>
+                  <span className={cx(styles.title, 'flex-1', 'overflow-hide')}>
+                    <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
+                    <span className="text-ellipsis">
+                      {dict('PC.Pages.OpenApp.historyConversation')}
+                    </span>
                   </span>
-                </span>
 
-                <ConditionRender condition={conversationList?.length}>
-                  <span
-                    className={cx(styles['more-conversation'])}
-                    onClick={handleViewAllHistory}
-                  >
-                    {dict('PC.Pages.OpenApp.viewAll')} <RightOutlined />
-                  </span>
-                </ConditionRender>
-              </div>
+                  <ConditionRender condition={conversationList?.length}>
+                    <span
+                      className={cx(styles['more-conversation'])}
+                      onClick={handleViewAllHistory}
+                    >
+                      {dict('PC.Pages.OpenApp.viewAll')} <RightOutlined />
+                    </span>
+                  </ConditionRender>
+                </div>
 
-              {/* 历史会话列表 */}
-              <div
-                ref={historyListRef}
-                className={cx(
-                  'flex-1',
-                  'overflow-y',
-                  'scroll-container',
-                  styles['history-list'],
-                )}
-                onScroll={handleHistoryScroll}
-              >
-                {conversationList?.length
-                  ? conversationList.map(
-                      (item: ConversationInfo, index: number) => (
-                        <ConversationItem
-                          key={item.id}
-                          isActive={cId === item.id?.toString()}
-                          isFirst={index === 0}
-                          onClick={() => handleLink(item.id, item.agentId)}
-                          name={item.topic}
-                          taskStatus={item.taskStatus}
-                        />
-                      ),
-                    )
-                  : loadingHistoryEnd && (
-                      <>
-                        <div className={cx(styles['no-used'])}>
-                          {dict('PC.Pages.OpenApp.lookRight')}
-                        </div>
-                        <div className={cx(styles['no-used'])}>
-                          {dict('PC.Pages.OpenApp.firstConversationTip')}
-                        </div>
-                      </>
-                    )}
-              </div>
-            </>
-          )}
+                {/* 历史会话列表 */}
+                <div
+                  ref={historyListRef}
+                  className={cx(
+                    'flex-1',
+                    'overflow-y',
+                    'scroll-container',
+                    styles['history-list'],
+                  )}
+                  onScroll={handleHistoryScroll}
+                >
+                  {conversationList?.length
+                    ? conversationList.map(
+                        (item: ConversationInfo, index: number) => (
+                          <ConversationItem
+                            key={item.id}
+                            isActive={cId === item.id?.toString()}
+                            isFirst={index === 0}
+                            onClick={() => handleLink(item.id, item.agentId)}
+                            name={item.topic}
+                            taskStatus={item.taskStatus}
+                          />
+                        ),
+                      )
+                    : loadingHistoryEnd && (
+                        <>
+                          <div className={cx(styles['no-used'])}>
+                            {dict('PC.Pages.OpenApp.lookRight')}
+                          </div>
+                          <div className={cx(styles['no-used'])}>
+                            {dict('PC.Pages.OpenApp.firstConversationTip')}
+                          </div>
+                        </>
+                      )}
+                </div>
+              </>
 
-          {/* 底部渐变 */}
-          <ConditionRender condition={showFooterTopGradient}>
-            <div className={cx(styles['footer-top-gradient'])} />
-          </ConditionRender>
-        </div>
+              {/* 底部渐变 */}
+              <ConditionRender condition={showFooterTopGradient}>
+                <div className={cx(styles['footer-top-gradient'])} />
+              </ConditionRender>
+            </div>
+          </>
+        )}
 
         {/* 用户区域，固定在底部 */}
         <footer

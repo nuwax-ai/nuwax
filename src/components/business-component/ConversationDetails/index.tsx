@@ -99,6 +99,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     isAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
+    setAppAgentDetailLoading,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -399,11 +400,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     },
     onError: () => {
       setLoading(false);
+      setAppAgentDetailLoading(false);
     },
   });
 
   useLayoutEffect(() => {
     setLoading(true);
+    setAppAgentDetailLoading(true);
     runDetail(agentId, true);
 
     return () => {
