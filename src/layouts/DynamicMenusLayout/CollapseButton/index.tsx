@@ -67,11 +67,11 @@ const CollapseButton: React.FC = () => {
     }
 
     // 优先级2: 检查URL参数
-    const hideMenu = searchParams.get('hideMenu');
-    if (hideMenu === 'true') {
-      setIsSecondMenuCollapsed(true);
-      return;
-    }
+    // const hideMenu = searchParams.get('hideMenu');
+    // if (hideMenu === 'true') {
+    //   setIsSecondMenuCollapsed(true);
+    //   return;
+    // }
 
     // 优先级3: 默认展开（false）
     setIsSecondMenuCollapsed(false);

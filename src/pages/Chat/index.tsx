@@ -691,10 +691,6 @@ const Chat: React.FC = () => {
             .replace(':id', newConversationId?.toString() || '');
         } else {
           url = `/home/chat/${newConversationId}/${newAgentId}`;
-          // 如果是通用型智能体，则隐藏菜单
-          if (effectiveAgent?.type === AgentTypeEnum.TaskAgent) {
-            url += '?hideMenu=true';
-          }
         }
 
         // 跳转会话页面
