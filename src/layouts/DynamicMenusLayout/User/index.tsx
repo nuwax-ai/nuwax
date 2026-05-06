@@ -4,6 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { redirectToLogin } from '@/utils/router';
 import { Popover } from 'antd';
+import { TooltipPlacement } from 'antd/es/tooltip';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
 import { useModel, useNavigate, useRequest } from 'umi';
@@ -15,6 +16,7 @@ const cx = classNames.bind(styles);
 
 interface UserProps {
   isAppDetails?: boolean;
+  placement?: TooltipPlacement;
 }
 
 /**
@@ -22,6 +24,7 @@ interface UserProps {
  */
 const User: React.FC<PropsWithChildren<UserProps>> = ({
   children,
+  placement = 'rightBottom',
   isAppDetails = false,
 }) => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
@@ -87,7 +90,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
   };
   return (
     <Popover
-      placement="rightBottom"
+      placement={placement}
       title={null}
       styles={{
         body: {
@@ -99,13 +102,17 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
           {USER_AVATAR_LIST.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';
+            const cursorStyle =
+              item.type === UserAvatarEnum.User_Name
+                ? styles['cursor-default']
+                : '';
             return (
               <UserActionItem
                 key={item.type}
                 {...item}
                 text={getMenuText(item.type)}
                 onClick={handlerClick}
-                className={style}
+                className={cx(cursorStyle, style)}
               />
             );
           })}

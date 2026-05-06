@@ -7,7 +7,7 @@
 
 // 应用智能体侧边栏容器
 .agentSidebarContainer {
-  width: 280px;
+  width: 250px;
   height: 100%;
   padding: @paddingXs @paddingSm;
   border-right: @colorBorderSecondary 1px solid;
@@ -39,6 +39,7 @@
     border-radius: @borderRadius;
     background-color: @colorBgContainer;
     overflow: hidden;
+    flex-shrink: 0;
 
     .logo {
       width: 100%;
@@ -80,6 +81,7 @@
     color: @colorText;
     font-size: @fontSize;
     font-weight: 500;
+    user-select: none;
   }
 
   .shortcutTag {
@@ -95,6 +97,37 @@
   }
 }
 
+// ========================== 页面导航 ==========================
+.pageNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .pageNavItem {
+    height: 36px;
+    border-radius: @borderRadius;
+    padding: @paddingXs 0 @paddingXs 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      background-color: #e6e7e8;
+      color: @colorText;
+    }
+
+    &.page-nav-item-active {
+      background-color: #e6e7e8;
+      color: @colorText;
+    }
+  }
+}
+
+// ========================== 历史会话列表 ==========================
 // 历史会话标题
 .history-title {
   padding: @paddingXs 0 @paddingXs 13px;
@@ -102,6 +135,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+
+  &.exist-page-nav {
+    padding-top: 0;
+  }
 
   .title {
     display: flex;
@@ -180,4 +217,14 @@
   .user-name {
     color: @colorTextSecondary;
   }
+
+  .active-icon-container {
+    color: @navFirstMenuTextSecondary;
+    padding: @paddingXs;
+  }
+}
+
+.messageContainer {
+  left: 13px !important;
+  bottom: 53px !important;
 }

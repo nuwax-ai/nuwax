@@ -1,0 +1,111 @@
+@import '@/styles/token.less';
+
+.markdown-custom-process-group {
+  margin: @marginSm 0;
+  border-radius: @borderRadius;
+  background-color: @colorBgContainer;
+  border: @lineWidth solid @colorBorderSecondary;
+  overflow: hidden;
+  transition: all @motionDurationMid @motionEaseInOut;
+
+  &:hover {
+    border-color: @colorPrimaryHover;
+    // box-shadow: @boxShadowSecondary;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @paddingXxs @paddingSm;
+    cursor: pointer;
+    user-select: none;
+    background-color: @colorFillQuaternary;
+    transition: background-color @motionDurationFast;
+
+    &:hover {
+      background-color: @colorFillTertiary;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .group-title {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextSecondary;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .process-count {
+        font-size: @fontSizeSm;
+        color: @colorTextDescription;
+        // background: @colorFillSecondary;
+        padding: 1px @paddingXs;
+        border-radius: 10px;
+      }
+
+      .expand-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+        transition: transform @motionDurationMid @motionEaseInOut;
+
+        &.is-expanded {
+          transform: rotate(180deg);
+        }
+      }
+    }
+  }
+
+  .group-content {
+    border-top: @lineWidth solid @colorBorderSecondary;
+    padding: 0 @paddingXxs 0 @padding;
+    background-color: @colorBgContainer;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+      border-radius: @borderRadiusXs;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &:hover {
+      scrollbar-color: @colorFill transparent;
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFillSecondary;
+      }
+    }
+
+    // 覆盖内部元素的 margin，使布局紧凑
+    :global {
+      .markdown-custom-process {
+        margin: @paddingXxs 0;
+        border: none;
+        background: @colorFillQuaternary;
+
+        &:hover {
+          background: @colorFillTertiary;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}

@@ -528,6 +528,10 @@ const routes = [
     layout: false,
     routes: [
       {
+        path: 'open-iframe-page/:agentId',
+        component: '@/pages/OpenIframePage',
+      },
+      {
         path: ':agentId',
         component: '@/pages/OpenApp/AppDetails',
       },

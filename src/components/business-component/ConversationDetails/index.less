@@ -29,9 +29,10 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      padding: @paddingXs @paddingXs @paddingXs 40px;
+      padding: @paddingXs 12px @paddingXs 20px;
       box-sizing: content-box;
 
+      // 应用智能体模式下，显示内容导航按钮
       &.app-title-container {
         padding-left: @padding;
       }
@@ -56,17 +57,13 @@
 
   .main-content-box {
     width: 100%;
-    padding: 0 @paddingXs 0 40px;
+    padding: 0 20px;
     overflow-y: hidden;
     height: 100%;
     flex: 1;
     display: flex;
     position: relative;
-    gap: 40px;
-
-    &.mobile-content-box {
-      padding-left: @paddingXs;
-    }
+    gap: 20px;
 
     //隐藏滚动条
     &::-webkit-scrollbar {
@@ -83,7 +80,6 @@
       }
 
       .chat-wrapper-content {
-        overflow: auto;
         margin-bottom: 5px;
         display: flex;
         flex-direction: column;
@@ -158,6 +154,14 @@
   font-weight: 400;
   line-height: 24px;
   color: @colorTextSecondary;
+}
+
+.mobile-page-preview-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
 }
 
 .copy-btn {

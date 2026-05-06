@@ -102,6 +102,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     isAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
+    setAppAgentDetailLoading,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -242,7 +243,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const confirmSendMessage = (
     args: any,
     cId: number | null = conversationId,
-    info: AgentDetailDto | null = agentDetail || null,
   ) => {
     let url = '';
 
@@ -253,11 +253,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         .replace(':agentId', agentId.toString());
     } else {
       url = `/home/chat/${cId}/${agentId}`;
-
-      // 如果是任务智能体，则隐藏菜单
-      if (info?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
     }
 
     history.push(url, args);
@@ -343,7 +338,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   defaultAgentDetail: result,
                   messageSourceType: 'agent' as MessageSourceType,
                 };
-                confirmSendMessage(attach, result?.conversationId, result);
+                confirmSendMessage(attach, result?.conversationId);
 
                 setLoading(false);
                 return;
@@ -416,11 +411,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     },
     onError: () => {
       setLoading(false);
+      setAppAgentDetailLoading(false);
     },
   });
 
   useLayoutEffect(() => {
     setLoading(true);
+    setAppAgentDetailLoading(true);
     runDetail(agentId, true);
 
     return () => {
@@ -611,7 +608,15 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 : '',
             )}
           >
-            <div className={cx('flex', 'items-center', 'gap-4')}>
+            <div
+              className={cx(
+                'flex',
+                'items-center',
+                'gap-4',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
               {/* 应用智能体模式下，显示内容导航按钮 */}
               <ConditionRender
                 condition={isAppSidebarMode && !isAppSidebarVisible}
@@ -633,7 +638,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               {/* 左侧标题 */}
               <Typography.Title
                 level={5}
-                className={cx(styles.title)}
+                className={cx(styles.title, 'flex-1')}
                 ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
               >
                 {cachedAgentName
@@ -671,8 +676,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
-                !!agentDetail?.pageHomeIndex &&
-                !pagePreviewData && (
+                !!agentDetail?.pageHomeIndex && (
                   <TooltipIcon
                     title={t(
                       'PC.Components.ConversationDetails.openPreviewPage',
@@ -712,18 +716,16 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
               [styles['file-tree-visible']]: isFileTreeVisible,
             })}
           >
-            <div className={cx(styles['chat-wrapper-content'])}>
+            <div
+              className={cx(styles['chat-wrapper-content'], 'scroll-container')}
+            >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
                 <NewConversationSet
@@ -873,49 +875,48 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
         minLeftWidth={400}
-        defaultLeftWidth={
-          agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-        }
         left={agentDetail?.hideChatArea ? null : LeftContent()}
+        defaultLeftWidth={33}
         right={
-          agentDetail?.type !== AgentTypeEnum.TaskAgent
-            ? pagePreviewData && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!agentDetail?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenPageCopyModal(true)}
-                    copyButtonText={t(
-                      'PC.Components.PagePreviewIframe.copyTemplate',
-                    )}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={agentDetail.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                      title={''}
-                      open={openPageCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenPageCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenPageCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            : null
+          pagePreviewData && (
+            <>
+              <PagePreviewIframe
+                className={cx({
+                  [styles['mobile-page-preview-container']]: isMobile,
+                })}
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+                // 复制模板按钮相关 props
+                showCopyButton={showCopyButton}
+                allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                onCopyClick={() => setOpenPageCopyModal(true)}
+                copyButtonText={t(
+                  'PC.Components.PagePreviewIframe.copyTemplate',
+                )}
+                copyButtonClassName={styles['copy-btn']}
+              />
+              {/* 复制模板弹窗 */}
+              {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                <CopyToSpaceComponent
+                  spaceId={agentDetail.spaceId}
+                  mode={AgentComponentTypeEnum.Page}
+                  componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                  title={''}
+                  open={openPageCopyModal}
+                  isTemplate={true}
+                  onSuccess={(_: any, targetSpaceId: number) => {
+                    setOpenPageCopyModal(false);
+                    // 跳转
+                    jumpToPageDevelop(targetSpaceId);
+                  }}
+                  onCancel={() => setOpenPageCopyModal(false)}
+                />
+              )}
+            </>
+          )
         }
       />
 

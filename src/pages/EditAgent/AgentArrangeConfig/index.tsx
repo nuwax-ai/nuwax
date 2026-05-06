@@ -352,8 +352,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page);
     }
 
-    // 事件绑定
+    // 事件绑定（通用智能体不显示）
     if (
+      agentConfigInfo?.type !== AgentTypeEnum.TaskAgent &&
       isExistComponent(AgentComponentTypeEnum.Event) &&
       eventsInfo?.bindConfig?.eventConfigs?.length
     ) {
@@ -1180,76 +1181,73 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
 
-    // 通用型智能体不显示 【页面/展开页面区/事件绑定】
+    // ========================== 页面配置区域，显示页面组件列表 ==========================
+    {
+      key: AgentArrangeConfigEnum.Page,
+      label: t('PC.Pages.AgentArrangeConfig.page'),
+      children: (
+        <CollapseComponentList
+          textClassName={cx(styles.text)}
+          type={AgentComponentTypeEnum.Page}
+          list={allPageComponentList}
+          deleteList={deleteList}
+          onSet={handlePageSet}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title={t('PC.Pages.AgentArrangeConfig.addPage')}
+          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Page)}
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
+    {
+      key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
+      label: t('PC.Pages.AgentArrangeConfig.defaultExpandPageArea'),
+      children: (
+        // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
+        <p className={cx(styles.text)}>
+          {t('PC.Pages.AgentArrangeConfig.defaultExpandPageAreaDesc')}
+        </p>
+      ),
+      extra: (
+        <Tooltip
+          title={
+            !allPageComponentList?.length
+              ? t('PC.Pages.AgentArrangeConfig.addPageFirst')
+              : ''
+          }
+        >
+          <Switch
+            disabled={!allPageComponentList?.length}
+            value={agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes}
+            // 阻止冒泡事件
+            onClick={(_, e: any) => {
+              e.stopPropagation();
+            }}
+            onChange={(value: boolean) =>
+              onChangeAgent(
+                value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
+                'expandPageArea',
+              )
+            }
+          />
+        </Tooltip>
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
+    // 通用型智能体不显示 【事件绑定】
     ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
       ? []
       : [
-          {
-            key: AgentArrangeConfigEnum.Page,
-            label: t('PC.Pages.AgentArrangeConfig.page'),
-            children: (
-              <CollapseComponentList
-                textClassName={cx(styles.text)}
-                type={AgentComponentTypeEnum.Page}
-                list={allPageComponentList}
-                deleteList={deleteList}
-                onSet={handlePageSet}
-                onDel={handleAgentComponentDel}
-              />
-            ),
-            extra: (
-              <TooltipIcon
-                title={t('PC.Pages.AgentArrangeConfig.addPage')}
-                onClick={(e) =>
-                  handlerComponentPlus(e, AgentComponentTypeEnum.Page)
-                }
-              />
-            ),
-            classNames: {
-              header: 'collapse-header',
-              body: 'collapse-body',
-            },
-          },
-          {
-            key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
-            label: t('PC.Pages.AgentArrangeConfig.defaultExpandPageArea'),
-            children: (
-              // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
-              <p className={cx(styles.text)}>
-                {t('PC.Pages.AgentArrangeConfig.defaultExpandPageAreaDesc')}
-              </p>
-            ),
-            extra: (
-              <Tooltip
-                title={
-                  !allPageComponentList?.length
-                    ? t('PC.Pages.AgentArrangeConfig.addPageFirst')
-                    : ''
-                }
-              >
-                <Switch
-                  disabled={!allPageComponentList?.length}
-                  value={
-                    agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes
-                  }
-                  // 阻止冒泡事件
-                  onClick={(_, e: any) => {
-                    e.stopPropagation();
-                  }}
-                  onChange={(value: boolean) =>
-                    onChangeAgent(
-                      value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
-                      'expandPageArea',
-                    )
-                  }
-                />
-              </Tooltip>
-            ),
-            classNames: {
-              header: 'collapse-header',
-              body: 'collapse-body',
-            },
-          },
           {
             key: AgentArrangeConfigEnum.Page_Event_Binding,
             label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
@@ -1370,6 +1368,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
 
+          {/* 工具 */}
           <div ref={toolSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.tools')}
@@ -1393,6 +1392,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             </div>
           )}
 
+          {/* 知识库 */}
           <div ref={knowledgeSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.knowledge')}
@@ -1403,6 +1403,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 记忆 */}
           <div ref={memorySectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.memory')}
@@ -1413,6 +1414,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 对话体验 */}
           <div ref={experienceSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.conversationExperience')}
@@ -1426,6 +1428,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 界面配置 */}
           <div ref={pageSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.interfaceConfig')}
@@ -1445,12 +1448,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         addComponents={addComponents}
         onAdded={handleAddComponent}
         tabs={CREATED_TABS.filter((item) => {
-          // 如果是通用型智能体，则不显示页面tag
+          // 如果是通用型智能体
           if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-            return (
-              item.key !== AgentComponentTypeEnum.Agent &&
-              item.key !== AgentComponentTypeEnum.Page
-            );
+            return item.key !== AgentComponentTypeEnum.Agent;
           }
           return (
             item.key !== AgentComponentTypeEnum.Agent &&
@@ -1487,6 +1487,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*页面设置弹窗*/}
       <PageSettingModal
         open={openPageModel}
+        isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
         currentComponentInfo={currentComponentInfo}
         allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}

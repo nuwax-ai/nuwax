@@ -1,6 +1,7 @@
 import { createBuildInPlugin } from 'ds-markdown/plugins';
 import rehypeRaw from 'rehype-raw';
 import rehypeStringify from 'rehype-stringify';
+import AppDevProcessGroup from './components/AppDevProcessGroup';
 import PlanProcess from './components/PlanProcess';
 import ToolCallProcess from './components/ToolCallProcess';
 
@@ -12,6 +13,13 @@ export default () => {
   return createBuildInPlugin({
     rehypePlugin: [rehypeRaw, rehypeStringify],
     components: {
+      'appdev-process-group': ({ children, ...props }: any) => {
+        const count = parseInt(props.count || '0', 10);
+        return (
+          <AppDevProcessGroup count={count}>{children}</AppDevProcessGroup>
+        );
+      },
+
       'appdev-plan': ({ node, ...props }: any) => {
         const {
           end: { offset: endOffset },

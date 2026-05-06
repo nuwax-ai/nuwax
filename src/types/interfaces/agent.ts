@@ -612,6 +612,14 @@ export interface AgentSelectedComponentInfo {
   type: AgentComponentTypeEnum;
 }
 
+// 自定义页面导航项
+export interface CustomPageNavItem {
+  description: string;
+  icon: string;
+  name: string;
+  path: string;
+}
+
 // Agent信息，已发布过的agent才有此信息
 export interface AgentDetailDto extends AgentBaseInfo {
   // 会话ID
@@ -623,6 +631,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   sandboxId?: string | number;
   // 发布备注信息
   remark: string;
+  // 自定义页面导航列表
+  customPageMenus: CustomPageNavItem[];
   // 智能体发布时间
   publishDate: number;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)

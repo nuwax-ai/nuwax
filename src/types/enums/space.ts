@@ -193,6 +193,8 @@ export enum PageSettingEnum {
   Visible_To_LLM,
   // 是否为智能体页面首页
   Home_Index,
+  // 自定义名称与图标
+  Custom_Name_And_Icon,
 }
 
 // 空间类型枚举
