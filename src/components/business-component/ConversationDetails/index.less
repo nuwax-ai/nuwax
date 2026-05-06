@@ -32,12 +32,17 @@
       padding: @paddingXs @paddingXs @paddingXs 40px;
       box-sizing: content-box;
 
+      // 应用智能体模式下，显示内容导航按钮
       &.app-title-container {
         padding-left: @padding;
       }
 
       &.app-title-container-collapsed {
         padding-left: @paddingXs;
+      }
+
+      &.page-preview-title {
+        padding-right: 40px;
       }
 
       .title {
@@ -66,6 +71,10 @@
 
     &.mobile-content-box {
       padding-left: @paddingXs;
+    }
+
+    &.page-preview-content {
+      padding-right: 40px;
     }
 
     //隐藏滚动条
