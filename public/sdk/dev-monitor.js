@@ -395,6 +395,21 @@
           errorText.includes('react-router') ||
           errorText.includes('default ErrorBoundary');
 
+        // Vue3 / Vue Router 错误特征（覆盖 vue3-vite 场景）
+        // 来源：Vue 3 runtime-core 内置警告与抛错前缀，以及 vue-router 4.x 的常见日志
+        const isVueError =
+          errorText.includes('[Vue warn]') ||
+          errorText.includes('[Vue Router warn]') ||
+          errorText.includes('[Vue Router]') ||
+          errorText.includes('Component render error') ||
+          errorText.includes('runtime-core') ||
+          errorText.includes('Failed to resolve component') ||
+          errorText.includes('Failed to resolve directive') ||
+          errorText.includes('Hydration completed but contains mismatches') ||
+          errorText.includes('Hydration node mismatch') ||
+          errorText.includes('Hydration children mismatch') ||
+          errorText.includes('Vue Router has reported');
+
         // 检查是否是其他需要捕获的错误（包括所有常见错误类型）
         const isImportantError =
           errorText.includes('Uncaught') ||
@@ -407,7 +422,7 @@
           errorText.includes('EvalError');
 
         // 如果匹配到任何错误，都进行捕获
-        if (isReactRouterError || isImportantError) {
+        if (isReactRouterError || isVueError || isImportantError) {
           const errorInfo = extractErrorInfo(args);
           const fullMessage = errorInfo.message || errorText;
 
@@ -421,6 +436,7 @@
           logger.error(fullMessage, {
             source: 'console.error',
             isReactRouterError,
+            isVueError,
             isImportantError,
             stack: errorInfo.stack,
             originalArgs: args.map((a) => {
@@ -469,11 +485,27 @@
           .join(' ');
 
         // 检查是否是重要的警告（可能表示错误）
+        // 关键字按"框架中性"分组，确保 React 与 Vue3 都被覆盖
+        // 这里避免过度匹配：Hydration 仅在出现 mismatch 语义时才上报
+        const hasHydrationMismatchWarning =
+          errorText.includes('Hydration') &&
+          (errorText.includes('mismatch') ||
+            errorText.includes('Mismatch') ||
+            errorText.includes('contains mismatches'));
+
         const isImportantWarning =
+          // React 生态特征
           errorText.includes('Error handled by React Router') ||
           errorText.includes('Error handled by') ||
           errorText.includes('ErrorBoundary') ||
           errorText.includes('default ErrorBoundary') ||
+          // Vue3 / Vue Router 警告特征
+          errorText.includes('[Vue warn]') ||
+          errorText.includes('[Vue Router warn]') ||
+          errorText.includes('Failed to resolve component') ||
+          errorText.includes('Failed to resolve directive') ||
+          hasHydrationMismatchWarning ||
+          // 通用关键字（任意框架/原生 JS）
           errorText.includes('Warning:') ||
           errorText.includes('Failed to') ||
           errorText.includes('ReferenceError') ||
@@ -540,14 +572,22 @@
       const innerHTML = element.innerHTML || '';
 
       // 检查类名、ID、文本内容中是否包含错误相关关键词
+      // 关键字按生态分组：React / Vue / 通用，确保 vue3-vite 项目同样可以识别错误 UI
       const errorKeywords = [
+        // 通用
         'error',
+        'error-page',
+        'error-page-container',
+        'error-fallback',
+        'Something went wrong',
+        // React 生态
         'ErrorBoundary',
         'error-boundary',
         'react-error-boundary',
-        'error-page',
-        'error-page-container',
-        'Something went wrong',
+        // Vue 生态
+        'vue-error-boundary',
+        'error-page-vue',
+        '[Vue 3]',
       ];
 
       const hasErrorKeyword =
@@ -558,8 +598,10 @@
             textContent.includes(keyword) ||
             innerHTML.includes(keyword),
         ) ||
-        // 检查常见的错误 UI 特征
+        // 检查常见的错误 UI 文本特征（覆盖 React Router / Vue Router / Vue 渲染异常）
         textContent.includes('Error handled by React Router') ||
+        textContent.includes('Vue Router has reported the following error') ||
+        textContent.includes('Component render error') ||
         textContent.includes('Something went wrong') ||
         (tagName === 'div' &&
           (className.includes('error') || id.includes('error')));
