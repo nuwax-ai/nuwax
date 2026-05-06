@@ -1076,7 +1076,6 @@ const Chat: React.FC = () => {
       }
     }
     return () => {
-      // document.documentElement.style.minWidth = '1200px';
       document.documentElement.style.minWidth = 'unset';
     };
   }, [pagePreviewData, isFileTreeVisible, isSidebarVisible, isMobile]);
@@ -1094,6 +1093,10 @@ const Chat: React.FC = () => {
           <div
             className={cx(styles['title-container'], {
               [styles['title-container-collapsed']]: isAppSidebarMode,
+              [styles['page-preview-title']]:
+                !!pagePreviewData &&
+                !(isMobile || isAppSidebarMode) &&
+                !isFileTreeVisible,
             })}
           >
             <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -1238,7 +1241,11 @@ const Chat: React.FC = () => {
         {/* 页面主体: 内容区域 */}
         <div
           className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile,
+            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
+            [styles['page-preview-content']]:
+              !!pagePreviewData &&
+              !(isMobile || isAppSidebarMode) &&
+              !isFileTreeVisible,
           })}
         >
           {/* 聊天内容区域 */}
@@ -1506,9 +1513,7 @@ const Chat: React.FC = () => {
             pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
           }
           minLeftWidth={430}
-          defaultLeftWidth={
-            effectiveAgent?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-          }
+          defaultLeftWidth={33}
           // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
           left={effectiveAgent?.hideChatArea ? null : LeftContent()}
           right={
