@@ -2,7 +2,6 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { USER_OPERATE_AREA } from '@/constants/menus.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiNotifyMessageUnreadCount } from '@/services/message';
 import { UserOperatorAreaEnum } from '@/types/enums/menus';
 import type { UserOperateAreaItemType } from '@/types/interfaces/layouts';
 import { MenuItemDto } from '@/types/interfaces/menu';
@@ -11,7 +10,7 @@ import { Badge, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -27,19 +26,7 @@ export interface UserOperateAreaType {
  * 一级菜单栏底部的用户操作区域组件
  */
 const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
-  const { unreadCount, setUnreadCount } = useModel('layout');
-  // 查询用户未读消息数量
-  const { run: runNotifyMessageUnreadCount } = useRequest(
-    apiNotifyMessageUnreadCount,
-    {
-      manual: true,
-      onSuccess: (result: number) => {
-        if (result > 0) {
-          setUnreadCount(result);
-        }
-      },
-    },
-  );
+  const { unreadCount, runNotifyMessageUnreadCount } = useModel('layout');
 
   const dataSource: UserOperateAreaItemType[] = useMemo(() => {
     const _userOperateArea = cloneDeep(USER_OPERATE_AREA);
