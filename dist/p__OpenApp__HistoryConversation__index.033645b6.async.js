@@ -1,3 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8963],{75283:function(E,a,n){n.r(a);var s=n(62334),v=n(75271),t=n(98166),o=n(52676),r=function(){var u=(0,t.useParams)(),i=Number(u.agentId),_=function(e,c){t.history.push("/app/chat/".concat(c,"/").concat(e))};return(0,o.jsx)(s.Z,{agentId:i,onClickLink:_})};a.default=r}}]);})();
-
-//# sourceMappingURL=p__OpenApp__HistoryConversation__index.033645b6.async.js.map

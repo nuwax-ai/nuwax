@@ -1,3 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[5333],{38105:function(e,s,n){n.r(s),n.d(s,{default:function(){return m}});var a=n(192),r=n(28194),u=n(9504),d=n(94581),l=n.n(d),f=n(75271),i=n(98166),o={container:"container___N3DsY"},t=n(52676),v=l().bind(o),c=function(){return(0,t.jsx)("div",{className:v(o.container),children:(0,t.jsx)(r.ZP,{status:"404",title:"404",subTitle:(0,a.dz)("PC.Pages.Error404.pageNotFound"),extra:(0,t.jsx)(u.ZP,{type:"primary",onClick:function(){return i.history.push("/")},children:(0,a.dz)("PC.Common.Global.backHome")})})})},m=c}}]);})();
-
-//# sourceMappingURL=p__404__index.437937c1.async.js.map
