@@ -171,15 +171,45 @@ const SpaceKnowledge: React.FC = () => {
     });
   };
 
+  // 加载知识图谱列表
+  const handleLoadGraphList = async () => {
+    console.log('handleLoadGraphList===================1');
+    setLoadingGraph(true);
+    try {
+      const response = await apiKnowledgeTripleList({
+        knowledgeId: knowledgeId,
+      });
+      console.log('handleLoadGraphList===================2');
+      if (response.code === SUCCESS_CODE && response.data) {
+        // 直接使用返回的数据
+        console.log('handleLoadGraphList===================3');
+        setGraphDocList(response.data || []);
+      }
+    } catch (error) {
+      // console.error('加载知识图谱列表失败:', error);
+      message.error('加载知识图谱列表失败');
+    } finally {
+      setLoadingGraph(false);
+    }
+    console.log('handleLoadGraphList===================4');
+  };
+
   // 知识库文档配置 - 数据删除接口
   const { run: runDocDelete } = useRequest(apiKnowledgeDocumentDelete, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除文档成功');
+      console.log('runDocDelete==================4');
       // 删除文档后，更新文档列表以及分段信息
       setLoadingDoc(true);
-      handleDocList();
+      //handleDocList();
+
+      setTimeout(function () {
+        console.log('runDocDelete==================5');
+        handleLoadGraphList();
+        console.log('runDocDelete==================6');
+      }, 3000);
     },
   });
 
@@ -272,11 +302,13 @@ const SpaceKnowledge: React.FC = () => {
 
   // 删除文档
   const handleDocDel = useCallback(() => {
+    console.log('handleDocDel===================1');
     const docId = currentDocumentInfo?.id;
     modalConfirm(
       '你确定要删除此文档吗?',
       currentDocumentInfo?.name || '',
       () => {
+        console.log('handleDocDel===================2');
         runDocDelete(docId);
         return new Promise((resolve) => {
           setTimeout(resolve, 1000);
@@ -307,24 +339,6 @@ const SpaceKnowledge: React.FC = () => {
   const handleQaList = () => {
     qaTableListRef.current?.refresh();
   };
-  // 加载知识图谱列表
-  const handleLoadGraphList = async () => {
-    setLoadingGraph(true);
-    try {
-      const response = await apiKnowledgeTripleList({
-        knowledgeId: knowledgeId,
-      });
-      if (response.code === SUCCESS_CODE && response.data) {
-        // 直接使用返回的数据
-        setGraphDocList(response.data || []);
-      }
-    } catch (error) {
-      // console.error('加载知识图谱列表失败:', error);
-      message.error('加载知识图谱列表失败');
-    } finally {
-      setLoadingGraph(false);
-    }
-  };
 
   // 生成知识图谱
   const handleGenerateGraph = async (docId: number) => {
@@ -333,11 +347,19 @@ const SpaceKnowledge: React.FC = () => {
         knowledgeId: knowledgeId,
         documentId: docId,
       });
+      console.log('handleGenerateGraph===================1');
       if (response.code === SUCCESS_CODE && response.data) {
         message.success(response.data);
         // 轮询检查生成状态
+        setTimeout(function () {
+          console.log('handleGenerateGraph===================2');
+          handleLoadGraphList();
+          console.log('handleGenerateGraph===================3');
+        }, 3000);
+        /*
         const checkStatus = setInterval(async () => {
           try {
+            console.log("handleGenerateGraph===================2");
             const listResponse = await apiKnowledgeTripleList({
               knowledgeId: knowledgeId,
             });
@@ -345,6 +367,7 @@ const SpaceKnowledge: React.FC = () => {
               const docInfo = listResponse.data.data.find(
                 (doc: KnowledgeTripleDocumentInfo) => doc.documentId === docId,
               );
+              console.log("handleGenerateGraph===================3");
               if (
                 docInfo &&
                 (docInfo.tripleStatus === 2 || docInfo.tripleStatus === 10)
@@ -355,14 +378,16 @@ const SpaceKnowledge: React.FC = () => {
                 } else {
                   message.error('知识图谱生成失败');
                 }
+                console.log("handleGenerateGraph===================4");
                 // 重新加载知识图谱列表
                 handleLoadGraphList();
+                console.log("handleGenerateGraph===================5");
               }
             }
           } catch (error) {
             console.error('检查知识图谱生成状态失败:', error);
           }
-        }, 3000);
+        }, 3000);*/
       } else {
         message.error('知识图谱生成任务提交失败');
       }
