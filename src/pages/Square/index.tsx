@@ -480,10 +480,10 @@ const Square: React.FC = () => {
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
-                          handleClick(item.targetId, item.targetType, item)
+                          handleClick(item.targetId, item.targetType)
                         }
                         onStartUse={() =>
-                          handleClick(item.targetId, item.targetType, item)
+                          handleClick(item.targetId, item.targetType)
                         }
                       />
                     );
@@ -501,7 +501,7 @@ const Square: React.FC = () => {
                         collectApi={apiPublishedSkillCollect}
                         unCollectApi={apiPublishedSkillUnCollect}
                         onClick={() =>
-                          handleClick(item.targetId, item.targetType, item)
+                          handleClick(item.targetId, item.targetType)
                         }
                         onStartUse={() => handleClickSkill(item)}
                       />
@@ -528,7 +528,7 @@ const Square: React.FC = () => {
                           }
                           created={item.created}
                           onClick={() =>
-                            handleClick(item.targetId, item.targetType, item)
+                            handleClick(item.targetId, item.targetType)
                           }
                         />
                       );
@@ -539,31 +539,11 @@ const Square: React.FC = () => {
                           key={index}
                           publishedItemInfo={item}
                           onClick={() =>
-                            handleClick(item.targetId, item.targetType, item)
+                            handleClick(item.targetId, item.targetType)
                           }
                         />
                       );
                     }
-                    // } else if (
-                    //   categoryTypeRef.current === SquareAgentTypeEnum.Skill
-                    // ) {
-                    //   // 技能
-                    //   return (
-                    //     <PageCard
-                    //       key={index}
-                    //       coverImg={item.coverImg}
-                    //       name={item.name}
-                    //       avatar={item.publishUser?.avatar}
-                    //       userName={
-                    //         item.publishUser?.nickName ||
-                    //         item.publishUser?.userName
-                    //       }
-                    //       created={item.created}
-                    //       onClick={() =>
-                    //         handleClick(item.targetId, item.targetType, item)
-                    //       }
-                    //     />
-                    //   );
                   } else {
                     // 插件、工作流
                     return (
