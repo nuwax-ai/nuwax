@@ -15,6 +15,8 @@ import styles from './index.module.less';
 export interface HistoryConversationListProps {
   agentId?: number | null;
   onClickLink: (id: number, agentId: number) => void;
+  /** 是否是应用智能体模式 */
+  isAppSidebarMode?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ export interface HistoryConversationListProps {
 const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   agentId,
   onClickLink,
+  isAppSidebarMode = false,
 }) => {
   const { runHistory } = useModel('conversationHistory');
   const location = useLocation();
@@ -71,6 +74,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
     setRenameModalVisible(true);
   };
 
+  // 重命名会话
   const handleRenameSubmit = async () => {
     if (!currentRenameId) return;
     const trimmedTopic = newTopic.trim();
@@ -96,9 +100,11 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
 
       if (res.success) {
         listRef.current?.refresh();
+        // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的5条会话记录
+        const limit = isAppSidebarMode ? 8 : 5;
         runHistory({
           agentId,
-          limit: 20,
+          limit,
         });
         message.success(
           t('PC.Components.HistoryConversationList.renameSuccess'),
@@ -115,6 +121,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
     setDeleteModalVisible(true);
   };
 
+  // 删除会话
   const handleDeleteSubmit = async () => {
     if (!currentDeleteId) return;
 
@@ -124,9 +131,11 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
 
       if (res.success) {
         listRef.current?.removeItem(currentDeleteId);
+        // 应用智能体模式下，查询当前智能体的8条会话记录，否则查询所有智能体的5条会话记录
+        const limit = isAppSidebarMode ? 8 : 5;
         runHistory({
           agentId,
-          limit: 20,
+          limit,
         });
         message.success(
           t('PC.Components.HistoryConversationList.deleteSuccess'),
