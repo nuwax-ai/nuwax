@@ -1473,6 +1473,12 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.AgentArrangeOutputWay.title': 'ダイレクト出力',
   'PC.Pages.AgentArrangeOutputWay.tooltip': '「はい」に設定すると、ワークフロー結果は LLM 要約なしでチャット ボックスに直接送信されます。',
   'PC.Pages.AgentArrangePageSettingModal.homeIndex': 'デフォルトのホームページ',
+  'PC.Pages.AgentArrangePageSettingModal.customNameAndIcon':
+    'カスタム名とアイコン',
+  'PC.Pages.AgentArrangePageSettingModal.pageIcon': 'ページアイコン',
+  'PC.Pages.AgentArrangePageSettingModal.pageName': 'ページ名',
+  'PC.Pages.AgentArrangePageSettingModal.pageNamePlaceholder':
+    'ページ名を入力してください',
   'PC.Pages.AgentArrangePageSettingModal.saveConfigFailed': 'ページ設定を保存できませんでした:',
   'PC.Pages.AgentArrangePageSettingModal.saveFailed': '保存に失敗しました。もう一度試してください',
   'PC.Pages.AgentArrangePageSettingModal.title': '設定',

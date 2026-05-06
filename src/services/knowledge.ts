@@ -414,11 +414,13 @@ export async function apiKnowledgeTripleList(
 }
 
 // 知识图谱 - 删除知识图谱
-export async function apiKnowledgeTripleDelete(
-  documentId: number,
-): Promise<RequestResponse<boolean>> {
-  return request(`/api/knowledge/triple/graph/delete/${documentId}`, {
+export async function apiKnowledgeTripleDelete(data: {
+  kbId: number | string;
+  documentId: number | string;
+}): Promise<RequestResponse<boolean>> {
+  return request(`/api/knowledge/triple/graph/delete`, {
     method: 'POST',
+    data,
   });
 }
 

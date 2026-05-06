@@ -1061,7 +1061,9 @@ const Chat: React.FC = () => {
     apiDownloadAllFiles(id);
   };
 
+  // 设置最小宽度
   useEffect(() => {
+    // 移动端不设置最小宽度
     if (isMobile) {
       document.documentElement.style.minWidth = 'unset';
       return;
@@ -1128,6 +1130,7 @@ const Chat: React.FC = () => {
                   }
                 />
               </ConditionRender>
+              {/* 下拉重命名会话、删除会话 */}
               <DropdownChangeName
                 agentId={agentId}
                 conversationInfo={conversationInfo}
@@ -1164,8 +1167,7 @@ const Chat: React.FC = () => {
 
               {/*打开预览页面*/}
               {!!effectiveAgent?.expandPageArea &&
-                !!effectiveAgent?.pageHomeIndex &&
-                !pagePreviewData && (
+                !!effectiveAgent?.pageHomeIndex && (
                   <TooltipIcon
                     title={t('PC.Pages.Chat.openPreviewPage')}
                     className={cx(styles['icon-box'])}
@@ -1514,49 +1516,41 @@ const Chat: React.FC = () => {
           // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
           left={effectiveAgent?.hideChatArea ? null : LeftContent()}
           right={
-            effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-              ? // 会话型
-                pagePreviewData && (
-                  <>
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!effectiveAgent?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                      // 复制模板按钮相关 props
-                      showCopyButton={showCopyButton}
-                      allowCopy={
-                        effectiveAgent?.allowCopy === AllowCopyEnum.Yes
-                      }
-                      onCopyClick={() => setOpenCopyModal(true)}
-                      copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                      copyButtonClassName={styles['copy-btn']}
-                    />
-                    {/* 复制模板弹窗 */}
-                    {showCopyButton &&
-                      effectiveAgent &&
-                      pagePreviewData?.uri && (
-                        <CopyToSpaceComponent
-                          spaceId={effectiveAgent!.spaceId}
-                          mode={AgentComponentTypeEnum.Page}
-                          componentId={parsePageAppProjectId(
-                            pagePreviewData?.uri,
-                          )}
-                          title={''}
-                          open={openCopyModal}
-                          isTemplate={true}
-                          onSuccess={(_: any, targetSpaceId: number) => {
-                            setOpenCopyModal(false);
-                            // 跳转
-                            jumpToPageDevelop(targetSpaceId);
-                          }}
-                          onCancel={() => setOpenCopyModal(false)}
-                        />
-                      )}
-                  </>
-                )
-              : null
+            pagePreviewData &&
+            !isFileTreeVisible && (
+              <>
+                <PagePreviewIframe
+                  pagePreviewData={pagePreviewData}
+                  showHeader={true}
+                  onClose={hidePagePreview}
+                  showCloseButton={!effectiveAgent?.hideChatArea}
+                  titleClassName={cx(styles['title-style'])}
+                  // 复制模板按钮相关 props
+                  showCopyButton={showCopyButton}
+                  allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+                  onCopyClick={() => setOpenCopyModal(true)}
+                  copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+                  copyButtonClassName={styles['copy-btn']}
+                />
+                {/* 复制模板弹窗 */}
+                {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
+                  <CopyToSpaceComponent
+                    spaceId={effectiveAgent!.spaceId}
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                    title={''}
+                    open={openCopyModal}
+                    isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
+                    onCancel={() => setOpenCopyModal(false)}
+                  />
+                )}
+              </>
+            )
           }
         />
       </div>

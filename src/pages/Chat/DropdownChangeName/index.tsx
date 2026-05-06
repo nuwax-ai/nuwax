@@ -132,9 +132,19 @@ const DropdownChangeName: React.FC<Porps> = ({
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
         message.success(dict('PC.Toast.Global.deletedSuccessfully'));
-        // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
-        handleUpdateHistory();
-        navigate('/', { replace: true });
+        // 如果是应用智能体模式，同步更新左侧历史会话记录列表
+        if (isAppSidebarMode) {
+          // 更新所有智能体的历史记录
+          runHistory({
+            agentId,
+            limit: 8,
+          });
+          navigate(`/app/${agentId}`, { replace: true });
+        } else {
+          // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
+          handleUpdateHistory();
+          navigate('/', { replace: true });
+        }
       }
     },
   });
