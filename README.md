@@ -323,3 +323,92 @@ Join the Nuwax AI Agent Platform community for technical support and latest upda
 ## License
 
 Apache 2.0 License - see [LICENSE](LICENSE) for details.
+
+---
+
+## ❓ FAQ
+
+### 平台概念
+
+**Nuwax 是什么？**
+Nuwax 是一个通用的 Agent 操作系统（Agent OS），用于轻松构建和部署私有的 Agentic AI 解决方案。它提供 Agent Computer（沙箱）能力，支持分布式部署和多服务器扩展。
+
+**Nuwax 与 LangChain / AutoGen 有什么区别？**
+- **LangChain** 侧重 LLM 应用开发框架，需要自行构建 UI 和部署架构；Nuwax 提供完整的开箱即用平台
+- **AutoGen** 专注多 Agent 对话编排；Nuwax 提供 Agent 操作系统级别的完整解决方案，包括部署、管理和沙箱执行
+- Nuwax 更适合需要快速部署私有 Agent 解决方案的团队
+
+### 安装配置
+
+**系统要求是什么？**
+- **Linux**：Ubuntu 22.04 LTS 或更高版本（推荐），x86_64 / ARM64
+- **macOS**：10.15+（Catalina），Intel / Apple Silicon（M1/M2）
+- **硬件**：4 核 8GB RAM 或以上
+- **环境**：Docker 和 Docker Compose V2
+
+**如何快速部署？**
+```bash
+# 使用 nuwax-cli 一键部署
+./nuwax-cli docker-service start
+```
+详细部署文档：https://nuwax.com/deploy.html
+
+**支持哪些平台？**
+- Linux：Ubuntu 22.04 LTS（推荐）、openEuler、Anolis OS、OpenCloudOS、Alinux、Kylin Linux 等 13 种发行版
+- macOS：Intel 和 Apple Silicon 均支持（推荐 OrbStack）
+
+### Agent Computer（沙箱）
+
+**什么是 Agent Computer？**
+Agent Computer 是 Nuwax 的沙箱执行环境，提供安全的 Agent 运行时隔离。支持：
+- 本地沙箱：适合开发测试
+- 远程沙箱：生产级隔离执行
+- 分布式部署：可在多台服务器上部署 Agent Computer
+
+**如何部署 Agent Computer？**
+```bash
+# 参考独立部署指南
+# https://nuwax.com/agent-computer-deploy.html
+```
+每个服务器需要 Docker 和 Docker Compose 环境，支持跨服务器分布式部署。
+
+### 服务管理
+
+**常用管理命令有哪些？**
+```bash
+# 服务管理
+./nuwax-cli docker-service start    # 启动
+./nuwax-cli docker-service stop     # 停止
+./nuwax-cli docker-service restart  # 重启
+./nuwax-cli docker-service status   # 状态
+
+# 备份管理
+./nuwax-cli auto-backup run         # 一键备份
+./nuwax-cli list-backups            # 列出备份
+./nuwax-cli rollback [BACKUP_ID]    # 恢复
+
+# 升级管理
+./nuwax-cli check-update install    # 检查更新
+./nuwax-cli auto-upgrade-deploy run # 自动升级部署
+```
+
+### 故障排查
+
+**Docker 权限问题？**
+当前用户需要 Docker 权限，验证命令：`docker ps`。如遇权限问题，可运行：
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+**macOS 提示未知开发者？**
+前往 系统偏好设置 → 安全性与隐私 → 允许未知开发者。推荐使用 OrbStack（个人免费使用，性能更好）。
+
+**镜像加速配置？**
+中国大陆用户推荐使用阿里云镜像加速。一键安装脚本已内置轩辕镜像加速配置。
+
+**如何获取更多帮助？**
+- 官方网站：https://nuwax.com
+- 在线演示：https://agent.nuwax.com
+- 部署文档：https://nuwax.com/deploy.html
+- GitHub Issues：https://github.com/nuwax-ai/nuwax/issues
