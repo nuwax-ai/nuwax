@@ -353,7 +353,10 @@ const BaseTemplate: React.FC = () => {
                       })}
                       onClick={() => handleOpenPage(item)}
                     >
-                      <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
+                      <SvgIcon
+                        name={item.icon}
+                        style={{ fontSize: 16, borderRadius: '2px' }}
+                      />
                       <span className="text-ellipsis">{item.name}</span>
                     </div>
                   );

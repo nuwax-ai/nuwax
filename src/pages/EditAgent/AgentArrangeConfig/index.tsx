@@ -1368,6 +1368,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
 
+          {/* 工具 */}
           <div ref={toolSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.tools')}
@@ -1391,6 +1392,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             </div>
           )}
 
+          {/* 知识库 */}
           <div ref={knowledgeSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.knowledge')}
@@ -1401,6 +1403,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 记忆 */}
           <div ref={memorySectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.memory')}
@@ -1411,6 +1414,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 对话体验 */}
           <div ref={experienceSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.conversationExperience')}
@@ -1424,6 +1428,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             />
           </div>
 
+          {/* 界面配置 */}
           <div ref={pageSectionRef}>
             <ConfigOptionsHeader
               title={t('PC.Pages.AgentArrangeConfig.interfaceConfig')}
