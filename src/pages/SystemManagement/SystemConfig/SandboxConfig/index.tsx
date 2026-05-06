@@ -13,6 +13,7 @@ import {
   apiUpdateSandboxConfig,
   apiUpdateSandboxGlobalConfig,
 } from '@/services/systemManage';
+import { SandboxTypeEnum } from '@/types/enums/systemManage';
 import { SandboxConfigItem as SandboxItem } from '@/types/interfaces/systemManage';
 import {
   CheckCircleOutlined,
@@ -207,6 +208,20 @@ const SandboxConfig: React.FC = () => {
           </div>
         </div>
       ),
+    },
+    {
+      title: t('PC.Pages.SystemConfigSandboxModal.type'),
+      dataIndex: 'type',
+      width: 120,
+      render: (_: any, record: SandboxItem) => {
+        if (record.type === SandboxTypeEnum.Agent) {
+          return t('PC.Pages.SystemConfigSandboxModal.typeAgent');
+        }
+        if (record.type === SandboxTypeEnum.PageApp) {
+          return t('PC.Pages.SystemConfigSandboxModal.typePageApp');
+        }
+        return record.type;
+      },
     },
     {
       title: t('PC.Pages.SystemConfigSandboxConfig.columnUsage'),
