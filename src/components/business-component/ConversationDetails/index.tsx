@@ -589,6 +589,10 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 : !isAppSidebarVisible
                 ? styles['app-title-container-collapsed']
                 : '',
+              {
+                [styles['page-preview-title']]:
+                  !!pagePreviewData && !(isMobile || isAppSidebarMode),
+              },
             )}
           >
             <div
@@ -685,6 +689,10 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <div
           className={cx(styles['main-content-box'], {
             [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
+            [styles['page-preview-content']]:
+              !!pagePreviewData &&
+              !(isMobile || isAppSidebarMode) &&
+              !isFileTreeVisible,
           })}
         >
           {/* 聊天内容区域 */}
@@ -836,6 +844,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       <ResizableSplit
         minLeftWidth={400}
         left={agentDetail?.hideChatArea ? null : LeftContent()}
+        defaultLeftWidth={33}
         right={
           pagePreviewData && (
             <>
