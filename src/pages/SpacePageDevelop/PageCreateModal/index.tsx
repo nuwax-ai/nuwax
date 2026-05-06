@@ -266,6 +266,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
             label={dict(
               'PC.Pages.SpacePageDevelop.PageCreateModal.templateType',
             )}
+            initialValue={PageTemplateTypeEnum.React}
             rules={[
               {
                 required: true,
