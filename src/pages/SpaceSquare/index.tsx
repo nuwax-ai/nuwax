@@ -256,11 +256,9 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() =>
-              handleClick(item.targetId, item.targetType, item, 'space')
-            }
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
             onStartUse={() =>
-              handleClick(item.targetId, item.targetType, item, 'space')
+              handleClick(item.targetId, item.targetType, 'space')
             }
           />
         );
@@ -275,9 +273,7 @@ const SpaceSection: React.FC = () => {
               type,
               true,
             )}
-            onClick={() =>
-              handleClick(item.targetId, item.targetType, item, 'space')
-            }
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
           />
         );
       } else {
@@ -303,9 +299,7 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra(componentTypeName, item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() =>
-              handleClick(item.targetId, item.targetType, item, 'space')
-            }
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
           />
         );
       }

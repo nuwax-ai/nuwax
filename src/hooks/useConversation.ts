@@ -33,8 +33,6 @@ const useConversation = () => {
       variableParams?: Record<string, string | number> | null;
       // 消息来源
       messageSourceType?: MessageSourceType;
-      // 是否隐藏菜单
-      hideMenu?: boolean;
       // 技能 ID 列表
       skillIds?: number[];
       // 模型 ID
@@ -50,10 +48,8 @@ const useConversation = () => {
 
     if (success) {
       const id = data?.id;
-      // 如果是通用型智能体模式，添加 hideMenu 参数
-      const url = attach?.hideMenu
-        ? `/home/chat/${id}/${agentId}?hideMenu=true`
-        : `/home/chat/${id}/${agentId}`;
+      // 跳转会话页面
+      const url = `/home/chat/${id}/${agentId}`;
       history.push(url, attach);
     }
   };

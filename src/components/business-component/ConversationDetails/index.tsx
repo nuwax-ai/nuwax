@@ -226,7 +226,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const confirmSendMessage = (
     args: any,
     cId: number | null = conversationId,
-    info: AgentDetailDto | null = agentDetail || null,
   ) => {
     let url = '';
 
@@ -237,11 +236,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         .replace(':agentId', agentId.toString());
     } else {
       url = `/home/chat/${cId}/${agentId}`;
-
-      // 如果是任务智能体，则隐藏菜单
-      if (info?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
     }
 
     history.push(url, args);
@@ -327,7 +321,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   defaultAgentDetail: result,
                   messageSourceType: 'agent' as MessageSourceType,
                 };
-                confirmSendMessage(attach, result?.conversationId, result);
+                confirmSendMessage(attach, result?.conversationId);
 
                 setLoading(false);
                 return;
@@ -688,11 +682,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
@@ -842,10 +832,14 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       <ResizableSplit
         minLeftWidth={400}
         left={agentDetail?.hideChatArea ? null : LeftContent()}
+        defaultLeftWidth={33}
         right={
           pagePreviewData && (
             <>
               <PagePreviewIframe
+                className={cx({
+                  [styles['mobile-page-preview-container']]: isMobile,
+                })}
                 pagePreviewData={pagePreviewData}
                 showHeader={true}
                 onClose={hidePagePreview}

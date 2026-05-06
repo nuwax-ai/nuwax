@@ -14,16 +14,11 @@ const useSpaceSquare = () => {
   const handleClick = (
     targetId: number,
     targetType: SquareAgentTypeEnum,
-    info?: SquarePublishedItemInfo,
     from: 'space' | 'square' = 'square',
   ) => {
     // 智能体
     if (targetType === SquareAgentTypeEnum.Agent) {
-      if (info && info.agentType === 'PageApp') {
-        history.push(`/agent/${targetId}?hideMenu=true`);
-      } else {
-        history.push(`/agent/${targetId}`);
-      }
+      history.push(`/agent/${targetId}`);
     }
     // 插件
     if (targetType === SquareAgentTypeEnum.Plugin) {

@@ -3,6 +3,7 @@ import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
@@ -11,12 +12,9 @@ import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import {
-  EllipsisOutlined,
-  LoadingOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
-import { Button } from 'antd';
+import eventBus from '@/utils/eventBus';
+import { LoadingOutlined, RightOutlined } from '@ant-design/icons';
+import { Badge } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -46,7 +44,17 @@ const cx = classNames.bind(styles);
 const BaseTemplate: React.FC = () => {
   const location = useLocation();
   const { id: cId, agentId } = useParams();
-  const { setOpenAdmin, isMobile, setOpenMessage } = useModel('layout');
+  const {
+    openAdmin,
+    setOpenAdmin,
+    isMobile,
+    setOpenMessage,
+    openMessage,
+    unreadCount,
+    setUnreadCount,
+    runNotifyMessageUnreadCount,
+  } = useModel('layout');
+
   // 状态管理
   const { userInfo, getUserInfo } = useModel('userInfo');
 
@@ -202,6 +210,49 @@ const BaseTemplate: React.FC = () => {
     closeSidebarIfMobileOpen,
   ]);
 
+  useEffect(() => {
+    // 初始化查询未读消息数量
+    runNotifyMessageUnreadCount();
+    // 监听新消息事件
+    eventBus.on(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
+
+    return () => {
+      eventBus.off(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
+      setUnreadCount(0);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 当弹层打开时，点击 iframe 会导致 window 失焦且 activeElement 指向 iframe，
+    // 这里主动关闭弹层，补齐“点击外部关闭”在 iframe 场景下的缺失。
+    if (!openAdmin && !openMessage) {
+      return;
+    }
+
+    const handleWindowBlur = () => {
+      window.setTimeout(() => {
+        const activeElement = document.activeElement;
+        if (!(activeElement instanceof HTMLIFrameElement)) {
+          return;
+        }
+
+        // 关闭User组件的弹窗
+        if (openAdmin) {
+          setOpenAdmin(false);
+        }
+        // 关闭消息弹窗
+        if (openMessage) {
+          setOpenMessage(false);
+        }
+      }, 0);
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [openAdmin, openMessage]);
+
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.onerror = null;
@@ -353,7 +404,10 @@ const BaseTemplate: React.FC = () => {
                       })}
                       onClick={() => handleOpenPage(item)}
                     >
-                      <SvgIcon name={item.icon} style={{ fontSize: 16 }} />
+                      <SvgIcon
+                        name={item.icon}
+                        style={{ fontSize: 16, borderRadius: '2px' }}
+                      />
                       <span className="text-ellipsis">{item.name}</span>
                     </div>
                   );
@@ -452,19 +506,30 @@ const BaseTemplate: React.FC = () => {
             )}
             onClick={() => setOpenAdmin(true)}
           >
+            {/* 用户头像 */}
             <div className={cx('cursor-pointer', styles['user-avatar'])}>
               <img src={userInfo?.avatar || (avatarImage as string)} alt="" />
             </div>
+
+            {/* 用户名称 */}
             <span
               className={cx('flex-1', 'text-ellipsis', styles['user-name'])}
             >
               {userInfo?.nickName || userInfo?.userName}
             </span>
-            <Button
-              type="text"
-              icon={<EllipsisOutlined />}
-              onClick={handleOpenMessage}
-            />
+
+            {/* 未读消息 */}
+            <Badge count={unreadCount} size="small">
+              <div
+                className={cx(styles['active-icon-container'])}
+                onClick={handleOpenMessage}
+              >
+                <SvgIcon
+                  name="icons-nav-notification"
+                  style={{ fontSize: 16 }}
+                />
+              </div>
+            </Badge>
           </footer>
         </User>
       </div>
