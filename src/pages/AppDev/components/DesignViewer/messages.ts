@@ -1,6 +1,14 @@
 // Message types for iframe ↔ parent window communication
 
-export const FILENAME_REGEXP = /^\/app\/project_workspace\/[^/]+\//;
+/**
+ * 匹配并移除工作区路径前缀，兼容以下两种后端路径规则：
+ * 1) project_workspace/{project_id}/
+ * 2) project_workspace/{tenant_id}/{space_id}/{project_id}/
+ *
+ * 同时兼容是否带 `/app/` 前缀，以及是否带前导 `/`。
+ */
+export const FILENAME_REGEXP =
+  /^\/?(?:app\/)?project_workspace\/(?:(?:[^/]+\/){0,2}[^/]+\/)/;
 
 export interface SourceInfo {
   fileName: string;
