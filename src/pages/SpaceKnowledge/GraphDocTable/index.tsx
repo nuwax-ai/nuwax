@@ -7,7 +7,6 @@ import {
   DeleteOutlined,
   ExclamationCircleFilled,
   PlayCircleOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -38,7 +37,6 @@ interface GraphDocTableProps {
   onToggleGraph?: (id: number, enable: boolean) => void;
   onDelete?: (id: number) => void;
   onGenerateGraph?: (id: number) => void;
-  onViewAllGraphs?: () => void;
 }
 
 const getStatusTag = (status?: number) => {
@@ -72,7 +70,6 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
   //onBatchConfig,
   onDelete,
   onGenerateGraph,
-  onViewAllGraphs,
 }) => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -228,7 +225,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
                 cancelText="取消"
               >
                 <Tooltip title="删除">
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+                  <Button type="text" icon={<DeleteOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}
@@ -251,46 +248,31 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
 
   return (
     <div className={styles.container}>
-      {/* 搜索和操作栏 */}
+      {/* 操作栏 */}
       <div className={styles.toolbar}>
-        <Input
+        <Input.Search
           placeholder="搜索文档名称"
-          prefix={<SearchOutlined />}
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           allowClear
-          style={{ width: 240 }}
+          style={{ width: 240, marginRight: 10 }}
         />
-        <Space>
-          <Button type="primary" onClick={() => onViewAllGraphs?.()}>
-            知识图谱
+        <Popconfirm
+          title="批量删除"
+          description={`确定要删除选中的 ${selectedRowKeys.length} 个文档吗？`}
+          onConfirm={handleBatchDelete}
+          disabled={selectedRowKeys.length === 0}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button
+            type="primary"
+            icon={<DeleteOutlined />}
+            disabled={selectedRowKeys.length === 0}
+          >
+            批量删除
           </Button>
-          <Popconfirm
-            title="批量删除"
-            description={`确定要删除选中的 ${selectedRowKeys.length} 个文档吗？`}
-            onConfirm={handleBatchDelete}
-            disabled={selectedRowKeys.length === 0}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={selectedRowKeys.length === 0}
-            >
-              批量删除
-            </Button>
-          </Popconfirm>
-          {/* <Button
-            type="text"
-            icon={<SettingOutlined />}
-            disabled={selectedRowKeys.length === 0}
-            onClick={handleBatchConfig}
-          >
-            批量修改配置
-          </Button> */}
-        </Space>
+        </Popconfirm>
       </div>
 
       {/* 表格 */}

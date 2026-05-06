@@ -173,16 +173,13 @@ const SpaceKnowledge: React.FC = () => {
 
   // 加载知识图谱列表
   const handleLoadGraphList = async () => {
-    console.log('handleLoadGraphList===================1');
     setLoadingGraph(true);
     try {
       const response = await apiKnowledgeTripleList({
         knowledgeId: knowledgeId,
       });
-      console.log('handleLoadGraphList===================2');
       if (response.code === SUCCESS_CODE && response.data) {
         // 直接使用返回的数据
-        console.log('handleLoadGraphList===================3');
         setGraphDocList(response.data || []);
       }
     } catch (error) {
@@ -191,7 +188,6 @@ const SpaceKnowledge: React.FC = () => {
     } finally {
       setLoadingGraph(false);
     }
-    console.log('handleLoadGraphList===================4');
   };
 
   // 知识库文档配置 - 数据删除接口
@@ -200,16 +196,11 @@ const SpaceKnowledge: React.FC = () => {
     debounceInterval: 300,
     onSuccess: () => {
       message.success('删除文档成功');
-      console.log('runDocDelete==================4');
       // 删除文档后，更新文档列表以及分段信息
       setLoadingDoc(true);
       //handleDocList();
 
-      setTimeout(function () {
-        console.log('runDocDelete==================5');
-        handleLoadGraphList();
-        console.log('runDocDelete==================6');
-      }, 3000);
+      handleLoadGraphList();
     },
   });
 
@@ -302,13 +293,11 @@ const SpaceKnowledge: React.FC = () => {
 
   // 删除文档
   const handleDocDel = useCallback(() => {
-    console.log('handleDocDel===================1');
     const docId = currentDocumentInfo?.id;
     modalConfirm(
       '你确定要删除此文档吗?',
       currentDocumentInfo?.name || '',
       () => {
-        console.log('handleDocDel===================2');
         runDocDelete(docId);
         return new Promise((resolve) => {
           setTimeout(resolve, 1000);
@@ -347,15 +336,10 @@ const SpaceKnowledge: React.FC = () => {
         knowledgeId: knowledgeId,
         documentId: docId,
       });
-      console.log('handleGenerateGraph===================1');
       if (response.code === SUCCESS_CODE && response.data) {
         message.success(response.data);
         // 轮询检查生成状态
-        setTimeout(function () {
-          console.log('handleGenerateGraph===================2');
-          handleLoadGraphList();
-          console.log('handleGenerateGraph===================3');
-        }, 3000);
+        handleLoadGraphList();
         /*
         const checkStatus = setInterval(async () => {
           try {
@@ -500,8 +484,12 @@ const SpaceKnowledge: React.FC = () => {
         }
       }
       // 更新本地列表
+      /*
       const newList = graphDocList.filter((d) => !ids.includes(d.documentId));
-      setGraphDocList(newList);
+      setGraphDocList(newList);*/
+
+      handleLoadGraphList();
+
       message.success(`成功删除 ${ids.length} 个文档的知识图谱`);
     } catch (error) {
       console.error('批量删除知识图谱失败:', error);
@@ -535,8 +523,12 @@ const SpaceKnowledge: React.FC = () => {
       });
       if (response.code === SUCCESS_CODE && response.data) {
         // 更新本地列表
+        /*
         const newList = graphDocList.filter((d) => d.documentId !== id);
-        setGraphDocList(newList);
+        setGraphDocList(newList);*/
+
+        handleLoadGraphList();
+
         message.success('删除成功');
       } else {
         message.error('删除失败');
@@ -576,6 +568,8 @@ const SpaceKnowledge: React.FC = () => {
             height: '100%',
             padding: '16px',
             overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <GraphDocTable
@@ -587,7 +581,6 @@ const SpaceKnowledge: React.FC = () => {
             onToggleGraph={handleToggleGraph}
             onDelete={handleGraphDelete}
             onGenerateGraph={handleGenerateGraph}
-            onViewAllGraphs={handleViewAllGraphs}
           />
         </div>
       );
@@ -688,6 +681,7 @@ const SpaceKnowledge: React.FC = () => {
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}
         onQaPopover={handleClickQaPopoverItem}
+        onViewAllGraphs={handleViewAllGraphs}
       />
       {/* 根据docType 判断是否显示QA问答 */}
       <div

@@ -28,6 +28,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onQaPopover,
   docType = KnowledgeDocTypeEnum.DOC,
   onChangeDocType,
+  onViewAllGraphs,
 }) => {
   const { spaceId } = useParams();
 
@@ -116,20 +117,11 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               添加QA问答
             </Button>
           </CustomPopover>
-        ) : // ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
-        //   <CustomPopover
-        //     list={KNOWLEDGE_GRAPH_IMPORT_TYPE}
-        //     onClick={onPopover}
-        //   >
-        //     <Button
-        //       type="primary"
-        //       icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
-        //       iconPosition="end"
-        //     >
-        //       添加内容
-        //     </Button>
-        //   </CustomPopover>
-        null}
+        ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
+          <Button type="primary" onClick={onViewAllGraphs}>
+            知识图谱
+          </Button>
+        ) : null}
       </div>
     </header>
   );
