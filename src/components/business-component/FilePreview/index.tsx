@@ -328,6 +328,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   // 关键修复：延迟渲染 Markdown，避免从 HTML 切换到 MD 时的闪动
   const [shouldRenderMarkdown, setShouldRenderMarkdown] =
     useState<boolean>(false);
+  // 控制 Markdown 实际可见性：
+  // 不使用 callback ref 返回清理函数（React 会告警），改由 effect 管理显示时机
+  const [isMarkdownVisible, setIsMarkdownVisible] = useState<boolean>(false);
 
   const resolvedType = fileType || detectedType;
 
@@ -343,8 +346,26 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     } else if (resolvedType !== 'markdown') {
       // 切换到其他类型时，立即重置
       setShouldRenderMarkdown(false);
+      setIsMarkdownVisible(false);
     }
   }, [resolvedType, textContent]);
+
+  useEffect(() => {
+    if (!shouldRenderMarkdown || !textContent) {
+      setIsMarkdownVisible(false);
+      return;
+    }
+    // 先隐藏，再等待 DsMarkdown 完成首轮渲染后显示，避免初始化期间闪动/抖动
+    setIsMarkdownVisible(false);
+    const timer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsMarkdownVisible(true);
+        });
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [shouldRenderMarkdown, textContent]);
 
   const fileName = useMemo(() => {
     if (downloadFileName) return downloadFileName;
@@ -839,28 +860,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   bottom: 0,
                   padding: '24px',
                   overflow: 'auto',
-                  // 关键修复：初始时完全隐藏，避免 DsMarkdown 初始化时导致布局重排
-                  opacity: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-                ref={(node) => {
-                  if (node) {
-                    // 等待 DsMarkdown 初始化完成后再显示，使用更长的延迟确保初始化完成
-                    const timer = setTimeout(() => {
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          if (node) {
-                            node.style.opacity = '1';
-                            node.style.visibility = 'visible';
-                            node.style.pointerEvents = 'auto';
-                            node.style.transition = 'opacity 0.3s ease-in-out';
-                          }
-                        });
-                      });
-                    }, 150); // 增加延迟时间，确保 DsMarkdown 初始化完成
-                    return () => clearTimeout(timer);
-                  }
+                  // 通过 state 控制显隐，而不是 callback ref 返回 cleanup（避免 React ref 警告）
+                  opacity: isMarkdownVisible ? 1 : 0,
+                  visibility: isMarkdownVisible ? 'visible' : 'hidden',
+                  pointerEvents: isMarkdownVisible ? 'auto' : 'none',
+                  transition: 'opacity 0.3s ease-in-out',
                 }}
               >
                 <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
