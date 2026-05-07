@@ -48,7 +48,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               </div>
               <div className={styles['plan-name']}>{planInfo.planName}</div>
               <div className={styles['plan-validity']}>
-                {dict('PC.Pages.MorePage.MySubscriptions.colExpireAt')}:{' '}
+                {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}:{' '}
                 {planInfo.expireAt} · 每月续费
               </div>
             </div>
@@ -64,12 +64,6 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
                 {dict('PC.Pages.MorePage.MySubscriptions.monthlyFee')}
               </span>
               <span className={styles['meta-value']}>¥{planInfo.price}</span>
-              <span className={styles['meta-hint']}>
-                {dict(
-                  'PC.Pages.MorePage.MySubscriptions.renewedTo',
-                  planInfo.expireAt.slice(0, 7),
-                )}
-              </span>
             </div>
             <div className={styles['plan-meta-item']}>
               <span className={styles['meta-label']}>
@@ -77,12 +71,6 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
               </span>
               <span className={styles['meta-value']}>
                 {planInfo.monthlyCredits.toLocaleString()}
-              </span>
-              <span className={styles['meta-hint']}>
-                {dict(
-                  'PC.Pages.MorePage.MySubscriptions.creditsIssued',
-                  String(planInfo.issuedCredits),
-                )}
               </span>
             </div>
           </div>

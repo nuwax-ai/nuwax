@@ -1,10 +1,30 @@
 import { dict } from '@/services/i18nRuntime';
-import { Button, Segmented, Tag, message } from 'antd';
+import {
+  AppstoreOutlined,
+  CloudOutlined,
+  FileProtectOutlined,
+  MailOutlined,
+  MessageOutlined,
+  PictureOutlined,
+  PlayCircleOutlined,
+  ScanOutlined,
+  TranslationOutlined,
+} from '@ant-design/icons';
+import { Segmented } from 'antd';
 import React, { useState } from 'react';
+import SubscribedAgents from './components/SubscribedAgents';
+import SubscribedCredits from './components/SubscribedCredits';
+import SubscribedSkills from './components/SubscribedSkills';
 import styles from './index.less';
 
-// Mock 智能体订阅
-const MOCK_SUBSCRIBED_AGENTS = [
+const TAB_KEYS = {
+  agents: 'agents',
+  skills: 'skills',
+  credits: 'credits',
+} as const;
+
+// Mock 增强数据
+const MOCK_AGENTS = [
   {
     id: 1,
     name: '智能文档摘要',
@@ -12,6 +32,8 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 19.9,
     expireAt: '2026-05-28',
     status: 'active' as const,
+    iconColor: '#3b82f6',
+    icon: <CloudOutlined />,
   },
   {
     id: 2,
@@ -20,6 +42,8 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 29.9,
     expireAt: '2026-06-15',
     status: 'active' as const,
+    iconColor: '#8b5cf6',
+    icon: <PictureOutlined />,
   },
   {
     id: 3,
@@ -28,6 +52,8 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 9.9,
     expireAt: '2026-04-30',
     status: 'expired' as const,
+    iconColor: '#ec4899',
+    icon: <MessageOutlined />,
   },
   {
     id: 4,
@@ -36,6 +62,8 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 39.9,
     expireAt: '2026-07-01',
     status: 'active' as const,
+    iconColor: '#10b981',
+    icon: <FileProtectOutlined />,
   },
   {
     id: 5,
@@ -44,6 +72,8 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 14.9,
     expireAt: '2026-05-10',
     status: 'active' as const,
+    iconColor: '#f59e0b',
+    icon: <AppstoreOutlined />,
   },
   {
     id: 6,
@@ -52,11 +82,12 @@ const MOCK_SUBSCRIBED_AGENTS = [
     price: 24.9,
     expireAt: '2026-08-20',
     status: 'active' as const,
+    iconColor: '#06b6d4',
+    icon: <MailOutlined />,
   },
 ];
 
-// Mock 技能订阅
-const MOCK_SUBSCRIBED_SKILLS = [
+const MOCK_SKILLS = [
   {
     id: 1,
     name: '语音合成',
@@ -64,6 +95,8 @@ const MOCK_SUBSCRIBED_SKILLS = [
     buyout: true,
     buyoutPrice: 199,
     status: 'active' as const,
+    themeColor: '#8b5cf6',
+    icon: <PlayCircleOutlined />,
   },
   {
     id: 2,
@@ -72,6 +105,8 @@ const MOCK_SUBSCRIBED_SKILLS = [
     buyout: true,
     buyoutPrice: 149,
     status: 'active' as const,
+    themeColor: '#f59e0b',
+    icon: <ScanOutlined />,
   },
   {
     id: 3,
@@ -81,6 +116,8 @@ const MOCK_SUBSCRIBED_SKILLS = [
     price: 29.9,
     expireAt: '2026-06-15',
     status: 'active' as const,
+    themeColor: '#06b6d4',
+    icon: <TranslationOutlined />,
   },
   {
     id: 4,
@@ -90,6 +127,8 @@ const MOCK_SUBSCRIBED_SKILLS = [
     price: 19.9,
     expireAt: '2026-05-10',
     status: 'active' as const,
+    themeColor: '#ec4899',
+    icon: <MessageOutlined />,
   },
   {
     id: 5,
@@ -99,11 +138,12 @@ const MOCK_SUBSCRIBED_SKILLS = [
     price: 9.9,
     expireAt: '2026-04-20',
     status: 'expired' as const,
+    themeColor: '#6366f1',
+    icon: <FileProtectOutlined />,
   },
 ];
 
-// Mock 增购积分包
-const MOCK_CREDIT_PACKS = [
+const MOCK_CREDITS = [
   {
     id: 1,
     name: '积分包C',
@@ -114,6 +154,7 @@ const MOCK_CREDIT_PACKS = [
     amount: 499,
     remaining: 2900,
     status: 'normal' as const,
+    themeColor: 'linear-gradient(90deg, #3b82f6 0%, #10b981 100%)',
   },
   {
     id: 2,
@@ -125,6 +166,7 @@ const MOCK_CREDIT_PACKS = [
     amount: 199,
     remaining: 150,
     status: 'low' as const,
+    themeColor: 'linear-gradient(90deg, #f59e0b 0%, #ef4444 100%)',
   },
   {
     id: 3,
@@ -136,236 +178,51 @@ const MOCK_CREDIT_PACKS = [
     amount: 99,
     remaining: 0,
     status: 'empty' as const,
+    themeColor: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
   },
 ];
 
-const TAB_KEYS = {
-  agents: 'agents',
-  skills: 'skills',
-  credits: 'credits',
-} as const;
-
-/**
- * 已订阅内容部分组件
- */
 const SubscribedContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.agents);
 
   return (
-    <div className={styles.subscribedSection}>
-      <div className={styles.subscribedTitle}>
+    <div className={styles['subscribed-section']}>
+      <div className={styles['subscribed-title']}>
         {dict('PC.Pages.MorePage.MySubscriptions.subscribedContent')}
       </div>
-      <Segmented
-        className={styles.subscribedTabs}
-        value={activeTab}
-        onChange={(val) => setActiveTab(val as string)}
-        options={[
-          {
-            value: TAB_KEYS.agents,
-            label: dict('PC.Pages.MorePage.MySubscriptions.tabAgents'),
-          },
-          {
-            value: TAB_KEYS.skills,
-            label: dict('PC.Pages.MorePage.MySubscriptions.tabSkills'),
-          },
-          {
-            value: TAB_KEYS.credits,
-            label: dict('PC.Pages.MorePage.MySubscriptions.tabCredits'),
-          },
-        ]}
-      />
 
-      {/* 智能体 Tab */}
-      {activeTab === TAB_KEYS.agents && (
-        <div className={styles.subscribedGrid}>
-          {MOCK_SUBSCRIBED_AGENTS.map((agent) => (
-            <div key={agent.id} className={styles.subscribedCard}>
-              <div className={styles.subscribedInfo}>
-                <div className={styles.subscribedName}>{agent.name}</div>
-                <div className={styles.subscribedProvider}>
-                  {agent.provider}
-                </div>
-                <div className={styles.subscribedMeta}>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.subAmount')} ¥
-                    {agent.price}
-                    {dict('PC.Pages.MorePage.MySubscriptions.perMonth')}
-                  </span>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}{' '}
-                    {agent.expireAt}
-                  </span>
-                </div>
-              </div>
-              <div className={styles.subscribedActions}>
-                <Tag
-                  className={styles.subscribedStatus}
-                  color={agent.status === 'active' ? 'success' : 'error'}
-                >
-                  {agent.status === 'active'
-                    ? dict('PC.Pages.MorePage.MySubscriptions.subscribing')
-                    : dict('PC.Pages.MorePage.MySubscriptions.expired')}
-                </Tag>
-                <Button
-                  size="small"
-                  onClick={() =>
-                    message.success(
-                      dict('PC.Pages.MorePage.MySubscriptions.renewSuccess') ||
-                        '续订成功',
-                    )
-                  }
-                >
-                  {dict('PC.Pages.MorePage.MySubscriptions.renew')}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className={styles['tabs-container']}>
+        <Segmented
+          value={activeTab}
+          onChange={(val) => setActiveTab(val as string)}
+          options={[
+            {
+              value: TAB_KEYS.agents,
+              label: dict('PC.Pages.MorePage.MySubscriptions.tabAgents'),
+            },
+            {
+              value: TAB_KEYS.skills,
+              label: dict('PC.Pages.MorePage.MySubscriptions.tabSkills'),
+            },
+            {
+              value: TAB_KEYS.credits,
+              label: dict('PC.Pages.MorePage.MySubscriptions.tabCredits'),
+            },
+          ]}
+        />
+      </div>
 
-      {/* 技能 Tab */}
-      {activeTab === TAB_KEYS.skills && (
-        <div className={styles.subscribedGrid}>
-          {MOCK_SUBSCRIBED_SKILLS.map((skill) => (
-            <div key={skill.id} className={styles.subscribedCard}>
-              <div className={styles.subscribedInfo}>
-                <div className={styles.subscribedName}>{skill.name}</div>
-                <div className={styles.subscribedProvider}>
-                  {skill.provider}
-                </div>
-                {skill.buyout ? (
-                  <div className={styles.subscribedMeta}>
-                    <span>
-                      {dict('PC.Pages.MorePage.MySubscriptions.permanentUse')}
-                    </span>
-                  </div>
-                ) : (
-                  <div className={styles.subscribedMeta}>
-                    <span>
-                      {dict('PC.Pages.MorePage.MySubscriptions.subAmount')} ¥
-                      {skill.price}
-                      {dict('PC.Pages.MorePage.MySubscriptions.perMonth')}
-                    </span>
-                    <span>
-                      {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}{' '}
-                      {skill.expireAt}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className={styles.subscribedActions}>
-                {skill.buyout ? (
-                  <>
-                    <Tag color="default">
-                      {dict('PC.Pages.MorePage.MySubscriptions.boughtOut')}
-                    </Tag>
-                    <span style={{ fontSize: 12, color: '#999' }}>
-                      {dict(
-                        'PC.Pages.MorePage.MySubscriptions.buyoutPrice',
-                        String(skill.buyoutPrice),
-                      )}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Tag
-                      color={skill.status === 'active' ? 'success' : 'error'}
-                    >
-                      {skill.status === 'active'
-                        ? dict(
-                            'PC.Pages.MorePage.MySubscriptions.monthlyPayment',
-                          )
-                        : dict('PC.Pages.MorePage.MySubscriptions.expired')}
-                    </Tag>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        message.success(
-                          dict(
-                            'PC.Pages.MorePage.MySubscriptions.renewSuccess',
-                          ) || '续订成功',
-                        )
-                      }
-                    >
-                      {dict('PC.Pages.MorePage.MySubscriptions.renew')}
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 增购积分 Tab */}
-      {activeTab === TAB_KEYS.credits && (
-        <div className={styles.subscribedGrid}>
-          {MOCK_CREDIT_PACKS.map((pack) => (
-            <div key={pack.id} className={styles.subscribedCard}>
-              <div className={styles.subscribedInfo}>
-                <div className={styles.subscribedName}>{pack.name}</div>
-                <div className={styles.subscribedProvider}>
-                  {pack.purchaseDate}
-                </div>
-                <div className={styles.subscribedMeta}>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.totalCredits')} +
-                    {pack.totalCredits.toLocaleString()}
-                  </span>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.consumedCredits')}{' '}
-                    {pack.consumed.toLocaleString()}
-                  </span>
-                </div>
-                <div className={styles.subscribedMeta}>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.expireTimeShort')}{' '}
-                    {pack.expireAt}
-                  </span>
-                  <span>
-                    {dict('PC.Pages.MorePage.MySubscriptions.purchaseAmount')} ¥
-                    {pack.amount}
-                  </span>
-                </div>
-              </div>
-              <div className={styles.subscribedActions}>
-                <span
-                  className={styles.creditsRemaining}
-                  style={{
-                    color:
-                      pack.status === 'empty'
-                        ? '#999'
-                        : pack.status === 'low'
-                        ? '#faad14'
-                        : '#52c41a',
-                  }}
-                >
-                  {dict(
-                    'PC.Pages.MorePage.MySubscriptions.remainingCredits',
-                    String(pack.remaining),
-                  )}
-                </span>
-                <Tag
-                  color={
-                    pack.status === 'empty'
-                      ? 'default'
-                      : pack.status === 'low'
-                      ? 'warning'
-                      : 'success'
-                  }
-                >
-                  {pack.status === 'empty'
-                    ? dict('PC.Pages.MorePage.MySubscriptions.usedUp')
-                    : pack.status === 'low'
-                    ? dict('PC.Pages.MorePage.MySubscriptions.runningOut')
-                    : dict('PC.Pages.MorePage.MySubscriptions.validityPeriod')}
-                </Tag>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className={styles['content-area']}>
+        {activeTab === TAB_KEYS.agents && (
+          <SubscribedAgents data={MOCK_AGENTS} />
+        )}
+        {activeTab === TAB_KEYS.skills && (
+          <SubscribedSkills data={MOCK_SKILLS} />
+        )}
+        {activeTab === TAB_KEYS.credits && (
+          <SubscribedCredits data={MOCK_CREDITS} />
+        )}
+      </div>
     </div>
   );
 };

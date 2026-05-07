@@ -1,6 +1,4 @@
 import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
-import type { PlanInfo } from '@/components/business-component/SubscriptionPlanCards';
-import SubscriptionPlanCards from '@/components/business-component/SubscriptionPlanCards';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetUserCredits } from '@/services/subscriptionService';
@@ -9,6 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import CurrentPlanCard from './components/CurrentPlanCard';
 import SubscribedContent from './components/SubscribedContent';
+import type { PlanInfo } from './components/SubscriptionPlanCards';
+import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 
 // Mock 订阅套餐数据
 const MOCK_PLANS: PlanInfo[] = [

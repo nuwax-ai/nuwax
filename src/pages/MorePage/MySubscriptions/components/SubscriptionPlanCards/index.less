@@ -1,0 +1,271 @@
+@import '@/styles/token.less';
+
+.subscription-plans-container {
+  margin: calc(@marginLg * 2) 0;
+
+  .plans-title {
+    font-size: @fontSizeHeading4;
+    font-weight: 600;
+    margin-bottom: @marginLg;
+    color: @colorTextBase;
+    position: relative;
+    padding-left: 14px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 18px;
+      background: @blue6;
+      border-radius: 2px;
+    }
+  }
+
+  .plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: @marginLg;
+  }
+}
+
+.plan-card {
+  background: @colorWhite;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 8%);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: transparent;
+  }
+
+  .current-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, @purple6 0%, #a855f7 100%);
+    color: @colorWhite;
+    font-size: 13px;
+    padding: 6px 20px;
+    border-bottom-left-radius: @borderRadiusLg;
+    font-weight: 600;
+    z-index: 2;
+    box-shadow: -2px 2px 10px rgba(0, 0, 0, 10%);
+    letter-spacing: 1px;
+  }
+
+  .plan-header {
+    padding: calc(@paddingLg * 1.2) @paddingLg;
+    margin-bottom: @marginSm;
+
+    .plan-name {
+      font-size: @fontSizeLg;
+      font-weight: 600;
+      margin-bottom: @marginSm;
+      color: @colorTextBase;
+    }
+
+    .plan-price-area {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: @marginSm;
+
+      .price-value {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+
+        .currency {
+          font-size: 18px;
+          margin-right: 2px;
+        }
+
+        .period {
+          font-size: @fontSizeSm;
+          font-weight: normal;
+          margin-left: 4px;
+          color: @colorTextSecondary;
+        }
+      }
+    }
+
+    .plan-hint-tag {
+      display: inline-block;
+      font-size: @fontSizeSm;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+  }
+
+  .plan-features {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: @margin;
+    padding: 0 @paddingLg @paddingLg;
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .feature-icon {
+        font-size: 14px;
+        color: #14b8a6;
+      }
+
+      .feature-text {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+      }
+    }
+  }
+
+  .plan-footer {
+    background: #f8fafc;
+    padding: @paddingLg;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: @marginLg;
+    border-top: 1px solid @colorBorderSecondary;
+
+    .renewal-info {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: @fontSizeLg;
+      color: @colorTextTertiary;
+      white-space: nowrap;
+    }
+
+    .footer-placeholder {
+      display: none;
+    }
+
+    .action-button {
+      width: 140px;
+      height: 40px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: @fontSize;
+      border: none !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease !important;
+      box-shadow: none !important;
+
+      &::after {
+        display: none !important; // 禁用 AntD 点击效果
+      }
+    }
+  }
+
+  // Themes
+  &.theme-blue {
+    &::after {
+      background: @blue6;
+    }
+
+    .plan-header {
+      .price-value {
+        color: @blue6;
+      }
+
+      .plan-hint-tag {
+        background: @blue1;
+        color: @blue6;
+      }
+    }
+
+    .action-button {
+      background: linear-gradient(90deg, #026fff 0%, #00b09b 100%) !important;
+      color: @colorWhite !important;
+
+      &:hover {
+        opacity: 0.9 !important;
+        background: linear-gradient(90deg, #026fff 0%, #00b09b 100%) !important;
+      }
+    }
+  }
+
+  &.theme-purple {
+    border: 2px solid @purple6;
+    &::after {
+      background: @purple6;
+    }
+
+    .plan-header {
+      .price-value {
+        color: @purple6;
+      }
+
+      .plan-hint-tag {
+        background: @purple1;
+        color: @purple6;
+      }
+    }
+
+    .action-button {
+      background: @purple6 !important;
+      color: @colorWhite !important;
+
+      &:hover {
+        background: @purple5 !important;
+      }
+    }
+  }
+
+  &.theme-orange {
+    &::after {
+      background: @orange6;
+    }
+
+    .plan-header {
+      .plan-name {
+        color: @orange6;
+      }
+      .price-value {
+        color: @orange6;
+      }
+
+      .plan-hint-tag {
+        background: @orange1;
+        color: @orange6;
+      }
+      .period {
+        color: @orange6 !important;
+      }
+    }
+
+    .action-button {
+      background: @orange6 !important;
+      color: @colorWhite !important;
+
+      &:hover {
+        background: @orange5 !important;
+      }
+    }
+  }
+}

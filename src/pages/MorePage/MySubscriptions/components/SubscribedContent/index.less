@@ -1,82 +1,70 @@
-.subscribedSection {
-  margin-top: 8px;
-}
+@import '@/styles/token.less';
 
-.subscribedTitle {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
+.subscribed-section {
+  margin-top: calc(@marginLg * 2);
 
-.subscribedTabs {
-  margin-bottom: 16px;
-}
+  .subscribed-title {
+    font-size: @fontSizeHeading4;
+    font-weight: 600;
+    margin-bottom: @marginLg;
+    color: @colorTextBase;
+    position: relative;
+    padding-left: 14px;
 
-.subscribedGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 18px;
+      background: @blue6;
+      border-radius: 2px;
+    }
+  }
 
-.subscribedCard {
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+  .tabs-container {
+    margin-bottom: @margin;
 
-.subscribedInfo {
-  flex: 1;
-  min-width: 0;
-}
+    :global {
+      .ant-segmented {
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 8px;
+        transition: none; // 避免容器层级的闪烁
 
-.subscribedName {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+        .ant-segmented-item {
+          border-radius: 6px;
+          transition: color 0.3s ease;
 
-.subscribedProvider {
-  font-size: 12px;
-  color: #999;
-  margin-bottom: 8px;
-}
+          &-selected {
+            color: @colorPrimary !important;
+            font-weight: 600;
+            background: @colorWhite;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 5%);
+          }
+        }
 
-.subscribedMeta {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: #666;
-}
+        .ant-segmented-thumb {
+          background: @colorWhite;
+          border-radius: 6px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 5%);
+        }
 
-.subscribedActions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
+        .ant-segmented-item-label {
+          padding: 4px 16px;
+          // min-height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: @fontSizeSm;
+        }
+      }
+    }
+  }
 
-.subscribedStatus {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.statusActive {
-  color: #52c41a;
-  background: #f6ffed;
-}
-
-.statusExpired {
-  color: #ff4d4f;
-  background: #fff2f0;
-}
-
-.creditsRemaining {
-  font-weight: 600;
-  font-size: 14px;
+  .content-area {
+    min-height: 400px;
+  }
 }
