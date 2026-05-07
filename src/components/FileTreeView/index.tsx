@@ -432,6 +432,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               return;
             }
 
+            const fileNameLower = (fileNode?.name || '').toLowerCase();
+            const _isMarkdownFile = isMarkdownFile(fileNameLower);
+            // md 不在这里预取，统一交给 FilePreview 通过 src 拉取, 避免发起两次http请求
+            if (_isMarkdownFile) {
+              setSelectedFileNode({
+                ...fileNode,
+                content: '',
+              });
+              return;
+            }
+
             // 先切到当前文件并清空内容，避免异步返回前继续显示上一个文件内容
             setSelectedFileNode({
               ...fileNode,
