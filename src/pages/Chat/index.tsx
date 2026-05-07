@@ -1093,10 +1093,6 @@ const Chat: React.FC = () => {
           <div
             className={cx(styles['title-container'], {
               [styles['title-container-collapsed']]: isAppSidebarMode,
-              [styles['page-preview-title']]:
-                !!pagePreviewData &&
-                !(isMobile || isAppSidebarMode) &&
-                !isFileTreeVisible,
             })}
           >
             <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -1239,15 +1235,7 @@ const Chat: React.FC = () => {
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-            [styles['page-preview-content']]:
-              !!pagePreviewData &&
-              !(isMobile || isAppSidebarMode) &&
-              !isFileTreeVisible,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
@@ -1521,6 +1509,9 @@ const Chat: React.FC = () => {
             !isFileTreeVisible && (
               <>
                 <PagePreviewIframe
+                  className={cx({
+                    [styles['mobile-page-preview-container']]: isMobile,
+                  })}
                   pagePreviewData={pagePreviewData}
                   showHeader={true}
                   onClose={hidePagePreview}
