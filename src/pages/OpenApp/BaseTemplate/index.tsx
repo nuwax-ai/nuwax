@@ -10,6 +10,7 @@ import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
@@ -59,8 +60,13 @@ const BaseTemplate: React.FC = () => {
   const { userInfo, getUserInfo } = useModel('userInfo');
 
   // 查询会话记录
-  const { conversationList, runHistory, loadingHistory, loadingHistoryEnd } =
-    useModel('conversationHistory');
+  const {
+    conversationList,
+    handleConversationUpdate,
+    runHistory,
+    loadingHistory,
+    loadingHistoryEnd,
+  } = useModel('conversationHistory');
 
   const {
     isAppSidebarVisible,
@@ -252,6 +258,22 @@ const BaseTemplate: React.FC = () => {
       window.removeEventListener('blur', handleWindowBlur);
     };
   }, [openAdmin, openMessage]);
+
+  useEffect(() => {
+    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
+    const _executingConversationList = conversationList?.find(
+      (item: ConversationInfo) => item.taskStatus === TaskStatus.EXECUTING,
+    );
+
+    if (_executingConversationList) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    };
+  }, [conversationList, handleConversationUpdate]);
 
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
