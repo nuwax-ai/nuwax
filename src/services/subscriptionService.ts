@@ -331,7 +331,7 @@ export async function apiGetCreditSummary(): Promise<
 export async function apiListCreditPackages(): Promise<
   RequestResponse<CreditPackageInfo[]>
 > {
-  return request('/api/credits/packages', { method: 'GET' });
+  return request('/api/credit/package/list', { method: 'GET' });
 }
 
 export async function apiPurchaseCredits(

@@ -31,19 +31,6 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   onRenew,
   onUpgrade,
 }) => {
-  const getThemeClass = (id: string) => {
-    switch (id) {
-      case 'basic':
-        return styles['theme-blue'];
-      case 'pro':
-        return styles['theme-purple'];
-      case 'enterprise':
-        return styles['theme-orange'];
-      default:
-        return styles['theme-blue'];
-    }
-  };
-
   return (
     <div className={styles['subscription-plans-container']}>
       <div className={styles['plans-title']}>
@@ -52,7 +39,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
       <div className={styles['plans-grid']}>
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlanId;
-          const themeClass = getThemeClass(plan.id);
+          const themeClass = styles['theme-blue'];
 
           return (
             <div

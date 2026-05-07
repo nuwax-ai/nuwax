@@ -56,11 +56,20 @@
     background: transparent;
   }
 
+  &.is-current {
+    border: 2px solid @blue6;
+    box-shadow: 0 8px 24px rgba(2, 111, 255, 15%);
+
+    .current-badge {
+      background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
+    }
+  }
+
   .current-badge {
     position: absolute;
     top: 0;
     right: 0;
-    background: linear-gradient(135deg, @purple6 0%, #a855f7 100%);
+    background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
     color: @colorWhite;
     font-size: 13px;
     padding: 6px 20px;
@@ -206,65 +215,6 @@
       &:hover {
         opacity: 0.9 !important;
         background: linear-gradient(90deg, #026fff 0%, #00b09b 100%) !important;
-      }
-    }
-  }
-
-  &.theme-purple {
-    border: 2px solid @purple6;
-    &::after {
-      background: @purple6;
-    }
-
-    .plan-header {
-      .price-value {
-        color: @purple6;
-      }
-
-      .plan-hint-tag {
-        background: @purple1;
-        color: @purple6;
-      }
-    }
-
-    .action-button {
-      background: @purple6 !important;
-      color: @colorWhite !important;
-
-      &:hover {
-        background: @purple5 !important;
-      }
-    }
-  }
-
-  &.theme-orange {
-    &::after {
-      background: @orange6;
-    }
-
-    .plan-header {
-      .plan-name {
-        color: @orange6;
-      }
-      .price-value {
-        color: @orange6;
-      }
-
-      .plan-hint-tag {
-        background: @orange1;
-        color: @orange6;
-      }
-      .period {
-        color: @orange6 !important;
-      }
-    }
-
-    .action-button {
-      background: @orange6 !important;
-      color: @colorWhite !important;
-
-      &:hover {
-        background: @orange5 !important;
       }
     }
   }

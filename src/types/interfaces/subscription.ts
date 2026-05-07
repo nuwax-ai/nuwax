@@ -124,11 +124,15 @@ export interface CheckSubscriptionResult {
 
 export interface CreditPackageInfo {
   id: number;
-  name: string;
-  credits: number;
+  packageName: string;
+  creditAmount: number;
   price: number;
-  originalPrice?: number;
-  tag?: string;
+  sort: number;
+  status: number;
+  period: MyPlanPeriodEnum;
+  remark?: string;
+  created?: string;
+  modified?: string;
 }
 
 export enum CreditRecordTypeEnum {

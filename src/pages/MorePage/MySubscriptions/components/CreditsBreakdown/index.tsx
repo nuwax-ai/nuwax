@@ -44,7 +44,10 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
         </div>
         <span className={classNames(styles['credits-value'], styles.blue)}>
-          <Statistic value={summary?.subscriptionCredit ?? 0} />
+          <Statistic
+            value={summary?.subscriptionCredit ?? 0}
+            valueStyle={{ color: '#1a6bff' }}
+          />
         </span>
       </div>
 
@@ -58,7 +61,10 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
         </div>
         <span className={classNames(styles['credits-value'], styles.green)}>
-          <Statistic value={summary?.purchaseCredit ?? 0} />
+          <Statistic
+            value={summary?.purchaseCredit ?? 0}
+            valueStyle={{ color: '#0d9488' }}
+          />
         </span>
       </div>
 
@@ -69,7 +75,10 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
         </div>
         <span className={classNames(styles['credits-value'], styles.orange)}>
-          <Statistic value={summary?.activityCredit ?? 0} />
+          <Statistic
+            value={summary?.activityCredit ?? 0}
+            valueStyle={{ color: '#f59e0b' }}
+          />
         </span>
       </div>
     </div>
