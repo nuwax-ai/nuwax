@@ -1,79 +1,70 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetBasicConfig,
-  apiSaveBasicConfig,
-} from '@/services/subscriptionService';
+import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
 import {
   Button,
-  Card,
   Col,
   Form,
   Input,
   InputNumber,
   Row,
-  Select,
   Switch,
   Typography,
   message,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
+import styles from './index.less';
 
 const { Text } = Typography;
-
-const MOCK_CONFIG = {
-  exchangeRate: 100,
-  exchangeDesc:
-    '每消费 1 元人民币可获得 100 积分，积分可用于智能体对话、知识库检索等场景。',
-  registerGiftCredits: 100,
-  registerGiftValidity: 'permanent',
-  registerGiftEnabled: true,
-  dailyLoginCredits: 10,
-  dailyLoginEnabled: true,
-};
 
 const BasicConfig: React.FC = () => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
-  const [registerGiftEnabled, setRegisterGiftEnabled] = useState(true);
-  const [dailyLoginEnabled, setDailyLoginEnabled] = useState(true);
   const [exchangeRate, setExchangeRate] = useState(100);
 
-  const { run: fetchConfig } = useRequest(apiGetBasicConfig, {
+  // 租户配置信息
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
+  // 保存租户配置信息接口
+  const { run: runSaveConfig } = useRequest(apiSystemSubscriptionConfigSave, {
     manual: true,
-    onSuccess: (res) => {
-      const cfg = res?.data ?? MOCK_CONFIG;
-      form.setFieldsValue(cfg);
-      setExchangeRate((cfg as typeof MOCK_CONFIG).exchangeRate ?? 100);
-      setRegisterGiftEnabled(
-        (cfg as typeof MOCK_CONFIG).registerGiftEnabled ?? true,
-      );
-      setDailyLoginEnabled(
-        (cfg as typeof MOCK_CONFIG).dailyLoginEnabled ?? true,
-      );
+    onSuccess: () => {
+      message.success(dict('PC.Common.Global.saveSuccess'));
+      setSaving(false);
+    },
+    onError: () => {
+      setSaving(false);
     },
   });
 
   useEffect(() => {
-    form.setFieldsValue(MOCK_CONFIG);
-    fetchConfig();
+    // 租户配置信息查询接口
+    runTenantConfig();
   }, []);
 
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
-      setSaving(true);
-      const res = await apiSaveBasicConfig(values);
-      if (res?.code === SUCCESS_CODE) {
-        message.success(dict('PC.Common.Global.saveSuccess'));
-      }
-    } catch {
-      // validation error
-    } finally {
-      setSaving(false);
+  useEffect(() => {
+    if (tenantConfigInfo) {
+      form.setFieldsValue({
+        ...tenantConfigInfo,
+        enableSubscription: Boolean(tenantConfigInfo.enableSubscription),
+        enableGiftCredit: Boolean(tenantConfigInfo.enableGiftCredit),
+        enableDailyGiftCredit: Boolean(tenantConfigInfo.enableDailyGiftCredit),
+      });
     }
+  }, [tenantConfigInfo]);
+
+  // 保存配置
+  const handleSave = async () => {
+    const values = await form.validateFields();
+    const payload = {
+      ...values,
+      enableSubscription: values.enableSubscription ? 1 : 0,
+      enableGiftCredit: values.enableGiftCredit ? 1 : 0,
+      enableDailyGiftCredit: values.enableDailyGiftCredit ? 1 : 0,
+    };
+    setSaving(true);
+    await runSaveConfig(payload);
   };
 
   return (
@@ -88,199 +79,209 @@ const BasicConfig: React.FC = () => {
       <Form
         form={form}
         layout="vertical"
-        style={{ maxWidth: 720 }}
         onValuesChange={(changed) => {
-          if (changed.exchangeRate !== undefined) {
-            setExchangeRate(changed.exchangeRate);
+          if (changed.creditExchangeRate !== undefined) {
+            setExchangeRate(changed.creditExchangeRate);
           }
         }}
       >
         {/* 积分兑换配置 */}
-        <Card
-          title={dict('PC.Pages.SystemSubscriptionBasicConfig.sectionExchange')}
-          style={{ marginBottom: 16 }}
-        >
-          <Row gutter={[32, 0]}>
-            <Col span={12}>
-              <Form.Item
-                name="exchangeRate"
-                label={dict(
-                  'PC.Pages.SystemSubscriptionBasicConfig.exchangeRate',
-                )}
-                rules={[{ required: true }]}
-                extra={dict(
-                  'PC.Pages.SystemSubscriptionBasicConfig.exchangeRateHint',
-                )}
-              >
-                <InputNumber
-                  min={1}
-                  precision={0}
-                  style={{ width: '100%' }}
-                  addonBefore="¥1 ="
-                  addonAfter={dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.creditsUnit',
-                  )}
-                />
-              </Form.Item>
-              <div style={{ marginTop: -8, marginBottom: 16 }}>
-                <Text type="secondary">
-                  {dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.currentExchange',
-                  )}
-                  ：¥1 = {exchangeRate}{' '}
-                  {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
-                </Text>
-              </div>
-            </Col>
-            <Col span={24}>
-              <Form.Item
-                name="exchangeDesc"
-                label={dict(
-                  'PC.Pages.SystemSubscriptionBasicConfig.exchangeDesc',
-                )}
-              >
-                <Input.TextArea
-                  rows={3}
-                  placeholder={dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.exchangeDescPlaceholder',
-                  )}
-                  maxLength={200}
-                  showCount
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
-
-        {/* 新用户注册赠送 */}
-        <Card
-          title={dict(
-            'PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift',
-          )}
-          extra={
+        <section className={styles.sectionBlock}>
+          <h5 className={styles.sectionTitle}>订阅与积分功能开关</h5>
+          <Text type="secondary" className={styles.sectionDesc}>
+            全局控制订阅/计费和积分体系的启用状态
+          </Text>
+          <div className={styles.exchangeLine}>
+            <div className={styles.exchangeLineLabel}>订阅与积分</div>
             <Form.Item
-              name="registerGiftEnabled"
+              name="enableSubscription"
               valuePropName="checked"
               noStyle
             >
-              <Switch onChange={setRegisterGiftEnabled} />
+              <Switch />
             </Form.Item>
-          }
-          style={{ marginBottom: 16 }}
-        >
-          <div
-            style={{
-              opacity: registerGiftEnabled ? 1 : 0.4,
-              pointerEvents: registerGiftEnabled ? 'auto' : 'none',
-            }}
-          >
-            <Row gutter={[32, 0]}>
-              <Col span={12}>
-                <Form.Item
-                  name="registerGiftCredits"
-                  label={dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.registerGiftCredits',
-                  )}
-                  rules={[{ required: true }]}
-                >
-                  <InputNumber
-                    min={0}
-                    precision={0}
-                    style={{ width: '100%' }}
-                    addonAfter={dict(
-                      'PC.Pages.SystemSubscriptionBasicConfig.creditsUnit',
-                    )}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="registerGiftValidity"
-                  label={dict(
-                    'PC.Pages.SystemSubscriptionBasicConfig.registerGiftValidity',
-                  )}
-                  rules={[{ required: true }]}
-                >
-                  <Select
-                    options={[
-                      {
-                        value: 'permanent',
-                        label: dict(
-                          'PC.Pages.SystemSubscriptionBasicConfig.validityPermanent',
-                        ),
-                      },
-                      {
-                        value: '7d',
-                        label: dict(
-                          'PC.Pages.SystemSubscriptionBasicConfig.validity7d',
-                        ),
-                      },
-                      {
-                        value: '30d',
-                        label: dict(
-                          'PC.Pages.SystemSubscriptionBasicConfig.validity30d',
-                        ),
-                      },
-                      {
-                        value: '90d',
-                        label: dict(
-                          'PC.Pages.SystemSubscriptionBasicConfig.validity90d',
-                        ),
-                      },
-                      {
-                        value: '1y',
-                        label: dict(
-                          'PC.Pages.SystemSubscriptionBasicConfig.validity1y',
-                        ),
-                      },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
           </div>
-        </Card>
+          <h5 className={styles.sectionTitle}>积分兑换比例</h5>
+          <Text type="secondary" className={styles.sectionDesc}>
+            设置积分与币值的兑换比率，用户可使用积分兑换订单金额
+          </Text>
+          <Row gutter={[24, 0]} align="bottom">
+            <Col span={24}>
+              <div className={styles.exchangeLine}>
+                <div className={styles.exchangeLineLabel}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate',
+                  )}
+                </div>
+                <div className={styles.exchangeLineContent}>
+                  <InputNumber
+                    min={1}
+                    precision={2}
+                    value={1}
+                    disabled
+                    style={{ width: 112 }}
+                    addonBefore="¥"
+                  />
+                  <span className={styles.exchangeEqual}>=</span>
+                  <Form.Item name="creditExchangeRate" noStyle>
+                    <InputNumber min={1} precision={0} style={{ width: 120 }} />
+                  </Form.Item>
+                  <span className={styles.exchangeUnit}>
+                    {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
+                  </span>
+                </div>
+              </div>
+            </Col>
+            <Col span={24}>
+              <div className={styles.exchangeLine}>
+                <div className={styles.exchangeLineLabel}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.currentExchange',
+                  )}
+                </div>
+                <div className={styles.exchangeNotice}>
+                  <Text type="secondary">
+                    每 100 积分 ≈ ¥
+                    {(100 / Number(exchangeRate || 1)).toFixed(2)}， 每 10,000
+                    积分 ≈ ¥{(10000 / Number(exchangeRate || 1)).toFixed(2)}
+                  </Text>
+                </div>
+              </div>
+            </Col>
+            <Col span={24}>
+              <div className={styles.exchangeLine}>
+                <div className={styles.exchangeLineLabel}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc',
+                  )}
+                </div>
+                <div className={styles.exchangeDescWrap}>
+                  <Form.Item name="creditExchangeDesc" noStyle>
+                    <Input.TextArea
+                      className="dispose-textarea-count"
+                      placeholder={dict(
+                        'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder',
+                      )}
+                      maxLength={200}
+                      showCount
+                      autoSize={{ minRows: 3, maxRows: 5 }}
+                    />
+                  </Form.Item>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </section>
+
+        {/* 新用户注册赠送 */}
+        <section className={styles.sectionBlock}>
+          <h5 className={styles.sectionTitle}>
+            {dict('PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift')}
+          </h5>
+          <Text type="secondary" className={styles.sectionDesc}>
+            用户首次注册完成后，自动获得赠送积分
+          </Text>
+
+          <Row gutter={[24, 0]} align="bottom">
+            <Col span={8}>
+              {/* 赠送积分 */}
+              <Form.Item
+                label={dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.registerGiftCredits',
+                )}
+              >
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <Form.Item name="giftCreditAmount" noStyle>
+                    <InputNumber min={0} precision={0} style={{ width: 120 }} />
+                  </Form.Item>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
+                  </span>
+                </div>
+              </Form.Item>
+            </Col>
+            {/* 赠送积分有效期 */}
+            <Col span={8}>
+              <Form.Item
+                label={dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.registerGiftValidity',
+                )}
+              >
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <Form.Item name="giftCreditExpire" noStyle>
+                    <InputNumber min={0} precision={0} style={{ width: 120 }} />
+                  </Form.Item>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {dict('PC.Common.Global.days')}
+                  </span>
+                </div>
+              </Form.Item>
+            </Col>
+            {/* 启用状态 */}
+            <Col span={8}>
+              <Form.Item
+                label="启用状态"
+                name="enableGiftCredit"
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+            </Col>
+          </Row>
+        </section>
 
         {/* 每日登录赠送 */}
-        <Card
-          title={dict(
-            'PC.Pages.SystemSubscriptionBasicConfig.sectionDailyLogin',
-          )}
-          extra={
-            <Form.Item name="dailyLoginEnabled" valuePropName="checked" noStyle>
-              <Switch onChange={setDailyLoginEnabled} />
-            </Form.Item>
-          }
-          style={{ marginBottom: 16 }}
-        >
-          <div
-            style={{
-              opacity: dailyLoginEnabled ? 1 : 0.4,
-              pointerEvents: dailyLoginEnabled ? 'auto' : 'none',
-            }}
-          >
-            <Row gutter={[32, 0]}>
-              <Col span={12}>
+        <section style={{ marginBottom: 16 }}>
+          <h5 className={styles.sectionTitle}>
+            {dict('PC.Pages.SystemSubscriptionBasicConfig.sectionDailyLogin')}
+          </h5>
+          <Text type="secondary" className={styles.sectionDesc}>
+            用户每日首次登录时自动获得赠送积分
+          </Text>
+
+          <Row gutter={[24, 0]} align="bottom">
+            <Col span={8}>
+              {/* 每日登录赠送积分 */}
+              <div
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+              >
                 <Form.Item
-                  name="dailyLoginCredits"
+                  name="dailyGiftCreditAmount"
                   label={dict(
                     'PC.Pages.SystemSubscriptionBasicConfig.dailyLoginCredits',
                   )}
-                  rules={[{ required: true }]}
                 >
-                  <InputNumber
-                    min={0}
-                    precision={0}
-                    style={{ width: '100%' }}
-                    addonAfter={dict(
-                      'PC.Pages.SystemSubscriptionBasicConfig.creditsUnit',
-                    )}
-                  />
+                  <InputNumber min={0} precision={0} style={{ width: 120 }} />
                 </Form.Item>
-              </Col>
-            </Row>
-          </div>
-        </Card>
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
+                </span>
+              </div>
+            </Col>
+            <Col span={8}>
+              {/* 启用状态 */}
+              <Form.Item
+                label="启用状态"
+                name="enableDailyGiftCredit"
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+            </Col>
+          </Row>
+        </section>
       </Form>
     </WorkspaceLayout>
   );
