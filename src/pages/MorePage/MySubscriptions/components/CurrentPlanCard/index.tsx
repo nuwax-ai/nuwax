@@ -6,6 +6,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { CheckOutlined } from '@ant-design/icons';
 import { Statistic } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
 
@@ -92,7 +93,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
     }
 
     // 格式化日期 YYYY-MM-DD
-    const dateStr = planInfo.endTime.split(' ')[0];
+    const dateStr = dayjs(planInfo.endTime).format('YYYY-MM-DD');
     const periodText = getPeriodRenewText(planInfo.plan.period);
 
     return (
