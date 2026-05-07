@@ -1,5 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
-import { Button } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
+import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
@@ -34,96 +35,119 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({
   onAddPurchase,
 }) => {
   return (
-    <div className={styles.currentPlanCard}>
-      <div className={styles.planHeader}>
-        <div>
-          <div className={styles.planName}>{planInfo.planName}</div>
-          <div className={styles.planStatus}>
-            {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
+    <>
+      {/* 背景装饰元素 */}
+      <div className={styles['current-plan-card']}>
+        <div className={styles['bg-decoration-1']} />
+        <div className={styles['bg-decoration-2']} />
+        <div className={styles['card-content']}>
+          <div className={styles['plan-header']}>
+            <div className={styles['header-left']}>
+              <div className={styles['current-plan-label']}>
+                {dict('PC.Pages.MorePage.MySubscriptions.currentPlan')}
+              </div>
+              <div className={styles['plan-name']}>{planInfo.planName}</div>
+              <div className={styles['plan-validity']}>
+                {dict('PC.Pages.MorePage.MySubscriptions.colExpireAt')}:{' '}
+                {planInfo.expireAt} · 每月续费
+              </div>
+            </div>
+            <div className={styles['plan-status']}>
+              <CheckOutlined className={styles['status-icon']} />
+              {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
+            </div>
+          </div>
+
+          <div className={styles['plan-meta']}>
+            <div className={styles['plan-meta-item']}>
+              <span className={styles['meta-label']}>
+                {dict('PC.Pages.MorePage.MySubscriptions.monthlyFee')}
+              </span>
+              <span className={styles['meta-value']}>¥{planInfo.price}</span>
+              <span className={styles['meta-hint']}>
+                {dict(
+                  'PC.Pages.MorePage.MySubscriptions.renewedTo',
+                  planInfo.expireAt.slice(0, 7),
+                )}
+              </span>
+            </div>
+            <div className={styles['plan-meta-item']}>
+              <span className={styles['meta-label']}>
+                {dict('PC.Pages.MorePage.MySubscriptions.monthlyCredits')}
+              </span>
+              <span className={styles['meta-value']}>
+                {planInfo.monthlyCredits.toLocaleString()}
+              </span>
+              <span className={styles['meta-hint']}>
+                {dict(
+                  'PC.Pages.MorePage.MySubscriptions.creditsIssued',
+                  String(planInfo.issuedCredits),
+                )}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className={styles.planMeta}>
-        <div className={styles.planMetaItem}>
-          <span className={styles.metaLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.monthlyFee')}
-          </span>
-          <span className={styles.metaValue}>¥{planInfo.price}</span>
-          <span className={styles.metaHint}>
-            {dict(
-              'PC.Pages.MorePage.MySubscriptions.renewedTo',
-              planInfo.expireAt.slice(0, 7),
-            )}
-          </span>
-        </div>
-        <div className={styles.planMetaItem}>
-          <span className={styles.metaLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.monthlyCredits')}
-          </span>
-          <span className={styles.metaValue}>
-            {planInfo.monthlyCredits.toLocaleString()}
-          </span>
-          <span className={styles.metaHint}>
-            {dict(
-              'PC.Pages.MorePage.MySubscriptions.creditsIssued',
-              String(planInfo.issuedCredits),
-            )}
-          </span>
-        </div>
-      </div>
-
       {/* 积分明细 */}
-      <div className={styles.creditsBreakdown}>
-        <div className={styles.creditsRow}>
-          <span className={styles.creditsLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.totalCredits')}
+      <div className={styles['credits-breakdown']}>
+        <div className={styles['credits-item']}>
+          <div className={styles['credits-label-area']}>
+            <span className={styles['credits-label']}>
+              {dict('PC.Pages.MorePage.MySubscriptions.totalCredits')}
+            </span>
             <span
-              className={styles.creditsLink}
+              className={styles['credits-detail-link']}
               onClick={() => history.push('/more-page/credit-records')}
             >
-              {' '}
               {dict('PC.Pages.MorePage.MySubscriptions.detail')}
             </span>
-          </span>
-          <span className={styles.creditsValue}>
+          </div>
+          <span className={styles['credits-value']}>
             {creditsBreakdown.total.toLocaleString()}
           </span>
         </div>
-        <div className={styles.creditsRow}>
-          <span className={styles.creditsLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.subscriptionCredits')}
-          </span>
-          <span className={styles.creditsValue}>
+
+        <div className={styles['credits-item']}>
+          <div className={styles['credits-label-area']}>
+            <span className={styles['credits-label']}>
+              {dict('PC.Pages.MorePage.MySubscriptions.subscriptionCredits')}
+            </span>
+          </div>
+          <span className={classNames(styles['credits-value'], styles.blue)}>
             {creditsBreakdown.subscription.toLocaleString()}
           </span>
         </div>
-        <div className={styles.creditsRow}>
-          <span className={styles.creditsLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.purchaseCredits')}
-            <Button
-              type="link"
-              size="small"
-              className={styles.addPurchaseBtn}
+
+        <div className={styles['credits-item']}>
+          <div className={styles['credits-label-area']}>
+            <span className={styles['credits-label']}>
+              {dict('PC.Pages.MorePage.MySubscriptions.purchaseCredits')}
+            </span>
+            <span
+              className={styles['add-purchase-link']}
               onClick={onAddPurchase}
             >
               {dict('PC.Pages.MorePage.MySubscriptions.addPurchase')}
-            </Button>
-          </span>
-          <span className={styles.creditsValue}>
+            </span>
+          </div>
+          <span className={classNames(styles['credits-value'], styles.green)}>
             {creditsBreakdown.purchase.toLocaleString()}
           </span>
         </div>
-        <div className={styles.creditsRow}>
-          <span className={styles.creditsLabel}>
-            {dict('PC.Pages.MorePage.MySubscriptions.activityCredits')}
-          </span>
-          <span className={styles.creditsValue}>
+
+        <div className={styles['credits-item']}>
+          <div className={styles['credits-label-area']}>
+            <span className={styles['credits-label']}>
+              {dict('PC.Pages.MorePage.MySubscriptions.activityCredits')}
+            </span>
+          </div>
+          <span className={classNames(styles['credits-value'], styles.orange)}>
             {creditsBreakdown.activity.toLocaleString()}
           </span>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
