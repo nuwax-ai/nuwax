@@ -10,6 +10,7 @@ import type {
   CreditPackageInfo,
   CreditRecordInfo,
   CreditRecordTypeEnum,
+  CreditSummaryInfo,
   DevEarningsSummaryInfo,
   DevPaymentAccountInfo,
   EarningRecordInfo,
@@ -318,6 +319,13 @@ export async function apiGetUserCredits(): Promise<
   RequestResponse<UserCreditsInfo>
 > {
   return request('/api/user/credits', { method: 'GET' });
+}
+
+// 查询当前登录用户总积分
+export async function apiGetCreditSummary(): Promise<
+  RequestResponse<CreditSummaryInfo>
+> {
+  return request('/api/credit/summary', { method: 'GET' });
 }
 
 export async function apiListCreditPackages(): Promise<

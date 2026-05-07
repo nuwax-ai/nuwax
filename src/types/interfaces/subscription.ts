@@ -151,6 +151,16 @@ export interface UserCreditsInfo {
   unit: 'credit';
 }
 
+export interface CreditSummaryInfo {
+  userId: number;
+  totalCredit: number;
+  subscriptionCredit: number;
+  purchaseCredit: number;
+  activityCredit: number;
+  manualCredit: number;
+  user: any;
+}
+
 // ──────────────────────────────────────────────
 // 订单相关
 // ──────────────────────────────────────────────
