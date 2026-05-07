@@ -37,6 +37,7 @@ import type {
   SystemWorkflowListParams,
   SystemWorkflowPage,
   TenantConfigDto,
+  TenantSubscriptionConfigInfo,
   TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
@@ -170,11 +171,22 @@ export async function apiSystemUploadFile(
     data: formData,
   });
 }
-// 更新配置信息
+
+// 更新主题配置
 export async function apiSystemConfigUpdate(
   data: TenantConfigDto,
 ): Promise<RequestResponse<any>> {
   return request('/api/system/config/update-theme', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新配置信息
+export async function apiSystemSubscriptionConfigSave(
+  data: TenantSubscriptionConfigInfo,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/config/save', {
     method: 'POST',
     data,
   });

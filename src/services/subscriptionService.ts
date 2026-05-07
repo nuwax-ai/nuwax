@@ -543,21 +543,6 @@ export async function apiListAdminPaymentOrders(params: {
 // 系统管理 - 订阅基础配置
 // ──────────────────────────────────────────────
 
-export async function apiGetBasicConfig(): Promise<
-  RequestResponse<Record<string, unknown>>
-> {
-  return request('/api/system/subscription-basic-config', { method: 'GET' });
-}
-
-export async function apiSaveBasicConfig(
-  data: Record<string, unknown>,
-): Promise<RequestResponse<null>> {
-  return request('/api/system/subscription-basic-config', {
-    method: 'PUT',
-    data,
-  });
-}
-
 // ──────────────────────────────────────────────
 // 订阅设置 - 套餐 CRUD
 // ──────────────────────────────────────────────

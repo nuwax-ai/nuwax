@@ -1,0 +1,58 @@
+@import '@/styles/token.less';
+
+.sectionTitle {
+  margin-bottom: @marginXs;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sectionDesc {
+  display: block;
+  margin-bottom: @marginSm;
+}
+
+.sectionBlock {
+  padding-bottom: @padding;
+  margin-bottom: @margin;
+  border-bottom: 1px solid @colorBorderSecondary;
+}
+
+.exchangeNotice {
+  flex: 1;
+  padding: @paddingXs @paddingSm;
+  background: #fafafa;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+}
+
+.exchangeLine {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  margin-bottom: @marginSm;
+}
+
+.exchangeLineLabel {
+  flex: 0 0 80px;
+  color: @colorTextLabel;
+  line-height: 32px;
+}
+
+.exchangeLineContent {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginSm;
+}
+
+.exchangeEqual {
+  color: @colorTextSecondary;
+}
+
+.exchangeUnit {
+  color: @colorText;
+  white-space: nowrap;
+}
+
+.exchangeDescWrap {
+  flex: 1;
+}
