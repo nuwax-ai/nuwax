@@ -82,10 +82,14 @@ const HomeSection: React.FC<{
     const _executingConversationList = conversationList?.find(
       (item: ConversationInfo) => item.taskStatus === TaskStatus.EXECUTING,
     );
-    if (_executingConversationList) {
-      // 监听会话状态更新事件
-      eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+
+    // 如果会话列表中不存在执行中的会话，则不监听会话状态更新事件
+    if (!_executingConversationList) {
+      return;
     }
+
+    // 监听会话状态更新事件
+    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
 
     return () => {
       eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
