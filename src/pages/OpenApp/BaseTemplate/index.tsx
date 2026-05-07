@@ -154,10 +154,15 @@ const BaseTemplate: React.FC = () => {
   });
 
   useEffect(() => {
-    // 如果智能体详情不存在，则查询智能体详情
+    /**
+     * 如果智能体详情不存在，则查询智能体详情
+     * 扩展页面：/app/open-iframe-page/
+     * 全部历史会话页面：/app/history/conversation/
+     */
     if (
       !appAgentDetail &&
-      location.pathname.includes('/app/open-iframe-page/')
+      (location.pathname.includes('/app/open-iframe-page/') ||
+        location.pathname.includes('/app/history/conversation/'))
     ) {
       setAppAgentDetailLoading(true);
       runDetail(agentId);
