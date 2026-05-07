@@ -45,13 +45,16 @@ const BaseTemplate: React.FC = () => {
   const location = useLocation();
   const { id: cId, agentId } = useParams();
   const {
+    openAdmin,
     setOpenAdmin,
     isMobile,
     setOpenMessage,
+    openMessage,
     unreadCount,
     setUnreadCount,
     runNotifyMessageUnreadCount,
   } = useModel('layout');
+
   // 状态管理
   const { userInfo, getUserInfo } = useModel('userInfo');
 
@@ -218,6 +221,37 @@ const BaseTemplate: React.FC = () => {
       setUnreadCount(0);
     };
   }, []);
+
+  useEffect(() => {
+    // 当弹层打开时，点击 iframe 会导致 window 失焦且 activeElement 指向 iframe，
+    // 这里主动关闭弹层，补齐“点击外部关闭”在 iframe 场景下的缺失。
+    if (!openAdmin && !openMessage) {
+      return;
+    }
+
+    const handleWindowBlur = () => {
+      window.setTimeout(() => {
+        const activeElement = document.activeElement;
+        if (!(activeElement instanceof HTMLIFrameElement)) {
+          return;
+        }
+
+        // 关闭User组件的弹窗
+        if (openAdmin) {
+          setOpenAdmin(false);
+        }
+        // 关闭消息弹窗
+        if (openMessage) {
+          setOpenMessage(false);
+        }
+      }, 0);
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [openAdmin, openMessage]);
 
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {

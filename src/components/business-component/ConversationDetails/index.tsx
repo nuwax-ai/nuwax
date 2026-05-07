@@ -589,10 +589,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 : !isAppSidebarVisible
                 ? styles['app-title-container-collapsed']
                 : '',
-              {
-                [styles['page-preview-title']]:
-                  !!pagePreviewData && !(isMobile || isAppSidebarMode),
-              },
             )}
           >
             <div
@@ -686,15 +682,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-            [styles['page-preview-content']]:
-              !!pagePreviewData &&
-              !(isMobile || isAppSidebarMode) &&
-              !isFileTreeVisible,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
@@ -849,6 +837,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           pagePreviewData && (
             <>
               <PagePreviewIframe
+                className={cx({
+                  [styles['mobile-page-preview-container']]: isMobile,
+                })}
                 pagePreviewData={pagePreviewData}
                 showHeader={true}
                 onClose={hidePagePreview}
