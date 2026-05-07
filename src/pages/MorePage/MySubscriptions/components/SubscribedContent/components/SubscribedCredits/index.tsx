@@ -15,11 +15,47 @@ export interface CreditPack {
   themeColor?: string;
 }
 
-interface SubscribedCreditsProps {
-  data: CreditPack[];
-}
+const MOCK_CREDITS = [
+  {
+    id: 1,
+    name: '积分包C',
+    purchaseDate: '2025-08-20',
+    totalCredits: 5000,
+    consumed: 2100,
+    expireAt: '2026-08-20',
+    amount: 499,
+    remaining: 2900,
+    status: 'normal' as const,
+    themeColor: 'linear-gradient(90deg, #3b82f6 0%, #10b981 100%)',
+  },
+  {
+    id: 2,
+    name: '积分包B',
+    purchaseDate: '2025-06-10',
+    totalCredits: 2000,
+    consumed: 1850,
+    expireAt: '2026-06-10',
+    amount: 199,
+    remaining: 150,
+    status: 'low' as const,
+    themeColor: 'linear-gradient(90deg, #f59e0b 0%, #ef4444 100%)',
+  },
+  {
+    id: 3,
+    name: '积分包A',
+    purchaseDate: '2025-03-05',
+    totalCredits: 1000,
+    consumed: 1000,
+    expireAt: '2026-03-05',
+    amount: 99,
+    remaining: 0,
+    status: 'empty' as const,
+    themeColor: 'linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%)',
+  },
+];
 
-const SubscribedCredits: React.FC<SubscribedCreditsProps> = ({ data }) => {
+const SubscribedCredits: React.FC = () => {
+  const data = MOCK_CREDITS;
   return (
     <div className={styles['credits-grid']}>
       {data.map((pack) => (

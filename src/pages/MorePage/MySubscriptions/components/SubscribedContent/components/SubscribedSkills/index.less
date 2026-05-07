@@ -78,14 +78,28 @@
       font-size: @fontSizeSm;
       color: @colorTextTertiary;
       display: flex;
-      gap: 12px;
+      justify-content: space-between;
       align-items: center;
       padding-top: @padding;
       border-top: 1px dashed @colorBorderSecondary;
 
-      .value {
-        color: @colorTextSecondary;
-        font-weight: 500;
+      .buyout-price {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .value {
+          color: @colorTextSecondary;
+          font-weight: 500;
+        }
+      }
+
+      .status-tag-inner {
+        margin: 0;
+        border: none;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-size: 12px;
       }
     }
 
@@ -113,44 +127,6 @@
             font-weight: 600;
           }
         }
-      }
-    }
-  }
-
-  .card-footer {
-    padding: @padding @paddingLg;
-    background: #f8fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .status-area {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .pay-type {
-        font-size: 12px;
-        color: @colorTextTertiary;
-      }
-
-      .status-tag {
-        margin: 0;
-        border: none;
-        padding: 0 10px;
-        border-radius: 20px;
-      }
-    }
-
-    .action-btn {
-      border-radius: 20px;
-      background: #1890ff;
-      border: none;
-      color: @colorWhite;
-      font-size: 12px;
-
-      &:hover {
-        background: #40a9ff;
       }
     }
   }
