@@ -43,7 +43,11 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
       title={
         <div className={cx(styles['see-detail-header'])}>
           <Tooltip title={title} placement="topLeft">
-            <div className={cx(styles['see-detail-header-title'])}>{title}</div>
+            <div
+              className={cx(styles['see-detail-header-title'], 'text-ellipsis')}
+            >
+              {title}
+            </div>
           </Tooltip>
           <div className={cx(styles['see-detail-header-actions'])}>
             <CopyIconButton
