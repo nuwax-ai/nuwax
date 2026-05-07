@@ -10,6 +10,70 @@ export enum PricingCycleEnum {
   Yearly = 'yearly',
 }
 
+export enum BizTypeEnum {
+  System = 'SYSTEM',
+  Agent = 'AGENT',
+  Skill = 'SKILL',
+}
+
+export enum MySubscriptionStatusEnum {
+  Active = 'ACTIVE',
+  Expired = 'EXPIRED',
+  Cancelled = 'CANCELLED',
+}
+
+export enum MyPlanPeriodEnum {
+  Month = 'MONTH',
+  Quarter = 'QUARTER',
+  Year = 'YEAR',
+  Forever = 'FOREVER',
+}
+
+export interface MySubscriptionItem {
+  id: number | null;
+  tenantId: number | null;
+  userId: number | null;
+  planId: number;
+  planName: string;
+  bizType: BizTypeEnum | null;
+  bizId: number | null;
+  period: MyPlanPeriodEnum | null;
+  startTime: string | null;
+  endTime: string | null;
+  status: MySubscriptionStatusEnum;
+  plan: {
+    id: number;
+    name: string;
+    description: string | null;
+    price: number;
+    firstPrice: number;
+    period: MyPlanPeriodEnum;
+    creditAmount: number;
+    callLimitCount: number | null;
+    functionOnly: boolean | null;
+    dailyGiftCreditAmount: number | null;
+    isHot: boolean | null;
+    status: number | null;
+    bizType: BizTypeEnum;
+    bizId: number | null;
+    groupIds: string | null;
+    extra: string | null;
+    sort: number | null;
+    created: string | null;
+    modified: string | null;
+  };
+  callUsedCount: number | null;
+  nextResetTime: string | null;
+  extra: any | null;
+  created: string | null;
+  modified: string | null;
+}
+
+export interface MySubscriptionData {
+  currentSubscription: MySubscriptionItem;
+  subscriptions: MySubscriptionItem[];
+}
+
 export interface PricingPlanInfo {
   id: number;
   spaceId: number;

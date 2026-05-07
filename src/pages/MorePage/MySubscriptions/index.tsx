@@ -1,7 +1,8 @@
 import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
-import { apiGetUserCredits } from '@/services/subscriptionService';
+import { apiGetMySubscription } from '@/services/subscriptionService';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -50,28 +51,19 @@ const MOCK_PLANS: PlanInfo[] = [
   },
 ];
 
-// Mock 当前订阅信息
-const MOCK_CURRENT_PLAN = {
-  planName: '专业版',
-  price: 299,
-  expireAt: '2025-12-31',
-  monthlyCredits: 2000,
-  issuedCredits: 1500,
-};
-
 const MySubscriptions: React.FC = () => {
-  const [balance, setBalance] = useState<number>(12580);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
 
-  const { run: fetchCredits } = useRequest(apiGetUserCredits, {
-    manual: true,
-    onSuccess: (res: { data: { balance: number } }) => {
-      if (res?.data) setBalance(res.data.balance);
+  // 获取我的订阅（系统级）
+  const { data: subData, run: fetchMySubscription } = useRequest(
+    () => apiGetMySubscription({ bizType: BizTypeEnum.System }),
+    {
+      manual: true,
     },
-  });
+  );
 
   useEffect(() => {
-    fetchCredits();
+    fetchMySubscription();
   }, []);
 
   const handleRenew = () => {
@@ -86,24 +78,19 @@ const MySubscriptions: React.FC = () => {
     );
   };
 
-  // 积分明细数据
-  const creditsBreakdown = {
-    total: balance,
-    subscription: 8580,
-    purchase: 3500,
-    activity: 500,
-  };
+  const currentSub = subData?.currentSubscription;
 
   return (
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.MySubscriptions.pageTitle')}
     >
       {/* 展板信息 */}
-      <CurrentPlanCard
-        planInfo={MOCK_CURRENT_PLAN}
-        creditsBreakdown={creditsBreakdown}
-        onAddPurchase={() => setPurchaseOpen(true)}
-      />
+      {currentSub && (
+        <CurrentPlanCard
+          planInfo={currentSub}
+          onAddPurchase={() => setPurchaseOpen(true)}
+        />
+      )}
 
       {/* 订阅套餐网格 */}
       <SubscriptionPlanCards
@@ -119,7 +106,7 @@ const MySubscriptions: React.FC = () => {
       <CreditsPurchaseModal
         open={purchaseOpen}
         onCancel={() => setPurchaseOpen(false)}
-        onSuccess={fetchCredits}
+        onSuccess={fetchMySubscription}
       />
     </WorkspaceLayout>
   );

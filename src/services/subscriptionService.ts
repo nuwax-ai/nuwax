@@ -4,6 +4,7 @@ import type {
   AdminOrderInfo,
   AgentSubscriptionConfig,
   AgentSubscriptionPlan,
+  BizTypeEnum,
   CheckSubscriptionResult,
   CreditPackageAdminInfo,
   CreditPackageInfo,
@@ -15,6 +16,7 @@ import type {
   EarningsSummaryInfo,
   MerchantInfoData,
   ModelPricingInfo,
+  MySubscriptionData,
   OrderInfo,
   PaymentConfigInfo,
   PricingPlanInfo,
@@ -29,6 +31,13 @@ import type {
   WithdrawalStatusEnum,
 } from '@/types/interfaces/subscription';
 import { request } from 'umi';
+
+// 查询我的订阅（新版）
+export async function apiGetMySubscription(params: {
+  bizType: BizTypeEnum;
+}): Promise<RequestResponse<MySubscriptionData>> {
+  return request('/api/subscription/my', { method: 'GET', params });
+}
 
 // 查询工作空间定价套餐列表
 export async function apiListPricingPlans(
@@ -598,9 +607,7 @@ export async function apiListAgentSubPlans(
   });
 }
 
-export async function apiGetCurrentAgentSub(
-  spaceId: number,
-): Promise<
+export async function apiGetCurrentAgentSub(spaceId: number): Promise<
   RequestResponse<{
     planId: string;
     startDate: string;
