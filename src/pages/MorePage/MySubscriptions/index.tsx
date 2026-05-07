@@ -78,16 +78,9 @@ const MySubscriptions: React.FC = () => {
 
       {/* 订阅套餐网格 */}
       <SubscriptionPlanCards
-        plans={
-          packagesData?.map((item: any) => ({
-            id: item.id.toString(),
-            name: item.packageName,
-            price: item.price,
-            features: [item.remark || '', ...[]],
-            period: item.period,
-          })) || []
-        }
-        currentPlanId={currentSub?.planId.toString()}
+        data={packagesData}
+        currentPlanId={currentSub?.planId}
+        endTime={currentSub?.endTime}
         onRenew={handleRenew}
         onUpgrade={handleUpgrade}
       />
