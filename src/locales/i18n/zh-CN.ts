@@ -4796,16 +4796,12 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.fieldName': '套餐名称',
   'PC.Pages.SystemCreditPackages.fieldCredits': '积分数量',
   'PC.Pages.SystemCreditPackages.fieldPrice': '售价（元）',
-  'PC.Pages.SystemCreditPackages.fieldOriginalPrice': '原价（元）',
-  'PC.Pages.SystemCreditPackages.fieldTag': '推荐标签',
-  'PC.Pages.SystemCreditPackages.fieldTagPlaceholder': '如：热门、最划算',
   'PC.Pages.SystemCreditPackages.fieldEnabled': '上架状态',
   'PC.Pages.SystemCreditPackages.colValidityPeriod': '有效期',
   'PC.Pages.SystemCreditPackages.fieldValidityPeriod': '有效期',
   'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder': '如：永久、90天、30天',
-  'PC.Pages.SystemCreditPackages.statusEnabled': '启用',
-  'PC.Pages.SystemCreditPackages.statusDisabled': '停用',
-
+  'PC.Pages.SystemCreditPackages.fieldSort': '排序',
+  
   // ── 系统管理 - 用户积分查询 ────────────────────────────
   'PC.Pages.SystemUserCredits.colUser': '用户',
   'PC.Pages.SystemUserCredits.colBalance': '当前余额',

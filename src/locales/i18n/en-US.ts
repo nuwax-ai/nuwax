@@ -3451,9 +3451,6 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.fieldName': 'Package Name',
   'PC.Pages.SystemCreditPackages.fieldCredits': 'Credits',
   'PC.Pages.SystemCreditPackages.fieldPrice': 'Price (CNY)',
-  'PC.Pages.SystemCreditPackages.fieldOriginalPrice': 'Original Price (CNY)',
-  'PC.Pages.SystemCreditPackages.fieldTag': 'Tag',
-  'PC.Pages.SystemCreditPackages.fieldTagPlaceholder': 'e.g. Popular, Best Value',
   'PC.Pages.SystemCreditPackages.fieldEnabled': 'Published',
 
   'PC.Pages.SpaceSkillManage.ComponentItem.lastEdited': 'Last edited',

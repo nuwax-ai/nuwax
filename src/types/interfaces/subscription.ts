@@ -122,18 +122,18 @@ export interface CheckSubscriptionResult {
 // 积分相关
 // ──────────────────────────────────────────────
 
-export interface CreditPackageInfo {
-  id: number;
-  packageName: string;
-  creditAmount: number;
-  price: number;
-  sort: number;
-  status: number;
-  period: MyPlanPeriodEnum;
-  remark?: string;
-  created?: string;
-  modified?: string;
-}
+// export interface CreditPackageInfo {
+//   id: number;
+//   packageName: string;
+//   creditAmount: number;
+//   price: number;
+//   sort: number;
+//   status: number;
+//   period: MyPlanPeriodEnum;
+//   remark?: string;
+//   created?: string;
+//   modified?: string;
+// }
 
 export enum CreditRecordTypeEnum {
   Recharge = 'recharge',
