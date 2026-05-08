@@ -2596,7 +2596,6 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.OpenApp.collapseNav': 'Collapse Navigation',
   'PC.Pages.OpenApp.firstConversationTip': 'Enter a command in the chat box to start your first conversation~',
   'PC.Pages.OpenApp.historyConversation': 'Chat History',
-  'PC.Pages.OpenApp.lookRight': 'Look right >',
   'PC.Pages.OpenApp.newConversation': 'New Conversation',
   'PC.Pages.OpenApp.viewAll': 'View All',
   'PC.Pages.PreviewAndDebug.convIdNotFoundDesktop': 'Conversation ID not found. Cannot open agent computer.',

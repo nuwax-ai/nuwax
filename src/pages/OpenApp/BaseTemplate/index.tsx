@@ -340,9 +340,16 @@ const BaseTemplate: React.FC = () => {
         style={agentSidebarStyle}
       >
         {/* 智能体图标 + 收起导航按钮 */}
-        <div className={styles.sidebarTop}>
+        <header className={styles.sidebarTop}>
           {/* 智能体图标 + 名称 */}
-          <div className={cx('flex', 'items-center', 'gap-4', 'overflow-hide')}>
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'overflow-hide',
+              styles['gap-8'],
+            )}
+          >
             {/* 智能体图标 */}
             <ConditionRender condition={appAgentDetail}>
               <div className={cx(styles['logo-container'])}>
@@ -370,7 +377,7 @@ const BaseTemplate: React.FC = () => {
             }
             placement="right"
           />
-        </div>
+        </header>
 
         {/* 新建会话按钮 */}
         <div
@@ -504,14 +511,9 @@ const BaseTemplate: React.FC = () => {
                         ),
                       )
                     : loadingHistoryEnd && (
-                        <>
-                          <div className={cx(styles['no-used'])}>
-                            {dict('PC.Pages.OpenApp.lookRight')}
-                          </div>
-                          <div className={cx(styles['no-used'])}>
-                            {dict('PC.Pages.OpenApp.firstConversationTip')}
-                          </div>
-                        </>
+                        <div className={cx(styles['no-used'])}>
+                          {dict('PC.Pages.OpenApp.firstConversationTip')}
+                        </div>
                       )}
                 </div>
               </>
