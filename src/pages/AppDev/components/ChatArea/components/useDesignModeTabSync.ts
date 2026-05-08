@@ -210,36 +210,28 @@ export const useDesignModeTabSync = ({
         return;
       }
 
-      debugLog('posting TOGGLE_DESIGN_MODE', {
-        enabled,
-        requestId,
-        targetOrigin,
-        pendingBefore,
-        pendingAfter: pendingToggleRef.current,
-      });
+      // postMessage 在 origin 不匹配时不会抛异常，而是把错误打到 console 后**静默丢弃**——
+      // 所以无法用 try/catch 兜住。只能主动判断 contentWindow 当前实际 origin：
+      //   - location 可读：iframe 仍在 same-origin 过渡态（about:blank / parent localhost），
+      //     此时往跨源 targetOrigin 投递必然被丢弃，需要 defer + 重试
+      //   - location 抛 SecurityError：contentWindow 已经 navigate 到目标跨源 URL，安全投递
+      const cw = iframe.contentWindow;
+      let canDeliver = true;
       try {
-        iframe.contentWindow.postMessage(
-          {
-            type: 'TOGGLE_DESIGN_MODE',
-            enabled,
-            requestId,
-            timestamp: Date.now(),
-          },
-          targetOrigin,
-        );
-        // 成功投递，重置重试计数（注意：这里成功只代表 postMessage 抛出与否，
-        // 真正的 ack 仍由 ackTimeoutRef 的 setTimeout 来判断）。
-        postMessageRetryRef.current = 0;
-      } catch (err) {
-        // 典型场景：dev server 重启过程中 iframe 处于 about:blank 等过渡 origin，
-        // iframe.src 已指向新 dev URL，但 contentWindow 还没真正 navigate 过去，
-        // postMessage 的 targetOrigin 校验抛 SecurityError。
-        // 不算业务失败，回滚 pending 状态、清掉 ack timer，安排短延时重试，
-        // 让真正的 navigation 完成后再发一次。
+        const actualOrigin = cw.location.origin;
+        canDeliver = actualOrigin === targetOrigin;
+      } catch {
+        // 跨源访问被拒 → contentWindow 已在跨源 target 上 → 可以投递
+        canDeliver = true;
+      }
+
+      if (!canDeliver) {
         console.warn(
-          '[DesignModeSync] postMessage threw (likely iframe mid-navigation)',
-          err,
+          '[DesignModeSync] iframe at transitional origin, deferring postMessage',
+          { targetOrigin, attempt: postMessageRetryRef.current },
         );
+        // 回滚刚刚为本次请求设置的 pending 状态与 ack timer，让重试可以重新走完整流程，
+        // 也避免 ackTimeout 把过渡态当作业务超时上抛 onAckTimeout。
         clearAckTimeout();
         pendingToggleRef.current = null;
         setTransitionState('idle');
@@ -250,19 +242,35 @@ export const useDesignModeTabSync = ({
           clearPostMessageRetry();
           postMessageRetryTimerRef.current = window.setTimeout(() => {
             postMessageRetryTimerRef.current = null;
-            // 通过当前作用域里的 syncIframeDesignMode 引用重发。
-            // 闭包捕获的是同一次 useCallback 的实例，重试期间 deps 一般不会变。
             syncIframeDesignMode(enabled);
           }, POSTMESSAGE_RETRY_DELAY);
         } else {
-          // 超过重试次数仍失败，重置计数并放弃；此时 transitionState 保持 'idle'，
-          // 用户切换 tab 或下次 iframe 重新加载会触发新的同步。
+          // 超过重试次数仍未到目标 origin，放弃本轮；用户切 tab 或 iframe 重新加载会再次触发。
           postMessageRetryRef.current = 0;
           console.warn(
             '[DesignModeSync] postMessage retries exhausted, giving up',
           );
         }
+        return;
       }
+
+      debugLog('posting TOGGLE_DESIGN_MODE', {
+        enabled,
+        requestId,
+        targetOrigin,
+        pendingBefore,
+        pendingAfter: pendingToggleRef.current,
+      });
+      cw.postMessage(
+        {
+          type: 'TOGGLE_DESIGN_MODE',
+          enabled,
+          requestId,
+          timestamp: Date.now(),
+        },
+        targetOrigin,
+      );
+      postMessageRetryRef.current = 0;
     },
     [previewIframeElement, isIframeLoaded, activeTab],
   );
