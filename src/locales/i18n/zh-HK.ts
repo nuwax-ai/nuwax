@@ -2022,6 +2022,8 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.AppDevEditorHeaderRight.starting': '啓動中...',
   'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': '切換到 v{0} 版本',
   'PC.Pages.AppDevEditorHeaderRight.viewLog': '查看日誌',
+  'PC.Pages.AppDevEditorHeaderRight.openDesignMode': '開啟設計模式',
+  'PC.Pages.AppDevEditorHeaderRight.closeDesignMode': '關閉設計模式',
   'PC.Pages.AppDevFileOperatingMask.defaultTip': '文件操作進行中，請稍候...',
   'PC.Pages.AppDevFilePathHeader.modified': '已修改',
   'PC.Pages.AppDevFileTreeContextMenu.delete': '刪除',

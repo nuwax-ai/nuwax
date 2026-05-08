@@ -2024,6 +2024,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AppDevEditorHeaderRight.starting': 'Starting...',
   'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': 'Switch to v{0}',
   'PC.Pages.AppDevEditorHeaderRight.viewLog': 'View log',
+  'PC.Pages.AppDevEditorHeaderRight.openDesignMode': 'Enable design mode',
+  'PC.Pages.AppDevEditorHeaderRight.closeDesignMode': 'Disable design mode',
   'PC.Pages.AppDevFileOperatingMask.defaultTip': 'File operation in progress. Please wait...',
   'PC.Pages.AppDevFilePathHeader.modified': 'Modified',
   'PC.Pages.AppDevFileTreeContextMenu.delete': 'Delete',

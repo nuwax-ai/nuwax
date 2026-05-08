@@ -380,8 +380,8 @@ const routes = [
     layout: false,
   },
   {
-    path: '/space/:spaceId/app-dev-preview/:projectId',
-    component: '@/pages/AppDev',
+    path: '/space/:spaceId/app-dev-design/:projectId',
+    component: '@/pages/AppDevDesign',
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },
