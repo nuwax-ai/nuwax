@@ -213,6 +213,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
 
       setIsLoading(true);
+      setIsIframeLoaded(false);
       setLoadError(null);
 
       if (iframeRef.current) {
