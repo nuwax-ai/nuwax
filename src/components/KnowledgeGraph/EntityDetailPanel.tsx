@@ -1,6 +1,7 @@
 /**
  * 实体详情面板
  */
+import { dict } from '@/services/i18nRuntime';
 import type { KnowledgeTriple } from '@/types/interfaces/knowledge';
 import { CloseOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Empty, Tag } from 'antd';
@@ -19,9 +20,9 @@ interface EntityDetailPanelProps {
 }
 
 const EntityTypeLabels: Record<string, string> = {
-  root: '核心实体',
-  object: '对象实体',
-  content: '内容实体',
+  root: dict('PC.Components.EntityDetailPanel.rootEntityType'),
+  object: dict('PC.Components.EntityDetailPanel.objectEntityType'),
+  content: dict('PC.Components.EntityDetailPanel.contentEntityType'),
 };
 
 const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
@@ -93,20 +94,20 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
 
       <div className={styles.body}>
         <div className={styles.section}>
-          <div className={styles.sectionTitle}>实体类型</div>
+          <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.entityType')}</div>
           <Tag color="purple">{EntityTypeLabels[node.type] || node.type}</Tag>
         </div>
 
         {node.fullText && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>实体描述</div>
+            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.entityDescription')}</div>
             <div className={styles.description}>{node.fullText}</div>
           </div>
         )}
 
         {relatedEntities.length > 0 && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>相关实体</div>
+            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.relatedEntities')}</div>
             <div className={styles.relatedEntities}>
               {relatedEntities.map((entity) => (
                 <div
@@ -126,7 +127,7 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
 
         {relatedSegments.length > 0 ? (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>原文切片</div>
+            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.originalSegment')}</div>
             <div className={styles.segments}>
               {relatedSegments.map((segment, index) => {
                 const isExpanded = expandedSegments[segment.id] || false;
@@ -134,7 +135,7 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
                   <div key={segment.id} className={styles.segmentItem}>
                     <div className={styles.segmentHeader}>
                       <div className={styles.segmentIndex}>
-                        切片 {index + 1}
+                        {dict('PC.Components.EntityDetailPanel.segment', index + 1)}
                       </div>
                       {segment.documentName && (
                         <div className={styles.documentName}>
@@ -155,11 +156,11 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
                     >
                       {isExpanded ? (
                         <>
-                          收起 <UpOutlined />
+                          {dict('PC.Components.EntityDetailPanel.collapse')} <UpOutlined />
                         </>
                       ) : (
                         <>
-                          更多 <DownOutlined />
+                          {dict('PC.Components.EntityDetailPanel.more')} <DownOutlined />
                         </>
                       )}
                     </div>
@@ -170,8 +171,8 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
           </div>
         ) : (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>原文切片</div>
-            <Empty description="暂无相关原文切片" />
+            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.originalSegment')}</div>
+            <Empty description={dict('PC.Components.EntityDetailPanel.noRelatedSegments')} />
           </div>
         )}
       </div>

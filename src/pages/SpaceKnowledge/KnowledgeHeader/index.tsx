@@ -13,7 +13,7 @@ import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useParams } from 'umi';
+import { useParams, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -32,6 +32,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onViewAllGraphs,
 }) => {
   const { spaceId } = useParams();
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  var isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -95,9 +98,11 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.QA}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
         </Radio>
-        <Radio value={KnowledgeDocTypeEnum.GRAPH}>
-          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
-        </Radio>
+        {isShowGRAPH && (
+          <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Radio>
+        )}
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
