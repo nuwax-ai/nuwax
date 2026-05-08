@@ -2682,6 +2682,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.monthlyPayment': '月付',
   'PC.Pages.MorePage.MySubscriptions.quarterlyPayment': '季付',
   'PC.Pages.MorePage.MySubscriptions.yearlyPayment': '年付',
+  'PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle': '选择积分套餐，即刻到账，可用于 Token 消耗、智能体订阅、工具调用等。',
 
   // ── 订阅通用枚举 ──
   'PC.Common.Subscription.BizType.system': '系统',

@@ -1901,6 +1901,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.aboutToUseUp': 'まもなく使い果たします',
   'PC.Pages.MorePage.MySubscriptions.fullyUsed': '使い果たしました',
   'PC.Pages.MorePage.MySubscriptions.normalUsage': '十分',
+  'PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle': 'クレジットパッケージを選択すると即座に反映され、Token消費、エージェント購読、ツール呼び出しなどに使用できます。',
   'PC.Pages.MorePage.MySubscriptions.totalCredits': '総クレジット',
   'PC.Pages.AppDev.DesignViewer.borderWidth': '枠線の幅',
   'PC.Pages.AppDev.DesignViewer.fontFamily': 'フォント',

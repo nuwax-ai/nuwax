@@ -2601,6 +2601,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.aboutToUseUp': 'Almost Used Up',
   'PC.Pages.MorePage.MySubscriptions.fullyUsed': 'Fully Used',
   'PC.Pages.MorePage.MySubscriptions.normalUsage': 'Sufficient',
+  'PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle': 'Select a credit package for instant arrival, usable for Token consumption, agent subscriptions, tool calls, etc.',
   'PC.Pages.MorePage.MySubscriptions.totalCredits': 'Total Credits',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': 'My Orders',

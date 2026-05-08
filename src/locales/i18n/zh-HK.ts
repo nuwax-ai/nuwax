@@ -2599,6 +2599,7 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.aboutToUseUp': '即將用完',
   'PC.Pages.MorePage.MySubscriptions.fullyUsed': '已用完',
   'PC.Pages.MorePage.MySubscriptions.normalUsage': '充足',
+  'PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle': '選擇積分套餐，即刻到賬，可用於 Token 消耗、智能體訂閱、工具調用等。',
   'PC.Pages.MorePage.MySubscriptions.totalCredits': '總積分',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': '我的訂單',

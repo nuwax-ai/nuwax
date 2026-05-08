@@ -1,4 +1,3 @@
-import CreditsPurchaseModal from '@/components/business-component/CreditsBalance/CreditsPurchaseModal';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -11,6 +10,7 @@ import { message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import CreditsBreakdown from './components/CreditsBreakdown';
+import PurchaseModal from './components/CreditsBreakdown/components/PurchaseModal';
 import CurrentPlanCard from './components/CurrentPlanCard';
 import SubscribedContent from './components/SubscribedContent';
 import SubscriptionPlanCards from './components/SubscriptionPlanCards';
@@ -35,18 +35,14 @@ const MySubscriptions: React.FC = () => {
   );
 
   // 获取积分套餐列表
-  const { data: packagesData, run: fetchPackages } = useRequest(
-    apiListCreditPackages,
-    {
-      manual: true,
-    },
-  );
+  const { data: packagesData } = useRequest(apiListCreditPackages, {
+    manual: true,
+  });
 
   // 刷新所有数据
   const refreshAll = () => {
     fetchCreditSummary();
     fetchMySubscription();
-    fetchPackages();
   };
 
   useEffect(() => {
@@ -87,11 +83,9 @@ const MySubscriptions: React.FC = () => {
 
       {/* 已订阅内容 */}
       <SubscribedContent />
-
-      <CreditsPurchaseModal
+      <PurchaseModal
         open={purchaseOpen}
         onCancel={() => setPurchaseOpen(false)}
-        onSuccess={refreshAll}
       />
     </WorkspaceLayout>
   );
