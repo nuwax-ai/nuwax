@@ -3,6 +3,7 @@ import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/ser
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { dict } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
+import type { InputRef } from 'antd';
 import {
   Col,
   Form,
@@ -14,7 +15,7 @@ import {
   message,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiCreateSubscriptionPlan,
@@ -118,6 +119,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   onCancel,
 }) => {
   const [form] = Form.useForm();
+  // 名称输入框引用
+  const nameInputRef = useRef<InputRef>(null);
   // 用户组列表
   const [userGroupList, setUserGroupList] = useState<UserGroupInfo[]>([]);
   // 已选中的用户组ID列表（支持多选）
@@ -172,6 +175,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
   // 打开弹窗时查询用户组列表
   useEffect(() => {
+    let timer: number | undefined;
+
     if (open) {
       form.setFieldsValue({
         name: planInfo?.name,
@@ -189,10 +194,23 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
       });
       setSelectedGroupIds(planInfo?.groupIds || []);
       runGetUserGroupList();
+
+      // 自动聚焦名称输入框
+      timer = window.setTimeout(() => {
+        nameInputRef.current?.focus({
+          cursor: 'end',
+        });
+      }, 0);
     } else {
       form.resetFields();
       setSelectedGroupIds([]);
     }
+
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
   }, [open, planInfo, sort]);
 
   // 确认提交
@@ -266,7 +284,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 },
               ]}
             >
-              <Input placeholder="例如：基础版" />
+              <Input ref={nameInputRef} placeholder="例如：基础版" />
             </Form.Item>
           </Col>
           <Col span={12}>

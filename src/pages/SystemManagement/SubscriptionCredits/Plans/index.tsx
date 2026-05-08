@@ -2,6 +2,16 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
+import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
@@ -10,6 +20,7 @@ import {
   apiGetSubscriptionPlanList,
   apiGetSubscriptionPlanStats,
   apiUpdateSubscriptionPlan,
+  apiUpdateSubscriptionPlanSort,
 } from '../services/subscription';
 import {
   SubscriptionPlanBizTypeEnum,
@@ -22,6 +33,58 @@ import styles from './index.less';
 import PlanItemCard from './PlanItemCard';
 import PlanStatCard from './PlanStatCard';
 
+/**
+ * 可拖拽排序的套餐卡片Props
+ * @param id 套餐ID
+ * @param children 子组件
+ */
+interface SortablePlanCardProps {
+  id: UniqueIdentifier;
+  children: React.ReactNode;
+}
+
+/**
+ * 可拖拽排序的套餐卡片
+ * @param id 套餐ID
+ * @param children 子组件
+ * @returns
+ */
+const SortablePlanCard: React.FC<SortablePlanCardProps> = ({
+  id,
+  children,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={styles['plan-sortable-item']}
+      data-dragging={isDragging}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </div>
+  );
+};
+
+/**
+ * 基础订阅套餐管理页面
+ * @returns
+ */
 const Plans: React.FC = () => {
   // 套餐列表
   const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
@@ -34,6 +97,15 @@ const Plans: React.FC = () => {
     null,
   );
 
+  // 传感器
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+
   // 计算新增套餐默认排序：取 plans 中最大 sort 与 plans.length 的最大值
   const createPlanSort = useMemo(() => {
     const maxSort = plans.reduce((max, item) => {
@@ -41,7 +113,7 @@ const Plans: React.FC = () => {
       return Math.max(max, currentSort);
     }, 0);
 
-    return Math.max(maxSort, plans.length);
+    return Math.max(maxSort, plans.length) + 1;
   }, [plans]);
 
   // 查询指定对象的订阅统计
@@ -76,6 +148,7 @@ const Plans: React.FC = () => {
       }
     };
 
+    // 查询数据
     fetchData();
   }, []);
 
@@ -139,6 +212,47 @@ const Plans: React.FC = () => {
     setCreateModalOpen(true);
   };
 
+  // 拖拽排序
+  const handlePlanDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = plans.findIndex(
+      (item) => String(item.id) === String(active.id),
+    );
+    const newIndex = plans.findIndex(
+      (item) => String(item.id) === String(over.id),
+    );
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const reorderedPlans = arrayMove(plans, oldIndex, newIndex).map(
+      (item, index) => ({
+        ...item,
+        sort: index + 1,
+      }),
+    );
+    setPlans(reorderedPlans);
+
+    try {
+      await apiUpdateSubscriptionPlanSort(
+        reorderedPlans
+          .filter((item) => typeof item.id === 'number')
+          .map((item) => ({
+            id: item.id as number,
+            sort: item.sort,
+          })),
+      );
+      message.success('排序已更新');
+    } catch {
+      message.error(dict('PC.Common.Toast.operationFailed'));
+      runPlanList();
+    }
+  };
+
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.subsPlans')}
@@ -179,18 +293,28 @@ const Plans: React.FC = () => {
       </div>
 
       {/* 套餐列表 */}
-      <div className={styles['plan-grid']}>
-        {plans.map((planInfo) => (
-          <div key={planInfo.id} className={styles['plan-grid-item']}>
-            <PlanItemCard
-              planInfo={planInfo}
-              onToggle={handleToggle}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handlePlanDragEnd}
+      >
+        <SortableContext items={plans.map((planInfo) => String(planInfo.id))}>
+          <div className={styles['plan-grid']}>
+            {plans.map((planInfo) => (
+              <div key={planInfo.id} className={styles['plan-grid-item']}>
+                <SortablePlanCard id={String(planInfo.id)}>
+                  <PlanItemCard
+                    planInfo={planInfo}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                </SortablePlanCard>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       <CreatePlanModal
         open={createModalOpen}
