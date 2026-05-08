@@ -5,6 +5,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { CheckOutlined } from '@ant-design/icons';
 import { Statistic } from 'antd';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 import {
@@ -14,6 +15,8 @@ import {
   getStatusText,
 } from '../../utils';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface CurrentPlanCardProps {
   planInfo: MySubscriptionItem;
@@ -27,7 +30,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
   const renderValidity = () => {
     if (!planInfo.endTime) {
       return (
-        <div className={styles['plan-validity']}>
+        <div className={cx(styles['plan-validity'])}>
           {dict('PC.Pages.MorePage.MySubscriptions.validityForever')}
         </div>
       );
@@ -38,7 +41,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
     const periodText = getPeriodRenewText(planInfo.plan.period);
 
     return (
-      <div className={styles['plan-validity']}>
+      <div className={cx(styles['plan-validity'])}>
         {dict(
           'PC.Pages.MorePage.MySubscriptions.validityTemplate',
           dateStr,
@@ -51,34 +54,34 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
   return (
     <>
       {/* 背景装饰元素 */}
-      <div className={styles['current-plan-card']}>
-        <div className={styles['bg-decoration-1']} />
-        <div className={styles['bg-decoration-2']} />
-        <div className={styles['card-content']}>
-          <div className={styles['plan-header']}>
-            <div className={styles['header-left']}>
-              <div className={styles['current-plan-label']}>
+      <div className={cx(styles['current-plan-card'])}>
+        <div className={cx(styles['bg-decoration-1'])} />
+        <div className={cx(styles['bg-decoration-2'])} />
+        <div className={cx(styles['card-content'])}>
+          <div className={cx(styles['plan-header'])}>
+            <div className={cx(styles['header-left'])}>
+              <div className={cx(styles['current-plan-label'])}>
                 {/* 当前订阅 */}
                 {dict('PC.Pages.MorePage.MySubscriptions.currentPlan')}
               </div>
               {/* 计划名称 */}
-              <div className={styles['plan-name']}>{planInfo.planName}</div>
+              <div className={cx(styles['plan-name'])}>{planInfo.planName}</div>
               {/* 到期时间 */}
               {renderValidity()}
             </div>
-            <div className={styles['plan-status']}>
-              <CheckOutlined className={styles['status-icon']} />
+            <div className={cx(styles['plan-status'])}>
+              <CheckOutlined className={cx(styles['status-icon'])} />
               {getStatusText(planInfo.status)}
             </div>
           </div>
 
           {planInfo.plan.period !== MyPlanPeriodEnum.Forever && (
-            <div className={styles['plan-meta']}>
-              <div className={styles['plan-meta-item']}>
-                <span className={styles['meta-label']}>
+            <div className={cx(styles['plan-meta'])}>
+              <div className={cx(styles['plan-meta-item'])}>
+                <span className={cx(styles['meta-label'])}>
                   {getFeeLabel(planInfo.plan.period)}
                 </span>
-                <span className={styles['meta-value']}>
+                <span className={cx(styles['meta-value'])}>
                   <Statistic
                     value={planInfo.plan.price}
                     valueStyle={{ color: '#fff' }}
@@ -87,11 +90,11 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
                   />
                 </span>
               </div>
-              <div className={styles['plan-meta-item']}>
-                <span className={styles['meta-label']}>
+              <div className={cx(styles['plan-meta-item'])}>
+                <span className={cx(styles['meta-label'])}>
                   {getCreditsLabel(planInfo.plan.period)}
                 </span>
-                <span className={styles['meta-value']}>
+                <span className={cx(styles['meta-value'])}>
                   <Statistic
                     value={planInfo.plan.creditAmount}
                     valueStyle={{ color: '#fff' }}

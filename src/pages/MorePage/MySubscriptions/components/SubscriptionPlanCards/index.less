@@ -23,12 +23,6 @@
       border-radius: 2px;
     }
   }
-
-  .plans-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: @marginLg;
-  }
 }
 
 .plan-card {
@@ -44,16 +38,6 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 8%);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: transparent;
   }
 
   &.is-current {
@@ -149,30 +133,15 @@
     }
 
     .action-button {
-      width: 140px;
-      height: 40px;
-      border-radius: 20px;
-      font-weight: 600;
       font-size: @fontSize;
-      border: none !important;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s ease !important;
-      box-shadow: none !important;
-
-      &::after {
-        display: none !important; // 禁用 AntD 点击效果
-      }
     }
   }
 
   // Themes
   &.theme-blue {
-    &::after {
-      background: @blue6;
-    }
-
     .plan-header {
       .price-value {
         color: @blue6;
@@ -181,16 +150,6 @@
       .plan-hint-tag {
         background: @blue1;
         color: @blue6;
-      }
-    }
-
-    .action-button {
-      background: linear-gradient(90deg, #026fff 0%, #00b09b 100%) !important;
-      color: @colorWhite !important;
-
-      &:hover {
-        opacity: 0.9 !important;
-        background: linear-gradient(90deg, #026fff 0%, #00b09b 100%) !important;
       }
     }
   }

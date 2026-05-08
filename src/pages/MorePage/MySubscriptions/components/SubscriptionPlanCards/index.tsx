@@ -3,7 +3,7 @@ import {
   CreditPackageInfo,
   MyPlanPeriodEnum,
 } from '@/types/interfaces/subscription';
-import { Button } from 'antd';
+import { Button, Col, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -24,6 +24,8 @@ interface SubscriptionPlanCardsProps {
   onRenew?: (plan: PlanInfo) => void;
   onUpgrade?: (plan: PlanInfo) => void;
 }
+
+const cx = classNames.bind(styles);
 
 const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   data = [],
@@ -71,73 +73,74 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   };
 
   return (
-    <div className={styles['subscription-plans-container']}>
-      <div className={styles['plans-title']}>
+    <div className={cx(styles['subscription-plans-container'])}>
+      <div className={cx(styles['plans-title'])}>
         {dict('PC.Pages.MorePage.MySubscriptions.planGrid')}
       </div>
-      <div className={styles['plans-grid']}>
+      <Row gutter={[24, 24]}>
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlanId?.toString();
           const themeClass = styles['theme-blue'];
 
           return (
-            <div
-              key={plan.id}
-              className={classNames(styles['plan-card'], themeClass, {
-                [styles['is-current']]: isCurrent,
-              })}
-            >
-              {isCurrent && (
-                <div className={styles['current-badge']}>
-                  {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
-                </div>
-              )}
-
-              <div className={styles['plan-header']}>
-                <div className={styles['plan-name']}>{plan.name}</div>
-                <div className={styles['plan-price-area']}>
-                  <span className={styles['price-value']}>
-                    <span className={styles['currency']}>¥</span>
-                    {plan.price}
-                    <span className={styles['period']}>
-                      {getPeriodLabel(plan.period)}
-                    </span>
-                  </span>
-                </div>
-                <div className={styles['plan-hint-tag']}>
-                  {plan.creditAmount}{' '}
-                  {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
-                  {getPeriodLabel(plan.period)}
-                </div>
-              </div>
-
-              <div className={styles['plan-footer']}>
-                {isCurrent && endTime ? (
-                  <div className={styles['renewal-info']}>
-                    {dict(
-                      'PC.Pages.MorePage.MySubscriptions.nextRenewal',
-                      dayjs(endTime).format('YYYY-MM-DD'),
-                    )}
+            <Col key={plan.id} xs={24} sm={12} md={8} lg={8} xl={8} xxl={6}>
+              <div
+                className={cx(styles['plan-card'], themeClass, {
+                  [styles['is-current']]: isCurrent,
+                })}
+              >
+                {isCurrent && (
+                  <div className={cx(styles['current-badge'])}>
+                    {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
                   </div>
-                ) : (
-                  <div className={styles['footer-placeholder']} />
                 )}
-                <Button
-                  type="primary"
-                  className={styles['action-button']}
-                  onClick={() =>
-                    isCurrent ? onRenew?.(plan) : onUpgrade?.(plan)
-                  }
-                >
-                  {isCurrent
-                    ? dict('PC.Pages.MorePage.MySubscriptions.renewNow')
-                    : dict('PC.Pages.MorePage.MySubscriptions.upgradeNow')}
-                </Button>
+
+                <div className={cx(styles['plan-header'])}>
+                  <div className={cx(styles['plan-name'])}>{plan.name}</div>
+                  <div className={cx(styles['plan-price-area'])}>
+                    <span className={cx(styles['price-value'])}>
+                      <span className={cx(styles['currency'])}>¥</span>
+                      {plan.price}
+                      <span className={cx(styles['period'])}>
+                        {getPeriodLabel(plan.period)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className={cx(styles['plan-hint-tag'])}>
+                    {plan.creditAmount}{' '}
+                    {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
+                    {getPeriodLabel(plan.period)}
+                  </div>
+                </div>
+
+                <div className={cx(styles['plan-footer'])}>
+                  {isCurrent && endTime ? (
+                    <div className={cx(styles['renewal-info'])}>
+                      {dict(
+                        'PC.Pages.MorePage.MySubscriptions.nextRenewal',
+                        dayjs(endTime).format('YYYY-MM-DD'),
+                      )}
+                    </div>
+                  ) : (
+                    <div className={cx(styles['footer-placeholder'])} />
+                  )}
+                  <Button
+                    type="primary"
+                    className={cx(styles['action-button'])}
+                    onClick={() =>
+                      isCurrent ? onRenew?.(plan) : onUpgrade?.(plan)
+                    }
+                  >
+                    {isCurrent
+                      ? dict('PC.Pages.MorePage.MySubscriptions.renewNow')
+                      : dict('PC.Pages.MorePage.MySubscriptions.upgradeNow')}
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Col>
           );
         })}
-      </div>
+      </Row>
     </div>
   );
 };

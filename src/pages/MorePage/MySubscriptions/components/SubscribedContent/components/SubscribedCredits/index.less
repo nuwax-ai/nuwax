@@ -1,11 +1,5 @@
 @import '@/styles/token.less';
 
-.credits-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: @marginLg;
-}
-
 .credit-card {
   background: @colorWhite;
   border-radius: @borderRadiusLg;
@@ -26,7 +20,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: @colorWhite;
+    color: @colorTextBase;
+    border-bottom: 1px solid @colorBorderSecondary;
 
     .pack-name {
       font-size: @fontSizeLg;
@@ -35,10 +30,8 @@
 
     .purchase-date {
       font-size: 12px;
-      opacity: 0.9;
-      background: rgba(255, 255, 255, 20%);
+      color: @colorTextTertiary;
       padding: 2px 10px;
-      border-radius: 20px;
     }
   }
 

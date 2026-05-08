@@ -1,8 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
 import { Space } from 'antd';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { memo, useMemo } from 'react';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 type TagType = 'success' | 'processing' | 'error' | 'warning' | 'default';
 
@@ -172,14 +175,12 @@ const PointStatusTags: React.FC<PointStatusCardProps> = ({
   }
 
   return (
-    <div className={styles['status-tags-container']}>
+    <div className={cx(styles['status-tags-container'])}>
       <Space size={8} wrap>
         {tags.map((tag, index) => (
           <span
             key={`${tag.text}-${index}`}
-            className={`${styles['status-text']} ${
-              styles[`status-${tag.type}`]
-            }`}
+            className={cx(styles['status-text'], styles[`status-${tag.type}`])}
           >
             {tag.text}
           </span>
