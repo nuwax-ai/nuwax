@@ -10,6 +10,12 @@ type TabType = 'chat' | 'data' | 'design';
 // 设计模式确认超时时间（毫秒）
 const DESIGN_MODE_ACK_TIMEOUT = 1800;
 
+// postMessage 因 iframe 处于过渡 origin（如 about:blank）失败时的最大重试次数
+const POSTMESSAGE_MAX_RETRY = 3;
+
+// 每次重试间隔（毫秒）。覆盖「iframe.src 已更新但 contentWindow 还没真正 navigate」的窗口
+const POSTMESSAGE_RETRY_DELAY = 500;
+
 // 是否启用调试日志
 const DEBUG = process.env.NODE_ENV === 'development';
 
@@ -73,10 +79,23 @@ export const useDesignModeTabSync = ({
 
   const ackTimeoutRef = useRef<number | null>(null);
 
+  // dev server 重启后 iframe 在「about:blank → 真实 URL」之间会有短暂过渡期，
+  // 此时 iframe.src 已指向新 origin 但 contentWindow 仍在 localhost，postMessage 会抛错。
+  // 用 ref 跟踪重试次数和待执行的重试 timer。
+  const postMessageRetryRef = useRef(0);
+  const postMessageRetryTimerRef = useRef<number | null>(null);
+
   const clearAckTimeout = () => {
     if (ackTimeoutRef.current !== null) {
       window.clearTimeout(ackTimeoutRef.current);
       ackTimeoutRef.current = null;
+    }
+  };
+
+  const clearPostMessageRetry = () => {
+    if (postMessageRetryTimerRef.current !== null) {
+      window.clearTimeout(postMessageRetryTimerRef.current);
+      postMessageRetryTimerRef.current = null;
     }
   };
 
@@ -198,15 +217,52 @@ export const useDesignModeTabSync = ({
         pendingBefore,
         pendingAfter: pendingToggleRef.current,
       });
-      iframe.contentWindow.postMessage(
-        {
-          type: 'TOGGLE_DESIGN_MODE',
-          enabled,
-          requestId,
-          timestamp: Date.now(),
-        },
-        targetOrigin,
-      );
+      try {
+        iframe.contentWindow.postMessage(
+          {
+            type: 'TOGGLE_DESIGN_MODE',
+            enabled,
+            requestId,
+            timestamp: Date.now(),
+          },
+          targetOrigin,
+        );
+        // 成功投递，重置重试计数（注意：这里成功只代表 postMessage 抛出与否，
+        // 真正的 ack 仍由 ackTimeoutRef 的 setTimeout 来判断）。
+        postMessageRetryRef.current = 0;
+      } catch (err) {
+        // 典型场景：dev server 重启过程中 iframe 处于 about:blank 等过渡 origin，
+        // iframe.src 已指向新 dev URL，但 contentWindow 还没真正 navigate 过去，
+        // postMessage 的 targetOrigin 校验抛 SecurityError。
+        // 不算业务失败，回滚 pending 状态、清掉 ack timer，安排短延时重试，
+        // 让真正的 navigation 完成后再发一次。
+        console.warn(
+          '[DesignModeSync] postMessage threw (likely iframe mid-navigation)',
+          err,
+        );
+        clearAckTimeout();
+        pendingToggleRef.current = null;
+        setTransitionState('idle');
+        setPendingTargetEnabled(false);
+
+        if (postMessageRetryRef.current < POSTMESSAGE_MAX_RETRY) {
+          postMessageRetryRef.current += 1;
+          clearPostMessageRetry();
+          postMessageRetryTimerRef.current = window.setTimeout(() => {
+            postMessageRetryTimerRef.current = null;
+            // 通过当前作用域里的 syncIframeDesignMode 引用重发。
+            // 闭包捕获的是同一次 useCallback 的实例，重试期间 deps 一般不会变。
+            syncIframeDesignMode(enabled);
+          }, POSTMESSAGE_RETRY_DELAY);
+        } else {
+          // 超过重试次数仍失败，重置计数并放弃；此时 transitionState 保持 'idle'，
+          // 用户切换 tab 或下次 iframe 重新加载会触发新的同步。
+          postMessageRetryRef.current = 0;
+          console.warn(
+            '[DesignModeSync] postMessage retries exhausted, giving up',
+          );
+        }
+      }
     },
     [previewIframeElement, isIframeLoaded, activeTab],
   );
@@ -379,10 +435,18 @@ export const useDesignModeTabSync = ({
     });
   }, [iframeDesignMode, activeTab, transitionState]);
 
+  // iframe 元素或 src 变化时（典型场景：dev server 重启），重置 postMessage 重试计数，
+  // 让新一轮 navigation 上的失败重新获得完整重试预算。
+  useEffect(() => {
+    postMessageRetryRef.current = 0;
+    clearPostMessageRetry();
+  }, [previewIframeElement, previewIframeElement?.src]);
+
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       clearAckTimeout();
+      clearPostMessageRetry();
       pendingToggleRef.current = null;
       setTransitionState('idle');
     };
