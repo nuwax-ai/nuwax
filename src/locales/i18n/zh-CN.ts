@@ -2006,6 +2006,8 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.AppDevEditorHeaderRight.starting': '启动中...',
   'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': '切换到 v{0} 版本',
   'PC.Pages.AppDevEditorHeaderRight.viewLog': '查看日志',
+  'PC.Pages.AppDevEditorHeaderRight.openDesignMode': '开启设计模式',
+  'PC.Pages.AppDevEditorHeaderRight.closeDesignMode': '关闭设计模式',
   'PC.Pages.AppDevFileOperatingMask.defaultTip': '文件操作进行中，请稍候...',
   'PC.Pages.AppDevFilePathHeader.modified': '已修改',
   'PC.Pages.AppDevFileTreeContextMenu.delete': '删除',

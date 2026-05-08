@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
 import { SyncOutlined } from '@ant-design/icons';
-import { Segmented } from 'antd';
+import { Button, Segmented } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -28,15 +28,60 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
     setIframeDesignMode,
     previewIframeElement,
   } = useModel('appDevDesign');
-  const { handleTabChange, isDesignModeLoading } = useDesignModeTabSync({
-    activeTab,
-    setActiveTab,
-    isIframeLoaded,
-    isSupportDesignMode,
-    iframeDesignMode,
-    setIframeDesignMode,
-    previewIframeElement,
-  });
+  const { handleTabChange, syncIframeDesignMode, isDesignModeLoading } =
+    useDesignModeTabSync({
+      activeTab,
+      setActiveTab,
+      isIframeLoaded,
+      isSupportDesignMode,
+      iframeDesignMode,
+      setIframeDesignMode,
+      previewIframeElement,
+    });
+
+  const isOnlyDesignTab =
+    hiddenTabs.includes('chat') &&
+    hiddenTabs.includes('data') &&
+    isSupportDesignMode;
+
+  const handleDesignToggle = () => {
+    if (!isIframeLoaded) return;
+    if (activeTab === 'design') {
+      if (iframeDesignMode) {
+        syncIframeDesignMode(false);
+      } else {
+        syncIframeDesignMode(true);
+      }
+    } else {
+      handleTabChange('design');
+    }
+  };
+
+  if (isOnlyDesignTab) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '8px 20px',
+          borderBottom: '1px solid rgba(0, 0, 0, 10%)',
+        }}
+      >
+        <Button
+          type={iframeDesignMode ? 'primary' : 'default'}
+          disabled={!isIframeLoaded}
+          onClick={handleDesignToggle}
+          icon={
+            isDesignModeLoading ? (
+              <SyncOutlined spin className={cx(styles.loadingIcon)} />
+            ) : undefined
+          }
+        >
+          {dict('PC.Pages.AppDevChatArea.designTab')}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div
