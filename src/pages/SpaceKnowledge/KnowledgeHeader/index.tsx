@@ -4,6 +4,7 @@ import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
@@ -83,7 +84,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         defaultValue={docType}
         onChange={handleChange}
       >
-        <Radio value={KnowledgeDocTypeEnum.DOC}>文档</Radio>
+        <Radio value={KnowledgeDocTypeEnum.DOC}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
+        </Radio>
         <Radio value={KnowledgeDocTypeEnum.QA}>QA问答</Radio>
         <Radio value={KnowledgeDocTypeEnum.GRAPH}>知识图谱</Radio>
       </Radio.Group>
