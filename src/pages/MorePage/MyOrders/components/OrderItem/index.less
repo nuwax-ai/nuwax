@@ -4,7 +4,7 @@
   background-color: @colorBgContainer;
   border: @lineWidth solid @colorBorder;
   border-radius: @borderRadiusLg;
-  padding: @padding @paddingMd @paddingXs;
+  padding: @padding @paddingMd;
   margin-bottom: @marginSm;
   box-shadow: @boxShadowTertiary;
   transition: box-shadow @motionDurationMid, border-color @motionDurationMid;
@@ -18,122 +18,117 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: @margin;
+    gap: @padding;
 
     .header-left {
+      flex: 1;
       display: flex;
-      gap: @paddingSm;
+      flex-direction: column;
+      min-width: 0;
 
-      .title-box {
-        .title {
-          font-size: @fontSizeLg;
-          font-weight: @fontWeightStrong;
-          color: @colorTextHeading;
-          margin-bottom: 4px;
+      .title {
+        font-size: @fontSizeLg;
+        font-weight: 600;
+        color: @colorTextHeading;
+        margin-bottom: @marginXs;
+        line-height: @lineHeightLg;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .meta-info {
+        display: flex;
+        align-items: center;
+        gap: @marginMd;
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        height: 24px; // 统一行高以对齐右侧
+
+        .order-id {
+          background: rgba(0, 0, 0, 3%);
+          padding: 1px 6px;
+          border-radius: @borderRadiusXs;
         }
 
-        .order-no-row {
-          font-size: @fontSizeSm;
-          color: @colorTextTertiary;
+        .date-wrapper {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
 
-          .dot {
-            font-weight: bold;
-          }
-
-          .income-label {
-            color: @colorTextTertiary;
+          .date-icon {
+            font-size: 12px;
           }
         }
       }
     }
 
-    .amount {
-      font-size: @fontSizeHeading4;
-      font-weight: @fontWeightStrong;
-      color: @colorTextHeading;
-
-      .currency {
-        font-size: @fontSize;
-        font-weight: normal;
-        margin-right: 2px;
-      }
-    }
-  }
-
-  .item-meta {
-    display: flex;
-    align-items: center;
-    gap: @padding;
-    margin-bottom: @marginSm;
-    font-size: 13px;
-    color: @colorTextTertiary;
-
-    .meta-item {
+    .header-right {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
 
-      span {
-        margin-top: 1px;
-      }
-    }
+      .amount {
+        margin-bottom: @marginXs;
 
-    .commission {
-      color: @orange;
-      font-weight: 400;
-    }
-  }
+        :global {
+          .ant-statistic-content {
+            font-size: @fontSizeHeading4;
+            font-weight: 700;
+            color: @colorTextHeading;
+            line-height: @lineHeightLg;
 
-  .item-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: @paddingXs;
-    border-top: @lineWidth solid @colorSplit;
-
-    .status-box {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 500;
-
-      .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-      }
-
-      &&.status-settled {
-        color: @colorSuccess;
-
-        .status-dot {
-          background-color: @colorSuccess;
+            .ant-statistic-content-prefix {
+              font-size: @fontSize;
+              font-weight: normal;
+              margin-right: 2px;
+            }
+          }
         }
       }
 
-      &.status-settling {
-        color: @colorWarning;
+      .status-box {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        height: 24px; // 与左侧对齐
 
         .status-dot {
-          background-color: @colorWarning;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
         }
-      }
-    }
 
-    .detail-btn {
-      color: @colorTextSecondary;
-      border-color: @colorBorderSecondary;
-      border-radius: @borderRadius;
-      font-size: @fontSizeSm;
-      padding: 0 @paddingSm;
+        &.status-settled {
+          color: @colorSuccess;
+          .status-dot {
+            background-color: @colorSuccess;
+          }
+        }
 
-      &:hover {
-        color: @colorPrimary;
-        border-color: @colorPrimary;
+        &.status-settling {
+          color: @colorWarning;
+          .status-dot {
+            background-color: @colorWarning;
+          }
+        }
+
+        &.status-cancelled {
+          color: @colorTextQuaternary;
+          .status-dot {
+            background-color: @colorTextQuaternary;
+          }
+        }
+
+        &.status-unknown {
+          color: @colorTextTertiary;
+          .status-dot {
+            background-color: @colorTextTertiary;
+          }
+        }
       }
     }
   }

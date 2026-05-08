@@ -3,9 +3,12 @@ import { dict } from '@/services/i18nRuntime';
 import { apiListCreditPackages } from '@/services/subscriptionService';
 import { CreditPackageInfo } from '@/types/interfaces/subscription';
 import { message, Space, Spin, Statistic, Tag } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface PurchaseModalProps {
   open: boolean;
@@ -51,40 +54,43 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
       }}
       submitter={{ render: () => null }} // 隐藏底部按钮区域
     >
-      <div className={styles['purchase-container']}>
-        <div className={styles['modal-subtitle']}>
+      <div className={cx(styles['purchase-container'])}>
+        <div className={cx(styles['modal-subtitle'])}>
           {dict('PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle')}
         </div>
 
-        <div className={styles['package-list']}>
+        <div className={cx(styles['package-list'])}>
           {loading ? (
-            <div className={styles['loading-wrapper']}>
+            <div className={cx(styles['loading-wrapper'])}>
               <Spin />
             </div>
           ) : (
             <Space
               direction="vertical"
               size={12}
-              className={styles['full-width']}
+              className={cx(styles['full-width'])}
             >
               {packages?.map((pkg: CreditPackageInfo) => (
                 <div
                   key={pkg.id}
-                  className={styles['package-item']}
+                  className={cx(styles['package-item'])}
                   onClick={() => handleItemClick()}
                 >
-                  <div className={styles['package-info']}>
-                    <div className={styles['package-name-row']}>
-                      <span className={styles['package-name']}>
+                  <div className={cx(styles['package-info'])}>
+                    <div className={cx(styles['package-name-row'])}>
+                      <span className={cx(styles['package-name'])}>
                         {pkg.packageName}
                       </span>
                       {pkg.remark && (
-                        <Tag color="orange" className={styles['package-tag']}>
+                        <Tag
+                          color="orange"
+                          className={cx(styles['package-tag'])}
+                        >
                           {pkg.remark}
                         </Tag>
                       )}
                     </div>
-                    <div className={styles['package-amount']}>
+                    <div className={cx(styles['package-amount'])}>
                       <Statistic
                         value={pkg.creditAmount}
                         suffix={dict(
@@ -98,7 +104,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
                       />
                     </div>
                   </div>
-                  <div className={styles['package-price']}>
+                  <div className={cx(styles['package-price'])}>
                     <Statistic
                       value={pkg.price}
                       prefix="¥"
