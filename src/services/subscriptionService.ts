@@ -427,29 +427,6 @@ export async function apiCreateCreditPackage(
   return request('/api/system/credit-packages', { method: 'POST', data });
 }
 
-export async function apiUpdateCreditPackage(
-  id: number,
-  data: Partial<CreditPackageAdminInfo>,
-): Promise<RequestResponse<CreditPackageAdminInfo>> {
-  return request(`/api/system/credit-packages/${id}`, { method: 'PUT', data });
-}
-
-export async function apiDeleteCreditPackage(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/credit-packages/${id}`, { method: 'DELETE' });
-}
-
-export async function apiToggleCreditPackage(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/credit-packages/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
 // ──────────────────────────────────────────────
 // 系统管理 - 用户积分 / 积分流水（管理员）
 // ──────────────────────────────────────────────
