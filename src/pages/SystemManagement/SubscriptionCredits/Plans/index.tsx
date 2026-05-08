@@ -2,7 +2,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Col, Row, message } from 'antd';
+import { Button, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -18,6 +18,7 @@ import {
   SubscriptionPlanStatusEnum,
 } from '../types/subscription';
 import CreatePlanModal from './CreatePlanModal';
+import styles from './index.less';
 import PlanItemCard from './PlanItemCard';
 import PlanStatCard from './PlanStatCard';
 
@@ -152,44 +153,44 @@ const Plans: React.FC = () => {
       }
     >
       {/* 统计信息 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={6}>
+      <div className={styles['plan-grid']}>
+        <div className={styles['plan-grid-item']}>
           <PlanStatCard
             title={dict('PC.Pages.SystemPlans.statTotalSubscriptions')}
             value={stats?.totalCount ?? 0}
           />
-        </Col>
-        <Col span={6}>
+        </div>
+        <div className={styles['plan-grid-item']}>
           <PlanStatCard
             title={dict('PC.Pages.SystemPlans.statDailyNew')}
             value={
               <span style={{ color: '#52c41a' }}>{stats?.todayCount ?? 0}</span>
             }
           />
-        </Col>
-        <Col span={6}>
+        </div>
+        <div className={styles['plan-grid-item']}>
           <PlanStatCard
             title={dict('PC.Pages.SystemPlans.statMonthlyNew')}
             value={
               <span style={{ color: '#52c41a' }}>{stats?.monthCount ?? 0}</span>
             }
           />
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       {/* 套餐列表 */}
-      <Row gutter={[16, 16]}>
+      <div className={styles['plan-grid']}>
         {plans.map((planInfo) => (
-          <Col span={6} key={planInfo.id}>
+          <div key={planInfo.id} className={styles['plan-grid-item']}>
             <PlanItemCard
               planInfo={planInfo}
               onToggle={handleToggle}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
-          </Col>
+          </div>
         ))}
-      </Row>
+      </div>
 
       <CreatePlanModal
         open={createModalOpen}
