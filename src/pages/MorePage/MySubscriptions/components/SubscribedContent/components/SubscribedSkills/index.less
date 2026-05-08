@@ -82,6 +82,12 @@
       align-items: center;
       padding-top: @padding;
       border-top: 1px dashed @colorBorderSecondary;
+      margin-top: @margin;
+
+      .pay-type {
+        font-size: 14px;
+        color: @colorTextTertiary;
+      }
 
       .buyout-price {
         display: flex;
@@ -103,12 +109,38 @@
       }
     }
 
+    .price-statistic {
+      line-height: 1;
+
+      :global {
+        .ant-statistic-content {
+          color: #1a6bff;
+          font-weight: 700;
+          font-size: 18px;
+          display: flex;
+          align-items: baseline;
+        }
+
+        .ant-statistic-content-prefix {
+          font-size: 14px;
+          margin-right: 2px;
+        }
+
+        .ant-statistic-content-suffix {
+          font-size: 14px;
+          color: @colorTextTertiary;
+          font-weight: 400;
+          margin-left: 2px;
+        }
+      }
+    }
+
     .sub-info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: @margin;
-      padding-top: @padding;
-      border-top: 1px dashed @colorBorderSecondary;
+      // padding-top: @padding;
+      // border-top: 1px dashed @colorBorderSecondary;
 
       .info-item {
         .label {
@@ -123,11 +155,17 @@
           color: @colorTextBase;
 
           .price {
-            color: @colorPrimary;
             font-weight: 600;
           }
         }
       }
     }
   }
+}
+
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
 }

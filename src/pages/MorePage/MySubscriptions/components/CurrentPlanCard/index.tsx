@@ -2,77 +2,18 @@ import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
   MySubscriptionItem,
-  MySubscriptionStatusEnum,
 } from '@/types/interfaces/subscription';
 import { CheckOutlined } from '@ant-design/icons';
 import { Statistic } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
+import {
+  getCreditsLabel,
+  getFeeLabel,
+  getPeriodRenewText,
+  getStatusText,
+} from '../../utils';
 import styles from './index.less';
-
-/**
- * 获取周期续费文案
- */
-const getPeriodRenewText = (period: MyPlanPeriodEnum) => {
-  switch (period) {
-    case MyPlanPeriodEnum.Month:
-      return dict('PC.Common.Subscription.Period.renewMonth');
-    case MyPlanPeriodEnum.Quarter:
-      return dict('PC.Common.Subscription.Period.renewQuarter');
-    case MyPlanPeriodEnum.Year:
-      return dict('PC.Common.Subscription.Period.renewYear');
-    default:
-      return '';
-  }
-};
-
-/**
- * 获取订阅状态文案
- */
-const getStatusText = (status: MySubscriptionStatusEnum) => {
-  switch (status) {
-    case MySubscriptionStatusEnum.Active:
-      return dict('PC.Common.Subscription.Status.active');
-    case MySubscriptionStatusEnum.Expired:
-      return dict('PC.Common.Subscription.Status.expired');
-    case MySubscriptionStatusEnum.Cancelled:
-      return dict('PC.Common.Subscription.Status.cancelled');
-    default:
-      return status;
-  }
-};
-
-/**
- * 获取费用标签
- */
-const getFeeLabel = (period: MyPlanPeriodEnum) => {
-  switch (period) {
-    case MyPlanPeriodEnum.Month:
-      return dict('PC.Pages.MorePage.MySubscriptions.feeMonth');
-    case MyPlanPeriodEnum.Quarter:
-      return dict('PC.Pages.MorePage.MySubscriptions.feeQuarter');
-    case MyPlanPeriodEnum.Year:
-      return dict('PC.Pages.MorePage.MySubscriptions.feeYear');
-    default:
-      return '';
-  }
-};
-
-/**
- * 获取积分标签
- */
-const getCreditsLabel = (period: MyPlanPeriodEnum) => {
-  switch (period) {
-    case MyPlanPeriodEnum.Month:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsMonth');
-    case MyPlanPeriodEnum.Quarter:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsQuarter');
-    case MyPlanPeriodEnum.Year:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsYear');
-    default:
-      return '';
-  }
-};
 
 interface CurrentPlanCardProps {
   planInfo: MySubscriptionItem;
@@ -140,6 +81,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
                 <span className={styles['meta-value']}>
                   <Statistic
                     value={planInfo.plan.price}
+                    valueStyle={{ color: '#fff' }}
                     prefix="¥"
                     precision={2}
                   />
@@ -150,7 +92,10 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
                   {getCreditsLabel(planInfo.plan.period)}
                 </span>
                 <span className={styles['meta-value']}>
-                  <Statistic value={planInfo.plan.creditAmount} />
+                  <Statistic
+                    value={planInfo.plan.creditAmount}
+                    valueStyle={{ color: '#fff' }}
+                  />
                 </span>
               </div>
             </div>
