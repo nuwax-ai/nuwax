@@ -1,0 +1,140 @@
+@import '@/styles/token.less';
+
+.order-item {
+  background-color: @colorBgContainer;
+  border: @lineWidth solid @colorBorder;
+  border-radius: @borderRadiusLg;
+  padding: @padding @paddingMd @paddingXs;
+  margin-bottom: @marginSm;
+  box-shadow: @boxShadowTertiary;
+  transition: box-shadow @motionDurationMid, border-color @motionDurationMid;
+
+  &:hover {
+    border-color: @colorPrimaryHover;
+    box-shadow: @boxShadowSecondary;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: @margin;
+
+    .header-left {
+      display: flex;
+      gap: @paddingSm;
+
+      .title-box {
+        .title {
+          font-size: @fontSizeLg;
+          font-weight: @fontWeightStrong;
+          color: @colorTextHeading;
+          margin-bottom: 4px;
+        }
+
+        .order-no-row {
+          font-size: @fontSizeSm;
+          color: @colorTextTertiary;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .dot {
+            font-weight: bold;
+          }
+
+          .income-label {
+            color: @colorTextTertiary;
+          }
+        }
+      }
+    }
+
+    .amount {
+      font-size: @fontSizeHeading4;
+      font-weight: @fontWeightStrong;
+      color: @colorTextHeading;
+
+      .currency {
+        font-size: @fontSize;
+        font-weight: normal;
+        margin-right: 2px;
+      }
+    }
+  }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    gap: @padding;
+    margin-bottom: @marginSm;
+    font-size: 13px;
+    color: @colorTextTertiary;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      span {
+        margin-top: 1px;
+      }
+    }
+
+    .commission {
+      color: @orange;
+      font-weight: 400;
+    }
+  }
+
+  .item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: @paddingXs;
+    border-top: @lineWidth solid @colorSplit;
+
+    .status-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+
+      &&.status-settled {
+        color: @colorSuccess;
+
+        .status-dot {
+          background-color: @colorSuccess;
+        }
+      }
+
+      &.status-settling {
+        color: @colorWarning;
+
+        .status-dot {
+          background-color: @colorWarning;
+        }
+      }
+    }
+
+    .detail-btn {
+      color: @colorTextSecondary;
+      border-color: @colorBorderSecondary;
+      border-radius: @borderRadius;
+      font-size: @fontSizeSm;
+      padding: 0 @paddingSm;
+
+      &:hover {
+        color: @colorPrimary;
+        border-color: @colorPrimary;
+      }
+    }
+  }
+}

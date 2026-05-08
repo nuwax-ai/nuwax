@@ -143,11 +143,23 @@ export enum CreditRecordTypeEnum {
 
 export interface CreditRecordInfo {
   id: number;
-  recordType: CreditRecordTypeEnum;
-  description: string;
+  userId: number;
+  batchNo: string;
+  creditType: string;
+  creditTypeName: string;
+  operationType: 1 | 2; // 操作类型：1-增加，2-扣减
+  operationTypeName: string;
   amount: number;
-  balance: number;
-  createdAt: string;
+  beforeAmount: number;
+  afterAmount: number; // 剩余积分
+  bizNo: string;
+  created: string; // 时间
+  remark: string; // 说明
+  user: {
+    username: string;
+    phone: string;
+    email: string;
+  };
 }
 
 export interface UserCreditsInfo {
