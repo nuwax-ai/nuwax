@@ -2587,6 +2587,16 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.creditBalance': 'Credit Balance',
   'PC.Pages.MorePage.MySubscriptions.buyCredits': 'Buy Credits',
   'PC.Pages.MorePage.MySubscriptions.viewDetails': 'View Details',
+  'PC.Pages.MorePage.MySubscriptions.tabAgents': 'Agents',
+  'PC.Pages.MorePage.MySubscriptions.tabSkills': 'Skills',
+  'PC.Pages.MorePage.MySubscriptions.tabCredits': 'Credits',
+  'PC.Pages.MorePage.MySubscriptions.subAmount': 'Subscription Amount',
+  'PC.Pages.MorePage.MySubscriptions.usedAmount': 'Used',
+  'PC.Pages.MorePage.MySubscriptions.purchaseAmount': 'Purchase Amount',
+  'PC.Pages.MorePage.MySubscriptions.remaining': 'Remaining',
+  'PC.Pages.MorePage.MySubscriptions.creditUnit': 'Credits',
+  'PC.Pages.MorePage.MySubscriptions.expireTime': 'Expiration Time',
+  'PC.Pages.MorePage.MySubscriptions.totalCredits': 'Total Credits',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': 'My Orders',
   'PC.Pages.MorePage.MyOrders.colOrderNo': 'Order No.',
@@ -3340,7 +3350,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceAgentSubscriptions.colStatus': 'Status',
 
   // ── Agent Subscriptions (card-based rewrite) ──
-  'PC.Pages.SpaceAgentSubscriptions.pageTitle': 'Agent Subscription',
+  // 'PC.Pages.SpaceAgentSubscriptions.pageTitle': 'Agent Subscription',
   'PC.Pages.SpaceAgentSubscriptions.pageSubtitle': 'Manage Agent Service Plans',
   'PC.Pages.SpaceAgentSubscriptions.sectionTitle': 'Available Plans',
   'PC.Pages.SpaceAgentSubscriptions.sectionHint': 'Click a card to subscribe',
