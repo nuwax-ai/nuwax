@@ -2769,6 +2769,9 @@ export const ZH_CN: SystemLangMap = {
   // ── 积分明细 - 新增 ──
   'PC.Pages.MorePage.CreditRecords.filterIncrease': '增加',
   'PC.Pages.MorePage.CreditRecords.filterDecrease': '扣减',
+  'PC.Pages.MorePage.CreditRecords.filterStartDate': '开始日期',
+  'PC.Pages.MorePage.CreditRecords.filterEndDate': '结束日期',
+  'PC.Pages.MorePage.CreditRecords.filterChangeType': '变动类型',
   'PC.Pages.MorePage.CreditRecords.colTime': '时间',
   'PC.Pages.MorePage.CreditRecords.colRemaining': '剩余积分',
   'PC.Pages.MorePage.CreditRecords.colNote': '说明',

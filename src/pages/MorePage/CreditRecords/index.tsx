@@ -2,127 +2,164 @@ import CreditsPurchaseModal from '@/components/business-component/CreditsBalance
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
-import type { CreditRecordInfo } from '@/types/interfaces/subscription';
-import { CreditRecordTypeEnum } from '@/types/interfaces/subscription';
-import { formatDateTime } from '@/utils/dateUtils';
+import { apiGetCreditFlows } from '@/services/subscriptionService';
+import {
+  CreditTypeEnum,
+  type CreditRecordInfo,
+} from '@/types/interfaces/subscription';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Tag } from 'antd';
-import React, { useState } from 'react';
+import { Statistic, Tag, message } from 'antd';
+import dayjs from 'dayjs';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
-
-// Mock 积分记录
-const MOCK_RECORDS: CreditRecordInfo[] = [
-  {
-    id: 1,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: 'API调用 Token消耗',
-    amount: -450,
-    balance: 12580,
-    createdAt: '2026-04-26 14:32:00',
-  },
-  {
-    id: 2,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: '智能文档摘要订阅',
-    amount: -120,
-    balance: 13030,
-    createdAt: '2026-04-26 09:15:00',
-  },
-  {
-    id: 3,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: 'AI绘画助手 图像生成',
-    amount: -230,
-    balance: 13150,
-    createdAt: '2026-04-25 23:58:00',
-  },
-  {
-    id: 4,
-    recordType: CreditRecordTypeEnum.Recharge,
-    description: '每日签到奖励',
-    amount: 200,
-    balance: 13380,
-    createdAt: '2026-04-25 18:30:00',
-  },
-  {
-    id: 5,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: 'Web搜索工具调用',
-    amount: -50,
-    balance: 13180,
-    createdAt: '2026-04-25 10:00:00',
-  },
-  {
-    id: 6,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: '代码分析工具 批量扫描',
-    amount: -380,
-    balance: 13230,
-    createdAt: '2026-04-24 16:42:00',
-  },
-  {
-    id: 7,
-    recordType: CreditRecordTypeEnum.Recharge,
-    description: '专业版订阅积分发放',
-    amount: 2000,
-    balance: 13610,
-    createdAt: '2026-04-24 08:20:00',
-  },
-  {
-    id: 8,
-    recordType: CreditRecordTypeEnum.Consume,
-    description: '合同审查助手 文档处理',
-    amount: -160,
-    balance: 11610,
-    createdAt: '2026-04-23 21:15:00',
-  },
-  {
-    id: 9,
-    recordType: CreditRecordTypeEnum.Recharge,
-    description: '参与"AI创意大赛"活动奖励',
-    amount: 500,
-    balance: 11860,
-    createdAt: '2026-04-22 19:45:00',
-  },
-  {
-    id: 10,
-    recordType: CreditRecordTypeEnum.Recharge,
-    description: '积分增购 积分包C',
-    amount: 499,
-    balance: 11835,
-    createdAt: '2026-04-19 14:20:00',
-  },
-];
 
 const CreditRecords: React.FC = () => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [dataSource, setDataSource] = useState<CreditRecordInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [filterValues, setFilterValues] = useState<any>(null); // 初始为 null，表示未执行过查询
+  const lastIdRef = useRef<number | undefined>(undefined);
+  const loadingRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 获取数据
+  const fetchData = useCallback(
+    async (isFirst = false) => {
+      if (loadingRef.current || (!hasMore && !isFirst)) return;
+
+      try {
+        setLoading(true);
+        loadingRef.current = true;
+
+        const res = await apiGetCreditFlows({
+          creditType: CreditTypeEnum.PURCHASE,
+          lastId: isFirst ? undefined : lastIdRef.current,
+          pageSize: 20,
+        });
+
+        if (res.success && res.data) {
+          const newData = res.data;
+          if (isFirst) {
+            setDataSource(newData);
+          } else {
+            setDataSource((prev) => [...prev, ...newData]);
+          }
+
+          if (newData.length > 0) {
+            lastIdRef.current = newData[newData.length - 1].id;
+          }
+
+          setHasMore(newData.length === 20);
+        }
+      } catch (error) {
+        console.error(error);
+        message.error(dict('PC.Toast.Global.fetchFailed'));
+      } finally {
+        setLoading(false);
+        loadingRef.current = false;
+      }
+    },
+    [hasMore],
+  );
+
+  // 初始加载
+  useEffect(() => {
+    fetchData(true);
+  }, []);
+
+  // 监听滚动加载
+  useEffect(() => {
+    const tableBody = containerRef.current?.querySelector('.ant-table-body');
+    if (!tableBody) return;
+
+    const onScroll = (e: Event) => {
+      const target = e.target as HTMLDivElement;
+      // 距离底部 50px 时加载
+      if (target.scrollHeight - target.scrollTop - target.clientHeight < 50) {
+        fetchData();
+      }
+    };
+
+    tableBody.addEventListener('scroll', onScroll);
+    return () => tableBody.removeEventListener('scroll', onScroll);
+  }, [fetchData]);
+
+  // 前端过滤逻辑
+  const displayData = useMemo(() => {
+    // 如果没有过滤条件，直接返回原数据
+    if (!filterValues) return dataSource;
+
+    const { startDate, endDate, operationType } = filterValues;
+    return dataSource.filter((item) => {
+      // 日期过滤
+      if (startDate && dayjs(item.created).isBefore(dayjs(startDate), 'day')) {
+        return false;
+      }
+      if (endDate && dayjs(item.created).isAfter(dayjs(endDate), 'day')) {
+        return false;
+      }
+      // 类型过滤
+      if (operationType && item.operationType !== Number(operationType)) {
+        return false;
+      }
+      return true;
+    });
+  }, [dataSource, filterValues]);
 
   const columns: ProColumns<CreditRecordInfo>[] = [
     {
+      title: dict('PC.Pages.MorePage.CreditRecords.filterStartDate'),
+      dataIndex: 'startDate',
+      key: 'startDate',
+      valueType: 'date',
+      hideInTable: true,
+    },
+    {
+      title: dict('PC.Pages.MorePage.CreditRecords.filterEndDate'),
+      dataIndex: 'endDate',
+      key: 'endDate',
+      valueType: 'date',
+      hideInTable: true,
+    },
+    {
+      title: dict('PC.Pages.MorePage.CreditRecords.filterChangeType'),
+      dataIndex: 'operationType',
+      key: 'operationType',
+      valueType: 'select',
+      valueEnum: {
+        1: { text: dict('PC.Pages.MorePage.CreditRecords.filterIncrease') },
+        2: { text: dict('PC.Pages.MorePage.CreditRecords.filterDecrease') },
+      },
+      hideInTable: true,
+    },
+    {
       title: dict('PC.Pages.MorePage.CreditRecords.colTime'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'created',
+      key: 'created',
       search: false,
-      width: 160,
-      render: (val) => formatDateTime(val as string),
+      valueType: 'dateTime',
     },
     {
       title: dict('PC.Pages.MorePage.CreditRecords.colType'),
-      dataIndex: 'recordType',
-      key: 'recordType',
+      dataIndex: 'creditTypeName',
+      key: 'creditTypeName',
       search: false,
-      width: 80,
       render: (_, record) => {
-        const isIncrease = record.amount > 0;
+        const isIncrease = record.operationType === 1;
         return (
           <Tag
             className={
               isIncrease ? styles.typeTagIncrease : styles.typeTagDecrease
             }
           >
-            {isIncrease
-              ? dict('PC.Pages.MorePage.CreditRecords.filterIncrease')
-              : dict('PC.Pages.MorePage.CreditRecords.filterDecrease')}
+            {record.operationTypeName}
           </Tag>
         );
       },
@@ -132,32 +169,32 @@ const CreditRecords: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
-      width: 120,
       render: (_, record) => {
-        const isPositive = record.amount > 0;
+        const isIncrease = record.operationType === 1;
         return (
-          <span
-            className={`${styles.amountCell} ${
-              isPositive ? styles.amountPositive : styles.amountNegative
-            }`}
-          >
-            {isPositive ? `+${record.amount}` : String(record.amount)}
-          </span>
+          <Statistic
+            value={record.amount}
+            prefix={isIncrease ? '+' : '-'}
+            valueStyle={{
+              color: isIncrease ? '#52c41a' : '#ff4d4f',
+              fontSize: '14px',
+              fontWeight: '600',
+            }}
+          />
         );
       },
     },
     {
       title: dict('PC.Pages.MorePage.CreditRecords.colRemaining'),
-      dataIndex: 'balance',
-      key: 'balance',
+      dataIndex: 'afterAmount',
+      key: 'afterAmount',
       search: false,
-      width: 120,
-      render: (val) => (val as number).toLocaleString(),
+      valueType: 'digit',
     },
     {
       title: dict('PC.Pages.MorePage.CreditRecords.colNote'),
-      dataIndex: 'description',
-      key: 'description',
+      dataIndex: 'remark',
+      key: 'remark',
       search: false,
       ellipsis: true,
     },
@@ -165,15 +202,28 @@ const CreditRecords: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}>
-      {/* 积分记录表格 */}
-      <XProTable<CreditRecordInfo>
-        rowKey="id"
-        columns={columns}
-        search={false}
-        toolBarRender={false}
-        dataSource={MOCK_RECORDS}
-        pagination={{ pageSize: 10 }}
-      />
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+        <XProTable<CreditRecordInfo>
+          rowKey="id"
+          columns={columns}
+          // onSubmit 仅在点击“查询”按钮时触发
+          onSubmit={(values) => {
+            setFilterValues(values);
+          }}
+          onReset={() => {
+            setFilterValues(null);
+          }}
+          search={{
+            layout: 'vertical',
+            defaultCollapsed: false,
+            collapseRender: false,
+          }}
+          toolBarRender={false}
+          dataSource={displayData}
+          loading={loading && dataSource.length === 0}
+          pagination={false}
+        />
+      </div>
 
       <CreditsPurchaseModal
         open={purchaseOpen}

@@ -360,6 +360,20 @@ export async function apiGetCreditBatches(params: {
   return request('/api/credit/batches', { method: 'GET', params });
 }
 
+/**
+ * 查询用户积分流水明细
+ */
+export async function apiGetCreditFlows(params: {
+  creditType?: CreditTypeEnum | string;
+  lastId?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<CreditRecordInfo[]>> {
+  return request('/api/credit/flows', {
+    method: 'GET',
+    params,
+  });
+}
+
 // ──────────────────────────────────────────────
 // 系统管理 - 支付与收益（开发者）
 // ──────────────────────────────────────────────
