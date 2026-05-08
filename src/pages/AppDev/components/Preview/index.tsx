@@ -1076,7 +1076,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
          * 并兼容可选的 `/app/` 与前导 `/`。
          */
         const pathCleanRegex =
-          /^\/?(?:app\/)?project_workspace\/(?:(?:[^/]+\/){0,2}[^/]+\/)/;
+          /^\/?(?:app\/)?project_workspace\/(?:\d+\/){1,3}/;
 
         pendingChanges.forEach((change: any) => {
           // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
