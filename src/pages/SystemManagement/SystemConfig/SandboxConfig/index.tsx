@@ -1,5 +1,5 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import { XProTable } from '@/components/ProComponents';
+import LimitedTooltip from '@/components/ProComponents/LimitedTooltip';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
@@ -197,14 +197,13 @@ const SandboxConfig: React.FC = () => {
       dataIndex: 'name',
       render: (_: any, record: SandboxItem) => (
         <div className={styles['sandbox-item']}>
-          <div className={styles['sandbox-icon']}>
-            <SvgIcon name="icons-nav-cube" />
-          </div>
           <div className={styles['sandbox-info']}>
-            <div className={styles.name}>{record.name}</div>
-            <div className={styles.address}>
+            <LimitedTooltip className={styles.name}>
+              {record.name}
+            </LimitedTooltip>
+            <LimitedTooltip className={styles.address}>
               {record.configValue?.hostWithScheme}
-            </div>
+            </LimitedTooltip>
           </div>
         </div>
       ),

@@ -389,6 +389,7 @@ export const useDesignModeTabSync = ({
 
   return {
     handleTabChange,
+    syncIframeDesignMode,
     transitionState,
     isDesignModeLoading:
       !isIframeLoaded ||

@@ -573,6 +573,7 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
             hasErrorInLatestBlock={consoleData.hasErrorInLatestBlock}
             onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
           />
+
           {/* 刷新按钮 */}
           {shouldShowPreviewStatus && (
             <Tooltip
