@@ -234,34 +234,38 @@ function XProTable<
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        .x-pro-table .ant-pro-table-list-toolbar-container {
-          padding-block: 8px;
-        }
-        .x-pro-table .ant-pro-table-list-toolbar-right {
-          flex: 1;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          min-width: 0;
-        }
-        .x-pro-table .ant-pro-table-list-toolbar-search {
-          display: flex;
-          align-items: center;
-          min-width: 0;
-        }
-        /* 强制让搜索框内的 LightFilter 靠左 */
-        .x-pro-table .ant-pro-table-list-toolbar-search > div {
-          margin-left: 0 !important;
-        }
-        .x-pro-table .ant-pro-table-list-toolbar-setting {
-          margin-left: 8px;
-        }
-        /* 按钮容器靠右 */
-        .x-pro-table .ant-pro-table-list-toolbar-actions {
-          display: flex;
-          gap: 8px;
-        }
-      `,
+          .x-pro-table .ant-table-thead > tr > th:first-child,
+          .x-pro-table .ant-table-tbody > tr > td:first-child {
+            padding-left: 24px !important;
+          }
+          .x-pro-table .ant-pro-table-list-toolbar-container {
+            padding-block: 8px;
+          }
+          .x-pro-table .ant-pro-table-list-toolbar-right {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-width: 0;
+          }
+          .x-pro-table .ant-pro-table-list-toolbar-search {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+          }
+          /* 强制让搜索框内的 LightFilter 靠左 */
+          .x-pro-table .ant-pro-table-list-toolbar-search > div {
+            margin-left: 0 !important;
+          }
+          .x-pro-table .ant-pro-table-list-toolbar-setting {
+            margin-left: 8px;
+          }
+          /* 按钮容器靠右 */
+          .x-pro-table .ant-pro-table-list-toolbar-actions {
+            display: flex;
+            gap: 8px;
+          }
+        `,
         }}
       />
       <ProConfigProvider intl={proIntl as any}>

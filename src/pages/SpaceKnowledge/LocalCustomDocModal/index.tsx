@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import docImage from '@/assets/images/doc_image.jpg';
 import {
   KNOWLEDGE_CUSTOM_DOC_LIST,
@@ -111,7 +112,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('文档添加成功');
+      message.success(dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'));
       handleClear();
       onConfirm();
     },
@@ -122,7 +123,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success('文档添加成功');
+      message.success(dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'));
       handleClear();
       onConfirm();
     },
@@ -261,7 +262,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       case KnowledgeTextStepEnum.Upload_Or_Text_Fill:
         return (
           <div className={cx('flex', 'content-end', styles.gap)}>
-            <Button onClick={onCancel}>取消</Button>
+            <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
             <Button
               onClick={handleUploadOrTextInput}
               type="primary"
@@ -271,7 +272,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                   : false
               }
             >
-              下一步
+              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep')}
             </Button>
           </div>
         );
@@ -283,10 +284,10 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 setCurrent(KnowledgeTextStepEnum.Upload_Or_Text_Fill)
               }
             >
-              上一步
+              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep')}
             </Button>
             <Button onClick={handleConfirmCreateSet} type="primary">
-              下一步
+              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep')}
             </Button>
           </div>
         );
@@ -298,7 +299,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                 setCurrent(KnowledgeTextStepEnum.Create_Segmented_Set)
               }
             >
-              上一步
+              {dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep')}
             </Button>
             <Button
               onClick={
@@ -308,7 +309,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
               }
               type="primary"
             >
-              确认
+              {dict('PC.Common.Global.confirm')}
             </Button>
           </div>
         );
@@ -346,7 +347,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   }, []);
   return (
     <Modal
-      title="添加内容"
+      title={dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent')}
       destroyOnHidden
       classNames={{
         content: cx(styles.container),

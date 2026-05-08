@@ -213,6 +213,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
 
       setIsLoading(true);
+      setIsIframeLoaded(false);
       setLoadError(null);
 
       if (iframeRef.current) {
@@ -1067,7 +1068,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         >();
 
         // 路径清理正则
-        const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
+        /**
+         * 兼容新旧两种工作区路径规则：
+         * 1) project_workspace/{project_id}/
+         * 2) project_workspace/{tenant_id}/{space_id}/{project_id}/
+         *
+         * 并兼容可选的 `/app/` 与前导 `/`。
+         */
+        const pathCleanRegex =
+          /^\/?(?:app\/)?project_workspace\/(?:\d+\/){1,3}/;
 
         pendingChanges.forEach((change: any) => {
           // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀

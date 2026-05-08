@@ -27,6 +27,15 @@ interface UseDesignModeTabSyncParams {
   iframeDesignMode: boolean;
   setIframeDesignMode: (enabled: boolean) => void;
   previewIframeElement: HTMLIFrameElement | null;
+  /**
+   * TOGGLE_DESIGN_MODE 的 ack 在超时窗口内没回，说明 iframe 内 design runtime 没生效，
+   * 这是「老项目 / 需要重启 dev server」的运行时信号。dedup 由调用方负责（同一项目应只重启一次）。
+   */
+  onAckTimeout?: (info: {
+    requestId: string;
+    targetEnabled: boolean;
+    sentAt: number;
+  }) => void;
 }
 
 /**
@@ -44,7 +53,13 @@ export const useDesignModeTabSync = ({
   iframeDesignMode,
   setIframeDesignMode,
   previewIframeElement,
+  onAckTimeout,
 }: UseDesignModeTabSyncParams) => {
+  // ref 持有最新回调，避免回调引用变化导致 syncIframeDesignMode 重新创建。
+  const onAckTimeoutRef = useRef(onAckTimeout);
+  useEffect(() => {
+    onAckTimeoutRef.current = onAckTimeout;
+  }, [onAckTimeout]);
   const [transitionState, setTransitionState] = useState<
     'idle' | 'pending' | 'confirmed' | 'failed'
   >('idle');
@@ -75,8 +90,7 @@ export const useDesignModeTabSync = ({
 
       // 检查 iframe 是否就绪
       if (!iframe || !iframe.contentWindow) {
-        console.error('[DesignModeSync] iframe not ready');
-        debugLog('sync aborted: iframe not ready', {
+        debugLog('sync skipped: iframe not ready', {
           enabled,
           hasIframe: !!iframe,
           hasContentWindow: !!iframe?.contentWindow,
@@ -84,7 +98,6 @@ export const useDesignModeTabSync = ({
           isIframeLoaded,
           activeTab,
         });
-        setTransitionState('failed');
         return;
       }
 
@@ -124,6 +137,11 @@ export const useDesignModeTabSync = ({
         if (pendingToggleRef.current?.requestId === requestId) {
           setTransitionState('failed');
           setPendingTargetEnabled(false);
+          // 清空 pending 事务，否则后续 iframe 重新加载触发 auto-sync 时
+          // 会被「相同 target 已 pending」的去重逻辑（syncIframeDesignMode 顶部）拦掉，
+          // 导致 dev server 重启成功后 design 模式无法自动恢复，必须用户手动切回 chat 再切 design。
+          pendingToggleRef.current = null;
+          ackTimeoutRef.current = null;
           debugLog('ack timeout snapshot', {
             requestId,
             targetEnabled: enabled,
@@ -136,6 +154,15 @@ export const useDesignModeTabSync = ({
             targetEnabled: enabled,
             sentAt,
           });
+          // 仅在「尝试开启 design 模式」失败时才上抛恢复信号；
+          // 关闭 design / 默认 chat tab 自动同步 false 时即使超时，也不应触发 dev server 重启。
+          if (enabled) {
+            onAckTimeoutRef.current?.({
+              requestId,
+              targetEnabled: enabled,
+              sentAt,
+            });
+          }
         }
       }, DESIGN_MODE_ACK_TIMEOUT);
 
@@ -389,6 +416,7 @@ export const useDesignModeTabSync = ({
 
   return {
     handleTabChange,
+    syncIframeDesignMode,
     transitionState,
     isDesignModeLoading:
       !isIframeLoaded ||

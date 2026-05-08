@@ -1,13 +1,13 @@
 /**
  * 知识图谱 - 文档表格列表
  */
+import { dict } from '@/services/i18nRuntime';
 import type { KnowledgeTripleDocumentInfo } from '@/types/interfaces/knowledge';
 import {
   //CopyOutlined,
   DeleteOutlined,
   ExclamationCircleFilled,
   PlayCircleOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -38,19 +38,18 @@ interface GraphDocTableProps {
   onToggleGraph?: (id: number, enable: boolean) => void;
   onDelete?: (id: number) => void;
   onGenerateGraph?: (id: number) => void;
-  onViewAllGraphs?: () => void;
 }
 
 const getStatusTag = (status?: number) => {
   const statusConfig: Record<number, { color: string; text: string }> = {
-    1: { color: '#F97316', text: '构建中' },
-    2: { color: '#22C55E', text: '可用' },
-    10: { color: '#EF4444', text: '不可用' },
+    1: { color: '#F97316', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.building') },
+    2: { color: '#22C55E', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.available') },
+    10: { color: '#EF4444', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.unavailable') },
   };
 
   const config = statusConfig[status ?? 0] || {
     color: '#94A3B8',
-    text: '待处理',
+    text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.pending'),
   };
 
   return (
@@ -72,7 +71,6 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
   //onBatchConfig,
   onDelete,
   onGenerateGraph,
-  onViewAllGraphs,
 }) => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -94,7 +92,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
     );
 
     if (hasUnavailable) {
-      message.warning('存在没有生成知识图谱的数据，不能进行删除操作');
+      message.warning(dict('PC.Pages.SpaceKnowledge.GraphDocTable.hasUnavailableData'));
       return;
     }
 
@@ -104,7 +102,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
 
   const columns: ColumnsType<KnowledgeTripleDocumentInfo> = [
     {
-      title: 'ID',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.id'),
       dataIndex: 'documentId',
       key: 'documentId',
       width: 100,
@@ -112,7 +110,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
       render: (id: number) => <span>{id}</span>,
     },
     {
-      title: '文档名称',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.documentName'),
       dataIndex: 'documentName',
       key: 'documentName',
       width: 240,
@@ -141,7 +139,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
       },
     },
     {
-      title: '状态',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.status'),
       dataIndex: 'tripleStatus',
       key: 'tripleStatus',
       width: 100,
@@ -149,7 +147,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
       render: (status: number) => getStatusTag(status),
     },
     {
-      title: '文件类型',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.fileType'),
       dataIndex: 'fileType',
       key: 'fileType',
       width: 100,
@@ -157,21 +155,21 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
       render: (type: string) => type || '-',
     },
     {
-      title: '创建时间',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.createdTime'),
       dataIndex: 'createdTime',
       key: 'createdTime',
       width: 180,
       render: (time: string) => formatDateTime(time),
     },
     {
-      title: '更新时间',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.updatedTime'),
       dataIndex: 'updatedTime',
       key: 'updatedTime',
       width: 180,
       render: (time: string) => formatDateTime(time),
     },
     {
-      title: '操作',
+      title: dict('PC.Pages.SpaceKnowledge.GraphDocTable.action'),
       key: 'action',
       width: 180,
       align: 'center',
@@ -184,14 +182,14 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
           <Space size="small">
             {(isNotStarted || isUnavailable) && (
               <Popconfirm
-                title="确定要生成知识图谱吗？"
+                title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmGenerateGraph')}
                 description={record.documentName}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => onGenerateGraph?.(record.documentId)}
-                okText="确定"
-                cancelText="取消"
+                okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
+                cancelText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.cancel')}
               >
-                <Tooltip title="生成知识图谱">
+                <Tooltip title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.generateGraph')}>
                   <Button
                     type="text"
                     style={{ color: '#1890ff' }}
@@ -220,15 +218,15 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
             ) : null} */}
             {record.tripleStatus === 2 && (
               <Popconfirm
-                title="确定要删除此文档吗？"
+                title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmDeleteDoc')}
                 description={record.documentName}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => onDelete?.(record.documentId)}
-                okText="确定"
-                cancelText="取消"
+                okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
+                cancelText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.cancel')}
               >
-                <Tooltip title="删除">
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+                <Tooltip title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.delete')}>
+                  <Button type="text" icon={<DeleteOutlined />} />
                 </Tooltip>
               </Popconfirm>
             )}
@@ -251,46 +249,31 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
 
   return (
     <div className={styles.container}>
-      {/* 搜索和操作栏 */}
+      {/* 操作栏 */}
       <div className={styles.toolbar}>
-        <Input
-          placeholder="搜索文档名称"
-          prefix={<SearchOutlined />}
+        <Input.Search
+          placeholder={dict('PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder')}
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           allowClear
-          style={{ width: 240 }}
+          style={{ width: 240, marginRight: 10 }}
         />
-        <Space>
-          <Button type="primary" onClick={() => onViewAllGraphs?.()}>
-            知识图谱
+        <Popconfirm
+          title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.batchDelete')}
+          description={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmBatchDelete', selectedRowKeys.length)}
+          onConfirm={handleBatchDelete}
+          disabled={selectedRowKeys.length === 0}
+          okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
+          cancelText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.cancel')}
+        >
+          <Button
+            type="primary"
+            icon={<DeleteOutlined />}
+            disabled={selectedRowKeys.length === 0}
+          >
+            {dict('PC.Pages.SpaceKnowledge.GraphDocTable.batchDelete')}
           </Button>
-          <Popconfirm
-            title="批量删除"
-            description={`确定要删除选中的 ${selectedRowKeys.length} 个文档吗？`}
-            onConfirm={handleBatchDelete}
-            disabled={selectedRowKeys.length === 0}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={selectedRowKeys.length === 0}
-            >
-              批量删除
-            </Button>
-          </Popconfirm>
-          {/* <Button
-            type="text"
-            icon={<SettingOutlined />}
-            disabled={selectedRowKeys.length === 0}
-            onClick={handleBatchConfig}
-          >
-            批量修改配置
-          </Button> */}
-        </Space>
+        </Popconfirm>
       </div>
 
       {/* 表格 */}
@@ -305,7 +288,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
           pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 篇文档`,
+          showTotal: (total) => dict('PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments', total),
         }}
         scroll={{ x: 'max-content' }}
       />

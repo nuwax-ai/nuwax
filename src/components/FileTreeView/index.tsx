@@ -122,6 +122,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
        * 当前正在查看/编辑的文件内容能够立即、自动地同步更新，避免出现“数据已变但界面显示的还是旧代码”的情况。
        */
       isProjectSkill = false,
+      initViewFileType,
     },
     ref,
   ) => {
@@ -213,6 +214,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         setIsFullscreen(true);
       }
     }, [isFullscreenPreview]);
+
+    useEffect(() => {
+      if (initViewFileType) {
+        setViewFileType(initViewFileType);
+      }
+    }, [initViewFileType]);
 
     // 获取文件内容并更新文件树
     const fetchFileContentUpdateFiles = useCallback(
@@ -365,7 +372,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
            */
           if (!fileProxyUrl || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
-            setViewFileType('preview');
+            if (!initViewFileType) {
+              setViewFileType('preview');
+            }
             setSelectedFileNode(fileNode);
             return;
           }
@@ -402,7 +411,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           fileRefreshTimestampRef.current = Date.now();
 
           setSelectedFileId(fileNode?.id || fileId);
-          setViewFileType('preview');
+
+          if (!initViewFileType) {
+            setViewFileType('preview');
+          }
 
           // 如果文件为图片、视频、音频、文档类型，则直接设置为选中文件节点
           if (
@@ -432,6 +444,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               return;
             }
 
+            const fileNameLower = (fileNode?.name || '').toLowerCase();
+            const _isMarkdownFile = isMarkdownFile(fileNameLower);
+            // md 不在这里预取，统一交给 FilePreview 通过 src 拉取, 避免发起两次http请求
+            if (_isMarkdownFile && !initViewFileType) {
+              setSelectedFileNode({
+                ...fileNode,
+                content: '',
+              });
+              return;
+            }
+
             // 先切到当前文件并清空内容，避免异步返回前继续显示上一个文件内容
             setSelectedFileNode({
               ...fileNode,
@@ -455,7 +478,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileId('');
         }
       },
-      [files, isRenamingFile, selectedFileId, changeFiles],
+      [files, isRenamingFile, selectedFileId, changeFiles, initViewFileType],
     );
 
     // 文件选择（对外接口，用于用户主动选择）

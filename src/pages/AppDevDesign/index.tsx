@@ -18,6 +18,13 @@ import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { AppDevHeader, ContentViewer } from '@/pages/AppDev/components';
+import ChatArea from '@/pages/AppDev/components/ChatArea';
+import { type DesignViewerRef } from '@/pages/AppDev/components/DesignViewer';
+import DevLogConsole from '@/pages/AppDev/components/DevLogConsole';
+import EditorHeaderRight from '@/pages/AppDev/components/EditorHeaderRight';
+import FileOperatingMask from '@/pages/AppDev/components/FileOperatingMask';
+import FileTreePanel from '@/pages/AppDev/components/FileTreePanel';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
   bindDataSource,
@@ -63,19 +70,12 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
-import { AppDevHeader, ContentViewer } from './components';
-import ChatArea from './components/ChatArea';
-import { type DesignViewerRef } from './components/DesignViewer';
-import DevLogConsole from './components/DevLogConsole';
-import EditorHeaderRight from './components/EditorHeaderRight';
-import FileOperatingMask from './components/FileOperatingMask';
-import FileTreePanel from './components/FileTreePanel';
 
-import PageEditModal from './components/PageEditModal';
+import PageEditModal from '@/pages/AppDev/components/PageEditModal';
 
+import { type PreviewRef } from '@/pages/AppDev/components/Preview';
+import { useDevLogs } from '@/pages/AppDev/hooks/useDevLogs';
 import { checkFileSizeExceedLimit } from '@/utils';
-import { type PreviewRef } from './components/Preview';
-import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
 const { Text } = Typography;
@@ -84,7 +84,7 @@ const cx = classNames.bind(styles);
  * AppDev页面组件
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
-const AppDev: React.FC = () => {
+const AppDevDesign: React.FC = () => {
   // 获取路由参数
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -184,7 +184,25 @@ const AppDev: React.FC = () => {
     useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
-  const { setIframeDesignMode } = useModel('appDevDesign');
+  const { iframeDesignMode, setIframeDesignMode, isIframeLoaded } =
+    useModel('appDevDesign');
+
+  // URL 参数控制默认 design 模式
+  const designModeFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('designMode') === 'true';
+  }, []);
+
+  useEffect(() => {
+    if (designModeFromUrl && isIframeLoaded && !iframeDesignMode) {
+      setIframeDesignMode(true);
+    }
+  }, [
+    designModeFromUrl,
+    isIframeLoaded,
+    iframeDesignMode,
+    setIframeDesignMode,
+  ]);
 
   // 文件操作遮罩延时显示逻辑
   useEffect(() => {
@@ -244,10 +262,9 @@ const AppDev: React.FC = () => {
     projectInfo?.hasPermission,
   );
 
-  // 开发服务器日志管理
   const devLogs = useDevLogs(projectId || '', {
     enabled: hasValidProjectId && isServiceRunning && projectInfo.hasPermission,
-    pollInterval: 5000, // 调整为5秒轮询
+    pollInterval: 5000,
     maxLogLines: 1000,
   });
 
@@ -262,8 +279,7 @@ const AppDev: React.FC = () => {
   const designViewerRef = useRef<DesignViewerRef>(null);
 
   // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
-  // 整个页面生命周期内只触发一次：避免「restart → 仍失败 → 再 restart」的死循环，
-  // 也避免跨项目切换时重复触发；如需重试由用户手动点「重启服务器」按钮。
+  // 整个页面生命周期内只触发一次：避免死循环和跨项目重复触发；后续重试由用户手动点「重启服务器」。
   // 后续「等 iframe 加载完成 → 切回 design」的动作由 ChatAreaTabs 内部完成。
   const designRecoveryFiredRef = useRef(false);
   const handleDesignModeUnreachable = useCallback(async () => {
@@ -762,10 +778,7 @@ const AppDev: React.FC = () => {
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    // 重置日志起始行号
     devLogs.resetStartLine();
-
-    // 使用重启开发服务器 Hook，手动触发时切换到预览标签页
     await restartDevServer({
       shouldSwitchTab: true,
       delayBeforeRefresh: 500,
@@ -1307,7 +1320,6 @@ const AppDev: React.FC = () => {
         server.stopKeepAlive();
       }
 
-      // 停止日志轮询
       devLogs.stopPolling();
 
       // ⭐ 清理自动发送相关资源
@@ -1447,45 +1459,10 @@ const AppDev: React.FC = () => {
             `xagi-nav-${navigationStyle}`,
           )}
         >
-          {/* 主布局 - 左右分栏 */}
+          {/* 主布局 - 左右分栏（左右互换） */}
           <div className={styles.mainRow}>
-            {/* 左侧AI助手面板 */}
+            {/* 左侧代码编辑器区域 */}
             <div className={styles.leftPanel}>
-              {/* 对话 Tab */}
-              <ChatArea
-                // chatMode={chatMode}
-                // setChatMode={setChatMode}
-                chat={chat}
-                projectId={projectId || ''}
-                selectedDataSources={selectedDataResources} // 新增：选中的数据源
-                onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
-                fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
-                isSupportDesignMode={fileManagement.isSupportDesignMode}
-                // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
-                modelSelector={modelSelector} // 模型选择器状态
-                files={currentDisplayFiles} // 新增：文件树数据
-                designViewerRef={designViewerRef} // 新增：DesignViewer ref
-                onDeleteDataResource={handleDeleteDataResource} // 新增：删除数据源回调
-                onAddDataResource={() => setIsAddDataResourceModalVisible(true)} // 新增：添加数据源回调
-                onUserManualSendMessage={() => {
-                  // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
-                  autoErrorHandling.resetAndEnableAutoHandling();
-                  autoErrorHandlingModelInstance.resetSessionCount();
-                  currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
-                }}
-                onUserCancelAgentTask={() => {
-                  // 用户取消Agent任务，重置自动重试计数
-                  autoErrorHandling.handleUserCancelAuto();
-                }}
-                isComparing={versionCompare.isComparing}
-                defaultActiveTab={'chat'}
-                hiddenTabs={[]}
-                onDesignModeUnreachable={handleDesignModeUnreachable}
-              />
-            </div>
-
-            {/* 右侧代码编辑器区域 */}
-            <div className={styles.rightPanel}>
               {/* 编辑器头部bar */}
               <div className={styles.editorHeader}>
                 <div className={styles.editorHeaderLeft}>
@@ -1550,7 +1527,6 @@ const AppDev: React.FC = () => {
                     getActionColor: projectInfo.getActionColor,
                     getActionText: projectInfo.getActionText,
                   }}
-                  // 控制台相关
                   consoleData={{
                     showDevLogConsole: showDevLogConsole,
                     hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
@@ -1742,7 +1718,6 @@ const AppDev: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {/* 开发日志查看器 */}
               <DevLogConsole
                 logs={devLogs.logs}
                 visible={showDevLogConsole}
@@ -1754,15 +1729,39 @@ const AppDev: React.FC = () => {
                 onRefresh={devLogs.refreshLogs}
                 onClose={() => setShowDevLogConsole(false)}
                 isChatLoading={chat.isChatLoading}
-                onAddToChat={(content: string, isAuto?: boolean) => {
-                  // 更新当前错误类型引用
-                  currentErrorTypeRef.current = 'log';
-                  autoErrorHandling.handleCustomError(content, 'log', isAuto);
-                }}
                 onResetAutoRetry={() => {
-                  // 重置自动重试计数
                   autoErrorHandling.resetAndEnableAutoHandling();
                 }}
+              />
+            </div>
+
+            {/* 右侧AI助手面板 */}
+            <div className={styles.rightPanel}>
+              {/* 对话 Tab */}
+              <ChatArea
+                chat={chat}
+                projectId={projectId || ''}
+                selectedDataSources={selectedDataResources}
+                onUpdateDataSources={handleUpdateDataSources}
+                fileContentState={fileManagement.fileContentState}
+                isSupportDesignMode={fileManagement.isSupportDesignMode}
+                modelSelector={modelSelector}
+                files={currentDisplayFiles}
+                designViewerRef={designViewerRef}
+                onDeleteDataResource={handleDeleteDataResource}
+                onAddDataResource={() => setIsAddDataResourceModalVisible(true)}
+                onUserManualSendMessage={() => {
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                  autoErrorHandlingModelInstance.resetSessionCount();
+                  currentRequestIdRef.current = '';
+                }}
+                onUserCancelAgentTask={() => {
+                  autoErrorHandling.handleUserCancelAuto();
+                }}
+                isComparing={versionCompare.isComparing}
+                defaultActiveTab={'design'}
+                hiddenTabs={['chat', 'data']}
+                onDesignModeUnreachable={handleDesignModeUnreachable}
               />
             </div>
           </div>
@@ -2064,4 +2063,4 @@ const AppDev: React.FC = () => {
   );
 };
 
-export default AppDev;
+export default AppDevDesign;

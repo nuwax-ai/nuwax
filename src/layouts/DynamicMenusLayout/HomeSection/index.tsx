@@ -1,10 +1,11 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
-// import { EVENT_TYPE } from '@/constants/event.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { dict } from '@/services/i18nRuntime';
-// import { TaskStatus } from '@/types/enums/agent';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import eventBus from '@/utils/eventBus';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -22,31 +23,28 @@ const HomeSection: React.FC<{
 }> = ({ style }) => {
   const { id: chatId } = useParams();
   const location = useLocation();
-  const { conversationList, usedAgentList, runUsed, runHistory } = useModel(
-    'conversationHistory',
-  );
+  const {
+    conversationList,
+    handleConversationUpdate,
+    usedAgentList,
+    runUsed,
+    runHistory,
+  } = useModel('conversationHistory');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
   // 智能体主页
   const handleAgentHome = (agentInfo: AgentInfo) => {
     handleCloseMobileMenu();
-    const { agentType, agentId, lastConversationId } = agentInfo;
+    const { agentId, lastConversationId } = agentInfo;
 
     // 如果最后一次会话ID存在，则跳转至最后一次会话
     if (!!lastConversationId) {
-      const url =
-        agentType === 'PageApp' || agentType === 'TaskAgent'
-          ? `/home/chat/${lastConversationId}/${agentId}?hideMenu=true`
-          : `/home/chat/${lastConversationId}/${agentId}`;
+      const url = `/home/chat/${lastConversationId}/${agentId}`;
       history.push(url);
       return;
     }
 
-    if (agentType === 'PageApp' || agentType === 'TaskAgent') {
-      history.push(`/agent/${agentId}?hideMenu=true`);
-      return;
-    }
     history.push(`/agent/${agentId}`);
   };
 
@@ -78,6 +76,25 @@ const HomeSection: React.FC<{
       limit: 5,
     });
   }, []);
+
+  useEffect(() => {
+    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
+    const _executingConversationList = conversationList?.find(
+      (item: ConversationInfo) => item.taskStatus === TaskStatus.EXECUTING,
+    );
+
+    // 如果会话列表中不存在执行中的会话，则不监听会话状态更新事件
+    if (!_executingConversationList) {
+      return;
+    }
+
+    // 监听会话状态更新事件
+    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    };
+  }, [conversationList, handleConversationUpdate]);
 
   return (
     <div style={style}>

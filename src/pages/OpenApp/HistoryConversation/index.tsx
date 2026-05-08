@@ -14,7 +14,13 @@ const HistoryConversation: React.FC = () => {
     history.push(`/app/chat/${agentId}/${id}`);
   };
 
-  return <HistoryConversationList agentId={agentId} onClickLink={handleLink} />;
+  return (
+    <HistoryConversationList
+      agentId={agentId}
+      onClickLink={handleLink}
+      isAppSidebarMode={true}
+    />
+  );
 };
 
 export default HistoryConversation;

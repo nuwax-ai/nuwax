@@ -4,6 +4,7 @@ import {
 } from '@/services/agentConfig';
 import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
@@ -72,12 +73,31 @@ export default () => {
     },
   });
 
+  // 会话状态更新
+  const handleConversationUpdate = (data: { conversationId: string }) => {
+    const { conversationId } = data;
+    const list = conversationList?.map((item: ConversationInfo) => {
+      if (
+        item.id?.toString() === conversationId &&
+        item.taskStatus === TaskStatus.EXECUTING
+      ) {
+        return {
+          ...item,
+          taskStatus: TaskStatus.COMPLETE,
+        };
+      }
+      return item;
+    });
+    setConversationList(list);
+  };
+
   return {
     usedAgentList,
     runUsed,
     conversationList,
     conversationListItem,
     setConversationList,
+    handleConversationUpdate,
     setConversationListItem,
     runHistory,
     runHistoryItem,

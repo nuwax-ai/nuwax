@@ -30,7 +30,7 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      padding: @paddingXs @paddingXs @paddingXs 32px;
+      padding: @paddingXs 12px @paddingXs 32px;
       box-sizing: content-box;
 
       &.title-container-collapsed {
@@ -56,23 +56,13 @@
 
   .main-content-box {
     width: 100%;
-    padding: 0 @paddingXs 0 40px;
+    padding: 0 20px;
     overflow-y: hidden;
     height: 100%;
     flex: 1;
     display: flex;
     position: relative;
-    gap: 40px;
-
-    &.mobile-content-box {
-      padding-left: @paddingXs;
-      gap: @paddingXs;
-    }
-
-    //隐藏滚动条
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    gap: 20px;
 
     .chat-section {
       width: 100%;
@@ -80,7 +70,7 @@
       flex-direction: column;
 
       &.file-tree-visible {
-        width: 35%;
+        width: 33%;
       }
 
       .chat-wrapper-content {
@@ -224,6 +214,14 @@
   font-weight: 400;
   line-height: 24px;
   color: @colorTextSecondary;
+}
+
+.mobile-page-preview-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
 }
 
 .agent-sidebar-w {

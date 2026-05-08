@@ -151,7 +151,6 @@ const Home: React.FC = () => {
       files,
       infos: selectedComponentList,
       messageSourceType: 'home' as MessageSourceType,
-      hideMenu: isTaskAgentMode,
       skillIds,
       modelId: modelId || selectedModelId,
     };
@@ -195,20 +194,12 @@ const Home: React.FC = () => {
 
   // 点击单个智能体
   const handleClick = (agentInfo: CategoryItemInfo) => {
-    const { agentType, targetId, lastConversationId } = agentInfo;
+    const { targetId, lastConversationId } = agentInfo;
 
     // 如果最后一次会话ID存在，则跳转至最后一次会话
     if (!!lastConversationId) {
-      const url =
-        agentType === 'PageApp' || agentType === 'TaskAgent'
-          ? `/home/chat/${lastConversationId}/${targetId}?hideMenu=true`
-          : `/home/chat/${lastConversationId}/${targetId}`;
+      const url = `/home/chat/${lastConversationId}/${targetId}`;
       history.push(url);
-      return;
-    }
-
-    if (agentType === 'PageApp') {
-      history.push(`/agent/${targetId}?hideMenu=true`);
       return;
     }
 

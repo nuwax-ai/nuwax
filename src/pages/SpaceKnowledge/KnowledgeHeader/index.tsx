@@ -4,6 +4,7 @@ import {
   KNOWLEDGE_QA_IMPORT_TYPE,
   KNOWLEDGE_TEXT_IMPORT_TYPE,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
@@ -12,7 +13,7 @@ import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useParams } from 'umi';
+import { useParams, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,8 +29,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onQaPopover,
   docType = KnowledgeDocTypeEnum.DOC,
   onChangeDocType,
+  onViewAllGraphs,
 }) => {
   const { spaceId } = useParams();
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  var isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -64,7 +69,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
           <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
             <span className={cx(styles.box)}>{`${fileSize}`}</span>
-            <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
+            <span className={cx(styles.box)}>
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount',
+                docCount,
+              )}
+            </span>
           </div>
         </div>
       </section>
@@ -82,9 +92,17 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         defaultValue={docType}
         onChange={handleChange}
       >
-        <Radio value={KnowledgeDocTypeEnum.DOC}>文档</Radio>
-        <Radio value={KnowledgeDocTypeEnum.QA}>QA问答</Radio>
-        <Radio value={KnowledgeDocTypeEnum.GRAPH}>知识图谱</Radio>
+        <Radio value={KnowledgeDocTypeEnum.DOC}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
+        </Radio>
+        <Radio value={KnowledgeDocTypeEnum.QA}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
+        </Radio>
+        {isShowGRAPH && (
+          <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Radio>
+        )}
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -103,7 +121,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加内容
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
             </Button>
           </CustomPopover>
         ) : docType === KnowledgeDocTypeEnum.QA ? (
@@ -113,23 +131,14 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加QA问答
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
             </Button>
           </CustomPopover>
-        ) : // ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
-        //   <CustomPopover
-        //     list={KNOWLEDGE_GRAPH_IMPORT_TYPE}
-        //     onClick={onPopover}
-        //   >
-        //     <Button
-        //       type="primary"
-        //       icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
-        //       iconPosition="end"
-        //     >
-        //       添加内容
-        //     </Button>
-        //   </CustomPopover>
-        null}
+        ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
+          <Button type="primary" onClick={onViewAllGraphs}>
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Button>
+        ) : null}
       </div>
     </header>
   );

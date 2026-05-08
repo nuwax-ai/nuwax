@@ -226,7 +226,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const confirmSendMessage = (
     args: any,
     cId: number | null = conversationId,
-    info: AgentDetailDto | null = agentDetail || null,
   ) => {
     let url = '';
 
@@ -237,122 +236,147 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         .replace(':agentId', agentId.toString());
     } else {
       url = `/home/chat/${cId}/${agentId}`;
-
-      // 如果是任务智能体，则隐藏菜单
-      if (info?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
     }
 
     history.push(url, args);
   };
 
-  // 已发布的智能体详情接口成功回调
-  const onResultSuccess = (result: AgentDetailDto) => {
-    const shouldSkipUrlParamsProcessing =
+  // 判断是否是从聊天页返回到详情页的场景
+  const handleIsPopBackFromChatPage = () => {
+    return (
       history.action === 'POP' &&
       sessionStorage.getItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY) ===
-        String(agentId);
+        String(agentId)
+    );
+  };
 
-    if (shouldSkipUrlParamsProcessing) {
-      sessionStorage.removeItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY);
-    } else {
-      // 获取用户自带的url参数
-      const queryParams = new URLSearchParams(location.search);
-      const paramsFromUrl = queryParams.get('params');
-      if (paramsFromUrl) {
-        try {
-          const _paramsFromUrl = decodeURIComponent(paramsFromUrl);
-          const parsed = JSON.parse(_paramsFromUrl) as Record<string, unknown>;
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            // 删除用户自带的url参数中的conversationId字段
-            const urlPayload = omit(parsed, 'conversationId') as Record<
-              string,
-              unknown
-            >;
-            // 如果用户自带的url参数中是否存在message字段，且message字段不为空
-            const hasMessage =
-              'message' in urlPayload &&
-              urlPayload.message !== null &&
-              String(urlPayload.message).trim() !== '';
-            // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
-            if (hasMessage) {
-              const vpRaw = urlPayload.variableParams;
-              // 智能体变量参数
-              const agentVariables = result?.variables || [];
-              // 智能体必填变量参数name列表
-              const requiredNames = agentVariables
-                .filter(
-                  (item: BindConfigWithSub) =>
-                    !item.systemVariable && item.require,
-                )
-                .map((item: BindConfigWithSub) => item.name);
-              // 用户自带的url参数中的变量参数
-              const vp =
-                vpRaw !== null &&
-                typeof vpRaw === 'object' &&
-                !Array.isArray(vpRaw)
-                  ? (vpRaw as Record<string, string | number>)
-                  : null;
+  /**
+   * 处理url参数
+   * @param skipMessageProcessing - 是否跳过对message字段的处理
+   * 如果skipMessageProcessing为true，则跳过对message字段的处理，直接保存url参数中的变量参数，否则处理message字段
+   */
+  const handleProcessUrlParams = (
+    result: AgentDetailDto,
+    skipMessageProcessing: boolean = false,
+  ): boolean => {
+    // 获取用户自带的url参数
+    const queryParams = new URLSearchParams(location.search);
+    const paramsFromUrl = queryParams.get('params');
+    // 如果用户自带的url参数中存在params字段，则处理url参数
+    if (paramsFromUrl) {
+      try {
+        const _paramsFromUrl = decodeURIComponent(paramsFromUrl);
+        const parsed = JSON.parse(_paramsFromUrl) as Record<string, unknown>;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // 删除用户自带的url参数中的conversationId字段
+          const urlPayload = omit(parsed, 'conversationId') as Record<
+            string,
+            unknown
+          >;
+          // 如果用户自带的url参数中是否存在message字段，且message字段不为空
+          const hasMessage =
+            'message' in urlPayload &&
+            urlPayload.message !== null &&
+            String(urlPayload.message).trim() !== '';
+          // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
+          if (hasMessage && !skipMessageProcessing) {
+            const vpRaw = urlPayload.variableParams;
+            // 智能体变量参数
+            const agentVariables = result?.variables || [];
+            // 智能体必填变量参数name列表
+            const requiredNames = agentVariables
+              .filter(
+                (item: BindConfigWithSub) =>
+                  !item.systemVariable && item.require,
+              )
+              .map((item: BindConfigWithSub) => item.name);
+            // 用户自带的url参数中的变量参数
+            const vp =
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+                ? (vpRaw as Record<string, string | number>)
+                : null;
 
-              /**
-               * 判断用户自带的url参数中的变量参数是否存在且不为空
-               */
-              const urlVpValuePresent = (val: unknown): boolean => {
-                if (val === null || val === undefined) return false;
-                if (typeof val === 'string') return val.trim() !== '';
-                if (typeof val === 'number') return !Number.isNaN(val);
-                if (typeof val === 'boolean') return true;
-                return false;
+            /**
+             * 判断用户自带的url参数中的变量参数是否存在且不为空
+             */
+            const urlVpValuePresent = (val: unknown): boolean => {
+              if (val === null || val === undefined) return false;
+              if (typeof val === 'string') return val.trim() !== '';
+              if (typeof val === 'number') return !Number.isNaN(val);
+              if (typeof val === 'boolean') return true;
+              return false;
+            };
+
+            /**
+             * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
+             */
+            const allRequiredInUrlParams =
+              requiredNames.length === 0 ||
+              (vp !== null &&
+                requiredNames.every(
+                  (name) =>
+                    Object.prototype.hasOwnProperty.call(vp, name) &&
+                    urlVpValuePresent(vp[name]),
+                ));
+
+            /**
+             * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
+             */
+            if (allRequiredInUrlParams) {
+              const attach = {
+                ...urlPayload,
+                defaultAgentDetail: result,
+                messageSourceType: 'agent' as MessageSourceType,
               };
+              confirmSendMessage(attach, result?.conversationId);
 
-              /**
-               * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
-               */
-              const allRequiredInUrlParams =
-                requiredNames.length === 0 ||
-                (vp !== null &&
-                  requiredNames.every(
-                    (name) =>
-                      Object.prototype.hasOwnProperty.call(vp, name) &&
-                      urlVpValuePresent(vp[name]),
-                  ));
-
-              /**
-               * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
-               */
-              if (allRequiredInUrlParams) {
-                const attach = {
-                  ...urlPayload,
-                  defaultAgentDetail: result,
-                  messageSourceType: 'agent' as MessageSourceType,
-                };
-                confirmSendMessage(attach, result?.conversationId, result);
-
-                setLoading(false);
-                return;
-              }
-              if (vp !== null) {
-                setVariableParams(vp);
-              }
-            } else {
-              const { variableParams: vpRaw, ...otherParams } = urlPayload;
-              if (
-                vpRaw !== null &&
-                typeof vpRaw === 'object' &&
-                !Array.isArray(vpRaw)
-              ) {
-                setVariableParams(vpRaw as Record<string, string | number>);
-              }
-
-              // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
-              setUrlOtherParams(otherParams);
+              setLoading(false);
+              return true;
             }
+            if (vp !== null) {
+              setVariableParams(vp);
+            }
+          } else {
+            const { variableParams: vpRaw, ...otherParams } = urlPayload;
+            if (
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+            ) {
+              setVariableParams(vpRaw as Record<string, string | number>);
+            }
+
+            // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
+            setUrlOtherParams(otherParams);
           }
-        } catch {
-          // 忽略 ?params= 非合法 JSON
         }
+      } catch {
+        // 忽略 ?params= 非合法 JSON
       }
+    }
+    return false;
+  };
+
+  // 已发布的智能体详情接口成功回调
+  const onResultSuccess = (result: AgentDetailDto) => {
+    // 判断是否是从聊天页返回到详情页的场景
+    const isPopBackFromChatPage = handleIsPopBackFromChatPage();
+
+    // 如果是从聊天页返回到详情页的场景，则跳过对message字段的处理，直接保存url参数中的变量参数
+    let shouldStopFollowUpLogic = false;
+
+    // 如果是从聊天页返回到详情页的场景，则跳过对message字段的处理，直接保存url参数中的变量参数，否则处理message字段
+    if (isPopBackFromChatPage) {
+      sessionStorage.removeItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY);
+      shouldStopFollowUpLogic = handleProcessUrlParams(result, true);
+    } else {
+      shouldStopFollowUpLogic = handleProcessUrlParams(result);
+    }
+
+    if (shouldStopFollowUpLogic) {
+      return;
     }
 
     setLoading(false);
@@ -688,11 +712,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
@@ -842,10 +862,14 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       <ResizableSplit
         minLeftWidth={400}
         left={agentDetail?.hideChatArea ? null : LeftContent()}
+        defaultLeftWidth={33}
         right={
           pagePreviewData && (
             <>
               <PagePreviewIframe
+                className={cx({
+                  [styles['mobile-page-preview-container']]: isMobile,
+                })}
                 pagePreviewData={pagePreviewData}
                 showHeader={true}
                 onClose={hidePagePreview}
