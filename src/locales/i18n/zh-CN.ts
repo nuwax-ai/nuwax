@@ -2786,6 +2786,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa': '添加QA问答',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.doc': '文档',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount': '{0}个文档',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.graph': '知识图谱',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.qa': 'QA问答',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': '添加内容',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess': '文档添加成功',

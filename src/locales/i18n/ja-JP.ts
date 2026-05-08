@@ -2787,6 +2787,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.doc': 'ドクター',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount': '{0} ドキュメント',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.qa': 'QA',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.graph': 'ナレッジグラフ',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': 'コンテンツの追加',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess': 'ドキュメントが正常に追加されました',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep': '次',

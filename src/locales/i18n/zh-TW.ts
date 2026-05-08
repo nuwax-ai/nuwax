@@ -2787,6 +2787,7 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.qa': 'QA問答',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': '新增內容',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess': '文件新增成功',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.graph': '知識圖譜',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep': '下一步',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.prevStep': '上一步',
   'PC.Pages.SpaceKnowledge.QaBatchModal.batchImportSuccess': '批次匯入成功',

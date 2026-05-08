@@ -95,7 +95,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.QA}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
         </Radio>
-        <Radio value={KnowledgeDocTypeEnum.GRAPH}>知识图谱</Radio>
+        <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+        </Radio>
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -129,7 +131,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           </CustomPopover>
         ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
           <Button type="primary" onClick={onViewAllGraphs}>
-            知识图谱
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
         ) : null}
       </div>

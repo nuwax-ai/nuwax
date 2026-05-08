@@ -2787,6 +2787,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.doc': 'Doc',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount': '{0} documents',
   'PC.Pages.SpaceKnowledge.KnowledgeHeader.qa': 'QA',
+  'PC.Pages.SpaceKnowledge.KnowledgeHeader.graph': 'Knowledge Graph',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent': 'Add Content',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess': 'Doc added successfully',
   'PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep': 'Next',
