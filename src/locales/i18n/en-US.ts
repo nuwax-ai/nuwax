@@ -2607,6 +2607,10 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.totalCredits': 'Total Credits',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': 'My Orders',
+  'PC.Pages.MorePage.MyOrders.statusPending': 'Pending',
+  'PC.Pages.MorePage.MyOrders.statusPaid': 'Paid',
+  'PC.Pages.MorePage.MyOrders.statusCancelled': 'Cancelled',
+  'PC.Pages.MorePage.MyOrders.orderIdLabel': 'ID: ',
 
 
   'PC.Pages.MorePage.MyEarnings.pageTitle': 'My Earnings',

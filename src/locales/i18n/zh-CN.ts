@@ -2584,6 +2584,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.viewDetails': '查看明细',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': '我的订单',
+  'PC.Pages.MorePage.MyOrders.statusPending': '待支付',
+  'PC.Pages.MorePage.MyOrders.statusPaid': '已支付',
+  'PC.Pages.MorePage.MyOrders.statusCancelled': '已取消',
+  'PC.Pages.MorePage.MyOrders.orderIdLabel': 'ID: ',
 
 
   'PC.Pages.MorePage.MyEarnings.pageTitle': '我的收益',
