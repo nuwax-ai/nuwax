@@ -464,38 +464,42 @@ const BaseTemplate: React.FC = () => {
             </div>
 
             {/* 页面导航 */}
-            <div className={styles.pageNavList}>
-              {appAgentDetail?.customPageMenus?.map(
-                (item: CustomPageNavItem, index: number) => {
-                  // 获取页面url: 如果path存在，则拼接base url
-                  // path: "/page/6368147380375552-1590/prod/"
-                  const url = item.path
-                    ? `${process.env.BASE_URL}${item.path}`
-                    : '';
-                  // 判断是否为当前页面
-                  const isActive =
-                    location.pathname.includes('/app/open-iframe-page/') &&
-                    normalizeActiveUrl(currentIframeUrl) ===
-                      normalizeActiveUrl(url);
+            <ConditionRender
+              condition={appAgentDetail?.customPageMenus?.length > 0}
+            >
+              <div className={styles.pageNavList}>
+                {appAgentDetail?.customPageMenus?.map(
+                  (item: CustomPageNavItem, index: number) => {
+                    // 获取页面url: 如果path存在，则拼接base url
+                    // path: "/page/6368147380375552-1590/prod/"
+                    const url = item.path
+                      ? `${process.env.BASE_URL}${item.path}`
+                      : '';
+                    // 判断是否为当前页面
+                    const isActive =
+                      location.pathname.includes('/app/open-iframe-page/') &&
+                      normalizeActiveUrl(currentIframeUrl) ===
+                        normalizeActiveUrl(url);
 
-                  return (
-                    <div
-                      key={`${item.name}-${index}`}
-                      className={cx(styles.pageNavItem, {
-                        [styles['page-nav-item-active']]: isActive,
-                      })}
-                      onClick={() => handleOpenPage(item)}
-                    >
-                      <SvgIcon
-                        name={item.icon}
-                        style={{ fontSize: 16, borderRadius: '4px' }}
-                      />
-                      <span className="text-ellipsis">{item.name}</span>
-                    </div>
-                  );
-                },
-              )}
-            </div>
+                    return (
+                      <div
+                        key={`${item.name}-${index}`}
+                        className={cx(styles.pageNavItem, {
+                          [styles['page-nav-item-active']]: isActive,
+                        })}
+                        onClick={() => handleOpenPage(item)}
+                      >
+                        <SvgIcon
+                          name={item.icon}
+                          style={{ fontSize: 16, borderRadius: '4px' }}
+                        />
+                        <span className="text-ellipsis">{item.name}</span>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </ConditionRender>
 
             {/* 历史会话列表区域 */}
             <div

@@ -534,6 +534,8 @@ const SkillDetails: React.FC = () => {
         <FileTreeView
           // 通用型智能体会话中点击选中的文件ID
           taskAgentSelectedFileId={'SKILL.md'}
+          // 初始化视图类型
+          initViewFileType={'code'}
           // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
           isImportProjectTrigger={importProjectTrigger}
           // 是否为项目技能模式
