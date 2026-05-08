@@ -6,17 +6,9 @@ import type { CreditRecordInfo } from '@/types/interfaces/subscription';
 import { CreditRecordTypeEnum } from '@/types/interfaces/subscription';
 import { formatDateTime } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, Select, Tag } from 'antd';
-import type { Dayjs } from 'dayjs';
+import { Tag } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
-
-// Mock 统计数据
-const MOCK_STATS = {
-  totalEarned: 5998,
-  totalConsumed: 3010,
-  currentRemaining: 12580,
-};
 
 // Mock 积分记录
 const MOCK_RECORDS: CreditRecordInfo[] = [
@@ -104,15 +96,6 @@ const MOCK_RECORDS: CreditRecordInfo[] = [
 
 const CreditRecords: React.FC = () => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [startDate, setStartDate] = useState<Dayjs | null>(null);
-  const [endDate, setEndDate] = useState<Dayjs | null>(null);
-  const [changeType, setChangeType] = useState<string>('全部');
-
-  const handleReset = () => {
-    setStartDate(null);
-    setEndDate(null);
-    setChangeType('全部');
-  };
 
   const columns: ProColumns<CreditRecordInfo>[] = [
     {
@@ -182,102 +165,6 @@ const CreditRecords: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}>
-      {/* 统计卡片 */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard} style={{ background: '#f6ffed' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.totalEarned')}
-          </div>
-          <div className={styles.statValue}>
-            {MOCK_STATS.totalEarned.toLocaleString()}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.CreditRecords.totalEarnedDesc')}
-          </div>
-        </div>
-        <div className={styles.statCard} style={{ background: '#fff2f0' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.totalConsumed')}
-          </div>
-          <div className={styles.statValue}>
-            {MOCK_STATS.totalConsumed.toLocaleString()}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.CreditRecords.totalConsumedDesc')}
-          </div>
-        </div>
-        <div className={styles.statCard} style={{ background: '#f0f5ff' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.currentRemaining')}
-          </div>
-          <div className={styles.statValue}>
-            {MOCK_STATS.currentRemaining.toLocaleString()}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.CreditRecords.currentRemainingDesc')}
-          </div>
-        </div>
-      </div>
-
-      {/* 筛选栏 */}
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.startDate')}
-          </span>
-          <DatePicker
-            value={startDate}
-            onChange={(val) => setStartDate(val)}
-            size="small"
-            style={{ width: 130 }}
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.endDate')}
-          </span>
-          <DatePicker
-            value={endDate}
-            onChange={(val) => setEndDate(val)}
-            size="small"
-            style={{ width: 130 }}
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.CreditRecords.changeType')}
-          </span>
-          <Select
-            value={changeType}
-            onChange={(val) => setChangeType(val)}
-            size="small"
-            style={{ width: 100 }}
-            options={[
-              {
-                value: '全部',
-                label: dict('PC.Pages.MorePage.CreditRecords.filterAll'),
-              },
-              {
-                value: '增加',
-                label: dict('PC.Pages.MorePage.CreditRecords.filterIncrease'),
-              },
-              {
-                value: '扣减',
-                label: dict('PC.Pages.MorePage.CreditRecords.filterDecrease'),
-              },
-            ]}
-          />
-        </div>
-        <div className={styles.filterActions}>
-          <Button size="small" onClick={handleReset}>
-            {dict('PC.Pages.MorePage.CreditRecords.filterReset')}
-          </Button>
-          <Button type="primary" size="small">
-            {dict('PC.Pages.MorePage.CreditRecords.filterSubmit')}
-          </Button>
-        </div>
-      </div>
-
       {/* 积分记录表格 */}
       <XProTable<CreditRecordInfo>
         rowKey="id"
