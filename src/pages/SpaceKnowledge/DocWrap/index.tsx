@@ -1,5 +1,6 @@
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import { dict } from '@/services/i18nRuntime';
 import type { DocWrapProps } from '@/types/interfaces/knowledge';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -71,13 +72,15 @@ const DocWrap: React.FC<DocWrapProps> = ({
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <Input.Search
-        placeholder="搜索"
+        placeholder={dict('PC.Pages.SpaceKnowledge.DocWrap.search')}
         size="large"
         onChange={(e) => onChange(e.target.value)}
         allowClear
         prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
       />
-      <p className={cx(styles['document-title'])}>文档列表</p>
+      <p className={cx(styles['document-title'])}>
+        {dict('PC.Pages.SpaceKnowledge.DocWrap.documentList')}
+      </p>
       {loading ? (
         <Loading />
       ) : (
