@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import ConditionRender from '@/components/ConditionRender';
 import LabelStar from '@/components/LabelStar';
 import SelectList from '@/components/custom/SelectList';
@@ -54,8 +55,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
           onAiSegmentChoose?.(false);
         }}
       >
-        <h3>自动分段与清洗</h3>
-        <p>自动分段与预处理规则</p>
+        <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean')}</h3>
+        <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc')}</p>
       </div>
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
@@ -66,8 +67,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
           onAiSegmentChoose?.(true);
         }}
       >
-        <h3>智能分段</h3>
-        <p>基于AI模型智能识别文档结构，自动优化分段效果</p>
+        <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.isAiSegment')}</h3>
+        <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.aiSegmentDesc')}</p>
       </div>
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
@@ -79,8 +80,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
           onAiSegmentChoose?.(false);
         }}
       >
-        <h3>自定义</h3>
-        <p>自定义分段规则，分段长度及预处理规则</p>
+        <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.custom')}</h3>
+        <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.customDesc')}</p>
         <div
           className={cx({
             [styles['custom-set-hide']]: autoSegmentConfigFlag || isAiSegment,
@@ -97,7 +98,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
             }}
             requiredMark={customizeRequiredMark}
           >
-            <Form.Item label={<LabelStar label="分段标识符" />}>
+            <Form.Item label={<LabelStar label={dict('PC.Pages.SpaceKnowledge.CreateSet.segmentDelimiter')} />}>
               <Form.Item name="selectDelimiter" noStyle>
                 <SelectList
                   className={cx({
@@ -118,17 +119,17 @@ const CreateSet: React.FC<CreateSetProps> = ({
                 <Form.Item
                   name="delimiter"
                   noStyle
-                  rules={[{ required: true, message: '输入分段标识符' }]}
+                  rules={[{ required: true, message: dict('PC.Pages.SpaceKnowledge.CreateSet.inputSegmentDelimiter') }]}
                 >
-                  <Input placeholder="输入分段标识符，例如 \n 换行" />
+                  <Input placeholder={dict('PC.Pages.SpaceKnowledge.CreateSet.segmentDelimiterPlaceholder')} />
                 </Form.Item>
               </ConditionRender>
             </Form.Item>
             <Form.Item
               name="words"
-              label="分段最大长度"
+              label={dict('PC.Pages.SpaceKnowledge.CreateSet.segmentMaxLength')}
               rules={[
-                { required: true, message: '请输入100-5000的数值' },
+                { required: true, message: dict('PC.Pages.SpaceKnowledge.CreateSet.inputRange100To5000') },
                 {
                   validator(_, value) {
                     if (
@@ -138,22 +139,22 @@ const CreateSet: React.FC<CreateSetProps> = ({
                       return Promise.resolve();
                     }
                     if (value && !isNumber(value)) {
-                      return Promise.reject(new Error('请输入正确的数字!'));
+                      return Promise.reject(new Error(dict('PC.Pages.SpaceKnowledge.CreateSet.inputValidNumber')));
                     }
                     return Promise.reject(
-                      new Error('分段最大长度不得小于100，大于5000!'),
+                      new Error(dict('PC.Pages.SpaceKnowledge.CreateSet.segmentMaxLengthRange')),
                     );
                   },
                 },
               ]}
             >
-              <Input placeholder="请输入100-5000的数值" />
+              <Input placeholder={dict('PC.Pages.SpaceKnowledge.CreateSet.inputRange100To5000')} />
             </Form.Item>
             <Form.Item
               name="overlaps"
-              label="分段重叠度%"
+              label={dict('PC.Pages.SpaceKnowledge.CreateSet.segmentOverlapPercent')}
               rules={[
-                { required: true, message: '请输入0-100的数值' },
+                { required: true, message: dict('PC.Pages.SpaceKnowledge.CreateSet.inputRange0To100') },
                 {
                   validator(_, value) {
                     if (
@@ -163,16 +164,16 @@ const CreateSet: React.FC<CreateSetProps> = ({
                       return Promise.resolve();
                     }
                     if (value && !isNumber(value)) {
-                      return Promise.reject(new Error('请输入正确的数字!'));
+                      return Promise.reject(new Error(dict('PC.Pages.SpaceKnowledge.CreateSet.inputValidNumber')));
                     }
                     return Promise.reject(
-                      new Error('分段重叠度不得小于0，大于100!'),
+                      new Error(dict('PC.Pages.SpaceKnowledge.CreateSet.segmentOverlapRange')),
                     );
                   },
                 },
               ]}
             >
-              <Input placeholder="请输入0-100的数值" />
+              <Input placeholder={dict('PC.Pages.SpaceKnowledge.CreateSet.inputRange0To100')} />
             </Form.Item>
           </Form>
         </div>
