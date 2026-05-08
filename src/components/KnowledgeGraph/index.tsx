@@ -1,6 +1,7 @@
 /**
  * 知识图谱主组件
  */
+import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeTripleListByKnowledge } from '@/services/knowledge';
 import type { KnowledgeTripleDocumentInfo } from '@/types/interfaces/knowledge';
 import { ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons';
@@ -104,7 +105,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
   if (!documentInfo) {
     return (
       <div className={styles.emptyContainer}>
-        <Empty description="请选择文档查看知识图谱" />
+        <Empty description={dict('PC.Components.KnowledgeGraph.selectDocViewGraph')} />
       </div>
     );
   }
@@ -113,7 +114,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     <div className={styles.knowledgeGraphContainer}>
       {loading && (
         <div className={styles.loadingOverlay}>
-          <Spin size="large" tip="图谱加载中..." />
+          <Spin size="large" tip={dict('PC.Components.KnowledgeGraph.graphLoading')} />
         </div>
       )}
       <header className={styles.header}>
@@ -122,7 +123,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
             <ArrowLeftOutlined className={styles.backIcon} onClick={onBack} />
           )}
           <div className={styles.titleArea}>
-            <div className={styles.titleMain}>知识图谱</div>
+            <div className={styles.titleMain}>{dict('PC.Components.KnowledgeGraph.title')}</div>
             {/* 只有当不是从知识图谱按钮进入时，才显示文档名称 */}
             {documentInfo.documentId !== 0 && (
               <Tooltip
@@ -141,11 +142,11 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         </div>
         <div className={styles.headerRight}>
           <span className={styles.searchTip}>
-            移动鼠标滚轮可实现图谱缩放
+            {dict('PC.Components.KnowledgeGraph.zoomTip')}
             {/* 最多展示60个实体，可通过搜索查看更多内容 */}
           </span>
           <Input
-            placeholder="搜索节点"
+            placeholder={dict('PC.Components.KnowledgeGraph.searchPlaceholder')}
             prefix={<SearchOutlined />}
             value={nodeSearchKeyword}
             onChange={(e) => handleNodeSearch(e.target.value)}
@@ -159,11 +160,11 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           <GraphCanvas ref={graphCanvasRef} data={filteredData} />
         ) : loading ? (
           <div className={styles.emptyState}>
-            <Spin size="large" tip="加载中..." />
+            <Spin size="large" tip={dict('PC.Components.KnowledgeGraph.loading')} />
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <Empty description="暂无节点数据" />
+            <Empty description={dict('PC.Components.KnowledgeGraph.noNodeData')} />
           </div>
         )}
       </main>

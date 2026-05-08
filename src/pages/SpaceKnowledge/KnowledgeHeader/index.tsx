@@ -66,7 +66,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
           <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
             <span className={cx(styles.box)}>{`${fileSize}`}</span>
-            <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
+            <span className={cx(styles.box)}>
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount',
+                docCount,
+              )}
+            </span>
           </div>
         </div>
       </section>
@@ -87,8 +92,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.DOC}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.doc')}
         </Radio>
-        <Radio value={KnowledgeDocTypeEnum.QA}>QA问答</Radio>
-        <Radio value={KnowledgeDocTypeEnum.GRAPH}>知识图谱</Radio>
+        <Radio value={KnowledgeDocTypeEnum.QA}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
+        </Radio>
+        <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+        </Radio>
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -107,7 +116,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加内容
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
             </Button>
           </CustomPopover>
         ) : docType === KnowledgeDocTypeEnum.QA ? (
@@ -117,12 +126,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               icon={<DownOutlined className={cx(styles['dropdown-icon'])} />}
               iconPosition="end"
             >
-              添加QA问答
+              {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
             </Button>
           </CustomPopover>
         ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
           <Button type="primary" onClick={onViewAllGraphs}>
-            知识图谱
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
         ) : null}
       </div>
