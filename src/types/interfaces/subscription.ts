@@ -234,6 +234,51 @@ export interface OrderInfo {
 }
 
 // ──────────────────────────────────────────────
+// 账单订单相关（联调接口专用）
+// ──────────────────────────────────────────────
+
+export enum BillOrderStatusEnum {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum BillPayStatusEnum {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  CLOSED = 'CLOSED',
+}
+
+export interface BillOrderItem {
+  id: number | string;
+  orderId: number | string;
+  targetType: string;
+  targetName: string;
+  targetId: number | string;
+  price: number;
+  count: number;
+  snapshot?: any;
+  created: string;
+}
+
+export interface BillOrderInfo {
+  id: number | string;
+  tenantId: number | string;
+  userId: number | string;
+  description: string;
+  bizType: string;
+  orderStatus: BillOrderStatusEnum;
+  payStatus: BillPayStatusEnum;
+  amount: number;
+  created: string;
+  modified: string;
+  items?: BillOrderItem[];
+  extra?: any;
+}
+
+// ──────────────────────────────────────────────
 // 收益相关
 // ──────────────────────────────────────────────
 

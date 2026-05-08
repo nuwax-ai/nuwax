@@ -4,6 +4,8 @@ import type {
   AdminOrderInfo,
   AgentSubscriptionConfig,
   AgentSubscriptionPlan,
+  BillOrderInfo,
+  BillOrderStatusEnum,
   BizTypeEnum,
   CheckSubscriptionResult,
   CreditBatchItem,
@@ -288,6 +290,13 @@ export async function apiListMyOrders(params: {
   pageSize?: number;
 }): Promise<RequestResponse<{ list: OrderInfo[]; total: number }>> {
   return request('/api/user/orders', { method: 'GET', params });
+}
+
+// 查询我的订单（账单中心版）
+export async function apiGetMyBillOrders(params: {
+  orderStatus?: BillOrderStatusEnum | null;
+}): Promise<RequestResponse<BillOrderInfo[]>> {
+  return request('/api/bill/order/my', { method: 'GET', params });
 }
 
 export async function apiRefundOrder(
