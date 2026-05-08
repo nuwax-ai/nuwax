@@ -371,6 +371,9 @@ const BaseTemplate: React.FC = () => {
     setOpenMessage(true);
   };
 
+  // 侧栏加载态：详情未就绪时也展示 loading，避免刷新首帧闪现按钮
+  const showAppSidebarLoading = appAgentDetailLoading || !appAgentDetail;
+
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
       {/* 侧边菜单栏区域 */}
@@ -381,72 +384,8 @@ const BaseTemplate: React.FC = () => {
         })}
         style={agentSidebarStyle}
       >
-        {/* 智能体图标 + 收起导航按钮 */}
-        <header className={styles.sidebarTop}>
-          {/* 智能体图标 + 名称 */}
-          <div
-            className={cx(
-              'flex',
-              'items-center',
-              'overflow-hide',
-              styles['gap-8'],
-            )}
-          >
-            {/* 智能体图标 */}
-            <ConditionRender condition={appAgentDetail}>
-              <div className={cx(styles['logo-container'])}>
-                <img
-                  src={appAgentDetail?.icon || agentImage}
-                  className={cx(styles.logo)}
-                  alt=""
-                  onError={handleError}
-                />
-              </div>
-              <span className="text-ellipsis">{appAgentDetail?.name}</span>
-            </ConditionRender>
-          </div>
-
-          {/* 收起导航按钮 */}
-          <TooltipIcon
-            title={dict('PC.Pages.OpenApp.collapseNav')}
-            className={styles.collapseBtn}
-            icon={
-              <SvgIcon
-                name="icons-nav-sidebar"
-                style={{ fontSize: 16 }}
-                onClick={toggleAppSidebarVisible}
-              />
-            }
-            placement="right"
-          />
-        </header>
-
-        {/* 新建会话按钮 */}
-        <div
-          className={styles.newSessionBtn}
-          onClick={() => {
-            createAppNewConversation(agentId);
-            closeSidebarIfMobileOpen();
-          }}
-        >
-          <span
-            className={cx(styles.newSessionText, 'flex-1', 'overflow-hide')}
-          >
-            <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
-            <span className="text-ellipsis">
-              {dict('PC.Pages.OpenApp.newConversation')}
-            </span>
-          </span>
-          <div className={cx('flex', 'items-center', 'gap-4')}>
-            <span className={styles.shortcutTag}>
-              {isMacSystem ? '⌘' : 'ctrl'}
-            </span>
-            <span className={styles.shortcutTag}>J</span>
-          </div>
-        </div>
-
         {/* 加载中状态 */}
-        {loadingHistory || appAgentDetailLoading ? (
+        {showAppSidebarLoading ? (
           <div
             className={cx(
               'flex',
@@ -460,6 +399,70 @@ const BaseTemplate: React.FC = () => {
           </div>
         ) : (
           <>
+            {/* 智能体图标 + 收起导航按钮 */}
+            <header className={styles.sidebarTop}>
+              {/* 智能体图标 + 名称 */}
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'overflow-hide',
+                  styles['gap-8'],
+                )}
+              >
+                {/* 智能体图标 */}
+                <ConditionRender condition={appAgentDetail}>
+                  <div className={cx(styles['logo-container'])}>
+                    <img
+                      src={appAgentDetail?.icon || agentImage}
+                      className={cx(styles.logo)}
+                      alt=""
+                      onError={handleError}
+                    />
+                  </div>
+                  <span className="text-ellipsis">{appAgentDetail?.name}</span>
+                </ConditionRender>
+              </div>
+
+              {/* 收起导航按钮 */}
+              <TooltipIcon
+                title={dict('PC.Pages.OpenApp.collapseNav')}
+                className={styles.collapseBtn}
+                icon={
+                  <SvgIcon
+                    name="icons-nav-sidebar"
+                    style={{ fontSize: 16 }}
+                    onClick={toggleAppSidebarVisible}
+                  />
+                }
+                placement="right"
+              />
+            </header>
+
+            {/* 新建会话按钮 */}
+            <div
+              className={styles.newSessionBtn}
+              onClick={() => {
+                createAppNewConversation(agentId);
+                closeSidebarIfMobileOpen();
+              }}
+            >
+              <span
+                className={cx(styles.newSessionText, 'flex-1', 'overflow-hide')}
+              >
+                <SvgIcon name="icons-nav-new_chat" style={{ fontSize: 16 }} />
+                <span className="text-ellipsis">
+                  {dict('PC.Pages.OpenApp.newConversation')}
+                </span>
+              </span>
+              <div className={cx('flex', 'items-center', 'gap-4')}>
+                <span className={styles.shortcutTag}>
+                  {isMacSystem ? '⌘' : 'ctrl'}
+                </span>
+                <span className={styles.shortcutTag}>J</span>
+              </div>
+            </div>
+
             {/* 页面导航 */}
             <div className={styles.pageNavList}>
               {appAgentDetail?.customPageMenus?.map(
@@ -485,7 +488,7 @@ const BaseTemplate: React.FC = () => {
                     >
                       <SvgIcon
                         name={item.icon}
-                        style={{ fontSize: 16, borderRadius: '2px' }}
+                        style={{ fontSize: 16, borderRadius: '4px' }}
                       />
                       <span className="text-ellipsis">{item.name}</span>
                     </div>
