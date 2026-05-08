@@ -62,6 +62,10 @@ interface ChatAreaProps {
   onAddDataResource?: () => void;
   defaultActiveTab?: 'chat' | 'data' | 'design';
   hiddenTabs?: Array<'chat' | 'data' | 'design'>;
+  /**
+   * iframe 内 design runtime 不响应 TOGGLE_DESIGN_MODE 时回调；调用方据此重启 dev server。
+   */
+  onDesignModeUnreachable?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -81,6 +85,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAddDataResource,
   defaultActiveTab = 'chat',
   hiddenTabs = [],
+  onDesignModeUnreachable,
 }) => {
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
@@ -659,6 +664,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         setActiveTab={setActiveTab}
         isSupportDesignMode={isSupportDesignMode}
         hiddenTabs={hiddenTabs}
+        onDesignModeUnreachable={onDesignModeUnreachable}
       />
 
       {/* 内容区域 */}

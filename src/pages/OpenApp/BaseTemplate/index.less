@@ -33,6 +33,10 @@
   align-items: center;
   justify-content: space-between;
 
+  .gap-8 {
+    gap: 8px;
+  }
+
   .logo-container {
     width: 28px;
     height: 28px;
@@ -110,19 +114,18 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: @colorTextSecondary;
+    color: @colorText;
     cursor: pointer;
     user-select: none;
     transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 500;
 
     &:hover {
       background-color: #e6e7e8;
-      color: @colorText;
     }
 
     &.page-nav-item-active {
       background-color: #e6e7e8;
-      color: @colorText;
     }
   }
 }
@@ -168,6 +171,11 @@
 
 .history-list {
   padding-left: 28px;
+
+  .no-used {
+    margin-left: 6px;
+    color: @colorTextDescription;
+  }
 }
 
 // 底部渐变

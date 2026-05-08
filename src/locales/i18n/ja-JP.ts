@@ -2614,7 +2614,6 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.OpenApp.collapseNav': 'ナビゲーションを折りたたむ',
   'PC.Pages.OpenApp.firstConversationTip': 'チャット ボックスにコマンドを入力して、最初の会話を開始してください~',
   'PC.Pages.OpenApp.historyConversation': 'チャット履歴',
-  'PC.Pages.OpenApp.lookRight': '右を見てください >',
   'PC.Pages.OpenApp.newConversation': '新しい会話',
   'PC.Pages.OpenApp.viewAll': 'すべて見る',
   'PC.Pages.PreviewAndDebug.convIdNotFoundDesktop': '会話IDが見つかりません。エージェントコンピュータを開けません。',
