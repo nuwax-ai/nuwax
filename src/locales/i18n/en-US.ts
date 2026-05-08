@@ -2596,6 +2596,11 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.remaining': 'Remaining',
   'PC.Pages.MorePage.MySubscriptions.creditUnit': 'Credits',
   'PC.Pages.MorePage.MySubscriptions.expireTime': 'Expiration Time',
+  'PC.Pages.MorePage.MySubscriptions.expired': 'Expired',
+  'PC.Pages.MorePage.MySubscriptions.validityYears': 'Validity {0} Years',
+  'PC.Pages.MorePage.MySubscriptions.aboutToUseUp': 'Almost Used Up',
+  'PC.Pages.MorePage.MySubscriptions.fullyUsed': 'Fully Used',
+  'PC.Pages.MorePage.MySubscriptions.normalUsage': 'Sufficient',
   'PC.Pages.MorePage.MySubscriptions.totalCredits': 'Total Credits',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': 'My Orders',

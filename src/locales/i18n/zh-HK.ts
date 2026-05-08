@@ -2594,6 +2594,11 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.MorePage.MySubscriptions.remaining': '剩餘',
   'PC.Pages.MorePage.MySubscriptions.creditUnit': '積分',
   'PC.Pages.MorePage.MySubscriptions.expireTime': '到期時間',
+  'PC.Pages.MorePage.MySubscriptions.expired': '已到期',
+  'PC.Pages.MorePage.MySubscriptions.validityYears': '有效期 {0} 年',
+  'PC.Pages.MorePage.MySubscriptions.aboutToUseUp': '即將用完',
+  'PC.Pages.MorePage.MySubscriptions.fullyUsed': '已用完',
+  'PC.Pages.MorePage.MySubscriptions.normalUsage': '充足',
   'PC.Pages.MorePage.MySubscriptions.totalCredits': '總積分',
 
   'PC.Pages.MorePage.MyOrders.pageTitle': '我的訂單',

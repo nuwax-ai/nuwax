@@ -7,6 +7,7 @@ import {
 import { Empty, Spin, Statistic } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import PointStatusTags from '../../../PointStatusTags';
 import styles from './index.less';
 
 const SubscribedCredits: React.FC = () => {
@@ -149,6 +150,12 @@ const SubscribedCredits: React.FC = () => {
               </span>
             </div>
             {/* 后端暂时未提供即将用完、已用完的状态，暂时使用占位逻辑 */}
+            <PointStatusTags
+              totalAmount={pack.totalAmount}
+              usedAmount={pack.usedAmount}
+              created={pack.created}
+              expireTime={pack.expireTime}
+            />
           </div>
         </div>
       ))}
