@@ -84,7 +84,7 @@ const cx = classNames.bind(styles);
  * AppDev页面组件
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
-const AppDevCustomize: React.FC = () => {
+const AppDevDesign: React.FC = () => {
   // 获取路由参数
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -184,7 +184,25 @@ const AppDevCustomize: React.FC = () => {
     useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
-  const { setIframeDesignMode } = useModel('appDevDesign');
+  const { iframeDesignMode, setIframeDesignMode, isIframeLoaded } =
+    useModel('appDevDesign');
+
+  // URL 参数控制默认 design 模式
+  const designModeFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('designMode') === 'true';
+  }, []);
+
+  useEffect(() => {
+    if (designModeFromUrl && isIframeLoaded && !iframeDesignMode) {
+      setIframeDesignMode(true);
+    }
+  }, [
+    designModeFromUrl,
+    isIframeLoaded,
+    iframeDesignMode,
+    setIframeDesignMode,
+  ]);
 
   // 文件操作遮罩延时显示逻辑
   useEffect(() => {
@@ -2030,4 +2048,4 @@ const AppDevCustomize: React.FC = () => {
   );
 };
 
-export default AppDevCustomize;
+export default AppDevDesign;

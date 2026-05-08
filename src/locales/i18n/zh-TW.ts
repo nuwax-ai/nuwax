@@ -2004,6 +2004,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.AppDevEditorHeaderRight.starting': '啟動中...',
   'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': '切換到 v{0} 版本',
   'PC.Pages.AppDevEditorHeaderRight.viewLog': '檢視日誌',
+  'PC.Pages.AppDevEditorHeaderRight.openDesignMode': '開啟設計模式',
+  'PC.Pages.AppDevEditorHeaderRight.closeDesignMode': '關閉設計模式',
   'PC.Pages.AppDevFileOperatingMask.defaultTip': '檔案操作進行中，請稍候...',
   'PC.Pages.AppDevFilePathHeader.modified': '已修改',
   'PC.Pages.AppDevFileTreeContextMenu.delete': '刪除',
