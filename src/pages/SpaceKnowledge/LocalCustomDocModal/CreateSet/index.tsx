@@ -11,6 +11,7 @@ import { Form, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
+import { useModel } from 'umi';
 
 const cx = classNames.bind(styles);
 
@@ -33,6 +34,9 @@ const CreateSet: React.FC<CreateSetProps> = ({
     const _value = value as KnowledgeSegmentIdentifierEnum;
     setSegmentDelimiter(_value);
   };
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  var isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   //console.log("2===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
 
@@ -58,6 +62,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
         <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentClean')}</h3>
         <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.autoSegmentCleanDesc')}</p>
       </div>
+      {isShowGRAPH && (
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
           [styles.active]: isAiSegment,
@@ -70,6 +75,7 @@ const CreateSet: React.FC<CreateSetProps> = ({
         <h3>{dict('PC.Pages.SpaceKnowledge.CreateSet.isAiSegment')}</h3>
         <p>{dict('PC.Pages.SpaceKnowledge.CreateSet.aiSegmentDesc')}</p>
       </div>
+      )}
       <div
         className={cx(styles['set-box'], 'px-16', 'py-16', 'cursor-pointer', {
           [styles.active]: !autoSegmentConfigFlag && !isAiSegment,
