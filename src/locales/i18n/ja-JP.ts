@@ -2006,6 +2006,8 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.AppDevEditorHeaderRight.starting': '起動...',
   'PC.Pages.AppDevEditorHeaderRight.switchVersionButton': 'v{0} に切り替える',
   'PC.Pages.AppDevEditorHeaderRight.viewLog': 'ログを表示する',
+  'PC.Pages.AppDevEditorHeaderRight.openDesignMode': 'デザインモードをオンにする',
+  'PC.Pages.AppDevEditorHeaderRight.closeDesignMode': 'デザインモードをオフにする',
   'PC.Pages.AppDevFileOperatingMask.defaultTip': 'ファイル操作が進行中です。お待ちください...',
   'PC.Pages.AppDevFilePathHeader.modified': '修正済み',
   'PC.Pages.AppDevFileTreeContextMenu.delete': '消去',
