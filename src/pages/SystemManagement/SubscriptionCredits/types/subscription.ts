@@ -50,7 +50,7 @@ export interface SubscriptionPlanListParams {
 // 订阅计划信息
 export interface SubscriptionPlanInfo {
   // 计划ID
-  id: number;
+  id?: number;
   // 计划名称
   name: string;
   // 计划描述
@@ -62,34 +62,34 @@ export interface SubscriptionPlanInfo {
   // 周期：1-月，3-季度，12-年,可用值:MONTH,QUARTER,YEAR,FOREVER
   period: SubscriptionPlanPeriodEnum;
   // 每月赠送积分
-  creditAmount: number;
+  creditAmount?: number;
   // 可调用次数，-1表示不限制
-  callLimitCount: number;
+  callLimitCount?: number;
   // 是否仅为功能订阅（true时资源消耗费用另计）
-  functionOnly: boolean;
+  functionOnly?: boolean;
   // 每日登录赠送积分
-  dailyGiftCreditAmount: number;
+  dailyGiftCreditAmount?: number;
   // 是否热门
   isHot: boolean;
   // 状态：0-下线，1-上线
   status: SubscriptionPlanStatusEnum;
   // 业务类型：SYSTEM-系统，AGENT-智能体，SKILL-技能,可用值:SYSTEM,AGENT,SKILL
-  bizType: SubscriptionPlanBizTypeEnum;
+  bizType?: SubscriptionPlanBizTypeEnum;
   // 业务对象ID，非SYSTEM时必填
-  bizId: string;
+  bizId?: string;
   // 关联用户组ID（JSON数组）
   groupIds: number[];
   // 扩展字段（JSON）
-  extra: unknown;
+  extra?: unknown;
   // 排序，越小越靠前，前端支持拖拽
   sort: number;
   // 创建时间
-  created: string;
+  created?: string;
   // 修改时间
-  modified: string;
+  modified?: string;
 
   // 列表展示字段
-  features: any[];
+  features?: any[];
 }
 
 // 修改订阅计划排序项
