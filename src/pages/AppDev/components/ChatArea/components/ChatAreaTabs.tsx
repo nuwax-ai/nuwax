@@ -14,6 +14,10 @@ interface ChatAreaTabsProps {
   setActiveTab: (tab: 'chat' | 'data' | 'design') => void;
   isSupportDesignMode: boolean;
   hiddenTabs?: Array<'chat' | 'data' | 'design'>;
+  /**
+   * iframe 在超时窗口内未回应 TOGGLE_DESIGN_MODE 时回调，调用方负责重启 dev server。
+   */
+  onDesignModeUnreachable?: () => void;
 }
 
 const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
@@ -21,6 +25,7 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
   setActiveTab,
   isSupportDesignMode,
   hiddenTabs = [],
+  onDesignModeUnreachable,
 }) => {
   const {
     isIframeLoaded,
@@ -37,6 +42,9 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
       iframeDesignMode,
       setIframeDesignMode,
       previewIframeElement,
+      onAckTimeout: onDesignModeUnreachable
+        ? () => onDesignModeUnreachable()
+        : undefined,
     });
 
   const isOnlyDesignTab =
