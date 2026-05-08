@@ -82,10 +82,10 @@ export async function apiGetSubscriptionPlanStats(
  * 查询订阅计划列表
  */
 export async function apiGetSubscriptionPlanList(
-  data: SubscriptionPlanListParams,
+  data?: SubscriptionPlanListParams,
 ): Promise<RequestResponse<SubscriptionPlanInfo[]>> {
-  const { status, keyword } = data;
-  return request(`/api/system/plan/list?status=${status}&keyword=${keyword}`, {
+  return request(`/api/system/plan/list`, {
     method: 'GET',
+    params: data,
   });
 }

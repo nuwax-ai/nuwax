@@ -1,16 +1,21 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Col, Row, message } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'umi';
 import {
+  apiDeleteSubscriptionPlan,
   apiGetSubscriptionPlanList,
   apiGetSubscriptionPlanStats,
+  apiUpdateSubscriptionPlan,
 } from '../services/subscription';
 import {
   SubscriptionPlanBizTypeEnum,
   SubscriptionPlanInfo,
   SubscriptionPlanStatsResult,
+  SubscriptionPlanStatusEnum,
 } from '../types/subscription';
 import CreatePlanModal from './CreatePlanModal';
 import PlanItemCard from './PlanItemCard';
@@ -23,10 +28,31 @@ const Plans: React.FC = () => {
   const [stats, setStats] = useState<SubscriptionPlanStatsResult | null>(null);
   // 新增套餐弹窗
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  // 当前编辑中的套餐
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlanInfo | null>(
+    null,
+  );
 
-  const handleToggle = (id: number, enabled: boolean) => {
-    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, enabled } : p)));
-  };
+  // 计算新增套餐默认排序：取 plans 中最大 sort 与 plans.length 的最大值
+  const createPlanSort = useMemo(() => {
+    const maxSort = plans.reduce((max, item) => {
+      const currentSort = item.sort ?? 0;
+      return Math.max(max, currentSort);
+    }, 0);
+
+    return Math.max(maxSort, plans.length);
+  }, [plans]);
+
+  // 查询指定对象的订阅统计
+  const { run: runPlanList } = useRequest(apiGetSubscriptionPlanList, {
+    manual: true,
+    onSuccess: (data: SubscriptionPlanInfo[]) => {
+      setPlans(data);
+    },
+    onError: () => {
+      message.error(dict('PC.Common.Toast.operationFailed'));
+    },
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,10 +62,7 @@ const Plans: React.FC = () => {
             bizType: SubscriptionPlanBizTypeEnum.SYSTEM,
             bizId: '-1',
           }),
-          apiGetSubscriptionPlanList({
-            status: -1,
-            keyword: '',
-          }),
+          apiGetSubscriptionPlanList(),
         ]);
 
         const statsData = statsRes?.data;
@@ -55,8 +78,63 @@ const Plans: React.FC = () => {
     fetchData();
   }, []);
 
+  // 切换套餐上架状态
+  const handleToggle = async (id: number, enabled: boolean) => {
+    const targetPlan = plans.find((plan) => plan.id === id);
+    if (!targetPlan) {
+      return;
+    }
+
+    try {
+      await apiUpdateSubscriptionPlan({
+        ...targetPlan,
+        status: enabled
+          ? SubscriptionPlanStatusEnum.Online
+          : SubscriptionPlanStatusEnum.Offline,
+      });
+
+      setPlans((prev) =>
+        prev.map((p) => ({
+          ...p,
+          status:
+            p.id === id
+              ? enabled
+                ? SubscriptionPlanStatusEnum.Online
+                : SubscriptionPlanStatusEnum.Offline
+              : p.status,
+        })),
+      );
+    } catch {
+      message.error(dict('PC.Common.Toast.operationFailed'));
+    }
+  };
+
+  // 编辑套餐
+  const handleEdit = (planInfo: SubscriptionPlanInfo) => {
+    setEditingPlan(planInfo);
+    setCreateModalOpen(true);
+  };
+
+  // 删除套餐（二次确认）
+  const handleDelete = (id: number) => {
+    modalConfirm(
+      '确认删除',
+      '删除后不可恢复，确定要删除该套餐吗？',
+      async () => {
+        try {
+          await apiDeleteSubscriptionPlan(id);
+          message.success('删除成功');
+          setPlans((prev) => prev.filter((p) => p.id !== id));
+        } catch {
+          message.error(dict('PC.Common.Toast.operationFailed'));
+        }
+      },
+    );
+  };
+
   // 新增套餐
   const handleCreatePlan = () => {
+    setEditingPlan(null);
     setCreateModalOpen(true);
   };
 
@@ -101,16 +179,27 @@ const Plans: React.FC = () => {
 
       {/* 套餐列表 */}
       <Row gutter={[16, 16]}>
-        {plans.map((plan) => (
-          <Col span={6} key={plan.id}>
-            <PlanItemCard plan={plan} onToggle={handleToggle} />
+        {plans.map((planInfo) => (
+          <Col span={6} key={planInfo.id}>
+            <PlanItemCard
+              planInfo={planInfo}
+              onToggle={handleToggle}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </Col>
         ))}
       </Row>
 
       <CreatePlanModal
         open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
+        sort={createPlanSort}
+        planInfo={editingPlan}
+        onSuccess={() => runPlanList()}
+        onCancel={() => {
+          setCreateModalOpen(false);
+          setEditingPlan(null);
+        }}
       />
     </WorkspaceLayout>
   );

@@ -4976,7 +4976,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemPlans.statDailyNew': '今日新增订阅',
   'PC.Pages.SystemPlans.statMonthlyNew': '本月新增订阅',
   'PC.Pages.SystemPlans.statMonthlyRevenue': '月收入（订阅）',
-  'PC.Pages.SystemPlans.statusActive': '上架中',
+  'PC.Pages.SystemPlans.status': '上架状态',
   'PC.Pages.SystemPlans.statusInactive': '已下架',
   'PC.Pages.SystemPlans.subscriberCount': '订阅人数',
   'PC.Pages.SystemPlans.free': '免费',

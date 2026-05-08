@@ -1,0 +1,74 @@
+@import '@/styles/token.less';
+
+// 用户组卡片
+.user-group-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 12px;
+  flex: 1 1 calc(50% - 6px);
+  min-width: 280px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #91caff;
+  }
+
+  &.user-group-card-selected {
+    border-color: @primary-color;
+  }
+
+  .user-group-card-title {
+    max-width: 80%;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .user-group-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 20px;
+
+    .user-group-card-label {
+      color: #8c8c8c;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .user-group-card-value {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: right;
+    }
+  }
+}
+
+// 用户组卡片容器
+.user-group-card-container {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.create-plan-modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.developer-permission-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 4px;
+}
+
+.developer-permission-desc {
+  color: #8c8c8c;
+  margin-bottom: 16px;
+}
