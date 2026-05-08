@@ -1,21 +1,26 @@
+import { BillOrderInfo } from '@/types/interfaces/subscription';
+import { Empty, Spin } from 'antd';
+import classNames from 'classnames';
 import React from 'react';
-import { MOCK_ORDERS } from '../../data';
 import OrderItem from '../OrderItem';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
+
 interface OrderListProps {
-  onViewDetail?: (id: string) => void;
+  orders: BillOrderInfo[];
+  loading: boolean;
 }
 
-const OrderList: React.FC<OrderListProps> = ({ onViewDetail }) => {
+const OrderList: React.FC<OrderListProps> = ({ orders, loading }) => {
   return (
-    <div className={styles['order-list-container']}>
-      <div className={styles['order-list']}>
-        {MOCK_ORDERS.map((order) => (
-          <OrderItem key={order.id} data={order} onViewDetail={onViewDetail} />
-        ))}
+    <Spin spinning={loading}>
+      <div className={cx(styles['order-list'])}>
+        {orders.length > 0
+          ? orders.map((order) => <OrderItem key={order.id} data={order} />)
+          : !loading && <Empty />}
       </div>
-    </div>
+    </Spin>
   );
 };
 
