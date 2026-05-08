@@ -4982,8 +4982,10 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────
-  'PC.Pages.SystemPlans.statActivePlans': '上架套餐',
+  // 'PC.Pages.SystemPlans.statActivePlans': '上架套餐',
+  'PC.Pages.SystemPlans.createPlan': '新增套餐',
   'PC.Pages.SystemPlans.statTotalSubscriptions': '总订阅数',
+  'PC.Pages.SystemPlans.statDailyNew': '今日新增订阅',
   'PC.Pages.SystemPlans.statMonthlyNew': '本月新增订阅',
   'PC.Pages.SystemPlans.statMonthlyRevenue': '月收入（订阅）',
   'PC.Pages.SystemPlans.statusActive': '上架中',
