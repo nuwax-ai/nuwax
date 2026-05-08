@@ -10,12 +10,6 @@ type TabType = 'chat' | 'data' | 'design';
 // 设计模式确认超时时间（毫秒）
 const DESIGN_MODE_ACK_TIMEOUT = 1800;
 
-// postMessage 因 iframe 处于过渡 origin（如 about:blank）失败时的最大重试次数
-const POSTMESSAGE_MAX_RETRY = 3;
-
-// 每次重试间隔（毫秒）。覆盖「iframe.src 已更新但 contentWindow 还没真正 navigate」的窗口
-const POSTMESSAGE_RETRY_DELAY = 500;
-
 // 是否启用调试日志
 const DEBUG = process.env.NODE_ENV === 'development';
 
@@ -79,23 +73,10 @@ export const useDesignModeTabSync = ({
 
   const ackTimeoutRef = useRef<number | null>(null);
 
-  // dev server 重启后 iframe 在「about:blank → 真实 URL」之间会有短暂过渡期，
-  // 此时 iframe.src 已指向新 origin 但 contentWindow 仍在 localhost，postMessage 会抛错。
-  // 用 ref 跟踪重试次数和待执行的重试 timer。
-  const postMessageRetryRef = useRef(0);
-  const postMessageRetryTimerRef = useRef<number | null>(null);
-
   const clearAckTimeout = () => {
     if (ackTimeoutRef.current !== null) {
       window.clearTimeout(ackTimeoutRef.current);
       ackTimeoutRef.current = null;
-    }
-  };
-
-  const clearPostMessageRetry = () => {
-    if (postMessageRetryTimerRef.current !== null) {
-      window.clearTimeout(postMessageRetryTimerRef.current);
-      postMessageRetryTimerRef.current = null;
     }
   };
 
@@ -210,50 +191,6 @@ export const useDesignModeTabSync = ({
         return;
       }
 
-      // postMessage 在 origin 不匹配时不会抛异常，而是把错误打到 console 后**静默丢弃**——
-      // 所以无法用 try/catch 兜住。只能主动判断 contentWindow 当前实际 origin：
-      //   - location 可读：iframe 仍在 same-origin 过渡态（about:blank / parent localhost），
-      //     此时往跨源 targetOrigin 投递必然被丢弃，需要 defer + 重试
-      //   - location 抛 SecurityError：contentWindow 已经 navigate 到目标跨源 URL，安全投递
-      const cw = iframe.contentWindow;
-      let canDeliver = true;
-      try {
-        const actualOrigin = cw.location.origin;
-        canDeliver = actualOrigin === targetOrigin;
-      } catch {
-        // 跨源访问被拒 → contentWindow 已在跨源 target 上 → 可以投递
-        canDeliver = true;
-      }
-
-      if (!canDeliver) {
-        console.warn(
-          '[DesignModeSync] iframe at transitional origin, deferring postMessage',
-          { targetOrigin, attempt: postMessageRetryRef.current },
-        );
-        // 回滚刚刚为本次请求设置的 pending 状态与 ack timer，让重试可以重新走完整流程，
-        // 也避免 ackTimeout 把过渡态当作业务超时上抛 onAckTimeout。
-        clearAckTimeout();
-        pendingToggleRef.current = null;
-        setTransitionState('idle');
-        setPendingTargetEnabled(false);
-
-        if (postMessageRetryRef.current < POSTMESSAGE_MAX_RETRY) {
-          postMessageRetryRef.current += 1;
-          clearPostMessageRetry();
-          postMessageRetryTimerRef.current = window.setTimeout(() => {
-            postMessageRetryTimerRef.current = null;
-            syncIframeDesignMode(enabled);
-          }, POSTMESSAGE_RETRY_DELAY);
-        } else {
-          // 超过重试次数仍未到目标 origin，放弃本轮；用户切 tab 或 iframe 重新加载会再次触发。
-          postMessageRetryRef.current = 0;
-          console.warn(
-            '[DesignModeSync] postMessage retries exhausted, giving up',
-          );
-        }
-        return;
-      }
-
       debugLog('posting TOGGLE_DESIGN_MODE', {
         enabled,
         requestId,
@@ -261,7 +198,7 @@ export const useDesignModeTabSync = ({
         pendingBefore,
         pendingAfter: pendingToggleRef.current,
       });
-      cw.postMessage(
+      iframe.contentWindow.postMessage(
         {
           type: 'TOGGLE_DESIGN_MODE',
           enabled,
@@ -270,7 +207,6 @@ export const useDesignModeTabSync = ({
         },
         targetOrigin,
       );
-      postMessageRetryRef.current = 0;
     },
     [previewIframeElement, isIframeLoaded, activeTab],
   );
@@ -443,18 +379,10 @@ export const useDesignModeTabSync = ({
     });
   }, [iframeDesignMode, activeTab, transitionState]);
 
-  // iframe 元素或 src 变化时（典型场景：dev server 重启），重置 postMessage 重试计数，
-  // 让新一轮 navigation 上的失败重新获得完整重试预算。
-  useEffect(() => {
-    postMessageRetryRef.current = 0;
-    clearPostMessageRetry();
-  }, [previewIframeElement, previewIframeElement?.src]);
-
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       clearAckTimeout();
-      clearPostMessageRetry();
       pendingToggleRef.current = null;
       setTransitionState('idle');
     };
