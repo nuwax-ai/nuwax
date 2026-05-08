@@ -2,34 +2,35 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiDeleteCreditPackage,
-  apiToggleCreditPackage,
-} from '@/services/subscriptionService';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Switch, message } from 'antd';
 import React, { useRef, useState } from 'react';
-import { apiGetCreditPackageList } from '../services/credit';
-import { CreditPackageInfo } from '../types/credit';
+import {
+  apiDeleteCreditPackage,
+  apiGetCreditPackageList,
+  apiUpdateCreditPackage,
+} from '../services/credit';
+import { CreditPackageInfo, CreditPackageStatusEnum } from '../types/credit';
 import CreditPackageFormModal from './CreditPackageFormModal';
 
 const CreditPackages: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState<CreditPackageInfo | null>(null);
+  const [creditPackageInfo, setCreditPackageInfo] =
+    useState<CreditPackageInfo | null>(null);
   const [form] = Form.useForm();
 
   const openCreate = () => {
-    setEditItem(null);
+    setCreditPackageInfo(null);
     form.resetFields();
     form.setFieldsValue({ enabled: true });
     setModalOpen(true);
   };
 
   const openEdit = (item: CreditPackageInfo) => {
-    setEditItem(item);
+    setCreditPackageInfo(item);
     form.setFieldsValue(item);
     setModalOpen(true);
   };
@@ -40,7 +41,7 @@ const CreditPackages: React.FC = () => {
     }
     modalConfirm(
       dict('PC.Common.Global.confirmDelete'),
-      (item.packageName as string) || '-',
+      item.packageName,
       async () => {
         await apiDeleteCreditPackage(item.id as number);
         message.success(dict('PC.Common.Global.deleteSuccess'));
@@ -49,11 +50,17 @@ const CreditPackages: React.FC = () => {
     );
   };
 
+  // 切换状态
   const handleToggle = async (item: CreditPackageInfo, enabled: boolean) => {
     if (!item.id) {
       return;
     }
-    await apiToggleCreditPackage(item.id as number, enabled);
+    await apiUpdateCreditPackage({
+      ...item,
+      status: enabled
+        ? CreditPackageStatusEnum.Enabled
+        : CreditPackageStatusEnum.Disabled,
+    });
     message.success(
       enabled
         ? dict('PC.Common.Global.enableSuccess')
@@ -62,6 +69,7 @@ const CreditPackages: React.FC = () => {
     actionRef.current?.reload();
   };
 
+  // 列配置
   const columns: ProColumns<CreditPackageInfo>[] = [
     {
       title: dict('PC.Pages.SystemCreditPackages.colName'),
@@ -124,7 +132,7 @@ const CreditPackages: React.FC = () => {
               key: 'delete',
               label: dict('PC.Common.Global.delete'),
               danger: true,
-              confirm: { title: dict('PC.Common.Global.confirmDelete') },
+              // confirm: { title: dict('PC.Common.Global.confirmDelete') },
               onClick: (r) => handleDelete(r),
             },
           ]}
@@ -173,8 +181,11 @@ const CreditPackages: React.FC = () => {
       <CreditPackageFormModal
         form={form}
         open={modalOpen}
-        editItem={editItem}
-        onSuccess={() => actionRef.current?.reload()}
+        creditPackageInfo={creditPackageInfo}
+        onSuccess={() => {
+          setModalOpen(false);
+          actionRef.current?.reload();
+        }}
         onCancel={() => setModalOpen(false)}
       />
     </WorkspaceLayout>

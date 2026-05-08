@@ -4802,10 +4802,11 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.fieldPrice': '售价（元）',
   'PC.Pages.SystemCreditPackages.fieldEnabled': '上架状态',
   'PC.Pages.SystemCreditPackages.colValidityPeriod': '有效期',
-  'PC.Pages.SystemCreditPackages.fieldValidityPeriod': '有效期',
+  'PC.Pages.SystemCreditPackages.fieldValidityPeriod': '有效期（月）',
   'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder': '如：永久、90天、30天',
   'PC.Pages.SystemCreditPackages.fieldSort': '排序',
-  
+  'PC.Pages.SystemCreditPackages.fieldRemark': '备注',
+  'PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder': '请输入备注',
   // ── 系统管理 - 用户积分查询 ────────────────────────────
   'PC.Pages.SystemUserCredits.colUser': '用户',
   'PC.Pages.SystemUserCredits.colBalance': '当前余额',

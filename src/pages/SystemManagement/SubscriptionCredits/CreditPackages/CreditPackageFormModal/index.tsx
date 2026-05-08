@@ -1,7 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, InputNumber, Switch, message } from 'antd';
+import { Col, Form, Input, InputNumber, Row, Switch, message } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import React, { useEffect, useState } from 'react';
 import {
@@ -9,11 +9,12 @@ import {
   apiUpdateCreditPackage,
 } from '../../services/credit';
 import { CreditPackageInfo, CreditPackageStatusEnum } from '../../types/credit';
+import styles from './index.less';
 
 interface CreditPackageFormModalProps {
   form: FormInstance;
   open: boolean;
-  editItem: CreditPackageInfo | null;
+  creditPackageInfo: CreditPackageInfo | null;
   onSuccess?: () => void;
   onCancel: () => void;
 }
@@ -24,44 +25,48 @@ interface CreditPackageFormModalProps {
 const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
   form,
   open,
-  editItem,
+  creditPackageInfo,
   onSuccess,
   onCancel,
 }) => {
   const [saving, setSaving] = useState(false);
 
+  const isEditMode = !!creditPackageInfo?.id;
+
   useEffect(() => {
     if (open) {
-      form.resetFields();
       form.setFieldsValue({
-        name: editItem?.packageName,
-        credits: editItem?.creditAmount,
-        validityPeriod: editItem?.period,
-        price: editItem?.price,
-        enabled: editItem?.status === 1,
+        packageName: creditPackageInfo?.packageName,
+        creditAmount: creditPackageInfo?.creditAmount,
+        period: creditPackageInfo?.period,
+        price: creditPackageInfo?.price,
+        status: creditPackageInfo?.status === CreditPackageStatusEnum.Enabled,
+        sort: creditPackageInfo?.sort,
+        remark: creditPackageInfo?.remark,
       });
+    } else {
+      form.resetFields();
     }
-  }, [open, editItem, form]);
+  }, [open, creditPackageInfo, form]);
 
-  // 确认保存
-  const handleConfirm = async () => {
-    const values = await form.validateFields();
+  // 确认提交
+  const handleConfirm = () => {
+    form.submit();
+  };
+
+  // 提交表单
+  const handleSubmit = async (values: CreditPackageInfo) => {
     const payload: CreditPackageInfo = {
-      ...(editItem?.id ? { id: editItem.id } : {}),
-      packageName: values.name,
-      creditAmount: values.credits,
-      period: Number(values.validityPeriod),
-      price: values.price,
-      status: values.enabled
+      ...(isEditMode ? { id: creditPackageInfo?.id } : {}),
+      ...values,
+      status: values.status
         ? CreditPackageStatusEnum.Enabled
         : CreditPackageStatusEnum.Disabled,
-      sort: editItem?.sort,
-      remark: editItem?.remark,
     };
 
     setSaving(true);
     try {
-      if (editItem?.id) {
+      if (isEditMode) {
         await apiUpdateCreditPackage(payload);
         message.success(dict('PC.Common.Global.saveSuccess'));
       } else {
@@ -69,7 +74,6 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
         message.success(dict('PC.Common.Global.createSuccess'));
       }
       onSuccess?.();
-      onCancel();
     } catch {
       message.error(dict('PC.Common.Toast.operationFailed'));
     } finally {
@@ -81,37 +85,52 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
     <CustomFormModal
       form={form}
       title={
-        editItem
+        creditPackageInfo
           ? dict('PC.Pages.SystemCreditPackages.editPackage')
           : dict('PC.Pages.SystemCreditPackages.createPackage')
       }
       open={open}
+      classNames={{ body: styles['credit-package-form-modal-body'] }}
       onCancel={onCancel}
       onConfirm={handleConfirm}
       loading={saving}
       width={560}
     >
-      <Form form={form} layout="vertical" requiredMark={customizeRequiredMark}>
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={customizeRequiredMark}
+        onFinish={handleSubmit}
+      >
         <Form.Item
-          name="name"
+          name="packageName"
           label={dict('PC.Pages.SystemCreditPackages.fieldName')}
           rules={[{ required: true }]}
         >
           <Input maxLength={30} showCount />
         </Form.Item>
         <Form.Item
-          name="credits"
+          name="creditAmount"
           label={dict('PC.Pages.SystemCreditPackages.fieldCredits')}
           rules={[{ required: true }]}
         >
-          <InputNumber min={1} precision={0} style={{ width: '100%' }} />
+          <InputNumber
+            min={1}
+            max={100000000}
+            precision={0}
+            className="w-full"
+          />
         </Form.Item>
         <Form.Item
-          name="validityPeriod"
+          name="period"
           label={dict('PC.Pages.SystemCreditPackages.fieldValidityPeriod')}
           rules={[{ required: true }]}
         >
-          <Input
+          <InputNumber
+            min={1}
+            max={100000000}
+            precision={0}
+            className="w-full"
             placeholder={dict(
               'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder',
             )}
@@ -122,20 +141,47 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
           label={dict('PC.Pages.SystemCreditPackages.fieldPrice')}
           rules={[{ required: true }]}
         >
-          <InputNumber min={0} precision={2} prefix="¥" className="w-full" />
+          <InputNumber
+            min={0}
+            max={100000000}
+            precision={1}
+            step={0.1}
+            prefix="¥"
+            className="w-full"
+          />
         </Form.Item>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="sort"
+              label={dict('PC.Pages.SystemCreditPackages.fieldSort')}
+            >
+              <InputNumber min={1} precision={0} className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="status"
+              label={dict('PC.Pages.SystemCreditPackages.fieldEnabled')}
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+        </Row>
         <Form.Item
-          name="enabled"
-          label={dict('PC.Pages.SystemCreditPackages.fieldEnabled')}
-          valuePropName="checked"
+          name="remark"
+          label={dict('PC.Pages.SystemCreditPackages.fieldRemark')}
         >
-          <Switch />
-        </Form.Item>
-        <Form.Item
-          name="sort"
-          label={dict('PC.Pages.SystemCreditPackages.fieldSort')}
-        >
-          <InputNumber min={1} precision={0} className="w-full" />
+          <Input.TextArea
+            maxLength={200}
+            showCount
+            className="dispose-textarea-count"
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            placeholder={dict(
+              'PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder',
+            )}
+          />
         </Form.Item>
       </Form>
     </CustomFormModal>
