@@ -10,10 +10,11 @@ import {
   CheckOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Skeleton, message } from 'antd';
+import { Button, Empty, Spin, message } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useRequest } from 'umi';
+import { getPeriodUnitText } from '../../../../utils';
 import styles from './index.less';
 
 const SubscribedAgents: React.FC = () => {
@@ -22,40 +23,20 @@ const SubscribedAgents: React.FC = () => {
   );
 
   const list = subData?.subscriptions || [];
-
-  const getPeriodLabel = (period: any) => {
+  const normalizePeriod = (period: any): MyPlanPeriodEnum => {
     const periodValueMap: Record<string, MyPlanPeriodEnum> = {
       '1': MyPlanPeriodEnum.Month,
       '3': MyPlanPeriodEnum.Quarter,
       '12': MyPlanPeriodEnum.Year,
     };
-
-    const p = (periodValueMap[period?.toString()] ||
+    return (periodValueMap[period?.toString()] ||
       period?.toString().toUpperCase()) as MyPlanPeriodEnum;
-
-    const periodMap: Record<MyPlanPeriodEnum, string> = {
-      [MyPlanPeriodEnum.Month]: dict(
-        'PC.Pages.MorePage.MySubscriptions.perMonth',
-      ),
-      [MyPlanPeriodEnum.Quarter]: dict(
-        'PC.Pages.MorePage.MySubscriptions.feeQuarter',
-      ),
-      [MyPlanPeriodEnum.Year]: dict(
-        'PC.Pages.MorePage.MySubscriptions.feeYear',
-      ),
-      [MyPlanPeriodEnum.Forever]: dict(
-        'PC.Pages.MorePage.MySubscriptions.validityForever',
-      ),
-    };
-    return periodMap[p] || '';
   };
 
   if (loading) {
     return (
-      <div className={styles['agents-grid']}>
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} active avatar paragraph={{ rows: 3 }} />
-        ))}
+      <div className={styles['loading-wrapper']}>
+        <Spin />
       </div>
     );
   }
@@ -94,7 +75,7 @@ const SubscribedAgents: React.FC = () => {
                   <span className={styles['price']}>¥{item.plan?.price}</span>
                   {item.plan?.period !== MyPlanPeriodEnum.Forever && (
                     <span className={styles['unit']}>
-                      {getPeriodLabel(item.plan?.period)}
+                      {getPeriodUnitText(normalizePeriod(item.plan?.period))}
                     </span>
                   )}
                 </div>

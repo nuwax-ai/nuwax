@@ -165,6 +165,36 @@ export interface CreditSummaryInfo {
   user: any;
 }
 
+export enum CreditTypeEnum {
+  SUBSCRIPTION = 'SUBSCRIPTION',
+  PURCHASE = 'PURCHASE',
+  ACTIVITY = 'ACTIVITY',
+  MANUAL = 'MANUAL',
+  LOAN = 'LOAN',
+  MODEL_CALL = 'MODEL_CALL',
+  AGENT_CALL = 'AGENT_CALL',
+  TOOL_CALL = 'TOOL_CALL',
+  MANUAL_DEDUCT = 'MANUAL_DEDUCT',
+}
+
+export interface CreditBatchItem {
+  id: number;
+  userId: number;
+  batchNo: string;
+  creditType: CreditTypeEnum | string;
+  creditTypeName: string;
+  totalAmount: number;
+  usedAmount: number;
+  remainAmount: number;
+  expireTime: string;
+  expired: boolean;
+  created: string;
+  remark: string;
+  extra?: {
+    price?: number;
+  };
+}
+
 // ──────────────────────────────────────────────
 // 订单相关
 // ──────────────────────────────────────────────

@@ -6,11 +6,13 @@ import type {
   AgentSubscriptionPlan,
   BizTypeEnum,
   CheckSubscriptionResult,
+  CreditBatchItem,
   CreditPackageAdminInfo,
   CreditPackageInfo,
   CreditRecordInfo,
   CreditRecordTypeEnum,
   CreditSummaryInfo,
+  CreditTypeEnum,
   DevEarningsSummaryInfo,
   DevPaymentAccountInfo,
   EarningRecordInfo,
@@ -349,6 +351,13 @@ export async function apiListCreditRecords(params: {
   pageSize?: number;
 }): Promise<RequestResponse<{ list: CreditRecordInfo[]; total: number }>> {
   return request('/api/user/credit-records', { method: 'GET', params });
+}
+
+// 查询用户积分批次列表
+export async function apiGetCreditBatches(params: {
+  creditType: CreditTypeEnum | string;
+}): Promise<RequestResponse<CreditBatchItem[]>> {
+  return request('/api/credit/batches', { method: 'GET', params });
 }
 
 // ──────────────────────────────────────────────

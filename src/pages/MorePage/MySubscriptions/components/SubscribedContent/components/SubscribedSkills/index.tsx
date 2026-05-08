@@ -1,11 +1,16 @@
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMySubscription } from '@/services/subscriptionService';
-import { BizTypeEnum, MyPlanPeriodEnum } from '@/types/interfaces/subscription';
+import {
+  BizTypeEnum,
+  MyPlanPeriodEnum,
+  MySubscriptionStatusEnum,
+} from '@/types/interfaces/subscription';
 import { PlayCircleOutlined } from '@ant-design/icons';
-import { Empty, Skeleton, Tag } from 'antd';
+import { Empty, Spin, Statistic, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useRequest } from 'umi';
+import { getPeriodPayTypeText, getPeriodUnitText } from '../../../../utils';
 import styles from './index.less';
 
 const SubscribedSkills: React.FC = () => {
@@ -17,10 +22,8 @@ const SubscribedSkills: React.FC = () => {
 
   if (loading) {
     return (
-      <div className={styles['skills-grid']}>
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} active avatar paragraph={{ rows: 3 }} />
-        ))}
+      <div className={styles['loading-wrapper']}>
+        <Spin />
       </div>
     );
   }
@@ -59,8 +62,7 @@ const SubscribedSkills: React.FC = () => {
 
               {buyout && (
                 <Tag color="cyan" className={styles['buyout-tag']}>
-                  {dict('PC.Pages.MorePage.MySubscriptions.permanentUse') ||
-                    '已买断 · 永久使用'}
+                  {dict('PC.Pages.MorePage.MySubscriptions.permanentUse')}
                 </Tag>
               )}
             </div>
@@ -69,33 +71,68 @@ const SubscribedSkills: React.FC = () => {
               {buyout ? (
                 <div className={styles['buyout-info']}>
                   <div className={styles['buyout-price']}>
-                    <span className={styles['label']}>买断价</span>
-                    <span className={styles['value']}>¥{item.plan?.price}</span>
+                    <span className={styles['label']}>
+                      {dict(
+                        'PC.Pages.MorePage.MySubscriptions.buyoutPriceLabel',
+                      )}
+                    </span>
+                    <Statistic
+                      value={item.plan?.price}
+                      valueStyle={{ fontSize: '14px' }}
+                      prefix="¥"
+                      precision={2}
+                    />
                   </div>
                   <Tag className={styles['status-tag-inner']} color="cyan">
-                    已买断
+                    {dict('PC.Pages.MorePage.MySubscriptions.boughtOut')}
                   </Tag>
                 </div>
               ) : (
-                <div className={styles['sub-info-grid']}>
-                  <div className={styles['info-item']}>
-                    <div className={styles['label']}>订阅金额</div>
-                    <div className={styles['value']}>
-                      <span className={styles['price']}>
-                        ¥{item.plan?.price}
-                      </span>
-                      /月
+                <>
+                  <div className={styles['sub-info-grid']}>
+                    <div className={styles['info-item']}>
+                      <div className={styles['label']}>
+                        {dict('PC.Pages.MorePage.MySubscriptions.subAmount')}
+                      </div>
+                      <div className={styles['value']}>
+                        <Statistic
+                          className={styles['price-statistic']}
+                          value={item.plan?.price}
+                          prefix="¥"
+                          suffix={getPeriodUnitText(item.plan?.period)}
+                          precision={2}
+                        />
+                      </div>
+                    </div>
+                    <div className={styles['info-item']}>
+                      <div className={styles['label']}>
+                        {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}
+                      </div>
+                      <div className={styles['value']}>
+                        {item.endTime
+                          ? dayjs(item.endTime).format('YYYY-MM-DD')
+                          : '-'}
+                      </div>
                     </div>
                   </div>
-                  <div className={styles['info-item']}>
-                    <div className={styles['label']}>到期时间</div>
-                    <div className={styles['value']}>
-                      {item.endTime
-                        ? dayjs(item.endTime).format('YYYY-MM-DD')
-                        : '-'}
+                  <div className={styles['buyout-info']}>
+                    <div className={styles['pay-type']}>
+                      {getPeriodPayTypeText(item.plan?.period)}
                     </div>
+                    <Tag
+                      className={styles['status-tag-inner']}
+                      color={
+                        item.status === MySubscriptionStatusEnum.Active
+                          ? 'success'
+                          : 'error'
+                      }
+                    >
+                      {item.status === MySubscriptionStatusEnum.Active
+                        ? dict('PC.Pages.MorePage.MySubscriptions.subscribing')
+                        : dict('PC.Pages.MorePage.MySubscriptions.expired')}
+                    </Tag>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
