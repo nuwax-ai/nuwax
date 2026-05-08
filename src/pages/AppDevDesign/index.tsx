@@ -274,20 +274,25 @@ const AppDevDesign: React.FC = () => {
     onServerStatusChange: setIsServiceRunning,
   });
 
-  // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
-  // 整个页面生命周期内只触发一次：避免死循环和跨项目重复触发；后续重试由用户手动点「重启服务器」。
-  const designRecoveryFiredRef = useRef(false);
-  const handleDesignModeUnreachable = useCallback(() => {
-    if (designRecoveryFiredRef.current) return;
-    designRecoveryFiredRef.current = true;
-    server.restartServer(false).catch(() => {
-      // restartServer 内部已写入 serverMessage / errorCode，这里只吞掉 unhandled rejection。
-    });
-  }, [server]);
-
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
   const designViewerRef = useRef<DesignViewerRef>(null);
+
+  // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
+  // 整个页面生命周期内只触发一次：避免死循环和跨项目重复触发；后续重试由用户手动点「重启服务器」。
+  const designRecoveryFiredRef = useRef(false);
+  const handleDesignModeUnreachable = useCallback(async () => {
+    if (designRecoveryFiredRef.current) return;
+    designRecoveryFiredRef.current = true;
+    try {
+      await server.restartServer(false);
+      // 重启完成后强制刷新预览，让 iframe 从已经稳定的新 dev URL 走一次完整 reload，
+      // 避免「about:blank → 真实 URL」过渡期 onLoad 提前触发、auto-sync 投递到错误 origin。
+      previewRef.current?.refresh();
+    } catch {
+      // restartServer 内部已写入 serverMessage / errorCode
+    }
+  }, [server]);
 
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState(false);
