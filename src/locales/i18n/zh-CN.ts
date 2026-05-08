@@ -2615,6 +2615,15 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.CreditRecords.colAmount': '变动积分',
   'PC.Pages.MorePage.CreditRecords.colBalance': '余额',
   'PC.Pages.MorePage.CreditRecords.colCreatedAt': '时间',
+  'PC.Pages.MorePage.CreditRecords.filterCreditType': '积分类型',
+  'PC.Pages.MorePage.CreditRecords.typeSubscription': '订阅发放',
+  'PC.Pages.MorePage.CreditRecords.typePurchase': '增购',
+  'PC.Pages.MorePage.CreditRecords.typeActivity': '活动发放',
+  'PC.Pages.MorePage.CreditRecords.typeManual': '系统发放',
+  'PC.Pages.MorePage.CreditRecords.typeModelCall': 'TOKEN消耗',
+  'PC.Pages.MorePage.CreditRecords.typeAgentCall': '智能体调用',
+  'PC.Pages.MorePage.CreditRecords.typeToolCall': '工具调用',
+  'PC.Pages.MorePage.CreditRecords.typeManualDeduct': '系统扣减',
 
   // ── 我的订阅 - 新增 ──
   'PC.Pages.MorePage.MySubscriptions.currentPlan': '当前订阅',
@@ -2732,11 +2741,6 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.MyEarnings.withdrawColAccount': '账户',
 
   // ── 积分明细 - 新增 ──
-  'PC.Pages.MorePage.CreditRecords.filterIncrease': '增加',
-  'PC.Pages.MorePage.CreditRecords.filterDecrease': '扣减',
-  'PC.Pages.MorePage.CreditRecords.filterStartDate': '开始日期',
-  'PC.Pages.MorePage.CreditRecords.filterEndDate': '结束日期',
-  'PC.Pages.MorePage.CreditRecords.filterChangeType': '变动类型',
   'PC.Pages.MorePage.CreditRecords.colTime': '时间',
   'PC.Pages.MorePage.CreditRecords.colRemaining': '剩余积分',
   'PC.Pages.MorePage.CreditRecords.colNote': '说明',
