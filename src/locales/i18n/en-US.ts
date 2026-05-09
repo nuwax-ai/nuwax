@@ -2850,7 +2850,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder': 'Search document name',
   'PC.Pages.SpaceKnowledge.GraphDocTable.status': 'Status',
   'PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments': 'Total {0} documents',
-  'PC.Pages.SpaceKnowledge.GraphDocTable.unavailable': 'Unavailable',
+  'PC.Pages.SpaceKnowledge.GraphDocTable.unavailable': 'Build failed',
   'PC.Pages.SpaceKnowledge.GraphDocTable.updatedTime': 'Updated',
   'PC.Pages.SpaceKnowledge.QaBatchModal.batchImportSuccess': 'Batch import successful',
   'PC.Pages.SpaceKnowledge.QaBatchModal.clickOrDragToUpload': 'Click or drag file(s) to this area to upload',
