@@ -35,7 +35,6 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   var isShowGRAPH = tenantConfigInfo.commercialEdition;
-  isShowGRAPH = true;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
