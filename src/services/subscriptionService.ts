@@ -20,15 +20,12 @@ import type {
   EarningRecordInfo,
   EarningsSummaryInfo,
   MerchantInfoData,
-  ModelPricingInfo,
   MySubscriptionData,
   OrderInfo,
   PaymentConfigInfo,
   PricingPlanInfo,
-  SkillPricingInfo,
   SubscriptionPlan,
   SubscriptionSummaryInfo,
-  ToolPricingInfo,
   UserCreditBalanceInfo,
   UserCreditsInfo,
   UserSubscriptionInfo,
@@ -79,133 +76,6 @@ export async function apiTogglePricingPlan(
   enabled: boolean,
 ): Promise<RequestResponse<null>> {
   return request(`/api/pricing-plans/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
-// ──────────────────────────────────────────────
-// 资源定价 - 模型/工具/技能
-// ──────────────────────────────────────────────
-
-export async function apiListModelPricing(
-  spaceId: number,
-): Promise<RequestResponse<ModelPricingInfo[]>> {
-  return request(`/api/space/${spaceId}/resource-pricing/models`, {
-    method: 'GET',
-  });
-}
-
-export async function apiCreateModelPricing(
-  spaceId: number,
-  data: Partial<ModelPricingInfo>,
-): Promise<RequestResponse<ModelPricingInfo>> {
-  return request(`/api/space/${spaceId}/resource-pricing/models`, {
-    method: 'POST',
-    data,
-  });
-}
-
-export async function apiUpdateModelPricing(
-  id: number,
-  data: Partial<ModelPricingInfo>,
-): Promise<RequestResponse<ModelPricingInfo>> {
-  return request(`/api/resource-pricing/models/${id}`, { method: 'PUT', data });
-}
-
-export async function apiDeleteModelPricing(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/models/${id}`, { method: 'DELETE' });
-}
-
-export async function apiToggleModelPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/models/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
-export async function apiListToolPricing(
-  spaceId: number,
-): Promise<RequestResponse<ToolPricingInfo[]>> {
-  return request(`/api/space/${spaceId}/resource-pricing/tools`, {
-    method: 'GET',
-  });
-}
-
-export async function apiCreateToolPricing(
-  spaceId: number,
-  data: Partial<ToolPricingInfo>,
-): Promise<RequestResponse<ToolPricingInfo>> {
-  return request(`/api/space/${spaceId}/resource-pricing/tools`, {
-    method: 'POST',
-    data,
-  });
-}
-
-export async function apiUpdateToolPricing(
-  id: number,
-  data: Partial<ToolPricingInfo>,
-): Promise<RequestResponse<ToolPricingInfo>> {
-  return request(`/api/resource-pricing/tools/${id}`, { method: 'PUT', data });
-}
-
-export async function apiDeleteToolPricing(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/tools/${id}`, { method: 'DELETE' });
-}
-
-export async function apiToggleToolPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/tools/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
-export async function apiListSkillPricing(
-  spaceId: number,
-): Promise<RequestResponse<SkillPricingInfo[]>> {
-  return request(`/api/space/${spaceId}/resource-pricing/skills`, {
-    method: 'GET',
-  });
-}
-
-export async function apiCreateSkillPricing(
-  spaceId: number,
-  data: Partial<SkillPricingInfo>,
-): Promise<RequestResponse<SkillPricingInfo>> {
-  return request(`/api/space/${spaceId}/resource-pricing/skills`, {
-    method: 'POST',
-    data,
-  });
-}
-
-export async function apiUpdateSkillPricing(
-  id: number,
-  data: Partial<SkillPricingInfo>,
-): Promise<RequestResponse<SkillPricingInfo>> {
-  return request(`/api/resource-pricing/skills/${id}`, { method: 'PUT', data });
-}
-
-export async function apiDeleteSkillPricing(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/skills/${id}`, { method: 'DELETE' });
-}
-
-export async function apiToggleSkillPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/skills/${id}/toggle`, {
     method: 'PUT',
     data: { enabled },
   });

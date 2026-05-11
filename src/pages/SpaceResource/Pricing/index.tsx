@@ -1,29 +1,17 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { dict } from '@/services/i18nRuntime';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  apiCreateModelPricing,
   apiCreateSkillPricing,
-  apiCreateToolPricing,
-  apiDeleteModelPricing,
   apiDeleteSkillPricing,
-  apiDeleteToolPricing,
-  apiListModelPricing,
+  apiListPricingConfig,
   apiListSkillPricing,
-  apiListToolPricing,
-  apiToggleModelPricing,
   apiToggleSkillPricing,
-  apiToggleToolPricing,
-  apiUpdateModelPricing,
   apiUpdateSkillPricing,
-  apiUpdateToolPricing,
-} from '@/services/subscriptionService';
-import type {
-  ModelPriceTier,
-  ModelPricingInfo,
-  SkillPricingInfo,
-  ToolPricingInfo,
-} from '@/types/interfaces/subscription';
+} from '@/pages/SpaceResource/services/resource';
+import { dict } from '@/services/i18nRuntime';
+import type { SkillPricingInfo } from '@/types/interfaces/subscription';
+import { modalConfirm } from '@/utils/ant-custom';
 import { formatPrice } from '@/utils/format';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -38,10 +26,17 @@ import {
   Select,
   Switch,
   Tag,
+  message,
 } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import { useParams } from 'umi';
+import {
+  QueryPricingConfigInfo,
+  ToolPricingInfo,
+  ToolPricingTargetType,
+} from '../types/resource';
 import styles from './index.less';
+import ModelPricingModal from './ModelPricingModal';
 import { useCrudTab } from './useCrudTab';
 
 // ─── Category helpers ───
@@ -80,74 +75,74 @@ function getCatTag(cat: string) {
 
 // ─── Modal selector catalogs ───
 
-const TOOL_CATALOG: { name: string; category: string; description: string }[] =
-  [
-    {
-      name: 'GPT-4o 文本生成',
-      category: 'plugin',
-      description: '支持多轮对话与复杂推理任务，高精度自然语言生成',
-    },
-    {
-      name: 'DALL·E 图像生成',
-      category: 'plugin',
-      description: '根据文本描述生成高质量图像，支持多种风格',
-    },
-    {
-      name: '语音识别引擎',
-      category: 'plugin',
-      description: '多语种语音转文字，支持实时流式识别',
-    },
-    {
-      name: '视频分析插件',
-      category: 'plugin',
-      description: '视频内容识别、场景检测与物体追踪',
-    },
-    {
-      name: '数据可视化引擎',
-      category: 'plugin',
-      description: '将原始数据转换为交互式图表与仪表盘',
-    },
-    {
-      name: 'PDF 解析插件',
-      category: 'plugin',
-      description: '高效解析 PDF 文档，提取文本、表格与图片',
-    },
-    {
-      name: 'Claude 长文本分析',
-      category: 'workflow',
-      description: '超长上下文窗口，适合文档分析与摘要',
-    },
-    {
-      name: '日报自动生成',
-      category: 'workflow',
-      description: '每日自动汇总数据并生成结构化报告',
-    },
-    {
-      name: '客户支持工作流',
-      category: 'workflow',
-      description: '自动分类、分配和响应客户工单',
-    },
-    {
-      name: '数据ETL工作流',
-      category: 'workflow',
-      description: '定时抽取、转换和加载数据到目标系统',
-    },
-    {
-      name: '文件搜索 MCP',
-      category: 'mcp',
-      description: '通过 MCP 协议提供本地文件智能搜索能力',
-    },
-    {
-      name: '数据库查询 MCP',
-      category: 'mcp',
-      description: '通过 MCP 协议执行数据库查询与结果返回',
-    },
-    {
-      name: '网络抓取 MCP',
-      category: 'mcp',
-      description: '通过 MCP 协议抓取网页内容并结构化输出',
-    },
-  ];
+// const TOOL_CATALOG: { name: string; category: string; description: string }[] =
+//   [
+//     {
+//       name: 'GPT-4o 文本生成',
+//       category: 'plugin',
+//       description: '支持多轮对话与复杂推理任务，高精度自然语言生成',
+//     },
+//     {
+//       name: 'DALL·E 图像生成',
+//       category: 'plugin',
+//       description: '根据文本描述生成高质量图像，支持多种风格',
+//     },
+//     {
+//       name: '语音识别引擎',
+//       category: 'plugin',
+//       description: '多语种语音转文字，支持实时流式识别',
+//     },
+//     {
+//       name: '视频分析插件',
+//       category: 'plugin',
+//       description: '视频内容识别、场景检测与物体追踪',
+//     },
+//     {
+//       name: '数据可视化引擎',
+//       category: 'plugin',
+//       description: '将原始数据转换为交互式图表与仪表盘',
+//     },
+//     {
+//       name: 'PDF 解析插件',
+//       category: 'plugin',
+//       description: '高效解析 PDF 文档，提取文本、表格与图片',
+//     },
+//     {
+//       name: 'Claude 长文本分析',
+//       category: 'workflow',
+//       description: '超长上下文窗口，适合文档分析与摘要',
+//     },
+//     {
+//       name: '日报自动生成',
+//       category: 'workflow',
+//       description: '每日自动汇总数据并生成结构化报告',
+//     },
+//     {
+//       name: '客户支持工作流',
+//       category: 'workflow',
+//       description: '自动分类、分配和响应客户工单',
+//     },
+//     {
+//       name: '数据ETL工作流',
+//       category: 'workflow',
+//       description: '定时抽取、转换和加载数据到目标系统',
+//     },
+//     {
+//       name: '文件搜索 MCP',
+//       category: 'mcp',
+//       description: '通过 MCP 协议提供本地文件智能搜索能力',
+//     },
+//     {
+//       name: '数据库查询 MCP',
+//       category: 'mcp',
+//       description: '通过 MCP 协议执行数据库查询与结果返回',
+//     },
+//     {
+//       name: '网络抓取 MCP',
+//       category: 'mcp',
+//       description: '通过 MCP 协议抓取网页内容并结构化输出',
+//     },
+//   ];
 
 const SKILL_CATALOG: { name: string; category: string; description: string }[] =
   [
@@ -198,95 +193,88 @@ const SKILL_CATALOG: { name: string; category: string; description: string }[] =
     },
   ];
 
-const MODEL_CATALOG: { name: string; provider: string }[] = [
-  { name: 'GPT-4o', provider: 'OpenAI' },
-  { name: 'GPT-4o-mini', provider: 'OpenAI' },
-  { name: 'GPT-4.1', provider: 'OpenAI' },
-  { name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
-  { name: 'Claude 3 Haiku', provider: 'Anthropic' },
-  { name: 'Claude Opus 4', provider: 'Anthropic' },
-  { name: 'DeepSeek-V3', provider: 'DeepSeek' },
-  { name: 'DeepSeek-R1', provider: 'DeepSeek' },
-  { name: 'Gemini 1.5 Pro', provider: 'Google' },
-  { name: 'Gemini 2.0 Flash', provider: 'Google' },
-  { name: 'Qwen-Max', provider: '阿里云' },
-  { name: 'Qwen-Plus', provider: '阿里云' },
-  { name: 'GLM-4', provider: '智谱AI' },
-  { name: 'Moonshot-v1', provider: '月之暗面' },
-];
-
-// ═══════════════════════════════════════════
-//  ModelPricingTab
-// ═══════════════════════════════════════════
-
 const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
-  const [tiers, setTiers] = useState<ModelPriceTier[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState<QueryPricingConfigInfo | null>(null);
+  const [form] = Form.useForm();
   const actionRef = useRef<ActionType>();
 
-  const crud = useCrudTab<ModelPricingInfo>({
-    spaceId,
-    listApi: apiListModelPricing,
-    createApi: apiCreateModelPricing,
-    updateApi: apiUpdateModelPricing,
-    deleteApi: apiDeleteModelPricing,
-    toggleApi: apiToggleModelPricing,
-  });
+  // const { run: listPricingConfig } = useRequest(apiListPricingConfig, {
+  //   manual: true,
+  //   onSuccess: (data: QueryPricingConfigInfo[]) => {
+  //     setList(data || []);
+  //   },
+  // });
 
   const openAdd = () => {
-    crud.openAdd();
-    setTiers([
-      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
-      { label: '≤128K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
-    ]);
+    setEditItem(null);
+    setModalOpen(true);
   };
 
-  const openEdit = (item: ModelPricingInfo) => {
-    crud.openEdit(item);
-    setTiers(item.tiers || []);
+  const openEdit = (item: QueryPricingConfigInfo) => {
+    setEditItem(item);
+    setModalOpen(true);
   };
 
-  const handleSave = () => {
-    crud.handleSave({ tiers });
-  };
+  const request = async () => {
+    setLoading(true);
+    const res = await apiListPricingConfig({
+      targetType: ToolPricingTargetType.MODEL,
+      spaceId,
+    });
+    setLoading(false);
 
-  const addTier = () => {
-    setTiers([
-      ...tiers,
-      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
-    ]);
-  };
-
-  const removeTier = (index: number) => {
-    setTiers(tiers.filter((_, i) => i !== index));
-  };
-
-  const updateTier = (
-    index: number,
-    field: keyof ModelPriceTier,
-    value: string | number,
-  ) => {
-    const newTiers = [...tiers];
-    if (field === 'label') {
-      newTiers[index] = { ...newTiers[index], label: value as string };
-    } else {
-      newTiers[index] = { ...newTiers[index], [field]: value };
+    if (res.code !== SUCCESS_CODE) {
+      message.error(
+        res.message || dict('PC.Pages.SpaceResourcePricing.fetchDataFailed'),
+      );
+      return { data: [], total: 0, success: false };
     }
-    setTiers(newTiers);
+
+    const data = res.data || [];
+    return {
+      data,
+      total: data.length,
+      success: true,
+    };
   };
 
-  const columns: ProColumns<ModelPricingInfo>[] = [
+  const handleDelete = (item: QueryPricingConfigInfo) => {
+    modalConfirm(
+      dict('PC.Common.Global.confirmDelete'),
+      item.targetObjectInfo?.name || '',
+      async () => {
+        // try {
+        //   const tierIds = item.tiers
+        //     .map((tier) => tier.id)
+        //     .filter((id): id is number => !!id);
+        //   if (tierIds.length) {
+        //     await Promise.all(tierIds.map((id) => apiDeleteModelPricing(id)));
+        //   }
+        //   message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
+        //   await loadModelPricingList();
+        // } catch (error) {
+        //   message.error(dict('PC.Common.Global.operationFailed'));
+        // }
+      },
+    );
+  };
+
+  const columns: ProColumns<QueryPricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.modelName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      render: (_, record) => record.targetObjectInfo?.name || '',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.provider'),
       dataIndex: 'provider',
       key: 'provider',
       width: 120,
-      render: (v) => <Tag>{v}</Tag>,
+      render: (_, record) => record.targetObjectInfo?.name || '',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.pricingTier'),
@@ -294,17 +282,17 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 340,
       render: (_, record) => (
         <div className={styles.tierTags}>
-          {record.tiers?.map((t, i) => (
-            <Tag key={i} color="blue" className={styles.tierTag}>
-              {t.label} |{' '}
+          {(record.modelPriceTiers || []).map((tier, index) => (
+            <Tag key={index} color="blue" className={styles.tierTag}>
+              {tier.contextLength}K |{' '}
               {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
-              {formatPrice(t.inputPrice)} |{' '}
+              {formatPrice(tier.inputPrice)} |{' '}
               {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
-              {formatPrice(t.outputPrice)}
-              {t.cachePrice > 0
+              {formatPrice(tier.outputPrice)}
+              {tier.cachePrice > 0
                 ? ` | ${dict(
                     'PC.Pages.SpaceResourcePricing.cachePriceLabel',
-                  )}¥${formatPrice(t.cachePrice)}`
+                  )}¥${formatPrice(tier.cachePrice)}`
                 : ''}
             </Tag>
           ))}
@@ -317,11 +305,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 100,
       align: 'center',
       render: (_, record) => (
-        <Switch
-          size="small"
-          checked={record.enabled}
-          onChange={(v) => crud.handleToggle(record, v)}
-        />
+        <Switch size="small" checked={record.status === 1} disabled />
       ),
     },
     {
@@ -336,14 +320,13 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             {
               key: 'edit',
               label: dict('PC.Common.Global.edit'),
-              onClick: (r) => openEdit(r),
+              onClick: (row) => openEdit(row),
             },
             {
               key: 'delete',
               label: dict('PC.Common.Global.delete'),
               danger: true,
-              confirm: { title: dict('PC.Common.Global.confirmDelete') },
-              onClick: (r) => crud.handleDelete(r),
+              onClick: (row) => handleDelete(row),
             },
           ]}
         />
@@ -361,162 +344,27 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
       </div>
-      <XProTable<ModelPricingInfo>
+      <XProTable<QueryPricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
-        dataSource={crud.list}
-        loading={crud.loading}
+        loading={loading}
         pagination={false}
         search={false}
+        request={request}
       />
-      <Drawer
-        title={
-          crud.editItem
-            ? dict('PC.Pages.SpaceResourcePricing.editModelPricing')
-            : dict('PC.Pages.SpaceResourcePricing.addModel')
-        }
-        open={crud.modalOpen}
-        onClose={() => crud.setModalOpen(false)}
-        width={520}
-        footer={
-          <div className={styles.drawerFooter}>
-            <Button onClick={() => crud.setModalOpen(false)}>
-              {dict('PC.Common.Global.cancel')}
-            </Button>
-            <Button type="primary" onClick={handleSave} loading={crud.saving}>
-              {crud.editItem
-                ? dict('PC.Common.Global.save')
-                : dict('PC.Common.Global.confirm')}
-            </Button>
-          </div>
-        }
-      >
-        <Form form={crud.form} layout="vertical">
-          <Form.Item
-            name="name"
-            label={dict('PC.Pages.SpaceResourcePricing.modelName')}
-            rules={[{ required: true }]}
-          >
-            {crud.editItem ? (
-              <Input disabled />
-            ) : (
-              <Select
-                placeholder={dict(
-                  'PC.Pages.SpaceResourcePricing.selectPlaceholder',
-                )}
-                onChange={(v) => {
-                  const m = MODEL_CATALOG.find((c) => c.name === v);
-                  if (m) {
-                    crud.form.setFieldsValue({
-                      name: m.name,
-                      provider: m.provider,
-                    });
-                  }
-                }}
-              >
-                {MODEL_CATALOG.map((m) => (
-                  <Select.Option key={m.name} value={m.name}>
-                    {m.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            )}
-          </Form.Item>
-          <Form.Item
-            name="provider"
-            label={dict('PC.Pages.SpaceResourcePricing.provider')}
-            rules={[{ required: true }]}
-          >
-            <Input disabled />
-          </Form.Item>
-        </Form>
-
-        <div className={styles.tierSection}>
-          <div className={styles.tierSectionHeader}>
-            <span className={styles.tierSectionTitle}>
-              {dict('PC.Pages.SpaceResourcePricing.pricingTier')}
-              <span className={styles.tierSectionHint}>
-                {dict('PC.Pages.SpaceResourcePricing.tierHint')}
-              </span>
-            </span>
-            <Button size="small" icon={<PlusOutlined />} onClick={addTier}>
-              {dict('PC.Pages.SpaceResourcePricing.addTier')}
-            </Button>
-          </div>
-
-          {tiers.map((tier, index) => (
-            <div key={index} className={styles.tierCard}>
-              <div className={styles.tierCardHeader}>
-                <div className={styles.tierThreshold}>
-                  <span className={styles.tierThresholdPrefix}>≤</span>
-                  <InputNumber
-                    value={parseInt(tier.label.replace(/[^0-9]/g, '')) || 32}
-                    min={1}
-                    precision={0}
-                    size="small"
-                    className={styles.tierThresholdInput}
-                    onChange={(v) => updateTier(index, 'label', `≤${v || 32}K`)}
-                  />
-                  <span className={styles.tierThresholdSuffix}>K</span>
-                </div>
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<span>✕</span>}
-                  onClick={() => removeTier(index)}
-                  title={dict('PC.Pages.SpaceResourcePricing.removeTier')}
-                />
-              </div>
-              <div className={styles.tierPrices}>
-                <div className={styles.tierPriceItem}>
-                  <span className={styles.tierPriceLabel}>
-                    {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}
-                  </span>
-                  <InputNumber
-                    value={tier.inputPrice}
-                    min={0}
-                    step={0.001}
-                    precision={4}
-                    size="small"
-                    className={styles.tierPriceInput}
-                    onChange={(v) => updateTier(index, 'inputPrice', v || 0)}
-                  />
-                </div>
-                <div className={styles.tierPriceItem}>
-                  <span className={styles.tierPriceLabel}>
-                    {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}
-                  </span>
-                  <InputNumber
-                    value={tier.outputPrice}
-                    min={0}
-                    step={0.001}
-                    precision={4}
-                    size="small"
-                    className={styles.tierPriceInput}
-                    onChange={(v) => updateTier(index, 'outputPrice', v || 0)}
-                  />
-                </div>
-                <div className={styles.tierPriceItem}>
-                  <span className={styles.tierPriceLabel}>
-                    {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}
-                  </span>
-                  <InputNumber
-                    value={tier.cachePrice}
-                    min={0}
-                    step={0.001}
-                    precision={4}
-                    size="small"
-                    className={styles.tierPriceInput}
-                    onChange={(v) => updateTier(index, 'cachePrice', v || 0)}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Drawer>
+      <ModelPricingModal
+        spaceId={spaceId}
+        open={modalOpen}
+        isEdit={!!editItem}
+        editItem={editItem}
+        form={form}
+        onCancel={() => setModalOpen(false)}
+        onSaved={() => {
+          setModalOpen(false);
+          actionRef.current?.reload();
+        }}
+      />
     </div>
   );
 };
@@ -530,55 +378,57 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const actionRef = useRef<ActionType>();
 
-  const crud = useCrudTab<ToolPricingInfo>({
-    spaceId,
-    listApi: apiListToolPricing,
-    createApi: apiCreateToolPricing,
-    updateApi: apiUpdateToolPricing,
-    deleteApi: apiDeleteToolPricing,
-    toggleApi: apiToggleToolPricing,
-  });
+  console.log('ToolPricingTab', spaceId);
 
-  const filteredList = crud.list.filter((t) => {
-    const matchKeyword = !keyword || t.name.includes(keyword);
-    const matchCategory = !categoryFilter || t.category === categoryFilter;
-    return matchKeyword && matchCategory;
-  });
+  // const crud = useCrudTab<ToolPricingInfo>({
+  //   spaceId,
+  //   listApi: apiListPricingConfig,
+  //   createApi: apiCreateToolPricing,
+  //   updateApi: apiUpdateToolPricing,
+  //   deleteApi: apiDeleteToolPricing,
+  //   toggleApi: apiToggleToolPricing,
+  // });
+
+  // const filteredList = crud.list.filter((t) => {
+  //   const matchKeyword = !keyword || t.name.includes(keyword);
+  //   const matchCategory = !categoryFilter || t.category === categoryFilter;
+  //   return matchKeyword && matchCategory;
+  // });
 
   const columns: ProColumns<ToolPricingInfo>[] = [
-    {
-      title: dict('PC.Pages.SpaceResourcePricing.toolName'),
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      render: (_, record) => (
-        <div className={styles.toolNameCell}>
-          <span
-            className={styles.toolIcon}
-            style={{
-              background:
-                record.category === 'plugin'
-                  ? '#7c3aed'
-                  : record.category === 'workflow'
-                  ? '#ea580c'
-                  : '#0891b2',
-            }}
-          >
-            {record.name.charAt(0)}
-          </span>
-          <div>
-            <div className={styles.toolName}>{record.name}</div>
-            <div className={styles.toolDesc}>{record.description}</div>
-          </div>
-        </div>
-      ),
-    },
+    // {
+    //   title: dict('PC.Pages.SpaceResourcePricing.toolName'),
+    //   dataIndex: 'name',
+    //   key: 'name',
+    //   width: 200,
+    //   render: (_, record) => (
+    //     <div className={styles.toolNameCell}>
+    //       <span
+    //         className={styles.toolIcon}
+    //         style={{
+    //           background:
+    //             record.category === 'plugin'
+    //               ? '#7c3aed'
+    //               : record.category === 'workflow'
+    //               ? '#ea580c'
+    //               : '#0891b2',
+    //         }}
+    //       >
+    //         {record.name.charAt(0)}
+    //       </span>
+    //       <div>
+    //         <div className={styles.toolName}>{record.name}</div>
+    //         <div className={styles.toolDesc}>{record.description}</div>
+    //       </div>
+    //     </div>
+    //   ),
+    // },
     {
       title: dict('PC.Pages.SpaceResourcePricing.category'),
       dataIndex: 'category',
       key: 'category',
       width: 100,
-      render: (_, record) => getCatTag(record.category),
+      // render: (_, record) => getCatTag(record.category),
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.calls'),
@@ -596,56 +446,56 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       title: dict('PC.Pages.SpaceResourcePricing.price'),
       key: 'price',
       width: 120,
-      render: (_, record) => (
-        <span>
-          <span className={styles.boldValue}>¥{formatPrice(record.price)}</span>
-          <span className={styles.muted}> / {record.period}</span>
-          {record.trialCount > 0 && (
-            <Tag color="green" style={{ marginLeft: 6 }}>
-              {dict('PC.Pages.SpaceResourcePricing.trialCount')}{' '}
-              {record.trialCount}
-            </Tag>
-          )}
-        </span>
-      ),
+      // render: (_, record) => (
+      //   <span>
+      //     <span className={styles.boldValue}>¥{formatPrice(record.price)}</span>
+      //     <span className={styles.muted}> / {record.period}</span>
+      //     {record.trialCount > 0 && (
+      //       <Tag color="green" style={{ marginLeft: 6 }}>
+      //         {dict('PC.Pages.SpaceResourcePricing.trialCount')}{' '}
+      //         {record.trialCount}
+      //       </Tag>
+      //     )}
+      //   </span>
+      // ),
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       key: 'enabled',
       width: 100,
       align: 'center',
-      render: (_, record) => (
-        <Switch
-          size="small"
-          checked={record.enabled}
-          onChange={(v) => crud.handleToggle(record, v)}
-        />
-      ),
+      // render: (_, record) => (
+      //   // <Switch
+      //   //   size="small"
+      //   //   checked={record.enabled}
+      //   //   onChange={(v) => crud.handleToggle(record, v)}
+      //   // />
+      // ),
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       width: 120,
       align: 'center',
-      render: (_, record) => (
-        <TableActions
-          record={record}
-          actions={[
-            {
-              key: 'edit',
-              label: dict('PC.Common.Global.edit'),
-              onClick: (r) => crud.openEdit(r),
-            },
-            {
-              key: 'delete',
-              label: dict('PC.Common.Global.delete'),
-              danger: true,
-              confirm: { title: dict('PC.Common.Global.confirmDelete') },
-              onClick: (r) => crud.handleDelete(r),
-            },
-          ]}
-        />
-      ),
+      // render: (_, record) => (
+      //   <TableActions
+      //     record={record}
+      //     actions={[
+      //       {
+      //         key: 'edit',
+      //         label: dict('PC.Common.Global.edit'),
+      //         onClick: (r) => crud.openEdit(r),
+      //       },
+      //       {
+      //         key: 'delete',
+      //         label: dict('PC.Common.Global.delete'),
+      //         danger: true,
+      //         confirm: { title: dict('PC.Common.Global.confirmDelete') },
+      //         onClick: (r) => crud.handleDelete(r),
+      //       },
+      //     ]}
+      //   />
+      // ),
     },
   ];
 
@@ -655,7 +505,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <h4 className={styles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.toolTitle')}
         </h4>
-        <Button type="primary" icon={<PlusOutlined />} onClick={crud.openAdd}>
+        <Button type="primary" icon={<PlusOutlined />}>
           {dict('PC.Pages.SpaceResourcePricing.addTool')}
         </Button>
       </div>
@@ -707,8 +557,8 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
-        dataSource={filteredList}
-        loading={crud.loading}
+        // dataSource={filteredList}
+        // loading={crud.loading}
         pagination={false}
         search={false}
       />
@@ -716,7 +566,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         <span className={styles.noticeIcon}>ⓘ</span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
       </div>
-      <Drawer
+      {/* <Drawer
         title={
           crud.editItem
             ? dict('PC.Pages.SpaceResourcePricing.editTool')
@@ -821,7 +671,7 @@ const ToolPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
             <InputNumber min={0} precision={0} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
-      </Drawer>
+      </Drawer> */}
     </div>
   );
 };

@@ -514,26 +514,26 @@ export interface ModelPriceTier {
   cachePrice: number;
 }
 
-export interface ModelPricingInfo {
-  id: number;
-  name: string;
-  provider: string;
-  tiers: ModelPriceTier[];
-  enabled: boolean;
-}
+// export interface ModelPricingInfo {
+//   id: number;
+//   name: string;
+//   provider: string;
+//   tiers: ModelPriceTier[];
+//   enabled: boolean;
+// }
 
-export interface ToolPricingInfo {
-  id: number;
-  name: string;
-  category: 'plugin' | 'workflow' | 'mcp';
-  description: string;
-  price: number;
-  period: string;
-  calls: number;
-  trialCount: number;
-  enabled: boolean;
-  createdAt: string;
-}
+// export interface ToolPricingInfo {
+//   id: number;
+//   name: string;
+//   category: 'plugin' | 'workflow' | 'mcp';
+//   description: string;
+//   price: number;
+//   period: string;
+//   calls: number;
+//   trialCount: number;
+//   enabled: boolean;
+//   createdAt: string;
+// }
 
 export interface SkillPricingInfo {
   id: number;
