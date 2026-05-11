@@ -2850,7 +2850,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder': '搜索文档名称',
   'PC.Pages.SpaceKnowledge.GraphDocTable.status': '状态',
   'PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments': '共 {0} 篇文档',
-  'PC.Pages.SpaceKnowledge.GraphDocTable.unavailable': '不可用',
+  'PC.Pages.SpaceKnowledge.GraphDocTable.unavailable': '构建失败',
   'PC.Pages.SpaceKnowledge.GraphDocTable.updatedTime': '更新时间',
   'PC.Pages.SpaceKnowledge.QaBatchModal.batchImportSuccess': '批量导入成功',
   'PC.Pages.SpaceKnowledge.QaBatchModal.clickOrDragToUpload': '点击或拖拽文件到此区域上传',
