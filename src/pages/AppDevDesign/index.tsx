@@ -16,6 +16,7 @@ import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import { useMergedAppDevAgentDevelopingOverlay } from '@/hooks/useMergedAppDevAgentDevelopingOverlay';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { AppDevHeader, ContentViewer } from '@/pages/AppDev/components';
@@ -297,6 +298,9 @@ const AppDevDesign: React.FC = () => {
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
+
+  /** URL 入参解析后的最终结果，透传给 ContentViewer */
+  const developingOverlayControl = useMergedAppDevAgentDevelopingOverlay();
 
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] =
@@ -1712,6 +1716,9 @@ const AppDevDesign: React.FC = () => {
                           onRefreshFileTree={fileManagement.loadFileTree}
                           findFileNode={fileManagement.findFileNode}
                           isChatLoading={chat.isChatLoading}
+                          showDevelopingOverlayDuringAgent={
+                            developingOverlayControl.valueForContentViewer
+                          }
                         />
                       </div>
                     </div>
