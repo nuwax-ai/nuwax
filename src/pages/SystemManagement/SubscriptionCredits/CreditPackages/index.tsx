@@ -157,6 +157,7 @@ const CreditPackages: React.FC = () => {
       title: dict('PC.Pages.SystemCreditPackages.colName'),
       dataIndex: 'packageName',
       key: 'packageName',
+      search: false,
       render: (_, record) => <span>{record.packageName || '-'}</span>,
     },
     {
@@ -186,7 +187,12 @@ const CreditPackages: React.FC = () => {
       title: dict('PC.Pages.SystemCreditPackages.colStatus'),
       dataIndex: 'status',
       key: 'status',
-      search: false,
+      search: true,
+      valueType: 'select',
+      valueEnum: {
+        [CreditPackageStatusEnum.Enabled]: '启用',
+        [CreditPackageStatusEnum.Disabled]: '禁用',
+      },
       render: (_, record) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Switch
