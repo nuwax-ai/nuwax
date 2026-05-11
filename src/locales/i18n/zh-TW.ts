@@ -4597,4 +4597,8 @@ export const ZH_TW: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 檔案解析失敗',
   'PC.Utils.PptxFallbackRenderer.previewAlt': '簡報預覽',
   'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 張幻燈片',
+  'PC.Pages.SystemCreditPackages.fieldNamePlaceholder': '請輸入積分套餐名稱',
+  'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder': '請輸入積分數量',
+  'PC.Pages.SystemCreditPackages.fieldPricePlaceholder': '請輸入積分套餐售價',
+  'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder': '請輸入積分有效期',
 };

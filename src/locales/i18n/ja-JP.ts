@@ -4598,4 +4598,11 @@ export const JA_JP: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX ファイルの解析に失敗しました',
   'PC.Utils.PptxFallbackRenderer.previewAlt': 'プレゼンテーションのプレビュー',
   'PC.Utils.PptxFallbackRenderer.slideCount': '合計 {0} 枚のスライド',
+  'PC.Pages.SystemCreditPackages.fieldNamePlaceholder': 'クレジットパッケージ名を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder':
+    'クレジット数を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldPricePlaceholder':
+    'クレジットパッケージ価格を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder':
+    'クレジット有効期間を入力してください',
 };

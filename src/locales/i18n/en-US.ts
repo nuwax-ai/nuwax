@@ -3457,9 +3457,15 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.createPackage': 'Create Package',
   'PC.Pages.SystemCreditPackages.editPackage': 'Edit Package',
   'PC.Pages.SystemCreditPackages.fieldName': 'Package Name',
+  'PC.Pages.SystemCreditPackages.fieldNamePlaceholder': 'Please enter package name',
   'PC.Pages.SystemCreditPackages.fieldCredits': 'Credits',
+  'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder': 'Please enter credits amount',
   'PC.Pages.SystemCreditPackages.fieldPrice': 'Price (CNY)',
+  'PC.Pages.SystemCreditPackages.fieldPricePlaceholder':
+    'Please enter credit package price',
   'PC.Pages.SystemCreditPackages.fieldEnabled': 'Published',
+  'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder':
+    'Please enter credits validity period',
 
   'PC.Pages.SpaceSkillManage.ComponentItem.lastEdited': 'Last edited',
   'PC.Pages.SpaceSkillManage.CreateSkill.createSkill': 'Create Skill',
