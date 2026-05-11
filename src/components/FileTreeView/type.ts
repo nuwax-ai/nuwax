@@ -109,4 +109,6 @@ export interface FileTreeViewProps {
   staticFileBasePath?: string;
   /** 是否为项目技能模式 */
   isProjectSkill?: boolean;
+  // 初始化视图类型
+  initViewFileType?: 'preview' | 'code';
 }
