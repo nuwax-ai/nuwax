@@ -4625,4 +4625,21 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemCreditRecords.operationTypeIncrease': '增加',
   'PC.Pages.SystemCreditRecords.operationTypeDecrease': '扣減',
   'PC.Pages.SystemCreditRecords.remark': '備註',
+
+  // ── 系统管理 - 业务订单查询 ────────────────────────────
+  'PC.Pages.SystemSubsOrders.colUser': '用戶',
+  'PC.Pages.SystemSubsOrders.orderId': '訂單ID',
+  'PC.Pages.SystemSubsOrders.userId': '用戶ID',
+  'PC.Pages.SystemSubsOrders.bizType': '業務類型',
+  'PC.Pages.SystemSubsOrders.description': '描述',
+  'PC.Pages.SystemSubsOrders.amount': '金額',
+  'PC.Pages.SystemSubsOrders.created': '開始時間',
+  'PC.Pages.SystemSubsOrders.modified': '修改時間',
+  'PC.Pages.SystemSubsOrders.orderStatus': '訂單狀態',
+  'PC.Pages.SystemSubsOrders.payStatus': '支付狀態',
+  'PC.Pages.SystemSubsOrders.viewDetail': '詳情',
+  'PC.Pages.SystemSubsOrders.statTotalRecords': '總記錄數',
+  'PC.Pages.SystemSubsOrders.statSubscriptionCount': '套餐訂閱',
+  'PC.Pages.SystemSubsOrders.statCreditsCount': '積分增購',
+  'PC.Pages.SystemSubsOrders.statTotalAmount': '總金額',
 };

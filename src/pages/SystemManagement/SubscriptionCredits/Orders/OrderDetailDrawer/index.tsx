@@ -10,12 +10,18 @@ export interface OrderDetailDrawerProps {
 }
 
 const statusColorMap: Record<string, string> = {
+  PAID: 'success',
+  PENDING: 'warning',
+  CANCELLED: 'default',
   Paid: 'success',
   Pending: 'warning',
   Refunded: 'default',
 };
 
 const statusLabelMap: Record<string, string> = {
+  PAID: dict('PC.Pages.MorePage.MyOrders.statusPaid'),
+  PENDING: dict('PC.Pages.MorePage.MyOrders.statusPending'),
+  CANCELLED: dict('PC.Pages.MorePage.MyOrders.statusRefunded'),
   Paid: dict('PC.Pages.MorePage.MyOrders.statusPaid'),
   Pending: dict('PC.Pages.MorePage.MyOrders.statusPending'),
   Refunded: dict('PC.Pages.MorePage.MyOrders.statusRefunded'),
@@ -73,11 +79,11 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             </div>
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colRecordNo')}
-              value={record.orderNo}
+              value={record.orderNo || record.id || '-'}
             />
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colDeveloper')}
-              value={record.userName}
+              value={record.userName || record.userId || '-'}
             />
           </div>
 
@@ -95,14 +101,15 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colSubscriptionType')}
               value={
-                record.orderType === 'Subscription'
+                record.orderType === 'Subscription' ||
+                record.bizType === 'SUBSCRIPTION'
                   ? dict('PC.Pages.MorePage.MyOrders.typeSubscription')
                   : dict('PC.Pages.MorePage.MyOrders.typeCredits')
               }
             />
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colPlanName')}
-              value={record.productName}
+              value={record.productName || record.description || '-'}
             />
             <DetailRow
               label={dict('PC.Pages.MorePage.MyOrders.colAmount')}
@@ -112,7 +119,13 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             />
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colStartAt')}
-              value={record.startAt ? formatDate(record.startAt) : '-'}
+              value={
+                record.startAt
+                  ? formatDate(record.startAt)
+                  : record.created
+                  ? formatDate(record.created)
+                  : '-'
+              }
             />
             <DetailRow
               label={dict('PC.Pages.SystemSubsOrders.colExpireAt')}

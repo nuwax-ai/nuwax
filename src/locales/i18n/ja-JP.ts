@@ -4629,4 +4629,21 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SystemCreditRecords.operationTypeIncrease': '増加',
   'PC.Pages.SystemCreditRecords.operationTypeDecrease': '減少',
   'PC.Pages.SystemCreditRecords.remark': '備考',
+
+  // ── 系统管理 - 业务订单查询 ────────────────────────────
+  'PC.Pages.SystemSubsOrders.colUser': 'ユーザー',
+  'PC.Pages.SystemSubsOrders.orderId': '注文ID',
+  'PC.Pages.SystemSubsOrders.userId': 'ユーザーID',
+  'PC.Pages.SystemSubsOrders.bizType': '業務タイプ',
+  'PC.Pages.SystemSubsOrders.description': '説明',
+  'PC.Pages.SystemSubsOrders.amount': '金額',
+  'PC.Pages.SystemSubsOrders.created': '開始時間',
+  'PC.Pages.SystemSubsOrders.modified': '更新時間',
+  'PC.Pages.SystemSubsOrders.orderStatus': '注文ステータス',
+  'PC.Pages.SystemSubsOrders.payStatus': '支払ステータス',
+  'PC.Pages.SystemSubsOrders.viewDetail': '詳細',
+  'PC.Pages.SystemSubsOrders.statTotalRecords': '総記録数',
+  'PC.Pages.SystemSubsOrders.statSubscriptionCount': 'サブスクリプション',
+  'PC.Pages.SystemSubsOrders.statCreditsCount': 'クレジット購入',
+  'PC.Pages.SystemSubsOrders.statTotalAmount': '総金額',
 };

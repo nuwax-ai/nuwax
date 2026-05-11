@@ -4713,4 +4713,20 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemCreditRecords.operationTypeIncrease': 'Increase',
   'PC.Pages.SystemCreditRecords.operationTypeDecrease': 'Decrease',
   'PC.Pages.SystemCreditRecords.remark': 'Remark',
+
+  // ── 系统管理 - 业务订单查询 ────────────────────────────
+  'PC.Pages.SystemSubsOrders.orderId': 'Order ID',
+  'PC.Pages.SystemSubsOrders.userId': 'User ID',
+  'PC.Pages.SystemSubsOrders.bizType': 'Business Type',
+  'PC.Pages.SystemSubsOrders.description': 'Description',
+  'PC.Pages.SystemSubsOrders.amount': 'Amount',
+  'PC.Pages.SystemSubsOrders.created': 'Start Time',
+  'PC.Pages.SystemSubsOrders.modified': 'Modified Time',
+  'PC.Pages.SystemSubsOrders.orderStatus': 'Order Status',
+  'PC.Pages.SystemSubsOrders.payStatus': 'Payment Status',
+  'PC.Pages.SystemSubsOrders.viewDetail': 'Details',
+  'PC.Pages.SystemSubsOrders.statTotalRecords': 'Total Records',
+  'PC.Pages.SystemSubsOrders.statSubscriptionCount': 'Subscriptions',
+  'PC.Pages.SystemSubsOrders.statCreditsCount': 'Credit Purchases',
+  'PC.Pages.SystemSubsOrders.statTotalAmount': 'Total Amount',
 };

@@ -4840,17 +4840,21 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 系统管理 - 业务订单查询 ────────────────────────────
   'PC.Pages.SystemSubsOrders.colUser': '用户',
-  'PC.Pages.SystemSubsOrders.colRecordNo': '记录编号',
-  'PC.Pages.SystemSubsOrders.colDeveloper': '开发者名称',
-  'PC.Pages.SystemSubsOrders.colSubscriptionType': '订阅类型',
-  'PC.Pages.SystemSubsOrders.colPlanName': '套餐名称',
-  'PC.Pages.SystemSubsOrders.colStartAt': '开始时间',
-  'PC.Pages.SystemSubsOrders.colExpireAt': '到期时间',
+  'PC.Pages.SystemSubsOrders.orderId': '订单ID',
+  'PC.Pages.SystemSubsOrders.userId': '用户ID',
+  'PC.Pages.SystemSubsOrders.bizType': '业务类型',
+  'PC.Pages.SystemSubsOrders.description': '描述',
+  'PC.Pages.SystemSubsOrders.amount': '金额',
+  'PC.Pages.SystemSubsOrders.created': '开始时间',
+  'PC.Pages.SystemSubsOrders.modified': '修改时间',
+  'PC.Pages.SystemSubsOrders.orderStatus': '订单状态',
+  'PC.Pages.SystemSubsOrders.payStatus': '支付状态',
+  'PC.Pages.SystemSubsOrders.viewDetail': '详情',
+
   'PC.Pages.SystemSubsOrders.statTotalRecords': '总记录数',
   'PC.Pages.SystemSubsOrders.statSubscriptionCount': '套餐订阅',
   'PC.Pages.SystemSubsOrders.statCreditsCount': '积分增购',
   'PC.Pages.SystemSubsOrders.statTotalAmount': '总金额',
-  'PC.Pages.SystemSubsOrders.viewDetail': '详情',
 
   // ── 系统管理 - 支付配置 ────────────────────────────────
   'PC.Pages.SystemPaymentConfig.tabAlipay': '支付宝',
