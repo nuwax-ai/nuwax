@@ -2681,7 +2681,6 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.OpenApp.collapseNav': '收起導航',
   'PC.Pages.OpenApp.firstConversationTip': '在會話框中輸入指令開始你的第一次會話吧～',
   'PC.Pages.OpenApp.historyConversation': '歷史會話',
-  'PC.Pages.OpenApp.lookRight': '右邊看>',
   'PC.Pages.OpenApp.newConversation': '新建會話',
   'PC.Pages.OpenApp.viewAll': '查看全部',
   'PC.Pages.PreviewAndDebug.convIdNotFoundDesktop': '會話ID不存在，無法打開智能體電腦',

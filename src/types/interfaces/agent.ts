@@ -618,6 +618,8 @@ export interface CustomPageNavItem {
   icon: string;
   name: string;
   path: string;
+  // 是否选中
+  selected: boolean;
 }
 
 // Agent信息，已发布过的agent才有此信息
