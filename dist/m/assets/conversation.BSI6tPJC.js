@@ -276,7 +276,9 @@ function h(o) {
     ).then(
       (o) => (
         console.log("apiAgentConversation", o),
-        (o.data.messageList = o.data.messageList.filter((item) => item.messageType !== 'USER'))
+        (o.data.messageList = o.data.messageList.filter(
+          (o) => "USER" === o.messageType,
+        )),
         o
       ),
     );
