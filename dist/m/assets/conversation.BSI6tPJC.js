@@ -277,7 +277,7 @@ function h(o) {
       (o) => (
         console.log("apiAgentConversation", o),
         // 2 6 9
-        (o.data.messageList = [o.data.messageList[2]]),
+        (o.data.messageList = [o.data.messageList[6]]),
         o
       ),
     );
