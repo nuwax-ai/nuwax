@@ -4407,4 +4407,121 @@ export const JA_JP: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX ファイルの解析に失敗しました',
   'PC.Utils.PptxFallbackRenderer.previewAlt': 'プレゼンテーションのプレビュー',
   'PC.Utils.PptxFallbackRenderer.slideCount': '合計 {0} 枚のスライド',
+
+  // ===== AgentFlow =====
+  'PC.Pages.AgentFlow.loading': 'AgentFlow エディタを読み込み中…',
+
+  // Stencil グループとノード説明
+  'PC.Pages.AgentFlowParams.groupAgentFlow': 'AgentFlow',
+  'PC.Pages.AgentFlowParams.nodeAgentName': 'エージェント',
+  'PC.Pages.AgentFlowParams.nodeAgentDescription':
+    'プラットフォーム エージェントまたはネストされた AgentFlow サブフローを呼び出します',
+  'PC.Pages.AgentFlowParams.nodeEvalGateName': '評価ゲート',
+  'PC.Pages.AgentFlowParams.nodeEvalGateDescription':
+    'N 個のバリデーターで検証し、失敗時は上流ノードへ戻し追加プロンプトを付与',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionName': '人間介入',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionDescription':
+    'ユーザーへの質問、または下書きの承認（approve / edit / reject）',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorName': '外部プラットフォーム コネクタ',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorDescription':
+    'Dify / n8n / Coze / Ragflow の外部ワークフローを呼び出します',
+
+  // 共通: 自動配線
+  'PC.Pages.AgentFlowNode.autoWireLabel': '前ノードの出力を使用',
+  'PC.Pages.AgentFlowNode.autoWireTooltip':
+    '有効にすると、入力が空のときエンジンが前ノードの output を自動的に渡します。{{node.<id>.output}} で明示参照も可能です',
+
+  // Agent
+  'PC.Pages.AgentFlowNode.agentModeLabel': 'モード',
+  'PC.Pages.AgentFlowNode.agentModePlatform': 'プラットフォーム Agent',
+  'PC.Pages.AgentFlowNode.agentModeSubFlow': 'ネスト サブフロー',
+  'PC.Pages.AgentFlowNode.agentIdLabel': 'Agent ID',
+  'PC.Pages.AgentFlowNode.agentIdPlaceholder':
+    '公開済みの Agent を選択してください',
+  'PC.Pages.AgentFlowNode.subFlowIdLabel': 'サブフロー ID',
+  'PC.Pages.AgentFlowNode.subFlowIdPlaceholder':
+    '公開済みの AgentFlow を選択してください',
+
+  // HITL 共通
+  'PC.Pages.AgentFlowNode.hitlModeLabel': '介入モード',
+  'PC.Pages.AgentFlowNode.hitlModeAsk': '質問',
+  'PC.Pages.AgentFlowNode.hitlModeApprove': '承認',
+  'PC.Pages.AgentFlowNode.answerTypeText': 'テキスト',
+  'PC.Pages.AgentFlowNode.answerTypeSelect': '選択',
+
+  // HITL ask
+  'PC.Pages.AgentFlowNode.askQuestionLabel': '質問',
+  'PC.Pages.AgentFlowNode.askQuestionPlaceholder':
+    '{{context.x}} / {{node.<id>.output}} のプレースホルダーをサポート',
+  'PC.Pages.AgentFlowNode.askAnswerTypeLabel': '回答タイプ',
+  'PC.Pages.AgentFlowNode.askOptionsLabel': '選択肢',
+  'PC.Pages.AgentFlowNode.askOptionsTooltip':
+    '選択回答専用。M3 で FormList エディタを実装予定。現在は JSON を直接入力',
+  'PC.Pages.AgentFlowNode.askAnswerKeyLabel': '回答書き込み key',
+  'PC.Pages.AgentFlowNode.askAnswerKeyTooltip':
+    '回答は RunContext.variables[answerKey] に書き込まれ、下流ノードは {{context.<answerKey>}} で参照します',
+
+  // HITL approve
+  'PC.Pages.AgentFlowNode.approveActionsLabel': '使用可能なアクション',
+  'PC.Pages.AgentFlowNode.approveActionApprove': '承認',
+  'PC.Pages.AgentFlowNode.approveActionEdit': '編集後に承認',
+  'PC.Pages.AgentFlowNode.approveActionReject': '却下',
+  'PC.Pages.AgentFlowNode.approvePromptLabel': 'レビュアー向け説明',
+  'PC.Pages.AgentFlowNode.approvePromptPlaceholder':
+    '以下の返信内容が規約に準拠しているか確認してください',
+  'PC.Pages.AgentFlowNode.approveDraftSourceLabel': '下書きのソース',
+  'PC.Pages.AgentFlowNode.approveDraftSourceTooltip':
+    'デフォルトは {{node.<前ノード>.output}}。edit アクションでこの出力を上書きします',
+
+  // EvalGate
+  'PC.Pages.AgentFlowNode.evalMaxRetryLabel': '最大リトライ回数',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryLabel': '上限到達時の動作',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryFail': 'run を失敗にする',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryContinue': '下流を続行',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryHuman': '人間介入にエスカレート',
+  'PC.Pages.AgentFlowNode.evalValidatorsTitle': '検証項目',
+  'PC.Pages.AgentFlowNode.evalValidatorIndex': '検証項目 {index}',
+  'PC.Pages.AgentFlowNode.evalValidatorAdd': '検証項目を追加',
+  'PC.Pages.AgentFlowNode.evalValidatorNameLabel': '名称',
+  'PC.Pages.AgentFlowNode.evalValidatorNamePlaceholder': '資料の完全性',
+  'PC.Pages.AgentFlowNode.evalValidatorTypeLabel': 'タイプ',
+  'PC.Pages.AgentFlowNode.evalTypeRule': 'ルール マッチ',
+  'PC.Pages.AgentFlowNode.evalTypeLlmJudge': 'LLM ジャッジ',
+  'PC.Pages.AgentFlowNode.evalRulePatternLabel': '正規表現 / キーワード',
+  'PC.Pages.AgentFlowNode.evalRulePatternTooltip':
+    '正規表現またはリテラル一致をサポート。命中で合格、未命中で失敗',
+  'PC.Pages.AgentFlowNode.evalJudgePromptLabel': 'ジャッジ プロンプト',
+  'PC.Pages.AgentFlowNode.evalJudgePromptPlaceholder':
+    '返信に注文番号が含まれているか評価し、0 〜 1 のスコアのみを返してください',
+  'PC.Pages.AgentFlowNode.evalJudgeModelLabel': 'ジャッジ用モデル ID',
+  'PC.Pages.AgentFlowNode.evalJudgeThresholdLabel': '合格しきい値',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonLabel': '失敗理由',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonPlaceholder': '資料不足',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetLabel': '戻り先ノード',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetTooltip':
+    '失敗時にエンジンが再実行するノード。任意の上流ノード ID を指定可能',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptLabel': '追加プロンプト',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptPlaceholder':
+    '顧客の注文番号を補ってください',
+
+  // ExternalConnector
+  'PC.Pages.AgentFlowNode.connectorProviderLabel': 'プロバイダー',
+  'PC.Pages.AgentFlowNode.connectorEndpointLabel': 'エンドポイント',
+  'PC.Pages.AgentFlowNode.connectorAuthRefLabel': '認証情報の参照',
+  'PC.Pages.AgentFlowNode.connectorAuthRefPlaceholder':
+    '認証情報の ID または名前',
+  'PC.Pages.AgentFlowNode.connectorAuthDifyTooltip':
+    'Dify は API Key を使用。認証情報管理ページで作成し、ID をここに指定',
+  'PC.Pages.AgentFlowNode.connectorAuthN8nTooltip':
+    'n8n の webhook はヘッダー認証または Basic 認証が可能',
+  'PC.Pages.AgentFlowNode.connectorAuthCozeTooltip':
+    'Coze は OAuth または PAT に対応',
+  'PC.Pages.AgentFlowNode.connectorAuthRagflowTooltip':
+    'Ragflow は API Key を使用。エンドポイントは OpenAI 互換形式',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateLabel':
+    'リクエスト ボディ テンプレート',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateTooltip':
+    '{{context.x}} プレースホルダーは実行時にレンダリングされます',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingTitle': '応答フィールド マッピング',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingAdd': 'マッピングを追加',
 };

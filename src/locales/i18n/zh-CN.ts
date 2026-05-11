@@ -4406,5 +4406,116 @@ export const ZH_CN: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.coverPreview': '演示文稿封面预览',
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX 文件解析失败',
   'PC.Utils.PptxFallbackRenderer.previewAlt': '演示文稿预览',
-  'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 张幻灯片'
+  'PC.Utils.PptxFallbackRenderer.slideCount': '共 {0} 张幻灯片',
+
+  // ===== AgentFlow =====
+  'PC.Pages.AgentFlow.loading': '正在加载 AgentFlow 编辑器…',
+
+  // Stencil 节点分组与节点描述
+  'PC.Pages.AgentFlowParams.groupAgentFlow': 'AgentFlow',
+  'PC.Pages.AgentFlowParams.nodeAgentName': '智能体',
+  'PC.Pages.AgentFlowParams.nodeAgentDescription':
+    '调用平台 Agent 或嵌套 AgentFlow 子流程',
+  'PC.Pages.AgentFlowParams.nodeEvalGateName': '评估验证',
+  'PC.Pages.AgentFlowParams.nodeEvalGateDescription':
+    '按 N 个 validator 校验输出，失败可回跳上游节点并追加提示词',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionName': '人类介入',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionDescription':
+    '询问用户 或 审批草稿（approve / edit / reject）',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorName': '三方平台连接器',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorDescription':
+    '调用 Dify / n8n / Coze / Ragflow 的外部工作流',
+
+  // 通用：自动接线
+  'PC.Pages.AgentFlowNode.autoWireLabel': '使用上一节点输出',
+  'PC.Pages.AgentFlowNode.autoWireTooltip':
+    '开启后，节点入参留空时引擎自动取上一节点 output。可在 prompt 内显式引用 {{node.<id>.output}}',
+
+  // Agent
+  'PC.Pages.AgentFlowNode.agentModeLabel': '模式',
+  'PC.Pages.AgentFlowNode.agentModePlatform': '平台 Agent',
+  'PC.Pages.AgentFlowNode.agentModeSubFlow': '嵌套子流程',
+  'PC.Pages.AgentFlowNode.agentIdLabel': 'Agent ID',
+  'PC.Pages.AgentFlowNode.agentIdPlaceholder': '选择已发布的平台 Agent',
+  'PC.Pages.AgentFlowNode.subFlowIdLabel': '子 AgentFlow ID',
+  'PC.Pages.AgentFlowNode.subFlowIdPlaceholder': '选择已发布的 AgentFlow',
+
+  // HITL 共用
+  'PC.Pages.AgentFlowNode.hitlModeLabel': '介入模式',
+  'PC.Pages.AgentFlowNode.hitlModeAsk': '询问',
+  'PC.Pages.AgentFlowNode.hitlModeApprove': '审批',
+  'PC.Pages.AgentFlowNode.answerTypeText': '文本',
+  'PC.Pages.AgentFlowNode.answerTypeSelect': '选择题',
+
+  // HITL ask
+  'PC.Pages.AgentFlowNode.askQuestionLabel': '问题',
+  'PC.Pages.AgentFlowNode.askQuestionPlaceholder':
+    '支持 {{context.x}} / {{node.<id>.output}} 占位符',
+  'PC.Pages.AgentFlowNode.askAnswerTypeLabel': '答案类型',
+  'PC.Pages.AgentFlowNode.askOptionsLabel': '可选项',
+  'PC.Pages.AgentFlowNode.askOptionsTooltip':
+    '选择题专用。M3 后接 FormList 编辑器；当前阶段用 JSON 直填',
+  'PC.Pages.AgentFlowNode.askAnswerKeyLabel': '答案写入 key',
+  'PC.Pages.AgentFlowNode.askAnswerKeyTooltip':
+    '答案将写入 RunContext.variables[answerKey]，后续节点用 {{context.<answerKey>}} 引用',
+
+  // HITL approve
+  'PC.Pages.AgentFlowNode.approveActionsLabel': '可用动作',
+  'PC.Pages.AgentFlowNode.approveActionApprove': '通过',
+  'PC.Pages.AgentFlowNode.approveActionEdit': '编辑后通过',
+  'PC.Pages.AgentFlowNode.approveActionReject': '拒绝',
+  'PC.Pages.AgentFlowNode.approvePromptLabel': '给审批人的说明',
+  'PC.Pages.AgentFlowNode.approvePromptPlaceholder': '请审核以下回复是否符合规范',
+  'PC.Pages.AgentFlowNode.approveDraftSourceLabel': '草稿来源',
+  'PC.Pages.AgentFlowNode.approveDraftSourceTooltip':
+    '默认 {{node.<上一节点>.output}}；edit 时覆写该节点输出',
+
+  // EvalGate
+  'PC.Pages.AgentFlowNode.evalMaxRetryLabel': '最大重试次数',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryLabel': '超限策略',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryFail': '失败终止 run',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryContinue': '继续下游',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryHuman': '转人工介入',
+  'PC.Pages.AgentFlowNode.evalValidatorsTitle': '校验项',
+  'PC.Pages.AgentFlowNode.evalValidatorIndex': '校验项 {index}',
+  'PC.Pages.AgentFlowNode.evalValidatorAdd': '新增校验项',
+  'PC.Pages.AgentFlowNode.evalValidatorNameLabel': '名称',
+  'PC.Pages.AgentFlowNode.evalValidatorNamePlaceholder': '资料完整性',
+  'PC.Pages.AgentFlowNode.evalValidatorTypeLabel': '类型',
+  'PC.Pages.AgentFlowNode.evalTypeRule': '规则匹配',
+  'PC.Pages.AgentFlowNode.evalTypeLlmJudge': 'LLM 评判',
+  'PC.Pages.AgentFlowNode.evalRulePatternLabel': '正则 / 关键词',
+  'PC.Pages.AgentFlowNode.evalRulePatternTooltip':
+    '支持正则或字面量匹配；命中视为通过，未命中视为失败',
+  'PC.Pages.AgentFlowNode.evalJudgePromptLabel': '评判 Prompt',
+  'PC.Pages.AgentFlowNode.evalJudgePromptPlaceholder':
+    '请评估以下回复是否包含订单号，仅回 0-1 之间的分数',
+  'PC.Pages.AgentFlowNode.evalJudgeModelLabel': '评判用模型 ID',
+  'PC.Pages.AgentFlowNode.evalJudgeThresholdLabel': '通过阈值',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonLabel': '失败原因',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonPlaceholder': '资料不全',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetLabel': '回跳目标节点',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetTooltip':
+    '失败后引擎将重新执行该节点；可填任意上游节点 ID',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptLabel': '追加提示词',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptPlaceholder':
+    '请补充客户的订单号',
+
+  // ExternalConnector
+  'PC.Pages.AgentFlowNode.connectorProviderLabel': 'Provider',
+  'PC.Pages.AgentFlowNode.connectorEndpointLabel': 'Endpoint',
+  'PC.Pages.AgentFlowNode.connectorAuthRefLabel': '凭据引用',
+  'PC.Pages.AgentFlowNode.connectorAuthRefPlaceholder': '凭据 ID 或名称',
+  'PC.Pages.AgentFlowNode.connectorAuthDifyTooltip':
+    'Dify 使用 API Key，在凭据管理页创建后填 ID',
+  'PC.Pages.AgentFlowNode.connectorAuthN8nTooltip':
+    'n8n webhook 可用 Header 或 Basic 鉴权',
+  'PC.Pages.AgentFlowNode.connectorAuthCozeTooltip': 'Coze 支持 OAuth 或 PAT',
+  'PC.Pages.AgentFlowNode.connectorAuthRagflowTooltip':
+    'Ragflow 使用 API Key，端点遵循 OpenAI 兼容风格',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateLabel': '请求体模板',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateTooltip':
+    '支持 {{context.x}} 占位符，运行时渲染',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingTitle': '响应字段映射',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingAdd': '新增映射'
 };

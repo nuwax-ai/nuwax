@@ -1,5 +1,6 @@
 // import { SearchOutlined } from '@ant-design/icons';
 // import { Input } from 'antd';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
@@ -35,6 +36,10 @@ const renderIcon = (url: string) => {
 
 // Render stencil panel and allow dragging child nodes onto canvas.
 const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
+  const flowKind = useFlowKind();
+  // 节点未声明 flowKinds 视为全部 flow 可见；否则需要匹配当前 flowKind
+  const matchesFlowKind = (child: StencilChildNode) =>
+    !child.flowKinds || child.flowKinds.includes(flowKind);
   /**
    * Handle drag start.
    * Calls parent `dragChild` with current event and child node.
@@ -58,41 +63,44 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
       </p>
       {/* Render stencil list */}
       <div className="stencil-list-style">
-        {asideList.map((item) => (
-          <div className="stencil-list-item" key={item.name}>
-            {/* Show group title if present */}
-            {item.name && <p className="stencil-list-title">{item.name}</p>}
-            <div className="stencil-list-content">
-              {/* Render group children, skip Loop node inside loop context */}
-              {item.children
-                .filter((child) =>
-                  isLoop ? child.type !== NodeTypeEnum.Loop : true,
-                )
-                .map((child) => {
-                  // Show LoopBreak/LoopContinue only in Loop context.
-                  const isLoopControl = [
-                    NodeTypeEnum.LoopBreak,
-                    NodeTypeEnum.LoopContinue,
-                  ].includes(child?.type || '');
-                  const shouldShow = isLoopControl ? isLoop : true;
-                  return (
-                    shouldShow && (
-                      <div
-                        className="child-content dis-left"
-                        draggable="true"
-                        key={child.type}
-                        onDragEnd={(e) => handleDragStart(child, e)}
-                        onClick={() => handleDragStart(child)}
-                      >
-                        {renderIcon(child.bgIcon || '')}
-                        <span>{child.name}</span>
-                      </div>
-                    )
-                  );
-                })}
+        {asideList
+          .filter((item) => item.children.some(matchesFlowKind))
+          .map((item) => (
+            <div className="stencil-list-item" key={item.key}>
+              {/* Show group title if present */}
+              {item.name && <p className="stencil-list-title">{item.name}</p>}
+              <div className="stencil-list-content">
+                {/* Render group children, skip Loop node inside loop context */}
+                {item.children
+                  .filter(matchesFlowKind)
+                  .filter((child) =>
+                    isLoop ? child.type !== NodeTypeEnum.Loop : true,
+                  )
+                  .map((child) => {
+                    // Show LoopBreak/LoopContinue only in Loop context.
+                    const isLoopControl = [
+                      NodeTypeEnum.LoopBreak,
+                      NodeTypeEnum.LoopContinue,
+                    ].includes(child?.type || '');
+                    const shouldShow = isLoopControl ? isLoop : true;
+                    return (
+                      shouldShow && (
+                        <div
+                          className="child-content dis-left"
+                          draggable="true"
+                          key={child.type}
+                          onDragEnd={(e) => handleDragStart(child, e)}
+                          onClick={() => handleDragStart(child)}
+                        >
+                          {renderIcon(child.bgIcon || '')}
+                          <span>{child.name}</span>
+                        </div>
+                      )
+                    );
+                  })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );

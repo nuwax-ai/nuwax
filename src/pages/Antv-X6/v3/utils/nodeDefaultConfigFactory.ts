@@ -5,8 +5,12 @@
  */
 
 import {
+  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
+  ExternalConnectorProviderEnum,
+  HitlApprovalActionEnum,
+  HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -56,6 +60,11 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
+  // AgentFlow 专用
+  [NodeTypeEnum.Agent]: 'Agent',
+  [NodeTypeEnum.EvalGate]: 'Eval Gate',
+  [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
+  [NodeTypeEnum.ExternalConnector]: 'External Connector',
 };
 
 /**
@@ -400,6 +409,69 @@ export function createDefaultNodeConfig(
         tableId: undefined,
         conditionType: 'AND',
         conditionArgs: [],
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.Agent:
+      return {
+        ...baseConfig,
+        agentMode: AgentNodeModeEnum.Platform,
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'output',
+            name: 'output',
+            dataType: DataTypeEnum.String,
+            description: 'Agent reply',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.EvalGate:
+      return {
+        ...baseConfig,
+        evalValidators: [],
+        evalMaxRetry: 2,
+        evalOnMaxRetry: 'fail',
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.HumanInteraction:
+      return {
+        ...baseConfig,
+        hitlMode: HitlModeEnum.Ask,
+        askConfig: {
+          question: '',
+          answerType: AnswerTypeEnum.TEXT,
+          answerKey: 'userAnswer',
+        },
+        approveConfig: {
+          actions: [
+            HitlApprovalActionEnum.Approve,
+            HitlApprovalActionEnum.Edit,
+            HitlApprovalActionEnum.Reject,
+          ],
+          promptToReviewer: '',
+          draftSource: '',
+        },
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.ExternalConnector:
+      return {
+        ...baseConfig,
+        connectorProvider: ExternalConnectorProviderEnum.Dify,
+        connectorConfig: {
+          endpoint: '',
+          authRef: '',
+          payloadTemplate: '',
+          responseMapping: {},
+        },
         inputArgs: [],
         outputArgs: [],
       };

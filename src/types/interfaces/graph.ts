@@ -85,6 +85,8 @@ export interface ChildNode {
 export interface StencilChildNode extends Partial<ChildNode> {
   bgIcon: string;
   type: NodeTypeEnum;
+  // 此节点适用的 flow 类型（缺省视为对所有 flow 可见）
+  flowKinds?: import('@/types/enums/common').FlowKindEnum[];
 }
 /**
  * 定义 StencilList 接口，用于描述模板列表的数据结构。

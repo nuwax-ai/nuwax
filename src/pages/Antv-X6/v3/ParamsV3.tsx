@@ -1,5 +1,9 @@
 import { t } from '@/services/i18nRuntime';
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  FlowKindEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import type { StencilList } from '@/types/interfaces/graph';
 import {
   InputConfigs,
@@ -54,7 +58,55 @@ const buildV3AsideList = (): StencilList[] => {
   });
 };
 
-export const asideList: StencilList[] = buildV3AsideList();
+// AgentFlow 专用节点：仅在 flowKind=AgentFlow 时显示在 Stencil 里
+const agentFlowGroup: StencilList = {
+  name: t('PC.Pages.AgentFlowParams.groupAgentFlow'),
+  key: 'groupAgentFlow',
+  children: [
+    {
+      name: t('PC.Pages.AgentFlowParams.nodeAgentName'),
+      icon: null,
+      bgIcon: '',
+      type: NodeTypeEnum.Agent,
+      shape: NodeShapeEnum.General,
+      description: t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
+      flowKinds: [FlowKindEnum.AgentFlow],
+    },
+    {
+      name: t('PC.Pages.AgentFlowParams.nodeEvalGateName'),
+      icon: null,
+      bgIcon: '',
+      type: NodeTypeEnum.EvalGate,
+      shape: NodeShapeEnum.General,
+      description: t('PC.Pages.AgentFlowParams.nodeEvalGateDescription'),
+      flowKinds: [FlowKindEnum.AgentFlow],
+    },
+    {
+      name: t('PC.Pages.AgentFlowParams.nodeHumanInteractionName'),
+      icon: null,
+      bgIcon: '',
+      type: NodeTypeEnum.HumanInteraction,
+      shape: NodeShapeEnum.General,
+      description: t(
+        'PC.Pages.AgentFlowParams.nodeHumanInteractionDescription',
+      ),
+      flowKinds: [FlowKindEnum.AgentFlow],
+    },
+    {
+      name: t('PC.Pages.AgentFlowParams.nodeExternalConnectorName'),
+      icon: null,
+      bgIcon: '',
+      type: NodeTypeEnum.ExternalConnector,
+      shape: NodeShapeEnum.General,
+      description: t(
+        'PC.Pages.AgentFlowParams.nodeExternalConnectorDescription',
+      ),
+      flowKinds: [FlowKindEnum.AgentFlow],
+    },
+  ],
+};
+
+export const asideList: StencilList[] = [...buildV3AsideList(), agentFlowGroup];
 
 export {
   InputConfigs,

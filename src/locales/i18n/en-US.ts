@@ -4407,4 +4407,120 @@ export const EN_US: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX file parse failed',
   'PC.Utils.PptxFallbackRenderer.previewAlt': 'Presentation Preview',
   'PC.Utils.PptxFallbackRenderer.slideCount': '{0} slides in total',
+
+  // ===== AgentFlow =====
+  'PC.Pages.AgentFlow.loading': 'Loading AgentFlow editor…',
+
+  // Stencil group + node descriptions
+  'PC.Pages.AgentFlowParams.groupAgentFlow': 'AgentFlow',
+  'PC.Pages.AgentFlowParams.nodeAgentName': 'Agent',
+  'PC.Pages.AgentFlowParams.nodeAgentDescription':
+    'Invoke a platform Agent or a nested AgentFlow sub-flow',
+  'PC.Pages.AgentFlowParams.nodeEvalGateName': 'Eval Gate',
+  'PC.Pages.AgentFlowParams.nodeEvalGateDescription':
+    'Run N validators; on failure, route back to an upstream node with an appended prompt',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionName': 'Human Interaction',
+  'PC.Pages.AgentFlowParams.nodeHumanInteractionDescription':
+    'Ask the user a question or request an approval (approve / edit / reject)',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorName': 'External Connector',
+  'PC.Pages.AgentFlowParams.nodeExternalConnectorDescription':
+    'Call external workflows on Dify / n8n / Coze / Ragflow',
+
+  // Common: auto wire
+  'PC.Pages.AgentFlowNode.autoWireLabel': 'Use previous node output',
+  'PC.Pages.AgentFlowNode.autoWireTooltip':
+    'When enabled, the engine auto-feeds the previous node output if inputs are left blank. You can still reference {{node.<id>.output}} explicitly.',
+
+  // Agent
+  'PC.Pages.AgentFlowNode.agentModeLabel': 'Mode',
+  'PC.Pages.AgentFlowNode.agentModePlatform': 'Platform Agent',
+  'PC.Pages.AgentFlowNode.agentModeSubFlow': 'Nested sub-flow',
+  'PC.Pages.AgentFlowNode.agentIdLabel': 'Agent ID',
+  'PC.Pages.AgentFlowNode.agentIdPlaceholder':
+    'Pick a published platform Agent',
+  'PC.Pages.AgentFlowNode.subFlowIdLabel': 'Sub-flow ID',
+  'PC.Pages.AgentFlowNode.subFlowIdPlaceholder': 'Pick a published AgentFlow',
+
+  // HITL common
+  'PC.Pages.AgentFlowNode.hitlModeLabel': 'Interaction mode',
+  'PC.Pages.AgentFlowNode.hitlModeAsk': 'Ask',
+  'PC.Pages.AgentFlowNode.hitlModeApprove': 'Approve',
+  'PC.Pages.AgentFlowNode.answerTypeText': 'Text',
+  'PC.Pages.AgentFlowNode.answerTypeSelect': 'Choice',
+
+  // HITL ask
+  'PC.Pages.AgentFlowNode.askQuestionLabel': 'Question',
+  'PC.Pages.AgentFlowNode.askQuestionPlaceholder':
+    'Supports {{context.x}} / {{node.<id>.output}} placeholders',
+  'PC.Pages.AgentFlowNode.askAnswerTypeLabel': 'Answer type',
+  'PC.Pages.AgentFlowNode.askOptionsLabel': 'Options',
+  'PC.Pages.AgentFlowNode.askOptionsTooltip':
+    'For choice answers. Full FormList editor lands in M3; meanwhile use raw JSON.',
+  'PC.Pages.AgentFlowNode.askAnswerKeyLabel': 'Answer key',
+  'PC.Pages.AgentFlowNode.askAnswerKeyTooltip':
+    'Answer is written to RunContext.variables[answerKey]; downstream nodes read it via {{context.<answerKey>}}',
+
+  // HITL approve
+  'PC.Pages.AgentFlowNode.approveActionsLabel': 'Available actions',
+  'PC.Pages.AgentFlowNode.approveActionApprove': 'Approve',
+  'PC.Pages.AgentFlowNode.approveActionEdit': 'Edit then approve',
+  'PC.Pages.AgentFlowNode.approveActionReject': 'Reject',
+  'PC.Pages.AgentFlowNode.approvePromptLabel': 'Reviewer prompt',
+  'PC.Pages.AgentFlowNode.approvePromptPlaceholder':
+    'Please review the following reply for compliance',
+  'PC.Pages.AgentFlowNode.approveDraftSourceLabel': 'Draft source',
+  'PC.Pages.AgentFlowNode.approveDraftSourceTooltip':
+    'Defaults to {{node.<previousId>.output}}; the edit action overwrites this output',
+
+  // EvalGate
+  'PC.Pages.AgentFlowNode.evalMaxRetryLabel': 'Max retries',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryLabel': 'On max retries',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryFail': 'Fail the run',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryContinue': 'Continue downstream',
+  'PC.Pages.AgentFlowNode.evalOnMaxRetryHuman': 'Escalate to human',
+  'PC.Pages.AgentFlowNode.evalValidatorsTitle': 'Validators',
+  'PC.Pages.AgentFlowNode.evalValidatorIndex': 'Validator {index}',
+  'PC.Pages.AgentFlowNode.evalValidatorAdd': 'Add validator',
+  'PC.Pages.AgentFlowNode.evalValidatorNameLabel': 'Name',
+  'PC.Pages.AgentFlowNode.evalValidatorNamePlaceholder':
+    'Material completeness',
+  'PC.Pages.AgentFlowNode.evalValidatorTypeLabel': 'Type',
+  'PC.Pages.AgentFlowNode.evalTypeRule': 'Rule match',
+  'PC.Pages.AgentFlowNode.evalTypeLlmJudge': 'LLM judge',
+  'PC.Pages.AgentFlowNode.evalRulePatternLabel': 'Pattern / keyword',
+  'PC.Pages.AgentFlowNode.evalRulePatternTooltip':
+    'Regex or literal match; a hit means pass, a miss means fail',
+  'PC.Pages.AgentFlowNode.evalJudgePromptLabel': 'Judge prompt',
+  'PC.Pages.AgentFlowNode.evalJudgePromptPlaceholder':
+    'Evaluate whether the reply contains an order ID. Return a score between 0 and 1.',
+  'PC.Pages.AgentFlowNode.evalJudgeModelLabel': 'Judge model ID',
+  'PC.Pages.AgentFlowNode.evalJudgeThresholdLabel': 'Pass threshold',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonLabel': 'Failure reason',
+  'PC.Pages.AgentFlowNode.evalOnFailReasonPlaceholder': 'Missing materials',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetLabel': 'Reroute target node',
+  'PC.Pages.AgentFlowNode.evalOnFailTargetTooltip':
+    'The engine re-executes this node on failure; pick any upstream node ID',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptLabel': 'Append prompt',
+  'PC.Pages.AgentFlowNode.evalOnFailAppendPromptPlaceholder':
+    'Please add the customer order ID',
+
+  // ExternalConnector
+  'PC.Pages.AgentFlowNode.connectorProviderLabel': 'Provider',
+  'PC.Pages.AgentFlowNode.connectorEndpointLabel': 'Endpoint',
+  'PC.Pages.AgentFlowNode.connectorAuthRefLabel': 'Credential reference',
+  'PC.Pages.AgentFlowNode.connectorAuthRefPlaceholder':
+    'Credential ID or name',
+  'PC.Pages.AgentFlowNode.connectorAuthDifyTooltip':
+    'Dify uses an API Key — create it on the Credentials page and reference its ID here',
+  'PC.Pages.AgentFlowNode.connectorAuthN8nTooltip':
+    'n8n webhooks accept header or basic auth',
+  'PC.Pages.AgentFlowNode.connectorAuthCozeTooltip':
+    'Coze supports OAuth or PAT',
+  'PC.Pages.AgentFlowNode.connectorAuthRagflowTooltip':
+    'Ragflow uses an API Key; endpoints follow the OpenAI-compatible style',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateLabel': 'Payload template',
+  'PC.Pages.AgentFlowNode.connectorPayloadTemplateTooltip':
+    'Supports {{context.x}} placeholders rendered at runtime',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingTitle': 'Response mapping',
+  'PC.Pages.AgentFlowNode.connectorResponseMappingAdd': 'Add mapping',
 };

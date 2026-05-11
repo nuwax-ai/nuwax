@@ -1,7 +1,12 @@
 import {
+  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
+  EvalValidatorTypeEnum,
   ExceptionHandleTypeEnum,
+  ExternalConnectorProviderEnum,
+  HitlApprovalActionEnum,
+  HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ConditionBranchTypeEnum, PortGroupEnum } from '@/types/enums/node';
@@ -142,6 +147,46 @@ export interface ExceptionHandleConfig {
   exceptionHandleNodeIds?: number[];
 }
 
+// AgentFlow: EvalGate validator 失败回跳配置
+export interface EvalValidatorOnFail {
+  targetNodeId: number | string;
+  appendPrompt: string;
+  reason: string;
+}
+
+// AgentFlow: EvalGate validator
+export interface EvalValidator {
+  name: string;
+  type: EvalValidatorTypeEnum;
+  config?: Record<string, unknown>;
+  onFail: EvalValidatorOnFail;
+}
+
+// AgentFlow: HITL ask 模式配置
+export interface HitlAskConfig {
+  question: string;
+  answerType: AnswerTypeEnum;
+  options?: QANodeOption[];
+  answerKey: string;
+  required?: boolean;
+}
+
+// AgentFlow: HITL approve 模式配置
+export interface HitlApproveConfig {
+  actions: HitlApprovalActionEnum[];
+  promptToReviewer: string;
+  draftSource: string;
+  onReject?: { targetNodeId?: number | string } | 'fail';
+}
+
+// AgentFlow: 三方连接器配置
+export interface ExternalConnectorConfig {
+  endpoint: string;
+  authRef: string;
+  payloadTemplate: string;
+  responseMapping: Record<string, string>;
+}
+
 // 节点内部的config
 export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置
@@ -251,6 +296,29 @@ export interface NodeConfig {
   exceptionHandleConfig?: ExceptionHandleConfig;
   toolName?: string;
   mcpId?: number;
+
+  // ===== AgentFlow 专用字段 =====
+  // Agent 节点
+  agentMode?: AgentNodeModeEnum;
+  agentId?: number;
+  subFlowId?: number;
+  agentInputs?: Record<string, string>;
+  // EvalGate 节点
+  evalValidators?: EvalValidator[];
+  evalMaxRetry?: number;
+  evalOnMaxRetry?: 'fail' | 'continue' | 'human';
+  // HumanInteraction 节点
+  hitlMode?: HitlModeEnum;
+  askConfig?: HitlAskConfig;
+  approveConfig?: HitlApproveConfig;
+  // ExternalConnector 节点
+  connectorProvider?: ExternalConnectorProviderEnum;
+  connectorConfig?: ExternalConnectorConfig;
+  // RunContext 显式读写声明（可选）
+  contextReads?: string[];
+  contextWrites?: string[];
+  // AgentFlow：开启后，节点 inputArgs 缺省自动取上一节点 output（前端 UI 开关，引擎执行端实现）
+  autoWirePrevOutput?: boolean;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

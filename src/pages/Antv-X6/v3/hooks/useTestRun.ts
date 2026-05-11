@@ -5,10 +5,17 @@
  */
 
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { ITestRun } from '@/services/workflow';
+import { FlowKindEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { GraphContainerRef, RunResultItem } from '@/types/interfaces/graph';
 import { ErrorParams } from '@/types/interfaces/workflow';
+import {
+  isAgentFlowMockEnabled,
+  MockScenario,
+  startMockAgentFlowRun,
+} from '@/utils/agentFlowMock';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useCallback, useState } from 'react';
 import { useModel } from 'umi';
@@ -18,6 +25,14 @@ import {
   removeWorkflowTestRun,
   setWorkflowTestRun,
 } from '../utils/workflowV3';
+
+// 从 URL `?scenario=evalRetry` 读 mock 场景；未指定走 happy
+const pickMockScenario = (): MockScenario => {
+  if (typeof window === 'undefined') return 'happy';
+  const s = new URLSearchParams(window.location.search).get('scenario');
+  if (s === 'evalRetry' || s === 'humanAsk' || s === 'humanApprove') return s;
+  return 'happy';
+};
 
 interface UseTestRunParams {
   workflowId: number;
@@ -74,6 +89,10 @@ export const useTestRun = ({
 }: UseTestRunParams): UseTestRunReturn => {
   // 使用全局 model 中的 testRun 状态，确保 TestRun 组件能正确响应状态变化
   const { testRun, setTestRun } = useModel('model');
+  // AgentFlow + mock 时走本地事件流，绕过 /api/workflow/test/*（后端就绪前）
+  const flowKind = useFlowKind();
+  const useMock =
+    flowKind === FlowKindEnum.AgentFlow && isAgentFlowMockEnabled();
 
   // 局部状态
   const [loading, setLoading] = useState(false);
@@ -152,6 +171,56 @@ export const useTestRun = ({
   const testRunAllNode = useCallback(
     async (params: ITestRun) => {
       setLoading(true);
+
+      // AgentFlow + mock：本地事件流，不打后端
+      if (useMock) {
+        startMockAgentFlowRun({
+          flowId: workflowId,
+          scenario: pickMockScenario(),
+          onMessage: (event) => {
+            const nodeId = (event.payload as { nodeId?: string }).nodeId;
+            if (nodeId) {
+              graphRef.current?.graphActiveNodeRunResult(nodeId, {
+                requestId: params.requestId,
+                options: {
+                  nodeId,
+                  nodeName: nodeId,
+                  ...(event.payload as Record<string, unknown>),
+                },
+                status: event.type,
+              } as RunResultItem);
+            }
+            if (event.type === 'human_required') {
+              setStopWait(true);
+              setLoading(false);
+              setWorkflowTestRun({
+                spaceId,
+                workflowId,
+                value: JSON.stringify(params),
+              });
+            }
+            if (event.type === 'run_completed') {
+              setTestRunResult(JSON.stringify(event.payload, null, 2));
+              setLoading(false);
+              removeWorkflowTestRun({ spaceId, workflowId });
+            }
+            if (event.type === 'run_failed') {
+              setErrorParams((prev) => ({
+                errorList: [
+                  ...prev.errorList,
+                  { error: String(event.payload.error ?? 'mock failed') },
+                ],
+                show: true,
+              }));
+              setLoading(false);
+            }
+          },
+          onClose: () => setLoading(false),
+        });
+        changeUpdateTime();
+        return;
+      }
+
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
@@ -248,7 +317,15 @@ export const useTestRun = ({
       abortConnection();
       changeUpdateTime();
     },
-    [graphRef, spaceId, workflowId, info, changeUpdateTime],
+    [
+      graphRef,
+      spaceId,
+      workflowId,
+      info,
+      changeUpdateTime,
+      useMock,
+      setErrorParams,
+    ],
   );
 
   // 试运行所有节点（入口）
