@@ -112,7 +112,7 @@ export interface UserCreditSummaryInfo {
 export interface UserCreditFlowSearchParams
   extends UserCreditSummarySearchParams {
   // 可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT
-  creditType: CreditFlowTypeEnum;
+  creditType?: CreditFlowTypeEnum;
   lastId?: number;
   pageSize?: number;
 }

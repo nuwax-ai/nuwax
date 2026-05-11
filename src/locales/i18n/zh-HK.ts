@@ -4610,4 +4610,19 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SystemUserCredits.purchaseCredit': '增購積分',
   'PC.Pages.SystemUserCredits.activityCredit': '活動積分',
   'PC.Pages.SystemUserCredits.manualCredit': '手動積分',
+
+  // ── 系统管理 - 积分流水查询 ────────────────────────────
+  'PC.Pages.SystemCreditRecords.recordId': '流水ID',
+  'PC.Pages.SystemCreditRecords.bizNo': '業務單號',
+  'PC.Pages.SystemCreditRecords.userName': '用戶名',
+  'PC.Pages.SystemCreditRecords.recordNo': '記錄編號',
+  'PC.Pages.SystemCreditRecords.phone': '手機號',
+  'PC.Pages.SystemCreditRecords.created': '建立時間',
+  'PC.Pages.SystemCreditRecords.amount': '積分數量',
+  'PC.Pages.SystemCreditRecords.operationType': '變動類型',
+  'PC.Pages.SystemCreditRecords.beforeAmount': '操作前積分',
+  'PC.Pages.SystemCreditRecords.afterAmount': '操作後積分',
+  'PC.Pages.SystemCreditRecords.operationTypeIncrease': '增加',
+  'PC.Pages.SystemCreditRecords.operationTypeDecrease': '扣減',
+  'PC.Pages.SystemCreditRecords.remark': '備註',
 };

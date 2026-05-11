@@ -4824,11 +4824,19 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemUserCredits.manualCredit': '手动积分',
 
   // ── 系统管理 - 积分流水查询 ────────────────────────────
-  'PC.Pages.SystemCreditRecords.colUser': '用户',
-  'PC.Pages.SystemCreditRecords.colRecordNo': '记录编号',
-  'PC.Pages.SystemCreditRecords.colPhone': '手机号',
-  'PC.Pages.SystemCreditRecords.typeIncrease': '增加',
-  'PC.Pages.SystemCreditRecords.typeDecrease': '扣减',
+  'PC.Pages.SystemCreditRecords.recordId': '流水ID',
+  'PC.Pages.SystemCreditRecords.bizNo': '业务单号',
+  'PC.Pages.SystemCreditRecords.userName': '用户名',
+  'PC.Pages.SystemCreditRecords.recordNo': '记录编号',
+  'PC.Pages.SystemCreditRecords.phone': '手机号',
+  'PC.Pages.SystemCreditRecords.created': '创建时间',
+  'PC.Pages.SystemCreditRecords.amount': '积分数量',
+  'PC.Pages.SystemCreditRecords.operationType': '变动类型',
+  'PC.Pages.SystemCreditRecords.beforeAmount': '操作前积分',
+  'PC.Pages.SystemCreditRecords.afterAmount': '操作后积分',
+  'PC.Pages.SystemCreditRecords.operationTypeIncrease': '增加',
+  'PC.Pages.SystemCreditRecords.operationTypeDecrease': '扣减',
+  'PC.Pages.SystemCreditRecords.remark': '备注',
 
   // ── 系统管理 - 业务订单查询 ────────────────────────────
   'PC.Pages.SystemSubsOrders.colUser': '用户',

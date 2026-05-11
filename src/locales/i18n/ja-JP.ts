@@ -4614,4 +4614,19 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SystemUserCredits.purchaseCredit': '追加購入クレジット',
   'PC.Pages.SystemUserCredits.activityCredit': 'アクティビティクレジット',
   'PC.Pages.SystemUserCredits.manualCredit': '手動クレジット',
+
+  // ── 系统管理 - 积分流水查询 ────────────────────────────
+  'PC.Pages.SystemCreditRecords.recordId': 'フローID',
+  'PC.Pages.SystemCreditRecords.bizNo': '業務番号',
+  'PC.Pages.SystemCreditRecords.userName': 'ユーザー名',
+  'PC.Pages.SystemCreditRecords.recordNo': '記録番号',
+  'PC.Pages.SystemCreditRecords.phone': '携帯番号',
+  'PC.Pages.SystemCreditRecords.created': '作成時間',
+  'PC.Pages.SystemCreditRecords.amount': 'クレジット数',
+  'PC.Pages.SystemCreditRecords.operationType': '変動タイプ',
+  'PC.Pages.SystemCreditRecords.beforeAmount': '変動前クレジット',
+  'PC.Pages.SystemCreditRecords.afterAmount': '変動後クレジット',
+  'PC.Pages.SystemCreditRecords.operationTypeIncrease': '増加',
+  'PC.Pages.SystemCreditRecords.operationTypeDecrease': '減少',
+  'PC.Pages.SystemCreditRecords.remark': '備考',
 };

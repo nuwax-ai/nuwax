@@ -4698,4 +4698,19 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemUserCredits.purchaseCredit': 'Purchased Credits',
   'PC.Pages.SystemUserCredits.activityCredit': 'Activity Credits',
   'PC.Pages.SystemUserCredits.manualCredit': 'Manual Credits',
+
+  // ── 系统管理 - 积分流水查询 ────────────────────────────
+  'PC.Pages.SystemCreditRecords.recordId': 'Flow ID',
+  'PC.Pages.SystemCreditRecords.bizNo': 'Business No.',
+  'PC.Pages.SystemCreditRecords.userName': 'Username',
+  'PC.Pages.SystemCreditRecords.recordNo': 'Record No.',
+  'PC.Pages.SystemCreditRecords.phone': 'Phone Number',
+  'PC.Pages.SystemCreditRecords.created': 'Created Time',
+  'PC.Pages.SystemCreditRecords.amount': 'Credit Amount',
+  'PC.Pages.SystemCreditRecords.operationType': 'Change Type',
+  'PC.Pages.SystemCreditRecords.beforeAmount': 'Credits Before',
+  'PC.Pages.SystemCreditRecords.afterAmount': 'Credits After',
+  'PC.Pages.SystemCreditRecords.operationTypeIncrease': 'Increase',
+  'PC.Pages.SystemCreditRecords.operationTypeDecrease': 'Decrease',
+  'PC.Pages.SystemCreditRecords.remark': 'Remark',
 };
