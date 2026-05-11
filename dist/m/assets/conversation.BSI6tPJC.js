@@ -1,3 +1,6 @@
+
+
+
 import {
   d as o,
   o as n,
@@ -273,9 +276,8 @@ function h(o) {
     ).then(
       (o) => (
         console.log("apiAgentConversation", o),
-        (o.data.messageList = o.data.messageList.filter(
-          (o) => 165994 === o.index,
-        )),
+        // 2 6 9
+        (o.data.messageList = [o.data.messageList[2]]),
         o
       ),
     );
