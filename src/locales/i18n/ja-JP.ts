@@ -4642,8 +4642,8 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SystemSubsOrders.orderStatus': '注文ステータス',
   'PC.Pages.SystemSubsOrders.payStatus': '支払ステータス',
   'PC.Pages.SystemSubsOrders.viewDetail': '詳細',
-  'PC.Pages.SystemSubsOrders.statTotalRecords': '総記録数',
-  'PC.Pages.SystemSubsOrders.statSubscriptionCount': 'サブスクリプション',
-  'PC.Pages.SystemSubsOrders.statCreditsCount': 'クレジット購入',
-  'PC.Pages.SystemSubsOrders.statTotalAmount': '総金額',
+  'PC.Pages.SystemSubsOrders.totalRevenue': '総収益',
+  'PC.Pages.SystemSubsOrders.monthRevenue': '今月の収益',
+  'PC.Pages.SystemSubsOrders.todayRevenue': '本日の収益',
+  'PC.Pages.SystemSubsOrders.pendingAmount': '精算済み金額',
 };

@@ -4851,10 +4851,10 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemSubsOrders.payStatus': '支付状态',
   'PC.Pages.SystemSubsOrders.viewDetail': '详情',
 
-  'PC.Pages.SystemSubsOrders.statTotalRecords': '总记录数',
-  'PC.Pages.SystemSubsOrders.statSubscriptionCount': '套餐订阅',
-  'PC.Pages.SystemSubsOrders.statCreditsCount': '积分增购',
-  'PC.Pages.SystemSubsOrders.statTotalAmount': '总金额',
+  'PC.Pages.SystemSubsOrders.totalRevenue': '总收益',
+  'PC.Pages.SystemSubsOrders.monthRevenue': '本月收益',
+  'PC.Pages.SystemSubsOrders.todayRevenue': '今日收益',
+  'PC.Pages.SystemSubsOrders.pendingAmount': '已结算金额',
 
   // ── 系统管理 - 支付配置 ────────────────────────────────
   'PC.Pages.SystemPaymentConfig.tabAlipay': '支付宝',

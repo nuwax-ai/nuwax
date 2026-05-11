@@ -4638,8 +4638,8 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SystemSubsOrders.orderStatus': '訂單狀態',
   'PC.Pages.SystemSubsOrders.payStatus': '支付狀態',
   'PC.Pages.SystemSubsOrders.viewDetail': '詳情',
-  'PC.Pages.SystemSubsOrders.statTotalRecords': '總記錄數',
-  'PC.Pages.SystemSubsOrders.statSubscriptionCount': '套餐訂閱',
-  'PC.Pages.SystemSubsOrders.statCreditsCount': '積分增購',
-  'PC.Pages.SystemSubsOrders.statTotalAmount': '總金額',
+  'PC.Pages.SystemSubsOrders.totalRevenue': '總收益',
+  'PC.Pages.SystemSubsOrders.monthRevenue': '本月收益',
+  'PC.Pages.SystemSubsOrders.todayRevenue': '今日收益',
+  'PC.Pages.SystemSubsOrders.pendingAmount': '已結算金額',
 };

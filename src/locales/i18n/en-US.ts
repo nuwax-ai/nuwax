@@ -4725,8 +4725,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SystemSubsOrders.orderStatus': 'Order Status',
   'PC.Pages.SystemSubsOrders.payStatus': 'Payment Status',
   'PC.Pages.SystemSubsOrders.viewDetail': 'Details',
-  'PC.Pages.SystemSubsOrders.statTotalRecords': 'Total Records',
-  'PC.Pages.SystemSubsOrders.statSubscriptionCount': 'Subscriptions',
-  'PC.Pages.SystemSubsOrders.statCreditsCount': 'Credit Purchases',
-  'PC.Pages.SystemSubsOrders.statTotalAmount': 'Total Amount',
+  'PC.Pages.SystemSubsOrders.totalRevenue': 'Total Revenue',
+  'PC.Pages.SystemSubsOrders.monthRevenue': 'Monthly Revenue',
+  'PC.Pages.SystemSubsOrders.todayRevenue': 'Today Revenue',
+  'PC.Pages.SystemSubsOrders.pendingAmount': 'Settled Amount',
 };

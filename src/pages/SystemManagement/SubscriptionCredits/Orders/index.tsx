@@ -9,16 +9,14 @@ import {
 import { formatDate } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Card, Col, Row, Statistic, Tag } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
-import { apiGetOrderRevenueList } from '../services/order-revenue';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'umi';
+import {
+  apiGetOrderRevenueList,
+  apiGetOrderRevenueStats,
+} from '../services/order-revenue';
+import { BillRevenueStatsInfo } from '../types/order-revenue';
 import OrderDetailDrawer from './OrderDetailDrawer';
-
-const MOCK_STATS = {
-  totalRecords: 528,
-  subscriptionCount: 312,
-  creditsCount: 216,
-  totalAmount: 86500,
-};
 
 /**
  * 业务订单查询
@@ -28,11 +26,28 @@ const SubsOrders: React.FC = () => {
   const [detailsVisible, setDetailsVisible] = useState(false);
   // 当前选中的订单
   const [currentRecord, setCurrentRecord] = useState<BillOrderInfo>();
+  // 统计信息
+  const [statsInfo, setStatsInfo] = useState<BillRevenueStatsInfo>();
 
   // 关闭详情弹窗
   const handleCloseDetails = useCallback(() => {
     setDetailsVisible(false);
     setCurrentRecord(undefined);
+  }, []);
+
+  // 收益统计（按月过滤，按用户排行）
+  const { run: fetchStatsInfo, loading: statsLoading } = useRequest(
+    apiGetOrderRevenueStats,
+    {
+      manual: true,
+      onSuccess: (res: BillRevenueStatsInfo) => {
+        setStatsInfo(res);
+      },
+    },
+  );
+
+  useEffect(() => {
+    fetchStatsInfo();
   }, []);
 
   // 订单状态配置
@@ -170,16 +185,16 @@ const SubsOrders: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title={dict('PC.Pages.SystemSubsOrders.statTotalRecords')}
-                value={MOCK_STATS.totalRecords}
+                title={dict('PC.Pages.SystemSubsOrders.totalRevenue')}
+                value={statsLoading ? '-' : statsInfo?.totalRevenue || 0}
               />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
               <Statistic
-                title={dict('PC.Pages.SystemSubsOrders.statSubscriptionCount')}
-                value={MOCK_STATS.subscriptionCount}
+                title={dict('PC.Pages.SystemSubsOrders.monthRevenue')}
+                value={statsLoading ? '-' : statsInfo?.monthRevenue || 0}
                 valueStyle={{ color: '#1677ff' }}
               />
             </Card>
@@ -187,8 +202,8 @@ const SubsOrders: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title={dict('PC.Pages.SystemSubsOrders.statCreditsCount')}
-                value={MOCK_STATS.creditsCount}
+                title={dict('PC.Pages.SystemSubsOrders.todayRevenue')}
+                value={statsLoading ? '-' : statsInfo?.todayRevenue || 0}
                 valueStyle={{ color: '#52c41a' }}
               />
             </Card>
@@ -196,8 +211,8 @@ const SubsOrders: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title={dict('PC.Pages.SystemSubsOrders.statTotalAmount')}
-                value={MOCK_STATS.totalAmount}
+                title={dict('PC.Pages.SystemSubsOrders.pendingAmount')}
+                value={statsLoading ? '-' : statsInfo?.pendingAmount || 0}
                 precision={0}
                 prefix={dict('PC.Common.Global.currencySymbol')}
               />
