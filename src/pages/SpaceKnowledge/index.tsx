@@ -199,7 +199,7 @@ const SpaceKnowledge: React.FC = () => {
       message.success(dict('PC.Pages.SpaceKnowledge.Index.deleteDocSuccess'));
       // 删除文档后，更新文档列表以及分段信息
       setLoadingDoc(true);
-      //handleDocList();
+      handleDocList();
 
       handleLoadGraphList();
     },
