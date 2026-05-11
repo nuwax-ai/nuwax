@@ -4688,4 +4688,14 @@ export const EN_US: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX file parse failed',
   'PC.Utils.PptxFallbackRenderer.previewAlt': 'Presentation Preview',
   'PC.Utils.PptxFallbackRenderer.slideCount': '{0} slides in total',
+
+  // ── 系统管理 - 用户积分查询 ────────────────────────────
+  'PC.Pages.SystemUserCredits.colUserId': 'User ID',
+  'PC.Pages.SystemUserCredits.colUserName': 'Username',
+  'PC.Pages.SystemUserCredits.colPhone': 'Phone Number',
+  'PC.Pages.SystemUserCredits.totalCredit': 'Total Credits',
+  'PC.Pages.SystemUserCredits.subscriptionCredit': 'Plan Credits',
+  'PC.Pages.SystemUserCredits.purchaseCredit': 'Purchased Credits',
+  'PC.Pages.SystemUserCredits.activityCredit': 'Activity Credits',
+  'PC.Pages.SystemUserCredits.manualCredit': 'Manual Credits',
 };

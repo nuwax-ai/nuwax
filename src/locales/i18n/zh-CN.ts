@@ -4814,15 +4814,14 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.fieldRemark': '备注',
   'PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder': '请输入备注',
   // ── 系统管理 - 用户积分查询 ────────────────────────────
-  'PC.Pages.SystemUserCredits.colUser': '用户',
-  'PC.Pages.SystemUserCredits.colBalance': '当前余额',
-  'PC.Pages.SystemUserCredits.colTotalRecharge': '累计充值',
-  'PC.Pages.SystemUserCredits.colTotalConsume': '累计消耗',
-  'PC.Pages.SystemUserCredits.colLastUpdated': '最后操作时间',
+  'PC.Pages.SystemUserCredits.colUserId': '用户ID',
+  'PC.Pages.SystemUserCredits.colUserName': '用户名称',
   'PC.Pages.SystemUserCredits.colPhone': '手机号',
-  'PC.Pages.SystemUserCredits.colPlanCredits': '套餐积分',
-  'PC.Pages.SystemUserCredits.colPurchaseCredits': '增购积分',
-  'PC.Pages.SystemUserCredits.colActivityCredits': '活动积分',
+  'PC.Pages.SystemUserCredits.totalCredit': '总积分',
+  'PC.Pages.SystemUserCredits.subscriptionCredit': '套餐积分',
+  'PC.Pages.SystemUserCredits.purchaseCredit': '增购积分',
+  'PC.Pages.SystemUserCredits.activityCredit': '活动积分',
+  'PC.Pages.SystemUserCredits.manualCredit': '手动积分',
 
   // ── 系统管理 - 积分流水查询 ────────────────────────────
   'PC.Pages.SystemCreditRecords.colUser': '用户',

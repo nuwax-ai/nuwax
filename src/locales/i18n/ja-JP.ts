@@ -4604,4 +4604,14 @@ export const JA_JP: SystemLangMap = {
     'クレジットパッケージ価格を入力してください',
   'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder':
     'クレジット有効期間を入力してください',
+
+  // ── 系统管理 - 用户积分查询 ────────────────────────────
+  'PC.Pages.SystemUserCredits.colUserId': 'ユーザーID',
+  'PC.Pages.SystemUserCredits.colUserName': 'ユーザー名',
+  'PC.Pages.SystemUserCredits.colPhone': '携帯番号',
+  'PC.Pages.SystemUserCredits.totalCredit': '総クレジット',
+  'PC.Pages.SystemUserCredits.subscriptionCredit': 'プランクレジット',
+  'PC.Pages.SystemUserCredits.purchaseCredit': '追加購入クレジット',
+  'PC.Pages.SystemUserCredits.activityCredit': 'アクティビティクレジット',
+  'PC.Pages.SystemUserCredits.manualCredit': '手動クレジット',
 };

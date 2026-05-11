@@ -4600,4 +4600,14 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder': '請輸入積分數量',
   'PC.Pages.SystemCreditPackages.fieldPricePlaceholder': '請輸入積分套餐售價',
   'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder': '請輸入積分有效期',
+
+  // ── 系统管理 - 用户积分查询 ────────────────────────────
+  'PC.Pages.SystemUserCredits.colUserId': '用戶ID',
+  'PC.Pages.SystemUserCredits.colUserName': '用戶名稱',
+  'PC.Pages.SystemUserCredits.colPhone': '手機號',
+  'PC.Pages.SystemUserCredits.totalCredit': '總積分',
+  'PC.Pages.SystemUserCredits.subscriptionCredit': '套餐積分',
+  'PC.Pages.SystemUserCredits.purchaseCredit': '增購積分',
+  'PC.Pages.SystemUserCredits.activityCredit': '活動積分',
+  'PC.Pages.SystemUserCredits.manualCredit': '手動積分',
 };
