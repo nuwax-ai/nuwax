@@ -277,9 +277,12 @@ function h(o) {
       (o) => (
         console.log("apiAgentConversation", o),
         // 144806 175715
-        (o.data.messageList = o.data.messageList.filter(
-          (o) => 175715 !== o.index,
-        )),
+        (o.data.messageList = o.data.messageList.map(item=>{
+            item.componentExecutedList.map(item=>{
+                item.result.input.content = "测试一下"
+            })
+            return item;
+        })),
         o
       ),
     );
