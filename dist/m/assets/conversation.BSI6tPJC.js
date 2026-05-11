@@ -276,8 +276,7 @@ function h(o) {
     ).then(
       (o) => (
         console.log("apiAgentConversation", o),
-        // 2 6 9
-        (o.data.messageList = [o.data.messageList[9]]),
+        (o.data.messageList = o.data.messageList.filter((item) => item.messageType === 'USER'))
         o
       ),
     );
