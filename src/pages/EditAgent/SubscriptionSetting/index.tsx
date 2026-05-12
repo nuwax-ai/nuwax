@@ -15,13 +15,24 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, InputNumber, Switch, message } from 'antd';
+import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Button, Form, InputNumber, message, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiDeleteAgentSubscriptionPlan,
   apiGetAgentSubscriptionPlanList,
   apiUpdateAgentSubscriptionPlan,
+  apiUpdateAgentSubscriptionPlanSort,
 } from '../services/agent-subscription-plan';
 import CreatePlanModal from './CreatePlanModal';
 import SubscriptionPlanCard from './SubscriptionPlanCard';
@@ -32,6 +43,41 @@ interface SubscriptionSettingProps {
   spaceId: number;
   visible: boolean;
 }
+
+/**
+ * 可拖拽排序的套餐卡片
+ */
+const SortablePlanCard: React.FC<{
+  id: UniqueIdentifier;
+  children: React.ReactNode;
+}> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={styles['plan-sortable-item']}
+      data-dragging={isDragging}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * 订阅设置
@@ -59,6 +105,15 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   // 智能体资源定价配置
   const [agentResourcePricingConfig, setAgentResourcePricingConfig] =
     useState<ResourcePricingConfigInfo | null>(null);
+
+  // 拖拽传感器
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
 
   const { run: loadAgentSubscriptionPlans } = useRequest(
     apiGetAgentSubscriptionPlanList,
@@ -98,6 +153,14 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
       loadAgentPlans();
     },
   });
+
+  // 更新智能体套餐排序
+  const { run: runUpdatePlanSort } = useRequest(
+    apiUpdateAgentSubscriptionPlanSort,
+    {
+      manual: true,
+    },
+  );
 
   // 查询当前智能体定价状态（用于回填开关）
   const { run: loadPricingStatus } = useRequest(apiQueryToolPricing, {
@@ -195,6 +258,49 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     );
   };
 
+  /**
+   * 套餐拖拽排序
+   */
+  const handlePlanDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = plans.findIndex(
+      (item) => String(item.id) === String(active.id),
+    );
+    const newIndex = plans.findIndex(
+      (item) => String(item.id) === String(over.id),
+    );
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const reorderedPlans = arrayMove(plans, oldIndex, newIndex).map(
+      (item, index) => ({
+        ...item,
+        sort: index + 1,
+      }),
+    );
+    setPlans(reorderedPlans);
+
+    try {
+      await runUpdatePlanSort(
+        reorderedPlans
+          .filter((item) => typeof item.id === 'number')
+          .map((item) => ({
+            id: item.id as number,
+            sort: item.sort,
+          })),
+      );
+      message.success('排序已更新');
+    } catch (error) {
+      message.error(dict('PC.Common.Global.operationFailed'));
+      loadAgentPlans();
+    }
+  };
+
   // 切换订阅模式
   const handleToggleSubscriptionMode = (checked: boolean) => {
     const previous = subscriptionEnabled;
@@ -288,18 +394,31 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
       </div>
 
       {/* 套餐列表 */}
-      <div className={styles['plan-grid']}>
-        {plans.map((plan) => (
-          <SubscriptionPlanCard
-            key={plan.id}
-            plan={plan}
-            updateLoading={updatingSubscriptionPlan}
-            onToggle={(_, checked) => handleTogglePlanStatus(plan, checked)}
-            onEdit={handleEditPlan}
-            onDelete={() => handleDeletePlan(plan)}
-          />
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handlePlanDragEnd}
+      >
+        <SortableContext items={plans.map((plan) => String(plan.id))}>
+          <div className={styles['plan-grid']}>
+            {plans.map((plan) => (
+              <div key={plan.id} className={styles['plan-grid-item']}>
+                <SortablePlanCard id={String(plan.id)}>
+                  <SubscriptionPlanCard
+                    plan={plan}
+                    updateLoading={updatingSubscriptionPlan}
+                    onToggle={(_, checked) =>
+                      handleTogglePlanStatus(plan, checked)
+                    }
+                    onEdit={handleEditPlan}
+                    onDelete={() => handleDeletePlan(plan)}
+                  />
+                </SortablePlanCard>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* 创建套餐模态框 */}
       <CreatePlanModal

@@ -128,6 +128,22 @@
   gap: 16px;
 }
 
+.plan-grid-item {
+  min-width: 0;
+}
+
+.plan-sortable-item {
+  min-width: 0;
+}
+
+.plan-sortable-item:hover {
+  cursor: grab;
+}
+
+.plan-sortable-item[data-dragging='true'] {
+  cursor: grabbing;
+}
+
 @media (max-width: 1400px) {
   .plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
