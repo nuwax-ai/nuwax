@@ -2682,7 +2682,6 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.OpenApp.collapseNav': 'ナビゲーションを折りたたむ',
   'PC.Pages.OpenApp.firstConversationTip': 'チャット ボックスにコマンドを入力して、最初の会話を開始してください~',
   'PC.Pages.OpenApp.historyConversation': 'チャット履歴',
-  'PC.Pages.OpenApp.lookRight': '右を見てください >',
   'PC.Pages.OpenApp.newConversation': '新しい会話',
   'PC.Pages.OpenApp.viewAll': 'すべて見る',
   'PC.Pages.PreviewAndDebug.convIdNotFoundDesktop': '会話IDが見つかりません。エージェントコンピュータを開けません。',
@@ -4598,4 +4597,53 @@ export const JA_JP: SystemLangMap = {
   'PC.Utils.PptxFallbackRenderer.parseFailed': 'PPTX ファイルの解析に失敗しました',
   'PC.Utils.PptxFallbackRenderer.previewAlt': 'プレゼンテーションのプレビュー',
   'PC.Utils.PptxFallbackRenderer.slideCount': '合計 {0} 枚のスライド',
+  'PC.Pages.SystemCreditPackages.fieldNamePlaceholder': 'クレジットパッケージ名を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder':
+    'クレジット数を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldPricePlaceholder':
+    'クレジットパッケージ価格を入力してください',
+  'PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder':
+    'クレジット有効期間を入力してください',
+
+  // ── 系统管理 - 用户积分查询 ────────────────────────────
+  'PC.Pages.SystemUserCredits.colUserId': 'ユーザーID',
+  'PC.Pages.SystemUserCredits.colUserName': 'ユーザー名',
+  'PC.Pages.SystemUserCredits.colPhone': '携帯番号',
+  'PC.Pages.SystemUserCredits.totalCredit': '総クレジット',
+  'PC.Pages.SystemUserCredits.subscriptionCredit': 'プランクレジット',
+  'PC.Pages.SystemUserCredits.purchaseCredit': '追加購入クレジット',
+  'PC.Pages.SystemUserCredits.activityCredit': 'アクティビティクレジット',
+  'PC.Pages.SystemUserCredits.manualCredit': '手動クレジット',
+
+  // ── 系统管理 - 积分流水查询 ────────────────────────────
+  'PC.Pages.SystemCreditRecords.recordId': 'フローID',
+  'PC.Pages.SystemCreditRecords.bizNo': '業務番号',
+  'PC.Pages.SystemCreditRecords.userName': 'ユーザー名',
+  'PC.Pages.SystemCreditRecords.recordNo': '記録番号',
+  'PC.Pages.SystemCreditRecords.phone': '携帯番号',
+  'PC.Pages.SystemCreditRecords.created': '作成時間',
+  'PC.Pages.SystemCreditRecords.amount': 'クレジット数',
+  'PC.Pages.SystemCreditRecords.operationType': '変動タイプ',
+  'PC.Pages.SystemCreditRecords.beforeAmount': '変動前クレジット',
+  'PC.Pages.SystemCreditRecords.afterAmount': '変動後クレジット',
+  'PC.Pages.SystemCreditRecords.operationTypeIncrease': '増加',
+  'PC.Pages.SystemCreditRecords.operationTypeDecrease': '減少',
+  'PC.Pages.SystemCreditRecords.remark': '備考',
+
+  // ── 系统管理 - 业务订单查询 ────────────────────────────
+  'PC.Pages.SystemSubsOrders.colUser': 'ユーザー',
+  'PC.Pages.SystemSubsOrders.orderId': '注文ID',
+  'PC.Pages.SystemSubsOrders.userId': 'ユーザーID',
+  'PC.Pages.SystemSubsOrders.bizType': '業務タイプ',
+  'PC.Pages.SystemSubsOrders.description': '説明',
+  'PC.Pages.SystemSubsOrders.amount': '金額',
+  'PC.Pages.SystemSubsOrders.created': '開始時間',
+  'PC.Pages.SystemSubsOrders.modified': '更新時間',
+  'PC.Pages.SystemSubsOrders.orderStatus': '注文ステータス',
+  'PC.Pages.SystemSubsOrders.payStatus': '支払ステータス',
+  'PC.Pages.SystemSubsOrders.viewDetail': '詳細',
+  'PC.Pages.SystemSubsOrders.totalRevenue': '総収益',
+  'PC.Pages.SystemSubsOrders.monthRevenue': '今月の収益',
+  'PC.Pages.SystemSubsOrders.todayRevenue': '本日の収益',
+  'PC.Pages.SystemSubsOrders.pendingAmount': '精算済み金額',
 };

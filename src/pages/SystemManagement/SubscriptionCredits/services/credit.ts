@@ -4,7 +4,14 @@
 
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
-import { CreditPackageInfo, CreditPackageSortItem } from '../types/credit';
+import {
+  CreditPackageInfo,
+  CreditPackageSortItem,
+  UserCreditFlowInfo,
+  UserCreditFlowSearchParams,
+  UserCreditSummaryInfo,
+  UserCreditSummarySearchParams,
+} from '../types/credit';
 
 /**
  * 删除积分套餐
@@ -64,5 +71,29 @@ export async function apiGetCreditPackageList(
     params: {
       status,
     },
+  });
+}
+
+/**
+ * 用户积分查询
+ */
+export async function apiGetCreditSummaryList(
+  params: UserCreditSummarySearchParams,
+): Promise<RequestResponse<UserCreditSummaryInfo[]>> {
+  return request('/api/system/credit/summary/list', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 查询用户积分流水明细，传入lastId翻页
+ */
+export async function apiGetCreditFlowList(
+  params: UserCreditFlowSearchParams,
+): Promise<RequestResponse<UserCreditFlowInfo[]>> {
+  return request('/api/system/credit/flow/list', {
+    method: 'GET',
+    params,
   });
 }

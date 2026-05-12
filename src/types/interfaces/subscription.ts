@@ -237,12 +237,14 @@ export interface OrderInfo {
 // 账单订单相关（联调接口专用）
 // ──────────────────────────────────────────────
 
+// 订单状态,可用值:PENDING,PAID,CANCELLED
 export enum BillOrderStatusEnum {
   PENDING = 'PENDING',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
 }
 
+// 支付状态,可用值:PENDING,PROCESSING,SUCCESS,FAILED,CLOSED
 export enum BillPayStatusEnum {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -251,31 +253,62 @@ export enum BillPayStatusEnum {
   CLOSED = 'CLOSED',
 }
 
-export interface BillOrderItem {
-  id: number | string;
-  orderId: number | string;
-  targetType: string;
-  targetName: string;
-  targetId: number | string;
-  price: number;
-  count: number;
-  snapshot?: any;
-  created: string;
+// 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION
+export enum BillBizTypeEnum {
+  CREDIT_PURCHASE = 'CREDIT_PURCHASE',
+  SUBSCRIPTION = 'SUBSCRIPTION',
 }
 
-export interface BillOrderInfo {
-  id: number | string;
-  tenantId: number | string;
-  userId: number | string;
-  description: string;
-  bizType: string;
-  orderStatus: BillOrderStatusEnum;
-  payStatus: BillPayStatusEnum;
-  amount: number;
+// 订单明细
+export interface BillOrderItem {
+  // 明细ID
+  id: number;
+  // 订单ID
+  orderId: number;
+  // 目标类型,可用值:PLAN,CREDIT_PACKAGE
+  targetType: string;
+  // 目标名称
+  targetName: string;
+  // 目标ID
+  targetId: number | string;
+  // 	单价
+  price: number;
+  // 数量
+  count: number;
+  // 快照信息
+  snapshot?: any;
+  // 创建时间
   created: string;
-  modified: string;
+  // 修改时间
+  // modified: string;
+}
+
+// 订单信息
+export interface BillOrderInfo {
+  // 订单ID
+  id: number;
+  // 租户ID
+  tenantId: number;
+  // 用户ID
+  userId: number;
+  // 订单描述
+  description: string;
+  // 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION
+  bizType: BillBizTypeEnum;
+  // 订单状态,可用值:PENDING,PAID,CANCELLED
+  orderStatus: BillOrderStatusEnum;
+  // 支付状态,可用值:PENDING,PROCESSING,SUCCESS,FAILED,CLOSED
+  payStatus: BillPayStatusEnum;
+  // 订单金额
+  amount: number;
+  // 订单明细
   items?: BillOrderItem[];
+  // 扩展字段
   extra?: any;
+  // 创建时间
+  created: string;
+  // 修改时间
+  modified: string;
 }
 
 // ──────────────────────────────────────────────
@@ -509,26 +542,26 @@ export interface ModelPriceTier {
   cachePrice: number;
 }
 
-export interface ModelPricingInfo {
-  id: number;
-  name: string;
-  provider: string;
-  tiers: ModelPriceTier[];
-  enabled: boolean;
-}
+// export interface ModelPricingInfo {
+//   id: number;
+//   name: string;
+//   provider: string;
+//   tiers: ModelPriceTier[];
+//   enabled: boolean;
+// }
 
-export interface ToolPricingInfo {
-  id: number;
-  name: string;
-  category: 'plugin' | 'workflow' | 'mcp';
-  description: string;
-  price: number;
-  period: string;
-  calls: number;
-  trialCount: number;
-  enabled: boolean;
-  createdAt: string;
-}
+// export interface ToolPricingInfo {
+//   id: number;
+//   name: string;
+//   category: 'plugin' | 'workflow' | 'mcp';
+//   description: string;
+//   price: number;
+//   period: string;
+//   calls: number;
+//   trialCount: number;
+//   enabled: boolean;
+//   createdAt: string;
+// }
 
 export interface SkillPricingInfo {
   id: number;

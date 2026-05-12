@@ -278,6 +278,20 @@ const AppDevDesign: React.FC = () => {
   const previewRef = useRef<PreviewRef>(null);
   const designViewerRef = useRef<DesignViewerRef>(null);
 
+  // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
+  // 整个页面生命周期内只触发一次：避免死循环和跨项目重复触发；后续重试由用户手动点「重启服务器」。
+  // 后续「等 iframe 加载完成 → 切回 design」的动作由 ChatAreaTabs 内部完成。
+  const designRecoveryFiredRef = useRef(false);
+  const handleDesignModeUnreachable = useCallback(async () => {
+    if (designRecoveryFiredRef.current) return;
+    designRecoveryFiredRef.current = true;
+    try {
+      await server.restartServer(false);
+    } catch {
+      // restartServer 内部已写入 serverMessage / errorCode
+    }
+  }, [server]);
+
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState(false);
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
@@ -1747,6 +1761,7 @@ const AppDevDesign: React.FC = () => {
                 isComparing={versionCompare.isComparing}
                 defaultActiveTab={'design'}
                 hiddenTabs={['chat', 'data']}
+                onDesignModeUnreachable={handleDesignModeUnreachable}
               />
             </div>
           </div>

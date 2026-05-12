@@ -14,7 +14,7 @@ import styles from './index.less';
 interface CreditPackageFormModalProps {
   form: FormInstance;
   open: boolean;
-  creditPackageInfo: CreditPackageInfo | null;
+  creditPackageInfo?: CreditPackageInfo | null;
   onSuccess?: () => void;
   onCancel: () => void;
 }
@@ -107,7 +107,13 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
           label={dict('PC.Pages.SystemCreditPackages.fieldName')}
           rules={[{ required: true }]}
         >
-          <Input maxLength={30} showCount />
+          <Input
+            maxLength={30}
+            showCount
+            placeholder={dict(
+              'PC.Pages.SystemCreditPackages.fieldNamePlaceholder',
+            )}
+          />
         </Form.Item>
         <Form.Item
           name="creditAmount"
@@ -119,6 +125,9 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
             max={100000000}
             precision={0}
             className="w-full"
+            placeholder={dict(
+              'PC.Pages.SystemCreditPackages.fieldCreditsPlaceholder',
+            )}
           />
         </Form.Item>
         <Form.Item
@@ -148,6 +157,9 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
             step={0.1}
             prefix="¥"
             className="w-full"
+            placeholder={dict(
+              'PC.Pages.SystemCreditPackages.fieldPricePlaceholder',
+            )}
           />
         </Form.Item>
         <Row gutter={16}>
