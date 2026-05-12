@@ -436,6 +436,7 @@ export function createDefaultNodeConfig(
         evalValidators: [],
         evalMaxRetry: 2,
         evalOnMaxRetry: 'fail',
+        passNextNodeIds: [],
         inputArgs: [],
         outputArgs: [],
       };
@@ -458,6 +459,8 @@ export function createDefaultNodeConfig(
           promptToReviewer: '',
           draftSource: '',
         },
+        approveNextNodeIds: [],
+        rejectNextNodeIds: [],
         inputArgs: [],
         outputArgs: [],
       };

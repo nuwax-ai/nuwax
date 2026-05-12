@@ -30,6 +30,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   id,
   icon,
   description,
+  workflowType,
   open,
   onCancel,
   onConfirm,
@@ -45,7 +46,9 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     onSuccess: (result: number) => {
       message.success(dict('PC.Components.CreateWorkflow.workflowCreated'));
       onCancel();
-      history.push(`/space/${spaceId}/workflow/${result}`);
+      const routePrefix =
+        workflowType === 'AgentFlow' ? 'agent-flow' : 'workflow';
+      history.push(`/space/${spaceId}/${routePrefix}/${result}`);
     },
   });
 
@@ -79,6 +82,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       name: values?.name,
       description: values?.description,
       icon: imageUrl,
+      ...(workflowType && { workflowType }),
     };
     if (type === CreateUpdateModeEnum.Create) {
       run({

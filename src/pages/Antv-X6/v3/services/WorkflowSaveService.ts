@@ -380,6 +380,32 @@ class WorkflowSaveService {
       return { type: PortType.Loop };
     }
 
+    // AgentFlow EvalGate 端口
+    if (sourceNode.type === NodeTypeEnum.EvalGate) {
+      if (sourcePort.includes('-eval-pass-out')) {
+        return { type: PortType.EvalGatePass };
+      }
+      if (sourcePort.includes('-eval-fail-')) {
+        const nodeIdStr = String(sourceNode.id);
+        let uuid = sourcePort;
+        if (sourcePort.startsWith(nodeIdStr + '-')) {
+          uuid = uuid.substring(nodeIdStr.length + 1);
+        }
+        uuid = uuid.replace(/^eval-fail-/, '').replace(/-out$/, '');
+        return { type: PortType.EvalGateFail, uuid };
+      }
+    }
+
+    // AgentFlow HumanInteraction 端口
+    if (sourceNode.type === NodeTypeEnum.HumanInteraction) {
+      if (sourcePort.includes('-hitl-approve-out')) {
+        return { type: PortType.HitlApprove };
+      }
+      if (sourcePort.includes('-hitl-reject-out')) {
+        return { type: PortType.HitlReject };
+      }
+    }
+
     // 特殊分支节点
     if (
       sourceNode.type === NodeTypeEnum.Condition ||
@@ -470,6 +496,49 @@ class WorkflowSaveService {
         if (!config.exceptionHandleNodeIds.includes(targetId)) {
           config.exceptionHandleNodeIds.push(targetId);
         }
+        return true;
+      }
+
+      case PortType.EvalGatePass: {
+        if (!sourceNode.nodeConfig) return false;
+        let passIds = sourceNode.nodeConfig.passNextNodeIds || [];
+        if (!passIds.includes(targetId)) {
+          passIds.push(targetId);
+        }
+        sourceNode.nodeConfig.passNextNodeIds = passIds;
+        return true;
+      }
+
+      case PortType.EvalGateFail: {
+        if (!portInfo.uuid || !sourceNode.nodeConfig?.evalValidators)
+          return false;
+        const validator = (sourceNode.nodeConfig.evalValidators as any[]).find(
+          (v: any) => v.uuid === portInfo.uuid,
+        );
+        if (validator) {
+          validator.onFail = { ...validator.onFail, targetNodeId: targetId };
+          return true;
+        }
+        return false;
+      }
+
+      case PortType.HitlApprove: {
+        if (!sourceNode.nodeConfig) return false;
+        let approveIds = sourceNode.nodeConfig.approveNextNodeIds || [];
+        if (!approveIds.includes(targetId)) {
+          approveIds.push(targetId);
+        }
+        sourceNode.nodeConfig.approveNextNodeIds = approveIds;
+        return true;
+      }
+
+      case PortType.HitlReject: {
+        if (!sourceNode.nodeConfig) return false;
+        let rejectIds = sourceNode.nodeConfig.rejectNextNodeIds || [];
+        if (!rejectIds.includes(targetId)) {
+          rejectIds.push(targetId);
+        }
+        sourceNode.nodeConfig.rejectNextNodeIds = rejectIds;
         return true;
       }
 

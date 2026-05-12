@@ -44,4 +44,9 @@ export enum SpecialPortType {
   QAOption = 'qa_option', // 问答选项端口
   Exception = 'exception', // 异常处理端口
   Loop = 'loop', // 循环节点特殊端口
+  // AgentFlow 专用
+  EvalGatePass = 'eval_gate_pass', // 评估验证通过端口
+  EvalGateFail = 'eval_gate_fail', // 评估验证失败端口
+  HitlApprove = 'hitl_approve', // 人类介入审批通过端口
+  HitlReject = 'hitl_reject', // 人类介入审批拒绝端口
 }

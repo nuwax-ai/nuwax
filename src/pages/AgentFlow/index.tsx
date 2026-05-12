@@ -11,15 +11,20 @@
  */
 
 import { FlowKindProvider } from '@/contexts/FlowKindContext';
+import { registerAgentFlowHandlers } from '@/pages/Antv-X6/v3/agentFlow/register';
 import { t } from '@/services/i18nRuntime';
 import { FlowKindEnum } from '@/types/enums/common';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const WorkflowV3 = React.lazy(() => import('@/pages/Antv-X6/v3/indexV3'));
 
 const AgentFlow: React.FC = () => {
+  useEffect(() => {
+    registerAgentFlowHandlers();
+  }, []);
+
   return (
     <FlowKindProvider flowKind={FlowKindEnum.AgentFlow}>
       <React.Suspense

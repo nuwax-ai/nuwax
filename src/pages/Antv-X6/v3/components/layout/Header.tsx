@@ -3,7 +3,7 @@ import { SaveStatusEnum } from '@/models/workflowV3';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PermissionsEnum } from '@/types/enums/common';
+import { FlowKindEnum, PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
 import { jumpBack } from '@/utils/router';
 import {
@@ -35,6 +35,8 @@ interface HeaderProp {
     description?: string;
     publishDate?: string | null;
     permissions?: PermissionsEnum[];
+    // 流类型：Workflow / AgentFlow
+    workflowType?: string;
   };
   onToggleVersionHistory: () => void;
   showPublish: () => void;
@@ -64,8 +66,15 @@ const Header: React.FC<HeaderProp> = ({
 }) => {
   const { spaceId } = useParams();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
-  const { name, icon, publishStatus, modified, description, publishDate } =
-    info;
+  const {
+    name,
+    icon,
+    publishStatus,
+    modified,
+    description,
+    publishDate,
+    workflowType,
+  } = info;
 
   const isMac = /mac/i.test(navigator.userAgent);
   const undoShortcut = isMac ? 'Cmd+Z' : 'Ctrl+Z';
@@ -220,6 +229,11 @@ const Header: React.FC<HeaderProp> = ({
         <div className="dis-col header-content-style ">
           <div className="dis-left">
             <strong className="header-name-style">{name}</strong>
+            {workflowType === FlowKindEnum.AgentFlow && (
+              <Tag color="purple" bordered={false} style={{ marginLeft: 4 }}>
+                AgentFlow
+              </Tag>
+            )}
             <Popover content={description}>
               <InfoCircleOutlined
                 className="mr-6"

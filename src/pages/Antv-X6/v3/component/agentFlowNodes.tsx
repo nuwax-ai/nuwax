@@ -453,14 +453,18 @@ const EvalGateNode: React.FC<NodeDisposeProps> = ({ form }) => {
               type="dashed"
               icon={<PlusOutlined />}
               block
-              onClick={() =>
+              onClick={() => {
+                const uuid = `${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`;
                 add({
+                  uuid,
                   name: '',
                   type: EvalValidatorTypeEnum.Rule,
                   config: {},
                   onFail: { targetNodeId: '', appendPrompt: '', reason: '' },
-                })
-              }
+                });
+              }}
             >
               {t('PC.Pages.AgentFlowNode.evalValidatorAdd')}
             </Button>

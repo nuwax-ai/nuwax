@@ -80,6 +80,7 @@ import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 import isEqual from 'lodash/isEqual';
 
+import { extensionRegistry } from '../extensions/registry';
 import {
   adjustParentSize,
   generatePortGroupConfig,
@@ -413,6 +414,23 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
   ];
   let outputPorts: Array<ReturnType<typeof generatePortConfig>> = [];
 
+  // 扩展点：委托给注册的 handler（AgentFlow 等分支类型）
+  const portHandler = extensionRegistry.get(data.type);
+  if (portHandler?.generatePorts) {
+    const result = portHandler.generatePorts(data, { generatePortConfig });
+    if (result) {
+      outputPorts = _handleExceptionOutputPort(
+        data,
+        result.outputPorts,
+        generatePortConfig,
+      );
+      return {
+        groups: generatePortGroupConfig(basePortSize, data),
+        items: [...result.inputPorts, ...outputPorts],
+      };
+    }
+  }
+
   switch (data.type) {
     case NodeTypeEnum.Start:
       inputPorts = []; // Start 节点没有输入端口
@@ -711,6 +729,13 @@ export const handleSpecialNodesNextIndex = (
   id: number,
   targetNode?: ChildNode,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.handleSpecialNextIndex) {
+    const result = spHandler.handleSpecialNextIndex(node, uuid, id, targetNode);
+    if (result) return result;
+  }
+
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
     case 'Condition': {
@@ -772,6 +797,16 @@ export const removeFromSpecialNodesNextIndex = (
   portId: string,
   targetId: number,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.parseSourcePort) {
+    const parsed = spHandler.parseSourcePort(node, portId);
+    if (parsed) {
+      spHandler.updateConnection?.(node, parsed, targetId, 'remove');
+      return node;
+    }
+  }
+
   // 从 portId 中提取 uuid（格式: {nodeId}-{uuid}-out）
   const segments = portId.split('-');
   const uuid = segments.slice(1, -1).join('-'); // 移除 nodeId 和 out
