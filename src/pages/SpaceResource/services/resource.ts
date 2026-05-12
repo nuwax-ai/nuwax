@@ -79,8 +79,8 @@ export async function apiToggleModelPricing(
  */
 export async function apiUpdateToolPricing(
   data: ToolPricingInfo,
-): Promise<RequestResponse<ToolPricingInfo>> {
-  return request('/api/pricing/config/update', {
+): Promise<RequestResponse<null>> {
+  return request('/api/pricing/config/save', {
     method: 'POST',
     data,
   });
