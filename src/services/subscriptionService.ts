@@ -32,7 +32,6 @@ import type {
   SubscriptionSummaryInfo,
   SystemSubscriptionPlan,
   UserCreditBalanceInfo,
-  UserCreditsInfo,
   UserSubscriptionInfo,
   WithdrawalInfo,
   WithdrawalStatusEnum,
@@ -253,12 +252,6 @@ export async function apiListWithdrawRecords(params: {
 // ──────────────────────────────────────────────
 // 积分
 // ──────────────────────────────────────────────
-
-export async function apiGetUserCredits(): Promise<
-  RequestResponse<UserCreditsInfo>
-> {
-  return request('/api/user/credits', { method: 'GET' });
-}
 
 // 查询当前登录用户总积分
 export async function apiGetCreditSummary(): Promise<
