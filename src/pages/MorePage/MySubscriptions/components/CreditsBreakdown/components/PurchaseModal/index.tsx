@@ -49,7 +49,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
       open={open}
       onOpenChange={(visible) => !visible && onCancel()}
       modalProps={{
-        destroyOnClose: true,
+        destroyOnHidden: true,
         width: 640,
       }}
       submitter={{ render: () => null }} // 隐藏底部按钮区域

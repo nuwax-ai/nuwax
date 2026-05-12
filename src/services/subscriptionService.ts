@@ -30,6 +30,7 @@ import type {
   RevenueStatsInfo,
   SubscriptionPlan,
   SubscriptionSummaryInfo,
+  SystemSubscriptionPlan,
   UserCreditBalanceInfo,
   UserCreditsInfo,
   UserSubscriptionInfo,
@@ -270,6 +271,15 @@ export async function apiListCreditPackages(): Promise<
   RequestResponse<CreditPackageInfo[]>
 > {
   return request('/api/credit/package/list', { method: 'GET' });
+}
+
+/**
+ * 查询可订阅的系统计划列表
+ */
+export async function apiListSystemSubscriptionPlans(): Promise<
+  RequestResponse<SystemSubscriptionPlan[]>
+> {
+  return request('/api/subscription/system/plans', { method: 'GET' });
 }
 
 export async function apiPurchaseCredits(

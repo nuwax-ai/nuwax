@@ -3,7 +3,7 @@ import { dict } from '@/services/i18nRuntime';
 import {
   apiGetCreditSummary,
   apiGetMySubscription,
-  apiListCreditPackages,
+  apiListSystemSubscriptionPlans,
 } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
@@ -34,9 +34,9 @@ const MySubscriptions: React.FC = () => {
     },
   );
 
-  // 获取积分套餐列表
+  // 获取积分套餐列表（新版系统计划）
   const { data: packagesData, run: fetchPackagesData } = useRequest(
-    apiListCreditPackages,
+    apiListSystemSubscriptionPlans,
     {
       manual: true,
     },

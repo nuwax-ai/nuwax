@@ -1,7 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import {
-  CreditPackageInfo,
   MyPlanPeriodEnum,
+  SystemSubscriptionPlan,
 } from '@/types/interfaces/subscription';
 import { Button, Col, Row } from 'antd';
 import classNames from 'classnames';
@@ -18,7 +18,7 @@ export interface PlanInfo {
 }
 
 interface SubscriptionPlanCardsProps {
-  data?: CreditPackageInfo[];
+  data?: SystemSubscriptionPlan[];
   currentPlanId?: number;
   endTime?: string;
   onRenew?: (plan: PlanInfo) => void;
@@ -37,7 +37,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   const plans = useMemo<PlanInfo[]>(() => {
     return data.map((item) => ({
       id: item.id.toString(),
-      name: item.packageName,
+      name: item.name,
       price: item.price,
       creditAmount: item.creditAmount,
       period: item.period,

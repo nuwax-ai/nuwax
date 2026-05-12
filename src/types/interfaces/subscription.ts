@@ -631,3 +631,47 @@ export interface WithdrawConfig {
   created: string;
   modified: string;
 }
+
+export interface SystemSubscriptionPlanItem {
+  name: string;
+  description: string;
+  icon: string;
+  selected: boolean;
+}
+
+export interface SystemSubscriptionPlanOpenApiConfig {
+  key: string;
+  rpm: number;
+  rpd: number;
+}
+
+export interface SystemSubscriptionPlanGroup {
+  name: string;
+  description: string;
+  groupType: string;
+  items: SystemSubscriptionPlanItem[];
+  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[];
+}
+
+export interface SystemSubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  firstPrice: number;
+  period: string;
+  creditAmount: number;
+  callLimitCount: number;
+  functionOnly: boolean;
+  dailyGiftCreditAmount: number;
+  isHot: boolean;
+  status: number;
+  bizType: string;
+  bizId: string;
+  groupIds: any[];
+  extra: any;
+  sort: number;
+  created: string;
+  modified: string;
+  itemGroups: SystemSubscriptionPlanGroup[];
+}
