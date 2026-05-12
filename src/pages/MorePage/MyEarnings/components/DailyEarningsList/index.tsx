@@ -7,12 +7,15 @@ import { Empty, Spin } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
-import DailyEarningsFilter from '../DailyEarningsFilter';
+import DailyEarningsDetailModal from './components/DailyEarningsDetailModal';
+import DailyEarningsFilter from './components/DailyEarningsFilter';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const DailyEarningsList: React.FC = () => {
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | string>();
   const [filterValues, setFilterValues] = useState<{
     date?: string;
   }>({});
@@ -87,7 +90,8 @@ const DailyEarningsList: React.FC = () => {
                     key={item.id}
                     className={cx(styles['earning-item'])}
                     onClick={() => {
-                      // 暂时不做处理，后续弹出模态框
+                      setSelectedId(item.id);
+                      setDetailModalVisible(true);
                     }}
                   >
                     <div className={cx(styles['date-badge'])}>
@@ -123,6 +127,15 @@ const DailyEarningsList: React.FC = () => {
               )}
         </div>
       </Spin>
+
+      <DailyEarningsDetailModal
+        visible={detailModalVisible}
+        targetId={selectedId}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setSelectedId(undefined);
+        }}
+      />
     </div>
   );
 };

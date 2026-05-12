@@ -16,6 +16,7 @@ import type {
   CreditRecordTypeEnum,
   CreditSummaryInfo,
   CreditTypeEnum,
+  DailyRevenueDetailRecord,
   DailyRevenueRecord,
   DevEarningsSummaryInfo,
   DevPaymentAccountInfo,
@@ -34,6 +35,7 @@ import type {
   UserSubscriptionInfo,
   WithdrawalInfo,
   WithdrawalStatusEnum,
+  WithdrawConfig,
 } from '@/types/interfaces/subscription';
 
 import { request } from 'umi';
@@ -50,6 +52,22 @@ export async function apiListDailyRevenue(params: {
   dt?: string;
 }): Promise<RequestResponse<DailyRevenueRecord[]>> {
   return request('/api/bill/revenue/daily', { method: 'GET', params });
+}
+
+// 查询我的收益明细
+export async function apiListDailyRevenueDetail(params: {
+  targetId: number | string;
+  pageNum: number;
+  pageSize: number;
+}): Promise<RequestResponse<DailyRevenueDetailRecord[]>> {
+  return request('/api/bill/revenue/detail', { method: 'GET', params });
+}
+
+// 查询提现配置
+export async function apiGetWithdrawConfig(): Promise<
+  RequestResponse<WithdrawConfig>
+> {
+  return request('/api/system/bill/withdraw/config', { method: 'GET' });
 }
 
 // 查询工作空间定价套餐列表

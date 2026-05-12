@@ -14,6 +14,22 @@ export interface DailyRevenueRecord {
   created: string;
 }
 
+export interface DailyRevenueDetailRecord {
+  id: number;
+  userId: number;
+  dt: string;
+  amount: number;
+  type: string; // PLAN, MODEL_CALL, TOOL_CALL
+  typeId: number;
+  orderId: number;
+  targetType: string;
+  targetId: number;
+  bizNo: string;
+  remark: string;
+  extra: any;
+  created: string;
+}
+
 export enum SubscriptionStatusEnum {
   Active = 'active',
   Expired = 'expired',
@@ -604,4 +620,14 @@ export interface WithdrawalInfo {
   rejectReason?: string;
   createdAt: string;
   processedAt?: string;
+}
+
+export interface WithdrawConfig {
+  id: number;
+  minAmount: number;
+  monthlyLimit: number;
+  dailyLimit: number;
+  limitMode: string;
+  created: string;
+  modified: string;
 }

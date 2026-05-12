@@ -2,19 +2,24 @@ import { dict } from '@/services/i18nRuntime';
 import {
   apiCreateWithdrawApply,
   apiGetRevenueStats,
+  apiGetWithdrawConfig,
 } from '@/services/subscriptionService';
 import { CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { Button, message, Modal, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
-import WithdrawRecordModal from '../WithdrawRecordModal';
+import WithdrawRecordModal from './components/WithdrawRecordModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const EarningsSummary: React.FC = () => {
   const [withdrawRecordOpen, setWithdrawRecordOpen] = useState(false);
+
+  // 获取提现配置（最低提现金额）
+  const { data: withdrawConfigRes } = useRequest(apiGetWithdrawConfig);
+  const minAmount = withdrawConfigRes?.data?.minAmount || 0;
 
   // 获取收益统计数据
   const {
@@ -39,7 +44,7 @@ const EarningsSummary: React.FC = () => {
                 value={res?.data?.amount || 0}
                 precision={2}
                 prefix="¥"
-                valueStyle={{ fontSize: 18, fontWeight: 600 }}
+                valueStyle={{ fontSize: '18px', fontWeight: '600' }}
               />
             </div>
           ),
@@ -128,7 +133,7 @@ const EarningsSummary: React.FC = () => {
               type="primary"
               icon={<DownloadOutlined />}
               className={cx(styles['withdraw-apply-btn'])}
-              disabled={pendingAmount <= 0}
+              disabled={pendingAmount <= 0 || pendingAmount < minAmount}
               loading={withdrawLoading}
               onClick={runWithdraw}
             >
