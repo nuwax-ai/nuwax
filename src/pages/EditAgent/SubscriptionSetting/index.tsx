@@ -259,6 +259,13 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   };
 
   /**
+   * 点击套餐卡片
+   */
+  const handleClickPlanCard = (plan: SubscriptionPlanInfo) => {
+    console.log('[SubscriptionSetting] click plan card:', plan);
+  };
+
+  /**
    * 套餐拖拽排序
    */
   const handlePlanDragEnd = async (event: DragEndEvent) => {
@@ -407,6 +414,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
                   <SubscriptionPlanCard
                     plan={plan}
                     updateLoading={updatingSubscriptionPlan}
+                    onClick={() => handleClickPlanCard(plan)}
                     onToggle={(_, checked) =>
                       handleTogglePlanStatus(plan, checked)
                     }
