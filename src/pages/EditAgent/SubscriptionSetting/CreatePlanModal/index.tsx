@@ -1,24 +1,27 @@
-import { apiCreateAgentSubscriptionPlan } from '@/pages/EditAgent/services/agent-subscription-plan';
+import CustomFormModal from '@/components/CustomFormModal';
+import {
+  apiCreateAgentSubscriptionPlan,
+  apiUpdateAgentSubscriptionPlan,
+} from '@/pages/EditAgent/services/agent-subscription-plan';
 import {
   SubscriptionPlanBizTypeEnum,
+  SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { customizeRequiredMark } from '@/utils/form';
 import {
   Button,
   Form,
   Input,
   InputNumber,
-  Modal,
+  InputRef,
   Segmented,
   Switch,
   message,
 } from 'antd';
-import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 export interface CreatePlanFormValues {
   name: string;
@@ -33,6 +36,7 @@ export interface CreatePlanFormValues {
 interface CreatePlanModalProps {
   agentId: number;
   open: boolean;
+  editPlan?: SubscriptionPlanInfo | null;
   onCancel: () => void;
   onCreated?: () => void;
 }
@@ -52,17 +56,36 @@ const periodOptions = [
 const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   agentId,
   open,
+  editPlan,
   onCancel,
   onCreated,
 }) => {
   const [form] = Form.useForm();
+  const nameInputRef = useRef<InputRef>(null);
   const [limitType, setLimitType] = useState<'unlimited' | 'limited'>(
     'unlimited',
   );
+
+  // 创建中
   const [creating, setCreating] = useState<boolean>(false);
 
   useEffect(() => {
     if (!open) {
+      return;
+    }
+    form.resetFields();
+
+    if (editPlan) {
+      const isUnlimited = editPlan.callLimitCount === -1;
+      setLimitType(isUnlimited ? 'unlimited' : 'limited');
+      form.setFieldsValue({
+        name: editPlan.name,
+        description: editPlan.description,
+        period: editPlan.period || SubscriptionPlanPeriodEnum.MONTH,
+        price: editPlan.price,
+        functionOnly: editPlan.functionOnly ?? false,
+        callLimitCount: isUnlimited ? undefined : editPlan.callLimitCount,
+      });
       return;
     }
     setLimitType('unlimited');
@@ -71,7 +94,19 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
       functionOnly: false,
       callLimitCount: undefined,
     });
-  }, [open, form]);
+  }, [open, editPlan, form]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [open]);
 
   /**
    * 提交创建订阅计划
@@ -84,7 +119,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     };
     setCreating(true);
     try {
-      await apiCreateAgentSubscriptionPlan({
+      const payload: SubscriptionPlanInfo = {
+        ...(editPlan || {}),
         name: submitValues.name,
         description: submitValues.description || '',
         price: submitValues.price,
@@ -95,14 +131,20 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             ? -1
             : Number(submitValues.callLimitCount || 0),
         functionOnly: Boolean(submitValues.functionOnly),
-        isHot: false,
-        status: SubscriptionPlanStatusEnum.Online,
-        bizType: SubscriptionPlanBizTypeEnum.AGENT,
-        bizId: String(agentId),
-        groupIds: [],
-        sort: 0,
-      });
-      message.success('添加成功');
+        isHot: editPlan?.isHot ?? false,
+        status: editPlan?.status ?? SubscriptionPlanStatusEnum.Online,
+        bizType: editPlan?.bizType || SubscriptionPlanBizTypeEnum.AGENT,
+        bizId: editPlan?.bizId || String(agentId),
+        sort: editPlan?.sort ?? 0,
+      };
+
+      if (editPlan?.id) {
+        await apiUpdateAgentSubscriptionPlan(payload);
+        message.success('更新成功');
+      } else {
+        await apiCreateAgentSubscriptionPlan(payload);
+        message.success('添加成功');
+      }
       onCreated?.();
       onCancel();
     } finally {
@@ -111,23 +153,38 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   };
 
   return (
-    <Modal
+    <CustomFormModal
+      form={form}
+      title={editPlan ? '编辑套餐' : '添加套餐'}
       open={open}
       width={600}
       centered
-      destroyOnHidden
+      loading={creating}
       onCancel={onCancel}
-      footer={null}
-      className={cx(styles.createPlanModal)}
-      title={<span className={cx(styles.modalTitle)}>添加套餐</span>}
+      onConfirm={handleSubmit}
+      okText={editPlan ? '更新' : '确认'}
+      classNames={{
+        content: styles['create-plan-modal-content'],
+        header: styles['create-plan-modal-header'],
+      }}
     >
-      <Form form={form} layout="vertical">
+      <Form
+        form={form}
+        preserve={false}
+        layout="vertical"
+        requiredMark={customizeRequiredMark}
+      >
         <Form.Item
           name="name"
           label="套餐名称"
           rules={[{ required: true, message: '请输入套餐名称' }]}
         >
-          <Input placeholder="例如：专业版" maxLength={30} showCount />
+          <Input
+            ref={nameInputRef}
+            placeholder="例如：专业版"
+            maxLength={30}
+            showCount
+          />
         </Form.Item>
 
         <Form.Item name="description" label="套餐描述">
@@ -140,8 +197,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           />
         </Form.Item>
 
-        <Form.Item label="价格">
-          <div className={cx(styles.priceRow)}>
+        <Form.Item label="价格" required>
+          <div className={styles['price-row']}>
             <Form.Item name="period" noStyle>
               <Segmented options={periodOptions} />
             </Form.Item>
@@ -155,24 +212,24 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 max={1000000}
                 precision={2}
                 className="w-full"
-                placeholder="输入价格"
+                placeholder="请输入价格"
               />
             </Form.Item>
           </div>
         </Form.Item>
 
         <Form.Item label="可调用次数">
-          <div className={cx(styles.limitSwitchRow)}>
+          <div className={styles['limit-switch-row']}>
             <Button
               type={limitType === 'unlimited' ? 'primary' : 'default'}
-              className={cx(styles.limitBtn)}
+              className={styles['limit-btn']}
               onClick={() => setLimitType('unlimited')}
             >
               不限
             </Button>
             <Button
               type={limitType === 'limited' ? 'primary' : 'default'}
-              className={cx(styles.limitBtn)}
+              className={styles['limit-btn']}
               onClick={() => setLimitType('limited')}
             >
               限制
@@ -194,26 +251,19 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           )}
         </Form.Item>
 
-        <div className={cx(styles.functionOnlyRow)}>
+        <div className={styles['function-only-row']}>
           <Form.Item name="functionOnly" valuePropName="checked" noStyle>
             <Switch />
           </Form.Item>
-          <div className={cx(styles.functionOnlyText)}>
-            <div className={cx(styles.functionOnlyTitle)}>仅为功能订阅</div>
-            <div className={cx(styles.functionOnlyDesc)}>
+          <div className={styles['function-only-text']}>
+            <div className={styles['function-only-title']}>仅为功能订阅</div>
+            <div className={styles['function-only-desc']}>
               开启后：模型/工具等资源调用需额外付费
             </div>
           </div>
         </div>
-
-        <div className={cx(styles.modalFooter)}>
-          <Button onClick={onCancel}>取消</Button>
-          <Button type="primary" loading={creating} onClick={handleSubmit}>
-            确认
-          </Button>
-        </div>
       </Form>
-    </Modal>
+    </CustomFormModal>
   );
 };
 

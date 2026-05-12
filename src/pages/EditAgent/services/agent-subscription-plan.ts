@@ -22,7 +22,7 @@ export async function apiOfflineAgentSubscriptionPlan(
  */
 export async function apiDeleteAgentSubscriptionPlan(
   id: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<boolean>> {
   return request(`/api/agent/plan/${id}/delete`, {
     method: 'POST',
   });

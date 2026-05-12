@@ -1,36 +1,33 @@
-.createPlanModal {
-  :global {
-    .ant-modal-content {
-      border-radius: 22px;
-      padding: 24px;
-    }
-  }
+.create-plan-modal-content {
+  border-radius: 22px;
+  padding: 24px;
 }
 
-.modalTitle {
+.create-plan-modal-header {
   color: #0f172a;
   font-size: 30px;
   font-weight: 700;
 }
 
-.priceRow {
+.price-row {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.limitSwitchRow {
+.limit-switch-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.limitBtn {
+.limit-btn {
   height: 36px;
   border-radius: 10px;
 }
 
-.functionOnlyRow {
+.function-only-row {
+  height: 70px;
   margin-top: 4px;
   border: 1px solid #e5ebf6;
   border-radius: 12px;
@@ -38,23 +35,21 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
+  box-sizing: border-box;
 
-.functionOnlyTitle {
-  color: #1e293b;
-  font-size: 14px;
-  font-weight: 600;
-}
+  .function-only-text {
+    height: 40px;
 
-.functionOnlyDesc {
-  margin-top: 2px;
-  color: #94a3b8;
-  font-size: 12px;
-}
+    .function-only-title {
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-.modalFooter {
-  margin-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+    .function-only-desc {
+      margin-top: 2px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  }
 }

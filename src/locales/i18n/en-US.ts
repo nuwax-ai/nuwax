@@ -1514,6 +1514,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.AgentEdit.showStand': 'Showroom',
   'PC.Pages.AgentEdit.unpublishedChanges': 'Unpublished changes',
   'PC.Pages.AgentEdit.versionHistory': 'Version History',
+  'PC.Pages.Agent.subscriptionSetting': 'Subscription Settings',
   'PC.Pages.AntvX6.loopBreakDesc': 'Immediately terminate current loop and break out of loop body',
   'PC.Pages.AntvX6.loopContinueDesc': 'Terminate current loop and continue to next iteration',
   'PC.Pages.AntvX6.systemPrompt': 'System Prompt',
