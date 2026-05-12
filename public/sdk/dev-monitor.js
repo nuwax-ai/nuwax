@@ -12,7 +12,7 @@
 
   // Configuration
   const config = {
-    version: '1.0.7',
+    version: '1.0.8',
     enabled: true,
     logLevel: 'error', // Only persist error-level logs
     maxErrors: 10, // Cap stored errors
@@ -146,6 +146,43 @@
   }
 
   /**
+   * 向父级窗口和顶层窗口广播消息。
+   *
+   * 设计说明：
+   * 1. 先沿用既有链路发送给 parent，保证现有接收端行为不变。
+   * 2. 再额外发送给 top，满足跨多层 iframe 时顶层容器也能收到消息。
+   * 3. 当 parent 与 top 指向同一窗口时做去重，避免重复触发同一条消息。
+   *
+   * @param {object} message - 通过 postMessage 发送的消息体
+   */
+  function postMessageToParentAndTop(message) {
+    if (!message || typeof message !== 'object') {
+      return;
+    }
+
+    const targets = [];
+
+    // parent: 当前窗口直接上一级容器（原有行为）
+    if (window.parent && window.parent !== window) {
+      targets.push(window.parent);
+    }
+
+    // top: 最外层容器（新增行为）
+    if (window.top && window.top !== window && window.top !== window.parent) {
+      targets.push(window.top);
+    }
+
+    for (let i = 0; i < targets.length; i += 1) {
+      const target = targets[i];
+      try {
+        target.postMessage(message, '*');
+      } catch (e) {
+        // 忽略单个目标发送失败，保证其他目标不受影响
+      }
+    }
+  }
+
+  /**
    * Whether to filter out known non-critical errors.
    * @param {string} message - Error message
    * @param {object} details - Error details
@@ -249,7 +286,7 @@
           }),
         };
 
-        window.parent.postMessage(errorMessage, '*');
+        postMessageToParentAndTop(errorMessage);
 
         _originalConsoleError.call(
           console,
@@ -973,7 +1010,7 @@
             }), // 仅在白屏时包含 document 字符串
           };
 
-          window.parent.postMessage(message, '*');
+          postMessageToParentAndTop(message);
         } catch (e) {
           // 静默处理错误
         }
