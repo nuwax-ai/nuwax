@@ -4,8 +4,8 @@ import { request } from 'umi';
 import {
   ListPricingConfigsParams,
   ModelPricingInfo,
-  QueryPricingConfigInfo,
   QueryPricingInfoParams,
+  ResourcePricingConfigInfo,
   ToolPricingInfo,
 } from '../types/resource';
 
@@ -91,7 +91,7 @@ export async function apiUpdateToolPricing(
  */
 export async function apiQueryToolPricing(
   data: QueryPricingInfoParams,
-): Promise<RequestResponse<QueryPricingConfigInfo>> {
+): Promise<RequestResponse<ResourcePricingConfigInfo>> {
   return request('/api/pricing/config/query', {
     method: 'POST',
     data,
@@ -103,7 +103,7 @@ export async function apiQueryToolPricing(
  */
 export async function apiListPricingConfig(
   data: ListPricingConfigsParams,
-): Promise<RequestResponse<QueryPricingConfigInfo[]>> {
+): Promise<RequestResponse<ResourcePricingConfigInfo[]>> {
   return request('/api/pricing/config/list', {
     method: 'POST',
     data,

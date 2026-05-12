@@ -36,8 +36,8 @@ const PlanItemCard: React.FC<PlanItemCardProps> = ({
   const isOnline = planInfo.status === SubscriptionPlanStatusEnum.Online;
 
   // 权益列表
-  const featureList = (planInfo.features || []).map((feature) => {
-    const featureText = String(feature || '');
+  const featureList = (planInfo.itemGroups || []).map((feature) => {
+    const featureText = String(feature.name || '');
     const badgeMatch = featureText.match(/(限时免费|功能限免|限时尝鲜)/);
     const badge = badgeMatch?.[1] || '';
     const text = featureText

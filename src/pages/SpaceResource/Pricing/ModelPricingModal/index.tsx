@@ -11,7 +11,7 @@ import {
   apiDeleteModelPricing,
   apiUpdateModelPricing,
 } from '../../services/resource';
-import type { QueryPricingConfigInfo } from '../../types/resource';
+import type { ResourcePricingConfigInfo } from '../../types/resource';
 import styles from '../index.less';
 
 interface ModelOption {
@@ -31,7 +31,7 @@ interface ModelPricingModalProps {
   /** 是否编辑模式。 */
   isEdit: boolean;
   /** 当前编辑的定价配置，新增时为 null。 */
-  editItem: QueryPricingConfigInfo | null;
+  editItem: ResourcePricingConfigInfo | null;
   /** 外部透传表单实例，便于父组件和弹窗共享表单状态。 */
   form: FormInstance;
   /** 关闭弹窗回调。 */
