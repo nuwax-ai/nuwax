@@ -2618,6 +2618,7 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MyEarnings.monthlyEarnings': 'Monthly Earnings',
   'PC.Pages.MorePage.MyEarnings.subscriberCount': 'Subscribers',
   'PC.Pages.MorePage.MyEarnings.pendingSettlement': 'Pending Settlement',
+  'PC.Pages.MorePage.MyEarnings.withdrawableBalance': 'Withdrawable Balance',
   'PC.Pages.MorePage.MyEarnings.colAgent': 'Agent',
   'PC.Pages.MorePage.MyEarnings.colUser': 'User',
   'PC.Pages.MorePage.MyEarnings.colPlan': 'Plan',

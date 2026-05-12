@@ -6,6 +6,7 @@ import type {
   AgentSubscriptionPlan,
   BillOrderInfo,
   BillOrderStatusEnum,
+  BillWithdrawApplyResponse,
   BizTypeEnum,
   CheckSubscriptionResult,
   CreditBatchItem,
@@ -25,6 +26,7 @@ import type {
   OrderInfo,
   PaymentConfigInfo,
   PricingPlanInfo,
+  RevenueStatsInfo,
   SkillPricingInfo,
   SubscriptionPlan,
   SubscriptionSummaryInfo,
@@ -313,6 +315,24 @@ export async function apiGetEarningsSummary(): Promise<
   RequestResponse<EarningsSummaryInfo>
 > {
   return request('/api/user/earnings/summary', { method: 'GET' });
+}
+
+/**
+ * 查询收益统计
+ */
+export async function apiGetRevenueStats(): Promise<
+  RequestResponse<RevenueStatsInfo>
+> {
+  return request('/api/bill/revenue/stats', { method: 'GET' });
+}
+
+/**
+ * 创建提现申请
+ */
+export async function apiCreateWithdrawApply(): Promise<
+  RequestResponse<BillWithdrawApplyResponse>
+> {
+  return request('/api/bill/withdraw/create', { method: 'POST' });
 }
 
 export async function apiListMyEarnings(params: {

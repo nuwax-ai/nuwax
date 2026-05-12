@@ -1,32 +1,32 @@
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiCreateWithdrawApply,
+  apiGetRevenueStats,
+} from '@/services/subscriptionService';
 import type { EarningRecordInfo } from '@/types/interfaces/subscription';
 import { SettlementStatusEnum } from '@/types/interfaces/subscription';
 import { formatDateTime } from '@/utils/dateUtils';
+import { CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
+import { useRequest } from 'ahooks';
 import {
   Button,
   DatePicker,
-  Drawer,
-  Input,
+  message,
+  Modal,
   Segmented,
   Select,
+  Statistic,
   Tag,
-  message,
 } from 'antd';
+import classNames from 'classnames';
 import type { Dayjs } from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
 
-// Mock 收益汇总
-const MOCK_SUMMARY = {
-  totalEarnings: 1174.95,
-  pendingSettlement: 443.03,
-  settled: 731.92,
-  withdrawn: 1350.0,
-  withdrawableBalance: 0.0,
-};
+const cx = classNames.bind(styles);
 
 // Mock 收益明细
 const MOCK_EARNINGS: (EarningRecordInfo & {
@@ -123,39 +123,76 @@ const MOCK_EARNINGS: (EarningRecordInfo & {
   },
 ];
 
-// Mock 提现记录
-const MOCK_WITHDRAW_RECORDS = [
-  {
-    id: 1,
-    amount: 500,
-    time: '2026-04-20 10:00',
-    status: '已到账',
-    account: '支付宝 ***8888',
-  },
-  {
-    id: 2,
-    amount: 350,
-    time: '2026-04-10 14:30',
-    status: '已到账',
-    account: '银行卡 ***6666',
-  },
-  {
-    id: 3,
-    amount: 500,
-    time: '2026-03-28 09:00',
-    status: '已到账',
-    account: '支付宝 ***8888',
-  },
-];
-
 const MyEarnings: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('全部');
   const [statusFilter, setStatusFilter] = useState<string>('全部');
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
-  const [withdrawApplyOpen, setWithdrawApplyOpen] = useState(false);
-  const [withdrawRecordOpen, setWithdrawRecordOpen] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+
+  // 获取收益统计数据
+  const {
+    data: revenueData,
+    loading: statsLoading,
+    refresh: refreshStats,
+  } = useRequest(apiGetRevenueStats);
+
+  // 提现申请
+  const { loading: withdrawLoading, run: runWithdraw } = useRequest(
+    apiCreateWithdrawApply,
+    {
+      manual: true,
+      onSuccess: (res) => {
+        Modal.success({
+          title: dict('PC.Pages.MorePage.MyEarnings.withdrawSuccessTitle'),
+          content: (
+            <div>
+              <div>{dict('PC.Pages.MorePage.MyEarnings.withdrawSuccess')}</div>
+              <Statistic
+                title={dict('PC.Pages.MorePage.MyEarnings.withdrawableBalance')}
+                value={res?.data?.amount || 0}
+                precision={2}
+                prefix="¥"
+                valueStyle={{ fontSize: 18, fontWeight: 600 }}
+              />
+            </div>
+          ),
+          okText: dict('PC.Common.ok'),
+        });
+        refreshStats();
+      },
+      onError: (err) => {
+        message.error(err.message || '提现申请失败');
+      },
+    },
+  );
+
+  const stats = useMemo(() => {
+    const data = revenueData?.data;
+    const total = data?.totalRevenue || 0;
+    const pending = data?.pendingAmount || 0;
+    const withdrawn = data?.settledAmount || 0;
+
+    return [
+      {
+        label: dict('PC.Pages.MorePage.MyEarnings.totalIncome'),
+        value: total,
+        hint: dict('PC.Pages.MorePage.MyEarnings.totalIncomeDesc'),
+        color: 'var(--xagi-blue)',
+      },
+      {
+        label: dict('PC.Pages.MorePage.MyEarnings.pendingSettlement'),
+        value: pending,
+        hint: dict('PC.Pages.MorePage.MyEarnings.pendingDesc'),
+        color: 'var(--xagi-orange)',
+      },
+      {
+        label: dict('PC.Pages.MorePage.MyEarnings.withdrawn'),
+        value: withdrawn,
+        hint: dict('PC.Pages.MorePage.MyEarnings.withdrawnDesc'),
+        color: 'var(--xagi-color-text)',
+      },
+    ];
+  }, [revenueData]);
 
   const settlementConfig = useMemo(
     () => ({
@@ -186,15 +223,6 @@ const MyEarnings: React.FC = () => {
     setEndDate(null);
   };
 
-  const handleWithdrawSubmit = () => {
-    if (!withdrawAmount || Number(withdrawAmount) <= 0) return;
-    message.success(
-      dict('PC.Pages.MorePage.MyEarnings.withdrawSuccess') || '提现申请已提交',
-    );
-    setWithdrawApplyOpen(false);
-    setWithdrawAmount('');
-  };
-
   const columns: ProColumns<(typeof MOCK_EARNINGS)[0]>[] = [
     {
       title: dict('PC.Pages.MorePage.MyEarnings.colCreatedAt'),
@@ -210,8 +238,8 @@ const MyEarnings: React.FC = () => {
       key: 'source',
       search: false,
       render: (_, record) => (
-        <div className={styles.tableSource}>
-          <span className={styles.sourceMain}>{record.source}</span>
+        <div className={cx(styles['table-source'])}>
+          <span className={cx(styles['source-main'])}>{record.source}</span>
         </div>
       ),
     },
@@ -243,7 +271,9 @@ const MyEarnings: React.FC = () => {
       width: 100,
       render: (_, record) =>
         record.platformFee ? (
-          <span className={styles.platformFee}>¥{record.platformFee}</span>
+          <span className={cx(styles['platform-fee'])}>
+            ¥{record.platformFee}
+          </span>
         ) : (
           <span style={{ color: '#ccc' }}>—</span>
         ),
@@ -263,230 +293,146 @@ const MyEarnings: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Pages.MorePage.MyEarnings.pageTitle')}>
-      {/* 统计卡片 */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.totalIncome')}
-          </div>
-          <div className={styles.statValue}>
-            ¥{MOCK_SUMMARY.totalEarnings.toFixed(2)}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.MyEarnings.totalIncomeDesc')}
-          </div>
+      <div className={cx(styles['my-earnings'])}>
+        {/* 统计卡片 */}
+        <div className={cx(styles['stats-container'])}>
+          {stats.map((item, index, arr) => (
+            <React.Fragment key={item.label}>
+              <div className={cx(styles['stat-card'])}>
+                <Statistic
+                  title={item.label}
+                  value={item.value}
+                  precision={2}
+                  prefix="¥"
+                  loading={statsLoading}
+                  valueStyle={{
+                    color: item.color,
+                    fontSize: '24px',
+                    fontWeight: '600',
+                  }}
+                />
+                {item.hint && (
+                  <div className={cx(styles['stat-hint'])}>{item.hint}</div>
+                )}
+              </div>
+              {index < arr.length - 1 && <div className={cx(styles.divider)} />}
+            </React.Fragment>
+          ))}
         </div>
-        <div className={styles.statCard} style={{ background: '#fff7e6' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.pendingSettlement')}
-          </div>
-          <div className={styles.statValue}>
-            ¥{MOCK_SUMMARY.pendingSettlement.toFixed(2)}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.MyEarnings.pendingDesc')}
-          </div>
-        </div>
-        <div className={styles.statCard} style={{ background: '#f6ffed' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.settled')}
-          </div>
-          <div className={styles.statValue}>
-            ¥{MOCK_SUMMARY.settled.toFixed(2)}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.MyEarnings.settledDesc')}
-          </div>
-        </div>
-        <div className={styles.statCard} style={{ background: '#f0f5ff' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.withdrawn')}
-          </div>
-          <div className={styles.statValue}>
-            ¥{MOCK_SUMMARY.withdrawn.toFixed(2)}
-          </div>
-          <div className={styles.statHint}>
-            {dict('PC.Pages.MorePage.MyEarnings.withdrawnDesc')}
-          </div>
-        </div>
-        <div className={styles.statCard} style={{ background: '#fff0f6' }}>
-          <div className={styles.statLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.withdrawableBalance')}
-          </div>
-          <div className={styles.statValue}>
-            ¥{MOCK_SUMMARY.withdrawableBalance.toFixed(2)}
-          </div>
-        </div>
-      </div>
 
-      {/* 提现按钮 */}
-      <div className={styles.withdrawButtons}>
-        <Button type="primary" onClick={() => setWithdrawApplyOpen(true)}>
-          {dict('PC.Pages.MorePage.MyEarnings.withdrawApply')}
-        </Button>
-        <Button onClick={() => setWithdrawRecordOpen(true)}>
-          {dict('PC.Pages.MorePage.MyEarnings.withdrawRecord')}
-        </Button>
-      </div>
-
-      {/* 筛选栏 */}
-      <div className={styles.filterBar}>
-        <Segmented
-          value={typeFilter}
-          onChange={(val) => setTypeFilter(val as string)}
-          options={[
-            dict('PC.Pages.MorePage.MyEarnings.filterAll'),
-            dict('PC.Pages.MorePage.MyEarnings.filterSubscription'),
-            dict('PC.Pages.MorePage.MyEarnings.filterToolCall'),
-          ]}
-        />
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.startDate')}
-          </span>
-          <DatePicker
-            value={startDate}
-            onChange={(val) => setStartDate(val)}
-            size="small"
-            style={{ width: 130 }}
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.endDate')}
-          </span>
-          <DatePicker
-            value={endDate}
-            onChange={(val) => setEndDate(val)}
-            size="small"
-            style={{ width: 130 }}
-          />
-        </div>
-        <div className={styles.filterGroup}>
-          <span className={styles.filterLabel}>
-            {dict('PC.Pages.MorePage.MyEarnings.filterStatus')}
-          </span>
-          <Select
-            value={statusFilter}
-            onChange={(val) => setStatusFilter(val)}
-            size="small"
-            style={{ width: 100 }}
-            options={[
-              {
-                value: '全部',
-                label: dict('PC.Pages.MorePage.MyEarnings.filterAll'),
-              },
-              {
-                value: '已结算',
-                label: dict('PC.Pages.MorePage.MyEarnings.settlementSettled'),
-              },
-              {
-                value: '待结算',
-                label: dict('PC.Pages.MorePage.MyEarnings.settlementPending'),
-              },
-              {
-                value: '已取消',
-                label: dict('PC.Pages.MorePage.MyEarnings.statusCancelled'),
-              },
-            ]}
-          />
-        </div>
-        <div className={styles.filterActions}>
-          <Button size="small" onClick={handleReset}>
-            {dict('PC.Pages.MorePage.MyEarnings.filterReset')}
-          </Button>
-          <Button type="primary" size="small">
-            {dict('PC.Pages.MorePage.MyEarnings.filterSubmit')}
-          </Button>
-        </div>
-      </div>
-
-      {/* 收益明细表格 */}
-      <XProTable<(typeof MOCK_EARNINGS)[0]>
-        rowKey="id"
-        columns={columns}
-        search={false}
-        toolBarRender={false}
-        dataSource={MOCK_EARNINGS}
-        pagination={{ pageSize: 10 }}
-      />
-
-      {/* 提现申请 Drawer */}
-      <Drawer
-        title={
-          dict('PC.Pages.MorePage.MyEarnings.withdrawApplyTitle') || '提现申请'
-        }
-        open={withdrawApplyOpen}
-        onClose={() => setWithdrawApplyOpen(false)}
-        width={400}
-        footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setWithdrawApplyOpen(false)}>取消</Button>
-            <Button type="primary" onClick={handleWithdrawSubmit}>
-              {dict('PC.Pages.MorePage.MyEarnings.withdrawSubmit')}
-            </Button>
-          </div>
-        }
-      >
-        <div className={styles.withdrawDrawerContent}>
-          <div>
-            <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
-              {dict('PC.Pages.MorePage.MyEarnings.withdrawAmount')}
-            </div>
-            <Input
-              type="number"
-              placeholder={dict(
-                'PC.Pages.MorePage.MyEarnings.withdrawAmountPlaceholder',
-              )}
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
+        {/* 提现操作区 */}
+        <div className={cx(styles['withdraw-container'])}>
+          <div className={cx(styles['balance-info'])}>
+            <Statistic
+              title={dict('PC.Pages.MorePage.MyEarnings.withdrawableBalance')}
+              value={revenueData?.data?.pendingAmount || 0}
+              precision={2}
               prefix="¥"
+              loading={statsLoading}
             />
           </div>
-          <div>
-            <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
-              {dict('PC.Pages.MorePage.MyEarnings.withdrawAccount')}
-            </div>
+          <div className={cx(styles['action-buttons'])}>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              className={cx(styles['withdraw-apply-btn'])}
+              disabled={(revenueData?.data?.pendingAmount || 0) <= 0}
+              loading={withdrawLoading}
+              onClick={runWithdraw}
+            >
+              {dict('PC.Pages.MorePage.MyEarnings.withdrawApply')}
+            </Button>
+            <Button
+              icon={<CalendarOutlined />}
+              className={cx(styles['withdraw-record-btn'])}
+            >
+              {dict('PC.Pages.MorePage.MyEarnings.withdrawRecord')}
+            </Button>
+          </div>
+        </div>
+
+        {/* 筛选栏 */}
+        <div className={cx(styles['filter-bar'])}>
+          <Segmented
+            value={typeFilter}
+            onChange={(val) => setTypeFilter(val as string)}
+            options={[
+              dict('PC.Pages.MorePage.MyEarnings.filterAll'),
+              dict('PC.Pages.MorePage.MyEarnings.filterSubscription'),
+              dict('PC.Pages.MorePage.MyEarnings.filterToolCall'),
+            ]}
+          />
+          <div className={cx(styles['filter-group'])}>
+            <span className={cx(styles['filter-label'])}>
+              {dict('PC.Pages.MorePage.MyEarnings.startDate')}
+            </span>
+            <DatePicker
+              value={startDate}
+              onChange={(val) => setStartDate(val)}
+              size="small"
+              style={{ width: 130 }}
+            />
+          </div>
+          <div className={cx(styles['filter-group'])}>
+            <span className={cx(styles['filter-label'])}>
+              {dict('PC.Pages.MorePage.MyEarnings.endDate')}
+            </span>
+            <DatePicker
+              value={endDate}
+              onChange={(val) => setEndDate(val)}
+              size="small"
+              style={{ width: 130 }}
+            />
+          </div>
+          <div className={cx(styles['filter-group'])}>
+            <span className={cx(styles['filter-label'])}>
+              {dict('PC.Pages.MorePage.MyEarnings.filterStatus')}
+            </span>
             <Select
-              defaultValue="alipay"
-              style={{ width: '100%' }}
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val)}
+              size="small"
+              style={{ width: 100 }}
               options={[
-                { value: 'alipay', label: '支付宝 ***8888' },
-                { value: 'bank', label: '银行卡 ***6666' },
+                {
+                  value: '全部',
+                  label: dict('PC.Pages.MorePage.MyEarnings.filterAll'),
+                },
+                {
+                  value: '已结算',
+                  label: dict('PC.Pages.MorePage.MyEarnings.settlementSettled'),
+                },
+                {
+                  value: '待结算',
+                  label: dict('PC.Pages.MorePage.MyEarnings.settlementPending'),
+                },
+                {
+                  value: '已取消',
+                  label: dict('PC.Pages.MorePage.MyEarnings.statusCancelled'),
+                },
               ]}
             />
           </div>
+          <div className={cx(styles['filter-actions'])}>
+            <Button size="small" onClick={handleReset}>
+              {dict('PC.Pages.MorePage.MyEarnings.filterReset')}
+            </Button>
+            <Button type="primary" size="small">
+              {dict('PC.Pages.MorePage.MyEarnings.filterSubmit')}
+            </Button>
+          </div>
         </div>
-      </Drawer>
 
-      {/* 提现记录 Drawer */}
-      <Drawer
-        title={
-          dict('PC.Pages.MorePage.MyEarnings.withdrawRecordTitle') || '提现记录'
-        }
-        open={withdrawRecordOpen}
-        onClose={() => setWithdrawRecordOpen(false)}
-        width={400}
-      >
-        <div className={styles.withdrawRecordList}>
-          {MOCK_WITHDRAW_RECORDS.map((record) => (
-            <div key={record.id} className={styles.withdrawRecordItem}>
-              <div className={styles.withdrawRecordInfo}>
-                <div className={styles.withdrawRecordAmount}>
-                  ¥{record.amount}
-                </div>
-                <div className={styles.withdrawRecordTime}>{record.time}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <Tag color="success">{record.status}</Tag>
-                <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                  {record.account}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Drawer>
+        {/* 收益明细表格 */}
+        <XProTable<(typeof MOCK_EARNINGS)[0]>
+          rowKey="id"
+          columns={columns}
+          search={false}
+          toolBarRender={false}
+          dataSource={MOCK_EARNINGS}
+          pagination={{ pageSize: 10 }}
+        />
+      </div>
     </WorkspaceLayout>
   );
 };
