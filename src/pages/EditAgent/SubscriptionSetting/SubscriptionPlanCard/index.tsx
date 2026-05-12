@@ -1,5 +1,6 @@
 import {
   SubscriptionPlanInfo,
+  SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { Button, Switch } from 'antd';
@@ -8,6 +9,12 @@ import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
+  [SubscriptionPlanPeriodEnum.MONTH]: '月',
+  [SubscriptionPlanPeriodEnum.QUARTER]: '季度',
+  [SubscriptionPlanPeriodEnum.YEAR]: '年',
+  [SubscriptionPlanPeriodEnum.FOREVER]: '永久',
+};
 
 interface SubscriptionPlanCardProps {
   plan: SubscriptionPlanInfo;
@@ -26,30 +33,34 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
   onDelete,
 }) => {
   return (
-    <div className={cx(styles.planCard)}>
-      <div className={cx(styles.cardTopLine)} />
-      <div className={cx(styles.cardHeader)}>
-        <div className={cx(styles.planName)}>{plan.name}</div>
-        <span className={cx(styles.packageTag)}>包千价</span>
+    <div className={cx(styles['plan-card'])}>
+      <div className={cx(styles['card-top-line'])} />
+      <div className={cx(styles['card-header'])}>
+        <div className={cx(styles['plan-name'])}>{plan.name}</div>
+        <span className={cx(styles['package-tag'])}>包千价</span>
       </div>
-      <div className={cx(styles.planDesc)}>{plan.description || '-'}</div>
-      <div className={cx(styles.priceBox)}>
+      <div className={cx(styles['plan-desc'], 'text-ellipsis-2')}>
+        {plan.description}
+      </div>
+      <div className={cx(styles['price-box'])}>
         <span className={cx(styles.currency)}>¥</span>
-        <span className={cx(styles.priceValue)}>{plan.price}</span>
-        <span className={cx(styles.priceUnit)}>{plan.period}</span>
+        <span className={cx(styles['price-value'])}>{plan.price}</span>
+        <span className={cx(styles['price-unit'])}>
+          {`/${periodLabelMap[plan.period] || '-'}`}
+        </span>
       </div>
-      <div className={cx(styles.planMeta)}>
+      <div className={cx(styles['plan-meta'])}>
         {plan.callLimitCount === -1
           ? '不限次数'
           : `${plan.callLimitCount ?? 0} 次`}
       </div>
-      <div className={cx(styles.cardFooter)}>
+      <div className={cx(styles['card-footer'])}>
         <Switch
           size="small"
           checked={plan.status === SubscriptionPlanStatusEnum.Online}
           onChange={(checked) => onToggle(plan.id || 0, checked)}
         />
-        <div className={cx(styles.footerActions)}>
+        <div className={cx(styles['footer-actions'])}>
           <Button size="small" onClick={() => onEdit(plan)}>
             编辑
           </Button>

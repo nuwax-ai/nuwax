@@ -78,7 +78,7 @@ export interface SubscriptionPlanInfo {
   // 业务对象ID，非SYSTEM时必填
   bizId?: string;
   // 关联用户组ID（JSON数组）
-  groupIds: number[];
+  groupIds?: number[];
   // 扩展字段（JSON）
   extra?: unknown;
   // 排序，越小越靠前，前端支持拖拽

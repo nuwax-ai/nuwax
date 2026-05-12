@@ -16,15 +16,12 @@ import {
 } from '@/services/subscriptionService';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, InputNumber, Switch, message } from 'antd';
-import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiGetAgentSubscriptionPlanList } from '../services/agent-subscription-plan';
 import CreatePlanModal from './CreatePlanModal';
 import SubscriptionPlanCard from './SubscriptionPlanCard';
 import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 interface SubscriptionSettingProps {
   agentId: number;
@@ -180,24 +177,24 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   }
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles.header)}>
-        <h2 className={cx(styles.title)}>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
           {dict('PC.Pages.Agent.subscriptionSetting')}
         </h2>
         <ConditionRender condition={plans.length > 0}>
           <span
-            className={cx(styles.countText)}
+            className={styles['count-text']}
           >{`共 ${plans.length} 个套餐`}</span>
         </ConditionRender>
       </div>
 
       {/* 设置面板 */}
-      <div className={cx(styles.settingPanel)}>
-        <div className={cx(styles.enableRow)}>
-          <div className={cx(styles.enableInfo)}>
-            <div className={cx(styles.enableTitle)}>开启付费模式</div>
-            <div className={cx(styles.enableDesc)}>
+      <div className={styles['setting-panel']}>
+        <div className={styles['enable-row']}>
+          <div className={styles['enable-info']}>
+            <div className={styles['enable-title']}>开启付费模式</div>
+            <div className={styles['enable-desc']}>
               开启后，用户需要付费才能使用服务
             </div>
           </div>
@@ -209,26 +206,26 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
         {/* 定价类型 */}
         <Form form={form} layout="vertical">
-          <div className={cx(styles.formRow)}>
-            <div className={cx(styles.formLeft)}>
-              <div className={cx(styles.fieldLabel)}>定价类型</div>
-              <Button className={cx(styles.modeBtn)} type="default">
+          <div className={styles['form-row']}>
+            <div className={styles['form-left']}>
+              <div className={styles['field-label']}>定价类型</div>
+              <Button className={styles['mode-btn']} type="default">
                 ☆ 订阅模式
               </Button>
             </div>
-            <div className={cx(styles.formRight)}>
+            <div className={styles['form-right']}>
               <Form.Item
                 name="trialCount"
                 label="默认试用次数"
                 initialValue={0}
-                className={cx(styles.trialFormItem)}
+                className={styles['trial-form-item']}
               >
-                <InputNumber min={0} className={cx(styles.trialInput)} />
+                <InputNumber min={0} className={styles['trial-input']} />
               </Form.Item>
               <Button type="primary" loading={saving} onClick={handleSave}>
                 {dict('PC.Common.Global.save')}
               </Button>
-              <div className={cx(styles.trialHint)}>
+              <div className={styles['trial-hint']}>
                 新用户可免费体验的次数，设为 0 则不提供试用
               </div>
             </div>
@@ -236,8 +233,8 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         </Form>
       </div>
 
-      <div className={cx(styles.listHeader)}>
-        <h3 className={cx(styles.listTitle)}>套餐列表</h3>
+      <div className={styles['list-header']}>
+        <h3 className={styles['list-title']}>套餐列表</h3>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -248,7 +245,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
       </div>
 
       {/* 套餐列表 */}
-      <div className={cx(styles.planGrid)}>
+      <div className={styles['plan-grid']}>
         {plans.map((plan) => (
           <SubscriptionPlanCard
             key={plan.id}

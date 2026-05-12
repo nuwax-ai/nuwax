@@ -16,7 +16,7 @@
   gap: 8px;
 }
 
-.backButton {
+.back-button {
   border: none;
 }
 
@@ -27,19 +27,19 @@
   font-weight: 600;
 }
 
-.countText {
+.count-text {
   color: #8a94a6;
   font-size: 14px;
 }
 
-.settingPanel {
+.setting-panel {
   margin-top: 16px;
   background: #fff;
   border-radius: 16px;
   padding: 20px 24px;
 }
 
-.enableRow {
+.enable-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -49,75 +49,79 @@
   margin-bottom: 16px;
 }
 
-.enableTitle {
+.enable-info {
+  flex: 1;
+}
+
+.enable-title {
   color: #1f2937;
   font-size: 16px;
   font-weight: 500;
 }
 
-.enableDesc {
+.enable-desc {
   margin-top: 4px;
   color: #94a3b8;
   font-size: 12px;
 }
 
-.formRow {
+.form-row {
   display: flex;
   justify-content: space-between;
   gap: 32px;
 }
 
-.formLeft {
+.form-left {
   flex: 1;
 }
 
-.formRight {
+.form-right {
   width: 360px;
 }
 
-.fieldLabel {
+.field-label {
   margin-bottom: 12px;
   color: #334155;
   font-size: 14px;
   font-weight: 600;
 }
 
-.modeBtn {
+.mode-btn {
   color: #2563eb;
   border-color: #8cb4ff;
   border-radius: 12px;
 }
 
-.trialFormItem {
+.trial-form-item {
   margin-bottom: 8px;
 }
 
-.trialInput {
+.trial-input {
   width: 180px;
   margin-right: 12px;
 }
 
-.trialHint {
+.trial-hint {
   margin-top: 8px;
   color: #94a3b8;
   font-size: 12px;
 }
 
-.listHeader {
+.list-header {
   margin-top: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.listTitle {
+.list-title {
   margin: 0;
   color: #111827;
   font-size: 28px;
   font-weight: 700;
 }
 
-.planGrid {
+.plan-grid {
   margin-top: 12px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -125,21 +129,21 @@
 }
 
 @media (max-width: 1400px) {
-  .planGrid {
+  .plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 960px) {
-  .planGrid {
+  .plan-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
-  .formRow {
+  .form-row {
     flex-direction: column;
   }
 
-  .formRight {
+  .form-right {
     width: 100%;
   }
 }
