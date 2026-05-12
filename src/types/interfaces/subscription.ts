@@ -327,6 +327,15 @@ export interface EarningsSummaryInfo {
   pendingSettlement: number;
 }
 
+export interface RevenueStatsInfo {
+  totalRevenue: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  pendingAmount: number;
+  settledAmount: number;
+  dailyRevenues: any[];
+}
+
 export interface EarningRecordInfo {
   id: number;
   developerName?: string;
@@ -501,6 +510,25 @@ export enum WithdrawalStatusEnum {
   Pending = 'pending',
   Approved = 'approved',
   Rejected = 'rejected',
+}
+
+export enum BillWithdrawStatusEnum {
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PAID = 'PAID',
+}
+
+export interface BillWithdrawApplyResponse {
+  id: number;
+  userId: number;
+  amount: number;
+  status: BillWithdrawStatusEnum;
+  rejectReason?: string;
+  paymentExtra?: any;
+  revenues?: any[];
+  created: string;
+  modified: string;
 }
 
 // ──────────────────────────────────────────────

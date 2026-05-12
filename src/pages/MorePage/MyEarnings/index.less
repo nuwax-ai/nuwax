@@ -1,122 +1,176 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
+.my-earnings {
+  .stats-container {
+    display: flex;
+    align-items: center;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 4%);
+    padding: @paddingLg @padding;
+    margin-bottom: @marginLg;
+    margin-top: @margin;
 
-.statCard {
-  padding: 20px 24px;
-  border-radius: 8px;
-  background: #f5f5f5;
-}
+    .stat-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 @padding;
 
-.statLabel {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 4px;
-}
+      :global {
+        .ant-statistic-title {
+          font-size: @fontSizeSm;
+          color: @colorTextDescription;
+          margin-bottom: @marginXs;
+          text-align: center;
+        }
 
-.statValue {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-}
+        .ant-statistic-content {
+          text-align: center;
+        }
+      }
 
-.statHint {
-  font-size: 11px;
-  color: #999;
-  margin-top: 4px;
-}
+      .stat-hint {
+        font-size: @fontSizeSm;
+        color: @colorTextDescription;
+        margin-top: @marginXs;
+      }
+    }
 
-.withdrawButtons {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
+    .divider {
+      width: 1px;
+      height: 64px;
+      background: @colorBorderSecondary;
+    }
+  }
 
-.filterBar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
+  .withdraw-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 4%);
+    padding: @padding @paddingLg;
+    margin-bottom: @marginLg;
 
-.filterGroup {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+    .balance-info {
+      :global {
+        .ant-statistic-title {
+          font-size: @fontSizeSm;
+          color: @colorTextDescription;
+          margin-bottom: @marginXs;
+        }
 
-.filterLabel {
-  font-size: 13px;
-  color: #666;
-  white-space: nowrap;
-}
+        .ant-statistic-content {
+          font-size: @fontSizeHeading2;
+          font-weight: @fontWeightStrong;
+          color: @colorWarning;
 
-.filterActions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
+          .ant-statistic-content-prefix,
+          .ant-statistic-content-value {
+            font-size: @fontSizeHeading2;
+            font-weight: @fontWeightStrong;
+            color: @colorWarning;
+          }
+        }
+      }
+    }
 
-.tableSource {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+    .action-buttons {
+      display: flex;
+      gap: @margin;
 
-.sourceMain {
-  font-size: 13px;
-  color: #333;
-}
+      .withdraw-apply-btn {
+        background: @colorWarning;
+        border-color: @colorWarning;
+        height: 44px;
+        padding: 0 @paddingLg;
+        font-weight: 500;
 
-.sourceSub {
-  font-size: 11px;
-  color: #999;
-}
+        &:hover {
+          background: @orange5;
+          border-color: @orange5;
+        }
 
-.platformFee {
-  color: #999;
-}
+        &:disabled,
+        &.ant-btn-disabled {
+          background: @colorFillAlter;
+          border-color: @colorBorderSecondary;
+          color: @colorTextDisabled;
+          opacity: 0.7;
+        }
 
-.withdrawDrawerContent {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+        :global(.anticon) {
+          font-size: 18px;
+        }
+      }
 
-.withdrawRecordList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+      .withdraw-record-btn {
+        height: 44px;
+        padding: 0 @paddingLg;
+        font-weight: 500;
+        border-color: @colorBorderSecondary;
+        color: @colorText;
 
-.withdrawRecordItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-}
+        &:hover {
+          color: @colorWarning;
+          border-color: @colorWarning;
+        }
 
-.withdrawRecordInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+        :global(.anticon) {
+          font-size: 16px;
+        }
+      }
+    }
+  }
 
-.withdrawRecordAmount {
-  font-size: 16px;
-  font-weight: 600;
-}
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: @marginSm;
+    margin-bottom: @margin;
+    flex-wrap: wrap;
 
-.withdrawRecordTime {
-  font-size: 12px;
-  color: #999;
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: @paddingXxs;
+
+      .filter-label {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        white-space: nowrap;
+      }
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: @marginXs;
+      margin-left: auto;
+    }
+  }
+
+  .table-source {
+    display: flex;
+    flex-direction: column;
+    gap: @paddingXxs;
+
+    .source-main {
+      font-size: @fontSizeSm;
+      color: @colorText;
+    }
+
+    .source-sub {
+      font-size: @fontSizeSm;
+      color: @colorTextDescription;
+    }
+  }
+
+  .platform-fee {
+    color: @colorTextDescription;
+  }
 }
