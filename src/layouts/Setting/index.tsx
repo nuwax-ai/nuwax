@@ -8,6 +8,7 @@ import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import DeveloperProfile from './DeveloperProfile';
 import styles from './index.less';
 import LanguageSwitchPanel from './LanguageSwitchPanel';
 import ResetPassword from './ResetPassword';
@@ -50,7 +51,7 @@ const Setting: React.FC = () => {
     setAction(type);
   };
 
-  const Content: React.FC = () => {
+  const renderContent = () => {
     switch (action) {
       case SettingActionEnum.Account:
         return <SettingAccount />;
@@ -78,6 +79,8 @@ const Setting: React.FC = () => {
         return <LanguageSwitchPanel />;
       case SettingActionEnum.Usage_Statistics:
         return <UsageStatistics />;
+      case SettingActionEnum.Developer_Profile:
+        return <DeveloperProfile />;
       default:
         return <SettingAccount />;
     }
@@ -101,6 +104,8 @@ const Setting: React.FC = () => {
         return dict('PC.Pages.Setting.language');
       case SettingActionEnum.Usage_Statistics:
         return dict('PC.Pages.Setting.usageStatistics');
+      case SettingActionEnum.Developer_Profile:
+        return dict('PC.Pages.Setting.DeveloperProfile.title');
       default:
         return '';
     }
@@ -141,7 +146,7 @@ const Setting: React.FC = () => {
             onClick={() => setOpenSetting(false)}
           />
           <div className={cx('flex-1', 'overflow-hide', styles.right)}>
-            <Content />
+            {renderContent()}
           </div>
         </div>
       )}

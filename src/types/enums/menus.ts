@@ -45,4 +45,6 @@ export enum SettingActionEnum {
   Usage_Statistics,
   // 语言切换
   Language_Switch,
+  // 开发者资料
+  Developer_Profile,
 }
