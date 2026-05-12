@@ -2614,6 +2614,8 @@ export const EN_US: SystemLangMap = {
 
 
   'PC.Pages.MorePage.MyEarnings.pageTitle': 'My Earnings',
+  'PC.Pages.MorePage.MyEarnings.date': 'Date',
+  'PC.Pages.MorePage.MyEarnings.monthFormat': 'MMM',
   'PC.Pages.MorePage.MyEarnings.totalEarnings': 'Total Earnings',
   'PC.Pages.MorePage.MyEarnings.monthlyEarnings': 'Monthly Earnings',
   'PC.Pages.MorePage.MyEarnings.subscriberCount': 'Subscribers',
@@ -2626,6 +2628,8 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.MorePage.MyEarnings.colSettlementStatus': 'Settlement Status',
   'PC.Pages.MorePage.MyEarnings.colCreatedAt': 'Time',
   'PC.Pages.MorePage.MyEarnings.settlementPending': 'Pending',
+  'PC.Pages.MorePage.MyEarnings.settlementWithdrawing': 'Withdrawing',
+  'PC.Pages.MorePage.MyEarnings.settlementPaying': 'Paying',
   'PC.Pages.MorePage.MyEarnings.settlementSettled': 'Settled',
 
   'PC.Pages.MorePage.CreditRecords.pageTitle': 'Credit Records',

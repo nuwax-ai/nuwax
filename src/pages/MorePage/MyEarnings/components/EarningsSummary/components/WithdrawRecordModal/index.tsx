@@ -30,7 +30,7 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
   const { loading, run: fetchRecords } = useRequest(apiListWithdrawRecords, {
     manual: true,
     onSuccess: (res) => {
-      const newList = (res?.data as unknown as WithdrawRecord[]) || [];
+      const newList = (res?.data as WithdrawRecord[]) || [];
       setRecordList((prev) => [...prev, ...newList]);
       if (newList.length < pageSize) {
         setHasMore(false);

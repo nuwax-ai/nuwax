@@ -1,3 +1,35 @@
+export enum DailyRevenueStatusEnum {
+  Pending = 'PENDING',
+  WithdrawApplying = 'WITHDRAW_APPLYING',
+  Paying = 'PAYING',
+  Settled = 'SETTLED',
+}
+
+export interface DailyRevenueRecord {
+  id: number;
+  userId: number;
+  dt: string;
+  amount: number;
+  status: DailyRevenueStatusEnum;
+  created: string;
+}
+
+export interface DailyRevenueDetailRecord {
+  id: number;
+  userId: number;
+  dt: string;
+  amount: number;
+  type: string; // PLAN, MODEL_CALL, TOOL_CALL
+  typeId: number;
+  orderId: number;
+  targetType: string;
+  targetId: number;
+  bizNo: string;
+  remark: string;
+  extra: any;
+  created: string;
+}
+
 export enum SubscriptionStatusEnum {
   Active = 'active',
   Expired = 'expired',
@@ -588,4 +620,58 @@ export interface WithdrawalInfo {
   rejectReason?: string;
   createdAt: string;
   processedAt?: string;
+}
+
+export interface WithdrawConfig {
+  id: number;
+  minAmount: number;
+  monthlyLimit: number;
+  dailyLimit: number;
+  limitMode: string;
+  created: string;
+  modified: string;
+}
+
+export interface SystemSubscriptionPlanItem {
+  name: string;
+  description: string;
+  icon: string;
+  selected: boolean;
+}
+
+export interface SystemSubscriptionPlanOpenApiConfig {
+  key: string;
+  rpm: number;
+  rpd: number;
+}
+
+export interface SystemSubscriptionPlanGroup {
+  name: string;
+  description: string;
+  groupType: string;
+  items: SystemSubscriptionPlanItem[];
+  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[];
+}
+
+export interface SystemSubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  firstPrice: number;
+  period: string;
+  creditAmount: number;
+  callLimitCount: number;
+  functionOnly: boolean;
+  dailyGiftCreditAmount: number;
+  isHot: boolean;
+  status: number;
+  bizType: string;
+  bizId: string;
+  groupIds: any[];
+  extra: any;
+  sort: number;
+  created: string;
+  modified: string;
+  itemGroups: SystemSubscriptionPlanGroup[];
 }

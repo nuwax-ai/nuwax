@@ -16,6 +16,8 @@ import type {
   CreditRecordTypeEnum,
   CreditSummaryInfo,
   CreditTypeEnum,
+  DailyRevenueDetailRecord,
+  DailyRevenueRecord,
   DevEarningsSummaryInfo,
   DevPaymentAccountInfo,
   EarningRecordInfo,
@@ -28,12 +30,14 @@ import type {
   RevenueStatsInfo,
   SubscriptionPlan,
   SubscriptionSummaryInfo,
+  SystemSubscriptionPlan,
   UserCreditBalanceInfo,
-  UserCreditsInfo,
   UserSubscriptionInfo,
   WithdrawalInfo,
   WithdrawalStatusEnum,
+  WithdrawConfig,
 } from '@/types/interfaces/subscription';
+
 import { request } from 'umi';
 
 // 查询我的订阅（新版）
@@ -41,6 +45,29 @@ export async function apiGetMySubscription(params: {
   bizType: BizTypeEnum;
 }): Promise<RequestResponse<MySubscriptionData>> {
   return request('/api/subscription/my', { method: 'GET', params });
+}
+
+// 查询我的每日收益
+export async function apiListDailyRevenue(params: {
+  dt?: string;
+}): Promise<RequestResponse<DailyRevenueRecord[]>> {
+  return request('/api/bill/revenue/daily', { method: 'GET', params });
+}
+
+// 查询我的收益明细
+export async function apiListDailyRevenueDetail(params: {
+  targetId: number | string;
+  pageNum: number;
+  pageSize: number;
+}): Promise<RequestResponse<DailyRevenueDetailRecord[]>> {
+  return request('/api/bill/revenue/detail', { method: 'GET', params });
+}
+
+// 查询提现配置
+export async function apiGetWithdrawConfig(): Promise<
+  RequestResponse<WithdrawConfig>
+> {
+  return request('/api/system/bill/withdraw/config', { method: 'GET' });
 }
 
 // 查询工作空间定价套餐列表
@@ -226,12 +253,6 @@ export async function apiListWithdrawRecords(params: {
 // 积分
 // ──────────────────────────────────────────────
 
-export async function apiGetUserCredits(): Promise<
-  RequestResponse<UserCreditsInfo>
-> {
-  return request('/api/user/credits', { method: 'GET' });
-}
-
 // 查询当前登录用户总积分
 export async function apiGetCreditSummary(): Promise<
   RequestResponse<CreditSummaryInfo>
@@ -243,6 +264,15 @@ export async function apiListCreditPackages(): Promise<
   RequestResponse<CreditPackageInfo[]>
 > {
   return request('/api/credit/package/list', { method: 'GET' });
+}
+
+/**
+ * 查询可订阅的系统计划列表
+ */
+export async function apiListSystemSubscriptionPlans(): Promise<
+  RequestResponse<SystemSubscriptionPlan[]>
+> {
+  return request('/api/subscription/system/plans', { method: 'GET' });
 }
 
 export async function apiPurchaseCredits(
