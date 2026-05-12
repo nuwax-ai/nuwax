@@ -2,6 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelListSpace } from '@/services/modelConfig';
 import type { ModelPriceTier } from '@/types/interfaces/subscription';
+import { customizeRequiredMark } from '@/utils/form';
 import type { FormInstance } from 'antd';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -114,14 +115,8 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       });
       setTiers(
         (editItem.modelPriceTiers || []).map((tier) => ({
-          id: tier.id,
-          modelId: tier.modelId,
+          ...tier,
           label: `≤${tier.contextLength}K`,
-          inputPrice: tier.inputPrice,
-          outputPrice: tier.outputPrice,
-          cachePrice: tier.cachePrice,
-          created: tier.created,
-          modified: tier.modified,
         })),
       );
       return;
@@ -202,6 +197,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
         const currentTierIds = tiers
           .map((tier) => tier.id)
           .filter((id): id is number => !!id);
+        // 删除档位
         const removedIds = originalTierIds.filter(
           (id) => !currentTierIds.includes(id),
         );
@@ -221,9 +217,11 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           created: tier.created || '',
           modified: tier.modified || '',
         };
+        // 更新档位
         if (tier.id) {
           await apiUpdateModelPricing(payload);
         } else {
+          // 新增档位
           await apiCreateModelPricing(payload);
         }
       }
@@ -260,10 +258,11 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           : dict('PC.Common.Global.confirm')
       }
     >
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" requiredMark={customizeRequiredMark}>
         <Form.Item name="modelId" hidden rules={[{ required: true }]}>
           <Input />
         </Form.Item>
+        {/* 模型名称 */}
         <Form.Item
           name="name"
           label={dict('PC.Pages.SpaceResourcePricing.modelName')}
@@ -286,6 +285,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
             </Select>
           )}
         </Form.Item>
+        {/* 供应商 */}
         <Form.Item
           name="provider"
           label={dict('PC.Pages.SpaceResourcePricing.provider')}
@@ -295,7 +295,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
         </Form.Item>
       </Form>
 
+      {/* 定价档位 */}
       <div className={styles.tierSection}>
+        {/* 档位标题 */}
         <div className={styles.tierSectionHeader}>
           <span className={styles.tierSectionTitle}>
             {dict('PC.Pages.SpaceResourcePricing.pricingTier')}
@@ -308,6 +310,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           </Button>
         </div>
 
+        {/* 档位列表 */}
         {tiers.map((tier, index) => (
           <div key={index} className={styles.tierCard}>
             <div className={styles.tierCardHeader}>
