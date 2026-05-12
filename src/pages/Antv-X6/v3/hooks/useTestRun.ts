@@ -188,7 +188,7 @@ export const useTestRun = ({
                   ...(event.payload as Record<string, unknown>),
                 },
                 status: event.type,
-              } as RunResultItem);
+              } as unknown as RunResultItem);
             }
             if (event.type === 'human_required') {
               setStopWait(true);

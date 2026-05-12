@@ -20,6 +20,7 @@ export interface PublishApplyListInfo {
   spaceId: number;
   name: string;
   targetType: SquareAgentTypeEnum;
+  workflowType?: string;
   targetSubType: 'ChatBot' | 'PageApp' | 'TaskAgent';
   pluginType: string;
   description: string;
@@ -49,6 +50,7 @@ export interface PublishListInfo {
   spaceId: number;
   name: string;
   targetType: SquareAgentTypeEnum;
+  workflowType?: string;
   pluginType: string;
   targetId: number;
   description: string;

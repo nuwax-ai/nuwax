@@ -11,6 +11,7 @@ import type {
   WorkflowBaseInfo,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
+import { buildWorkflowRoute } from '@/utils/router';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -46,9 +47,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     onSuccess: (result: number) => {
       message.success(dict('PC.Components.CreateWorkflow.workflowCreated'));
       onCancel();
-      const routePrefix =
-        workflowType === 'AgentFlow' ? 'agent-flow' : 'workflow';
-      history.push(`/space/${spaceId}/${routePrefix}/${result}`);
+      history.push(buildWorkflowRoute(spaceId as number, result, workflowType));
     },
   });
 

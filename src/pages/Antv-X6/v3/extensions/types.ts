@@ -55,6 +55,9 @@ export interface BranchNodeHandler {
   /** 删除节点时清理对其他节点的分支引用 */
   cleanupNodeReferences?(node: ChildNode, deletedNodeId: number): void;
 
+  /** 从画布边重建保存数据前，清空该节点的分支目标 */
+  resetBranchData?(node: ChildNode): void;
+
   /** syncFromGraph: 初始化分支 nextNodeIds 映射 */
   initBranchMap?(node: ChildNode): Map<string, number[]> | null;
 

@@ -1,7 +1,7 @@
 /**
  * EvalGate 分支处理器单元测试
  */
-import { NodeTypeEnum } from '@/types/enums/common';
+import { EvalValidatorTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type { PortConfig } from '@/types/interfaces/node';
 import { describe, expect, it } from 'vitest';
@@ -25,11 +25,13 @@ const createEvalGateNode = (overrides: Partial<ChildNode> = {}): ChildNode => ({
       {
         uuid: 'v1-uuid',
         name: 'Check A',
+        type: EvalValidatorTypeEnum.Rule,
         onFail: { targetNodeId: undefined, appendPrompt: '', reason: '' },
       },
       {
         uuid: 'v2-uuid',
         name: 'Check B',
+        type: EvalValidatorTypeEnum.Rule,
         onFail: { targetNodeId: undefined, appendPrompt: '', reason: '' },
       },
     ],
@@ -264,7 +266,7 @@ describe('EvalGate Handler', () => {
   });
 
   describe('initBranchMap', () => {
-    it('should create map with eval-pass and eval-fail keys', () => {
+    it('should create empty map with eval-pass and eval-fail keys', () => {
       const node = createEvalGateNode({
         nodeConfig: {
           passNextNodeIds: [3],
@@ -272,7 +274,8 @@ describe('EvalGate Handler', () => {
             {
               uuid: 'v1-uuid',
               name: 'A',
-              onFail: { targetNodeId: 5 },
+              type: EvalValidatorTypeEnum.Rule,
+              onFail: { targetNodeId: 5, appendPrompt: '', reason: '' },
             },
           ],
         },
@@ -280,8 +283,8 @@ describe('EvalGate Handler', () => {
       const map = evalGateHandler.initBranchMap!(node);
 
       expect(map).not.toBeNull();
-      expect(map!.get('eval-pass')).toEqual([3]);
-      expect(map!.get('eval-fail-v1-uuid')).toEqual([5]);
+      expect(map!.get('eval-pass')).toEqual([]);
+      expect(map!.get('eval-fail-v1-uuid')).toEqual([]);
     });
 
     it('should handle empty passNextNodeIds and no onFail target', () => {
@@ -290,6 +293,31 @@ describe('EvalGate Handler', () => {
 
       expect(map!.get('eval-pass')).toEqual([]);
       expect(map!.get('eval-fail-v1-uuid')).toEqual([]);
+    });
+  });
+
+  describe('resetBranchData', () => {
+    it('should clear passNextNodeIds and validator fail targets', () => {
+      const node = createEvalGateNode({
+        nodeConfig: {
+          passNextNodeIds: [3],
+          evalValidators: [
+            {
+              uuid: 'v1-uuid',
+              name: 'A',
+              type: EvalValidatorTypeEnum.Rule,
+              onFail: { targetNodeId: 5, appendPrompt: '', reason: '' },
+            },
+          ],
+        },
+      });
+
+      evalGateHandler.resetBranchData!(node);
+
+      expect((node.nodeConfig as any).passNextNodeIds).toEqual([]);
+      expect(
+        (node.nodeConfig as any).evalValidators[0].onFail.targetNodeId,
+      ).toBeUndefined();
     });
   });
 

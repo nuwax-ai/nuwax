@@ -136,7 +136,6 @@
     "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/react-dom": "^18.0.11",
     "@types/react-scroll-to-bottom": "^4.2.5",
-    "@types/testing-library__jest-dom": "^6.0.0",
     "@types/turndown": "^5.0.5",
     "clean-css": "^5.3.3",
     "cross-env": "^7.0.3",
@@ -150,7 +149,7 @@
     "prettier-plugin-packagejson": "^2.4.3",
     "standard-version": "^9.5.0",
     "typescript": "^5.0.3",
-    "vitest": "^3.1.1"
+    "vitest": "^4.0.15"
   },
   "packageManager": "pnpm@10.27.0",
   "engines": {

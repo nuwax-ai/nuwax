@@ -263,6 +263,8 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
 }
 
 // 任务创建者信息

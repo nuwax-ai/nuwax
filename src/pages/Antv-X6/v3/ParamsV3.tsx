@@ -27,7 +27,7 @@ const buildV3AsideList = (): StencilList[] => {
   const variableAggregationNode = {
     name: t('PC.Pages.AntvX6Params.nodeVariableAggregationName'),
     icon: variableNode?.icon || null,
-    bgIcon: variableNode?.bgIcon,
+    bgIcon: variableNode?.bgIcon || '',
     type: NodeTypeEnum.VariableAggregation,
     shape: NodeShapeEnum.General,
     description: t('PC.Pages.AntvX6Params.nodeVariableAggregationDescription'),

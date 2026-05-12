@@ -111,13 +111,21 @@ export const humanInteractionHandler: BranchNodeHandler = {
     });
   },
 
+  resetBranchData(node: ChildNode): void {
+    const nc = node.nodeConfig as any;
+    if (!nc) return;
+
+    nc.approveNextNodeIds = [];
+    nc.rejectNextNodeIds = [];
+  },
+
   initBranchMap(node: ChildNode): Map<string, number[]> | null {
     const nc = node.nodeConfig as any;
     if (nc?.hitlMode !== 'approve') return null;
 
     const branchMap = new Map<string, number[]>();
-    branchMap.set('hitl-approve', nc?.approveNextNodeIds || []);
-    branchMap.set('hitl-reject', nc?.rejectNextNodeIds || []);
+    branchMap.set('hitl-approve', []);
+    branchMap.set('hitl-reject', []);
     return branchMap;
   },
 

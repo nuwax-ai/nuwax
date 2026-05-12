@@ -150,16 +150,27 @@ export const evalGateHandler: BranchNodeHandler = {
     }
   },
 
+  resetBranchData(node: ChildNode): void {
+    const nc = node.nodeConfig as any;
+    if (!nc) return;
+
+    nc.passNextNodeIds = [];
+    const validators = nc.evalValidators || [];
+    validators.forEach((v: any) => {
+      v.onFail = { ...v.onFail, targetNodeId: undefined };
+    });
+  },
+
   initBranchMap(node: ChildNode): Map<string, number[]> | null {
     const branchMap = new Map<string, number[]>();
     const nc = node.nodeConfig as any;
 
-    branchMap.set('eval-pass', nc?.passNextNodeIds || []);
+    branchMap.set('eval-pass', []);
 
     const validators = nc?.evalValidators || [];
     validators.forEach((v: any) => {
       const key = `eval-fail-${v.uuid}`;
-      branchMap.set(key, v.onFail?.targetNodeId ? [v.onFail.targetNodeId] : []);
+      branchMap.set(key, []);
     });
 
     return branchMap;
@@ -186,7 +197,7 @@ export const evalGateHandler: BranchNodeHandler = {
     });
   },
 
-  isSpecialBranchNode(_node: ChildNode): boolean {
+  isSpecialBranchNode(): boolean {
     return true;
   },
 

@@ -89,6 +89,7 @@ interface UseNodeOperationsParams {
   changeDrawer: (val: any) => void;
   getNodeConfig: (id: number) => void;
   getReference: (id: number) => Promise<boolean>;
+  getWorkflow?: (key: string) => any;
   changeNode: (
     params: { nodeData: any },
     callback?: () => void,

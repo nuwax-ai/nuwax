@@ -434,9 +434,10 @@ const EvalGateNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   }}
                 >
                   <span>
-                    {t('PC.Pages.AgentFlowNode.evalValidatorIndex', {
-                      index: name + 1,
-                    })}
+                    {t('PC.Pages.AgentFlowNode.evalValidatorIndex').replace(
+                      '{index}',
+                      String(name + 1),
+                    )}
                   </span>
                   <Button
                     type="text"
@@ -538,6 +539,37 @@ const ExternalConnectorNode: React.FC<NodeDisposeProps> = ({ form }) => {
     Form.useWatch('connectorProvider', { form, preserve: true }) ||
     ExternalConnectorProviderEnum.Dify;
   const hints = PROVIDER_HINTS[provider as ExternalConnectorProviderEnum];
+  const responseMapping =
+    (Form.useWatch(['connectorConfig', 'responseMapping'], {
+      form,
+      preserve: true,
+    }) as Record<string, string> | undefined) || {};
+  const responseMappingRows = Object.entries(responseMapping);
+
+  const setResponseMappingRows = (rows: [string, string][]) => {
+    const next = rows.reduce<Record<string, string>>(
+      (acc, [contextKey, responsePath]) => {
+        acc[contextKey] = responsePath;
+        return acc;
+      },
+      {},
+    );
+    form.setFieldValue(['connectorConfig', 'responseMapping'], next);
+  };
+
+  const createUniqueContextKey = () => {
+    const base = 'context.connectorOutput';
+    if (!Object.prototype.hasOwnProperty.call(responseMapping, base)) {
+      return base;
+    }
+    let index = responseMappingRows.length + 1;
+    while (
+      Object.prototype.hasOwnProperty.call(responseMapping, `${base}${index}`)
+    ) {
+      index += 1;
+    }
+    return `${base}${index}`;
+  };
 
   return (
     <div className="model-node-style">
@@ -589,54 +621,71 @@ const ExternalConnectorNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <div className="node-title-style" style={{ marginTop: 8 }}>
         {t('PC.Pages.AgentFlowNode.connectorResponseMappingTitle')}
       </div>
-      <Form.List name={['connectorConfig', 'responseMappingEntries']}>
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map(({ key, name }) => (
-              <Space
-                key={key}
-                style={{ display: 'flex', marginBottom: 4 }}
-                align="baseline"
-              >
-                <Form.Item
-                  name={[name, 'contextKey']}
-                  rules={[{ required: true }]}
-                  style={{ marginBottom: 0, flex: 1 }}
-                >
-                  <Input placeholder="context.connectorOutput" />
-                </Form.Item>
-                <span>←</span>
-                <Form.Item
-                  name={[name, 'responsePath']}
-                  rules={[{ required: true }]}
-                  style={{ marginBottom: 0, flex: 1 }}
-                >
-                  <Input placeholder="data.outputs.text" />
-                </Form.Item>
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => remove(name)}
-                />
-              </Space>
-            ))}
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              block
-              onClick={() => {
-                const defaults = Object.entries(hints.defaultResponseMapping);
-                const next = defaults[fields.length] || ['', ''];
-                add({ contextKey: next[0], responsePath: next[1] });
-              }}
-            >
-              {t('PC.Pages.AgentFlowNode.connectorResponseMappingAdd')}
-            </Button>
-          </>
-        )}
-      </Form.List>
+      {responseMappingRows.map(([contextKey, responsePath], index) => (
+        <Space
+          key={`${contextKey}-${index}`}
+          style={{ display: 'flex', marginBottom: 4 }}
+          align="baseline"
+        >
+          <Input
+            value={contextKey}
+            placeholder="context.connectorOutput"
+            style={{ flex: 1 }}
+            onChange={(event) => {
+              const next = [...responseMappingRows];
+              next[index] = [event.target.value, responsePath];
+              setResponseMappingRows(next);
+            }}
+          />
+          <span>←</span>
+          <Input
+            value={responsePath}
+            placeholder="data.outputs.text"
+            style={{ flex: 1 }}
+            onChange={(event) => {
+              const next = [...responseMappingRows];
+              next[index] = [contextKey, event.target.value];
+              setResponseMappingRows(next);
+            }}
+          />
+          <Button
+            type="text"
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() =>
+              setResponseMappingRows(
+                responseMappingRows.filter((_, i) => i !== index),
+              )
+            }
+          />
+        </Space>
+      ))}
+      <Button
+        type="dashed"
+        icon={<PlusOutlined />}
+        block
+        onClick={() => {
+          const defaults = Object.entries(hints.defaultResponseMapping);
+          const nextDefault = defaults.find(
+            ([contextKey]) =>
+              !Object.prototype.hasOwnProperty.call(
+                responseMapping,
+                contextKey,
+              ),
+          );
+          const [contextKey, responsePath] = nextDefault || [
+            createUniqueContextKey(),
+            '',
+          ];
+          form.setFieldValue(['connectorConfig', 'responseMapping'], {
+            ...responseMapping,
+            [contextKey]: responsePath,
+          });
+        }}
+      >
+        {t('PC.Pages.AgentFlowNode.connectorResponseMappingAdd')}
+      </Button>
     </div>
   );
 };

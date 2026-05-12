@@ -1,7 +1,7 @@
 /**
  * HumanInteraction 分支处理器单元测试
  */
-import { NodeTypeEnum } from '@/types/enums/common';
+import { HitlModeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type { PortConfig } from '@/types/interfaces/node';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +11,7 @@ import { humanInteractionHandler } from '../handlers/humanInteraction';
 // ========== 测试数据 ==========
 
 const createHitlNode = (
-  hitlMode: 'ask' | 'approve' = 'approve',
+  hitlMode: HitlModeEnum = HitlModeEnum.Approve,
 ): ChildNode => ({
   id: 10,
   type: NodeTypeEnum.HumanInteraction,
@@ -48,7 +48,7 @@ const ctx = { generatePortConfig: mockGeneratePortConfig };
 describe('HumanInteraction Handler', () => {
   describe('generatePorts', () => {
     it('should generate normal out port in ask mode', () => {
-      const node = createHitlNode('ask');
+      const node = createHitlNode(HitlModeEnum.Ask);
       const result = humanInteractionHandler.generatePorts!(node, ctx);
 
       expect(result).not.toBeNull();
@@ -58,7 +58,7 @@ describe('HumanInteraction Handler', () => {
     });
 
     it('should generate approve + reject ports in approve mode', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const result = humanInteractionHandler.generatePorts!(node, ctx);
 
       expect(result!.outputPorts).toHaveLength(2);
@@ -68,11 +68,11 @@ describe('HumanInteraction Handler', () => {
 
     it('should always generate one input port', () => {
       const askResult = humanInteractionHandler.generatePorts!(
-        createHitlNode('ask'),
+        createHitlNode(HitlModeEnum.Ask),
         ctx,
       );
       const approveResult = humanInteractionHandler.generatePorts!(
-        createHitlNode('approve'),
+        createHitlNode(HitlModeEnum.Approve),
         ctx,
       );
 
@@ -218,29 +218,42 @@ describe('HumanInteraction Handler', () => {
 
   describe('initBranchMap', () => {
     it('should return null for ask mode (not a special branch)', () => {
-      const node = createHitlNode('ask');
+      const node = createHitlNode(HitlModeEnum.Ask);
       const result = humanInteractionHandler.initBranchMap!(node);
 
       expect(result).toBeNull();
     });
 
-    it('should return map with hitl-approve and hitl-reject for approve mode', () => {
-      const node = createHitlNode('approve');
+    it('should return empty map with hitl-approve and hitl-reject for approve mode', () => {
+      const node = createHitlNode(HitlModeEnum.Approve);
       (node.nodeConfig as any).approveNextNodeIds = [3];
       (node.nodeConfig as any).rejectNextNodeIds = [5];
       const result = humanInteractionHandler.initBranchMap!(node);
 
       expect(result).not.toBeNull();
-      expect(result!.get('hitl-approve')).toEqual([3]);
-      expect(result!.get('hitl-reject')).toEqual([5]);
+      expect(result!.get('hitl-approve')).toEqual([]);
+      expect(result!.get('hitl-reject')).toEqual([]);
     });
 
     it('should handle empty nextNodeIds in approve mode', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const result = humanInteractionHandler.initBranchMap!(node);
 
       expect(result!.get('hitl-approve')).toEqual([]);
       expect(result!.get('hitl-reject')).toEqual([]);
+    });
+  });
+
+  describe('resetBranchData', () => {
+    it('should clear approve and reject next node ids', () => {
+      const node = createHitlNode(HitlModeEnum.Approve);
+      (node.nodeConfig as any).approveNextNodeIds = [3];
+      (node.nodeConfig as any).rejectNextNodeIds = [5];
+
+      humanInteractionHandler.resetBranchData!(node);
+
+      expect((node.nodeConfig as any).approveNextNodeIds).toEqual([]);
+      expect((node.nodeConfig as any).rejectNextNodeIds).toEqual([]);
     });
   });
 
@@ -269,7 +282,7 @@ describe('HumanInteraction Handler', () => {
 
   describe('mergeBranchData', () => {
     it('should write approve and reject data back to node config', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const branchMap = new Map<string, number[]>();
       branchMap.set('hitl-approve', [3, 4]);
       branchMap.set('hitl-reject', [5]);
@@ -283,19 +296,19 @@ describe('HumanInteraction Handler', () => {
 
   describe('isSpecialBranchNode', () => {
     it('should return true in approve mode', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(true);
     });
 
     it('should return false in ask mode', () => {
-      const node = createHitlNode('ask');
+      const node = createHitlNode(HitlModeEnum.Ask);
       expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(false);
     });
   });
 
   describe('handleSpecialNextIndex', () => {
     it('should add to approveNextNodeIds from approve port', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const result = humanInteractionHandler.handleSpecialNextIndex!(
         node,
         '10-hitl-approve-out',
@@ -307,7 +320,7 @@ describe('HumanInteraction Handler', () => {
     });
 
     it('should add to rejectNextNodeIds from reject port', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const result = humanInteractionHandler.handleSpecialNextIndex!(
         node,
         '10-hitl-reject-out',
@@ -318,7 +331,7 @@ describe('HumanInteraction Handler', () => {
     });
 
     it('should replace target in approveNextNodeIds', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       (node.nodeConfig as any).approveNextNodeIds = [3];
       const targetNode = { id: 3 } as ChildNode;
       const result = humanInteractionHandler.handleSpecialNextIndex!(
@@ -332,7 +345,7 @@ describe('HumanInteraction Handler', () => {
     });
 
     it('should return null for unknown port pattern', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const result = humanInteractionHandler.handleSpecialNextIndex!(
         node,
         '10-unknown',
@@ -343,7 +356,7 @@ describe('HumanInteraction Handler', () => {
     });
 
     it('should not mutate the original node', () => {
-      const node = createHitlNode('approve');
+      const node = createHitlNode(HitlModeEnum.Approve);
       const originalApproveIds = [
         ...(node.nodeConfig as any).approveNextNodeIds,
       ];

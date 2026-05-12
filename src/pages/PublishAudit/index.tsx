@@ -12,6 +12,7 @@ import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
+import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
   FormInstance,
@@ -48,6 +49,7 @@ const PublishAudit: React.FC = () => {
       targetType,
       targetSubType,
       pluginType,
+      workflowType,
     } = record;
 
     let url = '';
@@ -71,7 +73,9 @@ const PublishAudit: React.FC = () => {
         url = `/space/${spaceId}/plugin/${targetId}?applyId=${applyId}`;
       }
     } else if (targetType === SquareAgentTypeEnum.Workflow) {
-      url = `/space/${spaceId}/workflow/${targetId}?applyId=${applyId}`;
+      url = buildWorkflowRoute(spaceId, targetId, workflowType, {
+        applyId,
+      });
     } else if (targetType === SquareAgentTypeEnum.Skill) {
       url = `/space/${spaceId}/skill-details/${targetId}?applyId=${applyId}`;
     }

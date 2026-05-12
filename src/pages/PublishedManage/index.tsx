@@ -9,6 +9,7 @@ import { dict } from '@/services/i18nRuntime';
 import { apiPublishList } from '@/services/publishManage';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
+import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
   FormInstance,
@@ -62,7 +63,12 @@ const PublishedManage: React.FC = () => {
         url = `/space/${record.spaceId}/plugin/${record.targetId}?publishId=${record.id}`;
       }
     } else if (record.targetType === SquareAgentTypeEnum.Workflow) {
-      url = `/space/${record.spaceId}/workflow/${record.targetId}?publishId=${record.id}`;
+      url = buildWorkflowRoute(
+        record.spaceId,
+        record.targetId,
+        record.workflowType,
+        { publishId: record.id },
+      );
     } else if (record.targetType === SquareAgentTypeEnum.Skill) {
       url = `/space/${record.spaceId}/skill-details/${record.targetId}?publishId=${record.id}`;
     }

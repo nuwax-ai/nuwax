@@ -149,16 +149,17 @@ export interface ExceptionHandleConfig {
 
 // AgentFlow: EvalGate validator 失败回跳配置
 export interface EvalValidatorOnFail {
-  targetNodeId: number | string;
+  targetNodeId?: number | string;
   appendPrompt: string;
   reason: string;
 }
 
 // AgentFlow: EvalGate validator
 export interface EvalValidator {
+  uuid?: string;
   name: string;
   type: EvalValidatorTypeEnum;
-  config?: Record<string, unknown>;
+  config?: Record<string, any>;
   onFail: EvalValidatorOnFail;
 }
 
@@ -304,6 +305,7 @@ export interface NodeConfig {
   subFlowId?: number;
   agentInputs?: Record<string, string>;
   // EvalGate 节点
+  passNextNodeIds?: number[];
   evalValidators?: EvalValidator[];
   evalMaxRetry?: number;
   evalOnMaxRetry?: 'fail' | 'continue' | 'human';
@@ -311,6 +313,8 @@ export interface NodeConfig {
   hitlMode?: HitlModeEnum;
   askConfig?: HitlAskConfig;
   approveConfig?: HitlApproveConfig;
+  approveNextNodeIds?: number[];
+  rejectNextNodeIds?: number[];
   // ExternalConnector 节点
   connectorProvider?: ExternalConnectorProviderEnum;
   connectorConfig?: ExternalConnectorConfig;

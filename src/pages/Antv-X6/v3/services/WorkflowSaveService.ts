@@ -19,7 +19,8 @@ import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
-import { Graph } from '@antv/x6';
+import type { Graph } from '@antv/x6';
+import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType as PortType } from '../types/enums';
 import type { EdgeV3 as EdgeData } from '../types/interfaces';
 
@@ -357,6 +358,8 @@ class WorkflowSaveService {
     if (node.nodeConfig?.exceptionHandleConfig) {
       node.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds = [];
     }
+
+    extensionRegistry.get(node.type)?.resetBranchData?.(node);
   }
 
   /**
@@ -380,30 +383,11 @@ class WorkflowSaveService {
       return { type: PortType.Loop };
     }
 
-    // AgentFlow EvalGate 端口
-    if (sourceNode.type === NodeTypeEnum.EvalGate) {
-      if (sourcePort.includes('-eval-pass-out')) {
-        return { type: PortType.EvalGatePass };
-      }
-      if (sourcePort.includes('-eval-fail-')) {
-        const nodeIdStr = String(sourceNode.id);
-        let uuid = sourcePort;
-        if (sourcePort.startsWith(nodeIdStr + '-')) {
-          uuid = uuid.substring(nodeIdStr.length + 1);
-        }
-        uuid = uuid.replace(/^eval-fail-/, '').replace(/-out$/, '');
-        return { type: PortType.EvalGateFail, uuid };
-      }
-    }
-
-    // AgentFlow HumanInteraction 端口
-    if (sourceNode.type === NodeTypeEnum.HumanInteraction) {
-      if (sourcePort.includes('-hitl-approve-out')) {
-        return { type: PortType.HitlApprove };
-      }
-      if (sourcePort.includes('-hitl-reject-out')) {
-        return { type: PortType.HitlReject };
-      }
+    const extensionPort = extensionRegistry
+      .get(sourceNode.type)
+      ?.parseSourcePort?.(sourceNode, sourcePort);
+    if (extensionPort) {
+      return extensionPort;
     }
 
     // 特殊分支节点
@@ -444,6 +428,22 @@ class WorkflowSaveService {
     targetId: number,
     portInfo: { type: PortType; uuid?: string },
   ): boolean {
+    const extensionHandler = extensionRegistry.get(sourceNode.type);
+    if (extensionHandler?.updateConnection) {
+      const handled = extensionHandler.updateConnection(
+        sourceNode,
+        portInfo,
+        targetId,
+        'add',
+      );
+      if (handled) {
+        return true;
+      }
+      if (extensionHandler.getBranchKey?.(portInfo)) {
+        return false;
+      }
+    }
+
     switch (portInfo.type) {
       case PortType.Condition: {
         const configs = sourceNode.nodeConfig?.conditionBranchConfigs;
@@ -496,49 +496,6 @@ class WorkflowSaveService {
         if (!config.exceptionHandleNodeIds.includes(targetId)) {
           config.exceptionHandleNodeIds.push(targetId);
         }
-        return true;
-      }
-
-      case PortType.EvalGatePass: {
-        if (!sourceNode.nodeConfig) return false;
-        let passIds = sourceNode.nodeConfig.passNextNodeIds || [];
-        if (!passIds.includes(targetId)) {
-          passIds.push(targetId);
-        }
-        sourceNode.nodeConfig.passNextNodeIds = passIds;
-        return true;
-      }
-
-      case PortType.EvalGateFail: {
-        if (!portInfo.uuid || !sourceNode.nodeConfig?.evalValidators)
-          return false;
-        const validator = (sourceNode.nodeConfig.evalValidators as any[]).find(
-          (v: any) => v.uuid === portInfo.uuid,
-        );
-        if (validator) {
-          validator.onFail = { ...validator.onFail, targetNodeId: targetId };
-          return true;
-        }
-        return false;
-      }
-
-      case PortType.HitlApprove: {
-        if (!sourceNode.nodeConfig) return false;
-        let approveIds = sourceNode.nodeConfig.approveNextNodeIds || [];
-        if (!approveIds.includes(targetId)) {
-          approveIds.push(targetId);
-        }
-        sourceNode.nodeConfig.approveNextNodeIds = approveIds;
-        return true;
-      }
-
-      case PortType.HitlReject: {
-        if (!sourceNode.nodeConfig) return false;
-        let rejectIds = sourceNode.nodeConfig.rejectNextNodeIds || [];
-        if (!rejectIds.includes(targetId)) {
-          rejectIds.push(targetId);
-        }
-        sourceNode.nodeConfig.rejectNextNodeIds = rejectIds;
         return true;
       }
 

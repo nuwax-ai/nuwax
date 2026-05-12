@@ -610,8 +610,11 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
       'exceptionHandleConfig',
     ];
     propsToHoist.forEach((prop) => {
-      if ((node as any)[prop] === undefined && node.nodeConfig?.[prop]) {
-        (hoistedData as any)[prop] = node.nodeConfig[prop];
+      if (
+        (node as any)[prop] === undefined &&
+        (node.nodeConfig as any)?.[prop]
+      ) {
+        (hoistedData as any)[prop] = (node.nodeConfig as any)[prop];
       }
     });
   }
