@@ -1,6 +1,10 @@
-import { apiCreateAgentSubscriptionPlan } from '@/pages/EditAgent/services/agent-subscription-plan';
+import {
+  apiCreateAgentSubscriptionPlan,
+  apiUpdateAgentSubscriptionPlan,
+} from '@/pages/EditAgent/services/agent-subscription-plan';
 import {
   SubscriptionPlanBizTypeEnum,
+  SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
@@ -33,6 +37,7 @@ export interface CreatePlanFormValues {
 interface CreatePlanModalProps {
   agentId: number;
   open: boolean;
+  editPlan?: SubscriptionPlanInfo | null;
   onCancel: () => void;
   onCreated?: () => void;
 }
@@ -52,6 +57,7 @@ const periodOptions = [
 const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   agentId,
   open,
+  editPlan,
   onCancel,
   onCreated,
 }) => {
@@ -63,6 +69,19 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
   useEffect(() => {
     if (!open) {
+      return;
+    }
+    if (editPlan) {
+      const isUnlimited = editPlan.callLimitCount === -1;
+      setLimitType(isUnlimited ? 'unlimited' : 'limited');
+      form.setFieldsValue({
+        name: editPlan.name,
+        description: editPlan.description,
+        period: editPlan.period || SubscriptionPlanPeriodEnum.MONTH,
+        price: editPlan.price,
+        functionOnly: editPlan.functionOnly ?? false,
+        callLimitCount: isUnlimited ? undefined : editPlan.callLimitCount,
+      });
       return;
     }
     setLimitType('unlimited');
@@ -84,7 +103,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     };
     setCreating(true);
     try {
-      await apiCreateAgentSubscriptionPlan({
+      const payload: SubscriptionPlanInfo = {
+        ...(editPlan || {}),
         name: submitValues.name,
         description: submitValues.description || '',
         price: submitValues.price,
@@ -95,14 +115,21 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             ? -1
             : Number(submitValues.callLimitCount || 0),
         functionOnly: Boolean(submitValues.functionOnly),
-        isHot: false,
-        status: SubscriptionPlanStatusEnum.Online,
-        bizType: SubscriptionPlanBizTypeEnum.AGENT,
-        bizId: String(agentId),
-        groupIds: [],
-        sort: 0,
-      });
-      message.success('添加成功');
+        isHot: editPlan?.isHot ?? false,
+        status: editPlan?.status ?? SubscriptionPlanStatusEnum.Online,
+        bizType: editPlan?.bizType || SubscriptionPlanBizTypeEnum.AGENT,
+        bizId: editPlan?.bizId || String(agentId),
+        groupIds: editPlan?.groupIds || [],
+        sort: editPlan?.sort ?? 0,
+      };
+
+      if (editPlan?.id) {
+        await apiUpdateAgentSubscriptionPlan(payload);
+        message.success('更新成功');
+      } else {
+        await apiCreateAgentSubscriptionPlan(payload);
+        message.success('添加成功');
+      }
       onCreated?.();
       onCancel();
     } finally {
@@ -119,7 +146,11 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
       onCancel={onCancel}
       footer={null}
       className={cx(styles.createPlanModal)}
-      title={<span className={cx(styles.modalTitle)}>添加套餐</span>}
+      title={
+        <span className={cx(styles.modalTitle)}>
+          {editPlan ? '编辑套餐' : '添加套餐'}
+        </span>
+      }
     >
       <Form form={form} layout="vertical">
         <Form.Item

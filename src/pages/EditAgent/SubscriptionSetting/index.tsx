@@ -8,16 +8,12 @@ import {
   ResourcePricingStatus,
   ToolPricingTargetType,
 } from '@/pages/SpaceResource/types/resource';
+import { SubscriptionPlanInfo } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiDeletePricingPlan,
   apiTogglePricingPlan,
 } from '@/services/subscriptionService';
-import type { RequestResponse } from '@/types/interfaces/request';
-import type {
-  PricingCycleEnum,
-  PricingPlanInfo,
-} from '@/types/interfaces/subscription';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, InputNumber, Switch, message } from 'antd';
 import classNames from 'classnames';
@@ -25,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiGetAgentSubscriptionPlanList } from '../services/agent-subscription-plan';
 import CreatePlanModal from './CreatePlanModal';
+import SubscriptionPlanCard from './SubscriptionPlanCard';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -44,13 +41,17 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   visible,
 }) => {
   const [form] = Form.useForm();
-  const [plans, setPlans] = useState<PricingPlanInfo[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
   const [saving, setSaving] = useState<boolean>(false);
   // 订阅模式是否开启
   const [subscriptionEnabled, setSubscriptionEnabled] =
     useState<boolean>(false);
   // 创建套餐模态框是否打开
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
+  // 当前编辑套餐
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlanInfo | null>(
+    null,
+  );
 
   // 智能体资源定价配置
   const [agentResourcePricingConfig, setAgentResourcePricingConfig] =
@@ -60,12 +61,14 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     apiGetAgentSubscriptionPlanList,
     {
       manual: true,
-      onSuccess: (res: RequestResponse<PricingPlanInfo[]>) =>
-        setPlans(res?.data ?? []),
+      onSuccess: (data: SubscriptionPlanInfo[]) => setPlans(data),
     },
   );
 
-  const handleLoadAgentSubscriptionPlans = () => {
+  /**
+   * 加载智能体套餐列表
+   */
+  const loadAgentPlans = () => {
     loadAgentSubscriptionPlans({
       agentId,
     });
@@ -74,7 +77,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   const { run: runTogglePlan } = useRequest(apiTogglePricingPlan, {
     manual: true,
     onSuccess: () => {
-      handleLoadAgentSubscriptionPlans();
+      loadAgentPlans();
     },
   });
 
@@ -82,7 +85,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     manual: true,
     onSuccess: () => {
       message.success(dict('PC.Common.Global.deleteSuccess'));
-      handleLoadAgentSubscriptionPlans();
+      loadAgentPlans();
     },
   });
 
@@ -112,7 +115,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
   useEffect(() => {
     if (visible) {
-      handleLoadAgentSubscriptionPlans();
+      loadAgentPlans();
       loadPricingStatus({
         targetType: ToolPricingTargetType.AGENT,
         targetId: String(agentId),
@@ -140,6 +143,15 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
   // 打开创建套餐模态框
   const handleOpenCreateModal = () => {
+    setEditingPlan(null);
+    setCreateModalOpen(true);
+  };
+
+  /**
+   * 打开编辑套餐弹窗
+   */
+  const handleEditPlan = (plan: SubscriptionPlanInfo) => {
+    setEditingPlan(plan);
     setCreateModalOpen(true);
   };
 
@@ -163,19 +175,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     }
   };
 
-  const getCycleLabel = (cycle: PricingCycleEnum) => {
-    if (cycle === 'monthly') {
-      return '/月';
-    }
-    if (cycle === 'quarterly') {
-      return '/季';
-    }
-    if (cycle === 'yearly') {
-      return '/年';
-    }
-    return '';
-  };
-
   if (!visible) {
     return null;
   }
@@ -193,6 +192,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         </ConditionRender>
       </div>
 
+      {/* 设置面板 */}
       <div className={cx(styles.settingPanel)}>
         <div className={cx(styles.enableRow)}>
           <div className={cx(styles.enableInfo)}>
@@ -247,51 +247,29 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         </Button>
       </div>
 
+      {/* 套餐列表 */}
       <div className={cx(styles.planGrid)}>
         {plans.map((plan) => (
-          <div key={plan.id} className={cx(styles.planCard)}>
-            <div className={cx(styles.cardTopLine)} />
-            <div className={cx(styles.cardHeader)}>
-              <div className={cx(styles.planName)}>{plan.name}</div>
-              <span className={cx(styles.packageTag)}>包千价</span>
-            </div>
-            <div className={cx(styles.planDesc)}>{plan.description || '-'}</div>
-            <div className={cx(styles.priceBox)}>
-              <span className={cx(styles.currency)}>¥</span>
-              <span className={cx(styles.priceValue)}>{plan.price}</span>
-              <span className={cx(styles.priceUnit)}>
-                {getCycleLabel(plan.cycle)}
-              </span>
-            </div>
-            <div className={cx(styles.planMeta)}>
-              {plan.benefits?.[0] || '不限次数'}
-            </div>
-            <div className={cx(styles.cardFooter)}>
-              <Switch
-                size="small"
-                checked={plan.enabled}
-                onChange={(checked) => runTogglePlan(plan.id, checked)}
-              />
-              <div className={cx(styles.footerActions)}>
-                <Button size="small">编辑</Button>
-                <Button
-                  size="small"
-                  danger
-                  onClick={() => runDeletePlan(plan.id)}
-                >
-                  删除
-                </Button>
-              </div>
-            </div>
-          </div>
+          <SubscriptionPlanCard
+            key={plan.id}
+            plan={plan}
+            onToggle={(planId, checked) => runTogglePlan(planId, checked)}
+            onEdit={handleEditPlan}
+            onDelete={(planId) => runDeletePlan(planId)}
+          />
         ))}
       </div>
 
+      {/* 创建套餐模态框 */}
       <CreatePlanModal
         agentId={agentId}
         open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
-        onCreated={handleLoadAgentSubscriptionPlans}
+        editPlan={editingPlan}
+        onCancel={() => {
+          setCreateModalOpen(false);
+          setEditingPlan(null);
+        }}
+        onCreated={loadAgentPlans}
       />
     </div>
   );
