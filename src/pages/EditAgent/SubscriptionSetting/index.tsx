@@ -360,73 +360,77 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
           />
         </div>
 
-        {/* 定价类型 */}
-        <Form form={form} layout="vertical">
-          <div className={styles['form-row']}>
-            <div className={styles['form-left']}>
-              <div className={styles['field-label']}>定价类型</div>
-              <Button className={styles['mode-btn']} type="default">
-                ☆ 订阅模式
-              </Button>
-            </div>
-            <div className={styles['form-right']}>
-              <Form.Item
-                name="trialCount"
-                label="默认试用次数"
-                initialValue={0}
-                className={styles['trial-form-item']}
-              >
-                <InputNumber min={0} className={styles['trial-input']} />
-              </Form.Item>
-              <Button type="primary" loading={saving} onClick={handleSave}>
-                {dict('PC.Common.Global.save')}
-              </Button>
-              <div className={styles['trial-hint']}>
-                新用户可免费体验的次数，设为 0 则不提供试用
+        <ConditionRender condition={subscriptionEnabled}>
+          {/* 定价类型 */}
+          <Form form={form} layout="vertical">
+            <div className={styles['form-row']}>
+              <div className={styles['form-left']}>
+                <div className={styles['field-label']}>定价类型</div>
+                <Button className={styles['mode-btn']} type="default">
+                  ☆ 订阅模式
+                </Button>
+              </div>
+              <div className={styles['form-right']}>
+                <Form.Item
+                  name="trialCount"
+                  label="默认试用次数"
+                  initialValue={0}
+                  className={styles['trial-form-item']}
+                >
+                  <InputNumber min={0} className={styles['trial-input']} />
+                </Form.Item>
+                <Button type="primary" loading={saving} onClick={handleSave}>
+                  {dict('PC.Common.Global.save')}
+                </Button>
+                <div className={styles['trial-hint']}>
+                  新用户可免费体验的次数，设为 0 则不提供试用
+                </div>
               </div>
             </div>
-          </div>
-        </Form>
+          </Form>
+        </ConditionRender>
       </div>
 
-      <div className={styles['list-header']}>
-        <h3 className={styles['list-title']}>套餐列表</h3>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleOpenCreateModal}
+      <ConditionRender condition={subscriptionEnabled}>
+        <div className={styles['list-header']}>
+          <h3 className={styles['list-title']}>套餐列表</h3>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleOpenCreateModal}
+          >
+            添加套餐
+          </Button>
+        </div>
+
+        {/* 套餐列表 */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handlePlanDragEnd}
         >
-          添加套餐
-        </Button>
-      </div>
-
-      {/* 套餐列表 */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handlePlanDragEnd}
-      >
-        <SortableContext items={plans.map((plan) => String(plan.id))}>
-          <div className={styles['plan-grid']}>
-            {plans.map((plan) => (
-              <div key={plan.id} className={styles['plan-grid-item']}>
-                <SortablePlanCard id={String(plan.id)}>
-                  <SubscriptionPlanCard
-                    plan={plan}
-                    updateLoading={updatingSubscriptionPlan}
-                    onClick={() => handleClickPlanCard(plan)}
-                    onToggle={(_, checked) =>
-                      handleTogglePlanStatus(plan, checked)
-                    }
-                    onEdit={handleEditPlan}
-                    onDelete={() => handleDeletePlan(plan)}
-                  />
-                </SortablePlanCard>
-              </div>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext items={plans.map((plan) => String(plan.id))}>
+            <div className={styles['plan-grid']}>
+              {plans.map((plan) => (
+                <div key={plan.id} className={styles['plan-grid-item']}>
+                  <SortablePlanCard id={String(plan.id)}>
+                    <SubscriptionPlanCard
+                      plan={plan}
+                      updateLoading={updatingSubscriptionPlan}
+                      onClick={() => handleClickPlanCard(plan)}
+                      onToggle={(_, checked) =>
+                        handleTogglePlanStatus(plan, checked)
+                      }
+                      onEdit={handleEditPlan}
+                      onDelete={() => handleDeletePlan(plan)}
+                    />
+                  </SortablePlanCard>
+                </div>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </ConditionRender>
 
       {/* 创建套餐模态框 */}
       <CreatePlanModal
