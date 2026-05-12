@@ -24,6 +24,7 @@ import {
 import classNames from 'classnames';
 import type { Dayjs } from 'dayjs';
 import React, { useMemo, useState } from 'react';
+import WithdrawRecordModal from './components/WithdrawRecordModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -128,6 +129,7 @@ const MyEarnings: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('全部');
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
+  const [withdrawRecordOpen, setWithdrawRecordOpen] = useState(false);
 
   // 获取收益统计数据
   const {
@@ -345,6 +347,7 @@ const MyEarnings: React.FC = () => {
             <Button
               icon={<CalendarOutlined />}
               className={cx(styles['withdraw-record-btn'])}
+              onClick={() => setWithdrawRecordOpen(true)}
             >
               {dict('PC.Pages.MorePage.MyEarnings.withdrawRecord')}
             </Button>
@@ -431,6 +434,11 @@ const MyEarnings: React.FC = () => {
           toolBarRender={false}
           dataSource={MOCK_EARNINGS}
           pagination={{ pageSize: 10 }}
+        />
+
+        <WithdrawRecordModal
+          open={withdrawRecordOpen}
+          onOpenChange={setWithdrawRecordOpen}
         />
       </div>
     </WorkspaceLayout>

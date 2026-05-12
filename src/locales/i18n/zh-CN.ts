@@ -2728,6 +2728,11 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.MorePage.MyEarnings.typePlatform': '平台服务',
   'PC.Pages.MorePage.MyEarnings.withdrawSuccessTitle': '提现申请已提交',
   'PC.Pages.MorePage.MyEarnings.withdrawSuccess': '提现申请已提交,预计1-3个工作日到账。',
+  'PC.Pages.MorePage.MyEarnings.withdrawRecordTitle': '提现记录',
+  'PC.Pages.MorePage.MyEarnings.withdrawStatusPendingReview': '待审核',
+  'PC.Pages.MorePage.MyEarnings.withdrawStatusApproved': '已通过',
+  'PC.Pages.MorePage.MyEarnings.withdrawStatusRejected': '已驳回',
+  'PC.Pages.MorePage.MyEarnings.withdrawStatusPaid': '已打款',
 
 
 

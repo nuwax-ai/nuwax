@@ -212,6 +212,16 @@ export async function apiListMyEarnings(params: {
   return request('/api/user/earnings', { method: 'GET', params });
 }
 
+/**
+ * 查询提现记录
+ */
+export async function apiListWithdrawRecords(params: {
+  pageNum?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<any[]>> {
+  return request('/api/bill/withdraw/records', { method: 'GET', params });
+}
+
 // ──────────────────────────────────────────────
 // 积分
 // ──────────────────────────────────────────────
