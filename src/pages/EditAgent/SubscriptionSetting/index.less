@@ -1,24 +1,228 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-.footer {
+.container {
+  width: 100%;
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f4f7fd;
+}
+
+.header {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
 }
 
-.textarea {
-  width: 100%;
-  border: 1px solid @BLANK12;
-  border-radius: @borderRadius;
-  padding: 8px 12px;
-  font-size: @fontSizeSm;
-  color: @BLANK04;
-  resize: vertical;
-  outline: none;
-  font-family: inherit;
+.backButton {
+  border: none;
+}
 
-  &:focus {
-    border-color: @colorPrimary;
+.title {
+  margin: 0;
+  color: #1f6feb;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.countText {
+  color: #8a94a6;
+  font-size: 14px;
+}
+
+.settingPanel {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+.enableRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e6edf8;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.enableTitle {
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.enableDesc {
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.formRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.formLeft {
+  flex: 1;
+}
+
+.formRight {
+  width: 360px;
+}
+
+.fieldLabel {
+  margin-bottom: 12px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.modeBtn {
+  color: #2563eb;
+  border-color: #8cb4ff;
+  border-radius: 12px;
+}
+
+.trialFormItem {
+  margin-bottom: 8px;
+}
+
+.trialInput {
+  width: 180px;
+  margin-right: 12px;
+}
+
+.trialHint {
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.listHeader {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.listTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.planGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.planCard {
+  background: #fff;
+  border: 1px solid #e6edf8;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cardTopLine {
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #0ea5a6 100%);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 8px;
+}
+
+.planName {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.packageTag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #0f766e;
+  font-size: 12px;
+  background: #d1fae5;
+}
+
+.planDesc {
+  min-height: 42px;
+  padding: 0 16px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.priceBox {
+  margin: 12px 16px 8px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  text-align: center;
+  padding: 10px 8px;
+}
+
+.currency {
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.priceValue {
+  color: #0f172a;
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.priceUnit {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.planMeta {
+  padding: 0 16px 12px;
+  color: #2563eb;
+  font-size: 14px;
+}
+
+.cardFooter {
+  padding: 12px 16px;
+  border-top: 1px solid #edf1f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerActions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 1400px) {
+  .planGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .planGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+
+  .formRight {
+    width: 100%;
   }
 }

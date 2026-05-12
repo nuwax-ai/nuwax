@@ -165,8 +165,6 @@ export enum EditAgentShowType {
   Version_History = 'Version_History',
   // 展示台
   Show_Stand = 'Show_Stand',
-  // 订阅设置
-  Subscription_Setting = 'Subscription_Setting',
 }
 
 // 组件设置类型

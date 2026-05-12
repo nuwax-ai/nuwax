@@ -31,11 +31,11 @@ export enum ToolPricingTargetType {
 }
 
 // 定价类型：ONE_TIME-单次，BUYOUT-买断，MONTHLY-包月，SUBSCRIPTION_PLAN-订阅计划，TIERED-阶梯计费,可用值:ONE_TIME,BUYOUT,MONTHLY,TIERED
-export enum ToolPricingPricingType {
+export enum ResourcePricingType {
   ONE_TIME = 'ONE_TIME',
   BUYOUT = 'BUYOUT',
   MONTHLY = 'MONTHLY',
-  SUBSCRIPTION_PLAN = 'SUBSCRIPTION_PLAN',
+  // SUBSCRIPTION_PLAN = 'SUBSCRIPTION_PLAN',
   TIERED = 'TIERED',
 }
 
@@ -54,7 +54,7 @@ export interface ToolPricingInfo {
   targetId: string;
 
   // 定价类型：ONE_TIME-单次，BUYOUT-买断，MONTHLY-包月，SUBSCRIPTION_PLAN-订阅计划，TIERED-阶梯计费,可用值:ONE_TIME,BUYOUT,MONTHLY,TIERED
-  pricingType: ToolPricingPricingType;
+  pricingType: ResourcePricingType;
 
   /*价格 */
   price?: number;
@@ -81,7 +81,7 @@ export interface QueryPricingInfoParams {
 /**
  * 查询定价配置结果
  */
-export interface QueryPricingConfigInfo extends ToolPricingInfo {
+export interface ResourcePricingConfigInfo extends ToolPricingInfo {
   // 配置ID
   id: number;
   // 修改时间
@@ -132,7 +132,7 @@ export interface ListPricingConfigsParams {
   targetId?: string;
 
   /*定价类型,可用值:ONE_TIME,BUYOUT,MONTHLY,TIERED */
-  pricingType?: ToolPricingPricingType;
+  pricingType?: ResourcePricingType;
 
   /*状态：0-禁用，1-启用 */
   status?: ResourcePricingStatus;

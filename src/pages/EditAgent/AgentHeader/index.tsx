@@ -5,10 +5,12 @@ import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
-// import { jumpBack } from '@/utils/router';
+import type {
+  AgentHeaderProps,
+  AgentHeaderTabKey,
+} from '@/types/interfaces/agentConfig';
 import { FormOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tag } from 'antd';
+import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -26,10 +28,11 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   agentConfigInfo,
   onToggleShowStand,
   onToggleVersionHistory,
-  onToggleSubscriptionSetting,
   onEditAgent,
   onPublish,
   onOtherAction,
+  activeTab = 'arrange',
+  onTabChange,
 }) => {
   const { spaceId } = useParams();
 
@@ -99,14 +102,6 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
         </div>
       ),
     },
-    {
-      key: 'subscriptionSetting',
-      label: (
-        <div onClick={onToggleSubscriptionSetting}>
-          {dict('PC.Pages.AgentEdit.subscriptionSetting')}
-        </div>
-      ),
-    },
     ...actionList,
   ];
 
@@ -118,7 +113,6 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           className={cx(styles['icon-backward'])}
           onClick={() => {
             history.push(`/space/${spaceId}/develop`);
-            // jumpBack(`/space/${spaceId}/develop`)
           }}
         />
       </ConditionRender>
@@ -148,7 +142,21 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           />
         </div>
       </div>
-      {/* <h2 className={cx('absolute', styles['header-title'])}>编排</h2> */}
+
+      {/* 头部导航栏 */}
+      <div className={cx('absolute', styles['header-segmented-wrap'])}>
+        <Segmented<AgentHeaderTabKey>
+          value={activeTab}
+          options={[
+            { label: '编排', value: 'arrange' },
+            { label: '订阅设置', value: 'subscriptionSetting' },
+            { label: '订阅统计', value: 'subscriptionStats' },
+          ]}
+          onChange={(value) => onTabChange?.(value)}
+        />
+      </div>
+
+      {/* 右侧操作区域 */}
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         <div className={cx('flex', 'items-center', styles['save-time-box'])}>
           <span className={cx(styles['save-time'])}>

@@ -33,10 +33,10 @@ import {
   apiUpdateToolPricing,
 } from '../services/resource';
 import {
-  QueryPricingConfigInfo,
+  ResourcePricingConfigInfo,
   ResourcePricingStatus,
+  ResourcePricingType,
   ToolPricingInfo,
-  ToolPricingPricingType,
   ToolPricingTargetType,
 } from '../types/resource';
 import styles from './index.less';
@@ -73,12 +73,12 @@ const CATEGORY_MAP: Record<string, { color: string; label: string }> = {
 };
 
 // 定价类型标签映射
-const PRICING_TYPE_LABEL_MAP: Record<ToolPricingPricingType, string> = {
-  [ToolPricingPricingType.ONE_TIME]: '单次',
-  [ToolPricingPricingType.BUYOUT]: '买断',
-  [ToolPricingPricingType.MONTHLY]: '包月',
-  [ToolPricingPricingType.SUBSCRIPTION_PLAN]: '订阅计划',
-  [ToolPricingPricingType.TIERED]: '阶梯计费',
+const PRICING_TYPE_LABEL_MAP: Record<ResourcePricingType, string> = {
+  [ResourcePricingType.ONE_TIME]: '单次',
+  [ResourcePricingType.BUYOUT]: '买断',
+  [ResourcePricingType.MONTHLY]: '包月',
+  [ResourcePricingType.SUBSCRIPTION_PLAN]: '订阅计划',
+  [ResourcePricingType.TIERED]: '阶梯计费',
 };
 
 function getCatTag(cat: string) {
@@ -138,7 +138,9 @@ const SKILL_CATALOG: { name: string; category: string; description: string }[] =
 const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editItem, setEditItem] = useState<QueryPricingConfigInfo | null>(null);
+  const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
+    null,
+  );
   const [form] = Form.useForm();
   const actionRef = useRef<ActionType>();
 
@@ -173,7 +175,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   };
 
   // 编辑模型定价
-  const openEdit = (item: QueryPricingConfigInfo) => {
+  const openEdit = (item: ResourcePricingConfigInfo) => {
     setEditItem(item);
     setModalOpen(true);
   };
@@ -203,7 +205,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   };
 
   // 删除模型定价
-  const handleDelete = (item: QueryPricingConfigInfo) => {
+  const handleDelete = (item: ResourcePricingConfigInfo) => {
     modalConfirm(
       dict('PC.Common.Global.confirmDelete'),
       item.targetObjectInfo?.name || '',
@@ -215,7 +217,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
    * 切换模型定价状态（开启/关闭收费）
    */
   const handleToggleStatus = (
-    item: QueryPricingConfigInfo,
+    item: ResourcePricingConfigInfo,
     checked: boolean,
   ) => {
     runUpdateToolPricing({
@@ -227,7 +229,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   };
 
   // 模型定价列表列配置
-  const columns: ProColumns<QueryPricingConfigInfo>[] = [
+  const columns: ProColumns<ResourcePricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.modelName'),
       dataIndex: 'targetId',
@@ -250,9 +252,8 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       width: 120,
       render: (_, record) =>
         record.pricingType
-          ? PRICING_TYPE_LABEL_MAP[
-              record.pricingType as ToolPricingPricingType
-            ] || record.pricingType
+          ? PRICING_TYPE_LABEL_MAP[record.pricingType as ResourcePricingType] ||
+            record.pricingType
           : '',
     },
     // 定价档位
@@ -346,7 +347,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
       </div>
-      <XProTable<QueryPricingConfigInfo>
+      <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}

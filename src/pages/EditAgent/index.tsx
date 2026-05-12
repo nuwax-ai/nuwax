@@ -40,6 +40,7 @@ import {
   ComponentModelBindConfig,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
+import type { AgentHeaderTabKey } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
   AnalyzeStatisticsItem,
@@ -145,6 +146,8 @@ const EditAgent: React.FC = () => {
   const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
   // 打开创建临时会话弹窗
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+  // 顶部分段菜单选中项
+  const [headerTab, setHeaderTab] = useState<AgentHeaderTabKey>('arrange');
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -954,14 +957,13 @@ const EditAgent: React.FC = () => {
         onToggleVersionHistory={() =>
           handleClosePreview(EditAgentShowType.Version_History)
         }
-        onToggleSubscriptionSetting={() =>
-          handleClosePreview(EditAgentShowType.Subscription_Setting)
-        }
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
         onPublish={() => setOpen(true)}
         onOtherAction={handlerClickMore}
+        activeTab={headerTab}
+        onTabChange={setHeaderTab}
       />
       <section
         className={cx(
@@ -971,71 +973,65 @@ const EditAgent: React.FC = () => {
           `xagi-nav-${navigationStyle}`,
         )}
       >
-        {/*编排*/}
-        <div
-          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'], {
-            [styles['chat-bot-edit-info']]:
-              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-          })}
-        >
-          {/*编排title*/}
-          <ArrangeTitle
-            originalModelConfigList={originalModelConfigList}
-            agentConfigInfo={agentConfigInfo}
-            icon={agentConfigInfo?.modelComponentConfig?.icon}
-            modelName={agentConfigInfo?.modelComponentConfig?.name}
-            onClick={() => setOpenAgentModel(true)}
-            onModelChange={async (modelId, name) => {
-              // 通用智能体直接切换模型，无需弹窗
-              const componentId = agentConfigInfo?.modelComponentConfig?.id;
-              if (!componentId) return;
-              const bindConfig = agentConfigInfo?.modelComponentConfig
-                ?.bindConfig as ComponentModelBindConfig;
-              await apiAgentComponentModelUpdate({
-                id: componentId,
-                targetId: modelId,
-                bindConfig,
-              });
-              const _agentConfigInfo = cloneDeep(
-                agentConfigInfo,
-              ) as AgentConfigInfo;
-              _agentConfigInfo.modelComponentConfig.targetId = modelId;
-              _agentConfigInfo.modelComponentConfig.name = name;
-              setAgentConfigInfo(_agentConfigInfo);
-            }}
+        {headerTab === 'subscriptionSetting' ? (
+          <SubscriptionSetting
+            agentId={agentId}
+            spaceId={spaceId}
+            visible={true}
           />
-          <div
-            className={cx(
-              'flex-1',
-              'flex',
-              'overflow-y',
-              styles['edit-content'],
-            )}
-          >
-            {/* 问答型智能体、应用页面 */}
-            {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
-              // 系统提示词/用户提示词
-              <SystemUserTipsWord
-                ref={systemUserTipsWordRef}
+        ) : (
+          <>
+            {/*编排*/}
+            <div
+              className={cx(
+                'radius-6',
+                'flex',
+                'flex-col',
+                styles['edit-info'],
+                {
+                  [styles['chat-bot-edit-info']]:
+                    agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                },
+              )}
+            >
+              {/*编排title*/}
+              <ArrangeTitle
+                originalModelConfigList={originalModelConfigList}
                 agentConfigInfo={agentConfigInfo}
-                valueUser={agentConfigInfo?.userPrompt}
-                valueSystem={agentConfigInfo?.systemPrompt}
-                onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
-                onChangeSystem={(value) =>
-                  handleChangeAgent(value, 'systemPrompt')
-                }
-                onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-                variables={promptVariables}
-                skills={promptTools}
+                icon={agentConfigInfo?.modelComponentConfig?.icon}
+                modelName={agentConfigInfo?.modelComponentConfig?.name}
+                onClick={() => setOpenAgentModel(true)}
+                onModelChange={async (modelId, name) => {
+                  // 通用智能体直接切换模型，无需弹窗
+                  const componentId = agentConfigInfo?.modelComponentConfig?.id;
+                  if (!componentId) return;
+                  const bindConfig = agentConfigInfo?.modelComponentConfig
+                    ?.bindConfig as ComponentModelBindConfig;
+                  await apiAgentComponentModelUpdate({
+                    id: componentId,
+                    targetId: modelId,
+                    bindConfig,
+                  });
+                  const _agentConfigInfo = cloneDeep(
+                    agentConfigInfo,
+                  ) as AgentConfigInfo;
+                  _agentConfigInfo.modelComponentConfig.targetId = modelId;
+                  _agentConfigInfo.modelComponentConfig.name = name;
+                  setAgentConfigInfo(_agentConfigInfo);
+                }}
               />
-            )}
-
-            {/*配置区域*/}
-            <AgentArrangeConfig
-              extraComponent={
-                agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+              <div
+                className={cx(
+                  'flex-1',
+                  'flex',
+                  'overflow-y',
+                  styles['edit-content'],
+                )}
+              >
+                {/* 问答型智能体、应用页面 */}
+                {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
+                  // 系统提示词/用户提示词
                   <SystemUserTipsWord
-                    className={cx(styles['prompt-wrapper'], 'w-full')}
                     ref={systemUserTipsWordRef}
                     agentConfigInfo={agentConfigInfo}
                     valueUser={agentConfigInfo?.userPrompt}
@@ -1052,161 +1048,185 @@ const EditAgent: React.FC = () => {
                     variables={promptVariables}
                     skills={promptTools}
                   />
-                )
-              }
-              agentId={agentId}
-              agentConfigInfo={agentConfigInfo}
-              onChangeAgent={handleChangeAgent}
-              onInsertSystemPrompt={handleInsertSystemPrompt}
-              onVariablesChange={handleVariablesChange}
-              onToolsChange={handleToolsChange}
-            />
-          </div>
-        </div>
+                )}
 
-        {(!agentConfigInfo?.hideChatArea ||
-          pagePreviewData ||
-          isFileTreeVisible) && (
-          <div
-            style={{
-              flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-              minWidth:
-                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
-            }}
-          >
-            {/*预览与调试和预览页面*/}
-            <ResizableSplit
-              resetTrigger={
-                pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-              }
-              minRightWidth={530}
-              defaultLeftWidth={33}
-              left={
-                agentConfigInfo?.hideChatArea ? null : (
-                  // 预览与调试
-                  <PreviewAndDebug
-                    agentConfigInfo={agentConfigInfo}
-                    agentId={agentId}
-                    onPressDebug={() =>
-                      handleClosePreview(EditAgentShowType.Debug_Details)
-                    }
-                    onAgentConfigInfo={setAgentConfigInfo}
-                    onOpenPreview={handleOpenPreview}
-                    onChangeSelectedComputerId={setCurrentSelectedComputerId}
-                  />
-                )
-              }
-              right={
-                // 页面预览可见时，显示页面预览
-                pagePreviewData && !isFileTreeVisible ? (
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!agentConfigInfo?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                  />
-                ) : (
-                  isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
-                  devConversationId && (
-                    <div
-                      className={cx(
-                        styles['file-tree-sidebar'],
-                        'flex',
-                        'w-full',
-                      )}
-                    >
-                      {/*文件树侧边栏 - 只在文件树可见时显示 */}
-                      <FileTreeView
-                        taskAgentSelectedFileId={taskAgentSelectedFileId}
-                        taskAgentSelectTrigger={taskAgentSelectTrigger}
-                        originalFiles={fileTreeData}
-                        fileTreeDataLoading={fileTreeDataLoading}
-                        targetId={devConversationId.toString()}
-                        viewMode={viewMode}
-                        readOnly={false}
-                        // 导出项目
-                        onExportProject={handleExportProject}
-                        // 上传文件
-                        onUploadFiles={handleUploadMultipleFiles}
-                        // 重命名文件
-                        onRenameFile={handleConfirmRenameFile}
-                        // 新建文件、文件夹
-                        onCreateFileNode={handleCreateFileNode}
-                        // 删除文件
-                        onDeleteFile={handleDeleteFile}
-                        // 保存文件
-                        onSaveFiles={handleSaveFiles}
-                        // 用户选择的智能体电脑ID
-                        agentSandboxId={finalSelectedComputerId}
-                        // 用户选择的智能体电脑名称
-                        agentSandboxName={''}
-                        // 重启容器
-                        onRestartServer={() =>
-                          restartVncPod(
-                            devConversationId,
-                            finalSelectedComputerId,
-                          )
+                {/*配置区域*/}
+                <AgentArrangeConfig
+                  extraComponent={
+                    agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                      <SystemUserTipsWord
+                        className={cx(styles['prompt-wrapper'], 'w-full')}
+                        ref={systemUserTipsWordRef}
+                        agentConfigInfo={agentConfigInfo}
+                        valueUser={agentConfigInfo?.userPrompt}
+                        valueSystem={agentConfigInfo?.systemPrompt}
+                        onChangeUser={(value) =>
+                          handleChangeAgent(value, 'userPrompt')
                         }
-                        // 重启智能体
-                        onRestartAgent={() => restartAgent(devConversationId)}
-                        // 关闭整个面板
-                        onClose={closePreviewView}
-                        // 文件树是否固定（用户点击后固定）
-                        isFileTreePinned={isFileTreePinned}
-                        // 文件树固定状态变化回调
-                        onFileTreePinnedChange={setIsFileTreePinned}
-                        isCanDeleteSkillFile={true}
-                        // 刷新文件树回调
-                        onRefreshFileTree={() =>
-                          handleRefreshFileList(devConversationId)
+                        onChangeSystem={(value) =>
+                          handleChangeAgent(value, 'systemPrompt')
                         }
-                        // VNC 空闲检测配置（仅通用型智能体启用）
-                        idleDetection={{
-                          enabled:
-                            agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-                          onIdleTimeout: () =>
-                            openPreviewView(devConversationId),
-                        }}
-                        hideDesktop={agentConfigInfo?.hideDesktop}
-                        // 静态资源文件基础路径
-                        staticFileBasePath={`/api/computer/static/${devConversationId}`}
+                        onReplace={(value) =>
+                          handleChangeAgent(value!, 'systemPrompt')
+                        }
+                        variables={promptVariables}
+                        skills={promptTools}
                       />
-                    </div>
-                  )
-                )
-              }
-            />
-          </div>
-        )}
+                    )
+                  }
+                  agentId={agentId}
+                  agentConfigInfo={agentConfigInfo}
+                  onChangeAgent={handleChangeAgent}
+                  onInsertSystemPrompt={handleInsertSystemPrompt}
+                  onVariablesChange={handleVariablesChange}
+                  onToolsChange={handleToolsChange}
+                />
+              </div>
+            </div>
 
-        {/*调试详情*/}
-        <DebugDetails
-          visible={showType === EditAgentShowType.Debug_Details}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        {/*展示台*/}
-        <ShowStand
-          cardList={cardList}
-          visible={showType === EditAgentShowType.Show_Stand}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        {/*版本历史*/}
-        <VersionHistory
-          targetId={agentId}
-          targetName={agentConfigInfo?.name}
-          targetType={AgentComponentTypeEnum.Agent}
-          permissions={agentConfigInfo?.permissions || []}
-          visible={showType === EditAgentShowType.Version_History}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        {/*订阅设置*/}
-        <SubscriptionSetting
-          agentId={agentId}
-          spaceId={spaceId}
-          visible={showType === EditAgentShowType.Subscription_Setting}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
+            {(!agentConfigInfo?.hideChatArea ||
+              pagePreviewData ||
+              isFileTreeVisible) && (
+              <div
+                style={{
+                  flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+                  minWidth:
+                    pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
+                }}
+              >
+                {/*预览与调试和预览页面*/}
+                <ResizableSplit
+                  resetTrigger={
+                    pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+                  }
+                  minRightWidth={530}
+                  defaultLeftWidth={33}
+                  left={
+                    agentConfigInfo?.hideChatArea ? null : (
+                      // 预览与调试
+                      <PreviewAndDebug
+                        agentConfigInfo={agentConfigInfo}
+                        agentId={agentId}
+                        onPressDebug={() =>
+                          handleClosePreview(EditAgentShowType.Debug_Details)
+                        }
+                        onAgentConfigInfo={setAgentConfigInfo}
+                        onOpenPreview={handleOpenPreview}
+                        onChangeSelectedComputerId={
+                          setCurrentSelectedComputerId
+                        }
+                      />
+                    )
+                  }
+                  right={
+                    // 页面预览可见时，显示页面预览
+                    pagePreviewData && !isFileTreeVisible ? (
+                      <PagePreviewIframe
+                        pagePreviewData={pagePreviewData}
+                        showHeader={true}
+                        onClose={hidePagePreview}
+                        showCloseButton={!agentConfigInfo?.hideChatArea}
+                        titleClassName={cx(styles['title-style'])}
+                      />
+                    ) : (
+                      isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                      devConversationId && (
+                        <div
+                          className={cx(
+                            styles['file-tree-sidebar'],
+                            'flex',
+                            'w-full',
+                          )}
+                        >
+                          {/*文件树侧边栏 - 只在文件树可见时显示 */}
+                          <FileTreeView
+                            taskAgentSelectedFileId={taskAgentSelectedFileId}
+                            taskAgentSelectTrigger={taskAgentSelectTrigger}
+                            originalFiles={fileTreeData}
+                            fileTreeDataLoading={fileTreeDataLoading}
+                            targetId={devConversationId.toString()}
+                            viewMode={viewMode}
+                            readOnly={false}
+                            // 导出项目
+                            onExportProject={handleExportProject}
+                            // 上传文件
+                            onUploadFiles={handleUploadMultipleFiles}
+                            // 重命名文件
+                            onRenameFile={handleConfirmRenameFile}
+                            // 新建文件、文件夹
+                            onCreateFileNode={handleCreateFileNode}
+                            // 删除文件
+                            onDeleteFile={handleDeleteFile}
+                            // 保存文件
+                            onSaveFiles={handleSaveFiles}
+                            // 用户选择的智能体电脑ID
+                            agentSandboxId={finalSelectedComputerId}
+                            // 用户选择的智能体电脑名称
+                            agentSandboxName={''}
+                            // 重启容器
+                            onRestartServer={() =>
+                              restartVncPod(
+                                devConversationId,
+                                finalSelectedComputerId,
+                              )
+                            }
+                            // 重启智能体
+                            onRestartAgent={() =>
+                              restartAgent(devConversationId)
+                            }
+                            // 关闭整个面板
+                            onClose={closePreviewView}
+                            // 文件树是否固定（用户点击后固定）
+                            isFileTreePinned={isFileTreePinned}
+                            // 文件树固定状态变化回调
+                            onFileTreePinnedChange={setIsFileTreePinned}
+                            isCanDeleteSkillFile={true}
+                            // 刷新文件树回调
+                            onRefreshFileTree={() =>
+                              handleRefreshFileList(devConversationId)
+                            }
+                            // VNC 空闲检测配置（仅通用型智能体启用）
+                            idleDetection={{
+                              enabled:
+                                agentConfigInfo?.type ===
+                                AgentTypeEnum.TaskAgent,
+                              onIdleTimeout: () =>
+                                openPreviewView(devConversationId),
+                            }}
+                            hideDesktop={agentConfigInfo?.hideDesktop}
+                            // 静态资源文件基础路径
+                            staticFileBasePath={`/api/computer/static/${devConversationId}`}
+                          />
+                        </div>
+                      )
+                    )
+                  }
+                />
+              </div>
+            )}
+
+            {/*调试详情*/}
+            <DebugDetails
+              visible={showType === EditAgentShowType.Debug_Details}
+              onClose={() => setShowType(EditAgentShowType.Hide)}
+            />
+            {/*展示台*/}
+            <ShowStand
+              cardList={cardList}
+              visible={showType === EditAgentShowType.Show_Stand}
+              onClose={() => setShowType(EditAgentShowType.Hide)}
+            />
+            {/*版本历史*/}
+            <VersionHistory
+              targetId={agentId}
+              targetName={agentConfigInfo?.name}
+              targetType={AgentComponentTypeEnum.Agent}
+              permissions={agentConfigInfo?.permissions || []}
+              visible={showType === EditAgentShowType.Version_History}
+              onClose={() => setShowType(EditAgentShowType.Hide)}
+            />
+          </>
+        )}
       </section>
       {/*发布智能体弹窗*/}
       <PublishComponentModal

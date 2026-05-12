@@ -58,7 +58,7 @@ export interface SubscriptionPlanInfo {
   // 价格
   price: number;
   // 首次订阅价格
-  firstPrice: number;
+  firstPrice?: number;
   // 周期：1-月，3-季度，12-年,可用值:MONTH,QUARTER,YEAR,FOREVER
   period: SubscriptionPlanPeriodEnum;
   // 每月赠送积分
@@ -88,8 +88,44 @@ export interface SubscriptionPlanInfo {
   // 修改时间
   modified?: string;
 
-  // 列表展示字段
-  features?: any[];
+  /*订阅计划的权限分组项 */
+  itemGroups?: {
+    /*分组描述 */
+    name?: string;
+
+    /*分组描述 */
+    description?: string;
+
+    /*分组类型,可用值:BASE,MODEL,AGENT,APP,KB,API */
+    groupType?: string;
+
+    /*分组项 */
+    items?: {
+      /*名称 */
+      name?: string;
+
+      /*描述 */
+      description?: string;
+
+      /*图标 */
+      icon?: string;
+
+      /*是否选中 */
+      selected?: boolean;
+    }[];
+
+    /*开放API权限配置 */
+    openApiConfigs?: {
+      /*开放api key */
+      key?: string;
+
+      /*接口调用频率限制，每分钟调用次数 */
+      rpm?: Record<string, unknown>;
+
+      /*接口调用频率限制，每天调用次数 */
+      rpd?: Record<string, unknown>;
+    }[];
+  }[];
 }
 
 // 修改订阅计划排序项
