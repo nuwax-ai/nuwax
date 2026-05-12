@@ -1,3 +1,19 @@
+export enum DailyRevenueStatusEnum {
+  Pending = 'PENDING',
+  WithdrawApplying = 'WITHDRAW_APPLYING',
+  Paying = 'PAYING',
+  Settled = 'SETTLED',
+}
+
+export interface DailyRevenueRecord {
+  id: number;
+  userId: number;
+  dt: string;
+  amount: number;
+  status: DailyRevenueStatusEnum;
+  created: string;
+}
+
 export enum SubscriptionStatusEnum {
   Active = 'active',
   Expired = 'expired',

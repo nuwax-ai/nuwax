@@ -1,0 +1,132 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.earnings-items {
+  display: flex;
+  flex-direction: column;
+  gap: @marginLg;
+
+  .earning-item {
+    display: flex;
+    align-items: center;
+    padding: @paddingLg;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    border: 1px solid @colorBorderSecondary;
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    cursor: pointer;
+
+    &:hover {
+      background: @colorBgContainer;
+      border-color: @colorPrimaryBorder;
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px -5px rgba(48, 113, 242, 12%);
+
+      .amount-section {
+        .amount {
+          transform: scale(1.05);
+        }
+
+        .arrow {
+          color: @colorPrimary;
+          transform: translateX(4px);
+        }
+      }
+    }
+
+    .date-badge {
+      width: 64px;
+      height: 64px;
+      background: @colorFillSecondary;
+      border-radius: @borderRadius;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-right: @marginLg;
+      flex-shrink: 0;
+
+      .day {
+        font-size: 26px;
+        font-weight: @fontWeightStrong;
+        color: @colorText;
+        line-height: 1;
+      }
+
+      .month {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        margin-top: 4px;
+      }
+    }
+
+    .info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      .date-str {
+        font-size: @fontSize;
+        font-weight: 500;
+        color: @colorText;
+      }
+
+      .status-tag {
+        align-self: flex-start;
+        padding: 2px 10px;
+        border-radius: 4px;
+        font-size: @fontSizeSm;
+        font-weight: 500;
+
+        &.status-pending {
+          background: @blue-1;
+          color: @blue-6;
+        }
+
+        &.status-settled {
+          background: @green-1;
+          color: @green-6;
+        }
+
+        &.status-applying {
+          background: @orange-1;
+          color: @orange-6;
+        }
+
+        &.status-paying {
+          background: @purple-1;
+          color: @purple-6;
+        }
+      }
+    }
+
+    .amount-section {
+      display: flex;
+      align-items: center;
+      gap: @margin;
+
+      .amount {
+        font-size: @fontSizeHeading4;
+        font-weight: @fontWeightStrong;
+        color: @colorSuccess;
+        font-family: Outfit, sans-serif;
+        transition: transform 0.3s;
+      }
+
+      .arrow {
+        color: @colorTextDescription;
+        font-size: @fontSize;
+        transition: all 0.3s;
+      }
+    }
+  }
+
+  .empty-state {
+    padding: 64px 0;
+    text-align: center;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    border: 1px dashed @colorBorderSecondary;
+  }
+}
