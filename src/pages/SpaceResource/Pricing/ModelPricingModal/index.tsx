@@ -244,7 +244,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       title={
         isEdit
           ? dict('PC.Pages.SpaceResourcePricing.editModelPricing')
-          : dict('PC.Pages.SpaceResourcePricing.addModel')
+          : dict('PC.Pages.SpaceResourcePricing.addModelPricing')
       }
       open={open}
       form={form}

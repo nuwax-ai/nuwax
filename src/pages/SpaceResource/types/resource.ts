@@ -39,6 +39,12 @@ export enum ToolPricingPricingType {
   TIERED = 'TIERED',
 }
 
+// 状态：0-禁用（关闭付费），1-启用（开启收费）
+export enum ResourcePricingStatus {
+  DISABLED = 0, // 禁用
+  ENABLED = 1, // 启用
+}
+
 // 资源定价 - 工具定价信息
 export interface ToolPricingInfo {
   /*定价对象类型,可用值:AGENT,SKILL,PLUGIN,WORKFLOW,MCP,MODEL */
@@ -57,7 +63,7 @@ export interface ToolPricingInfo {
   trialCount?: number;
 
   // 状态：0-禁用（关闭付费），1-启用（开启收费）
-  status?: number;
+  status?: ResourcePricingStatus;
 
   /*工作空间ID，默认-1，工作空间下的定价管理时，该字段为必须 */
   spaceId?: number;
@@ -129,7 +135,7 @@ export interface ListPricingConfigsParams {
   pricingType?: ToolPricingPricingType;
 
   /*状态：0-禁用，1-启用 */
-  status?: number;
+  status?: ResourcePricingStatus;
 
   /*工作空间ID，系统管理端传-1 */
   spaceId: number;

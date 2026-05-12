@@ -1,14 +1,6 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import {
-  apiCreateSkillPricing,
-  apiDeleteSkillPricing,
-  apiListPricingConfig,
-  apiListSkillPricing,
-  apiToggleSkillPricing,
-  apiUpdateSkillPricing,
-} from '@/pages/SpaceResource/services/resource';
 import { dict } from '@/services/i18nRuntime';
 import type { SkillPricingInfo } from '@/types/interfaces/subscription';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -29,10 +21,22 @@ import {
   message,
 } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
-import { useParams } from 'umi';
+import { useParams, useRequest } from 'umi';
+import {
+  apiCreateSkillPricing,
+  apiDeleteSkillPricing,
+  apiDeleteToolPricing,
+  apiListPricingConfig,
+  apiListSkillPricing,
+  apiToggleSkillPricing,
+  apiUpdateSkillPricing,
+  apiUpdateToolPricing,
+} from '../services/resource';
 import {
   QueryPricingConfigInfo,
+  ResourcePricingStatus,
   ToolPricingInfo,
+  ToolPricingPricingType,
   ToolPricingTargetType,
 } from '../types/resource';
 import styles from './index.less';
@@ -68,81 +72,19 @@ const CATEGORY_MAP: Record<string, { color: string; label: string }> = {
   },
 };
 
+// 定价类型标签映射
+const PRICING_TYPE_LABEL_MAP: Record<ToolPricingPricingType, string> = {
+  [ToolPricingPricingType.ONE_TIME]: '单次',
+  [ToolPricingPricingType.BUYOUT]: '买断',
+  [ToolPricingPricingType.MONTHLY]: '包月',
+  [ToolPricingPricingType.SUBSCRIPTION_PLAN]: '订阅计划',
+  [ToolPricingPricingType.TIERED]: '阶梯计费',
+};
+
 function getCatTag(cat: string) {
   const c = CATEGORY_MAP[cat];
   return c ? <Tag color={c.color}>{c.label}</Tag> : <Tag>{cat}</Tag>;
 }
-
-// ─── Modal selector catalogs ───
-
-// const TOOL_CATALOG: { name: string; category: string; description: string }[] =
-//   [
-//     {
-//       name: 'GPT-4o 文本生成',
-//       category: 'plugin',
-//       description: '支持多轮对话与复杂推理任务，高精度自然语言生成',
-//     },
-//     {
-//       name: 'DALL·E 图像生成',
-//       category: 'plugin',
-//       description: '根据文本描述生成高质量图像，支持多种风格',
-//     },
-//     {
-//       name: '语音识别引擎',
-//       category: 'plugin',
-//       description: '多语种语音转文字，支持实时流式识别',
-//     },
-//     {
-//       name: '视频分析插件',
-//       category: 'plugin',
-//       description: '视频内容识别、场景检测与物体追踪',
-//     },
-//     {
-//       name: '数据可视化引擎',
-//       category: 'plugin',
-//       description: '将原始数据转换为交互式图表与仪表盘',
-//     },
-//     {
-//       name: 'PDF 解析插件',
-//       category: 'plugin',
-//       description: '高效解析 PDF 文档，提取文本、表格与图片',
-//     },
-//     {
-//       name: 'Claude 长文本分析',
-//       category: 'workflow',
-//       description: '超长上下文窗口，适合文档分析与摘要',
-//     },
-//     {
-//       name: '日报自动生成',
-//       category: 'workflow',
-//       description: '每日自动汇总数据并生成结构化报告',
-//     },
-//     {
-//       name: '客户支持工作流',
-//       category: 'workflow',
-//       description: '自动分类、分配和响应客户工单',
-//     },
-//     {
-//       name: '数据ETL工作流',
-//       category: 'workflow',
-//       description: '定时抽取、转换和加载数据到目标系统',
-//     },
-//     {
-//       name: '文件搜索 MCP',
-//       category: 'mcp',
-//       description: '通过 MCP 协议提供本地文件智能搜索能力',
-//     },
-//     {
-//       name: '数据库查询 MCP',
-//       category: 'mcp',
-//       description: '通过 MCP 协议执行数据库查询与结果返回',
-//     },
-//     {
-//       name: '网络抓取 MCP',
-//       category: 'mcp',
-//       description: '通过 MCP 协议抓取网页内容并结构化输出',
-//     },
-//   ];
 
 const SKILL_CATALOG: { name: string; category: string; description: string }[] =
   [
@@ -200,23 +142,43 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
   const [form] = Form.useForm();
   const actionRef = useRef<ActionType>();
 
-  // const { run: listPricingConfig } = useRequest(apiListPricingConfig, {
-  //   manual: true,
-  //   onSuccess: (data: QueryPricingConfigInfo[]) => {
-  //     setList(data || []);
-  //   },
-  // });
+  // 删除定价配置
+  const { run: removePricingConfig } = useRequest(apiDeleteToolPricing, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
+      actionRef.current?.reload();
+    },
+    onError: () => {
+      message.error(dict('PC.Common.Global.operationFailed'));
+    },
+  });
 
+  // 更新定价配置（切换收费状态）
+  const { run: runUpdateToolPricing } = useRequest(apiUpdateToolPricing, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Common.Global.operationSuccess'));
+      actionRef.current?.reload();
+    },
+    onError: () => {
+      message.error(dict('PC.Common.Global.operationFailed'));
+    },
+  });
+
+  // 新增模型定价
   const openAdd = () => {
     setEditItem(null);
     setModalOpen(true);
   };
 
+  // 编辑模型定价
   const openEdit = (item: QueryPricingConfigInfo) => {
     setEditItem(item);
     setModalOpen(true);
   };
 
+  // 获取模型定价列表
   const request = async () => {
     setLoading(true);
     const res = await apiListPricingConfig({
@@ -240,34 +202,39 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
     };
   };
 
+  // 删除模型定价
   const handleDelete = (item: QueryPricingConfigInfo) => {
     modalConfirm(
       dict('PC.Common.Global.confirmDelete'),
       item.targetObjectInfo?.name || '',
-      async () => {
-        // try {
-        //   const tierIds = item.tiers
-        //     .map((tier) => tier.id)
-        //     .filter((id): id is number => !!id);
-        //   if (tierIds.length) {
-        //     await Promise.all(tierIds.map((id) => apiDeleteModelPricing(id)));
-        //   }
-        //   message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-        //   await loadModelPricingList();
-        // } catch (error) {
-        //   message.error(dict('PC.Common.Global.operationFailed'));
-        // }
-      },
+      () => removePricingConfig(item.id),
     );
   };
 
+  /**
+   * 切换模型定价状态（开启/关闭收费）
+   */
+  const handleToggleStatus = (
+    item: QueryPricingConfigInfo,
+    checked: boolean,
+  ) => {
+    runUpdateToolPricing({
+      ...item,
+      status: checked
+        ? ResourcePricingStatus.ENABLED
+        : ResourcePricingStatus.DISABLED,
+    });
+  };
+
+  // 模型定价列表列配置
   const columns: ProColumns<QueryPricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.modelName'),
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'targetId',
+      key: 'targetId',
       width: 200,
-      render: (_, record) => record.targetObjectInfo?.name || '',
+      fixed: 'left',
+      render: (_, record) => record.targetId || '',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.provider'),
@@ -277,35 +244,69 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       render: (_, record) => record.targetObjectInfo?.name || '',
     },
     {
+      title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
+      dataIndex: 'pricingType',
+      key: 'pricingType',
+      width: 120,
+      render: (_, record) =>
+        record.pricingType
+          ? PRICING_TYPE_LABEL_MAP[
+              record.pricingType as ToolPricingPricingType
+            ] || record.pricingType
+          : '',
+    },
+    // 定价档位
+    {
       title: dict('PC.Pages.SpaceResourcePricing.pricingTier'),
       key: 'tiers',
-      width: 340,
       render: (_, record) => (
         <div className={styles.tierTags}>
+          {/* 模型阶梯价格配置 */}
           {(record.modelPriceTiers || []).map((tier, index) => (
-            <Tag key={index} color="blue" className={styles.tierTag}>
-              {tier.contextLength}K |{' '}
-              {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
-              {formatPrice(tier.inputPrice)} |{' '}
-              {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
-              {formatPrice(tier.outputPrice)}
-              {tier.cachePrice > 0
-                ? ` | ${dict(
-                    'PC.Pages.SpaceResourcePricing.cachePriceLabel',
-                  )}¥${formatPrice(tier.cachePrice)}`
-                : ''}
+            <Tag key={index} className={styles.tierTag}>
+              <span
+                className={styles.tierTagContext}
+              >{`≤${tier.contextLength}K`}</span>
+              <span className={styles.tierTagSeparator}>|</span>
+              <span className={styles.tierTagPriceItem}>
+                {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
+                {formatPrice(tier.inputPrice)}
+              </span>
+              <span className={styles.tierTagSeparator}>|</span>
+              <span className={styles.tierTagPriceItem}>
+                {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
+                {formatPrice(tier.outputPrice)}
+              </span>
+              {/* 缓存价格 */}
+              {tier.cachePrice > 0 ? (
+                <>
+                  <span className={styles.tierTagSeparator}>|</span>
+                  <span className={styles.tierTagCachePrice}>
+                    {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
+                    {formatPrice(tier.cachePrice)}
+                  </span>
+                </>
+              ) : (
+                ''
+              )}
             </Tag>
           ))}
         </div>
       ),
     },
+    // 计费开关
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       key: 'enabled',
       width: 100,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
-        <Switch size="small" checked={record.status === 1} disabled />
+        <Switch
+          size="small"
+          checked={record.status === ResourcePricingStatus.ENABLED}
+          onChange={(checked) => handleToggleStatus(record, checked)}
+        />
       ),
     },
     {
@@ -313,6 +314,7 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
       key: 'action',
       width: 120,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <TableActions
           record={record}
@@ -350,7 +352,6 @@ const ModelPricingTab: React.FC<{ spaceId: number }> = ({ spaceId }) => {
         columns={columns}
         loading={loading}
         pagination={false}
-        search={false}
         request={request}
       />
       <ModelPricingModal
