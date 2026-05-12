@@ -18,8 +18,12 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
 
 interface SubscriptionPlanCardProps {
   plan: SubscriptionPlanInfo;
+  updateLoading?: boolean;
+  // 切换套餐状态
   onToggle: (planId: number, checked: boolean) => void;
+  // 编辑套餐
   onEdit: (plan: SubscriptionPlanInfo) => void;
+  // 删除套餐
   onDelete: (planId: number) => void;
 }
 
@@ -28,6 +32,7 @@ interface SubscriptionPlanCardProps {
  */
 const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
   plan,
+  updateLoading,
   onToggle,
   onEdit,
   onDelete,
@@ -57,6 +62,7 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
       <div className={cx(styles['card-footer'])}>
         <Switch
           size="small"
+          loading={updateLoading}
           checked={plan.status === SubscriptionPlanStatusEnum.Online}
           onChange={(checked) => onToggle(plan.id || 0, checked)}
         />

@@ -8,17 +8,21 @@ import {
   ResourcePricingStatus,
   ToolPricingTargetType,
 } from '@/pages/SpaceResource/types/resource';
-import { SubscriptionPlanInfo } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
-import { dict } from '@/services/i18nRuntime';
 import {
-  apiDeletePricingPlan,
-  apiTogglePricingPlan,
-} from '@/services/subscriptionService';
+  SubscriptionPlanInfo,
+  SubscriptionPlanStatusEnum,
+} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { dict } from '@/services/i18nRuntime';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, InputNumber, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-import { apiGetAgentSubscriptionPlanList } from '../services/agent-subscription-plan';
+import {
+  apiDeleteAgentSubscriptionPlan,
+  apiGetAgentSubscriptionPlanList,
+  apiUpdateAgentSubscriptionPlan,
+} from '../services/agent-subscription-plan';
 import CreatePlanModal from './CreatePlanModal';
 import SubscriptionPlanCard from './SubscriptionPlanCard';
 import styles from './index.less';
@@ -38,7 +42,9 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   visible,
 }) => {
   const [form] = Form.useForm();
+  // 套餐列表
   const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
+  // 保存中
   const [saving, setSaving] = useState<boolean>(false);
   // 订阅模式是否开启
   const [subscriptionEnabled, setSubscriptionEnabled] =
@@ -71,14 +77,21 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     });
   };
 
-  const { run: runTogglePlan } = useRequest(apiTogglePricingPlan, {
+  // 修改订阅计划（上线/下线）
+  const {
+    run: runUpdateAgentSubscriptionPlan,
+    loading: updatingSubscriptionPlan,
+  } = useRequest(apiUpdateAgentSubscriptionPlan, {
     manual: true,
+    loadingDelay: 300,
     onSuccess: () => {
       loadAgentPlans();
+      message.success('套餐状态修改成功');
     },
   });
 
-  const { run: runDeletePlan } = useRequest(apiDeletePricingPlan, {
+  // 删除订阅计划
+  const { run: runDeletePlan } = useRequest(apiDeleteAgentSubscriptionPlan, {
     manual: true,
     onSuccess: () => {
       message.success(dict('PC.Common.Global.deleteSuccess'));
@@ -150,6 +163,36 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   const handleEditPlan = (plan: SubscriptionPlanInfo) => {
     setEditingPlan(plan);
     setCreateModalOpen(true);
+  };
+
+  /**
+   * 切换套餐状态（上线/下线）
+   */
+  const handleTogglePlanStatus = (
+    plan: SubscriptionPlanInfo,
+    checked: boolean,
+  ) => {
+    if (!plan.id) {
+      return;
+    }
+    runUpdateAgentSubscriptionPlan({
+      ...plan,
+      status: checked
+        ? SubscriptionPlanStatusEnum.Online
+        : SubscriptionPlanStatusEnum.Offline,
+    });
+  };
+
+  /**
+   * 删除套餐（二次确认）
+   */
+  const handleDeletePlan = (plan: SubscriptionPlanInfo) => {
+    if (!plan.id) {
+      return;
+    }
+    modalConfirm(dict('PC.Common.Global.confirmDelete'), plan.name || '', () =>
+      runDeletePlan(plan.id as number),
+    );
   };
 
   // 切换订阅模式
@@ -250,9 +293,10 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
           <SubscriptionPlanCard
             key={plan.id}
             plan={plan}
-            onToggle={(planId, checked) => runTogglePlan(planId, checked)}
+            updateLoading={updatingSubscriptionPlan}
+            onToggle={(_, checked) => handleTogglePlanStatus(plan, checked)}
             onEdit={handleEditPlan}
-            onDelete={(planId) => runDeletePlan(planId)}
+            onDelete={() => handleDeletePlan(plan)}
           />
         ))}
       </div>
