@@ -1,6 +1,7 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   AdminOrderInfo,
+  AdminPaymentOrderRecord,
   AgentSubscriptionConfig,
   AgentSubscriptionPlan,
   BillOrderInfo,
@@ -441,6 +442,31 @@ export async function apiListAdminPaymentOrders(params: {
   pageSize?: number;
 }): Promise<RequestResponse<{ list: AdminOrderInfo[]; total: number }>> {
   return request('/api/system/payment-orders', { method: 'GET', params });
+}
+
+/**
+ * 分页查询系统支付订单（新版）
+ */
+export async function apiPageAdminPaymentOrders(data: {
+  bizOrderNo?: string;
+  paymentStatus?: string;
+  payChannel?: string;
+  createdStart?: string;
+  createdEnd?: string;
+  page: number;
+  pageSize: number;
+}): Promise<
+  RequestResponse<{
+    records: AdminPaymentOrderRecord[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }>
+> {
+  return request('/api/system/pay/order/page', {
+    method: 'POST',
+    data,
+  });
 }
 
 // ──────────────────────────────────────────────

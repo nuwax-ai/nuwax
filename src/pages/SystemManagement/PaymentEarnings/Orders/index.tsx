@@ -1,255 +1,129 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { dict } from '@/services/i18nRuntime';
-import { apiListAdminPaymentOrders } from '@/services/subscriptionService';
-import type { AdminOrderInfo } from '@/types/interfaces/subscription';
 import {
-  OrderStatusEnum,
-  OrderTypeEnum,
-} from '@/types/interfaces/subscription';
-import { copyTextToClipboard } from '@/utils/clipboard';
-import { formatDateTime } from '@/utils/dateUtils';
-import { CopyOutlined } from '@ant-design/icons';
+  getPayChannelValueEnum,
+  getPaymentStatusConfig,
+  getPaymentStatusValueEnum,
+} from '@/constants/subscription.constants';
+import { dict } from '@/services/i18nRuntime';
+import { apiPageAdminPaymentOrders } from '@/services/subscriptionService';
+import type { AdminPaymentOrderRecord } from '@/types/interfaces/subscription';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Col, Row, Statistic, Tag, Tooltip, message } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
-import OrderDetailDrawer from './OrderDetailDrawer';
-
-interface PaymentOrderExt extends AdminOrderInfo {
-  netAmount: number;
-  serviceFee: number;
-  paidAt: string;
-}
-
-const MOCK_PAYMENT_ORDERS: PaymentOrderExt[] = [
-  {
-    id: 1,
-    userName: 'Alice Wang',
-    orderNo: 'ORD20260401001',
-    productName: 'Basic Plan',
-    orderType: OrderTypeEnum.Subscription,
-    amount: 99,
-    netAmount: 97.02,
-    serviceFee: 1.98,
-    payMethod: '微信支付',
-    status: OrderStatusEnum.Paid,
-    createdAt: '2026-04-01T10:30:00Z',
-    paidAt: '2026-04-01T10:31:22Z',
-  },
-  {
-    id: 2,
-    userName: 'Bob Li',
-    orderNo: 'ORD20260315001',
-    productName: 'Pro Plan',
-    orderType: OrderTypeEnum.Subscription,
-    amount: 269,
-    netAmount: 263.62,
-    serviceFee: 5.38,
-    payMethod: '支付宝',
-    status: OrderStatusEnum.Paid,
-    createdAt: '2026-03-15T14:20:00Z',
-    paidAt: '2026-03-15T14:21:05Z',
-  },
-  {
-    id: 3,
-    userName: 'Diana Chen',
-    orderNo: 'ORD20260220001',
-    productName: '100 积分包',
-    orderType: OrderTypeEnum.Credits,
-    amount: 10,
-    netAmount: 9.8,
-    serviceFee: 0.2,
-    payMethod: '微信支付',
-    status: OrderStatusEnum.Refunded,
-    createdAt: '2026-02-20T09:00:00Z',
-    paidAt: '2026-02-20T09:01:30Z',
-  },
-  {
-    id: 4,
-    userName: 'Eric Zhang',
-    orderNo: 'ORD20260415001',
-    productName: '企业包 10000 积分',
-    orderType: OrderTypeEnum.Credits,
-    amount: 600,
-    netAmount: 588.0,
-    serviceFee: 12.0,
-    payMethod: '支付宝',
-    status: OrderStatusEnum.Paid,
-    createdAt: '2026-04-15T16:00:00Z',
-    paidAt: '2026-04-15T16:02:10Z',
-  },
-  {
-    id: 5,
-    userName: 'Fiona Liu',
-    orderNo: 'ORD20260429001',
-    productName: 'Enterprise Plan',
-    orderType: OrderTypeEnum.Subscription,
-    amount: 999,
-    netAmount: 0,
-    serviceFee: 0,
-    status: OrderStatusEnum.Pending,
-    createdAt: '2026-04-29T08:30:00Z',
-    paidAt: '',
-  },
-];
-
-const MOCK_STATS = {
-  totalOrders: 1286,
-  totalAmount: 286500,
-  netAmount: 280770,
-  serviceFee: 5730,
-};
+import { Tag } from 'antd';
+import React, { useMemo, useState } from 'react';
+import OrderDetail from './components/OrderDetail';
 
 const Orders: React.FC = () => {
-  const [detailsVisible, setDetailsVisible] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState<any>();
-  const handleCloseDetails = useCallback(() => {
-    setDetailsVisible(false);
-    setCurrentRecord(undefined);
-  }, []);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [currentRow, setCurrentRow] = useState<AdminPaymentOrderRecord>();
 
-  const statusConfig = useMemo(
-    () => ({
-      [OrderStatusEnum.Paid]: {
-        color: 'success',
-        label: dict('PC.Pages.MorePage.MyOrders.statusPaid'),
-      },
-      [OrderStatusEnum.Pending]: {
-        color: 'warning',
-        label: dict('PC.Pages.MorePage.MyOrders.statusPending'),
-      },
-      [OrderStatusEnum.Refunded]: {
-        color: 'default',
-        label: dict('PC.Pages.MorePage.MyOrders.statusRefunded'),
-      },
-    }),
-    [],
-  );
+  const statusConfig = useMemo(() => getPaymentStatusConfig(), []);
+  const paymentStatusValueEnum = useMemo(() => getPaymentStatusValueEnum(), []);
+  const payChannelValueEnum = useMemo(() => getPayChannelValueEnum(), []);
 
-  const columns: ProColumns<PaymentOrderExt>[] = [
+  const columns: ProColumns<AdminPaymentOrderRecord>[] = [
     {
-      title: dict('PC.Pages.SystemSubsOrders.colUser'),
-      dataIndex: 'userName',
-      key: 'userName',
-      ellipsis: true,
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colStartTime',
+      ),
+      dataIndex: 'createdStart',
+      key: 'createdStart',
+      valueType: 'date',
+      hideInTable: true,
+      search: true,
     },
     {
-      title: dict('PC.Pages.MorePage.MyOrders.colOrderNo'),
-      dataIndex: 'orderNo',
-      key: 'orderNo',
-      ellipsis: true,
-      width: 200,
-      render: (_, record) => (
-        <span>
-          {record.orderNo}
-          <Tooltip title={dict('PC.Common.Global.copy')}>
-            <Button
-              type="text"
-              size="small"
-              icon={<CopyOutlined />}
-              onClick={() =>
-                copyTextToClipboard(record.orderNo, () =>
-                  message.success(dict('PC.Pages.MorePage.MyOrders.copied')),
-                )
-              }
-              style={{ marginLeft: 4 }}
-            />
-          </Tooltip>
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colEndTime',
+      ),
+      dataIndex: 'createdEnd',
+      key: 'createdEnd',
+      valueType: 'date',
+      hideInTable: true,
+      search: true,
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colPayMethod',
+      ),
+      dataIndex: 'payChannel',
+      key: 'payChannel',
+      valueType: 'select',
+      valueEnum: payChannelValueEnum,
+      render: (val: any) => val || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colAmount'),
+      dataIndex: 'orderAmount',
+      key: 'orderAmount',
+      search: false,
+      render: (val: any) => (
+        <span style={{ fontWeight: 600 }}>
+          ¥
+          {new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(
+            Number(val) || 0,
+          )}
         </span>
       ),
     },
     {
-      title: dict('PC.Pages.MorePage.MyOrders.colProduct'),
-      dataIndex: 'productName',
-      key: 'productName',
-      ellipsis: true,
-    },
-    {
-      title: dict('PC.Pages.MorePage.MyOrders.colType'),
-      dataIndex: 'orderType',
-      key: 'orderType',
-      search: false,
-      render: (_, record) =>
-        record.orderType === OrderTypeEnum.Subscription
-          ? dict('PC.Pages.MorePage.MyOrders.typeSubscription')
-          : dict('PC.Pages.MorePage.MyOrders.typeCredits'),
-    },
-    {
-      title: dict('PC.Pages.MorePage.MyOrders.colAmount'),
-      dataIndex: 'amount',
-      key: 'amount',
-      search: false,
-      render: (_, record) => (
-        <span style={{ fontWeight: 600 }}>¥{record.amount ?? 0}</span>
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colNetAmount',
       ),
-    },
-    {
-      title: dict('PC.Pages.SystemPaymentOrders.colNetAmount'),
       dataIndex: 'netAmount',
       key: 'netAmount',
       search: false,
-      render: (val: any) => `¥${(Number(val) || 0).toFixed(2)}`,
+      render: (val: any) =>
+        `¥${new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(
+          Number(val) || 0,
+        )}`,
     },
     {
-      title: dict('PC.Pages.SystemPaymentOrders.colServiceFee'),
-      dataIndex: 'serviceFee',
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colServiceFee',
+      ),
       key: 'serviceFee',
       search: false,
-      render: (val: any) => (
+      render: (_, record) => (
         <span style={{ color: '#ff4d4f' }}>
-          ¥{(Number(val) || 0).toFixed(2)}
+          ¥
+          {new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(
+            Number(record.platformFee) + Number(record.providerFee) || 0,
+          )}
         </span>
       ),
     },
     {
-      title: dict('PC.Pages.MorePage.MyOrders.colPayMethod'),
-      dataIndex: 'payMethod',
-      key: 'payMethod',
-      search: false,
+      title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colStatus'),
+      dataIndex: 'paymentStatus',
+      key: 'paymentStatus',
       valueType: 'select',
-      valueEnum: {
-        '': { text: dict('PC.Common.Global.all') },
-        wechat: { text: dict('PC.Pages.SystemPaymentOrders.payMethodWechat') },
-        alipay: { text: dict('PC.Pages.SystemPaymentOrders.payMethodAlipay') },
-        bank: { text: dict('PC.Pages.SystemPaymentOrders.payMethodBank') },
+      valueEnum: paymentStatusValueEnum,
+      render: (_, record) => {
+        const config = (statusConfig as any)[record.paymentStatus];
+        return config ? (
+          <Tag color={config.color}>{config.label}</Tag>
+        ) : (
+          record.paymentStatus
+        );
       },
-      render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.MorePage.MyOrders.colCreatedAt'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colCreateTime',
+      ),
+      dataIndex: 'created',
+      key: 'createTime',
       search: false,
-      render: (val) => formatDateTime(val),
+      valueType: 'dateTime',
     },
     {
-      title: dict('PC.Pages.SystemPaymentOrders.colPaidAt'),
-      dataIndex: 'paidAt',
+      title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colPaidAt'),
+      dataIndex: 'modified',
       key: 'paidAt',
       search: false,
-      render: (val) => (val ? formatDateTime(val) : '-'),
-    },
-    {
-      title: dict('PC.Pages.MorePage.MyOrders.colStatus'),
-      dataIndex: 'status',
-      key: 'status',
-      search: false,
-      render: (_, record) => {
-        const cfg = statusConfig[record.status];
-        return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
-      },
-      valueEnum: {
-        [OrderStatusEnum.Paid]: {
-          text: dict('PC.Pages.MorePage.MyOrders.statusPaid'),
-        },
-        [OrderStatusEnum.Pending]: {
-          text: dict('PC.Pages.MorePage.MyOrders.statusPending'),
-        },
-        [OrderStatusEnum.Refunded]: {
-          text: dict('PC.Pages.MorePage.MyOrders.statusRefunded'),
-        },
-      },
+      valueType: 'dateTime',
     },
     {
       title: dict('PC.Common.Global.action'),
@@ -262,10 +136,12 @@ const Orders: React.FC = () => {
           actions={[
             {
               key: 'detail',
-              label: dict('PC.Pages.SystemPaymentOrders.viewDetail'),
-              onClick: (r) => {
-                setCurrentRecord(r);
-                setDetailsVisible(true);
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Orders.viewDetail',
+              ),
+              onClick: () => {
+                setCurrentRow(record);
+                setDetailOpen(true);
               },
             },
           ]}
@@ -277,83 +153,50 @@ const Orders: React.FC = () => {
   return (
     <>
       <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
-        {/* 统计卡 */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title={dict('PC.Pages.SystemPaymentOrders.statTotalOrders')}
-                value={MOCK_STATS.totalOrders}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title={dict('PC.Pages.SystemPaymentOrders.statTotalAmount')}
-                value={MOCK_STATS.totalAmount}
-                precision={0}
-                prefix="¥"
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title={dict('PC.Pages.SystemPaymentOrders.statNetAmount')}
-                value={MOCK_STATS.netAmount}
-                precision={0}
-                prefix="¥"
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title={dict('PC.Pages.SystemPaymentOrders.statServiceFee')}
-                value={MOCK_STATS.serviceFee}
-                precision={0}
-                prefix="¥"
-                valueStyle={{ color: '#ff4d4f' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <XProTable<PaymentOrderExt>
+        <XProTable<AdminPaymentOrderRecord>
           rowKey="id"
           columns={columns}
           request={async (params) => {
             try {
-              const res = await apiListAdminPaymentOrders({
-                keyword: params.userName,
-                status: params.status,
-                orderType: params.orderType,
-                payMethod: params.payMethod,
-                pageNum: params.current,
-                pageSize: params.pageSize,
+              const {
+                current,
+                pageSize,
+                paymentStatus,
+                payChannel,
+                createdStart,
+                createdEnd,
+              } = params;
+              const res = await apiPageAdminPaymentOrders({
+                paymentStatus,
+                payChannel,
+                createdStart,
+                createdEnd,
+                page: current || 1,
+                pageSize: pageSize || 10,
               });
-              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+              if (res?.code === SUCCESS_CODE && res.data) {
                 return {
-                  data: res.data.list,
-                  total: res.data.total,
+                  data: res.data.records || [],
+                  total: res.data.total || 0,
                   success: true,
                 };
               }
-            } catch {}
+            } catch (err) {
+              console.error('Failed to fetch payment orders:', err);
+            }
             return {
-              data: MOCK_PAYMENT_ORDERS,
-              total: MOCK_PAYMENT_ORDERS.length,
+              data: [],
+              total: 0,
               success: true,
             };
           }}
         />
       </WorkspaceLayout>
-      <OrderDetailDrawer
-        open={detailsVisible}
-        record={currentRecord}
-        onClose={handleCloseDetails}
+
+      <OrderDetail
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        data={currentRow}
       />
     </>
   );

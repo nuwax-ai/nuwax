@@ -668,3 +668,38 @@ export interface SystemSubscriptionPlan {
   modified: string;
   itemGroups: SystemSubscriptionPlanGroup[];
 }
+
+export enum PaymentStatusEnum {
+  INIT = 'INIT',
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  CLOSED = 'CLOSED',
+}
+
+export enum PayChannelEnum {
+  WxPay = 'WxPay',
+  AliPay = 'AliPay',
+  UnionPay = 'UnionPay',
+}
+
+export interface AdminPaymentOrderRecord {
+  id: number;
+  tenantId: number;
+  bizOrderNo: string;
+  bizScene: string;
+  orderAmount: number;
+  subject: string;
+  payMode: string; // scan
+  payChannel: PayChannelEnum;
+  platformFee: number;
+  providerFee: number;
+  netAmount: number;
+  gatewayPaymentOrderNo: string;
+  gatewaySyncStatus: string; // PENDING, SUCCESS, FAILED
+  bizNotifyStatus: string; // POLLING, NOTIFIED, TIMEOUT
+  gatewayOrderStatus: string;
+  paymentStatus: PaymentStatusEnum;
+  created: string;
+  modified: string;
+}
