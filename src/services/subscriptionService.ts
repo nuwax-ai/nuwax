@@ -312,7 +312,7 @@ export async function apiGetCreditFlows(params: {
 // ──────────────────────────────────────────────
 
 export async function apiGetDevEarningsSummary(): Promise<
-  RequestResponse<DevEarningsSummaryInfo>
+  RequestResponse<any>
 > {
   return request('/api/system/dev-earnings-summary', { method: 'GET' });
 }
@@ -332,12 +332,11 @@ export async function apiListDevEarnings(params: {
 /**
  * 按租户查询进件
  */
-export async function apiGetMerchantOnboardingByTenantId(data: {
-  tenantId: number;
-}): Promise<RequestResponse<MerchantOnboardingData>> {
+export async function apiGetMerchantOnboardingByTenantId(): Promise<
+  RequestResponse<MerchantOnboardingData>
+> {
   return request('/api/system/pay/merchant-onboarding/get-by-tenant-id', {
     method: 'POST',
-    data,
   });
 }
 

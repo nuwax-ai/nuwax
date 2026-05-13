@@ -14,18 +14,6 @@
   }
 }
 
-.id-card-upload {
-  .upload-box {
-    height: 180px;
-  }
-}
-
-.license-upload {
-  .upload-box {
-    height: 240px;
-  }
-}
-
 .upload-box {
   display: flex;
   flex-direction: column;
@@ -41,6 +29,17 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
+
+  &.front,
+  &.back {
+    height: auto;
+    aspect-ratio: 85.6 / 54;
+  }
+
+  &.license {
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
 
   &:hover {
     border-color: @colorPrimary;
@@ -119,5 +118,79 @@
   .upload-hint {
     font-size: 13px;
     color: @colorTextDescription;
+  }
+}
+
+.actions-wrapper {
+  display: flex;
+  gap: @margin-sm;
+}
+
+.page-content {
+  padding-bottom: @padding-lg;
+}
+
+.status-alert {
+  margin-bottom: @margin-md;
+}
+
+.form-card {
+  margin-bottom: @margin-md;
+}
+
+.form-item-no-margin {
+  margin-bottom: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.audit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .audit-action {
+    color: @colorText;
+    font-weight: 500;
+  }
+
+  .audit-remark {
+    color: @colorTextDescription;
+    font-size: 13px;
+    background: @colorFillAlter;
+    padding: 8px;
+    border-radius: @borderRadius;
+    margin-top: 4px;
+  }
+
+  .audit-time {
+    color: @colorTextDescription;
+    font-size: 12px;
+  }
+}
+
+.no-data {
+  color: @colorTextDescription;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.status-icon {
+  &.draft {
+    color: @gold-6;
+  }
+
+  &.reviewing {
+    color: @blue-6;
+  }
+
+  &.approved {
+    color: @green-6;
+  }
+
+  &.rejected {
+    color: @red-6;
   }
 }
