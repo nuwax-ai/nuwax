@@ -29,7 +29,9 @@ import { Button, Form, InputNumber, message, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
+  apiCreateAgentSubscriptionOrder,
   apiDeleteAgentSubscriptionPlan,
+  apiGetAgentSubscriptionOrderCashier,
   apiGetAgentSubscriptionPlanList,
   apiUpdateAgentSubscriptionPlan,
   apiUpdateAgentSubscriptionPlanSort,
@@ -115,6 +117,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     }),
   );
 
+  // 查询订阅计划列表
   const { run: loadAgentSubscriptionPlans } = useRequest(
     apiGetAgentSubscriptionPlanList,
     {
@@ -261,8 +264,30 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   /**
    * 点击套餐卡片
    */
-  const handleClickPlanCard = (plan: SubscriptionPlanInfo) => {
-    console.log('[SubscriptionSetting] click plan card:', plan);
+  const handleClickPlanCard = async (plan: SubscriptionPlanInfo) => {
+    if (!plan.id || plan.status !== SubscriptionPlanStatusEnum.Online) {
+      return;
+    }
+
+    // 创建订阅订单
+    try {
+      const orderInfo = await apiCreateAgentSubscriptionOrder(plan.id);
+      const orderId = orderInfo?.data?.id;
+      if (!orderId) {
+        message.error('创建订阅订单失败');
+        return;
+      }
+
+      const res = await apiGetAgentSubscriptionOrderCashier(orderId);
+      if (!res?.data?.cashierUrl) {
+        message.error('获取收银台地址失败');
+        return;
+      }
+
+      window.open(res?.data?.cashierUrl, '_blank');
+    } catch (error) {
+      console.error('点击套餐卡片失败:', error);
+    }
   };
 
   /**
