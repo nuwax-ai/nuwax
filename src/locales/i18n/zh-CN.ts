@@ -1,4 +1,4 @@
-import type { SystemLangMap } from '@/types/interfaces/i18n';
+import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const ZH_CN: SystemLangMap = {
   "PC.Common.Global.action": "操作",

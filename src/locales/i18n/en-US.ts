@@ -1,4 +1,4 @@
-import type { SystemLangMap } from '@/types/interfaces/i18n';
+import type { SystemLangMap } from "@/types/interfaces/i18n";
 
 export const EN_US: SystemLangMap = {
   "PC.Common.Global.action": "Action",
