@@ -41,8 +41,8 @@ interface ModelPricingModalProps {
 }
 
 /**
- * 模型定价弹窗。
- * 负责模型选择、价格档位编辑，以及新增/编辑提交。
+ * 模型定价弹窗
+ * 负责模型选择、价格档位编辑，以及新增/编辑提交
  */
 const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   spaceId,

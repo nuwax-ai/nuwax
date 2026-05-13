@@ -59,19 +59,6 @@ export async function apiListModelPricing(
   });
 }
 
-/**
- * todo: 切换模型定价状态
- */
-export async function apiToggleModelPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/models/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
 // ======================= 工具定价 =======================
 
 /**
