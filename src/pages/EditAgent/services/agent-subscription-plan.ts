@@ -4,6 +4,7 @@ import {
   SubscriptionPlanStatsResult,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { BillOrderInfo } from '@/types/interfaces/subscription';
 import { request } from 'umi';
 
 /**
@@ -89,5 +90,33 @@ export async function apiGetAgentSubscriptionPlanList(params: {
   return request('/api/agent/plan/list', {
     method: 'GET',
     params,
+  });
+}
+
+/**
+ * 创建订阅订单
+ */
+export async function apiCreateAgentSubscriptionOrder(
+  planId: number,
+): Promise<RequestResponse<BillOrderInfo>> {
+  return request('/api/subscription/order/create', {
+    method: 'POST',
+    params: {
+      planId,
+    },
+  });
+}
+
+/**
+ * 获取订单收银台地址
+ */
+export async function apiGetAgentSubscriptionOrderCashier(
+  orderId: number,
+): Promise<RequestResponse<{ cashierUrl: string }>> {
+  return request('/api/bill/order/pay/cashier', {
+    method: 'GET',
+    params: {
+      orderId,
+    },
   });
 }
