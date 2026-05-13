@@ -424,6 +424,7 @@ export interface MerchantOnboardingData {
   userId?: number;
   status: MerchantOnboardingStatusEnum;
   auditRemark?: string;
+  auditedAt?: string;
   merchantName: string;
   merchantShortName?: string;
   creditCode: string;
@@ -441,7 +442,7 @@ export interface MerchantOnboardingData {
   remark?: string;
   orgCertificateUrl?: string; // 营业执照
   licenseExpiry?: string; // 营业执照有效期
-  legalPersonIdCardUrl?: string; // 身份证正面
+  legalPersonIdCardFrontUrl?: string; // 身份证正面
   legalPersonIdCardBackUrl?: string; // 身份证反面
   photoFinanceRoomUrl?: string;
   photoGateUrl?: string;
