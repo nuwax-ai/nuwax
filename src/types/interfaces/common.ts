@@ -181,6 +181,8 @@ export interface CustomFormModalProps {
   centered?: boolean;
   // Modal宽度
   width?: number | string;
+  /** 弹层层级（嵌套在其它 Modal 内时可设为更高，避免被选层挡住） */
+  zIndex?: number;
   onCancel: () => void;
   onConfirm: () => void;
   // 确定按钮是否禁用

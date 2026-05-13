@@ -3303,6 +3303,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.editSkill": "編輯技能",
   "PC.Pages.SpaceResourcePricing.modelName": "模型",
   "PC.Pages.SpaceResourcePricing.toolName": "工具",
+  "PC.Pages.SpaceResourcePricing.toolTargetType": "工具類型",
   "PC.Pages.SpaceResourcePricing.skillName": "技能",
   "PC.Pages.SpaceResourcePricing.pricingType": "定價類型",
   "PC.Pages.SpaceResourcePricing.provider": "供應商",
@@ -3340,6 +3341,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名稱...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
+  "PC.Pages.SpaceResourcePricing.cycleMonthly": "月",
+  "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 次",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "智能體訂閱",
   "PC.Pages.SpaceAgentSubscriptions.pageSubtitle": "管理智能體的服務套餐",
