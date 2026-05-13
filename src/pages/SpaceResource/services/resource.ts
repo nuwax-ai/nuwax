@@ -1,5 +1,4 @@
 import type { RequestResponse } from '@/types/interfaces/request';
-import type { SkillPricingInfo } from '@/types/interfaces/subscription';
 import { request } from 'umi';
 import {
   ListPricingConfigsParams,
@@ -105,74 +104,5 @@ export async function apiDeleteToolPricing(
 ): Promise<RequestResponse<null>> {
   return request(`/api/pricing/config/${id}/delete`, {
     method: 'POST',
-  });
-}
-
-/**
- * 切换工具定价状态
- */
-export async function apiToggleToolPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/tools/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
-/**
- * 查询技能定价列表
- */
-export async function apiListSkillPricing(
-  spaceId: number,
-): Promise<RequestResponse<SkillPricingInfo[]>> {
-  return request(`/api/space/${spaceId}/resource-pricing/skills`, {
-    method: 'GET',
-  });
-}
-
-/**
- * 创建技能定价
- */
-export async function apiCreateSkillPricing(
-  spaceId: number,
-  data: Partial<SkillPricingInfo>,
-): Promise<RequestResponse<SkillPricingInfo>> {
-  return request(`/api/space/${spaceId}/resource-pricing/skills`, {
-    method: 'POST',
-    data,
-  });
-}
-
-/**
- * 更新技能定价
- */
-export async function apiUpdateSkillPricing(
-  id: number,
-  data: Partial<SkillPricingInfo>,
-): Promise<RequestResponse<SkillPricingInfo>> {
-  return request(`/api/resource-pricing/skills/${id}`, { method: 'PUT', data });
-}
-
-/**
- * 删除技能定价
- */
-export async function apiDeleteSkillPricing(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/skills/${id}`, { method: 'DELETE' });
-}
-
-/**
- * 切换技能定价状态
- */
-export async function apiToggleSkillPricing(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/resource-pricing/skills/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
   });
 }

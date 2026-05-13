@@ -61,17 +61,19 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
     },
   });
 
+  // 添加技能
   const openAdd = () => {
     setEditItem(null);
     setModalOpen(true);
   };
 
+  // 编辑技能
   const openEdit = (item: ResourcePricingConfigInfo) => {
     setEditItem(item);
     setModalOpen(true);
   };
 
-  // 删除定价配置
+  // 删除技能
   const handleDelete = (item: ResourcePricingConfigInfo) => {
     modalConfirm(
       dict('PC.Common.Global.confirmDelete'),
@@ -121,25 +123,11 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.skillName'),
-      dataIndex: 'targetId',
-      key: 'targetId',
+      dataIndex: 'name',
+      key: 'name',
       width: 180,
       search: false,
-      render: (_, record) => (
-        <div className={styles.toolNameCell}>
-          <span
-            className={styles.toolIcon}
-            style={{
-              background: '#16a34a',
-            }}
-          >
-            {(record.targetObjectInfo?.name || record.targetId || '').charAt(0)}
-          </span>
-          <span className={styles.toolName}>
-            {record.targetObjectInfo?.name || record.targetId}
-          </span>
-        </div>
-      ),
+      render: (_, record) => record.targetObjectInfo?.name || '-',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
@@ -197,7 +185,6 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       align: 'center',
       render: (_, record) => (
         <Switch
-          size="small"
           checked={record.status === ResourcePricingStatus.ENABLED}
           onChange={(v) => handleToggleStatus(record, v)}
         />
@@ -209,6 +196,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       width: 120,
       align: 'center',
       search: false,
+      fixed: 'right',
       render: (_, record) => (
         <TableActions
           record={record}
