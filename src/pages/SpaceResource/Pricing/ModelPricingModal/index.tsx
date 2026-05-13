@@ -248,6 +248,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       }
       open={open}
       form={form}
+      classNames={{ body: styles['model-pricing-modal-body'] }}
       loading={saving}
       onConfirm={handleSave}
       width={520}

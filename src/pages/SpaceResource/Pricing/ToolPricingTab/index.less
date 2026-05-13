@@ -1,0 +1,102 @@
+// 工具定价 Tab：表格名称列（头像 + 标题 + 描述）
+
+.toolNameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.toolNameAvatarWrap {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #e8f4fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.toolNameAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.toolNameAvatarLetter {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.toolNameText {
+  flex: 1;
+  min-width: 0;
+}
+
+.toolNameTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 88%);
+  line-height: 1.35;
+}
+
+.toolNameSubtitle {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 表格价格列（¥ + 金额 + /次 + 试用徽标）
+
+.priceCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  line-height: 1.35;
+}
+
+.priceCellMain {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+.priceCellCurrency {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+.priceCellAmount {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 88%);
+}
+
+.priceCellUnit {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+.priceTrialBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0f766e;
+  background: #ccfbf1;
+}

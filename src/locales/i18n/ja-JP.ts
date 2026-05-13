@@ -3304,6 +3304,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.editSkill": "スキルを編集",
   "PC.Pages.SpaceResourcePricing.modelName": "モデル",
   "PC.Pages.SpaceResourcePricing.toolName": "ツール",
+  "PC.Pages.SpaceResourcePricing.toolTargetType": "ツール種別",
   "PC.Pages.SpaceResourcePricing.skillName": "スキル",
   "PC.Pages.SpaceResourcePricing.pricingType": "料金タイプ",
   "PC.Pages.SpaceResourcePricing.provider": "プロバイダー",
@@ -3341,6 +3342,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "説明",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "ツール名を検索...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "回",
+  "PC.Pages.SpaceResourcePricing.cycleMonthly": "ヶ月",
+  "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 回",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "エージェントサブスクリプション",
   "PC.Pages.SpaceAgentSubscriptions.pageSubtitle": "エージェントサービスプランの管理",

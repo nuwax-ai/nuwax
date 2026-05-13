@@ -126,7 +126,7 @@ export interface ListPricingConfigsParams {
   targetType?: ToolPricingTargetType;
 
   /*定价对象类型列表，比如查询工具列表下面包含了 MCP、PLUGIN、WORKFLOW */
-  targetTypes?: Record<string, unknown>[];
+  targetTypes?: ToolPricingTargetType[];
 
   /*定价对象ID */
   targetId?: string;
