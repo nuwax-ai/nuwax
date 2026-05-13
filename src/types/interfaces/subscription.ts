@@ -407,7 +407,48 @@ export interface MerchantInfoData {
   contactPhone: string;
   contactEmail: string;
   businessLicense?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'draft' | 'under_review';
+}
+
+export enum MerchantOnboardingStatusEnum {
+  DRAFT = 'DRAFT',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export interface MerchantOnboardingData {
+  id?: number;
+  onboardingType?: string;
+  tenantId?: number;
+  userId?: number;
+  status: MerchantOnboardingStatusEnum;
+  auditRemark?: string;
+  merchantName: string;
+  merchantShortName?: string;
+  creditCode: string;
+  registeredAddress?: string;
+  legalPersonName: string;
+  legalPersonIdNo: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  bankAccountName?: string;
+  bankName: string;
+  bankBranchName?: string;
+  bankAccountNo: string;
+  bankReceiptRemark?: string;
+  remark?: string;
+  orgCertificateUrl?: string; // 营业执照
+  licenseExpiry?: string; // 营业执照有效期
+  legalPersonIdCardUrl?: string; // 身份证正面
+  legalPersonIdCardBackUrl?: string; // 身份证反面
+  photoFinanceRoomUrl?: string;
+  photoGateUrl?: string;
+  photoLandmarkUrl?: string;
+  bankAccountProofUrl?: string;
+  created?: string;
+  modified?: string;
 }
 
 // ──────────────────────────────────────────────
