@@ -46,6 +46,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
   onSaved,
 }) => {
   const [form] = Form.useForm();
+  const watchedSkillName = Form.useWatch('skillName', form);
   const [saving, setSaving] = useState<boolean>(false);
 
   // 添加技能弹窗是否打开
@@ -86,6 +87,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
     setCreatedOpen(false);
     setSelectedSkill(skill);
     form.setFieldsValue({
+      skillName: skill.name,
       skillId: skill.targetId,
       description: skill.description,
     });
@@ -108,7 +110,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
       await apiUpdateToolPricing({
         targetType: ToolPricingTargetType.SKILL,
         targetId: skillId,
-        pricingType: pricingType || ResourcePricingType.BUYOUT,
+        pricingType,
         price,
         trialCount,
         status: statusValue,
@@ -159,10 +161,13 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
             <div
               onClick={() => setCreatedOpen(true)}
               className={`${styles['skill-selector']} ${
-                selectedSkill ? '' : styles['skill-selector-placeholder']
+                selectedSkill || watchedSkillName
+                  ? ''
+                  : styles['skill-selector-placeholder']
               }`}
             >
               {selectedSkill?.name ||
+                watchedSkillName ||
                 dict('PC.Pages.SpaceResourcePricing.selectPlaceholder')}
             </div>
           )}
@@ -178,7 +183,11 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
           name="description"
           label={dict('PC.Pages.SpaceResourcePricing.description')}
         >
-          <Input.TextArea disabled autoSize={{ minRows: 4, maxRows: 6 }} />
+          <Input.TextArea
+            className="scroll-container"
+            disabled
+            autoSize={{ minRows: 4, maxRows: 6 }}
+          />
         </Form.Item>
 
         {/* 定价模式 */}
@@ -186,10 +195,10 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
           name="pricingType"
           label={dict('PC.Pages.SpaceResourcePricing.pricingMode')}
           tooltip={
-            <div>
+            <>
               <div>{dict('PC.Pages.SpaceResourcePricing.buyoutHint')}</div>
               <div>{dict('PC.Pages.SpaceResourcePricing.monthlyHint')}</div>
-            </div>
+            </>
           }
         >
           <Radio.Group
@@ -207,7 +216,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
           >
             <InputNumber
               min={0}
-              max={1000000}
+              max={100000000}
               precision={2}
               className="w-full"
               prefix="¥"
@@ -224,7 +233,12 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
             tooltip="-1 表示不限制试用次数"
             rules={[{ required: true }]}
           >
-            <InputNumber min={-1} precision={0} className="w-full" />
+            <InputNumber
+              min={-1}
+              precision={0}
+              max={100000000}
+              className="w-full"
+            />
           </Form.Item>
         </div>
 
