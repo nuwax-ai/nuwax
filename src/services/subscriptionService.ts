@@ -16,11 +16,10 @@ import type {
   CreditTypeEnum,
   DailyRevenueDetailRecord,
   DailyRevenueRecord,
-  DevEarningsSummaryInfo,
   DevPaymentAccountInfo,
   EarningRecordInfo,
   EarningsSummaryInfo,
-  MerchantInfoData,
+  MerchantOnboardingData,
   MySubscriptionData,
   OrderInfo,
   PricingPlanInfo,
@@ -327,19 +326,43 @@ export async function apiListDevEarnings(params: {
 }
 
 // ──────────────────────────────────────────────
-// 系统管理 - 商户进件信息
+// 系统管理 - 商户进件 (新版)
 // ──────────────────────────────────────────────
 
-export async function apiGetMerchantInfo(): Promise<
-  RequestResponse<MerchantInfoData>
-> {
-  return request('/api/system/merchant-info', { method: 'GET' });
+/**
+ * 按租户查询进件
+ */
+export async function apiGetMerchantOnboardingByTenantId(data: {
+  tenantId: number;
+}): Promise<RequestResponse<MerchantOnboardingData>> {
+  return request('/api/system/pay/merchant-onboarding/get-by-tenant-id', {
+    method: 'POST',
+    data,
+  });
 }
 
-export async function apiSaveMerchantInfo(
-  data: MerchantInfoData,
-): Promise<RequestResponse<null>> {
-  return request('/api/system/merchant-info', { method: 'PUT', data });
+/**
+ * 新增进件
+ */
+export async function apiAddMerchantOnboarding(
+  data: Partial<MerchantOnboardingData>,
+): Promise<RequestResponse<MerchantOnboardingData>> {
+  return request('/api/system/pay/merchant-onboarding/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新进件
+ */
+export async function apiUpdateMerchantOnboarding(
+  data: Partial<MerchantOnboardingData>,
+): Promise<RequestResponse<MerchantOnboardingData>> {
+  return request('/api/system/pay/merchant-onboarding/update', {
+    method: 'POST',
+    data,
+  });
 }
 
 // ──────────────────────────────────────────────
