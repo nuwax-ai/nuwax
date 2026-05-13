@@ -31,7 +31,9 @@ const PaymentDetailModal: React.FC<PaymentDetailModalProps> = ({
       )} - ${record.developerName}`}
       open={open}
       onOpenChange={(v) => !v && onCancel()}
-      submitter={false}
+      submitter={{
+        render: () => null,
+      }}
       width={640}
       className={cx(styles['payment-detail-modal'])}
       modalProps={{
