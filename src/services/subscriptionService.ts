@@ -1,6 +1,5 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
-  AdminCreditRecordInfo,
   AdminOrderInfo,
   AgentSubscriptionConfig,
   AgentSubscriptionPlan,
@@ -10,7 +9,6 @@ import type {
   BizTypeEnum,
   CheckSubscriptionResult,
   CreditBatchItem,
-  CreditPackageAdminInfo,
   CreditPackageInfo,
   CreditRecordInfo,
   CreditRecordTypeEnum,
@@ -25,13 +23,10 @@ import type {
   MerchantInfoData,
   MySubscriptionData,
   OrderInfo,
-  PaymentConfigInfo,
   PricingPlanInfo,
   RevenueStatsInfo,
   SubscriptionPlan,
-  SubscriptionSummaryInfo,
   SystemSubscriptionPlan,
-  UserCreditBalanceInfo,
   UserSubscriptionInfo,
   WithdrawalInfo,
   WithdrawalStatusEnum,
@@ -329,83 +324,6 @@ export async function apiListDevEarnings(params: {
   pageSize?: number;
 }): Promise<RequestResponse<{ list: EarningRecordInfo[]; total: number }>> {
   return request('/api/system/dev-earnings', { method: 'GET', params });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 订阅与积分（管理员）
-// ──────────────────────────────────────────────
-
-export async function apiGetSubscriptionSummary(): Promise<
-  RequestResponse<SubscriptionSummaryInfo>
-> {
-  return request('/api/system/subscription-summary', { method: 'GET' });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 积分套餐 CRUD
-// ──────────────────────────────────────────────
-
-export async function apiListAdminCreditPackages(): Promise<
-  RequestResponse<CreditPackageAdminInfo[]>
-> {
-  return request('/api/system/credit-packages', { method: 'GET' });
-}
-
-export async function apiCreateCreditPackage(
-  data: Partial<CreditPackageAdminInfo>,
-): Promise<RequestResponse<CreditPackageAdminInfo>> {
-  return request('/api/system/credit-packages', { method: 'POST', data });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 用户积分 / 积分流水（管理员）
-// ──────────────────────────────────────────────
-
-export async function apiListUserCreditBalances(params: {
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: UserCreditBalanceInfo[]; total: number }>> {
-  return request('/api/system/user-credits', { method: 'GET', params });
-}
-
-export async function apiListAdminCreditRecords(params: {
-  keyword?: string;
-  recordType?: CreditRecordTypeEnum;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: AdminCreditRecordInfo[]; total: number }>> {
-  return request('/api/system/credit-records', { method: 'GET', params });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 业务订单查询（管理员）
-// ──────────────────────────────────────────────
-
-export async function apiListAdminOrders(params: {
-  keyword?: string;
-  orderType?: string;
-  status?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: AdminOrderInfo[]; total: number }>> {
-  return request('/api/system/orders', { method: 'GET', params });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 支付配置
-// ──────────────────────────────────────────────
-
-export async function apiGetPaymentConfig(): Promise<
-  RequestResponse<PaymentConfigInfo>
-> {
-  return request('/api/system/payment-config', { method: 'GET' });
-}
-
-export async function apiSavePaymentConfig(
-  data: PaymentConfigInfo,
-): Promise<RequestResponse<null>> {
-  return request('/api/system/payment-config', { method: 'PUT', data });
 }
 
 // ──────────────────────────────────────────────
