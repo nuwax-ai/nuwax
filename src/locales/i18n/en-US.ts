@@ -42,6 +42,8 @@ export const EN_US: SystemLangMap = {
   "PC.Common.Global.published": "Published",
   "PC.Common.Global.refresh": "Refresh",
   "PC.Common.Global.save": "Save",
+  "PC.Common.Global.required": "This field is required",
+  "PC.Common.Global.invalidUrl": "Please enter a valid URL (starting with http:// or https://)",
   "PC.Common.Global.selectTime": "Please select a time",
   "PC.Common.Global.skill": "Skill",
   "PC.Common.Global.submit": "Submit",

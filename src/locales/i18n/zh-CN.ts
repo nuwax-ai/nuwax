@@ -42,6 +42,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Common.Global.published": "已发布",
   "PC.Common.Global.refresh": "刷新",
   "PC.Common.Global.save": "保存",
+  "PC.Common.Global.required": "该项为必填项",
+  "PC.Common.Global.invalidUrl": "请输入有效的 URL 地址 (以 http:// 或 https:// 开头)",
   "PC.Common.Global.selectTime": "请选择时间",
   "PC.Common.Global.skill": "技能",
   "PC.Common.Global.submit": "提交",

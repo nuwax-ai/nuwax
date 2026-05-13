@@ -194,11 +194,6 @@ export interface CreditRecordInfo {
   };
 }
 
-export interface UserCreditsInfo {
-  balance: number;
-  unit: 'credit';
-}
-
 export interface CreditSummaryInfo {
   userId: number;
   totalCredit: number;
@@ -392,74 +387,12 @@ export interface DevEarningsSummaryInfo {
 }
 
 // ──────────────────────────────────────────────
-// 系统管理 - 订阅与积分汇总
-// ──────────────────────────────────────────────
-
-export interface SubscriptionSummaryInfo {
-  activeSubscriptions: number;
-  totalUsers: number;
-  monthlyRevenue: number;
-  totalCredits: number;
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 积分套餐（管理员）
-// ──────────────────────────────────────────────
-
-export interface CreditPackageAdminInfo {
-  id: number;
-  name: string;
-  credits: number;
-  price: number;
-  originalPrice?: number;
-  tag?: string;
-  enabled: boolean;
-  createdAt: string;
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 用户积分余额（管理员视角）
-// ──────────────────────────────────────────────
-
-export interface UserCreditBalanceInfo {
-  userId: number;
-  userName: string;
-  balance: number;
-  totalRecharge: number;
-  totalConsume: number;
-  lastUpdatedAt: string;
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 管理员积分明细
-// ──────────────────────────────────────────────
-
-export interface AdminCreditRecordInfo extends CreditRecordInfo {
-  userName: string;
-}
-
-// ──────────────────────────────────────────────
 // 系统管理 - 管理员订单（含用户名）
 // ──────────────────────────────────────────────
 
 export interface AdminOrderInfo extends OrderInfo {
   userName: string;
   developerName?: string;
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 支付配置
-// ──────────────────────────────────────────────
-
-export interface PaymentConfigInfo {
-  alipayAppId: string;
-  alipayPrivateKey: string;
-  alipayPublicKey: string;
-  alipayNotifyUrl: string;
-  wechatAppId: string;
-  wechatMchId: string;
-  wechatApiKey: string;
-  wechatNotifyUrl: string;
 }
 
 // ──────────────────────────────────────────────
