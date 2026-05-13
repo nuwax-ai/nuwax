@@ -17,6 +17,7 @@ import type {
   DailyRevenueDetailRecord,
   DailyRevenueRecord,
   DevPaymentAccountInfo,
+  DevPaymentAccountRecord,
   EarningRecordInfo,
   EarningsSummaryInfo,
   MerchantOnboardingData,
@@ -374,6 +375,30 @@ export async function apiListDevPaymentAccounts(params: {
   pageSize?: number;
 }): Promise<RequestResponse<{ list: DevPaymentAccountInfo[]; total: number }>> {
   return request('/api/system/dev-payment-accounts', { method: 'GET', params });
+}
+
+/**
+ * 分页查询开发者收款账户（新版）
+ */
+export async function apiPageDevPaymentAccounts(data: {
+  userNameKeyword?: string;
+  userId?: number;
+  createdStart?: string;
+  createdEnd?: string;
+  page: number;
+  pageSize: number;
+}): Promise<
+  RequestResponse<{
+    records: DevPaymentAccountRecord[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }>
+> {
+  return request('/api/system/pay/developer-account/page', {
+    method: 'POST',
+    data,
+  });
 }
 
 // ──────────────────────────────────────────────

@@ -509,6 +509,24 @@ export interface DevPaymentAccountInfo {
   createdAt: string;
 }
 
+export interface DevPaymentAccountRecord {
+  id: number;
+  tenantId: number;
+  userId: number; // 开发者ID
+  userName: string; // 开发者
+  email: string;
+  phone: string;
+  realName: string;
+  idCardNo: string;
+  idCardFrontPhotoUrl: string;
+  idCardBackPhotoUrl: string;
+  bankName: string;
+  branchName: string;
+  bankCardNo: string; // 银行卡号
+  created: string;
+  modified: string;
+}
+
 // ──────────────────────────────────────────────
 // 系统管理 - 提现申请
 // ──────────────────────────────────────────────

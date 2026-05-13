@@ -2,107 +2,86 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiListDevPaymentAccounts } from '@/services/subscriptionService';
-import type { DevPaymentAccountInfo } from '@/types/interfaces/subscription';
+import { apiPageDevPaymentAccounts } from '@/services/subscriptionService';
+import type { DevPaymentAccountRecord } from '@/types/interfaces/subscription';
 import { DevPaymentTypeEnum } from '@/types/interfaces/subscription';
-import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
+import { BankFilled } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
 import React, { useCallback, useState } from 'react';
-import PaymentDetailDrawer from './PaymentDetailDrawer';
-
-interface DevPaymentExt extends DevPaymentAccountInfo {
-  email: string;
-  phone: string;
-}
-
-const MOCK_ACCOUNTS: DevPaymentExt[] = [
-  {
-    id: 1,
-    developerId: 101,
-    developerName: 'Alice Wang',
-    email: 'alice@example.com',
-    phone: '138****1234',
-    accountType: DevPaymentTypeEnum.Alipay,
-    accountNo: 'alice@example.com',
-    realName: '王丽',
-    createdAt: '2026-03-15T08:00:00Z',
-  },
-  {
-    id: 2,
-    developerId: 102,
-    developerName: 'Bob Li',
-    email: 'bob@example.com',
-    phone: '139****5678',
-    accountType: DevPaymentTypeEnum.BankCard,
-    accountNo: '6222 **** **** 1234',
-    realName: '李明',
-    bankName: '中国工商银行',
-    createdAt: '2026-02-20T09:00:00Z',
-  },
-  {
-    id: 3,
-    developerId: 103,
-    developerName: 'Carlos Dev',
-    email: 'carlos@dev.com',
-    phone: '137****9012',
-    accountType: DevPaymentTypeEnum.Alipay,
-    accountNo: 'carlos@dev.com',
-    realName: 'Carlos',
-    createdAt: '2026-04-01T10:00:00Z',
-  },
-];
+import PaymentDetailModal from './components/PaymentDetailModal';
 
 const DevPayment: React.FC = () => {
-  const [detailsVisible, setDetailsVisible] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState<any>();
-  const handleCloseDetails = useCallback(() => {
-    setDetailsVisible(false);
-    setCurrentRecord(undefined);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<any>(null);
+
+  const handleShowDetail = useCallback((record: any) => {
+    // 统一详情弹窗所需的数据格式
+    const detailData = {
+      ...record,
+      developerId: record.userId,
+      developerName: record.userName,
+      accountNo: record.bankCardNo,
+      accountType: DevPaymentTypeEnum.BankCard, // 后端示例目前均为银行卡
+    };
+    setCurrentRecord(detailData);
+    setModalVisible(true);
   }, []);
 
-  const columns: ProColumns<DevPaymentExt>[] = [
+  const handleCloseDetail = useCallback(() => {
+    setModalVisible(false);
+    setCurrentRecord(null);
+  }, []);
+
+  const columns: ProColumns<DevPaymentAccountRecord>[] = [
     {
-      title: dict('PC.Pages.SystemDevPayment.colDeveloperId'),
-      dataIndex: 'developerId',
-      key: 'developerId',
-      width: 100,
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloperId',
+      ),
+      dataIndex: 'userId',
+      key: 'userId',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colDeveloper'),
-      dataIndex: 'developerName',
-      key: 'developerName',
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloper',
+      ),
+      dataIndex: 'userName',
+      key: 'userNameKeyword',
       ellipsis: true,
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colEmail'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colEmail',
+      ),
       dataIndex: 'email',
       key: 'email',
+      search: false,
       ellipsis: true,
       render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colPhone'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colPhone',
+      ),
       dataIndex: 'phone',
       key: 'phone',
+      search: false,
       render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colDefaultAccount'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDefaultAccount',
+      ),
       key: 'defaultAccount',
       search: false,
       render: (_, record) => (
         <span>
-          {record.accountType === DevPaymentTypeEnum.Alipay ? (
-            <Tag icon={<AlipayCircleFilled />} color="blue">
-              {dict('PC.Pages.SystemDevPayment.typeAlipay')}
-            </Tag>
-          ) : (
-            <Tag icon={<BankFilled />} color="green">
-              {dict('PC.Pages.SystemDevPayment.typeBankCard')}
-            </Tag>
-          )}
-          {record.accountNo || '-'}
+          <Tag icon={<BankFilled />} color="green">
+            {dict(
+              'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeBankCard',
+            )}
+          </Tag>
+          {record.bankCardNo || '-'}
         </span>
       ),
     },
@@ -117,11 +96,10 @@ const DevPayment: React.FC = () => {
           actions={[
             {
               key: 'detail',
-              label: dict('PC.Pages.SystemDevPayment.viewDetail'),
-              onClick: (r) => {
-                setCurrentRecord(r);
-                setDetailsVisible(true);
-              },
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.viewDetail',
+              ),
+              onClick: (r) => handleShowDetail(r),
             },
           ]}
         />
@@ -132,36 +110,40 @@ const DevPayment: React.FC = () => {
   return (
     <>
       <WorkspaceLayout title={dict('PC.Routes.devPaymentInfo')}>
-        <XProTable<DevPaymentExt>
+        <XProTable<DevPaymentAccountRecord>
           rowKey="id"
           columns={columns}
           request={async (params) => {
             try {
-              const res = await apiListDevPaymentAccounts({
-                keyword: params.developerName,
-                pageNum: params.current,
-                pageSize: params.pageSize,
+              const { current, pageSize, userNameKeyword, userId } = params;
+              const res = await apiPageDevPaymentAccounts({
+                userNameKeyword,
+                userId: userId ? Number(userId) : undefined,
+                page: current || 1,
+                pageSize: pageSize || 10,
               });
-              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
+              if (res?.code === SUCCESS_CODE && res.data) {
                 return {
-                  data: res.data.list,
-                  total: res.data.total,
+                  data: res.data.records || [],
+                  total: res.data.total || 0,
                   success: true,
                 };
               }
-            } catch {}
+            } catch (err) {
+              console.error('Failed to fetch dev payment accounts:', err);
+            }
             return {
-              data: MOCK_ACCOUNTS,
-              total: MOCK_ACCOUNTS.length,
+              data: [],
+              total: 0,
               success: true,
             };
           }}
         />
       </WorkspaceLayout>
-      <PaymentDetailDrawer
-        open={detailsVisible}
+      <PaymentDetailModal
+        open={modalVisible}
         record={currentRecord}
-        onClose={handleCloseDetails}
+        onCancel={handleCloseDetail}
       />
     </>
   );

@@ -4924,19 +4924,23 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.invalidAccountNo": "银行账号格式错误",
 
   // ── 系统管理 - 开发者收款账户 ─────────────────────────
-  "PC.Pages.SystemDevPayment.colDeveloper": "开发者",
-  "PC.Pages.SystemDevPayment.colAccountType": "账户类型",
-  "PC.Pages.SystemDevPayment.colAccountNo": "账号",
-  "PC.Pages.SystemDevPayment.colRealName": "真实姓名",
-  "PC.Pages.SystemDevPayment.colBankName": "开户行",
-  "PC.Pages.SystemDevPayment.colCreatedAt": "添加时间",
-  "PC.Pages.SystemDevPayment.typeAlipay": "支付宝",
-  "PC.Pages.SystemDevPayment.typeBankCard": "银行卡",
-  "PC.Pages.SystemDevPayment.colDeveloperId": "开发者ID",
-  "PC.Pages.SystemDevPayment.colEmail": "邮箱",
-  "PC.Pages.SystemDevPayment.colPhone": "手机号",
-  "PC.Pages.SystemDevPayment.colDefaultAccount": "默认收款账户",
-  "PC.Pages.SystemDevPayment.viewDetail": "查看详细",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloper": "开发者",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeAlipay": "支付宝",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeBankCard": "银行卡",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloperId": "开发者ID",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colEmail": "邮箱",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colPhone": "手机号",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colAccountNo": "卡号",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDefaultAccount": "默认收款账户",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.viewDetail": "查看详细",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.modalTitle": "收款账户",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.sectionDevInfo": "开发者信息",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.sectionAccountInfo": "收款账户",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.settlementMethod": "结算方式",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.settlementManual": "手动",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colBankName": "开户行",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colRealName": "户名",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.tagDefault": "默认",
 
   // ── 系统管理 - 提现管理 ────────────────────────────────
   "PC.Pages.SystemWithdrawal.colDeveloper": "开发者",
@@ -5020,11 +5024,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemPaymentOrders.remark": "备注",
 
   // ── 系统管理 - 开发者付款信息 Drawer ────────────────────
-  "PC.Pages.SystemDevPayment.drawerTitle": "收款账户",
-  "PC.Pages.SystemDevPayment.sectionDeveloperInfo": "开发者信息",
-  "PC.Pages.SystemDevPayment.sectionPaymentAccount": "收款账户信息",
-  "PC.Pages.SystemDevPayment.settlementMethod": "结算方式",
-  "PC.Pages.SystemDevPayment.colBankCard": "银行卡号",
 
   // ── 系统管理 - 收益明细子页面 ──────────────────────────
   "PC.Pages.SystemEarningsDetail.title": "收益明细",
