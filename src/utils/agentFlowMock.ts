@@ -11,24 +11,207 @@
  * 事件 schema 对齐 docs/ch/AgentFlow-Design.md §8。
  */
 
+import type { IgetDetails } from '@/services/workflow';
 import {
+  AgentNodeModeEnum,
+  AnswerTypeEnum,
+  DataTypeEnum,
+  EvalValidatorTypeEnum,
   FlowKindEnum,
   HitlApprovalActionEnum,
   HitlModeEnum,
+  NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
+import type { ChildNode } from '@/types/interfaces/graph';
 
 const LOCAL_FLAG = 'agentFlow:mock';
+const MOCK_START_NODE_ID = 101;
+const MOCK_AGENT_NODE_ID = 102;
+const MOCK_EVAL_NODE_ID = 103;
+const MOCK_HITL_NODE_ID = 104;
+const MOCK_LLM_NODE_ID = 105;
+const MOCK_END_NODE_ID = 106;
+
+const now = () => new Date().toISOString();
+const uid = () =>
+  `mock_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export function isAgentFlowMockEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   const search = new URLSearchParams(window.location.search);
   if (search.get('mock') === 'agent-flow') return true;
+  if (search.get('mockAgentFlow') === 'true') return true;
   try {
     return window.localStorage.getItem(LOCAL_FLAG) === '1';
   } catch {
     return false;
   }
+}
+
+const createMockNode = (
+  workflowId: number,
+  node: Partial<ChildNode> & Pick<ChildNode, 'id' | 'name' | 'type'>,
+): ChildNode => ({
+  description: '',
+  icon: '',
+  workflowId,
+  shape: NodeShapeEnum.General,
+  nextNodeIds: [],
+  ...node,
+  nodeConfig: {
+    extension: { x: 80, y: 120 },
+    ...(node.nodeConfig || {}),
+  },
+});
+
+export function buildMockAgentFlowDetails({
+  workflowId,
+  spaceId,
+}: {
+  workflowId: number;
+  spaceId: number;
+}): IgetDetails {
+  const nowAt = now();
+  const startNode = createMockNode(workflowId, {
+    id: MOCK_START_NODE_ID,
+    name: '开始',
+    type: NodeTypeEnum.Start,
+    nextNodeIds: [MOCK_AGENT_NODE_ID],
+    nodeConfig: {
+      extension: { x: 80, y: 160 },
+      outputArgs: [
+        {
+          key: 'userQuestion',
+          name: 'userQuestion',
+          description: '用户输入',
+          dataType: DataTypeEnum.String,
+          require: true,
+          systemVariable: false,
+          bindValue: '',
+        },
+      ],
+    },
+  });
+
+  const agentNode = createMockNode(workflowId, {
+    id: MOCK_AGENT_NODE_ID,
+    name: '智能体',
+    type: NodeTypeEnum.Agent,
+    nextNodeIds: [MOCK_EVAL_NODE_ID],
+    nodeConfig: {
+      extension: { x: 340, y: 160 },
+      agentMode: AgentNodeModeEnum.Platform,
+      agentId: 1,
+      agentInputs: { question: 'context.userQuestion' },
+      contextReads: ['context.userQuestion'],
+      contextWrites: ['context.agentAnswer'],
+      autoWirePrevOutput: true,
+    },
+  });
+
+  const evalNode = createMockNode(workflowId, {
+    id: MOCK_EVAL_NODE_ID,
+    name: '评估验证',
+    type: NodeTypeEnum.EvalGate,
+    nodeConfig: {
+      extension: { x: 600, y: 160 },
+      passNextNodeIds: [MOCK_HITL_NODE_ID],
+      evalValidators: [
+        {
+          uuid: 'validator_1',
+          name: '答案完整性',
+          type: EvalValidatorTypeEnum.Rule,
+          config: { rule: '必须包含明确结论' },
+          onFail: {
+            targetNodeId: MOCK_AGENT_NODE_ID,
+            appendPrompt: '请补充明确结论后重新回答。',
+            reason: '答案不完整',
+          },
+        },
+      ],
+      evalMaxRetry: 2,
+      evalOnMaxRetry: 'human',
+    },
+  });
+
+  const hitlNode = createMockNode(workflowId, {
+    id: MOCK_HITL_NODE_ID,
+    name: '人类审批',
+    type: NodeTypeEnum.HumanInteraction,
+    nodeConfig: {
+      extension: { x: 860, y: 160 },
+      hitlMode: HitlModeEnum.Approve,
+      approveNextNodeIds: [MOCK_LLM_NODE_ID],
+      rejectNextNodeIds: [MOCK_AGENT_NODE_ID],
+      approveConfig: {
+        actions: [
+          HitlApprovalActionEnum.Approve,
+          HitlApprovalActionEnum.Edit,
+          HitlApprovalActionEnum.Reject,
+        ],
+        promptToReviewer: '请确认智能体输出是否可发送给用户。',
+        draftSource: 'context.agentAnswer',
+        onReject: { targetNodeId: MOCK_AGENT_NODE_ID },
+      },
+    },
+  });
+
+  const llmNode = createMockNode(workflowId, {
+    id: MOCK_LLM_NODE_ID,
+    name: '大模型润色',
+    type: NodeTypeEnum.LLM,
+    nextNodeIds: [MOCK_END_NODE_ID],
+    nodeConfig: {
+      extension: { x: 1120, y: 160 },
+      modelId: 1,
+      systemPrompt: '你是专业客服助手。',
+      userPrompt: '请润色 context.agentAnswer 并输出最终回复。',
+      temperature: 0.7,
+      maxTokens: 1024,
+      contextReads: ['context.agentAnswer'],
+      contextWrites: ['context.finalAnswer'],
+      autoWirePrevOutput: true,
+    },
+  });
+
+  const endNode = createMockNode(workflowId, {
+    id: MOCK_END_NODE_ID,
+    name: '结束',
+    type: NodeTypeEnum.End,
+    nodeConfig: {
+      extension: { x: 1380, y: 160 },
+      returnType: 'TEXT',
+      text: '{{context.finalAnswer}}',
+    },
+  });
+
+  return {
+    creator: {
+      userId: 0,
+      userName: 'mock',
+      nickName: 'Mock User',
+      avatar: '',
+    },
+    created: nowAt,
+    description: 'AgentFlow 本地调试流程',
+    endNode,
+    icon: '',
+    id: workflowId,
+    inputArgs: startNode.nodeConfig.outputArgs || [],
+    modified: nowAt,
+    name: `AgentFlow Mock #${workflowId}`,
+    nodes: [startNode, agentNode, evalNode, hitlNode, llmNode, endNode],
+    outputArgs: [],
+    publishStatus: '',
+    spaceId,
+    startNode,
+    extension: { size: 6 },
+    scope: null,
+    workflowType: FlowKindEnum.AgentFlow,
+    systemVariables: [],
+    editVersion: 1,
+  };
 }
 
 // 事件 actor 类型（参见设计文档 §8）
@@ -85,10 +268,6 @@ export interface MockRunHandle {
     selectedOption?: string;
   }) => void;
 }
-
-const now = () => new Date().toISOString();
-const uid = () =>
-  `mock_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 /**
  * 启动一次 mock run。返回一个 handle，可 abort，可 resume HITL。
@@ -188,7 +367,7 @@ export function startMockAgentFlowRun(
   switch (scenario) {
     case 'happy': {
       cursor += step;
-      emitNode(cursor, NodeTypeEnum.Agent, 'agent_1');
+      emitNode(cursor, NodeTypeEnum.Agent, String(MOCK_AGENT_NODE_ID));
       cursor += step * 2;
       emitRunCompleted(cursor + step, 'mock final answer');
       break;
@@ -197,7 +376,9 @@ export function startMockAgentFlowRun(
     case 'evalRetry': {
       // round 1
       cursor += step;
-      emitNode(cursor, NodeTypeEnum.Agent, 'agent_1', { round: 1 });
+      emitNode(cursor, NodeTypeEnum.Agent, String(MOCK_AGENT_NODE_ID), {
+        round: 1,
+      });
       cursor += step * 2;
       schedule(cursor, () =>
         emit({
@@ -206,7 +387,7 @@ export function startMockAgentFlowRun(
           type: 'gate_evaluated',
           actor: 'system',
           payload: {
-            nodeId: 'eval_1',
+            nodeId: String(MOCK_EVAL_NODE_ID),
             passed: false,
             failures: [
               {
@@ -225,8 +406,8 @@ export function startMockAgentFlowRun(
           type: 'gate_routed',
           actor: 'system',
           payload: {
-            fromNodeId: 'eval_1',
-            toNodeId: 'agent_1',
+            fromNodeId: String(MOCK_EVAL_NODE_ID),
+            toNodeId: String(MOCK_AGENT_NODE_ID),
             validator: 'validator_1',
             appendPrompt: '请补充客户的订单号',
             round: 2,
@@ -235,7 +416,7 @@ export function startMockAgentFlowRun(
       );
       // round 2
       cursor += step;
-      emitNode(cursor, NodeTypeEnum.Agent, 'agent_1', {
+      emitNode(cursor, NodeTypeEnum.Agent, String(MOCK_AGENT_NODE_ID), {
         round: 2,
         output: { text: '已补充订单号 ORD-12345' },
       });
@@ -246,7 +427,11 @@ export function startMockAgentFlowRun(
           runId,
           type: 'gate_evaluated',
           actor: 'system',
-          payload: { nodeId: 'eval_1', passed: true, failures: [] },
+          payload: {
+            nodeId: String(MOCK_EVAL_NODE_ID),
+            passed: true,
+            failures: [],
+          },
         }),
       );
       cursor += step;
@@ -256,7 +441,7 @@ export function startMockAgentFlowRun(
 
     case 'humanAsk': {
       cursor += step;
-      emitNode(cursor, NodeTypeEnum.Agent, 'agent_1');
+      emitNode(cursor, NodeTypeEnum.Agent, String(MOCK_AGENT_NODE_ID));
       cursor += step * 2;
       schedule(cursor, () => {
         emit({
@@ -264,7 +449,7 @@ export function startMockAgentFlowRun(
           runId,
           type: 'node_started',
           actor: NodeTypeEnum.HumanInteraction,
-          payload: { nodeId: 'hitl_1', round: 1 },
+          payload: { nodeId: String(MOCK_HITL_NODE_ID), round: 1 },
         });
         emit({
           at: now(),
@@ -272,10 +457,10 @@ export function startMockAgentFlowRun(
           type: 'human_required',
           actor: 'system',
           payload: {
-            nodeId: 'hitl_1',
+            nodeId: String(MOCK_HITL_NODE_ID),
             mode: HitlModeEnum.Ask,
             question: 'Confirm your action',
-            answerType: 'select',
+            answerType: AnswerTypeEnum.SELECT,
             options: [
               { label: 'A', value: 'A' },
               { label: 'B', value: 'B' },
@@ -291,7 +476,7 @@ export function startMockAgentFlowRun(
             runId,
             type: 'human_signal_applied',
             actor: 'human',
-            payload: { nodeId: 'hitl_1', signal },
+            payload: { nodeId: String(MOCK_HITL_NODE_ID), signal },
           }),
         );
         emitRunCompleted(t + step, 'mock final answer with user choice');
@@ -301,7 +486,7 @@ export function startMockAgentFlowRun(
 
     case 'humanApprove': {
       cursor += step;
-      emitNode(cursor, NodeTypeEnum.Agent, 'agent_1', {
+      emitNode(cursor, NodeTypeEnum.Agent, String(MOCK_AGENT_NODE_ID), {
         output: { text: 'draft reply for review' },
       });
       cursor += step * 2;
@@ -311,7 +496,7 @@ export function startMockAgentFlowRun(
           runId,
           type: 'node_started',
           actor: NodeTypeEnum.HumanInteraction,
-          payload: { nodeId: 'hitl_1' },
+          payload: { nodeId: String(MOCK_HITL_NODE_ID) },
         });
         emit({
           at: now(),
@@ -319,7 +504,7 @@ export function startMockAgentFlowRun(
           type: 'human_required',
           actor: 'system',
           payload: {
-            nodeId: 'hitl_1',
+            nodeId: String(MOCK_HITL_NODE_ID),
             mode: HitlModeEnum.Approve,
             draft: 'draft reply for review',
             actions: ['approve', 'edit', 'reject'],
@@ -334,7 +519,7 @@ export function startMockAgentFlowRun(
             runId,
             type: 'human_signal_applied',
             actor: 'human',
-            payload: { nodeId: 'hitl_1', signal },
+            payload: { nodeId: String(MOCK_HITL_NODE_ID), signal },
           }),
         );
         if (signal.action === HitlApprovalActionEnum.Reject) {

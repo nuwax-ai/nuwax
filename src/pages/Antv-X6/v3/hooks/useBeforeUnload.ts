@@ -7,6 +7,7 @@
  * 3) Attempt synchronous save through `sendBeacon`
  */
 
+import { isAgentFlowMockEnabled } from '@/utils/agentFlowMock';
 import { Graph } from '@antv/x6';
 import { useCallback, useEffect, useRef } from 'react';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -41,6 +42,8 @@ export function useBeforeUnload({
 
   // Perform synchronous save through sendBeacon.
   const syncSaveWithBeacon = useCallback(() => {
+    if (isAgentFlowMockEnabled()) return true;
+
     const graph = getGraph();
     if (!graph) return false;
 

@@ -1,6 +1,12 @@
 import Constant from '@/constants/codes.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
+import { FlowKindEnum } from '@/types/enums/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
+import {
+  buildMockAgentFlowDetails,
+  isAgentFlowMockEnabled,
+} from '@/utils/agentFlowMock';
 import { workflowLogger } from '@/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -10,14 +16,19 @@ import { getEdges } from '../utils/graphV3';
 
 interface UseWorkflowLifecycleProps {
   workflowId: number;
+  spaceId: number;
   handleInitLoading: (loading: boolean) => void;
 }
 
 export const useWorkflowLifecycle = ({
   workflowId,
+  spaceId,
   handleInitLoading,
 }: UseWorkflowLifecycleProps) => {
   const { setSpaceId } = useModel('workflowV3');
+  const flowKind = useFlowKind();
+  const useMock =
+    flowKind === FlowKindEnum.AgentFlow && isAgentFlowMockEnabled();
 
   // 防止 React StrictMode 双重调用
   const isInitializedRef = useRef(false);
@@ -31,40 +42,55 @@ export const useWorkflowLifecycle = ({
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
 
+  const applyWorkflowDetails = useCallback(
+    (data: IgetDetails, syncInfo: boolean) => {
+      if (syncInfo) {
+        setInfo(data);
+        setSpaceId(data.spaceId);
+      }
+
+      const _nodeList = data.nodes || [];
+      const _edgeList = getEdges(_nodeList);
+      setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+
+      workflowProxy.initialize({
+        workflowId,
+        nodes: _nodeList,
+        edges: _edgeList,
+        systemVariables: data.systemVariables,
+        modified: data.modified || new Date().toISOString(),
+      });
+      workflowProxy.setWorkflowInfo(data);
+      workflowSaveService.initialize(data);
+
+      if (data.editVersion !== undefined) {
+        workflowSaveService.setEditVersion(data.editVersion);
+        workflowLogger.log('Edit version updated:', data.editVersion);
+      }
+    },
+    [setSpaceId, workflowId],
+  );
+
+  const getWorkflowDetails = useCallback(async () => {
+    if (useMock) {
+      return buildMockAgentFlowDetails({ workflowId, spaceId });
+    }
+
+    const _res = await service.getDetails(workflowId);
+    return _res.code === Constant.success ? _res.data : null;
+  }, [spaceId, useMock, workflowId]);
+
   // 刷新画布数据
   const refreshGraphData = useCallback(async () => {
     try {
-      const _res = await service.getDetails(workflowId);
-      if (_res.code === Constant.success) {
-        const data = _res.data;
-        const _nodeList = data.nodes || [];
-        const _edgeList = getEdges(_nodeList);
-        setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-
-        // V3: 刷新时同步更新代理层数据（修复还原版本后节点操作报错问题）
-        workflowProxy.initialize({
-          workflowId: workflowId,
-          nodes: _nodeList,
-          edges: _edgeList,
-          systemVariables: data.systemVariables,
-          modified: data.modified || new Date().toISOString(),
-        });
-        workflowProxy.setWorkflowInfo(data);
-        workflowSaveService.initialize(data);
-
-        // V3: 刷新时同步更新版本号
-        if (data.editVersion !== undefined) {
-          workflowSaveService.setEditVersion(data.editVersion);
-          workflowLogger.log(
-            'Edit version updated after refresh:',
-            data.editVersion,
-          );
-        }
+      const data = await getWorkflowDetails();
+      if (data) {
+        applyWorkflowDetails(data, false);
       }
     } catch (error) {
       console.error('Failed to refresh graph data:', error);
     }
-  }, [workflowId]);
+  }, [applyWorkflowDetails, getWorkflowDetails]);
 
   // 修改当前工作流的基础信息（由 CreateWorkflow 组件调用，接口已在组件内调用过）
   const onConfirm = useCallback(
@@ -97,32 +123,9 @@ export const useWorkflowLifecycle = ({
 
       handleInitLoading(true);
       try {
-        // 调用接口，获取当前画布的所有节点和边
-        const _res = await service.getDetails(workflowId);
-
-        if (_res.code === Constant.success) {
-          const data = _res.data;
-          setInfo(data);
-          setSpaceId(data.spaceId);
-
-          const _nodeList = data.nodes || [];
-          const _edgeList = getEdges(_nodeList);
-
-          setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-
-          // V3: 初始化代理层数据
-          workflowProxy.initialize({
-            workflowId: workflowId,
-            nodes: _nodeList,
-            edges: _edgeList,
-            systemVariables: data.systemVariables, // 后端返回的系统变量
-            modified: data.modified || new Date().toISOString(),
-          });
-          // V3: 存储完整的工作流信息（用于全量保存）
-          workflowProxy.setWorkflowInfo(data);
-
-          // V3-NEW: 初始化新的保存服务（单一数据源优化）
-          workflowSaveService.initialize(data);
+        const data = await getWorkflowDetails();
+        if (data) {
+          applyWorkflowDetails(data, true);
         }
       } catch (error) {
         console.error('Failed to fetch graph data:', error);
@@ -134,7 +137,7 @@ export const useWorkflowLifecycle = ({
     if (workflowId) {
       initGraphData();
     }
-  }, [workflowId, handleInitLoading, setSpaceId]);
+  }, [applyWorkflowDetails, getWorkflowDetails, handleInitLoading, workflowId]);
 
   return {
     info,

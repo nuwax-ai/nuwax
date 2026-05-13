@@ -110,6 +110,7 @@ const Workflow: React.FC = () => {
     refreshGraphData,
   } = useWorkflowLifecycle({
     workflowId,
+    spaceId,
     handleInitLoading,
   });
 
