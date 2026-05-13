@@ -83,6 +83,7 @@ import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
 import SubscriptionSetting from './SubscriptionSetting';
+import SubscriptionStats from './SubscriptionStats';
 import SystemUserTipsWord, { SystemUserTipsWordRef } from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
@@ -979,6 +980,8 @@ const EditAgent: React.FC = () => {
             spaceId={spaceId}
             visible={true}
           />
+        ) : headerTab === 'subscriptionStats' ? (
+          <SubscriptionStats agentId={agentId} visible={true} />
         ) : (
           <>
             {/*编排*/}
