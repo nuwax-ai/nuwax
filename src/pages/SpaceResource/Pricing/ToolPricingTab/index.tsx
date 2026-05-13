@@ -3,11 +3,17 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Input, Switch, message } from 'antd';
 import React, { useRef, useState } from 'react';
-import { apiListPricingConfig } from '../../services/resource';
+import { useRequest } from 'umi';
+import {
+  apiDeleteToolPricing,
+  apiListPricingConfig,
+  apiUpdateToolPricing,
+} from '../../services/resource';
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
@@ -17,7 +23,7 @@ import pricingStyles from '../index.less';
 import styles from './index.less';
 import ToolPricingFormModal from './ToolPricingFormModal';
 
-// 工具类型标签映射
+// 表中 MCP/插件/工作流 targetType → 列展示文案
 export const TARGET_TYPE_LABEL_MAP: Partial<
   Record<ToolPricingTargetType, string>
 > = {
@@ -32,7 +38,7 @@ export const TARGET_TYPE_LABEL_MAP: Partial<
   ),
 };
 
-// 添加工具列表
+// 「添加工具」Popover 条目，CustomPopover.onClick 会带上 value 作为新建类型
 const ADD_TOOL_LIST: CustomPopoverItem[] = [
   {
     value: ToolPricingTargetType.PLUGIN,
@@ -48,29 +54,111 @@ const ADD_TOOL_LIST: CustomPopoverItem[] = [
   },
 ];
 
+/**
+ * 组件入参：`spaceId` 用于列表与表单保存绑定工作空间。
+ */
 interface ToolPricingTabProps {
   spaceId: number;
 }
 
 /**
- * 工具定价模块
+ * 工具定价 Tab：列出 MCP / 插件 / 工作流定价，支持新建、编辑与删除。
+ * 列表：`apiListPricingConfig`；删除：`apiDeleteToolPricing`；表单：`ToolPricingFormModal`。
+ * @returns 定价 Tab 的布局与表格
  */
 const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
+  /** 表格请求 loading */
   const [loading, setLoading] = useState<boolean>(false);
+  /** 工具名称关键词（可与列表过滤串联） */
   const [keyword, setKeyword] = useState('');
+  /** 插件 / 工作流 / MCP 筛选 */
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  /** 定价表单 Modal 开关 */
   const [toolModalOpen, setToolModalOpen] = useState<boolean>(false);
-  const [creatingTargetType, setCreatingTargetType] =
+
+  /** 新建：Popover 选中的类型；编辑：当前行的 targetType，供 Modal / Created */
+  const [selectedTargetType, setSelectedTargetType] =
     useState<ToolPricingTargetType | null>(null);
+
+  /** 非空时为编辑模式，弹窗内回显并可提交带上 id */
+  const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
+    null,
+  );
+  /** 供 XProTable 调用 reload（删除后、表单保存成功后刷新列表） */
   const actionRef = useRef<ActionType>();
 
+  /** 删除定价：`handleDelete` 内二次确认后执行 */
+  const { run: removePricingConfig } = useRequest(apiDeleteToolPricing, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
+      actionRef.current?.reload();
+    },
+    onError: () => {
+      message.error(dict('PC.Common.Global.operationFailed'));
+    },
+  });
+
+  /** 表格内切换「开启收费」，成功后刷新列表 */
+  const { run: runUpdateToolPricing } = useRequest(apiUpdateToolPricing, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.SpaceResourcePricing.toggleSuccess'));
+      actionRef.current?.reload();
+    },
+    onError: () => {
+      message.error(dict('PC.Common.Global.operationFailed'));
+    },
+  });
+
+  /** 关闭定价表单并重置新建/编辑状态 */
+  const closeToolModal = () => {
+    setToolModalOpen(false);
+    setEditItem(null);
+    setSelectedTargetType(null);
+  };
+
+  /** 从 Popover 选择类型后打开新建表单 */
   const handleClickAddToolType = (item: CustomPopoverItem) => {
     const targetType = item.value as ToolPricingTargetType;
-    setCreatingTargetType(targetType);
+    setSelectedTargetType(targetType);
+    setEditItem(null);
     setToolModalOpen(true);
   };
 
+  /** 编辑行：写入 editItem 后打开表单弹窗（回显在子组件） */
+  const handleOpenEdit = (record: ResourcePricingConfigInfo) => {
+    setEditItem(record);
+    setSelectedTargetType(record.targetType);
+    setToolModalOpen(true);
+  };
+
+  /** 删除行：二次确认通过后调用 `removePricingConfig` */
+  const handleDelete = (item: ResourcePricingConfigInfo) => {
+    modalConfirm(
+      dict('PC.Common.Global.confirmDelete'),
+      item.targetObjectInfo?.name || item.targetId || '',
+      () => removePricingConfig(item.id),
+    );
+  };
+
+  /** Switch：更新本条配置的 status（启用/禁用对用户计费） */
+  const handleToggleStatus = (
+    row: ResourcePricingConfigInfo,
+    checked: boolean,
+  ) => {
+    runUpdateToolPricing({
+      ...row,
+      spaceId: row.spaceId ?? spaceId,
+      status: checked
+        ? ResourcePricingStatus.ENABLED
+        : ResourcePricingStatus.DISABLED,
+    });
+  };
+
+  /** ProTable 列配置：详情见各列 render */
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
+    // 名称 + 简述 + 图标/首字母
     {
       title: dict('PC.Pages.SpaceResourcePricing.name'),
       dataIndex: ['targetObjectInfo', 'name'],
@@ -106,6 +194,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         );
       },
     },
+    // 工具大类：插件 / 工作流 / MCP
     {
       title: dict('PC.Pages.SpaceResourcePricing.toolTargetType'),
       dataIndex: 'targetType',
@@ -118,6 +207,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         return TARGET_TYPE_LABEL_MAP[tt as ToolPricingTargetType] ?? '-';
       },
     },
+    // ¥单价 + 「/次」单位 + 试用次数徽标
     {
       title: dict('PC.Pages.SpaceResourcePricing.price'),
       dataIndex: 'price',
@@ -148,6 +238,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         );
       },
     },
+    // 开启/关闭对用户计费（立即调保存接口）
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       dataIndex: 'status',
@@ -168,10 +259,11 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         <Switch
           size="small"
           checked={record.status === ResourcePricingStatus.ENABLED}
-          // onChange={(checked) => handleToggleStatus(record, checked)}
+          onChange={(checked) => handleToggleStatus(record, checked)}
         />
       ),
     },
+    // 编辑打开表单；删除二次确认后调接口
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
@@ -186,13 +278,13 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
             {
               key: 'edit',
               label: dict('PC.Common.Global.edit'),
-              // onClick: (row) => openEdit(row),
+              onClick: (row) => handleOpenEdit(row),
             },
             {
               key: 'delete',
               label: dict('PC.Common.Global.delete'),
               danger: true,
-              // onClick: (row) => handleDelete(row),
+              onClick: (row) => handleDelete(row),
             },
           ]}
         />
@@ -230,6 +322,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
 
   return (
     <div>
+      {/* 标题 + 「添加工具」Popover */}
       <div className={pricingStyles.tabHeader}>
         <h4 className={pricingStyles.tabTitle}>
           {dict('PC.Pages.SpaceResourcePricing.toolTitle')}
@@ -240,6 +333,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
           </Button>
         </CustomPopover>
       </div>
+      {/* 预留：关键词 + 类型筛选（可与 request 过滤串联） */}
       <div className={pricingStyles.searchBar}>
         <Input
           placeholder={dict(
@@ -284,6 +378,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
           {dict('PC.Pages.SpaceResourcePricing.categoryMCP')}
         </Button>
       </div>
+      {/* 工具定价列表 */}
       <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
@@ -292,23 +387,21 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         loading={loading}
         pagination={false}
       />
+      {/* 关闭收费说明 */}
       <div className={pricingStyles.billingNotice}>
         <span className={pricingStyles.noticeIcon}>ⓘ</span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
       </div>
 
-      {/* 工具添加弹窗 */}
+      {/* 新建 / 编辑工具定价（含选工具 Created） */}
       <ToolPricingFormModal
         spaceId={spaceId}
         open={toolModalOpen}
-        targetType={creatingTargetType}
-        onCancel={() => {
-          setToolModalOpen(false);
-          setCreatingTargetType(null);
-        }}
+        targetType={selectedTargetType as ToolPricingTargetType}
+        editItem={editItem}
+        onCancel={closeToolModal}
         onSaved={() => {
-          setToolModalOpen(false);
-          setCreatingTargetType(null);
+          closeToolModal();
           actionRef.current?.reload();
         }}
       />

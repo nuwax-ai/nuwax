@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { TARGET_TYPE_LABEL_MAP } from '..';
 import { apiUpdateToolPricing } from '../../../services/resource';
 import {
+  ResourcePricingConfigInfo,
   ResourcePricingStatus,
   ResourcePricingType,
   ToolPricingInfo,
@@ -16,10 +17,16 @@ import {
 } from '../../../types/resource';
 import styles from '../../index.less';
 
+/** 表单弹窗 z-index（嵌套的 Created 需高于此值，否则列表弹层会被压住） */
+const TOOL_PRICING_FORM_MODAL_Z = 1000;
+const TOOL_CREATED_PICK_MODAL_Z = 1120;
+
 interface ToolPricingFormModalProps {
   spaceId: number;
   open: boolean;
+  /** 新建时必传插件/工作流/MCP；编辑时用 editItem.targetType */
   targetType: ToolPricingTargetType;
+  editItem: ResourcePricingConfigInfo | null;
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -31,6 +38,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
   spaceId,
   open,
   targetType,
+  editItem,
   onCancel,
   onSaved,
 }) => {
@@ -54,20 +62,6 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
     return AgentComponentTypeEnum.MCP;
   };
 
-  // // 获取工具类型标签
-  // const getTargetTypeLabel = (type: ToolPricingTargetType | null) => {
-  //   if (type === ToolPricingTargetType.PLUGIN) {
-  //     return dict('PC.Pages.SpaceResourcePricing.categoryPlugin');
-  //   }
-  //   if (type === ToolPricingTargetType.WORKFLOW) {
-  //     return dict('PC.Pages.SpaceResourcePricing.categoryWorkflow');
-  //   }
-  //   if (type === ToolPricingTargetType.MCP) {
-  //     return dict('PC.Pages.SpaceResourcePricing.categoryMCP');
-  //   }
-  //   return '-';
-  // };
-
   // 获取弹窗标题
   const getModalTitle = (type: ToolPricingTargetType | null) => {
     if (type === ToolPricingTargetType.PLUGIN) {
@@ -88,14 +82,27 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
       setSelectedTool(null);
       return;
     }
+
     setSelectedTool(null);
+    if (editItem) {
+      form.setFieldsValue({
+        targetId: String(editItem.targetId),
+        description: editItem.targetObjectInfo?.description ?? '',
+        price: editItem.price ?? 0,
+        pricingType: editItem.pricingType ?? ResourcePricingType.ONE_TIME,
+        trialCount: editItem.trialCount ?? 0,
+        status: editItem.status === ResourcePricingStatus.ENABLED,
+      });
+      return;
+    }
+
     form.setFieldsValue({
       pricingType: ResourcePricingType.ONE_TIME,
       price: 0,
       trialCount: 0,
       status: true,
     });
-  }, [open, targetType, form]);
+  }, [open, editItem, targetType, form]);
 
   // 添加工具后回填工具名称与描述
   const handleCreatedAdded = (tool: CreatedNodeItem) => {
@@ -108,13 +115,14 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
     });
   };
 
-  // 添加工具
+  // 新增 / 编辑提交
   const handleSubmit = async () => {
     if (!targetType) {
       return;
     }
     const values = await form.validateFields();
     const payload: ToolPricingInfo = {
+      ...(editItem || {}),
       targetType,
       targetId: String(values.targetId || ''),
       pricingType: values.pricingType || ResourcePricingType.ONE_TIME,
@@ -132,7 +140,11 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
     setSaving(true);
     try {
       await apiUpdateToolPricing(payload);
-      message.success(dict('PC.Pages.SpaceResourcePricing.addSuccess'));
+      message.success(
+        editItem
+          ? dict('PC.Pages.SpaceResourcePricing.editSuccess')
+          : dict('PC.Pages.SpaceResourcePricing.addSuccess'),
+      );
       onSaved();
     } catch (error) {
       message.error(dict('PC.Common.Global.operationFailed'));
@@ -146,13 +158,18 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
       <CustomFormModal
         form={form}
         title={getModalTitle(targetType)}
-        open={open && !!targetType}
+        open={open}
         width={520}
         centered
+        zIndex={TOOL_PRICING_FORM_MODAL_Z}
         loading={saving}
         onCancel={onCancel}
         onConfirm={handleSubmit}
-        okText={dict('PC.Common.Global.confirm')}
+        okText={
+          editItem
+            ? dict('PC.Common.Global.save')
+            : dict('PC.Common.Global.confirm')
+        }
       >
         <Form
           form={form}
@@ -166,10 +183,11 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
             <div
               onClick={() => setCreatedOpen(true)}
               className={`${styles.toolSelector} ${
-                selectedTool ? '' : styles.toolSelectorPlaceholder
-              }`}
+                selectedTool || editItem ? '' : styles.toolSelectorPlaceholder
+              } ${editItem ? styles.toolSelectorReadonly : ''}`}
             >
-              {selectedTool?.name ||
+              {editItem?.targetObjectInfo?.name ||
+                selectedTool?.name ||
                 dict('PC.Pages.SpaceResourcePricing.selectTool')}
             </div>
           </Form.Item>
@@ -243,20 +261,19 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
         </Form>
       </CustomFormModal>
 
-      {targetType && (
-        <Created
-          open={createdOpen}
-          onCancel={() => setCreatedOpen(false)}
-          checkTag={getCreatedTagByTargetType(targetType)}
-          onAdded={handleCreatedAdded}
-          tabs={[
-            {
-              label: TARGET_TYPE_LABEL_MAP[targetType] || '',
-              key: getCreatedTagByTargetType(targetType),
-            },
-          ]}
-        />
-      )}
+      <Created
+        open={createdOpen}
+        modalZIndex={TOOL_CREATED_PICK_MODAL_Z}
+        onCancel={() => setCreatedOpen(false)}
+        checkTag={getCreatedTagByTargetType(targetType)}
+        onAdded={handleCreatedAdded}
+        tabs={[
+          {
+            label: TARGET_TYPE_LABEL_MAP[targetType] || '',
+            key: getCreatedTagByTargetType(targetType),
+          },
+        ]}
+      />
     </>
   );
 };
