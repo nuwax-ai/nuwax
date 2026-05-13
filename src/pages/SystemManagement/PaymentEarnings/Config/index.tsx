@@ -5,157 +5,127 @@ import {
   apiGetPaymentConfig,
   apiSavePaymentConfig,
 } from '@/services/subscriptionService';
-import type { PaymentConfigInfo } from '@/types/interfaces/subscription';
-import { AlipayCircleFilled, WechatFilled } from '@ant-design/icons';
-import { Button, Card, Form, Input, Tabs, message } from 'antd';
+import { Alert, Button, Form, Input, InputNumber, Tabs, message } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import styles from './index.less';
 
-const MOCK_CONFIG: PaymentConfigInfo = {
-  alipayAppId: '2021000000000000',
-  alipayPrivateKey: '',
-  alipayPublicKey: '',
-  alipayNotifyUrl: 'https://yourdomain.com/api/payment/alipay/notify',
-  wechatAppId: 'wx0000000000000000',
-  wechatMchId: '1234567890',
-  wechatApiKey: '',
-  wechatNotifyUrl: 'https://yourdomain.com/api/payment/wechat/notify',
-};
+const cx = classNames.bind(styles);
 
+/**
+ * 系统管理 - 支付与结算配置页面
+ * 包含：开发者分成比例设置、支付网关地址配置
+ */
 const Config: React.FC = () => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
 
+  // 初始化加载配置数据
   useEffect(() => {
-    form.setFieldsValue(MOCK_CONFIG);
     apiGetPaymentConfig()
       .then((res) => {
-        if (res?.data) form.setFieldsValue(res.data);
+        if (res?.data) {
+          form.setFieldsValue(res.data);
+        }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {
+        console.error('Failed to fetch payment config');
+      });
+  }, [form]);
 
+  // 执行保存配置操作
   const handleSave = async () => {
-    const values = await form.validateFields();
-    setSaving(true);
     try {
-      const res = await apiSavePaymentConfig(values as PaymentConfigInfo);
+      const values = await form.validateFields();
+      setSaving(true);
+      const res = await apiSavePaymentConfig(values);
       if (res?.code === SUCCESS_CODE) {
         message.success(dict('PC.Common.Global.saveSuccess'));
-      } else {
-        message.success(dict('PC.Common.Global.saveSuccess'));
       }
-    } catch {
-      message.success(dict('PC.Common.Global.saveSuccess'));
+    } catch (error) {
+      console.error('Save payment config error:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  const alipayTab = (
-    <Card style={{ maxWidth: 560 }}>
-      <Form.Item name="alipayAppId" label="App ID" rules={[{ required: true }]}>
-        <Input placeholder="2021000000000000" />
-      </Form.Item>
+  // 渲染“开发者分成比例”标签页内容
+  const renderShareRatioTab = () => (
+    <div className={cx(styles['content-card'])}>
       <Form.Item
-        name="alipayPrivateKey"
-        label={dict('PC.Pages.SystemPaymentConfig.privateKey')}
-        rules={[{ required: true }]}
+        label={dict('PC.Pages.SystemPaymentConfig.serviceRatio')}
+        name="serviceRatio"
+        required
+        tooltip={dict('PC.Pages.SystemPaymentConfig.serviceRatioHint')}
       >
-        <Input.TextArea
-          rows={4}
-          placeholder={dict(
-            'PC.Pages.SystemPaymentConfig.privateKeyPlaceholder',
-          )}
-        />
+        <div className={cx(styles['ratio-input-wrapper'])}>
+          <InputNumber
+            min={0}
+            max={100}
+            precision={2}
+            placeholder="1"
+            style={{ width: 120, marginRight: '5px' }}
+          />
+          <span className={cx(styles.unit)}>%</span>
+        </div>
       </Form.Item>
-      <Form.Item
-        name="alipayPublicKey"
-        label={dict('PC.Pages.SystemPaymentConfig.alipayPublicKey')}
-        rules={[{ required: true }]}
-      >
-        <Input.TextArea
-          rows={4}
-          placeholder={dict(
-            'PC.Pages.SystemPaymentConfig.alipayPublicKeyPlaceholder',
-          )}
-        />
-      </Form.Item>
-      <Form.Item
-        name="alipayNotifyUrl"
-        label={dict('PC.Pages.SystemPaymentConfig.notifyUrl')}
-      >
-        <Input placeholder="https://yourdomain.com/api/payment/alipay/notify" />
-      </Form.Item>
-    </Card>
+    </div>
   );
 
-  const wechatTab = (
-    <Card style={{ maxWidth: 560 }}>
-      <Form.Item name="wechatAppId" label="App ID" rules={[{ required: true }]}>
-        <Input placeholder="wx0000000000000000" />
-      </Form.Item>
+  // 渲染“支付网关配置”标签页内容
+  const renderGatewayTab = () => (
+    <div className={cx(styles['content-card'])}>
+      {/* 风险提示信息 */}
+      <div className={cx(styles['alert-wrapper'])}>
+        <Alert
+          message={dict('PC.Pages.SystemPaymentConfig.gatewayAlert')}
+          type="info"
+          showIcon
+        />
+      </div>
+
       <Form.Item
-        name="wechatMchId"
-        label={dict('PC.Pages.SystemPaymentConfig.mchId')}
-        rules={[{ required: true }]}
+        label={dict('PC.Pages.SystemPaymentConfig.gatewayUrl')}
+        name="gatewayUrl"
+        required
       >
-        <Input placeholder="1234567890" />
-      </Form.Item>
-      <Form.Item
-        name="wechatApiKey"
-        label={dict('PC.Pages.SystemPaymentConfig.apiKey')}
-        rules={[{ required: true }]}
-      >
-        <Input.Password
-          placeholder={dict('PC.Pages.SystemPaymentConfig.apiKeyPlaceholder')}
+        <Input
+          placeholder="https://payment-gateway.nuwax.com"
+          style={{ maxWidth: 600 }}
         />
       </Form.Item>
-      <Form.Item
-        name="wechatNotifyUrl"
-        label={dict('PC.Pages.SystemPaymentConfig.notifyUrl')}
-      >
-        <Input placeholder="https://yourdomain.com/api/payment/wechat/notify" />
-      </Form.Item>
-    </Card>
+    </div>
   );
 
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.paymentConfig')}
+      tips={dict('PC.Pages.SystemPaymentConfig.pageTips')}
       rightSlot={
         <Button type="primary" loading={saving} onClick={handleSave}>
           {dict('PC.Common.Global.save')}
         </Button>
       }
     >
-      <Form form={form} layout="vertical">
-        <Tabs
-          items={[
-            {
-              key: 'alipay',
-              label: (
-                <span>
-                  <AlipayCircleFilled
-                    style={{ color: '#1677ff', marginRight: 6 }}
-                  />
-                  {dict('PC.Pages.SystemPaymentConfig.tabAlipay')}
-                </span>
-              ),
-              children: alipayTab,
-            },
-            {
-              key: 'wechat',
-              label: (
-                <span>
-                  <WechatFilled style={{ color: '#07c160', marginRight: 6 }} />
-                  {dict('PC.Pages.SystemPaymentConfig.tabWechat')}
-                </span>
-              ),
-              children: wechatTab,
-            },
-          ]}
-        />
-      </Form>
+      <div className={cx(styles.container)}>
+        <Form form={form} layout="vertical">
+          <Tabs
+            defaultActiveKey="ratio"
+            items={[
+              {
+                key: 'ratio',
+                label: dict('PC.Pages.SystemPaymentConfig.tabShareRatio'),
+                children: renderShareRatioTab(),
+              },
+              {
+                key: 'gateway',
+                label: dict('PC.Pages.SystemPaymentConfig.tabGateway'),
+                children: renderGatewayTab(),
+              },
+            ]}
+          />
+        </Form>
+      </div>
     </WorkspaceLayout>
   );
 };
