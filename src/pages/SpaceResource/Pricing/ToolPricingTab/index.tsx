@@ -23,7 +23,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
 
   const columns: ProColumns<ToolPricingInfo>[] = [
     {
-      title: dict('PC.Pages.SpaceResourcePricing.category'),
+      title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
       dataIndex: 'category',
       key: 'category',
       width: 100,

@@ -11,7 +11,7 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, InputNumber, Radio, message } from 'antd';
+import { Form, Input, InputNumber, Radio, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 
@@ -47,9 +47,6 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState<boolean>(false);
-  const [pricingType, setPricingType] = useState<ResourcePricingType>(
-    ResourcePricingType.BUYOUT,
-  );
 
   // 添加技能弹窗是否打开
   const [createdOpen, setCreatedOpen] = useState<boolean>(false);
@@ -60,35 +57,36 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
 
   useEffect(() => {
     if (!open) {
+      form.resetFields();
       return;
     }
-    if (editItem) {
-      setSelectedSkill(null);
-      setPricingType(
-        editItem.pricingType === ResourcePricingType.MONTHLY
-          ? ResourcePricingType.MONTHLY
-          : ResourcePricingType.BUYOUT,
-      );
-      form.setFieldsValue({
-        skillName: editItem.targetObjectInfo?.name || '',
-        // category: editItem.targetObjectInfo?.category || 'text',
-        description: editItem.targetObjectInfo?.description || '',
-        price: editItem.price || 0,
-      });
-      return;
-    }
-    setPricingType(ResourcePricingType.BUYOUT);
     setSelectedSkill(null);
-    form.resetFields();
+
+    if (editItem) {
+      form.setFieldsValue({
+        skillName: editItem.targetObjectInfo?.name,
+        skillId: editItem.targetId,
+        pricingType: editItem.pricingType || ResourcePricingType.BUYOUT,
+        description: editItem.targetObjectInfo?.description,
+        price: editItem.price || 0,
+        trialCount: editItem.trialCount ?? -1,
+        status: editItem.status === ResourcePricingStatus.ENABLED,
+      });
+    } else {
+      form.setFieldsValue({
+        pricingType: ResourcePricingType.BUYOUT,
+        trialCount: -1,
+        status: ResourcePricingStatus.ENABLED,
+      });
+    }
   }, [open, editItem, form]);
 
-  // 创建技能后回填名称、分类与描述
+  // 创建技能后回填名称与描述
   const handleCreatedAdded = (skill: CreatedNodeItem) => {
     setCreatedOpen(false);
     setSelectedSkill(skill);
     form.setFieldsValue({
       skillId: skill.targetId,
-      category: skill.category,
       description: skill.description,
     });
   };
@@ -96,21 +94,24 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
   // 提交表单
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    const targetId = editItem?.targetId || String(values.skillId || '');
-    if (!targetId) {
-      message.error('请选择技能');
+    const { skillId, price, trialCount, status, pricingType } = values;
+    if (!skillId) {
+      message.warning('请选择技能');
       return;
     }
 
     setSaving(true);
     try {
+      const statusValue = status
+        ? ResourcePricingStatus.ENABLED
+        : ResourcePricingStatus.DISABLED;
       await apiUpdateToolPricing({
         targetType: ToolPricingTargetType.SKILL,
-        targetId: String(targetId),
-        pricingType,
-        price: Number(values.price || 0),
-        trialCount: editItem?.trialCount || 0,
-        status: editItem?.status ?? ResourcePricingStatus.ENABLED,
+        targetId: skillId,
+        pricingType: pricingType || ResourcePricingType.BUYOUT,
+        price,
+        trialCount,
+        status: statusValue,
         spaceId,
       });
       message.success(
@@ -136,6 +137,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
       open={open}
       width={520}
       centered
+      classNames={{ body: styles['skill-pricing-modal-body'] }}
       loading={saving}
       onCancel={onCancel}
       onConfirm={handleSubmit}
@@ -146,49 +148,29 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
       }
     >
       <Form form={form} layout="vertical" requiredMark={customizeRequiredMark}>
-        {editItem ? (
-          <Form.Item
-            label={dict('PC.Pages.SpaceResourcePricing.skillName')}
-            name="skillName"
-            rules={[{ required: true }]}
-          >
-            <Input disabled />
-          </Form.Item>
-        ) : (
-          <>
-            <Form.Item
-              label={dict('PC.Pages.SpaceResourcePricing.skillName')}
-              required
-            >
-              <div
-                onClick={() => setCreatedOpen(true)}
-                style={{
-                  height: 36,
-                  border: '1px solid #d9d9d9',
-                  borderRadius: 8,
-                  padding: '0 11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  color: selectedSkill ? 'rgba(0,0,0,0.88)' : 'rgba(0,0,0,0.4)',
-                }}
-              >
-                {selectedSkill?.name ||
-                  dict('PC.Pages.SpaceResourcePricing.selectPlaceholder')}
-              </div>
-            </Form.Item>
-            <Form.Item name="skillId" hidden rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-          </>
-        )}
-
-        {/* 分类 */}
         <Form.Item
-          name="category"
-          label={dict('PC.Pages.SpaceResourcePricing.category')}
+          name="skillName"
+          label={dict('PC.Pages.SpaceResourcePricing.skillName')}
+          required
         >
-          <Input disabled />
+          {editItem ? (
+            <Input disabled />
+          ) : (
+            <div
+              onClick={() => setCreatedOpen(true)}
+              className={`${styles['skill-selector']} ${
+                selectedSkill ? '' : styles['skill-selector-placeholder']
+              }`}
+            >
+              {selectedSkill?.name ||
+                dict('PC.Pages.SpaceResourcePricing.selectPlaceholder')}
+            </div>
+          )}
+        </Form.Item>
+
+        {/* 定价对象ID, 隐藏 */}
+        <Form.Item name="skillId" hidden rules={[{ required: true }]}>
+          <Input />
         </Form.Item>
 
         {/* 描述 */}
@@ -201,35 +183,56 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
 
         {/* 定价模式 */}
         <Form.Item
+          name="pricingType"
           label={dict('PC.Pages.SpaceResourcePricing.pricingMode')}
-          required
+          tooltip={
+            <div>
+              <div>{dict('PC.Pages.SpaceResourcePricing.buyoutHint')}</div>
+              <div>{dict('PC.Pages.SpaceResourcePricing.monthlyHint')}</div>
+            </div>
+          }
         >
           <Radio.Group
-            value={pricingType}
-            onChange={(e) => setPricingType(e.target.value)}
-            className={styles.pricingModelRadio}
+            className={styles['pricing-model-radio']}
             options={SKILL_PRICING_MODE_OPTIONS}
           />
-          <div className={styles.pricingModeHint}>
-            {pricingType === ResourcePricingType.BUYOUT
-              ? dict('PC.Pages.SpaceResourcePricing.buyoutHint')
-              : dict('PC.Pages.SpaceResourcePricing.monthlyHint')}
-          </div>
         </Form.Item>
 
-        {/* 价格 */}
-        <Form.Item
-          name="price"
-          label={dict('PC.Pages.SpaceResourcePricing.price')}
-          rules={[{ required: true }]}
-        >
-          <InputNumber
-            min={0}
-            max={1000000}
-            precision={2}
-            className="w-full"
-            prefix="¥"
-            placeholder={dict('PC.Pages.SpaceResourcePricing.pricePlaceholder')}
+        <div className={styles['form-two-columns']}>
+          {/* 价格 */}
+          <Form.Item
+            name="price"
+            label={dict('PC.Pages.SpaceResourcePricing.price')}
+            rules={[{ required: true }]}
+          >
+            <InputNumber
+              min={0}
+              max={1000000}
+              precision={2}
+              className="w-full"
+              prefix="¥"
+              placeholder={dict(
+                'PC.Pages.SpaceResourcePricing.pricePlaceholder',
+              )}
+            />
+          </Form.Item>
+
+          {/* 可试用次数 */}
+          <Form.Item
+            name="trialCount"
+            label={dict('PC.Pages.SpaceResourcePricing.trialCount')}
+            tooltip="-1 表示不限制试用次数"
+            rules={[{ required: true }]}
+          >
+            <InputNumber min={-1} precision={0} className="w-full" />
+          </Form.Item>
+        </div>
+
+        {/* 状态 */}
+        <Form.Item name="status" label="状态" valuePropName="checked">
+          <Switch
+            checkedChildren={dict('PC.Common.Global.enable')}
+            unCheckedChildren={dict('PC.Common.Global.disable')}
           />
         </Form.Item>
       </Form>
