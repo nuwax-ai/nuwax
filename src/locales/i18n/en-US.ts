@@ -5021,8 +5021,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colPaidAt": "Payment Completion Time",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colRemark": "Remark",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.detailTitle": "Payment Order Details",
-  "PC.Pages.SystemManagement.PaymentEarnings.Orders.devInfo": "Developer Info",
-  "PC.Pages.SystemManagement.PaymentEarnings.Orders.payAccount": "Receiving Account",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colOrderNo": "Order No.",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.viewDetail": "Details",
 

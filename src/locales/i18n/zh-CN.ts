@@ -5020,8 +5020,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colPaidAt": "支付完成时间",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colRemark": "备注",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.detailTitle": "支付订单详情",
-  "PC.Pages.SystemManagement.PaymentEarnings.Orders.devInfo": "开发者信息",
-  "PC.Pages.SystemManagement.PaymentEarnings.Orders.payAccount": "收款账户",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colOrderNo": "订单编号",
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.viewDetail": "详情",
 

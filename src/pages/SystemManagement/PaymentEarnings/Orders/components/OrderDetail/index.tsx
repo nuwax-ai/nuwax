@@ -46,7 +46,9 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
       open={open}
       onOpenChange={onOpenChange}
       width={720}
-      submitter={false}
+      submitter={{
+        render: () => null,
+      }}
       modalProps={{
         destroyOnClose: true,
         centered: true,
@@ -54,13 +56,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
     >
       <div className={cx(styles.detailContent)}>
         {/* 开发者信息 */}
-        <Descriptions
-          title={dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Orders.devInfo',
-          )}
-          column={2}
-          bordered={false}
-        >
+        <Descriptions column={2} bordered={false}>
           <Descriptions.Item
             label={dict(
               'PC.Pages.SystemManagement.PaymentEarnings.Orders.colOrderNo',
@@ -127,18 +123,6 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
           >
             {data.subject || '-'}
           </Descriptions.Item>
-        </Descriptions>
-
-        {/* 收款账户 */}
-        <Descriptions
-          title={dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Orders.payAccount',
-          )}
-          column={2}
-          bordered={false}
-          style={{ marginTop: 24 }}
-        >
-          {/* 设计图中收款账户下暂无具体字段 */}
         </Descriptions>
       </div>
     </XModalForm>
