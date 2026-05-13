@@ -88,6 +88,24 @@ const DeveloperProfile: React.FC = () => {
     }
   }, [realName, form]);
 
+  // 文件上传前校验
+  const beforeUpload = (file: File) => {
+    const isAcceptedFormat =
+      file.type === 'image/jpeg' ||
+      file.type === 'image/jpg' ||
+      file.type === 'image/png';
+    if (!isAcceptedFormat) {
+      message.error(dict('PC.Common.Global.imageFormatError'));
+      return Upload.LIST_IGNORE;
+    }
+    const isLt1M = file.size / 1024 / 1024 < 1;
+    if (!isLt1M) {
+      message.error(dict('PC.Common.Global.imageSizeError'));
+      return Upload.LIST_IGNORE;
+    }
+    return true;
+  };
+
   // 自定义上传逻辑
   const handleUpload = async (
     options: UploadRequestOption,
@@ -318,8 +336,9 @@ const DeveloperProfile: React.FC = () => {
                     }}
                   >
                     <Upload
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png"
                       showUploadList={false}
+                      beforeUpload={beforeUpload}
                       customRequest={(options) =>
                         handleUpload(options, 'front')
                       }
@@ -351,8 +370,9 @@ const DeveloperProfile: React.FC = () => {
                     }}
                   >
                     <Upload
-                      accept="image/*"
+                      accept=".jpg,.jpeg,.png"
                       showUploadList={false}
+                      beforeUpload={beforeUpload}
                       customRequest={(options) => handleUpload(options, 'back')}
                     >
                       {renderUploadBox('back', idCardBackPhotoUrl)}
