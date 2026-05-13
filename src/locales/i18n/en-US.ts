@@ -4923,19 +4923,23 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.invalidAccountNo": "Invalid bank account number format",
 
   // ── System Management - Developer Payment Accounts ─────────────────────────
-  "PC.Pages.SystemDevPayment.colDeveloper": "Developer",
-  "PC.Pages.SystemDevPayment.colAccountType": "Account Type",
-  "PC.Pages.SystemDevPayment.colAccountNo": "Account No.",
-  "PC.Pages.SystemDevPayment.colRealName": "Real Name",
-  "PC.Pages.SystemDevPayment.colBankName": "Bank Name",
-  "PC.Pages.SystemDevPayment.colCreatedAt": "Added Time",
-  "PC.Pages.SystemDevPayment.typeAlipay": "Alipay",
-  "PC.Pages.SystemDevPayment.typeBankCard": "Bank Card",
-  "PC.Pages.SystemDevPayment.colDeveloperId": "Developer ID",
-  "PC.Pages.SystemDevPayment.colEmail": "Email",
-  "PC.Pages.SystemDevPayment.colPhone": "Phone",
-  "PC.Pages.SystemDevPayment.colDefaultAccount": "Default Receiving Account",
-  "PC.Pages.SystemDevPayment.viewDetail": "View Details",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloper": "Developer",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeAlipay": "Alipay",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeBankCard": "Bank Card",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloperId": "Developer ID",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colEmail": "Email",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colPhone": "Phone",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colAccountNo": "Account No.",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDefaultAccount": "Default Receiving Account",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.viewDetail": "View Details",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.modalTitle": "Receiving Account",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.sectionDevInfo": "Developer Info",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.sectionAccountInfo": "Receiving Account",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.settlementMethod": "Settlement Method",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.settlementManual": "Manual",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colBankName": "Bank Name",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colRealName": "Account Name",
+  "PC.Pages.SystemManagement.PaymentEarnings.DevPayment.tagDefault": "Default",
 
   // ── System Management - Withdrawal Management ────────────────────────────────
   "PC.Pages.SystemWithdrawal.colDeveloper": "Developer",
@@ -5019,11 +5023,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPaymentOrders.remark": "Remark",
 
   // ── System Management - Developer Payment Info Drawer ────────────────────
-  "PC.Pages.SystemDevPayment.drawerTitle": "Receiving Account",
-  "PC.Pages.SystemDevPayment.sectionDeveloperInfo": "Developer Info",
-  "PC.Pages.SystemDevPayment.sectionPaymentAccount": "Receiving Account Info",
-  "PC.Pages.SystemDevPayment.settlementMethod": "Settlement Method",
-  "PC.Pages.SystemDevPayment.colBankCard": "Bank Card No.",
 
   // ── System Management - Earnings Details Sub-page ──────────────────────────
   "PC.Pages.SystemEarningsDetail.title": "Earnings Details",

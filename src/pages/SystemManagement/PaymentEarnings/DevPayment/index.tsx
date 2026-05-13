@@ -9,7 +9,7 @@ import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
 import React, { useCallback, useState } from 'react';
-import PaymentDetailDrawer from './PaymentDetailDrawer';
+import PaymentDetailModal from './components/PaymentDetailModal';
 
 interface DevPaymentExt extends DevPaymentAccountInfo {
   email: string;
@@ -54,52 +54,74 @@ const MOCK_ACCOUNTS: DevPaymentExt[] = [
 ];
 
 const DevPayment: React.FC = () => {
-  const [detailsVisible, setDetailsVisible] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState<any>();
-  const handleCloseDetails = useCallback(() => {
-    setDetailsVisible(false);
-    setCurrentRecord(undefined);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState<DevPaymentExt | null>(
+    null,
+  );
+
+  const handleShowDetail = useCallback((record: DevPaymentExt) => {
+    setCurrentRecord(record);
+    setModalVisible(true);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setModalVisible(false);
+    setCurrentRecord(null);
   }, []);
 
   const columns: ProColumns<DevPaymentExt>[] = [
     {
-      title: dict('PC.Pages.SystemDevPayment.colDeveloperId'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloperId',
+      ),
       dataIndex: 'developerId',
       key: 'developerId',
       width: 100,
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colDeveloper'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDeveloper',
+      ),
       dataIndex: 'developerName',
       key: 'developerName',
       ellipsis: true,
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colEmail'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colEmail',
+      ),
       dataIndex: 'email',
       key: 'email',
       ellipsis: true,
       render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colPhone'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colPhone',
+      ),
       dataIndex: 'phone',
       key: 'phone',
       render: (val) => val || '-',
     },
     {
-      title: dict('PC.Pages.SystemDevPayment.colDefaultAccount'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.colDefaultAccount',
+      ),
       key: 'defaultAccount',
       search: false,
       render: (_, record) => (
         <span>
           {record.accountType === DevPaymentTypeEnum.Alipay ? (
             <Tag icon={<AlipayCircleFilled />} color="blue">
-              {dict('PC.Pages.SystemDevPayment.typeAlipay')}
+              {dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeAlipay',
+              )}
             </Tag>
           ) : (
             <Tag icon={<BankFilled />} color="green">
-              {dict('PC.Pages.SystemDevPayment.typeBankCard')}
+              {dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.typeBankCard',
+              )}
             </Tag>
           )}
           {record.accountNo || '-'}
@@ -117,11 +139,10 @@ const DevPayment: React.FC = () => {
           actions={[
             {
               key: 'detail',
-              label: dict('PC.Pages.SystemDevPayment.viewDetail'),
-              onClick: (r) => {
-                setCurrentRecord(r);
-                setDetailsVisible(true);
-              },
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.DevPayment.viewDetail',
+              ),
+              onClick: (r) => handleShowDetail(r),
             },
           ]}
         />
@@ -158,10 +179,10 @@ const DevPayment: React.FC = () => {
           }}
         />
       </WorkspaceLayout>
-      <PaymentDetailDrawer
-        open={detailsVisible}
+      <PaymentDetailModal
+        open={modalVisible}
         record={currentRecord}
-        onClose={handleCloseDetails}
+        onCancel={handleCloseDetail}
       />
     </>
   );
