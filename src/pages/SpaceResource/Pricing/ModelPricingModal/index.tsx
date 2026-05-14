@@ -214,8 +214,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           inputPrice: tier.inputPrice,
           outputPrice: tier.outputPrice,
           cachePrice: tier.cachePrice,
-          created: tier.created || '',
-          modified: tier.modified || '',
         };
         // 更新档位
         if (tier.id) {
@@ -232,8 +230,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           : dict('PC.Pages.SpaceResourcePricing.addSuccess'),
       );
       onSaved();
-    } catch (error) {
-      message.error(dict('PC.Common.Global.operationFailed'));
     } finally {
       setSaving(false);
     }
@@ -345,8 +341,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                 <InputNumber
                   value={tier.inputPrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
                   className={styles.tierPriceInput}
                   onChange={(v) => updateTier(index, 'inputPrice', v || 0)}
@@ -359,8 +356,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                 <InputNumber
                   value={tier.outputPrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
                   className={styles.tierPriceInput}
                   onChange={(v) => updateTier(index, 'outputPrice', v || 0)}
@@ -373,8 +371,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                 <InputNumber
                   value={tier.cachePrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
                   className={styles.tierPriceInput}
                   onChange={(v) => updateTier(index, 'cachePrice', v || 0)}
