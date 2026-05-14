@@ -31,6 +31,7 @@ import NodePanelDrawer from '../panels/PropertyPanel';
 import ControlPanel from './ControlPanel';
 import ErrorList from './ErrorList';
 import Header from './Header';
+import StencilContent from './Sidebar';
 
 export interface WorkflowLayoutProps {
   // Header Props
@@ -192,7 +193,6 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 }) => {
   return (
     <div id="container">
-      {/* 顶部的名称和发布等按钮 */}
       <Header
         hideBack={hideBack}
         isValidLoading={isValidLoading}
@@ -208,36 +208,48 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         onBack={onBack}
       />
 
-      <Spin
-        spinning={globalLoadingTime > 0}
-        indicator={<LoadingOutlined spin />}
-        wrapperClassName="spin-workflow-global-style"
-      >
-        <GraphContainer
-          graphParams={graphParams}
-          ref={graphRef}
-          changeDrawer={handleNodeClick}
-          changeEdge={nodeChangeEdge}
-          changeCondition={changeNode}
-          removeNode={deleteNode}
-          copyNode={copyNode}
-          changeZoom={changeZoom}
-          createNodeByPortOrEdge={createNodeByPortOrEdge}
-          onSaveNode={handleSaveNode}
-          onClickBlank={handleClickBlank}
-          onInit={handleInitLoading}
-          onRefresh={handleRefreshGraph}
-        />
-      </Spin>
+      <div className="workflow-body">
+        <div className="workflow-sidebar">
+          <StencilContent
+            isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
+            dragChild={(child, position) => {
+              dragChild(child, position);
+            }}
+          />
+          <div className="workflow-minimap" id="minimap-container" />
+        </div>
 
-      <ControlPanel
-        dragChild={dragChild}
-        foldWrapItem={foldWrapItem}
-        changeGraph={changeGraph}
-        handleTestRun={testRunAll}
-        testRunLoading={testRunLoading}
-        zoomSize={(info?.extension?.size as number) ?? 1}
-      />
+        <div className="workflow-canvas">
+          <Spin
+            spinning={globalLoadingTime > 0}
+            indicator={<LoadingOutlined spin />}
+            wrapperClassName="spin-workflow-global-style"
+          >
+            <GraphContainer
+              graphParams={graphParams}
+              ref={graphRef}
+              changeDrawer={handleNodeClick}
+              changeEdge={nodeChangeEdge}
+              changeCondition={changeNode}
+              removeNode={deleteNode}
+              copyNode={copyNode}
+              changeZoom={changeZoom}
+              createNodeByPortOrEdge={createNodeByPortOrEdge}
+              onSaveNode={handleSaveNode}
+              onClickBlank={handleClickBlank}
+              onInit={handleInitLoading}
+              onRefresh={handleRefreshGraph}
+            />
+          </Spin>
+
+          <ControlPanel
+            changeGraph={changeGraph}
+            handleTestRun={testRunAll}
+            testRunLoading={testRunLoading}
+            zoomSize={(info?.extension?.size as number) ?? 1}
+          />
+        </div>
+      </div>
 
       <FoldWrap
         className="fold-wrap-style"

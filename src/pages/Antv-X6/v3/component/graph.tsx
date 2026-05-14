@@ -21,6 +21,7 @@ import {
   Graph,
   History,
   Keyboard,
+  MiniMap,
   Node,
   Selection,
   Shape,
@@ -470,9 +471,17 @@ const initGraph = ({
         rubberband: false,
         showNodeSelectionBox: false,
         showEdgeSelectionBox: false,
-        pointerEvents: 'none', //
+        pointerEvents: 'none',
       }),
-    ); // ，
+    )
+    .use(
+      new MiniMap({
+        container: document.getElementById('minimap-container') || undefined,
+        width: 200,
+        height: 140,
+        padding: 10,
+      }),
+    );
 
   /**
    *

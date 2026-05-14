@@ -710,7 +710,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       };
     }, []);
 
-    return <div ref={containerRef} id={GRAPH_CONTAINER_ID} />;
+    return (
+      <div
+        ref={containerRef}
+        id={GRAPH_CONTAINER_ID}
+        style={{ width: '100%', height: '100%' }}
+      />
+    );
   },
 );
 
