@@ -70,14 +70,12 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
         pricingType: editItem.pricingType || ResourcePricingType.BUYOUT,
         description: editItem.targetObjectInfo?.description,
         price: editItem.price || 0,
-        trialCount: editItem.trialCount ?? -1,
         status: editItem.status === ResourcePricingStatus.ENABLED,
       });
     } else {
       form.setFieldsValue({
         pricingType: ResourcePricingType.BUYOUT,
-        trialCount: -1,
-        status: ResourcePricingStatus.ENABLED,
+        status: true,
       });
     }
   }, [open, editItem, form]);
@@ -96,7 +94,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
   // 提交表单
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    const { skillId, price, trialCount, status, pricingType } = values;
+    const { skillId, price, status, pricingType } = values;
     if (!skillId) {
       message.warning('请选择技能');
       return;
@@ -112,7 +110,6 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
         targetId: skillId,
         pricingType,
         price,
-        trialCount,
         status: statusValue,
         spaceId,
       });
@@ -217,6 +214,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
             <InputNumber
               min={0}
               max={100000000}
+              step={0.01}
               precision={2}
               className="w-full"
               prefix="¥"
@@ -225,30 +223,18 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
               )}
             />
           </Form.Item>
-
-          {/* 可试用次数 */}
+          {/* 开启收费 */}
           <Form.Item
-            name="trialCount"
-            label={dict('PC.Pages.SpaceResourcePricing.trialCount')}
-            tooltip="-1 表示不限制试用次数"
-            rules={[{ required: true }]}
+            name="status"
+            label={dict('PC.Pages.SpaceResourcePricing.billingSwitch')}
+            valuePropName="checked"
           >
-            <InputNumber
-              min={-1}
-              precision={0}
-              max={100000000}
-              className="w-full"
+            <Switch
+              checkedChildren={dict('PC.Common.Global.enable')}
+              unCheckedChildren={dict('PC.Common.Global.disable')}
             />
           </Form.Item>
         </div>
-
-        {/* 状态 */}
-        <Form.Item name="status" label="状态" valuePropName="checked">
-          <Switch
-            checkedChildren={dict('PC.Common.Global.enable')}
-            unCheckedChildren={dict('PC.Common.Global.disable')}
-          />
-        </Form.Item>
       </Form>
 
       {/* 添加技能弹窗 */}
