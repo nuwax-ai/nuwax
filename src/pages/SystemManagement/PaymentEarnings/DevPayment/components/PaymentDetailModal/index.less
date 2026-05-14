@@ -1,0 +1,129 @@
+@import '@/styles/token.less';
+
+.payment-detail-modal {
+  :global {
+    .ant-modal-content {
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .ant-modal-header {
+      border-bottom: none;
+      margin-bottom: 24px;
+
+      .ant-modal-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: @text-color;
+      }
+    }
+  }
+
+  .section-title {
+    font-size: 14px;
+    color: @text-color-secondary;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px 48px;
+    margin-bottom: 32px;
+
+    .info-item {
+      .label {
+        font-size: 13px;
+        color: @text-color-secondary;
+        margin-bottom: 8px;
+      }
+
+      .value {
+        font-size: 15px;
+        color: @text-color;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .divider {
+    height: 1px;
+    background-color: @border-color-split;
+    margin-bottom: 24px;
+  }
+
+  .account-card {
+    background: #f5f8ff;
+    border: 1px solid #e1e9ff;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+
+      .icon-wrapper {
+        width: 40px;
+        height: 40px;
+        background: #e6f0ff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        color: @primary-color;
+        font-size: 20px;
+      }
+
+      .title-info {
+        flex: 1;
+
+        .name {
+          font-size: 16px;
+          font-weight: 600;
+          color: @text-color;
+          margin-bottom: 2px;
+        }
+
+        .type {
+          font-size: 12px;
+          color: @text-color-secondary;
+        }
+      }
+
+      .default-tag {
+        background: #e6f0ff;
+        color: @primary-color;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        padding: 0 8px;
+        height: 22px;
+        line-height: 22px;
+      }
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+
+      .grid-item {
+        .label {
+          font-size: 12px;
+          color: @text-color-secondary;
+          margin-bottom: 4px;
+        }
+
+        .value {
+          font-size: 14px;
+          color: @text-color;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}

@@ -241,6 +241,99 @@ export interface TenantConfigInfo {
 
   /* */
   captchaSceneId: string;
+
+  /*登录页文案 */
+  loginPageText?: string;
+
+  /*登录页副文案 */
+  loginPageSubText?: string;
+
+  /*最大上传文件大小，例如 100MB */
+  maxFileSize?: string;
+
+  /*CAS响应用户属性配置，格式为JSON，如：{"uid":"cas:user","userName":"cas:edu_userName","nickName":"cas:edu_name","phone":"cas:edu_phone","email":"cas:edu_email"} */
+  casUserAttributesConfig?: string;
+
+  /* */
+  skillPublishAudit?: number;
+
+  /* */
+  pageFooterText?: string;
+
+  /* */
+  allowAgentTempChat?: number;
+
+  /* */
+  allowAgentApi?: number;
+
+  /* */
+  allowMcpExport?: number;
+
+  /* */
+  version?: string;
+
+  /* */
+  homeSlogan?: string;
+
+  /*默认编码模型 */
+  defaultCodingModelId?: number;
+
+  /*默认视觉模型 */
+  defaultVisualModelId?: number;
+
+  /* */
+  mpAppId?: string;
+
+  /* */
+  mpAppSecret?: string;
+
+  /* */
+  sandboxConfig?: string;
+
+  /* */
+  userComputerDefaultSkillIds?: string;
+
+  /* */
+  officialPluginIds?: string;
+
+  /* */
+  officialWorkflowIds?: string;
+
+  /* */
+  officialSkillIds?: string;
+
+  /*收入分成比例 */
+  revenueRatio?: Record<string, unknown>;
+
+  /*支付网关地址 */
+  paymentGateway?: string;
+
+  /*是否开启订阅模式 */
+  enableSubscription?: number;
+
+  /*积分兑换比例，比如 1000标识1块钱可以兑换1000积分 */
+  creditExchangeRate?: number;
+
+  /*积分兑换说明 */
+  creditExchangeDesc?: string;
+
+  /*是否开启注册积分赠送 */
+  enableGiftCredit?: number;
+
+  /*注册赠送积分数 */
+  giftCreditAmount?: number;
+
+  /*注册赠送积分有效期（天） */
+  giftCreditExpire?: number;
+
+  /*是否开启每日登录赠送积分 */
+  enableDailyGiftCredit?: number;
+
+  /*每日登录赠送积分数 */
+  dailyGiftCreditAmount?: number;
+
+  /* */
+  commercialEdition?: boolean;
 }
 
 // 设置用户账号信息

@@ -4,6 +4,7 @@ import type { AddNodeData } from '@/components/KnowledgeGraph/AddNodeModal';
 import AddNodeModal from '@/components/KnowledgeGraph/AddNodeModal';
 import BatchImportModal from '@/components/KnowledgeGraph/BatchImportModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeConfigDetail,
   apiKnowledgeDocumentDelete,
@@ -15,7 +16,6 @@ import {
   apiKnowledgeTripleGenerate,
   apiKnowledgeTripleList,
 } from '@/services/knowledge';
-import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   KnowledgeDocTypeEnum,
@@ -374,7 +374,9 @@ const SpaceKnowledge: React.FC = () => {
           }
         }, 3000);*/
       } else {
-        message.error(dict('PC.Pages.SpaceKnowledge.Index.graphGenerateTaskSubmitFailed'));
+        message.error(
+          dict('PC.Pages.SpaceKnowledge.Index.graphGenerateTaskSubmitFailed'),
+        );
       }
     } catch (error) {
       console.error('生成知识图谱失败:', error);
@@ -491,16 +493,28 @@ const SpaceKnowledge: React.FC = () => {
 
       handleLoadGraphList();
 
-      message.success(dict('PC.Pages.SpaceKnowledge.Index.batchDeleteGraphSuccess', ids.length));
+      message.success(
+        dict(
+          'PC.Pages.SpaceKnowledge.Index.batchDeleteGraphSuccess',
+          ids.length,
+        ),
+      );
     } catch (error) {
       console.error('批量删除知识图谱失败:', error);
-      message.error(dict('PC.Pages.SpaceKnowledge.Index.batchDeleteGraphFailed'));
+      message.error(
+        dict('PC.Pages.SpaceKnowledge.Index.batchDeleteGraphFailed'),
+      );
     }
   };
 
   // 批量修改配置
   const handleGraphBatchConfig = (ids: number[]) => {
-    message.info(dict('PC.Pages.SpaceKnowledge.Index.batchConfigInDevelopment', ids.length));
+    message.info(
+      dict(
+        'PC.Pages.SpaceKnowledge.Index.batchConfigInDevelopment',
+        ids.length,
+      ),
+    );
   };
 
   // 开启/关闭图谱
@@ -512,7 +526,11 @@ const SpaceKnowledge: React.FC = () => {
       return d;
     });
     setGraphDocList(newList);
-    message.success(enable ? dict('PC.Pages.SpaceKnowledge.Index.graphEnabled') : dict('PC.Pages.SpaceKnowledge.Index.graphDisabled'));
+    message.success(
+      enable
+        ? dict('PC.Pages.SpaceKnowledge.Index.graphEnabled')
+        : dict('PC.Pages.SpaceKnowledge.Index.graphDisabled'),
+    );
   };
 
   // 单个文档删除
@@ -659,7 +677,11 @@ const SpaceKnowledge: React.FC = () => {
     try {
       const res = await doAction;
       if (res.code === SUCCESS_CODE) {
-        message.success(values.id ? dict('PC.Pages.SpaceKnowledge.Index.qaUpdateSuccess') : dict('PC.Pages.SpaceKnowledge.Index.qaAddSuccess'));
+        message.success(
+          values.id
+            ? dict('PC.Pages.SpaceKnowledge.Index.qaUpdateSuccess')
+            : dict('PC.Pages.SpaceKnowledge.Index.qaAddSuccess'),
+        );
         // 添加成功后，查询文档列表
         handleQaList();
         setQaOpen(false);

@@ -690,6 +690,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   allowAtSkill?: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox?: DefaultSelectedEnum;
+  // 是否开启订阅限制
+  subscriptionEnabled?: boolean;
+  // 剩余免费试用次数
+  trialRemaining?: number;
 }
 
 // 日志查询过滤条件

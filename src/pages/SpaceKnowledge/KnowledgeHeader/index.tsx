@@ -13,7 +13,7 @@ import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useParams, useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -34,7 +34,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   const { spaceId } = useParams();
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  var isShowGRAPH = tenantConfigInfo.commercialEdition;
+  let isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)

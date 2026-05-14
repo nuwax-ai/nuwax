@@ -71,6 +71,34 @@ const routes = [
       },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      // 组件资源子页面
+      {
+        path: '/space/:spaceId/plugin-workflow',
+        component: '@/pages/SpaceResource/PluginWorkflow',
+      },
+      {
+        path: '/space/:spaceId/knowledge-storage',
+        component: '@/pages/SpaceResource/KnowledgeStorage',
+      },
+      {
+        path: '/space/:spaceId/model-manage',
+        component: '@/pages/SpaceResource/ModelManage',
+      },
+      // 资源定价
+      {
+        path: '/space/:spaceId/resource-pricing',
+        component: '@/pages/SpaceResource/Pricing',
+      },
+      // 智能体用户订阅
+      {
+        path: '/space/:spaceId/agent-subscriptions',
+        component: '@/pages/SpaceResource/AgentSubscriptions',
+      },
+      // 订阅设置
+      {
+        path: '/space/:spaceId/subscription-settings',
+        component: '@/pages/SpaceResource/SubscriptionSettings',
+      },
       // 插件、工作流、MCP日志
       {
         path: '/space/:spaceId/library-log',
@@ -155,6 +183,27 @@ const routes = [
             path: 'api-key-logs',
             name: 'API Call Logs',
             component: '@/pages/MorePage/ApiKeyLogs',
+            hideInMenu: true,
+          },
+          {
+            path: 'my-subscriptions',
+            name: getRouteLabel('PC.Routes.mySubscriptions'),
+            component: '@/pages/MorePage/MySubscriptions',
+          },
+          {
+            path: 'my-orders',
+            name: getRouteLabel('PC.Routes.myOrders'),
+            component: '@/pages/MorePage/MyOrders',
+          },
+          {
+            path: 'my-earnings',
+            name: getRouteLabel('PC.Routes.myEarnings'),
+            component: '@/pages/MorePage/MyEarnings',
+          },
+          {
+            path: 'credit-records',
+            name: getRouteLabel('PC.Routes.creditRecords'),
+            component: '@/pages/MorePage/CreditRecords',
             hideInMenu: true,
           },
         ],
@@ -308,6 +357,93 @@ const routes = [
                 name: getRouteLabel('PC.Routes.userGroupManage'),
                 component:
                   '@/pages/SystemManagement/MenuPermission/UserGroupManage',
+              },
+            ],
+          },
+          {
+            path: 'payment-earnings',
+            name: getRouteLabel('PC.Routes.devPaymentEarnings'),
+            routes: [
+              {
+                path: 'config',
+                name: '支付配置',
+                component: '@/pages/SystemManagement/PaymentEarnings/Config',
+              },
+              {
+                path: 'merchant-info',
+                name: '支付进件信息',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/MerchantInfo',
+              },
+              {
+                path: 'dev-payment',
+                name: '开发者付款信息',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/DevPayment',
+              },
+              {
+                path: 'earnings-stats',
+                name: '开发者收益统计',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/EarningsStats',
+              },
+              {
+                path: 'withdrawal',
+                name: '开发者提现管理',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/Withdrawal',
+              },
+              {
+                path: 'orders',
+                name: '支付订单查询',
+                component: '@/pages/SystemManagement/PaymentEarnings/Orders',
+              },
+              {
+                path: 'earnings-detail',
+                name: '收益明细',
+                component:
+                  '@/pages/SystemManagement/PaymentEarnings/EarningsDetail',
+              },
+            ],
+          },
+          {
+            path: 'subscription-credits',
+            name: getRouteLabel('PC.Routes.adminSubscriptionCredits'),
+            routes: [
+              {
+                path: 'basic-config',
+                name: '基础配置',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/BasicConfig',
+              },
+              {
+                path: 'plans',
+                name: '基础订阅套餐',
+                component: '@/pages/SystemManagement/SubscriptionCredits/Plans',
+              },
+              {
+                path: 'credit-packages',
+                name: '积分增购套餐',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/CreditPackages',
+              },
+              {
+                path: 'user-credits',
+                name: '用户积分查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/UserCredits',
+              },
+              {
+                path: 'credit-records',
+                name: '积分明细查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/CreditRecords',
+              },
+              {
+                path: 'orders',
+                name: '业务订单查询',
+                component:
+                  '@/pages/SystemManagement/SubscriptionCredits/Orders',
               },
             ],
           },

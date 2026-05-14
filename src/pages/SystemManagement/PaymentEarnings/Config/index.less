@@ -1,0 +1,67 @@
+@import '@/styles/token.less';
+
+.container {
+  // padding: 24px;
+  background: @colorBgContainer;
+  min-height: 100%;
+
+  :global {
+    .ant-tabs-nav {
+      margin-bottom: 24px;
+      padding: 0 4px;
+
+      &::before {
+        border-bottom: 1px solid @colorBorderSecondary;
+      }
+    }
+  }
+}
+
+.content-card {
+  padding: @paddingMd;
+  background: @colorBgContainer;
+  border-radius: @borderRadiusLg;
+  border: 1px solid @colorBorderSecondary;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 8%);
+    border-color: @colorPrimaryBorder;
+  }
+
+  .field-hint {
+    margin-top: 12px;
+    font-size: 13px;
+    color: @colorTextDescription;
+    line-height: 1.6;
+  }
+}
+
+.alert-wrapper {
+  margin-bottom: 32px;
+
+  :global {
+    .ant-alert {
+      border-radius: @borderRadiusLg;
+      padding: 12px 20px;
+      background: rgba(22, 119, 255, 4%);
+      border: 1px solid rgba(22, 119, 255, 10%);
+
+      .ant-alert-message {
+        color: @colorPrimaryText;
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.ratio-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .unit {
+    color: @colorTextDescription;
+    font-weight: 500;
+  }
+}

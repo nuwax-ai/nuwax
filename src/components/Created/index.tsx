@@ -96,6 +96,7 @@ const Created: React.FC<CreatedProp> = ({
   addSkillLoading = undefined,
   tabs = defaultTabs,
   hideTop,
+  modalZIndex,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
@@ -850,6 +851,7 @@ const Created: React.FC<CreatedProp> = ({
       onCancel={onCancel}
       className={cx(styles['created-modal-style'])}
       width={1096}
+      zIndex={modalZIndex}
     >
       <div className={cx(styles['created-container'], 'dis-sb-start')}>
         {/* 左侧部分 */}

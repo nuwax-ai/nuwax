@@ -1,9 +1,9 @@
-import { dict } from '@/services/i18nRuntime';
 import docImage from '@/assets/images/doc_image.jpg';
 import {
   KNOWLEDGE_CUSTOM_DOC_LIST,
   KNOWLEDGE_LOCAL_DOC_LIST,
 } from '@/constants/library.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiKnowledgeDocumentAdd,
   apiKnowledgeDocumentCustomAdd,
@@ -112,7 +112,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success(dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'));
+      message.success(
+        dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
+      );
       handleClear();
       onConfirm();
     },
@@ -123,7 +125,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
-      message.success(dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'));
+      message.success(
+        dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
+      );
       handleClear();
       onConfirm();
     },
@@ -262,7 +266,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       case KnowledgeTextStepEnum.Upload_Or_Text_Fill:
         return (
           <div className={cx('flex', 'content-end', styles.gap)}>
-            <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
+            <Button onClick={onCancel}>
+              {dict('PC.Common.Global.cancel')}
+            </Button>
             <Button
               onClick={handleUploadOrTextInput}
               type="primary"

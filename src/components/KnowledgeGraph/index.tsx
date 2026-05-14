@@ -105,7 +105,9 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
   if (!documentInfo) {
     return (
       <div className={styles.emptyContainer}>
-        <Empty description={dict('PC.Components.KnowledgeGraph.selectDocViewGraph')} />
+        <Empty
+          description={dict('PC.Components.KnowledgeGraph.selectDocViewGraph')}
+        />
       </div>
     );
   }
@@ -114,7 +116,10 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     <div className={styles.knowledgeGraphContainer}>
       {loading && (
         <div className={styles.loadingOverlay}>
-          <Spin size="large" tip={dict('PC.Components.KnowledgeGraph.graphLoading')} />
+          <Spin
+            size="large"
+            tip={dict('PC.Components.KnowledgeGraph.graphLoading')}
+          />
         </div>
       )}
       <header className={styles.header}>
@@ -123,7 +128,9 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
             <ArrowLeftOutlined className={styles.backIcon} onClick={onBack} />
           )}
           <div className={styles.titleArea}>
-            <div className={styles.titleMain}>{dict('PC.Components.KnowledgeGraph.title')}</div>
+            <div className={styles.titleMain}>
+              {dict('PC.Components.KnowledgeGraph.title')}
+            </div>
             {/* 只有当不是从知识图谱按钮进入时，才显示文档名称 */}
             {documentInfo.documentId !== 0 && (
               <Tooltip
@@ -160,11 +167,16 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
           <GraphCanvas ref={graphCanvasRef} data={filteredData} />
         ) : loading ? (
           <div className={styles.emptyState}>
-            <Spin size="large" tip={dict('PC.Components.KnowledgeGraph.loading')} />
+            <Spin
+              size="large"
+              tip={dict('PC.Components.KnowledgeGraph.loading')}
+            />
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <Empty description={dict('PC.Components.KnowledgeGraph.noNodeData')} />
+            <Empty
+              description={dict('PC.Components.KnowledgeGraph.noNodeData')}
+            />
           </div>
         )}
       </main>

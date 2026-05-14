@@ -371,6 +371,39 @@ export interface TenantConfigDto {
   templateConfig?: string;
 }
 
+// 租户订阅基础配置信息，用于订阅基础配置的保存
+export interface TenantSubscriptionConfigInfo {
+  /*收入分成比例 */
+  revenueRatio?: Record<string, unknown>;
+
+  /*支付网关地址 */
+  paymentGateway?: string;
+
+  /*是否开启订阅模式 */
+  enableSubscription?: number;
+
+  /*积分兑换比例，比如 1000标识1块钱可以兑换1000积分 */
+  creditExchangeRate?: number;
+
+  /*积分兑换说明 */
+  creditExchangeDesc?: string;
+
+  /*是否开启注册积分赠送 */
+  enableGiftCredit?: number;
+
+  /*注册赠送积分数 */
+  giftCreditAmount?: number;
+
+  /*注册赠送积分有效期（天） */
+  giftCreditExpire?: number;
+
+  /*是否开启每日登录赠送积分 */
+  enableDailyGiftCredit?: number;
+
+  /*每日登录赠送积分数 */
+  dailyGiftCreditAmount?: number;
+}
+
 /**
  * 主题配置数据结构
  */

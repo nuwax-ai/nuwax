@@ -42,9 +42,18 @@ interface GraphDocTableProps {
 
 const getStatusTag = (status?: number) => {
   const statusConfig: Record<number, { color: string; text: string }> = {
-    1: { color: '#F97316', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.building') },
-    2: { color: '#22C55E', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.available') },
-    10: { color: '#EF4444', text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.unavailable') },
+    1: {
+      color: '#F97316',
+      text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.building'),
+    },
+    2: {
+      color: '#22C55E',
+      text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.available'),
+    },
+    10: {
+      color: '#EF4444',
+      text: dict('PC.Pages.SpaceKnowledge.GraphDocTable.unavailable'),
+    },
   };
 
   const config = statusConfig[status ?? 0] || {
@@ -92,7 +101,9 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
     );
 
     if (hasUnavailable) {
-      message.warning(dict('PC.Pages.SpaceKnowledge.GraphDocTable.hasUnavailableData'));
+      message.warning(
+        dict('PC.Pages.SpaceKnowledge.GraphDocTable.hasUnavailableData'),
+      );
       return;
     }
 
@@ -182,14 +193,22 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
           <Space size="small">
             {(isNotStarted || isUnavailable) && (
               <Popconfirm
-                title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmGenerateGraph')}
+                title={dict(
+                  'PC.Pages.SpaceKnowledge.GraphDocTable.confirmGenerateGraph',
+                )}
                 description={record.documentName}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => onGenerateGraph?.(record.documentId)}
                 okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
-                cancelText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.cancel')}
+                cancelText={dict(
+                  'PC.Pages.SpaceKnowledge.GraphDocTable.cancel',
+                )}
               >
-                <Tooltip title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.generateGraph')}>
+                <Tooltip
+                  title={dict(
+                    'PC.Pages.SpaceKnowledge.GraphDocTable.generateGraph',
+                  )}
+                >
                   <Button
                     type="text"
                     style={{ color: '#1890ff' }}
@@ -218,14 +237,20 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
             ) : null} */}
             {record.tripleStatus === 2 && (
               <Popconfirm
-                title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmDeleteDoc')}
+                title={dict(
+                  'PC.Pages.SpaceKnowledge.GraphDocTable.confirmDeleteDoc',
+                )}
                 description={record.documentName}
                 icon={<ExclamationCircleFilled />}
                 onConfirm={() => onDelete?.(record.documentId)}
                 okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
-                cancelText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.cancel')}
+                cancelText={dict(
+                  'PC.Pages.SpaceKnowledge.GraphDocTable.cancel',
+                )}
               >
-                <Tooltip title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.delete')}>
+                <Tooltip
+                  title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.delete')}
+                >
                   <Button type="text" icon={<DeleteOutlined />} />
                 </Tooltip>
               </Popconfirm>
@@ -252,7 +277,9 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
       {/* 操作栏 */}
       <div className={styles.toolbar}>
         <Input.Search
-          placeholder={dict('PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder')}
+          placeholder={dict(
+            'PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder',
+          )}
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           allowClear
@@ -260,7 +287,10 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
         />
         <Popconfirm
           title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.batchDelete')}
-          description={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirmBatchDelete', selectedRowKeys.length)}
+          description={dict(
+            'PC.Pages.SpaceKnowledge.GraphDocTable.confirmBatchDelete',
+            selectedRowKeys.length,
+          )}
           onConfirm={handleBatchDelete}
           disabled={selectedRowKeys.length === 0}
           okText={dict('PC.Pages.SpaceKnowledge.GraphDocTable.confirm')}
@@ -288,7 +318,8 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
           pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total) => dict('PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments', total),
+          showTotal: (total) =>
+            dict('PC.Pages.SpaceKnowledge.GraphDocTable.totalDocuments', total),
         }}
         scroll={{ x: 'max-content' }}
       />

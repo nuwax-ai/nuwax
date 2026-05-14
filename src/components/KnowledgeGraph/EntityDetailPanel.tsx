@@ -94,20 +94,26 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
 
       <div className={styles.body}>
         <div className={styles.section}>
-          <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.entityType')}</div>
+          <div className={styles.sectionTitle}>
+            {dict('PC.Components.EntityDetailPanel.entityType')}
+          </div>
           <Tag color="purple">{EntityTypeLabels[node.type] || node.type}</Tag>
         </div>
 
         {node.fullText && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.entityDescription')}</div>
+            <div className={styles.sectionTitle}>
+              {dict('PC.Components.EntityDetailPanel.entityDescription')}
+            </div>
             <div className={styles.description}>{node.fullText}</div>
           </div>
         )}
 
         {relatedEntities.length > 0 && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.relatedEntities')}</div>
+            <div className={styles.sectionTitle}>
+              {dict('PC.Components.EntityDetailPanel.relatedEntities')}
+            </div>
             <div className={styles.relatedEntities}>
               {relatedEntities.map((entity) => (
                 <div
@@ -127,7 +133,9 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
 
         {relatedSegments.length > 0 ? (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.originalSegment')}</div>
+            <div className={styles.sectionTitle}>
+              {dict('PC.Components.EntityDetailPanel.originalSegment')}
+            </div>
             <div className={styles.segments}>
               {relatedSegments.map((segment, index) => {
                 const isExpanded = expandedSegments[segment.id] || false;
@@ -135,7 +143,10 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
                   <div key={segment.id} className={styles.segmentItem}>
                     <div className={styles.segmentHeader}>
                       <div className={styles.segmentIndex}>
-                        {dict('PC.Components.EntityDetailPanel.segment', index + 1)}
+                        {dict(
+                          'PC.Components.EntityDetailPanel.segment',
+                          index + 1,
+                        )}
                       </div>
                       {segment.documentName && (
                         <div className={styles.documentName}>
@@ -156,11 +167,13 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
                     >
                       {isExpanded ? (
                         <>
-                          {dict('PC.Components.EntityDetailPanel.collapse')} <UpOutlined />
+                          {dict('PC.Components.EntityDetailPanel.collapse')}{' '}
+                          <UpOutlined />
                         </>
                       ) : (
                         <>
-                          {dict('PC.Components.EntityDetailPanel.more')} <DownOutlined />
+                          {dict('PC.Components.EntityDetailPanel.more')}{' '}
+                          <DownOutlined />
                         </>
                       )}
                     </div>
@@ -171,8 +184,14 @@ const EntityDetailPanel: React.FC<EntityDetailPanelProps> = ({
           </div>
         ) : (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>{dict('PC.Components.EntityDetailPanel.originalSegment')}</div>
-            <Empty description={dict('PC.Components.EntityDetailPanel.noRelatedSegments')} />
+            <div className={styles.sectionTitle}>
+              {dict('PC.Components.EntityDetailPanel.originalSegment')}
+            </div>
+            <Empty
+              description={dict(
+                'PC.Components.EntityDetailPanel.noRelatedSegments',
+              )}
+            />
           </div>
         )}
       </div>

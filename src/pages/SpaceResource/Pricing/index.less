@@ -1,0 +1,208 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.segmented {
+  margin-bottom: 16px;
+}
+
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.tabTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.billingNotice {
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #999;
+  background: #fffbe6;
+  border-radius: 0 0 8px 8px;
+}
+
+.noticeIcon {
+  color: #faad14;
+}
+
+.tierTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tierTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  border: 1px solid #d3e4ff;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #5b6472;
+
+  .tierTagContext {
+    color: #2563eb;
+    font-weight: 600;
+  }
+
+  .tierTagSeparator {
+    color: #9ca3af;
+  }
+
+  .tierTagPriceItem {
+    color: #475569;
+  }
+
+  .tierTagCachePrice {
+    color: #0f766e;
+    font-weight: 500;
+  }
+}
+
+.boldValue {
+  font-weight: 600;
+}
+
+.muted {
+  color: #999;
+  margin-left: 4px;
+}
+
+.tierSection {
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.tierSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tierSectionTitle {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tierSectionHint {
+  font-size: 12px;
+  color: #999;
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.tierCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.tierCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tierThreshold {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tierThresholdPrefix {
+  font-size: 14px;
+  color: #666;
+}
+
+.tierThresholdInput {
+  width: 60px;
+}
+
+.tierThresholdSuffix {
+  font-size: 14px;
+  color: #666;
+}
+
+.tierPrices {
+  display: flex;
+  gap: 12px;
+}
+
+.tierPriceItem {
+  flex: 1;
+}
+
+.tierPriceLabel {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.tierPriceInput {
+  width: 100%;
+}
+
+.toolDesc {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterBtn {
+  margin-left: 4px;
+}
+
+.model-pricing-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.toolSelector {
+  height: 36px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 88%);
+}
+
+.toolSelectorPlaceholder {
+  color: rgba(0, 0, 0, 40%);
+}
+
+.toolFormTwoColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
