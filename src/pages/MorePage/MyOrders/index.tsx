@@ -4,6 +4,7 @@ import { apiGetMyBillOrders } from '@/services/subscriptionService';
 import { BillOrderInfo } from '@/types/interfaces/subscription';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'umi';
 import OrderList from './components/OrderList';
 import styles from './index.less';
 
@@ -12,6 +13,7 @@ const cx = classNames.bind(styles);
 const MyOrders: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [orders, setOrders] = useState<BillOrderInfo[]>([]);
+  const location = useLocation();
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -31,7 +33,7 @@ const MyOrders: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [location]);
 
   return (
     <WorkspaceLayout
