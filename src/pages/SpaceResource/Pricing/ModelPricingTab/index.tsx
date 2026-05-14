@@ -256,9 +256,6 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
   return (
     <>
       <div className={styles.tabHeader}>
-        <h4 className={styles.tabTitle}>
-          {dict('PC.Pages.SpaceResourcePricing.modelTitle')}
-        </h4>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
@@ -270,6 +267,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
         loading={loading}
         pagination={false}
         request={request}
+        toolBarRender={false}
       />
 
       {/* 模型定价弹窗 */}

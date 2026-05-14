@@ -1,6 +1,37 @@
-// 工具定价 Tab：表格名称列（头像 + 标题 + 描述）
+// 顶部工具栏：工具名称搜索 + 添加工具
+.tool-pricing-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
 
-.toolNameCell {
+.tool-pricing-search-input {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+// 表格底部关闭收费说明
+.tool-pricing-billing-notice {
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #999;
+  background: #fffbe6;
+  border-radius: 0 0 8px 8px;
+}
+
+.tool-pricing-billing-notice-icon {
+  flex-shrink: 0;
+  color: #faad14;
+}
+
+// 表格名称列（头像 + 标题 + 描述）
+.tool-pricing-name-cell {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -8,7 +39,7 @@
   padding: 4px 0;
 }
 
-.toolNameAvatarWrap {
+.tool-pricing-name-avatar-wrap {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
@@ -20,32 +51,32 @@
   overflow: hidden;
 }
 
-.toolNameAvatarImg {
+.tool-pricing-name-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.toolNameAvatarLetter {
+.tool-pricing-name-avatar-letter {
   font-size: 16px;
   font-weight: 600;
   color: #2563eb;
   line-height: 1;
 }
 
-.toolNameText {
+.tool-pricing-name-text {
   flex: 1;
   min-width: 0;
 }
 
-.toolNameTitle {
+.tool-pricing-name-title {
   font-size: 14px;
   font-weight: 600;
   color: rgba(0, 0, 0, 88%);
   line-height: 1.35;
 }
 
-.toolNameSubtitle {
+.tool-pricing-name-subtitle {
   font-size: 12px;
   color: #8c8c8c;
   margin-top: 2px;
@@ -55,8 +86,7 @@
 }
 
 // 表格价格列（¥ + 金额 + /次 + 试用徽标）
-
-.priceCell {
+.tool-pricing-price-cell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -64,32 +94,32 @@
   line-height: 1.35;
 }
 
-.priceCellMain {
+.tool-pricing-price-main {
   display: inline-flex;
   align-items: baseline;
   gap: 0;
   flex-wrap: nowrap;
 }
 
-.priceCellCurrency {
+.tool-pricing-price-currency {
   font-size: 12px;
   color: #8c8c8c;
   font-weight: 400;
 }
 
-.priceCellAmount {
+.tool-pricing-price-amount {
   font-size: 14px;
   font-weight: 600;
   color: rgba(0, 0, 0, 88%);
 }
 
-.priceCellUnit {
+.tool-pricing-price-unit {
   font-size: 12px;
   color: #8c8c8c;
   font-weight: 400;
 }
 
-.priceTrialBadge {
+.tool-pricing-price-trial-badge {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
