@@ -38,6 +38,7 @@ import {
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -93,6 +94,7 @@ const statusMap = {
 
 const MerchantInfo: React.FC = () => {
   const [form] = Form.useForm();
+  const location = useLocation();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [onboardingId, setOnboardingId] = useState<number | undefined>(
@@ -209,7 +211,7 @@ const MerchantInfo: React.FC = () => {
 
   useEffect(() => {
     fetchMerchantOnboarding();
-  }, []);
+  }, [location]);
 
   const beforeUpload = (file: File) => {
     const isAcceptedFormat =
