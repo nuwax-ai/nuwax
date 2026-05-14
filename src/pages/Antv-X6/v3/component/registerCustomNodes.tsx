@@ -380,6 +380,38 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
+
+        {data.type === NodeTypeEnum.Agent && (
+          <div className="agent-flow-node-preview">
+            <span className="agent-flow-node-badge agent-badge">
+              {data.nodeConfig?.agentMode === 'subflow' ? 'SubFlow' : 'Agent'}
+            </span>
+          </div>
+        )}
+
+        {data.type === NodeTypeEnum.EvalGate && (
+          <div className="agent-flow-node-preview">
+            <span className="agent-flow-node-badge eval-badge">
+              {(data.nodeConfig?.validators?.length || 0) + ' validators'}
+            </span>
+          </div>
+        )}
+
+        {data.type === NodeTypeEnum.HumanInteraction && (
+          <div className="agent-flow-node-preview">
+            <span className="agent-flow-node-badge hitl-badge">
+              {data.nodeConfig?.hitlMode === 'approve' ? 'Approve' : 'Ask'}
+            </span>
+          </div>
+        )}
+
+        {data.type === NodeTypeEnum.ExternalConnector && (
+          <div className="agent-flow-node-preview">
+            <span className="agent-flow-node-badge connector-badge">
+              {data.nodeConfig?.provider?.toUpperCase() || 'External'}
+            </span>
+          </div>
+        )}
         {/* 异常处理 */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
