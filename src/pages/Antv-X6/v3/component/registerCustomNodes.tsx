@@ -22,7 +22,6 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
-import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -525,11 +524,11 @@ export const createCurvePath = (s: Point, e: Point) => {
   const v1 = { x: newStartX + control, y: startY };
   const v2 = { x: newEndX - control, y: endY };
 
-  return Path.normalize(
-    `M ${newStartX} ${startY}
+  return `M ${newStartX} ${startY}
      L ${newStartX + (s.x < e.x ? startOffset : -startOffset)} ${startY}
      C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${newEndX} ${endY}
      L ${newEndX} ${endY}
-    `,
-  );
+    `
+    .replace(/\s+/g, ' ')
+    .trim();
 };

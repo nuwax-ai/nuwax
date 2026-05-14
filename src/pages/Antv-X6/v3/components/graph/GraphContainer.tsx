@@ -31,8 +31,11 @@ import {
 } from '../../constants/loopNodeConstants';
 import {
   adjustParentSize,
+  animateRunningEdges,
   getEdges,
   needUpdateNodes,
+  resetAllEdgeAnimations,
+  setEdgeAttributes,
   updateEdgeArrows,
 } from '../../utils/graphV3';
 import {
@@ -163,6 +166,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       // 5. 批量添加边
       graphRef.current.addEdges(edges);
 
+      graphRef.current.getEdges().forEach((edge) => {
+        setEdgeAttributes(edge);
+      });
       updateEdgeArrows(graphRef.current);
     };
 
@@ -464,7 +470,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       const node = graphRef.current.getCellById(id);
       if (!node || !graphRef.current) return;
       const beforeData = node.getData();
-      // 如果是循环执行目前只会有串行 后续如果有并行需要考虑
       node.updateData({
         isFocus: true,
         runResults: [
@@ -476,6 +481,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         ],
       });
       graphRef.current.select(node);
+      if (runResult.status === RunResultStatusEnum.EXECUTING) {
+        animateRunningEdges(graphRef.current, id);
+      }
     };
 
     const graphResetRunResult = () => {
@@ -486,6 +494,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           runResults: [],
         });
       });
+      resetAllEdgeAnimations(graphRef.current);
     };
 
     const graphTriggerBlankClick = () => {

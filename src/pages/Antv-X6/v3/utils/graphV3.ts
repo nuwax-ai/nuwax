@@ -91,15 +91,70 @@ export const adjustParentSize = (parentNode: Node | Cell) => {
   );
 };
 
-// 辅助函数：设置边的属性
+const BRANCH_COLORS: Record<string, { stroke: string; label: string }> = {
+  eval_pass: { stroke: '#52c41a', label: 'Pass' },
+  eval_fail: { stroke: '#ff4d4f', label: 'Fail' },
+  hitl_approve: { stroke: '#52c41a', label: 'Approve' },
+  hitl_reject: { stroke: '#ff4d4f', label: 'Reject' },
+};
+
+function parseEdgeBranch(sourcePort: string | undefined): {
+  stroke: string;
+  label: string;
+} | null {
+  if (!sourcePort) return null;
+  for (const [key, cfg] of Object.entries(BRANCH_COLORS)) {
+    if (sourcePort.includes(`-${key.replace('_', '-')}-out`)) {
+      return cfg;
+    }
+  }
+  return null;
+}
+
 export function setEdgeAttributes(edge: Edge) {
+  const sourcePort = edge.getSourcePortId();
+  const branch = parseEdgeBranch(sourcePort);
+
   edge.attr({
     line: {
-      strokeDasharray: '', // 移除虚线样式
-      stroke: '#5147FF', // 设置边的颜色
-      strokeWidth: 1, // 设置边的宽度
+      strokeDasharray: '',
+      stroke: branch?.stroke || '#5147FF',
+      strokeWidth: 1,
+      targetMarker: {
+        name: 'classic',
+        size: 6,
+        fill: branch?.stroke || '#5147FF',
+        stroke: branch?.stroke || '#5147FF',
+      },
     },
   });
+
+  if (branch) {
+    edge.setLabels([
+      {
+        attrs: {
+          label: {
+            text: branch.label,
+            fill: branch.stroke,
+            fontSize: 11,
+            fontWeight: 600,
+            textAnchor: 'middle',
+            textVerticalAnchor: 'middle',
+          },
+          rect: {
+            fill: '#ffffff',
+            stroke: branch.stroke,
+            strokeWidth: 1,
+            rx: 4,
+            ry: 4,
+          },
+        },
+        position: {
+          distance: 0.5,
+        },
+      },
+    ]);
+  }
 }
 
 // 辅助函数：检查循环节点的连接是否有效
@@ -259,7 +314,16 @@ export const updateEdgeArrows = (graph: Graph) => {
         return edge.attr('line/targetMarker', null);
       }
 
-      edge.attr('line/targetMarker', isLast ? ARROW_CONFIG : null);
+      const branch = parseEdgeBranch(edge.getSourcePortId());
+      const arrowCfg = branch
+        ? {
+            name: 'classic' as const,
+            size: 6,
+            fill: branch.stroke,
+            stroke: branch.stroke,
+          }
+        : ARROW_CONFIG;
+      edge.attr('line/targetMarker', isLast ? arrowCfg : null);
       // edge.setZIndex(isLast ? 3 : 1);
     });
   });
@@ -807,6 +871,62 @@ const handleSpecialNodes = (
   );
 };
 
+const handleAgentFlowEdges = (
+  node: ChildNode,
+  isLoopNode: boolean,
+): EdgeConfig[] => {
+  const edges: EdgeConfig[] = [];
+  const nc = node.nodeConfig as any;
+  if (!nc) return edges;
+  const z = isLoopNode ? 5 : 1;
+
+  if (node.type === NodeTypeEnum.EvalGate) {
+    const passIds: number[] = nc.passNextNodeIds || [];
+    passIds.forEach((id) => {
+      edges.push({
+        source: `${node.id}-eval-pass`,
+        target: id.toString(),
+        zIndex: z,
+      });
+    });
+    const validators = nc.evalValidators || [];
+    validators.forEach((v: any) => {
+      const failId = v.onFail?.targetNodeId;
+      if (failId) {
+        edges.push({
+          source: `${node.id}-eval-fail-${v.uuid}`,
+          target: failId.toString(),
+          zIndex: z,
+        });
+      }
+    });
+  }
+
+  if (
+    node.type === NodeTypeEnum.HumanInteraction &&
+    nc.hitlMode === 'approve'
+  ) {
+    const approveIds: number[] = nc.approveNextNodeIds || [];
+    approveIds.forEach((id) => {
+      edges.push({
+        source: `${node.id}-hitl-approve`,
+        target: id.toString(),
+        zIndex: z,
+      });
+    });
+    const rejectIds: number[] = nc.rejectNextNodeIds || [];
+    rejectIds.forEach((id) => {
+      edges.push({
+        source: `${node.id}-hitl-reject`,
+        target: id.toString(),
+        zIndex: z,
+      });
+    });
+  }
+
+  return edges;
+};
+
 // 处理 Loop 节点的边
 const handleLoopEdges = (node: ChildNode): EdgeConfig[] => {
   const edges: EdgeConfig[] = [];
@@ -889,6 +1009,12 @@ export const getEdges = (
         return handleSpecialNodes(node, isLoopNode);
       } else if (node.type === NodeTypeEnum.Loop) {
         return handleLoopEdges(node);
+      } else if (
+        node.type === NodeTypeEnum.EvalGate ||
+        (node.type === NodeTypeEnum.HumanInteraction &&
+          (node.nodeConfig as any)?.hitlMode === 'approve')
+      ) {
+        return handleAgentFlowEdges(node, isLoopNode);
       } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         const _arr = node.nextNodeIds.filter(
           (item) => item !== node.loopNodeId && item !== node.id,
@@ -929,4 +1055,63 @@ export const getEdges = (
   });
   workflowLogger.log('[getEdges] resultEdges', resultEdges);
   return resultEdges;
+};
+
+const FLOW_DASH = '8 4';
+const activeAnimations = new WeakMap<Edge, Animation>();
+
+export const startEdgeFlowAnimation = (edge: Edge) => {
+  if (activeAnimations.get(edge)) return;
+  const branch = parseEdgeBranch(edge.getSourcePortId());
+  const color = branch?.stroke || '#5147FF';
+  edge.attr('line/strokeDasharray', FLOW_DASH);
+  edge.attr('line/stroke', color);
+  edge.attr('line/strokeWidth', 2);
+  const pathEl = (edge as any).container?.querySelector?.('path.connection');
+  if (!pathEl) {
+    const len = 20;
+    const anim = edge.animate(
+      (t: number) => {
+        edge.attr('line/strokeDashoffset', len * (1 - t));
+      },
+      { duration: 600, iterations: Infinity },
+    );
+    if (anim) activeAnimations.set(edge, anim);
+    return;
+  }
+};
+
+export const stopEdgeFlowAnimation = (edge: Edge) => {
+  const anim = activeAnimations.get(edge);
+  if (anim) {
+    anim.cancel();
+    activeAnimations.delete(edge);
+  }
+  const branch = parseEdgeBranch(edge.getSourcePortId());
+  edge.attr({
+    line: {
+      strokeDasharray: '',
+      stroke: branch?.stroke || '#5147FF',
+      strokeWidth: 1,
+    },
+  });
+};
+
+export const animateRunningEdges = (graph: Graph, executingNodeId: string) => {
+  graph.getEdges().forEach((edge) => {
+    const targetId = edge.getTargetCellId();
+    if (targetId === executingNodeId) {
+      startEdgeFlowAnimation(edge);
+    } else {
+      stopEdgeFlowAnimation(edge);
+    }
+  });
+};
+
+export const resetAllEdgeAnimations = (graph: Graph) => {
+  graph.getEdges().forEach((edge) => {
+    stopEdgeFlowAnimation(edge);
+    setEdgeAttributes(edge);
+  });
+  updateEdgeArrows(graph);
 };
