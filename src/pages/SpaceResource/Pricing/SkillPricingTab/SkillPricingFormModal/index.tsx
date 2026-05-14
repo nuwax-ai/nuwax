@@ -214,6 +214,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
             <InputNumber
               min={0}
               max={100000000}
+              step={0.01}
               precision={2}
               className="w-full"
               prefix="¥"

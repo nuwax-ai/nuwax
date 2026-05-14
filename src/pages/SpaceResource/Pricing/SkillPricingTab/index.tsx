@@ -1,8 +1,6 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
-import { formatPrice } from '@/utils/format';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Switch, Tag, message } from 'antd';
@@ -56,9 +54,6 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       message.success(dict('PC.Common.Global.operationSuccess'));
       actionRef.current?.reload();
     },
-    onError: () => {
-      message.error(dict('PC.Common.Global.operationFailed'));
-    },
   });
 
   // 添加技能
@@ -82,41 +77,58 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
     );
   };
 
-  // 切换定价配置状态
+  // 切换本条配置的计费开关（启用/禁用）
   const handleToggleStatus = (
-    item: ResourcePricingConfigInfo,
+    row: ResourcePricingConfigInfo,
     checked: boolean,
   ) => {
     runUpdateToolPricing({
-      ...item,
+      ...row,
+      spaceId: row.spaceId ?? spaceId,
       status: checked
         ? ResourcePricingStatus.ENABLED
         : ResourcePricingStatus.DISABLED,
     });
   };
 
-  // 请求定价配置列表
-  const request = async () => {
-    setLoading(true);
-    const res = await apiListPricingConfig({
-      targetType: ToolPricingTargetType.SKILL,
-      spaceId,
-    });
-    setLoading(false);
+  // 请求定价配置列表；search：`status`、`pricingType`（仅包月 / 买断）传入列表接口
+  const request = async (params: {
+    status?: ResourcePricingStatus | string | number;
+    pricingType?: ResourcePricingType | string;
+    pageSize?: number;
+    current?: number;
+  }) => {
+    try {
+      const statusRaw = params.status;
+      // 状态
+      let status: ResourcePricingStatus | undefined;
+      if (statusRaw !== undefined && statusRaw !== null) {
+        status = Number(statusRaw);
+      }
 
-    if (res.code !== SUCCESS_CODE) {
-      message.error(
-        res.message || dict('PC.Pages.SpaceResourcePricing.fetchDataFailed'),
-      );
+      // 定价类型
+      const ptRaw = params.pricingType;
+      const pricingType = ptRaw ? (ptRaw as ResourcePricingType) : undefined;
+
+      setLoading(true);
+      const res = await apiListPricingConfig({
+        targetType: ToolPricingTargetType.SKILL,
+        spaceId,
+        ...(status !== undefined ? { status } : {}),
+        ...(pricingType ? { pricingType } : {}),
+      });
+      setLoading(false);
+
+      const data = res.data || [];
+      return {
+        data,
+        total: data.length,
+        success: true,
+      };
+    } catch {
+      setLoading(false);
       return { data: [], total: 0, success: false };
     }
-
-    const data = res.data || [];
-    return {
-      data,
-      total: data.length,
-      success: true,
-    };
   };
 
   // 表格列配置
@@ -133,21 +145,30 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
       dataIndex: 'pricingType',
       key: 'pricingType',
-      width: 90,
-      render: (_, record) => record.pricingType || '-',
-    },
-    {
-      title: dict('PC.Pages.SpaceResourcePricing.trialCount'),
-      dataIndex: 'trialCount',
-      key: 'trialCount',
+      valueType: 'select',
+      valueEnum: {
+        [ResourcePricingType.MONTHLY]: {
+          text: dict('PC.Pages.SpaceResourcePricing.pricingModeMonthly'),
+        },
+        [ResourcePricingType.BUYOUT]: {
+          text: dict('PC.Pages.SpaceResourcePricing.pricingModeBuyout'),
+        },
+      },
+      fieldProps: {
+        allowClear: true,
+        placeholder: dict('PC.Pages.SpaceResourcePricing.selectPlaceholder'),
+      },
       width: 100,
-      align: 'center',
-      search: false,
-      render: (v) => (
-        <span className={styles['skill-pricing-bold-value']}>
-          {(v as number) || 0}
-        </span>
-      ),
+      render: (_, record) => {
+        const pt = record.pricingType;
+        if (pt === ResourcePricingType.MONTHLY) {
+          return dict('PC.Pages.SpaceResourcePricing.pricingModeMonthly');
+        }
+        if (pt === ResourcePricingType.BUYOUT) {
+          return dict('PC.Pages.SpaceResourcePricing.pricingModeBuyout');
+        }
+        return pt || '-';
+      },
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.price'),
@@ -158,7 +179,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       render: (_, record) => (
         <span>
           <span className={styles['skill-pricing-bold-value']}>
-            ¥{formatPrice(record.price || 0)}
+            ¥{record.price || 0}
           </span>
           {record.pricingType === ResourcePricingType.MONTHLY && (
             <span className={styles['skill-pricing-muted']}>
@@ -182,13 +203,23 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
+      dataIndex: 'status',
       key: 'status',
+      valueType: 'select',
+      valueEnum: {
+        [ResourcePricingStatus.ENABLED]: {
+          text: dict('PC.Common.Global.enable'),
+        },
+        [ResourcePricingStatus.DISABLED]: {
+          text: dict('PC.Common.Global.disable'),
+        },
+      },
       width: 100,
       align: 'center',
       render: (_, record) => (
         <Switch
           checked={record.status === ResourcePricingStatus.ENABLED}
-          onChange={(v) => handleToggleStatus(record, v)}
+          onChange={(checked) => handleToggleStatus(record, checked)}
         />
       ),
     },
