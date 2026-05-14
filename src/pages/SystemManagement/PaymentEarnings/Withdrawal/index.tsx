@@ -15,19 +15,11 @@ import {
 import { formatDateTime } from '@/utils/dateUtils';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import {
-  Card,
-  Col,
-  Input,
-  Modal,
-  Row,
-  Statistic,
-  Tabs,
-  Tag,
-  message,
-} from 'antd';
+import { Card, Input, Modal, Tabs, Tag, message } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import { history } from 'umi';
+import PendingWithdrawalTable from './components/PendingWithdrawalTable';
+import WithdrawalStats from './components/WithdrawalStats';
 
 const MOCK_WITHDRAWALS: WithdrawalInfo[] = [
   {
@@ -294,35 +286,10 @@ const Withdrawal: React.FC = () => {
         'PC.Pages.SystemWithdrawal.tabPending',
       )} (${pendingCount})`,
       children: (
-        <XProTable<WithdrawalInfo>
-          rowKey="id"
+        <PendingWithdrawalTable
           actionRef={actionRef}
           columns={pendingColumns}
-          request={async (params) => {
-            try {
-              const res = await apiListWithdrawals({
-                keyword: params.developerName,
-                status: WithdrawalStatusEnum.Pending,
-                pageNum: params.current,
-                pageSize: params.pageSize,
-              });
-              if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-                return {
-                  data: res.data.list,
-                  total: res.data.total,
-                  success: true,
-                };
-              }
-            } catch {}
-            const pending = MOCK_WITHDRAWALS.filter(
-              (w) => w.status === WithdrawalStatusEnum.Pending,
-            );
-            return {
-              data: pending,
-              total: pending.length,
-              success: true,
-            };
-          }}
+          mockData={MOCK_WITHDRAWALS}
         />
       ),
     },
@@ -387,37 +354,11 @@ const Withdrawal: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
-      {/* 统计卡 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemWithdrawal.statPending')}
-              value={pendingCount}
-              suffix={dict('PC.Common.Global.items')}
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemWithdrawal.statApproved')}
-              value={totalApproved}
-              precision={0}
-              prefix="¥"
-            />
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemWithdrawal.statTotal')}
-              value={MOCK_WITHDRAWALS.length}
-              suffix={dict('PC.Common.Global.items')}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <WithdrawalStats
+        pendingCount={pendingCount}
+        totalApproved={totalApproved}
+        totalCount={MOCK_WITHDRAWALS.length}
+      />
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
