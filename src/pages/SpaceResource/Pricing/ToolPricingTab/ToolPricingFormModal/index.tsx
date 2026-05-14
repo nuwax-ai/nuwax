@@ -15,7 +15,7 @@ import {
   ToolPricingInfo,
   ToolPricingTargetType,
 } from '../../../types/resource';
-import styles from '../../index.less';
+import styles from './index.less';
 
 /** 表单弹窗 z-index（嵌套的 Created 需高于此值，否则列表弹层会被压住） */
 const TOOL_PRICING_FORM_MODAL_Z = 1000;
@@ -182,9 +182,13 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
           >
             <div
               onClick={() => setCreatedOpen(true)}
-              className={`${styles.toolSelector} ${
-                selectedTool || editItem ? '' : styles.toolSelectorPlaceholder
-              } ${editItem ? styles.toolSelectorReadonly : ''}`}
+              className={`${styles['tool-pricing-tool-selector']} ${
+                selectedTool || editItem
+                  ? ''
+                  : styles['tool-pricing-tool-selector-placeholder']
+              } ${
+                editItem ? styles['tool-pricing-tool-selector-readonly'] : ''
+              }`}
             >
               {editItem?.targetObjectInfo?.name ||
                 selectedTool?.name ||
@@ -208,7 +212,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
             />
           </Form.Item>
 
-          <div className={styles.toolFormTwoColumns}>
+          <div className={styles['tool-pricing-two-columns']}>
             <Form.Item
               name="price"
               label={dict('PC.Pages.SpaceResourcePricing.price')}

@@ -13,9 +13,9 @@ export interface ModelPricingInfo {
   // 缓存价格
   cachePrice: number;
   // 创建时间
-  created: string;
+  created?: string;
   // 修改时间
-  modified: string;
+  modified?: string;
 }
 
 // ======================= 工具定价 =======================

@@ -7,7 +7,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Input, Switch, message } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiDeleteToolPricing,
@@ -19,7 +19,6 @@ import {
   ResourcePricingStatus,
   ToolPricingTargetType,
 } from '../../types/resource';
-import pricingStyles from '../index.less';
 import styles from './index.less';
 import ToolPricingFormModal from './ToolPricingFormModal';
 
@@ -33,10 +32,13 @@ export const TARGET_TYPE_LABEL_MAP: Partial<
   [ToolPricingTargetType.WORKFLOW]: dict(
     'PC.Pages.SpaceResourcePricing.categoryWorkflow',
   ),
-  [ToolPricingTargetType.MCP]: dict(
-    'PC.Pages.SpaceResourcePricing.categoryMCP',
-  ),
 };
+
+// 工具定价列表中显示的 targetType
+const TOOL_PRICING_TAB_TARGET_TYPES = [
+  ToolPricingTargetType.PLUGIN,
+  ToolPricingTargetType.WORKFLOW,
+];
 
 // 「添加工具」Popover 条目，CustomPopover.onClick 会带上 value 作为新建类型
 const ADD_TOOL_LIST: CustomPopoverItem[] = [
@@ -47,10 +49,6 @@ const ADD_TOOL_LIST: CustomPopoverItem[] = [
   {
     value: ToolPricingTargetType.WORKFLOW,
     label: dict('PC.Pages.SpaceResourcePricing.categoryWorkflow'),
-  },
-  {
-    value: ToolPricingTargetType.MCP,
-    label: dict('PC.Pages.SpaceResourcePricing.categoryMCP'),
   },
 ];
 
@@ -71,8 +69,6 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
   const [loading, setLoading] = useState<boolean>(false);
   /** 工具名称关键词（可与列表过滤串联） */
   const [keyword, setKeyword] = useState('');
-  /** 插件 / 工作流 / MCP 筛选 */
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
   /** 定价表单 Modal 开关 */
   const [toolModalOpen, setToolModalOpen] = useState<boolean>(false);
 
@@ -160,7 +156,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
     // 名称 + 简述 + 图标/首字母
     {
-      title: dict('PC.Pages.SpaceResourcePricing.name'),
+      title: dict('PC.Pages.SpaceResourcePricing.toolName'),
       dataIndex: ['targetObjectInfo', 'name'],
       key: 'name',
       width: 280,
@@ -174,18 +170,27 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         const initial = name !== '-' ? name.charAt(0).toLocaleUpperCase() : '?';
 
         return (
-          <div className={styles.toolNameCell}>
-            <div className={styles.toolNameAvatarWrap}>
+          <div className={styles['tool-pricing-name-cell']}>
+            <div className={styles['tool-pricing-name-avatar-wrap']}>
               {icon ? (
-                <img className={styles.toolNameAvatarImg} src={icon} alt="" />
+                <img
+                  className={styles['tool-pricing-name-avatar-img']}
+                  src={icon}
+                  alt=""
+                />
               ) : (
-                <span className={styles.toolNameAvatarLetter}>{initial}</span>
+                <span className={styles['tool-pricing-name-avatar-letter']}>
+                  {initial}
+                </span>
               )}
             </div>
-            <div className={styles.toolNameText}>
-              <div className={styles.toolNameTitle}>{name}</div>
+            <div className={styles['tool-pricing-name-text']}>
+              <div className={styles['tool-pricing-name-title']}>{name}</div>
               {desc ? (
-                <div className={styles.toolNameSubtitle} title={desc}>
+                <div
+                  className={styles['tool-pricing-name-subtitle']}
+                  title={desc}
+                >
                   {desc}
                 </div>
               ) : null}
@@ -194,13 +199,25 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         );
       },
     },
-    // 工具大类：插件 / 工作流 / MCP
+    // 工具大类：插件 / 工作流 / MCP；在 ProTable search（LightFilter）中用下拉筛选
     {
       title: dict('PC.Pages.SpaceResourcePricing.toolTargetType'),
       dataIndex: 'targetType',
       key: 'targetType',
       width: 100,
-      search: false,
+      valueType: 'select',
+      valueEnum: {
+        [ToolPricingTargetType.PLUGIN]: {
+          text: TARGET_TYPE_LABEL_MAP[ToolPricingTargetType.PLUGIN],
+        },
+        [ToolPricingTargetType.WORKFLOW]: {
+          text: TARGET_TYPE_LABEL_MAP[ToolPricingTargetType.WORKFLOW],
+        },
+      },
+      fieldProps: {
+        allowClear: true,
+        placeholder: dict('PC.Pages.SpaceResourcePricing.selectPlaceholder'),
+      },
       render: (_, record) => {
         const tt = record.targetType;
         if (typeof tt !== 'string') return '-';
@@ -221,16 +238,18 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         )}`;
 
         return (
-          <div className={styles.priceCell}>
-            <span className={styles.priceCellMain}>
-              <span className={styles.priceCellCurrency}>¥</span>
-              <span className={styles.priceCellAmount}>
+          <div className={styles['tool-pricing-price-cell']}>
+            <span className={styles['tool-pricing-price-main']}>
+              <span className={styles['tool-pricing-price-currency']}>¥</span>
+              <span className={styles['tool-pricing-price-amount']}>
                 {record.price || 0}
               </span>
-              <span className={styles.priceCellUnit}>{unitSuffix}</span>
+              <span className={styles['tool-pricing-price-unit']}>
+                {unitSuffix}
+              </span>
             </span>
             {trials > 0 ? (
-              <span className={styles.priceTrialBadge}>
+              <span className={styles['tool-pricing-price-trial-badge']}>
                 {dict('PC.Pages.SpaceResourcePricing.priceTrialBadge', trials)}
               </span>
             ) : null}
@@ -238,26 +257,28 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         );
       },
     },
-    // 开启/关闭对用户计费（立即调保存接口）
+    // 开启/关闭对用户计费（立即调保存接口）；search 中可按状态筛选
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       dataIndex: 'status',
-      key: 'enabled',
+      key: 'status',
       valueType: 'select',
       valueEnum: {
         [ResourcePricingStatus.ENABLED]: {
-          text: '启用',
+          text: dict('PC.Common.Global.enable'),
         },
         [ResourcePricingStatus.DISABLED]: {
-          text: '禁用',
+          text: dict('PC.Common.Global.disable'),
         },
+      },
+      fieldProps: {
+        allowClear: true,
       },
       width: 100,
       align: 'center',
       fixed: 'right',
       render: (_, record) => (
         <Switch
-          size="small"
           checked={record.status === ResourcePricingStatus.ENABLED}
           onChange={(checked) => handleToggleStatus(record, checked)}
         />
@@ -292,15 +313,25 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
     },
   ];
 
-  // 获取工具定价列表（MCP / PLUGIN / WORKFLOW）
-  const request = async () => {
+  const skipReloadOnMountRef = useRef(true);
+  useEffect(() => {
+    if (skipReloadOnMountRef.current) {
+      skipReloadOnMountRef.current = false;
+      return;
+    }
+    actionRef.current?.reload();
+  }, [keyword, spaceId]);
+
+  // 获取工具定价列表（MCP / PLUGIN / WORKFLOW）；search 中 targetType、status 下拉 + 顶部名称关键词在本地收窄
+  const request = async (params: {
+    targetType?: ToolPricingTargetType;
+    status?: ResourcePricingStatus | string | number;
+    pageSize?: number;
+    current?: number;
+  }) => {
     setLoading(true);
     const res = await apiListPricingConfig({
-      targetTypes: [
-        ToolPricingTargetType.MCP,
-        ToolPricingTargetType.PLUGIN,
-        ToolPricingTargetType.WORKFLOW,
-      ],
+      targetTypes: [...TOOL_PRICING_TAB_TARGET_TYPES],
       spaceId,
     });
     setLoading(false);
@@ -312,7 +343,34 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
       return { data: [], total: 0, success: false };
     }
 
-    const data = res.data || [];
+    let data = res.data || [];
+
+    const typeFilter = params.targetType;
+    if (
+      typeFilter === ToolPricingTargetType.PLUGIN ||
+      typeFilter === ToolPricingTargetType.WORKFLOW
+    ) {
+      data = data.filter((row) => row.targetType === typeFilter);
+    }
+
+    const statusRaw = params.status;
+    if (statusRaw !== undefined && statusRaw !== null && statusRaw !== '') {
+      const statusNum = Number(statusRaw);
+      if (
+        statusNum === ResourcePricingStatus.ENABLED ||
+        statusNum === ResourcePricingStatus.DISABLED
+      ) {
+        data = data.filter((row) => Number(row.status) === statusNum);
+      }
+    }
+
+    const kw = keyword.trim().toLowerCase();
+    if (kw) {
+      data = data.filter((row) =>
+        (row.targetObjectInfo?.name ?? '').toLowerCase().includes(kw),
+      );
+    }
+
     return {
       data,
       total: data.length,
@@ -322,20 +380,9 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
 
   return (
     <div>
-      {/* 标题 + 「添加工具」Popover */}
-      <div className={pricingStyles.tabHeader}>
-        <h4 className={pricingStyles.tabTitle}>
-          {dict('PC.Pages.SpaceResourcePricing.toolTitle')}
-        </h4>
-        <CustomPopover list={ADD_TOOL_LIST} onClick={handleClickAddToolType}>
-          <Button type="primary" icon={<PlusOutlined />}>
-            {dict('PC.Pages.SpaceResourcePricing.addTool')}
-          </Button>
-        </CustomPopover>
-      </div>
-      {/* 预留：关键词 + 类型筛选（可与 request 过滤串联） */}
-      <div className={pricingStyles.searchBar}>
+      <div className={styles['tool-pricing-toolbar']}>
         <Input
+          className={styles['tool-pricing-search-input']}
           placeholder={dict(
             'PC.Pages.SpaceResourcePricing.searchToolPlaceholder',
           )}
@@ -343,40 +390,12 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           allowClear
-          style={{ width: 260 }}
         />
-        <Button
-          type={categoryFilter === '' ? 'primary' : 'default'}
-          size="small"
-          onClick={() => setCategoryFilter('')}
-          className={pricingStyles.filterBtn}
-        >
-          {dict('PC.Pages.SpaceResourcePricing.filterAll')}
-        </Button>
-        <Button
-          type={categoryFilter === 'plugin' ? 'primary' : 'default'}
-          size="small"
-          onClick={() => setCategoryFilter('plugin')}
-          className={pricingStyles.filterBtn}
-        >
-          {dict('PC.Pages.SpaceResourcePricing.categoryPlugin')}
-        </Button>
-        <Button
-          type={categoryFilter === 'workflow' ? 'primary' : 'default'}
-          size="small"
-          onClick={() => setCategoryFilter('workflow')}
-          className={pricingStyles.filterBtn}
-        >
-          {dict('PC.Pages.SpaceResourcePricing.categoryWorkflow')}
-        </Button>
-        <Button
-          type={categoryFilter === 'mcp' ? 'primary' : 'default'}
-          size="small"
-          onClick={() => setCategoryFilter('mcp')}
-          className={pricingStyles.filterBtn}
-        >
-          {dict('PC.Pages.SpaceResourcePricing.categoryMCP')}
-        </Button>
+        <CustomPopover list={ADD_TOOL_LIST} onClick={handleClickAddToolType}>
+          <Button type="primary" icon={<PlusOutlined />}>
+            {dict('PC.Pages.SpaceResourcePricing.addTool')}
+          </Button>
+        </CustomPopover>
       </div>
       {/* 工具定价列表 */}
       <XProTable<ResourcePricingConfigInfo>
@@ -387,11 +406,15 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         loading={loading}
         pagination={false}
       />
-      {/* 关闭收费说明 */}
-      <div className={pricingStyles.billingNotice}>
-        <span className={pricingStyles.noticeIcon}>ⓘ</span>
+      <footer className={styles['tool-pricing-billing-notice']}>
+        <span
+          className={styles['tool-pricing-billing-notice-icon']}
+          aria-hidden
+        >
+          ⓘ
+        </span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
-      </div>
+      </footer>
 
       {/* 新建 / 编辑工具定价（含选工具 Created） */}
       <ToolPricingFormModal

@@ -12,7 +12,7 @@ import {
   apiUpdateModelPricing,
 } from '../../services/resource';
 import type { ResourcePricingConfigInfo } from '../../types/resource';
-import styles from '../index.less';
+import styles from './index.less';
 
 interface ModelOption {
   id: number;
@@ -214,8 +214,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           inputPrice: tier.inputPrice,
           outputPrice: tier.outputPrice,
           cachePrice: tier.cachePrice,
-          created: tier.created || '',
-          modified: tier.modified || '',
         };
         // 更新档位
         if (tier.id) {
@@ -232,8 +230,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           : dict('PC.Pages.SpaceResourcePricing.addSuccess'),
       );
       onSaved();
-    } catch (error) {
-      message.error(dict('PC.Common.Global.operationFailed'));
     } finally {
       setSaving(false);
     }
@@ -297,12 +293,12 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       </Form>
 
       {/* 定价档位 */}
-      <div className={styles.tierSection}>
+      <div className={styles['model-section']}>
         {/* 档位标题 */}
-        <div className={styles.tierSectionHeader}>
-          <span className={styles.tierSectionTitle}>
+        <div className={styles['model-section-header']}>
+          <span className={styles['model-section-title']}>
             {dict('PC.Pages.SpaceResourcePricing.pricingTier')}
-            <span className={styles.tierSectionHint}>
+            <span className={styles['model-section-hint']}>
               {dict('PC.Pages.SpaceResourcePricing.tierHint')}
             </span>
           </span>
@@ -313,19 +309,19 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
 
         {/* 档位列表 */}
         {tiers.map((tier, index) => (
-          <div key={index} className={styles.tierCard}>
-            <div className={styles.tierCardHeader}>
-              <div className={styles.tierThreshold}>
-                <span className={styles.tierThresholdPrefix}>≤</span>
+          <div key={index} className={styles['model-card']}>
+            <div className={styles['model-card-header']}>
+              <div className={styles['model-threshold']}>
+                <span className={styles['model-threshold-prefix']}>≤</span>
                 <InputNumber
                   value={parseInt(tier.label.replace(/[^0-9]/g, ''), 10) || 32}
                   min={1}
                   precision={0}
                   size="small"
-                  className={styles.tierThresholdInput}
+                  className={styles['model-threshold-input']}
                   onChange={(v) => updateTier(index, 'label', `≤${v || 32}K`)}
                 />
-                <span className={styles.tierThresholdSuffix}>K</span>
+                <span className={styles['model-threshold-suffix']}>K</span>
               </div>
               <Button
                 type="text"
@@ -337,46 +333,49 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                 ✕
               </Button>
             </div>
-            <div className={styles.tierPrices}>
-              <div className={styles.tierPriceItem}>
-                <span className={styles.tierPriceLabel}>
+            <div className={styles['model-prices']}>
+              <div className={styles['model-price-item']}>
+                <span className={styles['model-price-label']}>
                   {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}
                 </span>
                 <InputNumber
                   value={tier.inputPrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
-                  className={styles.tierPriceInput}
+                  className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'inputPrice', v || 0)}
                 />
               </div>
-              <div className={styles.tierPriceItem}>
-                <span className={styles.tierPriceLabel}>
+              <div className={styles['model-price-item']}>
+                <span className={styles['model-price-label']}>
                   {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}
                 </span>
                 <InputNumber
                   value={tier.outputPrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
-                  className={styles.tierPriceInput}
+                  className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'outputPrice', v || 0)}
                 />
               </div>
-              <div className={styles.tierPriceItem}>
-                <span className={styles.tierPriceLabel}>
+              <div className={styles['model-price-item']}>
+                <span className={styles['model-price-label']}>
                   {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}
                 </span>
                 <InputNumber
                   value={tier.cachePrice}
                   min={0}
-                  step={0.001}
-                  precision={4}
+                  max={100000000}
+                  step={0.01}
+                  precision={2}
                   size="small"
-                  className={styles.tierPriceInput}
+                  className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'cachePrice', v || 0)}
                 />
               </div>
