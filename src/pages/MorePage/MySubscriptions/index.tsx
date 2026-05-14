@@ -6,7 +6,6 @@ import {
   apiListSystemSubscriptionPlans,
 } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
-import { message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import CreditsBreakdown from './components/CreditsBreakdown';
@@ -53,14 +52,6 @@ const MySubscriptions: React.FC = () => {
     refreshAll();
   }, []);
 
-  const handleRenew = () => {
-    message.success(dict('PC.Pages.MorePage.MySubscriptions.renewSuccess'));
-  };
-
-  const handleUpgrade = () => {
-    message.success(dict('PC.Pages.MorePage.MySubscriptions.upgradeSuccess'));
-  };
-
   const currentSub = subData?.currentSubscription;
 
   return (
@@ -81,8 +72,6 @@ const MySubscriptions: React.FC = () => {
         data={packagesData}
         currentPlanId={currentSub?.planId}
         endTime={currentSub?.endTime}
-        onRenew={handleRenew}
-        onUpgrade={handleUpgrade}
       />
 
       {/* 已订阅内容 */}
