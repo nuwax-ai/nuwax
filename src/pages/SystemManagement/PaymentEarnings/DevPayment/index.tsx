@@ -6,14 +6,21 @@ import { apiPageDevPaymentAccounts } from '@/services/subscriptionService';
 import type { DevPaymentAccountRecord } from '@/types/interfaces/subscription';
 import { DevPaymentTypeEnum } from '@/types/interfaces/subscription';
 import { BankFilled } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
+import { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import PaymentDetailModal from './components/PaymentDetailModal';
 
 const DevPayment: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<any>(null);
+  const actionRef = useRef<ActionType>();
+  const location = useLocation();
+
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [location]);
 
   const handleShowDetail = useCallback((record: any) => {
     // 统一详情弹窗所需的数据格式
@@ -111,6 +118,7 @@ const DevPayment: React.FC = () => {
     <>
       <WorkspaceLayout title={dict('PC.Routes.devPaymentInfo')}>
         <XProTable<DevPaymentAccountRecord>
+          actionRef={actionRef}
           rowKey="id"
           columns={columns}
           request={async (params) => {
