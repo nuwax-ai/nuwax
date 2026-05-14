@@ -1,12 +1,17 @@
+import {
+  apiCreateAgentSubscriptionOrder,
+  apiGetAgentSubscriptionOrderCashier,
+} from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
   SystemSubscriptionPlan,
 } from '@/types/interfaces/subscription';
-import { Button, Col, Row } from 'antd';
+import { Button, Col, message, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 export interface PlanInfo {
@@ -21,8 +26,6 @@ interface SubscriptionPlanCardsProps {
   data?: SystemSubscriptionPlan[];
   currentPlanId?: number;
   endTime?: string;
-  onRenew?: (plan: PlanInfo) => void;
-  onUpgrade?: (plan: PlanInfo) => void;
 }
 
 const cx = classNames.bind(styles);
@@ -31,9 +34,62 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   data = [],
   currentPlanId,
   endTime,
-  onRenew,
-  onUpgrade,
 }) => {
+  const [processingId, setProcessingId] = React.useState<string | null>(null);
+
+  // 获取收银台地址并跳转支付
+  const { run: getCashierUrl } = useRequest(
+    apiGetAgentSubscriptionOrderCashier,
+    {
+      manual: true,
+      onSuccess: (res: any) => {
+        if (res && res?.cashierUrl) {
+          // 在新标签页打开支付收银台
+          window.open(res.cashierUrl, '_blank');
+        }
+      },
+      onFinally: () => {
+        setProcessingId(null);
+      },
+    },
+  );
+
+  // 创建订阅订单
+  const { run: createOrder } = useRequest(apiCreateAgentSubscriptionOrder, {
+    manual: true,
+    onSuccess: (res: any) => {
+      if (res) {
+        // 获取创建订单返回的支付网关订单号
+        const orderNo = res?.extra?.gatewayPaymentOrderNo;
+        if (orderNo) {
+          // 继续获取收银台地址
+          getCashierUrl(orderNo);
+        } else {
+          message.error('未获取到订单号');
+          setProcessingId(null);
+        }
+      } else {
+        setProcessingId(null);
+      }
+    },
+    onError: () => {
+      setProcessingId(null);
+    },
+  });
+
+  /**
+   * 点击订阅/续费处理函数
+   * @param plan 套餐信息
+   */
+  const handlePay = (plan: PlanInfo) => {
+    // 防止重复请求
+    if (processingId) return;
+
+    // 锁定当前正在处理的套餐ID
+    setProcessingId(plan.id);
+
+    createOrder(Number(plan.id));
+  };
   const plans = useMemo<PlanInfo[]>(() => {
     return data.map((item) => ({
       id: item.id.toString(),
@@ -127,9 +183,8 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   <Button
                     type="primary"
                     className={cx(styles['action-button'])}
-                    onClick={() =>
-                      isCurrent ? onRenew?.(plan) : onUpgrade?.(plan)
-                    }
+                    loading={processingId === plan.id}
+                    onClick={() => handlePay(plan)}
                   >
                     {isCurrent
                       ? dict('PC.Pages.MorePage.MySubscriptions.renewNow')

@@ -111,7 +111,7 @@ export async function apiCreateAgentSubscriptionOrder(
  * 获取订单收银台地址
  */
 export async function apiGetAgentSubscriptionOrderCashier(
-  orderId: number,
+  orderId: number | string,
 ): Promise<RequestResponse<{ cashierUrl: string }>> {
   return request('/api/bill/order/pay/cashier', {
     method: 'GET',
