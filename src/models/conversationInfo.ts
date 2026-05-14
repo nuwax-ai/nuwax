@@ -11,6 +11,7 @@ import {
   apiAgentConversationChatSuggest,
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
+  apiResolveAcpPermission,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -39,6 +40,10 @@ import {
   EditAgentShowType,
   OpenCloseEnum,
 } from '@/types/enums/space';
+import type {
+  RcoderAcpPermissionInteraction,
+  RcoderRequestPermissionResponse,
+} from '@/types/interfaces/acpPermission';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -67,6 +72,7 @@ import {
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
+import { normalizeAcpPermissionProgressMessage } from '@/utils/acpPermission';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
@@ -797,6 +803,24 @@ export default () => {
 
       let newMessage: any = null;
 
+      const permissionInteraction = normalizeAcpPermissionProgressMessage(res);
+      if (permissionInteraction) {
+        const interactions = currentMessage.acpPermissionInteractions || [];
+        if (interactions.some((item) => item.id === permissionInteraction.id)) {
+          return messageList;
+        }
+
+        newMessage = {
+          ...currentMessage,
+          acpPermissionInteractions: [...interactions, permissionInteraction],
+          status: currentMessage.status || MessageStatusEnum.Loading,
+        };
+
+        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        checkConversationActive(list);
+        return list;
+      }
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
@@ -1367,6 +1391,100 @@ export default () => {
     handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
   };
 
+  const updateAcpPermissionInteraction = useCallback(
+    (
+      interactionId: string,
+      updates: Partial<RcoderAcpPermissionInteraction>,
+    ) => {
+      setMessageList((list) =>
+        list.map((item) => {
+          const interactions = item.acpPermissionInteractions;
+          if (
+            !interactions?.some(
+              (interaction) => interaction.id === interactionId,
+            )
+          ) {
+            return item;
+          }
+
+          return {
+            ...item,
+            acpPermissionInteractions: interactions.map((interaction) =>
+              interaction.id === interactionId
+                ? { ...interaction, ...updates }
+                : interaction,
+            ),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const respondAcpPermission = useCallback(
+    async (
+      interaction: RcoderAcpPermissionInteraction,
+      acpResponse: RcoderRequestPermissionResponse,
+      options?: { saveRule?: boolean },
+    ) => {
+      const request = interaction.permission.request_permission_request;
+      const toolCallId = request.tool_call.tool_call_id;
+      const selectedOptionId =
+        'Selected' in acpResponse.outcome
+          ? acpResponse.outcome.Selected.option_id
+          : undefined;
+
+      updateAcpPermissionInteraction(interaction.id, {
+        responseStatus: 'submitting',
+        selectedOptionId,
+        errorMessage: undefined,
+      });
+
+      try {
+        const projectId =
+          currentConversationId || conversationInfoRef.current?.id;
+        const response = await apiResolveAcpPermission({
+          permission_resolve_request: {
+            request_permission_response: acpResponse,
+            session_id: request.session_id,
+            tool_call_id: toolCallId,
+            save_rule: !!options?.saveRule,
+          },
+          ...(projectId ? { project_id: String(projectId) } : {}),
+        });
+
+        if (response?.code && response.code !== SUCCESS_CODE) {
+          throw new Error(
+            response.message ||
+              dict('PC.Models.ConversationInfo.permissionResponseFailed'),
+          );
+        }
+
+        if (response?.ok === false) {
+          throw new Error(
+            response.error?.message ||
+              dict('PC.Models.ConversationInfo.permissionResponseFailed'),
+          );
+        }
+
+        updateAcpPermissionInteraction(interaction.id, {
+          responseStatus: 'submitted',
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : dict('PC.Models.ConversationInfo.permissionResponseFailed');
+        updateAcpPermissionInteraction(interaction.id, {
+          responseStatus: 'failed',
+          errorMessage,
+        });
+        message.error(errorMessage);
+      }
+    },
+    [currentConversationId, updateAcpPermissionInteraction],
+  );
+
   const handleDebug = useCallback((info: MessageInfo) => {
     const result = info?.finalResult;
     if (result) {
@@ -1407,6 +1525,7 @@ export default () => {
     runAsync,
     loadingSuggest,
     onMessageSend,
+    respondAcpPermission,
     handleDebug,
     messageViewRef,
     // 是否还有更多消息

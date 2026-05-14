@@ -26,6 +26,10 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type {
+  RcoderAcpPermissionInteraction,
+  RcoderRequestPermissionResponse,
+} from './acpPermission';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -285,6 +289,8 @@ export interface MessageInfo extends ChatMessageDto {
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
   processingList?: ProcessingInfo[];
+  // ACP 权限审批交互
+  acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
 }
 
 // 查询会话信息
@@ -444,6 +450,12 @@ export interface ChatViewProps {
   conversationId?: string | number;
   // 是否显示状态描述
   showStatusDesc?: boolean;
+  // ACP 权限审批回调
+  onAcpPermissionRespond?: (
+    interaction: RcoderAcpPermissionInteraction,
+    response: RcoderRequestPermissionResponse,
+    options?: { saveRule?: boolean },
+  ) => void;
 }
 
 // 卡片信息

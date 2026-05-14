@@ -1,3 +1,7 @@
+import type {
+  RcoderNotifyResolvedRequest,
+  RcoderPermissionProgressData,
+} from '@/types/interfaces/acpPermission';
 import {
   AgentAddParams,
   AgentCardInfo,
@@ -294,6 +298,18 @@ export async function apiAgentConversationChatStop(
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/conversation/chat/stop/${requestId}`, {
     method: 'POST',
+  });
+}
+
+// ACP 权限审批结果回调
+export function apiResolveAcpPermission(
+  data: RcoderNotifyResolvedRequest,
+): Promise<
+  RequestResponse<RcoderPermissionProgressData> | Record<string, any>
+> {
+  return request('/api/computer/notify-resolved', {
+    method: 'POST',
+    data,
   });
 }
 

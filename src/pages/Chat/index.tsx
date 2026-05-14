@@ -222,6 +222,7 @@ const Chat: React.FC = () => {
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    respondAcpPermission,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -1261,6 +1262,7 @@ const Chat: React.FC = () => {
                         contentClassName={styles['chat-inner']}
                         mode={'home'}
                         conversationId={id}
+                        onAcpPermissionRespond={respondAcpPermission}
                         showStatusDesc={
                           effectiveAgent?.type !== AgentTypeEnum.TaskAgent
                         }
