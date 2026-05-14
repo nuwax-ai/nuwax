@@ -72,6 +72,7 @@ const MySubscriptions: React.FC = () => {
         data={packagesData}
         currentPlanId={currentSub?.planId}
         endTime={currentSub?.endTime}
+        price={currentSub?.price}
       />
 
       {/* 已订阅内容 */}

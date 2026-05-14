@@ -26,6 +26,7 @@ interface SubscriptionPlanCardsProps {
   data?: SystemSubscriptionPlan[];
   currentPlanId?: number;
   endTime?: string;
+  price?: number;
 }
 
 const cx = classNames.bind(styles);
@@ -34,6 +35,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   data = [],
   currentPlanId,
   endTime,
+  price,
 }) => {
   const [processingId, setProcessingId] = React.useState<string | null>(null);
 
@@ -43,9 +45,11 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
     {
       manual: true,
       onSuccess: (res: any) => {
-        if (res && res?.cashierUrl) {
+        // 兼容处理：获取返回的数据内容
+        const data = res?.data || res;
+        if (data && data?.cashierUrl) {
           // 在新标签页打开支付收银台
-          window.open(res.cashierUrl, '_blank');
+          window.open(data.cashierUrl, '_blank');
         }
       },
       onFinally: () => {
@@ -59,11 +63,13 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
     manual: true,
     onSuccess: (res: any) => {
       if (res) {
-        // 获取创建订单返回的支付网关订单号
-        const orderNo = res?.extra?.gatewayPaymentOrderNo;
-        if (orderNo) {
+        // 兼容处理：获取返回的数据内容
+        const data = res?.data || res;
+        // 获取创建订单返回的支付网关订单号（订单ID）
+        const orderId = data?.id;
+        if (orderId) {
           // 继续获取收银台地址
-          getCashierUrl(orderNo);
+          getCashierUrl(orderId);
         } else {
           message.error('未获取到订单号');
           setProcessingId(null);
@@ -185,9 +191,12 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                     className={cx(styles['action-button'])}
                     loading={processingId === plan.id}
                     onClick={() => handlePay(plan)}
+                    disabled={plan.price <= 0}
                   >
                     {isCurrent
                       ? dict('PC.Pages.MorePage.MySubscriptions.renewNow')
+                      : plan.price <= (price || 0)
+                      ? dict('PC.Pages.MorePage.MySubscriptions.subscribeNow')
                       : dict('PC.Pages.MorePage.MySubscriptions.upgradeNow')}
                   </Button>
                 </div>
