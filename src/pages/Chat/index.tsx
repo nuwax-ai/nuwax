@@ -156,8 +156,7 @@ const Chat: React.FC = () => {
   }, [history.action, location.key]);
 
   // 智能体详情
-  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
-    useAgentDetails();
+  const { agentDetail, setAgentDetail } = useAgentDetails();
 
   // 会话输入框已选择组件
   const {
@@ -1533,7 +1532,6 @@ const Chat: React.FC = () => {
           agentId={agentId}
           loading={loadingConversation}
           agentDetail={effectiveAgent}
-          onToggleCollectSuccess={handleToggleCollectSuccess}
           onVisibleChange={setIsSidebarVisible}
         />
       </ConditionRender>

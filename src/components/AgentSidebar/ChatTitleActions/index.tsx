@@ -23,6 +23,8 @@ interface ChatTitleActionsProps {
   className?: string;
   /** 是否显示复制模板功能，默认为 true */
   showCopyTemplate?: boolean;
+  /** 订阅回调 */
+  onSubscribe?: () => void;
 }
 
 /**
@@ -33,6 +35,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
   agentInfo,
   className,
   showCopyTemplate = true,
+  onSubscribe,
 }) => {
   // 使用 UmiJS model 中的状态管理
   const [isCollected, setIsCollected] = useState<boolean>(
@@ -159,6 +162,17 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           onClick: handleToggleCollect,
           className: isCollected ? styles.collected : '',
         },
+        ...(agentInfo?.paymentRequired && !agentInfo.subscribed && onSubscribe
+          ? [
+              {
+                key: 'subscribe',
+                icon: 'icons-chat-subscribe',
+                title: '订阅',
+                onClick: onSubscribe,
+                className: styles.subscribe,
+              },
+            ]
+          : []),
         // 复制模板功能 - 根据配置和权限决定是否显示
         ...(showCopyTemplate && agentInfo?.allowCopy === AllowCopyEnum.Yes
           ? [
@@ -172,7 +186,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
             ]
           : []),
       ].filter(Boolean) as ActionItem[],
-    [isCollected, agentInfo, showCopyTemplate],
+    [isCollected, agentInfo, showCopyTemplate, onSubscribe],
   );
 
   return (
