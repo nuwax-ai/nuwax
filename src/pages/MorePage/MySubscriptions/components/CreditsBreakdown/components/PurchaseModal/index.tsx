@@ -1,6 +1,10 @@
 import { XModalForm } from '@/components/ProComponents';
+import { apiGetAgentSubscriptionOrderCashier } from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
-import { apiListCreditPackages } from '@/services/subscriptionService';
+import {
+  apiCreateCreditOrder,
+  apiListCreditPackages,
+} from '@/services/subscriptionService';
 import { CreditPackageInfo } from '@/types/interfaces/subscription';
 import { message, Space, Spin, Statistic, Tag } from 'antd';
 import classNames from 'classnames';
@@ -19,6 +23,7 @@ interface PurchaseModalProps {
  * 增购积分弹窗
  */
 const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
+  // 获取积分套餐列表
   const {
     data: packagesData,
     loading,
@@ -27,20 +32,62 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
     manual: true,
   });
 
+  // 当弹窗打开时，自动加载套餐列表
   useEffect(() => {
     if (open) {
       run();
     }
   }, [open, run]);
 
+  // 处理获取到的套餐数据格式
   const packages = useMemo(() => {
     if (Array.isArray(packagesData)) return packagesData;
     if ((packagesData as any)?.data) return (packagesData as any).data;
     return [];
   }, [packagesData]);
 
-  const handleItemClick = () => {
-    message.info('功能正在紧急开发中...');
+  // 获取收银台地址并跳转支付
+  const { run: getCashierUrl, loading: fetchingCashier } = useRequest(
+    apiGetAgentSubscriptionOrderCashier,
+    {
+      manual: true,
+      onSuccess: (res: any) => {
+        if (res && res?.cashierUrl) {
+          // 在新标签页打开支付收银台
+          window.open(res.cashierUrl, '_blank');
+        }
+      },
+    },
+  );
+
+  // 创建积分增购订单
+  const { run: createOrder, loading: creatingOrder } = useRequest(
+    apiCreateCreditOrder,
+    {
+      manual: true,
+      onSuccess: (res: any) => {
+        if (res) {
+          // 获取创建订单返回的支付网关订单号
+          const orderNo = res?.extra?.gatewayPaymentOrderNo;
+          if (orderNo) {
+            // 继续获取收银台地址
+            getCashierUrl(orderNo);
+          } else {
+            message.error('未获取到订单号');
+          }
+        }
+      },
+    },
+  );
+
+  /**
+   * 点击积分套餐处理函数
+   * @param id 套餐ID
+   */
+  const handleItemClick = (id: number) => {
+    // 防止重复请求
+    if (creatingOrder || fetchingCashier) return;
+    createOrder({ packageId: id });
   };
 
   return (
@@ -74,7 +121,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
                 <div
                   key={pkg.id}
                   className={cx(styles['package-item'])}
-                  onClick={() => handleItemClick()}
+                  onClick={() => handleItemClick(pkg.id)}
                 >
                   <div className={cx(styles['package-info'])}>
                     <div className={cx(styles['package-name-row'])}>

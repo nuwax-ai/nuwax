@@ -263,6 +263,18 @@ export async function apiListCreditPackages(): Promise<
 }
 
 /**
+ * 创建积分增购订单
+ */
+export async function apiCreateCreditOrder(params: {
+  packageId: number;
+}): Promise<RequestResponse<BillOrderInfo>> {
+  return request('/api/credit/order/create', {
+    method: 'POST',
+    params,
+  });
+}
+
+/**
  * 查询可订阅的系统计划列表
  */
 export async function apiListSystemSubscriptionPlans(): Promise<
