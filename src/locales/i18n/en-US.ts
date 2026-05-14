@@ -2594,6 +2594,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyOrders.statusPending": "Pending",
   "PC.Pages.MorePage.MyOrders.statusPaid": "Paid",
   "PC.Pages.MorePage.MyOrders.statusCancelled": "Cancelled",
+  "PC.Pages.MorePage.MyOrders.statusFailed": "Expired",
   "PC.Pages.MorePage.MyOrders.orderIdLabel": "ID: ",
 
 

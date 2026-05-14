@@ -22,13 +22,17 @@ function XModalForm<T = Record<string, any>>({
   return (
     <ModalForm<T>
       requiredMark={requiredMark ?? defaultRequiredMark}
-      submitter={{
-        searchConfig: {
-          submitText: dict('PC.Common.Global.confirm'),
-          resetText: dict('PC.Common.Global.cancel'),
-        },
-        ...submitter,
-      }}
+      submitter={
+        submitter === false
+          ? false
+          : {
+              searchConfig: {
+                submitText: dict('PC.Common.Global.confirm'),
+                resetText: dict('PC.Common.Global.cancel'),
+              },
+              ...submitter,
+            }
+      }
       {...restProps}
     >
       {children}
