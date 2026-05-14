@@ -1,4 +1,8 @@
 import CreateKnowledge from '@/components/CreateKnowledge';
+import { KnowledgeGraph } from '@/components/KnowledgeGraph';
+import type { AddNodeData } from '@/components/KnowledgeGraph/AddNodeModal';
+import AddNodeModal from '@/components/KnowledgeGraph/AddNodeModal';
+import BatchImportModal from '@/components/KnowledgeGraph/BatchImportModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -8,6 +12,9 @@ import {
   apiKnowledgeQaAdd,
   apiKnowledgeQaDelete,
   apiKnowledgeQaUpdate,
+  apiKnowledgeTripleDelete,
+  apiKnowledgeTripleGenerate,
+  apiKnowledgeTripleList,
 } from '@/services/knowledge';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
@@ -20,6 +27,7 @@ import type {
   KnowledgeDocumentInfo,
   KnowledgeInfo,
   KnowledgeQAInfo,
+  KnowledgeTripleDocumentInfo,
 } from '@/types/interfaces/knowledge';
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
@@ -30,6 +38,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
+import GraphDocTable from './GraphDocTable';
 import styles from './index.less';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
@@ -80,6 +89,26 @@ const SpaceKnowledge: React.FC = () => {
   // 根据docType 判断是否显示QA问答
   const [qaOpen, setQaOpen] = useState<boolean>(false);
   const [question, setQuestion] = useState<string>('');
+
+  // 知识图谱模式的文档状态
+  const [graphDocList, setGraphDocList] = useState<
+    KnowledgeTripleDocumentInfo[]
+  >([]);
+  const [currentGraphDoc, setCurrentGraphDoc] =
+    useState<KnowledgeTripleDocumentInfo | null>(null);
+  // 知识图谱视图模式：'table' 显示表格，'graph' 显示图谱详情
+  const [graphViewMode, setGraphViewMode] = useState<'table' | 'graph'>(
+    'table',
+  );
+  // 手动添加图谱节点弹窗
+  const [openAddNodeModal, setOpenAddNodeModal] = useState<boolean>(false);
+  // 批量导入图谱节点弹窗
+  const [openBatchImportModal, setOpenBatchImportModal] =
+    useState<boolean>(false);
+  // 知识图谱加载状态
+  const [loadingGraph, setLoadingGraph] = useState<boolean>(false);
+  // 知识图谱三元组数据
+  //const [tripleData, setTripleData] = useState<any>(null);
 
   // 知识库基础配置接口 - 数据详情查询
   const { run } = useRequest(apiKnowledgeConfigDetail, {
@@ -143,6 +172,25 @@ const SpaceKnowledge: React.FC = () => {
     });
   };
 
+  // 加载知识图谱列表
+  const handleLoadGraphList = async () => {
+    setLoadingGraph(true);
+    try {
+      const response = await apiKnowledgeTripleList({
+        knowledgeId: knowledgeId,
+      });
+      if (response.code === SUCCESS_CODE && response.data) {
+        // 直接使用返回的数据
+        setGraphDocList(response.data || []);
+      }
+    } catch (error) {
+      // console.error('加载知识图谱列表失败:', error);
+      message.error(dict('PC.Pages.SpaceKnowledge.Index.loadGraphListFailed'));
+    } finally {
+      setLoadingGraph(false);
+    }
+  };
+
   // 知识库文档配置 - 数据删除接口
   const { run: runDocDelete } = useRequest(apiKnowledgeDocumentDelete, {
     manual: true,
@@ -152,6 +200,8 @@ const SpaceKnowledge: React.FC = () => {
       // 删除文档后，更新文档列表以及分段信息
       setLoadingDoc(true);
       handleDocList();
+
+      handleLoadGraphList();
     },
   });
 
@@ -165,6 +215,27 @@ const SpaceKnowledge: React.FC = () => {
 
   // 点击添加内容下拉
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
+    // 知识图谱模式
+    if (docType === KnowledgeDocTypeEnum.GRAPH) {
+      if (item.value === 'manual_add') {
+        setOpenAddNodeModal(true);
+      } else if (item.value === 'auto_generate') {
+        // 一键生成知识图谱
+        if (graphDocList.length > 0) {
+          // 为所有文档生成知识图谱
+          /*
+          graphDocList.forEach(doc => {
+            handleGenerateGraph(doc.id);
+          });*/
+        } else {
+          message.info(dict('PC.Pages.SpaceKnowledge.Index.addDocFirst'));
+        }
+      } else if (item.value === 'batch_import') {
+        setOpenBatchImportModal(true);
+      }
+      return;
+    }
+    // 文档模式
     setType(item.value as KnowledgeTextImportEnum);
     setOpen(true);
   };
@@ -258,6 +329,61 @@ const SpaceKnowledge: React.FC = () => {
   const handleQaList = () => {
     qaTableListRef.current?.refresh();
   };
+
+  // 生成知识图谱
+  const handleGenerateGraph = async (docId: number) => {
+    try {
+      const response = await apiKnowledgeTripleGenerate({
+        knowledgeId: knowledgeId,
+        documentId: docId,
+      });
+      if (response.code === SUCCESS_CODE && response.data) {
+        message.success(response.data);
+        // 轮询检查生成状态
+        handleLoadGraphList();
+        /*
+        const checkStatus = setInterval(async () => {
+          try {
+            console.log("handleGenerateGraph===================2");
+            const listResponse = await apiKnowledgeTripleList({
+              knowledgeId: knowledgeId,
+            });
+            if (listResponse.code === SUCCESS_CODE && listResponse.data) {
+              const docInfo = listResponse.data.data.find(
+                (doc: KnowledgeTripleDocumentInfo) => doc.documentId === docId,
+              );
+              console.log("handleGenerateGraph===================3");
+              if (
+                docInfo &&
+                (docInfo.tripleStatus === 2 || docInfo.tripleStatus === 10)
+              ) {
+                clearInterval(checkStatus);
+                if (docInfo.tripleStatus === 2) {
+                  message.success(dict('PC.Pages.SpaceKnowledge.Index.graphGenerateSuccess'));
+                } else {
+                  message.error(dict('PC.Pages.SpaceKnowledge.Index.generateGraphFailed'));
+                }
+                console.log("handleGenerateGraph===================4");
+                // 重新加载知识图谱列表
+                handleLoadGraphList();
+                console.log("handleGenerateGraph===================5");
+              }
+            }
+          } catch (error) {
+            console.error('检查知识图谱生成状态失败:', error);
+          }
+        }, 3000);*/
+      } else {
+        message.error(
+          dict('PC.Pages.SpaceKnowledge.Index.graphGenerateTaskSubmitFailed'),
+        );
+      }
+    } catch (error) {
+      console.error('生成知识图谱失败:', error);
+      message.error(dict('PC.Pages.SpaceKnowledge.Index.generateGraphFailed'));
+    }
+  };
+
   // 切换类型
   const handleChangeDocType = (value: number) => {
     setQuestion(''); // 切换类型后，清空搜索
@@ -266,9 +392,14 @@ const SpaceKnowledge: React.FC = () => {
     if (value === KnowledgeDocTypeEnum.DOC) {
       setLoadingDoc(true);
       handleDocList();
-    } else {
+    } else if (value === KnowledgeDocTypeEnum.QA) {
       // 切换类型后，查询QA问答列表
       handleQaList();
+    } else if (value === KnowledgeDocTypeEnum.GRAPH) {
+      // 知识图谱模式：加载真实数据
+      handleLoadGraphList();
+      setGraphViewMode('table'); // 重置为表格视图
+      setCurrentGraphDoc(null);
     }
   };
 
@@ -336,7 +467,168 @@ const SpaceKnowledge: React.FC = () => {
     }
   };
 
-  // 渲染QA问答内容
+  // 点击表格中的文档，进入图谱详情页
+  const handleGraphDocClick = (doc: KnowledgeTripleDocumentInfo) => {
+    setCurrentGraphDoc(doc);
+    setGraphViewMode('graph');
+  };
+
+  // 批量删除图谱文档
+  const handleGraphBatchDelete = async (ids: number[]) => {
+    try {
+      // 逐个删除知识图谱
+      for (const id of ids) {
+        const response = await apiKnowledgeTripleDelete({
+          kbId: knowledgeId,
+          documentId: id,
+        });
+        if (response.code !== SUCCESS_CODE) {
+          throw new Error(`删除文档 ${id} 失败`);
+        }
+      }
+      // 更新本地列表
+      /*
+      const newList = graphDocList.filter((d) => !ids.includes(d.documentId));
+      setGraphDocList(newList);*/
+
+      handleLoadGraphList();
+
+      message.success(
+        dict(
+          'PC.Pages.SpaceKnowledge.Index.batchDeleteGraphSuccess',
+          ids.length,
+        ),
+      );
+    } catch (error) {
+      console.error('批量删除知识图谱失败:', error);
+      message.error(
+        dict('PC.Pages.SpaceKnowledge.Index.batchDeleteGraphFailed'),
+      );
+    }
+  };
+
+  // 批量修改配置
+  const handleGraphBatchConfig = (ids: number[]) => {
+    message.info(
+      dict(
+        'PC.Pages.SpaceKnowledge.Index.batchConfigInDevelopment',
+        ids.length,
+      ),
+    );
+  };
+
+  // 开启/关闭图谱
+  const handleToggleGraph = (id: number, enable: boolean) => {
+    const newList = graphDocList.map((d) => {
+      if (d.documentId === id) {
+        return { ...d, tripleStatus: enable ? 2 : 3 };
+      }
+      return d;
+    });
+    setGraphDocList(newList);
+    message.success(
+      enable
+        ? dict('PC.Pages.SpaceKnowledge.Index.graphEnabled')
+        : dict('PC.Pages.SpaceKnowledge.Index.graphDisabled'),
+    );
+  };
+
+  // 单个文档删除
+  const handleGraphDelete = async (id: number) => {
+    try {
+      const response = await apiKnowledgeTripleDelete({
+        kbId: knowledgeId,
+        documentId: id,
+      });
+      if (response.code === SUCCESS_CODE && response.data) {
+        // 更新本地列表
+        /*
+        const newList = graphDocList.filter((d) => d.documentId !== id);
+        setGraphDocList(newList);*/
+
+        handleLoadGraphList();
+
+        message.success(dict('PC.Pages.SpaceKnowledge.Index.deleteSuccess'));
+      } else {
+        message.error(dict('PC.Pages.SpaceKnowledge.Index.deleteFailed'));
+      }
+    } catch (error) {
+      console.error('删除知识图谱失败:', error);
+      message.error(dict('PC.Pages.SpaceKnowledge.Index.deleteGraphFailed'));
+    }
+  };
+
+  // 查看全部知识图谱
+  const handleViewAllGraphs = async () => {
+    try {
+      // 切换到图谱视图，显示所有知识图谱
+      setGraphViewMode('graph');
+      // 这里可以设置一个特殊的 documentInfo 来标识是全部知识图谱
+      setCurrentGraphDoc({
+        documentId: 0,
+        documentName: dict('PC.Pages.SpaceKnowledge.Index.allKnowledgeGraphs'),
+        fileType: 'all',
+        tripleStatus: 2,
+      });
+    } catch (error) {
+      console.error('查看全部知识图谱失败:', error);
+      message.error(dict('PC.Pages.SpaceKnowledge.Index.viewAllGraphsFailed'));
+    }
+  };
+
+  // 渲染知识图谱内容
+  const renderGraphContent = () => {
+    if (graphViewMode === 'table') {
+      // 表格视图
+      return (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            padding: '16px',
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <GraphDocTable
+            documentList={graphDocList}
+            loading={loadingGraph}
+            onRowClick={handleGraphDocClick}
+            onBatchDelete={handleGraphBatchDelete}
+            onBatchConfig={handleGraphBatchConfig}
+            onToggleGraph={handleToggleGraph}
+            onDelete={handleGraphDelete}
+            onGenerateGraph={handleGenerateGraph}
+          />
+        </div>
+      );
+    }
+    // 图谱详情视图
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* 知识图谱 */}
+        <div
+          style={{ flex: 1, width: '100%', minHeight: 0, overflow: 'hidden' }}
+        >
+          <KnowledgeGraph
+            kbId={knowledgeId}
+            spaceId={spaceId}
+            documentInfo={currentGraphDoc}
+            showBackButton
+            onBack={() => setGraphViewMode('table')}
+          />
+        </div>
+      </div>
+    );
+  };
   const renderQaContent = () => {
     return (
       <div className={cx('flex', 'flex-col', 'w-full')}>
@@ -412,21 +704,19 @@ const SpaceKnowledge: React.FC = () => {
         onEdit={() => setOpenKnowledge(true)}
         onPopover={handleClickPopoverItem}
         onQaPopover={handleClickQaPopoverItem}
+        onViewAllGraphs={handleViewAllGraphs}
       />
       {/* 根据docType 判断是否显示QA问答 */}
       <div
         className={cx('flex', 'flex-1')}
         style={{
-          height:
-            docType === KnowledgeDocTypeEnum.DOC ? 'calc(100% - 88px)' : '100%',
-          padding: '0 10px',
-          margin: '0',
-          overflowX: 'auto',
+          padding: docType === KnowledgeDocTypeEnum.GRAPH ? 0 : '0 10px',
+          overflow: 'hidden',
         }}
       >
-        {docType === KnowledgeDocTypeEnum.DOC
-          ? renderDocContent()
-          : renderQaContent()}
+        {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
+        {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
+        {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
       </div>
 
       {/*本地文档弹窗*/}
@@ -465,6 +755,25 @@ const SpaceKnowledge: React.FC = () => {
         onConfirm={() => {
           setQaBatchOpen(false);
           handleQaList();
+        }}
+      />
+      {/* 手动添加图谱节点弹窗*/}
+      <AddNodeModal
+        visible={openAddNodeModal}
+        onClose={() => setOpenAddNodeModal(false)}
+        onConfirm={(data: AddNodeData) => {
+          console.log('添加节点数据:', data);
+          message.success(dict('PC.Pages.SpaceKnowledge.Index.addSuccess'));
+          setOpenAddNodeModal(false);
+        }}
+      />
+      {/* 批量导入图谱节点弹窗*/}
+      <BatchImportModal
+        visible={openBatchImportModal}
+        onClose={() => setOpenBatchImportModal(false)}
+        onConfirm={(fileList) => {
+          console.log('导入文件列表:', fileList);
+          message.success(dict('PC.Pages.SpaceKnowledge.Index.importSuccess'));
         }}
       />
     </div>

@@ -25,6 +25,9 @@ import type {
   KnowledgeRawSegmentInfo,
   KnowledgeRawSegmentListParams,
   KnowledgeRawSegmentUpdateParams,
+  KnowledgeTripleGenerateParams,
+  KnowledgeTripleListParams,
+  KnowledgeTripleListResponse,
 } from '@/types/interfaces/knowledge';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import {
@@ -383,5 +386,50 @@ export async function apiKnowledgeQaUpload(
   return request('/api/knowledge/qa/importExcel', {
     method: 'POST',
     data: formData,
+  });
+}
+
+/**
+ * 知识图谱配置接口
+ */
+
+// 知识图谱 - 生成知识图谱
+export async function apiKnowledgeTripleGenerate(
+  data: KnowledgeTripleGenerateParams,
+): Promise<RequestResponse<string>> {
+  return request('/api/knowledge/triple/generate', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识图谱 - 查询知识图谱列表
+export async function apiKnowledgeTripleList(
+  data: KnowledgeTripleListParams,
+): Promise<RequestResponse<KnowledgeTripleListResponse>> {
+  return request('/api/knowledge/triple/graph/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识图谱 - 删除知识图谱
+export async function apiKnowledgeTripleDelete(data: {
+  kbId: number | string;
+  documentId: number | string;
+}): Promise<RequestResponse<boolean>> {
+  return request(`/api/knowledge/triple/graph/delete`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 知识图谱 - 按知识库ID分页查询三元组
+export async function apiKnowledgeTripleListByKnowledge(
+  data: KnowledgeTripleListByKnowledgeParams,
+): Promise<RequestResponse<KnowledgeTriplePageResponse>> {
+  return request('/api/knowledge/triple/list/byKnowledge', {
+    method: 'POST',
+    data,
   });
 }
