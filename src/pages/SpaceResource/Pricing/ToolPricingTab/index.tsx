@@ -34,10 +34,11 @@ export const TARGET_TYPE_LABEL_MAP: Partial<
   ),
 };
 
+// 工具定价列表中显示的 targetType
 const TOOL_PRICING_TAB_TARGET_TYPES = [
   ToolPricingTargetType.PLUGIN,
   ToolPricingTargetType.WORKFLOW,
-] as const;
+];
 
 // 「添加工具」Popover 条目，CustomPopover.onClick 会带上 value 作为新建类型
 const ADD_TOOL_LIST: CustomPopoverItem[] = [
@@ -256,20 +257,22 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         );
       },
     },
-    // 开启/关闭对用户计费（立即调保存接口）
+    // 开启/关闭对用户计费（立即调保存接口）；search 中可按状态筛选
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       dataIndex: 'status',
-      key: 'enabled',
-      hideInSearch: true,
+      key: 'status',
       valueType: 'select',
       valueEnum: {
         [ResourcePricingStatus.ENABLED]: {
-          text: '启用',
+          text: dict('PC.Common.Global.enable'),
         },
         [ResourcePricingStatus.DISABLED]: {
-          text: '禁用',
+          text: dict('PC.Common.Global.disable'),
         },
+      },
+      fieldProps: {
+        allowClear: true,
       },
       width: 100,
       align: 'center',
@@ -319,9 +322,10 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
     actionRef.current?.reload();
   }, [keyword, spaceId]);
 
-  // 获取工具定价列表（MCP / PLUGIN / WORKFLOW）；search 中 targetType 下拉 + 顶部名称关键词在本地收窄
+  // 获取工具定价列表（MCP / PLUGIN / WORKFLOW）；search 中 targetType、status 下拉 + 顶部名称关键词在本地收窄
   const request = async (params: {
     targetType?: ToolPricingTargetType;
+    status?: ResourcePricingStatus | string | number;
     pageSize?: number;
     current?: number;
   }) => {
@@ -347,6 +351,17 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
       typeFilter === ToolPricingTargetType.WORKFLOW
     ) {
       data = data.filter((row) => row.targetType === typeFilter);
+    }
+
+    const statusRaw = params.status;
+    if (statusRaw !== undefined && statusRaw !== null && statusRaw !== '') {
+      const statusNum = Number(statusRaw);
+      if (
+        statusNum === ResourcePricingStatus.ENABLED ||
+        statusNum === ResourcePricingStatus.DISABLED
+      ) {
+        data = data.filter((row) => Number(row.status) === statusNum);
+      }
     }
 
     const kw = keyword.trim().toLowerCase();
@@ -391,7 +406,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
         loading={loading}
         pagination={false}
       />
-      <div className={styles['tool-pricing-billing-notice']}>
+      <footer className={styles['tool-pricing-billing-notice']}>
         <span
           className={styles['tool-pricing-billing-notice-icon']}
           aria-hidden
@@ -399,7 +414,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
           ⓘ
         </span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
-      </div>
+      </footer>
 
       {/* 新建 / 编辑工具定价（含选工具 Created） */}
       <ToolPricingFormModal

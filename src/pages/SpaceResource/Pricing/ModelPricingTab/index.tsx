@@ -2,7 +2,6 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
-import { formatPrice } from '@/utils/format';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Switch, Tag, message } from 'antd';
@@ -19,8 +18,8 @@ import {
   ResourcePricingType,
   ToolPricingTargetType,
 } from '../../types/resource';
-import styles from '../index.less';
 import ModelPricingModal from '../ModelPricingModal';
+import styles from './index.less';
 
 // 定价类型标签映射
 const PRICING_TYPE_LABEL_MAP: Record<ResourcePricingType, string> = {
@@ -82,12 +81,24 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
     setModalOpen(true);
   };
 
-  // 获取模型定价列表
-  const request = async () => {
+  // 获取模型定价列表；search 中「计费开关」对应 `status` 走 `/api/pricing/config/list` 过滤
+  const request = async (params: {
+    status?: ResourcePricingStatus | string | number;
+    pageSize?: number;
+    current?: number;
+  }) => {
+    const statusRaw = params.status;
+    // 转换为数字类型
+    let status: ResourcePricingStatus | undefined;
+    if (statusRaw !== undefined && statusRaw !== null) {
+      status = Number(statusRaw);
+    }
+
     setLoading(true);
     const res = await apiListPricingConfig({
       targetType: ToolPricingTargetType.MODEL,
       spaceId,
+      ...(status !== undefined ? { status } : {}),
     });
     setLoading(false);
 
@@ -154,6 +165,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
       dataIndex: 'pricingType',
       key: 'pricingType',
       width: 120,
+      search: false,
       render: (_, record) =>
         record.pricingType
           ? PRICING_TYPE_LABEL_MAP[record.pricingType as ResourcePricingType] ||
@@ -166,34 +178,40 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
       key: 'tiers',
       search: false,
       render: (_, record) => (
-        <div className={styles.tierTags}>
+        <div className={styles['model-pricing-tier-tags']}>
           {/* 模型阶梯价格配置 */}
           {(record.modelPriceTiers || []).map((tier, index) => (
-            <Tag key={index} className={styles.tierTag}>
-              <span
-                className={styles.tierTagContext}
-              >{`≤${tier.contextLength}K`}</span>
-              <span className={styles.tierTagSeparator}>|</span>
-              <span className={styles.tierTagPriceItem}>
-                {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
-                {formatPrice(tier.inputPrice)}
+            <Tag key={index} className={styles['model-pricing-tier-tag']}>
+              <span className={styles['model-pricing-tier-tag-context']}>
+                {`≤${tier.contextLength}K`}
               </span>
-              <span className={styles.tierTagSeparator}>|</span>
-              <span className={styles.tierTagPriceItem}>
+              <span className={styles['model-pricing-tier-tag-separator']}>
+                |
+              </span>
+              <span className={styles['model-pricing-tier-tag-price-item']}>
+                {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
+                {tier.inputPrice}
+              </span>
+              <span className={styles['model-pricing-tier-tag-separator']}>
+                |
+              </span>
+              <span className={styles['model-pricing-tier-tag-price-item']}>
                 {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
-                {formatPrice(tier.outputPrice)}
+                {tier.outputPrice}
               </span>
               {/* 缓存价格 */}
-              {tier.cachePrice > 0 ? (
+              {tier.cachePrice > 0 && (
                 <>
-                  <span className={styles.tierTagSeparator}>|</span>
-                  <span className={styles.tierTagCachePrice}>
+                  <span className={styles['model-pricing-tier-tag-separator']}>
+                    |
+                  </span>
+                  <span
+                    className={styles['model-pricing-tier-tag-cache-price']}
+                  >
                     {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
-                    {formatPrice(tier.cachePrice)}
+                    {tier.cachePrice}
                   </span>
                 </>
-              ) : (
-                ''
               )}
             </Tag>
           ))}
@@ -204,22 +222,24 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
       dataIndex: 'status',
-      key: 'enabled',
+      key: 'status',
       valueType: 'select',
       valueEnum: {
         [ResourcePricingStatus.ENABLED]: {
-          text: '启用',
+          text: dict('PC.Common.Global.enable'),
         },
         [ResourcePricingStatus.DISABLED]: {
-          text: '禁用',
+          text: dict('PC.Common.Global.disable'),
         },
+      },
+      fieldProps: {
+        allowClear: true,
       },
       width: 100,
       align: 'center',
       fixed: 'right',
       render: (_, record) => (
         <Switch
-          size="small"
           checked={record.status === ResourcePricingStatus.ENABLED}
           onChange={(checked) => handleToggleStatus(record, checked)}
         />
@@ -255,7 +275,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
 
   return (
     <>
-      <div className={styles.tabHeader}>
+      <div className={styles['model-pricing-tab-header']}>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addModel')}
         </Button>
