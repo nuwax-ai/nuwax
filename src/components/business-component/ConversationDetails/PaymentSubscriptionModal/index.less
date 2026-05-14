@@ -1,29 +1,5 @@
 @import '@/styles/token';
 
-.modal {
-  :global(.ant-modal-content) {
-    border-radius: 16px;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  :global(.ant-modal-body) {
-    padding: 0;
-  }
-
-  :global(.ant-modal-header) {
-    margin: 0;
-    padding: 16px 20px;
-    border-bottom: none;
-    background: transparent;
-  }
-
-  :global(.ant-modal-close) {
-    top: 12px;
-    inset-inline-end: 12px;
-  }
-}
-
 .body {
   padding: 8px 20px 24px;
 }
@@ -35,14 +11,28 @@
   justify-content: center;
 }
 
+/** 套餐卡片：最多 3 列，多出的行换行；整体区域限高纵向滚动 */
 .cards-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  overflow-x: auto;
+  max-height: min(520px, 62vh);
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-bottom: 8px;
+  align-content: start;
   scrollbar-width: thin;
 
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+
   &::-webkit-scrollbar {
+    width: 6px;
     height: 6px;
   }
 
@@ -53,8 +43,8 @@
 }
 
 .plan-pay-card {
-  flex: 0 0 min(232px, 78vw);
-  max-width: 280px;
+  min-width: 0;
+  width: 100%;
   background: #f5f5f7;
   border-radius: 16px;
   padding: 20px 18px 18px;

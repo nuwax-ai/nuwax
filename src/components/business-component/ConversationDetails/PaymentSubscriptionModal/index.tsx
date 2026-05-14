@@ -107,12 +107,27 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
 
   return (
     <Modal
-      className={cx(styles.modal)}
+      styles={{
+        content: {
+          borderRadius: 16,
+          padding: 0,
+          overflow: 'hidden',
+        },
+        header: {
+          margin: 0,
+          padding: '16px 20px',
+          borderBottom: 'none',
+          background: 'transparent',
+        },
+        body: {
+          padding: 0,
+        },
+      }}
       title="选择订阅套餐"
       open={open}
       onCancel={onClose}
       footer={null}
-      width={1080}
+      width="min(760px, calc(100vw - 32px))"
       centered
       destroyOnHidden
     >
