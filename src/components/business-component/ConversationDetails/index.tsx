@@ -16,7 +16,9 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import useAgentSubscription from '@/hooks/useAgentSubscription';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { SubscriptionPlanStatusEnum } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
 import { apiCheckSubscription } from '@/services/subscriptionService';
@@ -61,6 +63,7 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+import PaymentSubscriptionModal from './PaymentSubscriptionModal';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -135,6 +138,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
+  // 付费弹窗状态
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+
   //======================================用户自带的url地址中的params参数======================================
 
   /**
@@ -159,8 +165,15 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
-  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
-    useAgentDetails();
+  const { agentDetail, setAgentDetail } = useAgentDetails();
+
+  // 智能体订阅
+  const {
+    agentSubscriptionPlans,
+    loadingAgentSubscriptionPlans,
+    loadAgentSubscriptionPlans,
+    createAgentSubscriptionOrder,
+  } = useAgentSubscription();
 
   // 缓存智能体名称，避免清空等操作导致 agentDetail 刷新时的文字闪烁
   const [cachedAgentName, setCachedAgentName] = useState<string>('');
@@ -398,6 +411,12 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
     setLoading(false);
     setAgentDetail(result);
+
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    if (result.paymentRequired && !result.subscribed) {
+      setOpenPaymentModal(true);
+    }
+
     // 设置应用智能体详情
     handleSetAppAgentDetail(result);
     handleOpenPreview(result);
@@ -444,6 +463,16 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       setAppAgentDetailLoading(false);
     },
   });
+
+  useEffect(() => {
+    if (openPaymentModal) {
+      // 显示付费弹窗时加载数据
+      loadAgentSubscriptionPlans({
+        agentId,
+        status: SubscriptionPlanStatusEnum.Online,
+      });
+    }
+  }, [openPaymentModal, agentId]);
 
   useLayoutEffect(() => {
     setLoading(true);
@@ -961,8 +990,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           agentId={agentId}
           loading={loading}
           agentDetail={agentDetail}
-          onToggleCollectSuccess={handleToggleCollectSuccess}
           onVisibleChange={setIsSidebarVisible}
+          onSubscribe={() => setOpenPaymentModal(true)}
         />
       </ConditionRender>
 
@@ -976,6 +1005,20 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
             if (res?.data) setSubscriptionCheckResult(res.data);
           });
         }}
+      />
+
+      {/* 付费订阅套餐弹窗 */}
+      <PaymentSubscriptionModal
+        open={openPaymentModal}
+        loading={loadingAgentSubscriptionPlans}
+        // 套餐列表
+        plans={agentSubscriptionPlans}
+        // 是否已订阅
+        userSubscribed={!!agentDetail?.subscribed}
+        // 关闭回调
+        onClose={() => setOpenPaymentModal(false)}
+        // 订阅回调
+        onSubscribe={createAgentSubscriptionOrder}
       />
     </div>
   );

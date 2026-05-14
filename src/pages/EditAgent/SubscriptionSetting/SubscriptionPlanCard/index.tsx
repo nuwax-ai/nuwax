@@ -19,8 +19,6 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
 interface SubscriptionPlanCardProps {
   plan: SubscriptionPlanInfo;
   updateLoading?: boolean;
-  // 点击卡片
-  onClick?: () => void;
   // 切换套餐状态
   onToggle: (planId: number, checked: boolean) => void;
   // 编辑套餐
@@ -35,13 +33,12 @@ interface SubscriptionPlanCardProps {
 const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
   plan,
   updateLoading,
-  onClick,
   onToggle,
   onEdit,
   onDelete,
 }) => {
   return (
-    <div className={cx(styles['plan-card'])} onClick={onClick}>
+    <div className={cx(styles['plan-card'])}>
       <div className={cx(styles['card-top-line'])} />
       <div className={cx(styles['card-header'])}>
         <div className={cx(styles['plan-name'])}>{plan.name}</div>
