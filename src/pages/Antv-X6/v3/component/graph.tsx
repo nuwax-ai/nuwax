@@ -1,12 +1,4 @@
 // AntV X6 graph with plugins.
-import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
-
-import { Clipboard } from '@antv/x6-plugin-clipboard';
-import { History } from '@antv/x6-plugin-history';
-import { Keyboard } from '@antv/x6-plugin-keyboard';
-import { Selection } from '@antv/x6-plugin-selection';
-import { Snapline } from '@antv/x6-plugin-snapline';
-// import { Transform } from '@antv/x6-plugin-transform';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { t } from '@/services/i18nRuntime';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
@@ -22,6 +14,18 @@ import {
 } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
+import {
+  Cell,
+  Clipboard,
+  Edge,
+  Graph,
+  History,
+  Keyboard,
+  Node,
+  Selection,
+  Shape,
+  Snapline,
+} from '@antv/x6';
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
 import {

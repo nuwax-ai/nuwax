@@ -211,3 +211,16 @@ export const SUCCESS_MESSAGES = {
   DEV_SERVER_STARTED: dict('PC.Constants.AppDev.successDevServerStarted'),
   CHAT_CANCELLED: dict('PC.Constants.AppDev.successChatCancelled'),
 } as const;
+
+/**
+ * 页面级 URL 查询参数名，例如 `?developingOverlay=false`。
+ * 优先级高于组件默认值。
+ */
+export const APP_DEV_AGENT_PREVIEW_OVERLAY_QUERY_PARAM =
+  'developingOverlay' as const;
+
+/**
+ * 历史参数名兼容（避免旧链接失效）。
+ */
+export const LEGACY_APP_DEV_AGENT_PREVIEW_OVERLAY_QUERY_PARAM =
+  'agentDevelopingOverlay' as const;
