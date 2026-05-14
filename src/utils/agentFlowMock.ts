@@ -27,11 +27,14 @@ import type { ChildNode } from '@/types/interfaces/graph';
 
 const LOCAL_FLAG = 'agentFlow:mock';
 const MOCK_START_NODE_ID = 101;
-const MOCK_AGENT_NODE_ID = 102;
-const MOCK_EVAL_NODE_ID = 103;
-const MOCK_HITL_NODE_ID = 104;
-const MOCK_LLM_NODE_ID = 105;
-const MOCK_END_NODE_ID = 106;
+const MOCK_LOOP_NODE_ID = 102;
+const MOCK_LOOP_START_ID = 1120;
+const MOCK_LOOP_END_ID = 1121;
+const MOCK_AGENT_NODE_ID = 103;
+const MOCK_EVAL_NODE_ID = 104;
+const MOCK_HITL_NODE_ID = 105;
+const MOCK_LLM_NODE_ID = 106;
+const MOCK_END_NODE_ID = 107;
 
 const now = () => new Date().toISOString();
 const uid = () =>
@@ -77,7 +80,7 @@ export function buildMockAgentFlowDetails({
     id: MOCK_START_NODE_ID,
     name: '开始',
     type: NodeTypeEnum.Start,
-    nextNodeIds: [MOCK_AGENT_NODE_ID],
+    nextNodeIds: [MOCK_LOOP_NODE_ID],
     nodeConfig: {
       extension: { x: 80, y: 160 },
       outputArgs: [
@@ -94,13 +97,25 @@ export function buildMockAgentFlowDetails({
     },
   });
 
+  const loopStartNode = createMockNode(workflowId, {
+    id: MOCK_LOOP_START_ID,
+    name: '循环开始',
+    type: NodeTypeEnum.LoopStart,
+    loopNodeId: MOCK_LOOP_NODE_ID,
+    nextNodeIds: [MOCK_AGENT_NODE_ID],
+    nodeConfig: {
+      extension: { x: 120, y: 258 },
+    },
+  });
+
   const agentNode = createMockNode(workflowId, {
     id: MOCK_AGENT_NODE_ID,
     name: '智能体',
     type: NodeTypeEnum.Agent,
+    loopNodeId: MOCK_LOOP_NODE_ID,
     nextNodeIds: [MOCK_EVAL_NODE_ID],
     nodeConfig: {
-      extension: { x: 340, y: 160 },
+      extension: { x: 320, y: 258 },
       agentMode: AgentNodeModeEnum.Platform,
       agentId: 1,
       agentInputs: { question: 'context.userQuestion' },
@@ -114,9 +129,10 @@ export function buildMockAgentFlowDetails({
     id: MOCK_EVAL_NODE_ID,
     name: '评估验证',
     type: NodeTypeEnum.EvalGate,
+    loopNodeId: MOCK_LOOP_NODE_ID,
     nodeConfig: {
-      extension: { x: 600, y: 160 },
-      passNextNodeIds: [MOCK_HITL_NODE_ID],
+      extension: { x: 560, y: 258 },
+      passNextNodeIds: [MOCK_LOOP_END_ID],
       evalValidators: [
         {
           uuid: 'validator_1',
@@ -135,12 +151,40 @@ export function buildMockAgentFlowDetails({
     },
   });
 
+  const loopEndNode = createMockNode(workflowId, {
+    id: MOCK_LOOP_END_ID,
+    name: '循环结束',
+    type: NodeTypeEnum.LoopEnd,
+    loopNodeId: MOCK_LOOP_NODE_ID,
+    nodeConfig: {
+      extension: { x: 760, y: 258 },
+    },
+  });
+
+  const loopNode = createMockNode(workflowId, {
+    id: MOCK_LOOP_NODE_ID,
+    name: '重试循环',
+    type: NodeTypeEnum.Loop,
+    shape: NodeShapeEnum.Loop,
+    nextNodeIds: [MOCK_HITL_NODE_ID],
+    innerStartNodeId: MOCK_LOOP_START_ID,
+    innerEndNodeId: MOCK_LOOP_END_ID,
+    innerNodes: [loopStartNode, agentNode, evalNode, loopEndNode],
+    nodeConfig: {
+      extension: { x: 80, y: 200 },
+      loopType: 'SPECIFY_TIMES_LOOP',
+      inputArgs: [],
+      outputArgs: [],
+      variableArgs: [],
+    },
+  });
+
   const hitlNode = createMockNode(workflowId, {
     id: MOCK_HITL_NODE_ID,
     name: '人类审批',
     type: NodeTypeEnum.HumanInteraction,
     nodeConfig: {
-      extension: { x: 860, y: 160 },
+      extension: { x: 1000, y: 200 },
       hitlMode: HitlModeEnum.Approve,
       approveNextNodeIds: [MOCK_LLM_NODE_ID],
       rejectNextNodeIds: [MOCK_AGENT_NODE_ID],
@@ -163,7 +207,7 @@ export function buildMockAgentFlowDetails({
     type: NodeTypeEnum.LLM,
     nextNodeIds: [MOCK_END_NODE_ID],
     nodeConfig: {
-      extension: { x: 1120, y: 160 },
+      extension: { x: 1260, y: 200 },
       modelId: 1,
       systemPrompt: '你是专业客服助手。',
       userPrompt: '请润色 context.agentAnswer 并输出最终回复。',
@@ -180,7 +224,7 @@ export function buildMockAgentFlowDetails({
     name: '结束',
     type: NodeTypeEnum.End,
     nodeConfig: {
-      extension: { x: 1380, y: 160 },
+      extension: { x: 1520, y: 200 },
       returnType: 'TEXT',
       text: '{{context.finalAnswer}}',
     },
@@ -194,14 +238,14 @@ export function buildMockAgentFlowDetails({
       avatar: '',
     },
     created: nowAt,
-    description: 'AgentFlow 本地调试流程',
+    description: 'AgentFlow 本地调试流程（含循环节点）',
     endNode,
     icon: '',
     id: workflowId,
     inputArgs: startNode.nodeConfig.outputArgs || [],
     modified: nowAt,
     name: `AgentFlow Mock #${workflowId}`,
-    nodes: [startNode, agentNode, evalNode, hitlNode, llmNode, endNode],
+    nodes: [startNode, loopNode, hitlNode, llmNode, endNode],
     outputArgs: [],
     publishStatus: '',
     spaceId,

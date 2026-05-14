@@ -29,12 +29,16 @@ describe('agentFlowMock', () => {
     expect(details.workflowType).toBe(FlowKindEnum.AgentFlow);
     expect(details.nodes.map((node) => node.type)).toEqual([
       NodeTypeEnum.Start,
-      NodeTypeEnum.Agent,
-      NodeTypeEnum.EvalGate,
+      NodeTypeEnum.Loop,
       NodeTypeEnum.HumanInteraction,
       NodeTypeEnum.LLM,
       NodeTypeEnum.End,
     ]);
     expect(details.startNode.nextNodeIds).toEqual([details.nodes[1].id]);
+    const loopNode = details.nodes[1];
+    expect(loopNode.type).toBe(NodeTypeEnum.Loop);
+    expect(loopNode.innerNodes!.length).toBe(4);
+    expect(loopNode.innerStartNodeId).toBeTruthy();
+    expect(loopNode.innerEndNodeId).toBeTruthy();
   });
 });
