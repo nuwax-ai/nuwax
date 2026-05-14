@@ -2621,6 +2621,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MorePage.MyOrders.typeCredits": "クレジット",
   "PC.Pages.MorePage.MyOrders.statusPaid": "支払済",
   "PC.Pages.MorePage.MyOrders.statusPending": "未払い",
+  "PC.Pages.MorePage.MyOrders.statusCancelled": "キャンセル済",
+  "PC.Pages.MorePage.MyOrders.statusFailed": "失効",
   "PC.Pages.MorePage.MyOrders.statusRefunded": "返金済",
   "PC.Pages.MorePage.MyOrders.applyRefund": "返金申請",
   "PC.Pages.MorePage.MyOrders.confirmRefund": "この注文を返金してもよろしいですか？",

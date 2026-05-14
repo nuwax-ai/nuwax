@@ -14,6 +14,10 @@
     box-shadow: @boxShadowSecondary;
   }
 
+  &.order-item-clickable {
+    cursor: pointer;
+  }
+
   .item-header {
     display: flex;
     justify-content: space-between;
@@ -104,6 +108,7 @@
 
         &.status-settled {
           color: @colorSuccess;
+
           .status-dot {
             background-color: @colorSuccess;
           }
@@ -111,13 +116,23 @@
 
         &.status-settling {
           color: @colorWarning;
+
           .status-dot {
             background-color: @colorWarning;
           }
         }
 
+        &.status-expired {
+          color: @colorTextQuaternary;
+
+          .status-dot {
+            background-color: @colorTextQuaternary;
+          }
+        }
+
         &.status-cancelled {
           color: @colorTextQuaternary;
+
           .status-dot {
             background-color: @colorTextQuaternary;
           }
@@ -125,6 +140,7 @@
 
         &.status-unknown {
           color: @colorTextTertiary;
+
           .status-dot {
             background-color: @colorTextTertiary;
           }

@@ -2594,6 +2594,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyOrders.statusPending": "待支付",
   "PC.Pages.MorePage.MyOrders.statusPaid": "已支付",
   "PC.Pages.MorePage.MyOrders.statusCancelled": "已取消",
+  "PC.Pages.MorePage.MyOrders.statusFailed": "已失效",
   "PC.Pages.MorePage.MyOrders.orderIdLabel": "ID: ",
 
 
