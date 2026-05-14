@@ -6,8 +6,9 @@ import {
   apiListSystemSubscriptionPlans,
 } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
+import { Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import CreditsBreakdown from './components/CreditsBreakdown';
 import PurchaseModal from './components/CreditsBreakdown/components/PurchaseModal';
 // import CurrentPlanCard from './components/CurrentPlanCard';
@@ -16,30 +17,33 @@ import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 
 const MySubscriptions: React.FC = () => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const location = useLocation();
 
-  // 获取积分汇总数据
-  const { data: creditsSummary, run: fetchCreditSummary } = useRequest(
-    apiGetCreditSummary,
-    {
-      manual: true,
-    },
-  );
+  const {
+    data: creditsSummary,
+    run: fetchCreditSummary,
+    loading: creditsLoading,
+  } = useRequest(apiGetCreditSummary, {
+    manual: true,
+  });
 
-  // 获取我的订阅（系统级）
-  const { data: subData, run: fetchMySubscription } = useRequest(
-    () => apiGetMySubscription({ bizType: BizTypeEnum.System }),
-    {
-      manual: true,
-    },
-  );
+  const {
+    data: subData,
+    run: fetchMySubscription,
+    loading: subLoading,
+  } = useRequest(() => apiGetMySubscription({ bizType: BizTypeEnum.System }), {
+    manual: true,
+  });
 
-  // 获取积分套餐列表（新版系统计划）
-  const { data: packagesData, run: fetchPackagesData } = useRequest(
-    apiListSystemSubscriptionPlans,
-    {
-      manual: true,
-    },
-  );
+  const {
+    data: packagesData,
+    run: fetchPackagesData,
+    loading: packagesLoading,
+  } = useRequest(apiListSystemSubscriptionPlans, {
+    manual: true,
+  });
+
+  const pageLoading = creditsLoading || subLoading || packagesLoading;
 
   // 刷新所有数据
   const refreshAll = () => {
@@ -50,7 +54,7 @@ const MySubscriptions: React.FC = () => {
 
   useEffect(() => {
     refreshAll();
-  }, []);
+  }, [location]);
 
   const currentSub = subData?.currentSubscription;
 
@@ -58,25 +62,27 @@ const MySubscriptions: React.FC = () => {
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.MySubscriptions.pageTitle')}
     >
-      {/* 展板信息 */}
-      {/* {currentSub && <CurrentPlanCard planInfo={currentSub} />} */}
+      <Spin spinning={pageLoading}>
+        {/* 展板信息 */}
+        {/* {currentSub && <CurrentPlanCard planInfo={currentSub} />} */}
 
-      {/* 积分明细 */}
-      <CreditsBreakdown
-        summary={creditsSummary}
-        onAddPurchase={() => setPurchaseOpen(true)}
-      />
+        {/* 积分明细 */}
+        <CreditsBreakdown
+          summary={creditsSummary}
+          onAddPurchase={() => setPurchaseOpen(true)}
+        />
 
-      {/* 订阅套餐网格 */}
-      <SubscriptionPlanCards
-        data={packagesData}
-        currentPlanId={currentSub?.planId}
-        endTime={currentSub?.endTime}
-        price={currentSub?.price}
-      />
+        {/* 订阅套餐网格 */}
+        <SubscriptionPlanCards
+          data={packagesData}
+          currentPlanId={currentSub?.planId}
+          endTime={currentSub?.endTime}
+          price={currentSub?.price}
+        />
 
-      {/* 已订阅内容 */}
-      <SubscribedContent />
+        {/* 已订阅内容 */}
+        <SubscribedContent />
+      </Spin>
       <PurchaseModal
         open={purchaseOpen}
         onCancel={() => setPurchaseOpen(false)}
