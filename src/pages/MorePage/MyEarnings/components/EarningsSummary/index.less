@@ -82,7 +82,14 @@
 
     .action-buttons {
       display: flex;
+      align-items: center;
       gap: @margin;
+
+      .withdraw-hint {
+        font-size: @fontSizeSm;
+        color: @colorTextDescription;
+        white-space: nowrap;
+      }
 
       .withdraw-apply-btn {
         background: @colorWarning;

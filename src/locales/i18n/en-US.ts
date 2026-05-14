@@ -2729,6 +2729,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusApproved": "Approved",
   "PC.Pages.MorePage.MyEarnings.withdrawStatusRejected": "Rejected",
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "Paid",
+  "PC.Pages.MorePage.MyEarnings.withdrawHint": "Minimum withdrawal: ¥{0}, platform fee: {1}%",
 
 
 

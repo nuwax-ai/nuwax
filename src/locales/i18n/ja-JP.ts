@@ -2641,6 +2641,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.colCreatedAt": "時間",
   "PC.Pages.MorePage.MyEarnings.settlementPending": "未決済",
   "PC.Pages.MorePage.MyEarnings.settlementSettled": "決済済",
+  "PC.Pages.MorePage.MyEarnings.withdrawHint": "最低{0}円から引き出し可能、プラットフォーム手数料{1}%",
 
   "PC.Pages.MorePage.CreditRecords.pageTitle": "クレジット明細",
   "PC.Pages.MorePage.CreditRecords.currentBalance": "現在の残高",
