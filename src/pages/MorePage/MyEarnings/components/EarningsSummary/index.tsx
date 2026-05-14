@@ -9,6 +9,7 @@ import { useRequest } from 'ahooks';
 import { Button, message, Modal, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import WithdrawRecordModal from './components/WithdrawRecordModal';
 import styles from './index.less';
 
@@ -20,7 +21,12 @@ const EarningsSummary: React.FC = () => {
   // 获取提现配置（最低提现金额）
   const { data: withdrawConfigRes } = useRequest(apiGetWithdrawConfig);
   const minAmount = withdrawConfigRes?.data?.minAmount || 0;
-  const serviceFeeRate = withdrawConfigRes?.data?.serviceFeeRate ?? 0;
+  // revenueRatio 为小数形式，显示需乘以 100
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const serviceFeeRate =
+    typeof tenantConfigInfo?.revenueRatio === 'number'
+      ? tenantConfigInfo.revenueRatio * 100
+      : '-';
 
   // 获取收益统计数据
   const {

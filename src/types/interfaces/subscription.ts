@@ -618,7 +618,6 @@ export interface WithdrawalInfo {
 export interface WithdrawConfig {
   id: number;
   minAmount: number;
-  serviceFeeRate: number;
   monthlyLimit: number;
   dailyLimit: number;
   limitMode: string;
