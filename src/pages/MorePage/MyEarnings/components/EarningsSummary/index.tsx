@@ -20,6 +20,7 @@ const EarningsSummary: React.FC = () => {
   // 获取提现配置（最低提现金额）
   const { data: withdrawConfigRes } = useRequest(apiGetWithdrawConfig);
   const minAmount = withdrawConfigRes?.data?.minAmount || 0;
+  const serviceFeeRate = withdrawConfigRes?.data?.serviceFeeRate ?? 0;
 
   // 获取收益统计数据
   const {
@@ -129,6 +130,15 @@ const EarningsSummary: React.FC = () => {
             />
           </div>
           <div className={cx(styles['action-buttons'])}>
+            {minAmount > 0 && (
+              <span className={cx(styles['withdraw-hint'])}>
+                {dict(
+                  'PC.Pages.MorePage.MyEarnings.withdrawHint',
+                  minAmount,
+                  serviceFeeRate,
+                )}
+              </span>
+            )}
             <Button
               type="primary"
               icon={<DownloadOutlined />}
