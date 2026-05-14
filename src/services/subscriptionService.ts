@@ -6,6 +6,7 @@ import type {
   AgentSubscriptionPlan,
   BillOrderInfo,
   BillOrderStatusEnum,
+  BillPayStatusEnum,
   BillWithdrawApplyResponse,
   BizTypeEnum,
   CheckSubscriptionResult,
@@ -190,6 +191,7 @@ export async function apiListMyOrders(params: {
 // 查询我的订单（账单中心版）
 export async function apiGetMyBillOrders(params: {
   orderStatus?: BillOrderStatusEnum | null;
+  payStatus?: BillPayStatusEnum | null;
 }): Promise<RequestResponse<BillOrderInfo[]>> {
   return request('/api/bill/order/my', { method: 'GET', params });
 }
