@@ -1,0 +1,227 @@
+@import '@/styles/token';
+
+.body {
+  padding: 8px 20px 24px;
+}
+
+.loading-wrap {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/** 套餐卡片：最多 3 列，多出的行换行；整体区域限高纵向滚动 */
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  max-height: min(520px, 62vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  align-content: start;
+  scrollbar-width: thin;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 12%);
+  }
+}
+
+.plan-pay-card {
+  min-width: 0;
+  width: 100%;
+  background: #f5f5f7;
+  border-radius: 16px;
+  padding: 20px 18px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  // font-size: @fontSizeLg + 2px;
+  font-size: 20px;
+  font-weight: 600;
+  color: @colorTextHeading;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.price-block {
+  margin-bottom: 12px;
+}
+
+.price-main-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.price-main {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  color: @colorTextHeading;
+}
+
+.price-unit {
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  margin-bottom: 3px;
+}
+
+.price-original {
+  width: 100%;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  text-decoration: line-through;
+}
+
+.renewal-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: @colorTextTertiary;
+}
+
+.subscribe-btn-wrap {
+  margin-bottom: 16px;
+
+  button {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    font-size: @fontSize;
+    font-weight: 500;
+  }
+}
+
+.subscribe-btn-upgrade {
+  background: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+  color: #fff !important;
+
+  &:hover {
+    opacity: 0.88;
+    color: #fff !important;
+  }
+}
+
+.subscribe-btn-upgrade-accent {
+  background: #8b7355 !important;
+  border-color: #8b7355 !important;
+  color: #fff !important;
+
+  &:hover {
+    opacity: 0.9;
+    color: #fff !important;
+  }
+}
+
+.subscribe-btn-current {
+  background: #ece8e1 !important;
+  border-color: #ece8e1 !important;
+  color: @colorTextSecondary !important;
+  cursor: default;
+}
+
+.points-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: @fontSize;
+  font-weight: 500;
+  color: @colorTextSecondary;
+}
+
+.diamond {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  color: @colorTextHeading;
+  transform: rotate(45deg);
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid @colorTextHeading;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.divider-dashed {
+  border: none;
+  border-top: 1px dashed #d4d4d8;
+  margin: 0 0 12px;
+}
+
+.feature-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 260px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.feature-icon {
+  color: #595959;
+  font-size: 13px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  font-size: 15px;
+  line-height: 1.45;
+  color: #3f3f46;
+}
+
+.feature-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #8b7355;
+  background: #ece7df;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: @colorTextTertiary;
+}

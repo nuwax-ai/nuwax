@@ -1,10 +1,12 @@
+import { apiGetAgentSubscriptionOrderCashier } from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import {
   BillOrderInfo,
   BillPayStatusEnum,
 } from '@/types/interfaces/subscription';
 import { CalendarOutlined } from '@ant-design/icons';
-import { Statistic } from 'antd';
+import { useRequest } from 'ahooks';
+import { message, Statistic } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -17,39 +19,69 @@ interface OrderItemProps {
 }
 
 const OrderItem: React.FC<OrderItemProps> = ({ data }) => {
-  const getStatusText = () => {
+  const isPendingPay =
+    data.payStatus === BillPayStatusEnum.PENDING ||
+    data.payStatus === BillPayStatusEnum.PROCESSING;
+
+  const { run: goPay, loading: paying } = useRequest(
+    apiGetAgentSubscriptionOrderCashier,
+    {
+      manual: true,
+      onSuccess: (res: any) => {
+        const d = res?.data || res;
+        if (d?.cashierUrl) {
+          window.open(d.cashierUrl, '_blank');
+        }
+      },
+      onError: (err) => {
+        message.error(err.message);
+      },
+    },
+  );
+
+  const handleClick = () => {
+    if (isPendingPay && !paying) {
+      goPay(data.id);
+    }
+  };
+
+  // 根据支付状态映射文案与样式类名
+  const statusInfo = React.useMemo(() => {
     switch (data.payStatus) {
       case BillPayStatusEnum.PENDING:
       case BillPayStatusEnum.PROCESSING:
-        return dict('PC.Pages.MorePage.MyOrders.statusPending');
+        return {
+          text: dict('PC.Pages.MorePage.MyOrders.statusPending'),
+          className: styles['status-settling'],
+        };
       case BillPayStatusEnum.SUCCESS:
-        return dict('PC.Pages.MorePage.MyOrders.statusPaid');
-      case BillPayStatusEnum.CLOSED:
-        return dict('PC.Pages.MorePage.MyOrders.statusCancelled');
+        return {
+          text: dict('PC.Pages.MorePage.MyOrders.statusPaid'),
+          className: styles['status-settled'],
+        };
       case BillPayStatusEnum.FAILED:
-      default:
-        return null;
-    }
-  };
-
-  const getStatusClass = () => {
-    switch (data.payStatus) {
-      case BillPayStatusEnum.SUCCESS:
-        return styles['status-settled'];
-      case BillPayStatusEnum.PENDING:
-      case BillPayStatusEnum.PROCESSING:
-        return styles['status-settling'];
+        return {
+          text: dict('PC.Pages.MorePage.MyOrders.statusFailed'),
+          className: styles['status-expired'],
+        };
       case BillPayStatusEnum.CLOSED:
-        return styles['status-cancelled'];
+        return {
+          text: dict('PC.Pages.MorePage.MyOrders.statusCancelled'),
+          className: styles['status-cancelled'],
+        };
       default:
-        return styles['status-unknown'];
+        return { text: null, className: styles['status-unknown'] };
     }
-  };
-
-  const statusText = getStatusText();
+  }, [data.payStatus]);
 
   return (
-    <div className={cx(styles['order-item'])}>
+    <div
+      className={cx(
+        styles['order-item'],
+        isPendingPay && styles['order-item-clickable'],
+      )}
+      onClick={handleClick}
+    >
       <div className={cx(styles['item-header'])}>
         <div className={cx(styles['header-left'])}>
           <div className={cx(styles['title'])}>{data.description}</div>
@@ -75,10 +107,10 @@ const OrderItem: React.FC<OrderItemProps> = ({ data }) => {
             value={data.amount}
             precision={2}
           />
-          {statusText && (
-            <div className={cx(styles['status-box'], getStatusClass())}>
+          {statusInfo.text && (
+            <div className={cx(styles['status-box'], statusInfo.className)}>
               <span className={cx(styles['status-dot'])} />
-              {statusText}
+              {statusInfo.text}
             </div>
           )}
         </div>

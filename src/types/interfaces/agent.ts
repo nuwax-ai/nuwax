@@ -661,6 +661,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   manualComponents: AgentManualComponentInfo[];
   // 是否允许复制, 1 允许
   allowCopy: AllowCopyEnum;
+  // 是否需要付费
+  paymentRequired: boolean;
+  // 是否已订阅，对智能体和技能有效
+  subscribed: boolean;
   // 当前登录用户是否收藏
   collect: boolean;
   // 是否默认展开扩展页面区域, 1 展开；0 不展开

@@ -6,6 +6,7 @@ import {
 import {
   ResourcePricingConfigInfo,
   ResourcePricingStatus,
+  ResourcePricingType,
   ToolPricingTargetType,
 } from '@/pages/SpaceResource/types/resource';
 import {
@@ -29,9 +30,7 @@ import { Button, Form, InputNumber, message, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
-  apiCreateAgentSubscriptionOrder,
   apiDeleteAgentSubscriptionPlan,
-  apiGetAgentSubscriptionOrderCashier,
   apiGetAgentSubscriptionPlanList,
   apiUpdateAgentSubscriptionPlan,
   apiUpdateAgentSubscriptionPlanSort,
@@ -104,10 +103,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     null,
   );
 
-  // 智能体资源定价配置
-  const [agentResourcePricingConfig, setAgentResourcePricingConfig] =
-    useState<ResourcePricingConfigInfo | null>(null);
-
   // 拖拽传感器
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -169,7 +164,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
   const { run: loadPricingStatus } = useRequest(apiQueryToolPricing, {
     manual: true,
     onSuccess: (data: ResourcePricingConfigInfo) => {
-      setAgentResourcePricingConfig(data);
       const enabled = data?.status === ResourcePricingStatus.ENABLED;
       setSubscriptionEnabled(enabled);
       form.setFieldsValue({
@@ -183,9 +177,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     manual: true,
     onSuccess: () => {
       message.success(dict('PC.Common.Global.operationSuccess'));
-    },
-    onError: () => {
-      message.error(dict('PC.Common.Global.operationFailed'));
     },
   });
 
@@ -209,7 +200,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         targetType: ToolPricingTargetType.AGENT,
         targetId: String(agentId),
         spaceId,
-        pricingType: agentResourcePricingConfig?.pricingType,
+        pricingType: ResourcePricingType.MONTHLY,
         trialCount: Number(values.trialCount || 0),
       });
     } finally {
@@ -259,35 +250,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     modalConfirm(dict('PC.Common.Global.confirmDelete'), plan.name || '', () =>
       runDeletePlan(plan.id as number),
     );
-  };
-
-  /**
-   * 点击套餐卡片
-   */
-  const handleClickPlanCard = async (plan: SubscriptionPlanInfo) => {
-    if (!plan.id || plan.status !== SubscriptionPlanStatusEnum.Online) {
-      return;
-    }
-
-    // 创建订阅订单
-    try {
-      const orderInfo = await apiCreateAgentSubscriptionOrder(plan.id);
-      const orderId = orderInfo?.data?.id;
-      if (!orderId) {
-        message.error('创建订阅订单失败');
-        return;
-      }
-
-      const res = await apiGetAgentSubscriptionOrderCashier(orderId);
-      if (!res?.data?.cashierUrl) {
-        message.error('获取收银台地址失败');
-        return;
-      }
-
-      window.open(res?.data?.cashierUrl, '_blank');
-    } catch (error) {
-      console.error('点击套餐卡片失败:', error);
-    }
   };
 
   /**
@@ -343,7 +305,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         targetType: ToolPricingTargetType.AGENT,
         targetId: String(agentId),
         spaceId,
-        pricingType: agentResourcePricingConfig?.pricingType,
+        pricingType: ResourcePricingType.MONTHLY,
         status: checked
           ? ResourcePricingStatus.ENABLED
           : ResourcePricingStatus.DISABLED,
@@ -442,7 +404,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
                     <SubscriptionPlanCard
                       plan={plan}
                       updateLoading={updatingSubscriptionPlan}
-                      onClick={() => handleClickPlanCard(plan)}
                       onToggle={(_, checked) =>
                         handleTogglePlanStatus(plan, checked)
                       }

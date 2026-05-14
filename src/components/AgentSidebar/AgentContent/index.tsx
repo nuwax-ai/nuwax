@@ -1,18 +1,21 @@
 import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图标
 import { SvgIcon } from '@/components/base';
-import ChatTitleActions from '@/components/ChatTitleActions';
 import ConditionRender from '@/components/ConditionRender';
 import { dict } from '@/services/i18nRuntime';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
+import ChatTitleActions from '../ChatTitleActions';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 智能体内容
-const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
+const AgentContent: React.FC<AgentContentProps> = ({
+  agentDetail,
+  onSubscribe,
+}) => {
   // 控制头像加载失败时只回退到默认图标一次，防止死循环
   const hasRetriedRef = useRef<boolean>(false);
 
@@ -90,7 +93,7 @@ const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
           </Typography.Paragraph>
         </ConditionRender>
         {/* 分享 复制 迁移 功能 */}
-        <ChatTitleActions agentInfo={agentDetail} />
+        <ChatTitleActions agentInfo={agentDetail} onSubscribe={onSubscribe} />
       </div>
     </div>
   );
