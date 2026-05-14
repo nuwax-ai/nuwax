@@ -2655,6 +2655,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/mo",
   "PC.Pages.MorePage.MySubscriptions.renewNow": "Renew",
   "PC.Pages.MorePage.MySubscriptions.upgradeNow": "Upgrade",
+  "PC.Pages.MorePage.MySubscriptions.subscribeNow": "Subscribe",
   "PC.Pages.MorePage.MySubscriptions.creditsPerMonth": "{0} Credits/Mo",
   "PC.Pages.MorePage.MySubscriptions.models": "{0} Models",
   "PC.Pages.MorePage.MySubscriptions.allTools": "All Tools",

@@ -2,10 +2,19 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
-import { Alert, Button, Form, Input, InputNumber, Tabs, message } from 'antd';
+import {
+  Alert,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Spin,
+  Tabs,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -15,12 +24,19 @@ const cx = classNames.bind(styles);
  * 包含：开发者分成比例设置、支付网关地址配置
  */
 const Config: React.FC = () => {
-  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo, runTenantConfig, loading } =
+    useModel('tenantConfigInfo');
+  const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   // tenantConfigInfo.revenueRatio tenantConfigInfo.paymentGateway
 
   // 初始化加载配置数据
+  useEffect(() => {
+    runTenantConfig();
+  }, [location]);
+
+  // 更新表单值
   useEffect(() => {
     if (tenantConfigInfo) {
       const { revenueRatio, paymentGateway } = tenantConfigInfo;
@@ -129,23 +145,25 @@ const Config: React.FC = () => {
       }
     >
       <div className={cx(styles.container)}>
-        <Form form={form} layout="vertical">
-          <Tabs
-            defaultActiveKey="ratio"
-            items={[
-              {
-                key: 'ratio',
-                label: dict('PC.Pages.SystemPaymentConfig.tabShareRatio'),
-                children: renderShareRatioTab(),
-              },
-              {
-                key: 'gateway',
-                label: dict('PC.Pages.SystemPaymentConfig.tabGateway'),
-                children: renderGatewayTab(),
-              },
-            ]}
-          />
-        </Form>
+        <Spin spinning={loading}>
+          <Form form={form} layout="vertical">
+            <Tabs
+              defaultActiveKey="ratio"
+              items={[
+                {
+                  key: 'ratio',
+                  label: dict('PC.Pages.SystemPaymentConfig.tabShareRatio'),
+                  children: renderShareRatioTab(),
+                },
+                {
+                  key: 'gateway',
+                  label: dict('PC.Pages.SystemPaymentConfig.tabGateway'),
+                  children: renderGatewayTab(),
+                },
+              ]}
+            />
+          </Form>
+        </Spin>
       </div>
     </WorkspaceLayout>
   );

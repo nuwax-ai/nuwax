@@ -39,9 +39,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
     }
   }, [open, run]);
 
-  // 处理获取到的套餐数据格式
-  const packages = useMemo(() => {
+  // 处理获取到的套餐数据格式，兼容不同后端响应结构
+  const packages = useMemo<CreditPackageInfo[]>(() => {
     if (Array.isArray(packagesData)) return packagesData;
+    // 兼容可能存在的 data 包裹结构
     if ((packagesData as any)?.data) return (packagesData as any).data;
     return [];
   }, [packagesData]);
@@ -52,9 +53,11 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
     {
       manual: true,
       onSuccess: (res: any) => {
-        if (res && res?.cashierUrl) {
-          // 在新标签页打开支付收银台
-          window.open(res.cashierUrl, '_blank');
+        // 兼容处理：有些环境下 res 是原始数据，有些则是 RequestResponse 包裹
+        const data = res?.data || res;
+        if (data && data?.cashierUrl) {
+          // 在新标签页打开支付收银台（由后端提供的收银台页面）
+          window.open(data.cashierUrl, '_blank');
         }
       },
     },
@@ -67,11 +70,13 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
       manual: true,
       onSuccess: (res: any) => {
         if (res) {
-          // 获取创建订单返回的支付网关订单号
-          const orderNo = res?.extra?.gatewayPaymentOrderNo;
-          if (orderNo) {
-            // 继续获取收银台地址
-            getCashierUrl(orderNo);
+          // 兼容处理获取返回的数据内容
+          const data = res?.data || res;
+          // 获取创建订单返回的订单ID（用于换取收银台URL）
+          const orderId = data?.id;
+          if (orderId) {
+            // 继续获取支付收银台地址
+            getCashierUrl(orderId);
           } else {
             message.error('未获取到订单号');
           }

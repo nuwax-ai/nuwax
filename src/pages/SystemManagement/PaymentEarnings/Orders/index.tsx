@@ -9,14 +9,21 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import { apiPageAdminPaymentOrders } from '@/services/subscriptionService';
 import type { AdminPaymentOrderRecord } from '@/types/interfaces/subscription';
-import type { ProColumns } from '@ant-design/pro-components';
+import { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import OrderDetail from './components/OrderDetail';
 
 const Orders: React.FC = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [currentRow, setCurrentRow] = useState<AdminPaymentOrderRecord>();
+  const actionRef = useRef<ActionType>();
+  const location = useLocation();
+
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [location]);
 
   const statusConfig = useMemo(() => getPaymentStatusConfig(), []);
   const paymentStatusValueEnum = useMemo(() => getPaymentStatusValueEnum(), []);
@@ -154,6 +161,7 @@ const Orders: React.FC = () => {
     <>
       <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
         <XProTable<AdminPaymentOrderRecord>
+          actionRef={actionRef}
           rowKey="id"
           columns={columns}
           request={async (params) => {
