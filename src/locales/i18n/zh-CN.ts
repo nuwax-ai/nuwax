@@ -2655,6 +2655,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/月",
   "PC.Pages.MorePage.MySubscriptions.renewNow": "续订",
   "PC.Pages.MorePage.MySubscriptions.upgradeNow": "升级",
+  "PC.Pages.MorePage.MySubscriptions.subscribeNow": "订阅",
   "PC.Pages.MorePage.MySubscriptions.creditsPerMonth": "{0} 积分/月",
   "PC.Pages.MorePage.MySubscriptions.models": "{0}个模型",
   "PC.Pages.MorePage.MySubscriptions.allTools": "全部工具",
