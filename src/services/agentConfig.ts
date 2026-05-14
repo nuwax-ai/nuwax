@@ -1,3 +1,4 @@
+import type { AgentInterventionRespondRequest } from '@/types/interfaces/acpIntervention';
 import {
   AgentAddParams,
   AgentCardInfo,
@@ -295,6 +296,20 @@ export async function apiAgentConversationChatStop(
   return request(`/api/agent/conversation/chat/stop/${requestId}`, {
     method: 'POST',
   });
+}
+
+export function apiAgentInterventionRespond(
+  data: AgentInterventionRespondRequest,
+): Promise<RequestResponse<unknown>> {
+  return request(
+    `/api/agent-interventions/${encodeURIComponent(
+      data.interventionId,
+    )}/respond`,
+    {
+      method: 'POST',
+      data,
+    },
+  );
 }
 
 // 停止临时会话

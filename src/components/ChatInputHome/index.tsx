@@ -7,6 +7,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
+import type { AgentMode } from '@/types/interfaces/acpIntervention';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
@@ -15,7 +16,7 @@ import {
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { message, Tooltip, Upload, UploadProps } from 'antd';
+import { message, Segmented, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -85,6 +86,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onModelSelect,
   /** 智能体类型 */
   agentType,
+  agentMode = 'yolo',
+  onAgentModeChange,
+  showAgentModeSelector = false,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -165,7 +169,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const confirmSendMessage = (value: string) => {
     // 如果输入框内容不为空 或者 附件文件列表不为空
     if (!!value.trim() || !!files?.length) {
-      onEnter(value, files, skillIds, selectedModelId);
+      onEnter(value, files, skillIds, selectedModelId, agentMode);
       // 如果需要清空输入框
       if (isClearInput) {
         // 清空附件文件列表
@@ -609,6 +613,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 isPersonalComputer={isPersonalComputer}
                 readonly={readonly}
               />
+            )}
+            {showAgentModeSelector && (
+              <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
+                <Segmented
+                  size="small"
+                  value={agentMode}
+                  disabled={wholeDisabled || isConversationActive}
+                  options={[
+                    { label: 'YOLO', value: 'yolo' },
+                    { label: 'Ask', value: 'ask' },
+                  ]}
+                  onChange={(value) => onAgentModeChange?.(value as AgentMode)}
+                />
+              </Tooltip>
             )}
             {/* 智能体模型选择器 */}
             {allowOtherModel === DefaultSelectedEnum.Yes && (

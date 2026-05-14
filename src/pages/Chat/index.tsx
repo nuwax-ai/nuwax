@@ -39,6 +39,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { AgentMode } from '@/types/interfaces/acpIntervention';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
   MessageSourceType,
@@ -104,6 +105,7 @@ const Chat: React.FC = () => {
   const [selectedModelId, setSelectedModelId] = useState<number>(
     location.state?.modelId,
   );
+  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
 
   const [form] = Form.useForm();
   // 变量参数
@@ -178,6 +180,7 @@ const Chat: React.FC = () => {
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
+    respondAcpPermission,
     messageViewRef,
     messageViewScrollToBottom,
     allowAutoScrollRef,
@@ -527,6 +530,7 @@ const Chat: React.FC = () => {
             data,
             skillIds,
             modelId: selectedModelId,
+            agentMode,
           };
 
           onMessageSend(sendParams);
@@ -696,6 +700,7 @@ const Chat: React.FC = () => {
     files: UploadFileInfo[] = [],
     skillIds: number[] = [],
     modelId?: number,
+    selectedAgentMode?: AgentMode,
   ) => {
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
@@ -719,6 +724,7 @@ const Chat: React.FC = () => {
       sandboxId: effectiveSandboxId,
       skillIds,
       modelId: modelId || selectedModelId,
+      agentMode: selectedAgentMode || agentMode,
     };
 
     onMessageSend(sendParams);
@@ -1261,6 +1267,7 @@ const Chat: React.FC = () => {
                         contentClassName={styles['chat-inner']}
                         mode={'home'}
                         conversationId={id}
+                        onAcpPermissionRespond={respondAcpPermission}
                         showStatusDesc={
                           effectiveAgent?.type !== AgentTypeEnum.TaskAgent
                         }
@@ -1366,6 +1373,9 @@ const Chat: React.FC = () => {
               selectedModelId={selectedModelId}
               onModelSelect={setSelectedModelId}
               agentType={effectiveAgent?.type}
+              agentMode={agentMode}
+              onAgentModeChange={setAgentMode}
+              showAgentModeSelector
               // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
             />
           </div>

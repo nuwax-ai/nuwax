@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
+import AcpPermissionCard from '@/components/AcpPermissionCard';
 import CopyButton from '@/components/base/CopyButton';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
@@ -39,6 +40,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     mode = 'chat',
     conversationId = '',
     showStatusDesc = true,
+    onAcpPermissionRespond,
   }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
@@ -193,6 +195,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
           <ConditionRender
             condition={messageInfo?.role !== AssistantRoleEnum.USER}
           >
+            {!!messageInfo?.acpPermissionInteractions?.length && (
+              <div className={cx(styles['acp-permission-list'])}>
+                {messageInfo.acpPermissionInteractions.map((interaction) => (
+                  <AcpPermissionCard
+                    key={interaction.intervention.id}
+                    interaction={interaction}
+                    onRespond={(acpResponse) =>
+                      onAcpPermissionRespond?.(interaction, acpResponse)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
             {/* 内容区域: 思考内容、会话内容 */}
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>

@@ -11,6 +11,7 @@ import {
   apiAgentConversationChatSuggest,
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
+  apiAgentInterventionRespond,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -39,6 +40,11 @@ import {
   EditAgentShowType,
   OpenCloseEnum,
 } from '@/types/enums/space';
+import type {
+  AcpPermissionInteraction,
+  AcpPermissionInterventionRequest,
+  AcpRequestPermissionResponse,
+} from '@/types/interfaces/acpIntervention';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -797,6 +803,39 @@ export default () => {
 
       let newMessage: any = null;
 
+      if (
+        (res as any).messageType === 'acpRequestPermission' &&
+        (res as any).subType === 'session/request_permission'
+      ) {
+        const intervention = data as AcpPermissionInterventionRequest;
+        if (!intervention?.id || !intervention?.acp?.request) {
+          return messageList;
+        }
+
+        const interactions = currentMessage.acpPermissionInteractions || [];
+        if (
+          interactions.some((item) => item.intervention.id === intervention.id)
+        ) {
+          return messageList;
+        }
+
+        newMessage = {
+          ...currentMessage,
+          acpPermissionInteractions: [
+            ...interactions,
+            {
+              intervention,
+              responseStatus: 'pending',
+            },
+          ],
+          status: currentMessage.status || MessageStatusEnum.Loading,
+        };
+
+        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        checkConversationActive(list);
+        return list;
+      }
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
@@ -1276,6 +1315,7 @@ export default () => {
       data = null,
       skillIds,
       modelId,
+      agentMode = 'yolo',
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
@@ -1361,11 +1401,95 @@ export default () => {
       skillIds,
       // 模型ID
       modelId,
+      agent_config: {
+        agent_server: {
+          agent_mode: agentMode,
+        },
+      },
     };
 
     // 处理会话
     handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
   };
+
+  const updateAcpPermissionInteraction = useCallback(
+    (interventionId: string, updates: Partial<AcpPermissionInteraction>) => {
+      setMessageList((list) =>
+        list.map((item) => {
+          const interactions = item.acpPermissionInteractions;
+          if (
+            !interactions?.some(
+              (interaction) => interaction.intervention.id === interventionId,
+            )
+          ) {
+            return item;
+          }
+
+          return {
+            ...item,
+            acpPermissionInteractions: interactions.map((interaction) =>
+              interaction.intervention.id === interventionId
+                ? { ...interaction, ...updates }
+                : interaction,
+            ),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const respondAcpPermission = useCallback(
+    async (
+      interaction: AcpPermissionInteraction,
+      acpResponse: AcpRequestPermissionResponse,
+    ) => {
+      const { intervention } = interaction;
+      updateAcpPermissionInteraction(intervention.id, {
+        responseStatus: 'submitting',
+        selectedOptionId:
+          acpResponse.outcome.outcome === 'selected'
+            ? acpResponse.outcome.optionId
+            : undefined,
+        errorMessage: undefined,
+      });
+
+      try {
+        const response = await apiAgentInterventionRespond({
+          interventionId: intervention.id,
+          revision: intervention.revision,
+          source: intervention.source,
+          protocol: intervention.protocol,
+          callbackTarget: intervention.callbackTarget,
+          action:
+            acpResponse.outcome.outcome === 'selected' ? 'submit' : 'cancel',
+          acpResponse,
+        });
+
+        if (response?.code && response.code !== SUCCESS_CODE) {
+          throw new Error(
+            response.message ||
+              dict('PC.Models.ConversationInfo.permissionResponseFailed'),
+          );
+        }
+
+        updateAcpPermissionInteraction(intervention.id, {
+          responseStatus: 'submitted',
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : dict('PC.Models.ConversationInfo.permissionResponseFailed');
+        updateAcpPermissionInteraction(intervention.id, {
+          responseStatus: 'failed',
+          errorMessage,
+        });
+        message.error(errorMessage);
+      }
+    },
+    [updateAcpPermissionInteraction],
+  );
 
   const handleDebug = useCallback((info: MessageInfo) => {
     const result = info?.finalResult;
@@ -1434,6 +1558,7 @@ export default () => {
     handleVariables,
     runStopConversation,
     loadingStopConversation,
+    respondAcpPermission,
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,

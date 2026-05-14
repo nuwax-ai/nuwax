@@ -26,6 +26,11 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type {
+  AcpPermissionInteraction,
+  AcpRequestPermissionResponse,
+  AgentMode,
+} from './acpIntervention';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -152,6 +157,8 @@ export interface SendMessageParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 会话参数
@@ -173,6 +180,11 @@ export interface ConversationChatParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  agent_config?: {
+    agent_server?: {
+      agent_mode?: AgentMode;
+    };
+  };
 }
 
 // 临时会话参数
@@ -285,6 +297,8 @@ export interface MessageInfo extends ChatMessageDto {
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
   processingList?: ProcessingInfo[];
+  /** ACP permission approval 交互 */
+  acpPermissionInteractions?: AcpPermissionInteraction[];
 }
 
 // 查询会话信息
@@ -444,6 +458,10 @@ export interface ChatViewProps {
   conversationId?: string | number;
   // 是否显示状态描述
   showStatusDesc?: boolean;
+  onAcpPermissionRespond?: (
+    interaction: AcpPermissionInteraction,
+    acpResponse: AcpRequestPermissionResponse,
+  ) => void;
 }
 
 // 卡片信息

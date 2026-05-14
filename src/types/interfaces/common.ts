@@ -32,6 +32,7 @@ import type {
 import type { InputAndOutConfig } from '@/types/interfaces/node';
 import type { FormInstance, GetProp, UploadFile, UploadProps } from 'antd';
 import React from 'react';
+import type { AgentMode } from './acpIntervention';
 
 export type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 // 原代码中 large、middle、small 未定义，将其改为字符串字面量类型
@@ -529,6 +530,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
     files: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
@@ -573,6 +575,12 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onModelSelect?: (modelId: number) => void;
   /** 智能体类型 */
   agentType?: string;
+  /** 当前 Agent mode */
+  agentMode?: AgentMode;
+  /** Agent mode 变化回调 */
+  onAgentModeChange?: (mode: AgentMode) => void;
+  /** 是否展示 Agent mode 选择器 */
+  showAgentModeSelector?: boolean;
   /** 占位符文本 */
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */
