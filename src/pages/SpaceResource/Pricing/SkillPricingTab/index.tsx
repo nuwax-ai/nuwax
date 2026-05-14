@@ -19,7 +19,7 @@ import {
   ResourcePricingType,
   ToolPricingTargetType,
 } from '../../types/resource';
-import styles from '../index.less';
+import styles from './index.less';
 import SkillPricingFormModal from './SkillPricingFormModal';
 
 interface SkillPricingTabProps {
@@ -144,7 +144,9 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       align: 'center',
       search: false,
       render: (v) => (
-        <span className={styles.boldValue}>{(v as number) || 0}</span>
+        <span className={styles['skill-pricing-bold-value']}>
+          {(v as number) || 0}
+        </span>
       ),
     },
     {
@@ -155,11 +157,11 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
       search: false,
       render: (_, record) => (
         <span>
-          <span className={styles.boldValue}>
+          <span className={styles['skill-pricing-bold-value']}>
             ¥{formatPrice(record.price || 0)}
           </span>
           {record.pricingType === ResourcePricingType.MONTHLY && (
-            <span className={styles.muted}>
+            <span className={styles['skill-pricing-muted']}>
               /{dict('PC.Pages.SpaceAgentSubscriptions.cycleMonthly')}
             </span>
           )}
@@ -180,7 +182,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.billingSwitch'),
-      key: 'enabled',
+      key: 'status',
       width: 100,
       align: 'center',
       render: (_, record) => (
@@ -220,10 +222,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
 
   return (
     <div>
-      <div className={styles.tabHeader}>
-        <h4 className={styles.tabTitle}>
-          {dict('PC.Pages.SpaceResourcePricing.skillTitle')}
-        </h4>
+      <div className={styles['skill-pricing-tab-header']}>
         <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           {dict('PC.Pages.SpaceResourcePricing.addSkill')}
         </Button>
