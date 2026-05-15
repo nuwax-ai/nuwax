@@ -2662,6 +2662,7 @@ export const ZH_CN: SystemLangMap = {
   // ── 我的订阅 - 新增 ──
   "PC.Pages.MorePage.MySubscriptions.currentPlan": "当前订阅",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "使用中",
+  "PC.Pages.MorePage.MySubscriptions.statusHot": "热门",
   "PC.Pages.MorePage.MySubscriptions.feeMonth": "月费",
   "PC.Pages.MorePage.MySubscriptions.feeQuarter": "季费",
   "PC.Pages.MorePage.MySubscriptions.feeYear": "年费",

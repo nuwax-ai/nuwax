@@ -20,6 +20,7 @@ export interface PlanInfo {
   price: number;
   creditAmount: number;
   period: string;
+  isHot: boolean;
 }
 
 interface SubscriptionPlanCardsProps {
@@ -105,6 +106,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
       price: item.price,
       creditAmount: item.creditAmount,
       period: item.period,
+      isHot: !!item.isHot,
     }));
   }, [data]);
 
@@ -153,10 +155,16 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   [styles['is-current']]: isCurrent,
                 })}
               >
-                {isCurrent && (
+                {isCurrent ? (
                   <div className={cx(styles['current-badge'])}>
                     {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
                   </div>
+                ) : (
+                  plan.isHot && (
+                    <div className={cx(styles['hot-badge'])}>
+                      {dict('PC.Pages.MorePage.MySubscriptions.statusHot')}
+                    </div>
+                  )
                 )}
 
                 <div className={cx(styles['plan-header'])}>
