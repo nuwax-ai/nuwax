@@ -4904,8 +4904,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatio": "平台服务比例",
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "开发者收益与平台服务比例，配置时请注意支付平台收取的服务费成本",
   "PC.Pages.SystemPaymentConfig.gatewayUrl": "网关地址",
-  "PC.Pages.SystemPaymentConfig.gatewayAlert": "支付平台每笔支付将收取 1% 的服务费，与开发者分成比例的配置上注意考虑该成本",
-  "PC.Pages.SystemPaymentConfig.pageTips": "配置支付网关连接信息，支付平台每笔支付将收取 1% 的服务费",
+  "PC.Pages.SystemPaymentConfig.gatewayAlert": "支付平台每笔支付将收取 {0} 的服务费，与开发者分成比例的配置上注意考虑该成本",
 
 
   // ── 系统管理 - 商户进件信息 ────────────────────────────

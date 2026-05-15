@@ -150,7 +150,9 @@ const MerchantInfo: React.FC = () => {
           action: dict(
             'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusDraft',
           ),
-          time: data.created,
+          time: data.created
+            ? dayjs(data.created).format('YYYY-MM-DD HH:mm:ss')
+            : '',
           status: 'done',
         });
 
@@ -175,7 +177,9 @@ const MerchantInfo: React.FC = () => {
             action: dict(
               'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusRejected',
             ),
-            time: data.auditedAt || data.modified,
+            time: data.auditedAt
+              ? dayjs(data.auditedAt).format('YYYY-MM-DD HH:mm:ss')
+              : '',
             status: 'rejected',
             remark: data.auditRemark,
           });
@@ -186,8 +190,9 @@ const MerchantInfo: React.FC = () => {
               'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusApproved',
             ),
             time:
-              currentStatus === MerchantOnboardingStatusEnum.APPROVED
-                ? data.auditedAt || data.modified
+              currentStatus === MerchantOnboardingStatusEnum.APPROVED &&
+              data.auditedAt
+                ? dayjs(data.auditedAt).format('YYYY-MM-DD HH:mm:ss')
                 : '',
             status:
               currentStatus === MerchantOnboardingStatusEnum.APPROVED
