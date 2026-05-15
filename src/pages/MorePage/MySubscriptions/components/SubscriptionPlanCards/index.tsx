@@ -124,13 +124,13 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
         'PC.Pages.MorePage.MySubscriptions.perMonth',
       ),
       [MyPlanPeriodEnum.Quarter]: dict(
-        'PC.Pages.MorePage.MySubscriptions.feeQuarter',
+        'PC.Pages.MorePage.MySubscriptions.perQuarter',
       ),
       [MyPlanPeriodEnum.Year]: dict(
-        'PC.Pages.MorePage.MySubscriptions.feeYear',
+        'PC.Pages.MorePage.MySubscriptions.perYear',
       ),
       [MyPlanPeriodEnum.Forever]: dict(
-        'PC.Pages.MorePage.MySubscriptions.validityForever',
+        'PC.Pages.MorePage.MySubscriptions.perForever',
       ),
     };
     return periodMap[p] || '';
@@ -173,7 +173,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   <div className={cx(styles['plan-hint-tag'])}>
                     {plan.creditAmount}{' '}
                     {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
-                    {getPeriodLabel(plan.period)}
+                    {dict('PC.Pages.MorePage.MySubscriptions.perMonth')}
                   </div>
                 </div>
 
