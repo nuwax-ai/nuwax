@@ -93,6 +93,9 @@ const statusMap = {
   },
 };
 
+const mk = (key: string) =>
+  `PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.${key}`;
+
 const MerchantInfo: React.FC = () => {
   const [form] = Form.useForm();
   const location = useLocation();
@@ -106,12 +109,14 @@ const MerchantInfo: React.FC = () => {
   );
   const [auditTimeline, setAuditTimeline] = useState<any[]>([]);
 
-  // 图片上传状态
   const [upLoadingFront, setUpLoadingFront] = useState(false);
   const [upLoadingBack, setUpLoadingBack] = useState(false);
   const [upLoadingLicense, setUpLoadingLicense] = useState(false);
+  const [upLoadingFinance, setUpLoadingFinance] = useState(false);
+  const [upLoadingGate, setUpLoadingGate] = useState(false);
+  const [upLoadingLandmark, setUpLoadingLandmark] = useState(false);
+  const [upLoadingBankProof, setUpLoadingBankProof] = useState(false);
 
-  // 监听表单字段
   const legalPersonIdCardFrontUrl = Form.useWatch(
     'legalPersonIdCardFrontUrl',
     form,
@@ -121,9 +126,53 @@ const MerchantInfo: React.FC = () => {
     form,
   );
   const orgCertificateUrl = Form.useWatch('orgCertificateUrl', form);
+  const photoFinanceRoomUrl = Form.useWatch('photoFinanceRoomUrl', form);
+  const photoGateUrl = Form.useWatch('photoGateUrl', form);
+  const photoLandmarkUrl = Form.useWatch('photoLandmarkUrl', form);
+  const bankAccountProofUrl = Form.useWatch('bankAccountProofUrl', form);
+
+  const uploadingMap: Record<
+    string,
+    { uploading: boolean; setUploading: (v: boolean) => void }
+  > = {
+    legalPersonIdCardFrontUrl: {
+      uploading: upLoadingFront,
+      setUploading: setUpLoadingFront,
+    },
+    legalPersonIdCardBackUrl: {
+      uploading: upLoadingBack,
+      setUploading: setUpLoadingBack,
+    },
+    orgCertificateUrl: {
+      uploading: upLoadingLicense,
+      setUploading: setUpLoadingLicense,
+    },
+    photoFinanceRoomUrl: {
+      uploading: upLoadingFinance,
+      setUploading: setUpLoadingFinance,
+    },
+    photoGateUrl: { uploading: upLoadingGate, setUploading: setUpLoadingGate },
+    photoLandmarkUrl: {
+      uploading: upLoadingLandmark,
+      setUploading: setUpLoadingLandmark,
+    },
+    bankAccountProofUrl: {
+      uploading: upLoadingBankProof,
+      setUploading: setUpLoadingBankProof,
+    },
+  };
+
+  const watchMap: Record<string, string | undefined> = {
+    legalPersonIdCardFrontUrl: legalPersonIdCardFrontUrl,
+    legalPersonIdCardBackUrl: legalPersonIdCardBackUrl,
+    orgCertificateUrl: orgCertificateUrl,
+    photoFinanceRoomUrl: photoFinanceRoomUrl,
+    photoGateUrl: photoGateUrl,
+    photoLandmarkUrl: photoLandmarkUrl,
+    bankAccountProofUrl: bankAccountProofUrl,
+  };
 
   const fetchMerchantOnboarding = async () => {
-    // if (!tenantId) return;
     setLoading(true);
     try {
       const res = await apiGetMerchantOnboardingByTenantId();
@@ -138,31 +187,21 @@ const MerchantInfo: React.FC = () => {
                 .replace(/\s/g, '')
                 .replace(/(\d{4})(?=\d)/g, '$1 ')
             : undefined,
-          licenseExpiry: data.licenseExpiry
-            ? dayjs(data.licenseExpiry)
-            : undefined,
         });
-        // 审核进度逻辑 (固定展示全流程)
         const timeline: any[] = [];
         const currentStatus = data.status;
 
-        // 1. 创建 (草稿) - 始终为完成状态
         timeline.push({
-          action: dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusDraft',
-          ),
+          action: dict(mk('statusDraft')),
           time: data.created
             ? dayjs(data.created).format('YYYY-MM-DD HH:mm:ss')
             : '',
           status: 'done',
         });
 
-        // 2. 审核中 - 状态流转高亮
         timeline.push({
-          action: dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusUnderReview',
-          ),
-          time: '', // 审核中始终不显示时间
+          action: dict(mk('statusUnderReview')),
+          time: '',
           status:
             currentStatus === MerchantOnboardingStatusEnum.UNDER_REVIEW
               ? 'processing'
@@ -172,12 +211,9 @@ const MerchantInfo: React.FC = () => {
               : 'pending',
         });
 
-        // 3. 审核结果 (已通过 / 已拒绝)
         if (currentStatus === MerchantOnboardingStatusEnum.REJECTED) {
           timeline.push({
-            action: dict(
-              'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusRejected',
-            ),
+            action: dict(mk('statusRejected')),
             time: data.auditedAt
               ? dayjs(data.auditedAt).format('YYYY-MM-DD HH:mm:ss')
               : '',
@@ -185,11 +221,8 @@ const MerchantInfo: React.FC = () => {
             remark: data.auditRemark,
           });
         } else {
-          // 默认为“已通过”占位，或如果是已通过状态则显示真实数据
           timeline.push({
-            action: dict(
-              'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusApproved',
-            ),
+            action: dict(mk('statusApproved')),
             time:
               currentStatus === MerchantOnboardingStatusEnum.APPROVED &&
               data.auditedAt
@@ -238,24 +271,15 @@ const MerchantInfo: React.FC = () => {
 
   const handleUpload = async (
     options: UploadRequestOption,
-    type: 'front' | 'back' | 'license',
+    fieldName: string,
   ) => {
     const { file, onSuccess, onError } = options;
-    if (type === 'front') setUpLoadingFront(true);
-    else if (type === 'back') setUpLoadingBack(true);
-    else setUpLoadingLicense(true);
+    uploadingMap[fieldName]?.setUploading(true);
 
     try {
       const res = await apiSystemUploadFile(file as File);
       if (res.success && res.data?.url) {
-        const url = res.data.url;
-        const fieldName =
-          type === 'front'
-            ? 'legalPersonIdCardFrontUrl'
-            : type === 'back'
-            ? 'legalPersonIdCardBackUrl'
-            : 'orgCertificateUrl';
-        form.setFieldValue(fieldName, url);
+        form.setFieldValue(fieldName, res.data.url);
         onSuccess?.(res.data);
       } else {
         throw new Error('Upload failed');
@@ -264,9 +288,7 @@ const MerchantInfo: React.FC = () => {
       onError?.(error as any);
       message.error(dict('PC.Common.Global.error'));
     } finally {
-      if (type === 'front') setUpLoadingFront(false);
-      else if (type === 'back') setUpLoadingBack(false);
-      else setUpLoadingLicense(false);
+      uploadingMap[fieldName]?.setUploading(false);
     }
   };
 
@@ -282,9 +304,6 @@ const MerchantInfo: React.FC = () => {
       const payload: Partial<MerchantOnboardingData> = {
         ...values,
         bankAccountNo: values.bankAccountNo?.replace(/\s/g, ''),
-        licenseExpiry: values.licenseExpiry
-          ? dayjs(values.licenseExpiry).format('YYYY-MM-DD')
-          : undefined,
         id: onboardingId,
         onboardingType: 'TENANT',
         status: targetStatus,
@@ -309,21 +328,20 @@ const MerchantInfo: React.FC = () => {
   const statusInfo =
     statusMap[status] || statusMap[MerchantOnboardingStatusEnum.DRAFT];
 
-  const renderUploadBox = (
-    type: 'front' | 'back' | 'license',
-    imageUrl?: string,
-  ) => {
-    const isUploading =
-      type === 'front'
-        ? upLoadingFront
-        : type === 'back'
-        ? upLoadingBack
-        : upLoadingLicense;
+  const renderUploadBox = (fieldName: string, imageUrl?: string) => {
+    const isUploading = uploadingMap[fieldName]?.uploading;
+    const isIdCard =
+      fieldName === 'legalPersonIdCardFrontUrl' ||
+      fieldName === 'legalPersonIdCardBackUrl';
 
     if (imageUrl) {
       return (
         <div
-          className={cx(styles['upload-box'], styles[type], styles.hasImage)}
+          className={cx(
+            styles['upload-box'],
+            isIdCard ? styles.front : styles.license,
+            styles.hasImage,
+          )}
         >
           <img
             src={imageUrl}
@@ -343,34 +361,74 @@ const MerchantInfo: React.FC = () => {
     }
 
     return (
-      <div className={cx(styles['upload-box'], styles[type])}>
+      <div
+        className={cx(
+          styles['upload-box'],
+          isIdCard ? styles.front : styles.license,
+        )}
+      >
         <div className={cx(styles['icon-wrapper'])}>
           {isUploading ? (
             <LoadingOutlined className={cx(styles['upload-icon'])} />
-          ) : type === 'license' ? (
-            <PictureOutlined className={cx(styles['upload-icon'])} />
-          ) : (
+          ) : isIdCard ? (
             <IdcardOutlined className={cx(styles['upload-icon'])} />
+          ) : (
+            <PictureOutlined className={cx(styles['upload-icon'])} />
           )}
         </div>
-        <div className={cx(styles['upload-text'])}>
-          {type === 'front'
-            ? dict(
-                'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.idCardFront',
-              )
-            : type === 'back'
-            ? dict(
-                'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.idCardBack',
-              )
-            : dict(
-                'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.licenseLabel',
-              )}
-        </div>
+        <div className={cx(styles['upload-text'])}>{dict(mk(fieldName))}</div>
         <div className={cx(styles['upload-hint'])}>
           {dict('PC.Pages.Setting.DeveloperProfile.uploadBtn')} ·{' '}
           {dict('PC.Pages.Setting.DeveloperProfile.uploadHint')}
         </div>
       </div>
+    );
+  };
+
+  const renderUploadField = (
+    fieldName: string,
+    label: string,
+    required = true,
+  ) => {
+    const isIdCard =
+      fieldName === 'legalPersonIdCardFrontUrl' ||
+      fieldName === 'legalPersonIdCardBackUrl';
+    return (
+      <Form.Item
+        label={label}
+        required={required}
+        className={cx(styles['form-item-no-margin'])}
+      >
+        <Form.Item
+          name={fieldName}
+          valuePropName="data-url"
+          getValueFromEvent={(e) => {
+            if (typeof e === 'string') return e;
+            if (e?.file?.status === 'done' && e.file.response?.url) {
+              return e.file.response.url;
+            }
+            return watchMap[fieldName];
+          }}
+          rules={
+            required
+              ? [{ required: true, message: dict('PC.Common.Global.required') }]
+              : []
+          }
+        >
+          <Upload
+            className={cx(
+              isIdCard ? styles['id-card-upload'] : styles['license-upload'],
+            )}
+            maxCount={1}
+            accept=".jpg,.jpeg,.png"
+            showUploadList={false}
+            beforeUpload={beforeUpload}
+            customRequest={(opt) => handleUpload(opt, fieldName)}
+          >
+            {renderUploadBox(fieldName, watchMap[fieldName])}
+          </Upload>
+        </Form.Item>
+      </Form.Item>
     );
   };
 
@@ -390,9 +448,7 @@ const MerchantInfo: React.FC = () => {
             loading={saving}
             onClick={() => handleSave(MerchantOnboardingStatusEnum.DRAFT)}
           >
-            {dict(
-              'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.saveDraft',
-            )}
+            {dict(mk('saveDraft'))}
           </Button>
           <Button
             type="primary"
@@ -401,9 +457,7 @@ const MerchantInfo: React.FC = () => {
               handleSave(MerchantOnboardingStatusEnum.UNDER_REVIEW)
             }
           >
-            {dict(
-              'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.submitReview',
-            )}
+            {dict(mk('submitReview'))}
           </Button>
         </div>
       }
@@ -418,288 +472,311 @@ const MerchantInfo: React.FC = () => {
             message={statusInfo.text}
             description={
               status === MerchantOnboardingStatusEnum.REJECTED
-                ? dict(
-                    'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.rejectedHint',
-                  )
+                ? dict(mk('rejectedHint'))
                 : undefined
             }
           />
 
           <Row gutter={24}>
-            <Col span={12}>
+            <Col span={16}>
               <Form form={form} layout="vertical">
+                {/* 分组1: 商户信息 */}
                 <Card
-                  title={dict(
-                    'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionLegalPerson',
-                  )}
+                  title={dict(mk('sectionMerchant'))}
                   className={cx(styles['form-card'])}
                 >
-                  <Form.Item
-                    name="legalPersonName"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.legalPersonName',
-                    )}
-                    rules={[{ required: true }]}
-                  >
-                    <Input
-                      maxLength={50}
-                      showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderName',
-                      )}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    name="legalPersonIdNo"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.legalPersonId',
-                    )}
-                    rules={[
-                      { required: true },
-                      {
-                        pattern:
-                          /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
-                        message: dict(
-                          'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.invalidIdCard',
-                        ),
-                      },
-                    ]}
-                  >
-                    <Input
-                      maxLength={18}
-                      showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderIdCard',
-                      )}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.idCardPhotos',
-                    )}
-                    required
-                    className={cx(styles['form-item-no-margin'])}
-                  >
-                    <Row gutter={24}>
-                      <Col span={12}>
-                        <Form.Item
-                          name="legalPersonIdCardFrontUrl"
-                          valuePropName="data-url"
-                          getValueFromEvent={(e) => {
-                            if (typeof e === 'string') return e;
-                            if (
-                              e?.file?.status === 'done' &&
-                              e.file.response?.url
-                            ) {
-                              return e.file.response.url;
-                            }
-                            return legalPersonIdCardFrontUrl;
-                          }}
-                          rules={[
-                            {
-                              required: true,
-                              message: dict('PC.Common.Global.required'),
-                            },
-                          ]}
-                        >
-                          <Upload
-                            className={cx(styles['id-card-upload'])}
-                            maxCount={1}
-                            accept=".jpg,.jpeg,.png"
-                            showUploadList={false}
-                            beforeUpload={beforeUpload}
-                            customRequest={(opt) => handleUpload(opt, 'front')}
-                          >
-                            {renderUploadBox(
-                              'front',
-                              legalPersonIdCardFrontUrl,
-                            )}
-                          </Upload>
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item
-                          name="legalPersonIdCardBackUrl"
-                          valuePropName="data-url"
-                          getValueFromEvent={(e) => {
-                            if (typeof e === 'string') return e;
-                            if (
-                              e?.file?.status === 'done' &&
-                              e.file.response?.url
-                            ) {
-                              return e.file.response.url;
-                            }
-                            return legalPersonIdCardBackUrl;
-                          }}
-                          rules={[
-                            {
-                              required: true,
-                              message: dict('PC.Common.Global.required'),
-                            },
-                          ]}
-                        >
-                          <Upload
-                            className={cx(styles['id-card-upload'])}
-                            maxCount={1}
-                            accept=".jpg,.jpeg,.png"
-                            showUploadList={false}
-                            beforeUpload={beforeUpload}
-                            customRequest={(opt) => handleUpload(opt, 'back')}
-                          >
-                            {renderUploadBox('back', legalPersonIdCardBackUrl)}
-                          </Upload>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Form.Item>
-                </Card>
-
-                <Card
-                  title={dict(
-                    'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionBusinessLicense',
-                  )}
-                  className={cx(styles['form-card'])}
-                >
-                  <Form.Item
-                    name="merchantName"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.companyName',
-                    )}
-                    rules={[{ required: true }]}
-                  >
-                    <Input
-                      maxLength={100}
-                      showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderCompanyName',
-                      )}
-                    />
-                  </Form.Item>
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="merchantName"
+                        label={dict(mk('merchantName'))}
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          maxLength={100}
+                          showCount
+                          placeholder={dict(mk('placeholderMerchantName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="merchantShortName"
+                        label={dict(mk('merchantShortName'))}
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          maxLength={50}
+                          showCount
+                          placeholder={dict(mk('placeholderShortName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                   <Form.Item
                     name="creditCode"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.creditCode',
-                    )}
+                    label={dict(mk('creditCode'))}
                     rules={[
                       { required: true },
                       {
                         pattern: /^[A-Z0-9]{18}$/,
-                        message: dict(
-                          'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.invalidCreditCode',
-                        ),
+                        message: dict(mk('invalidCreditCode')),
                       },
                     ]}
                   >
                     <Input
                       maxLength={18}
                       showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderCreditCode',
-                      )}
+                      placeholder={dict(mk('placeholderCreditCode'))}
                     />
                   </Form.Item>
-                  {/* <Form.Item
-                    name="licenseExpiry"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.licenseExpiry',
-                    )}
+                  <Form.Item
+                    name="registeredAddress"
+                    label={dict(mk('registeredAddress'))}
                     rules={[{ required: true }]}
                   >
-                    <DatePicker
-                      className={cx(styles['full-width'])}
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderExpiry',
-                      )}
+                    <Input
+                      maxLength={200}
+                      showCount
+                      placeholder={dict(mk('placeholderAddress'))}
                     />
-                  </Form.Item> */}
-                  <Form.Item
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.licensePhoto',
-                    )}
-                    required
-                    className={cx(styles['form-item-no-margin'])}
-                  >
-                    <Form.Item
-                      name="orgCertificateUrl"
-                      valuePropName="data-url"
-                      rules={[
-                        {
-                          required: true,
-                          message: dict('PC.Common.Global.required'),
-                        },
-                      ]}
-                      getValueFromEvent={(e) => {
-                        if (typeof e === 'string') return e;
-                        if (
-                          e?.file?.status === 'done' &&
-                          e.file.response?.url
-                        ) {
-                          return e.file.response.url;
-                        }
-                        return orgCertificateUrl;
-                      }}
-                    >
-                      <Upload
-                        className={cx(styles['license-upload'])}
-                        maxCount={1}
-                        accept=".jpg,.jpeg,.png"
-                        showUploadList={false}
-                        beforeUpload={beforeUpload}
-                        customRequest={(opt) => handleUpload(opt, 'license')}
+                  </Form.Item>
+                  {renderUploadField(
+                    'orgCertificateUrl',
+                    dict(mk('licensePhoto')),
+                  )}
+                </Card>
+
+                {/* 分组2: 法人信息 */}
+                <Card
+                  title={dict(mk('sectionLegalPerson'))}
+                  className={cx(styles['form-card'])}
+                >
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="legalPersonName"
+                        label={dict(mk('legalPersonName'))}
+                        rules={[{ required: true }]}
                       >
-                        {renderUploadBox('license', orgCertificateUrl)}
-                      </Upload>
-                    </Form.Item>
+                        <Input
+                          maxLength={50}
+                          showCount
+                          placeholder={dict(mk('placeholderName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="legalPersonIdNo"
+                        label={dict(mk('legalPersonId'))}
+                        rules={[
+                          { required: true },
+                          {
+                            pattern:
+                              /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/,
+                            message: dict(mk('invalidIdCard')),
+                          },
+                        ]}
+                      >
+                        <Input
+                          maxLength={18}
+                          showCount
+                          placeholder={dict(mk('placeholderIdCard'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'legalPersonIdCardFrontUrl',
+                        dict(mk('idCardFront')),
+                      )}
+                    </Col>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'legalPersonIdCardBackUrl',
+                        dict(mk('idCardBack')),
+                      )}
+                    </Col>
+                  </Row>
+                </Card>
+
+                {/* 分组3: 经办联系人 */}
+                <Card
+                  title={dict(mk('sectionContact'))}
+                  className={cx(styles['form-card'])}
+                >
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="contactName"
+                        label={dict(mk('contactName'))}
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          maxLength={50}
+                          showCount
+                          placeholder={dict(mk('placeholderContactName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="contactPhone"
+                        label={dict(mk('contactPhone'))}
+                        rules={[
+                          { required: true },
+                          {
+                            pattern: /^1[3-9]\d{9}$/,
+                            message: dict(mk('invalidPhone')),
+                          },
+                        ]}
+                      >
+                        <Input
+                          maxLength={20}
+                          showCount
+                          placeholder={dict(mk('placeholderContactPhone'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Form.Item
+                    name="contactEmail"
+                    label={dict(mk('contactEmail'))}
+                    rules={[
+                      { required: true },
+                      {
+                        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: dict(mk('invalidEmail')),
+                      },
+                    ]}
+                  >
+                    <Input
+                      maxLength={100}
+                      showCount
+                      placeholder={dict(mk('placeholderContactEmail'))}
+                    />
                   </Form.Item>
                 </Card>
 
+                {/* 分组4: 银行账户 */}
                 <Card
-                  title={dict(
-                    'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionBankAccount',
-                  )}
+                  title={dict(mk('sectionBankAccount'))}
                   className={cx(styles['form-card'])}
                 >
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="bankAccountName"
+                        label={dict(mk('bankAccountName'))}
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          maxLength={100}
+                          showCount
+                          placeholder={dict(mk('placeholderBankAccountName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="bankName"
+                        label={dict(mk('bankName'))}
+                        rules={[{ required: true }]}
+                      >
+                        <Input
+                          maxLength={100}
+                          showCount
+                          placeholder={dict(mk('placeholderBankName'))}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                   <Form.Item
-                    name="bankName"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.bankName',
-                    )}
+                    name="bankBranchName"
+                    label={dict(mk('bankBranchName'))}
                     rules={[{ required: true }]}
                   >
                     <Input
                       maxLength={100}
                       showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderBankName',
-                      )}
+                      placeholder={dict(mk('placeholderBranchName'))}
                     />
                   </Form.Item>
                   <BankAccountInput />
                   <Form.Item
-                    name="bankBranchName"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.bankBranchCode',
-                    )}
+                    name="bankReceiptRemark"
+                    label={dict(mk('bankReceiptRemark'))}
                     rules={[{ required: true }]}
                   >
                     <Input
                       maxLength={100}
                       showCount
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderBranchName',
+                      placeholder={dict(mk('placeholderBankReceiptRemark'))}
+                    />
+                  </Form.Item>
+                </Card>
+
+                {/* 分组5: 证件与场地影像 */}
+                <Card
+                  title={dict(mk('sectionPhotos'))}
+                  className={cx(styles['form-card'])}
+                >
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'photoFinanceRoomUrl',
+                        dict(mk('photoFinanceRoomUrl')),
                       )}
+                    </Col>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'photoGateUrl',
+                        dict(mk('photoGateUrl')),
+                      )}
+                    </Col>
+                  </Row>
+                  <Row gutter={24}>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'photoLandmarkUrl',
+                        dict(mk('photoLandmarkUrl')),
+                      )}
+                    </Col>
+                    <Col span={12}>
+                      {renderUploadField(
+                        'bankAccountProofUrl',
+                        dict(mk('bankAccountProofUrl')),
+                      )}
+                    </Col>
+                  </Row>
+                </Card>
+
+                {/* 分组6: 备注 */}
+                <Card
+                  title={dict(mk('sectionRemark'))}
+                  className={cx(styles['form-card'])}
+                >
+                  <Form.Item
+                    name="remark"
+                    label={dict(mk('remark'))}
+                    rules={[{ required: true }]}
+                  >
+                    <Input.TextArea
+                      rows={4}
+                      maxLength={500}
+                      showCount
+                      placeholder={dict(mk('placeholderRemark'))}
                     />
                   </Form.Item>
                 </Card>
               </Form>
             </Col>
 
-            <Col span={12}>
-              <Card
-                title={dict(
-                  'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionAuditProgress',
-                )}
-              >
+            <Col span={8}>
+              <Card title={dict(mk('sectionAuditProgress'))}>
                 {auditTimeline.length > 0 ? (
                   <Timeline
                     items={auditTimeline.map((item) => ({
