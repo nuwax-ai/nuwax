@@ -62,7 +62,7 @@ export interface BillOrderSearchParams {
   orderStatus?: BillOrderStatusEnum;
   // 支付状态,可用值:PENDING,PROCESSING,SUCCESS,FAILED,CLOSED
   payStatus?: BillPayStatusEnum;
-  // 开始时间
+  // 创建时间起止
   startTime?: string;
   endTime?: string;
   // 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION
