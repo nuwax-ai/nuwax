@@ -10,6 +10,8 @@ import type {
   ConversationStatsResult,
   ModelConfigDto,
   NotifyMessageSendParams,
+  PayConfigResult,
+  PayConnectivityResult,
   PublishedDto,
   SandboxConfigItem,
   SandboxGlobalConfig,
@@ -189,6 +191,22 @@ export async function apiSystemSubscriptionConfigSave(
   return request('/api/system/config/save', {
     method: 'POST',
     data,
+  });
+}
+
+export async function apiQueryPayConfig(): Promise<
+  RequestResponse<PayConfigResult>
+> {
+  return request('/api/system/pay/config/query', {
+    method: 'POST',
+  });
+}
+
+export async function apiCheckPayConnectivity(): Promise<
+  RequestResponse<PayConnectivityResult>
+> {
+  return request('/api/system/pay/config/check-connectivity', {
+    method: 'POST',
   });
 }
 

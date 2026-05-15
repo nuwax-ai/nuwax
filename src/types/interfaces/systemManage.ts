@@ -405,6 +405,25 @@ export interface TenantSubscriptionConfigInfo {
 }
 
 /**
+ * 支付配置查询结果
+ */
+export interface PayConfigResult {
+  /** 支付分成比例 */
+  payRate: number;
+}
+
+/**
+ * 支付网关连通性检测结果
+ */
+export interface PayConnectivityResult {
+  reachable: boolean;
+  message: string;
+  gatewayBaseUrl: string;
+  gatewayServerTimeMillis: number;
+  latencyMillis: number;
+}
+
+/**
  * 主题配置数据结构
  */
 export interface ThemeConfigData {

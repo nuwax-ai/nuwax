@@ -78,6 +78,7 @@ const BaseTemplate: React.FC = () => {
     handleSetAppAgentDetail,
     appAgentDetailLoading,
     setAppAgentDetailLoading,
+    setOpenPaymentModal,
   } = useModel('useOpenApp');
 
   const { runTenantConfig } = useModel('tenantConfigInfo');
@@ -398,7 +399,7 @@ const BaseTemplate: React.FC = () => {
             <LoadingOutlined />
           </div>
         ) : (
-          <>
+          <div className={cx('flex', 'flex-col', 'flex-1')}>
             {/* 智能体图标 + 收起导航按钮 */}
             <header className={styles.sidebarTop}>
               {/* 智能体图标 + 名称 */}
@@ -484,7 +485,7 @@ const BaseTemplate: React.FC = () => {
                     return (
                       <div
                         key={`${item.name}-${index}`}
-                        className={cx(styles.pageNavItem, {
+                        className={cx(styles['nav-item'], {
                           [styles['page-nav-item-active']]: isActive,
                         })}
                         onClick={() => handleOpenPage(item)}
@@ -498,6 +499,21 @@ const BaseTemplate: React.FC = () => {
                     );
                   },
                 )}
+              </div>
+            </ConditionRender>
+
+            {/* 订阅导航 */}
+            <ConditionRender
+              condition={
+                appAgentDetail?.paymentRequired && !appAgentDetail.subscribed
+              }
+            >
+              <div
+                className={cx(styles['nav-item'])}
+                onClick={() => setOpenPaymentModal(true)}
+              >
+                <SvgIcon name="icons-chat-collect" style={{ fontSize: 16 }} />
+                <span className="text-ellipsis">订阅</span>
               </div>
             </ConditionRender>
 
@@ -572,7 +588,7 @@ const BaseTemplate: React.FC = () => {
                 <div className={cx(styles['footer-top-gradient'])} />
               </ConditionRender>
             </div>
-          </>
+          </div>
         )}
 
         {/* 用户区域，固定在底部 */}

@@ -1,7 +1,12 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
+import {
+  apiCheckPayConnectivity,
+  apiQueryPayConfig,
+  apiSystemSubscriptionConfigSave,
+} from '@/services/systemManage';
+import type { PayConnectivityResult } from '@/types/interfaces/systemManage';
 import {
   Alert,
   Button,
@@ -11,6 +16,7 @@ import {
   message,
   Spin,
   Tabs,
+  Tag,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -29,11 +35,35 @@ const Config: React.FC = () => {
   const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
-  // tenantConfigInfo.revenueRatio tenantConfigInfo.paymentGateway
+  const [payRate, setPayRate] = useState<number | null>(null);
+  const [connectivity, setConnectivity] =
+    useState<PayConnectivityResult | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const fetchPayConfig = async () => {
+    const res = await apiQueryPayConfig();
+    if (res.success && res.data) {
+      setPayRate(res.data.payRate);
+    }
+  };
+
+  const checkConnectivity = async () => {
+    setChecking(true);
+    try {
+      const res = await apiCheckPayConnectivity();
+      if (res.success && res.data) {
+        setConnectivity(res.data);
+      }
+    } finally {
+      setChecking(false);
+    }
+  };
 
   // 初始化加载配置数据
   useEffect(() => {
     runTenantConfig();
+    fetchPayConfig();
+    checkConnectivity();
   }, [location]);
 
   // 更新表单值
@@ -111,9 +141,7 @@ const Config: React.FC = () => {
         <Alert
           message={dict(
             'PC.Pages.SystemPaymentConfig.gatewayAlert',
-            typeof tenantConfigInfo?.revenueRatio === 'number'
-              ? `${tenantConfigInfo.revenueRatio * 100}%`
-              : '- %',
+            `${payRate ?? '-'} %`,
           )}
           type="info"
           showIcon
@@ -122,20 +150,49 @@ const Config: React.FC = () => {
 
       <Form.Item
         label={dict('PC.Pages.SystemPaymentConfig.gatewayUrl')}
-        name="paymentGateway"
-        rules={[
-          {
-            required: true,
-            message: dict('PC.Common.Global.required'),
-          },
-          {
-            pattern: /^(http|https):\/\//,
-            message: dict('PC.Common.Global.invalidUrl'),
-          },
-        ]}
+        required
       >
-        <Input style={{ maxWidth: 600 }} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <Form.Item
+            name="paymentGateway"
+            noStyle
+            rules={[
+              {
+                required: true,
+                message: dict('PC.Common.Global.required'),
+              },
+              {
+                pattern: /^(http|https):\/\//,
+                message: dict('PC.Common.Global.invalidUrl'),
+              },
+            ]}
+          >
+            <Input style={{ maxWidth: 600 }} />
+          </Form.Item>
+          <Button loading={checking} onClick={checkConnectivity}>
+            {dict('PC.Pages.SystemPaymentConfig.checkConnectivity')}
+          </Button>
+        </div>
       </Form.Item>
+      {connectivity && (
+        <div style={{ marginTop: -16, marginBottom: 16 }}>
+          {connectivity.reachable ? (
+            <Tag color="success">
+              {dict(
+                'PC.Pages.SystemPaymentConfig.connectivitySuccess',
+                connectivity.latencyMillis,
+              )}
+            </Tag>
+          ) : (
+            <Tag color="error">
+              {dict(
+                'PC.Pages.SystemPaymentConfig.connectivityFailed',
+                connectivity.message,
+              )}
+            </Tag>
+          )}
+        </div>
+      )}
     </div>
   );
 
