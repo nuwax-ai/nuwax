@@ -4901,8 +4901,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatio": "Platform Service Ratio",
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "Ratio between developer earnings and platform services. Please consider the service fee cost of the payment platform when configuring.",
   "PC.Pages.SystemPaymentConfig.gatewayUrl": "Gateway Address",
-  "PC.Pages.SystemPaymentConfig.gatewayAlert": "The payment platform will charge a 1% service fee per transaction. Please consider this cost when configuring the developer share ratio.",
-  "PC.Pages.SystemPaymentConfig.pageTips": "Configure payment gateway connection information. The payment platform will charge a 1% service fee per transaction.",
+  "PC.Pages.SystemPaymentConfig.gatewayAlert": "The payment platform will charge a {0} service fee per transaction. Please consider this cost when configuring the developer share ratio.",
 
 
   // ── System Management - Merchant Info ────────────────────────────
