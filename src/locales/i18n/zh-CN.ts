@@ -2885,7 +2885,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Setting.DeveloperProfile.cardNumber": "卡号",
   "PC.Pages.Setting.DeveloperProfile.cardholderName": "户名",
   "PC.Pages.Setting.DeveloperProfile.phone": "手机号",
-  "PC.Pages.Setting.DeveloperProfile.saveBtn": "保存结算信息",
+  "PC.Pages.Setting.DeveloperProfile.saveBtn": "保存资料",
   "PC.Pages.Setting.DeveloperProfile.uploadBtn": "点击上传",
   "PC.Pages.Setting.DeveloperProfile.uploadHint": "JPG/PNG",
   "PC.Pages.Setting.DeveloperProfile.uploadError": "请上传身份证正面",

@@ -2885,7 +2885,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Setting.DeveloperProfile.cardNumber": "Card Number",
   "PC.Pages.Setting.DeveloperProfile.cardholderName": "Cardholder Name",
   "PC.Pages.Setting.DeveloperProfile.phone": "Phone Number",
-  "PC.Pages.Setting.DeveloperProfile.saveBtn": "Save Settlement Information",
+  "PC.Pages.Setting.DeveloperProfile.saveBtn": "Save Profile",
   "PC.Pages.Setting.DeveloperProfile.uploadBtn": "Click to Upload",
   "PC.Pages.Setting.DeveloperProfile.uploadHint": "JPG/PNG",
   "PC.Pages.Setting.DeveloperProfile.uploadError": "Please upload the front of your ID card",
