@@ -1,7 +1,10 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
+import {
+  apiQueryPayConfig,
+  apiSystemSubscriptionConfigSave,
+} from '@/services/systemManage';
 import {
   Alert,
   Button,
@@ -29,11 +32,19 @@ const Config: React.FC = () => {
   const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
-  // tenantConfigInfo.revenueRatio tenantConfigInfo.paymentGateway
+  const [payRate, setPayRate] = useState<number | null>(null);
+
+  const fetchPayConfig = async () => {
+    const res = await apiQueryPayConfig();
+    if (res.success && res.data) {
+      setPayRate(res.data.payRate);
+    }
+  };
 
   // 初始化加载配置数据
   useEffect(() => {
     runTenantConfig();
+    fetchPayConfig();
   }, [location]);
 
   // 更新表单值
@@ -111,9 +122,7 @@ const Config: React.FC = () => {
         <Alert
           message={dict(
             'PC.Pages.SystemPaymentConfig.gatewayAlert',
-            typeof tenantConfigInfo?.revenueRatio === 'number'
-              ? `${tenantConfigInfo.revenueRatio * 100}%`
-              : '- %',
+            `${payRate ?? '-'} %`,
           )}
           type="info"
           showIcon
