@@ -217,7 +217,7 @@ const Square: React.FC = () => {
     const data: SquarePublishedListParams & {
       category?: any;
       targetType?: any;
-      targetSubType?: any;
+      targetSubType?: 'ChatBot' | 'PageApp';
       official?: boolean;
     } = {
       page: pageIndex,
