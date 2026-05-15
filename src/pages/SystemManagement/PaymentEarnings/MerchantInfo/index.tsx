@@ -1,3 +1,4 @@
+import { BankAccountInput } from '@/components/base';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -270,7 +271,12 @@ const MerchantInfo: React.FC = () => {
   };
 
   const handleSave = async (targetStatus?: MerchantOnboardingStatusEnum) => {
-    const values = await form.validateFields();
+    let values;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
     setSaving(true);
     try {
       const payload: Partial<MerchantOnboardingData> = {
@@ -437,6 +443,7 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={50}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderName',
                       )}
@@ -460,6 +467,7 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={18}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderIdCard',
                       )}
@@ -561,6 +569,7 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={100}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderCompanyName',
                       )}
@@ -583,6 +592,7 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={18}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderCreditCode',
                       )}
@@ -658,39 +668,13 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={100}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderBankName',
                       )}
                     />
                   </Form.Item>
-                  <Form.Item
-                    name="bankAccountNo"
-                    label={dict(
-                      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.bankAccount',
-                    )}
-                    rules={[
-                      { required: true },
-                      {
-                        pattern: /^(\d{4}\s?)*\d{1,4}$/,
-                        message: dict(
-                          'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.invalidAccountNo',
-                        ),
-                      },
-                    ]}
-                    normalize={(value) => {
-                      if (!value) return value;
-                      return value
-                        .replace(/\s/g, '')
-                        .replace(/(\d{4})(?=\d)/g, '$1 ');
-                    }}
-                  >
-                    <Input
-                      maxLength={30}
-                      placeholder={dict(
-                        'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderAccountNo',
-                      )}
-                    />
-                  </Form.Item>
+                  <BankAccountInput />
                   <Form.Item
                     name="bankBranchName"
                     label={dict(
@@ -700,6 +684,7 @@ const MerchantInfo: React.FC = () => {
                   >
                     <Input
                       maxLength={100}
+                      showCount
                       placeholder={dict(
                         'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.placeholderBranchName',
                       )}
