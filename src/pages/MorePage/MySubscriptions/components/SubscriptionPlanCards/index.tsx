@@ -48,8 +48,10 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
         // 兼容处理：获取返回的数据内容
         const data = res?.data || res;
         if (data && data?.cashierUrl) {
-          // 在新标签页打开支付收银台
-          window.open(data.cashierUrl, '_blank');
+          const returnUrl = encodeURIComponent(window.location.href);
+          const separator = data.cashierUrl.includes('?') ? '&' : '?';
+          const url = `${data.cashierUrl}${separator}returnUrl=${returnUrl}`;
+          window.location.href = url;
         }
       },
       onFinally: () => {

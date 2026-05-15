@@ -11,10 +11,12 @@
   justify-content: center;
 }
 
-/** 套餐卡片：最多 3 列，多出的行换行；整体区域限高纵向滚动 */
+/** 套餐卡片区域：列数由 TS 注入 `--plan-cols`（与 Modal 宽度推导一致）；`data-desktop-cols` 仅供下方媒体查询判断「桌面是否三列」。 */
 .cards-row {
+  --plan-cols: 3;
+
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--plan-cols), minmax(0, 1fr));
   gap: 16px;
   max-height: min(520px, 62vh);
   overflow-x: hidden;
@@ -23,12 +25,16 @@
   align-content: start;
   scrollbar-width: thin;
 
+  /** 平板宽度：若在桌面为三列布局，则降为两列，避免卡片过窄 */
   @media (max-width: 900px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    &[data-desktop-cols='3'] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
+  /** 小屏单列，与 Modal min(…, 100vw-32px) 配合阅读 */
   @media (max-width: 560px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   &::-webkit-scrollbar {
@@ -54,7 +60,6 @@
 }
 
 .title {
-  // font-size: @fontSizeLg + 2px;
   font-size: 20px;
   font-weight: 600;
   color: @colorTextHeading;
@@ -102,12 +107,38 @@
 .subscribe-btn-wrap {
   margin-bottom: 16px;
 
-  button {
+  /** Ant Design Button：根节点 inline-flex；省略须落在包住文案的子 span（并设 min-width:0） */
+  :global(.ant-btn) {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
     height: 44px;
     border-radius: 10px;
     font-size: @fontSize;
     font-weight: 500;
+  }
+
+  :global(.ant-btn:not(.ant-btn-icon-only) > span:not(.ant-btn-loading-icon)) {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /** 无 ant-btn 类时的兜底（一般不存在） */
+  button:not(:global(.ant-btn)) {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    border-radius: 10px;
+    font-size: @fontSize;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

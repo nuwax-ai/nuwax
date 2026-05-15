@@ -1,3 +1,5 @@
+import { SubscriptionPlanInfo } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+
 // 资源定价 - 模型定价信息
 export interface ModelPricingInfo {
   // 档位ID
@@ -117,7 +119,7 @@ export interface ResourcePricingConfigInfo extends ToolPricingInfo {
     modified: string;
   }>;
   // 订阅计划
-  plans?: Array<Record<string, unknown>>;
+  plans?: SubscriptionPlanInfo[];
 }
 
 // 参数接口

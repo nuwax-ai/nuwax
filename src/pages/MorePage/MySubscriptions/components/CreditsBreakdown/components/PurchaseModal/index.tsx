@@ -56,8 +56,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
         // 兼容处理：有些环境下 res 是原始数据，有些则是 RequestResponse 包裹
         const data = res?.data || res;
         if (data && data?.cashierUrl) {
-          // 在新标签页打开支付收银台（由后端提供的收银台页面）
-          window.open(data.cashierUrl, '_blank');
+          const returnUrl = encodeURIComponent(window.location.href);
+          const separator = data.cashierUrl.includes('?') ? '&' : '?';
+          const url = `${data.cashierUrl}${separator}returnUrl=${returnUrl}`;
+          window.location.href = url;
         }
       },
     },
