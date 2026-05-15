@@ -413,6 +413,17 @@ export interface PayConfigResult {
 }
 
 /**
+ * 支付网关连通性检测结果
+ */
+export interface PayConnectivityResult {
+  reachable: boolean;
+  message: string;
+  gatewayBaseUrl: string;
+  gatewayServerTimeMillis: number;
+  latencyMillis: number;
+}
+
+/**
  * 主题配置数据结构
  */
 export interface ThemeConfigData {
