@@ -405,6 +405,14 @@ export interface TenantSubscriptionConfigInfo {
 }
 
 /**
+ * 支付配置查询结果
+ */
+export interface PayConfigResult {
+  /** 支付分成比例 */
+  payRate: number;
+}
+
+/**
  * 主题配置数据结构
  */
 export interface ThemeConfigData {
