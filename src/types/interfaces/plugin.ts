@@ -241,6 +241,10 @@ export interface PublishSkillInfo {
   created: string; // ISO 时间字符串
   category: string;
   collect: boolean;
+  /** 广场技能详情 /api/published/skill/:id 可能返回 */
+  paymentRequired?: boolean;
+  subscribed?: boolean;
+  spaceId?: number;
 }
 
 // 插件http头部组件

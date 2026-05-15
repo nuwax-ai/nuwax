@@ -1,6 +1,11 @@
 /**
  * PaymentSubscriptionModal — 会话页付费订阅套餐弹窗
  * props：开关、加载态、计划列表与订阅下单回调
+ *
+ * 布局备注：
+ * - 弹窗 width 随有效列数变化：1 套餐单列、2 套餐双列、≥3 套餐三列；与网格 `--plan-cols` 一致。
+ * - BODY_PAD_X / CARD_GAP / CARD_COL_WIDTH 需与 index.less 中 `.body` 横向 padding、`.cards-row` gap 及单列视觉对齐，避免错位。
+ * - 窄屏：less 中 ≤900px 可将三列降为两列，≤560px 单列；width 仍受 min(..., 100vw - 32px) 限制。
  */
 import {
   SubscriptionPlanInfo,
@@ -14,6 +19,26 @@ import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 弹窗内容区单侧水平留白合计（`.body` 左右各 20px，与样式表一致） */
+const BODY_PAD_X = 40;
+/** 套餐卡片网格列间距（与 `.cards-row` 的 gap: 16px 一致） */
+const CARD_GAP = 16;
+/**
+ * 单列在桌面下的基准宽度(px)，用于推算 Modal 总宽。
+ * 备注：调高会使三列弹窗更接近原 ~760px 视觉；改动时请同步目测三列并排效果。
+ */
+const CARD_COL_WIDTH = 270;
+
+/**
+ * 按列数推算 Modal 宽度：内容区 = 横向留白 + N×列宽 + (N-1)×间距，再与视口做 min。
+ * @param columnCount — 桌面下列数，有效范围 clamp 到 1～3
+ */
+function calcModalWidthForColumns(columnCount: number): string {
+  const c = Math.min(Math.max(columnCount, 1), 3);
+  const inner = BODY_PAD_X + c * CARD_COL_WIDTH + (c - 1) * CARD_GAP;
+  return `min(${inner}px, calc(100vw - 32px))`;
+}
 
 const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
   [SubscriptionPlanPeriodEnum.MONTH]: '月',
@@ -105,6 +130,33 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [sortedPlans],
   );
 
+  /**
+   * 网格列数与弹窗宽度依据：
+   * - loading：按 3 列占位（避免载入完成后宽度跳动过大）
+   * - 无套餐：按 1 列（空状态窄一些）
+   * - 有套餐：min(个数, 3)，超过 3 条仍在三列网格内自动换行
+   */
+  const planColumnCount = useMemo(() => {
+    if (loading) return 3;
+    if (sortedPlans.length === 0) return 1;
+    return Math.min(sortedPlans.length, 3);
+  }, [loading, sortedPlans.length]);
+
+  // Modal.width：由 planColumnCount 推算，公式见 calcModalWidthForColumns
+  const modalWidth = useMemo(
+    () => calcModalWidthForColumns(planColumnCount),
+    [planColumnCount],
+  );
+
+  /** 注入 CSS 变量，供 `.cards-row` repeat(var(--plan-cols)) 使用 */
+  const cardsGridStyle = useMemo(
+    () =>
+      ({
+        ['--plan-cols' as string]: planColumnCount,
+      } as React.CSSProperties),
+    [planColumnCount],
+  );
+
   return (
     <Modal
       styles={{
@@ -127,7 +179,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
       open={open}
       onCancel={onClose}
       footer={null}
-      width="min(760px, calc(100vw - 32px))"
+      width={modalWidth}
       centered
       destroyOnHidden
     >
@@ -139,7 +191,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
         ) : sortedPlans.length === 0 ? (
           <Empty className={cx(styles.empty)} description="暂无可用套餐" />
         ) : (
-          <div className={cx(styles['cards-row'])}>
+          <div
+            className={cx(styles['cards-row'])}
+            style={cardsGridStyle}
+            data-desktop-cols={planColumnCount}
+          >
             {sortedPlans.map((plan, index) => {
               // 周期
               const period = periodLabelMap[plan.period] || '月';
@@ -153,6 +209,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
               const renewal = parseRenewalPrice(plan.extra);
               // 权益列表
               const features = buildFeatureRows(plan);
+              const creditAmountText = `每月 ${plan.creditAmount} 积分`;
               // 可调用次数
               const callLimit = plan.callLimitCount;
               const callLimitText =
@@ -180,7 +237,9 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   key={plan.id ?? plan.name}
                   className={cx(styles['plan-pay-card'])}
                 >
-                  <div className={cx(styles.title)}>{plan.name}</div>
+                  <div className={cx(styles.title, 'text-ellipsis')}>
+                    {plan.name}
+                  </div>
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>
                       <span className={cx(styles['price-main'])}>
@@ -226,6 +285,12 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         {`升级为${plan.name}连续包月`}
                       </Button>
                     )}
+                  </div>
+
+                  {/* 每月赠送积分 */}
+                  <div className={cx(styles['points-row'])}>
+                    <span className={cx(styles.diamond)} aria-hidden />
+                    <span>{creditAmountText}</span>
                   </div>
 
                   {/* 可调用次数 */}
