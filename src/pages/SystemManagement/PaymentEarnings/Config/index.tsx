@@ -109,7 +109,12 @@ const Config: React.FC = () => {
       {/* 风险提示信息 */}
       <div className={cx(styles['alert-wrapper'])}>
         <Alert
-          message={dict('PC.Pages.SystemPaymentConfig.gatewayAlert')}
+          message={dict(
+            'PC.Pages.SystemPaymentConfig.gatewayAlert',
+            typeof tenantConfigInfo?.revenueRatio === 'number'
+              ? `${tenantConfigInfo.revenueRatio * 100}%`
+              : '- %',
+          )}
           type="info"
           showIcon
         />
@@ -137,7 +142,6 @@ const Config: React.FC = () => {
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.paymentConfig')}
-      tips={dict('PC.Pages.SystemPaymentConfig.pageTips')}
       rightSlot={
         <Button type="primary" loading={saving} onClick={handleSave}>
           {dict('PC.Common.Global.save')}
