@@ -5,14 +5,15 @@ import { dict } from '@/services/i18nRuntime';
 import {
   BillBizTypeEnum,
   BillOrderInfo,
+  BillOrderItem,
   BillOrderStatusEnum,
   BillPayStatusEnum,
 } from '@/types/interfaces/subscription';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import type { ParamsType, ProColumns } from '@ant-design/pro-components';
-import { Card, Col, Row, Statistic, Tag } from 'antd';
+import { Button, Card, Col, Row, Statistic, Tag } from 'antd';
 import dayjs from 'dayjs';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetOrderRevenueList,
@@ -22,6 +23,7 @@ import {
   type BillOrderSearchParams,
   BillRevenueStatsInfo,
 } from '../types/order-revenue';
+import OrderLineItemsModal from './OrderLineItemsModal';
 
 /** 支付状态展示文案（模块加载时 `dict` 解析一次） */
 const PAY_STATUS_LABELS: Record<BillPayStatusEnum, string> = {
@@ -109,6 +111,22 @@ const fetchOrderRevenueTableRequest = async (
  * 业务订单查询
  */
 const SubsOrders: React.FC = () => {
+  const [orderItemsModal, setOrderItemsModal] = useState<{
+    open: boolean;
+    items: BillOrderItem[];
+  }>({ open: false, items: [] });
+
+  const openOrderItemsModal = useCallback((record: BillOrderInfo) => {
+    setOrderItemsModal({
+      open: true,
+      items: record.items ?? [],
+    });
+  }, []);
+
+  const closeOrderItemsModal = useCallback(() => {
+    setOrderItemsModal((s) => ({ ...s, open: false }));
+  }, []);
+
   // 统计信息
   const [statsInfo, setStatsInfo] = useState<BillRevenueStatsInfo>();
 
@@ -159,130 +177,153 @@ const SubsOrders: React.FC = () => {
   );
 
   // 订单列表列配置
-  const columns: ProColumns<BillOrderInfo>[] = [
-    {
-      title: dict('PC.Pages.SystemSubsOrders.orderId'),
-      dataIndex: 'id',
-      key: 'id',
-      ellipsis: true,
-      search: false,
-      width: 180,
-      render: (_, record) => String(record.id ?? '-'),
-    },
-    {
-      title: dict('PC.Pages.SystemSubsOrders.userId'),
-      dataIndex: 'userId',
-      key: 'userId',
-      ellipsis: true,
-      search: false,
-      render: (_, record) => String(record.userId ?? '-'),
-    },
-    // 业务类型
-    {
-      title: dict('PC.Pages.SystemSubsOrders.bizType'),
-      dataIndex: 'bizType',
-      key: 'bizType',
-      valueType: 'select',
-      valueEnum: {
-        [BillBizTypeEnum.CREDIT_PURCHASE]: {
-          text: bizTypeLabelMap[BillBizTypeEnum.CREDIT_PURCHASE],
+  const columns: ProColumns<BillOrderInfo>[] = useMemo(
+    () => [
+      {
+        title: dict('PC.Pages.SystemSubsOrders.orderId'),
+        dataIndex: 'id',
+        key: 'id',
+        ellipsis: true,
+        search: false,
+        width: 150,
+        fixed: 'left',
+        render: (_, record) => String(record.id ?? '-'),
+      },
+      {
+        title: dict('PC.Pages.SystemSubsOrders.userId'),
+        dataIndex: 'userId',
+        key: 'userId',
+        ellipsis: true,
+        search: false,
+        render: (_, record) => String(record.userId ?? '-'),
+      },
+      // 业务类型
+      {
+        title: dict('PC.Pages.SystemSubsOrders.bizType'),
+        dataIndex: 'bizType',
+        key: 'bizType',
+        valueType: 'select',
+        valueEnum: {
+          [BillBizTypeEnum.CREDIT_PURCHASE]: {
+            text: bizTypeLabelMap[BillBizTypeEnum.CREDIT_PURCHASE],
+          },
+          [BillBizTypeEnum.SUBSCRIPTION]: {
+            text: bizTypeLabelMap[BillBizTypeEnum.SUBSCRIPTION],
+          },
         },
-        [BillBizTypeEnum.SUBSCRIPTION]: {
-          text: bizTypeLabelMap[BillBizTypeEnum.SUBSCRIPTION],
+        fieldProps: {
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseSelect'),
+        },
+        render: (_, record) =>
+          bizTypeLabelMap[record.bizType] ?? String(record.bizType),
+      },
+      // 描述
+      {
+        title: dict('PC.Pages.SystemSubsOrders.description'),
+        dataIndex: 'description',
+        key: 'description',
+        ellipsis: true,
+        search: false,
+        render: (_, record) => record.description || '-',
+      },
+      // 金额
+      {
+        title: dict('PC.Pages.SystemSubsOrders.amount'),
+        dataIndex: 'amount',
+        key: 'amount',
+        search: false,
+        render: (_, record) => (
+          <span style={{ fontWeight: 600 }}>
+            {dict('PC.Common.Global.currencySymbol')}
+            {record.amount ?? 0}
+          </span>
+        ),
+      },
+      // 订单状态
+      {
+        title: dict('PC.Pages.SystemSubsOrders.orderStatus'),
+        dataIndex: 'orderStatus',
+        key: 'orderStatus',
+        render: (_, record) => {
+          const cfg = statusConfig[record.orderStatus];
+          return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
+        },
+        valueEnum: {
+          [BillOrderStatusEnum.PAID]: {
+            text: dict('PC.Pages.SystemSubsOrders.orderStatusPaid'),
+          },
+          [BillOrderStatusEnum.PENDING]: {
+            text: dict('PC.Pages.SystemSubsOrders.orderStatusPending'),
+          },
+          [BillOrderStatusEnum.CANCELLED]: {
+            text: dict('PC.Pages.SystemSubsOrders.orderStatusCancelled'),
+          },
         },
       },
-      fieldProps: {
-        allowClear: true,
-        placeholder: dict('PC.Common.Global.pleaseSelect'),
-      },
-      render: (_, record) =>
-        bizTypeLabelMap[record.bizType] ?? String(record.bizType),
-    },
-    // 描述
-    {
-      title: dict('PC.Pages.SystemSubsOrders.description'),
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      search: false,
-      render: (_, record) => record.description || '-',
-    },
-    // 金额
-    {
-      title: dict('PC.Pages.SystemSubsOrders.amount'),
-      dataIndex: 'amount',
-      key: 'amount',
-      search: false,
-      render: (_, record) => (
-        <span style={{ fontWeight: 600 }}>
-          {dict('PC.Common.Global.currencySymbol')}
-          {record.amount ?? 0}
-        </span>
-      ),
-    },
-    // 订单状态
-    {
-      title: dict('PC.Pages.SystemSubsOrders.orderStatus'),
-      dataIndex: 'orderStatus',
-      key: 'orderStatus',
-      render: (_, record) => {
-        const cfg = statusConfig[record.orderStatus];
-        return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
-      },
-      valueEnum: {
-        [BillOrderStatusEnum.PAID]: {
-          text: dict('PC.Pages.SystemSubsOrders.orderStatusPaid'),
+      // 支付状态
+      {
+        title: dict('PC.Pages.SystemSubsOrders.payStatus'),
+        dataIndex: 'payStatus',
+        key: 'payStatus',
+        valueType: 'select',
+        valueEnum: Object.fromEntries(
+          Object.values(BillPayStatusEnum).map((status) => [
+            status,
+            { text: PAY_STATUS_LABELS[status] },
+          ]),
+        ) as Record<BillPayStatusEnum, { text: string }>,
+        fieldProps: {
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseSelect'),
         },
-        [BillOrderStatusEnum.PENDING]: {
-          text: dict('PC.Pages.SystemSubsOrders.orderStatusPending'),
+        render: (_, record) =>
+          PAY_STATUS_LABELS[record.payStatus] ?? String(record.payStatus),
+      },
+      // 开始时间
+      {
+        title: dict('PC.Pages.SystemSubsOrders.created'),
+        dataIndex: 'created',
+        key: 'created',
+        valueType: 'dateTimeRange',
+        fieldProps: {
+          placeholder: [
+            dict('PC.Pages.SystemSubsOrders.createdTimeRangeStart'),
+            dict('PC.Pages.SystemSubsOrders.createdTimeRangeEnd'),
+          ],
         },
-        [BillOrderStatusEnum.CANCELLED]: {
-          text: dict('PC.Pages.SystemSubsOrders.orderStatusCancelled'),
-        },
+        width: 170,
+        render: (_, record) => formatDateTimeYmdHms(record.created),
       },
-    },
-    // 支付状态
-    {
-      title: dict('PC.Pages.SystemSubsOrders.payStatus'),
-      dataIndex: 'payStatus',
-      key: 'payStatus',
-      valueType: 'select',
-      valueEnum: Object.fromEntries(
-        Object.values(BillPayStatusEnum).map((status) => [
-          status,
-          { text: PAY_STATUS_LABELS[status] },
-        ]),
-      ) as Record<BillPayStatusEnum, { text: string }>,
-      fieldProps: {
-        allowClear: true,
-        placeholder: dict('PC.Common.Global.pleaseSelect'),
+      // 修改时间
+      {
+        title: dict('PC.Pages.SystemSubsOrders.modified'),
+        dataIndex: 'modified',
+        key: 'modified',
+        search: false,
+        width: 170,
+        render: (_, record) => formatDateTimeYmdHms(record.modified),
       },
-      render: (_, record) =>
-        PAY_STATUS_LABELS[record.payStatus] ?? String(record.payStatus),
-    },
-    // 创建时间
-    {
-      title: dict('PC.Pages.SystemSubsOrders.created'),
-      dataIndex: 'created',
-      key: 'created',
-      valueType: 'dateTimeRange',
-      fieldProps: {
-        placeholder: [
-          dict('PC.Pages.SystemSubsOrders.createdTimeRangeStart'),
-          dict('PC.Pages.SystemSubsOrders.createdTimeRangeEnd'),
-        ],
+      {
+        title: dict('PC.Pages.SystemSubsOrders.operationColumn'),
+        key: 'operation',
+        search: false,
+        width: 100,
+        fixed: 'right',
+        align: 'left',
+        render: (_, record) => (
+          <Button
+            type="link"
+            style={{ padding: 0 }}
+            onClick={() => openOrderItemsModal(record)}
+          >
+            {dict('PC.Pages.SystemSubsOrders.orderLineItems')}
+          </Button>
+        ),
       },
-      render: (_, record) => formatDateTimeYmdHms(record.created),
-    },
-    // 修改时间
-    {
-      title: dict('PC.Pages.SystemSubsOrders.modified'),
-      dataIndex: 'modified',
-      key: 'modified',
-      search: false,
-      render: (_, record) => formatDateTimeYmdHms(record.modified),
-    },
-  ];
+    ],
+    [bizTypeLabelMap, openOrderItemsModal, statusConfig],
+  );
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.subsOrders')}>
@@ -331,12 +372,20 @@ const SubsOrders: React.FC = () => {
         rowKey="id"
         columns={columns}
         request={fetchOrderRevenueTableRequest}
+        scroll={{ x: 'max-content' }}
         scrollYOffset={80}
         showQueryButtons={false}
         search={{
           filterType: 'query',
           defaultCollapsed: false,
         }}
+      />
+
+      {/* 订单明显 */}
+      <OrderLineItemsModal
+        open={orderItemsModal.open}
+        onCancel={closeOrderItemsModal}
+        items={orderItemsModal.items}
       />
     </WorkspaceLayout>
   );
