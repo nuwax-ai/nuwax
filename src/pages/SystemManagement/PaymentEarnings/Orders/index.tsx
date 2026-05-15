@@ -1,4 +1,4 @@
-import { TableActions, XProTable } from '@/components/ProComponents';
+import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -11,13 +11,10 @@ import { apiPageAdminPaymentOrders } from '@/services/subscriptionService';
 import type { AdminPaymentOrderRecord } from '@/types/interfaces/subscription';
 import { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'umi';
-import OrderDetail from './components/OrderDetail';
 
 const Orders: React.FC = () => {
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [currentRow, setCurrentRow] = useState<AdminPaymentOrderRecord>();
   const actionRef = useRef<ActionType>();
   const location = useLocation();
 
@@ -30,6 +27,24 @@ const Orders: React.FC = () => {
   const payChannelValueEnum = useMemo(() => getPayChannelValueEnum(), []);
 
   const columns: ProColumns<AdminPaymentOrderRecord>[] = [
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Orders.colOrderNo',
+      ),
+      dataIndex: 'bizOrderNo',
+      key: 'bizOrderNo',
+      width: 200,
+      search: true,
+      fixed: 'left',
+    },
+    {
+      title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colRemark'),
+      dataIndex: 'subject',
+      key: 'subject',
+      ellipsis: true,
+      search: false,
+      width: 200,
+    },
     {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Orders.colStartTime',
@@ -56,6 +71,7 @@ const Orders: React.FC = () => {
       ),
       dataIndex: 'payChannel',
       key: 'payChannel',
+      width: 120,
       valueType: 'select',
       valueEnum: payChannelValueEnum,
       render: (val: any) => val || '-',
@@ -64,12 +80,13 @@ const Orders: React.FC = () => {
       title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colAmount'),
       dataIndex: 'orderAmount',
       key: 'orderAmount',
+      width: 120,
       search: false,
-      render: (val: any) => (
+      render: (_, record) => (
         <span style={{ fontWeight: 600 }}>
           ¥
           {new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(
-            Number(val) || 0,
+            Number(record.orderAmount) || 0,
           )}
         </span>
       ),
@@ -80,10 +97,11 @@ const Orders: React.FC = () => {
       ),
       dataIndex: 'netAmount',
       key: 'netAmount',
+      width: 120,
       search: false,
-      render: (val: any) =>
+      render: (_, record) =>
         `¥${new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2 }).format(
-          Number(val) || 0,
+          Number(record.netAmount) || 0,
         )}`,
     },
     {
@@ -91,6 +109,7 @@ const Orders: React.FC = () => {
         'PC.Pages.SystemManagement.PaymentEarnings.Orders.colServiceFee',
       ),
       key: 'serviceFee',
+      width: 120,
       search: false,
       render: (_, record) => (
         <span style={{ color: '#ff4d4f' }}>
@@ -105,6 +124,7 @@ const Orders: React.FC = () => {
       title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colStatus'),
       dataIndex: 'paymentStatus',
       key: 'paymentStatus',
+      width: 120,
       valueType: 'select',
       valueEnum: paymentStatusValueEnum,
       render: (_, record) => {
@@ -122,6 +142,7 @@ const Orders: React.FC = () => {
       ),
       dataIndex: 'created',
       key: 'createTime',
+      width: 180,
       search: false,
       valueType: 'dateTime',
     },
@@ -129,84 +150,57 @@ const Orders: React.FC = () => {
       title: dict('PC.Pages.SystemManagement.PaymentEarnings.Orders.colPaidAt'),
       dataIndex: 'modified',
       key: 'paidAt',
+      width: 180,
       search: false,
       valueType: 'dateTime',
-    },
-    {
-      title: dict('PC.Common.Global.action'),
-      key: 'action',
-      search: false,
-      width: 100,
-      render: (_, record) => (
-        <TableActions
-          record={record}
-          actions={[
-            {
-              key: 'detail',
-              label: dict(
-                'PC.Pages.SystemManagement.PaymentEarnings.Orders.viewDetail',
-              ),
-              onClick: () => {
-                setCurrentRow(record);
-                setDetailOpen(true);
-              },
-            },
-          ]}
-        />
-      ),
     },
   ];
 
   return (
-    <>
-      <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
-        <XProTable<AdminPaymentOrderRecord>
-          actionRef={actionRef}
-          rowKey="id"
-          columns={columns}
-          request={async (params) => {
-            try {
-              const {
-                current,
-                pageSize,
-                paymentStatus,
-                payChannel,
-                createdStart,
-                createdEnd,
-              } = params;
-              const res = await apiPageAdminPaymentOrders({
-                paymentStatus,
-                payChannel,
-                createdStart,
-                createdEnd,
-                page: current || 1,
-                pageSize: pageSize || 10,
-              });
-              if (res?.code === SUCCESS_CODE && res.data) {
-                return {
-                  data: res.data.records || [],
-                  total: res.data.total || 0,
-                  success: true,
-                };
-              }
-            } catch (err) {
-              console.error('Failed to fetch payment orders:', err);
+    <WorkspaceLayout title={dict('PC.Routes.paymentOrders')}>
+      <XProTable<AdminPaymentOrderRecord>
+        actionRef={actionRef}
+        rowKey="id"
+        columns={columns}
+        scroll={{ x: 1500 }}
+        request={async (params) => {
+          try {
+            const {
+              current,
+              pageSize,
+              paymentStatus,
+              payChannel,
+              createdStart,
+              createdEnd,
+              bizOrderNo,
+            } = params;
+            const res = await apiPageAdminPaymentOrders({
+              paymentStatus,
+              payChannel,
+              createdStart,
+              createdEnd,
+              bizOrderNo,
+              page: current || 1,
+              pageSize: pageSize || 10,
+            });
+            if (res?.code === SUCCESS_CODE && res.data) {
+              return {
+                data: res.data.records || [],
+                total: res.data.total || 0,
+                success: true,
+              };
             }
-            return {
-              data: [],
-              total: 0,
-              success: true,
-            };
-          }}
-        />
-      </WorkspaceLayout>
-
-      <OrderDetail
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        data={currentRow}
+          } catch (err) {
+            console.error('Failed to fetch payment orders:', err);
+          }
+          return {
+            data: [],
+            total: 0,
+            success: true,
+          };
+        }}
       />
-    </>
+    </WorkspaceLayout>
   );
 };
 
