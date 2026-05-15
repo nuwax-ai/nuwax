@@ -26,7 +26,7 @@ const useAgentSubscription = () => {
     loading: loadingAgentSubscriptionPlans,
   } = useRequest(apiGetAgentSubscriptionPlanList, {
     manual: true,
-    loadingDelay: 300,
+    loadingDelay: 500,
     onSuccess: (data: SubscriptionPlanInfo[]) =>
       setAgentSubscriptionPlans(data),
   });

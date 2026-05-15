@@ -23,6 +23,9 @@ const useOpenApp = () => {
   const [appAgentDetailLoading, setAppAgentDetailLoading] =
     useState<boolean>(false);
 
+  // 付费弹窗状态
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+
   // 状态管理
   const { setIsMobile } = useModel('layout');
 
@@ -114,6 +117,8 @@ const useOpenApp = () => {
     createAppNewConversation,
     appAgentDetailLoading,
     setAppAgentDetailLoading,
+    openPaymentModal,
+    setOpenPaymentModal,
   };
 };
 
