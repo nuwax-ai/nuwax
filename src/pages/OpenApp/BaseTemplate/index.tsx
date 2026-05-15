@@ -512,7 +512,7 @@ const BaseTemplate: React.FC = () => {
                 className={cx(styles['nav-item'])}
                 onClick={() => setOpenPaymentModal(true)}
               >
-                <SvgIcon name="icons-nav-time" style={{ fontSize: 16 }} />
+                <SvgIcon name="icons-chat-collect" style={{ fontSize: 16 }} />
                 <span className="text-ellipsis">订阅</span>
               </div>
             </ConditionRender>
