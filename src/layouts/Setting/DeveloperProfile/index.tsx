@@ -277,6 +277,7 @@ const DeveloperProfile: React.FC = () => {
                   <Input
                     placeholder={dict('PC.Pages.Setting.inputNickName')}
                     maxLength={50}
+                    showCount
                   />
                 </Form.Item>
 
@@ -305,6 +306,7 @@ const DeveloperProfile: React.FC = () => {
                       'PC.Pages.Setting.DeveloperProfile.idCardNo',
                     )}
                     maxLength={18}
+                    showCount
                   />
                 </Form.Item>
               </div>
@@ -407,7 +409,8 @@ const DeveloperProfile: React.FC = () => {
                     placeholder={dict(
                       'PC.Pages.Setting.DeveloperProfile.bankName',
                     )}
-                    maxLength={100}
+                    maxLength={50}
+                    showCount
                   />
                 </Form.Item>
 
@@ -421,7 +424,8 @@ const DeveloperProfile: React.FC = () => {
                     placeholder={dict(
                       'PC.Pages.Setting.DeveloperProfile.branchName',
                     )}
-                    maxLength={100}
+                    maxLength={50}
+                    showCount
                   />
                 </Form.Item>
               </div>
@@ -465,6 +469,7 @@ const DeveloperProfile: React.FC = () => {
                       'PC.Pages.Setting.DeveloperProfile.cardNumber',
                     )}
                     maxLength={23} // 19位卡号 + 4个空格
+                    showCount
                   />
                 </Form.Item>
 
@@ -489,6 +494,7 @@ const DeveloperProfile: React.FC = () => {
                     )}
                     maxLength={50}
                     disabled
+                    showCount
                   />
                 </Form.Item>
               </div>
@@ -522,6 +528,7 @@ const DeveloperProfile: React.FC = () => {
                       'PC.Pages.Setting.DeveloperProfile.phone',
                     )}
                     maxLength={11}
+                    showCount
                   />
                 </Form.Item>
 
@@ -542,6 +549,7 @@ const DeveloperProfile: React.FC = () => {
                       'PC.Pages.Setting.DeveloperProfile.email',
                     )}
                     maxLength={100}
+                    showCount
                   />
                 </Form.Item>
               </div>
