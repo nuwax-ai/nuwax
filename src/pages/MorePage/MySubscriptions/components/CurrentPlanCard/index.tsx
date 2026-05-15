@@ -92,7 +92,7 @@ const CurrentPlanCard: React.FC<CurrentPlanCardProps> = ({ planInfo }) => {
               </div>
               <div className={cx(styles['plan-meta-item'])}>
                 <span className={cx(styles['meta-label'])}>
-                  {getCreditsLabel(planInfo.plan.period)}
+                  {getCreditsLabel()}
                 </span>
                 <span className={cx(styles['meta-value'])}>
                   <Statistic
