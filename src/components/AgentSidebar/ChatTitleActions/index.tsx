@@ -166,7 +166,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           ? [
               {
                 key: 'subscribe',
-                icon: 'icons-chat-subscribe',
+                icon: 'icons-chat-collect',
                 title: '订阅',
                 onClick: onSubscribe,
                 className: styles.subscribe,
