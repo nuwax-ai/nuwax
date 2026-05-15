@@ -58,6 +58,17 @@ const statusMap = {
       'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusDraft',
     ),
   },
+  [MerchantOnboardingStatusEnum.PENDING_REVIEW]: {
+    icon: (
+      <ClockCircleFilled
+        className={cx(styles['status-icon'], styles.reviewing)}
+      />
+    ),
+    color: 'info' as const,
+    text: dict(
+      'PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusPendingReview',
+    ),
+  },
   [MerchantOnboardingStatusEnum.UNDER_REVIEW]: {
     icon: (
       <ClockCircleFilled
@@ -100,7 +111,7 @@ const MerchantInfo: React.FC = () => {
   const [form] = Form.useForm();
   const location = useLocation();
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [onboardingId, setOnboardingId] = useState<number | undefined>(
     undefined,
   );
@@ -191,6 +202,7 @@ const MerchantInfo: React.FC = () => {
         const timeline: any[] = [];
         const currentStatus = data.status;
 
+        // Step 1: 草稿
         timeline.push({
           action: dict(mk('statusDraft')),
           time: data.created
@@ -199,18 +211,40 @@ const MerchantInfo: React.FC = () => {
           status: 'done',
         });
 
+        // Step 2: 待审核
+        const pastPendingReview = [
+          MerchantOnboardingStatusEnum.UNDER_REVIEW,
+          MerchantOnboardingStatusEnum.APPROVED,
+          MerchantOnboardingStatusEnum.REJECTED,
+        ].includes(currentStatus);
+        timeline.push({
+          action: dict(mk('statusPendingReview')),
+          time: '',
+          status:
+            currentStatus === MerchantOnboardingStatusEnum.PENDING_REVIEW
+              ? 'processing'
+              : pastPendingReview
+              ? 'done'
+              : 'pending',
+        });
+
+        // Step 3: 审核中
+        const pastUnderReview = [
+          MerchantOnboardingStatusEnum.APPROVED,
+          MerchantOnboardingStatusEnum.REJECTED,
+        ].includes(currentStatus);
         timeline.push({
           action: dict(mk('statusUnderReview')),
           time: '',
           status:
             currentStatus === MerchantOnboardingStatusEnum.UNDER_REVIEW
               ? 'processing'
-              : currentStatus === MerchantOnboardingStatusEnum.APPROVED ||
-                currentStatus === MerchantOnboardingStatusEnum.REJECTED
+              : pastUnderReview
               ? 'done'
               : 'pending',
         });
 
+        // Step 4: 已通过 or 已拒绝
         if (currentStatus === MerchantOnboardingStatusEnum.REJECTED) {
           timeline.push({
             action: dict(mk('statusRejected')),
@@ -327,6 +361,10 @@ const MerchantInfo: React.FC = () => {
 
   const statusInfo =
     statusMap[status] || statusMap[MerchantOnboardingStatusEnum.DRAFT];
+
+  const isFormEditable =
+    status === MerchantOnboardingStatusEnum.DRAFT ||
+    status === MerchantOnboardingStatusEnum.REJECTED;
 
   const renderUploadBox = (fieldName: string, imageUrl?: string) => {
     const isUploading = uploadingMap[fieldName]?.uploading;
@@ -446,6 +484,7 @@ const MerchantInfo: React.FC = () => {
           </Button>
           <Button
             loading={saving}
+            disabled={loading || !isFormEditable}
             onClick={() => handleSave(MerchantOnboardingStatusEnum.DRAFT)}
           >
             {dict(mk('saveDraft'))}
@@ -453,6 +492,7 @@ const MerchantInfo: React.FC = () => {
           <Button
             type="primary"
             loading={saving}
+            disabled={loading || !isFormEditable}
             onClick={() =>
               handleSave(MerchantOnboardingStatusEnum.UNDER_REVIEW)
             }

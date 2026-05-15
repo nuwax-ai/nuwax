@@ -4948,6 +4948,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.remark": "Remark",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionAuditProgress": "Audit Progress",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusDraft": "Draft",
+  "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusPendingReview": "Pending Review",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusUnderReview": "Under Review",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusApproved": "Approved",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusRejected": "Rejected",

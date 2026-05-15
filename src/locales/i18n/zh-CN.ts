@@ -4948,6 +4948,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.remark": "备注",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.sectionAuditProgress": "审核进度",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusDraft": "草稿",
+  "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusPendingReview": "待审核",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusUnderReview": "审核中",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusApproved": "已通过",
   "PC.Pages.SystemManagement.PaymentEarnings.MerchantInfo.statusRejected": "已拒绝",
