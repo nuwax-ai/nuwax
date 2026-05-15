@@ -4907,6 +4907,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "开发者收益与平台服务比例，配置时请注意支付平台收取的服务费成本",
   "PC.Pages.SystemPaymentConfig.gatewayUrl": "网关地址",
   "PC.Pages.SystemPaymentConfig.gatewayAlert": "支付平台每笔支付将收取 {0} 的服务费，与开发者分成比例的配置上注意考虑该成本",
+  "PC.Pages.SystemPaymentConfig.checkConnectivity": "检测连接",
+  "PC.Pages.SystemPaymentConfig.connectivitySuccess": "连接正常 (延迟: {0}ms)",
+  "PC.Pages.SystemPaymentConfig.connectivityFailed": "连接异常: {0}",
 
 
   // ── 系统管理 - 商户进件信息 ────────────────────────────

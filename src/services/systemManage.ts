@@ -11,6 +11,7 @@ import type {
   ModelConfigDto,
   NotifyMessageSendParams,
   PayConfigResult,
+  PayConnectivityResult,
   PublishedDto,
   SandboxConfigItem,
   SandboxGlobalConfig,
@@ -197,6 +198,14 @@ export async function apiQueryPayConfig(): Promise<
   RequestResponse<PayConfigResult>
 > {
   return request('/api/system/pay/config/query', {
+    method: 'POST',
+  });
+}
+
+export async function apiCheckPayConnectivity(): Promise<
+  RequestResponse<PayConnectivityResult>
+> {
+  return request('/api/system/pay/config/check-connectivity', {
     method: 'POST',
   });
 }

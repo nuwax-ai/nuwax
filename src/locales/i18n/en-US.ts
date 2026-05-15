@@ -4907,6 +4907,9 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "Ratio between developer earnings and platform services. Please consider the service fee cost of the payment platform when configuring.",
   "PC.Pages.SystemPaymentConfig.gatewayUrl": "Gateway Address",
   "PC.Pages.SystemPaymentConfig.gatewayAlert": "The payment platform will charge a {0} service fee per transaction. Please consider this cost when configuring the developer share ratio.",
+  "PC.Pages.SystemPaymentConfig.checkConnectivity": "Check Connection",
+  "PC.Pages.SystemPaymentConfig.connectivitySuccess": "Connected (Latency: {0}ms)",
+  "PC.Pages.SystemPaymentConfig.connectivityFailed": "Connection failed: {0}",
 
 
   // ── System Management - Merchant Info ────────────────────────────
