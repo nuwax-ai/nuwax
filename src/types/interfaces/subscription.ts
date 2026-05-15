@@ -412,6 +412,7 @@ export interface MerchantInfoData {
 
 export enum MerchantOnboardingStatusEnum {
   DRAFT = 'DRAFT',
+  PENDING_REVIEW = 'PENDING_REVIEW',
   UNDER_REVIEW = 'UNDER_REVIEW',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',

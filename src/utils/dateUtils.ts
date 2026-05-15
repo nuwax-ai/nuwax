@@ -30,3 +30,15 @@ export function formatDateTime(date?: string | number | Date | null): string {
   if (!date) return dict('PC.Common.Global.emptyPlaceholder');
   return dayjs(date).format('L LT');
 }
+
+/**
+ * Fixed pattern `YYYY-MM-DD HH:mm:ss` (not locale-relative; common in admin tables).
+ * Returns `-` when missing or invalid.
+ */
+export function formatDateTimeYmdHms(
+  date?: string | number | Date | null,
+): string {
+  if (date === undefined || date === null || date === '') return '-';
+  const d = dayjs(date);
+  return d.isValid() ? d.format('YYYY-MM-DD HH:mm:ss') : '-';
+}
