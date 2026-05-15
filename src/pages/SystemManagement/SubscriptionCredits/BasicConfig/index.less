@@ -1,58 +1,82 @@
 @import '@/styles/token.less';
 
-.sectionTitle {
-  margin-bottom: @marginXs;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.sectionDesc {
-  display: block;
-  margin-bottom: @marginSm;
-}
-
-.sectionBlock {
-  padding-bottom: @padding;
-  margin-bottom: @margin;
-  border-bottom: 1px solid @colorBorderSecondary;
-}
-
-.exchangeNotice {
-  flex: 1;
-  padding: @paddingXs @paddingSm;
-  background: #fafafa;
-  border: 1px solid @colorBorderSecondary;
-  border-radius: @borderRadius;
-}
-
-.exchangeLine {
+.page {
   display: flex;
-  align-items: center;
-  gap: @marginSm;
-  margin-bottom: @marginSm;
-}
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 
-.exchangeLineLabel {
-  flex: 0 0 80px;
-  color: @colorTextLabel;
-  line-height: 32px;
-}
+  .scrollBody {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
 
-.exchangeLineContent {
-  display: inline-flex;
-  align-items: center;
-  gap: @marginSm;
-}
+    .sectionTitle {
+      margin-bottom: @marginXs;
+      font-size: 15px;
+      font-weight: 600;
+    }
 
-.exchangeEqual {
-  color: @colorTextSecondary;
-}
+    .sectionDesc {
+      display: block;
+      margin-bottom: @marginSm;
+    }
 
-.exchangeUnit {
-  color: @colorText;
-  white-space: nowrap;
-}
+    .sectionBlock {
+      padding-bottom: @padding;
+      margin-bottom: @margin;
+      border-bottom: 1px solid @colorBorderSecondary;
+    }
 
-.exchangeDescWrap {
-  flex: 1;
+    .exchangeNotice {
+      flex: 1;
+      padding: @paddingXs @paddingSm;
+      background: #fafafa;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+    }
+
+    .exchangeLine {
+      display: flex;
+      align-items: center;
+      gap: @marginSm;
+      margin-bottom: @marginSm;
+    }
+
+    .exchangeLineLabel {
+      flex: 0 0 80px;
+      color: @colorTextLabel;
+      line-height: 32px;
+    }
+
+    .exchangeLineContent {
+      display: inline-flex;
+      align-items: center;
+      gap: @marginSm;
+    }
+
+    .exchangeEqual {
+      color: @colorTextSecondary;
+    }
+
+    .exchangeUnit {
+      color: @colorText;
+      white-space: nowrap;
+    }
+
+    .exchangeDescWrap {
+      flex: 1;
+    }
+  }
+
+  .footerBar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: @marginSm;
+    padding-top: @paddingSm;
+    margin-top: @marginXs;
+    border-top: 1px solid @colorBorderSecondary;
+  }
 }
