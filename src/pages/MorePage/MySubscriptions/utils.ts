@@ -55,17 +55,8 @@ export const getFeeLabel = (period: MyPlanPeriodEnum) => {
 /**
  * 获取积分标签文案 (如: 每月积分)
  */
-export const getCreditsLabel = (period: MyPlanPeriodEnum) => {
-  switch (period) {
-    case MyPlanPeriodEnum.Month:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsMonth');
-    case MyPlanPeriodEnum.Quarter:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsQuarter');
-    case MyPlanPeriodEnum.Year:
-      return dict('PC.Pages.MorePage.MySubscriptions.creditsYear');
-    default:
-      return '';
-  }
+export const getCreditsLabel = () => {
+  return dict('PC.Pages.MorePage.MySubscriptions.creditsMonth');
 };
 
 /**
