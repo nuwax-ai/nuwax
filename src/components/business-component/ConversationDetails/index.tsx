@@ -106,6 +106,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     setAppAgentDetailLoading,
+    openPaymentModal,
+    setOpenPaymentModal,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -137,9 +139,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 页面复制弹窗状态
   const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
-
-  // 付费弹窗状态
-  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
 
   //======================================用户自带的url地址中的params参数======================================
 
