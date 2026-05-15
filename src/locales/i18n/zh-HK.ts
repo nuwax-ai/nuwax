@@ -3525,6 +3525,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.collectSuccess": "收藏成功",
   "PC.Pages.Square.PluginHeader.publishedAt": "發佈於{0}",
   "PC.Pages.Square.SingleAgent.startUsing": "開始使用",
+  "PC.Pages.Square.SingleAgent.paid": "付費",
+  "PC.Pages.Square.SingleAgent.subscribed": "已訂閱",
   "PC.Pages.Square.SkillDetail.copyTemplate": "複製模板",
   "PC.Pages.Square.SkillDetail.downloadExport": "下載導出",
   "PC.Pages.Square.SkillDetail.exportFailed": "導出失敗",

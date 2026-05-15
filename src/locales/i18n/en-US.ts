@@ -3717,6 +3717,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.collectSuccess": "Added to favorites successfully",
   "PC.Pages.Square.PluginHeader.publishedAt": "Published on {0}",
   "PC.Pages.Square.SingleAgent.startUsing": "Start Using",
+  "PC.Pages.Square.SingleAgent.paid": "Paid",
+  "PC.Pages.Square.SingleAgent.subscribed": "Subscribed",
   "PC.Pages.Square.SkillDetail.copyTemplate": "Copy Template",
   "PC.Pages.Square.SkillDetail.downloadExport": "Download Export",
   "PC.Pages.Square.SkillDetail.exportFailed": "Export failed",

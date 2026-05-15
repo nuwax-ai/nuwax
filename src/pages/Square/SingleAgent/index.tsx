@@ -41,6 +41,8 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     description,
     statistics,
     collect,
+    paymentRequired,
+    subscribed,
   } = publishedItemInfo;
 
   // 智能体收藏
@@ -73,6 +75,22 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
       runCollectAgent(targetId);
     }
   };
+
+  /** 需付费时在卡片角标展示「付费 / 已订阅」（与 SquarePublishedItemInfo 字段对齐） */
+  const paymentExtra =
+    paymentRequired === true ? (
+      <span
+        className={cx(
+          styles['payment-badge'],
+          subscribed && styles['payment-badge-subscribed'],
+        )}
+      >
+        {subscribed
+          ? dict('PC.Pages.Square.SingleAgent.subscribed')
+          : dict('PC.Pages.Square.SingleAgent.paid')}
+      </span>
+    ) : undefined;
+
   return (
     <CardWrapper
       className={cx(styles['card-wrapper'])}
@@ -82,6 +100,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
       content={description}
       icon={icon}
       defaultIcon={agentImage}
+      extra={paymentExtra}
       onClick={onClick}
       footer={
         <>

@@ -1,3 +1,16 @@
+@import '@/styles/token';
+
+.payment-badge {
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+  color: @colorTextLabel;
+  white-space: nowrap;
+}
+
+.payment-badge-subscribed {
+  color: @colorSuccess;
+}
+
 .card-wrapper {
   position: relative;
 
@@ -40,7 +53,7 @@
       .text {
         display: flex;
         align-items: center;
-        font-size: 12px;
+        font-size: @fontSizeSm;
         color: #828894;
         gap: 4px;
       }

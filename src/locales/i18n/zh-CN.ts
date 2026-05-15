@@ -3717,6 +3717,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Square.PluginHeader.collectSuccess": "收藏成功",
   "PC.Pages.Square.PluginHeader.publishedAt": "发布于{0}",
   "PC.Pages.Square.SingleAgent.startUsing": "开始使用",
+  "PC.Pages.Square.SingleAgent.paid": "付费",
+  "PC.Pages.Square.SingleAgent.subscribed": "已订阅",
   "PC.Pages.Square.SkillDetail.copyTemplate": "复制模板",
   "PC.Pages.Square.SkillDetail.downloadExport": "下载导出",
   "PC.Pages.Square.SkillDetail.exportFailed": "导出失败",
