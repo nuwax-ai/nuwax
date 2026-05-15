@@ -2662,6 +2662,7 @@ export const EN_US: SystemLangMap = {
   // ── My Subscriptions ──
   "PC.Pages.MorePage.MySubscriptions.currentPlan": "Current Subscription",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "Active",
+  "PC.Pages.MorePage.MySubscriptions.statusHot": "Hot",
   "PC.Pages.MorePage.MySubscriptions.feeMonth": "Monthly Fee",
   "PC.Pages.MorePage.MySubscriptions.feeQuarter": "Quarterly Fee",
   "PC.Pages.MorePage.MySubscriptions.feeYear": "Yearly Fee",
