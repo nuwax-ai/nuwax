@@ -362,9 +362,7 @@ const MerchantInfo: React.FC = () => {
   const statusInfo =
     statusMap[status] || statusMap[MerchantOnboardingStatusEnum.DRAFT];
 
-  const isFormEditable =
-    status === MerchantOnboardingStatusEnum.DRAFT ||
-    status === MerchantOnboardingStatusEnum.REJECTED;
+  const isFormEditable = status !== MerchantOnboardingStatusEnum.UNDER_REVIEW;
 
   const renderUploadBox = (fieldName: string, imageUrl?: string) => {
     const isUploading = uploadingMap[fieldName]?.uploading;
