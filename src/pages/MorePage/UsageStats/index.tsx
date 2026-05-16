@@ -3,20 +3,19 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiGetResourceStatDetail,
-  apiGetResourceStatSummary,
+  apiGetMyResourceStatDetail,
+  apiGetMyResourceStatSummary,
 } from '@/services/systemManage';
 import type {
   ResourceStatDTO,
   ResourceStatSummaryDTO,
-  StatGroup,
 } from '@/types/interfaces/systemManage';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, DatePicker, Skeleton, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'umi';
+import { useLocation } from 'umi';
 import styles from './index.less';
 
 const { RangePicker } = DatePicker;
@@ -26,14 +25,6 @@ const formatNumber = (num: number | undefined): string => {
   if (num >= 100000000) return `${(num / 100000000).toFixed(1)}亿`;
   if (num >= 10000) return `${(num / 10000).toFixed(1)}万`;
   return num.toLocaleString();
-};
-
-const formatAmount = (num: number | undefined): string => {
-  if (num === null || num === undefined) return '¥0.00';
-  return `¥${num.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 };
 
 const SummaryCard: React.FC<{
@@ -67,9 +58,8 @@ const SummaryCard: React.FC<{
   );
 };
 
-const ModelMonitor: React.FC = () => {
+const UsageStats: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const actionRef = useRef<ActionType>();
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().startOf('day'),
@@ -84,9 +74,7 @@ const ModelMonitor: React.FC = () => {
     async (start?: string, end?: string) => {
       setSummaryLoading(true);
       try {
-        const res = await apiGetResourceStatSummary({
-          userId: -1,
-          type: 'SALES',
+        const res = await apiGetMyResourceStatSummary({
           dtStart: start || dateRange[0].format('YYYYMMDD'),
           dtEnd: end || dateRange[1].format('YYYYMMDD'),
         });
@@ -121,11 +109,6 @@ const ModelMonitor: React.FC = () => {
     actionRef.current?.reload();
   }, [dateRange, fetchSummary]);
 
-  const handleRefresh = useCallback(() => {
-    fetchSummary();
-    actionRef.current?.reload();
-  }, [fetchSummary]);
-
   const handleReset = useCallback(() => {
     const today = dayjs().startOf('day');
     const todayEnd = dayjs().endOf('day');
@@ -137,9 +120,7 @@ const ModelMonitor: React.FC = () => {
 
   const request = async (params: any) => {
     const { current, pageSize } = params;
-    const res = await apiGetResourceStatDetail({
-      userId: -1,
-      type: 'SALES',
+    const res = await apiGetMyResourceStatDetail({
       dtStart: dateRange[0].format('YYYYMMDD'),
       dtEnd: dateRange[1].format('YYYYMMDD'),
       pageNum: current,
@@ -147,9 +128,7 @@ const ModelMonitor: React.FC = () => {
     });
 
     if (res.code !== SUCCESS_CODE) {
-      message.error(
-        res.message || dict('PC.Pages.GlobalModelManage.fetchDataFailed'),
-      );
+      message.error(res.message || dict('PC.Pages.UsageStats.fetchDataFailed'));
       return { data: [], total: 0, success: false };
     }
 
@@ -161,117 +140,80 @@ const ModelMonitor: React.FC = () => {
     };
   };
 
-  const getSummaryMetrics = useCallback((group: StatGroup | undefined) => {
-    const g =
-      group ||
-      ({
-        modelCallCount: 0,
-        failedModelCallCount: 0,
-        totalInputTokens: 0,
-        totalCacheInputTokens: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        totalAmount: 0,
-      } as StatGroup);
+  const overviewMetrics = React.useMemo(() => {
+    const c = summaryData?.consumption;
     return [
       {
-        label: dict('PC.Pages.ModelMonitor.modelCallCount'),
-        value: formatNumber(g.modelCallCount),
+        label: dict('PC.Pages.UsageStats.callCount'),
+        value: formatNumber(
+          (c?.modelCallCount ?? 0) +
+            (c?.agentCallCount ?? 0) +
+            (c?.toolCallCount ?? 0),
+        ),
       },
       {
-        label: dict('PC.Pages.ModelMonitor.failedModelCallCount'),
-        value: formatNumber(g.failedModelCallCount),
+        label: dict('PC.Pages.UsageStats.totalInputTokens'),
+        value: formatNumber(
+          (c?.totalInputTokens ?? 0) + (c?.totalCacheInputTokens ?? 0),
+        ),
       },
       {
-        label: dict('PC.Pages.ModelMonitor.totalInputTokens'),
-        value: formatNumber(g.totalInputTokens),
+        label: dict('PC.Pages.UsageStats.cacheInputTokens'),
+        value: formatNumber(c?.totalCacheInputTokens),
       },
       {
-        label: dict('PC.Pages.ModelMonitor.cacheInputTokens'),
-        value: formatNumber(g.totalCacheInputTokens),
+        label: dict('PC.Pages.UsageStats.inputTokens'),
+        value: formatNumber(c?.inputTokens ?? 0),
       },
       {
-        label: dict('PC.Pages.ModelMonitor.inputTokens'),
-        value: formatNumber(g.inputTokens ?? 0),
+        label: dict('PC.Pages.UsageStats.outputTokens'),
+        value: formatNumber(c?.totalOutputTokens),
       },
       {
-        label: dict('PC.Pages.ModelMonitor.outputTokens'),
-        value: formatNumber(g.totalOutputTokens),
-      },
-      {
-        label: dict('PC.Pages.ModelMonitor.totalAmount'),
-        value: formatAmount(g.totalAmount),
+        label: dict('PC.Pages.UsageStats.creditAmount'),
+        value: formatNumber(c?.totalCreditAmount),
         highlight: true,
       },
     ];
-  }, []);
-
-  const mergedGroup: StatGroup | undefined = React.useMemo(() => {
-    const c = summaryData?.consumption;
-    const s = summaryData?.sales;
-    if (!c && !s) return undefined;
-    const keys: (keyof StatGroup)[] = [
-      'totalInputTokens',
-      'totalOutputTokens',
-      'totalCacheInputTokens',
-      'toolCount',
-      'toolCallCount',
-      'agentCount',
-      'agentCallCount',
-      'modelCallCount',
-      'failedModelCallCount',
-      'failedToolCallCount',
-      'failedAgentCallCount',
-      'totalCreditAmount',
-      'totalAmount',
-    ];
-    const result = {} as StatGroup;
-    for (const k of keys) {
-      result[k] = (c?.[k] ?? 0) + (s?.[k] ?? 0);
-    }
-    return result;
   }, [summaryData]);
-
-  const overviewMetrics = getSummaryMetrics(mergedGroup);
 
   const columns: ProColumns<ResourceStatDTO>[] = [
     {
-      title: dict('PC.Pages.ModelMonitor.colModelName'),
+      title: dict('PC.Pages.UsageStats.colModelName'),
       dataIndex: 'targetName',
       width: 160,
       fixed: 'left',
       hideInSearch: true,
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colCallCount'),
+      title: dict('PC.Pages.UsageStats.colType'),
+      dataIndex: 'targetType',
+      width: 100,
+      hideInSearch: true,
+    },
+    {
+      title: dict('PC.Pages.UsageStats.colCallCount'),
       dataIndex: 'callCount',
       width: 100,
       hideInSearch: true,
       render: (_, record) => formatNumber(record.callCount),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colCallFailedCount'),
-      dataIndex: 'callFailedCount',
-      width: 100,
-      hideInSearch: true,
-      render: (_, record) => formatNumber(record.callFailedCount),
-    },
-    {
-      title: dict('PC.Pages.ModelMonitor.colTotalInputTokens'),
+      title: dict('PC.Pages.UsageStats.colTotalInputTokens'),
       dataIndex: 'inputTokens',
       width: 130,
       hideInSearch: true,
       render: (_, record) => formatNumber(record.inputTokens),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colCacheInputTokens'),
+      title: dict('PC.Pages.UsageStats.colCacheInputTokens'),
       dataIndex: 'cacheInputTokens',
       width: 140,
       hideInSearch: true,
       render: (_, record) => formatNumber(record.cacheInputTokens),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colInputTokens'),
+      title: dict('PC.Pages.UsageStats.colInputTokens'),
       width: 120,
       hideInSearch: true,
       render: (_, record) =>
@@ -280,52 +222,34 @@ const ModelMonitor: React.FC = () => {
         ),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colOutputTokens'),
+      title: dict('PC.Pages.UsageStats.colOutputTokens'),
       dataIndex: 'outputTokens',
       width: 120,
       hideInSearch: true,
       render: (_, record) => formatNumber(record.outputTokens),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colFeeAmount'),
-      dataIndex: 'feeAmount',
-      width: 130,
+      title: dict('PC.Pages.UsageStats.colCreditAmount'),
+      dataIndex: 'creditAmount',
+      width: 120,
       hideInSearch: true,
-      render: (_, record) => formatAmount(record.feeAmount),
+      render: (_, record) => formatNumber(record.creditAmount),
     },
     {
-      title: dict('PC.Pages.ModelMonitor.colDt'),
+      title: dict('PC.Pages.UsageStats.colDt'),
       dataIndex: 'dt',
       width: 120,
       hideInSearch: true,
     },
-    {
-      title: dict('PC.Pages.ModelMonitor.colLog'),
-      valueType: 'option',
-      width: 80,
-      align: 'center',
-      fixed: 'right',
-      render: (_, record) => (
-        <a
-          onClick={() => {
-            navigate(
-              `/system/log-query/running-log?targetId=${record.targetId}&targetType=${record.targetType}`,
-            );
-          }}
-        >
-          {dict('PC.Pages.ModelMonitor.viewLog')}
-        </a>
-      ),
-    },
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.ModelMonitor.pageTitle')} hideScroll>
-      <div className={styles['model-monitor-container']}>
+    <WorkspaceLayout title={dict('PC.Pages.UsageStats.pageTitle')} hideScroll>
+      <div className={styles['usage-stats-container']}>
         {/* 筛选栏 */}
         <div className={styles['filter-bar']}>
           <span className={styles['filter-label']}>
-            {dict('PC.Pages.ModelMonitor.timeRange')}
+            {dict('PC.Pages.UsageStats.timeRange')}
           </span>
           <RangePicker
             value={dateRange}
@@ -341,15 +265,12 @@ const ModelMonitor: React.FC = () => {
             icon={<SearchOutlined />}
             onClick={handleSearch}
           >
-            {dict('PC.Pages.ModelMonitor.search')}
+            {dict('PC.Pages.UsageStats.search')}
           </Button>
           <Button onClick={handleReset}>
-            {dict('PC.Pages.ModelMonitor.reset')}
+            {dict('PC.Pages.UsageStats.reset')}
           </Button>
           <div style={{ flex: 1 }} />
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-            {dict('PC.Pages.ModelMonitor.refreshData')}
-          </Button>
         </div>
 
         {/* 统计卡片 */}
@@ -382,4 +303,4 @@ const ModelMonitor: React.FC = () => {
   );
 };
 
-export default ModelMonitor;
+export default UsageStats;

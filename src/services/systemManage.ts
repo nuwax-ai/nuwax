@@ -797,3 +797,31 @@ export async function apiGetResourceStatDetail(
     params,
   });
 }
+
+/**
+ * 获取当前用户资源统计汇总
+ */
+export async function apiGetMyResourceStatSummary(params?: {
+  dtStart?: string;
+  dtEnd?: string;
+}): Promise<RequestResponse<ResourceStatSummaryDTO>> {
+  return request('/api/bill/resource-stat/my-summary', {
+    method: 'GET',
+    params: { ...params, type: 'CONSUMPTION' },
+  });
+}
+
+/**
+ * 获取当前用户资源统计明细
+ */
+export async function apiGetMyResourceStatDetail(params: {
+  dtStart?: string;
+  dtEnd?: string;
+  pageNum?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
+  return request('/api/bill/resource-stat/my', {
+    method: 'GET',
+    params: { ...params, type: 'CONSUMPTION' },
+  });
+}

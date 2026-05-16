@@ -206,6 +206,11 @@ const routes = [
             component: '@/pages/MorePage/CreditRecords',
             hideInMenu: true,
           },
+          {
+            path: 'usage-stats',
+            name: getRouteLabel('PC.Routes.usageStats'),
+            component: '@/pages/MorePage/UsageStats',
+          },
         ],
       },
       // 系统管理统一管理
