@@ -5,7 +5,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Switch, Tag, message } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiDeleteToolPricing,
@@ -18,7 +18,7 @@ import {
   ResourcePricingType,
   ToolPricingTargetType,
 } from '../../types/resource';
-import ModelPricingModal from '../ModelPricingModal';
+import ModelPricingModal from './ModelPricingModal';
 import styles from './index.less';
 
 // 定价类型标签映射
@@ -31,12 +31,17 @@ const PRICING_TYPE_LABEL_MAP: Record<ResourcePricingType, string> = {
 
 interface ModelPricingTabProps {
   spaceId: number;
+  /** 将「添加模型」注册到上级页面工具栏右侧 */
+  registerToolbarRight?: (node: React.ReactNode | null) => void;
 }
 
 /**
  * 模型定价模块
  */
-const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
+const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
+  spaceId,
+  registerToolbarRight,
+}) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
@@ -69,11 +74,26 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
     },
   });
 
-  // 新增模型定价
-  const openAdd = () => {
+  /** 顶部「添加模型」触发（通过 ref 供工具栏挂载，避免过时闭包） */
+  const openAddRef = useRef<() => void>(() => {});
+  openAddRef.current = () => {
     setEditItem(null);
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!registerToolbarRight) return;
+    registerToolbarRight(
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={() => openAddRef.current()}
+      >
+        {dict('PC.Pages.SpaceResourcePricing.addModel')}
+      </Button>,
+    );
+    return () => registerToolbarRight(null);
+  }, [registerToolbarRight]);
 
   // 编辑模型定价
   const openEdit = (item: ResourcePricingConfigInfo) => {
@@ -145,20 +165,20 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.modelName'),
-      dataIndex: 'targetId',
-      key: 'targetId',
+      dataIndex: 'name',
+      key: 'name',
       width: 200,
       fixed: 'left',
       search: false,
-      render: (_, record) => record.targetId || '',
+      render: (_, record) => record.targetObjectInfo?.name || '',
     },
     {
-      title: dict('PC.Pages.SpaceResourcePricing.provider'),
-      dataIndex: 'provider',
-      key: 'provider',
+      title: dict('PC.Pages.SpaceResourcePricing.modelId'),
+      dataIndex: 'targetId',
+      key: 'targetId',
       width: 120,
       search: false,
-      render: (_, record) => record.targetObjectInfo?.name || '',
+      render: (_, record) => record.targetId || '',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
@@ -178,36 +198,31 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
       key: 'tiers',
       search: false,
       render: (_, record) => (
-        <div className={styles['model-pricing-tier-tags']}>
+        <div className={styles['model-tier-list']}>
           {/* 模型阶梯价格配置 */}
           {(record.modelPriceTiers || []).map((tier, index) => (
-            <Tag key={index} className={styles['model-pricing-tier-tag']}>
-              <span className={styles['model-pricing-tier-tag-context']}>
+            <Tag key={index} className={styles['model-tier-item']}>
+              {/* 上下文长度 */}
+              <span className={styles['model-tier-context']}>
                 {`≤${tier.contextLength}K`}
               </span>
-              <span className={styles['model-pricing-tier-tag-separator']}>
-                |
-              </span>
-              <span className={styles['model-pricing-tier-tag-price-item']}>
+              <span className={styles['model-tier-separator']}>|</span>
+              {/* 输入价格 */}
+              <span className={styles['model-tier-price']}>
                 {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
                 {tier.inputPrice}
               </span>
-              <span className={styles['model-pricing-tier-tag-separator']}>
-                |
-              </span>
-              <span className={styles['model-pricing-tier-tag-price-item']}>
+              <span className={styles['model-tier-separator']}>|</span>
+              {/* 输出价格 */}
+              <span className={styles['model-tier-price']}>
                 {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
                 {tier.outputPrice}
               </span>
               {/* 缓存价格 */}
               {tier.cachePrice > 0 && (
                 <>
-                  <span className={styles['model-pricing-tier-tag-separator']}>
-                    |
-                  </span>
-                  <span
-                    className={styles['model-pricing-tier-tag-cache-price']}
-                  >
+                  <span className={styles['model-tier-separator']}>|</span>
+                  <span className={styles['model-tier-cache-price']}>
                     {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
                     {tier.cachePrice}
                   </span>
@@ -275,11 +290,6 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
 
   return (
     <>
-      <div className={styles['model-pricing-tab-header']}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
-          {dict('PC.Pages.SpaceResourcePricing.addModel')}
-        </Button>
-      </div>
       <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
@@ -288,6 +298,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
         pagination={false}
         request={request}
         toolBarRender={false}
+        scroll={{ x: 'max-content' }}
       />
 
       {/* 模型定价弹窗 */}
