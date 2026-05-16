@@ -86,14 +86,16 @@ export interface AcpPermissionInteraction {
 export type AgentInterventionAction = 'submit' | 'cancel' | 'skip' | 'timeout';
 
 export interface AgentInterventionRespondRequest {
-  interventionId: string;
-  revision: number;
-  source: 'acp_permission';
-  protocol: 'acp';
-  callbackTarget: {
-    kind: 'electron' | 'rcoder';
-    targetId: string;
+  permission_resolve_request: {
+    request_permission_response: {
+      outcome:
+        | { Selected: { option_id: string } }
+        | { Cancelled: Record<string, never> | null };
+    };
+    session_id: string;
+    tool_call_id: string;
+    save_rule?: boolean;
   };
-  action: AgentInterventionAction;
-  acpResponse: AcpRequestPermissionResponse;
+  user_id?: string;
+  conversation_id?: number;
 }

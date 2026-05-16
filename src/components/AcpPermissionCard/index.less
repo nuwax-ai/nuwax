@@ -3,80 +3,48 @@
 
 .card {
   margin-top: @paddingSm;
-  padding: @padding;
+  padding: @paddingSm @padding;
   border: @lineWidth solid @colorBorderSecondary;
   border-radius: @borderRadius;
   background: @colorBgContainer;
-  box-shadow: @boxShadowTertiary;
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: @paddingSm;
-  margin-bottom: @paddingSm;
+  align-items: center;
+  gap: @paddingXs;
+  margin-bottom: @paddingXs;
 }
 
-.eyebrow {
-  color: @colorTextTertiary;
-  font-size: @fontSizeSm;
-  line-height: @lineHeightSm;
+.icon {
+  flex-shrink: 0;
+  color: @colorPrimary;
+  font-size: @fontSizeLg;
 }
 
 .title {
-  margin-top: @paddingXxs;
+  flex: 1;
+  min-width: 0;
   color: @colorTextBase;
   font-size: @fontSize;
-  font-weight: @fontWeightStrong;
   line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.meta {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: @paddingXs;
-  align-items: center;
-  margin-bottom: @paddingSm;
+.kindTag,
+.statusTag {
+  flex-shrink: 0;
+  margin: 0;
 }
 
-.rawInput {
-  margin-bottom: @paddingSm;
-
-  pre {
-    max-height: 180px;
-    margin: @paddingXxs 0 0;
-    padding: @paddingSm;
-    overflow: auto;
-    color: @colorText;
-    font-size: @fontSizeSm;
-    line-height: @lineHeightSm;
-    white-space: pre-wrap;
-    word-break: break-word;
-    background: @colorFillQuaternary;
-    border-radius: @borderRadiusSm;
-  }
-}
-
-.sectionTitle {
-  color: @colorTextSecondary;
-  font-size: @fontSizeSm;
-}
-
-.options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: @paddingXs;
+.actions {
+  // no extra wrapping needed; buttons are spaced by antd Space
 }
 
 .error {
-  margin-top: @paddingSm;
-  color: @colorError;
-  font-size: @fontSizeSm;
-}
-
-.submitted {
-  margin-top: @paddingSm;
-  color: @colorSuccess;
+  display: block;
+  margin-top: @paddingXs;
   font-size: @fontSizeSm;
 }

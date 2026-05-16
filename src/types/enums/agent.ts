@@ -111,6 +111,7 @@ export enum ConversationEventTypeEnum {
   MESSAGE = 'MESSAGE',
   FINAL_RESULT = 'FINAL_RESULT',
   ERROR = 'ERROR',
+  ACP_REQUEST_PERMISSION = 'ACP_REQUEST_PERMISSION',
 }
 
 // assistant 模型回复；user 用户消息,可用值:USER,ASSISTANT,SYSTEM,FUNCTION

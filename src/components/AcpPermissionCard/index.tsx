@@ -3,9 +3,13 @@ import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
 } from '@/types/interfaces/acpIntervention';
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Tag, Typography } from 'antd';
-import React, { useMemo } from 'react';
+import {
+  CheckOutlined,
+  CloseOutlined,
+  SafetyOutlined,
+} from '@ant-design/icons';
+import { Button, Space, Tag, Typography } from 'antd';
+import React from 'react';
 import styles from './index.less';
 
 const { Text } = Typography;
@@ -15,22 +19,6 @@ interface AcpPermissionCardProps {
   onRespond?: (response: AcpRequestPermissionResponse) => void;
 }
 
-const formatJson = (value: unknown): string => {
-  if (value === undefined || value === null) {
-    return t('PC.Common.Global.noData');
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-};
-
 const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   interaction,
   onRespond,
@@ -39,12 +27,8 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const toolCall = request.toolCall || {};
   const isSubmitting = interaction.responseStatus === 'submitting';
   const isSubmitted = interaction.responseStatus === 'submitted';
+  const isFailed = interaction.responseStatus === 'failed';
   const disabled = isSubmitting || isSubmitted || !onRespond;
-
-  const rawInputText = useMemo(
-    () => formatJson(toolCall.rawInput),
-    [toolCall.rawInput],
-  );
 
   const handleSelect = (optionId: string) => {
     onRespond?.({
@@ -63,67 +47,62 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     });
   };
 
+  const title =
+    toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
+
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <div>
-          <div className={styles.eyebrow}>
-            {t('PC.Components.AcpPermissionCard.eyebrow')}
-          </div>
-          <div className={styles.title}>
-            {toolCall.title?.trim() ||
-              t('PC.Components.AcpPermissionCard.defaultTitle')}
-          </div>
-        </div>
-        {toolCall.kind && <Tag>{toolCall.kind}</Tag>}
-      </div>
-
-      <div className={styles.meta}>
-        <Text type="secondary">toolCallId</Text>
-        <Text code copyable>
-          {toolCall.toolCallId || '-'}
+        <SafetyOutlined className={styles.icon} />
+        <Text strong className={styles.title}>
+          {title}
         </Text>
+        {toolCall.kind && (
+          <Tag color="processing" className={styles.kindTag}>
+            {toolCall.kind}
+          </Tag>
+        )}
+        {isSubmitted && (
+          <Tag color="success" className={styles.statusTag}>
+            {t('PC.Components.AcpPermissionCard.submitted')}
+          </Tag>
+        )}
       </div>
 
-      <div className={styles.rawInput}>
-        <div className={styles.sectionTitle}>rawInput</div>
-        <pre>{rawInputText}</pre>
+      <div className={styles.actions}>
+        <Space size={8} wrap>
+          {request.options?.map((option) => {
+            const isAllow = option.kind.startsWith('allow');
+            return (
+              <Button
+                key={option.optionId}
+                size="small"
+                type={isAllow ? 'primary' : 'default'}
+                danger={option.kind.startsWith('reject')}
+                icon={isAllow ? <CheckOutlined /> : <CloseOutlined />}
+                loading={
+                  isSubmitting &&
+                  interaction.selectedOptionId === option.optionId
+                }
+                disabled={disabled}
+                onClick={() => handleSelect(option.optionId)}
+              >
+                {option.name || option.optionId}
+              </Button>
+            );
+          })}
+          {!isSubmitted && (
+            <Button size="small" disabled={disabled} onClick={handleCancel}>
+              {t('PC.Common.Global.cancel')}
+            </Button>
+          )}
+        </Space>
       </div>
 
-      <div className={styles.options}>
-        {request.options?.map((option) => (
-          <Button
-            key={option.optionId}
-            type={option.kind.startsWith('allow') ? 'primary' : 'default'}
-            danger={option.kind.startsWith('reject')}
-            icon={
-              option.kind.startsWith('allow') ? (
-                <CheckOutlined />
-              ) : (
-                <CloseOutlined />
-              )
-            }
-            loading={
-              isSubmitting && interaction.selectedOptionId === option.optionId
-            }
-            disabled={disabled}
-            onClick={() => handleSelect(option.optionId)}
-          >
-            {option.name || option.optionId}
-          </Button>
-        ))}
-        <Button disabled={disabled} onClick={handleCancel}>
-          {t('PC.Common.Global.cancel')}
-        </Button>
-      </div>
-
-      {interaction.responseStatus === 'failed' && (
-        <div className={styles.error}>{interaction.errorMessage}</div>
-      )}
-      {isSubmitted && (
-        <div className={styles.submitted}>
-          {t('PC.Components.AcpPermissionCard.submitted')}
-        </div>
+      {isFailed && interaction.errorMessage && (
+        <Text type="danger" className={styles.error}>
+          {interaction.errorMessage}
+        </Text>
       )}
     </div>
   );

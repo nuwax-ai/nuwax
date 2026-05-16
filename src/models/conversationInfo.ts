@@ -803,28 +803,82 @@ export default () => {
 
       let newMessage: any = null;
 
-      if (
-        (res as any).messageType === 'acpRequestPermission' &&
-        (res as any).subType === 'session/request_permission'
-      ) {
-        const intervention = data as AcpPermissionInterventionRequest;
-        if (!intervention?.id || !intervention?.acp?.request) {
+      const isAcpPermissionEvent =
+        eventType === ConversationEventTypeEnum.ACP_REQUEST_PERMISSION ||
+        ((res as any).message_type === 'acpRequestPermission' &&
+          (res as any).sub_type === 'request_permission') ||
+        ((res as any).messageType === 'acpRequestPermission' &&
+          (res as any).subType === 'AcpRequestPermission');
+
+      if (isAcpPermissionEvent) {
+        const eventData = (res as any).data ?? res;
+        const reqPerm = eventData?.request_permission_request;
+        const intervention = (eventData?._intervention ??
+          eventData?.interventionRequest) as
+          | AcpPermissionInterventionRequest
+          | undefined;
+
+        const sessionId =
+          reqPerm?.session_id ||
+          intervention?.sessionId ||
+          eventData?.session_id;
+        const toolCall =
+          reqPerm?.tool_call || intervention?.acp?.request?.toolCall;
+        const options = reqPerm?.options || intervention?.acp?.request?.options;
+        const toolCallId = eventData?.tool_call_id || toolCall?.toolCallId;
+
+        if ((!intervention?.id && !sessionId) || !toolCall) {
           return messageList;
         }
 
+        const interventionId =
+          intervention?.id || `itv_${sessionId}_${toolCallId}`;
         const interactions = currentMessage.acpPermissionInteractions || [];
         if (
-          interactions.some((item) => item.intervention.id === intervention.id)
+          interactions.some((item) => item.intervention.id === interventionId)
         ) {
           return messageList;
         }
+
+        const normalizedIntervention: AcpPermissionInterventionRequest =
+          intervention || {
+            id: interventionId,
+            revision: 1,
+            kind: 'approval',
+            status: 'pending',
+            sessionId: sessionId,
+            source: 'acp_permission',
+            engine: (eventData?._engine as any) || 'codex-cli',
+            protocol: 'acp',
+            callbackTarget: { kind: 'electron', targetId: '' },
+            schemaRef: '',
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: sessionId,
+                toolCall: {
+                  toolCallId: toolCallId,
+                  kind: toolCall?.kind,
+                  title: toolCall?.title,
+                  rawInput: toolCall?.raw_input ?? toolCall?.rawInput,
+                  status: toolCall?.status,
+                },
+                options: (options || []).map((o: any) => ({
+                  optionId: o.option_id ?? o.optionId,
+                  kind: o.kind,
+                  name: o.name,
+                })),
+              },
+            },
+            createdAt: Date.now(),
+          };
 
         newMessage = {
           ...currentMessage,
           acpPermissionInteractions: [
             ...interactions,
             {
-              intervention,
+              intervention: normalizedIntervention,
               responseStatus: 'pending',
             },
           ],
@@ -839,7 +893,6 @@ export default () => {
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
-        data.executeId = processingResult.executeId;
         const processingList = [
           ...(currentMessage?.processingList || []),
         ] as ProcessingInfo[];
@@ -1146,8 +1199,6 @@ export default () => {
         perfLifecycle.onSseConnect();
       },
       onMessage: (res: ConversationChatResponse) => {
-        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判“首包”
-        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断“真正消息块”。
         perfLifecycle.onFirstChunk(res?.eventType, res);
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
@@ -1455,15 +1506,24 @@ export default () => {
       });
 
       try {
+        const isSelected = acpResponse.outcome.outcome === 'selected';
+        const sessionId =
+          intervention.acp?.request?.sessionId || intervention.sessionId;
+        const toolCallId = intervention.acp?.request?.toolCall?.toolCallId;
+
         const response = await apiAgentInterventionRespond({
-          interventionId: intervention.id,
-          revision: intervention.revision,
-          source: intervention.source,
-          protocol: intervention.protocol,
-          callbackTarget: intervention.callbackTarget,
-          action:
-            acpResponse.outcome.outcome === 'selected' ? 'submit' : 'cancel',
-          acpResponse,
+          permission_resolve_request: {
+            request_permission_response: {
+              outcome: isSelected
+                ? { Selected: { option_id: acpResponse.outcome.optionId } }
+                : { Cancelled: null },
+            },
+            session_id: sessionId,
+            tool_call_id: toolCallId,
+            save_rule: false,
+          },
+          user_id: String(currentConversationId),
+          conversation_id: currentConversationId || undefined,
         });
 
         if (response?.code && response.code !== SUCCESS_CODE) {
@@ -1488,7 +1548,7 @@ export default () => {
         message.error(errorMessage);
       }
     },
-    [updateAcpPermissionInteraction],
+    [updateAcpPermissionInteraction, currentConversationId],
   );
 
   const handleDebug = useCallback((info: MessageInfo) => {
