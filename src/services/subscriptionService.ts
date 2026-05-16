@@ -451,6 +451,21 @@ export async function apiRejectWithdrawal(
   });
 }
 
+/**
+ * 保存提现配置
+ */
+export async function apiSaveWithdrawConfig(data: {
+  minAmount: number;
+  monthlyLimit: number;
+  dailyLimit: number;
+  limitMode: string;
+}): Promise<RequestResponse<boolean>> {
+  return request('/api/system/bill/withdraw/config/save', {
+    method: 'POST',
+    data,
+  });
+}
+
 // ──────────────────────────────────────────────
 // 系统管理 - 支付订单查询（管理员）
 // ──────────────────────────────────────────────
