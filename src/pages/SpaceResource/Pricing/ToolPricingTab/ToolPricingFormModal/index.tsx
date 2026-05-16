@@ -253,6 +253,8 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
 
       <Created
         open={createdOpen}
+        // 只展示当前空间
+        isSpaceOnly={true}
         modalZIndex={TOOL_CREATED_PICK_MODAL_Z}
         onCancel={() => setCreatedOpen(false)}
         checkTag={getCreatedTagByTargetType(targetType)}

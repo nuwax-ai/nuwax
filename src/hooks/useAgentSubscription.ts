@@ -41,22 +41,31 @@ const useAgentSubscription = () => {
 
     // 创建订阅订单
     try {
-      const orderInfo = await apiCreateAgentSubscriptionOrder(plan.id);
-      const orderId = orderInfo?.data?.id;
+      const orderResponse = await apiCreateAgentSubscriptionOrder(plan.id);
+      const orderId = orderResponse?.data?.id;
       if (!orderId) {
         message.error('创建订阅订单失败');
         return;
       }
 
       // 获取收银台地址
-      const res = await apiGetAgentSubscriptionOrderCashier(orderId);
-      if (!res?.data?.cashierUrl) {
+      const cashierResponse = await apiGetAgentSubscriptionOrderCashier(
+        orderId,
+      );
+      if (!cashierResponse?.data?.cashierUrl) {
         message.error('获取收银台地址失败');
         return;
       }
 
       // 打开收银台
-      window.open(res?.data?.cashierUrl, '_blank');
+      if (cashierResponse?.data?.cashierUrl) {
+        const returnUrl = encodeURIComponent(window.location.href);
+        const separator = cashierResponse.data.cashierUrl.includes('?')
+          ? '&'
+          : '?';
+        const url = `${cashierResponse.data.cashierUrl}${separator}returnUrl=${returnUrl}`;
+        window.location.href = url;
+      }
     } catch (error) {
       console.error('点击套餐卡片失败:', error);
     }
