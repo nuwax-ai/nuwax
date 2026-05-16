@@ -63,34 +63,29 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colOrderId'),
     dataIndex: 'id',
-    width: 100,
     search: false,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colDescription'),
     dataIndex: 'description',
-    width: 200,
     search: false,
     ellipsis: true,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colBizType'),
     dataIndex: 'bizType',
-    width: 120,
     search: false,
     render: (_, record) => BIZ_TYPE_MAP[record.bizType] || record.bizType,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colAmount'),
     dataIndex: 'amount',
-    width: 120,
     search: false,
     render: (_, record) => `¥${Number(record.amount).toFixed(2)}`,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colPayStatus'),
     dataIndex: 'payStatus',
-    width: 120,
     valueType: 'select',
     valueEnum: Object.entries(PAY_STATUS_MAP).reduce(
       (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
@@ -104,7 +99,6 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colOrderStatus'),
     dataIndex: 'orderStatus',
-    width: 120,
     valueType: 'select',
     valueEnum: Object.entries(ORDER_STATUS_MAP).reduce(
       (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
@@ -118,7 +112,6 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colCreated'),
     dataIndex: 'created',
-    width: 180,
     search: false,
     valueType: 'dateTime',
   },
@@ -148,7 +141,6 @@ const OrderList: React.FC = () => {
     title: dict('PC.Pages.MorePage.MyOrders.colAction'),
     valueType: 'option',
     fixed: 'right',
-    width: 100,
     render: (_, record) => {
       const isPendingPay =
         record.payStatus === BillPayStatusEnum.PENDING ||
