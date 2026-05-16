@@ -1,6 +1,10 @@
 import { XModalForm } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
 import { apiListWithdrawRecords } from '@/services/subscriptionService';
+import {
+  BillWithdrawRecordInfo,
+  BillWithdrawStatusEnum,
+} from '@/types/interfaces/subscription';
 import { useRequest } from 'ahooks';
 import { Empty, Spin, Statistic, Tag } from 'antd';
 import React from 'react';
@@ -11,26 +15,21 @@ interface WithdrawRecordModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface WithdrawRecord {
-  id: number;
-  amount: number;
-  status: string;
-  created: string;
-}
-
 const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
   open,
   onOpenChange,
 }) => {
   const [pageNum, setPageNum] = React.useState(1);
-  const [recordList, setRecordList] = React.useState<WithdrawRecord[]>([]);
+  const [recordList, setRecordList] = React.useState<BillWithdrawRecordInfo[]>(
+    [],
+  );
   const [hasMore, setHasMore] = React.useState(true);
   const pageSize = 20;
 
   const { loading, run: fetchRecords } = useRequest(apiListWithdrawRecords, {
     manual: true,
     onSuccess: (res) => {
-      const newList = (res?.data as WithdrawRecord[]) || [];
+      const newList = Array.isArray(res?.data?.records) ? res.data.records : [];
       setRecordList((prev) => [...prev, ...newList]);
       if (newList.length < pageSize) {
         setHasMore(false);
@@ -56,20 +55,23 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
     }
   };
 
-  const statusConfig: Record<string, { color: string; label: string }> = {
-    PENDING_REVIEW: {
+  const statusConfig: Record<
+    BillWithdrawStatusEnum,
+    { color: string; label: string }
+  > = {
+    [BillWithdrawStatusEnum.PENDING_REVIEW]: {
       color: 'warning',
       label: dict('PC.Pages.MorePage.MyEarnings.withdrawStatusPendingReview'),
     },
-    APPROVED: {
+    [BillWithdrawStatusEnum.APPROVED]: {
       color: 'success',
       label: dict('PC.Pages.MorePage.MyEarnings.withdrawStatusApproved'),
     },
-    REJECTED: {
+    [BillWithdrawStatusEnum.REJECTED]: {
       color: 'error',
       label: dict('PC.Pages.MorePage.MyEarnings.withdrawStatusRejected'),
     },
-    PAID: {
+    [BillWithdrawStatusEnum.PAID]: {
       color: 'success',
       label: dict('PC.Pages.MorePage.MyEarnings.withdrawStatusPaid'),
     },

@@ -27,14 +27,22 @@ const PendingWithdrawalTable: React.FC = () => {
 
   const handleApprove = async (id: number) => {
     await apiApproveWithdrawal(id);
-    message.success(dict('PC.Pages.SystemWithdrawal.approveSuccess'));
+    message.success(
+      dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess',
+      ),
+    );
     actionRef.current?.reload();
   };
 
   const handleReject = async () => {
     if (!rejectId) return;
     await apiRejectWithdrawal(rejectId, rejectReason);
-    message.success(dict('PC.Pages.SystemWithdrawal.rejectSuccess'));
+    message.success(
+      dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
+      ),
+    );
     setRejectModalOpen(false);
     setRejectReason('');
     actionRef.current?.reload();
@@ -42,20 +50,26 @@ const PendingWithdrawalTable: React.FC = () => {
 
   const columns: ProColumns<WithdrawalInfo>[] = [
     {
-      title: dict('PC.Pages.SystemWithdrawal.colApplicationNo'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo',
+      ),
       dataIndex: 'applicationNo',
       key: 'applicationNo',
       ellipsis: true,
       width: 180,
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colDeveloper'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
+      ),
       dataIndex: 'developerName',
       key: 'developerName',
       ellipsis: true,
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colAmount'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount',
+      ),
       dataIndex: 'amount',
       key: 'amount',
       search: false,
@@ -66,7 +80,9 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colPayMethod'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPayMethod',
+      ),
       key: 'payMethod',
       search: false,
       render: (_, record) => (
@@ -81,7 +97,9 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colCreatedAt'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt',
+      ),
       dataIndex: 'createdAt',
       key: 'createdAt',
       search: false,
@@ -98,15 +116,21 @@ const PendingWithdrawalTable: React.FC = () => {
           actions={[
             {
               key: 'approve',
-              label: dict('PC.Pages.SystemWithdrawal.approve'),
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approve',
+              ),
               confirm: {
-                title: dict('PC.Pages.SystemWithdrawal.confirmApprove'),
+                title: dict(
+                  'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.confirmApprove',
+                ),
               },
               onClick: (r) => handleApprove(r.id),
             },
             {
               key: 'reject',
-              label: dict('PC.Pages.SystemWithdrawal.reject'),
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.reject',
+              ),
               danger: true,
               onClick: (r) => {
                 setRejectId(r.id);
@@ -115,7 +139,9 @@ const PendingWithdrawalTable: React.FC = () => {
             },
             {
               key: 'earnings',
-              label: dict('PC.Pages.SystemWithdrawal.viewEarnings'),
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewEarnings',
+              ),
               onClick: (r) =>
                 history.push(
                   `/system/payment-earnings/earnings-detail?developerId=${
@@ -162,7 +188,9 @@ const PendingWithdrawalTable: React.FC = () => {
         }}
       />
       <Modal
-        title={dict('PC.Pages.SystemWithdrawal.rejectModalTitle')}
+        title={dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectModalTitle',
+        )}
         open={rejectModalOpen}
         onCancel={() => {
           setRejectModalOpen(false);
@@ -170,17 +198,21 @@ const PendingWithdrawalTable: React.FC = () => {
         }}
         onOk={handleReject}
         okButtonProps={{ danger: true }}
-        okText={dict('PC.Pages.SystemWithdrawal.reject')}
+        okText={dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.reject',
+        )}
       >
         <p style={{ marginBottom: 12 }}>
-          {dict('PC.Pages.SystemWithdrawal.rejectReasonLabel')}
+          {dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonLabel',
+          )}
         </p>
         <Input.TextArea
           rows={3}
           value={rejectReason}
           onChange={(e) => setRejectReason(e.target.value)}
           placeholder={dict(
-            'PC.Pages.SystemWithdrawal.rejectReasonPlaceholder',
+            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonPlaceholder',
           )}
           maxLength={200}
           showCount

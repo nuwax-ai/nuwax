@@ -545,7 +545,7 @@ export enum BillWithdrawStatusEnum {
   PAID = 'PAID',
 }
 
-export interface BillWithdrawApplyResponse {
+export interface BillWithdrawRecordInfo {
   id: number;
   userId: number;
   amount: number;
@@ -556,6 +556,8 @@ export interface BillWithdrawApplyResponse {
   created: string;
   modified: string;
 }
+
+export type BillWithdrawApplyResponse = BillWithdrawRecordInfo;
 
 // ──────────────────────────────────────────────
 // 资源定价（模型/工具/技能）

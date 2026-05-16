@@ -858,3 +858,48 @@ export interface UserSandBoxSelectDto {
   /** 已选择的沙盒，key为agentId，value为sandboxId */
   agentSelected: Record<string, string>;
 }
+/**
+ * 查询收益明细参数
+ */
+export interface SystemRevenueDetailParams {
+  /** 用户ID */
+  userId: number;
+  /** 日期 (YYYYMMDD) */
+  dt?: number;
+  /** 页码 */
+  pageNum: number;
+  /** 每页条数 */
+  pageSize: number;
+}
+
+/**
+ * 收益明细信息
+ */
+export interface SystemRevenueDetailInfo {
+  /** 明细ID */
+  id: number;
+  /** 用户ID */
+  userId: number;
+  /** 日期 */
+  dt: string;
+  /** 金额 */
+  amount: number;
+  /** 类型 (PLAN, MODEL_CALL, TOOL_CALL 等) */
+  type: string;
+  /** 类型关联ID */
+  typeId: number;
+  /** 关联订单ID */
+  orderId: number;
+  /** 目标类型 (AGENT, SKILL, MODEL, PLUGIN, MCP, WORKFLOW) */
+  targetType: string;
+  /** 目标ID */
+  targetId: number;
+  /** 业务单号 */
+  bizNo: string;
+  /** 备注/收益项名称 */
+  remark: string;
+  /** 扩展字段 */
+  extra: Record<string, any>;
+  /** 创建时间 */
+  created: string;
+}

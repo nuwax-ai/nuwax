@@ -43,7 +43,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({ data, loading }) => {
     <Row className={styles.earningsSummary} gutter={[16, 16]}>
       <Col span={6}>
         <StatItem
-          title={dict('PC.Pages.SystemPaymentEarnings.totalRevenue')}
+          title={dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Stats.totalRevenue',
+          )}
           value={data.totalEarnings}
           prefix="¥"
           loading={loading}
@@ -51,7 +53,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({ data, loading }) => {
       </Col>
       <Col span={6}>
         <StatItem
-          title={dict('PC.Pages.SystemPaymentEarnings.todayRevenue')}
+          title={dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Stats.todayRevenue',
+          )}
           value={data.todayEarnings}
           prefix="¥"
           loading={loading}
@@ -59,7 +63,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({ data, loading }) => {
       </Col>
       <Col span={6}>
         <StatItem
-          title={dict('PC.Pages.SystemPaymentEarnings.monthRevenue')}
+          title={dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Stats.monthRevenue',
+          )}
           value={data.monthlyEarnings}
           prefix="¥"
           loading={loading}
@@ -67,7 +73,9 @@ const EarningsSummary: React.FC<EarningsSummaryProps> = ({ data, loading }) => {
       </Col>
       <Col span={6}>
         <StatItem
-          title={dict('PC.Pages.SystemPaymentEarnings.pendingAmount')}
+          title={dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Stats.pendingAmount',
+          )}
           value={data.pendingSettlement}
           prefix="¥"
           loading={loading}
