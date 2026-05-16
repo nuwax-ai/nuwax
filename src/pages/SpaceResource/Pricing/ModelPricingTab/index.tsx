@@ -18,7 +18,7 @@ import {
   ResourcePricingType,
   ToolPricingTargetType,
 } from '../../types/resource';
-import ModelPricingModal from '../ModelPricingModal';
+import ModelPricingModal from './ModelPricingModal';
 import styles from './index.less';
 
 // 定价类型标签映射

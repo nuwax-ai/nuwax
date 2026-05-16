@@ -3312,7 +3312,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.toolTargetType": "ツール種別",
   "PC.Pages.SpaceResourcePricing.skillName": "スキル",
   "PC.Pages.SpaceResourcePricing.pricingType": "料金タイプ",
-  "PC.Pages.SpaceResourcePricing.provider": "プロバイダー",
   "PC.Pages.SpaceResourcePricing.pricingTier": "価格ティア",
   "PC.Pages.SpaceResourcePricing.pricingTierHint": "¥/百万トークン",
   "PC.Pages.SpaceResourcePricing.billingSwitch": "請求を有効化",

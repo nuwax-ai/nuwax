@@ -3444,7 +3444,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.toolTargetType": "Tool type",
   "PC.Pages.SpaceResourcePricing.skillName": "Skill",
   "PC.Pages.SpaceResourcePricing.pricingType": "Pricing Type",
-  "PC.Pages.SpaceResourcePricing.provider": "Provider",
   "PC.Pages.SpaceResourcePricing.pricingTier": "Pricing Tier",
   "PC.Pages.SpaceResourcePricing.pricingTierHint": "¥/M tokens",
   "PC.Pages.SpaceResourcePricing.billingSwitch": "Enable Billing",

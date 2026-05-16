@@ -3306,7 +3306,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.toolTargetType": "工具類型",
   "PC.Pages.SpaceResourcePricing.skillName": "技能",
   "PC.Pages.SpaceResourcePricing.pricingType": "定價類型",
-  "PC.Pages.SpaceResourcePricing.provider": "供應商",
   "PC.Pages.SpaceResourcePricing.pricingTier": "定價檔位",
   "PC.Pages.SpaceResourcePricing.pricingTierHint": "¥/百萬 tokens",
   "PC.Pages.SpaceResourcePricing.billingSwitch": "開啟收費",

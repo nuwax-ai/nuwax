@@ -9,6 +9,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Switch, message } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -23,6 +24,8 @@ import {
 } from '../../types/resource';
 import styles from './index.less';
 import ToolPricingFormModal from './ToolPricingFormModal';
+
+const cx = classNames.bind(styles);
 
 // 表中 MCP/插件/工作流 targetType → 列展示文案
 export const TARGET_TYPE_LABEL_MAP: Partial<
@@ -204,10 +207,12 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
               />
             </div>
             <div className={styles['tool-name-text']}>
-              <div className={styles['tool-name-title']}>{name}</div>
+              <div className={cx(styles['tool-name-title'], 'text-ellipsis')}>
+                {name}
+              </div>
               {description && (
                 <div
-                  className={styles['tool-name-subtitle']}
+                  className={cx(styles['tool-name-subtitle'], 'text-ellipsis')}
                   title={description}
                 >
                   {description}
