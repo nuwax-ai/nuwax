@@ -56,7 +56,7 @@ const useAgentSubscription = () => {
       }
 
       // 打开收银台
-      window.open(res?.data?.cashierUrl, '_blank');
+      window.open(res?.data?.cashierUrl, '_self');
     } catch (error) {
       console.error('点击套餐卡片失败:', error);
     }
