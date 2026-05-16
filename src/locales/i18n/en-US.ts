@@ -5050,8 +5050,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPaymentEarnings.pendingAmount": "Pending Amount",
   "PC.Pages.SystemPaymentEarnings.settledAmount": "Settled Amount",
   "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "Total Earnings",
-  "PC.Pages.SystemPaymentEarnings.colWithdrawn": "Withdrawn",
-  "PC.Pages.SystemPaymentEarnings.colAvailable": "Available",
   "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "Last Earnings Time",
   "PC.Pages.SystemPaymentEarnings.viewDetail": "View Details",
   "PC.Pages.SystemPaymentEarnings.chartTopRankings": "Top 10 Developer Earnings",

@@ -5050,8 +5050,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemPaymentEarnings.pendingAmount": "待结算金额",
   "PC.Pages.SystemPaymentEarnings.settledAmount": "已结算金额",
   "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "收益总额",
-  "PC.Pages.SystemPaymentEarnings.colWithdrawn": "已提现",
-  "PC.Pages.SystemPaymentEarnings.colAvailable": "可提现",
   "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "最后收益时间",
   "PC.Pages.SystemPaymentEarnings.viewDetail": "查看明细",
   "PC.Pages.SystemPaymentEarnings.chartTopRankings": "开发者收益 TOP10",
