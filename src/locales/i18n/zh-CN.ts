@@ -5158,5 +5158,31 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemSubscriptionCredits.activeSubscriptions": "有效订阅数",
   "PC.Pages.SystemSubscriptionCredits.totalUsers": "订阅用户数",
   "PC.Pages.SystemSubscriptionCredits.monthlyRevenue": "本月订阅收入",
-  "PC.Pages.SystemSubscriptionCredits.totalCredits": "积分总量"
+  "PC.Pages.SystemSubscriptionCredits.totalCredits": "积分总量",
+
+  // ── 用量统计 ────────────────────────────
+  "PC.Routes.usageStats": "用量统计",
+  "PC.Pages.UsageStats.pageTitle": "用量统计",
+  "PC.Pages.UsageStats.timeRange": "时间范围",
+  "PC.Pages.UsageStats.search": "查询",
+  "PC.Pages.UsageStats.reset": "重置",
+  "PC.Pages.UsageStats.refreshData": "刷新数据",
+  "PC.Pages.UsageStats.summaryTitle": "用量概览",
+  "PC.Pages.UsageStats.callCount": "调用次数",
+  "PC.Pages.UsageStats.creditAmount": "消耗积分",
+  "PC.Pages.UsageStats.totalInputTokens": "总输入Token",
+  "PC.Pages.UsageStats.cacheInputTokens": "缓存输入Token",
+  "PC.Pages.UsageStats.inputTokens": "输入Token",
+  "PC.Pages.UsageStats.outputTokens": "输出Token",
+  "PC.Pages.UsageStats.totalAmount": "总费用",
+  "PC.Pages.UsageStats.colModelName": "模型名称",
+  "PC.Pages.UsageStats.colType": "类型",
+  "PC.Pages.UsageStats.colCallCount": "调用次数",
+  "PC.Pages.UsageStats.colTotalInputTokens": "总输入Token",
+  "PC.Pages.UsageStats.colCacheInputTokens": "缓存输入Token",
+  "PC.Pages.UsageStats.colInputTokens": "输入Token",
+  "PC.Pages.UsageStats.colOutputTokens": "输出Token",
+  "PC.Pages.UsageStats.colCreditAmount": "消耗积分",
+  "PC.Pages.UsageStats.colDt": "日期",
+  "PC.Pages.UsageStats.fetchDataFailed": "获取数据失败"
 };
