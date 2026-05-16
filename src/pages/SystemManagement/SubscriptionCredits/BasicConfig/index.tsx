@@ -48,6 +48,7 @@ const BasicConfig: React.FC = () => {
         enableGiftCredit: Boolean(tenantConfigInfo.enableGiftCredit),
         enableDailyGiftCredit: Boolean(tenantConfigInfo.enableDailyGiftCredit),
       });
+      setExchangeRate(Number(tenantConfigInfo.creditExchangeRate) || 100);
     } else {
       // 租户配置信息查询接口
       runTenantConfig();
