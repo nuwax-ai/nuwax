@@ -277,9 +277,12 @@ const CreditRecords: React.FC = () => {
     };
   };
 
-  /** 游标分页配置 */
+  /** 游标分页配置（与通用表格一致：15 / 30 / 50 / 100 条每页） */
   const cursorPagination = useMemo(
     () => ({
+      showSizeChanger: true,
+      pageSizeOptions: [15, 30, 50, 100],
+      defaultPageSize: DEFAULT_CURSOR_PAGE_SIZE,
       showQuickJumper: false,
       /** 游标分页无真实 total，避免误导性的「共 X 条」 */
       showTotal: () => null,
