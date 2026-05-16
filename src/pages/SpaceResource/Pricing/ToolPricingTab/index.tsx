@@ -57,6 +57,8 @@ const ADD_TOOL_LIST: CustomPopoverItem[] = [
  */
 interface ToolPricingTabProps {
   spaceId: number;
+  /** 将「添加工具」注册到上级页面工具栏右侧 */
+  registerToolbarRight?: (node: React.ReactNode | null) => void;
 }
 
 /**
@@ -64,7 +66,10 @@ interface ToolPricingTabProps {
  * 列表：`apiListPricingConfig`；删除：`apiDeleteToolPricing`；表单：`ToolPricingFormModal`。
  * @returns 定价 Tab 的布局与表格
  */
-const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
+const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
+  spaceId,
+  registerToolbarRight,
+}) => {
   /** 表格请求 loading */
   const [loading, setLoading] = useState<boolean>(false);
   /** 工具名称关键词（可与列表过滤串联） */
@@ -114,13 +119,31 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
     setSelectedTargetType(null);
   };
 
-  /** 从 Popover 选择类型后打开新建表单 */
-  const handleClickAddToolType = (item: CustomPopoverItem) => {
+  /** 从 Popover 选择类型后打开新建表单（供顶部工具栏注册，避免过时闭包） */
+  const handleClickAddToolTypeRef = useRef<(item: CustomPopoverItem) => void>(
+    () => {},
+  );
+  handleClickAddToolTypeRef.current = (item: CustomPopoverItem) => {
     const targetType = item.value as ToolPricingTargetType;
     setSelectedTargetType(targetType);
     setEditItem(null);
     setToolModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!registerToolbarRight) return;
+    registerToolbarRight(
+      <CustomPopover
+        list={ADD_TOOL_LIST}
+        onClick={(item) => handleClickAddToolTypeRef.current(item)}
+      >
+        <Button type="primary" icon={<PlusOutlined />}>
+          {dict('PC.Pages.SpaceResourcePricing.addTool')}
+        </Button>
+      </CustomPopover>,
+    );
+    return () => registerToolbarRight(null);
+  }, [registerToolbarRight]);
 
   /** 编辑行：写入 editItem 后打开表单弹窗（回显在子组件） */
   const handleOpenEdit = (record: ResourcePricingConfigInfo) => {
@@ -391,11 +414,6 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({ spaceId }) => {
           onChange={(e) => setKeyword(e.target.value)}
           allowClear
         />
-        <CustomPopover list={ADD_TOOL_LIST} onClick={handleClickAddToolType}>
-          <Button type="primary" icon={<PlusOutlined />}>
-            {dict('PC.Pages.SpaceResourcePricing.addTool')}
-          </Button>
-        </CustomPopover>
       </div>
       {/* 工具定价列表 */}
       <XProTable<ResourcePricingConfigInfo>

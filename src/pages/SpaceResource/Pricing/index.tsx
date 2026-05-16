@@ -1,7 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { Segmented } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';
 import ModelPricingTab from './ModelPricingTab';
@@ -36,15 +36,38 @@ const SpaceResourcePricing: React.FC = () => {
 
   // 当前激活的标签
   const [activeTab, setActiveTab] = useState<string>('model');
+  /** 各 Tab 在挂载时将「新增」按钮注册到顶部工具栏右侧 */
+  const [toolbarRight, setToolbarRight] = useState<React.ReactNode | null>(
+    null,
+  );
+  const registerToolbarRight = useCallback(
+    (node: React.ReactNode | null) => setToolbarRight(node),
+    [],
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'model':
-        return <ModelPricingTab spaceId={spaceId} />;
+        return (
+          <ModelPricingTab
+            spaceId={spaceId}
+            registerToolbarRight={registerToolbarRight}
+          />
+        );
       case 'tool':
-        return <ToolPricingTab spaceId={spaceId} />;
+        return (
+          <ToolPricingTab
+            spaceId={spaceId}
+            registerToolbarRight={registerToolbarRight}
+          />
+        );
       case 'skill':
-        return <SkillPricingTab spaceId={spaceId} />;
+        return (
+          <SkillPricingTab
+            spaceId={spaceId}
+            registerToolbarRight={registerToolbarRight}
+          />
+        );
       default:
         return null;
     }
@@ -55,12 +78,15 @@ const SpaceResourcePricing: React.FC = () => {
       title={dict('PC.Pages.SpaceResourcePricing.pageTitle')}
       hideScroll
     >
-      <Segmented
-        options={tabOptions}
-        value={activeTab}
-        onChange={(v) => setActiveTab(v as string)}
-        className={styles.segmented}
-      />
+      <div className={styles['pricing-toolbar']}>
+        <Segmented
+          options={tabOptions}
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as string)}
+          className={styles['segmented']}
+        />
+        <div className={styles['pricing-toolbar-right']}>{toolbarRight}</div>
+      </div>
       {renderTabContent()}
     </WorkspaceLayout>
   );

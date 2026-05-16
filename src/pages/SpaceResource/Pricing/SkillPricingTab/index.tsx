@@ -4,7 +4,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Switch, Tag, message } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiDeleteToolPricing,
@@ -22,12 +22,17 @@ import SkillPricingFormModal from './SkillPricingFormModal';
 
 interface SkillPricingTabProps {
   spaceId: number;
+  /** 将「添加技能」注册到上级页面工具栏右侧 */
+  registerToolbarRight?: (node: React.ReactNode | null) => void;
 }
 
 /**
  * 技能定价模块
  */
-const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
+const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
+  spaceId,
+  registerToolbarRight,
+}) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
@@ -56,11 +61,26 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
     },
   });
 
-  // 添加技能
-  const openAdd = () => {
+  /** 顶部「添加技能」 */
+  const openAddRef = useRef<() => void>(() => {});
+  openAddRef.current = () => {
     setEditItem(null);
     setModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!registerToolbarRight) return;
+    registerToolbarRight(
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={() => openAddRef.current()}
+      >
+        {dict('PC.Pages.SpaceResourcePricing.addSkill')}
+      </Button>,
+    );
+    return () => registerToolbarRight(null);
+  }, [registerToolbarRight]);
 
   // 编辑技能
   const openEdit = (item: ResourcePricingConfigInfo) => {
@@ -253,11 +273,6 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({ spaceId }) => {
 
   return (
     <div>
-      <div className={styles['skill-pricing-tab-header']}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
-          {dict('PC.Pages.SpaceResourcePricing.addSkill')}
-        </Button>
-      </div>
       <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
