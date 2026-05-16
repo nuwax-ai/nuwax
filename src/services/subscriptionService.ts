@@ -8,6 +8,7 @@ import type {
   BillOrderStatusEnum,
   BillPayStatusEnum,
   BillWithdrawApplyResponse,
+  BillWithdrawRecordInfo,
   BizTypeEnum,
   CheckSubscriptionResult,
   CreditBatchItem,
@@ -243,7 +244,9 @@ export async function apiListMyEarnings(params: {
 export async function apiListWithdrawRecords(params: {
   pageNum?: number;
   pageSize?: number;
-}): Promise<RequestResponse<any[]>> {
+}): Promise<
+  RequestResponse<{ records: BillWithdrawRecordInfo[]; total: number }>
+> {
   return request('/api/bill/withdraw/records', { method: 'GET', params });
 }
 

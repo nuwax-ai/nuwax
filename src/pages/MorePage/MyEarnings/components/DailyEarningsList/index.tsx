@@ -54,7 +54,10 @@ const DailyEarningsList: React.FC = () => {
     },
   };
 
-  const listData = useMemo(() => revenueData?.data || [], [revenueData]);
+  const listData = useMemo(
+    () => (Array.isArray(revenueData?.data) ? revenueData.data : []),
+    [revenueData],
+  );
 
   // 解析日期字符串 20260507 -> { day: '07', month: '4月' }
   const parseDate = (dtStr: string) => {
