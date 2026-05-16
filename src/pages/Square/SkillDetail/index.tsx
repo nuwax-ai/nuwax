@@ -20,7 +20,7 @@ import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
 
@@ -170,12 +170,18 @@ const SkillDetail: React.FC = ({}) => {
     }
   };
 
+  /** 返回广场技能列表 */
+  const handleBack = () => {
+    history.push('/square?cate_type=Skill');
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       {skillInfo?.id && (
         <PluginHeader
           targetInfo={skillInfo}
           targetType={SquareAgentTypeEnum.Skill}
+          onBack={handleBack}
           extraBeforeCollect={
             <Space>
               {skillInfo.paymentRequired &&
