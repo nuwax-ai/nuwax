@@ -25,6 +25,8 @@ import type {
   SystemMcpPage,
   SystemPluginListParams,
   SystemPluginPage,
+  SystemRevenueDetailInfo,
+  SystemRevenueDetailParams,
   SystemSkillListParams,
   SystemSkillPage,
   SystemSpaceListParams,
@@ -752,5 +754,17 @@ export async function apiTestSandboxConnectivity(
 ): Promise<RequestResponse<null>> {
   return request(`/api/system/sandbox/config/test/${id}`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 查询收益明细
+ */
+export async function apiSystemRevenueDetail(
+  params: SystemRevenueDetailParams,
+): Promise<RequestResponse<Page<SystemRevenueDetailInfo>>> {
+  return request('/api/system/bill/revenue/detail', {
+    method: 'GET',
+    params,
   });
 }

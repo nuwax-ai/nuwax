@@ -5043,17 +5043,17 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemWithdrawal.earningsPlaceholder": "Earnings details feature under development...",
 
   // ── System Management - Developer Earnings Statistics ─────────────────────────
-  "PC.Pages.SystemPaymentEarnings.colDeveloper": "Developer",
-  "PC.Pages.SystemPaymentEarnings.totalRevenue": "Total Revenue",
-  "PC.Pages.SystemPaymentEarnings.todayRevenue": "Today's Revenue",
-  "PC.Pages.SystemPaymentEarnings.monthRevenue": "Month's Revenue",
-  "PC.Pages.SystemPaymentEarnings.pendingAmount": "Pending Amount",
-  "PC.Pages.SystemPaymentEarnings.settledAmount": "Settled Amount",
-  "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "Total Earnings",
-  "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "Last Earnings Time",
-  "PC.Pages.SystemPaymentEarnings.viewDetail": "View Details",
-  "PC.Pages.SystemPaymentEarnings.chartTopRankings": "Top 10 Developer Earnings",
-  "PC.Pages.SystemPaymentEarnings.chartTotalRevenue": "Total Revenue",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "Developer",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.totalRevenue": "Total Revenue",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.todayRevenue": "Today's Revenue",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.monthRevenue": "Month's Revenue",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.pendingAmount": "Pending Amount",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.settledAmount": "Settled Amount",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colTotalEarnings": "Total Earnings",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colLastEarningsAt": "Last Earnings Time",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.viewDetail": "View Details",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTopRankings": "Top 10 Developer Earnings",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTotalRevenue": "Total Revenue",
 
   // ── System Management - Subscription & Credits Summary Card ────────────────────
   // ── System Management - Basic Subscription Plans ────────────────────────────
@@ -5094,21 +5094,19 @@ export const EN_US: SystemLangMap = {
   // ── System Management - Developer Payment Info Drawer ────────────────────
 
   // ── System Management - Earnings Details Sub-page ──────────────────────────
-  "PC.Pages.SystemEarningsDetail.title": "Earnings Details",
-  "PC.Pages.SystemEarningsDetail.subtitle": "{name} - Earnings Details",
-  "PC.Pages.SystemEarningsDetail.btnBack": "Back to List",
-  "PC.Pages.SystemEarningsDetail.filterAll": "All",
-  "PC.Pages.SystemEarningsDetail.filterSettled": "Settled",
-  "PC.Pages.SystemEarningsDetail.filterUnsettled": "Unsettled",
-  "PC.Pages.SystemEarningsDetail.colOrderNo": "Order/Serial No.",
-  "PC.Pages.SystemEarningsDetail.colItemName": "Item Name",
-  "PC.Pages.SystemEarningsDetail.colEarningsAmount": "Earnings Amount",
-  "PC.Pages.SystemEarningsDetail.colEarningsType": "Earnings Type",
-  "PC.Pages.SystemEarningsDetail.colEarningsTime": "Earnings Time",
-  "PC.Pages.SystemEarningsDetail.statTotal": "Total Earnings",
-  "PC.Pages.SystemEarningsDetail.statWithdrawn": "Withdrawn",
-  "PC.Pages.SystemEarningsDetail.statAvailable": "Available",
-  "PC.Pages.SystemEarningsDetail.statCount": "Record Count",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - Earnings Details",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack": "Back to List",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colOrderNo": "Order/Serial No.",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colItemName": "Item Name",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "Earnings Amount",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsType": "Earnings Type",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsTime": "Earnings Time",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colStatus": "Status",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "Settled",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "Subscription",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "Model Call",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "Tool Call",
+
 
   // ── System Management - Subscription Details Drawer ──────────────────────────
   "PC.Pages.SystemSubsOrders.drawerTitle": "Subscription Details",

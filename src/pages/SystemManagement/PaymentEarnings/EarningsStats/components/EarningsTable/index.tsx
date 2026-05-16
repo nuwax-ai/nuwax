@@ -35,7 +35,9 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
 
   const columns: ProColumns<DailyRevenueItem>[] = [
     {
-      title: dict('PC.Pages.SystemPaymentEarnings.colDeveloper'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper',
+      ),
       dataIndex: 'userName',
       key: 'userName',
       search: false,
@@ -46,7 +48,9 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       ),
     },
     {
-      title: dict('PC.Pages.SystemPaymentEarnings.colTotalEarnings'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Stats.colTotalEarnings',
+      ),
       dataIndex: 'amount',
       key: 'amount',
       search: false,
@@ -61,7 +65,9 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       ),
     },
     {
-      title: dict('PC.Pages.SystemPaymentEarnings.colLastEarningsAt'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Stats.colLastEarningsAt',
+      ),
       dataIndex: 'dt',
       key: 'dt',
       search: false,
@@ -78,7 +84,9 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
           actions={[
             {
               key: 'detail',
-              label: dict('PC.Pages.SystemPaymentEarnings.viewDetail'),
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Stats.viewDetail',
+              ),
               onClick: (r) =>
                 history.push(
                   `/system/payment-earnings/earnings-detail?developerId=${

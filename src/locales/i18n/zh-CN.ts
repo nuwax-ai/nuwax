@@ -5043,17 +5043,17 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemWithdrawal.earningsPlaceholder": "收益明细功能开发中...",
 
   // ── 系统管理 - 开发者收益统计 ─────────────────────────
-  "PC.Pages.SystemPaymentEarnings.colDeveloper": "开发者",
-  "PC.Pages.SystemPaymentEarnings.totalRevenue": "总收益",
-  "PC.Pages.SystemPaymentEarnings.todayRevenue": "今日收益",
-  "PC.Pages.SystemPaymentEarnings.monthRevenue": "本月收益",
-  "PC.Pages.SystemPaymentEarnings.pendingAmount": "待结算金额",
-  "PC.Pages.SystemPaymentEarnings.settledAmount": "已结算金额",
-  "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "收益总额",
-  "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "最后收益时间",
-  "PC.Pages.SystemPaymentEarnings.viewDetail": "查看明细",
-  "PC.Pages.SystemPaymentEarnings.chartTopRankings": "开发者收益 TOP10",
-  "PC.Pages.SystemPaymentEarnings.chartTotalRevenue": "收益总额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "开发者",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.totalRevenue": "总收益",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.todayRevenue": "今日收益",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.monthRevenue": "本月收益",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.pendingAmount": "待结算金额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.settledAmount": "已结算金额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colTotalEarnings": "收益总额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.colLastEarningsAt": "最后收益时间",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.viewDetail": "查看明细",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTopRankings": "开发者收益 TOP10",
+  "PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTotalRevenue": "收益总额",
 
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────
@@ -5094,21 +5094,18 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 开发者付款信息 Drawer ────────────────────
 
   // ── 系统管理 - 收益明细子页面 ──────────────────────────
-  "PC.Pages.SystemEarningsDetail.title": "收益明细",
-  "PC.Pages.SystemEarningsDetail.subtitle": "{name} - 收益明细",
-  "PC.Pages.SystemEarningsDetail.btnBack": "返回收益列表",
-  "PC.Pages.SystemEarningsDetail.filterAll": "全部",
-  "PC.Pages.SystemEarningsDetail.filterSettled": "已结算",
-  "PC.Pages.SystemEarningsDetail.filterUnsettled": "未结算",
-  "PC.Pages.SystemEarningsDetail.colOrderNo": "订单编号/流水号",
-  "PC.Pages.SystemEarningsDetail.colItemName": "收益项名称",
-  "PC.Pages.SystemEarningsDetail.colEarningsAmount": "收益金额",
-  "PC.Pages.SystemEarningsDetail.colEarningsType": "收益类型",
-  "PC.Pages.SystemEarningsDetail.colEarningsTime": "收益时间",
-  "PC.Pages.SystemEarningsDetail.statTotal": "收益总额",
-  "PC.Pages.SystemEarningsDetail.statWithdrawn": "已提现",
-  "PC.Pages.SystemEarningsDetail.statAvailable": "可提现",
-  "PC.Pages.SystemEarningsDetail.statCount": "明细笔数",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - 收益明细",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack": "返回收益列表",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colOrderNo": "订单编号/流水号",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colItemName": "收益项名称",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "收益金额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsType": "收益类型",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsTime": "收益时间",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.colStatus": "状态",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled": "已结算",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typePlan": "订阅",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeModelCall": "模型调用",
+  "PC.Pages.SystemManagement.PaymentEarnings.Detail.typeToolCall": "工具调用",
 
   // ── 系统管理 - 订阅详情 Drawer ──────────────────────────
   "PC.Pages.SystemSubsOrders.drawerTitle": "订阅详情",

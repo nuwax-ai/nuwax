@@ -40,7 +40,9 @@ const EarningsStats: React.FC = () => {
 
       {/* 排行榜图表 */}
       <TopEarningsChart
-        title={dict('PC.Pages.SystemPaymentEarnings.chartTopRankings')}
+        title={dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTopRankings',
+        )}
         data={revenueData?.userRankings || []}
         loading={statsLoading}
       />
