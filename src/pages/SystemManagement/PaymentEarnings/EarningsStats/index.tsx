@@ -3,11 +3,13 @@ import { dict } from '@/services/i18nRuntime';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
+import { useLocation } from 'umi';
 import EarningsSummary from './components/EarningsSummary';
 import EarningsTable from './components/EarningsTable';
 import TopEarningsChart from './components/TopEarningsChart';
 
 const EarningsStats: React.FC = () => {
+  const location = useLocation();
   const [month, setMonth] = useState<string>(dayjs().format('YYYY-MM'));
   const [revenueData, setRevenueData] = useState<any>(null);
 
@@ -35,20 +37,22 @@ const EarningsStats: React.FC = () => {
         />
       }
     >
-      {/* 统计卡 */}
-      <EarningsSummary data={summaryData} loading={statsLoading} />
+      <div key={location.key}>
+        {/* 统计卡 */}
+        <EarningsSummary data={summaryData} loading={statsLoading} />
 
-      {/* 排行榜图表 */}
-      <TopEarningsChart
-        title={dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTopRankings',
-        )}
-        data={revenueData?.userRankings || []}
-        loading={statsLoading}
-      />
+        {/* 排行榜图表 */}
+        <TopEarningsChart
+          title={dict(
+            'PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTopRankings',
+          )}
+          data={revenueData?.userRankings || []}
+          loading={statsLoading}
+        />
 
-      {/* 收益详情表格 */}
-      <EarningsTable month={month} onStatsChange={setRevenueData} />
+        {/* 收益详情表格 */}
+        <EarningsTable month={month} onStatsChange={setRevenueData} />
+      </div>
     </WorkspaceLayout>
   );
 };

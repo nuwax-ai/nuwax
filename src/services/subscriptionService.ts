@@ -193,7 +193,9 @@ export async function apiListMyOrders(params: {
 export async function apiGetMyBillOrders(params: {
   orderStatus?: BillOrderStatusEnum | null;
   payStatus?: BillPayStatusEnum | null;
-}): Promise<RequestResponse<BillOrderInfo[]>> {
+  pageNum?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<{ records: BillOrderInfo[]; total: number }>> {
   return request('/api/bill/order/my', { method: 'GET', params });
 }
 

@@ -29,11 +29,14 @@ const DailyEarningsDetailModal: React.FC<DailyEarningsDetailModalProps> = ({
         targetId: targetId!,
         pageNum,
         pageSize: 20,
-      }).then((res) => ({
-        list: res.data || [],
-        // 如果返回的数据少于 20 条，说明没有更多了
-        noMore: (res.data || []).length < 20,
-      }));
+      }).then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        return {
+          list,
+          // 如果返回的数据少于 20 条，说明没有更多了
+          noMore: list.length < 20,
+        };
+      });
     },
     {
       target: containerRef,

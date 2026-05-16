@@ -3,11 +3,13 @@ import { dict } from '@/services/i18nRuntime';
 import { WithdrawalStatusEnum } from '@/types/interfaces/subscription';
 import { Card, Tabs } from 'antd';
 import React, { useState } from 'react';
+import { useLocation } from 'umi';
 import PendingWithdrawalTable from './components/PendingWithdrawalTable';
 import ProcessedWithdrawalTable from './components/ProcessedWithdrawalTable';
 import { MOCK_WITHDRAWALS } from './constants';
 
 const Withdrawal: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('pending');
 
   const pendingCount = MOCK_WITHDRAWALS.filter(
@@ -63,7 +65,9 @@ const Withdrawal: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      <div key={location.key}>
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      </div>
     </WorkspaceLayout>
   );
 };
