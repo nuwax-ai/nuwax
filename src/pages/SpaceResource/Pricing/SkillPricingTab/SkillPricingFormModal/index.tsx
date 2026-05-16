@@ -241,6 +241,8 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
       {!editItem && (
         <Created
           open={createdOpen}
+          // 只展示当前空间
+          isSpaceOnly={true}
           onCancel={() => setCreatedOpen(false)}
           checkTag={AgentComponentTypeEnum.Skill}
           onAdded={handleCreatedAdded}

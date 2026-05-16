@@ -1,7 +1,7 @@
 /**
  * 订单收益查询
  */
-import { RequestResponse } from '@/types/interfaces/request';
+import { PageNum, RequestResponse } from '@/types/interfaces/request';
 import { BillOrderInfo } from '@/types/interfaces/subscription';
 import { request } from 'umi';
 import {
@@ -27,7 +27,7 @@ export async function apiGetOrderRevenueStats(
  */
 export async function apiGetOrderRevenueList(
   params: BillOrderSearchParams,
-): Promise<RequestResponse<BillOrderInfo[]>> {
+): Promise<RequestResponse<PageNum<BillOrderInfo>>> {
   return request('/api/system/bill/order/query', {
     method: 'GET',
     params,

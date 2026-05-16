@@ -573,3 +573,51 @@ export async function apiSubscribeAgentPlan(
     data: { planId },
   });
 }
+
+export interface DailyRevenueItem {
+  id: number | null;
+  userId: number;
+  nickName: string | null;
+  userName: string | null;
+  phone: string | null;
+  email: string | null;
+  dt: string; // YYYYMMDD
+  amount: number;
+  status: string;
+  created: string | null;
+}
+
+export interface RevenueStatsResponse {
+  totalRevenue: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  pendingAmount: number;
+  settledAmount: number;
+  dailyRevenues: DailyRevenueItem[];
+  userRankings: Array<{
+    userId: number;
+    userName: string | null;
+    amount: number;
+  }>;
+  total: number;
+}
+
+export interface RevenueStatsParams {
+  monthStart?: string; // YYYYMMDD
+  monthEnd?: string; // YYYYMMDD
+  status?: string; // PENDING,WITHDRAW_APPLYING,PAYING,SETTLED
+  pageNum?: number;
+  pageSize?: number;
+}
+
+/**
+ * 系统管理 - 查询开发者收益统计 (支持按月过滤、排行、列表)
+ */
+export async function apiGetSystemRevenueStats(
+  params: RevenueStatsParams,
+): Promise<RequestResponse<RevenueStatsResponse>> {
+  return request('/api/system/bill/revenue/stats', {
+    method: 'GET',
+    params,
+  });
+}

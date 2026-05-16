@@ -92,10 +92,10 @@ const fetchOrderRevenueTableRequest = async (
     };
     const res = await apiGetOrderRevenueList(payload);
     if (res?.code === SUCCESS_CODE) {
-      const list = res.data || [];
+      const list = res.data.records || [];
       return {
         data: list,
-        total: list.length,
+        total: res.data.total,
         success: true,
       };
     }
