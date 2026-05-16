@@ -3348,6 +3348,10 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.periodOnce": "回",
   "PC.Pages.SpaceResourcePricing.cycleMonthly": "ヶ月",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 回",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
+    "各ティアのコンテキスト長は必須で、0 より大きい値にしてください",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
+    "ティアごとのコンテキスト長は重複できません",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "エージェントサブスクリプション",
   "PC.Pages.SpaceAgentSubscriptions.pageSubtitle": "エージェントサービスプランの管理",

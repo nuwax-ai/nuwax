@@ -63,34 +63,29 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colOrderId'),
     dataIndex: 'id',
-    width: 100,
     search: false,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colDescription'),
     dataIndex: 'description',
-    width: 200,
     search: false,
     ellipsis: true,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colBizType'),
     dataIndex: 'bizType',
-    width: 120,
     search: false,
     render: (_, record) => BIZ_TYPE_MAP[record.bizType] || record.bizType,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colAmount'),
     dataIndex: 'amount',
-    width: 120,
     search: false,
     render: (_, record) => `¥${Number(record.amount).toFixed(2)}`,
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colPayStatus'),
     dataIndex: 'payStatus',
-    width: 120,
     valueType: 'select',
     valueEnum: Object.entries(PAY_STATUS_MAP).reduce(
       (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
@@ -104,7 +99,6 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colOrderStatus'),
     dataIndex: 'orderStatus',
-    width: 120,
     valueType: 'select',
     valueEnum: Object.entries(ORDER_STATUS_MAP).reduce(
       (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
@@ -118,7 +112,6 @@ const columns: ProColumns<BillOrderInfo>[] = [
   {
     title: dict('PC.Pages.MorePage.MyOrders.colCreated'),
     dataIndex: 'created',
-    width: 180,
     search: false,
     valueType: 'dateTime',
   },
@@ -148,7 +141,6 @@ const OrderList: React.FC = () => {
     title: dict('PC.Pages.MorePage.MyOrders.colAction'),
     valueType: 'option',
     fixed: 'right',
-    width: 100,
     render: (_, record) => {
       const isPendingPay =
         record.payStatus === BillPayStatusEnum.PENDING ||
@@ -179,15 +171,18 @@ const OrderList: React.FC = () => {
       rowKey="id"
       columns={allColumns}
       request={async (params) => {
+        const { current, pageSize, orderStatus, payStatus } = params;
         const res = await apiGetMyBillOrders({
-          orderStatus: params?.orderStatus || null,
-          payStatus: params?.payStatus || null,
+          orderStatus: orderStatus || null,
+          payStatus: payStatus || null,
+          pageNum: current,
+          pageSize,
         });
         if (res.success) {
           return {
-            data: res.data || [],
+            data: Array.isArray(res.data?.records) ? res.data.records : [],
             success: true,
-            total: (res.data || []).length,
+            total: res.data?.total || 0,
           };
         }
         return { data: [], success: false, total: 0 };

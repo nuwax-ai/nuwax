@@ -3,52 +3,60 @@ import { dict } from '@/services/i18nRuntime';
 import { WithdrawalStatusEnum } from '@/types/interfaces/subscription';
 import { Card, Tabs } from 'antd';
 import React, { useState } from 'react';
+import { useLocation } from 'umi';
 import PendingWithdrawalTable from './components/PendingWithdrawalTable';
 import ProcessedWithdrawalTable from './components/ProcessedWithdrawalTable';
-import WithdrawalStats from './components/WithdrawalStats';
 import { MOCK_WITHDRAWALS } from './constants';
 
 const Withdrawal: React.FC = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('pending');
 
   const pendingCount = MOCK_WITHDRAWALS.filter(
     (w) => w.status === WithdrawalStatusEnum.Pending,
   ).length;
-  const totalApproved = MOCK_WITHDRAWALS.filter(
-    (w) => w.status === WithdrawalStatusEnum.Approved,
-  ).reduce((s, w) => s + w.amount, 0);
 
   const tabItems = [
     {
       key: 'pending',
       label: `${dict(
-        'PC.Pages.SystemWithdrawal.tabPending',
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending',
       )} (${pendingCount})`,
       children: <PendingWithdrawalTable />,
     },
     {
       key: 'processed',
-      label: dict('PC.Pages.SystemWithdrawal.tabProcessed'),
+      label: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabProcessed',
+      ),
       children: <ProcessedWithdrawalTable />,
     },
     {
       key: 'config',
-      label: dict('PC.Pages.SystemWithdrawal.tabConfig'),
+      label: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig',
+      ),
       children: (
         <Card style={{ maxWidth: 560 }}>
           <p style={{ color: '#999' }}>
-            {dict('PC.Pages.SystemWithdrawal.configPlaceholder')}
+            {dict(
+              'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.configPlaceholder',
+            )}
           </p>
         </Card>
       ),
     },
     {
       key: 'earnings',
-      label: dict('PC.Pages.SystemWithdrawal.tabEarnings'),
+      label: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabEarnings',
+      ),
       children: (
         <Card style={{ maxWidth: 560 }}>
           <p style={{ color: '#999' }}>
-            {dict('PC.Pages.SystemWithdrawal.earningsPlaceholder')}
+            {dict(
+              'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.earningsPlaceholder',
+            )}
           </p>
         </Card>
       ),
@@ -57,13 +65,9 @@ const Withdrawal: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
-      <WithdrawalStats
-        pendingCount={pendingCount}
-        totalApproved={totalApproved}
-        totalCount={MOCK_WITHDRAWALS.length}
-      />
-
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      <div key={location.key}>
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      </div>
     </WorkspaceLayout>
   );
 };
