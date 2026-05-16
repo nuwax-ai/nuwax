@@ -2,6 +2,7 @@ import Created from '@/components/Created';
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, InputNumber, Select, Switch, message } from 'antd';
@@ -27,6 +28,8 @@ interface ToolPricingFormModalProps {
   /** 新建时必传插件/工作流/MCP；编辑时用 editItem.targetType */
   targetType: ToolPricingTargetType;
   editItem: ResourcePricingConfigInfo | null;
+  /** 当前工具定价列表已占用的目标，传给 Created 做已添加状态 */
+  pricedToolAddComponents: AgentAddComponentStatusInfo[];
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -39,6 +42,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
   open,
   targetType,
   editItem,
+  pricedToolAddComponents,
   onCancel,
   onSaved,
 }) => {
@@ -259,6 +263,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
         onCancel={() => setCreatedOpen(false)}
         checkTag={getCreatedTagByTargetType(targetType)}
         onAdded={handleCreatedAdded}
+        addComponents={pricedToolAddComponents}
         tabs={[
           {
             label: TARGET_TYPE_LABEL_MAP[targetType] || '',
