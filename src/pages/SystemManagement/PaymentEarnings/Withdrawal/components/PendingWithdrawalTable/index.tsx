@@ -12,15 +12,17 @@ import {
 } from '@/types/interfaces/subscription';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Input, Modal, message } from 'antd';
+import { message } from 'antd';
 import React, { useRef, useState } from 'react';
-import { history } from 'umi';
+import RejectModal from './components/RejectModal';
+import RevenueDetailModal from './components/RevenueDetailModal';
 
 const PendingWithdrawalTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectId, setRejectId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [revenueModalVisible, setRevenueModalVisible] = useState(false);
+  const [currentRevenues, setCurrentRevenues] = useState<any[]>([]);
 
   const handleApprove = async (id: number) => {
     await apiApproveWithdrawal(id);
@@ -32,16 +34,14 @@ const PendingWithdrawalTable: React.FC = () => {
     actionRef.current?.reload();
   };
 
-  const handleReject = async () => {
+  const handleReject = async (reason: string) => {
     if (!rejectId) return;
-    await apiRejectWithdrawal(rejectId, rejectReason);
+    await apiRejectWithdrawal(rejectId, reason);
     message.success(
       dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
       ),
     );
-    setRejectModalOpen(false);
-    setRejectReason('');
     actionRef.current?.reload();
   };
 
@@ -59,14 +59,27 @@ const PendingWithdrawalTable: React.FC = () => {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
       ),
-      key: 'keyword',
+      dataIndex: 'userName',
+      key: 'userName',
+      width: 120,
       ellipsis: true,
-      render: (_, record) => {
-        const firstRev = record.revenues?.[0];
-        return firstRev
-          ? `${firstRev.userName || firstRev.nickName || '-'}`
-          : '-';
-      },
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPhone',
+      ),
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 120,
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colEmail',
+      ),
+      dataIndex: 'email',
+      key: 'email',
+      width: 180,
+      ellipsis: true,
     },
     {
       title: dict(
@@ -115,12 +128,12 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'created',
       key: 'created',
       search: false,
+      valueType: 'dateTime',
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
-      width: 200,
       render: (_, record) => (
         <TableActions
           record={record}
@@ -153,14 +166,10 @@ const PendingWithdrawalTable: React.FC = () => {
               label: dict(
                 'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewEarnings',
               ),
-              onClick: (r) =>
-                history.push(
-                  `/system/payment-earnings/earnings-detail?developerId=${
-                    r.userId
-                  }&developerName=${encodeURIComponent(
-                    r.revenues?.[0]?.userName || '',
-                  )}`,
-                ),
+              onClick: (r) => {
+                setCurrentRevenues(r.revenues || []);
+                setRevenueModalVisible(true);
+              },
             },
           ]}
         />
@@ -191,37 +200,16 @@ const PendingWithdrawalTable: React.FC = () => {
           return { data: [], total: 0, success: false };
         }}
       />
-      <Modal
-        title={dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectModalTitle',
-        )}
+      <RejectModal
         open={rejectModalOpen}
-        onCancel={() => {
-          setRejectModalOpen(false);
-          setRejectReason('');
-        }}
-        onOk={handleReject}
-        okButtonProps={{ danger: true }}
-        okText={dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.reject',
-        )}
-      >
-        <p style={{ marginBottom: 12 }}>
-          {dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonLabel',
-          )}
-        </p>
-        <Input.TextArea
-          rows={3}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          placeholder={dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonPlaceholder',
-          )}
-          maxLength={200}
-          showCount
-        />
-      </Modal>
+        onCancel={() => setRejectModalOpen(false)}
+        onConfirm={handleReject}
+      />
+      <RevenueDetailModal
+        open={revenueModalVisible}
+        onCancel={() => setRevenueModalVisible(false)}
+        data={currentRevenues}
+      />
     </>
   );
 };

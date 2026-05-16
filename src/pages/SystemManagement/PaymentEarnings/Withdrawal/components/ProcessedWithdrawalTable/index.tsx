@@ -55,14 +55,27 @@ const ProcessedWithdrawalTable: React.FC = () => {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
       ),
-      key: 'keyword',
+      dataIndex: 'userName',
+      key: 'userName',
+      width: 120,
       ellipsis: true,
-      render: (_, record) => {
-        const firstRev = record.revenues?.[0];
-        return firstRev
-          ? `${firstRev.userName || firstRev.nickName || '-'}`
-          : '-';
-      },
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPhone',
+      ),
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 120,
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colEmail',
+      ),
+      dataIndex: 'email',
+      key: 'email',
+      width: 180,
+      ellipsis: true,
     },
     {
       title: dict(
