@@ -9,6 +9,7 @@ import type {
   BillPayStatusEnum,
   BillWithdrawApplyResponse,
   BillWithdrawRecordInfo,
+  BillWithdrawStatusEnum,
   BizTypeEnum,
   CheckSubscriptionResult,
   CreditBatchItem,
@@ -31,8 +32,6 @@ import type {
   SubscriptionPlan,
   SystemSubscriptionPlan,
   UserSubscriptionInfo,
-  WithdrawalInfo,
-  WithdrawalStatusEnum,
   WithdrawConfig,
 } from '@/types/interfaces/subscription';
 
@@ -427,11 +426,13 @@ export async function apiPageDevPaymentAccounts(data: {
 
 export async function apiListWithdrawals(params: {
   keyword?: string;
-  status?: WithdrawalStatusEnum;
+  status?: BillWithdrawStatusEnum;
   pageNum?: number;
   pageSize?: number;
-}): Promise<RequestResponse<{ list: WithdrawalInfo[]; total: number }>> {
-  return request('/api/system/withdrawals', { method: 'GET', params });
+}): Promise<
+  RequestResponse<{ records: BillWithdrawRecordInfo[]; total: number }>
+> {
+  return request('/api/system/bill/withdraw/list', { method: 'GET', params });
 }
 
 export async function apiApproveWithdrawal(

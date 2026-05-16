@@ -2,8 +2,12 @@ import pluginImage from '@/assets/images/plugin_image.png';
 import workflowImage from '@/assets/images/workflow_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { TableActions, XProTable } from '@/components/ProComponents';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
+import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
@@ -44,6 +48,19 @@ const TOOL_PRICING_TAB_TARGET_TYPES = [
   ToolPricingTargetType.PLUGIN,
   ToolPricingTargetType.WORKFLOW,
 ];
+
+/** 定价 targetType → Created 勾选态用的组件类型（与 ToolPricingFormModal 一致） */
+const toolPricingTargetTypeToAgentComponentType = (
+  tt: ToolPricingTargetType,
+): AgentComponentTypeEnum => {
+  if (tt === ToolPricingTargetType.PLUGIN) {
+    return AgentComponentTypeEnum.Plugin;
+  }
+  if (tt === ToolPricingTargetType.WORKFLOW) {
+    return AgentComponentTypeEnum.Workflow;
+  }
+  return AgentComponentTypeEnum.MCP;
+};
 
 // 「添加工具」Popover 条目，CustomPopover.onClick 会带上 value 作为新建类型
 const ADD_TOOL_LIST: CustomPopoverItem[] = [
@@ -88,6 +105,10 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
     null,
   );
+  /** 当前列表已定价的插件/工作流，传给 Created 标记已添加，避免重复选 */
+  const [pricedToolAddComponents, setPricedToolAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
   /** 供 XProTable 调用 reload（删除后、表单保存成功后刷新列表） */
   const actionRef = useRef<ActionType>();
 
@@ -334,43 +355,54 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
     pageSize?: number;
     current?: number;
   }) => {
-    setLoading(true);
-    // 状态：0-禁用，1-启用
-    const statusRaw = params.status;
-    const status =
-      statusRaw !== undefined && statusRaw !== null
-        ? Number(statusRaw)
-        : undefined;
+    try {
+      setLoading(true);
+      // 状态：0-禁用，1-启用
+      const statusRaw = params.status;
+      const status =
+        statusRaw !== undefined && statusRaw !== null
+          ? Number(statusRaw)
+          : undefined;
 
-    const res = await apiListPricingConfig({
-      targetTypes: [...TOOL_PRICING_TAB_TARGET_TYPES],
-      spaceId,
-      ...(status !== undefined ? { status } : {}),
-    });
-    setLoading(false);
+      const res = await apiListPricingConfig({
+        targetTypes: [...TOOL_PRICING_TAB_TARGET_TYPES],
+        spaceId,
+        ...(status !== undefined ? { status } : {}),
+      });
+      setLoading(false);
 
-    if (res.code !== SUCCESS_CODE) {
-      message.error(
-        res.message || dict('PC.Pages.SpaceResourcePricing.fetchDataFailed'),
+      // 处理已定价的工具, 标记已添加避免重复选
+      const rawList = res.data || [];
+      setPricedToolAddComponents(
+        rawList.map((row) => ({
+          type: toolPricingTargetTypeToAgentComponentType(
+            row.targetType as ToolPricingTargetType,
+          ),
+          targetId: Number(row.targetId),
+          status: AgentAddComponentStatusEnum.Added,
+        })),
       );
+
+      let data = [...rawList];
+
+      const typeFilter = params.targetType;
+      if (
+        typeFilter === ToolPricingTargetType.PLUGIN ||
+        typeFilter === ToolPricingTargetType.WORKFLOW
+      ) {
+        data = data.filter((row) => row.targetType === typeFilter);
+      }
+
+      return {
+        data,
+        total: data.length,
+        success: true,
+      };
+    } catch {
+      setLoading(false);
+      setPricedToolAddComponents([]);
       return { data: [], total: 0, success: false };
     }
-
-    let data = res.data || [];
-
-    const typeFilter = params.targetType;
-    if (
-      typeFilter === ToolPricingTargetType.PLUGIN ||
-      typeFilter === ToolPricingTargetType.WORKFLOW
-    ) {
-      data = data.filter((row) => row.targetType === typeFilter);
-    }
-
-    return {
-      data,
-      total: data.length,
-      success: true,
-    };
   };
 
   return (
@@ -398,6 +430,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
         open={toolModalOpen}
         targetType={selectedTargetType as ToolPricingTargetType}
         editItem={editItem}
+        pricedToolAddComponents={pricedToolAddComponents}
         onCancel={closeToolModal}
         onSaved={() => {
           closeToolModal();

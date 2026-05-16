@@ -1,5 +1,4 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
@@ -109,39 +108,38 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
     pageSize?: number;
     current?: number;
   }) => {
-    const statusRaw = params.status;
-    // 转换为数字类型
-    let status: ResourcePricingStatus | undefined;
-    if (statusRaw !== undefined && statusRaw !== null) {
-      status = Number(statusRaw);
-    }
+    try {
+      const statusRaw = params.status;
+      // 转换为数字类型
+      let status: ResourcePricingStatus | undefined;
+      if (statusRaw !== undefined && statusRaw !== null) {
+        status = Number(statusRaw);
+      }
 
-    setLoading(true);
-    const res = await apiListPricingConfig({
-      targetType: ToolPricingTargetType.MODEL,
-      spaceId,
-      ...(status !== undefined ? { status } : {}),
-    });
-    setLoading(false);
+      setLoading(true);
+      const res = await apiListPricingConfig({
+        targetType: ToolPricingTargetType.MODEL,
+        spaceId,
+        ...(status !== undefined ? { status } : {}),
+      });
+      setLoading(false);
 
-    if (res.code !== SUCCESS_CODE) {
-      message.error(
-        res.message || dict('PC.Pages.SpaceResourcePricing.fetchDataFailed'),
+      const data = res.data || [];
+      setExistingModelIds(
+        data
+          .map((item) => Number(item.targetId))
+          .filter((id) => Number.isFinite(id)),
       );
+      return {
+        data,
+        total: data.length,
+        success: true,
+      };
+    } catch {
+      setLoading(false);
+      setExistingModelIds([]);
       return { data: [], total: 0, success: false };
     }
-
-    const data = res.data || [];
-    setExistingModelIds(
-      data
-        .map((item) => Number(item.targetId))
-        .filter((id) => Number.isFinite(id)),
-    );
-    return {
-      data,
-      total: data.length,
-      success: true,
-    };
   };
 
   // 删除模型定价
