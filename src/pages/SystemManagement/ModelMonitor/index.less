@@ -1,0 +1,80 @@
+.model-monitor-container {
+  padding: 20px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+// 筛选栏
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.filter-label {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 65%);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+// 汇总统计卡片区域
+.summary-section {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 85%);
+    margin-bottom: 12px;
+  }
+}
+
+.stat-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat-item-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+  transition: all 0.3s ease;
+  background: #fff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 12%);
+    transform: translateY(-2px);
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 45%);
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 85%);
+    line-height: 1.2;
+
+    &.highlight {
+      color: #faad14;
+    }
+  }
+}
+
+// 明细表格区域 - 撑满剩余空间
+.detail-section {
+  flex: 1;
+  min-height: 0;
+}
