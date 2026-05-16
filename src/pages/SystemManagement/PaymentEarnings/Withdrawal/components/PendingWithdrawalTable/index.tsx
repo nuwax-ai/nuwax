@@ -84,6 +84,7 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'phone',
       key: 'phone',
       width: 120,
+      search: false,
     },
     {
       title: dict(
@@ -93,6 +94,7 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'email',
       width: 180,
       ellipsis: true,
+      search: false,
     },
     {
       title: dict(
@@ -198,7 +200,7 @@ const PendingWithdrawalTable: React.FC = () => {
         columns={columns}
         request={async (params) => {
           const res = await apiListWithdrawals({
-            keyword: params.keyword,
+            keyword: params.userName,
             status: BillWithdrawStatusEnum.PENDING_REVIEW,
             pageNum: params.current,
             pageSize: params.pageSize,
