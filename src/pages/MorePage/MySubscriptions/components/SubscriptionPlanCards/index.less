@@ -121,6 +121,42 @@
     }
   }
 
+  .plan-content {
+    padding: 0 @paddingXl @paddingLg;
+    flex: 1;
+    min-height: 140px;
+
+    .benefit-group {
+      margin-bottom: @marginSm;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .benefit-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 12px;
+      margin-bottom: @marginSm;
+      font-size: @fontSize;
+      color: @colorTextSecondary;
+      line-height: 1.4;
+
+      .check-icon {
+        margin-top: 3px;
+        color: @green6;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      span {
+        color: @colorTextBase;
+      }
+    }
+  }
+
   .plan-footer {
     background: #f8fafc;
     padding: @paddingLg;

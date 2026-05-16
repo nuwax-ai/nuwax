@@ -7,6 +7,7 @@ import {
   MyPlanPeriodEnum,
   SystemSubscriptionPlan,
 } from '@/types/interfaces/subscription';
+import { CheckOutlined } from '@ant-design/icons';
 import { Button, Col, message, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -21,6 +22,7 @@ export interface PlanInfo {
   creditAmount: number;
   period: string;
   isHot: boolean;
+  itemGroups: any[];
 }
 
 interface SubscriptionPlanCardsProps {
@@ -107,6 +109,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
       creditAmount: item.creditAmount,
       period: item.period,
       isHot: !!item.isHot,
+      itemGroups: item.itemGroups || [],
     }));
   }, [data]);
 
@@ -183,6 +186,19 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                     {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
                     {dict('PC.Pages.MorePage.MySubscriptions.perMonth')}
                   </div>
+                </div>
+
+                <div className={cx(styles['plan-content'])}>
+                  {plan.itemGroups.map((group, gIdx) => (
+                    <div key={gIdx} className={cx(styles['benefit-group'])}>
+                      {group.items.map((benefit: any, bIdx: number) => (
+                        <div key={bIdx} className={cx(styles['benefit-item'])}>
+                          <CheckOutlined className={cx(styles['check-icon'])} />
+                          <span>{benefit.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
 
                 <div className={cx(styles['plan-footer'])}>
