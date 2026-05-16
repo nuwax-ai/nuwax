@@ -187,7 +187,7 @@ const UsageStats: React.FC = () => {
     },
     {
       title: dict('PC.Pages.UsageStats.colType'),
-      dataIndex: 'type',
+      dataIndex: 'targetType',
       width: 100,
       hideInSearch: true,
     },
@@ -273,22 +273,17 @@ const UsageStats: React.FC = () => {
           <div style={{ flex: 1 }} />
         </div>
 
-        {/* 综合统计卡片 */}
-        <div className={styles['summary-section']}>
-          <div className={styles['section-title']}>
-            {dict('PC.Pages.UsageStats.summaryTitle')}
-          </div>
-          <div className={styles['stat-cards-row']}>
-            {overviewMetrics.map((metric, index) => (
-              <SummaryCard
-                key={index}
-                label={metric.label}
-                value={metric.value}
-                highlight={metric.highlight}
-                loading={summaryLoading}
-              />
-            ))}
-          </div>
+        {/* 统计卡片 */}
+        <div className={styles['stat-cards-row']}>
+          {overviewMetrics.map((metric, index) => (
+            <SummaryCard
+              key={index}
+              label={metric.label}
+              value={metric.value}
+              highlight={metric.highlight}
+              loading={summaryLoading}
+            />
+          ))}
         </div>
 
         {/* 明细表格 */}
