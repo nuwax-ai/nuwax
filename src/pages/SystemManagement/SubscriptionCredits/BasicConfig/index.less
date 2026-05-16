@@ -29,6 +29,18 @@
       border-bottom: 1px solid @colorBorderSecondary;
     }
 
+    /** 区块标题与控制开关同一行（如订阅总开关） */
+    .sectionTitleRow {
+      display: flex;
+      align-items: center;
+      gap: @marginMd;
+      margin-bottom: @marginSm;
+
+      .sectionTitle {
+        margin-bottom: 0;
+      }
+    }
+
     .exchangeNotice {
       flex: 1;
       padding: @paddingXs @paddingSm;

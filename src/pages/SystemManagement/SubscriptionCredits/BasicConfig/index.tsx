@@ -82,12 +82,8 @@ const BasicConfig: React.FC = () => {
           >
             {/* 积分兑换配置 */}
             <section className={styles.sectionBlock}>
-              <h5 className={styles.sectionTitle}>订阅与积分功能开关</h5>
-              <Text type="secondary" className={styles.sectionDesc}>
-                全局控制订阅/计费和积分体系的启用状态
-              </Text>
-              <div className={styles.exchangeLine}>
-                <div className={styles.exchangeLineLabel}>订阅与积分</div>
+              <div className={styles.sectionTitleRow}>
+                <h5 className={styles.sectionTitle}>订阅与积分功能开关</h5>
                 <Form.Item
                   name="enableSubscription"
                   valuePropName="checked"
@@ -96,6 +92,9 @@ const BasicConfig: React.FC = () => {
                   <Switch />
                 </Form.Item>
               </div>
+              <Text type="secondary" className={styles.sectionDesc}>
+                全局控制订阅/计费和积分体系的启用状态
+              </Text>
               <h5 className={styles.sectionTitle}>积分兑换比例</h5>
               <Text type="secondary" className={styles.sectionDesc}>
                 设置积分与币值的兑换比率，用户可使用积分兑换订单金额
@@ -121,6 +120,7 @@ const BasicConfig: React.FC = () => {
                       <Form.Item name="creditExchangeRate" noStyle>
                         <InputNumber
                           min={1}
+                          max={100000000}
                           precision={0}
                           style={{ width: 120 }}
                         />
@@ -177,17 +177,26 @@ const BasicConfig: React.FC = () => {
 
             {/* 新用户注册赠送 */}
             <section className={styles.sectionBlock}>
-              <h5 className={styles.sectionTitle}>
-                {dict(
-                  'PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift',
-                )}
-              </h5>
+              <div className={styles.sectionTitleRow}>
+                <h5 className={styles.sectionTitle}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift',
+                  )}
+                </h5>
+                <Form.Item
+                  name="enableGiftCredit"
+                  valuePropName="checked"
+                  noStyle
+                >
+                  <Switch />
+                </Form.Item>
+              </div>
               <Text type="secondary" className={styles.sectionDesc}>
                 用户首次注册完成后，自动获得赠送积分
               </Text>
 
               <Row gutter={[24, 0]} align="bottom">
-                <Col span={8}>
+                <Col span={12}>
                   {/* 赠送积分 */}
                   <Form.Item
                     label={dict(
@@ -204,6 +213,7 @@ const BasicConfig: React.FC = () => {
                       <Form.Item name="giftCreditAmount" noStyle>
                         <InputNumber
                           min={0}
+                          max={100000000}
                           precision={0}
                           style={{ width: 120 }}
                         />
@@ -217,7 +227,7 @@ const BasicConfig: React.FC = () => {
                   </Form.Item>
                 </Col>
                 {/* 赠送积分有效期 */}
-                <Col span={8}>
+                <Col span={12}>
                   <Form.Item
                     label={dict(
                       'PC.Pages.SystemSubscriptionBasicConfig.registerGiftValidity',
@@ -233,6 +243,7 @@ const BasicConfig: React.FC = () => {
                       <Form.Item name="giftCreditExpire" noStyle>
                         <InputNumber
                           min={0}
+                          max={100000000}
                           precision={0}
                           style={{ width: 120 }}
                         />
@@ -243,70 +254,54 @@ const BasicConfig: React.FC = () => {
                     </div>
                   </Form.Item>
                 </Col>
-                {/* 启用状态 */}
-                <Col span={8}>
-                  <Form.Item
-                    label="启用状态"
-                    name="enableGiftCredit"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
               </Row>
             </section>
 
             {/* 每日登录赠送 */}
             <section style={{ marginBottom: 16 }}>
-              <h5 className={styles.sectionTitle}>
-                {dict(
-                  'PC.Pages.SystemSubscriptionBasicConfig.sectionDailyLogin',
-                )}
-              </h5>
+              <div className={styles.sectionTitleRow}>
+                <h5 className={styles.sectionTitle}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.sectionDailyLogin',
+                  )}
+                </h5>
+                <Form.Item
+                  name="enableDailyGiftCredit"
+                  valuePropName="checked"
+                  noStyle
+                >
+                  <Switch />
+                </Form.Item>
+              </div>
               <Text type="secondary" className={styles.sectionDesc}>
                 用户每日首次登录时自动获得赠送积分
               </Text>
 
-              <Row gutter={[24, 0]} align="bottom">
-                <Col span={8}>
-                  {/* 每日登录赠送积分 */}
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    <Form.Item
-                      name="dailyGiftCreditAmount"
-                      label={dict(
-                        'PC.Pages.SystemSubscriptionBasicConfig.dailyLoginCredits',
-                      )}
-                    >
-                      <InputNumber
-                        min={0}
-                        precision={0}
-                        style={{ width: 120 }}
-                      />
-                    </Form.Item>
-                    <span style={{ whiteSpace: 'nowrap' }}>
-                      {dict(
-                        'PC.Pages.SystemSubscriptionBasicConfig.creditsUnit',
-                      )}
-                    </span>
-                  </div>
-                </Col>
-                <Col span={8}>
-                  {/* 启用状态 */}
-                  <Form.Item
-                    label="启用状态"
-                    name="enableDailyGiftCredit"
-                    valuePropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Col>
-              </Row>
+              {/* 每日登录赠送积分 */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <Form.Item
+                  name="dailyGiftCreditAmount"
+                  label={dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.dailyLoginCredits',
+                  )}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100000000}
+                    precision={0}
+                    style={{ width: 120 }}
+                  />
+                </Form.Item>
+                <span style={{ whiteSpace: 'nowrap' }}>
+                  {dict('PC.Pages.SystemSubscriptionBasicConfig.creditsUnit')}
+                </span>
+              </div>
             </section>
           </Form>
         </div>
