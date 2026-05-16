@@ -2,9 +2,8 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiApproveWithdrawal,
   apiListWithdrawals,
-  apiRejectWithdrawal,
+  apiProcessWithdrawal,
 } from '@/services/subscriptionService';
 import {
   BillWithdrawRecordInfo,
@@ -20,29 +19,43 @@ import RevenueDetailModal from './components/RevenueDetailModal';
 const PendingWithdrawalTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [selectedRecord, setSelectedRecord] =
+    useState<BillWithdrawRecordInfo | null>(null);
   const [revenueModalVisible, setRevenueModalVisible] = useState(false);
   const [currentRevenues, setCurrentRevenues] = useState<any[]>([]);
 
-  const handleApprove = async (id: number) => {
-    await apiApproveWithdrawal(id);
-    message.success(
-      dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess',
-      ),
-    );
-    actionRef.current?.reload();
+  const handleApprove = async (record: BillWithdrawRecordInfo) => {
+    const res = await apiProcessWithdrawal({
+      tenantId: record.userId,
+      applicationId: record.id,
+      action: 'APPROVE',
+    });
+    if (res?.code === SUCCESS_CODE) {
+      message.success(
+        dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess',
+        ),
+      );
+      actionRef.current?.reload();
+    }
   };
 
   const handleReject = async (reason: string) => {
-    if (!rejectId) return;
-    await apiRejectWithdrawal(rejectId, reason);
-    message.success(
-      dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
-      ),
-    );
-    actionRef.current?.reload();
+    if (!selectedRecord) return;
+    const res = await apiProcessWithdrawal({
+      tenantId: selectedRecord.userId,
+      applicationId: selectedRecord.id,
+      action: 'REJECT',
+      rejectReason: reason,
+    });
+    if (res?.code === SUCCESS_CODE) {
+      message.success(
+        dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
+        ),
+      );
+      actionRef.current?.reload();
+    }
   };
 
   const columns: ProColumns<BillWithdrawRecordInfo>[] = [
@@ -148,7 +161,7 @@ const PendingWithdrawalTable: React.FC = () => {
                   'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.confirmApprove',
                 ),
               },
-              onClick: (r) => handleApprove(r.id),
+              onClick: (r) => handleApprove(r),
             },
             {
               key: 'reject',
@@ -157,7 +170,7 @@ const PendingWithdrawalTable: React.FC = () => {
               ),
               danger: true,
               onClick: (r) => {
-                setRejectId(r.id);
+                setSelectedRecord(r);
                 setRejectModalOpen(true);
               },
             },

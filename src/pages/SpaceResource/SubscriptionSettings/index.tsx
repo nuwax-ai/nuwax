@@ -608,7 +608,7 @@ const SpaceSubscriptionSettings: React.FC = () => {
         ]}
         width={520}
         centered
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
@@ -858,7 +858,7 @@ const SpaceSubscriptionSettings: React.FC = () => {
         ]}
         width={380}
         centered
-        destroyOnClose
+        destroyOnHidden
       >
         <p
           style={{
