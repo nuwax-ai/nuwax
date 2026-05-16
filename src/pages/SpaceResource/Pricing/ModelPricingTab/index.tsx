@@ -47,6 +47,8 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
     null,
   );
+  /** 列表中已配置定价的模型 ID，供新增弹窗下拉排除 */
+  const [existingModelIds, setExistingModelIds] = useState<number[]>([]);
   const [form] = Form.useForm();
   const actionRef = useRef<ActionType>();
 
@@ -130,6 +132,11 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
     }
 
     const data = res.data || [];
+    setExistingModelIds(
+      data
+        .map((item) => Number(item.targetId))
+        .filter((id) => Number.isFinite(id)),
+    );
     return {
       data,
       total: data.length,
@@ -304,6 +311,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
       {/* 模型定价弹窗 */}
       <ModelPricingModal
         spaceId={spaceId}
+        existingModelIds={existingModelIds}
         open={modalOpen}
         isEdit={!!editItem}
         editItem={editItem}

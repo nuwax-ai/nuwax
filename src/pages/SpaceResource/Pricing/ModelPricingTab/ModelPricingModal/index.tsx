@@ -26,6 +26,11 @@ interface ModelOption {
 interface ModelPricingModalProps {
   /** 当前空间 ID，用于查询可用模型列表。 */
   spaceId: number;
+  /**
+   * 当前空间已配置定价的模型 ID（与列表 `targetId` 对应）。
+   * 新增模式下下拉中会排除这些模型；编辑模式不受影响。
+   */
+  existingModelIds?: readonly number[];
   /** 弹窗是否显示。 */
   open: boolean;
   /** 是否编辑模式。 */
@@ -46,6 +51,7 @@ interface ModelPricingModalProps {
  */
 const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   spaceId,
+  existingModelIds = [],
   open,
   isEdit,
   editItem,
@@ -84,23 +90,29 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     if (!open || isEdit) {
       return;
     }
-    /** 仅在新增模式下加载可选模型。 */
+    const excludedIds = new Set(existingModelIds);
+
+    /** 仅在新增模式下加载可选模型，并排除已配置定价的模型。 */
     const fetchModelOptions = async () => {
       try {
         const result = await apiModelListSpace(spaceId);
-        const options = (result?.data || []).map((item) => ({
-          id: Number(item.id),
-          name: item.name,
-          apiProtocol: item.apiProtocol || '-',
-        }));
-        setModelOptions(options.filter((item) => Number.isFinite(item.id)));
+        const options = (result?.data || [])
+          .map((item) => ({
+            id: Number(item.id),
+            name: item.name,
+            apiProtocol: item.apiProtocol || '-',
+          }))
+          .filter(
+            (item) => Number.isFinite(item.id) && !excludedIds.has(item.id),
+          );
+        setModelOptions(options);
       } catch (error) {
         setModelOptions([]);
         message.error(dict('PC.Common.Global.operationFailed'));
       }
     };
     fetchModelOptions();
-  }, [open, isEdit, spaceId]);
+  }, [open, isEdit, spaceId, existingModelIds]);
 
   useEffect(() => {
     if (!open) {
