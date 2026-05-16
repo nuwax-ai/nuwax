@@ -1,37 +1,14 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiGetSystemRevenueStats } from '@/services/subscriptionService';
+import {
+  apiGetSystemRevenueStats,
+  type DailyRevenueItem,
+} from '@/services/subscriptionService';
 import type { ProColumns } from '@ant-design/pro-components';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef } from 'react';
 import { history } from 'umi';
-
-export interface DailyRevenueItem {
-  id: number | null;
-  userId: number;
-  nickName: string | null;
-  userName: string | null;
-  phone: string | null;
-  email: string | null;
-  dt: string; // YYYYMMDD
-  amount: number;
-  status: string;
-}
-
-const MOCK_DATA: DailyRevenueItem[] = [
-  {
-    id: null,
-    userId: 1,
-    nickName: '测试用户',
-    userName: 'test_user',
-    phone: '13800138000',
-    email: 'test@example.com',
-    dt: '20260516',
-    amount: 125.5,
-    status: 'PENDING',
-  },
-];
 
 interface EarningsTableProps {
   month: string;
@@ -51,6 +28,8 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       isFirstRender.current = false;
       return;
     }
+    // 月份切换时，先清空父组件数据，以触发统计卡片和图表的 loading 状态
+    onStatsChange?.(null);
     actionRef.current?.reload();
   }, [month]);
 
@@ -61,60 +40,38 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       key: 'userName',
       search: false,
       render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>
-            {record.userName || record.nickName || '未知'}
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>
-            {record.phone || record.email || '-'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: '收益日期',
-      dataIndex: 'dt',
-      key: 'dt',
-      search: false,
-      render: (val) => {
-        const dateStr = val as string;
-        if (dateStr?.length === 8) {
-          return `${dateStr.substring(0, 4)}-${dateStr.substring(
-            4,
-            6,
-          )}-${dateStr.substring(6, 8)}`;
-        }
-        return val;
-      },
-    },
-    {
-      title: '收益金额',
-      dataIndex: 'amount',
-      key: 'amount',
-      search: false,
-      render: (val) => (
-        <span style={{ fontWeight: 600, color: '#f5222d' }}>
-          ¥{((val as number) ?? 0).toLocaleString()}
+        <span style={{ fontWeight: 500 }}>
+          {record.nickName || record.userName || '-'}
         </span>
       ),
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      title: dict('PC.Pages.SystemPaymentEarnings.colTotalEarnings'),
+      dataIndex: 'amount',
+      key: 'amount',
       search: false,
-      valueEnum: {
-        PENDING: { text: '待结算', status: 'Default' },
-        WITHDRAW_APPLYING: { text: '提现中', status: 'Processing' },
-        PAYING: { text: '支付中', status: 'Warning' },
-        SETTLED: { text: '已结算', status: 'Success' },
-      },
+      render: (_, record) => (
+        <span style={{ fontWeight: 600, color: '#52c41a' }}>
+          ¥
+          {(record.amount ?? 0).toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </span>
+      ),
+    },
+    {
+      title: dict('PC.Pages.SystemPaymentEarnings.colLastEarningsAt'),
+      dataIndex: 'dt',
+      key: 'dt',
+      search: false,
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
-      width: 100,
+      width: 200,
+      align: 'center',
       render: (_, record) => (
         <TableActions
           record={record}
@@ -127,7 +84,7 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
                   `/system/payment-earnings/earnings-detail?developerId=${
                     r.userId
                   }&developerName=${encodeURIComponent(
-                    r.userName || r.nickName || '',
+                    r.nickName || r.userName || '',
                   )}`,
                 ),
             },
@@ -161,18 +118,14 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
             onStatsChange?.(res.data);
             return {
               data: res.data?.dailyRevenues || [],
-              total: res.data?.total || 0,
+              total: res.data?.total ?? 0,
               success: true,
             };
           }
         } catch (e) {
           console.error('Fetch earnings error:', e);
         }
-        return {
-          data: MOCK_DATA,
-          total: MOCK_DATA.length,
-          success: true,
-        };
+        return { data: [], total: 0, success: false };
       }}
     />
   );
