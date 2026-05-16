@@ -4,7 +4,6 @@ import { dict } from '@/services/i18nRuntime';
 import { Tabs } from 'antd';
 import React, { useEffect } from 'react';
 import { useLocation, useSearchParams } from 'umi';
-import EarningsTable from '../EarningsStats/components/EarningsTable';
 import PendingWithdrawalTable from './components/PendingWithdrawalTable';
 import ProcessedWithdrawalTable from './components/ProcessedWithdrawalTable';
 import WithdrawConfigCard from './components/WithdrawConfigCard';
@@ -46,13 +45,6 @@ const Withdrawal: React.FC = () => {
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig',
       ),
       children: <WithdrawConfigCard />,
-    },
-    {
-      key: 'earnings',
-      label: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabEarnings',
-      ),
-      children: <EarningsTable />,
     },
   ];
 
