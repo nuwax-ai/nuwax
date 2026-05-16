@@ -2,10 +2,55 @@ import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import type { ProColumns } from '@ant-design/pro-components';
+import type { ParamsType, ProColumns } from '@ant-design/pro-components';
 import React from 'react';
 import { apiGetCreditSummaryList } from '../services/credit';
 import { UserCreditSummaryInfo } from '../types/credit';
+
+/** ProTable 查询参数（筛选项与表单字段：仅 userId、userName） */
+type UserCreditSummaryTableParams = ParamsType & {
+  userId?: number | string;
+  userName?: string;
+  current?: number;
+  pageSize?: number;
+};
+
+function parseUserIdParam(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = Number(value);
+  return Number.isNaN(n) ? undefined : n;
+}
+
+/**
+ * 用户积分汇总列表（ProTable request）：userId、用户名称 → 接口 userId / usernamePhoneOrEmail。
+ */
+async function fetchUserCreditSummaryTableRequest(
+  params: UserCreditSummaryTableParams,
+): Promise<{
+  data: UserCreditSummaryInfo[];
+  total: number;
+  success: boolean;
+}> {
+  try {
+    const res = await apiGetCreditSummaryList({
+      userId: parseUserIdParam(params.userId),
+      usernamePhoneOrEmail: params.userName?.trim() || undefined,
+    });
+    if (res?.code === SUCCESS_CODE) {
+      const list = res.data || [];
+      return {
+        data: list,
+        total: list.length,
+        success: true,
+      };
+    }
+  } catch {}
+  return {
+    data: [],
+    total: 0,
+    success: false,
+  };
+}
 
 const UserCredits: React.FC = () => {
   const columns: ProColumns<UserCreditSummaryInfo>[] = [
@@ -14,6 +59,11 @@ const UserCredits: React.FC = () => {
       dataIndex: 'userId',
       key: 'userId',
       ellipsis: true,
+      fieldProps: {
+        placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
+          'PC.Pages.SystemUserCredits.colUserId',
+        )}`,
+      },
       render: (_, record) => record.userId || '-',
     },
     {
@@ -21,6 +71,11 @@ const UserCredits: React.FC = () => {
       dataIndex: 'userName',
       key: 'userName',
       ellipsis: true,
+      fieldProps: {
+        placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
+          'PC.Pages.SystemUserCredits.colUserName',
+        )}`,
+      },
       render: (_, record) => record.user?.username || '-',
     },
     {
@@ -28,6 +83,7 @@ const UserCredits: React.FC = () => {
       dataIndex: 'phone',
       key: 'phone',
       ellipsis: true,
+      search: false,
       render: (_, record) => record.user?.phone || '-',
     },
     {
@@ -69,30 +125,10 @@ const UserCredits: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.userCreditsQuery')}>
-      <XProTable<UserCreditSummaryInfo>
+      <XProTable<UserCreditSummaryInfo, UserCreditSummaryTableParams>
         rowKey="userId"
         columns={columns}
-        request={async (params) => {
-          try {
-            const keyword = params.userName || params.phone;
-            const res = await apiGetCreditSummaryList({
-              usernamePhoneOrEmail: keyword,
-            });
-            if (res?.code === SUCCESS_CODE) {
-              const list = res.data || [];
-              return {
-                data: list,
-                total: list.length,
-                success: true,
-              };
-            }
-          } catch (error) {}
-          return {
-            data: [],
-            total: 0,
-            success: false,
-          };
-        }}
+        request={fetchUserCreditSummaryTableRequest}
       />
     </WorkspaceLayout>
   );
