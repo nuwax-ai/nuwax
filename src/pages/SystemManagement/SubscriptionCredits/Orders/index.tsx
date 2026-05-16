@@ -5,15 +5,14 @@ import { dict } from '@/services/i18nRuntime';
 import {
   BillBizTypeEnum,
   BillOrderInfo,
-  BillOrderItem,
   BillOrderStatusEnum,
   BillPayStatusEnum,
 } from '@/types/interfaces/subscription';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import type { ParamsType, ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Col, Row, Statistic, Tag } from 'antd';
+import { Card, Col, DatePicker, Row, Statistic, Tag } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiGetOrderRevenueList,
@@ -23,7 +22,6 @@ import {
   type BillOrderSearchParams,
   BillRevenueStatsInfo,
 } from '../types/order-revenue';
-import OrderLineItemsModal from './OrderLineItemsModal';
 
 /** 支付状态展示文案（模块加载时 `dict` 解析一次） */
 const PAY_STATUS_LABELS: Record<BillPayStatusEnum, string> = {
@@ -111,22 +109,6 @@ const fetchOrderRevenueTableRequest = async (
  * 业务订单查询
  */
 const SubsOrders: React.FC = () => {
-  const [orderItemsModal, setOrderItemsModal] = useState<{
-    open: boolean;
-    items: BillOrderItem[];
-  }>({ open: false, items: [] });
-
-  const openOrderItemsModal = useCallback((record: BillOrderInfo) => {
-    setOrderItemsModal({
-      open: true,
-      items: record.items ?? [],
-    });
-  }, []);
-
-  const closeOrderItemsModal = useCallback(() => {
-    setOrderItemsModal((s) => ({ ...s, open: false }));
-  }, []);
-
   // 统计信息
   const [statsInfo, setStatsInfo] = useState<BillRevenueStatsInfo>();
 
@@ -245,10 +227,7 @@ const SubsOrders: React.FC = () => {
         title: dict('PC.Pages.SystemSubsOrders.orderStatus'),
         dataIndex: 'orderStatus',
         key: 'orderStatus',
-        render: (_, record) => {
-          const cfg = statusConfig[record.orderStatus];
-          return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
-        },
+        valueType: 'select',
         valueEnum: {
           [BillOrderStatusEnum.PAID]: {
             text: dict('PC.Pages.SystemSubsOrders.orderStatusPaid'),
@@ -259,6 +238,14 @@ const SubsOrders: React.FC = () => {
           [BillOrderStatusEnum.CANCELLED]: {
             text: dict('PC.Pages.SystemSubsOrders.orderStatusCancelled'),
           },
+        },
+        fieldProps: {
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseSelect'),
+        },
+        render: (_, record) => {
+          const cfg = statusConfig[record.orderStatus];
+          return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
         },
       },
       // 支付状态
@@ -280,18 +267,23 @@ const SubsOrders: React.FC = () => {
         render: (_, record) =>
           PAY_STATUS_LABELS[record.payStatus] ?? String(record.payStatus),
       },
-      // 开始时间
+      // 开始时间（LightFilter 默认 dateTimeRange 会先出一层再点开 RangePicker；自定义表单项一次即可展开面板）
       {
         title: dict('PC.Pages.SystemSubsOrders.created'),
         dataIndex: 'created',
         key: 'created',
         valueType: 'dateTimeRange',
-        fieldProps: {
-          placeholder: [
-            dict('PC.Pages.SystemSubsOrders.createdTimeRangeStart'),
-            dict('PC.Pages.SystemSubsOrders.createdTimeRangeEnd'),
-          ],
-        },
+        renderFormItem: () => (
+          <DatePicker.RangePicker
+            showTime
+            allowClear
+            style={{ width: '100%', minWidth: 360 }}
+            placeholder={[
+              dict('PC.Pages.SystemSubsOrders.createdTimeRangeStart'),
+              dict('PC.Pages.SystemSubsOrders.createdTimeRangeEnd'),
+            ]}
+          />
+        ),
         width: 170,
         render: (_, record) => formatDateTimeYmdHms(record.created),
       },
@@ -304,25 +296,8 @@ const SubsOrders: React.FC = () => {
         width: 170,
         render: (_, record) => formatDateTimeYmdHms(record.modified),
       },
-      {
-        title: dict('PC.Pages.SystemSubsOrders.operationColumn'),
-        key: 'operation',
-        search: false,
-        width: 100,
-        fixed: 'right',
-        align: 'left',
-        render: (_, record) => (
-          <Button
-            type="link"
-            style={{ padding: 0 }}
-            onClick={() => openOrderItemsModal(record)}
-          >
-            {dict('PC.Pages.SystemSubsOrders.orderLineItems')}
-          </Button>
-        ),
-      },
     ],
-    [bizTypeLabelMap, openOrderItemsModal, statusConfig],
+    [bizTypeLabelMap, statusConfig],
   );
 
   return (
@@ -367,7 +342,6 @@ const SubsOrders: React.FC = () => {
         </Col>
       </Row>
 
-      {/* 订单列表：flex + min-height:0 + 高度的父边界，分页才能留在区内；滚动由表格 body（scroll.y）承担 */}
       <XProTable<BillOrderInfo, BillOrderRevenueTableParams>
         rowKey="id"
         columns={columns}
@@ -375,17 +349,6 @@ const SubsOrders: React.FC = () => {
         scroll={{ x: 'max-content' }}
         scrollYOffset={80}
         showQueryButtons={false}
-        search={{
-          filterType: 'query',
-          defaultCollapsed: false,
-        }}
-      />
-
-      {/* 订单明显 */}
-      <OrderLineItemsModal
-        open={orderItemsModal.open}
-        onCancel={closeOrderItemsModal}
-        items={orderItemsModal.items}
       />
     </WorkspaceLayout>
   );
