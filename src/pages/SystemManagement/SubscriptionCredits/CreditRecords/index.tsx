@@ -97,6 +97,7 @@ const CreditRecords: React.FC = () => {
       key: 'userId',
       ellipsis: true,
       width: 100,
+      fixed: 'left',
       fieldProps: {
         placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
           'PC.Pages.SystemCreditRecords.userId',
@@ -108,6 +109,7 @@ const CreditRecords: React.FC = () => {
       title: dict('PC.Pages.SystemCreditRecords.userName'),
       dataIndex: 'userName',
       key: 'userName',
+      width: 100,
       ellipsis: true,
       render: (_, record) => record.user?.username || '-',
     },
@@ -115,6 +117,7 @@ const CreditRecords: React.FC = () => {
       title: dict('PC.Pages.SystemCreditRecords.phone'),
       dataIndex: 'phone',
       key: 'phone',
+      width: 100,
       ellipsis: true,
       search: false,
       render: (_, record) => record.user?.phone || '-',
@@ -123,6 +126,7 @@ const CreditRecords: React.FC = () => {
       title: dict('PC.Pages.SystemCreditRecords.email'),
       dataIndex: 'email',
       key: 'email',
+      width: 100,
       ellipsis: true,
       search: false,
       render: (_, record) => record.user?.email || '-',
@@ -156,12 +160,14 @@ const CreditRecords: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
+      width: 150,
       render: (_, record) => record.amount || '-',
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.creditType'),
       dataIndex: 'creditType',
       key: 'creditType',
+      width: 140,
       valueType: 'select',
       valueEnum: creditTypeSearchEnum,
       fieldProps: {
@@ -175,6 +181,7 @@ const CreditRecords: React.FC = () => {
       dataIndex: 'operationType',
       key: 'operationType',
       search: false,
+      width: 100,
       render: (_, record) => {
         const cfg = typeConfig[record.operationType];
         return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
@@ -298,6 +305,7 @@ const CreditRecords: React.FC = () => {
         columns={columns}
         request={requestCreditFlowList}
         pagination={showPagination ? cursorPagination : false}
+        scroll={{ x: 'max-content' }}
       />
     </WorkspaceLayout>
   );
