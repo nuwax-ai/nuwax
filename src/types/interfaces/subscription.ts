@@ -563,34 +563,6 @@ export type BillWithdrawApplyResponse = BillWithdrawRecordInfo;
 // 资源定价（模型/工具/技能）
 // ──────────────────────────────────────────────
 
-export interface ModelPriceTier {
-  label: string; // e.g. "≤32K"
-  inputPrice: number;
-  outputPrice: number;
-  cachePrice: number;
-}
-
-// export interface ModelPricingInfo {
-//   id: number;
-//   name: string;
-//   provider: string;
-//   tiers: ModelPriceTier[];
-//   enabled: boolean;
-// }
-
-// export interface ToolPricingInfo {
-//   id: number;
-//   name: string;
-//   category: 'plugin' | 'workflow' | 'mcp';
-//   description: string;
-//   price: number;
-//   period: string;
-//   calls: number;
-//   trialCount: number;
-//   enabled: boolean;
-//   createdAt: string;
-// }
-
 export interface SkillPricingInfo {
   id: number;
   name: string;

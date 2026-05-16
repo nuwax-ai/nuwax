@@ -3482,6 +3482,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "Trial {0} calls",
   "PC.Pages.SpaceResourcePricing.tierHint": "(Multiple Tiers · ¥/Million TOKENS)",
   "PC.Pages.SpaceResourcePricing.removeTier": "Remove this tier",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
+    "Each tier needs a context length greater than 0.",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
+    "Context lengths must be unique for each tier.",
   "PC.Pages.SpaceResourcePricing.filterAll": "All",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "Agent Subscriptions",

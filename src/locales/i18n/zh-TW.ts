@@ -3342,6 +3342,10 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
   "PC.Pages.SpaceResourcePricing.cycleMonthly": "月",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 次",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
+    "每個檔位的上下文長度不能為空且須大於 0",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
+    "各檔位的上下文長度不能相同",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "智能體訂閱",
   "PC.Pages.SpaceAgentSubscriptions.pageSubtitle": "管理智能體的服務套餐",
