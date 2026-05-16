@@ -903,3 +903,78 @@ export interface SystemRevenueDetailInfo {
   /** 创建时间 */
   created: string;
 }
+
+/** 资源统计-统计分组 */
+export interface StatGroup {
+  /** 总输入Token */
+  totalInputTokens: number;
+  /** 总输出Token */
+  totalOutputTokens: number;
+  /** 总缓存输入Token */
+  totalCacheInputTokens: number;
+  /** 工具总个数 */
+  toolCount: number;
+  /** 工具调用总次数 */
+  toolCallCount: number;
+  /** 智能体个数 */
+  agentCount: number;
+  /** 智能体调用总次数 */
+  agentCallCount: number;
+  /** 模型调用总次数 */
+  modelCallCount: number;
+  /** 模型调用失败次数 */
+  failedModelCallCount: number;
+  /** 工具调用失败次数 */
+  failedToolCallCount: number;
+  /** 智能体调用失败次数 */
+  failedAgentCallCount: number;
+  /** 总积分 */
+  totalCreditAmount: number;
+  /** 总金额 */
+  totalAmount: number;
+}
+
+/** 资源统计汇总 */
+export interface ResourceStatSummaryDTO {
+  /** 消费统计 */
+  consumption: StatGroup;
+  /** 销售统计 */
+  sales: StatGroup;
+}
+
+/** 资源统计明细查询参数 */
+export interface ResourceStatDetailParams {
+  userId?: number;
+  type?: 'CONSUMPTION' | 'SALES';
+  targetType?: string;
+  targetId?: number;
+  dtStart?: string;
+  dtEnd?: string;
+  pageNum?: number;
+  pageSize?: number;
+}
+
+/** 资源统计明细记录 */
+export interface ResourceStatDTO {
+  id: number;
+  tenantId: number;
+  userId: number;
+  userName: string;
+  nickName: string;
+  phone: string;
+  email: string;
+  type: string;
+  targetType: string;
+  targetId: number;
+  targetName: string;
+  dt: string;
+  callCount: number;
+  callFailedCount: number;
+  creditAmount: number;
+  feeAmount: number;
+  cacheInputTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  extra: string;
+  created: string;
+}
