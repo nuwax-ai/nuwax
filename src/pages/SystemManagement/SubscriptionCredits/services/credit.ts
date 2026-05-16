@@ -2,7 +2,7 @@
  * 积分套餐
  */
 
-import type { RequestResponse } from '@/types/interfaces/request';
+import type { PageNum, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import {
   CreditPackageInfo,
@@ -79,7 +79,7 @@ export async function apiGetCreditPackageList(
  */
 export async function apiGetCreditSummaryList(
   params: UserCreditSummarySearchParams,
-): Promise<RequestResponse<UserCreditSummaryInfo[]>> {
+): Promise<RequestResponse<PageNum<UserCreditSummaryInfo>>> {
   return request('/api/system/credit/summary/list', {
     method: 'GET',
     params,

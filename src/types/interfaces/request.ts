@@ -29,6 +29,14 @@ export interface Page<T> {
   countId: string;
 }
 
+// 分页响应数据
+export interface PageNum<T> {
+  records: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
 /**
  * 表格分页查询参数
  */

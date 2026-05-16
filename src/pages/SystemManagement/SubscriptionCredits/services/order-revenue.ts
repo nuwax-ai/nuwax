@@ -1,7 +1,7 @@
 /**
  * 订单收益查询
  */
-import { RequestResponse } from '@/types/interfaces/request';
+import { PageNum, RequestResponse } from '@/types/interfaces/request';
 import { BillOrderInfo } from '@/types/interfaces/subscription';
 import { request } from 'umi';
 import {
@@ -20,14 +20,6 @@ export async function apiGetOrderRevenueStats(
     method: 'GET',
     params,
   });
-}
-
-// 分页响应数据
-export interface PageNum<T> {
-  records: T[];
-  total: number;
-  pageNum: number;
-  pageSize: number;
 }
 
 /**
