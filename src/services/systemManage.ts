@@ -807,7 +807,7 @@ export async function apiGetMyResourceStatSummary(params?: {
 }): Promise<RequestResponse<ResourceStatSummaryDTO>> {
   return request('/api/bill/resource-stat/my-summary', {
     method: 'GET',
-    params,
+    params: { ...params, type: 'CONSUMPTION' },
   });
 }
 
@@ -822,6 +822,6 @@ export async function apiGetMyResourceStatDetail(params: {
 }): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
   return request('/api/bill/resource-stat/my', {
     method: 'GET',
-    params,
+    params: { ...params, type: 'CONSUMPTION' },
   });
 }

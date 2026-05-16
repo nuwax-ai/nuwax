@@ -21,7 +21,6 @@ import styles from './index.less';
 
 const { RangePicker } = DatePicker;
 
-/** 格式化大数字 */
 const formatNumber = (num: number | undefined): string => {
   if (num === null || num === undefined) return '0';
   if (num >= 100000000) return `${(num / 100000000).toFixed(1)}亿`;
@@ -29,7 +28,6 @@ const formatNumber = (num: number | undefined): string => {
   return num.toLocaleString();
 };
 
-/** 格式化金额 */
 const formatAmount = (num: number | undefined): string => {
   if (num === null || num === undefined) return '¥0.00';
   return `¥${num.toLocaleString('zh-CN', {
@@ -38,7 +36,6 @@ const formatAmount = (num: number | undefined): string => {
   })}`;
 };
 
-/** 汇总卡片 */
 const SummaryCard: React.FC<{
   label: string;
   value: string;
@@ -139,13 +136,12 @@ const ModelMonitor: React.FC = () => {
   }, [fetchSummary]);
 
   const request = async (params: any) => {
-    const { current, pageSize, targetType } = params;
+    const { current, pageSize } = params;
     const res = await apiGetResourceStatDetail({
       userId: -1,
       type: 'SALES',
       dtStart: dateRange[0].format('YYYYMMDD'),
       dtEnd: dateRange[1].format('YYYYMMDD'),
-      targetType,
       pageNum: current,
       pageSize,
     });
@@ -210,7 +206,6 @@ const ModelMonitor: React.FC = () => {
     ];
   }, []);
 
-  // 合并 consumption + sales 作为综合统计
   const mergedGroup: StatGroup | undefined = React.useMemo(() => {
     const c = summaryData?.consumption;
     const s = summaryData?.sales;
@@ -357,22 +352,17 @@ const ModelMonitor: React.FC = () => {
           </Button>
         </div>
 
-        {/* 综合统计卡片 */}
-        <div className={styles['summary-section']}>
-          <div className={styles['section-title']}>
-            {dict('PC.Pages.ModelMonitor.summaryTitle')}
-          </div>
-          <div className={styles['stat-cards-row']}>
-            {overviewMetrics.map((metric, index) => (
-              <SummaryCard
-                key={index}
-                label={metric.label}
-                value={metric.value}
-                highlight={metric.highlight}
-                loading={summaryLoading}
-              />
-            ))}
-          </div>
+        {/* 统计卡片 */}
+        <div className={styles['stat-cards-row']}>
+          {overviewMetrics.map((metric, index) => (
+            <SummaryCard
+              key={index}
+              label={metric.label}
+              value={metric.value}
+              highlight={metric.highlight}
+              loading={summaryLoading}
+            />
+          ))}
         </div>
 
         {/* 明细表格 */}
