@@ -1,20 +1,28 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 
-import { Card, Tabs } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'umi';
+import { Tabs } from 'antd';
+import React, { useEffect } from 'react';
+import { useLocation, useSearchParams } from 'umi';
+import EarningsTable from '../EarningsStats/components/EarningsTable';
 import PendingWithdrawalTable from './components/PendingWithdrawalTable';
 import ProcessedWithdrawalTable from './components/ProcessedWithdrawalTable';
 import WithdrawConfigCard from './components/WithdrawConfigCard';
 
 const Withdrawal: React.FC = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('pending');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'pending';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
 
   // 监听路由变化，点击菜单重新进入时重置到第一个页签
   useEffect(() => {
-    setActiveTab('pending');
+    if (!searchParams.get('tab')) {
+      setActiveTab('pending');
+    }
   }, [location.key]);
 
   const tabItems = [
@@ -44,15 +52,7 @@ const Withdrawal: React.FC = () => {
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabEarnings',
       ),
-      children: (
-        <Card style={{ maxWidth: 560 }}>
-          <p style={{ color: '#999' }}>
-            {dict(
-              'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.earningsPlaceholder',
-            )}
-          </p>
-        </Card>
-      ),
+      children: <EarningsTable />,
     },
   ];
 
