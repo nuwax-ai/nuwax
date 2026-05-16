@@ -244,6 +244,11 @@ const routes = [
             component: '@/pages/GlobalModelManage',
           },
           {
+            path: 'model/monitor',
+            name: getRouteLabel('PC.Routes.modelMonitor'),
+            component: '@/pages/SystemManagement/ModelMonitor',
+          },
+          {
             path: 'config',
             name: getRouteLabel('PC.Routes.systemConfig'),
             routes: [
