@@ -3,19 +3,56 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTime } from '@/utils/dateUtils';
-import type { ProColumns } from '@ant-design/pro-components';
+import type { ParamsType, ProColumns } from '@ant-design/pro-components';
 import { Tag } from 'antd';
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { apiGetCreditFlowList } from '../services/credit';
 import {
   CreditFlowOperationTypeEnum,
+  CreditFlowTypeEnum,
   type UserCreditFlowInfo,
+  type UserCreditFlowSearchParams,
 } from '../types/credit';
+
+/** ProTable 传入的分页与表单字段；请求接口仅使用 UserCreditFlowSearchParams */
+type CreditFlowListTableParams = ParamsType &
+  Pick<UserCreditFlowSearchParams, 'creditType' | 'userId'> & {
+    userName?: string;
+    current?: number;
+    pageSize?: number;
+  };
+
+const DEFAULT_CURSOR_PAGE_SIZE = 15;
+
+/** 积分类型筛选下拉：枚举值 → i18n key（不含 LOAN） */
+const CREDIT_FLOW_TYPE_SEARCH_KEYS: Partial<
+  Record<CreditFlowTypeEnum, string>
+> = {
+  [CreditFlowTypeEnum.SUBSCRIPTION]:
+    'PC.Pages.SystemCreditRecords.creditTypeSubscription',
+  [CreditFlowTypeEnum.PURCHASE]:
+    'PC.Pages.SystemCreditRecords.creditTypePurchase',
+  [CreditFlowTypeEnum.ACTIVITY]:
+    'PC.Pages.SystemCreditRecords.creditTypeActivity',
+  [CreditFlowTypeEnum.MANUAL]: 'PC.Pages.SystemCreditRecords.creditTypeManual',
+  [CreditFlowTypeEnum.MODEL_CALL]:
+    'PC.Pages.SystemCreditRecords.creditTypeModelCall',
+  [CreditFlowTypeEnum.AGENT_CALL]:
+    'PC.Pages.SystemCreditRecords.creditTypeAgentCall',
+  [CreditFlowTypeEnum.TOOL_CALL]:
+    'PC.Pages.SystemCreditRecords.creditTypeToolCall',
+  [CreditFlowTypeEnum.MANUAL_DEDUCT]:
+    'PC.Pages.SystemCreditRecords.creditTypeManualDeduct',
+};
 
 /**
  * 积分明细查询
  */
 const CreditRecords: React.FC = () => {
+  /** 当前表格是否有数据：无数据时不展示底部分页 */
+  const [showPagination, setShowPagination] = useState<boolean>(false);
+
+  // 游标分页映射
   const lastIdMapRef = useRef<Record<number, number | undefined>>({
     1: undefined,
   });
@@ -35,28 +72,44 @@ const CreditRecords: React.FC = () => {
     [],
   );
 
+  const creditTypeSearchEnum = useMemo(
+    () =>
+      Object.fromEntries(
+        (
+          Object.entries(CREDIT_FLOW_TYPE_SEARCH_KEYS) as [
+            CreditFlowTypeEnum,
+            string,
+          ][]
+        )
+          .filter(([, dictKey]) => Boolean(dictKey))
+          .map(([enumVal, dictKey]) => [enumVal, { text: dict(dictKey) }]),
+      ),
+    [],
+  );
+
   /**
    * 积分流水查询列配置
    */
   const columns: ProColumns<UserCreditFlowInfo>[] = [
     {
-      title: dict('PC.Pages.SystemCreditRecords.recordId'),
-      dataIndex: 'id',
-      key: 'id',
+      title: dict('PC.Pages.SystemCreditRecords.userId'),
+      dataIndex: 'userId',
+      key: 'userId',
       ellipsis: true,
-      width: 180,
-    },
-    {
-      title: dict('PC.Pages.SystemCreditRecords.bizNo'),
-      dataIndex: 'batchNo',
-      key: 'bizNo',
-      ellipsis: true,
-      width: 180,
+      width: 100,
+      fixed: 'left',
+      fieldProps: {
+        placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
+          'PC.Pages.SystemCreditRecords.userId',
+        )}`,
+      },
+      render: (_, record) => record.userId || '-',
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.userName'),
       dataIndex: 'userName',
       key: 'userName',
+      width: 100,
       ellipsis: true,
       render: (_, record) => record.user?.username || '-',
     },
@@ -64,20 +117,71 @@ const CreditRecords: React.FC = () => {
       title: dict('PC.Pages.SystemCreditRecords.phone'),
       dataIndex: 'phone',
       key: 'phone',
+      width: 100,
       ellipsis: true,
+      search: false,
       render: (_, record) => record.user?.phone || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemCreditRecords.email'),
+      dataIndex: 'email',
+      key: 'email',
+      width: 100,
+      ellipsis: true,
+      search: false,
+      render: (_, record) => record.user?.email || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemCreditRecords.recordId'),
+      dataIndex: 'id',
+      key: 'id',
+      ellipsis: true,
+      search: false,
+      width: 120,
+    },
+    {
+      title: dict('PC.Pages.SystemCreditRecords.bizNo'),
+      dataIndex: 'bizNo',
+      key: 'bizNo',
+      ellipsis: true,
+      search: false,
+      width: 130,
+    },
+    {
+      title: dict('PC.Pages.SystemCreditRecords.batchNo'),
+      dataIndex: 'batchNo',
+      key: 'batchNo',
+      ellipsis: true,
+      search: false,
+      width: 120,
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.amount'),
       dataIndex: 'amount',
       key: 'amount',
       search: false,
+      width: 150,
       render: (_, record) => record.amount || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemCreditRecords.creditType'),
+      dataIndex: 'creditType',
+      key: 'creditType',
+      width: 140,
+      valueType: 'select',
+      valueEnum: creditTypeSearchEnum,
+      fieldProps: {
+        allowClear: true,
+        placeholder: dict('PC.Common.Global.pleaseSelect'),
+      },
+      render: (_, record) => record.creditTypeName || record.creditType || '-',
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.operationType'),
       dataIndex: 'operationType',
       key: 'operationType',
+      search: false,
+      width: 100,
       render: (_, record) => {
         const cfg = typeConfig[record.operationType];
         return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
@@ -121,19 +225,15 @@ const CreditRecords: React.FC = () => {
     },
   ];
 
-  const requestCreditFlowList = async (params: {
-    current?: number;
-    pageSize?: number;
-    userName?: string;
-    phone?: string;
-    operationType?: number;
-  }) => {
-    const current = Number(params.current || 1);
-    const pageSize = Number(params.pageSize || 10);
-    const usernamePhoneOrEmail = String(params.userName || params.phone || '');
+  const requestCreditFlowList = async (params: CreditFlowListTableParams) => {
+    const current = Number(params.current ?? 1);
+    const pageSize = Number(params.pageSize ?? DEFAULT_CURSOR_PAGE_SIZE);
+    const usernamePhoneOrEmail = params.userName?.trim() || undefined;
+
     const queryKey = JSON.stringify({
-      usernamePhoneOrEmail,
-      operationType: params.operationType,
+      userId: params.userId ?? '',
+      usernamePhoneOrEmail: usernamePhoneOrEmail ?? '',
+      creditType: params.creditType,
       pageSize,
     });
 
@@ -145,13 +245,17 @@ const CreditRecords: React.FC = () => {
 
     try {
       const lastId = lastIdMapRef.current[current];
-      const res = await apiGetCreditFlowList({
-        usernamePhoneOrEmail: usernamePhoneOrEmail || undefined,
+      const payload: UserCreditFlowSearchParams = {
+        userId: params.userId,
+        usernamePhoneOrEmail,
+        creditType: params.creditType,
         lastId,
         pageSize,
-      });
+      };
+      const res = await apiGetCreditFlowList(payload);
       if (res?.code === SUCCESS_CODE) {
         const list = res.data || [];
+        setShowPagination(list.length > 0);
         const nextPageLastId = list.length
           ? list[list.length - 1]?.id
           : undefined;
@@ -164,7 +268,8 @@ const CreditRecords: React.FC = () => {
           success: true,
         };
       }
-    } catch (error) {}
+    } catch {}
+    setShowPagination(false);
     return {
       data: [],
       total: 0,
@@ -172,12 +277,35 @@ const CreditRecords: React.FC = () => {
     };
   };
 
+  /** 游标分页配置 */
+  const cursorPagination = useMemo(
+    () => ({
+      showQuickJumper: false,
+      /** 游标分页无真实 total，避免误导性的「共 X 条」 */
+      showTotal: () => null,
+      /** 仅保留上一页 / 下一页，隐藏页码与跳转（接口按 lastId 翻页） */
+      itemRender: (
+        _page: number,
+        type: 'page' | 'prev' | 'next' | 'jump-prev' | 'jump-next',
+        originalElement: React.ReactNode,
+      ) => {
+        if (type === 'page' || type === 'jump-prev' || type === 'jump-next') {
+          return null;
+        }
+        return originalElement;
+      },
+    }),
+    [],
+  );
+
   return (
     <WorkspaceLayout title={dict('PC.Routes.creditsRecordsQuery')}>
-      <XProTable<UserCreditFlowInfo>
+      <XProTable<UserCreditFlowInfo, CreditFlowListTableParams>
         rowKey="id"
         columns={columns}
         request={requestCreditFlowList}
+        pagination={showPagination ? cursorPagination : false}
+        scroll={{ x: 'max-content' }}
       />
     </WorkspaceLayout>
   );
