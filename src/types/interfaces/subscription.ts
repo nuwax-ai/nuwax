@@ -548,6 +548,9 @@ export enum BillWithdrawStatusEnum {
 export interface BillWithdrawRecordInfo {
   id: number;
   userId: number;
+  userName?: string;
+  phone?: string;
+  email?: string;
   amount: number;
   status: BillWithdrawStatusEnum;
   rejectReason?: string;

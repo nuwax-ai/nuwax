@@ -55,7 +55,7 @@ const EarningsSummary: React.FC = () => {
               />
             </div>
           ),
-          okText: dict('PC.Common.ok'),
+          okText: dict('PC.Utils.AntCustom.okText'),
         });
         refreshStats();
       },

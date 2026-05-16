@@ -30,34 +30,29 @@ const Withdrawal: React.FC = () => {
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending',
       ),
-      children: <PendingWithdrawalTable />,
     },
     {
       key: 'processed',
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabProcessed',
       ),
-      children: <ProcessedWithdrawalTable />,
     },
     {
       key: 'config',
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig',
       ),
-      children: <WithdrawConfigCard />,
     },
   ];
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
       <div key={location.key}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          destroyOnHidden={true}
-        />
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </div>
+      {activeTab === 'pending' && <PendingWithdrawalTable />}
+      {activeTab === 'processed' && <ProcessedWithdrawalTable />}
+      {activeTab === 'config' && <WithdrawConfigCard />}
     </WorkspaceLayout>
   );
 };
