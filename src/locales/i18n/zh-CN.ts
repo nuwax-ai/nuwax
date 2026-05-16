@@ -5030,7 +5030,7 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 系统管理 - 提现管理 ────────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper": "开发者",
-  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "申请金额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "提现金额",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAccount": "收款账户",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt": "申请时间",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus": "状态",
@@ -5042,11 +5042,14 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.confirmApprove": "确认通过该提现申请？",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess": "已审核通过",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess": "已拒绝",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusPaid": "已打款",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectModalTitle": "填写拒绝原因",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonLabel": "请填写拒绝原因（将通知给开发者）",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonPlaceholder": "请输入拒绝原因",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo": "申请编号",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPayMethod": "收款方式",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason": "拒绝理由",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colProcessedAt": "处理时间",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending": "提现审核",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabProcessed": "已处理",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig": "提现配置",

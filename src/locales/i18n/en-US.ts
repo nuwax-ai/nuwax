@@ -5030,7 +5030,7 @@ export const EN_US: SystemLangMap = {
 
   // ── System Management - Withdrawal Management ────────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper": "Developer",
-  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "Applied Amount",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "Withdrawal Amount",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAccount": "Receiving Account",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt": "Application Time",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus": "Status",
@@ -5042,11 +5042,14 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.confirmApprove": "Confirm to approve this withdrawal application?",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess": "Approved successfully",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess": "Rejected successfully",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusPaid": "Paid",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectModalTitle": "Rejection Reason",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonLabel": "Please fill in the reason for rejection (will notify the developer)",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonPlaceholder": "Please enter rejection reason",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo": "Application No.",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPayMethod": "Payment Method",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason": "Reject Reason",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colProcessedAt": "Processed At",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending": "Withdrawal Audit",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabProcessed": "Processed",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig": "Withdrawal Config",

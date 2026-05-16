@@ -6,18 +6,15 @@ import {
   apiListWithdrawals,
   apiRejectWithdrawal,
 } from '@/services/subscriptionService';
-import type { WithdrawalInfo } from '@/types/interfaces/subscription';
 import {
-  DevPaymentTypeEnum,
-  WithdrawalStatusEnum,
+  BillWithdrawRecordInfo,
+  BillWithdrawStatusEnum,
 } from '@/types/interfaces/subscription';
-import { formatDateTime } from '@/utils/dateUtils';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Input, Modal, message } from 'antd';
 import React, { useRef, useState } from 'react';
 import { history } from 'umi';
-import { MOCK_WITHDRAWALS } from '../../constants';
 
 const PendingWithdrawalTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -48,23 +45,28 @@ const PendingWithdrawalTable: React.FC = () => {
     actionRef.current?.reload();
   };
 
-  const columns: ProColumns<WithdrawalInfo>[] = [
+  const columns: ProColumns<BillWithdrawRecordInfo>[] = [
     {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo',
       ),
-      dataIndex: 'applicationNo',
-      key: 'applicationNo',
+      dataIndex: 'id',
+      key: 'id',
       ellipsis: true,
-      width: 180,
+      search: false,
     },
     {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
       ),
-      dataIndex: 'developerName',
-      key: 'developerName',
+      key: 'keyword',
       ellipsis: true,
+      render: (_, record) => {
+        const firstRev = record.revenues?.[0];
+        return firstRev
+          ? `${firstRev.userName || firstRev.nickName || '-'}`
+          : '-';
+      },
     },
     {
       title: dict(
@@ -74,7 +76,7 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'amount',
       search: false,
       render: (_, record) => (
-        <span style={{ fontWeight: 600, color: '#1677ff' }}>
+        <span style={{ fontWeight: 600, color: '#f5222d' }}>
           ¥{(record.amount ?? 0).toLocaleString()}
         </span>
       ),
@@ -85,25 +87,34 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
       key: 'payMethod',
       search: false,
-      render: (_, record) => (
-        <span>
-          {record.accountType === DevPaymentTypeEnum.Alipay ? (
-            <AlipayCircleFilled style={{ color: '#1677ff', marginRight: 4 }} />
-          ) : (
-            <BankFilled style={{ color: '#52c41a', marginRight: 4 }} />
-          )}
-          {record.realName || '-'} · {record.accountNo || '-'}
-        </span>
-      ),
+      render: (_, record) => {
+        const extra = record.paymentExtra || {};
+        const isAlipay =
+          extra.type === 'ALIPAY' || extra.accountType === 'ALIPAY';
+        return (
+          <span>
+            {isAlipay ? (
+              <AlipayCircleFilled
+                style={{ color: '#1677ff', marginRight: 4 }}
+              />
+            ) : (
+              <BankFilled style={{ color: '#52c41a', marginRight: 4 }} />
+            )}
+            {extra.bankName ||
+              extra.channelName ||
+              (isAlipay ? '支付宝' : '银行卡')}{' '}
+            · {extra.accountNo || extra.cardNo || '-'}
+          </span>
+        );
+      },
     },
     {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt',
       ),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'created',
+      key: 'created',
       search: false,
-      render: (val) => formatDateTime(val),
     },
     {
       title: dict('PC.Common.Global.action'),
@@ -145,8 +156,10 @@ const PendingWithdrawalTable: React.FC = () => {
               onClick: (r) =>
                 history.push(
                   `/system/payment-earnings/earnings-detail?developerId=${
-                    r.developerId ?? r.id
-                  }&developerName=${encodeURIComponent(r.developerName)}`,
+                    r.userId
+                  }&developerName=${encodeURIComponent(
+                    r.revenues?.[0]?.userName || '',
+                  )}`,
                 ),
             },
           ]}
@@ -157,34 +170,25 @@ const PendingWithdrawalTable: React.FC = () => {
 
   return (
     <>
-      <XProTable<WithdrawalInfo>
+      <XProTable<BillWithdrawRecordInfo>
         rowKey="id"
         actionRef={actionRef}
         columns={columns}
         request={async (params) => {
-          try {
-            const res = await apiListWithdrawals({
-              keyword: params.developerName,
-              status: WithdrawalStatusEnum.Pending,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            });
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list,
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          const pending = MOCK_WITHDRAWALS.filter(
-            (w) => w.status === WithdrawalStatusEnum.Pending,
-          );
-          return {
-            data: pending,
-            total: pending.length,
-            success: true,
-          };
+          const res = await apiListWithdrawals({
+            keyword: params.keyword,
+            status: BillWithdrawStatusEnum.PENDING_REVIEW,
+            pageNum: params.current,
+            pageSize: params.pageSize,
+          });
+          if (res?.code === SUCCESS_CODE) {
+            return {
+              data: Array.isArray(res.data?.records) ? res.data.records : [],
+              total: res.data?.total || 0,
+              success: true,
+            };
+          }
+          return { data: [], total: 0, success: false };
         }}
       />
       <Modal

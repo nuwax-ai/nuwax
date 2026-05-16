@@ -1,27 +1,22 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
-import { WithdrawalStatusEnum } from '@/types/interfaces/subscription';
+
 import { Card, Tabs } from 'antd';
 import React, { useState } from 'react';
 import { useLocation } from 'umi';
 import PendingWithdrawalTable from './components/PendingWithdrawalTable';
 import ProcessedWithdrawalTable from './components/ProcessedWithdrawalTable';
-import { MOCK_WITHDRAWALS } from './constants';
 
 const Withdrawal: React.FC = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('pending');
 
-  const pendingCount = MOCK_WITHDRAWALS.filter(
-    (w) => w.status === WithdrawalStatusEnum.Pending,
-  ).length;
-
   const tabItems = [
     {
       key: 'pending',
-      label: `${dict(
+      label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending',
-      )} (${pendingCount})`,
+      ),
       children: <PendingWithdrawalTable />,
     },
     {
