@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
-<link rel="stylesheet" href="/umi.eb538794.css">
+<link rel="stylesheet" href="/umi.a8cc2ef9.css">
 <script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
 <script type="text/javascript">
         (function () {
@@ -113,24 +113,22 @@
           }
 
           // 应用详情页
-          // const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
-          // if (matchAppDetails) {
-          //   replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
-          //   window.location.replace(replaceUrl);
-          //   return;
-          // }
-
-
           const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
           if (matchAppDetails) {
-            // url 中携带 params 参数时，保留当前地址，不做应用详情跳转
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+
+            // url 中携带 params 参数时，仅保留并追加 params 参数
             const hasParamsQuery = /[?&]params=/.test(href);
-            // 如果 url 中携带 params 参数，则不进行应用详情跳转
             if (hasParamsQuery) {
-              return;
+              const queryString = href.split('?')[1] || '';
+              const paramsQuery = queryString
+                .split('&')
+                .find((queryItem) => queryItem.startsWith('params='));
+              if (paramsQuery) {
+                replaceUrl += '&' + paramsQuery;
+              }
             }
 
-            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
             window.location.replace(replaceUrl);
             return;
           }
@@ -157,10 +155,10 @@
 				}
 			})();
       </script>
-<script src="/preload_helper.af072bcd.js"></script>
+<script src="/preload_helper.9c6be8fe.js"></script>
 </head>
 <body>
 <div id="root"></div>
-<script src="/umi.8f387d69.js"></script>
+<script src="/umi.cec83500.js"></script>
 </body>
 </html>

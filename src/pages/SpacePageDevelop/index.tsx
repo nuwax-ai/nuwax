@@ -181,18 +181,22 @@ const SpacePageDevelop: React.FC = () => {
     },
   });
 
-  // 查询页面列表接口
+  // 删除页面项目接口
   const { run: runPageDelete } = useRequest(apiPageDeleteProject, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_: null, params: number[]) => {
+    onSuccess: () => {
       message.success(dict('PC.Toast.Global.deletedSuccessfully'));
-      const projectId = params[0];
-      const _pageList = pageList.filter((item) => item.projectId !== projectId);
-      setPageList(_pageList);
-      pageAllRef.current = pageAllRef.current.filter(
-        (item) => item.projectId !== projectId,
-      );
+      // 重新查询页面列表
+      runPageList({
+        spaceId,
+      });
+    },
+    onError: () => {
+      // 即使删除报错（可能项目已被删除），也重新查询列表以同步状态
+      runPageList({
+        spaceId,
+      });
     },
   });
 

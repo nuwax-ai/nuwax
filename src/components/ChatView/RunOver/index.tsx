@@ -49,11 +49,25 @@ const RunOver: React.FC<RunOverProps> = ({
 
   // 计算 Popover content：如果 processingList 为空或没有已完成的项，则不显示 content
   const popoverContent = useMemo(() => {
-    // 过滤出已完成的 processing 项（状态不为执行中）
-    const completedProcesses =
-      processingList?.filter(
-        (info) => info.status !== ProcessingEnum.EXECUTING,
-      ) || [];
+    const seenExecuteIds = new Set();
+    const completedProcesses = [];
+    const list = processingList || [];
+
+    // 从后往前遍历，确保保留相同 executeId 的最后一次推送（最新状态）
+    for (let i = list.length - 1; i >= 0; i--) {
+      const info = list[i];
+      // 过滤掉正在执行的
+      if (info.status === ProcessingEnum.EXECUTING) continue;
+
+      if (info.executeId) {
+        if (seenExecuteIds.has(info.executeId)) {
+          continue;
+        }
+        seenExecuteIds.add(info.executeId);
+      }
+      // 插入到开头以维持原始相对顺序
+      completedProcesses.unshift(info);
+    }
 
     // 如果既没有已完成的 processing 项，则不显示 content
     if (completedProcesses.length === 0) {
@@ -131,8 +145,8 @@ const RunOver: React.FC<RunOverProps> = ({
             {showStatusDesc && lastProcessInfo && (
               <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
-                  ? dict('PC.Components.RunOver.calling') + ' '
-                  : dict('PC.Components.RunOver.called', '')}
+                  ? `${dict('PC.Components.RunOver.calling', '')} `
+                  : `${dict('PC.Components.RunOver.called', '')} `}
                 {lastProcessInfo.name}
               </span>
             )}

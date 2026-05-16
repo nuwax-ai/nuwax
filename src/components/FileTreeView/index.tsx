@@ -94,6 +94,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isShowShare = true,
       // 是否显示导出 PDF 按钮, 默认显示
       isShowExportPdfButton = true,
+      // 是否显示下载按钮, 默认显示
+      isShowDownloadButton = true,
       onClose,
       showFullscreenIcon = true,
       // 是否隐藏文件树（外部控制）
@@ -114,6 +116,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isDynamicTheme = false,
       // 静态资源文件基础路径
       staticFileBasePath,
+      /**
+       * 是否为项目技能模式（主要适用于技能预览和编辑）：
+       * 在 SkillDetails 页面设置 isProjectSkill={true}，是为了确保当技能的文件列表数据发生任何变动时，
+       * 当前正在查看/编辑的文件内容能够立即、自动地同步更新，避免出现“数据已变但界面显示的还是旧代码”的情况。
+       */
+      isProjectSkill = false,
+      initViewFileType,
     },
     ref,
   ) => {
@@ -196,14 +205,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const filesRef = useRef<FileNode[]>([]);
 
     // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
-    // 统一使用一个时间戳，适用于 html、office、json 等需要刷新的文件类型
+    // 统一使用一个时间戳，适用于 html、office、json、视频、音频、图片等需要刷新的文件类型
     const fileRefreshTimestampRef = useRef<number>(Date.now());
-    // 用于存储视频文件的刷新时间戳，确保每次点击时都能刷新
-    const videoRefreshTimestampRef = useRef<number>(Date.now());
-    // 用于存储音频文件的刷新时间戳，确保每次点击时都能刷新
-    const audioRefreshTimestampRef = useRef<number>(Date.now());
-    // 用于存储图片文件的刷新时间戳，确保每次点击时都能刷新
-    const imageRefreshTimestampRef = useRef<number>(Date.now());
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -212,23 +215,34 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
     }, [isFullscreenPreview]);
 
+    useEffect(() => {
+      if (initViewFileType) {
+        setViewFileType(initViewFileType);
+      }
+    }, [initViewFileType]);
+
     // 获取文件内容并更新文件树
     const fetchFileContentUpdateFiles = useCallback(
       async (fileProxyUrl: string, fileId: string) => {
-        // 获取文件内容
-        const fileContent = await fetchContentFromUrl(fileProxyUrl);
+        try {
+          // 获取文件内容
+          const fileContent = await fetchContentFromUrl(fileProxyUrl);
 
-        // 更新文件树中的文件内容
-        setFiles((prevFiles) => {
-          const updatedFiles: FileNode[] = updateFileTreeContent(
-            fileId,
-            fileContent,
-            prevFiles,
-          );
-          return updatedFiles;
-        });
+          // 更新文件树中的文件内容
+          setFiles((prevFiles) => {
+            const updatedFiles: FileNode[] = updateFileTreeContent(
+              fileId,
+              fileContent,
+              prevFiles,
+            );
+            return updatedFiles;
+          });
 
-        return fileContent;
+          return fileContent;
+        } catch (error) {
+          console.error('Failed to fetch file content:', error);
+          return '';
+        }
       },
       [],
     );
@@ -276,30 +290,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 return;
               }
 
+              // 更新刷新时间戳
+              fileRefreshTimestampRef.current = Date.now();
+
               // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
               if (isVideo || isAudio || isOfficeDocument || isImage) {
-                // 如果是新选中的文件（office文档），更新刷新时间戳
-                if (isOfficeDocument) {
-                  fileRefreshTimestampRef.current = Date.now();
-                }
-
-                // 如果是新选中的视频文件，更新刷新时间戳
-                if (isVideo) {
-                  videoRefreshTimestampRef.current = Date.now();
-                }
-
-                // 如果是新选中的音频文件，更新刷新时间戳
-                if (isAudio) {
-                  audioRefreshTimestampRef.current = Date.now();
-                }
-
-                // 如果是新选中的图片文件，更新刷新时间戳
+                // 如果是新选中的图片文件，重置选中文件节点，触发一次重渲染
                 if (isImage) {
                   // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
                   setSelectedFileNode((prevNode) =>
                     prevNode ? { ...prevNode } : prevNode,
                   );
-                  imageRefreshTimestampRef.current = Date.now();
                 }
                 return;
               }
@@ -371,7 +372,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
            */
           if (!fileProxyUrl || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
-            setViewFileType('preview');
+            if (!initViewFileType) {
+              setViewFileType('preview');
+            }
             setSelectedFileNode(fileNode);
             return;
           }
@@ -393,8 +396,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 检查是否是 html 文件
-          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
           // 判断文件是否为文档类型
           const result = isDocumentFile(fileNode?.name || '');
           // 判断文件是否为office文档类型
@@ -406,12 +407,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 判断文件是否为图片类型
           const isImageFileType = isImageFile(fileNode?.name || '');
 
-          if (isHtmlFile) {
-            fileRefreshTimestampRef.current = Date.now();
-          }
+          // 更新刷新时间戳
+          fileRefreshTimestampRef.current = Date.now();
 
           setSelectedFileId(fileNode?.id || fileId);
-          setViewFileType('preview');
+
+          if (!initViewFileType) {
+            setViewFileType('preview');
+          }
 
           // 如果文件为图片、视频、音频、文档类型，则直接设置为选中文件节点
           if (
@@ -422,28 +425,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           ) {
             setSelectedFileNode(fileNode);
 
-            // 如果是新选中的office文档，更新刷新时间戳
-            if (isOfficeFile) {
-              fileRefreshTimestampRef.current = Date.now();
-            }
-
-            // 如果是新选中的视频文件，更新刷新时间戳
-            if (isVideoFileType) {
-              videoRefreshTimestampRef.current = Date.now();
-            }
-
-            // 如果是新选中的音频文件，更新刷新时间戳
-            if (isAudioFileType) {
-              audioRefreshTimestampRef.current = Date.now();
-            }
-
-            // 如果是新选中的图片文件，更新刷新时间戳
+            // 如果是新选中的图片文件，重置选中文件节点，触发一次重渲染
             if (isImageFileType) {
               // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
               setSelectedFileNode((prevNode) =>
                 prevNode ? { ...prevNode } : prevNode,
               );
-              imageRefreshTimestampRef.current = Date.now();
             }
           }
           // 其他类型文件：使用文件代理URL获取文件内容
@@ -454,6 +441,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 如果文件不支持预览，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
             if (!isPreviewable) {
               setSelectedFileNode(fileNode);
+              return;
+            }
+
+            const fileNameLower = (fileNode?.name || '').toLowerCase();
+            const _isMarkdownFile = isMarkdownFile(fileNameLower);
+            // md 不在这里预取，统一交给 FilePreview 通过 src 拉取, 避免发起两次http请求
+            if (_isMarkdownFile && !initViewFileType) {
+              setSelectedFileNode({
+                ...fileNode,
+                content: '',
+              });
               return;
             }
 
@@ -480,7 +478,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileId('');
         }
       },
-      [files, isRenamingFile, selectedFileId, changeFiles],
+      [files, isRenamingFile, selectedFileId, changeFiles, initViewFileType],
     );
 
     // 文件选择（对外接口，用于用户主动选择）
@@ -628,18 +626,27 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (
         files &&
         files.length > 0 &&
-        isImportProjectTrigger &&
-        taskAgentSelectedFileId
+        (isImportProjectTrigger || isProjectSkill)
       ) {
+        // 优先使用当前选中的 ID，如果没有则尝试使用外部传入的 ID
+        const targetSyncId = selectedFileId || taskAgentSelectedFileId;
+        if (!targetSyncId) return;
+
         // 从新的 files 中查找对应的文件节点
-        const newFileNode = findFileNode(taskAgentSelectedFileId, files);
+        const newFileNode = findFileNode(targetSyncId, files);
 
         if (newFileNode) {
           setSelectedFileNode(newFileNode);
           setSelectedFileId(newFileNode?.id);
         }
       }
-    }, [files, isImportProjectTrigger, taskAgentSelectedFileId]);
+    }, [
+      files,
+      isImportProjectTrigger,
+      isProjectSkill,
+      selectedFileId,
+      taskAgentSelectedFileId,
+    ]);
 
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
@@ -1329,7 +1336,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * @param fileType - 文件类型标识（如 'html', 'office', 'json', 'video', 'audio'）
      * @param fileProxyUrl - 文件代理 URL
      * @param selectedFileId - 选中的文件 ID
-     * @param customTimestampRef - 可选的自定义时间戳 ref，如果不提供则使用默认的 fileRefreshTimestampRef
      * @returns 包含 key 和 url 的对象
      */
     const buildFilePreviewProps = useCallback(
@@ -1337,17 +1343,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileType: string,
         fileProxyUrl: string,
         selectedFileId: string,
-        customTimestampRef?: React.MutableRefObject<number>,
       ): { key: string; url: string } => {
-        // 使用自定义时间戳 ref 或默认的 fileRefreshTimestampRef
-        const timestampRef = customTimestampRef || fileRefreshTimestampRef;
-
         // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
         const triggerPart =
           taskAgentSelectTrigger !== undefined
             ? `trigger-${taskAgentSelectTrigger}`
             : 'trigger-none';
-        const timestampPart = `timestamp-${timestampRef.current}`;
+        const timestampPart = `timestamp-${fileRefreshTimestampRef.current}`;
         const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
 
         // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
@@ -1355,9 +1357,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         const triggerValue =
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
-            : timestampRef.current;
+            : fileRefreshTimestampRef.current;
+        const separator = fileProxyUrl.includes('?') ? '&' : '?';
         const fileUrl = triggerValue
-          ? `${fileProxyUrl}?t=${triggerValue}`
+          ? `${fileProxyUrl}${separator}t=${triggerValue}`
           : fileProxyUrl;
 
         return { key: fileKey, url: fileUrl };
@@ -1442,9 +1445,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 获取文件代理URL
-      const fileProxyUrl = selectedFileNode?.fileProxyUrl
-        ? `${process.env.BASE_URL}${selectedFileNode?.fileProxyUrl}`
-        : '';
+      let fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+      // 如果是相对路径（不以 http://, https:// 或 // 开头），则添加 BASE_URL 前缀
+      if (fileProxyUrl && !/^(https?:)?\/\//i.test(fileProxyUrl)) {
+        fileProxyUrl = `${process.env.BASE_URL || ''}${fileProxyUrl}`;
+      }
 
       // 视频文件：使用FilePreview组件
       if (isVideo && fileProxyUrl) {
@@ -1452,7 +1457,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           'video',
           fileProxyUrl,
           selectedFileId,
-          videoRefreshTimestampRef,
         );
 
         return <FilePreview key={videoKey} src={videoUrl} fileType="video" />;
@@ -1464,7 +1468,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           'audio',
           fileProxyUrl,
           selectedFileId,
-          audioRefreshTimestampRef,
         );
 
         return <FilePreview key={audioKey} src={audioUrl} fileType="audio" />;
@@ -1506,7 +1509,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             'image',
             fileProxyUrl,
             selectedFileId,
-            imageRefreshTimestampRef,
           );
 
           return <FilePreview key={imageKey} src={imageUrl} fileType="image" />;
@@ -1548,14 +1550,17 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
       // 如果是html、md文件，并且处于预览模式
+      const fileNameLower = fileName?.toLowerCase() || '';
+      // 兼容 .html 和 .htm 后缀，并处理可能存在的查询参数
+      const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
       if (
-        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
+        (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
         viewFileType === 'preview' &&
-        fileProxyUrl
+        (fileProxyUrl || selectedFileNode?.content)
       ) {
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-        const isHtml = fileName?.includes('.htm');
+        const isHtml = isHtmlInCondition;
 
         // 获取文件预览的 key 和 url
         const fileTypeForPreview = isHtml ? 'html' : 'markdown';
@@ -1570,6 +1575,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <FilePreview
             key={filePreviewKey}
             src={filePreviewUrl}
+            content={selectedFileNode?.content}
             fileType={fileTypeForPreview}
             staticFileBasePath={staticFileBasePath}
           />
@@ -1673,6 +1679,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
           // 是否显示分享按钮
           isShowShare={isShowShare}
+          // 是否显示下载按钮
+          isShowDownloadButton={isShowDownloadButton}
           // 分享回调
           onShare={onShare}
           // 是否显示导出 PDF 按钮, 默认显示

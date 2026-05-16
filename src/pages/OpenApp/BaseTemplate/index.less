@@ -7,9 +7,9 @@
 
 // 应用智能体侧边栏容器
 .agentSidebarContainer {
-  width: 280px;
+  width: 250px;
   height: 100%;
-  padding: @paddingXs @paddingSm;
+  padding: @paddingSm @paddingXs;
   border-right: @colorBorderSecondary 1px solid;
   background-color: @colorBgContainerDisabled;
   display: flex;
@@ -29,16 +29,23 @@
 
 .sidebarTop {
   height: 32px;
+  margin: 0 @marginXxs;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: @marginSm;
+
+  .gap-8 {
+    gap: 8px;
+  }
 
   .logo-container {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: @borderRadius;
     background-color: @colorBgContainer;
     overflow: hidden;
+    flex-shrink: 0;
 
     .logo {
       width: 100%;
@@ -63,6 +70,7 @@
   border-radius: @borderRadiusLg;
   background-color: @colorBgContainer;
   padding: 0 @paddingSm;
+  margin-bottom: @marginSm;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -79,7 +87,8 @@
     gap: 8px;
     color: @colorText;
     font-size: @fontSize;
-    font-weight: 500;
+    font-weight: 400;
+    user-select: none;
   }
 
   .shortcutTag {
@@ -95,13 +104,48 @@
   }
 }
 
+// ========================== 导航 ==========================
+.pageNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: @marginSm;
+}
+
+.nav-item {
+  height: 36px;
+  border-radius: @borderRadius;
+  padding: @paddingXs @paddingXxs @paddingXs 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: @colorText;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 400;
+
+  &:hover {
+    background-color: #e6e7e8;
+  }
+
+  &.page-nav-item-active {
+    background-color: #e6e7e8;
+  }
+}
+
+// ========================== 历史会话列表 ==========================
 // 历史会话标题
 .history-title {
-  padding: @paddingXs 0 @paddingXs 13px;
+  padding: @paddingXs @paddingXxs @paddingXs 13px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+
+  &.exist-page-nav {
+    padding-top: 0;
+  }
 
   .title {
     display: flex;
@@ -109,7 +153,7 @@
     gap: 8px;
     color: @colorText;
     font-size: @fontSize;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   // 查看更多
@@ -131,6 +175,11 @@
 
 .history-list {
   padding-left: 28px;
+
+  .no-used {
+    margin-left: 6px;
+    color: @colorTextDescription;
+  }
 }
 
 // 底部渐变
@@ -180,4 +229,14 @@
   .user-name {
     color: @colorTextSecondary;
   }
+
+  .active-icon-container {
+    color: @navFirstMenuTextSecondary;
+    padding: @paddingXs;
+  }
+}
+
+.messageContainer {
+  left: 13px !important;
+  bottom: 53px !important;
 }

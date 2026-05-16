@@ -195,7 +195,10 @@ const SpaceSkillManage: React.FC = () => {
   };
 
   // 确认导入技能项目
-  const handleImportSkillProjectConfirm = async (file: File) => {
+  const handleImportSkillProjectConfirm = async (
+    file: File,
+    usageScenarios?: string[],
+  ) => {
     const {
       code,
       data: id,
@@ -203,6 +206,7 @@ const SpaceSkillManage: React.FC = () => {
     } = await apiSkillImport({
       file,
       targetSpaceId: spaceId,
+      usageScenarios,
     });
 
     if (code === SUCCESS_CODE) {

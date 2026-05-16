@@ -450,17 +450,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
             ]}
           />
         </Form.Item>
-
-        <Form.Item
-          name="usageScenarios"
-          label={dict('PC.Pages.SpaceLibrary.availableScope')}
-        >
-          <Select
-            mode="multiple"
-            options={MODEL_USAGE_SCENARIO_LIST}
-            placeholder={dict('PC.Pages.SpaceLibrary.selectAvailableScope')}
-          />
-        </Form.Item>
+        {modelType !== ModelTypeEnum.Embeddings && (
+          <Form.Item
+            name="usageScenarios"
+            label={dict('PC.Pages.SpaceLibrary.availableScope')}
+          >
+            <Select
+              mode="multiple"
+              options={MODEL_USAGE_SCENARIO_LIST}
+              placeholder={dict('PC.Pages.SpaceLibrary.selectAvailableScope')}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="apiProtocol"

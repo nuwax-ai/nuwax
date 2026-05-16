@@ -60,6 +60,25 @@ export enum SystemManageListEnum {
   User_Group_Manage,
 }
 
+// 沙盒配置-绑定对象类型枚举
+export enum SandboxBindTypeEnum {
+  User = 'User',
+  Space = 'Space',
+}
+
+// 沙盒配置-类型枚举
+export enum SandboxTypeEnum {
+  Agent = 'Agent',
+  PageApp = 'PageApp',
+}
+
+// 沙盒配置-隔离级别枚举
+export enum SandboxIsolationEnum {
+  Tenant = 'Tenant',
+  Space = 'Space',
+  Project = 'Project',
+}
+
 // 系统管理-用户管理-角色枚举
 export enum UserRoleEnum {
   Admin = 'Admin',

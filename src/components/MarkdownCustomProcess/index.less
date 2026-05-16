@@ -23,8 +23,20 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      width: calc(100% - 146px);
+      flex: 1;
+      min-width: 0;
       line-height: 16px;
+      transition: all 0.2s;
+
+      &.is-edit {
+        cursor: pointer;
+        // font-weight: 600;
+        // color: rgba(0, 0, 0, 65%);
+
+        &:hover {
+          // color: rgba(0, 0, 0, 88%);
+        }
+      }
     }
 
     .process-controls {

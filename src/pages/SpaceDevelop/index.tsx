@@ -34,6 +34,7 @@ import {
   FileType,
 } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
@@ -368,10 +369,12 @@ const SpaceDevelop: React.FC = () => {
           const origin = window.location.origin;
           // 这里实现复制路径到浏览器地址栏
           const path = `${origin}/app/${agentInfo.id}`;
-          navigator.clipboard.writeText(path);
-          message.success(
-            dict('PC.Pages.SpaceDevelop.copyIndependentSessionSuccess'),
-          );
+          // 复制路径到剪贴板
+          copyTextToClipboard(path, () => {
+            message.success(
+              dict('PC.Pages.SpaceDevelop.copyIndependentSessionSuccess'),
+            );
+          });
         } catch (error) {
           console.error('Failed to copy independent session path:', error);
           message.error(
@@ -513,9 +516,6 @@ const SpaceDevelop: React.FC = () => {
               key={item.id}
               agentConfigInfo={item}
               onClickMore={(type) => handlerClickMore(type, index)}
-              // onCollect={(isCollect: boolean) =>
-              //   handlerCollect(index, isCollect)
-              // }
               onClick={handleClick}
             />
           ))}

@@ -70,6 +70,14 @@ interface ContentViewerProps {
   findFileNode: (fileId: string) => any;
   /** 是否正在AI聊天加载中 */
   isChatLoading?: boolean;
+  /**
+   * Agent 聊天加载中时，是否在预览区显示「开发中」全屏空状态（盖住 iframe）。
+   * 默认 true（与历史行为一致，未传入本 prop 即为 true）。传 false 时仅不再替换预览 iframe；
+   * 不改变 isChatLoading 驱动的代码只读等逻辑。
+   * 宿主若需「URL ?developingOverlay= / 偏好」多级合并，
+   * 可先使用 `resolveShowDevelopingOverlayDuringAgent` 再传入本属性。
+   */
+  showDevelopingOverlayDuringAgent?: boolean;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
@@ -122,6 +130,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRefreshFile,
   findFileNode,
   isChatLoading = false,
+  showDevelopingOverlayDuringAgent = true,
   onStartDev,
   onRestartDev,
   onWhiteScreenOrIframeError,
@@ -139,7 +148,9 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
         isStarting={isStarting}
-        isDeveloping={isChatLoading}
+        isDeveloping={Boolean(
+          isChatLoading && showDevelopingOverlayDuringAgent,
+        )}
         isRestarting={isRestarting}
         isProjectUploading={isProjectUploading}
         startError={startError}
@@ -158,6 +169,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       devServerUrl,
       isStarting,
       isChatLoading,
+      showDevelopingOverlayDuringAgent,
       isRestarting,
       isProjectUploading,
       startError,

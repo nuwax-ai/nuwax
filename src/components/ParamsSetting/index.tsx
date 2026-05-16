@@ -1,5 +1,5 @@
 import SelectList from '@/components/custom/SelectList';
-import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
+import { ParamsSettingDefaultOptionsFun } from '@/constants/common.constants';
 import { COMMON_TABLE_STYLE } from '@/constants/layout.constants';
 import { dict } from '@/services/i18nRuntime';
 import { BindValueType } from '@/types/enums/agent';
@@ -130,14 +130,13 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     if (isComplexType(record)) {
       // 数组和对象没有下级参数时，只允许引用（不允许输入），所以只显示引用选项
       if (!hasSubArgs(record)) {
-        return ParamsSettingDefaultOptions.filter(
+        return ParamsSettingDefaultOptionsFun().filter(
           (item) => item.value === BindValueType.Reference,
         );
       }
-      return ParamsSettingDefaultOptions;
+      return ParamsSettingDefaultOptionsFun();
     }
-
-    return ParamsSettingDefaultOptions;
+    return ParamsSettingDefaultOptionsFun();
   };
 
   // 获取参数默认值
@@ -185,9 +184,10 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
       title: dict('PC.Components.ParamsSetting.paramName'),
       dataIndex: 'name',
       key: 'name',
+      width: 170,
       className: 'flex items-center table-params-name-td',
       render: (_, record) => (
-        <div className={cx('flex', 'flex-col', styles['params-td'])}>
+        <div className={cx('flex', 'flex-col', 'overflow-hide')}>
           <span className={cx(styles['params-name'], 'text-ellipsis-2')}>
             {record.name}
           </span>
@@ -227,7 +227,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     {
       title: dict('PC.Components.ParamsSetting.defaultValue'),
       key: 'default',
-      width: 220,
+      width: 232,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>

@@ -1,6 +1,9 @@
 import {
   AccessControlEnum,
   MessageScopeEnum,
+  SandboxBindTypeEnum,
+  SandboxIsolationEnum,
+  SandboxTypeEnum,
   UserRoleEnum,
   UserStatusEnum,
 } from '@/types/enums/systemManage';
@@ -368,6 +371,58 @@ export interface TenantConfigDto {
   templateConfig?: string;
 }
 
+// 租户订阅基础配置信息，用于订阅基础配置的保存
+export interface TenantSubscriptionConfigInfo {
+  /*收入分成比例 */
+  revenueRatio?: Record<string, unknown>;
+
+  /*支付网关地址 */
+  paymentGateway?: string;
+
+  /*是否开启订阅模式 */
+  enableSubscription?: number;
+
+  /*积分兑换比例，比如 1000标识1块钱可以兑换1000积分 */
+  creditExchangeRate?: number;
+
+  /*积分兑换说明 */
+  creditExchangeDesc?: string;
+
+  /*是否开启注册积分赠送 */
+  enableGiftCredit?: number;
+
+  /*注册赠送积分数 */
+  giftCreditAmount?: number;
+
+  /*注册赠送积分有效期（天） */
+  giftCreditExpire?: number;
+
+  /*是否开启每日登录赠送积分 */
+  enableDailyGiftCredit?: number;
+
+  /*每日登录赠送积分数 */
+  dailyGiftCreditAmount?: number;
+}
+
+/**
+ * 支付配置查询结果
+ */
+export interface PayConfigResult {
+  /** 支付分成比例 */
+  payRate: number;
+}
+
+/**
+ * 支付网关连通性检测结果
+ */
+export interface PayConnectivityResult {
+  reachable: boolean;
+  message: string;
+  gatewayBaseUrl: string;
+  gatewayServerTimeMillis: number;
+  latencyMillis: number;
+}
+
 /**
  * 主题配置数据结构
  */
@@ -730,6 +785,18 @@ export interface ConversationTrendList {
 }
 
 /**
+ * 沙盒绑定信息项
+ */
+export interface SandboxBindItem {
+  /** 目标类型 (User/Space) */
+  targetType: SandboxBindTypeEnum;
+  /** 目标ID */
+  targetId: number;
+  /** 目标名称 */
+  targetName: string;
+}
+
+/**
  * 沙盒配置项
  */
 export interface SandboxConfigItem {
@@ -738,6 +805,12 @@ export interface SandboxConfigItem {
   userId: number;
   name: string;
   configKey: string;
+  /** 沙盒类型: Agent (智能体), PageApp (应用开发) */
+  type: SandboxTypeEnum;
+  /** 绑定信息 */
+  bindItems?: SandboxBindItem[];
+  /** 沙盒隔离: Tenant (租户), Space (空间), Project (项目) */
+  isolation?: SandboxIsolationEnum;
   configValue: {
     hostWithScheme: string;
     agentPort: number;

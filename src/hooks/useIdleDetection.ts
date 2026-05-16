@@ -43,7 +43,7 @@ export interface UseIdleDetectionOptions {
   /**
    * 需要监听的 iframe 选择器
    * 用于监听同源 iframe 内的用户活动
-   * 例如: 'iframe[title="VNC Preview"]' 或 '#vnc-iframe'
+   * Example: 'iframe[title="VNC Preview"]' or '#vnc-iframe'
    * 注意: 仅支持同源 iframe，跨域 iframe 会被自动跳过
    */
   iframeSelector?: string;
@@ -205,7 +205,7 @@ export function useIdleDetection(
    * 暂停空闲检测
    */
   const pause = useCallback(() => {
-    idleLogger.log('⏸️ 暂停空闲检测');
+    idleLogger.log('[Idle] Pause idle detection');
     setIsPaused(true);
     clearIdleTimer();
   }, [clearIdleTimer]);
@@ -214,7 +214,7 @@ export function useIdleDetection(
    * 恢复空闲检测
    */
   const resume = useCallback(() => {
-    idleLogger.log('▶️ 恢复空闲检测');
+    idleLogger.log('[Idle] Resume idle detection');
     setIsPaused(false);
     resetIdleTimer();
   }, [resetIdleTimer]);
@@ -262,10 +262,13 @@ export function useIdleDetection(
         }
       } catch (e) {
         // 跨域 iframe 会抛出 SecurityError
-        idleLogger.log('⚠️ 无法访问 iframe（可能是跨域）', {
-          src: iframe.src,
-          error: (e as Error).message,
-        });
+        idleLogger.log(
+          '[Idle] Unable to access iframe; it may be cross-origin',
+          {
+            src: iframe.src,
+            error: (e as Error).message,
+          },
+        );
       }
       return null;
     },
@@ -278,7 +281,7 @@ export function useIdleDetection(
   useEffect(() => {
     // 如果未启用或没有目标元素，不设置监听器
     if (!enabled || !targetElement) {
-      idleLogger.log('🚫 空闲检测未启用', {
+      idleLogger.log('[Idle] Idle detection is disabled', {
         enabled,
         hasTarget: !!targetElement,
       });
@@ -288,13 +291,13 @@ export function useIdleDetection(
 
     // 如果暂停中，不设置监听器
     if (isPaused) {
-      idleLogger.log('⏸️ 空闲检测已暂停，跳过事件监听器设置');
+      idleLogger.log('[Idle] Idle detection is paused; skip listener setup');
       return;
     }
 
     idleLogger.log(
-      '✅ 空闲检测已启用',
-      `监听事件: ${ACTIVITY_EVENTS.join(', ')}`,
+      '[Idle] Idle detection is enabled',
+      `Listening events: ${ACTIVITY_EVENTS.join(', ')}`,
     );
 
     // 启动初始定时器
@@ -312,7 +315,7 @@ export function useIdleDetection(
 
     // 清理函数
     return () => {
-      idleLogger.log('🧹 清理空闲检测事件监听器');
+      idleLogger.log('[Idle] Clean up idle detection event listeners');
       clearIdleTimer();
       throttledResetRef.current.cancel();
       ACTIVITY_EVENTS.forEach((event) => {
@@ -335,7 +338,7 @@ export function useIdleDetection(
 
     // 事件处理函数
     const handleIframeActivity = () => {
-      idleLogger.log('🖥️ 检测到 iframe 内用户活动');
+      idleLogger.log('[Idle] User activity detected inside iframe');
       throttledResetRef.current();
     };
 
@@ -349,7 +352,7 @@ export function useIdleDetection(
       // 避免重复绑定
       if (boundIframeDocs.includes(iframeDoc)) return;
 
-      idleLogger.log('🔗 绑定 iframe 事件监听器', { src: iframe.src });
+      idleLogger.log('[Idle] Bind iframe event listeners', { src: iframe.src });
 
       ACTIVITY_EVENTS.forEach((event) => {
         iframeDoc.addEventListener(event, handleIframeActivity, {
@@ -366,7 +369,7 @@ export function useIdleDetection(
     const scanAndBindIframes = () => {
       const iframes =
         document.querySelectorAll<HTMLIFrameElement>(iframeSelector);
-      idleLogger.log('🔍 扫描 iframe', {
+      idleLogger.log('[Idle] Scan iframes', {
         selector: iframeSelector,
         count: iframes.length,
       });
@@ -406,7 +409,7 @@ export function useIdleDetection(
         });
       });
       if (shouldRescan) {
-        idleLogger.log('🔄 检测到新 iframe，重新扫描');
+        idleLogger.log('[Idle] New iframe detected; rescan');
         scanAndBindIframes();
       }
     });
@@ -428,7 +431,7 @@ export function useIdleDetection(
           }
         });
       });
-      idleLogger.log('🧹 清理 iframe 事件监听器', {
+      idleLogger.log('[Idle] Clean up iframe event listeners', {
         count: boundIframeDocs.length,
       });
     };
@@ -446,11 +449,11 @@ export function useIdleDetection(
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // 页面被切出，清除计时器（暂停检测）
-        idleLogger.log('👁️ 页面切出，暂停空闲计时器');
+        idleLogger.log('[Idle] Page hidden; pause idle timer');
         clearIdleTimer();
       } else {
         // 页面切回，重置计时器（重新开始计时）
-        idleLogger.log('👁️ 页面切回，重置空闲计时器');
+        idleLogger.log('[Idle] Page visible; reset idle timer');
         resetIdleTimer();
       }
     };

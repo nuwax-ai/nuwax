@@ -139,7 +139,7 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
-        return Promise.reject(errorInfo);
+        return Promise.reject();
       }
 
       // 根据错误码处理不同情况
@@ -184,7 +184,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          // 返回 rejected Promise，但不传递 errorInfo，避免被后续错误处理逻辑误判
+          // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
           return Promise.reject();
       }
 

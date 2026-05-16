@@ -37,6 +37,14 @@ import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace
 
 import { ReactComponent as IconComputerStarSvgFile } from '@/assets/icons/common/icon_computer_star.svg';
 
+import { ReactComponent as CreditsSvgFile } from '@/assets/icons/nav/icons-nav-credits.svg';
+import { ReactComponent as KnowledgeSvgFile } from '@/assets/icons/nav/icons-nav-knowledge.svg';
+import { ReactComponent as MyEarningsSvgFile } from '@/assets/icons/nav/icons-nav-my-earnings.svg';
+import { ReactComponent as MyOrdersSvgFile } from '@/assets/icons/nav/icons-nav-my-orders.svg';
+import { ReactComponent as MySubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-my-subscription.svg';
+import { ReactComponent as PricingSvgFile } from '@/assets/icons/nav/icons-nav-pricing.svg';
+import { ReactComponent as SubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-subscription.svg';
+
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -75,6 +83,13 @@ const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
+const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
+const PricingSvg = wrapSvg(PricingSvgFile);
+const KnowledgeSvg = wrapSvg(KnowledgeSvgFile);
+const MySubscriptionSvg = wrapSvg(MySubscriptionSvgFile);
+const MyOrdersSvg = wrapSvg(MyOrdersSvgFile);
+const MyEarningsSvg = wrapSvg(MyEarningsSvgFile);
+const CreditsSvg = wrapSvg(CreditsSvgFile);
 export default {
   'icons-nav-api_key': ApiKeySvg,
   'icons-nav-home': HomeSvg,
@@ -112,4 +127,11 @@ export default {
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
   'icons-nav-computer-star': IconComputerStarSvgFile,
+  'icons-nav-subscription': SubscriptionSvg,
+  'icons-nav-pricing': PricingSvg,
+  'icons-nav-knowledge': KnowledgeSvg,
+  'icons-nav-my-subscription': MySubscriptionSvg,
+  'icons-nav-my-orders': MyOrdersSvg,
+  'icons-nav-my-earnings': MyEarningsSvg,
+  'icons-nav-credits': CreditsSvg,
 } as Record<string, React.FC>;

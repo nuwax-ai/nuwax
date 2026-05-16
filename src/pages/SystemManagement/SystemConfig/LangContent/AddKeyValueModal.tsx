@@ -176,6 +176,7 @@ const AddKeyValueModal: React.FC<AddKeyValueModalProps> = ({
                 placeholder={dict(
                   'PC.Pages.SystemConfig.LangContent.keyPlaceholder',
                 )}
+                style={{ height: '32px' }}
                 disabled={isEdit}
               />
             </Form.Item>

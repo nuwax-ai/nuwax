@@ -1,7 +1,6 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
+import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
-import type { CaptchaConsumeControl } from '@/hooks/useCaptchaConsume';
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiLogin } from '@/services/account';
 import { dict, initI18n, syncLangFromUserInfo } from '@/services/i18nRuntime';
@@ -86,22 +85,37 @@ const Login: React.FC = () => {
     LoginTypeEnum.Password,
   );
   const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
+  /**
+   * 防止快速重复点击导致重复触发验证码弹窗。
+   * 在 captchaVerifyCallback 调用时释放，或由 popup watcher 在弹窗关闭后释放。
+   */
+  const loginTriggerLockRef = useRef<boolean>(false);
+  const lastLoginTriggerAtRef = useRef<number>(0);
+  /**
+   * 防止 SDK 多次调用 captchaVerifyCallback 导致并发登录请求。
+   */
+  const isVerifyingRef = useRef<boolean>(false);
+  /** 检测到 SDK 自动验证（deviceToken 格式）时跳过验证码校验 */
+  const captchaFallbackRef = useRef<boolean>(false);
+  /**
+   * 监听验证码弹窗状态：弹窗关闭且未进入提交态时释放登录锁。
+   */
+  const captchaPopupWatcherTimerRef = useRef<number | null>(null);
+  const captchaDelayTimerRef = useRef<number | null>(null);
+  const captchaRef = useRef<AliyunCaptchaRef>(null);
   const [checked, setChecked] = useState<boolean>(true);
   const [form] = Form.useForm();
   const { loadEnd, tenantConfigInfo, runTenantConfig } =
     useModel('tenantConfigInfo');
-  // 菜单数据模型
   const { loadMenus } = useModel('menuModel');
 
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
     {
       manual: true,
+      normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
-        console.info('[Login] password-login-onSuccess', {
-          account: params?.[0]?.phoneOrEmail,
-        });
         const { expireDate, token, redirect: responseRedirectUrl } = result;
         localStorage.setItem(ACCESS_TOKEN, token);
         localStorage.setItem(EXPIRE_DATE, expireDate);
@@ -112,15 +126,12 @@ const Login: React.FC = () => {
         } catch (error) {
           console.error('[Login] Sync language after login failed:', error);
         }
-        // 登录成功后强制刷新菜单数据（可能切换了账号）
         await loadMenus(true);
-        // 登录成功后重新初始化语言
         await initI18n(true);
         const redirect = decodeURIComponent(searchParams.get('redirect') || '');
         if (isWeakNumber(redirect)) {
           history.go(Number(redirect));
         } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          // 注意没有考虑 "//" url 的情况
           window.location.href = responseRedirectUrl;
         } else if (redirect) {
           history.replace(redirect);
@@ -129,23 +140,56 @@ const Login: React.FC = () => {
         }
       },
       onError: (error: any) => {
-        console.info('[Login] password-login-onError', {
-          errorMessage: error?.message || String(error),
-        });
         console.error('[Login] Request Error:', error);
+        // SDK 的 refresh() 在 deviceToken（无弹出 DOM）模式下会崩溃并触发新 callback 形成死循环
       },
     },
   );
 
-  useEffect(() => {
-    // 清除主题本地缓存
-    unifiedThemeService.clearUserThemeConfig();
+  const clearCaptchaPopupWatcher = () => {
+    if (captchaPopupWatcherTimerRef.current !== null) {
+      window.clearInterval(captchaPopupWatcherTimerRef.current);
+      captchaPopupWatcherTimerRef.current = null;
+    }
+  };
 
-    // 租户配置信息查询接口
+  const startCaptchaPopupWatcher = () => {
+    clearCaptchaPopupWatcher();
+    const startedAt = Date.now();
+    captchaPopupWatcherTimerRef.current = window.setInterval(() => {
+      const hasCaptchaPopup =
+        !!document.getElementById('aliyunCaptcha-window-popup') ||
+        !!document.getElementById('aliyunCaptcha-mask');
+
+      if (!hasCaptchaPopup) {
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
+        return;
+      }
+
+      // 极端兜底：防止异常情况下 watcher 长驻
+      if (Date.now() - startedAt > 2 * 60 * 1000) {
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
+      }
+    }, 500);
+  };
+
+  useEffect(() => {
+    unifiedThemeService.clearUserThemeConfig();
     runTenantConfig();
   }, []);
 
-  // 表单验证规则 - 抽取为常量避免重复
+  useEffect(() => {
+    return () => {
+      clearCaptchaPopupWatcher();
+      if (captchaDelayTimerRef.current !== null) {
+        window.clearTimeout(captchaDelayTimerRef.current);
+        captchaDelayTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const getPhoneOrEmailRules = () => {
     const isEmailAuth = tenantConfigInfo?.authType === 3;
     return [
@@ -189,35 +233,90 @@ const Login: React.FC = () => {
     },
   ];
 
-  // 账号密码登录
-  const handlerPasswordLogin = (captchaVerifyParam: string) => {
-    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+  /**
+   * 密码登录：在 captchaVerifyCallback 内调用，直接发起登录请求。
+   *
+   * 参考阿里云官方 demo，captchaVerifyCallback 应始终返回
+   * { captchaResult: true, bizResult: true }，避免 SDK 因 bizResult=false
+   * 而自动刷新验证码（导致登录后仍产生新的校验码请求）。
+   * 业务成功/失败通过 onSuccess/onError 回调中的 UI 反馈（message、导航等）处理。
+   */
+  const handlerPasswordLogin = async (
+    captchaVerifyParam: string,
+  ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
+    console.log(
+      '[Login handlerPasswordLogin] raw param length:',
+      captchaVerifyParam?.length,
+      'preview:',
+      captchaVerifyParam?.substring(0, 100),
+    );
     const {
       phoneOrEmail,
       areaCode = '86',
       password,
     } = form.getFieldsValue() || {};
-    // console.log('[Login] 密码登录使用验证码参数:', captchaVerifyParam);
-    console.info('[Login] password-login-run', {
-      account: phoneOrEmail,
-      hasCaptchaVerifyParam: !!captchaVerifyParam,
-    });
-    // 返回请求 Promise，让验证码组件可在请求结束后再刷新实例
-    return runPasswordLogin({
-      phoneOrEmail,
-      areaCode,
-      password,
-      captchaVerifyParam,
-    }).then(() => ({ skipRefresh: true } as CaptchaConsumeControl));
+    const normalizedCaptchaParam =
+      typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
+
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha &&
+      !captchaFallbackRef.current
+    );
+
+    if (needAliyunCaptcha && !normalizedCaptchaParam) {
+      console.warn('[Login] password-login-blocked-empty-captcha', {
+        account: phoneOrEmail,
+      });
+      return { captchaResult: false, bizResult: true };
+    }
+
+    try {
+      await runPasswordLogin({
+        phoneOrEmail,
+        areaCode,
+        password,
+        captchaVerifyParam: normalizedCaptchaParam,
+      });
+      // onSuccess 处理导航，登录成功
+      return { captchaResult: true, bizResult: true };
+    } catch {
+      // 登录失败由 onError 回调处理 UI 反馈，不通过 bizResult 通知 SDK
+      return { captchaResult: true, bizResult: true };
+    }
   };
 
-  // 验证码登录
-  const handlerCodeLogin = (
+  /**
+   * 验证码登录：获取 captchaVerifyParam 后跳转至验证码输入页，
+   * 由下一页真正消费 token。
+   */
+  const handlerCodeLogin = async (
     captchaVerifyParam: string,
-  ): CaptchaConsumeControl => {
-    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+  ): Promise<{ captchaResult: boolean; bizResult: boolean }> => {
     const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
-    // console.log('[Login] 验证码登录使用验证码参数:', captchaVerifyParam);
+    const normalizedCaptchaParam =
+      typeof captchaVerifyParam === 'string' ? captchaVerifyParam.trim() : '';
+
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+
+    if (needAliyunCaptcha && !normalizedCaptchaParam) {
+      console.warn('[Login] code-login-blocked-empty-captcha', {
+        account: phoneOrEmail,
+      });
+      return { captchaResult: false, bizResult: false };
+    }
+
     const redirect = searchParams.get('redirect');
     const path = redirect
       ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
@@ -226,44 +325,136 @@ const Login: React.FC = () => {
       phoneOrEmail,
       areaCode,
       authType: tenantConfigInfo.authType,
-      captchaVerifyParam,
+      captchaVerifyParam: normalizedCaptchaParam,
     });
-    /**
-     * 验证码登录为跨页面消费场景：
-     * token 会在 VerifyCode 页真正调用发送验证码接口时才消费，
-     * 这里必须跳过当前页自动 refresh，避免 token 提前失效。
-     */
-    return { skipRefresh: true };
+    return { captchaResult: true, bizResult: true };
   };
 
-  // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
-  const handlerSuccess = (captchaVerifyParam: string = '') => {
-    // console.log('[Login] 验证码验证成功回调:', captchaVerifyParam);
-    // 每次调用时都使用最新的 loginType 值
-    if (loginTypeRef.current === LoginTypeEnum.Password) {
-      return handlerPasswordLogin(captchaVerifyParam);
-    } else {
-      return handlerCodeLogin(captchaVerifyParam);
+  /**
+   * 传给 AliyunCaptcha 的 onVerify 回调。
+   * SDK 验证通过后调用此函数，在此处发起业务请求并返回真实结果。
+   * SDK 据此决定是否显示验证码错误并调用 onBizResultCallback。
+   */
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    console.log(
+      '[Login handleCaptchaVerify] param length:',
+      captchaVerifyParam?.length,
+      'preview:',
+      captchaVerifyParam?.substring(0, 150),
+    );
+
+    // 检测 SDK 自动验证（deviceToken JSON 格式，非用户滑动验证）
+    const isDeviceTokenFallback =
+      captchaVerifyParam?.startsWith('{"sceneId"') &&
+      captchaVerifyParam.length > 500;
+    if (isDeviceTokenFallback) {
+      // deviceToken 格式走正常路径发送给后端（后端支持此格式），
+      // 仅跳过前端 needAliyunCaptcha 的空字符串拦截（captchaFallbackRef）
+      if (isVerifyingRef.current) {
+        console.log(
+          '[Login handleCaptchaVerify] deviceToken path locked, skip',
+        );
+        return { captchaResult: true, bizResult: true };
+      }
+      isVerifyingRef.current = true;
+      captchaFallbackRef.current = true;
+      console.log(
+        '[Login handleCaptchaVerify] deviceToken auto-verify, pass-through to backend',
+      );
+      try {
+        if (loginTypeRef.current === LoginTypeEnum.Password) {
+          return await handlerPasswordLogin(captchaVerifyParam);
+        }
+        return await handlerCodeLogin(captchaVerifyParam);
+      } finally {
+        captchaFallbackRef.current = false;
+        isVerifyingRef.current = false;
+        // 释放触发锁并清理 popup watcher，避免登录按钮锁死
+        loginTriggerLockRef.current = false;
+        clearCaptchaPopupWatcher();
+      }
     }
-  }; // loginType 作为依赖项
+
+    if (isVerifyingRef.current) {
+      console.log('[Login handleCaptchaVerify] isVerifyingRef locked, skip');
+      return { captchaResult: true, bizResult: true };
+    }
+    isVerifyingRef.current = true;
+
+    // 验证码已通过，立即释放触发锁并清除 popup watcher
+    loginTriggerLockRef.current = false;
+    clearCaptchaPopupWatcher();
+
+    try {
+      if (loginTypeRef.current === LoginTypeEnum.Password) {
+        return await handlerPasswordLogin(captchaVerifyParam);
+      }
+      return await handlerCodeLogin(captchaVerifyParam);
+    } finally {
+      isVerifyingRef.current = false;
+    }
+  };
 
   const doLogin = () => {
+    if (loading) return;
+
+    const now = Date.now();
+    if (
+      loginTriggerLockRef.current ||
+      now - lastLoginTriggerAtRef.current < 800
+    ) {
+      return;
+    }
+
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
-    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
     const needAliyunCaptcha = !!(
       tenantConfigInfo &&
       captchaSceneId !== '' &&
       captchaPrefix !== '' &&
       openCaptcha
     );
-    // console.log('[Login] 执行登录检查:', { needAliyunCaptcha, openCaptcha });
-    // 如果需要阿里云验证码，则点击按钮触发验证码
+
+    // 保障 initAliyunCaptcha 与验证请求之间 ≥2s，确保图片资源预加载完成
     if (needAliyunCaptcha) {
-      document.getElementById('aliyun-captcha-login')?.click();
+      const initAt = window.__captchaInitAt || 0;
+      const gap = now - initAt;
+      if (gap < 2000) {
+        const delay = 2000 - gap;
+        loginTriggerLockRef.current = true;
+        lastLoginTriggerAtRef.current = now;
+        captchaDelayTimerRef.current = window.setTimeout(() => {
+          captchaDelayTimerRef.current = null;
+          captchaRef.current?.show?.();
+          startCaptchaPopupWatcher();
+        }, delay);
+        return;
+      }
+    }
+
+    loginTriggerLockRef.current = true;
+    lastLoginTriggerAtRef.current = now;
+
+    console.log(
+      '[Login doLogin] needAliyunCaptcha:',
+      needAliyunCaptcha,
+      'captchaSceneId:',
+      captchaSceneId,
+      'openCaptcha:',
+      openCaptcha,
+    );
+
+    if (needAliyunCaptcha) {
+      captchaRef.current?.show?.();
+      startCaptchaPopupWatcher();
     } else {
-      //不需要阿里云验证码，直接执行登录/验证码逻辑
-      handlerSuccess();
+      const handler =
+        loginTypeRef.current === LoginTypeEnum.Password
+          ? handlerPasswordLogin('')
+          : handlerCodeLogin('');
+      handler.finally(() => {
+        loginTriggerLockRef.current = false;
+      });
     }
   };
 
@@ -289,7 +480,6 @@ const Login: React.FC = () => {
     loginTypeRef.current = Number(value);
   };
   const { token } = theme.useToken();
-  // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     {
       label: (
@@ -436,8 +626,9 @@ const Login: React.FC = () => {
                 <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
                 <AliyunCaptcha
                   config={tenantConfigInfo}
-                  doAction={handlerSuccess}
+                  onVerify={handleCaptchaVerify}
                   elementId="aliyun-captcha-login"
+                  ref={captchaRef}
                 />
               </div>
             </div>

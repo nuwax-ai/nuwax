@@ -351,6 +351,8 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       okButtonProps={{ loading: bindMenuLoading }}
       className={cx(styles.menuPermissionModal)}
       destroyOnHidden={true}
+      okText={t('PC.Common.Global.confirm')}
+      cancelText={t('PC.Common.Global.cancel')}
       footer={
         hasNoMenuData
           ? [

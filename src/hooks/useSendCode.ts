@@ -8,6 +8,7 @@ const useSendCode = () => {
   const { runWithPromise: runSendCode, loading: sendLoading } =
     useRequestPromiseBridge(apiSendCode, {
       manual: true,
+      normalizeUnknownError: true,
       debounceInterval: 300,
       onSuccess: () => {
         message.success(dict('PC.Hooks.UseSendCode.codeSent'));

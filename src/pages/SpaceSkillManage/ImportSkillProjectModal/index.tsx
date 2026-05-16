@@ -1,13 +1,17 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { SKILL_USAGE_SCENARIO_LIST } from '@/constants/library.constants';
 import { dict } from '@/services/i18nRuntime';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { UploadOutlined } from '@ant-design/icons';
-import { Form, FormProps, message, Typography, Upload } from 'antd';
+import { Form, FormProps, message, Select, Typography, Upload } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ImportSkillProjectModalProps {
   open: boolean;
+  /** 是否为创建模式（显示适用范围），默认 true */
+  isCreate?: boolean;
   onCancel: () => void;
-  onConfirm: (file: File) => Promise<void>;
+  onConfirm: (file: File, usageScenarios?: string[]) => Promise<void>;
 }
 
 const { Text } = Typography;
@@ -24,6 +28,7 @@ const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
  */
 const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
   open,
+  isCreate = true,
   onCancel,
   onConfirm,
 }) => {
@@ -85,7 +90,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
 
     try {
       setLoading(true);
-      await onConfirm(file);
+      await onConfirm(file, isCreate ? values.usageScenarios || [] : undefined);
     } catch (error) {
       console.error('Failed to process file import', error);
     } finally {
@@ -157,6 +162,31 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       onConfirm={handlerSubmit}
     >
       <Form form={form} name="import-skill-project" onFinish={onFinish}>
+        {isCreate && (
+          <Form.Item
+            name="usageScenarios"
+            label={dict(
+              'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioLabel',
+            )}
+            initialValue={[AgentTypeEnum.TaskAgent]}
+            rules={[
+              {
+                required: true,
+                message: dict(
+                  'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioRequired',
+                ),
+              },
+            ]}
+          >
+            <Select
+              mode="multiple"
+              placeholder={dict(
+                'PC.Pages.SpaceSkillManage.CreateSkill.usageScenarioPlaceholder',
+              )}
+              options={SKILL_USAGE_SCENARIO_LIST}
+            />
+          </Form.Item>
+        )}
         <Form.Item>
           <Form.Item
             name="files"

@@ -36,6 +36,11 @@ import { CardBindConfig } from './cardInfo';
 import { ModelConfigInfo } from './model';
 import { PageArgConfig } from './pageDev';
 
+export type AgentHeaderTabKey =
+  | 'arrange'
+  | 'subscriptionSetting'
+  | 'subscriptionStats';
+
 // 智能体header组件
 export interface AgentHeaderProps {
   // 是否隐藏返回箭头
@@ -47,6 +52,8 @@ export interface AgentHeaderProps {
   onEditAgent: () => void;
   onPublish: () => void;
   onOtherAction: (key: ApplicationMoreActionEnum) => void;
+  activeTab?: AgentHeaderTabKey;
+  onTabChange?: (tab: AgentHeaderTabKey) => void;
 }
 
 // 编配title组件
@@ -89,6 +96,8 @@ export interface ComponentSettingModalProps {
 
 // 页面设置弹窗Props
 export interface PageSettingModalProps {
+  // 是否为通用型智能体
+  isTaskAgent?: boolean;
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
   allPageComponentList?: AgentComponentInfo[];
@@ -194,14 +203,22 @@ export interface OutputWayProps {
 // 页面是否模型可见组件属性
 export interface VisibleToLLMProps {
   visibleToLLMType: VisibleToLLMEnum;
-  onChangePageInfo: (attr: string, value: number) => void;
+  onChangePageInfo: (attr: string, value: number | string) => void;
   onSaveSet: () => void;
 }
 
 // 是否为智能体页面首页组件属性
 export interface HomeIndexProps {
   homeIndexType: HomeIndexEnum;
-  onChangePageInfo: (attr: string, value: number) => void;
+  onChangePageInfo: (attr: string, value: number | string) => void;
+  onSaveSet: () => void;
+}
+
+// 自定义页面名称和图标组件属性
+export interface CustomNameAndIconProps {
+  pageIcon?: string;
+  pageName?: string;
+  onChangePageInfo: (attr: string, value: number | string) => void;
   onSaveSet: () => void;
 }
 

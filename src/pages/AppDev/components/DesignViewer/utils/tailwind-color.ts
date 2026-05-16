@@ -131,7 +131,7 @@ const tailwindColorMap: Record<string, Record<string, string>> = {
     '500': '#84cc16',
     '600': '#65a30d',
     '700': '#4d7c0f',
-    '800': '#365314',
+    '800': '#3f6212',
     '900': '#365314',
     '950': '#1a2e05',
   },
@@ -297,19 +297,23 @@ const tailwindColorMap: Record<string, Record<string, string>> = {
  * 生成完整的 Tailwind CSS 颜色选项列表
  * 包含所有颜色和所有色阶
  * 默认和透明选项会排在最前面
+ *
+ * 注意：value 使用唯一的 label（如 "red-500"）而不是 hex 值，
+ * 以避免相同颜色值导致的 React key 冲突问题
  */
 export const generateFullTailwindColorOptions = (): Array<{
   label: string;
   value: string;
+  hex: string;
 }> => {
-  const options: Array<{ label: string; value: string }> = [];
+  const options: Array<{ label: string; value: string; hex: string }> = [];
 
   // 首先添加默认和透明选项（排在最前面）
   const specialOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'transparent', value: 'transparent' },
-    { label: 'black', value: '#000000' },
-    { label: 'white', value: '#ffffff' },
+    { label: 'Default', value: 'Default', hex: 'Default' },
+    { label: 'transparent', value: 'transparent', hex: 'transparent' },
+    { label: 'black', value: 'black', hex: '#000000' },
+    { label: 'white', value: 'white', hex: '#ffffff' },
   ];
 
   // 将特殊选项添加到数组开头
@@ -319,11 +323,23 @@ export const generateFullTailwindColorOptions = (): Array<{
   Object.entries(tailwindColorMap).forEach(([colorName, shades]) => {
     Object.entries(shades).forEach(([shade, hexValue]) => {
       const label = `${colorName}-${shade}`;
-      options.push({ label, value: hexValue });
+      // 使用 label 作为 value 以确保唯一性，hex 单独存储
+      options.push({ label, value: label, hex: hexValue });
     });
   });
 
   return options;
+};
+
+/**
+ * 从颜色选项的 value（label）获取对应的 hex 颜色值
+ * @param value 颜色选项的 value（如 "red-500", "Default", "transparent"）
+ * @returns hex 颜色值或特殊值
+ */
+export const getHexFromColorValue = (value: string): string => {
+  const options = generateFullTailwindColorOptions();
+  const option = options.find((opt) => opt.value === value);
+  return option?.hex || value;
 };
 
 /**

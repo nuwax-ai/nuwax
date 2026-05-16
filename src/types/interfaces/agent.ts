@@ -612,6 +612,16 @@ export interface AgentSelectedComponentInfo {
   type: AgentComponentTypeEnum;
 }
 
+// 自定义页面导航项
+export interface CustomPageNavItem {
+  description: string;
+  icon: string;
+  name: string;
+  path: string;
+  // 是否选中
+  selected: boolean;
+}
+
 // Agent信息，已发布过的agent才有此信息
 export interface AgentDetailDto extends AgentBaseInfo {
   // 会话ID
@@ -623,6 +633,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   sandboxId?: string | number;
   // 发布备注信息
   remark: string;
+  // 自定义页面导航列表
+  customPageMenus: CustomPageNavItem[];
   // 智能体发布时间
   publishDate: number;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
@@ -649,6 +661,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   manualComponents: AgentManualComponentInfo[];
   // 是否允许复制, 1 允许
   allowCopy: AllowCopyEnum;
+  // 是否需要付费
+  paymentRequired: boolean;
+  // 是否已订阅，对智能体和技能有效
+  subscribed: boolean;
   // 当前登录用户是否收藏
   collect: boolean;
   // 是否默认展开扩展页面区域, 1 展开；0 不展开
@@ -678,6 +694,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   allowAtSkill?: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox?: DefaultSelectedEnum;
+  // 是否开启订阅限制
+  subscriptionEnabled?: boolean;
+  // 剩余免费试用次数
+  trialRemaining?: number;
 }
 
 // 日志查询过滤条件

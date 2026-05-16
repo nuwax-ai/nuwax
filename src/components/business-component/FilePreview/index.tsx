@@ -65,6 +65,8 @@ export interface FilePreviewProps {
   staticFileBasePath?: string;
   /** File source: URL string, ArrayBuffer, Blob, or File object */
   src?: string | ArrayBuffer | Blob | File;
+  /** File content string (alternative to src) */
+  content?: string;
   /** For multiple images: array of image sources */
   srcList?: Array<string | File>;
   /** File type (auto-detected if not provided) */
@@ -312,6 +314,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   onError,
   className,
   style,
+  content: propsContent,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewerRef = useRef<any>(null);
@@ -325,6 +328,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   // 关键修复：延迟渲染 Markdown，避免从 HTML 切换到 MD 时的闪动
   const [shouldRenderMarkdown, setShouldRenderMarkdown] =
     useState<boolean>(false);
+  // 控制 Markdown 实际可见性：
+  // 不使用 callback ref 返回清理函数（React 会告警），改由 effect 管理显示时机
+  const [isMarkdownVisible, setIsMarkdownVisible] = useState<boolean>(false);
 
   const resolvedType = fileType || detectedType;
 
@@ -340,8 +346,26 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     } else if (resolvedType !== 'markdown') {
       // 切换到其他类型时，立即重置
       setShouldRenderMarkdown(false);
+      setIsMarkdownVisible(false);
     }
   }, [resolvedType, textContent]);
+
+  useEffect(() => {
+    if (!shouldRenderMarkdown || !textContent) {
+      setIsMarkdownVisible(false);
+      return;
+    }
+    // 先隐藏，再等待 DsMarkdown 完成首轮渲染后显示，避免初始化期间闪动/抖动
+    setIsMarkdownVisible(false);
+    const timer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsMarkdownVisible(true);
+        });
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [shouldRenderMarkdown, textContent]);
 
   const fileName = useMemo(() => {
     if (downloadFileName) return downloadFileName;
@@ -385,7 +409,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   }, [src, fileName]);
 
   const initPreview = async () => {
-    if (!containerRef.current || (!src && !srcList?.length)) return;
+    if (!containerRef.current || (!src && !srcList?.length && !propsContent))
+      return;
 
     // Handle srcList for image gallery
     if (srcList && srcList.length > 0) {
@@ -437,6 +462,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
+      if (propsContent) {
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
       setStatus('loading');
       try {
         let content: string;
@@ -461,6 +492,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // HTML handling
     if (type === 'html') {
+      if (propsContent) {
+        setHtmlUrl(null);
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
       if (typeof src === 'string') {
         setHtmlUrl(src);
         setTextContent('');
@@ -578,7 +616,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   };
 
   useEffect(() => {
-    if (src || srcList?.length) {
+    if (src || srcList?.length || propsContent) {
       initPreview();
     } else {
       setStatus('idle');
@@ -594,7 +632,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, srcList, fileType]);
+  }, [src, srcList, fileType, propsContent]);
 
   // ResizeObserver 监听容器尺寸变化
   const lastSizeRef = useRef<{ width: number; height: number } | null>(null);
@@ -822,28 +860,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   bottom: 0,
                   padding: '24px',
                   overflow: 'auto',
-                  // 关键修复：初始时完全隐藏，避免 DsMarkdown 初始化时导致布局重排
-                  opacity: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-                ref={(node) => {
-                  if (node) {
-                    // 等待 DsMarkdown 初始化完成后再显示，使用更长的延迟确保初始化完成
-                    const timer = setTimeout(() => {
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          if (node) {
-                            node.style.opacity = '1';
-                            node.style.visibility = 'visible';
-                            node.style.pointerEvents = 'auto';
-                            node.style.transition = 'opacity 0.3s ease-in-out';
-                          }
-                        });
-                      });
-                    }, 150); // 增加延迟时间，确保 DsMarkdown 初始化完成
-                    return () => clearTimeout(timer);
-                  }
+                  // 通过 state 控制显隐，而不是 callback ref 返回 cleanup（避免 React ref 警告）
+                  opacity: isMarkdownVisible ? 1 : 0,
+                  visibility: isMarkdownVisible ? 'visible' : 'hidden',
+                  pointerEvents: isMarkdownVisible ? 'auto' : 'none',
+                  transition: 'opacity 0.3s ease-in-out',
                 }}
               >
                 <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>

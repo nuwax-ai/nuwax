@@ -16,6 +16,14 @@ export enum PageDevelopCreateTypeEnum {
   Reverse_Proxy = 'Reverse_Proxy',
 }
 
+// 在线创建项目模板类型，可用值:react,vue3
+export enum PageTemplateTypeEnum {
+  // React 模板
+  React = 'react',
+  // Vue3 模板
+  Vue3 = 'vue3',
+}
+
 // 页面项目类型,可用值:Agent,Page (自定义)
 export enum PageDevelopSelectTypeEnum {
   // 全部

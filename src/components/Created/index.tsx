@@ -9,7 +9,6 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { AgentAddComponentBaseInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
@@ -97,13 +96,14 @@ const Created: React.FC<CreatedProp> = ({
   addSkillLoading = undefined,
   tabs = defaultTabs,
   hideTop,
+  modalZIndex,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
   const spaceId = Number(params.spaceId);
 
   // 打开、关闭创建弹窗
-  const [showCreate, setShowCreate] = useState(false);
+  const [showCreate, setShowCreate] = useState<boolean>(false);
   // 搜索栏的
   const [search, setSearch] = useState<string>('');
   // 当前顶部被选中被选中的
@@ -242,7 +242,7 @@ const Created: React.FC<CreatedProp> = ({
 
   // 添加ref引用
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isRequesting = useRef(false);
+  const isRequesting = useRef<boolean>(false);
   /**  -----------------  需要调用接口  -----------------   */
 
   // 获取右侧的list（关键修改）
@@ -469,7 +469,6 @@ const Created: React.FC<CreatedProp> = ({
     setLoading(true);
     runPageList({
       spaceId,
-      publishType: PageDevelopPublishTypeEnum.PAGE,
       buildRunning: true,
     });
   };
@@ -550,10 +549,8 @@ const Created: React.FC<CreatedProp> = ({
         setLoading(true);
         runPageList({
           spaceId,
-          publishType: PageDevelopPublishTypeEnum.PAGE,
           buildRunning: true,
         });
-        return;
       } else {
         setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
         setSizes(100); // 重置数据大小
@@ -854,6 +851,7 @@ const Created: React.FC<CreatedProp> = ({
       onCancel={onCancel}
       className={cx(styles['created-modal-style'])}
       width={1096}
+      zIndex={modalZIndex}
     >
       <div className={cx(styles['created-container'], 'dis-sb-start')}>
         {/* 左侧部分 */}

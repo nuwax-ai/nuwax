@@ -1,0 +1,33 @@
+@import '@/styles/token.less';
+
+.status-tags-container {
+  display: flex;
+  align-items: center;
+  gap: @paddingXxs;
+  flex-wrap: wrap;
+}
+
+.status-text {
+  font-size: @fontSizeSm;
+  font-weight: 600;
+  line-height: @lineHeightSm;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+
+  &.status-success,
+  &.status-processing {
+    color: #0d9488; // 莫兰迪青，对应有效期
+  }
+
+  &.status-warning {
+    color: @orange6; // 橙色，对应即将用完
+  }
+
+  &.status-error {
+    color: @red6; // 红色，对应已用完或已过期
+  }
+
+  &.status-default {
+    color: #0d9488;
+  }
+}

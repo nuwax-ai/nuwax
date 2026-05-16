@@ -1,0 +1,51 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.daily-earnings-filter {
+  background: @colorBgContainer;
+  border-radius: @borderRadiusLg;
+  padding: @paddingLg;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: @marginLg;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 4%);
+
+  .filter-fields {
+    display: flex;
+    gap: @marginLg;
+    flex: 1;
+
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .label {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        font-weight: 500;
+      }
+
+      :global {
+        .ant-picker {
+          width: 180px;
+          border-radius: @borderRadius;
+        }
+      }
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: @margin;
+
+    :global {
+      .ant-btn {
+        min-width: 80px;
+        height: 36px;
+        border-radius: @borderRadius;
+      }
+    }
+  }
+}

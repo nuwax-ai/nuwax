@@ -8,6 +8,10 @@ import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
+import {
+  getIframeTargetOrigin,
+  isValidIframeMessage,
+} from '@/utils/iframeMessageValidator';
 import { jumpTo } from '@/utils/router';
 import {
   ReloadOutlined,
@@ -115,6 +119,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
     const {
       setIsIframeLoaded,
+      setPreviewIframeElement,
       setIframeDesignMode,
       pendingChanges,
       setPendingChanges,
@@ -208,6 +213,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
 
       setIsLoading(true);
+      setIsIframeLoaded(false);
       setLoadError(null);
 
       if (iframeRef.current) {
@@ -932,20 +938,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      */
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
-        // ⭐ 过滤：只处理来自 iframe 的消息
-        // 检查消息是否来自我们的 iframe（通过检查 source 是否是 iframe 的 contentWindow）
-        const isFromIframe =
-          iframeRef.current &&
-          (event.source === iframeRef.current.contentWindow ||
-            // 也允许通过 origin 判断（如果 iframe 的 URL 和 origin 匹配）
-            (iframeRef.current.src &&
-              event.origin === new URL(iframeRef.current.src).origin));
-
-        // ⭐ 调试日志：记录所有消息以便排查
         const data = event.data;
 
-        // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
-        if (!isFromIframe && data?.type?.includes('dev-monitor')) {
+        // 仅处理 dev-monitor 相关消息
+        if (!data?.type?.includes('dev-monitor')) {
+          return;
+        }
+
+        // 使用统一的消息验证工具
+        if (!isValidIframeMessage(event, iframeRef.current)) {
           return;
         }
 
@@ -1004,6 +1005,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         if (iframeRef.current) {
           iframeRef.current = null;
         }
+        setPreviewIframeElement(null);
         // 退出页面时，重置设计模式状态、清空待保存列表、清空选中元素
         setIframeDesignMode(false);
         setPendingChanges([]);
@@ -1066,7 +1068,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         >();
 
         // 路径清理正则
-        const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
+        /**
+         * 兼容新旧两种工作区路径规则：
+         * 1) project_workspace/{project_id}/
+         * 2) project_workspace/{tenant_id}/{space_id}/{project_id}/
+         *
+         * 并兼容可选的 `/app/` 与前导 `/`。
+         */
+        const pathCleanRegex =
+          /^\/?(?:app\/)?project_workspace\/(?:\d+\/){1,3}/;
 
         pendingChanges.forEach((change: any) => {
           // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
@@ -1102,6 +1112,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const updatedContent = await applyDesignChanges(
                 fileContent,
                 changes,
+                filePath,
               );
               filesToUpdate.push({
                 name: filePath,
@@ -1175,6 +1186,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           }
 
           try {
+            const targetOrigin = getIframeTargetOrigin(iframe);
+
             if (type === 'style') {
               // 恢复样式：使用原始 className
               iframe.contentWindow?.postMessage(
@@ -1187,7 +1200,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   },
                   timestamp: Date.now(),
                 },
-                '*',
+                targetOrigin,
               );
             } else if (type === 'content') {
               // 恢复内容：使用原始文本内容
@@ -1201,7 +1214,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   },
                   timestamp: Date.now(),
                 },
-                '*',
+                targetOrigin,
               );
             }
 
@@ -1236,7 +1249,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           !isDeveloping &&
           !isProjectUploading ? (
             <iframe
-              ref={iframeRef}
+              ref={(node) => {
+                iframeRef.current = node;
+                setPreviewIframeElement(node);
+              }}
               className={styles.previewIframe}
               data-id={`${+(lastRefreshed || 0)}`}
               key={`${+(lastRefreshed || 0)}`} // 添加key属性，当devServerUrl变化时强制重新渲染iframe

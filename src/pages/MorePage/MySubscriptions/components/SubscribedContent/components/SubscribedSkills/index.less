@@ -1,0 +1,165 @@
+@import '@/styles/token.less';
+
+.skill-card {
+  background: @colorWhite;
+  border-radius: @borderRadiusLg;
+  border: 1px solid @colorBorderSecondary;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: @paddingLg;
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: @margin;
+      margin-bottom: @margin;
+    }
+
+    .skill-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @colorWhite;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .skill-info {
+      flex: 1;
+      min-width: 0;
+
+      .skill-name {
+        font-size: @fontSizeLg;
+        font-weight: 600;
+        color: @colorTextBase;
+        margin-bottom: 2px;
+      }
+
+      .skill-provider {
+        font-size: 12px;
+        color: @colorTextTertiary;
+      }
+    }
+
+    .buyout-tag {
+      border: none;
+      background: #e6fffb;
+      color: #13c2c2;
+      border-radius: 4px;
+      font-size: 12px;
+      margin: 0;
+    }
+  }
+
+  .card-body {
+    padding: 0 @paddingLg @paddingLg;
+    flex: 1;
+
+    .buyout-info {
+      font-size: @fontSizeSm;
+      color: @colorTextTertiary;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: @padding;
+      border-top: 1px dashed @colorBorderSecondary;
+      margin-top: @margin;
+
+      .pay-type {
+        font-size: 14px;
+        color: @colorTextTertiary;
+      }
+
+      .buyout-price {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .value {
+          color: @colorTextSecondary;
+          font-weight: 500;
+        }
+      }
+
+      .status-tag-inner {
+        margin: 0;
+        border: none;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+      }
+    }
+
+    .price-statistic {
+      line-height: 1;
+
+      :global {
+        .ant-statistic-content {
+          color: #1a6bff;
+          font-weight: 700;
+          font-size: 18px;
+          display: flex;
+          align-items: baseline;
+        }
+
+        .ant-statistic-content-prefix {
+          font-size: 14px;
+          margin-right: 2px;
+        }
+
+        .ant-statistic-content-suffix {
+          font-size: 14px;
+          color: @colorTextTertiary;
+          font-weight: 400;
+          margin-left: 2px;
+        }
+      }
+    }
+
+    .sub-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: @margin;
+      // padding-top: @padding;
+      // border-top: 1px dashed @colorBorderSecondary;
+
+      .info-item {
+        .label {
+          font-size: 12px;
+          color: @colorTextTertiary;
+          margin-bottom: 4px;
+        }
+
+        .value {
+          font-size: @fontSize;
+          font-weight: 500;
+          color: @colorTextBase;
+
+          .price {
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}

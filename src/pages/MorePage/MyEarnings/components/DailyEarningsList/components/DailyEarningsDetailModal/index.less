@@ -1,0 +1,46 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.detail-modal {
+  :global {
+    .ant-modal-body {
+      padding: 0;
+    }
+  }
+}
+
+.detail-scroll-container {
+  max-height: 520px;
+  overflow-y: auto;
+  padding: @padding 0;
+
+  // 滚动条样式优化
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @colorBorderSecondary;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.amount-plus {
+  color: @colorSuccess;
+  font-weight: @fontWeightStrong;
+  font-family: Outfit, sans-serif;
+}
+
+.load-more-status {
+  padding: @paddingLg;
+  text-align: center;
+
+  .no-more-text {
+    color: @colorTextDescription;
+    font-size: @fontSizeSm;
+  }
+}

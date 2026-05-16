@@ -1,4 +1,5 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { ModelUsageScenarioEnum } from '@/types/enums/modelConfig';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 const itemList = {
@@ -26,6 +27,7 @@ export interface IGetList {
   justReturnSpaceData?: boolean;
   allowCopy?: number; // 模板库 是否允许复制
   official?: boolean; // 官方插件/工作流/技能
+  usageScenarios?: ModelUsageScenarioEnum[];
 }
 function _getMcpList(data?: IGetList): Promise<RequestResponse<any>> {
   return request('/api/mcp/deployed/list', {
@@ -62,6 +64,11 @@ export async function getList(
 ): Promise<RequestResponse<any>> {
   if (type === AgentComponentTypeEnum.MCP) {
     return _getMcpList(data);
+  }
+
+  // 技能类型为 通用智能体时，只返回类型为 TaskAgent 的技能
+  if (type === AgentComponentTypeEnum.Skill && data) {
+    data.usageScenarios = [ModelUsageScenarioEnum.TaskAgent];
   }
 
   return request(`${itemList[type]}`, {

@@ -1,0 +1,131 @@
+// 顶部工具栏：工具名称搜索 + 添加工具
+.tool-pricing-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-pricing-search-input {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+// 表格底部关闭收费说明
+.tool-pricing-billing-notice {
+  padding: 10px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #999;
+  background: #fffbe6;
+  border-radius: 0 0 8px 8px;
+}
+
+.tool-pricing-billing-notice-icon {
+  flex-shrink: 0;
+  color: #faad14;
+}
+
+// 表格名称列（头像 + 标题 + 描述）
+.tool-pricing-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.tool-pricing-name-avatar-wrap {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #e8f4fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tool-pricing-name-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tool-pricing-name-avatar-letter {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.tool-pricing-name-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-pricing-name-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 88%);
+  line-height: 1.35;
+}
+
+.tool-pricing-name-subtitle {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 表格价格列（¥ + 金额 + /次 + 试用徽标）
+.tool-pricing-price-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  line-height: 1.35;
+}
+
+.tool-pricing-price-main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+.tool-pricing-price-currency {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+.tool-pricing-price-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 88%);
+}
+
+.tool-pricing-price-unit {
+  font-size: 12px;
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+.tool-pricing-price-trial-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #0f766e;
+  background: #ccfbf1;
+}

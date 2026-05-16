@@ -18,6 +18,7 @@ export interface LimitedTooltipProps {
   emptyText?: string;
   formatJson?: boolean;
   className?: string;
+  style?: React.CSSProperties;
   placement?: TooltipProps['placement'];
 }
 
@@ -45,6 +46,7 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
   emptyText = '-',
   formatJson = false,
   className,
+  style,
   placement = 'top',
 }) => {
   const [isOverflow, setIsOverflow] = React.useState(false);
@@ -95,6 +97,14 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
         ref={containerRef}
         onMouseEnter={handleMouseEnter}
         className={`text-ellipsis ${className || ''}`}
+        style={{
+          width: '100%',
+          display: 'block',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          ...style,
+        }}
       >
         {displayText}
       </div>

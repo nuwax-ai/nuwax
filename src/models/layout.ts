@@ -1,5 +1,7 @@
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
+import { apiNotifyMessageUnreadCount } from '@/services/message';
 import { useRef, useState } from 'react';
+import { useRequest } from 'umi';
 
 const useLayout = () => {
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -111,6 +113,19 @@ const useLayout = () => {
       : NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth('style1');
   };
 
+  // 查询用户未读消息数量
+  const { run: runNotifyMessageUnreadCount } = useRequest(
+    apiNotifyMessageUnreadCount,
+    {
+      manual: true,
+      onSuccess: (result: number) => {
+        if (result > 0) {
+          setUnreadCount(result);
+        }
+      },
+    },
+  );
+
   return {
     isMobile,
     setIsMobile,
@@ -121,6 +136,7 @@ const useLayout = () => {
     handleCloseMobileMenu,
     unreadCount,
     setUnreadCount,
+    runNotifyMessageUnreadCount,
     openMessage,
     setOpenMessage,
     openAdmin,

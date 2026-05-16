@@ -283,7 +283,7 @@ const parsePageAppProjectId = (uri: string): number => {
 const isMarkdownFile = (filePath: string, strict = true): boolean => {
   if (!filePath || typeof filePath !== 'string') return false;
 
-  const ext = filePath.toLowerCase().split('.').pop() || '';
+  const ext = filePath.split('?')[0].toLowerCase().split('.').pop() || '';
 
   const common = ['md', 'markdown'];
   const full = ['mdown', 'mkd', 'mkdn', 'mdtxt', 'mdtext', 'text'];

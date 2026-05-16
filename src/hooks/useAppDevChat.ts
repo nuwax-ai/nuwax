@@ -5,7 +5,6 @@
 import {
   cancelAgentTask,
   listConversations,
-  saveConversation,
   stopAgentService,
 } from '@/services/appDev';
 import {
@@ -39,13 +38,13 @@ import { t } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
+import { parseAppDevHistoryMessagesFromListRecord } from '@/utils/appDevHistoryMessages';
 import {
-  addSessionInfoToMessages,
   appendTextToStreamingMessage,
+  appendThinkToStreamingMessage,
   createAssistantMessage,
   createUserMessage,
   generateAIChatSSEUrl,
-  generateConversationTopic,
   generateRequestId,
   generateSSEUrl,
   getAuthHeaders,
@@ -55,8 +54,6 @@ import {
   markStreamingMessageCancelled,
   markStreamingMessageComplete,
   markStreamingMessageError,
-  parseChatMessages,
-  serializeChatMessages,
   sortMessagesByTimestamp,
 } from '@/utils/chatUtils';
 
@@ -208,31 +205,6 @@ export const useAppDevChat = ({
     [onRefreshFileTree],
   );
 
-  const handleSaveConversation = useCallback(
-    (
-      chatMessages: AppDevChatMessage[],
-      sessionId: string,
-      projectId: string,
-    ) => {
-      const topic = generateConversationTopic(chatMessages);
-      const content = serializeChatMessages(chatMessages);
-
-      // 保存会话
-      saveConversation({
-        projectId,
-        sessionId,
-        content,
-        topic,
-      }).then(() => {
-        // 新增：刷新文件树内容
-        if (onRefreshFileTree) {
-          debouncedRefreshFileTree();
-        }
-      });
-    },
-    [saveConversation, debouncedRefreshFileTree],
-  );
-
   /**
    * 处理SSE消息 - 基于 request_id 过滤处理
    */
@@ -252,6 +224,22 @@ export const useAppDevChat = ({
 
         case SessionMessageType.AGENT_SESSION_UPDATE: {
           const { subType, data } = message;
+          // 思考流：写入 message.think；先刷新正文缓冲区，避免与已缓冲正文顺序错乱
+          if (subType === AgentSessionUpdateSubType.AGENT_THOUGHT_CHUNK) {
+            const chunkText = data?.content?.text || data?.text || '';
+            const isFinal = data?.is_final;
+            if (chunkText) {
+              flushTextBuffer(false);
+              setChatMessages((prev) =>
+                appendThinkToStreamingMessage(prev, activeRequestId, chunkText),
+              );
+            }
+            // thought 的 is_final 只表示思考段结束，仍需继续收正文；仅刷新正文缓冲区
+            if (isFinal) {
+              flushTextBuffer(false);
+            }
+          }
+
           if (subType === AgentSessionUpdateSubType.AGENT_MESSAGE_CHUNK) {
             const chunkText = data?.content?.text || data?.text || '';
             const isFinal = data?.is_final;
@@ -443,29 +431,8 @@ export const useAppDevChat = ({
           flushTextBuffer(true);
           // 标记消息完成
           setChatMessages((prev) => {
-            const updated = markStreamingMessageComplete(prev, activeRequestId);
-
-            // 保存会话
-            const userMessage = updated.find(
-              (m) =>
-                m.requestId === activeRequestId &&
-                m.role === AssistantRoleEnum.USER,
-            );
-            const assistantMessage = updated.find(
-              (m) =>
-                m.requestId === activeRequestId &&
-                m.role === AssistantRoleEnum.ASSISTANT,
-            );
-
-            if (userMessage && assistantMessage) {
-              handleSaveConversation(
-                [userMessage, assistantMessage],
-                message.sessionId,
-                projectId,
-              );
-            }
-
-            return updated;
+            // 会话落库由后端完成；此处仅更新本地完成态。
+            return markStreamingMessageComplete(prev, activeRequestId);
           });
 
           // 会话结束时执行一次文件树刷新
@@ -499,7 +466,6 @@ export const useAppDevChat = ({
     },
     [
       projectId,
-      handleSaveConversation,
       appDevSseModel,
       debouncedRefreshFileTree,
       flushTextBuffer,
@@ -511,8 +477,11 @@ export const useAppDevChat = ({
    * 初始化 AppDev SSE 连接
    */
   const initializeAppDevSSEConnection = useCallback(
-    async (sessionId: string, requestId: string) => {
-      const sseUrl = generateSSEUrl(sessionId);
+    async (sessionId: string, requestId: string, fluxProjectId?: string) => {
+      // 优先使用 ai-chat-flux 返回的 project_id，确保与后端会话归属一致；
+      // 若后端暂未返回该字段，则回退到当前页面 projectId，兼容老链路。
+      const effectiveProjectId = fluxProjectId || projectId;
+      const sseUrl = generateSSEUrl(sessionId, effectiveProjectId);
       const headers = getAuthHeaders();
 
       // 连接到SSE
@@ -682,10 +651,31 @@ export const useAppDevChat = ({
 
           setChatInput('');
 
-          const sessionId = response.data.session_id;
+          /**
+           * 兼容两种返回结构：
+           * 1) 旧结构：response.data.session_id / response.data.project_id
+           * 2) 新结构：response.data.data.session_id / response.data.data.project_id
+           * 你提供的样例属于新结构，因此优先从 data.data 中读取。
+           */
+          const successPayload = response?.data?.data || response?.data || {};
+          const sessionId = successPayload.session_id;
+          const fluxProjectId = successPayload.project_id;
+          if (!sessionId) {
+            // 后端成功事件没有返回 session_id 时，无法建立后续 ai-session-sse 连接。
+            setChatMessages((prev) =>
+              markStreamingMessageError(
+                prev,
+                requestId,
+                t('PC.Pages.AppDevChat.serviceExceptionTryLater'),
+              ),
+            );
+            setIsChatLoading(false);
+            aIChatAbortConnectionRef.current?.abort();
+            return;
+          }
 
-          // 立即建立SSE连接（使用返回的session_id）
-          initializeAppDevSSEConnection(sessionId, requestId);
+          // 立即建立SSE连接：使用 ai-chat-flux 返回的 session_id + project_id
+          initializeAppDevSSEConnection(sessionId, requestId, fluxProjectId);
         }
 
         if (response.type === 'error') {
@@ -751,6 +741,7 @@ export const useAppDevChat = ({
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId: string = generateRequestId(), // 生成临时request_id
       selectedMentions?: MentionItem[], // 新增：@ 提及的项（包含通过 @ 选择的数据源）
+      skillIds?: number[], // 新增：@ 提及的技能 ID 列表
     ) => {
       try {
         // 数据源数据结构提取
@@ -799,6 +790,7 @@ export const useAppDevChat = ({
           // 原型图片附件列表
           attachment_prototype_images: attachmentPrototypeImages,
           data_sources: _selectedDataResources,
+          skill_ids: skillIds, // 新增：传递技能 ID 列表
         };
 
         // 添加用户消息（包含附件和数据源）
@@ -862,6 +854,7 @@ export const useAppDevChat = ({
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId?: string,
       selectedMentions?: MentionItem[], // 新增：@ 提及的项
+      skillIds?: number[], // 新增：技能 ID 列表
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
@@ -876,6 +869,7 @@ export const useAppDevChat = ({
         attachmentPrototypeImages,
         requestId,
         selectedMentions, // 传递 @ 提及的项
+        skillIds, // 传递技能 ID 列表
       );
     },
     [chatInput, sendMessageAndConnectSSE],
@@ -931,8 +925,9 @@ export const useAppDevChat = ({
           data?.current < data?.pages;
         setTotalHistoryCount(data?.total || 0);
 
-        // 按创建时间排序，获取所有会话
-        const sortedConversations = data?.records.sort(
+        // 按创建时间排序；复制后再 sort，避免就地修改接口返回的 records 引用
+        const records = Array.isArray(data?.records) ? data.records : [];
+        const sortedConversations = [...records].sort(
           (a: any, b: any) =>
             new Date(a.created).getTime() - new Date(b.created).getTime(),
         );
@@ -942,21 +937,24 @@ export const useAppDevChat = ({
 
         for (const conversation of sortedConversations) {
           try {
-            const messages = parseChatMessages(conversation.content);
-
-            // 为每个消息添加会话信息并生成唯一ID
-            const messagesWithSessionInfo = addSessionInfoToMessages(messages, {
-              sessionId: conversation.sessionId,
-              topic: conversation.topic,
-              created: conversation.created,
-            });
-
-            newMessages.push(...messagesWithSessionInfo);
-          } catch (parseError) {}
+            newMessages.push(
+              ...parseAppDevHistoryMessagesFromListRecord(conversation),
+            );
+          } catch (parseError) {
+            console.warn(
+              '[AppDev] Failed to parse history list record',
+              {
+                id: conversation?.id,
+                role: conversation?.role,
+                sessionId: conversation?.sessionId,
+              },
+              parseError,
+            );
+          }
         }
 
-        // 按时间戳排序新消息
-        const sortedNewMessages = sortMessagesByTimestamp(newMessages);
+        // 按时间戳排序；传入副本，避免 sortMessagesByTimestamp 内部 sort 就地改动 newMessages
+        const sortedNewMessages = sortMessagesByTimestamp([...newMessages]);
 
         // 更新消息列表
         if (isLoadMore) {

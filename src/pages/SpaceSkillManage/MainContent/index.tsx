@@ -3,7 +3,7 @@ import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
 import { dict } from '@/services/i18nRuntime';
 import { apiSkillList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
-import { FilterStatusEnum } from '@/types/enums/space';
+import { AgentTypeEnum, FilterStatusEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { SkillInfo } from '@/types/interfaces/library';
 import { debounce } from '@/utils/debounce';
@@ -22,7 +22,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 查询参数
-export type IQuery = 'status' | 'keyword';
+export type IQuery = 'status' | 'keyword' | 'usageScenario';
 
 // 暴露给父组件的方法
 export interface MainContentRef {
@@ -109,6 +109,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     const [keyword, setKeyword] = useState<string>(
       searchParams.get('keyword') || '',
     );
+    // 适用范围
+    const [usageScenario, setUsageScenario] = useState<AgentTypeEnum>(
+      (searchParams.get('usageScenario') as AgentTypeEnum) || AgentTypeEnum.All,
+    );
 
     // 是否加载中
     const [loading, setLoading] = useState(false);
@@ -121,6 +125,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     const handleFilterList = (
       filterStatus: FilterStatusEnum,
       filterKeyword: string,
+      filterUsageScenario: AgentTypeEnum,
       list = skillListAllRef.current,
     ) => {
       if (list.length === 0) {
@@ -136,6 +141,18 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       if (filterKeyword) {
         _list = _list.filter((item) => item.name.includes(filterKeyword));
       }
+      if (filterUsageScenario !== AgentTypeEnum.All) {
+        _list = _list.filter((item) => {
+          const scenarios = item.usageScenarios || [];
+          if (filterUsageScenario === AgentTypeEnum.TaskAgent) {
+            return (
+              scenarios.length === 0 ||
+              scenarios.includes(AgentTypeEnum.TaskAgent)
+            );
+          }
+          return scenarios.includes(filterUsageScenario);
+        });
+      }
       setSkillList(_list);
     };
     // 防抖过滤
@@ -148,7 +165,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       onSuccess: (result: SkillInfo[]) => {
         setLoading(false);
         skillListAllRef.current = result;
-        debounceFilterList(status, keyword, result);
+        debounceFilterList(status, keyword, usageScenario, result);
       },
       onError: () => {
         setLoading(false);
@@ -183,12 +200,16 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
         (Number(searchParams.get('status')) as FilterStatusEnum) ||
         FilterStatusEnum.All;
       const _keyword = searchParams.get('keyword') || '';
+      const _usageScenario =
+        (searchParams.get('usageScenario') as AgentTypeEnum) ||
+        AgentTypeEnum.All;
 
       setStatus(_status);
       setKeyword(_keyword);
+      setUsageScenario(_usageScenario);
 
       // 使用最新的参数过滤，避免依赖旧的 state
-      debounceFilterList(_status, _keyword);
+      debounceFilterList(_status, _keyword, _usageScenario);
     }, [searchParams]);
 
     // 暴露给父组件的方法

@@ -11,5 +11,6 @@ export default {
 
   // Language
   'lang.en': 'English',
+  'lang.ja': 'Japanese',
   'lang.zh': 'Chinese',
 };

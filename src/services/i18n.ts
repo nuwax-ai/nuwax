@@ -78,6 +78,9 @@ export function getI18nImportDefaultMap(
   if (normalizedLang.startsWith('zh')) {
     return { ...(defaults['zh-cn'] || {}) };
   }
+  if (normalizedLang.startsWith('ja')) {
+    return { ...(defaults['ja-jp'] || {}) };
+  }
   return { ...(defaults['en-us'] || {}) };
 }
 

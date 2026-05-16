@@ -192,7 +192,7 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
 
   const isLoadingState = useMemo(
     () => !isStarting && !isRestarting && !isProjectUploading && isLoading,
-    [isStarting, isRestarting, isProjectUploading],
+    [isStarting, isRestarting, isProjectUploading, isLoading],
   );
   const { setIsIframeLoaded } = useModel('appDevDesign');
   useEffect(() => {
@@ -573,6 +573,7 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
             hasErrorInLatestBlock={consoleData.hasErrorInLatestBlock}
             onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
           />
+
           {/* 刷新按钮 */}
           {shouldShowPreviewStatus && (
             <Tooltip

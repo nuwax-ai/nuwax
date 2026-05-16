@@ -40,7 +40,7 @@ export async function apiModelList(
 
 // 查询指定空间下模型列表接口
 export async function apiModelListSpace(
-  spaceId: string,
+  spaceId: number,
 ): Promise<RequestResponse<ModelConfigInfo[]>> {
   return request(`/api/model/list/space/${spaceId}`, {
     method: 'POST',

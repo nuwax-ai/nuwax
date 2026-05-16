@@ -109,6 +109,7 @@ export interface SelectListType {
   options: option[];
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
+  style?: React.CSSProperties;
 }
 
 // 默认的object
@@ -180,6 +181,8 @@ export interface CustomFormModalProps {
   centered?: boolean;
   // Modal宽度
   width?: number | string;
+  /** 弹层层级（嵌套在其它 Modal 内时可设为更高，避免被选层挡住） */
+  zIndex?: number;
   onCancel: () => void;
   onConfirm: () => void;
   // 确定按钮是否禁用
@@ -454,9 +457,12 @@ export interface SubmitButtonProps {
 
 // 上传文件信息
 export interface UploadFileInfo {
+  // 文件URL (必填)
   url: string;
   name: string;
+  // 文件类型 (必填)
   type: string;
+  // 文件key
   key?: string;
   size: number;
   width?: number;

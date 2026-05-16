@@ -144,6 +144,9 @@ const ChatTemp: React.FC = () => {
   const { handleChatProcessingList, pagePreviewData, hidePagePreview } =
     useModel('chat');
 
+  // 鼠标是否悬停在聊天区域
+  const [isHoveringChat, setIsHoveringChat] = useState(false);
+
   // 会话UID
   const conversationUid = useRef<string>();
 
@@ -703,6 +706,11 @@ const ChatTemp: React.FC = () => {
     }
   };
 
+  const handleCaptchaVerify = async (captchaVerifyParam: string) => {
+    await asyncFun(captchaVerifyParam);
+    return { captchaResult: true, bizResult: true } as const;
+  };
+
   useEffect(() => {
     if (tenantConfigInfo) {
       const { captchaSceneId, captchaPrefix, openCaptcha } = tenantConfigInfo;
@@ -840,6 +848,8 @@ const ChatTemp: React.FC = () => {
               styles['main-content'],
             )}
             ref={setRef}
+            onMouseEnter={() => setIsHoveringChat(true)}
+            onMouseLeave={() => setIsHoveringChat(false)}
           >
             <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
               {isLoadingConversation ? (
@@ -912,7 +922,7 @@ const ChatTemp: React.FC = () => {
               clearDisabled={!messageList?.length}
               onEnter={handleMessageSend}
               onClear={handleClear}
-              visible={showScrollBtn}
+              visible={showScrollBtn && isHoveringChat}
               wholeDisabled={wholeDisabled}
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
@@ -933,22 +943,22 @@ const ChatTemp: React.FC = () => {
               onClear={handleClear}
               wholeDisabled={wholeDisabled}
               onEnter={handleMessageSend}
-              visible={showScrollBtn}
+              visible={showScrollBtn && isHoveringChat}
               onScrollBottom={onScrollBottom}
             />
             <p
               className={cx(
                 styles['welcome-text'],
                 'text-ellipsis',
-                'cursor-pointer',
                 'clip-path-animation',
               )}
-              onClick={handleSiteLink}
             >
-              {dict(
-                'PC.Pages.ChatTemp.welcomeText',
-                tenantConfigInfo?.siteName,
-              )}
+              <span className="cursor-pointer" onClick={handleSiteLink}>
+                {dict(
+                  'PC.Pages.ChatTemp.welcomeText',
+                  tenantConfigInfo?.siteName,
+                )}
+              </span>
             </p>
           </div>
           <button
@@ -958,7 +968,7 @@ const ChatTemp: React.FC = () => {
           />
           <AliyunCaptcha
             config={tenantConfigInfo}
-            doAction={asyncFun}
+            onVerify={handleCaptchaVerify}
             elementId={buttonId}
             onReady={handleCaptchaReady}
           />

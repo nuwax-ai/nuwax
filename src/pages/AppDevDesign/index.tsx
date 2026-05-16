@@ -1,0 +1,2073 @@
+import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
+import Created from '@/components/Created';
+import PublishComponentModal from '@/components/PublishComponentModal';
+import VersionHistory from '@/components/VersionHistory';
+import { ERROR_MESSAGES } from '@/constants/appDevConstants';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { CREATED_TABS } from '@/constants/common.constants';
+import { useAppDevChat } from '@/hooks/useAppDevChat';
+import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
+import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
+import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
+import { useAppDevServer } from '@/hooks/useAppDevServer';
+import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
+import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
+import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
+import { useMergedAppDevAgentDevelopingOverlay } from '@/hooks/useMergedAppDevAgentDevelopingOverlay';
+import { useRestartDevServer } from '@/hooks/useRestartDevServer';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { AppDevHeader, ContentViewer } from '@/pages/AppDev/components';
+import ChatArea from '@/pages/AppDev/components/ChatArea';
+import { type DesignViewerRef } from '@/pages/AppDev/components/DesignViewer';
+import DevLogConsole from '@/pages/AppDev/components/DevLogConsole';
+import EditorHeaderRight from '@/pages/AppDev/components/EditorHeaderRight';
+import FileOperatingMask from '@/pages/AppDev/components/FileOperatingMask';
+import FileTreePanel from '@/pages/AppDev/components/FileTreePanel';
+import { apiAgentConfigInfo } from '@/services/agentConfig';
+import {
+  bindDataSource,
+  buildProject,
+  exportProject,
+  stopAgentService,
+  uploadAndStartProject,
+} from '@/services/appDev';
+import { t } from '@/services/i18nRuntime';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
+import {
+  AgentAddComponentBaseInfo,
+  AgentAddComponentStatusInfo,
+} from '@/types/interfaces/agentConfig';
+import { FileNode } from '@/types/interfaces/appDev';
+import { DataResource } from '@/types/interfaces/dataResource';
+import { generateRequestId } from '@/utils/chatUtils';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
+import { UploadOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Button,
+  Input,
+  message,
+  Modal,
+  Segmented,
+  Space,
+  Tooltip,
+  Typography,
+  Upload,
+} from 'antd';
+import classNames from 'classnames';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useModel, useParams, useRequest } from 'umi';
+
+import PageEditModal from '@/pages/AppDev/components/PageEditModal';
+
+import { type PreviewRef } from '@/pages/AppDev/components/Preview';
+import { useDevLogs } from '@/pages/AppDev/hooks/useDevLogs';
+import { checkFileSizeExceedLimit } from '@/utils';
+import styles from './index.less';
+
+const { Text } = Typography;
+const cx = classNames.bind(styles);
+/**
+ * AppDev页面组件
+ * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
+ */
+const AppDevDesign: React.FC = () => {
+  // 获取路由参数
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+
+  // 数据源选择状态
+  const [selectedDataResources, setSelectedDataResources] = useState<
+    DataResource[]
+  >([]);
+  // 缓存 selectedDataResources 引用，避免无限循环
+  const selectedDataResourcesRef = useRef<DataResource[]>([]);
+
+  // ⭐ 自动发送消息锁，防止重复调用
+  const autoSendLockRef = useRef<boolean>(false);
+  const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ⭐ 自动错误处理 Hook 引用
+  const autoErrorHandlingRef = useRef<ReturnType<
+    typeof useAutoErrorHandling
+  > | null>(null);
+
+  // 页面编辑状态
+  const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
+
+  // 使用 AppDev 模型来管理状态
+  const appDevModel = useModel('appDev');
+  const { navigationStyle } = useUnifiedTheme();
+  const {
+    workspace,
+    isServiceRunning,
+    setIsServiceRunning,
+    setActiveFile,
+    updateFileContent,
+    updateDevServerUrl,
+    updateWorkspace,
+  } = appDevModel;
+
+  // 使用简化的 AppDev projectId hook
+  const { projectId, hasValidProjectId } = useAppDevProjectId();
+
+  // 使用 Modal.confirm 来处理确认对话框
+  const [, contextHolder] = Modal.useModal();
+
+  // 组件内部状态
+  const [missingProjectId, setMissingProjectId] = useState(false);
+  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showDevLogConsole, setShowDevLogConsole] = useState(false);
+
+  // 空操作函数常量，避免每次渲染创建新函数实例
+  const noop = useCallback(() => {}, []);
+  const asyncNoopFalse = useCallback(async () => false, []);
+  const asyncNoop = useCallback(async () => {}, []);
+
+  // 部署相关状态
+  const [isDeploying, setIsDeploying] = useState(false);
+
+  // 单文件上传状态
+  const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
+    useState(false);
+  const [singleFileUploadLoading, setSingleFileUploadLoading] = useState(false);
+  const [singleFilePath, setSingleFilePath] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  // 项目导入状态
+  const [isProjectUploading, setIsProjectUploading] = useState(false);
+
+  // 聊天模式状态
+  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+
+  // 数据资源相关状态
+  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
+    useState(false);
+
+  // 删除确认对话框状态
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
+  // 文件操作状态，避免多步流程竞争和覆盖
+  const [isFileOperating, setIsFileOperating] = useState(false);
+  // 文件操作遮罩显示状态，小于500ms不显示遮罩
+  const [shouldShowFileOperatingMask, setShouldShowFileOperatingMask] =
+    useState(false);
+  // 文件操作开始时间
+  const fileOperatingStartTimeRef = useRef<number | null>(null);
+  // 文件操作延时定时器
+  const fileOperatingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 版本历史弹窗状态
+  const [openVersionHistory, setOpenVersionHistory] = useState(false);
+
+  // 发布智能体弹窗状态
+  const [openPublishComponentModal, setOpenPublishComponentModal] =
+    useState(false);
+  // 使用 Hook 控制抽屉打开时的滚动条
+  useDrawerScroll(openVersionHistory);
+  const { iframeDesignMode, setIframeDesignMode, isIframeLoaded } =
+    useModel('appDevDesign');
+
+  // URL 参数控制默认 design 模式
+  const designModeFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('designMode') === 'true';
+  }, []);
+
+  useEffect(() => {
+    if (designModeFromUrl && isIframeLoaded && !iframeDesignMode) {
+      setIframeDesignMode(true);
+    }
+  }, [
+    designModeFromUrl,
+    isIframeLoaded,
+    iframeDesignMode,
+    setIframeDesignMode,
+  ]);
+
+  // 文件操作遮罩延时显示逻辑
+  useEffect(() => {
+    if (isFileOperating) {
+      // 文件操作开始，记录开始时间并设置500ms后显示遮罩
+      fileOperatingStartTimeRef.current = Date.now();
+
+      // 设置500ms延时显示遮罩
+      fileOperatingTimerRef.current = setTimeout(() => {
+        setShouldShowFileOperatingMask(true);
+      }, 500);
+    } else {
+      // 文件操作结束，清理定时器和状态
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+
+      // 检查操作持续时间，如果小于500ms则不显示遮罩
+      if (fileOperatingStartTimeRef.current) {
+        const duration = Date.now() - fileOperatingStartTimeRef.current;
+        if (duration < 500) {
+          // 操作时间太短，不显示遮罩
+          setShouldShowFileOperatingMask(false);
+        }
+      }
+
+      // 重置状态
+      fileOperatingStartTimeRef.current = null;
+    }
+
+    // 清理函数
+    return () => {
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+    };
+  }, [isFileOperating]);
+
+  // 使用项目详情 Hook
+  const projectInfo = useAppDevProjectInfo(projectId);
+
+  // 权限校验通过后才初始化其他 hooks
+  const fileManagement = useAppDevFileManagement({
+    projectId: projectId || '',
+    onFileSelect: setActiveFile,
+    onFileContentChange: updateFileContent,
+    isChatLoading: false, // 临时设为false，稍后更新
+    hasPermission: projectInfo.hasPermission, // 传递权限状态
+  });
+
+  // 模型选择器
+  const modelSelector = useAppDevModelSelector(
+    spaceId,
+    projectId,
+    projectInfo?.hasPermission,
+  );
+
+  const devLogs = useDevLogs(projectId || '', {
+    enabled: hasValidProjectId && isServiceRunning && projectInfo.hasPermission,
+    pollInterval: 5000,
+    maxLogLines: 1000,
+  });
+
+  const server = useAppDevServer({
+    projectId: projectId || '',
+    onServerStart: updateDevServerUrl,
+    onServerStatusChange: setIsServiceRunning,
+  });
+
+  // Preview组件的ref，用于触发刷新
+  const previewRef = useRef<PreviewRef>(null);
+  const designViewerRef = useRef<DesignViewerRef>(null);
+
+  // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
+  // 整个页面生命周期内只触发一次：避免死循环和跨项目重复触发；后续重试由用户手动点「重启服务器」。
+  // 后续「等 iframe 加载完成 → 切回 design」的动作由 ChatAreaTabs 内部完成。
+  const designRecoveryFiredRef = useRef(false);
+  const handleDesignModeUnreachable = useCallback(async () => {
+    if (designRecoveryFiredRef.current) return;
+    designRecoveryFiredRef.current = true;
+    try {
+      await server.restartServer(false);
+    } catch {
+      // restartServer 内部已写入 serverMessage / errorCode
+    }
+  }, [server]);
+
+  // Preview 状态跟踪
+  const [previewIsLoading, setPreviewIsLoading] = useState(false);
+  const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
+    null,
+  );
+
+  /** URL 入参解析后的最终结果，透传给 ContentViewer */
+  const developingOverlayControl = useMergedAppDevAgentDevelopingOverlay();
+
+  // 智能体配置信息
+  const [agentConfigInfo, setAgentConfigInfo] =
+    useState<AgentConfigInfo | null>(null);
+
+  // 查询智能体配置信息
+  const { run: runAgentConfigInfo } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      setAgentConfigInfo(result);
+    },
+  });
+
+  useEffect(() => {
+    if (
+      projectInfo.projectInfoState.projectInfo?.devAgentId &&
+      projectInfo.hasPermission
+    ) {
+      const agentId = projectInfo.projectInfoState.projectInfo?.devAgentId;
+      runAgentConfigInfo(agentId);
+    }
+  }, [
+    projectInfo.projectInfoState.projectInfo?.devAgentId,
+    projectInfo.hasPermission,
+  ]);
+
+  // 定期更新 Preview 状态
+  useEffect(() => {
+    const updatePreviewStatus = () => {
+      if (previewRef.current) {
+        setPreviewIsLoading(previewRef.current.getIsLoading());
+        setPreviewLastRefreshed(previewRef.current.getLastRefreshed());
+      }
+    };
+
+    // 立即更新一次
+    updatePreviewStatus();
+
+    // 每 500ms 更新一次状态
+    const interval = setInterval(updatePreviewStatus, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!projectInfo.hasPermission) {
+      return;
+    }
+
+    // 获取上次使用的模型ID、多模态模型ID
+    const { lastChatModelId, lastMultiModelId } =
+      projectInfo.projectInfoState.projectInfo || {};
+
+    const { chatModelList, multiModelList } = modelSelector.models || {};
+
+    // 如果上次使用的多模态模型ID存在，则使用上次使用的多模态模型ID
+    if (lastMultiModelId && !!multiModelList?.length) {
+      const index = multiModelList?.findIndex((m) => m.id === lastMultiModelId);
+      if (index > -1) {
+        modelSelector.selectMultiModel(lastMultiModelId);
+      } else {
+        // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
+        modelSelector.selectMultiModel(multiModelList[0].id);
+      }
+    }
+
+    // 如果上次使用的编码模型ID存在，则使用上次使用的编码模型ID
+    if (lastChatModelId && !!chatModelList?.length) {
+      // 如果上次使用的模型ID存在，则使用上次使用的模型ID
+      const index = chatModelList?.findIndex((m) => m.id === lastChatModelId);
+      if (index > -1) {
+        modelSelector.selectModel(lastChatModelId);
+      } else {
+        // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
+        modelSelector.selectModel(chatModelList[0].id);
+      }
+      return;
+    }
+
+    // 没有上次使用的模型时，优先使用 Anthropic 的第一个
+    const anthropicModel = chatModelList?.find(
+      (m) => m.apiProtocol === 'Anthropic',
+    );
+
+    if (anthropicModel) {
+      modelSelector.selectModel(anthropicModel.id);
+    } else if (chatModelList && chatModelList.length > 0) {
+      // 如果没有 Anthropic 模型，使用列表第一个
+      modelSelector.selectModel(chatModelList[0].id);
+    }
+  }, [
+    modelSelector.models,
+    projectInfo.projectInfoState.projectInfo,
+    projectInfo.hasPermission,
+  ]);
+
+  // 使用重启开发服务器 Hook
+  const { restartDevServer } = useRestartDevServer({
+    projectId: projectId || '',
+    server,
+    setActiveTab,
+    previewRef,
+    devLogsRefresh: () => devLogs.resetStartLine(),
+  });
+
+  const chat = useAppDevChat({
+    projectId: projectId || '',
+    selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
+    multiModelId: modelSelector.selectedMultiModelId, // 新增：传递多模态模型ID（视觉模型ID）
+    onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
+    selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
+    onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
+    onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
+    onRestartDevServer: async () => {
+      // 使用重启开发服务器 Hook，Agent 触发时不切换页面
+      await restartDevServer({
+        shouldSwitchTab: false, // Agent 触发时不切换页面
+        delayBeforeRefresh: 500,
+        showMessage: false, // Agent 触发时不显示消息
+      });
+    },
+  });
+
+  // ⭐ 自动错误处理 Model（用于记录和管理）
+  const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
+
+  // 使用 ref 存储 errorType 和 requestId，以便在 callback 中使用
+  const currentErrorTypeRef = useRef<'whiteScreen' | 'log' | 'iframe'>('log');
+  const currentRequestIdRef = useRef<string>('');
+
+  // 定义 handleAddLogToChat（需要在 useAutoErrorHandling 之前定义）
+  const handleAddLogToChat = useCallback(
+    (content: string, isAuto?: boolean, callback?: () => void) => {
+      if (!content.trim()) {
+        message.warning(t('PC.Pages.AppDevIndex.inputContentEmpty'));
+        return;
+      }
+
+      // 将日志内容添加到聊天输入框
+      chat.setChatInput(content);
+
+      if (isAuto && !chat.isChatLoading) {
+        // ⭐ 加锁：防止重复调用自动发送逻辑
+        if (autoSendLockRef.current) {
+          console.warn(
+            '[AppDev] auto-send is already processing, skip duplicate trigger',
+          );
+          return;
+        }
+
+        // 设置锁标志
+        autoSendLockRef.current = true;
+
+        // 清除之前的定时器（如果存在）
+        if (autoSendTimerRef.current) {
+          clearTimeout(autoSendTimerRef.current);
+        }
+
+        // 设置定时器发送消息
+        autoSendTimerRef.current = setTimeout(() => {
+          try {
+            // 再次检查聊天是否仍在加载中
+            if (!chat.isChatLoading) {
+              // 调用 callback，这里会记录次数并调用 setAutoSendCount
+              callback?.();
+              // 通过事件总线发布发送消息事件
+              eventBus.emit(
+                EVENT_NAMES.SEND_CHAT_MESSAGE,
+                currentRequestIdRef.current,
+              );
+              console.log(
+                `[AppDev] Auto-send message event triggered, requestId: ${currentRequestIdRef.current}`,
+              );
+
+              // 发送成功后，生成新的 requestId 供下次使用（如果下次还有自动处理）
+              currentRequestIdRef.current = generateRequestId();
+            } else {
+              console.warn(
+                '[AppDev] chat is loading, canceling auto-send trigger',
+              );
+              // 如果取消发送，重置 requestId
+              currentRequestIdRef.current = '';
+            }
+          } finally {
+            // 延迟解锁，确保消息已处理
+            setTimeout(() => {
+              autoSendLockRef.current = false;
+              autoSendTimerRef.current = null;
+            }, 500);
+          }
+        }, 300);
+        return;
+      }
+      // 显示成功提示
+      message.success(t('PC.Pages.AppDevIndex.logAddedWaitingSend'));
+    },
+    [chat],
+  );
+
+  // 自动异常处理（在 handleAddLogToChat 之后定义）
+  const autoErrorHandling = useAutoErrorHandling({
+    onAddToChat: (content, isAuto, callback) => {
+      // 这里会在 handleAddLogToChat 中实际处理
+      handleAddLogToChat(content, isAuto, () => {
+        // 记录自动处理问题次数到 Model
+        if (isAuto && content) {
+          // 生成 requestId（如果还没有生成）
+          if (!currentRequestIdRef.current) {
+            currentRequestIdRef.current = generateRequestId();
+          }
+
+          // 记录到 model（用于统计和历史记录）
+          autoErrorHandlingModelInstance.recordAutoHandle(
+            currentErrorTypeRef.current,
+            content,
+            currentRequestIdRef.current,
+          );
+        }
+
+        // 调用外部传入的 callback（这个 callback 就是 setAutoSendCount，会增加重试次数）
+        callback?.();
+      });
+    },
+    isChatLoading: chat.isChatLoading,
+    enabled: hasValidProjectId && projectInfo.hasPermission,
+  });
+
+  // 存储 autoErrorHandling 的引用
+  useEffect(() => {
+    autoErrorHandlingRef.current = autoErrorHandling;
+  }, [autoErrorHandling]);
+
+  // 数据资源管理
+  const dataResourceManagement = useDataResourceManagement();
+
+  useEffect(() => {
+    // 初始化处于added状态的组件列表
+    if (projectInfo.projectInfoState.projectInfo && projectInfo.hasPermission) {
+      const dataSources =
+        projectInfo.projectInfoState.projectInfo?.dataSources || [];
+
+      dataResourceManagement.fetchResources(dataSources);
+
+      // 初始化处于added状态的组件列表
+      const addComponents = dataSources.map((dataSource) => {
+        const type =
+          dataSource.type === 'plugin'
+            ? AgentComponentTypeEnum.Plugin
+            : AgentComponentTypeEnum.Workflow;
+        return {
+          type: type,
+          targetId: dataSource.id,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      });
+      setAddComponents(addComponents as AgentAddComponentStatusInfo[]);
+    }
+  }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
+
+  useEffect(() => {
+    if (dataResourceManagement.resources?.length > 0) {
+      const _selectedDataResources: DataResource[] =
+        dataResourceManagement.resources.map((resource) => {
+          // 判断数据源是否已选中
+          const isExist = selectedDataResourcesRef.current?.find(
+            (item) => item.id === resource.id,
+          );
+          if (isExist) {
+            return isExist;
+          }
+          // 新增数据源
+          return {
+            ...resource,
+            isSelected: false,
+          };
+        });
+      setSelectedDataResources(_selectedDataResources);
+      selectedDataResourcesRef.current = _selectedDataResources;
+    }
+  }, [dataResourceManagement.resources]);
+
+  // 稳定 currentFiles 引用，避免无限循环
+  const stableCurrentFiles = useMemo(() => {
+    return fileManagement.fileTreeState.data;
+  }, [fileManagement.fileTreeState.data]);
+
+  // 版本对比管理
+  const versionCompare = useAppDevVersionCompare({
+    projectId: projectId || '',
+    onVersionSwitchSuccess: () => {
+      // 刷新文件树（不保持状态，因为切换版本是全新内容）
+      fileManagement.loadFileTree(false);
+      // 刷新项目详情
+      projectInfo.refreshProjectInfo();
+    },
+  });
+
+  // 获取当前显示的文件树（版本模式或正常模式）
+  const currentDisplayFiles = useMemo(() => {
+    return versionCompare.isComparing
+      ? versionCompare.versionFiles
+      : stableCurrentFiles;
+  }, [
+    versionCompare.isComparing,
+    versionCompare.versionFiles,
+    stableCurrentFiles,
+  ]);
+
+  /**
+   * 在版本模式下查找文件节点
+   */
+  const findVersionFileNode = useCallback(
+    (fileId: string): any => {
+      const findInNodes = (nodes: any[]): any => {
+        for (const node of nodes) {
+          if (node.id === fileId) {
+            return node;
+          }
+          if (node.children) {
+            const found = findInNodes(node.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      return findInNodes(versionCompare.versionFiles);
+    },
+    [versionCompare.versionFiles],
+  );
+
+  /**
+   * 处理版本选择，直接在页面中显示版本对比
+   */
+  const handleVersionSelect = useCallback(
+    async (version: number) => {
+      try {
+        // 先切换到代码查看模式
+        setActiveTab('code');
+        // 然后启动版本对比
+        await versionCompare.startVersionCompare(version);
+      } catch (error) {
+        // 版本对比启动失败
+      }
+    },
+    [versionCompare],
+  );
+
+  /**
+   * 检查 projectId 状态
+   */
+  useEffect(() => {
+    setMissingProjectId(!hasValidProjectId);
+  }, [projectId, hasValidProjectId]);
+
+  // 截图 iframe 内容
+  const handleCaptureIframeContent = useCallback(() => {
+    if (previewRef.current) {
+      try {
+        previewRef.current.captureIframeContent();
+      } catch (error) {
+        console.error('[AppDev] error while capturing iframe content:', error);
+      }
+    }
+  }, [previewRef.current]);
+
+  /**
+   * 处理项目发布成组件
+   */
+  const handlePublishComponent = useCallback(async () => {
+    if (!hasValidProjectId || !projectId) {
+      message.error(t('PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy'));
+      return;
+    }
+
+    // 截图 iframe 内容
+    handleCaptureIframeContent();
+
+    try {
+      setIsDeploying(true);
+      const result = await buildProject(
+        projectId,
+        PageDevelopPublishTypeEnum.PAGE,
+      );
+
+      // 检查API响应格式
+      if (result?.code === SUCCESS_CODE && result?.data) {
+        const { prodServerUrl } = result.data;
+        // 显示部署结果 - 垂直居中显示
+        Modal.success({
+          title: t('PC.Pages.AppDevIndex.publishComponentSuccessTitle'),
+          content: (
+            <div>
+              <p>{t('PC.Pages.AppDevIndex.publishComponentSuccessDesc')}</p>
+              {prodServerUrl && (
+                <p>
+                  <a
+                    href={`${process.env.BASE_URL}${prodServerUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t('PC.Pages.AppDevIndex.clickToPreview')}
+                  </a>
+                </p>
+              )}
+            </div>
+          ),
+          centered: true,
+        });
+        projectInfo.refreshProjectInfo();
+      } else {
+        message.error(
+          result.message || t('PC.Pages.AppDevIndex.publishFailed'),
+        );
+      }
+    } catch (error) {
+      // request请求中设置了skipErrorHandler: true, 跳过了错误处理
+      message.error(t('PC.Pages.AppDevIndex.publishFailedRetryAfterFix'));
+    } finally {
+      setIsDeploying(false);
+    }
+  }, [hasValidProjectId, projectId, projectInfo]);
+
+  /**
+   * 处理发布成应用
+   */
+  const handlePublishApplication = async () => {
+    // 截图 iframe 内容
+    handleCaptureIframeContent();
+    setOpenPublishComponentModal(true);
+  };
+
+  /**
+   * 处理发布成应用
+   */
+  const handleBeforePublish = async () => {
+    if (!hasValidProjectId || !projectId) {
+      message.error(t('PC.Pages.AppDevIndex.invalidProjectIdCannotDeploy'));
+      return;
+    }
+    // 先关闭弹窗，再显示 loading 效果（与发布成组件一致）
+    setOpenPublishComponentModal(false);
+    setIsDeploying(true);
+    const { code } = await buildProject(
+      projectId,
+      PageDevelopPublishTypeEnum.AGENT,
+    );
+
+    if (code !== SUCCESS_CODE) {
+      setIsDeploying(false);
+    }
+  };
+
+  /**
+   * 处理发布智能体
+   */
+  const handleConfirmPublish = () => {
+    projectInfo.refreshProjectInfo();
+    setIsDeploying(false);
+    setOpenPublishComponentModal(false);
+  };
+
+  /**
+   * 处理项目导出
+   */
+  const handleExportProject = useCallback(async () => {
+    // 检查项目ID是否有效
+    if (!hasValidProjectId || !projectId) {
+      message.warning(t('PC.Pages.AppDevIndex.invalidProjectIdCannotExport'));
+      return;
+    }
+
+    // 导出整个项目压缩包
+    exportProject(projectId);
+  }, [hasValidProjectId, projectId]);
+
+  /**
+   * 处理重启开发服务器按钮点击（手动触发）
+   */
+  const handleRestartDevServer = useCallback(async () => {
+    devLogs.resetStartLine();
+    await restartDevServer({
+      shouldSwitchTab: true,
+      delayBeforeRefresh: 500,
+      showMessage: false,
+    });
+  }, [restartDevServer, devLogs.resetStartLine, projectId]);
+
+  /**
+   * 处理添加组件（Created 组件回调）
+   */
+  const handleAddComponent = useCallback(
+    async (item: AgentAddComponentBaseInfo) => {
+      // 检查项目ID是否有效
+      if (!hasValidProjectId || !projectId) {
+        message.error(
+          t('PC.Pages.AppDevIndex.invalidProjectIdCannotBindDataSource'),
+        );
+        return;
+      }
+
+      // 只处理 Plugin 和 Workflow 类型
+      if (
+        item.targetType !== AgentComponentTypeEnum.Plugin &&
+        item.targetType !== AgentComponentTypeEnum.Workflow
+      ) {
+        message.warning(t('PC.Pages.AppDevIndex.onlyPluginWorkflowSupported'));
+        return;
+      }
+
+      // 组件添加loading状态到列表
+      setAddComponents((list) => {
+        return [
+          ...list,
+          {
+            type: item.targetType,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Loading,
+          },
+        ];
+      });
+
+      try {
+        // 确定数据源类型
+        const type =
+          item.targetType === AgentComponentTypeEnum.Plugin
+            ? 'plugin'
+            : 'workflow';
+
+        // 调用绑定数据源 API
+        const result = await bindDataSource({
+          projectId: Number(projectId),
+          type,
+          dataSourceId: item.targetId,
+        });
+
+        // 检查绑定结果
+        if (result?.code === SUCCESS_CODE) {
+          message.success(t('PC.Pages.AppDevIndex.bindDataSourceSuccess'));
+
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) => {
+            return list.map((info) => {
+              if (
+                info.targetId === item.targetId &&
+                info.status === AgentAddComponentStatusEnum.Loading
+              ) {
+                return { ...info, status: AgentAddComponentStatusEnum.Added };
+              }
+              return info;
+            });
+          });
+        } else {
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) =>
+            list.filter((info) => info.targetId !== item.targetId),
+          );
+          const errorMessage =
+            result?.message || t('PC.Pages.AppDevIndex.bindDataSourceFailed');
+          throw new Error(errorMessage);
+        }
+      } catch (error: any) {
+        const errorMessage =
+          error?.message ||
+          error?.toString() ||
+          t('PC.Pages.AppDevIndex.bindDataSourceUnknownError');
+        message.error(errorMessage);
+      }
+    },
+    [hasValidProjectId, projectId, projectInfo],
+  );
+
+  /**
+   * 处理取消或关闭添加组件
+   */
+  const handleCancelAddComponent = () => {
+    // 刷新项目详情信息以更新数据源列表
+    projectInfo.refreshProjectInfo();
+
+    // 关闭 Created 弹窗
+    setIsAddDataResourceModalVisible(false);
+  };
+
+  /**
+   * 处理删除数据资源
+   */
+  const handleDeleteDataResource = useCallback(
+    async (resourceId: number) => {
+      try {
+        await dataResourceManagement.deleteResource(resourceId);
+        setAddComponents((list) =>
+          list.filter((info) => info.targetId !== Number(resourceId)),
+        );
+
+        const _selectedDataResources =
+          selectedDataResources?.filter((item) => item.id !== resourceId) || [];
+        setSelectedDataResources(_selectedDataResources);
+        selectedDataResourcesRef.current = _selectedDataResources;
+      } catch (error) {
+        // 删除数据资源失败
+      }
+    },
+    [dataResourceManagement, selectedDataResources],
+  );
+
+  /**
+   * 处理项目上传
+   */
+  const handleUploadProject = useCallback(async () => {
+    if (!selectedFile) {
+      message.error(t('PC.Pages.AppDevIndex.selectFileFirst'));
+      return;
+    }
+
+    // 检查文件大小是否超过最大上传文件大小
+    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
+      selectedFile,
+    ]);
+    // 如果超过最大上传文件大小，则提示错误
+    if (isExceedLimitSize) {
+      message.error(
+        t('PC.Pages.AppDevIndex.uploadSizeLimitExceeded', String(maxFileSize)),
+      );
+      return;
+    }
+
+    try {
+      setIsProjectUploading(true);
+
+      const result = await uploadAndStartProject({
+        file: selectedFile,
+        projectId: projectId || undefined,
+        projectName:
+          workspace.projectName || t('PC.Pages.AppDevIndex.unnamedProject'),
+        spaceId: spaceId ? Number(spaceId) : undefined,
+      });
+
+      if (result?.success && result?.data) {
+        message.success(t('PC.Pages.AppDevIndex.importProjectSuccess'));
+        setIsUploadModalVisible(false);
+        setSelectedFile(null);
+
+        // 刷新文件树（不保持状态，因为导入项目是全新内容）
+        fileManagement.loadFileTree(false, true);
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
+
+        // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
+        setTimeout(async () => {
+          try {
+            // 使用重启开发服务器 Hook，项目导入后切换到预览标签页
+            await restartDevServer({
+              shouldSwitchTab: true, // 项目导入后切换到预览标签页
+              delayBeforeRefresh: 500,
+              showMessage: false,
+            });
+          } finally {
+            setIsProjectUploading(false);
+          }
+        }, 500);
+      } else {
+        // message.warning('Upload succeeded but response data format is invalid.');
+        setIsProjectUploading(false);
+      }
+    } catch (error) {
+      // message.error(error instanceof Error ? error.message : 'Project upload failed.');
+      setIsProjectUploading(false);
+    } finally {
+      // setUploadLoading(false); // 移除未使用变量
+    }
+  }, [selectedFile, projectId, workspace.projectName, server, projectInfo]);
+
+  /**
+   * 处理文件选择
+   */
+  const handleFileSelect = useCallback((file: File) => {
+    // 校验文件类型，仅支持 .zip 压缩文件
+    const isZip = file.name?.toLowerCase().endsWith('.zip');
+
+    if (!isZip) {
+      message.error(t('PC.Pages.AppDevIndex.zipOnly'));
+      return false;
+    }
+
+    setSelectedFile(file);
+    return false; // 阻止自动上传
+  }, []);
+
+  /**
+   * 处理单个文件选择
+   */
+  const handleSelectSingleFile = useCallback(
+    (file: File) => {
+      setUploadFile(file);
+      // 如果用户没有输入路径，使用文件名作为默认路径
+      if (!singleFilePath.trim()) {
+        setSingleFilePath(file.name);
+      }
+    },
+    [singleFilePath],
+  );
+
+  /**
+   * 处理单个文件上传
+   */
+  const handleUploadSingleFile = useCallback(async () => {
+    if (!hasValidProjectId || !singleFilePath.trim() || !uploadFile) {
+      return;
+    }
+    setSingleFileUploadLoading(true);
+    setIsFileOperating(true);
+    setIsSingleFileUploadModalVisible(false); // 立即关闭弹窗
+    try {
+      const result = await fileManagement.uploadSingleFileToServer(
+        uploadFile,
+        singleFilePath.trim(),
+      );
+      if (result) {
+        setSingleFilePath('');
+        setUploadFile(null);
+        projectInfo.refreshProjectInfo();
+      }
+    } finally {
+      setSingleFileUploadLoading(false);
+      setIsFileOperating(false);
+    }
+  }, [
+    hasValidProjectId,
+    fileManagement,
+    projectInfo,
+    singleFilePath,
+    uploadFile,
+  ]);
+
+  /**
+   * 处理右键上传（直接调用上传接口，不依赖状态）
+   */
+  const handleRightClickUpload = useCallback(
+    async (node: FileNode | null) => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return;
+      }
+      //两种情况 第一个是文件夹，第二个是文件
+      let relativePath = '';
+      if (node) {
+        if (node.type === 'file') {
+          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+        } else if (node.type === 'folder') {
+          relativePath = node.path + '/';
+        }
+      } else {
+        relativePath = '';
+      }
+      // 创建一个隐藏的文件输入框
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      // 等待用户选择文件
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          document.body.removeChild(input);
+          return;
+        }
+
+        // 检查文件大小是否超过最大上传文件大小
+        const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
+          file,
+        ]);
+        // 如果超过最大上传文件大小，则提示错误
+        if (isExceedLimitSize) {
+          message.error(
+            t(
+              'PC.Pages.AppDevIndex.uploadSizeLimitExceeded',
+              String(maxFileSize),
+            ),
+          );
+          return;
+        }
+
+        try {
+          // 设置加载状态，与弹窗上传保持一致
+          setSingleFileUploadLoading(true);
+          setIsFileOperating(true);
+
+          // 直接调用上传接口，使用文件名作为路径
+          const result = await fileManagement.uploadSingleFileToServer(
+            file,
+            relativePath + file.name,
+          );
+
+          if (result) {
+            // 与弹窗上传成功后逻辑保持一致
+            // 刷新项目详情(刷新版本列表)
+            projectInfo.refreshProjectInfo();
+          }
+        } catch (error) {
+          console.error('[AppDev] right-click upload failed', error);
+        } finally {
+          // 清理加载状态和DOM
+          setSingleFileUploadLoading(false);
+          document.body.removeChild(input);
+          setIsFileOperating(false);
+        }
+      };
+
+      // 如果用户取消选择，也要清理DOM
+      input.oncancel = () => {
+        document.body.removeChild(input);
+        setIsFileOperating(false);
+      };
+    },
+    [hasValidProjectId, fileManagement, projectInfo],
+  );
+
+  /**
+   * 处理单个文件上传取消
+   */
+  const handleCancelSingleFileUpload = useCallback(() => {
+    setIsSingleFileUploadModalVisible(false);
+    setSingleFilePath('');
+    setUploadFile(null);
+  }, []);
+
+  /**
+   * 处理删除文件/文件夹
+   */
+  const handleDeleteClick = useCallback(
+    (node: any, event: React.MouseEvent) => {
+      if (isFileOperating) return;
+      event.stopPropagation(); // 阻止事件冒泡
+      setNodeToDelete(node);
+      setDeleteModalVisible(true);
+    },
+    [],
+  );
+
+  /**
+   * 处理重命名文件/文件夹
+   * 文件操作期间，全局 isFileOperating，所有 UI 禁用
+   */
+  const handleRenameFile = useCallback(
+    async (node: any, newName: string): Promise<boolean> => {
+      if (!node || !newName.trim() || isFileOperating) {
+        return false;
+      }
+      setIsFileOperating(true);
+      try {
+        // 这里建议调用前先关闭前端弹窗
+        const success = await fileManagement.renameFileItem(
+          node.id,
+          newName.trim(),
+        );
+        if (success) {
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      } finally {
+        setIsFileOperating(false);
+      }
+    },
+    [fileManagement, projectInfo],
+  );
+
+  /**
+   * 统一处理白屏和 iframe 错误的情况
+   * 统一由 autoErrorHandling 管理处理，包括重试次数限制和用户确认
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
+   */
+  const handleWhiteScreenOrIframeError = useCallback(
+    (errorMessage: string, errorType?: 'whiteScreen' | 'iframe') => {
+      // 如果有错误消息，通过 autoErrorHandling 统一处理（格式化逻辑在内部）
+      if (errorMessage.trim()) {
+        // 更新当前错误类型引用
+        currentErrorTypeRef.current = errorType || 'whiteScreen';
+
+        // 通过 autoErrorHandling 统一处理，传入原始错误内容和场景类型
+        // 如果未指定类型，默认使用 'whiteScreen'
+        autoErrorHandling.handleCustomError(
+          errorMessage,
+          errorType || 'whiteScreen',
+          true,
+        );
+      } else {
+        // 只有白屏没有错误，可以记录日志但不触发自动处理
+        console.warn('[AppDev] white screen detected without captured error');
+      }
+    },
+    [autoErrorHandling],
+  );
+
+  /**
+   * 处理上传文件到指定路径
+   */
+  const handleUploadToFolder = useCallback(
+    async (targetPath: string, file: File): Promise<boolean> => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return false;
+      }
+
+      if (!targetPath.trim()) {
+        message.error(t('PC.Pages.AppDevIndex.targetPathRequired'));
+        return false;
+      }
+
+      try {
+        // 构建完整文件路径
+        const fileName = file.name;
+        const fullPath = targetPath.endsWith('/')
+          ? `${targetPath}${fileName}`
+          : `${targetPath}/${fileName}`;
+
+        const success = await fileManagement.uploadSingleFileToServer(
+          file,
+          fullPath,
+        );
+        if (success) {
+          message.success(
+            t('PC.Pages.AppDevIndex.fileUploadSuccess', fileName),
+          );
+          handleRestartDevServer();
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          message.error(t('PC.Pages.AppDevIndex.fileUploadFailed'));
+          return false;
+        }
+      } catch (error) {
+        message.error(
+          t(
+            'PC.Pages.AppDevIndex.fileUploadFailedWithError',
+            error instanceof Error
+              ? error.message
+              : t('PC.Pages.AppDevIndex.unknownError'),
+          ),
+        );
+        return false;
+      }
+    },
+    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
+  );
+
+  /**
+   * 确认删除
+   */
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!nodeToDelete || !projectId) return;
+    setIsFileOperating(true);
+    try {
+      // 删除文件/文件夹
+      const success = await fileManagement.deleteFileItem(nodeToDelete.id);
+
+      if (success) {
+        const deleteType =
+          nodeToDelete.type === 'folder'
+            ? t('PC.Pages.AppDevIndex.fileTypeFolder')
+            : t('PC.Pages.AppDevIndex.fileTypeFile');
+        message.success(
+          t(
+            'PC.Pages.AppDevIndex.deleteSuccessWithType',
+            deleteType,
+            nodeToDelete.name,
+          ),
+        );
+        // 删除文件时不自动切换tab
+        restartDevServer({
+          shouldSwitchTab: false,
+          delayBeforeRefresh: 500,
+          showMessage: false,
+        });
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
+      }
+    } finally {
+      setDeleteModalVisible(false);
+      setNodeToDelete(null);
+      setIsFileOperating(false);
+    }
+  }, [nodeToDelete, projectId, fileManagement, restartDevServer, projectInfo]);
+
+  /**
+   * 取消删除
+   */
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteModalVisible(false);
+    setNodeToDelete(null);
+  }, []);
+
+  /**
+   * 处理取消编辑
+   */
+  const handleCancelEdit = useCallback(
+    (silent: boolean = false) => {
+      fileManagement.cancelEdit(silent);
+    },
+    [fileManagement],
+  );
+
+  // 页面退出时的资源清理
+  useEffect(() => {
+    return () => {
+      // 清理聊天相关资源
+      if (chat.cleanupAppDevSSE) {
+        chat.cleanupAppDevSSE();
+      }
+
+      // 清理服务器相关资源
+      if (server.stopKeepAlive) {
+        server.stopKeepAlive();
+      }
+
+      devLogs.stopPolling();
+
+      // ⭐ 清理自动发送相关资源
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+        autoSendTimerRef.current = null;
+      }
+      autoSendLockRef.current = false;
+
+      // 清理文件操作延时定时器
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+
+      // ⭐ 重置自动错误处理 Model 的所有状态
+      autoErrorHandlingModelInstance.resetAll();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依赖数组，只在组件卸载时执行清理
+
+  // 如果缺少 projectId，显示提示信息
+  if (missingProjectId) {
+    return (
+      <div className={styles.errorContainer}>
+        <Alert
+          message={t('PC.Pages.AppDevIndex.missingProjectIdMessage')}
+          description={
+            <div>
+              <p>{t('PC.Pages.AppDevIndex.missingProjectIdDesc')}</p>
+              <code>{t('PC.Pages.AppDevIndex.missingProjectIdExample')}</code>
+            </div>
+          }
+          type="warning"
+          showIcon
+          action={
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => setIsUploadModalVisible(true)}
+                disabled={chat.isChatLoading} // 新增：聊天加载时禁用
+              >
+                {t('PC.Pages.AppDevIndex.uploadProject')}
+              </Button>
+              <Button onClick={() => window.history.back()}>
+                {t('PC.Pages.AppDevIndex.back')}
+              </Button>
+            </Space>
+          }
+        />
+      </div>
+    );
+  }
+
+  /**
+   * 确认编辑项目
+   */
+  const handleConfirmEditProject = () => {
+    setOpenPageEditVisible(false);
+    projectInfo.refreshProjectInfo();
+  };
+
+  /**
+   * 更新数据源
+   */
+  const handleUpdateDataSources = (dataSources: DataResource[]) => {
+    setSelectedDataResources(dataSources);
+    selectedDataResourcesRef.current = dataSources;
+  };
+
+  return (
+    <>
+      {contextHolder}
+      {/* 全局文件操作/部署遮罩组件，优先级最高。部署>文件操作。 */}
+      <FileOperatingMask
+        visible={
+          isDeploying || (isFileOperating && shouldShowFileOperatingMask)
+        }
+        tip={isDeploying ? t('PC.Pages.AppDevIndex.deployingTip') : undefined}
+        subtitle={
+          isDeploying ? t('PC.Pages.AppDevIndex.deployingSubtitle') : undefined
+        }
+        icon={
+          isDeploying ? (
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M14.6663 29.3333V23.9999C14.6663 23.2635 15.2633 22.6666 15.9997 22.6666C16.7361 22.6666 17.333 23.2635 17.333 23.9999V29.3333C17.333 30.0696 16.7361 30.6666 15.9997 30.6666C15.2633 30.6666 14.6663 30.0696 14.6663 29.3333ZM9.40332 20.7109C9.92402 20.1902 10.768 20.1902 11.2887 20.7109C11.8094 21.2316 11.8094 22.0756 11.2887 22.5963L7.5153 26.3697C6.99457 26.89 6.15044 26.8903 5.62988 26.3697C5.10932 25.8492 5.1096 25.005 5.62988 24.4843L9.40332 20.7109ZM20.7106 20.7109C21.2313 20.1902 22.0753 20.1902 22.596 20.7109L26.3695 24.4843C26.8897 25.005 26.89 25.8492 26.3695 26.3697C25.8489 26.8903 25.0048 26.89 24.4841 26.3697L20.7106 22.5963C20.1899 22.0756 20.1899 21.2316 20.7106 20.7109ZM7.99967 14.6666C8.73605 14.6666 9.33301 15.2635 9.33301 15.9999C9.33301 16.7363 8.73605 17.3333 7.99967 17.3333H2.66634C1.92996 17.3333 1.33301 16.7363 1.33301 15.9999C1.33301 15.2635 1.92996 14.6666 2.66634 14.6666H7.99967ZM29.333 14.6666C30.0694 14.6666 30.6663 15.2635 30.6663 15.9999C30.6663 16.7363 30.0694 17.3333 29.333 17.3333H23.9997C23.2633 17.3333 22.6663 16.7363 22.6663 15.9999C22.6663 15.2635 23.2633 14.6666 23.9997 14.6666H29.333ZM5.62988 5.63013C6.15044 5.10957 6.99457 5.10984 7.5153 5.63013L11.2887 9.40356C11.8094 9.92426 11.8094 10.7683 11.2887 11.289C10.768 11.8097 9.92402 11.8097 9.40332 11.289L5.62988 7.51554C5.1096 6.99481 5.10932 6.15069 5.62988 5.63013ZM24.4841 5.63013C25.0048 5.10984 25.8489 5.10957 26.3695 5.63013C26.89 6.15069 26.8897 6.99481 26.3695 7.51554L22.596 11.289C22.0753 11.8097 21.2313 11.8097 20.7106 11.289C20.1899 10.7683 20.1899 9.92426 20.7106 9.40356L24.4841 5.63013ZM14.6663 7.99992V2.66659C14.6663 1.93021 15.2633 1.33325 15.9997 1.33325C16.7361 1.33325 17.333 1.93021 17.333 2.66659V7.99992C17.333 8.7363 16.7361 9.33325 15.9997 9.33325C15.2633 9.33325 14.6663 8.7363 14.6663 7.99992Z"
+                fill="#FC8800"
+              />
+            </svg>
+          ) : undefined
+        }
+        zIndex={9999}
+      />
+      <div
+        className={cx(
+          styles.appDev,
+          styles.container,
+          'h-full',
+          'flex',
+          'flex-col',
+        )}
+        /* 页面主区根据 isFileOperating 动态调整可交互性与视觉反馈（禁用操作+暗色） */
+        style={
+          isFileOperating || isDeploying
+            ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
+            : {}
+        }
+      >
+        {/* 顶部头部区域 */}
+        <AppDevHeader
+          workspace={workspace}
+          spaceId={spaceId}
+          onEditProject={() => setOpenPageEditVisible(true)}
+          // 处理项目发布成组件
+          onPublishComponent={handlePublishComponent}
+          // 处理发布成应用
+          onPublishApplication={handlePublishApplication}
+          onOpenVersionHistory={() => setOpenVersionHistory(true)}
+          hasUpdates={projectInfo.hasUpdates}
+          isDeploying={isDeploying}
+          projectInfo={projectInfo.projectInfoState?.projectInfo}
+          isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
+          previewRef={previewRef} // 新增：传递 Preview 引用以获取回退次数
+        />
+        <section
+          className={cx(
+            'flex',
+            'flex-1',
+            styles.section,
+            `xagi-nav-${navigationStyle}`,
+          )}
+        >
+          {/* 主布局 - 左右分栏（左右互换） */}
+          <div className={styles.mainRow}>
+            {/* 左侧代码编辑器区域 */}
+            <div className={styles.leftPanel}>
+              {/* 编辑器头部bar */}
+              <div className={styles.editorHeader}>
+                <div className={styles.editorHeaderLeft}>
+                  <Segmented
+                    value={activeTab}
+                    onChange={(value) =>
+                      setActiveTab(value as 'preview' | 'code')
+                    }
+                    disabled={versionCompare.isComparing}
+                    options={[
+                      {
+                        label: (
+                          <Tooltip title={t('PC.Pages.AppDevIndex.preview')}>
+                            <SvgIcon
+                              name="icons-common-preview"
+                              style={{ fontSize: 18 }}
+                            />
+                          </Tooltip>
+                        ),
+                        value: 'preview',
+                      },
+                      {
+                        label: (
+                          <Tooltip title={t('PC.Pages.AppDevIndex.code')}>
+                            <SvgIcon
+                              name="icons-common-code"
+                              style={{ fontSize: 18 }}
+                            />
+                          </Tooltip>
+                        ),
+                        value: 'code',
+                      },
+                    ]}
+                    className={styles.segmentedTabs}
+                  />
+                </div>
+                <EditorHeaderRight
+                  // 版本对比模式相关
+                  isComparing={versionCompare.isComparing}
+                  versionCompareData={{
+                    isSwitching: versionCompare.isSwitching,
+                    targetVersion: versionCompare.targetVersion || undefined,
+                    onCancelCompare: versionCompare.cancelCompare,
+                    onConfirmVersionSwitch: versionCompare.confirmVersionSwitch,
+                  }}
+                  // 预览模式相关
+                  activeTab={activeTab}
+                  previewData={{
+                    devServerUrl: workspace.devServerUrl,
+                    isStarting: server.isStarting,
+                    isRestarting: server.isRestarting,
+                    isProjectUploading: isProjectUploading,
+                    isLoading: previewIsLoading,
+                    lastRefreshed: previewLastRefreshed,
+                  }}
+                  // 版本选择相关
+                  versionData={{
+                    versionList: projectInfo.versionList,
+                    currentVersion:
+                      projectInfo.projectInfoState.projectInfo?.codeVersion,
+                    onVersionSelect: handleVersionSelect,
+                    getActionColor: projectInfo.getActionColor,
+                    getActionText: projectInfo.getActionText,
+                  }}
+                  consoleData={{
+                    showDevLogConsole: showDevLogConsole,
+                    hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
+                    onToggleDevLogConsole: () =>
+                      setShowDevLogConsole(!showDevLogConsole),
+                  }}
+                  // 更多操作相关
+                  actionsData={{
+                    onImportProject: () => setIsUploadModalVisible(true),
+                    onUploadSingleFile: () => handleRightClickUpload(null),
+                    onRefreshPreview: () => previewRef.current?.refresh(),
+                    onRestartServer: async () => {
+                      //新逻辑 先停止Agent服务
+                      await stopAgentService(projectId || '');
+                      await handleRestartDevServer();
+                    },
+                    onFullscreenPreview: () => {
+                      if (previewRef.current && workspace.devServerUrl) {
+                        window.open(
+                          `${process.env.BASE_URL}${workspace.devServerUrl}`,
+                          '_blank',
+                        );
+                      }
+                    },
+                    onExportProject: handleExportProject,
+                  }}
+                  // 通用状态
+                  isChatLoading={chat.isChatLoading}
+                />
+              </div>
+              {/* 主内容区域 */}
+              <div className={styles.contentArea}>
+                <div className={styles.contentRow}>
+                  {/* FileTreePanel 组件 */}
+                  {activeTab !== 'preview' && (
+                    <FileTreePanel
+                      files={currentDisplayFiles}
+                      isComparing={versionCompare.isComparing}
+                      selectedFileId={
+                        versionCompare.isComparing
+                          ? workspace.activeFile
+                          : fileManagement.fileContentState.selectedFile
+                      }
+                      expandedFolders={
+                        fileManagement.fileTreeState.expandedFolders
+                      }
+                      onFileSelect={(fileId) => {
+                        if (versionCompare.isComparing) {
+                          updateWorkspace({ activeFile: fileId });
+                        } else {
+                          fileManagement.switchToFile(fileId);
+                          setActiveTab('code');
+                        }
+                      }}
+                      onToggleFolder={fileManagement.toggleFolder}
+                      onDeleteFile={isFileOperating ? noop : handleDeleteClick}
+                      onRenameFile={
+                        isFileOperating ? asyncNoopFalse : handleRenameFile
+                      }
+                      onUploadToFolder={
+                        isFileOperating ? asyncNoopFalse : handleUploadToFolder
+                      }
+                      onUploadProject={
+                        isFileOperating
+                          ? noop
+                          : () => setIsUploadModalVisible(true)
+                      }
+                      onUploadSingleFile={
+                        isFileOperating ? asyncNoop : handleRightClickUpload
+                      }
+                      selectedDataResources={selectedDataResources}
+                      workspace={workspace}
+                      fileManagement={fileManagement}
+                      isChatLoading={chat.isChatLoading}
+                      // projectId={projectId ? Number(projectId) : undefined}
+                      isFileTreeInitializing={
+                        fileManagement.isFileTreeInitializing
+                      }
+                    />
+                  )}
+
+                  {/* 编辑器区域 */}
+                  <div className={styles.editorCol}>
+                    <div className={styles.editorContainer}>
+                      {/* 内容区域 */}
+                      <div className={styles.editorContent}>
+                        <ContentViewer
+                          files={currentDisplayFiles}
+                          projectInfo={
+                            projectInfo.projectInfoState?.projectInfo
+                          }
+                          refreshProjectInfo={() => {
+                            // 刷新项目详情(刷新版本列表)
+                            projectInfo.refreshProjectInfo();
+                          }}
+                          mode={activeTab}
+                          isComparing={versionCompare.isComparing}
+                          selectedFileId={
+                            versionCompare.isComparing
+                              ? workspace.activeFile
+                              : fileManagement.fileContentState.selectedFile
+                          }
+                          fileNode={
+                            versionCompare.isComparing
+                              ? findVersionFileNode(workspace.activeFile)
+                              : fileManagement.findFileNode(
+                                  fileManagement.fileContentState.selectedFile,
+                                )
+                          }
+                          fileContent={
+                            fileManagement.fileContentState.fileContent
+                          }
+                          isLoadingFileContent={
+                            fileManagement.fileContentState.isLoadingFileContent
+                          }
+                          fileContentError={
+                            fileManagement.fileContentState.fileContentError
+                          }
+                          isFileModified={
+                            fileManagement.fileContentState.isFileModified
+                          }
+                          isSavingFile={
+                            fileManagement.fileContentState.isSavingFile
+                          }
+                          devServerUrl={
+                            projectInfo.hasPermission
+                              ? workspace.devServerUrl
+                              : null
+                          }
+                          isStarting={server.isStarting}
+                          isRestarting={server.isRestarting}
+                          isProjectUploading={isProjectUploading}
+                          serverMessage={server.serverMessage}
+                          serverErrorCode={server.serverErrorCode}
+                          previewRef={previewRef}
+                          designViewerRef={designViewerRef}
+                          onStartDev={server.startServer}
+                          onRestartDev={async () => {
+                            // 使用重启开发服务器 Hook，不切换标签页
+                            await restartDevServer({
+                              shouldSwitchTab: false, // 不切换标签页
+                              delayBeforeRefresh: 500,
+                              showMessage: false,
+                            });
+                          }}
+                          onWhiteScreenOrIframeError={
+                            handleWhiteScreenOrIframeError
+                          }
+                          onContentChange={(fileId, content) => {
+                            if (
+                              !versionCompare.isComparing &&
+                              !chat.isChatLoading
+                            ) {
+                              fileManagement.updateFileContent(fileId, content);
+                              updateFileContent(fileId, content);
+                            }
+                          }}
+                          onSaveFile={() => {
+                            fileManagement.saveFile().then((success) => {
+                              if (success) {
+                                // 刷新项目详情(刷新版本列表)
+                                projectInfo.refreshProjectInfo();
+                                return true;
+                              }
+                              return false;
+                            });
+                          }}
+                          onCancelEdit={handleCancelEdit}
+                          onRefreshFile={() => {
+                            // 关闭设计模式
+                            setIframeDesignMode(false);
+                            // 刷新整个文件树（保持状态，强制刷新）
+                            fileManagement.loadFileTree(true, true);
+                            // 重新加载当前文件内容
+                            if (fileManagement.fileContentState.selectedFile) {
+                              fileManagement.switchToFile(
+                                fileManagement.fileContentState.selectedFile,
+                              );
+                              // 取消编辑
+                              handleCancelEdit(true);
+                            }
+                          }}
+                          onRefreshFileTree={fileManagement.loadFileTree}
+                          findFileNode={fileManagement.findFileNode}
+                          isChatLoading={chat.isChatLoading}
+                          showDevelopingOverlayDuringAgent={
+                            developingOverlayControl.valueForContentViewer
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DevLogConsole
+                logs={devLogs.logs}
+                visible={showDevLogConsole}
+                hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
+                latestErrorLogs={devLogs.latestErrorLogs}
+                isLoading={devLogs.isLoading}
+                lastLine={devLogs.lastLine}
+                onClear={devLogs.clearLogs}
+                onRefresh={devLogs.refreshLogs}
+                onClose={() => setShowDevLogConsole(false)}
+                isChatLoading={chat.isChatLoading}
+                onResetAutoRetry={() => {
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                }}
+              />
+            </div>
+
+            {/* 右侧AI助手面板 */}
+            <div className={styles.rightPanel}>
+              {/* 对话 Tab */}
+              <ChatArea
+                chat={chat}
+                projectId={projectId || ''}
+                selectedDataSources={selectedDataResources}
+                onUpdateDataSources={handleUpdateDataSources}
+                fileContentState={fileManagement.fileContentState}
+                isSupportDesignMode={fileManagement.isSupportDesignMode}
+                modelSelector={modelSelector}
+                files={currentDisplayFiles}
+                designViewerRef={designViewerRef}
+                onDeleteDataResource={handleDeleteDataResource}
+                onAddDataResource={() => setIsAddDataResourceModalVisible(true)}
+                onUserManualSendMessage={() => {
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                  autoErrorHandlingModelInstance.resetSessionCount();
+                  currentRequestIdRef.current = '';
+                }}
+                onUserCancelAgentTask={() => {
+                  autoErrorHandling.handleUserCancelAuto();
+                }}
+                isComparing={versionCompare.isComparing}
+                defaultActiveTab={'design'}
+                hiddenTabs={['chat', 'data']}
+                onDesignModeUnreachable={handleDesignModeUnreachable}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 上传项目模态框 */}
+        <Modal
+          title={t('PC.Pages.AppDevIndex.importProjectTitle')}
+          open={isUploadModalVisible && !chat.isChatLoading}
+          // ⚠️ 不用 onOk，按钮自身 onClick 处理
+          onOk={undefined}
+          onCancel={() => {
+            setIsUploadModalVisible(false);
+            setSelectedFile(null);
+          }}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={() => {
+                setIsUploadModalVisible(false);
+                setSelectedFile(null);
+              }}
+              disabled={isFileOperating}
+            >
+              {t('PC.Common.Global.cancel')}
+            </Button>,
+            <Button
+              key="confirm"
+              type="primary"
+              disabled={!selectedFile || isFileOperating}
+              // 只在可用时允许操作
+              onClick={async () => {
+                setIsUploadModalVisible(false);
+                setIsFileOperating(true);
+                try {
+                  await handleUploadProject();
+                } finally {
+                  setSelectedFile(null);
+                  setIsFileOperating(false);
+                }
+              }}
+            >
+              {t('PC.Pages.AppDevIndex.confirmImport')}
+            </Button>,
+          ]}
+          width={500}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
+        >
+          <div>
+            <Upload.Dragger
+              accept=".zip"
+              beforeUpload={(file) => handleFileSelect(file)}
+              disabled={isFileOperating}
+              showUploadList={false}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined />
+              </p>
+              <p className="ant-upload-text">
+                {t('PC.Pages.AppDevIndex.uploadDragText')}
+              </p>
+              <p className="ant-upload-hint">
+                {t('PC.Pages.AppDevIndex.uploadZipHint')}
+              </p>
+            </Upload.Dragger>
+            {selectedFile && (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 12,
+                  background: '#f5f5f5',
+                  borderRadius: 6,
+                }}
+              >
+                <Text strong>{t('PC.Pages.AppDevIndex.selectedFile')}</Text>
+                <br />
+                <Text>{selectedFile.name}</Text>
+                <br />
+                <Text type="secondary">
+                  {t('PC.Pages.AppDevIndex.fileSize')}:
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </Text>
+              </div>
+            )}
+          </div>
+        </Modal>
+
+        {/* 单文件上传模态框 */}
+        <Modal
+          title={t('PC.Pages.AppDevIndex.singleFileUploadTitle')}
+          open={isSingleFileUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
+          onCancel={handleCancelSingleFileUpload}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={handleCancelSingleFileUpload}
+              disabled={isFileOperating}
+            >
+              {t('PC.Common.Global.cancel')}
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={singleFileUploadLoading}
+              onClick={handleUploadSingleFile}
+              disabled={
+                !uploadFile || !singleFilePath.trim() || isFileOperating
+              }
+            >
+              {t('PC.Pages.AppDevIndex.upload')}
+            </Button>,
+          ]}
+          width={500}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <Text>
+                {t('PC.Pages.AppDevIndex.currentProjectId')}:
+                {projectId || t('PC.Pages.AppDevIndex.notSet')}
+              </Text>
+            </div>
+            <div>
+              <Text strong>{t('PC.Pages.AppDevIndex.filePath')}:</Text>
+              <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+                {t('PC.Pages.AppDevIndex.filePathTip')}
+              </div>
+              <Input
+                placeholder={t('PC.Pages.AppDevIndex.filePathPlaceholder')}
+                value={singleFilePath}
+                onChange={(e) => setSingleFilePath(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+            <div>
+              <Text strong>{t('PC.Pages.AppDevIndex.selectFile')}:</Text>
+              <Upload.Dragger
+                beforeUpload={(file) => {
+                  handleSelectSingleFile(file);
+                  return false;
+                }}
+                disabled={singleFileUploadLoading}
+                style={{ marginTop: 8 }}
+                showUploadList={false}
+              >
+                <p className="ant-upload-drag-icon">
+                  <UploadOutlined />
+                </p>
+                <p className="ant-upload-text">
+                  {t('PC.Pages.AppDevIndex.uploadDragText')}
+                </p>
+                <p className="ant-upload-hint">
+                  {t('PC.Pages.AppDevIndex.singleFileUploadHint')}
+                </p>
+              </Upload.Dragger>
+              {uploadFile && (
+                <div style={{ marginTop: 8 }}>
+                  <Alert
+                    message={t(
+                      'PC.Pages.AppDevIndex.selectedFileWithName',
+                      uploadFile.name,
+                    )}
+                    type="success"
+                    showIcon
+                    action={
+                      <Button
+                        type="text"
+                        size="small"
+                        onClick={() => setUploadFile(null)}
+                      >
+                        {t('PC.Pages.AppDevIndex.clear')}
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </Space>
+        </Modal>
+
+        {/* 删除确认对话框 */}
+        <Modal
+          title={t('PC.Pages.AppDevIndex.confirmDeleteTitle')}
+          open={deleteModalVisible}
+          // ⚠️ 不再用 onOk，按钮自身 onClick 处理
+          onOk={undefined}
+          onCancel={handleDeleteCancel}
+          okText={t('PC.Pages.AppDevIndex.delete')}
+          cancelText={t('PC.Common.Global.cancel')}
+          okButtonProps={{
+            danger: true,
+            // 禁用逻辑统一用 isFileOperating，loading 由全局 mask 处理
+            disabled: isFileOperating,
+          }}
+          cancelButtonProps={{ disabled: isFileOperating }}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={handleDeleteCancel}
+              disabled={isFileOperating}
+            >
+              {t('PC.Common.Global.cancel')}
+            </Button>,
+            <Button
+              key="confirm"
+              type="primary"
+              danger
+              disabled={isFileOperating}
+              onClick={async () => {
+                // 用户点击确认，立即关闭弹窗，全局 mask 检查交互
+                setDeleteModalVisible(false);
+                setIsFileOperating(true);
+                try {
+                  await handleDeleteConfirm();
+                } finally {
+                  setIsFileOperating(false);
+                }
+              }}
+            >
+              {t('PC.Pages.AppDevIndex.delete')}
+            </Button>,
+          ]}
+        >
+          <p>
+            {t(
+              'PC.Pages.AppDevIndex.confirmDeleteContent',
+              nodeToDelete?.type === 'folder'
+                ? t('PC.Pages.AppDevIndex.fileTypeFolder')
+                : t('PC.Pages.AppDevIndex.fileTypeFile'),
+              nodeToDelete?.name || '',
+            )}
+          </p>
+          {nodeToDelete?.type === 'folder' && (
+            <p style={{ color: '#ff4d4f', fontSize: '12px' }}>
+              {t('PC.Pages.AppDevIndex.deleteFolderWarning')}
+            </p>
+          )}
+        </Modal>
+
+        {/* 数据资源添加弹窗 - 使用 Created 组件 */}
+        <Created
+          open={isAddDataResourceModalVisible}
+          onCancel={handleCancelAddComponent}
+          checkTag={AgentComponentTypeEnum.Workflow}
+          addComponents={addComponents}
+          onAdded={handleAddComponent}
+          tabs={CREATED_TABS.filter(
+            (item) =>
+              item.key === AgentComponentTypeEnum.Plugin ||
+              item.key === AgentComponentTypeEnum.Workflow,
+          )}
+        />
+      </div>
+
+      {/* 页面开发项目编辑模态框 */}
+      <PageEditModal
+        open={openPageEditVisible}
+        onCancel={() => setOpenPageEditVisible(false)}
+        onConfirm={handleConfirmEditProject}
+        projectInfo={projectInfo.projectInfoState.projectInfo}
+      />
+      {/*发布智能体弹窗*/}
+      <PublishComponentModal
+        title={t('PC.Pages.AppDevIndex.application')}
+        targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
+        open={openPublishComponentModal}
+        onBeforePublishFn={handleBeforePublish}
+        spaceId={spaceId}
+        category={agentConfigInfo?.category}
+        // 取消发布
+        onCancel={() => setOpenPublishComponentModal(false)}
+        onConfirm={handleConfirmPublish}
+      />
+      {/*版本历史*/}
+      <ConditionRender
+        condition={
+          projectInfo.projectInfoState.projectInfo?.publishType ===
+          PageDevelopPublishTypeEnum.AGENT
+        }
+      >
+        <VersionHistory
+          targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
+          targetName={projectInfo.projectInfoState.projectInfo?.name}
+          targetType={AgentComponentTypeEnum.Agent}
+          permissions={agentConfigInfo?.permissions || []}
+          visible={openVersionHistory}
+          isDrawer={true}
+          onClose={() => setOpenVersionHistory(false)}
+        />
+      </ConditionRender>
+    </>
+  );
+};
+
+export default AppDevDesign;

@@ -5,6 +5,8 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import SubscriptionDrawer from '@/components/business-component/SubscriptionDrawer';
+import SubscriptionPrompt from '@/components/business-component/SubscriptionPrompt';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
@@ -14,9 +16,12 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import useAgentSubscription from '@/hooks/useAgentSubscription';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { SubscriptionPlanStatusEnum } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
+import { apiCheckSubscription } from '@/services/subscriptionService';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -37,6 +42,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type {
+  AttachmentFile,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
@@ -57,6 +63,7 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+import PaymentSubscriptionModal from './PaymentSubscriptionModal';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -98,6 +105,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     isAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
+    setAppAgentDetailLoading,
+    openPaymentModal,
+    setOpenPaymentModal,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -154,17 +164,38 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
-  const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
-    useAgentDetails();
+  const { agentDetail, setAgentDetail } = useAgentDetails();
+
+  // 智能体订阅
+  const {
+    agentSubscriptionPlans,
+    loadingAgentSubscriptionPlans,
+    loadAgentSubscriptionPlans,
+    createAgentSubscriptionOrder,
+  } = useAgentSubscription();
 
   // 缓存智能体名称，避免清空等操作导致 agentDetail 刷新时的文字闪烁
   const [cachedAgentName, setCachedAgentName] = useState<string>('');
+
+  // 订阅相关状态
+  const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
+  const [subscriptionCheckResult, setSubscriptionCheckResult] = useState<
+    import('@/types/interfaces/subscription').CheckSubscriptionResult | null
+  >(null);
 
   useEffect(() => {
     if (agentDetail?.name) {
       setCachedAgentName(agentDetail.name);
     }
   }, [agentDetail?.name]);
+
+  useEffect(() => {
+    if (agentDetail?.subscriptionEnabled && agentId) {
+      apiCheckSubscription(agentId).then((res) => {
+        if (res?.data) setSubscriptionCheckResult(res.data);
+      });
+    }
+  }, [agentDetail?.subscriptionEnabled, agentId]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -224,7 +255,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const confirmSendMessage = (
     args: any,
     cId: number | null = conversationId,
-    info: AgentDetailDto | null = agentDetail || null,
   ) => {
     let url = '';
 
@@ -235,126 +265,157 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         .replace(':agentId', agentId.toString());
     } else {
       url = `/home/chat/${cId}/${agentId}`;
-
-      // 如果是任务智能体，则隐藏菜单
-      if (info?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
     }
 
     history.push(url, args);
   };
 
-  // 已发布的智能体详情接口成功回调
-  const onResultSuccess = (result: AgentDetailDto) => {
-    const shouldSkipUrlParamsProcessing =
+  // 判断是否是从聊天页返回到详情页的场景
+  const handleIsPopBackFromChatPage = () => {
+    return (
       history.action === 'POP' &&
       sessionStorage.getItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY) ===
-        String(agentId);
+        String(agentId)
+    );
+  };
 
-    if (shouldSkipUrlParamsProcessing) {
-      sessionStorage.removeItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY);
-    } else {
-      // 获取用户自带的url参数
-      const queryParams = new URLSearchParams(location.search);
-      const paramsFromUrl = queryParams.get('params');
-      if (paramsFromUrl) {
-        try {
-          const _paramsFromUrl = decodeURIComponent(paramsFromUrl);
-          const parsed = JSON.parse(_paramsFromUrl) as Record<string, unknown>;
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            // 删除用户自带的url参数中的conversationId字段
-            const urlPayload = omit(parsed, 'conversationId') as Record<
-              string,
-              unknown
-            >;
-            // 如果用户自带的url参数中是否存在message字段，且message字段不为空
-            const hasMessage =
-              'message' in urlPayload &&
-              urlPayload.message !== null &&
-              String(urlPayload.message).trim() !== '';
-            // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
-            if (hasMessage) {
-              const vpRaw = urlPayload.variableParams;
-              // 智能体变量参数
-              const agentVariables = result?.variables || [];
-              // 智能体必填变量参数name列表
-              const requiredNames = agentVariables
-                .filter(
-                  (item: BindConfigWithSub) =>
-                    !item.systemVariable && item.require,
-                )
-                .map((item: BindConfigWithSub) => item.name);
-              // 用户自带的url参数中的变量参数
-              const vp =
-                vpRaw !== null &&
-                typeof vpRaw === 'object' &&
-                !Array.isArray(vpRaw)
-                  ? (vpRaw as Record<string, string | number>)
-                  : null;
+  /**
+   * 处理url参数
+   * @param skipMessageProcessing - 是否跳过对message字段的处理
+   * 如果skipMessageProcessing为true，则跳过对message字段的处理，直接保存url参数中的变量参数，否则处理message字段
+   */
+  const handleProcessUrlParams = (
+    result: AgentDetailDto,
+    skipMessageProcessing: boolean = false,
+  ): boolean => {
+    // 获取用户自带的url参数
+    const queryParams = new URLSearchParams(location.search);
+    const paramsFromUrl = queryParams.get('params');
+    // 如果用户自带的url参数中存在params字段，则处理url参数
+    if (paramsFromUrl) {
+      try {
+        const _paramsFromUrl = decodeURIComponent(paramsFromUrl);
+        const parsed = JSON.parse(_paramsFromUrl) as Record<string, unknown>;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // 删除用户自带的url参数中的conversationId字段
+          const urlPayload = omit(parsed, 'conversationId') as Record<
+            string,
+            unknown
+          >;
+          // 如果用户自带的url参数中是否存在message字段，且message字段不为空
+          const hasMessage =
+            'message' in urlPayload &&
+            urlPayload.message !== null &&
+            String(urlPayload.message).trim() !== '';
+          // 如果用户自带的url参数中存在message，则需要发送消息，否则不需要发送消息
+          if (hasMessage && !skipMessageProcessing) {
+            const vpRaw = urlPayload.variableParams;
+            // 智能体变量参数
+            const agentVariables = result?.variables || [];
+            // 智能体必填变量参数name列表
+            const requiredNames = agentVariables
+              .filter(
+                (item: BindConfigWithSub) =>
+                  !item.systemVariable && item.require,
+              )
+              .map((item: BindConfigWithSub) => item.name);
+            // 用户自带的url参数中的变量参数
+            const vp =
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+                ? (vpRaw as Record<string, string | number>)
+                : null;
 
-              /**
-               * 判断用户自带的url参数中的变量参数是否存在且不为空
-               */
-              const urlVpValuePresent = (val: unknown): boolean => {
-                if (val === null || val === undefined) return false;
-                if (typeof val === 'string') return val.trim() !== '';
-                if (typeof val === 'number') return !Number.isNaN(val);
-                if (typeof val === 'boolean') return true;
-                return false;
+            /**
+             * 判断用户自带的url参数中的变量参数是否存在且不为空
+             */
+            const urlVpValuePresent = (val: unknown): boolean => {
+              if (val === null || val === undefined) return false;
+              if (typeof val === 'string') return val.trim() !== '';
+              if (typeof val === 'number') return !Number.isNaN(val);
+              if (typeof val === 'boolean') return true;
+              return false;
+            };
+
+            /**
+             * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
+             */
+            const allRequiredInUrlParams =
+              requiredNames.length === 0 ||
+              (vp !== null &&
+                requiredNames.every(
+                  (name) =>
+                    Object.prototype.hasOwnProperty.call(vp, name) &&
+                    urlVpValuePresent(vp[name]),
+                ));
+
+            /**
+             * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
+             */
+            if (allRequiredInUrlParams) {
+              const attach = {
+                ...urlPayload,
+                defaultAgentDetail: result,
+                messageSourceType: 'agent' as MessageSourceType,
               };
+              confirmSendMessage(attach, result?.conversationId);
 
-              /**
-               * 判断用户自带的url参数中的变量参数是否满足智能体必填变量参数要求
-               */
-              const allRequiredInUrlParams =
-                requiredNames.length === 0 ||
-                (vp !== null &&
-                  requiredNames.every(
-                    (name) =>
-                      Object.prototype.hasOwnProperty.call(vp, name) &&
-                      urlVpValuePresent(vp[name]),
-                  ));
-
-              /**
-               * 如果用户自带的url参数中的变量参数满足智能体必填变量参数要求，则发送消息，否则不发送消息
-               */
-              if (allRequiredInUrlParams) {
-                const attach = {
-                  ...urlPayload,
-                  defaultAgentDetail: result,
-                  messageSourceType: 'agent' as MessageSourceType,
-                };
-                confirmSendMessage(attach, result?.conversationId, result);
-
-                setLoading(false);
-                return;
-              }
-              if (vp !== null) {
-                setVariableParams(vp);
-              }
-            } else {
-              const { variableParams: vpRaw, ...otherParams } = urlPayload;
-              if (
-                vpRaw !== null &&
-                typeof vpRaw === 'object' &&
-                !Array.isArray(vpRaw)
-              ) {
-                setVariableParams(vpRaw as Record<string, string | number>);
-              }
-
-              // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
-              setUrlOtherParams(otherParams);
+              setLoading(false);
+              return true;
             }
+            if (vp !== null) {
+              setVariableParams(vp);
+            }
+          } else {
+            const { variableParams: vpRaw, ...otherParams } = urlPayload;
+            if (
+              vpRaw !== null &&
+              typeof vpRaw === 'object' &&
+              !Array.isArray(vpRaw)
+            ) {
+              setVariableParams(vpRaw as Record<string, string | number>);
+            }
+
+            // 设置url中用户自带的params参数，排除掉conversationId、message、variableParams后的其他参数，用于后续发送消息时传递
+            setUrlOtherParams(otherParams);
           }
-        } catch {
-          // 忽略 ?params= 非合法 JSON
         }
+      } catch {
+        // 忽略 ?params= 非合法 JSON
       }
+    }
+    return false;
+  };
+
+  // 已发布的智能体详情接口成功回调
+  const onResultSuccess = (result: AgentDetailDto) => {
+    // 判断是否是从聊天页返回到详情页的场景
+    const isPopBackFromChatPage = handleIsPopBackFromChatPage();
+
+    // 如果是从聊天页返回到详情页的场景，则跳过对message字段的处理，直接保存url参数中的变量参数
+    let shouldStopFollowUpLogic = false;
+
+    // 如果是从聊天页返回到详情页的场景，则跳过对message字段的处理，直接保存url参数中的变量参数，否则处理message字段
+    if (isPopBackFromChatPage) {
+      sessionStorage.removeItem(SKIP_DETAIL_QUERY_ON_POP_BACK_KEY);
+      shouldStopFollowUpLogic = handleProcessUrlParams(result, true);
+    } else {
+      shouldStopFollowUpLogic = handleProcessUrlParams(result);
+    }
+
+    if (shouldStopFollowUpLogic) {
+      return;
     }
 
     setLoading(false);
     setAgentDetail(result);
+
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    if (result.paymentRequired && !result.subscribed) {
+      setOpenPaymentModal(true);
+    }
+
     // 设置应用智能体详情
     handleSetAppAgentDetail(result);
     handleOpenPreview(result);
@@ -398,11 +459,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     },
     onError: () => {
       setLoading(false);
+      setAppAgentDetailLoading(false);
     },
   });
 
+  useEffect(() => {
+    if (openPaymentModal) {
+      // 显示付费弹窗时加载数据
+      loadAgentSubscriptionPlans({
+        agentId,
+        status: SubscriptionPlanStatusEnum.Online,
+      });
+    }
+  }, [openPaymentModal, agentId]);
+
   useLayoutEffect(() => {
     setLoading(true);
+    setAppAgentDetailLoading(true);
     runDetail(agentId, true);
 
     return () => {
@@ -477,6 +550,20 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     }
 
     // 用户自带的url参数中的附件文件列表
+    const otherAttachments = (urlOtherParams?.attachments ||
+      []) as AttachmentFile[];
+
+    // 用户自带的url参数中的附件文件列表转为file类型，方便统一处理
+    const otherAttachmentsFiles = otherAttachments.map((item) => ({
+      // 文件URL
+      url: item.fileUrl,
+      // 文件类型
+      type: item.mimeType,
+      name: item?.fileName || '',
+      key: item?.fileKey || '',
+    })) as UploadFileInfo[];
+
+    // 用户自带的url参数中的附件文件列表
     const otherFiles = (urlOtherParams?.files || []) as UploadFileInfo[];
     // 用户自带的url参数中的组件列表
     const _selectedComponents = (urlOtherParams?.selectedComponents ||
@@ -492,7 +579,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     const attach = {
       message: messageInfo,
       // 附件文件列表
-      files: [...otherFiles, ...(files || [])],
+      files: [...otherFiles, ...otherAttachmentsFiles, ...(files || [])],
       // 组件列表
       infos: [...selectedComponentList, ..._selectedComponents],
       // 默认智能体详情
@@ -570,11 +657,24 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         {/* 页面顶部: 标题区域 */}
         <header className={cx(styles['title-box'])}>
           <div
-            className={cx(styles['title-container'], {
-              [styles['title-container-collapsed']]: isAppSidebarMode,
-            })}
+            className={cx(
+              styles['title-container'],
+              isAppSidebarMode && isAppSidebarVisible
+                ? styles['app-title-container']
+                : !isAppSidebarVisible
+                ? styles['app-title-container-collapsed']
+                : '',
+            )}
           >
-            <div className={cx('flex', 'items-center', 'gap-4')}>
+            <div
+              className={cx(
+                'flex',
+                'items-center',
+                'gap-4',
+                'flex-1',
+                'overflow-hide',
+              )}
+            >
               {/* 应用智能体模式下，显示内容导航按钮 */}
               <ConditionRender
                 condition={isAppSidebarMode && !isAppSidebarVisible}
@@ -596,7 +696,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               {/* 左侧标题 */}
               <Typography.Title
                 level={5}
-                className={cx(styles.title)}
+                className={cx(styles.title, 'flex-1')}
                 ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
               >
                 {cachedAgentName
@@ -634,8 +734,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
-                !!agentDetail?.pageHomeIndex &&
-                !pagePreviewData && (
+                !!agentDetail?.pageHomeIndex && (
                   <TooltipIcon
                     title={t(
                       'PC.Components.ConversationDetails.openPreviewPage',
@@ -653,23 +752,38 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     }}
                   />
                 )}
+
+              {/*订阅管理图标*/}
+              {agentDetail?.subscriptionEnabled && (
+                <TooltipIcon
+                  title={t(
+                    'PC.Components.ConversationDetails.subscriptionManage',
+                  )}
+                  className={cx(styles['icon-box'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-subscription"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={() => setSubscriptionDrawerOpen(true)}
+                />
+              )}
             </div>
           </div>
         </header>
 
         {/* 页面主体: 内容区域 */}
-        <div
-          className={cx(styles['main-content-box'], {
-            [styles['mobile-content-box']]: isMobile || isAppSidebarMode,
-          })}
-        >
+        <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
           <div
             className={cx(styles['chat-section'], {
               [styles['file-tree-visible']]: isFileTreeVisible,
             })}
           >
-            <div className={cx(styles['chat-wrapper-content'])}>
+            <div
+              className={cx(styles['chat-wrapper-content'], 'scroll-container')}
+            >
               <div className={cx(styles['chat-wrapper'], 'flex-1')}>
                 {/* 新对话设置 */}
                 <NewConversationSet
@@ -716,6 +830,16 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 ) : null}
               </div>
             </div>
+            {/* 订阅套餐提示（需订阅且无试用次数且无有效订阅时显示）*/}
+            {agentDetail?.subscriptionEnabled &&
+              !subscriptionCheckResult?.hasSubscription &&
+              (subscriptionCheckResult?.trialRemaining ?? 0) <= 0 &&
+              (subscriptionCheckResult?.plans?.length ?? 0) > 0 && (
+                <SubscriptionPrompt
+                  plans={subscriptionCheckResult!.plans}
+                  onViewPlans={() => setSubscriptionDrawerOpen(true)}
+                />
+              )}
             <ChatInputHome
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}
@@ -809,49 +933,48 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
         minLeftWidth={400}
-        defaultLeftWidth={
-          agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-        }
         left={agentDetail?.hideChatArea ? null : LeftContent()}
+        defaultLeftWidth={33}
         right={
-          agentDetail?.type !== AgentTypeEnum.TaskAgent
-            ? pagePreviewData && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!agentDetail?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenPageCopyModal(true)}
-                    copyButtonText={t(
-                      'PC.Components.PagePreviewIframe.copyTemplate',
-                    )}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={agentDetail.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                      title={''}
-                      open={openPageCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenPageCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenPageCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            : null
+          pagePreviewData && (
+            <>
+              <PagePreviewIframe
+                className={cx({
+                  [styles['mobile-page-preview-container']]: isMobile,
+                })}
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+                // 复制模板按钮相关 props
+                showCopyButton={showCopyButton}
+                allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                onCopyClick={() => setOpenPageCopyModal(true)}
+                copyButtonText={t(
+                  'PC.Components.PagePreviewIframe.copyTemplate',
+                )}
+                copyButtonClassName={styles['copy-btn']}
+              />
+              {/* 复制模板弹窗 */}
+              {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                <CopyToSpaceComponent
+                  spaceId={agentDetail.spaceId}
+                  mode={AgentComponentTypeEnum.Page}
+                  componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                  title={''}
+                  open={openPageCopyModal}
+                  isTemplate={true}
+                  onSuccess={(_: any, targetSpaceId: number) => {
+                    setOpenPageCopyModal(false);
+                    // 跳转
+                    jumpToPageDevelop(targetSpaceId);
+                  }}
+                  onCancel={() => setOpenPageCopyModal(false)}
+                />
+              )}
+            </>
+          )
         }
       />
 
@@ -866,10 +989,36 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           agentId={agentId}
           loading={loading}
           agentDetail={agentDetail}
-          onToggleCollectSuccess={handleToggleCollectSuccess}
           onVisibleChange={setIsSidebarVisible}
+          onSubscribe={() => setOpenPaymentModal(true)}
         />
       </ConditionRender>
+
+      {/*订阅管理抽屉*/}
+      <SubscriptionDrawer
+        agentId={agentId}
+        open={subscriptionDrawerOpen}
+        onClose={() => setSubscriptionDrawerOpen(false)}
+        onSubscribeSuccess={() => {
+          apiCheckSubscription(agentId).then((res) => {
+            if (res?.data) setSubscriptionCheckResult(res.data);
+          });
+        }}
+      />
+
+      {/* 付费订阅套餐弹窗 */}
+      <PaymentSubscriptionModal
+        open={openPaymentModal}
+        loading={loadingAgentSubscriptionPlans}
+        // 套餐列表
+        plans={agentSubscriptionPlans}
+        // 是否已订阅
+        userSubscribed={!!agentDetail?.subscribed}
+        // 关闭回调
+        onClose={() => setOpenPaymentModal(false)}
+        // 订阅回调
+        onSubscribe={createAgentSubscriptionOrder}
+      />
     </div>
   );
 };
