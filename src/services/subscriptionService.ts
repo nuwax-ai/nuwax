@@ -435,19 +435,16 @@ export async function apiListWithdrawals(params: {
   return request('/api/system/bill/withdraw/list', { method: 'GET', params });
 }
 
-export async function apiApproveWithdrawal(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/withdrawals/${id}/approve`, { method: 'POST' });
-}
-
-export async function apiRejectWithdrawal(
-  id: number,
-  reason: string,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/withdrawals/${id}/reject`, {
+export async function apiProcessWithdrawal(data: {
+  tenantId: number;
+  applicationId: number;
+  action: 'APPROVE' | 'REJECT' | 'COMPLETE_PAYMENT';
+  rejectReason?: string;
+  paymentExtra?: any;
+}): Promise<RequestResponse<boolean>> {
+  return request('/api/system/bill/withdraw/process', {
     method: 'POST',
-    data: { reason },
+    data,
   });
 }
 

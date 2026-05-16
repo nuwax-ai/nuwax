@@ -30,47 +30,57 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: @padding 0;
-      border-bottom: 1px solid @colorBorderSecondary;
-      transition: background @motionDurationSlow;
-
-      &:last-child {
-        border-bottom: none;
-      }
+      padding: 8px;
+      margin-bottom: 4px;
+      border-radius: @borderRadius;
+      transition: all @motionDurationSlow;
+      cursor: pointer;
 
       &:hover {
         background: @colorFillAlter;
       }
 
-      .record-info {
+      .record-main {
+        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: @paddingXxs;
+        gap: 4px;
 
-        :global(.ant-statistic) {
-          .ant-statistic-content {
-            font-size: 18px;
-            font-weight: 700;
-            color: @colorText;
+        .record-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          :global(.ant-statistic) {
+            .ant-statistic-content {
+              font-size: 18px;
+              font-weight: 700;
+              color: @colorText;
+            }
+          }
+
+          :global(.ant-tag) {
+            margin-right: 0;
+            border: none;
+            padding: 2px 8px;
+            border-radius: @borderRadiusLg;
+            font-weight: 500;
           }
         }
 
-        .record-subtitle {
+        .record-time {
           font-size: @fontSizeSm;
           color: @colorTextDescription;
         }
-      }
 
-      .record-status-box {
-        display: flex;
-        align-items: center;
-
-        :global(.ant-tag) {
-          margin-right: 0;
-          border: none;
-          padding: 4px 10px;
-          border-radius: @borderRadiusLg;
-          font-weight: 500;
+        .record-reject-reason {
+          margin-top: 4px;
+          padding: 8px 12px;
+          background: @colorErrorBg;
+          color: @colorErrorText;
+          border-radius: @borderRadius;
+          font-size: @fontSizeSm;
+          line-height: 1.5;
         }
       }
     }

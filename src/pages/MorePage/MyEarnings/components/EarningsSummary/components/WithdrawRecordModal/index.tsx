@@ -7,6 +7,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { useRequest } from 'ahooks';
 import { Empty, Spin, Statistic, Tag } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
 
@@ -86,7 +87,7 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
       modalProps={{
         width: 480,
         destroyOnHidden: true,
-        styles: { body: { padding: '12px 24px 24px' } },
+        styles: { body: { padding: '12px 0px 24px' } },
       }}
     >
       <div className={styles['record-list-container']} onScroll={handleScroll}>
@@ -94,21 +95,32 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
           <div className={styles['record-list']}>
             {recordList.map((record) => (
               <div key={record.id} className={styles['record-item']}>
-                <div className={styles['record-info']}>
-                  <Statistic
-                    value={record.amount || 0}
-                    precision={2}
-                    prefix="¥"
-                    valueStyle={{ fontSize: 16, fontWeight: 600 }}
-                  />
-                  <div className={styles['record-subtitle']}>
-                    {record.created} · 尾号 8899 的银行卡
+                <div className={styles['record-main']}>
+                  <div className={styles['record-header']}>
+                    <Statistic
+                      value={record.amount || 0}
+                      precision={2}
+                      prefix="¥"
+                      valueStyle={{ fontSize: 16, fontWeight: 600 }}
+                    />
+                    <Tag
+                      color={statusConfig[record.status]?.color || 'default'}
+                    >
+                      {statusConfig[record.status]?.label || record.status}
+                    </Tag>
                   </div>
-                </div>
-                <div className={styles['record-status-box']}>
-                  <Tag color={statusConfig[record.status]?.color || 'default'}>
-                    {statusConfig[record.status]?.label || record.status}
-                  </Tag>
+                  <div className={styles['record-time']}>
+                    {dayjs(record.created).format('YYYY-MM-DD HH:mm:ss')}
+                  </div>
+                  {record.status === BillWithdrawStatusEnum.REJECTED &&
+                    record.rejectReason && (
+                      <div className={styles['record-reject-reason']}>
+                        {dict(
+                          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason',
+                        )}
+                        ：{record.rejectReason}
+                      </div>
+                    )}
                 </div>
               </div>
             ))}
