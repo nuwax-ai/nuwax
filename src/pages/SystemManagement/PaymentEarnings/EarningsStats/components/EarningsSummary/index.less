@@ -1,0 +1,46 @@
+.earningsSummary {
+  margin-bottom: 16px;
+}
+
+.statCard {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #fff 0%, #f8faff 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(22, 119, 255, 12%);
+  }
+
+  :global {
+    .ant-card-body {
+      padding: 24px;
+    }
+
+    .ant-statistic-title {
+      margin-bottom: 12px;
+      color: rgba(0, 0, 0, 45%);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .ant-statistic-content {
+      color: #1a1a1a;
+      font-weight: 700;
+
+      &-value {
+        font-family: 'DIN Alternate', Inter, -apple-system, sans-serif;
+        font-size: 28px;
+      }
+
+      &-prefix {
+        font-size: 18px;
+        margin-right: 4px;
+        color: #1677ff;
+      }
+    }
+  }
+}

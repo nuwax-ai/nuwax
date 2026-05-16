@@ -90,7 +90,6 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
         description: editItem.targetObjectInfo?.description ?? '',
         price: editItem.price ?? 0,
         pricingType: editItem.pricingType ?? ResourcePricingType.ONE_TIME,
-        trialCount: editItem.trialCount ?? 0,
         status: editItem.status === ResourcePricingStatus.ENABLED,
       });
       return;
@@ -99,7 +98,6 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
     form.setFieldsValue({
       pricingType: ResourcePricingType.ONE_TIME,
       price: 0,
-      trialCount: 0,
       status: true,
     });
   }, [open, editItem, targetType, form]);
@@ -127,7 +125,6 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
       targetId: String(values.targetId || ''),
       pricingType: values.pricingType || ResourcePricingType.ONE_TIME,
       price: Number(values.price || 0),
-      trialCount: Number(values.trialCount || 0),
       status: values.status
         ? ResourcePricingStatus.ENABLED
         : ResourcePricingStatus.DISABLED,
@@ -230,6 +227,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
               label={dict('PC.Pages.SpaceResourcePricing.period')}
             >
               <Select
+                disabled
                 options={[
                   {
                     label: dict('PC.Pages.SpaceResourcePricing.periodOnce'),
@@ -239,18 +237,6 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
               />
             </Form.Item>
           </div>
-
-          <Form.Item
-            name="trialCount"
-            label={dict('PC.Pages.SpaceResourcePricing.trialCount')}
-          >
-            <InputNumber
-              min={0}
-              precision={0}
-              max={100000000}
-              className="w-full"
-            />
-          </Form.Item>
 
           <Form.Item
             name="status"

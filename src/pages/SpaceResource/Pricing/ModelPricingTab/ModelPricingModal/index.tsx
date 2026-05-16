@@ -10,14 +10,14 @@ import {
   apiCreateModelPricing,
   apiDeleteModelPricing,
   apiUpdateModelPricing,
-} from '../../services/resource';
-import type { ResourcePricingConfigInfo } from '../../types/resource';
+} from '../../../services/resource';
+import type { ResourcePricingConfigInfo } from '../../../types/resource';
 import styles from './index.less';
 
 interface ModelOption {
   id: number;
   name: string;
-  provider: string;
+  apiProtocol: string;
 }
 
 /**
@@ -91,7 +91,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
         const options = (result?.data || []).map((item) => ({
           id: Number(item.id),
           name: item.name,
-          provider: item.apiProtocol || '-',
+          apiProtocol: item.apiProtocol || '-',
         }));
         setModelOptions(options.filter((item) => Number.isFinite(item.id)));
       } catch (error) {
@@ -111,7 +111,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       form.setFieldsValue({
         modelId: Number(editItem.targetId),
         name: editItem.targetObjectInfo?.name,
-        provider: editItem.targetObjectInfo?.name || '-',
+        // apiProtocol: editItem.targetObjectInfo?.apiProtocol || '-',
       });
       setTiers(
         (editItem.modelPriceTiers || []).map((tier) => ({
@@ -136,7 +136,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     return Number(match?.[0] || 32);
   };
 
-  /** 选择模型后自动回填模型名称与供应商。 */
+  /** 选择模型后自动回填模型名称与接口协议。 */
   const handleModelChange = (modelId: number) => {
     const model = modelOptions.find((item) => item.id === modelId);
     if (!model) {
@@ -145,7 +145,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     form.setFieldsValue({
       modelId: model.id,
       name: model.name,
-      provider: model.provider,
+      apiProtocol: model.apiProtocol,
     });
   };
 
@@ -282,10 +282,10 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
             </Select>
           )}
         </Form.Item>
-        {/* 供应商 */}
+        {/* 接口协议 */}
         <Form.Item
-          name="provider"
-          label={dict('PC.Pages.SpaceResourcePricing.provider')}
+          name="apiProtocol"
+          label={dict('PC.Pages.SpaceLibrary.CreateModel.apiProtocol')}
           rules={[{ required: true }]}
         >
           <Input disabled />
@@ -323,15 +323,18 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                 />
                 <span className={styles['model-threshold-suffix']}>K</span>
               </div>
-              <Button
-                type="text"
-                danger
-                size="small"
-                onClick={() => removeTier(index)}
-                title={dict('PC.Pages.SpaceResourcePricing.removeTier')}
-              >
-                ✕
-              </Button>
+              {/* 删除档位 */}
+              {tiers.length > 1 && (
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  onClick={() => removeTier(index)}
+                  title={dict('PC.Pages.SpaceResourcePricing.removeTier')}
+                >
+                  ✕
+                </Button>
+              )}
             </div>
             <div className={styles['model-prices']}>
               <div className={styles['model-price-item']}>

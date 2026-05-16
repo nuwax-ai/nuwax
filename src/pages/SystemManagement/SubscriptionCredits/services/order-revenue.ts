@@ -22,12 +22,20 @@ export async function apiGetOrderRevenueStats(
   });
 }
 
+// 分页响应数据
+export interface PageNum<T> {
+  records: T[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
 /**
  * 订单查询
  */
 export async function apiGetOrderRevenueList(
   params: BillOrderSearchParams,
-): Promise<RequestResponse<BillOrderInfo[]>> {
+): Promise<RequestResponse<PageNum<BillOrderInfo>>> {
   return request('/api/system/bill/order/query', {
     method: 'GET',
     params,
