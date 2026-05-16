@@ -179,15 +179,18 @@ const OrderList: React.FC = () => {
       rowKey="id"
       columns={allColumns}
       request={async (params) => {
+        const { current, pageSize, orderStatus, payStatus } = params;
         const res = await apiGetMyBillOrders({
-          orderStatus: params?.orderStatus || null,
-          payStatus: params?.payStatus || null,
+          orderStatus: orderStatus || null,
+          payStatus: payStatus || null,
+          pageNum: current,
+          pageSize,
         });
         if (res.success) {
           return {
-            data: res.data || [],
+            data: Array.isArray(res.data?.records) ? res.data.records : [],
             success: true,
-            total: (res.data || []).length,
+            total: res.data?.total || 0,
           };
         }
         return { data: [], success: false, total: 0 };
