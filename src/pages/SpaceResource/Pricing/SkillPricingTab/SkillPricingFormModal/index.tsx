@@ -9,6 +9,7 @@ import {
 } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, InputNumber, Radio, Switch, message } from 'antd';
@@ -19,6 +20,8 @@ interface SkillPricingFormModalProps {
   spaceId: number;
   open: boolean;
   editItem: ResourcePricingConfigInfo | null;
+  /** 当前技能定价列表已占用的技能，传给 Created 做已添加状态 */
+  pricedSkillAddComponents: AgentAddComponentStatusInfo[];
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -42,6 +45,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
   spaceId,
   open,
   editItem,
+  pricedSkillAddComponents,
   onCancel,
   onSaved,
 }) => {
@@ -246,6 +250,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
           onCancel={() => setCreatedOpen(false)}
           checkTag={AgentComponentTypeEnum.Skill}
           onAdded={handleCreatedAdded}
+          addComponents={pricedSkillAddComponents}
           tabs={[{ label: '技能', key: AgentComponentTypeEnum.Skill }]}
         />
       )}

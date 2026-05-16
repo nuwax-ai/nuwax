@@ -1,5 +1,10 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
+import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -38,6 +43,10 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
     null,
   );
+  /** 已配置定价的技能，用于 Created 标记「已添加」避免重复选 */
+  const [pricedSkillAddComponents, setPricedSkillAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
   const actionRef = useRef<ActionType>();
 
   // 删除定价配置
@@ -140,6 +149,13 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
       setLoading(false);
 
       const data = res.data || [];
+      setPricedSkillAddComponents(
+        data.map((row) => ({
+          type: AgentComponentTypeEnum.Skill,
+          targetId: Number(row.targetId),
+          status: AgentAddComponentStatusEnum.Added,
+        })),
+      );
       return {
         data,
         total: data.length,
@@ -147,6 +163,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
       };
     } catch {
       setLoading(false);
+      setPricedSkillAddComponents([]);
       return { data: [], total: 0, success: false };
     }
   };
@@ -262,7 +279,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
   ];
 
   return (
-    <div>
+    <>
       <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
@@ -278,10 +295,11 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
         spaceId={spaceId}
         open={modalOpen}
         editItem={editItem}
+        pricedSkillAddComponents={pricedSkillAddComponents}
         onCancel={() => setModalOpen(false)}
         onSaved={() => actionRef.current?.reload()}
       />
-    </div>
+    </>
   );
 };
 
