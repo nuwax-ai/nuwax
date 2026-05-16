@@ -3,7 +3,7 @@ import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Switch, Tag, message } from 'antd';
+import { Button, Switch, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -159,6 +159,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
       key: 'name',
       width: 180,
       search: false,
+      ellipsis: true,
       render: (_, record) => record.targetObjectInfo?.name || '-',
     },
     {
@@ -206,18 +207,6 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
               /{dict('PC.Pages.SpaceAgentSubscriptions.cycleMonthly')}
             </span>
           )}
-          <Tag
-            color={
-              record.pricingType === ResourcePricingType.MONTHLY
-                ? 'cyan'
-                : 'orange'
-            }
-            style={{ marginLeft: 6 }}
-          >
-            {record.pricingType === ResourcePricingType.MONTHLY
-              ? dict('PC.Pages.SpaceResourcePricing.pricingModeMonthly')
-              : dict('PC.Pages.SpaceResourcePricing.pricingModeBuyout')}
-          </Tag>
         </span>
       ),
     },
@@ -236,6 +225,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
       },
       width: 100,
       align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <Switch
           checked={record.status === ResourcePricingStatus.ENABLED}
@@ -280,6 +270,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
         request={request}
         loading={loading}
         pagination={false}
+        scroll={{ x: 1000 }}
       />
 
       {/* 技能定价弹窗 */}

@@ -6,3 +6,14 @@
   color: #999;
   margin-left: 4px;
 }
+
+/* 技能名称：在表格横向滚动 + 自定义 render 下列宽需约束，否则省略号不生效 */
+.skill-pricing-name-cell {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.skill-pricing-name-cell :global(.ant-typography) {
+  margin-bottom: 0 !important;
+  width: 100%;
+}

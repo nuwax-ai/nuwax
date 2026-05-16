@@ -1,12 +1,14 @@
+import pluginImage from '@/assets/images/plugin_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Input, Switch, message } from 'antd';
+import { Button, Switch, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -72,8 +74,6 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
 }) => {
   /** 表格请求 loading */
   const [loading, setLoading] = useState<boolean>(false);
-  /** 工具名称关键词（可与列表过滤串联） */
-  const [keyword, setKeyword] = useState('');
   /** 定价表单 Modal 开关 */
   const [toolModalOpen, setToolModalOpen] = useState<boolean>(false);
 
@@ -177,46 +177,42 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
 
   /** ProTable 列配置：详情见各列 render */
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
-    // 名称 + 简述 + 图标/首字母
+    // 名称 + 简述 + 图标（无自定义图时按 targetType 用默认插画）
     {
       title: dict('PC.Pages.SpaceResourcePricing.toolName'),
       dataIndex: ['targetObjectInfo', 'name'],
       key: 'name',
-      width: 280,
+      width: 220,
       ellipsis: false,
       search: false,
       render: (_, record) => {
-        const info = record.targetObjectInfo;
-        const name = info?.name?.trim() || '-';
-        const desc = info?.description?.trim();
-        const icon = info?.icon?.trim();
-        const initial = name !== '-' ? name.charAt(0).toLocaleUpperCase() : '?';
+        const targetObjectInfo = record.targetObjectInfo;
+        const { name, description, icon } = targetObjectInfo || {};
+        // 无自定义图时按 targetType 用默认图标
+        const defaultImage =
+          record.targetType === ToolPricingTargetType.WORKFLOW
+            ? workflowImage
+            : pluginImage;
 
         return (
-          <div className={styles['tool-pricing-name-cell']}>
-            <div className={styles['tool-pricing-name-avatar-wrap']}>
-              {icon ? (
-                <img
-                  className={styles['tool-pricing-name-avatar-img']}
-                  src={icon}
-                  alt=""
-                />
-              ) : (
-                <span className={styles['tool-pricing-name-avatar-letter']}>
-                  {initial}
-                </span>
-              )}
+          <div className={styles['tool-name-cell']}>
+            <div className={styles['tool-name-avatar-wrap']}>
+              <img
+                className={styles['tool-name-avatar-img']}
+                src={icon || defaultImage}
+                alt=""
+              />
             </div>
-            <div className={styles['tool-pricing-name-text']}>
-              <div className={styles['tool-pricing-name-title']}>{name}</div>
-              {desc ? (
+            <div className={styles['tool-name-text']}>
+              <div className={styles['tool-name-title']}>{name}</div>
+              {description && (
                 <div
-                  className={styles['tool-pricing-name-subtitle']}
-                  title={desc}
+                  className={styles['tool-name-subtitle']}
+                  title={description}
                 >
-                  {desc}
+                  {description}
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         );
@@ -247,7 +243,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
         return TARGET_TYPE_LABEL_MAP[tt as ToolPricingTargetType] ?? '-';
       },
     },
-    // ¥单价 + 「/次」单位 + 试用次数徽标
+    // ¥单价 + 「/次」单位
     {
       title: dict('PC.Pages.SpaceResourcePricing.price'),
       dataIndex: 'price',
@@ -255,27 +251,17 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
       width: 220,
       search: false,
       render: (_, record) => {
-        const trials = record.trialCount ?? 0;
         const unitSuffix = ` / ${dict(
           'PC.Pages.SpaceResourcePricing.periodOnce',
         )}`;
 
         return (
-          <div className={styles['tool-pricing-price-cell']}>
-            <span className={styles['tool-pricing-price-main']}>
-              <span className={styles['tool-pricing-price-currency']}>¥</span>
-              <span className={styles['tool-pricing-price-amount']}>
-                {record.price || 0}
-              </span>
-              <span className={styles['tool-pricing-price-unit']}>
-                {unitSuffix}
-              </span>
+          <div className={styles['tool-price-cell']}>
+            <span className={styles['tool-price-currency']}>¥</span>
+            <span className={styles['tool-price-amount']}>
+              {record.price || 0}
             </span>
-            {trials > 0 ? (
-              <span className={styles['tool-pricing-price-trial-badge']}>
-                {dict('PC.Pages.SpaceResourcePricing.priceTrialBadge', trials)}
-              </span>
-            ) : null}
+            <span className={styles['tool-price-unit']}>{unitSuffix}</span>
           </div>
         );
       },
@@ -336,16 +322,7 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
     },
   ];
 
-  const skipReloadOnMountRef = useRef(true);
-  useEffect(() => {
-    if (skipReloadOnMountRef.current) {
-      skipReloadOnMountRef.current = false;
-      return;
-    }
-    actionRef.current?.reload();
-  }, [keyword, spaceId]);
-
-  // 获取工具定价列表（MCP / PLUGIN / WORKFLOW）；search 中 targetType、status 下拉 + 顶部名称关键词在本地收窄
+  // 获取工具定价列表：`status` 由接口 `/api/pricing/config/list` 过滤；`targetType` 仍本地筛选
   const request = async (params: {
     targetType?: ToolPricingTargetType;
     status?: ResourcePricingStatus | string | number;
@@ -353,9 +330,17 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
     current?: number;
   }) => {
     setLoading(true);
+    // 状态：0-禁用，1-启用
+    const statusRaw = params.status;
+    const status =
+      statusRaw !== undefined && statusRaw !== null
+        ? Number(statusRaw)
+        : undefined;
+
     const res = await apiListPricingConfig({
       targetTypes: [...TOOL_PRICING_TAB_TARGET_TYPES],
       spaceId,
+      ...(status !== undefined ? { status } : {}),
     });
     setLoading(false);
 
@@ -376,24 +361,6 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
       data = data.filter((row) => row.targetType === typeFilter);
     }
 
-    const statusRaw = params.status;
-    if (statusRaw !== undefined && statusRaw !== null && statusRaw !== '') {
-      const statusNum = Number(statusRaw);
-      if (
-        statusNum === ResourcePricingStatus.ENABLED ||
-        statusNum === ResourcePricingStatus.DISABLED
-      ) {
-        data = data.filter((row) => Number(row.status) === statusNum);
-      }
-    }
-
-    const kw = keyword.trim().toLowerCase();
-    if (kw) {
-      data = data.filter((row) =>
-        (row.targetObjectInfo?.name ?? '').toLowerCase().includes(kw),
-      );
-    }
-
     return {
       data,
       total: data.length,
@@ -403,32 +370,18 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
 
   return (
     <div>
-      <div className={styles['tool-pricing-toolbar']}>
-        <Input
-          className={styles['tool-pricing-search-input']}
-          placeholder={dict(
-            'PC.Pages.SpaceResourcePricing.searchToolPlaceholder',
-          )}
-          prefix={<SearchOutlined />}
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          allowClear
-        />
-      </div>
       {/* 工具定价列表 */}
       <XProTable<ResourcePricingConfigInfo>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
+        params={{ spaceId }}
         request={request}
         loading={loading}
         pagination={false}
       />
-      <footer className={styles['tool-pricing-billing-notice']}>
-        <span
-          className={styles['tool-pricing-billing-notice-icon']}
-          aria-hidden
-        >
+      <footer className={styles['tool-billing-notice']}>
+        <span className={styles['tool-billing-notice-icon']} aria-hidden>
           ⓘ
         </span>
         <span>{dict('PC.Pages.SpaceResourcePricing.billingNotice')}</span>
