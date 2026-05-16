@@ -19,15 +19,21 @@ const ProcessedWithdrawalTable: React.FC = () => {
     () => ({
       [WithdrawalStatusEnum.Pending]: {
         color: 'processing',
-        label: dict('PC.Pages.SystemWithdrawal.statusPending'),
+        label: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusPending',
+        ),
       },
       [WithdrawalStatusEnum.Approved]: {
         color: 'success',
-        label: dict('PC.Pages.SystemWithdrawal.statusApproved'),
+        label: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusApproved',
+        ),
       },
       [WithdrawalStatusEnum.Rejected]: {
         color: 'error',
-        label: dict('PC.Pages.SystemWithdrawal.statusRejected'),
+        label: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusRejected',
+        ),
       },
     }),
     [],
@@ -35,20 +41,26 @@ const ProcessedWithdrawalTable: React.FC = () => {
 
   const columns: ProColumns<WithdrawalInfo>[] = [
     {
-      title: dict('PC.Pages.SystemWithdrawal.colApplicationNo'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo',
+      ),
       dataIndex: 'applicationNo',
       key: 'applicationNo',
       ellipsis: true,
       width: 180,
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colDeveloper'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
+      ),
       dataIndex: 'developerName',
       key: 'developerName',
       ellipsis: true,
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colAmount'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount',
+      ),
       dataIndex: 'amount',
       key: 'amount',
       search: false,
@@ -59,7 +71,9 @@ const ProcessedWithdrawalTable: React.FC = () => {
       ),
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colPayMethod'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPayMethod',
+      ),
       key: 'payMethod',
       search: false,
       render: (_, record) => (
@@ -74,14 +88,18 @@ const ProcessedWithdrawalTable: React.FC = () => {
       ),
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colCreatedAt'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt',
+      ),
       dataIndex: 'createdAt',
       key: 'createdAt',
       search: false,
       render: (val) => formatDateTime(val),
     },
     {
-      title: dict('PC.Pages.SystemWithdrawal.colStatus'),
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus',
+      ),
       dataIndex: 'status',
       key: 'status',
       search: false,

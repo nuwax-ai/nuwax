@@ -3339,6 +3339,10 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名稱...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
+    "每個檔位的上下文長度不能為空且須大於 0",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
+    "各檔位的上下文長度不能相同",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "智能體訂閱",
   "PC.Pages.SpaceAgentSubscriptions.pageSubtitle": "管理智能體的服務套餐",
