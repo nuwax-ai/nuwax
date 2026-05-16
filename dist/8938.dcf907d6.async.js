@@ -1,0 +1,1 @@
+"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8938],{58938:function(u,n,_){_.d(n,{createEventModelingServices:function(){return e.h}});var e=_(23878),c=_(53978)}}]);})();
