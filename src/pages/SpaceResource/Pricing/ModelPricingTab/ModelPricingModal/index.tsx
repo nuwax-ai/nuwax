@@ -1,7 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelListSpace } from '@/services/modelConfig';
-import type { ModelPriceTier } from '@/types/interfaces/subscription';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormInstance } from 'antd';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
@@ -17,7 +16,6 @@ import styles from './index.less';
 interface ModelOption {
   id: number;
   name: string;
-  apiProtocol: string;
 }
 
 /**
@@ -60,10 +58,13 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   onSaved,
 }) => {
   /**
-   * 档位表单结构。
-   * 在基础档位信息上补充接口返回字段，便于编辑场景回填与更新。
+   * 档位表单结构（编辑时 `contextLength` 可为 `null`，便于输入框清空后再输入）。
    */
-  type ModelTierForm = ModelPriceTier & {
+  type ModelTierForm = {
+    inputPrice: number;
+    outputPrice: number;
+    cachePrice: number;
+    contextLength: number | null;
     id?: number;
     modelId?: number;
     created?: string;
@@ -75,7 +76,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   /** 可选模型列表（弹窗内部加载）。 */
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   /** 保存按钮 loading 状态。 */
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<boolean>(false);
 
   /** 编辑场景下的原始档位 ID 列表，用于识别被删除档位。 */
   const originalTierIds = useMemo(
@@ -100,7 +101,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
           .map((item) => ({
             id: Number(item.id),
             name: item.name,
-            apiProtocol: item.apiProtocol || '-',
           }))
           .filter(
             (item) => Number.isFinite(item.id) && !excludedIds.has(item.id),
@@ -108,7 +108,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
         setModelOptions(options);
       } catch (error) {
         setModelOptions([]);
-        message.error(dict('PC.Common.Global.operationFailed'));
       }
     };
     fetchModelOptions();
@@ -123,41 +122,27 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
       form.setFieldsValue({
         modelId: Number(editItem.targetId),
         name: editItem.targetObjectInfo?.name,
-        // apiProtocol: editItem.targetObjectInfo?.apiProtocol || '-',
       });
-      setTiers(
-        (editItem.modelPriceTiers || []).map((tier) => ({
-          ...tier,
-          label: `≤${tier.contextLength}K`,
-        })),
-      );
+      setTiers(editItem?.modelPriceTiers || []);
       return;
     }
 
     // 新增：重置表单并初始化默认档位。
     form.resetFields();
     setTiers([
-      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
-      { label: '≤128K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
+      { contextLength: 32, inputPrice: 0, outputPrice: 0, cachePrice: 0 },
     ]);
   }, [open, editItem, form]);
 
-  /** 从“≤32K”这类标签中提取上下文长度数值。 */
-  const parseContextLength = (label: string): number => {
-    const match = label.match(/\d+/);
-    return Number(match?.[0] || 32);
-  };
-
   /** 选择模型后自动回填模型名称与接口协议。 */
   const handleModelChange = (modelId: number) => {
-    const model = modelOptions.find((item) => item.id === modelId);
-    if (!model) {
+    const modelInfo = modelOptions.find((item) => item.id === modelId);
+    if (!modelInfo) {
       return;
     }
     form.setFieldsValue({
-      modelId: model.id,
-      name: model.name,
-      apiProtocol: model.apiProtocol,
+      modelId: modelInfo.id,
+      name: modelInfo.name,
     });
   };
 
@@ -166,7 +151,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   const addTier = () => {
     setTiers([
       ...tiers,
-      { label: '≤32K', inputPrice: 0, outputPrice: 0, cachePrice: 0 },
+      { contextLength: 0, inputPrice: 0, outputPrice: 0, cachePrice: 0 },
     ]);
   };
 
@@ -179,15 +164,27 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
   const updateTier = (
     index: number,
     field: keyof ModelTierForm,
-    value: string | number,
+    value: string | number | null,
   ) => {
     const next = [...tiers];
-    if (field === 'label') {
-      next[index] = { ...next[index], label: value as string };
-    } else {
-      next[index] = { ...next[index], [field]: value };
-    }
+    next[index] = { ...next[index], [field]: value };
     setTiers(next);
+  };
+
+  /**
+   * 解析档位上下文长度：须为正整数（>0）；否则返回 null。
+   */
+  const parsePositiveContextLength = (tier: ModelTierForm): number | null => {
+    const v = tier.contextLength;
+    if (v === null || v === undefined) {
+      return null;
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n)) {
+      return null;
+    }
+    const floored = Math.floor(n);
+    return floored > 0 ? floored : null;
   };
 
   /**
@@ -200,6 +197,24 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     const modelId = Number(values.modelId);
     if (!modelId) {
       message.error(dict('PC.Common.Global.operationFailed'));
+      return;
+    }
+
+    // 校验上下文长度，必须为正整数（>0）。
+    const resolvedContextLengths = tiers.map(parsePositiveContextLength);
+    if (resolvedContextLengths.some((len) => len === null)) {
+      message.error(
+        dict('PC.Pages.SpaceResourcePricing.tierContextLengthInvalid'),
+      );
+      return;
+    }
+
+    // 校验上下文长度是否重复
+    const contextLengths = resolvedContextLengths as number[];
+    if (new Set(contextLengths).size !== contextLengths.length) {
+      message.error(
+        dict('PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate'),
+      );
       return;
     }
 
@@ -222,7 +237,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
         const payload = {
           id: tier.id,
           modelId,
-          contextLength: parseContextLength(tier.label),
+          contextLength: tier.contextLength || 0,
           inputPrice: tier.inputPrice,
           outputPrice: tier.outputPrice,
           cachePrice: tier.cachePrice,
@@ -294,14 +309,6 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
             </Select>
           )}
         </Form.Item>
-        {/* 接口协议 */}
-        <Form.Item
-          name="apiProtocol"
-          label={dict('PC.Pages.SpaceLibrary.CreateModel.apiProtocol')}
-          rules={[{ required: true }]}
-        >
-          <Input disabled />
-        </Form.Item>
       </Form>
 
       {/* 定价档位 */}
@@ -326,12 +333,14 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
               <div className={styles['model-threshold']}>
                 <span className={styles['model-threshold-prefix']}>≤</span>
                 <InputNumber
-                  value={parseInt(tier.label.replace(/[^0-9]/g, ''), 10) || 32}
-                  min={1}
+                  value={tier.contextLength}
+                  min={0}
+                  max={100000000}
                   precision={0}
+                  step={1}
                   size="small"
                   className={styles['model-threshold-input']}
-                  onChange={(v) => updateTier(index, 'label', `≤${v || 32}K`)}
+                  onChange={(v) => updateTier(index, 'contextLength', v)}
                 />
                 <span className={styles['model-threshold-suffix']}>K</span>
               </div>

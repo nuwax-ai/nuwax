@@ -3482,6 +3482,10 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "试用 {0} 次",
   "PC.Pages.SpaceResourcePricing.tierHint": "（多档位 · ¥/百万 TOKENS）",
   "PC.Pages.SpaceResourcePricing.removeTier": "删除此档位",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
+    "每个档位的上下文长度不能为空且须大于 0",
+  "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
+    "各档位的上下文长度不能相同",
   "PC.Pages.SpaceResourcePricing.filterAll": "全部",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "智能体用户订阅",
