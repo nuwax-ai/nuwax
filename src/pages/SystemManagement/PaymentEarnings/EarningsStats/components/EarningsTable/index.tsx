@@ -11,7 +11,7 @@ import React, { useEffect, useRef } from 'react';
 import { history } from 'umi';
 
 interface EarningsTableProps {
-  month: string;
+  month?: string;
   onStatsChange?: (data: any) => void;
 }
 
@@ -29,7 +29,9 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       return;
     }
     // 月份切换时，先清空父组件数据，以触发统计卡片和图表的 loading 状态
-    onStatsChange?.(null);
+    if (month) {
+      onStatsChange?.(null);
+    }
     actionRef.current?.reload();
   }, [month]);
 
@@ -111,16 +113,18 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       fullHeight={false}
       request={async (params) => {
         try {
-          const date = dayjs(month);
-          const monthStart = date.startOf('month').format('YYYYMMDD');
-          const monthEnd = date.endOf('month').format('YYYYMMDD');
-
-          const res = await apiGetSystemRevenueStats({
-            monthStart,
-            monthEnd,
+          const apiParams: any = {
             pageNum: params.current,
             pageSize: params.pageSize,
-          });
+          };
+
+          if (month) {
+            const date = dayjs(month);
+            apiParams.monthStart = date.startOf('month').format('YYYYMMDD');
+            apiParams.monthEnd = date.endOf('month').format('YYYYMMDD');
+          }
+
+          const res = await apiGetSystemRevenueStats(apiParams);
 
           if (res?.code === SUCCESS_CODE) {
             onStatsChange?.(res.data);
