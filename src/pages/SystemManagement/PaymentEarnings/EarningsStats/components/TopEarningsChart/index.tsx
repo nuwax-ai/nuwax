@@ -82,7 +82,9 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
         title: (items: any) => `${items.displayName}`,
         items: [
           (d: any) => ({
-            name: dict('PC.Pages.SystemPaymentEarnings.chartTotalRevenue'),
+            name: dict(
+              'PC.Pages.SystemManagement.PaymentEarnings.Stats.chartTotalRevenue',
+            ),
             value: `¥${d.amount.toLocaleString()}`,
             color: '#52c41a',
           }),
