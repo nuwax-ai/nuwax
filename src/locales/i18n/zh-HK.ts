@@ -3301,6 +3301,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.editTool": "編輯工具",
   "PC.Pages.SpaceResourcePricing.editSkill": "編輯技能",
   "PC.Pages.SpaceResourcePricing.modelName": "模型",
+  "PC.Pages.SpaceResourcePricing.modelId": "模型ID",
   "PC.Pages.SpaceResourcePricing.toolName": "工具",
   "PC.Pages.SpaceResourcePricing.skillName": "技能",
   "PC.Pages.SpaceResourcePricing.pricingType": "定價類型",

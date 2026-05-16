@@ -145,20 +145,20 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
   const columns: ProColumns<ResourcePricingConfigInfo>[] = [
     {
       title: dict('PC.Pages.SpaceResourcePricing.modelName'),
-      dataIndex: 'targetId',
-      key: 'targetId',
+      dataIndex: 'name',
+      key: 'name',
       width: 200,
       fixed: 'left',
       search: false,
-      render: (_, record) => record.targetId || '',
+      render: (_, record) => record.targetObjectInfo?.name || '',
     },
     {
-      title: dict('PC.Pages.SpaceResourcePricing.provider'),
-      dataIndex: 'provider',
-      key: 'provider',
+      title: dict('PC.Pages.SpaceResourcePricing.modelId'),
+      dataIndex: 'targetId',
+      key: 'targetId',
       width: 120,
       search: false,
-      render: (_, record) => record.targetObjectInfo?.name || '',
+      render: (_, record) => record.targetId || '',
     },
     {
       title: dict('PC.Pages.SpaceResourcePricing.pricingType'),
@@ -182,12 +182,14 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
           {/* 模型阶梯价格配置 */}
           {(record.modelPriceTiers || []).map((tier, index) => (
             <Tag key={index} className={styles['model-pricing-tier-tag']}>
+              {/* 上下文长度 */}
               <span className={styles['model-pricing-tier-tag-context']}>
                 {`≤${tier.contextLength}K`}
               </span>
               <span className={styles['model-pricing-tier-tag-separator']}>
                 |
               </span>
+              {/* 输入价格 */}
               <span className={styles['model-pricing-tier-tag-price-item']}>
                 {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
                 {tier.inputPrice}
@@ -195,6 +197,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
               <span className={styles['model-pricing-tier-tag-separator']}>
                 |
               </span>
+              {/* 输出价格 */}
               <span className={styles['model-pricing-tier-tag-price-item']}>
                 {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
                 {tier.outputPrice}
@@ -288,6 +291,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({ spaceId }) => {
         pagination={false}
         request={request}
         toolBarRender={false}
+        scroll={{ x: 'max-content' }}
       />
 
       {/* 模型定价弹窗 */}

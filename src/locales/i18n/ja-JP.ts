@@ -3307,6 +3307,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.editTool": "ツールを編集",
   "PC.Pages.SpaceResourcePricing.editSkill": "スキルを編集",
   "PC.Pages.SpaceResourcePricing.modelName": "モデル",
+  "PC.Pages.SpaceResourcePricing.modelId": "モデルID",
   "PC.Pages.SpaceResourcePricing.toolName": "ツール",
   "PC.Pages.SpaceResourcePricing.toolTargetType": "ツール種別",
   "PC.Pages.SpaceResourcePricing.skillName": "スキル",

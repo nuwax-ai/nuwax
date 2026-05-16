@@ -3439,6 +3439,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.editTool": "Edit Tool",
   "PC.Pages.SpaceResourcePricing.editSkill": "Edit Skill",
   "PC.Pages.SpaceResourcePricing.modelName": "Model",
+  "PC.Pages.SpaceResourcePricing.modelId": "Model ID",
   "PC.Pages.SpaceResourcePricing.toolName": "Tool",
   "PC.Pages.SpaceResourcePricing.toolTargetType": "Tool type",
   "PC.Pages.SpaceResourcePricing.skillName": "Skill",
