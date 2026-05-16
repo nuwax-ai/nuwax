@@ -15,7 +15,7 @@ const cx = classNames.bind(styles);
 
 const DailyEarningsList: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | string>();
+  const [selectedDt, setSelectedDt] = useState<string>();
   const [filterValues, setFilterValues] = useState<{
     date?: string;
   }>({});
@@ -93,7 +93,7 @@ const DailyEarningsList: React.FC = () => {
                     key={item.id}
                     className={cx(styles['earning-item'])}
                     onClick={() => {
-                      setSelectedId(item.id);
+                      setSelectedDt(item.dt);
                       setDetailModalVisible(true);
                     }}
                   >
@@ -133,10 +133,10 @@ const DailyEarningsList: React.FC = () => {
 
       <DailyEarningsDetailModal
         visible={detailModalVisible}
-        targetId={selectedId}
+        dt={selectedDt}
         onCancel={() => {
           setDetailModalVisible(false);
-          setSelectedId(undefined);
+          setSelectedDt(undefined);
         }}
       />
     </div>

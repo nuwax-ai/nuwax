@@ -53,10 +53,12 @@ export async function apiListDailyRevenue(params: {
 
 // 查询我的收益明细
 export async function apiListDailyRevenueDetail(params: {
-  targetId: number | string;
+  dt: string;
   pageNum: number;
   pageSize: number;
-}): Promise<RequestResponse<DailyRevenueDetailRecord[]>> {
+}): Promise<
+  RequestResponse<{ records: DailyRevenueDetailRecord[]; total: number }>
+> {
   return request('/api/bill/revenue/detail', { method: 'GET', params });
 }
 

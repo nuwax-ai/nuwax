@@ -5188,5 +5188,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UsageStats.colOutputTokens": "Output Tokens",
   "PC.Pages.UsageStats.colCreditAmount": "Credits Used",
   "PC.Pages.UsageStats.colDt": "Date",
-  "PC.Pages.UsageStats.fetchDataFailed": "Failed to fetch data"
+  "PC.Pages.UsageStats.fetchDataFailed": "Failed to fetch data",
+  "PC.Pages.MorePage.MyEarnings.Detail.modalTitle": "Revenue Details",
+  "PC.Pages.MorePage.MyEarnings.Detail.colAmount": "Revenue Amount",
+  "PC.Pages.MorePage.MyEarnings.Detail.colSource": "Source",
+  "PC.Pages.MorePage.MyEarnings.Detail.colType": "Type",
+  "PC.Pages.MorePage.MyEarnings.Detail.colTime": "Time"
 };

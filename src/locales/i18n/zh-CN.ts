@@ -5187,5 +5187,10 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.UsageStats.colOutputTokens": "输出Token",
   "PC.Pages.UsageStats.colCreditAmount": "消耗积分",
   "PC.Pages.UsageStats.colDt": "日期",
-  "PC.Pages.UsageStats.fetchDataFailed": "获取数据失败"
+  "PC.Pages.UsageStats.fetchDataFailed": "获取数据失败",
+  "PC.Pages.MorePage.MyEarnings.Detail.modalTitle": "收益明细",
+  "PC.Pages.MorePage.MyEarnings.Detail.colAmount": "收益金额",
+  "PC.Pages.MorePage.MyEarnings.Detail.colSource": "来源",
+  "PC.Pages.MorePage.MyEarnings.Detail.colType": "类型",
+  "PC.Pages.MorePage.MyEarnings.Detail.colTime": "时间"
 };
