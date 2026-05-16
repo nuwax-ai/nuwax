@@ -57,6 +57,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   dev_payment_earnings: 'icons-nav-my-earnings',
   // 订阅与积分（管理员）
   admin_subscription_credits: 'icons-nav-subscription',
+  // 模型监控
+  model_monitor: 'icons-common-console',
 
   // 二级菜单 - 工作空间
   // 智能体开发
