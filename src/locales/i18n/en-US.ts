@@ -5044,16 +5044,18 @@ export const EN_US: SystemLangMap = {
 
   // ── System Management - Developer Earnings Statistics ─────────────────────────
   "PC.Pages.SystemPaymentEarnings.colDeveloper": "Developer",
-  "PC.Pages.SystemPaymentEarnings.totalEarnings": "Total Earnings",
-  "PC.Pages.SystemPaymentEarnings.monthlyEarnings": "Monthly Earnings",
-  "PC.Pages.SystemPaymentEarnings.pendingSettlement": "Pending Settlement",
-  "PC.Pages.SystemPaymentEarnings.developerCount": "Developers",
-  "PC.Pages.SystemPaymentEarnings.avgEarnings": "Avg Earnings",
+  "PC.Pages.SystemPaymentEarnings.totalRevenue": "Total Revenue",
+  "PC.Pages.SystemPaymentEarnings.todayRevenue": "Today's Revenue",
+  "PC.Pages.SystemPaymentEarnings.monthRevenue": "Month's Revenue",
+  "PC.Pages.SystemPaymentEarnings.pendingAmount": "Pending Amount",
+  "PC.Pages.SystemPaymentEarnings.settledAmount": "Settled Amount",
   "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "Total Earnings",
   "PC.Pages.SystemPaymentEarnings.colWithdrawn": "Withdrawn",
   "PC.Pages.SystemPaymentEarnings.colAvailable": "Available",
   "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "Last Earnings Time",
   "PC.Pages.SystemPaymentEarnings.viewDetail": "View Details",
+  "PC.Pages.SystemPaymentEarnings.chartTopRankings": "Top 10 Developer Earnings",
+  "PC.Pages.SystemPaymentEarnings.chartTotalRevenue": "Total Revenue",
 
   // ── System Management - Subscription & Credits Summary Card ────────────────────
   // ── System Management - Basic Subscription Plans ────────────────────────────

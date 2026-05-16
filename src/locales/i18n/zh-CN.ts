@@ -5044,16 +5044,18 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 系统管理 - 开发者收益统计 ─────────────────────────
   "PC.Pages.SystemPaymentEarnings.colDeveloper": "开发者",
-  "PC.Pages.SystemPaymentEarnings.totalEarnings": "平台总分成",
-  "PC.Pages.SystemPaymentEarnings.monthlyEarnings": "本月分成",
-  "PC.Pages.SystemPaymentEarnings.pendingSettlement": "待结算",
-  "PC.Pages.SystemPaymentEarnings.developerCount": "开发者数",
-  "PC.Pages.SystemPaymentEarnings.avgEarnings": "人均收益",
+  "PC.Pages.SystemPaymentEarnings.totalRevenue": "总收益",
+  "PC.Pages.SystemPaymentEarnings.todayRevenue": "今日收益",
+  "PC.Pages.SystemPaymentEarnings.monthRevenue": "本月收益",
+  "PC.Pages.SystemPaymentEarnings.pendingAmount": "待结算金额",
+  "PC.Pages.SystemPaymentEarnings.settledAmount": "已结算金额",
   "PC.Pages.SystemPaymentEarnings.colTotalEarnings": "收益总额",
   "PC.Pages.SystemPaymentEarnings.colWithdrawn": "已提现",
   "PC.Pages.SystemPaymentEarnings.colAvailable": "可提现",
   "PC.Pages.SystemPaymentEarnings.colLastEarningsAt": "最后收益时间",
   "PC.Pages.SystemPaymentEarnings.viewDetail": "查看明细",
+  "PC.Pages.SystemPaymentEarnings.chartTopRankings": "开发者收益 TOP10",
+  "PC.Pages.SystemPaymentEarnings.chartTotalRevenue": "收益总额",
 
   // ── 系统管理 - 订阅与积分汇总卡片 ────────────────────
   // ── 系统管理 - 基础订阅套餐 ────────────────────────────

@@ -1,251 +1,52 @@
-import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetDevEarningsSummary,
-  apiListDevEarnings,
-} from '@/services/subscriptionService';
-import { formatDateTime } from '@/utils/dateUtils';
-import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
-import type { ProColumns } from '@ant-design/pro-components';
-import { Card, Col, Row, Select, Statistic, Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
-
-interface DevEarningSummary {
-  id: number;
-  developerName: string;
-  totalEarnings: number;
-  withdrawn: number;
-  available: number;
-  lastEarningsAt: string;
-}
-
-const MOCK_STATS = {
-  totalEarnings: 86400,
-  totalEarningsTrend: 12.5,
-  monthlyEarnings: 12800,
-  monthlyEarningsTrend: -3.2,
-  developerCount: 47,
-  developerCountTrend: 8.3,
-  avgEarnings: 1838,
-  avgEarningsTrend: 5.1,
-};
-
-const MOCK_DEV_EARNINGS: DevEarningSummary[] = [
-  {
-    id: 1,
-    developerName: 'Alice Wang',
-    totalEarnings: 15800,
-    withdrawn: 12000,
-    available: 3800,
-    lastEarningsAt: '2026-04-28T10:30:00Z',
-  },
-  {
-    id: 2,
-    developerName: 'Bob Li',
-    totalEarnings: 9200,
-    withdrawn: 6000,
-    available: 3200,
-    lastEarningsAt: '2026-04-27T14:20:00Z',
-  },
-  {
-    id: 3,
-    developerName: 'Carlos Dev',
-    totalEarnings: 23500,
-    withdrawn: 20000,
-    available: 3500,
-    lastEarningsAt: '2026-04-26T09:00:00Z',
-  },
-  {
-    id: 4,
-    developerName: 'Diana Chen',
-    totalEarnings: 5600,
-    withdrawn: 3000,
-    available: 2600,
-    lastEarningsAt: '2026-04-25T16:00:00Z',
-  },
-];
-
-const TrendTag: React.FC<{ value: number }> = ({ value }) => {
-  if (!value) return null;
-  const isUp = value > 0;
-  return (
-    <Tag color={isUp ? 'green' : 'red'} style={{ marginLeft: 8, fontSize: 12 }}>
-      {isUp ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-      {Math.abs(value)}%
-    </Tag>
-  );
-};
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import React, { useState } from 'react';
+import EarningsSummary from './components/EarningsSummary';
+import EarningsTable from './components/EarningsTable';
+import TopEarningsChart from './components/TopEarningsChart';
 
 const EarningsStats: React.FC = () => {
-  const [summary, setSummary] = useState(MOCK_STATS);
-  const [month, setMonth] = useState<string>('2026-04');
+  const [month, setMonth] = useState<string>(dayjs().format('YYYY-MM'));
+  const [revenueData, setRevenueData] = useState<any>(null);
 
-  const { run: fetchSummary } = useRequest(apiGetDevEarningsSummary, {
-    manual: true,
-    onSuccess: (res) => setSummary(res?.data ?? MOCK_STATS),
-  });
+  // 格式化卡片数据
+  const summaryData = {
+    totalEarnings: revenueData?.totalRevenue || 0,
+    monthlyEarnings: revenueData?.monthRevenue || 0,
+    pendingSettlement: revenueData?.pendingAmount || 0,
+    todayEarnings: revenueData?.todayRevenue || 0,
+  };
 
-  useEffect(() => {
-    fetchSummary();
-  }, [month]);
-
-  const columns: ProColumns<DevEarningSummary>[] = [
-    {
-      title: dict('PC.Pages.SystemPaymentEarnings.colDeveloper'),
-      dataIndex: 'developerName',
-      key: 'developerName',
-      ellipsis: true,
-    },
-    {
-      title: dict('PC.Pages.SystemPaymentEarnings.colTotalEarnings'),
-      dataIndex: 'totalEarnings',
-      key: 'totalEarnings',
-      search: false,
-      render: (_, record) => (
-        <span style={{ fontWeight: 600 }}>
-          ¥{(record.totalEarnings ?? 0).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: dict('PC.Pages.SystemPaymentEarnings.colWithdrawn'),
-      dataIndex: 'withdrawn',
-      key: 'withdrawn',
-      search: false,
-      render: (val) => `¥${((val as number) ?? 0).toLocaleString()}`,
-    },
-    {
-      title: dict('PC.Pages.SystemPaymentEarnings.colAvailable'),
-      dataIndex: 'available',
-      key: 'available',
-      search: false,
-      render: (val) => (
-        <span style={{ color: '#52c41a', fontWeight: 600 }}>
-          ¥{((val as number) ?? 0).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: dict('PC.Pages.SystemPaymentEarnings.colLastEarningsAt'),
-      dataIndex: 'lastEarningsAt',
-      key: 'lastEarningsAt',
-      search: false,
-      render: (val) => (val ? formatDateTime(val) : '-'),
-    },
-    {
-      title: dict('PC.Common.Global.action'),
-      key: 'action',
-      search: false,
-      width: 120,
-      render: (_, record) => (
-        <TableActions
-          record={record}
-          actions={[
-            {
-              key: 'detail',
-              label: dict('PC.Pages.SystemPaymentEarnings.viewDetail'),
-              onClick: (r) =>
-                history.push(
-                  `/system/payment-earnings/earnings-detail?developerId=${
-                    r.id
-                  }&developerName=${encodeURIComponent(r.developerName)}`,
-                ),
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+  // 这里的 loading 状态可以通过判断 revenueData 是否存在，或者后续进一步优化
+  const statsLoading = !revenueData;
 
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.devEarningsStats')}
       rightSlot={
-        <Select
-          value={month}
-          onChange={setMonth}
+        <DatePicker
+          picker="month"
+          value={month ? dayjs(month) : null}
+          onChange={(date) => setMonth(date ? date.format('YYYY-MM') : '')}
+          allowClear={false}
           style={{ width: 140 }}
-          options={[
-            { value: '2026-04', label: '2026 年 4 月' },
-            { value: '2026-03', label: '2026 年 3 月' },
-            { value: '2026-02', label: '2026 年 2 月' },
-            { value: '2026-01', label: '2026 年 1 月' },
-          ]}
         />
       }
     >
       {/* 统计卡 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentEarnings.totalEarnings')}
-              value={summary.totalEarnings}
-              prefix="¥"
-            />
-            <TrendTag value={summary.totalEarningsTrend} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentEarnings.monthlyEarnings')}
-              value={summary.monthlyEarnings}
-              prefix="¥"
-            />
-            <TrendTag value={summary.monthlyEarningsTrend} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentEarnings.developerCount')}
-              value={summary.developerCount}
-            />
-            <TrendTag value={summary.developerCountTrend} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemPaymentEarnings.avgEarnings')}
-              value={summary.avgEarnings}
-              prefix="¥"
-            />
-            <TrendTag value={summary.avgEarningsTrend} />
-          </Card>
-        </Col>
-      </Row>
+      <EarningsSummary data={summaryData} loading={statsLoading} />
 
-      <XProTable<DevEarningSummary>
-        rowKey="id"
-        columns={columns}
-        request={async (params) => {
-          try {
-            const res = await apiListDevEarnings({
-              keyword: params.developerName,
-              month,
-              pageNum: params.current,
-              pageSize: params.pageSize,
-            } as any);
-            if (res?.code === SUCCESS_CODE && res.data?.list?.length) {
-              return {
-                data: res.data.list as DevEarningSummary[],
-                total: res.data.total,
-                success: true,
-              };
-            }
-          } catch {}
-          return {
-            data: MOCK_DEV_EARNINGS,
-            total: MOCK_DEV_EARNINGS.length,
-            success: true,
-          };
-        }}
+      {/* 排行榜图表 */}
+      <TopEarningsChart
+        title="开发者收益 TOP10"
+        data={revenueData?.userRankings || []}
+        loading={statsLoading}
       />
+
+      {/* 收益详情表格 */}
+      <EarningsTable month={month} onStatsChange={setRevenueData} />
     </WorkspaceLayout>
   );
 };

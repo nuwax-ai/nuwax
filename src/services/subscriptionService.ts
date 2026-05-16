@@ -573,3 +573,19 @@ export async function apiSubscribeAgentPlan(
     data: { planId },
   });
 }
+
+/**
+ * 系统管理 - 查询开发者收益统计 (支持按月过滤、排行、列表)
+ */
+export async function apiGetSystemRevenueStats(params: {
+  monthStart?: string; // YYYYMMDD
+  monthEnd?: string; // YYYYMMDD
+  status?: string; // PENDING,WITHDRAW_APPLYING,PAYING,SETTLED
+  pageNum?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<any>> {
+  return request('/api/system/bill/revenue/stats', {
+    method: 'GET',
+    params,
+  });
+}
