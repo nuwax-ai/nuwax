@@ -60,7 +60,6 @@ const Layout: React.FC = () => {
     getCurrentMenuWidth,
   } = useModel('layout');
 
-  const { runTenantConfig } = useModel('tenantConfigInfo');
   const { asyncSpaceListFun } = useModel('spaceModel');
   const { loadMenus } = useModel('menuModel');
 
@@ -108,8 +107,6 @@ const Layout: React.FC = () => {
     loadMenus();
     // 查询广场分类列表
     runQueryCategory();
-    // 租户配置信息查询接口
-    runTenantConfig();
     // 工作空间列表查询接口
     asyncSpaceListFun();
   }, []);

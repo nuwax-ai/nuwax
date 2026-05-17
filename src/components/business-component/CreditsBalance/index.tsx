@@ -3,13 +3,16 @@ import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { history, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const CreditsBalance: React.FC = () => {
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
+
+  const showCredits = tenantConfigInfo?.enableSubscription !== 0;
 
   const { run: fetchCredits } = useRequest(apiGetCreditSummary, {
     manual: true,
@@ -19,8 +22,10 @@ const CreditsBalance: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchCredits();
-  }, []);
+    if (showCredits) {
+      fetchCredits();
+    }
+  }, [showCredits]);
 
   const handleClickBalance = () => {
     history.push('/more-page/credit-records');
@@ -33,23 +38,25 @@ const CreditsBalance: React.FC = () => {
 
   return (
     <div className={cx(styles['credits-balance-wrapper'])}>
-      <div className={cx(styles.container)} onClick={handleClickBalance}>
-        <span className={cx(styles.label)}>
-          {dict('PC.Components.CreditsBalance.credits')}:
-        </span>
-        <span className={cx(styles.balance)}>
-          {balance !== null && balance !== undefined
-            ? balance.toLocaleString()
-            : '--'}
-        </span>
-        <Button
-          type="primary"
-          className={cx(styles['top-up-btn'])}
-          onClick={handleTopUp}
-        >
-          {dict('PC.Components.CreditsBalance.topUp')} +
-        </Button>
-      </div>
+      {showCredits && (
+        <div className={cx(styles.container)} onClick={handleClickBalance}>
+          <span className={cx(styles.label)}>
+            {dict('PC.Components.CreditsBalance.credits')}:
+          </span>
+          <span className={cx(styles.balance)}>
+            {balance !== null && balance !== undefined
+              ? balance.toLocaleString()
+              : '--'}
+          </span>
+          <Button
+            type="primary"
+            className={cx(styles['top-up-btn'])}
+            onClick={handleTopUp}
+          >
+            {dict('PC.Components.CreditsBalance.topUp')} +
+          </Button>
+        </div>
+      )}
       <div className={cx(styles.footer)}>
         {dict('PC.Components.SiteFooter.poweredBy')}
       </div>

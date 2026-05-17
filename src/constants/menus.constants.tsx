@@ -139,3 +139,13 @@ export const OTHER_MENU_CODES = [
   MENU_CODE_MY_COMPUTER,
   MENU_CODE_MORE_PAGE,
 ];
+
+/**
+ * 子路由至对应高亮菜单路径的映射配置表
+ * 后续如有其他新增的详情页、编辑页等子路由需要高亮其对应列表菜单，直接在此配置表中添加即可。
+ */
+export const MENU_PATH_NORMALIZATION_MAP: Record<string, string> = {
+  // 收益明细 -> 开发者收益统计
+  '/system/payment-earnings/earnings-detail':
+    '/system/payment-earnings/earnings-stats',
+};

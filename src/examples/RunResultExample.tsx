@@ -82,7 +82,7 @@ const RunResultExample: React.FC = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <Card title="运行结果组件示例" bordered={false}>
+      <Card title="运行结果组件示例" variant="borderless">
         <div style={{ marginBottom: '20px' }}>
           <Button
             onClick={() => setExpanded(!expanded)}
