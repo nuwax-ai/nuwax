@@ -7,11 +7,12 @@
  * - BODY_PAD_X / CARD_GAP / CARD_COL_WIDTH 需与 index.less 中 `.body` 横向 padding、`.cards-row` gap 及单列视觉对齐，避免错位。
  * - 窄屏：less 中 ≤900px 可将三列降为两列，≤560px 单列；width 仍受 min(..., 100vw - 32px) 限制。
  */
+import ConditionRender from '@/components/ConditionRender';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
-  SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
@@ -100,6 +101,7 @@ function buildFeatureRows(
 }
 
 export interface PaymentSubscriptionModalProps {
+  agentDetail?: AgentDetailDto | null;
   open: boolean;
   loading: boolean;
   plans: SubscriptionPlanInfo[];
@@ -114,6 +116,7 @@ export interface PaymentSubscriptionModalProps {
  */
 const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   open,
+  agentDetail,
   loading,
   plans,
   userSubscribed,
@@ -157,6 +160,10 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
+  const trialCount = agentDetail?.trialCount ?? 0;
+  const modalTitle =
+    trialCount > 0 ? `免费试用${trialCount}次` : '选择订阅套餐';
+
   return (
     <Modal
       styles={{
@@ -175,7 +182,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
           padding: 0,
         },
       }}
-      title="选择订阅套餐"
+      title={modalTitle}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -213,18 +220,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
               // 可调用次数
               const callLimit = plan.callLimitCount;
               const callLimitText =
-                callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次`;
+                callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次/月`;
               // 是否是当前套餐
               const isCurrentEffective =
                 !userSubscribed &&
                 priceMain <= 0 &&
                 firstFreeTierIndex !== -1 &&
                 index === firstFreeTierIndex;
-
-              // 是否可购买
-              const canPurchase =
-                plan.status === SubscriptionPlanStatusEnum.Online &&
-                !isCurrentEffective;
 
               // 是否是升级按钮
               const isAccentBtn =
@@ -274,7 +276,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                       // 升级按钮
                       <Button
                         type="primary"
-                        disabled={!canPurchase}
                         className={
                           isAccentBtn
                             ? cx(styles['subscribe-btn-upgrade-accent'])
@@ -282,16 +283,20 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         }
                         onClick={() => onSubscribe(plan)}
                       >
-                        {`升级为${plan.name}连续包月`}
+                        订阅套餐
                       </Button>
                     )}
                   </div>
 
-                  {/* 每月赠送积分 */}
-                  <div className={cx(styles['points-row'])}>
-                    <span className={cx(styles.diamond)} aria-hidden />
-                    <span>{creditAmountText}</span>
-                  </div>
+                  <ConditionRender
+                    condition={plan.creditAmount && plan.creditAmount > 0}
+                  >
+                    {/* 每月赠送积分 */}
+                    <div className={cx(styles['points-row'])}>
+                      <span className={cx(styles.diamond)} aria-hidden />
+                      <span>{creditAmountText}</span>
+                    </div>
+                  </ConditionRender>
 
                   {/* 可调用次数 */}
                   <div className={cx(styles['points-row'])}>

@@ -108,6 +108,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
+    isNeedSubscription,
+    setIsNeedSubscription,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -414,6 +416,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
     if (result.paymentRequired && !result.subscribed) {
       setOpenPaymentModal(true);
+      setIsNeedSubscription(true);
     }
 
     // 设置应用智能体详情
@@ -845,7 +848,10 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               isClearInput={false}
-              wholeDisabled={wholeDisabled}
+              wholeDisabled={
+                wholeDisabled ||
+                (isNeedSubscription && !agentDetail?.trialCount)
+              }
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
@@ -1009,6 +1015,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       {/* 付费订阅套餐弹窗 */}
       <PaymentSubscriptionModal
         open={openPaymentModal}
+        agentDetail={agentDetail}
         loading={loadingAgentSubscriptionPlans}
         // 套餐列表
         plans={agentSubscriptionPlans}
