@@ -521,11 +521,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     dataSourceAttachments.length > 0) && (
                     <div className={styles.messageAttachments}>
                       {/* 渲染传统附件（图片、文件等） */}
-                      {allAttachments.map((attachment) => (
+                      {allAttachments.map((attachment, index) => (
                         <MessageAttachment
-                          key={attachment.content.id}
-                          attachment={attachment.content}
-                          type={attachment.type}
+                          key={attachment.content?.id || index}
+                          attachment={attachment?.content}
+                          type={attachment?.type}
                           size={60}
                           showPreview={true}
                         />
