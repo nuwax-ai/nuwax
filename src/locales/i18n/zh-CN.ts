@@ -2905,7 +2905,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Setting.DeveloperProfile.title": "开发者资料",
   "PC.Pages.Setting.DeveloperProfile.infoTitle": "开发者信息",
   "PC.Pages.Setting.DeveloperProfile.infoDesc": "完善开发者资料与结算信息",
-  "PC.Pages.Setting.DeveloperProfile.verified": "已验证开发者",
   "PC.Pages.Setting.DeveloperProfile.sectionProfile": "开发者资料",
   "PC.Pages.Setting.DeveloperProfile.sectionBank": "银行卡信息",
   "PC.Pages.Setting.DeveloperProfile.name": "姓名",

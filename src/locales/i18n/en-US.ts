@@ -2905,7 +2905,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Setting.DeveloperProfile.title": "Developer Profile",
   "PC.Pages.Setting.DeveloperProfile.infoTitle": "Developer Profile",
   "PC.Pages.Setting.DeveloperProfile.infoDesc": "Complete developer profile and settlement information",
-  "PC.Pages.Setting.DeveloperProfile.verified": "Verified Developer",
   "PC.Pages.Setting.DeveloperProfile.sectionProfile": "Developer Profile",
   "PC.Pages.Setting.DeveloperProfile.sectionBank": "Bank Card Information",
   "PC.Pages.Setting.DeveloperProfile.name": "Name",
