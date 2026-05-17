@@ -244,6 +244,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
       {/* 添加技能弹窗 */}
       {!editItem && (
         <Created
+          showMoreMenus={false}
           open={createdOpen}
           // 只展示当前空间
           isSpaceOnly={true}
