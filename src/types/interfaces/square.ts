@@ -104,6 +104,7 @@ export interface SquareAgentInfo {
 
 // 单个智能体组件
 export interface SingleAgentProps {
+  isEnableSubscription?: boolean;
   onClick: () => void;
   // 开始使用
   onStartUse?: (e: React.MouseEvent<HTMLElement>) => void;

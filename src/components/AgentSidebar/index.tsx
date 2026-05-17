@@ -23,7 +23,15 @@ export type AgentSidebarRef = {
 
 const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
   (
-    { className, agentId, loading, agentDetail, onVisibleChange, onSubscribe },
+    {
+      className,
+      agentId,
+      loading,
+      agentDetail,
+      onVisibleChange,
+      onSubscribe,
+      isEnableSubscription = true,
+    },
     ref,
   ) => {
     const [visible, setVisible] = useState<boolean>(false);
@@ -97,7 +105,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
                   {/* 智能体内容 */}
                   <AgentContent
                     agentDetail={agentDetail}
-                    onSubscribe={onSubscribe}
+                    onSubscribe={isEnableSubscription ? onSubscribe : undefined}
                   />
                   {/* 智能体相关会话 */}
                   <AgentConversation agentId={agentId} />

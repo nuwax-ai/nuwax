@@ -108,6 +108,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
+    isNeedSubscription,
+    setIsNeedSubscription,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -156,6 +158,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     restartAgent,
     clearFilePanelInfo,
   } = useModel('conversationInfo');
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 会话输入框已选择组件
   const {
@@ -414,6 +421,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
     if (result.paymentRequired && !result.subscribed) {
       setOpenPaymentModal(true);
+      setIsNeedSubscription(true);
     }
 
     // 设置应用智能体详情
@@ -845,7 +853,12 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               isClearInput={false}
-              wholeDisabled={wholeDisabled}
+              wholeDisabled={
+                wholeDisabled ||
+                (isEnableSubscription &&
+                  isNeedSubscription &&
+                  !agentDetail?.trialCount)
+              }
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
@@ -982,6 +995,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       <ConditionRender condition={!isAppSidebarMode}>
         {/*智能体详情*/}
         <AgentSidebar
+          isEnableSubscription={isEnableSubscription}
           ref={sidebarRef}
           className={cx(
             styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
@@ -1006,19 +1020,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         }}
       />
 
-      {/* 付费订阅套餐弹窗 */}
-      <PaymentSubscriptionModal
-        open={openPaymentModal}
-        loading={loadingAgentSubscriptionPlans}
-        // 套餐列表
-        plans={agentSubscriptionPlans}
-        // 是否已订阅
-        userSubscribed={!!agentDetail?.subscribed}
-        // 关闭回调
-        onClose={() => setOpenPaymentModal(false)}
-        // 订阅回调
-        onSubscribe={createAgentSubscriptionOrder}
-      />
+      <ConditionRender condition={isEnableSubscription}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Agent"
+          trialCount={agentDetail?.trialCount ?? 0}
+          loading={loadingAgentSubscriptionPlans}
+          // 套餐列表
+          plans={agentSubscriptionPlans}
+          // 是否已订阅
+          userSubscribed={!!agentDetail?.subscribed}
+          // 关闭回调
+          onClose={() => setOpenPaymentModal(false)}
+          // 订阅回调
+          onSubscribe={createAgentSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };
