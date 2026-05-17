@@ -163,7 +163,7 @@ const SpaceModelManage: React.FC = () => {
         <div className={cx(styles['header-right'])}>
           <Input
             rootClassName={cx(styles.input)}
-            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
+            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchModal')}
             value={keyword}
             onChange={(e) => {
               const k = e.target.value;
@@ -187,7 +187,7 @@ const SpaceModelManage: React.FC = () => {
               setOpenModel(true);
             }}
           >
-            {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
+            {dict('PC.Pages.SpaceLibrary.Index.addModel')}
           </Button>
         </div>
       </div>
