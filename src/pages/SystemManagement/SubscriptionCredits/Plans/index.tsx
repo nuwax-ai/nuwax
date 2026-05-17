@@ -1,9 +1,7 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { modalConfirm } from '@/utils/ant-custom';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -24,7 +22,6 @@ import {
 import { Button, message, Switch } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  apiDeleteSubscriptionPlan,
   apiGetSubscriptionPlanList,
   apiGetSubscriptionPlanStats,
   apiUpdateSubscriptionPlan,
@@ -56,18 +53,17 @@ function getPeriodLabel(period: SubscriptionPlanPeriodEnum): string {
 
 /**
  * 基础订阅套餐管理页面
- * @returns
  */
 const Plans = () => {
   const actionRef = useRef<ActionType>();
-  const isDraggingRef = useRef(false);
+  const isDraggingRef = useRef<boolean>(false);
   const originalDataRef = useRef<SubscriptionPlanInfo[] | null>(null);
   // 套餐列表（与 XProTable request + dataSource / postData 配合，拖拽时保持乐观顺序）
   const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
   // 统计信息
   const [stats, setStats] = useState<SubscriptionPlanStatsResult | null>(null);
   // 新增套餐弹窗
-  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
   // 当前编辑中的套餐
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlanInfo | null>(
     null,
@@ -103,17 +99,12 @@ const Plans = () => {
     try {
       const listRes = await apiGetSubscriptionPlanList();
       const listData = listRes?.data ?? [];
-      if (listRes?.code !== SUCCESS_CODE) {
-        message.error(dict('PC.Common.Toast.operationFailed'));
-        return { data: [], success: false, total: 0 };
-      }
       return {
         data: listData,
         success: true,
         total: listData.length,
       };
     } catch {
-      message.error(dict('PC.Common.Toast.operationFailed'));
       return { data: [], success: false, total: 0 };
     }
   }, []);
@@ -167,23 +158,6 @@ const Plans = () => {
   const handleEdit = (planInfo: SubscriptionPlanInfo) => {
     setEditingPlan(planInfo);
     setCreateModalOpen(true);
-  };
-
-  // 删除套餐（二次确认）
-  const handleDelete = (id: number) => {
-    modalConfirm(
-      '确认删除',
-      '删除后不可恢复，确定要删除该套餐吗？',
-      async () => {
-        try {
-          await apiDeleteSubscriptionPlan(id);
-          message.success('删除成功');
-          actionRef.current?.reload();
-        } catch {
-          message.error(dict('PC.Common.Toast.operationFailed'));
-        }
-      },
-    );
   };
 
   // 新增套餐
@@ -348,23 +322,6 @@ const Plans = () => {
         r.isHot ? dict('PC.Common.Global.yes') : dict('PC.Common.Global.no'),
     },
     {
-      title: dict('PC.Pages.SystemPlans.status'),
-      dataIndex: 'status',
-      width: 120,
-      search: false,
-      render: (_, r) => {
-        if (typeof r.id !== 'number') {
-          return '-';
-        }
-        return (
-          <Switch
-            checked={r.status === SubscriptionPlanStatusEnum.Online}
-            onChange={(v) => handleToggle(r.id as number, v)}
-          />
-        );
-      },
-    },
-    {
       title: dict('PC.Pages.SystemPlans.colCreated'),
       dataIndex: 'created',
       width: 176,
@@ -379,11 +336,31 @@ const Plans = () => {
       render: (_, r) => formatDateTimeYmdHms(r.modified),
     },
     {
+      title: dict('PC.Pages.SystemPlans.status'),
+      dataIndex: 'status',
+      width: 120,
+      search: false,
+      fixed: 'right',
+      align: 'center',
+      render: (_, r) => {
+        if (typeof r.id !== 'number') {
+          return '-';
+        }
+        return (
+          <Switch
+            checked={r.status === SubscriptionPlanStatusEnum.Online}
+            onChange={(v) => handleToggle(r.id as number, v)}
+          />
+        );
+      },
+    },
+    {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       fixed: 'right',
       width: 120,
       search: false,
+      align: 'center',
       render: (_, record) =>
         typeof record.id === 'number' ? (
           <TableActions
@@ -393,16 +370,6 @@ const Plans = () => {
                 key: 'edit',
                 label: dict('PC.Common.Global.edit'),
                 onClick: (plan) => handleEdit(plan),
-              },
-              {
-                key: 'delete',
-                label: dict('PC.Common.Global.delete'),
-                danger: true,
-                onClick: (plan) => {
-                  if (typeof plan.id === 'number') {
-                    handleDelete(plan.id);
-                  }
-                },
               },
             ]}
           />
@@ -488,6 +455,7 @@ const Plans = () => {
         </SortableContext>
       </DndContext>
 
+      {/* 新增套餐弹窗 */}
       <CreatePlanModal
         open={createModalOpen}
         sort={createPlanSort}
