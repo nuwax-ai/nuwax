@@ -681,3 +681,43 @@ export interface AdminPaymentOrderRecord {
   created: string;
   modified: string;
 }
+
+// ──────────────────────────────────────────────
+// 系统管理 - 系统收益统计相关接口
+// ──────────────────────────────────────────────
+
+export interface DailyRevenueItem {
+  id: number | null;
+  userId: number;
+  nickName: string | null;
+  userName: string | null;
+  phone: string | null;
+  email: string | null;
+  dt: string; // YYYYMMDD
+  amount: number;
+  status: string;
+  created: string | null;
+}
+
+export interface RevenueStatsResponse {
+  totalRevenue: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  pendingAmount: number;
+  settledAmount: number;
+  dailyRevenues: DailyRevenueItem[];
+  userRankings: Array<{
+    userId: number;
+    userName: string | null;
+    amount: number;
+  }>;
+  total: number;
+}
+
+export interface RevenueStatsParams {
+  monthStart?: string; // YYYYMMDD
+  monthEnd?: string; // YYYYMMDD
+  status?: string; // PENDING,WITHDRAW_APPLYING,PAYING,SETTLED
+  pageNum?: number;
+  pageSize?: number;
+}
