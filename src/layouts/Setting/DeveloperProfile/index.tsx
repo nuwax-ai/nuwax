@@ -6,7 +6,6 @@ import { dict } from '@/services/i18nRuntime';
 import { apiSystemUploadFile } from '@/services/systemManage';
 import type { DeveloperAccount } from '@/types/interfaces/developerAccount';
 import {
-  CheckOutlined,
   IdcardOutlined,
   LoadingOutlined,
   PlusOutlined,
@@ -16,6 +15,7 @@ import type { UploadProps } from 'antd';
 import { Button, Form, Input, Modal, Spin, Upload, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,6 +29,7 @@ type UploadRequestOption = Parameters<
  * 用于展示和修改开发者的基本信息、身份验证以及银行账户信息
  */
 const DeveloperProfile: React.FC = () => {
+  const { userInfo } = useModel('userInfo');
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   const [upLoadingFront, setUpLoadingFront] = useState<boolean>(false);
@@ -237,15 +238,24 @@ const DeveloperProfile: React.FC = () => {
           {/* 顶部头部卡片：展示头像、名称和认证状态 */}
           <div className={cx(styles['header-card'])}>
             <div className={cx(styles['avatar-wrapper'])}>
-              <UserOutlined />
+              {userInfo?.avatar ? (
+                <img
+                  src={userInfo.avatar}
+                  alt="avatar"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                <UserOutlined />
+              )}
             </div>
             <div className={cx(styles.info)}>
               <div className={cx(styles.name)}>
                 {realName || dict('PC.Components.UserMenu.defaultUserName')}
-              </div>
-              <div className={cx(styles.status)}>
-                <CheckOutlined className={cx(styles['icon-check'])} />
-                {dict('PC.Pages.Setting.DeveloperProfile.verified')}
               </div>
             </div>
           </div>

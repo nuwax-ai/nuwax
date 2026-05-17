@@ -13,7 +13,11 @@ import { PATH_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
-import { handleOpenUrl, updatePathUrlToLocalStorage } from '../utils';
+import {
+  handleOpenUrl,
+  normalizeMenuPathname,
+  updatePathUrlToLocalStorage,
+} from '../utils';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -307,6 +311,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return targetPath === decodeURIComponent(activePath);
       }
 
+      const pathname = normalizeMenuPathname(location.pathname);
+
       // 如果路径包含动态参数，先解析路径
       if (targetPath.includes(':')) {
         const resolvedPath = resolveDynamicPath(targetPath);
@@ -320,7 +326,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
           // 将动态路径转换为正则表达式进行匹配
           const pattern = rawPattern.replace(/:(\w+)/g, '[^/]+');
           const regex = new RegExp(`^${pattern}(/.*)?$`);
-          return regex.test(location.pathname);
+          return regex.test(pathname);
         }
 
         // 使用解析后的路径进行匹配
@@ -329,7 +335,6 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
       // 去掉查询参数，只保留路径部分
       const [pathWithoutQuery] = targetPath.split('?');
-      const pathname = location.pathname;
 
       // 精确匹配或前缀匹配
       return (
@@ -353,6 +358,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       pathname: string,
       parentCodes: string[] = [],
     ): string[] | null => {
+      const normalizedPathname = normalizeMenuPathname(pathname);
+
       const stripQueryAndHash = (value: string): string => {
         // 只用于“匹配判断”，不做业务跳转，因此直接去掉 ? 和 #
         return value.split('#')[0].split('?')[0];
@@ -369,7 +376,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       };
 
       /**
-       * 将传入的 pathname 归一化成：
+       * 将传入 of the pathname 归一化成：
        * - 若是完整 URL：同时保留 full（去 query/hash 后）和 path（URL.pathname）
        * - 若不是 URL：直接将 cleaned 作为 path
        */
@@ -389,7 +396,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return { cleaned, path: cleaned, isUrl: false };
       };
 
-      const target = normalizeTarget(pathname);
+      const target = normalizeTarget(normalizedPathname);
 
       const appendCodeIfNeeded = (codes: string[], code?: string) => {
         if (!code) return codes;
@@ -508,8 +515,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     const isIframePage = location.pathname?.includes('/open-iframe-page');
 
     // 当前路径, 用于匹配菜单
-    let targetPath = location.pathname;
-    // 如果当前页面是应用内打开的iframe页面，且路径包含 ?url=，则直接比较路径（应用内打开的外部链接），则获取iframe页面的路径
+    let targetPath = normalizeMenuPathname(location.pathname);
+    // 如果当前页面是应用内打开 of the iframe页面，且路径包含 ?url=，则直接比较路径（应用内打开的外部链接），则获取iframe页面的路径
     if (isIframePage && location.search?.includes('?url=')) {
       const activePath = location.search.split('?url=')[1];
       targetPath = decodeURIComponent(activePath);

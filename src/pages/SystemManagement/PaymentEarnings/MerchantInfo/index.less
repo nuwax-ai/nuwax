@@ -30,6 +30,25 @@
   position: relative;
   overflow: hidden;
 
+  &.disabled {
+    cursor: not-allowed;
+    background: @colorBgContainerDisabled;
+    border-color: @colorBorder;
+
+    &:hover {
+      border-color: @colorBorder;
+      background: @colorBgContainerDisabled;
+
+      .icon-wrapper {
+        background: rgba(24, 144, 255, 10%);
+      }
+
+      .image-mask {
+        opacity: 0;
+      }
+    }
+  }
+
   &.front,
   &.back {
     height: auto;
@@ -40,7 +59,7 @@
 
   &.license {
     height: auto;
-    width: 560px;
+    width: 100%;
     max-width: 100%;
     aspect-ratio: 16 / 10;
   }

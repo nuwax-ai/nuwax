@@ -76,7 +76,9 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
           // 继续获取收银台地址
           getCashierUrl(orderId);
         } else {
-          message.error('未获取到订单号');
+          message.error(
+            dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
+          );
           setProcessingId(null);
         }
       } else {

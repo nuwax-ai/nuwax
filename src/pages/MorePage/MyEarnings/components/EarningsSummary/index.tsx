@@ -60,7 +60,9 @@ const EarningsSummary: React.FC = () => {
         refreshStats();
       },
       onError: (err) => {
-        message.error(err.message || '提现申请失败');
+        message.error(
+          err.message || dict('PC.Pages.MorePage.MyEarnings.withdrawFailed'),
+        );
       },
     },
   );

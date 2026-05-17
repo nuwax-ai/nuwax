@@ -40,7 +40,7 @@ const ExceptionItemExample: React.FC = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <Card title="异常处理组件示例" bordered={false}>
+      <Card title="异常处理组件示例" variant="borderless">
         <Form
           form={form}
           layout="vertical"
