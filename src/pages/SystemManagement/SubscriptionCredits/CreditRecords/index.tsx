@@ -51,6 +51,11 @@ const CREDIT_FLOW_TYPE_SEARCH_KEYS: Partial<
 const CreditRecords: React.FC = () => {
   /** 当前表格是否有数据：无数据时不展示底部分页 */
   const [showPagination, setShowPagination] = useState<boolean>(false);
+  /**
+   * 与通用表格对齐的每页条数；单独受控可避免 ProTable 内部默认 pageSize（如 20）
+   * 与 defaultPageSize 不一致，从而导致首请求与下拉展示错位。
+   */
+  const [tablePageSize, setTablePageSize] = useState(DEFAULT_CURSOR_PAGE_SIZE);
 
   // 游标分页映射
   const lastIdMapRef = useRef<Record<number, number | undefined>>({
@@ -283,6 +288,10 @@ const CreditRecords: React.FC = () => {
       showSizeChanger: true,
       pageSizeOptions: [15, 30, 50, 100],
       defaultPageSize: DEFAULT_CURSOR_PAGE_SIZE,
+      pageSize: tablePageSize,
+      onShowSizeChange: (_current: number, size: number) => {
+        setTablePageSize(size);
+      },
       showQuickJumper: false,
       /** 游标分页无真实 total，避免误导性的「共 X 条」 */
       showTotal: () => null,
@@ -298,7 +307,7 @@ const CreditRecords: React.FC = () => {
         return originalElement;
       },
     }),
-    [],
+    [tablePageSize],
   );
 
   return (
