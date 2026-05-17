@@ -1,4 +1,5 @@
 import PaymentSubscriptionModal from '@/components/business-component/ConversationDetails/PaymentSubscriptionModal';
+import ConditionRender from '@/components/ConditionRender';
 import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import useAgentSubscription from '@/hooks/useAgentSubscription';
@@ -20,7 +21,7 @@ import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
 
@@ -47,6 +48,11 @@ const SkillDetail: React.FC = ({}) => {
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
     useState<boolean>(false);
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 查询技能信息
   const {
@@ -184,16 +190,21 @@ const SkillDetail: React.FC = ({}) => {
           onBack={handleBack}
           extraBeforeCollect={
             <Space>
-              {skillInfo.paymentRequired &&
-                (skillInfo.subscribed ? (
-                  <Button disabled>
-                    {dict('PC.Pages.Square.SkillDetail.subscribed')}
-                  </Button>
-                ) : (
-                  <Button type="primary" onClick={handleOpenSubscribeModal}>
-                    {dict('PC.Pages.Square.SkillDetail.subscribeAction')}
-                  </Button>
-                ))}
+              {/* 如果开启订阅功能，则显示订阅按钮 */}
+              {isEnableSubscription && (
+                <>
+                  {skillInfo.paymentRequired &&
+                    (skillInfo.subscribed ? (
+                      <Button disabled>
+                        {dict('PC.Pages.Square.SkillDetail.subscribed')}
+                      </Button>
+                    ) : (
+                      <Button type="primary" onClick={handleOpenSubscribeModal}>
+                        {dict('PC.Pages.Square.SkillDetail.subscribeAction')}
+                      </Button>
+                    ))}
+                </>
+              )}
               {skillInfo.allowCopy === AllowCopyEnum.Yes && (
                 <>
                   <Button
@@ -257,17 +268,19 @@ const SkillDetail: React.FC = ({}) => {
         onConfirm={handlerConfirmCopyTemplate}
       />
 
-      {/* 付费订阅套餐弹窗 */}
-      <PaymentSubscriptionModal
-        open={openPaymentModal}
-        targetType="Skill"
-        trialCount={skillInfo?.trialCount ?? 0}
-        loading={loadingSkillPricing}
-        plans={skillSubscriptionPlans}
-        userSubscribed={Boolean(skillInfo?.subscribed)}
-        onClose={() => setOpenPaymentModal(false)}
-        onSubscribe={handleSubscribeSkillPlan}
-      />
+      <ConditionRender condition={isEnableSubscription}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          trialCount={skillInfo?.trialCount ?? 0}
+          loading={loadingSkillPricing}
+          plans={skillSubscriptionPlans}
+          userSubscribed={Boolean(skillInfo?.subscribed)}
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={handleSubscribeSkillPlan}
+        />
+      </ConditionRender>
     </div>
   );
 };

@@ -159,6 +159,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     clearFilePanelInfo,
   } = useModel('conversationInfo');
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
   // 会话输入框已选择组件
   const {
     selectedComponentList,
@@ -850,7 +855,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               isClearInput={false}
               wholeDisabled={
                 wholeDisabled ||
-                (isNeedSubscription && !agentDetail?.trialCount)
+                (isEnableSubscription &&
+                  isNeedSubscription &&
+                  !agentDetail?.trialCount)
               }
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
@@ -988,6 +995,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       <ConditionRender condition={!isAppSidebarMode}>
         {/*智能体详情*/}
         <AgentSidebar
+          isEnableSubscription={isEnableSubscription}
           ref={sidebarRef}
           className={cx(
             styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
@@ -1012,21 +1020,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         }}
       />
 
-      {/* 付费订阅套餐弹窗 */}
-      <PaymentSubscriptionModal
-        open={openPaymentModal}
-        targetType="Agent"
-        trialCount={agentDetail?.trialCount ?? 0}
-        loading={loadingAgentSubscriptionPlans}
-        // 套餐列表
-        plans={agentSubscriptionPlans}
-        // 是否已订阅
-        userSubscribed={!!agentDetail?.subscribed}
-        // 关闭回调
-        onClose={() => setOpenPaymentModal(false)}
-        // 订阅回调
-        onSubscribe={createAgentSubscriptionOrder}
-      />
+      <ConditionRender condition={isEnableSubscription}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Agent"
+          trialCount={agentDetail?.trialCount ?? 0}
+          loading={loadingAgentSubscriptionPlans}
+          // 套餐列表
+          plans={agentSubscriptionPlans}
+          // 是否已订阅
+          userSubscribed={!!agentDetail?.subscribed}
+          // 关闭回调
+          onClose={() => setOpenPaymentModal(false)}
+          // 订阅回调
+          onSubscribe={createAgentSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };

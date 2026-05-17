@@ -55,8 +55,13 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   // 获取二级菜单方法
   const { getSecondLevelMenus } = useModel('menuModel');
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
   // 获取二级菜单, 用于渲染菜单
   const secondMenus: MenuItemDto[] = getSecondLevelMenus(parentCode);
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   /**
    * 查找菜单的父菜单和同级菜单
@@ -672,6 +677,17 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   // 如果没有二级菜单，不渲染
   if (!secondMenus.length) {
     return null;
+  }
+
+  // 如果未开启订阅功能，则不渲染订阅相关的菜单
+  if (parentCode === 'workspace' && !isEnableSubscription) {
+    return (
+      <div className={'flex flex-col gap-4 overflow-hide'}>
+        {secondMenus
+          ?.filter((menu: MenuItemDto) => menu.code !== 'ziyuandingjia')
+          ?.map((menu: MenuItemDto) => renderMenuItem(menu))}
+      </div>
+    );
   }
 
   return (
