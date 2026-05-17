@@ -260,6 +260,8 @@ const SkillDetail: React.FC = ({}) => {
       {/* 付费订阅套餐弹窗 */}
       <PaymentSubscriptionModal
         open={openPaymentModal}
+        targetType="Skill"
+        trialCount={skillInfo?.trialCount ?? 0}
         loading={loadingSkillPricing}
         plans={skillSubscriptionPlans}
         userSubscribed={Boolean(skillInfo?.subscribed)}

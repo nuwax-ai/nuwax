@@ -1015,7 +1015,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       {/* 付费订阅套餐弹窗 */}
       <PaymentSubscriptionModal
         open={openPaymentModal}
-        agentDetail={agentDetail}
+        targetType="Agent"
+        trialCount={agentDetail?.trialCount ?? 0}
         loading={loadingAgentSubscriptionPlans}
         // 套餐列表
         plans={agentSubscriptionPlans}

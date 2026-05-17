@@ -50,12 +50,6 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
 
 const BADGE_REGEX = /(限时免费|功能限免|限时尝鲜)/;
 
-function parseRenewalPrice(extra: unknown): number | undefined {
-  if (!extra || typeof extra !== 'object') return undefined;
-  const v = (extra as Record<string, unknown>).renewalPrice;
-  return typeof v === 'number' ? v : undefined;
-}
-
 /** 同一套权益解析逻辑，与后台 PlanItemCard 对齐，并兼容 items 明细 */
 function buildFeatureRows(
   plan: SubscriptionPlanInfo,
@@ -102,6 +96,8 @@ function buildFeatureRows(
 
 export interface PaymentSubscriptionModalProps {
   agentDetail?: AgentDetailDto | null;
+  trialCount?: number;
+  targetType: 'Agent' | 'Skill';
   open: boolean;
   loading: boolean;
   plans: SubscriptionPlanInfo[];
@@ -116,7 +112,8 @@ export interface PaymentSubscriptionModalProps {
  */
 const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   open,
-  agentDetail,
+  trialCount = 0,
+  targetType,
   loading,
   plans,
   userSubscribed,
@@ -160,7 +157,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
-  const trialCount = agentDetail?.trialCount ?? 0;
   const modalTitle =
     trialCount > 0 ? `免费试用${trialCount}次` : '选择订阅套餐';
 
@@ -205,15 +201,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
           >
             {sortedPlans.map((plan, index) => {
               // 周期
-              const period = periodLabelMap[plan.period] || '月';
+              const period = periodLabelMap[plan?.period] || '月';
               // 价格
               const priceMain = plan.price ?? 0;
               // 原价
               const firstPrice = plan.firstPrice;
               // 是否显示原价
               const showStrikeOriginal = firstPrice !== priceMain;
-              // 续费价格
-              const renewal = parseRenewalPrice(plan.extra);
               // 权益列表
               const features = buildFeatureRows(plan);
               const creditAmountText = `每月 ${plan.creditAmount} 积分`;
@@ -251,16 +245,14 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         /{period}
                       </span>
                     </div>
-                    {showStrikeOriginal ? (
-                      <div className={cx(styles['price-original'])}>
-                        原价¥{firstPrice}/{period}
-                      </div>
-                    ) : null}
-                    {renewal !== undefined ? (
-                      <div className={cx(styles['renewal-hint'])}>
-                        次月续费金额¥{renewal}/{period}
-                      </div>
-                    ) : null}
+                    {/* 原价, 技能只占位，不显示原价 */}
+                    <div className={cx(styles['price-original'])}>
+                      {targetType === 'Agent'
+                        ? showStrikeOriginal
+                          ? `原价¥${firstPrice}/${period}`
+                          : ''
+                        : ''}
+                    </div>
                   </div>
 
                   {/* 订阅按钮 */}
@@ -283,7 +275,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         }
                         onClick={() => onSubscribe(plan)}
                       >
-                        订阅套餐
+                        {targetType === 'Agent'
+                          ? '订阅套餐'
+                          : plan?.period === SubscriptionPlanPeriodEnum.MONTH
+                          ? '订阅包月套餐'
+                          : '订阅买断套餐'}
                       </Button>
                     )}
                   </div>
