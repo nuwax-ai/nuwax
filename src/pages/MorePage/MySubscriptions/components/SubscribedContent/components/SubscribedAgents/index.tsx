@@ -126,7 +126,11 @@ const SubscribedAgents: React.FC = () => {
                 <Button
                   type="primary"
                   className={cx(styles['renew-button'])}
-                  onClick={() => message.success('续订功能开发中')}
+                  onClick={() =>
+                    message.success(
+                      dict('PC.Pages.MorePage.MySubscriptions.renewalUnderDev'),
+                    )
+                  }
                 >
                   {dict('PC.Pages.MorePage.MySubscriptions.renewNow')}
                 </Button>

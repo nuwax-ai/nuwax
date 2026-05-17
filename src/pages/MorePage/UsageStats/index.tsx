@@ -22,8 +22,14 @@ const { RangePicker } = DatePicker;
 
 const formatNumber = (num: number | undefined): string => {
   if (num === null || num === undefined) return '0';
-  if (num >= 100000000) return `${(num / 100000000).toFixed(1)}亿`;
-  if (num >= 10000) return `${(num / 10000).toFixed(1)}万`;
+  if (num >= 100000000)
+    return `${(num / 100000000).toFixed(1)}${dict(
+      'PC.Pages.UsageStats.hundredMillionUnit',
+    )}`;
+  if (num >= 10000)
+    return `${(num / 10000).toFixed(1)}${dict(
+      'PC.Pages.UsageStats.tenThousandUnit',
+    )}`;
   return num.toLocaleString();
 };
 

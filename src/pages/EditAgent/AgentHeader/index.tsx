@@ -109,14 +109,22 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
 
   const tabOptions = useMemo(() => {
-    const opts = [{ label: '编排', value: 'arrange' as AgentHeaderTabKey }];
+    const opts = [
+      {
+        label: dict('PC.Pages.AgentEdit.arrange'),
+        value: 'arrange' as AgentHeaderTabKey,
+      },
+    ];
     if (showSubscriptionTabs) {
       opts.push(
         {
-          label: '订阅设置',
+          label: dict('PC.Pages.AgentEdit.subscriptionSetting'),
           value: 'subscriptionSetting' as AgentHeaderTabKey,
         },
-        { label: '订阅统计', value: 'subscriptionStats' as AgentHeaderTabKey },
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionStats'),
+          value: 'subscriptionStats' as AgentHeaderTabKey,
+        },
       );
     }
     return opts;
