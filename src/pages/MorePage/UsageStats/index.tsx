@@ -266,6 +266,7 @@ const UsageStats: React.FC = () => {
             }}
             format="YYYYMMDD"
           />
+          <div style={{ flex: 1 }} />
           <Button
             type="primary"
             icon={<SearchOutlined />}
@@ -276,7 +277,6 @@ const UsageStats: React.FC = () => {
           <Button onClick={handleReset}>
             {dict('PC.Pages.UsageStats.reset')}
           </Button>
-          <div style={{ flex: 1 }} />
         </div>
 
         {/* 统计卡片 */}
@@ -299,9 +299,11 @@ const UsageStats: React.FC = () => {
             rowKey="id"
             columns={columns}
             request={request}
+            search={false}
             onReset={handleReset}
             fullHeight={true}
             showQueryButtons={false}
+            scrollYOffset={30}
           />
         </div>
       </div>

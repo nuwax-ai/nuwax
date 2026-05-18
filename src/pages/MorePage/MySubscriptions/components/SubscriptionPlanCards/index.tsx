@@ -1,20 +1,15 @@
-import {
-  apiCreateAgentSubscriptionOrder,
-  apiGetAgentSubscriptionOrderCashier,
-} from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
   SystemSubscriptionPlan,
   SystemSubscriptionPlanGroup,
-  SystemSubscriptionPlanItem,
 } from '@/types/interfaces/subscription';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Col, message, Row } from 'antd';
+import { Button, Col, Popover, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { useRequest } from 'umi';
+import { useSubscriptionPurchase } from '../../hooks/useSubscriptionPurchase';
 import styles from './index.less';
 
 export interface PlanInfo {
@@ -42,68 +37,14 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   endTime,
   price,
 }) => {
-  const [processingId, setProcessingId] = React.useState<string | null>(null);
-
-  // 获取收银台地址并跳转支付
-  const { run: getCashierUrl } = useRequest(
-    apiGetAgentSubscriptionOrderCashier,
-    {
-      manual: true,
-      onSuccess: (res: any) => {
-        // 兼容处理：获取返回的数据内容
-        const data = res?.data || res;
-        if (data && data?.cashierUrl) {
-          const returnUrl = encodeURIComponent(window.location.href);
-          const separator = data.cashierUrl.includes('?') ? '&' : '?';
-          const url = `${data.cashierUrl}${separator}returnUrl=${returnUrl}`;
-          window.location.href = url;
-        }
-      },
-      onFinally: () => {
-        setProcessingId(null);
-      },
-    },
-  );
-
-  // 创建订阅订单
-  const { run: createOrder } = useRequest(apiCreateAgentSubscriptionOrder, {
-    manual: true,
-    onSuccess: (res: any) => {
-      if (res) {
-        // 兼容处理：获取返回的数据内容
-        const data = res?.data || res;
-        // 获取创建订单返回的支付网关订单号（订单ID）
-        const orderId = data?.id;
-        if (orderId) {
-          // 继续获取收银台地址
-          getCashierUrl(orderId);
-        } else {
-          message.error(
-            dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
-          );
-          setProcessingId(null);
-        }
-      } else {
-        setProcessingId(null);
-      }
-    },
-    onError: () => {
-      setProcessingId(null);
-    },
-  });
+  const { processingId, handlePay: payPlan } = useSubscriptionPurchase();
 
   /**
    * 点击订阅/续费处理函数
    * @param plan 套餐信息
    */
   const handlePay = (plan: PlanInfo) => {
-    // 防止重复请求
-    if (processingId) return;
-
-    // 锁定当前正在处理的套餐ID
-    setProcessingId(plan.id);
-
-    createOrder(Number(plan.id));
+    payPlan(plan.id);
   };
   const plans = useMemo<PlanInfo[]>(() => {
     return data.map((item) => ({
@@ -143,6 +84,66 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
       ),
     };
     return periodMap[p] || '';
+  };
+
+  const renderPlanContent = (plan: PlanInfo) => {
+    const allItems = plan.itemGroups?.flatMap((g) => g.items || []) || [];
+    const maxVisibleItems = 5;
+    const hasOverflow = allItems.length > maxVisibleItems;
+    const visibleItems = hasOverflow
+      ? allItems.slice(0, maxVisibleItems - 1)
+      : allItems;
+    const remainingItems = hasOverflow
+      ? allItems.slice(maxVisibleItems - 1)
+      : [];
+
+    const popoverContent = (
+      <div className={cx(styles['popover-benefit-list'])}>
+        {remainingItems.map((benefit, bIdx) => (
+          <div key={bIdx} className={cx(styles['benefit-item'])}>
+            {benefit.selected ? (
+              <CheckOutlined className={cx(styles['check-icon'])} />
+            ) : (
+              <CloseOutlined className={cx(styles['close-icon'])} />
+            )}
+            <span>{benefit.description}</span>
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <div className={cx(styles['plan-content'])}>
+        <div className={cx(styles['benefit-group'])}>
+          {visibleItems.map((benefit, bIdx) => (
+            <div key={bIdx} className={cx(styles['benefit-item'])}>
+              {benefit.selected ? (
+                <CheckOutlined className={cx(styles['check-icon'])} />
+              ) : (
+                <CloseOutlined className={cx(styles['close-icon'])} />
+              )}
+              <span className={cx(styles['benefit-text'])}>
+                {benefit.description}
+              </span>
+            </div>
+          ))}
+          {hasOverflow && (
+            <Popover
+              content={popoverContent}
+              trigger="hover"
+              placement="right"
+              overlayClassName={cx(styles['benefit-popover'])}
+            >
+              <div
+                className={cx(styles['benefit-item'], styles['ellipsis-item'])}
+              >
+                <span className={cx(styles['ellipsis-text'])}>...</span>
+              </div>
+            </Popover>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -192,31 +193,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   </div>
                 </div>
 
-                <div className={cx(styles['plan-content'])}>
-                  {plan.itemGroups?.map((group, gIdx) => (
-                    <div key={gIdx} className={cx(styles['benefit-group'])}>
-                      {group.items?.map(
-                        (benefit: SystemSubscriptionPlanItem, bIdx: number) => (
-                          <div
-                            key={bIdx}
-                            className={cx(styles['benefit-item'])}
-                          >
-                            {benefit.selected ? (
-                              <CheckOutlined
-                                className={cx(styles['check-icon'])}
-                              />
-                            ) : (
-                              <CloseOutlined
-                                className={cx(styles['close-icon'])}
-                              />
-                            )}
-                            <span>{benefit.description}</span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {renderPlanContent(plan)}
 
                 <div className={cx(styles['plan-footer'])}>
                   {isCurrent && endTime ? (
@@ -232,7 +209,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   <Button
                     type="primary"
                     className={cx(styles['action-button'])}
-                    loading={processingId === plan.id}
+                    loading={processingId?.toString() === plan.id}
                     onClick={() => handlePay(plan)}
                     disabled={plan.price <= 0}
                   >
