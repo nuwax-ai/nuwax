@@ -369,9 +369,11 @@ const ModelMonitor: React.FC = () => {
             rowKey="id"
             columns={columns}
             request={request}
+            search={false}
             onReset={handleReset}
             fullHeight={true}
             showQueryButtons={false}
+            scrollYOffset={30}
           />
         </div>
       </div>
