@@ -4917,6 +4917,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemUserCredits.purchaseCredit": "增购积分",
   "PC.Pages.SystemUserCredits.activityCredit": "活动积分",
   "PC.Pages.SystemUserCredits.manualCredit": "手动积分",
+  "PC.Pages.SystemUserCredits.viewCreditRecords": "积分明细",
 
   // ── 系统管理 - 积分流水查询 ────────────────────────────
   "PC.Pages.SystemCreditRecords.recordId": "流水ID",
@@ -4932,7 +4933,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemCreditRecords.creditType": "积分类型",
   "PC.Pages.SystemCreditRecords.creditTypeSubscription": "订阅发放",
   "PC.Pages.SystemCreditRecords.creditTypePurchase": "增购",
-  "PC.Pages.SystemCreditRecords.creditTypeActivity": "活动发放",
+  "PC.Pages.SystemCreditRecords.creditTypeActivity": "活动积分",
   "PC.Pages.SystemCreditRecords.creditTypeManual": "系统发放",
   "PC.Pages.SystemCreditRecords.creditTypeModelCall": "模型调用",
   "PC.Pages.SystemCreditRecords.creditTypeAgentCall": "智能体调用",

@@ -2,10 +2,11 @@ import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { formatDateTime } from '@/utils/dateUtils';
+import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import type { ParamsType, ProColumns } from '@ant-design/pro-components';
-import { Tag } from 'antd';
+import { Statistic, Tag } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import { apiGetCreditFlowList } from '../services/credit';
 import {
   CreditFlowOperationTypeEnum,
@@ -23,6 +24,15 @@ type CreditFlowListTableParams = ParamsType &
   };
 
 const DEFAULT_CURSOR_PAGE_SIZE = 15;
+
+/** 从 URL 查询串解析 userId（与列表页 query 一致） */
+function parseUserIdFromSearch(search: string): number | undefined {
+  const q = new URLSearchParams(search);
+  const raw = q.get('userId');
+  if (raw === null || raw === '') return undefined;
+  const n = Number(raw);
+  return Number.isNaN(n) ? undefined : n;
+}
 
 /** 积分类型筛选下拉：枚举值 → i18n key（不含 LOAN） */
 const CREDIT_FLOW_TYPE_SEARCH_KEYS: Partial<
@@ -49,6 +59,17 @@ const CREDIT_FLOW_TYPE_SEARCH_KEYS: Partial<
  * 积分明细查询
  */
 const CreditRecords: React.FC = () => {
+  const location = useLocation();
+  const userIdFromUrl = useMemo(
+    () => parseUserIdFromSearch(location.search ?? ''),
+    [location.search],
+  );
+
+  const formInitialValues = useMemo(
+    () => (userIdFromUrl !== undefined ? { userId: userIdFromUrl } : undefined),
+    [userIdFromUrl],
+  );
+
   /** 当前表格是否有数据：无数据时不展示底部分页 */
   const [showPagination, setShowPagination] = useState<boolean>(false);
   /**
@@ -67,11 +88,11 @@ const CreditRecords: React.FC = () => {
     () => ({
       [CreditFlowOperationTypeEnum.INCREASE]: {
         color: 'success',
-        label: dict('PC.Pages.SystemCreditRecords.typeIncrease'),
+        label: dict('PC.Pages.SystemCreditRecords.operationTypeIncrease'),
       },
       [CreditFlowOperationTypeEnum.DECREASE]: {
         color: 'error',
-        label: dict('PC.Pages.SystemCreditRecords.typeDecrease'),
+        label: dict('PC.Pages.SystemCreditRecords.operationTypeDecrease'),
       },
     }),
     [],
@@ -161,25 +182,23 @@ const CreditRecords: React.FC = () => {
       width: 120,
     },
     {
-      title: dict('PC.Pages.SystemCreditRecords.amount'),
-      dataIndex: 'amount',
-      key: 'amount',
-      search: false,
-      width: 150,
-      render: (_, record) => record.amount || '-',
-    },
-    {
       title: dict('PC.Pages.SystemCreditRecords.creditType'),
       dataIndex: 'creditType',
       key: 'creditType',
       width: 140,
       valueType: 'select',
+      align: 'center',
       valueEnum: creditTypeSearchEnum,
       fieldProps: {
         allowClear: true,
-        placeholder: dict('PC.Common.Global.pleaseSelect'),
       },
-      render: (_, record) => record.creditTypeName || record.creditType || '-',
+      render: (_, record) => (
+        <span>
+          {creditTypeSearchEnum[record.creditType]?.text ??
+            record.creditTypeName ??
+            '-'}
+        </span>
+      ),
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.operationType'),
@@ -201,6 +220,28 @@ const CreditRecords: React.FC = () => {
       },
     },
     {
+      title: dict('PC.Pages.SystemCreditRecords.amount'),
+      dataIndex: 'amount',
+      key: 'amount',
+      search: false,
+      width: 150,
+      render: (_, record) => {
+        const isIncrease =
+          record.operationType === CreditFlowOperationTypeEnum.INCREASE;
+        return (
+          <Statistic
+            value={record.amount}
+            prefix={isIncrease ? '+' : '-'}
+            valueStyle={{
+              color: isIncrease ? '#52c41a' : '#ff4d4f',
+              fontSize: '14px',
+              fontWeight: '600',
+            }}
+          />
+        );
+      },
+    },
+    {
       title: dict('PC.Pages.SystemCreditRecords.beforeAmount'),
       dataIndex: 'beforeAmount',
       key: 'beforeAmount',
@@ -219,7 +260,7 @@ const CreditRecords: React.FC = () => {
       dataIndex: 'created',
       key: 'created',
       search: false,
-      render: (_, record) => formatDateTime(record.created),
+      render: (_, record) => formatDateTimeYmdHms(record.created),
     },
     {
       title: dict('PC.Pages.SystemCreditRecords.remark'),
@@ -313,11 +354,15 @@ const CreditRecords: React.FC = () => {
   return (
     <WorkspaceLayout title={dict('PC.Routes.creditsRecordsQuery')}>
       <XProTable<UserCreditFlowInfo, CreditFlowListTableParams>
+        key={location.pathname + (location.search || '')}
         rowKey="id"
         columns={columns}
         request={requestCreditFlowList}
         pagination={showPagination ? cursorPagination : false}
         scroll={{ x: 'max-content' }}
+        form={
+          formInitialValues ? { initialValues: formInitialValues } : undefined
+        }
       />
     </WorkspaceLayout>
   );
