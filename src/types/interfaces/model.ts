@@ -1,5 +1,6 @@
 import type {
   ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelScopeEnum,
@@ -62,6 +63,8 @@ export interface ModelFormData {
   strategy: ModelStrategyEnum;
   // 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
   type?: ModelTypeEnum;
+  /** 模型能力类型多选（与 ModelCapabilityTypeEnum / 服务端约定一致） */
+  types?: ModelCapabilityTypeEnum[];
   // 最大输出token数, token上限
   maxTokens: number;
   // 最大上下文长度，默认128000
@@ -80,8 +83,6 @@ export interface ModelSaveParams extends ModelFormData {
   spaceId: number;
   // 最大输出token数, token上限
   maxTokens: number;
-  // 模型能力类型列表，可选值：Text-文本生成、Image-图像理解、Audio-语音识别、Video-视频理解、TextEmbedding-文本向量、MultiEmbedding-多模态向量、Reasoning-深度思考
-  types?: string[];
   // API列表
   apiInfoList: {
     // 接口地址

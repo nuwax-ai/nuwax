@@ -66,7 +66,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           }
         })
         .catch(() => {
-          message.error(dict('PC.Components.ChatTitleActions.uncollectFailed'));
+          // message.error(dict('PC.Components.ChatTitleActions.uncollectFailed'));
         });
     } else {
       // 添加收藏
@@ -79,7 +79,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           }
         })
         .catch(() => {
-          message.error(dict('PC.Components.ChatTitleActions.collectFailed'));
+          // message.error(dict('PC.Components.ChatTitleActions.collectFailed'));
         });
     }
   }, [agentInfo?.statistics?.targetId, isCollected]);
@@ -162,7 +162,7 @@ const ChatTitleActions: React.FC<ChatTitleActionsProps> = ({
           onClick: handleToggleCollect,
           className: isCollected ? styles.collected : '',
         },
-        ...(agentInfo?.paymentRequired && !agentInfo.subscribed && onSubscribe
+        ...(agentInfo?.paymentRequired && onSubscribe
           ? [
               {
                 key: 'subscribe',

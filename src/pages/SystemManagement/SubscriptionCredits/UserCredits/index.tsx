@@ -3,7 +3,9 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { ParamsType, ProColumns } from '@ant-design/pro-components';
+import { Button } from 'antd';
 import React from 'react';
+import { history } from 'umi';
 import { apiGetCreditSummaryList } from '../services/credit';
 import { UserCreditSummaryInfo } from '../types/credit';
 
@@ -15,14 +17,8 @@ type UserCreditSummaryTableParams = ParamsType & {
   pageSize?: number;
 };
 
-function parseUserIdParam(value: unknown): number | undefined {
-  if (value === undefined || value === null || value === '') return undefined;
-  const n = Number(value);
-  return Number.isNaN(n) ? undefined : n;
-}
-
 /**
- * 用户积分汇总列表（ProTable request）：userId、用户名称 → 接口 userId / usernamePhoneOrEmail。
+ * 用户积分汇总列表
  */
 async function fetchUserCreditSummaryTableRequest(
   params: UserCreditSummaryTableParams,
@@ -33,8 +29,8 @@ async function fetchUserCreditSummaryTableRequest(
 }> {
   try {
     const res = await apiGetCreditSummaryList({
-      userId: parseUserIdParam(params.userId),
-      usernamePhoneOrEmail: params.userName?.trim() || undefined,
+      userId: params.userId ? Number(params.userId) : undefined,
+      usernamePhoneOrEmail: params.userName?.trim() || '',
     });
     if (res?.code === SUCCESS_CODE) {
       const list = res.data.records || [];
@@ -50,6 +46,20 @@ async function fetchUserCreditSummaryTableRequest(
     total: 0,
     success: false,
   };
+}
+
+/** 跳转订阅积分「积分明细」页面并携带用户 ID（查询参数 userId） */
+function navigateToUserCreditRecords(
+  userId: UserCreditSummaryInfo['userId'],
+): void {
+  if (userId === undefined || userId === null) {
+    return;
+  }
+  history.push(
+    `/system/subscription-credits/credit-records?userId=${encodeURIComponent(
+      String(userId),
+    )}`,
+  );
 }
 
 const UserCredits: React.FC = () => {
@@ -112,6 +122,7 @@ const UserCredits: React.FC = () => {
       dataIndex: 'activityCredit',
       key: 'activityCredit',
       search: false,
+      width: 120,
       render: (_, record) => record.activityCredit || '-',
     },
     {
@@ -119,7 +130,24 @@ const UserCredits: React.FC = () => {
       dataIndex: 'manualCredit',
       key: 'manualCredit',
       search: false,
+      width: 120,
       render: (_, record) => record.manualCredit || '-',
+    },
+    {
+      title: dict('PC.Common.Global.operation'),
+      key: 'actions',
+      search: false,
+      fixed: 'right',
+      align: 'center',
+      width: 120,
+      render: (_, record) => (
+        <Button
+          type="link"
+          onClick={() => navigateToUserCreditRecords(record.userId)}
+        >
+          {dict('PC.Pages.SystemUserCredits.viewCreditRecords')}
+        </Button>
+      ),
     },
   ];
 
@@ -129,6 +157,7 @@ const UserCredits: React.FC = () => {
         rowKey="userId"
         columns={columns}
         request={fetchUserCreditSummaryTableRequest}
+        scroll={{ x: 'max-content' }}
       />
     </WorkspaceLayout>
   );
