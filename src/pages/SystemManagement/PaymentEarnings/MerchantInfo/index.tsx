@@ -368,6 +368,7 @@ const MerchantInfo: React.FC = () => {
 
   const isFormEditable =
     status === MerchantOnboardingStatusEnum.DRAFT ||
+    status === MerchantOnboardingStatusEnum.PENDING_REVIEW ||
     status === MerchantOnboardingStatusEnum.REJECTED ||
     status === MerchantOnboardingStatusEnum.APPROVED;
 
@@ -504,6 +505,7 @@ const MerchantInfo: React.FC = () => {
               loading ||
               isFormDirty ||
               (status !== MerchantOnboardingStatusEnum.DRAFT &&
+                status !== MerchantOnboardingStatusEnum.PENDING_REVIEW &&
                 status !== MerchantOnboardingStatusEnum.REJECTED)
             }
             onClick={() =>

@@ -170,6 +170,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ConversationDetails.requiredParamsWarning": "請填寫必填參數",
   "PC.Components.ConversationDetails.startConversationWithAgent": "和{0}開始會話",
   "PC.Components.ConversationDetails.viewAgentDetails": "查看智能體詳情",
+  "PC.Components.ConversationDetails.paidSubscribe": "訂閱",
   "PC.Components.CopyIconButton.copy": "複製",
   "PC.Components.CopyToSpaceComponent.pageCopySuccess": "頁面複製成功",
   "PC.Components.CopyToSpaceComponent.templateCopySuccess": "模板複製成功",
