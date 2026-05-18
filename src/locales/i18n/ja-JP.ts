@@ -170,6 +170,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ConversationDetails.requiredParamsWarning": "必須パラメータを入力してください",
   "PC.Components.ConversationDetails.startConversationWithAgent": "{0} と会話を開始してください",
   "PC.Components.ConversationDetails.viewAgentDetails": "エージェントの詳細を表示する",
+  "PC.Components.ConversationDetails.paidSubscribe": "購読",
   "PC.Components.CopyIconButton.copy": "コピー",
   "PC.Components.CopyToSpaceComponent.pageCopySuccess": "ページが正常にコピーされました",
   "PC.Components.CopyToSpaceComponent.templateCopySuccess": "テンプレートが正常にコピーされました",
@@ -3386,7 +3387,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "説明",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "ツール名を検索...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "回",
-  "PC.Pages.SpaceResourcePricing.cycleMonthly": "ヶ月",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 回",
   "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
     "各ティアのコンテキスト長は必須で、0 より大きい値にしてください",
