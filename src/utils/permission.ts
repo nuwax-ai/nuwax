@@ -89,19 +89,6 @@ export const ROUTE_CONTROL_CONFIG: Record<
     excludePaths?: string[];
   }
 > = {
-  // 订阅/积分套餐增购相关菜单分组
-  'subscription-credits': {
-    // 当租户未开启订阅业务（enableSubscription 为数字 0）时，隐藏本增购功能组
-    shouldHide: (config) => config?.enableSubscription === 0,
-    // “基础设置”作为底层核心入口需始终保留公开展示，不受订阅状态控制而隐藏
-    excludePaths: ['basic-config'],
-  },
-  // 支付与收益相关菜单分组
-  'payment-earnings': {
-    // 租户未开启订阅时隐藏该分组。由于无保留排除项且子路由全被隐藏，父级空菜单亦会被过滤清除
-    shouldHide: (config) => config?.enableSubscription === 0,
-    excludePaths: [],
-  },
   // 系统更多页面菜单分组
   'more-page': {
     // 租户未开启订阅时隐藏该多级菜单组
