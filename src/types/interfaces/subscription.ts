@@ -359,6 +359,7 @@ export interface RevenueStatsInfo {
   todayRevenue: number;
   monthRevenue: number;
   pendingAmount: number;
+  unsettledAmount?: number;
   settledAmount: number;
   dailyRevenues: any[];
 }
