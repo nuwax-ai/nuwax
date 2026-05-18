@@ -4452,6 +4452,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemRunningLogTable.placeholderUserName": "请输入用户名",
   "PC.Pages.SystemRunningLogTable.queryFailed": "查询失败",
   "PC.Pages.SystemRunningLogTable.targetTypeAgent": "智能体",
+  "PC.Pages.SystemRunningLogTable.targetTypeModel": "模型",
   "PC.Pages.SystemRunningLogTable.targetTypePlugin": "插件",
   "PC.Pages.SystemRunningLogTable.targetTypeWorkflow": "工作流",
   "PC.Pages.SystemTargetAuthModal.authorize": "授权",

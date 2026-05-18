@@ -81,6 +81,9 @@ const LogProTable: React.FC = () => {
             text: t('PC.Pages.SystemRunningLogTable.targetTypeWorkflow'),
           },
           [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
+          [AgentComponentTypeEnum.Model]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeModel'),
+          },
         },
         hideInTable: false,
         initialValue: targetTypeFromUrl,

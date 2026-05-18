@@ -4452,6 +4452,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemRunningLogTable.placeholderUserName": "Please enter username",
   "PC.Pages.SystemRunningLogTable.queryFailed": "Query failed",
   "PC.Pages.SystemRunningLogTable.targetTypeAgent": "Agent",
+  "PC.Pages.SystemRunningLogTable.targetTypeModel": "Model",
   "PC.Pages.SystemRunningLogTable.targetTypePlugin": "Plugin",
   "PC.Pages.SystemRunningLogTable.targetTypeWorkflow": "Workflow",
   "PC.Pages.SystemTargetAuthModal.authorize": "Authorize",
