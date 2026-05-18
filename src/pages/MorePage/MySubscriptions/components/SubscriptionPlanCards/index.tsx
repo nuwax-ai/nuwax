@@ -6,8 +6,10 @@ import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
   SystemSubscriptionPlan,
+  SystemSubscriptionPlanGroup,
+  SystemSubscriptionPlanItem,
 } from '@/types/interfaces/subscription';
-import { CheckOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { Button, Col, message, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -22,7 +24,7 @@ export interface PlanInfo {
   creditAmount: number;
   period: string;
   isHot: boolean;
-  itemGroups: any[];
+  itemGroups: SystemSubscriptionPlanGroup[];
 }
 
 interface SubscriptionPlanCardsProps {
@@ -193,12 +195,25 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                 <div className={cx(styles['plan-content'])}>
                   {plan.itemGroups.map((group, gIdx) => (
                     <div key={gIdx} className={cx(styles['benefit-group'])}>
-                      {group.items.map((benefit: any, bIdx: number) => (
-                        <div key={bIdx} className={cx(styles['benefit-item'])}>
-                          <CheckOutlined className={cx(styles['check-icon'])} />
-                          <span>{benefit.description}</span>
-                        </div>
-                      ))}
+                      {group.items.map(
+                        (benefit: SystemSubscriptionPlanItem, bIdx: number) => (
+                          <div
+                            key={bIdx}
+                            className={cx(styles['benefit-item'])}
+                          >
+                            {benefit.selected ? (
+                              <CheckOutlined
+                                className={cx(styles['check-icon'])}
+                              />
+                            ) : (
+                              <CloseOutlined
+                                className={cx(styles['close-icon'])}
+                              />
+                            )}
+                            <span>{benefit.description}</span>
+                          </div>
+                        ),
+                      )}
                     </div>
                   ))}
                 </div>

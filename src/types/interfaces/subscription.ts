@@ -622,7 +622,7 @@ export interface SystemSubscriptionPlanGroup {
   description: string;
   groupType: string;
   items: SystemSubscriptionPlanItem[];
-  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[];
+  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[] | null;
 }
 
 export interface SystemSubscriptionPlan {
