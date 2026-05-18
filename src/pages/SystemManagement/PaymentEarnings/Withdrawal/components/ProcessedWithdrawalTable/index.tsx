@@ -14,7 +14,13 @@ import { Tag, message } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import PayModal from './components/PayModal';
 
-const ProcessedWithdrawalTable: React.FC = () => {
+interface ProcessedWithdrawalTableProps {
+  status?: BillWithdrawStatusEnum;
+}
+
+const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
+  status = BillWithdrawStatusEnum.APPROVED,
+}) => {
   const actionRef = useRef<ActionType>();
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] =
@@ -51,9 +57,9 @@ const ProcessedWithdrawalTable: React.FC = () => {
         ),
       },
       [BillWithdrawStatusEnum.APPROVED]: {
-        color: 'success',
+        color: 'warning',
         label: dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.statusApproved',
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabApproved',
         ),
       },
       [BillWithdrawStatusEnum.REJECTED]: {
@@ -72,110 +78,117 @@ const ProcessedWithdrawalTable: React.FC = () => {
     [],
   );
 
-  const columns: ProColumns<BillWithdrawRecordInfo>[] = [
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo',
-      ),
-      dataIndex: 'id',
-      key: 'id',
-      ellipsis: true,
-      search: false,
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
-      ),
-      dataIndex: 'userName',
-      key: 'userName',
-      width: 120,
-      ellipsis: true,
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPhone',
-      ),
-      dataIndex: 'phone',
-      key: 'phone',
-      width: 120,
-      search: false,
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colEmail',
-      ),
-      dataIndex: 'email',
-      key: 'email',
-      width: 180,
-      ellipsis: true,
-      search: false,
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount',
-      ),
-      dataIndex: 'amount',
-      key: 'amount',
-      search: false,
-      render: (_, record) => (
-        <span style={{ fontWeight: 600 }}>
-          ¥{(record.amount ?? 0).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus',
-      ),
-      dataIndex: 'status',
-      key: 'status',
-      search: false,
-      render: (_, record) => {
-        const cfg = statusConfig[record.status];
-        return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
+  const columns = useMemo<ProColumns<BillWithdrawRecordInfo>[]>(() => {
+    const cols: ProColumns<BillWithdrawRecordInfo>[] = [
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colApplicationNo',
+        ),
+        dataIndex: 'id',
+        key: 'id',
+        ellipsis: true,
+        search: false,
       },
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason',
-      ),
-      dataIndex: 'rejectReason',
-      key: 'rejectReason',
-      search: false,
-    },
-    {
-      title: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colProcessedAt',
-      ),
-      dataIndex: 'modified',
-      key: 'modified',
-      search: false,
-      valueType: 'dateTime',
-    },
-    {
-      title: dict('PC.Common.Global.action'),
-      key: 'action',
-      search: false,
-      render: (_, record) => (
-        <TableActions
-          record={record}
-          actions={[
-            {
-              key: 'pay',
-              label: dict(
-                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.pay',
-              ),
-              visible: record.status === BillWithdrawStatusEnum.APPROVED,
-              onClick: (r) => {
-                setSelectedRecord(r);
-                setPayModalOpen(true);
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
+        ),
+        dataIndex: 'userName',
+        key: 'userName',
+        width: 120,
+        ellipsis: true,
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPhone',
+        ),
+        dataIndex: 'phone',
+        key: 'phone',
+        width: 120,
+        search: false,
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colEmail',
+        ),
+        dataIndex: 'email',
+        key: 'email',
+        width: 180,
+        ellipsis: true,
+        search: false,
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount',
+        ),
+        dataIndex: 'amount',
+        key: 'amount',
+        search: false,
+        render: (_, record) => (
+          <span style={{ fontWeight: 600 }}>
+            ¥{(record.amount ?? 0).toLocaleString()}
+          </span>
+        ),
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus',
+        ),
+        dataIndex: 'status',
+        key: 'status',
+        search: false,
+        render: (_, record) => {
+          const cfg = statusConfig[record.status];
+          return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
+        },
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason',
+        ),
+        dataIndex: 'rejectReason',
+        key: 'rejectReason',
+        search: false,
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colProcessedAt',
+        ),
+        dataIndex: 'modified',
+        key: 'modified',
+        search: false,
+        valueType: 'dateTime',
+      },
+    ];
+
+    if (status === BillWithdrawStatusEnum.APPROVED) {
+      cols.push({
+        title: dict('PC.Common.Global.action'),
+        key: 'action',
+        search: false,
+        render: (_, record) => (
+          <TableActions
+            record={record}
+            actions={[
+              {
+                key: 'pay',
+                label: dict(
+                  'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.pay',
+                ),
+                visible: record.status === BillWithdrawStatusEnum.APPROVED,
+                onClick: (r) => {
+                  setSelectedRecord(r);
+                  setPayModalOpen(true);
+                },
               },
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+            ]}
+          />
+        ),
+      });
+    }
+
+    return cols;
+  }, [status, statusConfig]);
 
   return (
     <>
@@ -186,7 +199,7 @@ const ProcessedWithdrawalTable: React.FC = () => {
         request={async (params) => {
           const res = await apiListWithdrawals({
             keyword: params.userName,
-            status: BillWithdrawStatusEnum.APPROVED,
+            status: status,
             pageNum: params.current,
             pageSize: params.pageSize,
           });
