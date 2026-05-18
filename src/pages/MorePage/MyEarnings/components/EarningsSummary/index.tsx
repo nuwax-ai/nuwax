@@ -1,8 +1,9 @@
 import { dict } from '@/services/i18nRuntime';
 import {
   apiCreateWithdrawApply,
+  apiGetCreditSummary,
   apiGetRevenueStats,
-  apiGetWithdrawConfig,
+  apiGetUserWithdrawConfig,
 } from '@/services/subscriptionService';
 import { CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -19,7 +20,7 @@ const EarningsSummary: React.FC = () => {
   const [withdrawRecordOpen, setWithdrawRecordOpen] = useState(false);
 
   // 获取提现配置（最低提现金额）
-  const { data: withdrawConfigRes } = useRequest(apiGetWithdrawConfig);
+  const { data: withdrawConfigRes } = useRequest(apiGetUserWithdrawConfig);
   const minAmount = withdrawConfigRes?.data?.minAmount || 0;
   // revenueRatio 为小数形式，显示需乘以 100
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -67,10 +68,38 @@ const EarningsSummary: React.FC = () => {
     },
   );
 
+  const [creditChecking, setCreditChecking] = useState(false);
+
+  const handleWithdraw = async () => {
+    if (creditChecking || withdrawLoading) return;
+    setCreditChecking(true);
+    try {
+      const res = await apiGetCreditSummary();
+      if (res && res.success && res.data) {
+        const totalCredit = res.data.totalCredit ?? 0;
+        if (totalCredit < 0) {
+          message.error(
+            dict('PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError'),
+          );
+          return;
+        }
+      } else {
+        message.error(
+          res?.message || dict('PC.Pages.MorePage.MyEarnings.withdrawFailed'),
+        );
+        return;
+      }
+      runWithdraw();
+    } catch (err: any) {
+    } finally {
+      setCreditChecking(false);
+    }
+  };
+
   const stats = useMemo(() => {
     const data = revenueData?.data;
     const total = data?.totalRevenue || 0;
-    const pending = data?.pendingAmount || 0;
+    const pending = data?.unsettledAmount || 0;
     const withdrawn = data?.settledAmount || 0;
 
     return [
@@ -151,9 +180,13 @@ const EarningsSummary: React.FC = () => {
               type="primary"
               icon={<DownloadOutlined />}
               className={cx(styles['withdraw-apply-btn'])}
-              disabled={pendingAmount <= 0 || pendingAmount < minAmount}
-              loading={withdrawLoading}
-              onClick={runWithdraw}
+              disabled={
+                pendingAmount <= 0 ||
+                pendingAmount < minAmount ||
+                creditChecking
+              }
+              loading={withdrawLoading || creditChecking}
+              onClick={handleWithdraw}
             >
               {dict('PC.Pages.MorePage.MyEarnings.withdrawApply')}
             </Button>

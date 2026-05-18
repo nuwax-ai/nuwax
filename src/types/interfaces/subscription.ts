@@ -359,6 +359,7 @@ export interface RevenueStatsInfo {
   todayRevenue: number;
   monthRevenue: number;
   pendingAmount: number;
+  unsettledAmount?: number;
   settledAmount: number;
   dailyRevenues: any[];
 }
@@ -621,7 +622,7 @@ export interface SystemSubscriptionPlanGroup {
   description: string;
   groupType: string;
   items: SystemSubscriptionPlanItem[];
-  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[];
+  openApiConfigs: SystemSubscriptionPlanOpenApiConfig[] | null;
 }
 
 export interface SystemSubscriptionPlan {

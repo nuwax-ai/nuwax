@@ -1,10 +1,8 @@
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiGetSystemRevenueStats,
-  type DailyRevenueItem,
-} from '@/services/subscriptionService';
+import { apiGetSystemRevenueStats } from '@/services/subscriptionService';
+import type { DailyRevenueItem } from '@/types/interfaces/subscription';
 import type { ProColumns } from '@ant-design/pro-components';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef } from 'react';
@@ -12,28 +10,30 @@ import { history } from 'umi';
 
 interface EarningsTableProps {
   month?: string;
+  searchTrigger?: number;
   onStatsChange?: (data: any) => void;
 }
 
 const EarningsTable: React.FC<EarningsTableProps> = ({
   month,
+  searchTrigger,
   onStatsChange,
 }) => {
   const actionRef = useRef<any>();
   const isFirstRender = useRef(true);
 
-  // 仅在月份变化（且非首次渲染）时刷新表格
+  // 在月份变化或主动触发查询（且非首次渲染）时刷新表格
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    // 月份切换时，先清空父组件数据，以触发统计卡片和图表的 loading 状态
+    // 切换或重新查询时，先清空父组件数据，以触发统计卡片和图表的 loading 状态
     if (month) {
       onStatsChange?.(null);
     }
     actionRef.current?.reload();
-  }, [month]);
+  }, [month, searchTrigger]);
 
   const columns: ProColumns<DailyRevenueItem>[] = [
     {
