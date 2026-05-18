@@ -12,10 +12,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 智能体内容
-const AgentContent: React.FC<AgentContentProps> = ({
-  agentDetail,
-  onSubscribe,
-}) => {
+const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
   // 控制头像加载失败时只回退到默认图标一次，防止死循环
   const hasRetriedRef = useRef<boolean>(false);
 
@@ -93,7 +90,7 @@ const AgentContent: React.FC<AgentContentProps> = ({
           </Typography.Paragraph>
         </ConditionRender>
         {/* 分享 复制 迁移 功能 */}
-        <ChatTitleActions agentInfo={agentDetail} onSubscribe={onSubscribe} />
+        <ChatTitleActions agentInfo={agentDetail} />
       </div>
     </div>
   );

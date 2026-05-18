@@ -170,6 +170,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ConversationDetails.requiredParamsWarning": "請填寫必填引數",
   "PC.Components.ConversationDetails.startConversationWithAgent": "和{0}開始會話",
   "PC.Components.ConversationDetails.viewAgentDetails": "檢視智慧體詳情",
+  "PC.Components.ConversationDetails.paidSubscribe": "訂閱",
   "PC.Components.CopyIconButton.copy": "複製",
   "PC.Components.CopyToSpaceComponent.pageCopySuccess": "頁面複製成功",
   "PC.Components.CopyToSpaceComponent.templateCopySuccess": "模板複製成功",
@@ -3380,7 +3381,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名稱...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
-  "PC.Pages.SpaceResourcePricing.cycleMonthly": "月",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 次",
   "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
     "每個檔位的上下文長度不能為空且須大於 0",
