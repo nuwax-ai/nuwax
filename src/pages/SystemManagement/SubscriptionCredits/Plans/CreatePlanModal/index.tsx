@@ -56,8 +56,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
   selected,
   onClick,
 }) => {
-  const tokenLimitPerDay = group.tokenLimit?.limitPerDay ?? 0;
-
   return (
     <div
       className={cx(styles['user-group-card'], {
@@ -68,25 +66,8 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
       <div className={cx(styles['user-group-card-title'], 'text-ellipsis')}>
         {group.name}
       </div>
-      <div className={styles['user-group-card-row']}>
-        <span className={styles['user-group-card-label']}>用户组编码</span>
-        <span className={styles['user-group-card-value']}>
-          {group.code || '-'}
-        </span>
-      </div>
-      <div className={styles['user-group-card-row']}>
-        <span className={styles['user-group-card-label']}>用户组描述</span>
-        <span className={styles['user-group-card-value']}>
-          {group.description || '-'}
-        </span>
-      </div>
-      <div className={styles['user-group-card-row']}>
-        <span className={styles['user-group-card-label']}>每日 Token 限额</span>
-        <span className={styles['user-group-card-value']}>
-          {tokenLimitPerDay === 0
-            ? '不限制'
-            : `${tokenLimitPerDay.toLocaleString()} / 天`}
-        </span>
+      <div className={cx(styles['user-group-card-desc'], 'text-ellipsis')}>
+        {group.description}
       </div>
     </div>
   );
@@ -102,7 +83,6 @@ interface CreatePlanFormValues {
   isHot: boolean;
   description: string;
   sort: number;
-  functionOnly: boolean;
 }
 
 /**
@@ -189,7 +169,6 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
         status: planInfo
           ? planInfo.status === SubscriptionPlanStatusEnum.Online
           : true,
-        functionOnly: planInfo?.functionOnly || false,
         sort: planInfo?.sort || sort || 1,
       });
       setSelectedGroupIds(planInfo?.groupIds || []);
@@ -273,7 +252,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              label={dict('PC.Pages.SystemSubsOrders.colPlanName')}
+              label={dict('PC.Pages.SystemPlans.colName')}
               name="name"
               rules={[
                 {
@@ -307,8 +286,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
               <InputNumber
                 min={0}
                 max={100000000}
-                step={0.1}
-                precision={1}
+                step={0.01}
+                precision={2}
                 className="w-full"
                 placeholder="例如：99"
               />
@@ -336,8 +315,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
               <InputNumber
                 min={0}
                 max={100000000}
-                step={0.1}
-                precision={1}
+                step={0.01}
+                precision={2}
                 className="w-full"
                 placeholder="留空表示无原价"
               />
@@ -352,16 +331,6 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 precision={0}
                 className="w-full"
               />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            <Form.Item
-              label="是否仅为功能订阅"
-              name="functionOnly"
-              valuePropName="checked"
-            >
-              <Switch checkedChildren="是" unCheckedChildren="否" />
             </Form.Item>
           </Col>
 
@@ -396,25 +365,26 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           </Col>
         </Row>
 
-        <h3 className={styles['developer-permission-title']}>开发者权限</h3>
-        <div className={styles['developer-permission-desc']}>
-          关联用户组以控制套餐包含的权限范围，可多选
-        </div>
+        {/* 开发者权限(可多选) */}
+        {userGroupList.length > 0 && (
+          <>
+            <h3 className={styles['developer-permission-title']}>开发者权限</h3>
+            <div className={styles['developer-permission-desc']}>
+              关联用户组以控制套餐包含的权限范围，可多选
+            </div>
 
-        <div className={cx('flex', styles['user-group-card-container'])}>
-          {userGroupList.length > 0 ? (
-            userGroupList.map((group) => (
-              <UserGroupCard
-                key={group.id}
-                group={group}
-                selected={selectedGroupIds.includes(group.id)}
-                onClick={handleToggleGroup}
-              />
-            ))
-          ) : (
-            <div style={{ color: '#8c8c8c' }}>暂无用户组数据</div>
-          )}
-        </div>
+            <div className={cx('flex', styles['user-group-card-container'])}>
+              {userGroupList.map((group) => (
+                <UserGroupCard
+                  key={group.id}
+                  group={group}
+                  selected={selectedGroupIds.includes(group.id)}
+                  onClick={handleToggleGroup}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </Form>
     </CustomFormModal>
   );

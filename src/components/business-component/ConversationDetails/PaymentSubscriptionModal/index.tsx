@@ -7,11 +7,12 @@
  * - BODY_PAD_X / CARD_GAP / CARD_COL_WIDTH 需与 index.less 中 `.body` 横向 padding、`.cards-row` gap 及单列视觉对齐，避免错位。
  * - 窄屏：less 中 ≤900px 可将三列降为两列，≤560px 单列；width 仍受 min(..., 100vw - 32px) 限制。
  */
+import ConditionRender from '@/components/ConditionRender';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
-  SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
@@ -48,12 +49,6 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
 };
 
 const BADGE_REGEX = /(限时免费|功能限免|限时尝鲜)/;
-
-function parseRenewalPrice(extra: unknown): number | undefined {
-  if (!extra || typeof extra !== 'object') return undefined;
-  const v = (extra as Record<string, unknown>).renewalPrice;
-  return typeof v === 'number' ? v : undefined;
-}
 
 /** 同一套权益解析逻辑，与后台 PlanItemCard 对齐，并兼容 items 明细 */
 function buildFeatureRows(
@@ -100,6 +95,9 @@ function buildFeatureRows(
 }
 
 export interface PaymentSubscriptionModalProps {
+  agentDetail?: AgentDetailDto | null;
+  trialCount?: number;
+  targetType: 'Agent' | 'Skill';
   open: boolean;
   loading: boolean;
   plans: SubscriptionPlanInfo[];
@@ -114,6 +112,8 @@ export interface PaymentSubscriptionModalProps {
  */
 const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   open,
+  trialCount = 0,
+  targetType,
   loading,
   plans,
   userSubscribed,
@@ -157,6 +157,9 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
+  const modalTitle =
+    trialCount > 0 ? `免费试用${trialCount}次` : '选择订阅套餐';
+
   return (
     <Modal
       styles={{
@@ -175,7 +178,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
           padding: 0,
         },
       }}
-      title="选择订阅套餐"
+      title={modalTitle}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -198,33 +201,26 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
           >
             {sortedPlans.map((plan, index) => {
               // 周期
-              const period = periodLabelMap[plan.period] || '月';
+              const period = periodLabelMap[plan?.period] || '月';
               // 价格
               const priceMain = plan.price ?? 0;
               // 原价
               const firstPrice = plan.firstPrice;
               // 是否显示原价
               const showStrikeOriginal = firstPrice !== priceMain;
-              // 续费价格
-              const renewal = parseRenewalPrice(plan.extra);
               // 权益列表
               const features = buildFeatureRows(plan);
               const creditAmountText = `每月 ${plan.creditAmount} 积分`;
               // 可调用次数
               const callLimit = plan.callLimitCount;
               const callLimitText =
-                callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次`;
+                callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次/月`;
               // 是否是当前套餐
               const isCurrentEffective =
                 !userSubscribed &&
                 priceMain <= 0 &&
                 firstFreeTierIndex !== -1 &&
                 index === firstFreeTierIndex;
-
-              // 是否可购买
-              const canPurchase =
-                plan.status === SubscriptionPlanStatusEnum.Online &&
-                !isCurrentEffective;
 
               // 是否是升级按钮
               const isAccentBtn =
@@ -249,16 +245,14 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         /{period}
                       </span>
                     </div>
-                    {showStrikeOriginal ? (
-                      <div className={cx(styles['price-original'])}>
-                        原价¥{firstPrice}/{period}
-                      </div>
-                    ) : null}
-                    {renewal !== undefined ? (
-                      <div className={cx(styles['renewal-hint'])}>
-                        次月续费金额¥{renewal}/{period}
-                      </div>
-                    ) : null}
+                    {/* 原价, 技能只占位，不显示原价 */}
+                    <div className={cx(styles['price-original'])}>
+                      {targetType === 'Agent'
+                        ? showStrikeOriginal
+                          ? `原价¥${firstPrice}/${period}`
+                          : ''
+                        : ''}
+                    </div>
                   </div>
 
                   {/* 订阅按钮 */}
@@ -274,7 +268,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                       // 升级按钮
                       <Button
                         type="primary"
-                        disabled={!canPurchase}
                         className={
                           isAccentBtn
                             ? cx(styles['subscribe-btn-upgrade-accent'])
@@ -282,16 +275,24 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         }
                         onClick={() => onSubscribe(plan)}
                       >
-                        {`升级为${plan.name}连续包月`}
+                        {targetType === 'Agent'
+                          ? '订阅套餐'
+                          : plan?.period === SubscriptionPlanPeriodEnum.MONTH
+                          ? '订阅包月套餐'
+                          : '订阅买断套餐'}
                       </Button>
                     )}
                   </div>
 
-                  {/* 每月赠送积分 */}
-                  <div className={cx(styles['points-row'])}>
-                    <span className={cx(styles.diamond)} aria-hidden />
-                    <span>{creditAmountText}</span>
-                  </div>
+                  <ConditionRender
+                    condition={plan.creditAmount && plan.creditAmount > 0}
+                  >
+                    {/* 每月赠送积分 */}
+                    <div className={cx(styles['points-row'])}>
+                      <span className={cx(styles.diamond)} aria-hidden />
+                      <span>{creditAmountText}</span>
+                    </div>
+                  </ConditionRender>
 
                   {/* 可调用次数 */}
                   <div className={cx(styles['points-row'])}>

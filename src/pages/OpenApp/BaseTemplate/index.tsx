@@ -81,7 +81,10 @@ const BaseTemplate: React.FC = () => {
     setOpenPaymentModal,
   } = useModel('useOpenApp');
 
-  const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // =========================== footer 渐变 ===========================
   const historyListRef = useRef<HTMLDivElement | null>(null);
@@ -505,11 +508,13 @@ const BaseTemplate: React.FC = () => {
             {/* 订阅导航 */}
             <ConditionRender
               condition={
-                appAgentDetail?.paymentRequired && !appAgentDetail.subscribed
+                isEnableSubscription &&
+                appAgentDetail?.paymentRequired &&
+                !appAgentDetail.subscribed
               }
             >
               <div
-                className={cx(styles['nav-item'])}
+                className={cx(styles['nav-item'], 'mb-12')}
                 onClick={() => setOpenPaymentModal(true)}
               >
                 <SvgIcon name="icons-chat-collect" style={{ fontSize: 16 }} />

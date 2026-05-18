@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
+  isEnableSubscription = true,
   onClick,
   onStartUse,
   extra,
@@ -78,7 +79,7 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
 
   /** 需付费时在卡片角标展示「付费 / 已订阅」（与 SquarePublishedItemInfo 字段对齐） */
   const paymentExtra =
-    paymentRequired === true ? (
+    isEnableSubscription && paymentRequired === true ? (
       <span
         className={cx(
           styles['payment-badge'],

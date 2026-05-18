@@ -148,6 +148,8 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     const response = await fetch(fullUrl, {
       method: 'GET',
+      /** 不走浏览器 HTTP 缓存，便于文件树预览每次拿到服务端最新内容 */
+      cache: 'no-store',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         Accept: 'text/plain, application/json, */*',

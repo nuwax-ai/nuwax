@@ -97,6 +97,7 @@ const Created: React.FC<CreatedProp> = ({
   tabs = defaultTabs,
   hideTop,
   modalZIndex,
+  showMoreMenus = true,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
@@ -901,13 +902,15 @@ const Created: React.FC<CreatedProp> = ({
             </Button>
           </div>
           {/* 下方的菜单 */}
-          <Menu
-            className={cx(styles['aside-menu'])}
-            onClick={(val) => onMenuClick(val.key)}
-            selectedKeys={[selectMenu]}
-            mode="vertical"
-            items={getItems()}
-          ></Menu>
+          {showMoreMenus && (
+            <Menu
+              className={cx(styles['aside-menu'])}
+              onClick={(val) => onMenuClick(val.key)}
+              selectedKeys={[selectMenu]}
+              mode="vertical"
+              items={getItems()}
+            />
+          )}
         </div>
         {/* 右侧部分应该是变动的 */}
         <div
