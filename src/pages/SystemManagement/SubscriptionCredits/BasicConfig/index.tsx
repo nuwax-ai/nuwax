@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { PATH_URL } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
 import {
@@ -32,7 +33,9 @@ const BasicConfig: React.FC = () => {
     onSuccess: () => {
       message.success(dict('PC.Common.Global.saveSuccess'));
       setSaving(false);
-      // 重新获取租户配置信息，更新Model或者缓存中的租户配置信息
+      // 清空侧栏记录的最近路径，避免订阅/租户配置变更后仍跳回旧路由（工作空间下的资源定价旧路由已不可用）
+      localStorage.removeItem(PATH_URL);
+      // 重新获取租户配置信息，更新 Model 或缓存中的租户配置信息
       runTenantConfig();
     },
     onError: () => {
