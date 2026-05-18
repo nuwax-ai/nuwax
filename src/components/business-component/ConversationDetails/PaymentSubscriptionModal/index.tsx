@@ -50,6 +50,67 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
 
 const BADGE_REGEX = /(限时免费|功能限免|限时尝鲜)/;
 
+/** 未订阅时：与历史逻辑一致的主操作按钮文案 */
+function getUnsubscribedActionLabel(
+  targetType: 'Agent' | 'Skill',
+  plan: SubscriptionPlanInfo,
+): string {
+  if (targetType === 'Agent') {
+    return '订阅套餐';
+  }
+  return plan?.period === SubscriptionPlanPeriodEnum.MONTH
+    ? '订阅包月套餐'
+    : '订阅买断套餐';
+}
+
+/**
+ * 套餐卡片主按钮文案：当前档 / 未订阅默认文案 / 已订阅比价升级
+ */
+function getSubscribeButtonLabel(
+  targetType: 'Agent' | 'Skill',
+  plan: SubscriptionPlanInfo,
+  options: {
+    isCurrentEffective: boolean;
+    isUserSubscribed: boolean;
+    resolvedSubscribedPrice: number | null;
+    priceMain: number;
+    currentSubscribedPlanPeriod: SubscriptionPlanPeriodEnum | null | undefined;
+  },
+): string {
+  const {
+    isCurrentEffective,
+    isUserSubscribed,
+    resolvedSubscribedPrice,
+    priceMain,
+    currentSubscribedPlanPeriod,
+  } = options;
+
+  const isSkillForeverSubscribed =
+    targetType === 'Skill' &&
+    isUserSubscribed &&
+    currentSubscribedPlanPeriod === SubscriptionPlanPeriodEnum.FOREVER;
+
+  if (isCurrentEffective) {
+    if (isSkillForeverSubscribed) {
+      return '已买断套餐';
+    }
+    return '当前套餐(续订)';
+  }
+  if (!isUserSubscribed) {
+    return getUnsubscribedActionLabel(targetType, plan);
+  }
+  if (
+    resolvedSubscribedPrice === null ||
+    resolvedSubscribedPrice === undefined
+  ) {
+    return getUnsubscribedActionLabel(targetType, plan);
+  }
+  if (resolvedSubscribedPrice < priceMain) {
+    return '升级';
+  }
+  return getUnsubscribedActionLabel(targetType, plan);
+}
+
 /** 同一套权益解析逻辑，与后台 PlanItemCard 对齐，并兼容 items 明细 */
 function buildFeatureRows(
   plan: SubscriptionPlanInfo,
@@ -96,12 +157,27 @@ function buildFeatureRows(
 
 export interface PaymentSubscriptionModalProps {
   agentDetail?: AgentDetailDto | null;
-  trialCount?: number;
+  /**
+   * 是否已超出调用限制（与 AgentDetail.overCallLimit 对齐）。
+   * true：标题「选择订阅套餐」；false：标题「选择订阅套餐（可试用）」
+   */
+  overCallLimit?: boolean;
   targetType: 'Agent' | 'Skill';
   open: boolean;
   loading: boolean;
   plans: SubscriptionPlanInfo[];
-  userSubscribed: boolean;
+  /**
+   * 「我的订阅」当前业务下的生效套餐 planId；
+   * - null：当前无对应订阅（含未请求到数据时父组件传入 null 的情况）
+   */
+  currentSubscribedPlanId?: number | null;
+  /**
+   * 「我的订阅」当前生效套餐价格，用于与列表中各套餐比价（升级 / 订阅）
+   * 未传时尝试用 plans 中同 planId 的 price 兜底
+   */
+  currentSubscribedPlanPrice?: number | null;
+  /** 当前生效套餐周期（与「我的订阅」plan.period 对齐；技能永久买断态依赖此字段） */
+  currentSubscribedPlanPeriod?: SubscriptionPlanPeriodEnum | null;
   onClose: () => void;
   // 订阅回调
   onSubscribe: (plan: SubscriptionPlanInfo) => void;
@@ -112,11 +188,13 @@ export interface PaymentSubscriptionModalProps {
  */
 const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   open,
-  trialCount = 0,
+  overCallLimit = false,
   targetType,
   loading,
   plans,
-  userSubscribed,
+  currentSubscribedPlanId,
+  currentSubscribedPlanPrice,
+  currentSubscribedPlanPeriod,
   onClose,
   onSubscribe,
 }) => {
@@ -125,10 +203,41 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [plans],
   );
 
-  const firstFreeTierIndex = useMemo(
-    () => sortedPlans.findIndex((p) => (p.price ?? 0) <= 0),
-    [sortedPlans],
-  );
+  /** 已有当前业务下的订阅（planId 已确定） */
+  const isUserSubscribed =
+    currentSubscribedPlanId !== null && currentSubscribedPlanId !== undefined;
+
+  /**
+   * 用户当前订阅套餐价格：优先接口 plan.price；否则在列表里按 planId 查找
+   */
+  const resolvedSubscribedPrice = useMemo(() => {
+    if (!isUserSubscribed) return null;
+    if (
+      currentSubscribedPlanPrice !== null &&
+      currentSubscribedPlanPrice !== undefined
+    ) {
+      return Number(currentSubscribedPlanPrice);
+    }
+    const match = sortedPlans.find(
+      (p) =>
+        p.id !== null &&
+        p.id !== undefined &&
+        Number(p.id) === Number(currentSubscribedPlanId),
+    );
+    if (
+      match !== undefined &&
+      match.price !== null &&
+      match.price !== undefined
+    ) {
+      return Number(match.price);
+    }
+    return null;
+  }, [
+    currentSubscribedPlanPrice,
+    currentSubscribedPlanId,
+    isUserSubscribed,
+    sortedPlans,
+  ]);
 
   /**
    * 网格列数与弹窗宽度依据：
@@ -142,11 +251,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     return Math.min(sortedPlans.length, 3);
   }, [loading, sortedPlans.length]);
 
-  // Modal.width：由 planColumnCount 推算，公式见 calcModalWidthForColumns
-  const modalWidth = useMemo(
-    () => calcModalWidthForColumns(planColumnCount),
-    [planColumnCount],
-  );
+  // Modal.width：Agent 按列数推算；Skill 固定为单列卡片基准宽
+  const modalWidth = useMemo(() => {
+    if (targetType === 'Skill') {
+      return CARD_COL_WIDTH;
+    }
+    return calcModalWidthForColumns(planColumnCount);
+  }, [targetType, planColumnCount]);
 
   /** 注入 CSS 变量，供 `.cards-row` repeat(var(--plan-cols)) 使用 */
   const cardsGridStyle = useMemo(
@@ -157,8 +268,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
-  const modalTitle =
-    trialCount > 0 ? `免费试用${trialCount}次` : '选择订阅套餐';
+  const modalTitle = overCallLimit ? '选择订阅套餐' : '选择订阅套餐（可试用）';
 
   return (
     <Modal
@@ -199,7 +309,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
             style={cardsGridStyle}
             data-desktop-cols={planColumnCount}
           >
-            {sortedPlans.map((plan, index) => {
+            {sortedPlans.map((plan) => {
               // 周期
               const period = periodLabelMap[plan?.period] || '月';
               // 价格
@@ -215,18 +325,43 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
               const callLimit = plan.callLimitCount;
               const callLimitText =
                 callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次/月`;
-              // 是否是当前套餐
+              // 是否是当前套餐（与「我的订阅」currentSubscription.planId 对齐）
               const isCurrentEffective =
-                !userSubscribed &&
-                priceMain <= 0 &&
-                firstFreeTierIndex !== -1 &&
-                index === firstFreeTierIndex;
+                currentSubscribedPlanId !== null &&
+                currentSubscribedPlanId !== undefined &&
+                plan.id !== null &&
+                plan.id !== undefined &&
+                Number(plan.id) === Number(currentSubscribedPlanId);
 
-              // 是否是升级按钮
-              const isAccentBtn =
-                index === sortedPlans.length - 1 &&
-                priceMain > 0 &&
-                !isCurrentEffective;
+              // 是否显示升级按钮
+              const showAsUpgrade =
+                isUserSubscribed &&
+                !isCurrentEffective &&
+                resolvedSubscribedPrice !== null &&
+                resolvedSubscribedPrice !== undefined &&
+                priceMain > resolvedSubscribedPrice;
+
+              // 金色强调：仅对应文案「升级」的付费档位；未订阅的多档同为「订阅*」时需统一底色
+              const isAccentBtn = showAsUpgrade && priceMain > 0;
+
+              const isSkillForeverBuyoutLocked =
+                targetType === 'Skill' &&
+                isUserSubscribed &&
+                currentSubscribedPlanPeriod ===
+                  SubscriptionPlanPeriodEnum.FOREVER &&
+                isCurrentEffective;
+
+              const subscribeButtonLabel = getSubscribeButtonLabel(
+                targetType,
+                plan,
+                {
+                  isCurrentEffective,
+                  isUserSubscribed,
+                  resolvedSubscribedPrice,
+                  priceMain,
+                  currentSubscribedPlanPeriod,
+                },
+              );
 
               return (
                 <div
@@ -259,13 +394,21 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   <div className={cx(styles['subscribe-btn-wrap'])}>
                     {isCurrentEffective ? (
                       <Button
-                        disabled
-                        className={cx(styles['subscribe-btn-current'])}
+                        disabled={isSkillForeverBuyoutLocked}
+                        className={cx(
+                          styles['subscribe-btn-current'],
+                          !isSkillForeverBuyoutLocked && 'cursor-pointer',
+                        )}
+                        onClick={
+                          isSkillForeverBuyoutLocked
+                            ? undefined
+                            : () => onSubscribe(plan)
+                        }
                       >
-                        当前套餐
+                        {subscribeButtonLabel}
                       </Button>
                     ) : (
-                      // 升级按钮
+                      // 升级 / 订阅
                       <Button
                         type="primary"
                         className={
@@ -275,11 +418,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         }
                         onClick={() => onSubscribe(plan)}
                       >
-                        {targetType === 'Agent'
-                          ? '订阅套餐'
-                          : plan?.period === SubscriptionPlanPeriodEnum.MONTH
-                          ? '订阅包月套餐'
-                          : '订阅买断套餐'}
+                        {subscribeButtonLabel}
                       </Button>
                     )}
                   </div>

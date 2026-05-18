@@ -34,6 +34,7 @@ import { request } from 'umi';
 // 查询我的订阅（新版）
 export async function apiGetMySubscription(params: {
   bizType: BizTypeEnum;
+  bizId: number;
 }): Promise<RequestResponse<MySubscriptionData>> {
   return request('/api/subscription/my', { method: 'GET', params });
 }
