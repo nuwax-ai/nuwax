@@ -2786,6 +2786,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusRejected": "已驳回",
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "已打款",
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "金额需满{0}元可提现，平台收取{1}%服务费",
+  "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "您的积分为负，无法提现",
 
 
 

@@ -2786,6 +2786,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusRejected": "Rejected",
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "Paid",
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "Minimum withdrawal: ¥{0}, platform fee: {1}%",
+  "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "Your credits are negative, withdrawal is not allowed",
 
 
 

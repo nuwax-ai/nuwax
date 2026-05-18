@@ -1,6 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
-import { DatePicker } from 'antd';
+import { Button, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
 import { useLocation } from 'umi';
@@ -11,6 +11,8 @@ import TopEarningsChart from './components/TopEarningsChart';
 const EarningsStats: React.FC = () => {
   const location = useLocation();
   const [month, setMonth] = useState<string>(dayjs().format('YYYY-MM'));
+  const [selectedMonth, setSelectedMonth] = useState<string>(month);
+  const [searchTrigger, setSearchTrigger] = useState<number>(0);
   const [revenueData, setRevenueData] = useState<any>(null);
 
   // 格式化卡片数据
@@ -21,6 +23,11 @@ const EarningsStats: React.FC = () => {
     todayEarnings: revenueData?.todayRevenue || 0,
   };
 
+  const handleSearch = () => {
+    setMonth(selectedMonth);
+    setSearchTrigger((prev) => prev + 1);
+  };
+
   // 这里的 loading 状态可以通过判断 revenueData 是否存在，或者后续进一步优化
   const statsLoading = !revenueData;
 
@@ -28,13 +35,22 @@ const EarningsStats: React.FC = () => {
     <WorkspaceLayout
       title={dict('PC.Routes.devEarningsStats')}
       rightSlot={
-        <DatePicker
-          picker="month"
-          value={month ? dayjs(month) : null}
-          onChange={(date) => setMonth(date ? date.format('YYYY-MM') : '')}
-          allowClear={false}
-          style={{ width: 140 }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <DatePicker
+            picker="month"
+            value={selectedMonth ? dayjs(selectedMonth) : null}
+            onChange={(date) => {
+              const formatted = date ? date.format('YYYY-MM') : '';
+              setSelectedMonth(formatted);
+              setMonth(formatted); // 切换日期自动触发查询
+            }}
+            allowClear={false}
+            style={{ width: 140 }}
+          />
+          <Button type="primary" onClick={handleSearch}>
+            {dict('PC.Components.XProTable.query')}
+          </Button>
+        </div>
       }
     >
       <div key={location.key}>
@@ -51,7 +67,11 @@ const EarningsStats: React.FC = () => {
         />
 
         {/* 收益详情表格 */}
-        <EarningsTable month={month} onStatsChange={setRevenueData} />
+        <EarningsTable
+          month={month}
+          searchTrigger={searchTrigger}
+          onStatsChange={setRevenueData}
+        />
       </div>
     </WorkspaceLayout>
   );
