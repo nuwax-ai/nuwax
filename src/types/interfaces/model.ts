@@ -46,6 +46,8 @@ export interface GroupModelItem {
 }
 
 export interface ModelFormData {
+  // 模型提供商ID
+  pid?: string;
   // 模型名称
   name: string;
   // 模型描述
@@ -78,6 +80,8 @@ export interface ModelSaveParams extends ModelFormData {
   spaceId: number;
   // 最大输出token数, token上限
   maxTokens: number;
+  // 模型能力类型列表，可选值：Text-文本生成、Image-图像理解、Audio-语音识别、Video-视频理解、TextEmbedding-文本向量、MultiEmbedding-多模态向量、Reasoning-深度思考
+  types?: string[];
   // API列表
   apiInfoList: {
     // 接口地址
@@ -121,6 +125,61 @@ export interface ModelConfigInfo extends ModelSaveParams {
   created: string;
   // 创建者信息
   creator: CreatorInfo;
+}
+
+// ============================= 模型供应商相关类型 =============================
+export interface ModelProviderModalities {
+  /** 支持的输入形态 */
+  input: string[];
+  /** 支持的输出形态 */
+  output: string[];
+}
+
+/** 上下文与输出上限 */
+export interface ModelProviderLimit {
+  context: number;
+  output: number;
+}
+
+/** ApiInfo.models 条目：单个可用模型描述 */
+export interface ModelProviderModelInfo {
+  id: string;
+  name: string;
+  releaseDate: string;
+  attachment: boolean;
+  reasoning: boolean;
+  temperature: boolean;
+  toolCall: boolean;
+  structuredOutput: boolean;
+  knowledge: string;
+  interleaved?: {
+    field: string;
+  };
+  limit?: ModelProviderLimit;
+  modalities?: ModelProviderModalities;
+}
+
+/** 租户下模型供应商的单个 API 端点描述 */
+export interface ModelProviderApiInfo {
+  /** 接口地址 */
+  url: string;
+  /** 接口密钥 */
+  key: string;
+  /** 权重 */
+  weight: number;
+}
+
+/** 模型供应商（租户维度）概要 */
+export interface ModelProviderInfo {
+  tenantId: number;
+  pid: string;
+  name: string;
+  icon: string;
+  /** 各协议对应的接口基地址，如 { openAI: "https://..." } */
+  apiInfo: Record<string, string>;
+  doc: string;
+  /** 该端点可用的模型列表 */
+  models: ModelProviderModelInfo[];
 }
 
 // 模型测试信息

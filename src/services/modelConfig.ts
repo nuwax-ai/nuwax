@@ -2,6 +2,7 @@
 import type {
   ModelConfigInfo,
   ModelListParams,
+  ModelProviderInfo,
   ModelSaveParams,
   ModelTestInfo,
 } from '@/types/interfaces/model';
@@ -52,6 +53,15 @@ export async function apiModelInfo(
   modelId: string,
 ): Promise<RequestResponse<ModelConfigInfo>> {
   return request(`/api/model/${modelId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询指定模型配置信息
+export async function apiModelProviders(): Promise<
+  RequestResponse<ModelProviderInfo[]>
+> {
+  return request('/api/model/providers', {
     method: 'GET',
   });
 }

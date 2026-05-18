@@ -1,8 +1,9 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { PATH_URL } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { Segmented } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
-import { useParams } from 'umi';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { history, useModel, useParams } from 'umi';
 import styles from './index.less';
 import ModelPricingTab from './ModelPricingTab';
 import SkillPricingTab from './SkillPricingTab';
@@ -14,6 +15,12 @@ import ToolPricingTab from './ToolPricingTab';
 const SpaceResourcePricing: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+
+  // 租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 标签选项
   const tabOptions = useMemo(
@@ -33,6 +40,14 @@ const SpaceResourcePricing: React.FC = () => {
     ],
     [],
   );
+
+  // 监听是否开启订阅功能
+  useEffect(() => {
+    if (!isEnableSubscription) {
+      localStorage.removeItem(PATH_URL);
+      history.push('/');
+    }
+  }, [isEnableSubscription]);
 
   // 当前激活的标签
   const [activeTab, setActiveTab] = useState<string>('model');
