@@ -105,10 +105,15 @@ const MENU_ICON_MAP: Record<string, string> = {
   api_key: 'icons-nav-api_key',
   // 更多页面 - 我的订阅
   my_subscriptions: 'icons-nav-my-subscription',
+  wodedingyue: 'icons-nav-wodedingyue',
   // 更多页面 - 我的订单
   my_orders: 'icons-nav-my-orders',
+  wodedingdan: 'icons-nav-wodedingdan',
   // 更多页面 - 我的收益
   my_earnings: 'icons-nav-my-earnings',
+  wodeshouyi: 'icons-nav-wodeshouyi',
+  // 更多页面 - 用量统计
+  yongliangtongji: 'icons-nav-yongliangtongji',
 
   // 系统管理 - 支付与收益子菜单
   payment_config: 'icons-nav-settings',

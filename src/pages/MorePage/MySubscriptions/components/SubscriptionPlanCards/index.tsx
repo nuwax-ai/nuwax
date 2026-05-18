@@ -7,10 +7,9 @@ import {
   MyPlanPeriodEnum,
   SystemSubscriptionPlan,
   SystemSubscriptionPlanGroup,
-  SystemSubscriptionPlanItem,
 } from '@/types/interfaces/subscription';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Col, message, Row } from 'antd';
+import { Button, Col, message, Popover, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -145,6 +144,66 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
     return periodMap[p] || '';
   };
 
+  const renderPlanContent = (plan: PlanInfo) => {
+    const allItems = plan.itemGroups?.flatMap((g) => g.items || []) || [];
+    const maxVisibleItems = 5;
+    const hasOverflow = allItems.length > maxVisibleItems;
+    const visibleItems = hasOverflow
+      ? allItems.slice(0, maxVisibleItems - 1)
+      : allItems;
+    const remainingItems = hasOverflow
+      ? allItems.slice(maxVisibleItems - 1)
+      : [];
+
+    const popoverContent = (
+      <div className={cx(styles['popover-benefit-list'])}>
+        {remainingItems.map((benefit, bIdx) => (
+          <div key={bIdx} className={cx(styles['benefit-item'])}>
+            {benefit.selected ? (
+              <CheckOutlined className={cx(styles['check-icon'])} />
+            ) : (
+              <CloseOutlined className={cx(styles['close-icon'])} />
+            )}
+            <span>{benefit.description}</span>
+          </div>
+        ))}
+      </div>
+    );
+
+    return (
+      <div className={cx(styles['plan-content'])}>
+        <div className={cx(styles['benefit-group'])}>
+          {visibleItems.map((benefit, bIdx) => (
+            <div key={bIdx} className={cx(styles['benefit-item'])}>
+              {benefit.selected ? (
+                <CheckOutlined className={cx(styles['check-icon'])} />
+              ) : (
+                <CloseOutlined className={cx(styles['close-icon'])} />
+              )}
+              <span className={cx(styles['benefit-text'])}>
+                {benefit.description}
+              </span>
+            </div>
+          ))}
+          {hasOverflow && (
+            <Popover
+              content={popoverContent}
+              trigger="hover"
+              placement="right"
+              overlayClassName={cx(styles['benefit-popover'])}
+            >
+              <div
+                className={cx(styles['benefit-item'], styles['ellipsis-item'])}
+              >
+                <span className={cx(styles['ellipsis-text'])}>...</span>
+              </div>
+            </Popover>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={cx(styles['subscription-plans-container'])}>
       <div className={cx(styles['plans-title'])}>
@@ -192,31 +251,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   </div>
                 </div>
 
-                <div className={cx(styles['plan-content'])}>
-                  {plan.itemGroups?.map((group, gIdx) => (
-                    <div key={gIdx} className={cx(styles['benefit-group'])}>
-                      {group.items?.map(
-                        (benefit: SystemSubscriptionPlanItem, bIdx: number) => (
-                          <div
-                            key={bIdx}
-                            className={cx(styles['benefit-item'])}
-                          >
-                            {benefit.selected ? (
-                              <CheckOutlined
-                                className={cx(styles['check-icon'])}
-                              />
-                            ) : (
-                              <CloseOutlined
-                                className={cx(styles['close-icon'])}
-                              />
-                            )}
-                            <span>{benefit.description}</span>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {renderPlanContent(plan)}
 
                 <div className={cx(styles['plan-footer'])}>
                   {isCurrent && endTime ? (

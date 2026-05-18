@@ -26,6 +26,7 @@
 }
 
 .plan-card {
+  height: 100%;
   background: @colorWhite;
   border: 1px solid @colorBorderSecondary;
   border-radius: @borderRadiusLg;
@@ -123,8 +124,11 @@
 
   .plan-content {
     padding: 0 @paddingXl @paddingLg;
-    flex: 1;
-    min-height: 140px;
+    height: 180px;
+    min-height: 180px;
+    max-height: 180px;
+    overflow: hidden;
+    box-sizing: border-box;
 
     .benefit-group {
       margin-bottom: @marginSm;
@@ -136,35 +140,55 @@
 
     .benefit-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: flex-start;
-      gap: 12px;
+      gap: @marginSm;
       margin-bottom: @marginSm;
       font-size: @fontSize;
       color: @colorTextSecondary;
       line-height: 1.4;
+      width: 100%;
+      overflow: hidden;
 
       .check-icon {
-        margin-top: 3px;
         color: @green6;
-        font-size: 14px;
+        font-size: @fontSize;
         flex-shrink: 0;
       }
 
       .close-icon {
-        margin-top: 3px;
         color: @colorTextDisabled;
-        font-size: 14px;
+        font-size: @fontSize;
         flex-shrink: 0;
       }
 
-      span {
+      .benefit-text {
         color: @colorTextBase;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+    }
+
+    .ellipsis-item {
+      justify-content: flex-start;
+      padding-left: calc(@fontSize + @marginSm);
+      cursor: pointer;
+      width: fit-content;
+
+      .ellipsis-text {
+        font-weight: @fontWeightStrong;
+        font-size: @fontSizeXl;
+        color: @colorTextSecondary;
+        line-height: 1;
+        letter-spacing: 2px;
       }
     }
   }
 
   .plan-footer {
+    margin-top: auto;
     background: #f8fafc;
     padding: @paddingLg;
     display: flex;
@@ -206,6 +230,67 @@
         background: @blue1;
         color: @blue6;
       }
+    }
+  }
+}
+
+.popover-benefit-list {
+  display: flex;
+  flex-direction: column;
+  gap: @marginSm;
+  max-width: 320px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @colorBorder;
+    border-radius: @borderRadiusXs;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .benefit-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: @marginSm;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    line-height: 1.4;
+
+    .check-icon {
+      margin-top: 3px;
+      color: @green6;
+      font-size: @fontSize;
+      flex-shrink: 0;
+    }
+
+    .close-icon {
+      margin-top: 3px;
+      color: @colorTextDisabled;
+      font-size: @fontSize;
+      flex-shrink: 0;
+    }
+
+    span {
+      color: @colorTextBase;
+    }
+  }
+}
+
+:global {
+  .benefit-popover {
+    .ant-popover-inner {
+      padding: @paddingSm @padding;
+      border-radius: @borderRadiusLg;
+      box-shadow: @boxShadowSecondary;
     }
   }
 }
