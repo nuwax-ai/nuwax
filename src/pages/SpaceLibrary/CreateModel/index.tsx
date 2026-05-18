@@ -11,22 +11,25 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import {
   apiModelInfo,
+  apiModelProviders,
   apiModelSave,
   apiModelTestConnectivity,
 } from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
-  ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import { ModelComponentStatusEnum } from '@/types/enums/space';
 import type { CreateModelProps } from '@/types/interfaces/library';
 import type {
   ModelConfigInfo,
   ModelFormData,
+  ModelProviderInfo,
+  ModelProviderModelInfo,
   ModelSaveParams,
 } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
@@ -36,6 +39,7 @@ import {
   PlusCircleOutlined,
 } from '@ant-design/icons';
 import {
+  AutoComplete,
   Button,
   Form,
   FormProps,
@@ -48,12 +52,66 @@ import {
   Space,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 import IntranetServerCommand from './IntranetServerCommand';
+import ProviderPidAutoComplete from './ProviderPidAutoComplete';
+import {
+  mapModalitiesInputsToCapabilityTypes,
+  supplierDefaultProtocolAndUrl,
+  supplierResolvableProtocols,
+  supplierUrlForProtocol,
+} from './supplierApiInfo';
+import SupplierModelNameAutoComplete from './SupplierModelNameAutoComplete';
 
 const cx = classNames.bind(styles);
+
+// 向量类模型能力
+const EMBEDDING_CAPABILITIES: readonly ModelCapabilityTypeEnum[] = [
+  ModelCapabilityTypeEnum.TextEmbedding,
+  ModelCapabilityTypeEnum.MultiEmbedding,
+];
+
+/** 多选能力中包含向量类（文本向量 / 多模态向量） */
+const isEmbeddingCapabilityType = (
+  types: ModelCapabilityTypeEnum[] | null,
+): boolean => (types ?? []).some((t) => EMBEDDING_CAPABILITIES.includes(t));
+
+/** 多选能力中包含文本生成 / 图像理解 / 语音识别 / 视频理解 任一项（与推理模型开关相关） */
+const hasGenerationLikeCapabilityType = (
+  types: ModelCapabilityTypeEnum[] | null,
+): boolean =>
+  (types ?? []).some((t) =>
+    (
+      [
+        ModelCapabilityTypeEnum.Text,
+        ModelCapabilityTypeEnum.Image,
+        ModelCapabilityTypeEnum.Audio,
+        ModelCapabilityTypeEnum.Video,
+      ] as ModelCapabilityTypeEnum[]
+    ).includes(t),
+  );
+
+/** 新建模型时写入表单的默认值（打开创建弹窗并通过 effect 应用；编辑由 runQuery 覆盖） */
+const CREATE_MODEL_DEFAULT_VALUES = {
+  networkType: ModelNetworkTypeEnum.Internet,
+  apiInfoList: [{ weight: 1 }],
+  isReasonModel: 0,
+  functionCall: ModelFunctionCallEnum.StreamCallSupported,
+  apiProtocol: ModelApiProtocolEnum.OpenAI,
+  strategy: ModelStrategyEnum.RoundRobin,
+  types: [
+    ModelCapabilityTypeEnum.Text,
+    ModelCapabilityTypeEnum.Image,
+    ModelCapabilityTypeEnum.Video,
+  ],
+  maxTokens: 4096,
+  maxContextTokens: 128000,
+  dimension: 1536,
+  enabled: ModelComponentStatusEnum.Enabled,
+  usageScenarios: MODEL_USAGE_SCENARIO_LIST.map((v) => v.value),
+};
 
 /**
  * 创建工作流弹窗
@@ -69,7 +127,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
-  const [modelType, setModelType] = useState<ModelTypeEnum>();
+  const [modelTypes, setModelTypes] = useState<
+    ModelCapabilityTypeEnum[] | null
+  >(null);
   // 检测连接加载中
   const [loadingTestConnection, setLoadingTestConnection] =
     useState<boolean>(false);
@@ -77,6 +137,33 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   // 确认按钮是否可点击
   const [submittable, setSubmittable] = useState<boolean>(false);
+  // 模型提供商列表
+  const [modelProviderList, setModelProviderList] = useState<
+    ModelProviderInfo[]
+  >([]);
+
+  /**
+   * 供应商 / 供应商模型使用 antd AutoComplete（底层为 rc-select combobox）。
+   * 选中后输入框为 pid 或 modelId 时，内置 filterOption 会再按该字符串筛 options，列表常只剩 1 条。
+   * 做法：filterOption={false} 关内置过滤；用下方 state 存「用户搜索关键字」，由 useMemo 生成实际传入的 options。
+   * 每次展开下拉时清空搜索关键字（setTimeout(0) 排在 rc 可能触发的 onSearch 之后，保证先打开再清）。
+   */
+  const [pidOptionsFilter, setPidOptionsFilter] = useState<string>('');
+  /** 供应商模型「标识」下拉的本地搜索关键字 */
+  const [supplierModelOptionsFilter, setSupplierModelOptionsFilter] =
+    useState<string>('');
+  /** 供应商模型「名称」下拉的本地搜索关键字（与标识列分列，互不干扰输入框展示） */
+  const [supplierNameOptionsFilter, setSupplierNameOptionsFilter] =
+    useState<string>('');
+
+  // 查询模型提供商列表
+  const { run: runModelProviders } = useRequest(apiModelProviders, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: ModelProviderInfo[]) => {
+      setModelProviderList(result || []);
+    },
+  });
 
   // 监听表单值变化
   const values = Form.useWatch([], { form, preserve: true });
@@ -94,7 +181,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
     debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo) => {
       form.setFieldsValue(result);
-      setModelType(result?.type);
+      setModelTypes(result?.types as ModelCapabilityTypeEnum[] | null);
     },
   });
 
@@ -114,10 +201,22 @@ const CreateModel: React.FC<CreateModelProps> = ({
   });
 
   useEffect(() => {
-    if (id) {
-      runQuery(id);
+    if (open) {
+      runModelProviders();
     }
-  }, [id]);
+  }, [open, runModelProviders]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (id !== undefined && id !== null) {
+      runQuery(String(id));
+    } else {
+      form.setFieldsValue(CREATE_MODEL_DEFAULT_VALUES);
+      setModelTypes([...CREATE_MODEL_DEFAULT_VALUES.types]);
+    }
+  }, [open, id, runQuery, form]);
 
   // 在空间中添加或更新模型配置接口
   const { run } = useRequest(action, {
@@ -159,6 +258,277 @@ const CreateModel: React.FC<CreateModelProps> = ({
     form.submit();
   };
 
+  // 监听供应商PID
+  const pidWatch = Form.useWatch('pid', form);
+  // 监听API协议
+  const apiProtocolWatch = Form.useWatch('apiProtocol', form);
+
+  /** 选中供应商 PID 时应的供应商详情 */
+  const currentProvider = useMemo(
+    () => modelProviderList.find((p) => p.pid === pidWatch),
+    [modelProviderList, pidWatch],
+  );
+
+  /** 可选协议：若有供应商且 apiInfo 可解析，则收窄为支持的协议列表 */
+  const providerApiProtocolSelectOptions = useMemo(() => {
+    const restriction = supplierResolvableProtocols(currentProvider?.apiInfo);
+    if (!restriction) return MODEL_API_PROTOCOL_LIST;
+
+    let filtered = MODEL_API_PROTOCOL_LIST.filter((x) =>
+      restriction.has(x.value),
+    );
+    const current = apiProtocolWatch as ModelApiProtocolEnum | undefined;
+    if (current && !filtered.some((o) => o.value === current)) {
+      const fromDefined = MODEL_API_PROTOCOL_LIST.find(
+        (o) => o.value === current,
+      );
+      if (fromDefined) filtered = [...filtered, fromDefined];
+      else filtered = [...filtered, { value: current, label: current }];
+    }
+    if (!filtered.length) return MODEL_API_PROTOCOL_LIST;
+    return filtered;
+  }, [currentProvider, apiProtocolWatch]);
+
+  /** 当前供应商下可选模型（展示用 label，提交 value 为 model id） */
+  const supplierModelSelectOptions = useMemo(
+    () =>
+      currentProvider?.models?.map((m) => ({
+        label: (m.name || '').trim() ? `${m.name} (${m.id})` : m.id,
+        value: m.id,
+      })) ?? [],
+    [currentProvider],
+  );
+
+  /** 经 supplierModelOptionsFilter 筛选后的模型选项（标识列）；空关键字时与 supplierModelSelectOptions 一致 */
+  const supplierModelOptionsDisplayed = useMemo(() => {
+    const q = supplierModelOptionsFilter.trim().toLowerCase();
+    if (!q) return supplierModelSelectOptions;
+    return supplierModelSelectOptions.filter(
+      (o) =>
+        String(o.label ?? '')
+          .toLowerCase()
+          .includes(q) ||
+        String(o.value ?? '')
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [supplierModelSelectOptions, supplierModelOptionsFilter]);
+
+  /** 模型名称下拉：label 侧重展示名称，value 仍为 model id */
+  const supplierModelNameSelectOptions = useMemo(
+    () =>
+      currentProvider?.models?.map((m) => ({
+        label: (m.name || '').trim() || m.id,
+        value: m.id,
+      })) ?? [],
+    [currentProvider],
+  );
+
+  /** 名称列下拉过滤关键字 */
+  const supplierNameOptionsDisplayed = useMemo(() => {
+    const q = supplierNameOptionsFilter.trim().toLowerCase();
+    if (!q) return supplierModelNameSelectOptions;
+    return supplierModelNameSelectOptions.filter(
+      (o) =>
+        String(o.label ?? '')
+          .toLowerCase()
+          .includes(q) ||
+        String(o.value ?? '')
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [supplierModelNameSelectOptions, supplierNameOptionsFilter]);
+
+  // 当API协议变化时，按供应商 apiInfo 回写首条 URL；该协议无配置或值为空串时置空（此前 !url 直接 return 会导致仍显示上一协议的地址）
+  const providerApiUrlWhenProtocolChanges = useCallback(
+    (changedValues: Record<string, unknown>) => {
+      if (!('apiProtocol' in changedValues)) {
+        return;
+      }
+      const protocol = changedValues.apiProtocol as ModelApiProtocolEnum;
+      const pidVal = form.getFieldValue('pid');
+      const provider = modelProviderList.find((p) => p.pid === pidVal);
+      if (!provider) {
+        return;
+      }
+      const url = supplierUrlForProtocol(provider.apiInfo, protocol) ?? '';
+      const row = form.getFieldValue('apiInfoList')?.[0];
+      form.setFieldsValue({
+        apiInfoList: [
+          {
+            url,
+            key: row?.key ?? '',
+            weight:
+              typeof row?.weight === 'number' && !Number.isNaN(row.weight)
+                ? row.weight
+                : 1,
+          },
+        ],
+      });
+    },
+    [form, modelProviderList],
+  );
+
+  /** 全部供应商：label 为名称，value 为 pid */
+  const providerOptions = useMemo(
+    () =>
+      modelProviderList.map((p) => ({
+        label: p.name,
+        value: p.pid,
+      })),
+    [modelProviderList],
+  );
+
+  /** 经 pidOptionsFilter 筛选后的供应商选项；空关键字时为全量，避免「已选后再点开只见一条」 */
+  const providerOptionsDisplayed = useMemo(() => {
+    const q = pidOptionsFilter.trim().toLowerCase();
+    if (!q) return providerOptions;
+    return providerOptions.filter(
+      (o) =>
+        String(o.label ?? '')
+          .toLowerCase()
+          .includes(q) ||
+        String(o.value ?? '')
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [providerOptions, pidOptionsFilter]);
+
+  /**
+   * 用供应商侧的模型元数据回填表单（模型名称 / 标识下拉选中时调用，手动输入不触发）。
+   * - modalities.input → 映射为表单 `types`（有至少一项可识别时才覆盖）
+   * - 供应商模型条目上的 reasoning → isReasonModel
+   * - 供应商模型条目上的 toolCall → functionCall
+   * 回填后同步 `modelTypes` 与表单 `types` 一致。
+   */
+  const applySupplierModelFields = useCallback(
+    (provider: ModelProviderInfo, modelItem: ModelProviderModelInfo) => {
+      const patch: Parameters<typeof form.setFieldsValue>[0] = {
+        model: modelItem.id,
+        name: (modelItem.name || '').trim(),
+        description: (provider.doc || '').trim(),
+      };
+
+      if (
+        modelItem.limit !== undefined &&
+        modelItem.limit !== null &&
+        typeof modelItem.limit.context === 'number' &&
+        !Number.isNaN(modelItem.limit.context)
+      ) {
+        patch.maxContextTokens = modelItem.limit.context;
+      }
+      if (
+        modelItem.limit !== undefined &&
+        modelItem.limit !== null &&
+        typeof modelItem.limit.output === 'number' &&
+        !Number.isNaN(modelItem.limit.output)
+      ) {
+        patch.maxTokens = modelItem.limit.output;
+      }
+
+      // 供应商模型条目上的 modalities.input → 映射为表单 `types`（有至少一项可识别时才覆盖）
+      if (
+        modelItem.modalities?.input !== undefined &&
+        modelItem.modalities?.input !== null
+      ) {
+        const mapped = mapModalitiesInputsToCapabilityTypes(
+          modelItem.modalities.input,
+        );
+        if (mapped.length > 0) {
+          patch.types = mapped;
+        }
+      }
+
+      // 供应商模型条目上的 reasoning → isReasonModel
+      patch.isReasonModel = modelItem.reasoning ? 1 : 0;
+
+      // 供应商模型条目上的 toolCall → functionCall
+      patch.functionCall = modelItem.toolCall
+        ? ModelFunctionCallEnum.StreamCallSupported
+        : ModelFunctionCallEnum.Unsupported;
+
+      form.setFieldsValue(patch);
+
+      // 同步 `modelTypes` 与表单 `types` 一致
+      const nextTypes = (patch.types ?? form.getFieldValue('types')) as
+        | ModelCapabilityTypeEnum[]
+        | undefined;
+      setModelTypes(nextTypes?.length ? [...nextTypes] : null);
+    },
+    [form],
+  );
+
+  /** 从下拉选了供应商：重置依赖字段并按供应商 apiInfo 联动协议 / 地址（自行输入 PID 不回填） */
+  const applyPidLinkageOnDropdownPick = useCallback(
+    (pid: string) => {
+      const provider = modelProviderList.find((p) => p.pid === pid);
+      const next: Parameters<typeof form.setFieldsValue>[0] = {
+        pid,
+        model: undefined,
+        name: undefined,
+        description: undefined,
+        apiProtocol: ModelApiProtocolEnum.OpenAI,
+        apiInfoList: [{ weight: 1 }],
+      };
+      const d = provider ? supplierDefaultProtocolAndUrl(provider) : null;
+      if (d) {
+        next.apiProtocol = d.protocol;
+        next.apiInfoList = [{ url: d.url, key: '', weight: 1 }];
+      }
+      form.setFieldsValue(next);
+    },
+    [form, modelProviderList],
+  );
+
+  const clearPidLinkedFields = useCallback(() => {
+    setPidOptionsFilter(''); // 清空本地搜索，避免下次展开仍带旧关键字
+    form.setFieldsValue({
+      pid: undefined,
+      model: undefined,
+      name: undefined,
+      description: undefined,
+      apiProtocol: ModelApiProtocolEnum.OpenAI,
+      apiInfoList: [{ weight: 1 }],
+    });
+  }, [form]);
+
+  /** 从下拉选供应商模型：回显模型元数据（自行输入不回填） */
+  const applySupplierModelLinkageOnDropdownPick = useCallback(
+    (modelId: string) => {
+      if (!currentProvider) return;
+      const item = currentProvider.models?.find((x) => x.id === modelId);
+      if (!item) return;
+      applySupplierModelFields(currentProvider, item);
+    },
+    [applySupplierModelFields, currentProvider],
+  );
+
+  /** 清空供应商模型及由其联动回填的表单（名称、描述等）；顺带重置模型下拉本地搜索关键字 */
+  const clearSupplierModelLinkedFields = useCallback(() => {
+    setSupplierModelOptionsFilter('');
+    setSupplierNameOptionsFilter('');
+    form.setFieldsValue({
+      model: undefined,
+      name: undefined,
+      description: undefined,
+    });
+  }, [form]);
+
+  /** 切换供应商后清空列表本地过滤关键字 */
+  useEffect(() => {
+    setSupplierModelOptionsFilter('');
+    setSupplierNameOptionsFilter('');
+  }, [currentProvider?.pid]);
+
+  /** 弹窗关闭时重置下拉过滤状态（避免下次打开沿用旧关键字） */
+  useEffect(() => {
+    if (!open) {
+      setPidOptionsFilter('');
+      setSupplierModelOptionsFilter('');
+      setSupplierNameOptionsFilter('');
+    }
+  }, [open]);
+
   // 检测模型连通性
   const handlerCheckConnection = () => {
     setLoadingTestConnection(true);
@@ -181,7 +551,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
       open={open}
       classNames={{
         content: cx(styles.container),
-        header: cx(styles.header),
         body: cx(styles.body),
       }}
       destroyOnHidden
@@ -220,24 +589,32 @@ const CreateModel: React.FC<CreateModelProps> = ({
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{
-          networkType: ModelNetworkTypeEnum.Internet,
-          apiInfoList: [{ weight: 1 }],
-          isReasonModel: 0,
-          functionCall: ModelFunctionCallEnum.StreamCallSupported,
-          apiProtocol: ModelApiProtocolEnum.OpenAI,
-          strategy: ModelStrategyEnum.RoundRobin,
-          type: ModelTypeEnum.Chat,
-          maxTokens: 4096,
-          // 最大上下文长度，默认128000
-          maxContextTokens: 128000,
-          dimension: 1536,
-          enabled: ModelComponentStatusEnum.Enabled, // 启用
-          usageScenarios: MODEL_USAGE_SCENARIO_LIST.map((v) => v.value),
+        onValuesChange={(changedValues) => {
+          providerApiUrlWhenProtocolChanges(
+            changedValues as Record<string, unknown>,
+          );
         }}
         autoComplete="off"
       >
+        {/* 仅从列表 onSelect 才 applyPidLinkage；ProviderPidAutoComplete 负责「存 pid / 展示 name」，失焦落盘手写 */}
+        <Form.Item
+          name="pid"
+          label={dict('PC.Pages.SpaceLibrary.CreateModel.modelProvider')}
+        >
+          <ProviderPidAutoComplete
+            className={cx('w-full')}
+            placeholder={dict(
+              'PC.Pages.SpaceLibrary.CreateModel.selectModelProvider',
+            )}
+            providerOptionsDisplayed={providerOptionsDisplayed}
+            setPidOptionsFilter={setPidOptionsFilter}
+            applyPidLinkageOnDropdownPick={applyPidLinkageOnDropdownPick}
+            clearPidLinkedFields={clearPidLinkedFields}
+            modelProviderList={modelProviderList}
+          />
+        </Form.Item>
         <div className={cx('flex', styles['gap-16'])}>
+          {/* 模型名称 */}
           <Form.Item
             className={cx('flex-1')}
             name="name"
@@ -251,12 +628,22 @@ const CreateModel: React.FC<CreateModelProps> = ({
               },
             ]}
           >
-            <Input
+            <SupplierModelNameAutoComplete
+              className={cx('w-full')}
               placeholder={dict(
                 'PC.Pages.SpaceLibrary.CreateModel.inputModelName',
               )}
+              supplierNameOptionsDisplayed={supplierNameOptionsDisplayed}
+              setSupplierNameOptionsFilter={setSupplierNameOptionsFilter}
+              applySupplierModelLinkageOnDropdownPick={
+                applySupplierModelLinkageOnDropdownPick
+              }
+              clearSupplierModelLinkedFields={clearSupplierModelLinkedFields}
+              currentProvider={currentProvider}
             />
           </Form.Item>
+
+          {/* 模型标识（供应商模型） */}
           <Form.Item
             className={cx('flex-1')}
             name="model"
@@ -265,15 +652,36 @@ const CreateModel: React.FC<CreateModelProps> = ({
               {
                 required: true,
                 message: dict(
-                  'PC.Pages.SpaceLibrary.CreateModel.inputModelIdentifier',
+                  'PC.Pages.SpaceLibrary.CreateModel.selectSupplierModel',
                 ),
               },
             ]}
           >
-            <Input
+            {/* 与 pid 同款：下拉 onSelect 才 applySupplierModelLinkage；手动填写不触发联动 */}
+            <AutoComplete
+              className={cx('w-full')}
+              allowClear
+              options={supplierModelOptionsDisplayed}
+              filterOption={false}
               placeholder={dict(
-                'PC.Pages.SpaceLibrary.CreateModel.inputModelIdentifier',
+                'PC.Pages.SpaceLibrary.CreateModel.selectSupplierModel',
               )}
+              onOpenChange={(isOpen) => {
+                if (isOpen) {
+                  // 延后清空本地搜索关键字，避免打开瞬间仍按旧词筛成单条（与 pid 一致）
+                  window.setTimeout(() => setSupplierModelOptionsFilter(''), 0);
+                }
+              }}
+              onSearch={(v) => setSupplierModelOptionsFilter(String(v ?? ''))}
+              onSelect={(value) =>
+                applySupplierModelLinkageOnDropdownPick(String(value ?? ''))
+              }
+              onClear={clearSupplierModelLinkedFields}
+              onBlur={() => {
+                if (!String(form.getFieldValue('model') ?? '').trim()) {
+                  clearSupplierModelLinkedFields();
+                }
+              }}
             />
           </Form.Item>
         </div>
@@ -299,35 +707,32 @@ const CreateModel: React.FC<CreateModelProps> = ({
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
-        <div className={cx('flex', styles['gap-16'])}>
-          <Form.Item
-            name="type"
-            label={dict('PC.Pages.SpaceLibrary.CreateModel.modelType')}
-            className={cx('flex-1')}
-            rules={[
-              {
-                required: true,
-                message: dict(
-                  'PC.Pages.SpaceLibrary.CreateModel.selectModelType',
-                ),
-              },
-            ]}
-          >
-            <Select
-              onChange={setModelType}
-              options={MODEL_TYPE_LIST.filter((v) =>
-                [
-                  ModelTypeEnum.Chat,
-                  ModelTypeEnum.Embeddings,
-                  ModelTypeEnum.Multi,
-                ].includes(v.value),
-              )}
-              placeholder={dict(
+        {/* 模型类型 */}
+        <Form.Item
+          name="types"
+          label={dict('PC.Pages.SpaceLibrary.CreateModel.modelType')}
+          className={cx('flex-1')}
+          rules={[
+            {
+              required: true,
+              message: dict(
                 'PC.Pages.SpaceLibrary.CreateModel.selectModelType',
-              )}
-            />
-          </Form.Item>
-          {modelType !== ModelTypeEnum.Embeddings && (
+              ),
+            },
+          ]}
+        >
+          <Select
+            mode="multiple"
+            onChange={(v) => setModelTypes(v as ModelCapabilityTypeEnum[])}
+            options={MODEL_TYPE_LIST}
+            placeholder={dict(
+              'PC.Pages.SpaceLibrary.CreateModel.selectModelType',
+            )}
+          />
+        </Form.Item>
+        <div className={cx('flex', styles['gap-16'])}>
+          {/* 推理模型 */}
+          {hasGenerationLikeCapabilityType(modelTypes) && (
             <Form.Item
               name="isReasonModel"
               className={cx('flex-1')}
@@ -347,7 +752,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
               />
             </Form.Item>
           )}
-          <ConditionRender condition={modelType === ModelTypeEnum.Embeddings}>
+
+          {/* 向量维度 */}
+          <ConditionRender condition={isEmbeddingCapabilityType(modelTypes)}>
             <Form.Item
               name="dimension"
               label={dict('PC.Pages.SpaceLibrary.CreateModel.vectorDimension')}
@@ -366,7 +773,10 @@ const CreateModel: React.FC<CreateModelProps> = ({
           </ConditionRender>
         </div>
 
-        <ConditionRender condition={modelType !== ModelTypeEnum.Embeddings}>
+        {/* 文本模型或多模态模型时显示 */}
+        <ConditionRender
+          condition={hasGenerationLikeCapabilityType(modelTypes)}
+        >
           <div className={cx('flex', styles['gap-16'])}>
             <Form.Item
               name="maxTokens"
@@ -450,7 +860,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             ]}
           />
         </Form.Item>
-        {modelType !== ModelTypeEnum.Embeddings && (
+        {!isEmbeddingCapabilityType(modelTypes) && (
           <Form.Item
             name="usageScenarios"
             label={dict('PC.Pages.SpaceLibrary.availableScope')}
@@ -476,7 +886,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           ]}
         >
           <Select
-            options={MODEL_API_PROTOCOL_LIST}
+            options={providerApiProtocolSelectOptions}
             placeholder={dict(
               'PC.Pages.SpaceLibrary.CreateModel.selectApiProtocol',
             )}
@@ -508,7 +918,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
             >
               <Select
                 options={MODEL_STRATEGY_LIST}
-                rootClassName={styles.select}
                 placeholder={dict(
                   'PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy',
                 )}
@@ -529,6 +938,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
               {fields.map(({ key, name, ...restField }) => (
                 <Space
                   key={key}
+                  className={cx(styles.apiInfoRow)}
                   style={{ display: 'flex', marginBottom: 8 }}
                   align="baseline"
                 >
@@ -536,6 +946,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     {...restField}
                     label={key === 0 ? 'URL' : ''}
                     name={[name, 'url']}
+                    className={cx(styles.apiInfoUrl)}
                     rules={[
                       {
                         required: true,
@@ -555,6 +966,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     {...restField}
                     label={key === 0 ? 'API KEY' : ''}
                     name={[name, 'key']}
+                    className={cx(styles.apiInfoKey)}
                     rules={[
                       {
                         required: true,
@@ -578,6 +990,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                         : ''
                     }
                     name={[name, 'weight']}
+                    className={cx(styles.apiInfoWeight)}
                     rules={[
                       {
                         required: true,
@@ -594,10 +1007,21 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     />
                   </Form.Item>
                   <Form.Item
+                    className={cx(styles.apiInfoActions)}
                     label={
                       key === 0 ? (
                         <PlusCircleOutlined
-                          onClick={() => add({ weight: 1 })}
+                          onClick={() => {
+                            const rows = form.getFieldValue('apiInfoList') as
+                              | ModelSaveParams['apiInfoList']
+                              | undefined;
+                            const url = rows?.[0]?.url;
+                            add({
+                              url: typeof url === 'string' ? url : '',
+                              key: '',
+                              weight: 1,
+                            });
+                          }}
                         />
                       ) : (
                         ''
