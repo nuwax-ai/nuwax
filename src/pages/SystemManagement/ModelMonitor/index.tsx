@@ -86,7 +86,7 @@ const ModelMonitor: React.FC = () => {
       try {
         const res = await apiGetResourceStatSummary({
           userId: -1,
-          type: 'SALES',
+          // type: 'SALES',
           dtStart: start || dateRange[0].format('YYYYMMDD'),
           dtEnd: end || dateRange[1].format('YYYYMMDD'),
         });
@@ -172,6 +172,14 @@ const ModelMonitor: React.FC = () => {
         inputTokens: 0,
         outputTokens: 0,
         totalAmount: 0,
+        totalOutputTokens: 0,
+        toolCount: 0,
+        toolCallCount: 0,
+        agentCount: 0,
+        agentCallCount: 0,
+        totalCreditAmount: 0,
+        failedToolCallCount: 0,
+        failedAgentCallCount: 0,
       } as StatGroup);
     return [
       {
@@ -192,7 +200,7 @@ const ModelMonitor: React.FC = () => {
       },
       {
         label: dict('PC.Pages.ModelMonitor.inputTokens'),
-        value: formatNumber(g.inputTokens ?? 0),
+        value: formatNumber(g.totalInputTokens ?? 0),
       },
       {
         label: dict('PC.Pages.ModelMonitor.outputTokens'),
@@ -342,9 +350,6 @@ const ModelMonitor: React.FC = () => {
             onClick={handleSearch}
           >
             {dict('PC.Pages.ModelMonitor.search')}
-          </Button>
-          <Button onClick={handleReset}>
-            {dict('PC.Pages.ModelMonitor.reset')}
           </Button>
           <div style={{ flex: 1 }} />
           <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
