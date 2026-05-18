@@ -122,6 +122,15 @@ export async function apiListWithdrawRecords(params: {
   return request('/api/bill/withdraw/records', { method: 'GET', params });
 }
 
+/**
+ * 用户端查询提现配置
+ */
+export async function apiGetUserWithdrawConfig(): Promise<
+  RequestResponse<WithdrawConfig>
+> {
+  return request('/api/bill/withdraw/config', { method: 'GET' });
+}
+
 // ──────────────────────────────────────────────
 // 积分
 // ──────────────────────────────────────────────
