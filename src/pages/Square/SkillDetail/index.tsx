@@ -16,6 +16,7 @@ import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
@@ -42,8 +43,13 @@ const SkillDetail: React.FC = ({}) => {
     SubscriptionPlanInfo[]
   >([]);
 
-  // 创建订阅订单
-  const { createAgentSubscriptionOrder } = useAgentSubscription();
+  // 创建订阅订单 + 当前技能维度「我的订阅」
+  const {
+    createAgentSubscriptionOrder,
+    mySubscriptionInfo,
+    loadMySubscription,
+    loadingMySubscription,
+  } = useAgentSubscription();
 
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
@@ -102,21 +108,32 @@ const SkillDetail: React.FC = ({}) => {
     }
   }, [skillId]);
 
-  // 技能需付费且未订阅时自动打开订阅套餐弹窗
+  useEffect(() => {
+    if (!openPaymentModal) {
+      return;
+    }
+    if (!skillId) {
+      return;
+    }
+    // 查询技能定价配置
+    loadSkillPricing({
+      targetType: ToolPricingTargetType.SKILL,
+      targetId: String(skillId),
+    });
+    loadMySubscription({
+      bizType: BizTypeEnum.Skill,
+      bizId: skillId,
+    });
+  }, [openPaymentModal, skillId, loadSkillPricing, loadMySubscription]);
+
   useEffect(() => {
     if (!skillInfo) {
       return;
     }
     if (skillInfo.paymentRequired && !skillInfo.subscribed) {
       setOpenPaymentModal(true);
-
-      // 查询技能定价配置
-      loadSkillPricing({
-        targetType: ToolPricingTargetType.SKILL,
-        targetId: String(skillId),
-      });
     }
-  }, [skillInfo, skillId]);
+  }, [skillInfo]);
 
   // 订阅技能套餐
   const handleSubscribeSkillPlan = (plan: SubscriptionPlanInfo) => {
@@ -134,10 +151,6 @@ const SkillDetail: React.FC = ({}) => {
   /** 手动打开订阅弹窗并拉取套餐（未订阅时自动打开弹窗同样在 useEffect 中请求定价） */
   const handleOpenSubscribeModal = () => {
     setOpenPaymentModal(true);
-    loadSkillPricing({
-      targetType: ToolPricingTargetType.SKILL,
-      targetId: String(skillId),
-    });
   };
 
   // 智能体、工作流、技能模板复制
@@ -191,19 +204,12 @@ const SkillDetail: React.FC = ({}) => {
           extraBeforeCollect={
             <Space>
               {/* 如果开启订阅功能，则显示订阅按钮 */}
-              {isEnableSubscription && (
-                <>
-                  {skillInfo.paymentRequired &&
-                    (skillInfo.subscribed ? (
-                      <Button disabled>
-                        {dict('PC.Pages.Square.SkillDetail.subscribed')}
-                      </Button>
-                    ) : (
-                      <Button type="primary" onClick={handleOpenSubscribeModal}>
-                        {dict('PC.Pages.Square.SkillDetail.subscribeAction')}
-                      </Button>
-                    ))}
-                </>
+              {isEnableSubscription && skillInfo.paymentRequired && (
+                <Button type="primary" onClick={handleOpenSubscribeModal}>
+                  {skillInfo.subscribed
+                    ? dict('PC.Pages.Square.SkillDetail.subscribed')
+                    : dict('PC.Pages.Square.SkillDetail.subscribeAction')}
+                </Button>
               )}
               {skillInfo.allowCopy === AllowCopyEnum.Yes && (
                 <>
@@ -273,10 +279,19 @@ const SkillDetail: React.FC = ({}) => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Skill"
-          trialCount={skillInfo?.trialCount ?? 0}
-          loading={loadingSkillPricing}
+          loading={loadingSkillPricing || loadingMySubscription}
           plans={skillSubscriptionPlans}
-          userSubscribed={Boolean(skillInfo?.subscribed)}
+          currentSubscribedPlanId={
+            mySubscriptionInfo?.currentSubscription?.planId ?? null
+          }
+          currentSubscribedPlanPrice={
+            mySubscriptionInfo?.currentSubscription?.plan?.price ?? null
+          }
+          currentSubscribedPlanPeriod={
+            mySubscriptionInfo?.currentSubscription?.plan?.period ??
+            mySubscriptionInfo?.currentSubscription?.period ??
+            null
+          }
           onClose={() => setOpenPaymentModal(false)}
           onSubscribe={handleSubscribeSkillPlan}
         />
