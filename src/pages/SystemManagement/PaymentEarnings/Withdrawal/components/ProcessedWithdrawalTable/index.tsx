@@ -1,16 +1,47 @@
-import { XProTable } from '@/components/ProComponents';
+import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiListWithdrawals } from '@/services/subscriptionService';
+import {
+  apiListWithdrawals,
+  apiProcessWithdrawal,
+} from '@/services/subscriptionService';
 import {
   BillWithdrawRecordInfo,
   BillWithdrawStatusEnum,
 } from '@/types/interfaces/subscription';
-import type { ProColumns } from '@ant-design/pro-components';
-import { Tag } from 'antd';
-import React, { useMemo } from 'react';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { Tag, message } from 'antd';
+import React, { useMemo, useRef, useState } from 'react';
+import PayModal from './components/PayModal';
 
 const ProcessedWithdrawalTable: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] =
+    useState<BillWithdrawRecordInfo | null>(null);
+
+  const handleConfirmPay = async (values: {
+    remark: string;
+    images: string[];
+  }) => {
+    if (!selectedRecord) return;
+    const res = await apiProcessWithdrawal({
+      tenantId: selectedRecord.userId,
+      applicationId: selectedRecord.id,
+      action: 'COMPLETE_PAYMENT',
+      paymentExtra: {
+        remark: values.remark,
+        images: values.images,
+      },
+    });
+    if (res?.success) {
+      message.success(
+        dict('PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paySuccess'),
+      );
+      actionRef.current?.reload();
+    }
+  };
+
   const statusConfig = useMemo(
     () => ({
       [BillWithdrawStatusEnum.PENDING_REVIEW]: {
@@ -111,7 +142,6 @@ const ProcessedWithdrawalTable: React.FC = () => {
       dataIndex: 'rejectReason',
       key: 'rejectReason',
       search: false,
-      render: (val) => val || '-',
     },
     {
       title: dict(
@@ -120,30 +150,66 @@ const ProcessedWithdrawalTable: React.FC = () => {
       dataIndex: 'modified',
       key: 'modified',
       search: false,
+      valueType: 'dateTime',
+    },
+    {
+      title: dict('PC.Common.Global.action'),
+      key: 'action',
+      search: false,
+      render: (_, record) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'pay',
+              label: dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.pay',
+              ),
+              visible: record.status === BillWithdrawStatusEnum.APPROVED,
+              onClick: (r) => {
+                setSelectedRecord(r);
+                setPayModalOpen(true);
+              },
+            },
+          ]}
+        />
+      ),
     },
   ];
 
   return (
-    <XProTable<BillWithdrawRecordInfo>
-      rowKey="id"
-      columns={columns}
-      request={async (params) => {
-        const res = await apiListWithdrawals({
-          keyword: params.userName,
-          status: BillWithdrawStatusEnum.APPROVED,
-          pageNum: params.current,
-          pageSize: params.pageSize,
-        });
-        if (res?.code === SUCCESS_CODE) {
-          return {
-            data: Array.isArray(res.data?.records) ? res.data.records : [],
-            total: res.data?.total || 0,
-            success: true,
-          };
-        }
-        return { data: [], total: 0, success: false };
-      }}
-    />
+    <>
+      <XProTable<BillWithdrawRecordInfo>
+        actionRef={actionRef}
+        rowKey="id"
+        columns={columns}
+        request={async (params) => {
+          const res = await apiListWithdrawals({
+            keyword: params.userName,
+            status: BillWithdrawStatusEnum.APPROVED,
+            pageNum: params.current,
+            pageSize: params.pageSize,
+          });
+          if (res?.code === SUCCESS_CODE) {
+            return {
+              data: Array.isArray(res.data?.records) ? res.data.records : [],
+              total: res.data?.total || 0,
+              success: true,
+            };
+          }
+          return { data: [], total: 0, success: false };
+        }}
+      />
+      <PayModal
+        open={payModalOpen}
+        onCancel={() => {
+          setPayModalOpen(false);
+          setSelectedRecord(null);
+        }}
+        onConfirm={handleConfirmPay}
+        record={selectedRecord}
+      />
+    </>
   );
 };
 
