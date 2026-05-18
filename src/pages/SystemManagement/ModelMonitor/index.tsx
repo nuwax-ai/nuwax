@@ -11,7 +11,7 @@ import type {
   ResourceStatSummaryDTO,
   StatGroup,
 } from '@/types/interfaces/systemManage';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, DatePicker, Skeleton, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
@@ -120,11 +120,6 @@ const ModelMonitor: React.FC = () => {
     fetchSummary(start, end);
     actionRef.current?.reload();
   }, [dateRange, fetchSummary]);
-
-  const handleRefresh = useCallback(() => {
-    fetchSummary();
-    actionRef.current?.reload();
-  }, [fetchSummary]);
 
   const handleReset = useCallback(() => {
     const today = dayjs().startOf('day');
@@ -344,16 +339,13 @@ const ModelMonitor: React.FC = () => {
             }}
             format="YYYYMMDD"
           />
+          <div className="flex-1" />
           <Button
             type="primary"
             icon={<SearchOutlined />}
             onClick={handleSearch}
           >
             {dict('PC.Pages.ModelMonitor.search')}
-          </Button>
-          <div style={{ flex: 1 }} />
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-            {dict('PC.Pages.ModelMonitor.refreshData')}
           </Button>
         </div>
 
