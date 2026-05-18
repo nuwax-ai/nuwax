@@ -5099,6 +5099,16 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.limitModeHint": "“同时满足”：每月和每日限制均需满足；“任一满足”：满足任一限制即不可提现",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.saveConfig": "保存配置",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.saveSuccess": "配置保存成功",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.pay": "打款",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payModalTitle": "提现打款",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payRemarkLabel": "打款备注",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payRemarkPlaceholder": "请输入打款备注",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payImagesLabel": "凭证图片",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paySuccess": "打款成功",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadBtn": "上传",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadTypeError": "只支持上传 JPG/PNG/JPEG 格式的图片！",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadSizeError": "图片大小不能超过 5MB！",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadFailed": "上传图片失败，请稍后重试",
 
   // ── 系统管理 - 开发者收益统计 ─────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "开发者",

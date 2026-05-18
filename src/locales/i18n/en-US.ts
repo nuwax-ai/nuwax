@@ -5100,6 +5100,16 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.limitModeHint": "\"All satisfied\": Both monthly and daily limits must be met; \"Any satisfied\": Reaching any limit will block withdrawal",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.saveConfig": "Save Configuration",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.saveSuccess": "Configuration saved successfully",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.pay": "Pay",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payModalTitle": "Withdrawal Payment",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payRemarkLabel": "Payment Remark",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payRemarkPlaceholder": "Please enter payment remark",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payImagesLabel": "Voucher Images",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paySuccess": "Payment completed successfully",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadBtn": "Upload",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadTypeError": "Only JPG/PNG/JPEG images are supported!",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadSizeError": "Image size cannot exceed 5MB!",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadFailed": "Failed to upload image. Please try again later.",
 
   // ── System Management - Developer Earnings Statistics ─────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "Developer",
