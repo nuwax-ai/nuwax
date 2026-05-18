@@ -551,7 +551,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
       open={open}
       classNames={{
         content: cx(styles.container),
-        header: cx(styles.header),
         body: cx(styles.body),
       }}
       destroyOnHidden
@@ -919,7 +918,6 @@ const CreateModel: React.FC<CreateModelProps> = ({
             >
               <Select
                 options={MODEL_STRATEGY_LIST}
-                rootClassName={styles.select}
                 placeholder={dict(
                   'PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy',
                 )}
@@ -940,6 +938,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
               {fields.map(({ key, name, ...restField }) => (
                 <Space
                   key={key}
+                  className={cx(styles.apiInfoRow)}
                   style={{ display: 'flex', marginBottom: 8 }}
                   align="baseline"
                 >
@@ -947,6 +946,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     {...restField}
                     label={key === 0 ? 'URL' : ''}
                     name={[name, 'url']}
+                    className={cx(styles.apiInfoUrl)}
                     rules={[
                       {
                         required: true,
@@ -966,6 +966,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     {...restField}
                     label={key === 0 ? 'API KEY' : ''}
                     name={[name, 'key']}
+                    className={cx(styles.apiInfoKey)}
                     rules={[
                       {
                         required: true,
@@ -989,6 +990,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
                         : ''
                     }
                     name={[name, 'weight']}
+                    className={cx(styles.apiInfoWeight)}
                     rules={[
                       {
                         required: true,
@@ -1005,10 +1007,21 @@ const CreateModel: React.FC<CreateModelProps> = ({
                     />
                   </Form.Item>
                   <Form.Item
+                    className={cx(styles.apiInfoActions)}
                     label={
                       key === 0 ? (
                         <PlusCircleOutlined
-                          onClick={() => add({ weight: 1 })}
+                          onClick={() => {
+                            const rows = form.getFieldValue('apiInfoList') as
+                              | ModelSaveParams['apiInfoList']
+                              | undefined;
+                            const url = rows?.[0]?.url;
+                            add({
+                              url: typeof url === 'string' ? url : '',
+                              key: '',
+                              weight: 1,
+                            });
+                          }}
                         />
                       ) : (
                         ''
