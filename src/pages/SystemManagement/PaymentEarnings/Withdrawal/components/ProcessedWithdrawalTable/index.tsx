@@ -111,7 +111,6 @@ const ProcessedWithdrawalTable: React.FC = () => {
       dataIndex: 'rejectReason',
       key: 'rejectReason',
       search: false,
-      render: (val) => val || '-',
     },
     {
       title: dict(
@@ -120,6 +119,7 @@ const ProcessedWithdrawalTable: React.FC = () => {
       dataIndex: 'modified',
       key: 'modified',
       search: false,
+      valueType: 'dateTime',
     },
   ];
 

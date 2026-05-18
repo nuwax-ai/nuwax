@@ -368,7 +368,8 @@ const MerchantInfo: React.FC = () => {
 
   const isFormEditable =
     status === MerchantOnboardingStatusEnum.DRAFT ||
-    status === MerchantOnboardingStatusEnum.REJECTED;
+    status === MerchantOnboardingStatusEnum.REJECTED ||
+    status === MerchantOnboardingStatusEnum.APPROVED;
 
   const renderUploadBox = (fieldName: string, imageUrl?: string) => {
     const isUploading = uploadingMap[fieldName]?.uploading;
@@ -499,7 +500,12 @@ const MerchantInfo: React.FC = () => {
           <Button
             type="primary"
             loading={saving}
-            disabled={loading || !isFormEditable || isFormDirty}
+            disabled={
+              loading ||
+              isFormDirty ||
+              (status !== MerchantOnboardingStatusEnum.DRAFT &&
+                status !== MerchantOnboardingStatusEnum.REJECTED)
+            }
             onClick={() =>
               handleSave(MerchantOnboardingStatusEnum.UNDER_REVIEW)
             }
