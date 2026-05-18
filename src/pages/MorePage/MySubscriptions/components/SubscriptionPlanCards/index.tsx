@@ -193,9 +193,9 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                 </div>
 
                 <div className={cx(styles['plan-content'])}>
-                  {plan.itemGroups.map((group, gIdx) => (
+                  {plan.itemGroups?.map((group, gIdx) => (
                     <div key={gIdx} className={cx(styles['benefit-group'])}>
-                      {group.items.map(
+                      {group.items?.map(
                         (benefit: SystemSubscriptionPlanItem, bIdx: number) => (
                           <div
                             key={bIdx}
