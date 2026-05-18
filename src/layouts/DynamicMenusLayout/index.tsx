@@ -324,7 +324,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     }
 
     // 多语言内容特殊处理，如果路径是/system/config/lang-content/:lang，则设置一级菜单选中系统管理
-    if (pathname.startsWith('/system/config/lang-content')) {
+    // 积分流水查询特殊处理，如果路径是/system/subscription-credits/credit-records，则设置一级菜单选中系统管理
+    if (
+      pathname.startsWith('/system/config/lang-content') ||
+      pathname.startsWith('/system/subscription-credits/credit-records')
+    ) {
       setActiveTab('system_manage');
       return;
     }

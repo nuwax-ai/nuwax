@@ -4714,6 +4714,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemUserCredits.purchaseCredit": "追加購入クレジット",
   "PC.Pages.SystemUserCredits.activityCredit": "アクティビティクレジット",
   "PC.Pages.SystemUserCredits.manualCredit": "手動クレジット",
+  "PC.Pages.SystemUserCredits.viewCreditRecords": "クレジット明細",
 
   // ── 系统管理 - 积分流水查询 ────────────────────────────
   "PC.Pages.SystemCreditRecords.recordId": "フローID",
@@ -4729,7 +4730,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemCreditRecords.creditType": "ポイント種別",
   "PC.Pages.SystemCreditRecords.creditTypeSubscription": "サブスクリプション付与",
   "PC.Pages.SystemCreditRecords.creditTypePurchase": "増購",
-  "PC.Pages.SystemCreditRecords.creditTypeActivity": "キャンペーン付与",
+  "PC.Pages.SystemCreditRecords.creditTypeActivity": "活動ポイント",
   "PC.Pages.SystemCreditRecords.creditTypeManual": "システム付与",
   "PC.Pages.SystemCreditRecords.creditTypeModelCall": "モデル呼び出し",
   "PC.Pages.SystemCreditRecords.creditTypeAgentCall": "エージェント呼び出し",

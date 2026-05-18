@@ -348,7 +348,6 @@ const SubsOrders: React.FC = () => {
         request={fetchOrderRevenueTableRequest}
         scroll={{ x: 'max-content' }}
         scrollYOffset={80}
-        showQueryButtons={false}
       />
     </WorkspaceLayout>
   );

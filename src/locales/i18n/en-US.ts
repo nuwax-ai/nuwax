@@ -4918,6 +4918,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemUserCredits.purchaseCredit": "Purchased Credits",
   "PC.Pages.SystemUserCredits.activityCredit": "Activity Credits",
   "PC.Pages.SystemUserCredits.manualCredit": "Manual Credits",
+  "PC.Pages.SystemUserCredits.viewCreditRecords": "Credit records",
 
   // ── System Management - Credit Records Query ────────────────────────────
   "PC.Pages.SystemCreditRecords.recordId": "Flow ID",
@@ -4933,7 +4934,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemCreditRecords.creditType": "Credit Type",
   "PC.Pages.SystemCreditRecords.creditTypeSubscription": "Subscription grant",
   "PC.Pages.SystemCreditRecords.creditTypePurchase": "Add-on purchase",
-  "PC.Pages.SystemCreditRecords.creditTypeActivity": "Activity grant",
+  "PC.Pages.SystemCreditRecords.creditTypeActivity": "Activity credits",
   "PC.Pages.SystemCreditRecords.creditTypeManual": "System grant",
   "PC.Pages.SystemCreditRecords.creditTypeModelCall": "Model call",
   "PC.Pages.SystemCreditRecords.creditTypeAgentCall": "Agent call",
