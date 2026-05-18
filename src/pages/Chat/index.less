@@ -66,11 +66,25 @@
 
     .chat-section {
       width: 100%;
+      flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
 
       &.file-tree-visible {
         width: 33%;
+      }
+
+      /* 干预固定栏：与 ChatInputHome .chat-container 同宽（800px + 水平 @padding） */
+      .intervention-dock {
+        flex-shrink: 0;
+        z-index: 30;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 @padding @paddingXs;
+        box-sizing: border-box;
       }
 
       .chat-wrapper-content {
@@ -79,6 +93,7 @@
         display: flex;
         flex-direction: column;
         flex: 1;
+        min-height: 0;
 
         // 使用滚动条自动隐藏 mixin
         .scrollbar-auto-hide();

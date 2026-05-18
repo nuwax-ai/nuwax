@@ -1,0 +1,44 @@
+@import '@/styles/token.less';
+
+.optionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingXs;
+  width: 100%;
+
+  :global {
+    .ant-radio-wrapper,
+    .ant-checkbox-wrapper {
+      align-items: center;
+      margin: 0;
+      padding: @paddingXs @paddingSm;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+      background: @colorBgContainer;
+      transition: border-color 0.2s ease, background 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .ant-radio-wrapper:hover,
+    .ant-checkbox-wrapper:hover {
+      border-color: @colorPrimaryBorder;
+      background: @colorPrimaryBg;
+    }
+
+    .ant-radio-wrapper-checked,
+    .ant-checkbox-wrapper-checked {
+      border-color: @colorPrimary;
+      background: @colorPrimaryBg;
+      box-shadow: 0 0 0 1px @colorPrimaryBg;
+    }
+
+    .ant-radio-wrapper::after,
+    .ant-checkbox-wrapper::after {
+      display: none;
+    }
+  }
+}
+
+.textControl {
+  border-radius: @borderRadius;
+}

@@ -1,0 +1,167 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+@import '../../../components/intervention-dock-shell.less';
+
+.card {
+  margin-top: @paddingSm;
+  padding: @paddingSm @padding;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  background: @colorBgContainer;
+}
+
+/* 固定在会话输入框上方：布局重置，外壳由 dockShellClassName 统一 */
+.cardDocked {
+  margin-top: 0;
+  padding: 0;
+
+  .actions {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: @paddingSm;
+  padding: @paddingSm @padding @paddingXs;
+  border-bottom: 1px solid @colorBorderSecondary;
+  background: linear-gradient(
+    180deg,
+    @colorPrimaryBg 0%,
+    @colorBgContainer 100%
+  );
+}
+
+.card:not(.cardDocked) .header {
+  align-items: center;
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.iconWrap {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: @borderRadiusLg;
+  background: @colorPrimaryBg;
+  color: @colorPrimary;
+  font-size: 18px;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: @colorPrimary;
+  font-size: @fontSizeLg;
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: @colorPrimary;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  color: @colorTextBase;
+  font-size: @fontSize;
+  line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardDocked .title {
+  white-space: normal;
+}
+
+.kindTag,
+.statusTag {
+  flex-shrink: 0;
+  margin: 2px 0 0;
+}
+
+.body {
+  padding: @paddingSm @padding;
+}
+
+.actions {
+  padding: @paddingXs @padding @paddingSm;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @WHITE01;
+}
+
+.card:not(.cardDocked) .body {
+  padding: 0;
+}
+
+.card:not(.cardDocked) .actions {
+  padding: 0;
+  border-top: none;
+  background: transparent;
+}
+
+.error {
+  display: block;
+  padding: 0 @padding @paddingXs;
+  font-size: @fontSizeSm;
+}
+
+.card:not(.cardDocked) .error {
+  padding: 0;
+  margin-top: @paddingXs;
+}
+
+.buttonLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcutGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shortcut {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 4px;
+  background: @WHITE01;
+  color: @colorTextSecondary;
+  font-size: 11px;
+  font-family: inherit;
+  line-height: 16px;
+  text-align: center;
+}
+
+.multiCheck {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+}
+
+.multiCheckItem {
+  font-size: 12px;
+
+  &:not(:first-child) {
+    margin-left: -7px;
+  }
+}

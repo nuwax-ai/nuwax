@@ -1,0 +1,18 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+/**
+ * 固定栏干预卡片统一外壳（ACP / MCP Ask 根节点共用同一 class）
+ */
+.root {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 20px;
+  background: @colorBgContainer;
+  box-shadow: 0 5px 16px -4px rgba(0, 0, 0, 7%);
+}

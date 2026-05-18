@@ -31,6 +31,7 @@ import type {
   AcpRequestPermissionResponse,
   AgentMode,
 } from './acpIntervention';
+import type { McpAskInteraction } from './mcpAskIntervention';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -299,6 +300,8 @@ export interface MessageInfo extends ChatMessageDto {
   processingList?: ProcessingInfo[];
   /** ACP permission approval 交互 */
   acpPermissionInteractions?: AcpPermissionInteraction[];
+  /** MCP ask/question 交互（nuwax_ask_user） */
+  mcpAskInteractions?: McpAskInteraction[];
 }
 
 // 查询会话信息

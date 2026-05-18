@@ -16,6 +16,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { AgentInterventionChatLayer } from '@/features/agent-intervention';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -181,6 +182,10 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     respondAcpPermission,
+    respondMcpAsk,
+    injectMockAcpPermission,
+    injectMockMcpAsk,
+    injectAllInterventionMocks,
     messageViewRef,
     messageViewScrollToBottom,
     allowAutoScrollRef,
@@ -1267,7 +1272,6 @@ const Chat: React.FC = () => {
                         contentClassName={styles['chat-inner']}
                         mode={'home'}
                         conversationId={id}
-                        onAcpPermissionRespond={respondAcpPermission}
                         showStatusDesc={
                           effectiveAgent?.type !== AgentTypeEnum.TaskAgent
                         }
@@ -1312,6 +1316,18 @@ const Chat: React.FC = () => {
                 ) : null}
               </div>
             </div>
+
+            {/* MCP Ask：固定在输入框（会话框）上方，消息滚动时保持可见 */}
+            <AgentInterventionChatLayer
+              conversationId={id}
+              messageList={messageList}
+              onRespondAcpPermission={respondAcpPermission}
+              onRespondMcpAsk={respondMcpAsk}
+              injectMockAcpPermission={injectMockAcpPermission}
+              injectMockMcpAsk={injectMockMcpAsk}
+              injectAllInterventionMocks={injectAllInterventionMocks}
+              className={styles['intervention-dock']}
+            />
 
             {/* 会话状态显示 - 有消息时就显示 */}
             {messageList?.length > 0 &&

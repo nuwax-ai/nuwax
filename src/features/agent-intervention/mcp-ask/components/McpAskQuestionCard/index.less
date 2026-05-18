@@ -1,0 +1,174 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+@import '../../../components/intervention-dock-shell.less';
+
+.shell {
+  .interventionDockShell();
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: @paddingSm;
+  padding: @paddingSm @padding @paddingXs;
+  border-bottom: 1px solid @colorBorderSecondary;
+  background: linear-gradient(
+    180deg,
+    @colorPrimaryBg 0%,
+    @colorBgContainer 100%
+  );
+}
+
+.iconWrap {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: @borderRadiusLg;
+  background: @colorPrimaryBg;
+  color: @colorPrimary;
+  font-size: 18px;
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: @colorPrimary;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.title {
+  display: block;
+  color: @colorTextBase;
+  font-size: @fontSize;
+  line-height: @lineHeight;
+}
+
+.desc {
+  display: block;
+  margin-top: 4px;
+  font-size: @fontSizeSm;
+  line-height: 1.5;
+}
+
+.statusTag {
+  flex-shrink: 0;
+  margin: 2px 0 0;
+}
+
+.wizardBlock {
+  padding: @paddingSm @padding 0;
+}
+
+.steps {
+  margin-bottom: 0;
+
+  :global {
+    .ant-steps-item-title {
+      font-size: @fontSizeSm !important;
+      line-height: 1.35 !important;
+    }
+
+    .ant-steps-item-description {
+      max-width: 140px;
+      font-size: 12px !important;
+    }
+
+    .ant-steps-item-process .ant-steps-item-icon {
+      background: @colorPrimary;
+      border-color: @colorPrimary;
+    }
+  }
+}
+
+.stepCallout {
+  margin-top: @paddingSm;
+  padding: @paddingXs @paddingSm;
+  border-radius: @borderRadius;
+  background: @WHITE01;
+  border: 1px solid @colorBorderSecondary;
+}
+
+.stepCalloutText {
+  font-size: @fontSizeSm;
+  line-height: 1.5;
+}
+
+.formSurface {
+  padding: @paddingSm @padding;
+}
+
+.form {
+  margin: 0;
+
+  :global {
+    .ant-form-item {
+      margin-bottom: @paddingSm;
+    }
+
+    .ant-form-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .ant-form-item-label > label {
+      color: @colorTextBase;
+      font-size: @fontSizeSm;
+      font-weight: 500;
+    }
+  }
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: @paddingSm;
+  padding: @paddingXs @padding @paddingSm;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @WHITE01;
+}
+
+.stepMeta {
+  font-size: @fontSizeSm;
+}
+
+.footerActions {
+  margin-left: auto;
+}
+
+.buttonLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcut {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 4px;
+  background: @WHITE01;
+  color: @colorTextSecondary;
+  font-size: 11px;
+  font-family: inherit;
+  line-height: 16px;
+  text-align: center;
+}
+
+.error {
+  display: block;
+  padding: 0 @padding @paddingXs;
+  font-size: @fontSizeSm;
+}

@@ -4,6 +4,10 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import {
+  processInterventionSsePatch,
+  useAgentInterventionHandlers,
+} from '@/features/agent-intervention';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -11,7 +15,6 @@ import {
   apiAgentConversationChatSuggest,
   apiAgentConversationMessageList,
   apiAgentConversationUpdate,
-  apiAgentInterventionRespond,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -40,11 +43,6 @@ import {
   EditAgentShowType,
   OpenCloseEnum,
 } from '@/types/enums/space';
-import type {
-  AcpPermissionInteraction,
-  AcpPermissionInterventionRequest,
-  AcpRequestPermissionResponse,
-} from '@/types/interfaces/acpIntervention';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -123,6 +121,17 @@ export default () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+
+  const {
+    respondAcpPermission,
+    respondMcpAsk,
+    injectMockAcpPermission,
+    injectMockMcpAsk,
+    injectAllInterventionMocks,
+  } = useAgentInterventionHandlers({
+    setMessageList,
+    conversationId: currentConversationId,
+  });
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
@@ -803,89 +812,12 @@ export default () => {
 
       let newMessage: any = null;
 
-      const isAcpPermissionEvent =
-        eventType === ConversationEventTypeEnum.ACP_REQUEST_PERMISSION ||
-        ((res as any).message_type === 'acpRequestPermission' &&
-          (res as any).sub_type === 'request_permission') ||
-        ((res as any).messageType === 'acpRequestPermission' &&
-          (res as any).subType === 'AcpRequestPermission');
-
-      if (isAcpPermissionEvent) {
-        const eventData = (res as any).data ?? res;
-        const reqPerm = eventData?.request_permission_request;
-        const intervention = (eventData?._intervention ??
-          eventData?.interventionRequest) as
-          | AcpPermissionInterventionRequest
-          | undefined;
-
-        const sessionId =
-          reqPerm?.session_id ||
-          intervention?.sessionId ||
-          eventData?.session_id;
-        const toolCall =
-          reqPerm?.tool_call || intervention?.acp?.request?.toolCall;
-        const options = reqPerm?.options || intervention?.acp?.request?.options;
-        const toolCallId = eventData?.tool_call_id || toolCall?.toolCallId;
-
-        if ((!intervention?.id && !sessionId) || !toolCall) {
-          return messageList;
-        }
-
-        const interventionId =
-          intervention?.id || `itv_${sessionId}_${toolCallId}`;
-        const interactions = currentMessage.acpPermissionInteractions || [];
-        if (
-          interactions.some((item) => item.intervention.id === interventionId)
-        ) {
-          return messageList;
-        }
-
-        const normalizedIntervention: AcpPermissionInterventionRequest =
-          intervention || {
-            id: interventionId,
-            revision: 1,
-            kind: 'approval',
-            status: 'pending',
-            sessionId: sessionId,
-            source: 'acp_permission',
-            engine: (eventData?._engine as any) || 'codex-cli',
-            protocol: 'acp',
-            callbackTarget: { kind: 'electron', targetId: '' },
-            schemaRef: '',
-            acp: {
-              method: 'session/request_permission',
-              request: {
-                sessionId: sessionId,
-                toolCall: {
-                  toolCallId: toolCallId,
-                  kind: toolCall?.kind,
-                  title: toolCall?.title,
-                  rawInput: toolCall?.raw_input ?? toolCall?.rawInput,
-                  status: toolCall?.status,
-                },
-                options: (options || []).map((o: any) => ({
-                  optionId: o.option_id ?? o.optionId,
-                  kind: o.kind,
-                  name: o.name,
-                })),
-              },
-            },
-            createdAt: Date.now(),
-          };
-
-        newMessage = {
-          ...currentMessage,
-          acpPermissionInteractions: [
-            ...interactions,
-            {
-              intervention: normalizedIntervention,
-              responseStatus: 'pending',
-            },
-          ],
-          status: currentMessage.status || MessageStatusEnum.Loading,
-        };
-
-        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+      const interventionPatch = processInterventionSsePatch(
+        res,
+        currentMessage,
+      );
+      if (interventionPatch) {
+        list.splice(index, arraySpliceAction, interventionPatch);
         checkConversationActive(list);
         return list;
       }
@@ -1463,94 +1395,6 @@ export default () => {
     handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
   };
 
-  const updateAcpPermissionInteraction = useCallback(
-    (interventionId: string, updates: Partial<AcpPermissionInteraction>) => {
-      setMessageList((list) =>
-        list.map((item) => {
-          const interactions = item.acpPermissionInteractions;
-          if (
-            !interactions?.some(
-              (interaction) => interaction.intervention.id === interventionId,
-            )
-          ) {
-            return item;
-          }
-
-          return {
-            ...item,
-            acpPermissionInteractions: interactions.map((interaction) =>
-              interaction.intervention.id === interventionId
-                ? { ...interaction, ...updates }
-                : interaction,
-            ),
-          };
-        }),
-      );
-    },
-    [],
-  );
-
-  const respondAcpPermission = useCallback(
-    async (
-      interaction: AcpPermissionInteraction,
-      acpResponse: AcpRequestPermissionResponse,
-    ) => {
-      const { intervention } = interaction;
-      updateAcpPermissionInteraction(intervention.id, {
-        responseStatus: 'submitting',
-        selectedOptionId:
-          acpResponse.outcome.outcome === 'selected'
-            ? acpResponse.outcome.optionId
-            : undefined,
-        errorMessage: undefined,
-      });
-
-      try {
-        const isSelected = acpResponse.outcome.outcome === 'selected';
-        const sessionId =
-          intervention.acp?.request?.sessionId || intervention.sessionId;
-        const toolCallId = intervention.acp?.request?.toolCall?.toolCallId;
-
-        const response = await apiAgentInterventionRespond({
-          permission_resolve_request: {
-            request_permission_response: {
-              outcome: isSelected
-                ? { Selected: { option_id: acpResponse.outcome.optionId } }
-                : { Cancelled: null },
-            },
-            session_id: sessionId,
-            tool_call_id: toolCallId,
-            save_rule: false,
-          },
-          user_id: String(currentConversationId),
-          conversation_id: currentConversationId || undefined,
-        });
-
-        if (response?.code && response.code !== SUCCESS_CODE) {
-          throw new Error(
-            response.message ||
-              dict('PC.Models.ConversationInfo.permissionResponseFailed'),
-          );
-        }
-
-        updateAcpPermissionInteraction(intervention.id, {
-          responseStatus: 'submitted',
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : dict('PC.Models.ConversationInfo.permissionResponseFailed');
-        updateAcpPermissionInteraction(intervention.id, {
-          responseStatus: 'failed',
-          errorMessage,
-        });
-        message.error(errorMessage);
-      }
-    },
-    [updateAcpPermissionInteraction, currentConversationId],
-  );
-
   const handleDebug = useCallback((info: MessageInfo) => {
     const result = info?.finalResult;
     if (result) {
@@ -1619,6 +1463,10 @@ export default () => {
     runStopConversation,
     loadingStopConversation,
     respondAcpPermission,
+    respondMcpAsk,
+    injectMockAcpPermission,
+    injectMockMcpAsk,
+    injectAllInterventionMocks,
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,
