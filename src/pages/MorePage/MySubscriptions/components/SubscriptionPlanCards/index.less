@@ -4,7 +4,7 @@
   margin: calc(@marginLg * 2) 0;
 
   .plans-title {
-    font-size: @fontSizeHeading4;
+    font-size: @fontSizeLg;
     font-weight: 600;
     margin-bottom: @marginLg;
     color: @colorTextBase;
@@ -28,11 +28,15 @@
   }
 
   &.is-current {
-    border: 2px solid @blue6;
-    box-shadow: 0 8px 24px rgba(2, 111, 255, 15%);
+    border: 2px solid @colorPrimary;
+    box-shadow: 0 8px 24px color-mix(in srgb, @colorPrimary 15%, transparent);
 
     .current-badge {
-      background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
+      background: linear-gradient(
+        135deg,
+        @colorPrimary 0%,
+        @colorPrimaryHover 100%
+      );
     }
 
     .hot-badge {
@@ -56,7 +60,11 @@
   }
 
   .current-badge {
-    background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
+    background: linear-gradient(
+      135deg,
+      @colorPrimary 0%,
+      @colorPrimaryHover 100%
+    );
   }
 
   .hot-badge {
@@ -197,34 +205,6 @@
       font-size: @fontSizeLg;
       color: @colorTextTertiary;
       white-space: nowrap;
-    }
-
-    .footer-placeholder {
-      display: none;
-    }
-
-    .action-button {
-      font-size: @fontSize;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: @colorTextBase;
-      color: @colorWhite;
-      border-color: @colorTextBase;
-
-      &:not([disabled]):hover {
-        background: @colorTextSecondary;
-        border-color: @colorTextSecondary;
-        color: @colorWhite;
-      }
-
-      &[disabled],
-      &[disabled]:hover {
-        background: @colorTextBase !important;
-        color: @colorWhite !important;
-        border-color: @colorTextBase !important;
-        opacity: 0.4;
-      }
     }
   }
 

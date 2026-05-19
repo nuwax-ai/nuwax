@@ -44,19 +44,13 @@ const TARGET_TYPE_TAG_MAP: Record<string, TargetTypeTagConfig> = {
 };
 
 /**
- * 是否为 Agent 类型（Agent 无 Token 用量，表格展示为 -）
- */
-export const isAgentResourceStatRecord = (record: ResourceStatDTO): boolean =>
-  record.targetType === AgentComponentTypeEnum.Agent;
-
-/**
- * Token 列渲染：Agent 显示 -，其余类型走 formatter
+ * Token 列渲染：仅 Model 类型展示数值，其余类型显示 -
  */
 export const renderUsageStatTokenCell = (
   record: ResourceStatDTO,
   formatValue: () => React.ReactNode,
 ): React.ReactNode => {
-  if (isAgentResourceStatRecord(record)) {
+  if (record.targetType !== AgentComponentTypeEnum.Model) {
     return USAGE_STAT_TOKEN_EMPTY;
   }
   return formatValue();

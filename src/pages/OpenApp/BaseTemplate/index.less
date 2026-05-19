@@ -70,7 +70,6 @@
   border-radius: @borderRadiusLg;
   background-color: @colorBgContainer;
   padding: 0 @paddingSm;
-  margin-bottom: @marginSm;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -109,7 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: @marginSm;
+  margin-top: @marginSm;
 }
 
 .nav-item {
@@ -124,6 +123,10 @@
   user-select: none;
   transition: background-color 0.2s ease, color 0.2s ease;
   font-weight: 400;
+
+  &.mt-6 {
+    margin-top: @marginXs;
+  }
 
   &:hover {
     background-color: #e6e7e8;
@@ -142,6 +145,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+  margin-top: @marginSm;
 
   &.exist-page-nav {
     padding-top: 0;

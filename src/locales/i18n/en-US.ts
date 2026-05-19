@@ -1561,6 +1561,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AntvX6ComplexNode.requestTimeoutLabel": "Request Timeout",
   "PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder": "Please enter timeout duration",
   "PC.Pages.AntvX6ComplexNode.skills": "Skills",
+  "PC.Pages.AntvX6ComplexNode.workflowTools": "Tools",
   "PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder": "System prompt can reference input variables with {{var}}, {{var.child}}, or {{var[index]}}.",
   "PC.Pages.AntvX6ComplexNode.systemPromptTitle": "System Prompt",
   "PC.Pages.AntvX6ComplexNode.systemPromptTooltip": "Provide system-level instructions for the conversation, such as role setting and response logic.",
@@ -5098,6 +5099,11 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadTypeError": "Only JPG/PNG/JPEG images are supported!",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadSizeError": "Image size cannot exceed 5MB!",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadFailed": "Failed to upload image. Please try again later.",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPaymentRemark": "Payment Remark",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewBtn": "View",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paymentRemarkDetailTitle": "Payment Details",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.voucherImagesLabel": "Voucher Images",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.noVoucherImages": "No voucher images",
 
   // ── System Management - Developer Earnings Statistics ─────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "Developer",

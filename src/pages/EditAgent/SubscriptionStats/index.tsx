@@ -1,3 +1,5 @@
+import type { StatMetricItem } from '@/components/business-component/StatMetricCard';
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { apiGetAgentSubscriptionPlanStats } from '@/pages/EditAgent/services/agent-subscription-plan';
 import {
   SubscriptionPlanPeriodEnum,
@@ -6,6 +8,8 @@ import {
   UserSubscriberStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
+import { formatDateTimeYmdHms } from '@/utils/dateUtils';
+import { formatInteger } from '@/utils/numberFormat';
 import { Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -75,9 +79,9 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
   const columns: ColumnsType<SubscriptionPlanSubscriberInfo> = useMemo(
     () => [
       {
-        title: '用户ID',
-        dataIndex: 'userId',
-        width: 100,
+        title: '订阅记录ID',
+        dataIndex: 'id',
+        width: 150,
       },
       {
         title: '套餐名称',
@@ -92,6 +96,11 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
           periodLabelMap[period] || '-',
       },
       {
+        title: '已用次数',
+        dataIndex: 'callUsedCount',
+        width: 120,
+      },
+      {
         title: '状态',
         dataIndex: 'status',
         width: 110,
@@ -99,47 +108,65 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
           subscriberStatusLabelMap[status] || '-',
       },
       {
+        title: '订阅者ID',
+        dataIndex: ['subscriber', 'id'],
+        width: 100,
+        render: (subscriberId?: number) =>
+          subscriberId !== undefined && subscriberId !== null
+            ? subscriberId
+            : '-',
+      },
+      {
+        title: '订阅者名称',
+        dataIndex: ['subscriber', 'name'],
+        width: 120,
+        ellipsis: true,
+        render: (subscriberName?: string) => subscriberName || '-',
+      },
+      {
         title: '开始时间',
         dataIndex: 'startTime',
-        width: 170,
+        width: 200,
+        render: (startTime: string) => formatDateTimeYmdHms(startTime),
       },
       {
         title: '结束时间',
         dataIndex: 'endTime',
-        width: 170,
-        render: (endTime: string) => endTime || '-',
-      },
-      {
-        title: '已用次数',
-        dataIndex: 'callUsedCount',
-        width: 100,
+        width: 200,
+        render: (endTime: string) => formatDateTimeYmdHms(endTime),
       },
     ],
     [],
   );
 
+  /** 订阅概览三项指标（数值已格式化为字符串，供 StatMetricCardList 展示） */
+  const subscriptionMetrics = useMemo((): StatMetricItem[] => {
+    return [
+      {
+        key: 'totalCount',
+        label: '总订阅数',
+        value: formatInteger(statsResult?.totalCount ?? 0),
+      },
+      {
+        key: 'todayCount',
+        label: '今日新增',
+        value: formatInteger(statsResult?.todayCount ?? 0),
+      },
+      {
+        key: 'monthCount',
+        label: '本月新增',
+        value: formatInteger(statsResult?.monthCount ?? 0),
+      },
+    ];
+  }, [statsResult]);
+
   return (
     <div className={styles.container}>
-      <div className={styles['stat-grid']}>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>总订阅数</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.totalCount ?? 0}
-          </div>
-        </div>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>今日新增</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.todayCount ?? 0}
-          </div>
-        </div>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>本月新增</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.monthCount ?? 0}
-          </div>
-        </div>
-      </div>
+      <StatMetricCardList
+        items={subscriptionMetrics}
+        loading={loading}
+        showTooltip={false}
+      />
 
       <div className={styles['table-card']}>
         <Table<SubscriptionPlanSubscriberInfo>

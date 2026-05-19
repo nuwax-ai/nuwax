@@ -18,7 +18,6 @@ import {
   MySubscriptionStatusEnum,
   type MySubscriptionItem,
 } from '@/types/interfaces/subscription';
-import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -53,8 +52,6 @@ const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
   [SubscriptionPlanPeriodEnum.FOREVER]: '永久',
 };
 
-const BADGE_REGEX = /(限时免费|功能限免|限时尝鲜)/;
-
 /** 未订阅时：与历史逻辑一致的主操作按钮文案 */
 function getUnsubscribedActionLabel(
   targetType: 'Agent' | 'Skill',
@@ -64,7 +61,7 @@ function getUnsubscribedActionLabel(
     return '订阅套餐';
   }
   return plan?.period === SubscriptionPlanPeriodEnum.MONTH
-    ? '订阅包月套餐'
+    ? '订阅套餐'
     : '订阅买断套餐';
 }
 
@@ -119,50 +116,6 @@ function getSubscribeButtonLabel(
     return '升级';
   }
   return getUnsubscribedActionLabel(targetType, plan);
-}
-
-/** 同一套权益解析逻辑，与后台 PlanItemCard 对齐，并兼容 items 明细 */
-function buildFeatureRows(
-  plan: SubscriptionPlanInfo,
-): { text: string; badge: string }[] {
-  const rows: { text: string; badge: string }[] = [];
-
-  const pushParsedLine = (raw: string) => {
-    const featureText = String(raw || '');
-    const badgeMatch = featureText.match(BADGE_REGEX);
-    const badge = badgeMatch?.[1] || '';
-    const text = featureText
-      .replace(/（/g, '(')
-      .replace(/）/g, ')')
-      .replace(/\((限时免费|功能限免|限时尝鲜)\)/g, '')
-      .replace(BADGE_REGEX, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    rows.push({ text: text || featureText, badge });
-  };
-
-  (plan.itemGroups || []).forEach((group) => {
-    const items = group.items?.filter((it) => it.selected !== false) ?? [];
-    if (items.length > 0) {
-      items.forEach((it) => {
-        const line = `${it.name || ''}${
-          it.description ? ` · ${it.description}` : ''
-        }`.trim();
-        if (line) pushParsedLine(line);
-      });
-    } else if (group.name) {
-      pushParsedLine(group.name);
-    }
-  });
-
-  const gift = plan.dailyGiftCreditAmount;
-  if (gift && gift > 0) {
-    const line = `每日登录领 ${gift.toLocaleString()} 积分`;
-    if (!rows.some((r) => r.text.includes('每日登录'))) {
-      rows.unshift({ text: line, badge: '' });
-    }
-  }
-  return rows;
 }
 
 export interface PaymentSubscriptionModalProps {
@@ -331,8 +284,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
               const firstPrice = plan.firstPrice;
               // 是否显示原价
               const showStrikeOriginal = firstPrice !== priceMain;
-              // 权益列表
-              const features = buildFeatureRows(plan);
               const creditAmountText = `每月 ${plan.creditAmount} 积分`;
               // 可调用次数
               const callLimit = plan.callLimitCount;
@@ -452,30 +403,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   <div className={cx(styles['points-row'])}>
                     <span className={cx(styles.diamond)} aria-hidden />
                     <span>{`可调用次数：${callLimitText}`}</span>
-                  </div>
-
-                  {/* 分割线 */}
-                  <hr className={cx(styles['divider-dashed'])} />
-                  {/* 权益列表 */}
-                  <div className={cx(styles['feature-list'])}>
-                    {features.map((feature, fi) => (
-                      <div
-                        key={`${feature.text}-${fi}`}
-                        className={cx(styles['feature-item'])}
-                      >
-                        <CheckCircleFilled
-                          className={cx(styles['feature-icon'])}
-                        />
-                        <span className={cx(styles['feature-text'])}>
-                          {feature.text}
-                        </span>
-                        {feature.badge ? (
-                          <span className={cx(styles['feature-badge'])}>
-                            {feature.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                    ))}
                   </div>
                 </div>
               );

@@ -661,7 +661,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return (
           <SecondMenuItem.SubItem
             key={menuCode}
-            icon={menu.icon}
+            icon={level === 0 ? menu.icon : undefined}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}
@@ -677,7 +677,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return (
         <div key={menuCode} className="flex flex-col gap-4">
           <SecondMenuItem
-            icon={menu.icon}
+            icon={level === 0 ? menu.icon : undefined}
             name={menu.name}
             style={{ marginLeft: indent }}
             isActive={menuActive}

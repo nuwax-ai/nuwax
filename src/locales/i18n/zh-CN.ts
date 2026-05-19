@@ -1561,6 +1561,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AntvX6ComplexNode.requestTimeoutLabel": "请求超时配置",
   "PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder": "请输入超时配置时长",
   "PC.Pages.AntvX6ComplexNode.skills": "技能",
+  "PC.Pages.AntvX6ComplexNode.workflowTools": "技能",
   "PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder": "系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量",
   "PC.Pages.AntvX6ComplexNode.systemPromptTitle": "系统提示词",
   "PC.Pages.AntvX6ComplexNode.systemPromptTooltip": "为对话提供系统级指导，如设定人设和回复逻辑。",
@@ -5097,6 +5098,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadTypeError": "只支持上传 JPG/PNG/JPEG 格式的图片！",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadSizeError": "图片大小不能超过 5MB！",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadFailed": "上传图片失败，请稍后重试",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPaymentRemark": "打款备注",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewBtn": "查看",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paymentRemarkDetailTitle": "打款详情",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.voucherImagesLabel": "凭证图片",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.noVoucherImages": "暂无凭证图片",
 
   // ── 系统管理 - 开发者收益统计 ─────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "开发者",

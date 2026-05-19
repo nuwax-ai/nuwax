@@ -7,6 +7,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
   transition: all 0.3s ease;
   overflow: hidden;
 
@@ -18,7 +19,7 @@
   .card-header {
     padding: @paddingLg;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: @margin;
 
     .agent-icon {
@@ -32,6 +33,7 @@
       font-size: 24px;
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 10%);
+      overflow: hidden;
     }
 
     .agent-info {
@@ -50,7 +52,14 @@
 
       .agent-provider {
         font-size: @fontSizeSm;
+        line-height: 20px;
+        height: 40px;
         color: @colorTextTertiary;
+        display: box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-all;
       }
     }
   }
@@ -74,8 +83,9 @@
         color: @colorTextBase;
 
         .price {
-          color: @colorPrimary;
-          font-weight: 600;
+          color: @colorTextBase;
+          font-weight: 700;
+          font-size: calc(@fontSizeSm + 2px);
         }
 
         .unit {
@@ -94,6 +104,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: auto;
 
     .status-box {
       display: flex;
