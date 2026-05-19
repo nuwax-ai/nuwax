@@ -11,9 +11,9 @@ import { Switch, Tag, message } from 'antd';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import {
-  apiSystemDeleteModelPricing,
+  apiSystemDeleteModelPricingConfig,
   apiSystemListPricingConfig,
-  apiSystemUpdateModelPricing,
+  apiSystemModelPricingConfigSave,
 } from '../services/resource';
 import styles from './index.less';
 
@@ -45,28 +45,25 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
 
   // 删除定价配置
-  const { run: removePricingConfig } = useRequest(apiSystemDeleteModelPricing, {
-    manual: true,
-    onSuccess: () => {
-      message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-      actionRef.current?.reload();
+  const { run: removePricingConfig } = useRequest(
+    apiSystemDeleteModelPricingConfig,
+    {
+      manual: true,
+      onSuccess: () => {
+        message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
+        actionRef.current?.reload();
+      },
     },
-    onError: () => {
-      message.error(dict('PC.Common.Global.operationFailed'));
-    },
-  });
+  );
 
   // 更新定价配置（切换收费状态）
   const { run: runUpdateToolPricing } = useRequest(
-    apiSystemUpdateModelPricing,
+    apiSystemModelPricingConfigSave,
     {
       manual: true,
       onSuccess: () => {
         message.success(dict('PC.Common.Global.operationSuccess'));
         actionRef.current?.reload();
-      },
-      onError: () => {
-        message.error(dict('PC.Common.Global.operationFailed'));
       },
     },
   );
@@ -124,12 +121,17 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
     item: ResourcePricingConfigInfo,
     checked: boolean,
   ) => {
-    runUpdateToolPricing({
-      ...item,
+    const data = {
+      targetType: item.targetType,
+      targetId: item.targetId,
+      pricingType: item.pricingType,
+      price: item.price,
+      trialCount: item.trialCount,
       status: checked
         ? ResourcePricingStatus.ENABLED
         : ResourcePricingStatus.DISABLED,
-    });
+    };
+    runUpdateToolPricing(data);
   };
 
   // 模型定价列表列配置
