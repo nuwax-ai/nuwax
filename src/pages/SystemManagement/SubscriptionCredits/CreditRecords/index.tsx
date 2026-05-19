@@ -3,9 +3,14 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
-import type { ParamsType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ParamsType,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { Statistic, Tag } from 'antd';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import { apiGetCreditFlowList } from '../services/credit';
 import {
@@ -83,6 +88,25 @@ const CreditRecords: React.FC = () => {
     1: undefined,
   });
   const queryKeyRef = useRef<string>('');
+  const formRef = useRef<FormInstance>();
+  const actionRef = useRef<ActionType>();
+
+  /** 重置表单与游标分页，恢复到 URL 对应的 formInitialValues */
+  const handleReset = useCallback(() => {
+    formRef.current?.setFieldsValue({
+      userId: formInitialValues?.userId,
+      userName: undefined,
+      creditType: undefined,
+    });
+    queryKeyRef.current = '';
+    lastIdMapRef.current = { 1: undefined };
+    actionRef.current?.setPageInfo?.({
+      current: 1,
+      pageSize: tablePageSize,
+    });
+    // submit 会按当前表单值发起请求；reload 仅复用上次提交的筛选条件
+    formRef.current?.submit();
+  }, [formInitialValues, tablePageSize]);
 
   const typeConfig = useMemo(
     () => ({
@@ -356,10 +380,13 @@ const CreditRecords: React.FC = () => {
       <XProTable<UserCreditFlowInfo, CreditFlowListTableParams>
         key={location.pathname + (location.search || '')}
         rowKey="id"
+        formRef={formRef}
+        actionRef={actionRef}
         columns={columns}
         request={requestCreditFlowList}
         pagination={showPagination ? cursorPagination : false}
         scroll={{ x: 'max-content' }}
+        onReset={handleReset}
         form={
           formInitialValues ? { initialValues: formInitialValues } : undefined
         }

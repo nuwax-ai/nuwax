@@ -349,7 +349,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                         ¥{priceMain}
                       </span>
                       <span className={cx(styles['price-unit'])}>
-                        /{period}
+                        / {period}
                       </span>
                     </div>
                     {/* 原价, 技能只占位，不显示原价 */}
