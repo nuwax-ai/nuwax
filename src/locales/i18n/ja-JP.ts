@@ -1515,7 +1515,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentEdit.subscriptionStats": "サブスクリプション統計",
   "PC.Pages.AgentEdit.unpublishedChanges": "未公開の変更",
   "PC.Pages.AgentEdit.versionHistory": "バージョン履歴",
-  "PC.Pages.Agent.subscriptionSetting": "サブスクリプション設定",
   "PC.Pages.AntvX6.loopBreakDesc": "現在のループを直ちに終了し、ループ本体から抜け出します。",
   "PC.Pages.AntvX6.loopContinueDesc": "現在のループを終了し、次の繰り返しに進みます。",
   "PC.Pages.AntvX6.systemPrompt": "システムプロンプト",

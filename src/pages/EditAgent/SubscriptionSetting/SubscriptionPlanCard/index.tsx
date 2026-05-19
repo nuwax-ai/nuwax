@@ -1,3 +1,4 @@
+import ConditionRender from '@/components/ConditionRender';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
@@ -41,17 +42,21 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
     <div className={cx(styles['plan-card'])}>
       <div className={cx(styles['card-top-line'])} />
       <div className={cx(styles['card-header'])}>
-        <div className={cx(styles['plan-name'])}>{plan.name}</div>
-        <span className={cx(styles['package-tag'])}>包千价</span>
+        <div className={cx(styles['plan-name'], 'flex-1', 'text-ellipsis')}>
+          {plan.name}
+        </div>
+        {/* 仅为功能订阅时显示包干价标签 */}
+        <ConditionRender condition={plan.functionOnly}>
+          <span className={cx(styles['package-tag'])}>包干价</span>
+        </ConditionRender>
       </div>
       <div className={cx(styles['plan-desc'], 'text-ellipsis-2')}>
         {plan.description}
       </div>
       <div className={cx(styles['price-box'])}>
-        <span className={cx(styles.currency)}>¥</span>
-        <span className={cx(styles['price-value'])}>{plan.price}</span>
+        <span className={cx(styles['price-value'])}>¥{plan.price}</span>
         <span className={cx(styles['price-unit'])}>
-          {`/${periodLabelMap[plan.period] || '-'}`}
+          {`/ ${periodLabelMap[plan.period] || '-'}`}
         </span>
       </div>
       <div className={cx(styles['plan-meta'])}>
