@@ -263,16 +263,6 @@ const Plans = () => {
         typeof r.price === 'number' ? `¥${r.price}` : r.price ?? '-',
     },
     {
-      title: dict('PC.Pages.SystemPlans.colFirstPrice'),
-      dataIndex: 'firstPrice',
-      width: 112,
-      search: false,
-      render: (_, r) =>
-        r.firstPrice !== undefined && r.firstPrice !== null
-          ? `¥${r.firstPrice}`
-          : '-',
-    },
-    {
       title: dict('PC.Pages.SystemPlans.colPeriod'),
       dataIndex: 'period',
       width: 100,
@@ -287,7 +277,7 @@ const Plans = () => {
       render: (_, r) =>
         r.creditAmount !== undefined && r.creditAmount !== null
           ? r.creditAmount.toLocaleString()
-          : '-',
+          : 0,
     },
     {
       title: dict('PC.Pages.SystemPlans.colCallLimit'),
@@ -296,9 +286,6 @@ const Plans = () => {
       search: false,
       render: (_, r) => {
         const n = r.callLimitCount;
-        if (n === undefined || n === null) {
-          return '-';
-        }
         if (n === -1) {
           return dict('PC.Pages.SystemPlans.colCallLimitUnlimited');
         }
@@ -314,7 +301,7 @@ const Plans = () => {
         r.dailyGiftCreditAmount !== undefined &&
         r.dailyGiftCreditAmount !== null
           ? r.dailyGiftCreditAmount.toLocaleString()
-          : '-',
+          : 0,
     },
     {
       title: dict('PC.Pages.SystemPlans.colIsHot'),
@@ -341,14 +328,11 @@ const Plans = () => {
     {
       title: dict('PC.Pages.SystemPlans.status'),
       dataIndex: 'status',
-      width: 120,
+      width: 100,
       search: false,
       fixed: 'right',
       align: 'center',
       render: (_, r) => {
-        if (typeof r.id !== 'number') {
-          return '-';
-        }
         return (
           <Switch
             checked={r.status === SubscriptionPlanStatusEnum.Online}
@@ -361,24 +345,21 @@ const Plans = () => {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       fixed: 'right',
-      width: 120,
+      width: 80,
       search: false,
       align: 'center',
-      render: (_, record) =>
-        typeof record.id === 'number' ? (
-          <TableActions
-            record={record}
-            actions={[
-              {
-                key: 'edit',
-                label: dict('PC.Common.Global.edit'),
-                onClick: (plan) => handleEdit(plan),
-              },
-            ]}
-          />
-        ) : (
-          '-'
-        ),
+      render: (_, record) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: dict('PC.Common.Global.edit'),
+              onClick: (plan) => handleEdit(plan),
+            },
+          ]}
+        />
+      ),
     },
   ];
 

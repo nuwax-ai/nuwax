@@ -123,6 +123,8 @@ const AgentModelSetting: React.FC<
           list?.map((item) => ({
             label: item.name,
             value: item.id,
+            description: item.description,
+            img: (item as ModelConfigInfo & { icon?: string }).icon,
           })) || [];
         setModelConfigList(_list);
 
@@ -142,6 +144,8 @@ const AgentModelSetting: React.FC<
           list?.map((item) => ({
             label: item.name,
             value: item.id,
+            description: item.description,
+            img: (item as ModelConfigInfo & { icon?: string }).icon,
           })) || [];
         setModelConfigList(_list);
       }
@@ -191,6 +195,8 @@ const AgentModelSetting: React.FC<
         ?.map((item) => ({
           label: item.name,
           value: item.id,
+          description: item.description,
+          img: (item as ModelConfigInfo & { icon?: string }).icon,
         })) || []
     );
   }, [originalModelConfigList, targetId]);
@@ -310,6 +316,7 @@ const AgentModelSetting: React.FC<
               onChange={handleChangeModelTarget}
               options={modelConfigList}
               value={targetId}
+              showDescription
             />
           </div>
         </Flex>
@@ -340,6 +347,7 @@ const AgentModelSetting: React.FC<
             onChange={handleChangeModelTarget}
             options={modelConfigList}
             value={targetId}
+            showDescription
           />
         </div>
         <div className="flex-1">
@@ -357,6 +365,7 @@ const AgentModelSetting: React.FC<
             options={reasonModelList}
             value={componentBindConfig.reasoningModelId}
             allowClear
+            showDescription
           />
         </div>
       </Flex>

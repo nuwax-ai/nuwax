@@ -4588,7 +4588,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SystemPlans.colDesc": "描述",
   "PC.Pages.SystemPlans.colPrice": "價格（元）",
   "PC.Pages.SystemPlans.colPeriod": "週期",
-  "PC.Pages.SystemPlans.colFirstPrice": "原價（元）",
   "PC.Pages.SystemPlans.periodMonth": "月",
   "PC.Pages.SystemPlans.periodQuarter": "季度",
   "PC.Pages.SystemPlans.periodYear": "年",

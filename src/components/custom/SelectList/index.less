@@ -26,8 +26,15 @@
 // 行宽随内容伸缩，便于 rc-select 计算下拉层宽度（popupMatchSelectWidth={false}）
 .option-row {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
 }
 
 // 文案最长 300px，超出单行省略号（需非纯 inline 才能让 ellipsis 生效）
@@ -38,6 +45,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+}
+
+.option-description {
+  display: box;
+  max-width: 300px;
+  overflow: hidden;
+  color: @GRAY05;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: normal;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .dropdown-popup {
