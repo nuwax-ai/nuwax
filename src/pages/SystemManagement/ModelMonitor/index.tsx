@@ -1,3 +1,4 @@
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -14,57 +15,23 @@ import type {
 import {
   formatCurrency,
   formatInteger,
-  subtractNumbers,
   sumBigNumbersToNumber,
 } from '@/utils/numberFormat';
-import {
-  getStatGroupInputTokens,
-  getStatGroupTotalInputTokens,
-} from '@/utils/resourceStatMetrics';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, Skeleton, Tooltip, message } from 'antd';
+import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'umi';
 import styles from './index.less';
+import {
+  getModelMonitorRecordInputTokens,
+  getModelMonitorRecordTotalInputTokens,
+  getModelMonitorSummaryInputTokens,
+  getModelMonitorSummaryTotalInputTokens,
+} from './resourceStatTokenMetrics';
 
 const { RangePicker } = DatePicker;
-
-const SummaryCard: React.FC<{
-  label: string;
-  value: string;
-  highlight?: boolean;
-  loading?: boolean;
-}> = ({ label, value, highlight, loading }) => {
-  if (loading) {
-    return (
-      <div className={styles['stat-item-card']}>
-        <Skeleton
-          active
-          paragraph={{ rows: 1, width: '50%' }}
-          title={{ width: '70%' }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div className={styles['stat-item-card']}>
-      <span className={styles['stat-label']}>{label}</span>
-      <Tooltip title={value}>
-        <span className={styles['stat-value-trigger']}>
-          <span
-            className={`${styles['stat-value']} ${
-              highlight ? styles['highlight'] : ''
-            }`}
-          >
-            {value}
-          </span>
-        </span>
-      </Tooltip>
-    </div>
-  );
-};
 
 const ModelMonitor: React.FC = () => {
   const location = useLocation();
@@ -185,9 +152,7 @@ const ModelMonitor: React.FC = () => {
       },
       {
         label: dict('PC.Pages.ModelMonitor.totalInputTokens'),
-        value: formatInteger(
-          getStatGroupTotalInputTokens(g, 'totalIsInputOnly'),
-        ),
+        value: formatInteger(getModelMonitorSummaryTotalInputTokens(g)),
       },
       {
         label: dict('PC.Pages.ModelMonitor.cacheInputTokens'),
@@ -195,7 +160,7 @@ const ModelMonitor: React.FC = () => {
       },
       {
         label: dict('PC.Pages.ModelMonitor.inputTokens'),
-        value: formatInteger(getStatGroupInputTokens(g, 'totalIsInputOnly')),
+        value: formatInteger(getModelMonitorSummaryInputTokens(g)),
       },
       {
         label: dict('PC.Pages.ModelMonitor.outputTokens'),
@@ -265,7 +230,8 @@ const ModelMonitor: React.FC = () => {
       dataIndex: 'inputTokens',
       width: 130,
       hideInSearch: true,
-      render: (_, record) => formatInteger(record.inputTokens),
+      render: (_, record) =>
+        formatInteger(getModelMonitorRecordTotalInputTokens(record)),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colCacheInputTokens'),
@@ -279,7 +245,7 @@ const ModelMonitor: React.FC = () => {
       width: 120,
       hideInSearch: true,
       render: (_, record) =>
-        subtractNumbers(record.inputTokens, record.cacheInputTokens),
+        formatInteger(getModelMonitorRecordInputTokens(record)),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colOutputTokens'),
@@ -349,17 +315,7 @@ const ModelMonitor: React.FC = () => {
         </div>
 
         {/* 统计卡片 */}
-        <div className={styles['stat-cards-row']}>
-          {overviewMetrics.map((metric, index) => (
-            <SummaryCard
-              key={index}
-              label={metric.label}
-              value={metric.value}
-              highlight={metric.highlight}
-              loading={summaryLoading}
-            />
-          ))}
-        </div>
+        <StatMetricCardList items={overviewMetrics} loading={summaryLoading} />
 
         {/* 明细表格 */}
         <div className={styles['detail-section']}>
