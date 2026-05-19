@@ -1,3 +1,5 @@
+import type { StatMetricItem } from '@/components/business-component/StatMetricCard';
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { apiGetAgentSubscriptionPlanStats } from '@/pages/EditAgent/services/agent-subscription-plan';
 import {
   SubscriptionPlanPeriodEnum,
@@ -7,6 +9,7 @@ import {
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
+import { formatInteger } from '@/utils/numberFormat';
 import { Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -136,28 +139,34 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
     [],
   );
 
+  /** 订阅概览三项指标（数值已格式化为字符串，供 StatMetricCardList 展示） */
+  const subscriptionMetrics = useMemo((): StatMetricItem[] => {
+    return [
+      {
+        key: 'totalCount',
+        label: '总订阅数',
+        value: formatInteger(statsResult?.totalCount ?? 0),
+      },
+      {
+        key: 'todayCount',
+        label: '今日新增',
+        value: formatInteger(statsResult?.todayCount ?? 0),
+      },
+      {
+        key: 'monthCount',
+        label: '本月新增',
+        value: formatInteger(statsResult?.monthCount ?? 0),
+      },
+    ];
+  }, [statsResult]);
+
   return (
     <div className={styles.container}>
-      <div className={styles['stat-grid']}>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>总订阅数</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.totalCount ?? 0}
-          </div>
-        </div>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>今日新增</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.todayCount ?? 0}
-          </div>
-        </div>
-        <div className={styles['stat-card']}>
-          <div className={styles['stat-title']}>本月新增</div>
-          <div className={styles['stat-value']}>
-            {statsResult?.monthCount ?? 0}
-          </div>
-        </div>
-      </div>
+      <StatMetricCardList
+        items={subscriptionMetrics}
+        loading={loading}
+        showTooltip={false}
+      />
 
       <div className={styles['table-card']}>
         <Table<SubscriptionPlanSubscriberInfo>

@@ -68,7 +68,13 @@ const StatMetricCard: React.FC<StatMetricCardProps> = ({
   return (
     <div className={styles['stat-item-card']} style={valueStyle}>
       <span className={styles['stat-label']}>{label}</span>
-      {showTooltip ? <Tooltip title={value}>{valueNode}</Tooltip> : valueNode}
+      {showTooltip ? (
+        <Tooltip title={value} placement="topLeft">
+          {valueNode}
+        </Tooltip>
+      ) : (
+        valueNode
+      )}
     </div>
   );
 };
