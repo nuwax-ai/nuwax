@@ -714,8 +714,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     className={cx(styles['icon-box'])}
                     icon={
                       <SvgIcon
-                        name="icons-chat-collect"
-                        style={{ fontSize: 16 }}
+                        name="icons-nav-wodedingyue"
+                        style={{ fontSize: 18 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}
