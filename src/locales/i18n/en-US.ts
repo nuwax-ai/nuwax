@@ -5055,6 +5055,8 @@ export const EN_US: SystemLangMap = {
   // ── System Management - Withdrawal Management ────────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper": "Developer",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "Withdrawal Amount",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPlatformServiceFee": "Platform Service Fee",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colActualTransferAmount": "Actual Transfer Amount",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAccount": "Receiving Account",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt": "Application Time",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus": "Status",
