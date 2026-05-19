@@ -5044,7 +5044,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.monthlyPayment": "Monthly",
   "PC.Pages.MorePage.MySubscriptions.nextRenewal": "Next Renewal: {0}",
   "PC.Pages.MorePage.MySubscriptions.perForever": "/Lifetime",
-  "PC.Pages.MorePage.MySubscriptions.permanentUse": "Buyout · Permanent Use",
+  "PC.Pages.MorePage.MySubscriptions.permanentUse": "Permanent Use",
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/mo",
   "PC.Pages.MorePage.MySubscriptions.perQuarter": "/quarter",
   "PC.Pages.MorePage.MySubscriptions.perYear": "/year",

@@ -5036,7 +5036,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.monthlyPayment": "月付",
   "PC.Pages.MorePage.MySubscriptions.nextRenewal": "下次續費：{0}",
   "PC.Pages.MorePage.MySubscriptions.perForever": "/永久有效",
-  "PC.Pages.MorePage.MySubscriptions.permanentUse": "已買斷 · 永久使用",
+  "PC.Pages.MorePage.MySubscriptions.permanentUse": "永久使用",
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/月",
   "PC.Pages.MorePage.MySubscriptions.perQuarter": "/季",
   "PC.Pages.MorePage.MySubscriptions.perYear": "/年",
