@@ -130,17 +130,29 @@ const Square: React.FC = () => {
   // 获取租户配置信息
 
   const handleClickSkill = (item: SquarePublishedItemInfo) => {
-    const agentId = tenantConfigInfo?.defaultTaskAgentId;
-    if (!agentId) {
-      // 站点默认通用型智能体未配置
-      message.warning(dict('PC.Pages.Square.Square.defaultAgentNotConfigured'));
-      return;
+    const { targetId, paymentRequired, subscribed } = item;
+
+    // 如果开启订阅功能，且技能需要付费，则打开付费订阅弹窗
+    if (isEnableSubscription && paymentRequired && !subscribed) {
+      // 查询技能订阅计划列表以及当前技能我的订阅信息
+      querySkillSubscriptionPlans(targetId);
+      // 打开付费订阅弹窗
+      setOpenPaymentModal(true);
+    } else {
+      const agentId = tenantConfigInfo?.defaultTaskAgentId;
+      if (!agentId) {
+        // 站点默认通用型智能体未配置
+        message.warning(
+          dict('PC.Pages.Square.Square.defaultAgentNotConfigured'),
+        );
+        return;
+      }
+      history.push(
+        `/agent/${agentId}?skillId=${
+          item.targetId
+        }&skillName=${encodeURIComponent(item.name)}`,
+      );
     }
-    history.push(
-      `/agent/${agentId}?skillId=${
-        item.targetId
-      }&skillName=${encodeURIComponent(item.name)}`,
-    );
   };
 
   // 点击技能卡片
@@ -153,7 +165,6 @@ const Square: React.FC = () => {
       querySkillSubscriptionPlans(targetId);
       // 打开付费订阅弹窗
       setOpenPaymentModal(true);
-      return;
     } else {
       handleClick(targetId, targetType);
     }
@@ -585,6 +596,7 @@ const Square: React.FC = () => {
                     return (
                       <SquareComponentInfo
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
