@@ -1,13 +1,4 @@
-.create-plan-modal-content {
-  border-radius: 22px;
-  padding: 24px;
-}
-
-.create-plan-modal-header {
-  color: #0f172a;
-  font-size: 30px;
-  font-weight: 700;
-}
+@import '@/styles/token.less';
 
 .price-row {
   display: flex;
@@ -38,18 +29,23 @@
   box-sizing: border-box;
 
   .function-only-text {
-    height: 40px;
-
-    .function-only-title {
-      color: #1e293b;
-      font-size: 14px;
-      font-weight: 600;
-    }
+    flex: 1;
+    min-width: 0;
 
     .function-only-desc {
-      margin-top: 2px;
-      color: #94a3b8;
-      font-size: 12px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.5;
+
+      .function-only-highlight {
+        color: @colorPrimary;
+        font-weight: 600;
+      }
+
+      .function-only-highlight-pay {
+        color: #ff1818;
+        font-weight: 600;
+      }
     }
   }
 }

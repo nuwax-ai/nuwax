@@ -1561,6 +1561,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AntvX6ComplexNode.requestTimeoutLabel": "请求超时配置",
   "PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder": "请输入超时配置时长",
   "PC.Pages.AntvX6ComplexNode.skills": "技能",
+  "PC.Pages.AntvX6ComplexNode.workflowTools": "技能",
   "PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder": "系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量",
   "PC.Pages.AntvX6ComplexNode.systemPromptTitle": "系统提示词",
   "PC.Pages.AntvX6ComplexNode.systemPromptTooltip": "为对话提供系统级指导，如设定人设和回复逻辑。",
