@@ -5122,7 +5122,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceSubscriptionSettings.fieldTrialCalls": "試用次數",
   "PC.Pages.SpaceSubscriptionSettings.fieldTrialCallsHint": "新用戶可免費体验的調用次數，设为 0 则不提供試用",
   "PC.Pages.SpaceSubscriptionSettings.pageSubtitle": "共 {count} 個套餐",
-  "PC.Pages.SpaceSubscriptionSettings.pageTitle": "訂閱设置",
+  "PC.Pages.SpaceSubscriptionSettings.pageTitle": "訂閱設定",
   "PC.Pages.SpaceSubscriptionSettings.sectionTitle": "套餐列表",
   "PC.Pages.SpaceSubscriptionSettings.statusInactive": "下架",
   "PC.Pages.SpaceSubscriptionSettings.tagFunc": "功能訂閱",
