@@ -2804,7 +2804,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.monthlyPayment": "Monthly",
   "PC.Pages.MorePage.MySubscriptions.quarterlyPayment": "Quarterly",
   "PC.Pages.MorePage.MySubscriptions.yearlyPayment": "Yearly",
-  "PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle": "Select a credit package for instant arrival, usable for Token consumption, agent subscriptions, tool calls, etc.",
+  "PC.Pages.MorePage.MySubscriptions.purchaseCreditsSubtitle": "Select a credit package for instant arrival, usable for Token consumption, tool calls, etc.",
 
   // ── Subscription Common Enums ──
   "PC.Common.Subscription.BizType.system": "System",
