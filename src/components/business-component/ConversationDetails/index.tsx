@@ -173,12 +173,17 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 智能体订阅
   const {
+    // 智能体订阅套餐
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
     loadAgentSubscriptionPlans,
+    // 当前生效智能体套餐
     mySubscriptionInfo,
+    // 加载当前生效智能体套餐
     loadMySubscription,
+    // 加载当前生效智能体套餐loading
     loadingMySubscription,
+    // 创建智能体订阅订单
     createAgentSubscriptionOrder,
   } = useAgentSubscription();
 
@@ -1003,13 +1008,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}
-          // 当前生效套餐 planId
-          currentSubscribedPlanId={
-            mySubscriptionInfo?.currentSubscription?.planId ?? null
-          }
-          // 当前生效套餐价格，用于与列表中各套餐比价（升级 / 订阅）
-          currentSubscribedPlanPrice={
-            mySubscriptionInfo?.currentSubscription?.plan?.price ?? null
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
           }
           // 关闭回调
           onClose={() => setOpenPaymentModal(false)}

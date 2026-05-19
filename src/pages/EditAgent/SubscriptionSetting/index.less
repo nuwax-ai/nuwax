@@ -2,51 +2,25 @@
 @import '@/styles/token';
 
 .container {
-  width: 100%;
   flex: 1;
   height: 100%;
   overflow-y: auto;
   padding: 16px;
-  background: #f4f7fd;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.back-button {
-  border: none;
-}
-
-.title {
-  margin: 0;
-  color: #1f6feb;
-  font-size: 30px;
-  font-weight: 600;
-}
-
-.count-text {
-  color: #8a94a6;
-  font-size: 14px;
 }
 
 .setting-panel {
-  margin-top: 16px;
   background: #fff;
   border-radius: 16px;
-  padding: 20px 24px;
+  border: 1px solid #e6edf8;
+  padding: 20px;
 }
 
 .enable-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #e6edf8;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 16px;
 }
 
 .enable-info {
@@ -65,46 +39,15 @@
   font-size: 12px;
 }
 
-.form-row {
+.trial-controls {
   display: flex;
-  justify-content: space-between;
-  gap: 32px;
-}
-
-.form-left {
-  flex: 1;
-}
-
-.form-right {
-  width: 360px;
-}
-
-.field-label {
-  margin-bottom: 12px;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.mode-btn {
-  color: #2563eb;
-  border-color: #8cb4ff;
-  border-radius: 12px;
-}
-
-.trial-form-item {
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .trial-input {
-  width: 180px;
-  margin-right: 12px;
-}
-
-.trial-hint {
-  margin-top: 8px;
-  color: #94a3b8;
-  font-size: 12px;
+  width: 120px;
 }
 
 .list-header {
@@ -112,13 +55,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
 
-.list-title {
-  margin: 0;
-  color: #111827;
-  font-size: 28px;
-  font-weight: 700;
+  .list-title-container {
+    align-items: flex-end;
+
+    .list-title {
+      margin: 0;
+      color: #111827;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .count-text {
+      margin-bottom: 2px;
+      color: @GRAY05;
+      font-size: @fontSizeSm;
+    }
+  }
 }
 
 .plan-grid {
@@ -153,13 +106,5 @@
 @media (max-width: 960px) {
   .plan-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
-  .form-row {
-    flex-direction: column;
-  }
-
-  .form-right {
-    width: 100%;
   }
 }

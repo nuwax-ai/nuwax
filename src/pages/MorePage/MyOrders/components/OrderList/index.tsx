@@ -21,29 +21,6 @@ const BIZ_TYPE_MAP: Record<string, string> = {
   ),
 };
 
-const PAY_STATUS_MAP: Record<string, { text: string; color: string }> = {
-  [BillPayStatusEnum.PENDING]: {
-    text: dict('PC.Pages.MorePage.MyOrders.payStatusPending'),
-    color: 'warning',
-  },
-  [BillPayStatusEnum.PROCESSING]: {
-    text: dict('PC.Pages.MorePage.MyOrders.payStatusProcessing'),
-    color: 'processing',
-  },
-  [BillPayStatusEnum.SUCCESS]: {
-    text: dict('PC.Pages.MorePage.MyOrders.payStatusSuccess'),
-    color: 'success',
-  },
-  [BillPayStatusEnum.FAILED]: {
-    text: dict('PC.Pages.MorePage.MyOrders.payStatusFailed'),
-    color: 'default',
-  },
-  [BillPayStatusEnum.CLOSED]: {
-    text: dict('PC.Pages.MorePage.MyOrders.payStatusClosed'),
-    color: 'default',
-  },
-};
-
 const ORDER_STATUS_MAP: Record<string, { text: string; color: string }> = {
   PENDING: {
     text: dict('PC.Pages.MorePage.MyOrders.orderStatusPending'),
@@ -82,19 +59,6 @@ const columns: ProColumns<BillOrderInfo>[] = [
     dataIndex: 'amount',
     search: false,
     render: (_, record) => `¥${Number(record.amount).toFixed(2)}`,
-  },
-  {
-    title: dict('PC.Pages.MorePage.MyOrders.colPayStatus'),
-    dataIndex: 'payStatus',
-    valueType: 'select',
-    valueEnum: Object.entries(PAY_STATUS_MAP).reduce(
-      (acc, [key, val]) => ({ ...acc, [key]: { text: val.text } }),
-      {},
-    ),
-    render: (_, record) => {
-      const info = PAY_STATUS_MAP[record.payStatus];
-      return info ? <Tag color={info.color}>{info.text}</Tag> : '-';
-    },
   },
   {
     title: dict('PC.Pages.MorePage.MyOrders.colOrderStatus'),
@@ -171,10 +135,9 @@ const OrderList: React.FC = () => {
       rowKey="id"
       columns={allColumns}
       request={async (params) => {
-        const { current, pageSize, orderStatus, payStatus } = params;
+        const { current, pageSize, orderStatus } = params;
         const res = await apiGetMyBillOrders({
           orderStatus: orderStatus || null,
-          payStatus: payStatus || null,
           pageNum: current,
           pageSize,
         });

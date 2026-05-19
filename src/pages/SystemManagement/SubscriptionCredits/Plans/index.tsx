@@ -1,8 +1,11 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
+import type { StatMetricItem } from '@/components/business-component/StatMetricCard';
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
+import { formatInteger } from '@/utils/numberFormat';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -21,6 +24,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Button, message, Switch } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import {
   apiGetSubscriptionPlanList,
   apiGetSubscriptionPlanStats,
@@ -35,8 +39,6 @@ import {
   SubscriptionPlanStatusEnum,
 } from '../types/subscription';
 import CreatePlanModal from './CreatePlanModal';
-import styles from './index.less';
-import PlanStatCard from './PlanStatCard';
 
 const PERIOD_LABEL_KEY: Partial<Record<SubscriptionPlanPeriodEnum, string>> = {
   [SubscriptionPlanPeriodEnum.MONTH]: 'PC.Pages.SystemPlans.periodMonth',
@@ -55,6 +57,7 @@ function getPeriodLabel(period: SubscriptionPlanPeriodEnum): string {
  * 基础订阅套餐管理页面
  */
 const Plans = () => {
+  const location = useLocation();
   const actionRef = useRef<ActionType>();
   const isDraggingRef = useRef<boolean>(false);
   const originalDataRef = useRef<SubscriptionPlanInfo[] | null>(null);
@@ -62,6 +65,7 @@ const Plans = () => {
   const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
   // 统计信息
   const [stats, setStats] = useState<SubscriptionPlanStatsResult | null>(null);
+  const [statsLoading, setStatsLoading] = useState<boolean>(false);
   // 新增套餐弹窗
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
   // 当前编辑中的套餐
@@ -94,6 +98,31 @@ const Plans = () => {
     [plans],
   );
 
+  const overviewMetrics = useMemo<StatMetricItem[]>(
+    () => [
+      {
+        key: 'totalCount',
+        label: dict('PC.Pages.SystemPlans.statTotalSubscriptions'),
+        value: formatInteger(stats?.totalCount),
+      },
+      {
+        key: 'todayCount',
+        label: dict('PC.Pages.SystemPlans.statDailyNew'),
+        value: formatInteger(stats?.todayCount),
+        highlight: true,
+        highlightColor: '#52c41a',
+      },
+      {
+        key: 'monthCount',
+        label: dict('PC.Pages.SystemPlans.statMonthlyNew'),
+        value: formatInteger(stats?.monthCount),
+        highlight: true,
+        highlightColor: '#1677ff',
+      },
+    ],
+    [stats],
+  );
+
   /** XProTable 列表请求（与 CreditPackages 页相同：request + dataSource + postData） */
   const plansTableRequest = useCallback(async () => {
     try {
@@ -109,10 +138,11 @@ const Plans = () => {
     }
   }, []);
 
-  // 顶部订阅统计卡片（独立于表格 request）
+  // 顶部订阅统计卡片 + 套餐列表（菜单切换时 location.state 变化，需重新拉取）
   useEffect(() => {
     let cancelled = false;
     const loadStats = async () => {
+      setStatsLoading(true);
       try {
         const statsRes = await apiGetSubscriptionPlanStats({
           bizType: SubscriptionPlanBizTypeEnum.SYSTEM,
@@ -125,13 +155,18 @@ const Plans = () => {
         if (!cancelled) {
           message.error(dict('PC.Common.Toast.operationFailed'));
         }
+      } finally {
+        if (!cancelled) {
+          setStatsLoading(false);
+        }
       }
     };
     loadStats();
+    actionRef.current?.reload();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location.state]);
 
   // 切换套餐上架状态
   const handleToggle = async (id: number, enabled: boolean) => {
@@ -260,16 +295,6 @@ const Plans = () => {
         typeof r.price === 'number' ? `¥${r.price}` : r.price ?? '-',
     },
     {
-      title: dict('PC.Pages.SystemPlans.colFirstPrice'),
-      dataIndex: 'firstPrice',
-      width: 112,
-      search: false,
-      render: (_, r) =>
-        r.firstPrice !== undefined && r.firstPrice !== null
-          ? `¥${r.firstPrice}`
-          : '-',
-    },
-    {
       title: dict('PC.Pages.SystemPlans.colPeriod'),
       dataIndex: 'period',
       width: 100,
@@ -284,7 +309,7 @@ const Plans = () => {
       render: (_, r) =>
         r.creditAmount !== undefined && r.creditAmount !== null
           ? r.creditAmount.toLocaleString()
-          : '-',
+          : 0,
     },
     {
       title: dict('PC.Pages.SystemPlans.colCallLimit'),
@@ -293,9 +318,6 @@ const Plans = () => {
       search: false,
       render: (_, r) => {
         const n = r.callLimitCount;
-        if (n === undefined || n === null) {
-          return '-';
-        }
         if (n === -1) {
           return dict('PC.Pages.SystemPlans.colCallLimitUnlimited');
         }
@@ -311,7 +333,7 @@ const Plans = () => {
         r.dailyGiftCreditAmount !== undefined &&
         r.dailyGiftCreditAmount !== null
           ? r.dailyGiftCreditAmount.toLocaleString()
-          : '-',
+          : 0,
     },
     {
       title: dict('PC.Pages.SystemPlans.colIsHot'),
@@ -338,14 +360,11 @@ const Plans = () => {
     {
       title: dict('PC.Pages.SystemPlans.status'),
       dataIndex: 'status',
-      width: 120,
+      width: 100,
       search: false,
       fixed: 'right',
       align: 'center',
       render: (_, r) => {
-        if (typeof r.id !== 'number') {
-          return '-';
-        }
         return (
           <Switch
             checked={r.status === SubscriptionPlanStatusEnum.Online}
@@ -358,30 +377,28 @@ const Plans = () => {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       fixed: 'right',
-      width: 120,
+      width: 80,
       search: false,
       align: 'center',
-      render: (_, record) =>
-        typeof record.id === 'number' ? (
-          <TableActions
-            record={record}
-            actions={[
-              {
-                key: 'edit',
-                label: dict('PC.Common.Global.edit'),
-                onClick: (plan) => handleEdit(plan),
-              },
-            ]}
-          />
-        ) : (
-          '-'
-        ),
+      render: (_, record) => (
+        <TableActions
+          record={record}
+          actions={[
+            {
+              key: 'edit',
+              label: dict('PC.Common.Global.edit'),
+              onClick: (plan) => handleEdit(plan),
+            },
+          ]}
+        />
+      ),
     },
   ];
 
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.subsPlans')}
+      headerPadding="15px 15px 0 24px"
       rightSlot={
         <Button
           type="primary"
@@ -393,30 +410,11 @@ const Plans = () => {
       }
     >
       {/* 统计信息 */}
-      <div className={styles['plan-grid']}>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statTotalSubscriptions')}
-            value={stats?.totalCount ?? 0}
-          />
-        </div>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statDailyNew')}
-            value={
-              <span style={{ color: '#52c41a' }}>{stats?.todayCount ?? 0}</span>
-            }
-          />
-        </div>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statMonthlyNew')}
-            value={
-              <span style={{ color: '#52c41a' }}>{stats?.monthCount ?? 0}</span>
-            }
-          />
-        </div>
-      </div>
+      <StatMetricCardList
+        items={overviewMetrics}
+        loading={statsLoading}
+        showTooltip={false}
+      />
 
       {/* 套餐列表（可拖拽排序） */}
       <DndContext
@@ -445,6 +443,8 @@ const Plans = () => {
             showIndex={false}
             fullHeight={false}
             options={false}
+            showQueryButtons={false}
+            hideToolbar
             scroll={{ x: 'max-content' }}
             components={{
               body: {

@@ -2,10 +2,14 @@ import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import type { ParamsType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  ParamsType,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { Button } from 'antd';
-import React from 'react';
-import { history } from 'umi';
+import React, { useEffect, useRef } from 'react';
+import { history, useLocation } from 'umi';
 import { apiGetCreditSummaryList } from '../services/credit';
 import { UserCreditSummaryInfo } from '../types/credit';
 
@@ -30,7 +34,7 @@ async function fetchUserCreditSummaryTableRequest(
   try {
     const res = await apiGetCreditSummaryList({
       userId: params.userId ? Number(params.userId) : undefined,
-      usernamePhoneOrEmail: params.userName?.trim() || '',
+      usernamePhoneOrEmail: params.userName?.trim() || undefined,
     });
     if (res?.code === SUCCESS_CODE) {
       const list = res.data.records || [];
@@ -63,6 +67,8 @@ function navigateToUserCreditRecords(
 }
 
 const UserCredits: React.FC = () => {
+  const location = useLocation();
+  const actionRef = useRef<ActionType>();
   const columns: ProColumns<UserCreditSummaryInfo>[] = [
     {
       title: dict('PC.Pages.SystemUserCredits.colUserId'),
@@ -101,45 +107,45 @@ const UserCredits: React.FC = () => {
       dataIndex: 'totalCredit',
       key: 'totalCredit',
       search: false,
-      render: (_, record) => record.totalCredit || '-',
+      render: (_, record) => record.totalCredit || 0,
     },
     {
       title: dict('PC.Pages.SystemUserCredits.subscriptionCredit'),
       dataIndex: 'subscriptionCredit',
       key: 'subscriptionCredit',
       search: false,
-      render: (_, record) => record.subscriptionCredit || '-',
+      render: (_, record) => record.subscriptionCredit || 0,
     },
     {
       title: dict('PC.Pages.SystemUserCredits.purchaseCredit'),
       dataIndex: 'purchaseCredit',
       key: 'purchaseCredit',
       search: false,
-      render: (_, record) => record.purchaseCredit || '-',
+      render: (_, record) => record.purchaseCredit || 0,
     },
     {
       title: dict('PC.Pages.SystemUserCredits.activityCredit'),
       dataIndex: 'activityCredit',
       key: 'activityCredit',
       search: false,
-      width: 120,
-      render: (_, record) => record.activityCredit || '-',
+      width: 150,
+      render: (_, record) => record.activityCredit || 0,
     },
-    {
-      title: dict('PC.Pages.SystemUserCredits.manualCredit'),
-      dataIndex: 'manualCredit',
-      key: 'manualCredit',
-      search: false,
-      width: 120,
-      render: (_, record) => record.manualCredit || '-',
-    },
+    // {
+    //   title: dict('PC.Pages.SystemUserCredits.manualCredit'),
+    //   dataIndex: 'manualCredit',
+    //   key: 'manualCredit',
+    //   search: false,
+    //   width: 120,
+    //   render: (_, record) => record.manualCredit || 0,
+    // },
     {
       title: dict('PC.Common.Global.operation'),
       key: 'actions',
       search: false,
       fixed: 'right',
       align: 'center',
-      width: 120,
+      width: 100,
       render: (_, record) => (
         <Button
           type="link"
@@ -151,10 +157,15 @@ const UserCredits: React.FC = () => {
     },
   ];
 
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [location.state]);
+
   return (
     <WorkspaceLayout title={dict('PC.Routes.userCreditsQuery')}>
       <XProTable<UserCreditSummaryInfo, UserCreditSummaryTableParams>
         rowKey="userId"
+        actionRef={actionRef}
         columns={columns}
         request={fetchUserCreditSummaryTableRequest}
         scroll={{ x: 'max-content' }}

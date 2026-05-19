@@ -1,3 +1,4 @@
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -10,59 +11,26 @@ import type {
   ResourceStatDTO,
   ResourceStatSummaryDTO,
 } from '@/types/interfaces/systemManage';
+import { formatDecimal, formatInteger, sumNumbers } from '@/utils/numberFormat';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, Skeleton, message } from 'antd';
+import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import styles from './index.less';
+import {
+  ResourceStatTargetTypeTag,
+  renderUsageStatTokenCell,
+} from './ResourceStatTargetTypeTag';
+import {
+  getUsageRecordInputTokens,
+  getUsageRecordTotalInputTokens,
+  getUsageSummaryInputTokens,
+  getUsageSummaryTotalInputTokens,
+} from './resourceStatTokenMetrics';
 
 const { RangePicker } = DatePicker;
-
-const formatNumber = (num: number | undefined): string => {
-  if (num === null || num === undefined) return '0';
-  if (num >= 100000000)
-    return `${(num / 100000000).toFixed(1)}${dict(
-      'PC.Pages.UsageStats.hundredMillionUnit',
-    )}`;
-  if (num >= 10000)
-    return `${(num / 10000).toFixed(1)}${dict(
-      'PC.Pages.UsageStats.tenThousandUnit',
-    )}`;
-  return num.toLocaleString();
-};
-
-const SummaryCard: React.FC<{
-  label: string;
-  value: string;
-  highlight?: boolean;
-  loading?: boolean;
-}> = ({ label, value, highlight, loading }) => {
-  if (loading) {
-    return (
-      <div className={styles['stat-item-card']}>
-        <Skeleton
-          active
-          paragraph={{ rows: 1, width: '50%' }}
-          title={{ width: '70%' }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div className={styles['stat-item-card']}>
-      <span className={styles['stat-label']}>{label}</span>
-      <span
-        className={`${styles['stat-value']} ${
-          highlight ? styles['highlight'] : ''
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-};
 
 const UsageStats: React.FC = () => {
   const location = useLocation();
@@ -151,33 +119,39 @@ const UsageStats: React.FC = () => {
     return [
       {
         label: dict('PC.Pages.UsageStats.callCount'),
-        value: formatNumber(
-          (c?.modelCallCount ?? 0) +
-            (c?.agentCallCount ?? 0) +
-            (c?.toolCallCount ?? 0),
+        value: sumNumbers(
+          c?.modelCallCount,
+          c?.agentCallCount,
+          c?.toolCallCount,
+        ),
+      },
+      {
+        label: dict('PC.Pages.UsageStats.failedCallCount'),
+        value: sumNumbers(
+          c?.failedModelCallCount,
+          c?.failedAgentCallCount,
+          c?.failedToolCallCount,
         ),
       },
       {
         label: dict('PC.Pages.UsageStats.totalInputTokens'),
-        value: formatNumber(
-          (c?.totalInputTokens ?? 0) + (c?.totalCacheInputTokens ?? 0),
-        ),
+        value: formatInteger(getUsageSummaryTotalInputTokens(c)),
       },
       {
         label: dict('PC.Pages.UsageStats.cacheInputTokens'),
-        value: formatNumber(c?.totalCacheInputTokens),
+        value: formatInteger(c?.totalCacheInputTokens),
       },
       {
         label: dict('PC.Pages.UsageStats.inputTokens'),
-        value: formatNumber(c?.inputTokens ?? 0),
+        value: formatInteger(getUsageSummaryInputTokens(c)),
       },
       {
         label: dict('PC.Pages.UsageStats.outputTokens'),
-        value: formatNumber(c?.totalOutputTokens),
+        value: formatInteger(c?.totalOutputTokens),
       },
       {
         label: dict('PC.Pages.UsageStats.creditAmount'),
-        value: formatNumber(c?.totalCreditAmount),
+        value: formatDecimal(c?.totalCreditAmount),
         highlight: true,
       },
     ];
@@ -196,35 +170,51 @@ const UsageStats: React.FC = () => {
       dataIndex: 'targetType',
       width: 100,
       hideInSearch: true,
+      render: (_, record) => (
+        <ResourceStatTargetTypeTag targetType={record.targetType} />
+      ),
     },
     {
       title: dict('PC.Pages.UsageStats.colCallCount'),
       dataIndex: 'callCount',
       width: 100,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.callCount),
+      render: (_, record) => formatInteger(record.callCount),
+    },
+    {
+      title: dict('PC.Pages.UsageStats.colCallFailedCount'),
+      dataIndex: 'callFailedCount',
+      width: 100,
+      hideInSearch: true,
+      render: (_, record) => formatInteger(record.callFailedCount),
     },
     {
       title: dict('PC.Pages.UsageStats.colTotalInputTokens'),
       dataIndex: 'inputTokens',
       width: 130,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.inputTokens),
+      render: (_, record) =>
+        renderUsageStatTokenCell(record, () =>
+          formatInteger(getUsageRecordTotalInputTokens(record)),
+        ),
     },
     {
       title: dict('PC.Pages.UsageStats.colCacheInputTokens'),
       dataIndex: 'cacheInputTokens',
       width: 140,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.cacheInputTokens),
+      render: (_, record) =>
+        renderUsageStatTokenCell(record, () =>
+          formatInteger(record.cacheInputTokens),
+        ),
     },
     {
       title: dict('PC.Pages.UsageStats.colInputTokens'),
       width: 120,
       hideInSearch: true,
       render: (_, record) =>
-        formatNumber(
-          (record.inputTokens ?? 0) - (record.cacheInputTokens ?? 0),
+        renderUsageStatTokenCell(record, () =>
+          formatInteger(getUsageRecordInputTokens(record)),
         ),
     },
     {
@@ -232,14 +222,17 @@ const UsageStats: React.FC = () => {
       dataIndex: 'outputTokens',
       width: 120,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.outputTokens),
+      render: (_, record) =>
+        renderUsageStatTokenCell(record, () =>
+          formatInteger(record.outputTokens),
+        ),
     },
     {
       title: dict('PC.Pages.UsageStats.colCreditAmount'),
       dataIndex: 'creditAmount',
       width: 120,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.creditAmount),
+      render: (_, record) => formatDecimal(record.creditAmount),
     },
     {
       title: dict('PC.Pages.UsageStats.colDt'),
@@ -280,17 +273,7 @@ const UsageStats: React.FC = () => {
         </div>
 
         {/* 统计卡片 */}
-        <div className={styles['stat-cards-row']}>
-          {overviewMetrics.map((metric, index) => (
-            <SummaryCard
-              key={index}
-              label={metric.label}
-              value={metric.value}
-              highlight={metric.highlight}
-              loading={summaryLoading}
-            />
-          ))}
-        </div>
+        <StatMetricCardList items={overviewMetrics} loading={summaryLoading} />
 
         {/* 明细表格 */}
         <div className={styles['detail-section']}>

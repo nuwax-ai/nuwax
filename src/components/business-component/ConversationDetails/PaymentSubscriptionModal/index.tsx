@@ -13,6 +13,11 @@ import {
   SubscriptionPlanPeriodEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { AgentDetailDto } from '@/types/interfaces/agent';
+import {
+  MyPlanPeriodEnum,
+  MySubscriptionStatusEnum,
+  type MySubscriptionItem,
+} from '@/types/interfaces/subscription';
 import { CheckCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
@@ -71,14 +76,16 @@ function getSubscribeButtonLabel(
   plan: SubscriptionPlanInfo,
   options: {
     isCurrentEffective: boolean;
+    isCurrentSubscriptionExpired: boolean;
     isUserSubscribed: boolean;
     resolvedSubscribedPrice: number | null;
     priceMain: number;
-    currentSubscribedPlanPeriod: SubscriptionPlanPeriodEnum | null | undefined;
+    currentSubscribedPlanPeriod: MyPlanPeriodEnum | null | undefined;
   },
 ): string {
   const {
     isCurrentEffective,
+    isCurrentSubscriptionExpired,
     isUserSubscribed,
     resolvedSubscribedPrice,
     priceMain,
@@ -88,11 +95,14 @@ function getSubscribeButtonLabel(
   const isSkillForeverSubscribed =
     targetType === 'Skill' &&
     isUserSubscribed &&
-    currentSubscribedPlanPeriod === SubscriptionPlanPeriodEnum.FOREVER;
+    currentSubscribedPlanPeriod === MyPlanPeriodEnum.Forever;
 
   if (isCurrentEffective) {
     if (isSkillForeverSubscribed) {
       return '已买断套餐';
+    }
+    if (isCurrentSubscriptionExpired) {
+      return '套餐已过期(续订)';
     }
     return '当前套餐(续订)';
   }
@@ -167,17 +177,10 @@ export interface PaymentSubscriptionModalProps {
   loading: boolean;
   plans: SubscriptionPlanInfo[];
   /**
-   * 「我的订阅」当前业务下的生效套餐 planId；
-   * - null：当前无对应订阅（含未请求到数据时父组件传入 null 的情况）
+   * 「我的订阅」当前业务下的 currentSubscription（与接口 MySubscriptionData 对齐）
+   * - null：无当前订阅或未拉到数据；planId / 价格 / 周期在弹窗内从此对象解析
    */
-  currentSubscribedPlanId?: number | null;
-  /**
-   * 「我的订阅」当前生效套餐价格，用于与列表中各套餐比价（升级 / 订阅）
-   * 未传时尝试用 plans 中同 planId 的 price 兜底
-   */
-  currentSubscribedPlanPrice?: number | null;
-  /** 当前生效套餐周期（与「我的订阅」plan.period 对齐；技能永久买断态依赖此字段） */
-  currentSubscribedPlanPeriod?: SubscriptionPlanPeriodEnum | null;
+  currentSubscribedInfo?: MySubscriptionItem | null;
   onClose: () => void;
   // 订阅回调
   onSubscribe: (plan: SubscriptionPlanInfo) => void;
@@ -192,9 +195,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   targetType,
   loading,
   plans,
-  currentSubscribedPlanId,
-  currentSubscribedPlanPrice,
-  currentSubscribedPlanPeriod,
+  currentSubscribedInfo,
   onClose,
   onSubscribe,
 }) => {
@@ -202,6 +203,18 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     () => [...plans].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
     [plans],
   );
+
+  /** 从「我的订阅」条目解析 planId / 价格 / 周期 */
+  const currentSubscribedPlanId = currentSubscribedInfo?.planId ?? null;
+  // 价格
+  const currentSubscribedPlanPrice = currentSubscribedInfo?.plan?.price ?? null;
+  // 周期：1-月，3-季度，12-年,可用值:MONTH,QUARTER,YEAR,FOREVER
+  const currentSubscribedPlanPeriod = currentSubscribedInfo?.period ?? null;
+  // 状态：ACTIVE / EXPIRED / CANCELLED
+  const currentSubscribedStatus = currentSubscribedInfo?.status;
+  // 是否已过期
+  const isCurrentSubscriptionExpired =
+    currentSubscribedStatus === MySubscriptionStatusEnum.Expired;
 
   /** 已有当前业务下的订阅（planId 已确定） */
   const isUserSubscribed =
@@ -347,8 +360,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
               const isSkillForeverBuyoutLocked =
                 targetType === 'Skill' &&
                 isUserSubscribed &&
-                currentSubscribedPlanPeriod ===
-                  SubscriptionPlanPeriodEnum.FOREVER &&
+                currentSubscribedPlanPeriod === MyPlanPeriodEnum.Forever &&
                 isCurrentEffective;
 
               const subscribeButtonLabel = getSubscribeButtonLabel(
@@ -356,6 +368,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                 plan,
                 {
                   isCurrentEffective,
+                  isCurrentSubscriptionExpired,
                   isUserSubscribed,
                   resolvedSubscribedPrice,
                   priceMain,
@@ -368,8 +381,10 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   key={plan.id ?? plan.name}
                   className={cx(styles['plan-pay-card'])}
                 >
-                  <div className={cx(styles.title, 'text-ellipsis')}>
-                    {plan.name}
+                  <div className={cx(styles['card-header'])}>
+                    <div className={cx(styles.title, 'text-ellipsis')}>
+                      {plan.name}
+                    </div>
                   </div>
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>

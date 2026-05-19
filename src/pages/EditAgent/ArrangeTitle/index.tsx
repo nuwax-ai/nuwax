@@ -16,6 +16,26 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const renderModelMenuLabel = (item: {
+  name: string;
+  description?: string;
+  icon?: string;
+}) => (
+  <div className={cx(styles['model-option'])}>
+    {!!item.icon && (
+      <img className={cx(styles['model-option-icon'])} src={item.icon} alt="" />
+    )}
+    <div className={cx(styles['model-option-content'])}>
+      <span className={cx(styles['model-option-name'])}>{item.name}</span>
+      {!!item.description && (
+        <span className={cx(styles['model-option-desc'])}>
+          {item.description}
+        </span>
+      )}
+    </div>
+  </div>
+);
+
 /**
  * 编排顶部title组件
  */
@@ -71,10 +91,10 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
         return item.usageScenarios?.includes(agentConfigInfo.type as any);
       })
       .map((item) => ({
-        key: item.id,
-        label: item.name,
+        key: String(item.id),
+        label: renderModelMenuLabel(item),
       }));
-  }, [isTaskAgent, originalModelConfigList]);
+  }, [agentConfigInfo?.type, isTaskAgent, originalModelConfigList]);
 
   // 通用智能体：下拉切换模型
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {

@@ -15,7 +15,7 @@ import {
   message,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
   apiCreateSubscriptionPlan,
@@ -30,6 +30,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 默认用户组编码，创建/编辑套餐时必须关联 */
+const DEFAULT_USER_GROUP_CODE = 'default_group';
+
 interface CreatePlanModalProps {
   open: boolean;
   sort?: number;
@@ -41,6 +44,8 @@ interface CreatePlanModalProps {
 interface UserGroupCardProps {
   group: UserGroupInfo;
   selected: boolean;
+  /** 锁定选中状态，不可取消 */
+  locked?: boolean;
   onClick: (id: number) => void;
 }
 
@@ -48,20 +53,30 @@ interface UserGroupCardProps {
  * 用户组权限信息卡片
  * @param group - 用户组信息
  * @param selected - 是否选中
+ * @param locked - 是否锁定（不可取消选中）
  * @param onClick - 点击卡片回调
  * @returns 用户组展示卡片
  */
 const UserGroupCard: React.FC<UserGroupCardProps> = ({
   group,
   selected,
+  locked = false,
   onClick,
 }) => {
+  const handleClick = () => {
+    if (locked) {
+      return;
+    }
+    onClick(group.id);
+  };
+
   return (
     <div
       className={cx(styles['user-group-card'], {
         [styles['user-group-card-selected']]: selected,
+        [styles['user-group-card-locked']]: locked,
       })}
-      onClick={() => onClick(group.id)}
+      onClick={handleClick}
     >
       <div className={cx(styles['user-group-card-title'], 'text-ellipsis')}>
         {group.name}
@@ -79,7 +94,6 @@ interface CreatePlanFormValues {
   creditAmount?: number;
   price: number;
   period: 'MONTH' | 'QUARTER' | 'YEAR' | 'FOREVER';
-  firstPrice?: number;
   isHot: boolean;
   description: string;
   sort: number;
@@ -106,6 +120,22 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   // 已选中的用户组ID列表（支持多选）
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
 
+  const defaultGroupId = useMemo(
+    () =>
+      userGroupList.find((group) => group.code === DEFAULT_USER_GROUP_CODE)?.id,
+    [userGroupList],
+  );
+
+  /**
+   * 确保默认用户组始终包含在选中列表中
+   */
+  const ensureDefaultGroupSelected = (groupIds: number[]) => {
+    if (!defaultGroupId || groupIds.includes(defaultGroupId)) {
+      return groupIds;
+    }
+    return [...groupIds, defaultGroupId];
+  };
+
   /**
    * 查询用户组列表
    */
@@ -114,6 +144,14 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     debounceInterval: 300,
     onSuccess: (result: UserGroupInfo[]) => {
       setUserGroupList(result);
+      const defaultGroup = result.find(
+        (group) => group.code === DEFAULT_USER_GROUP_CODE,
+      );
+      if (defaultGroup) {
+        setSelectedGroupIds((prev) =>
+          prev.includes(defaultGroup.id) ? prev : [...prev, defaultGroup.id],
+        );
+      }
     },
   });
 
@@ -162,7 +200,6 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
         name: planInfo?.name,
         description: planInfo?.description,
         price: planInfo?.price || 0,
-        firstPrice: planInfo?.firstPrice || 0,
         period: planInfo?.period || 'MONTH',
         creditAmount: planInfo?.creditAmount || 0,
         isHot: planInfo?.isHot || false,
@@ -171,7 +208,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           : true,
         sort: planInfo?.sort || sort || 1,
       });
-      setSelectedGroupIds(planInfo?.groupIds || []);
+      setSelectedGroupIds(ensureDefaultGroupSelected(planInfo?.groupIds || []));
       runGetUserGroupList();
 
       // 自动聚焦名称输入框
@@ -186,19 +223,30 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     }
 
     return () => {
-      if (timer !== undefined) {
+      if (timer) {
         window.clearTimeout(timer);
       }
     };
   }, [open, planInfo, sort]);
+
+  // 用户组列表或默认组加载后，确保默认用户组始终选中
+  useEffect(() => {
+    if (!open || !defaultGroupId) {
+      return;
+    }
+    setSelectedGroupIds((prev) => ensureDefaultGroupSelected(prev));
+  }, [open, defaultGroupId]);
 
   // 确认提交
   const handleConfirm = () => {
     form.submit();
   };
 
-  // 切换用户组选中状态
+  // 切换用户组选中状态（默认用户组不可取消）
   const handleToggleGroup = (groupId: number) => {
+    if (groupId === defaultGroupId) {
+      return;
+    }
     setSelectedGroupIds((prev) =>
       prev.includes(groupId)
         ? prev.filter((id) => id !== groupId)
@@ -212,7 +260,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     const payload = {
       ...(isEditMode ? { id: planInfo?.id } : {}),
       ...values,
-      groupIds: selectedGroupIds,
+      groupIds: ensureDefaultGroupSelected(selectedGroupIds),
       bizType: planInfo?.bizType ?? SubscriptionPlanBizTypeEnum.SYSTEM,
       bizId: planInfo?.bizId ?? '-1',
       status: values.status
@@ -311,30 +359,6 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           </Col>
 
           <Col span={12}>
-            <Form.Item label="原价 (¥)" name="firstPrice">
-              <InputNumber
-                min={0}
-                max={100000000}
-                step={0.01}
-                precision={2}
-                className="w-full"
-                placeholder="留空表示无原价"
-              />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
-            <Form.Item label="排序" name="sort">
-              <InputNumber
-                min={0}
-                max={1000}
-                precision={0}
-                className="w-full"
-              />
-            </Form.Item>
-          </Col>
-
-          <Col span={12}>
             <Form.Item label="热门标签" name="isHot" valuePropName="checked">
               <Switch checkedChildren="是" unCheckedChildren="否" />
             </Form.Item>
@@ -379,6 +403,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                   key={group.id}
                   group={group}
                   selected={selectedGroupIds.includes(group.id)}
+                  locked={group.id === defaultGroupId}
                   onClick={handleToggleGroup}
                 />
               ))}

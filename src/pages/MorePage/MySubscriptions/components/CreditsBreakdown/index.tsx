@@ -46,10 +46,7 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
         </div>
         <span className={cx(styles['credits-value'], styles.blue)}>
-          <Statistic
-            value={summary?.subscriptionCredit ?? 0}
-            valueStyle={{ color: '#1a6bff' }}
-          />
+          <Statistic value={summary?.subscriptionCredit ?? 0} />
         </span>
       </div>
 
@@ -66,10 +63,7 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
         </div>
         <span className={cx(styles['credits-value'], styles.green)}>
-          <Statistic
-            value={summary?.purchaseCredit ?? 0}
-            valueStyle={{ color: '#0d9488' }}
-          />
+          <Statistic value={summary?.purchaseCredit ?? 0} />
         </span>
       </div>
 
@@ -78,12 +72,17 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           <span className={cx(styles['credits-label'])}>
             {dict('PC.Pages.MorePage.MySubscriptions.activityCredits')}
           </span>
+          {summary?.dailyGiftCredit && summary.dailyGiftCredit > 0 ? (
+            <span className={cx(styles['daily-gift-tip'])}>
+              {dict(
+                'PC.Pages.MorePage.MySubscriptions.dailyGiftTip',
+                summary.dailyGiftCredit,
+              )}
+            </span>
+          ) : null}
         </div>
         <span className={cx(styles['credits-value'], styles.orange)}>
-          <Statistic
-            value={summary?.activityCredit ?? 0}
-            valueStyle={{ color: '#f59e0b' }}
-          />
+          <Statistic value={summary?.activityCredit ?? 0} />
         </span>
       </div>
     </div>

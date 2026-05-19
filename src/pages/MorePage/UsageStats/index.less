@@ -7,7 +7,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  // overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -16,7 +16,6 @@
   display: flex;
   align-items: center;
   gap: @marginSm;
-  margin-bottom: @marginMd;
   flex-shrink: 0;
 }
 
@@ -27,52 +26,13 @@
   font-weight: 500;
 }
 
-.stat-cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: @marginSm;
-  margin-bottom: @marginMd;
-  flex-shrink: 0;
-}
-
-.stat-item-card {
-  // 固定高度：2 * controlHeightLg + padding，保证加载态/正常态及不同文案长度下卡片对齐
-  height: calc(2 * @controlHeightLg + @padding);
-  box-sizing: border-box;
-  border-radius: @borderRadiusLg;
-  box-shadow: @boxShadowTertiary;
-  transition: all @motionDurationMid @motionEaseInOut;
-  background: @colorBgContainer;
-  padding: @padding;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: @paddingXs;
-  overflow: hidden;
-
-  &:hover {
-    box-shadow: @boxShadowSecondary;
-    transform: translateY(-2px);
-  }
-
-  .stat-label {
-    font-size: @fontSizeSm;
-    color: @colorTextTertiary;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .stat-value {
-    font-size: @fontSizeHeading3;
-    font-weight: 600;
-    color: @colorText;
-    line-height: @lineHeightSm;
-
-    &.highlight {
-      color: @colorWarning;
-    }
-  }
+// 类型 Tag（模型 / 智能体 / 工具）
+.type-tag-model,
+.type-tag-agent,
+.type-tag-tool,
+.type-tag-plugin,
+.type-tag-workflow {
+  margin-inline-end: 0;
 }
 
 // 明细表格区域 - 占满剩余空间，表格体内部滚动

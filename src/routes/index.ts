@@ -249,6 +249,12 @@ const routes = [
             component: '@/pages/GlobalModelManage',
           },
           {
+            path: 'model/pricing',
+            name: getRouteLabel('PC.Pages.SpaceResourcePricing.pageTitle'),
+            component: '@/pages/GlobalModelManage/Pricing',
+            hideInMenu: true,
+          },
+          {
             path: 'model/monitor',
             name: getRouteLabel('PC.Routes.modelMonitor'),
             component: '@/pages/SystemManagement/ModelMonitor',
