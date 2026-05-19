@@ -12,6 +12,7 @@ import { ProConfigProvider, ProTable } from '@ant-design/pro-components';
 import { Button } from 'antd';
 import { useMemo, useRef } from 'react';
 import { useIntl } from 'umi';
+import { enhanceColumnsForLightFilterEnterConfirm } from './enhanceLightFilterEnterConfirm';
 import { getProIntlMessage } from './i18n';
 
 /**
@@ -22,6 +23,7 @@ import { getProIntlMessage } from './i18n';
  * - 隐藏工具栏和选项栏
  * - 统一的分页配置（条/页、共 X 条）
  * - 统一的搜索表单配置（查询/重置/展开收起）
+ * - LightFilter 搜索项 Input 回车等同该条件下拉内的「确认」（回写并收起，非工具栏查询）
  * - 默认开启自动高度适应 (fullHeight=true)
  *
  * @example
@@ -105,8 +107,23 @@ function XProTable<
       }
     }
 
+    const filterType =
+      restProps.search === false
+        ? undefined
+        : (typeof restProps.search === 'object' &&
+            restProps.search?.filterType) ||
+          (COMMON_PRO_TABLE_PROPS.search as { filterType?: string })
+            ?.filterType;
+
+    // 仅 LightFilter 模式需要模拟下拉「确认」；避免与整表 isKeyPressSubmit 冲突
+    if (restProps.search !== false && filterType === 'light') {
+      return enhanceColumnsForLightFilterEnterConfirm<DataType, ValueType>(
+        cols,
+      );
+    }
+
     return cols;
-  }, [restProps.columns, showIndex, currentLang]);
+  }, [restProps.columns, showIndex, restProps.search, currentLang]);
 
   // 合并 toolBarRender，添加查询/重置按钮
   const mergedToolBarRender = useMemo(() => {
@@ -181,6 +198,24 @@ function XProTable<
 
     return merged;
   }, [restProps.search, currentLang]);
+
+  /**
+   * 关闭整表回车提交，避免与 LightFilter 下拉「确认」行为冲突（如用户管理-用户名）。
+   * 条件生效后用户再点工具栏「查询」刷新列表。
+   */
+  const mergedForm = useMemo(() => {
+    const baseForm =
+      typeof restProps.form === 'object' && restProps.form !== null
+        ? restProps.form
+        : {};
+
+    if (restProps.search === false) return restProps.form;
+
+    return {
+      ...baseForm,
+      isKeyPressSubmit: baseForm.isKeyPressSubmit ?? false,
+    };
+  }, [restProps.form, restProps.search]);
 
   /**
    * 分页文案同样采用运行时翻译，避免 COMMON_PRO_TABLE_PROPS 的静态快照问题。
@@ -272,6 +307,7 @@ function XProTable<
         <ProTable<DataType, Params, ValueType>
           {...COMMON_PRO_TABLE_PROPS}
           {...restProps}
+          form={mergedForm}
           formRef={formRef}
           actionRef={actionRef}
           columns={mergedColumns}
