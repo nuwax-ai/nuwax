@@ -2747,6 +2747,11 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.CreditRecords.typeManualDeduct": "System Deduction",
 
   // ── My Subscriptions ──
+  "PC.Pages.MorePage.MySubscriptions.currentPlanButton": "Current Plan",
+  "PC.Pages.MorePage.MySubscriptions.upgradeTo": "Upgrade to ",
+  "PC.Pages.MorePage.MySubscriptions.continuousMonthly": " Continuous Monthly",
+  "PC.Pages.MorePage.MySubscriptions.continuousQuarterly": " Continuous Quarterly",
+  "PC.Pages.MorePage.MySubscriptions.continuousYearly": " Continuous Yearly",
   "PC.Pages.MorePage.MySubscriptions.currentPlan": "Current Subscription",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "Active",
   "PC.Pages.MorePage.MySubscriptions.statusHot": "Hot",
