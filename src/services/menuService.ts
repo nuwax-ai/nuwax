@@ -114,6 +114,9 @@ const MENU_ICON_MAP: Record<string, string> = {
   wodeshouyi: 'icons-nav-wodeshouyi',
   // 更多页面 - 用量统计
   yongliangtongji: 'icons-nav-yongliangtongji',
+  ziyuandingjia: 'icons-nav-ziyuandingjia',
+  dingyueyujifen: 'icons-nav-dingyueyujifen',
+  zhifuyushouyi: 'icons-nav-zhifuyushouyi',
 
   // 系统管理 - 支付与收益子菜单
   payment_config: 'icons-nav-settings',

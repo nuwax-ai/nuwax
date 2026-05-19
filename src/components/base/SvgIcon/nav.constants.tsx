@@ -45,11 +45,10 @@ import { ReactComponent as MySubscriptionSvgFile } from '@/assets/icons/nav/icon
 import { ReactComponent as PricingSvgFile } from '@/assets/icons/nav/icons-nav-pricing.svg';
 import { ReactComponent as SubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-subscription.svg';
 
-import { ReactComponent as WodedingdanSvgFile } from '@/assets/icons/nav/wodedingdan.svg';
-import { ReactComponent as WodedingyueSvgFile } from '@/assets/icons/nav/wodedingyue.svg';
-import { ReactComponent as WodeshouyiSvgFile } from '@/assets/icons/nav/wodeshouyi.svg';
+import { ReactComponent as DingyueyujifenSvgFile } from '@/assets/icons/nav/dingyueyujifen.svg';
 import { ReactComponent as YongliangtongjiSvgFile } from '@/assets/icons/nav/yongliangtongji.svg';
-
+import { ReactComponent as ZhifuyushouyiSvgFile } from '@/assets/icons/nav/zhifuyushouyi.svg';
+import { ReactComponent as ZiyuandingjiaSvgFile } from '@/assets/icons/nav/ziyuandingjia.svg';
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -95,13 +94,6 @@ const MySubscriptionSvg = wrapSvg(MySubscriptionSvgFile);
 const MyOrdersSvg = wrapSvg(MyOrdersSvgFile);
 const MyEarningsSvg = wrapSvg(MyEarningsSvgFile);
 const CreditsSvg = wrapSvg(CreditsSvgFile);
-const WodedingyueSvg = wrapSvg(WodedingyueSvgFile, {
-  viewBox: '0 0 1024 1024',
-});
-const WodedingdanSvg = wrapSvg(WodedingdanSvgFile, {
-  viewBox: '0 0 1024 1024',
-});
-const WodeshouyiSvg = wrapSvg(WodeshouyiSvgFile, { viewBox: '0 0 1024 1024' });
 const YongliangtongjiSvg = wrapSvg(YongliangtongjiSvgFile, {
   viewBox: '0 0 1024 1024',
 });
@@ -149,8 +141,11 @@ export default {
   'icons-nav-my-orders': MyOrdersSvg,
   'icons-nav-my-earnings': MyEarningsSvg,
   'icons-nav-credits': CreditsSvg,
-  'icons-nav-wodedingyue': WodedingyueSvg,
-  'icons-nav-wodedingdan': WodedingdanSvg,
-  'icons-nav-wodeshouyi': WodeshouyiSvg,
+  'icons-nav-wodedingyue': DingyueyujifenSvgFile,
+  'icons-nav-wodedingdan': MyOrdersSvg,
+  'icons-nav-wodeshouyi': ZhifuyushouyiSvgFile,
   'icons-nav-yongliangtongji': YongliangtongjiSvg,
+  'icons-nav-ziyuandingjia': ZiyuandingjiaSvgFile,
+  'icons-nav-dingyueyujifen': DingyueyujifenSvgFile,
+  'icons-nav-zhifuyushouyi': ZhifuyushouyiSvgFile,
 } as Record<string, React.FC>;
