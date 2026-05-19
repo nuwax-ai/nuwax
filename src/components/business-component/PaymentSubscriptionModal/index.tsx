@@ -234,7 +234,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
-  const modalTitle = overCallLimit ? '选择订阅套餐' : '选择订阅套餐（可试用）';
+  // 技能没有试用次数，则不显示可试用
+  const modalTitle =
+    overCallLimit || targetType === 'Skill'
+      ? '选择订阅套餐'
+      : '选择订阅套餐（可试用）';
 
   return (
     <Modal
