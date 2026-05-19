@@ -87,7 +87,11 @@ const BasicConfig: React.FC = () => {
             {/* 积分兑换配置 */}
             <section className={styles.sectionBlock}>
               <div className={styles.sectionTitleRow}>
-                <h5 className={styles.sectionTitle}>订阅与积分功能开关</h5>
+                <h5 className={styles.sectionTitle}>
+                  {dict(
+                    'PC.Pages.SystemSubscriptionBasicConfig.subscriptionSwitch',
+                  )}
+                </h5>
                 <Form.Item
                   name="enableSubscription"
                   valuePropName="checked"
@@ -97,11 +101,19 @@ const BasicConfig: React.FC = () => {
                 </Form.Item>
               </div>
               <Text type="secondary" className={styles.sectionDesc}>
-                全局控制订阅/计费和积分体系的启用状态
+                {dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.subscriptionSwitchDesc',
+                )}
               </Text>
-              <h5 className={styles.sectionTitle}>积分兑换比例</h5>
+              <h5 className={styles.sectionTitle}>
+                {dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.exchangeRateTitle',
+                )}
+              </h5>
               <Text type="secondary" className={styles.sectionDesc}>
-                设置积分与币值的兑换比率，用户可使用积分兑换订单金额
+                {dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.exchangeRateDesc',
+                )}
               </Text>
               <Row gutter={[24, 0]} align="bottom">
                 <Col span={24}>
@@ -146,10 +158,17 @@ const BasicConfig: React.FC = () => {
                     </div>
                     <div className={styles.exchangeNotice}>
                       <Text type="secondary">
-                        每 100 积分 ≈ ¥
-                        {(100 / Number(exchangeRate || 1)).toFixed(2)}， 每
-                        10,000 积分 ≈ ¥
-                        {(10000 / Number(exchangeRate || 1)).toFixed(2)}
+                        {dict(
+                          'PC.Pages.SystemSubscriptionBasicConfig.exchangeRateHint',
+                        )
+                          .replace(
+                            '{0}',
+                            (100 / Number(exchangeRate || 1)).toFixed(2),
+                          )
+                          .replace(
+                            '{1}',
+                            (10000 / Number(exchangeRate || 1)).toFixed(2),
+                          )}
                       </Text>
                     </div>
                   </div>
@@ -174,7 +193,9 @@ const BasicConfig: React.FC = () => {
                 </Form.Item>
               </div>
               <Text type="secondary" className={styles.sectionDesc}>
-                用户首次注册完成后，自动获得赠送积分
+                {dict(
+                  'PC.Pages.SystemSubscriptionBasicConfig.registerGiftDesc',
+                )}
               </Text>
 
               <Row gutter={[24, 0]} align="bottom">
@@ -256,7 +277,7 @@ const BasicConfig: React.FC = () => {
                 </Form.Item>
               </div>
               <Text type="secondary" className={styles.sectionDesc}>
-                用户每日首次登录时自动获得赠送积分
+                {dict('PC.Pages.SystemSubscriptionBasicConfig.dailyLoginDesc')}
               </Text>
 
               {/* 每日登录赠送积分 */}

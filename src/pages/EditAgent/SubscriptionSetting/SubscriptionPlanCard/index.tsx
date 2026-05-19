@@ -4,6 +4,7 @@ import {
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { dict } from '@/services/i18nRuntime';
 import { Button, Switch } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -11,10 +12,18 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
-  [SubscriptionPlanPeriodEnum.MONTH]: '月',
-  [SubscriptionPlanPeriodEnum.QUARTER]: '季度',
-  [SubscriptionPlanPeriodEnum.YEAR]: '年',
-  [SubscriptionPlanPeriodEnum.FOREVER]: '永久',
+  [SubscriptionPlanPeriodEnum.MONTH]: dict(
+    'PC.Pages.AgentEdit.SubscriptionPlanCard.periodMonth',
+  ),
+  [SubscriptionPlanPeriodEnum.QUARTER]: dict(
+    'PC.Pages.AgentEdit.SubscriptionPlanCard.periodQuarter',
+  ),
+  [SubscriptionPlanPeriodEnum.YEAR]: dict(
+    'PC.Pages.AgentEdit.SubscriptionPlanCard.periodYear',
+  ),
+  [SubscriptionPlanPeriodEnum.FOREVER]: dict(
+    'PC.Pages.AgentEdit.SubscriptionPlanCard.periodForever',
+  ),
 };
 
 interface SubscriptionPlanCardProps {
@@ -47,7 +56,9 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
         </div>
         {/* 仅为功能订阅时显示包干价标签 */}
         <ConditionRender condition={plan.functionOnly}>
-          <span className={cx(styles['package-tag'])}>包干价</span>
+          <span className={cx(styles['package-tag'])}>
+            {dict('PC.Pages.AgentEdit.SubscriptionPlanCard.fixedPrice')}
+          </span>
         </ConditionRender>
       </div>
       <div className={cx(styles['plan-desc'], 'text-ellipsis-2')}>
@@ -61,8 +72,11 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
       </div>
       <div className={cx(styles['plan-meta'])}>
         {plan.callLimitCount === -1
-          ? '不限次数'
-          : `${plan.callLimitCount ?? 0} 次`}
+          ? dict('PC.Pages.AgentEdit.SubscriptionPlanCard.unlimited')
+          : dict('PC.Pages.AgentEdit.SubscriptionPlanCard.callCount').replace(
+              '{0}',
+              String(plan.callLimitCount ?? 0),
+            )}
       </div>
       <div
         className={cx(styles['card-footer'])}
@@ -76,10 +90,10 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
         />
         <div className={cx(styles['footer-actions'])}>
           <Button size="small" onClick={() => onEdit(plan)}>
-            编辑
+            {dict('PC.Pages.AgentEdit.SubscriptionPlanCard.edit')}
           </Button>
           <Button size="small" danger onClick={() => onDelete(plan.id || 0)}>
-            删除
+            {dict('PC.Pages.AgentEdit.SubscriptionPlanCard.delete')}
           </Button>
         </div>
       </div>
