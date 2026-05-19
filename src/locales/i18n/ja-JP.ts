@@ -2521,7 +2521,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.GlobalModelManage.edit": "編集",
   "PC.Pages.GlobalModelManage.embeddings": "埋め込み",
   "PC.Pages.GlobalModelManage.fetchDataFailed": "データの取得に失敗しました",
-  "PC.Pages.GlobalModelManage.pageTitle": "パブリックモデル管理",
+  "PC.Pages.GlobalModelManage.pageTitle": "モデル設定",
   "PC.Pages.GlobalModelManage.statusDisabled": "無効",
   "PC.Pages.GlobalModelManage.statusEnabled": "有効",
   "PC.Pages.ModelMonitor.pageTitle": "モデルモニター",

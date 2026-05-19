@@ -2506,7 +2506,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.GlobalModelManage.edit": "Edit",
   "PC.Pages.GlobalModelManage.embeddings": "Embeddings",
   "PC.Pages.GlobalModelManage.fetchDataFailed": "Failed to fetch data",
-  "PC.Pages.GlobalModelManage.pageTitle": "Public Model Mgmt",
+  "PC.Pages.GlobalModelManage.pageTitle": "Model Configuration",
   "PC.Pages.GlobalModelManage.statusDisabled": "Disabled",
   "PC.Pages.GlobalModelManage.statusEnabled": "Enabled",
   "PC.Pages.ModelMonitor.pageTitle": "Model Monitor",

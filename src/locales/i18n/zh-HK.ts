@@ -2501,7 +2501,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.GlobalModelManage.edit": "編輯",
   "PC.Pages.GlobalModelManage.embeddings": "向量嵌入",
   "PC.Pages.GlobalModelManage.fetchDataFailed": "獲取數據失敗",
-  "PC.Pages.GlobalModelManage.pageTitle": "公共模型管理",
+  "PC.Pages.GlobalModelManage.pageTitle": "模型配置",
   "PC.Pages.GlobalModelManage.statusDisabled": "已禁用",
   "PC.Pages.GlobalModelManage.statusEnabled": "已啓用",
   "PC.Pages.ModelMonitor.pageTitle": "模型監控",
