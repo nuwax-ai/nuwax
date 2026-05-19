@@ -24,10 +24,18 @@ const CreditsBalance: React.FC = () => {
   });
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
     if (showCredits) {
       fetchCredits();
+      // 增加定时刷新，每 15 秒刷新一次
+      intervalId = setInterval(() => {
+        fetchCredits();
+      }, 15000);
     }
-  }, [showCredits]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [showCredits, fetchCredits]);
 
   const handleClickBalance = () => {
     history.push('/more-page/my-subscriptions');
