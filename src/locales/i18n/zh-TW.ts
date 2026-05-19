@@ -1514,7 +1514,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentEdit.subscriptionStats": "訂閱統計",
   "PC.Pages.AgentEdit.unpublishedChanges": "有未釋出的更改",
   "PC.Pages.AgentEdit.versionHistory": "版本記錄",
-  "PC.Pages.Agent.subscriptionSetting": "訂閱設定",
   "PC.Pages.AntvX6.loopBreakDesc": "用於立即終止當前所在的迴圈，跳出迴圈體",
   "PC.Pages.AntvX6.loopContinueDesc": "用於終止當前迴圈，執行下次迴圈",
   "PC.Pages.AntvX6.systemPrompt": "系統提示詞",
