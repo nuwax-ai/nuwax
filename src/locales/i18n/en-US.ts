@@ -59,6 +59,8 @@ export const EN_US: SystemLangMap = {
   "PC.Common.Global.yes": "Yes",
   "PC.Common.Global.imageFormatError": "Only JPG/JPEG/PNG formats are supported",
   "PC.Common.Global.imageSizeError": "Image size cannot exceed 1MB",
+  "PC.Common.Global.query": "Query",
+  "PC.Common.Global.reset": "Reset",
   "PC.Components.ActionMenu.more": "More",
   "PC.Components.ActivatedIcon.activated": "Activated",
   "PC.Components.AgentContent.from": "From",
@@ -5274,8 +5276,6 @@ export const EN_US: SystemLangMap = {
   // ── Usage Statistics ────────────────────────────
   "PC.Pages.UsageStats.pageTitle": "Usage Statistics",
   "PC.Pages.UsageStats.timeRange": "Time Range",
-  "PC.Pages.UsageStats.search": "Search",
-  "PC.Pages.UsageStats.reset": "Reset",
   "PC.Pages.UsageStats.refreshData": "Refresh",
   "PC.Pages.UsageStats.summaryTitle": "Usage Overview",
   "PC.Pages.UsageStats.callCount": "Call Count",
