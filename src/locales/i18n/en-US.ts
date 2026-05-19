@@ -2779,10 +2779,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "Paid",
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "Minimum withdrawal: ¥{0}, platform fee: {1}%",
   "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "Your credits are negative, withdrawal is not allowed",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "Confirm Withdrawal",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "Are you sure you want to apply for withdrawal?",
 
-
-
-
+  
   // ── Credit Records ──
   "PC.Pages.MorePage.CreditRecords.colTime": "Time",
   "PC.Pages.MorePage.CreditRecords.colRemaining": "Remaining Credits",

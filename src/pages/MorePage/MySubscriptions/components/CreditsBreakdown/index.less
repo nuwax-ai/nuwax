@@ -88,17 +88,27 @@
 
       .daily-gift-tip {
         font-size: calc(@fontSizeSm - 2px);
-        color: @colorWarning;
+        color: @orange-7;
         padding: @creditsLinkPadding;
-        border: @lineWidth @lineType @colorWarningBorder;
+        border: @lineWidth @lineType fade(@gold-4, 35%);
         border-radius: @creditsLinkRadius;
-        background: @colorWarningBg;
+        background: linear-gradient(
+          135deg,
+          fade(@gold-1, 70%),
+          fade(@orange-1, 50%)
+        );
         transition: all @motionDurationFast @motionEaseInOut;
         line-height: @lineHeight;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 60%;
+
+        &:hover {
+          transform: scale(1.03) translateY(-0.5px);
+          border-color: fade(@gold-5, 60%);
+          box-shadow: 0 4px 10px fade(@orange-5, 15%);
+        }
       }
     }
 
