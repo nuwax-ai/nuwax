@@ -2704,6 +2704,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.purchaseCredits": "增购积分",
   "PC.Pages.MorePage.MySubscriptions.activityCredits": "活动积分",
   "PC.Pages.MorePage.MySubscriptions.addPurchase": "+ 增购",
+  "PC.Pages.MorePage.MySubscriptions.dailyGiftTip": "每日登录赠送 {0} 积分",
   "PC.Pages.MorePage.MySubscriptions.detail": "明细",
   "PC.Pages.MorePage.MySubscriptions.planGrid": "订阅套餐",
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/月",

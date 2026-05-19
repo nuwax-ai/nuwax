@@ -203,6 +203,7 @@ export interface CreditSummaryInfo {
   purchaseCredit: number;
   activityCredit: number;
   manualCredit: number;
+  dailyGiftCredit: number;
   user: any;
 }
 
