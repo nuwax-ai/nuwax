@@ -938,7 +938,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Constants.Library.createSettings": "创建设置",
   "PC.Constants.Library.dataProcess": "数据处理",
   "PC.Constants.Library.execRecord": "执行记录",
-  "PC.Constants.Library.externalApi": "外部API调用",
   "PC.Constants.Library.generalAgent": "通用智能体",
   "PC.Constants.Library.localDoc": "本地文档",
   "PC.Constants.Library.localDocDesc": "上传 PDF, TXT, MD, DOC, DOCX 格式的本地文件",

@@ -1,6 +1,6 @@
 import type { ModelProviderInfo } from '@/types/interfaces/model';
 import { AutoComplete } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SupplierModelNameAutoCompleteProps = {
   value?: string;
@@ -14,6 +14,7 @@ export type SupplierModelNameAutoCompleteProps = {
   currentProvider: ModelProviderInfo | undefined;
   className?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 /**
@@ -32,8 +33,19 @@ const SupplierModelNameAutoComplete: React.FC<
   currentProvider,
   className,
   placeholder,
+  disabled,
 }) => {
   const [display, setDisplay] = useState('');
+  /** 点清空后跳过紧随其后的 blur，避免用旧展示名再次联动或写回表单 */
+  const skipNextBlurRef = useRef<boolean>(false);
+
+  const handleClear = useCallback(() => {
+    skipNextBlurRef.current = true;
+    setDisplay('');
+    setSupplierNameOptionsFilter('');
+    onChange?.(undefined);
+    clearSupplierModelLinkedFields();
+  }, [clearSupplierModelLinkedFields, onChange, setSupplierNameOptionsFilter]);
 
   useEffect(() => {
     setDisplay(typeof value === 'string' ? value : '');
@@ -42,7 +54,7 @@ const SupplierModelNameAutoComplete: React.FC<
   const blurCommit = useCallback(() => {
     const t = display.trim();
     if (!t) {
-      clearSupplierModelLinkedFields();
+      handleClear();
       return;
     }
     const models = currentProvider?.models ?? [];
@@ -59,9 +71,9 @@ const SupplierModelNameAutoComplete: React.FC<
     onChange?.(t);
   }, [
     applySupplierModelLinkageOnDropdownPick,
-    clearSupplierModelLinkedFields,
     currentProvider,
     display,
+    handleClear,
     onChange,
   ]);
 
@@ -69,6 +81,7 @@ const SupplierModelNameAutoComplete: React.FC<
     <AutoComplete
       className={className}
       allowClear
+      disabled={disabled}
       options={supplierNameOptionsDisplayed}
       filterOption={false}
       placeholder={placeholder}
@@ -81,6 +94,10 @@ const SupplierModelNameAutoComplete: React.FC<
       onSearch={(v) => setSupplierNameOptionsFilter(String(v ?? ''))}
       onChange={(v) => {
         const s = String(v ?? '');
+        if (!s.trim()) {
+          handleClear();
+          return;
+        }
         const picked = currentProvider?.models?.find((m) => m.id === s);
         setDisplay(picked ? (picked.name || '').trim() || picked.id : s);
         setSupplierNameOptionsFilter(s);
@@ -88,8 +105,14 @@ const SupplierModelNameAutoComplete: React.FC<
       onSelect={(optVal) =>
         applySupplierModelLinkageOnDropdownPick(String(optVal ?? ''))
       }
-      onClear={() => clearSupplierModelLinkedFields()}
-      onBlur={blurCommit}
+      onClear={handleClear}
+      onBlur={() => {
+        if (skipNextBlurRef.current) {
+          skipNextBlurRef.current = false;
+          return;
+        }
+        blurCommit();
+      }}
     />
   );
 };

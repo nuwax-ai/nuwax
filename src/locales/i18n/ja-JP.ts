@@ -927,7 +927,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Constants.Library.createSettings": "設定の作成",
   "PC.Constants.Library.dataProcess": "データ処理",
   "PC.Constants.Library.execRecord": "実行記録",
-  "PC.Constants.Library.externalApi": "外部API",
   "PC.Constants.Library.generalAgent": "総代理店",
   "PC.Constants.Library.localDoc": "ローカルドキュメント",
   "PC.Constants.Library.localDocDesc": "ローカル ファイルを PDF、TXT、MD、DOC、DOCX 形式でアップロードします",

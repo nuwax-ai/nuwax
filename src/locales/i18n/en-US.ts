@@ -938,7 +938,6 @@ export const EN_US: SystemLangMap = {
   "PC.Constants.Library.createSettings": "Create Settings",
   "PC.Constants.Library.dataProcess": "Data Processing",
   "PC.Constants.Library.execRecord": "Execution Record",
-  "PC.Constants.Library.externalApi": "External API",
   "PC.Constants.Library.generalAgent": "General Agent",
   "PC.Constants.Library.localDoc": "Local Doc",
   "PC.Constants.Library.localDocDesc": "Upload local files in PDF, TXT, MD, DOC, DOCX format",
