@@ -14,6 +14,8 @@ export interface StatMetricCardListProps {
   className?: string;
   /** 网格单列最小宽度（px），默认 180 */
   minColumnWidth?: number;
+  /** 是否展示 hover Tooltip，默认展示 */
+  showTooltip?: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ const StatMetricCardList: React.FC<StatMetricCardListProps> = ({
   loading,
   className,
   minColumnWidth = 180,
+  showTooltip = true,
 }) => {
   const listStyle = useMemo(
     () =>
@@ -44,7 +47,9 @@ const StatMetricCardList: React.FC<StatMetricCardListProps> = ({
           label={item.label}
           value={item.value}
           highlight={item.highlight}
+          highlightColor={item.highlightColor}
           loading={loading}
+          showTooltip={item.showTooltip ?? showTooltip}
         />
       ))}
     </div>
