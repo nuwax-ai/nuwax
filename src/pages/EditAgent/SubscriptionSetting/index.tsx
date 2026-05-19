@@ -142,7 +142,9 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
     loadingDelay: 300,
     onSuccess: () => {
       loadAgentPlans();
-      message.success('套餐状态修改成功');
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.planStatusUpdated'),
+      );
     },
   });
 
@@ -291,7 +293,9 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
             sort: item.sort,
           })),
       );
-      message.success('排序已更新');
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.sortUpdated'),
+      );
     } catch (error) {
       message.error(dict('PC.Common.Global.operationFailed'));
       loadAgentPlans();
@@ -328,9 +332,11 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
       <div className={styles['setting-panel']}>
         <div className={styles['enable-row']}>
           <div className={styles['enable-info']}>
-            <div className={styles['enable-title']}>开启付费模式</div>
+            <div className={styles['enable-title']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.enablePayment')}
+            </div>
             <div className={styles['enable-desc']}>
-              开启后，用户需要付费才能使用服务
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.enablePaymentDesc')}
             </div>
           </div>
           <Switch
@@ -343,9 +349,15 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
           <Form form={form}>
             <div className={styles['enable-row']}>
               <div className={styles['enable-info']}>
-                <div className={styles['enable-title']}>默认试用次数</div>
+                <div className={styles['enable-title']}>
+                  {dict(
+                    'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCount',
+                  )}
+                </div>
                 <div className={styles['enable-desc']}>
-                  新用户可免费体验的次数，设为 0 则不提供试用
+                  {dict(
+                    'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCountDesc',
+                  )}
                 </div>
               </div>
               <div className={styles['trial-controls']}>
@@ -368,11 +380,15 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
       <ConditionRender condition={subscriptionEnabled}>
         <div className={styles['list-header']}>
           <div className={cx('flex', 'gap-4', styles['list-title-container'])}>
-            <h3 className={styles['list-title']}>套餐列表</h3>
+            <h3 className={styles['list-title']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.planList')}
+            </h3>
             <ConditionRender condition={plans.length > 0}>
-              <span
-                className={styles['count-text']}
-              >{`共 ${plans.length} 个套餐`}</span>
+              <span className={styles['count-text']}>
+                {dict(
+                  'PC.Pages.AgentEdit.SubscriptionSetting.planCount',
+                ).replace('{0}', String(plans.length))}
+              </span>
             </ConditionRender>
           </div>
           <Button
@@ -380,7 +396,7 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
             icon={<PlusOutlined />}
             onClick={handleOpenCreateModal}
           >
-            添加套餐
+            {dict('PC.Pages.AgentEdit.SubscriptionSetting.addPlan')}
           </Button>
         </div>
 
