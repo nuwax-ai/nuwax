@@ -179,7 +179,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 加载当前生效智能体套餐loading
     loadingMySubscription,
     // 创建智能体订阅订单
-    createAgentSubscriptionOrder,
+    createSubscriptionOrder,
     openAgentSubscriptionModal,
   } = useAgentSubscription();
 
@@ -999,7 +999,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           // 关闭回调
           onClose={() => setOpenPaymentModal(false)}
           // 订阅回调
-          onSubscribe={createAgentSubscriptionOrder}
+          onSubscribe={createSubscriptionOrder}
         />
       </ConditionRender>
     </div>
