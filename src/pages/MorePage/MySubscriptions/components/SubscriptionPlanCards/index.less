@@ -208,6 +208,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      background: @colorTextBase;
+      color: @colorWhite;
+      border-color: @colorTextBase;
+
+      &:not([disabled]):hover {
+        background: @colorTextSecondary;
+        border-color: @colorTextSecondary;
+        color: @colorWhite;
+      }
+
+      &[disabled],
+      &[disabled]:hover {
+        background: @colorTextBase !important;
+        color: @colorWhite !important;
+        border-color: @colorTextBase !important;
+        opacity: 0.4;
+      }
     }
   }
 
@@ -215,9 +232,9 @@
   &.theme-blue {
     .plan-header {
       .plan-hint-tag {
-        background: @blue1;
-        color: @blue7;
-        border: @lineWidth solid @blue2;
+        background: @colorFillQuaternary;
+        color: @colorTextSecondary;
+        border: @lineWidth solid @colorBorderSecondary;
       }
     }
   }
