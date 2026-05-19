@@ -2653,16 +2653,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.pageTitle": "我的收益",
   "PC.Pages.MorePage.MyEarnings.date": "日期",
   "PC.Pages.MorePage.MyEarnings.monthFormat": "M月",
-  "PC.Pages.MorePage.MyEarnings.totalEarnings": "累计收益",
-  "PC.Pages.MorePage.MyEarnings.monthlyEarnings": "本月收益",
-  "PC.Pages.MorePage.MyEarnings.subscriberCount": "订阅用户数",
   "PC.Pages.MorePage.MyEarnings.pendingSettlement": "待结算",
-  "PC.Pages.MorePage.MyEarnings.colAgent": "智能体",
-  "PC.Pages.MorePage.MyEarnings.colUser": "用户",
-  "PC.Pages.MorePage.MyEarnings.colPlan": "套餐",
   "PC.Pages.MorePage.MyEarnings.colEarnings": "收益金额",
   "PC.Pages.MorePage.MyEarnings.colSettlementStatus": "结算状态",
-  "PC.Pages.MorePage.MyEarnings.colCreatedAt": "时间",
   "PC.Pages.MorePage.MyEarnings.settlementPending": "待结算",
   "PC.Pages.MorePage.MyEarnings.settlementWithdrawing": "提现中",
   "PC.Pages.MorePage.MyEarnings.settlementPaying": "打款中",
@@ -2786,8 +2779,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "已打款",
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "金额需满{0}元可提现，平台收取{1}%服务费",
   "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "您的积分为负，无法提现",
-
-
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "确认提现",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "确认要申请提现吗？",
 
 
   // ── 积分明细 - 新增 ──
