@@ -8,20 +8,6 @@
     font-weight: 600;
     margin-bottom: @marginLg;
     color: @colorTextBase;
-    position: relative;
-    padding-left: 14px;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 18px;
-      background: @blue6;
-      border-radius: 2px;
-    }
   }
 }
 
@@ -95,6 +81,7 @@
       margin-bottom: @marginSm;
 
       .price-value {
+        color: @colorTextBase;
         font-size: 32px;
         font-weight: 700;
         line-height: 1;
@@ -222,13 +209,10 @@
   // Themes
   &.theme-blue {
     .plan-header {
-      .price-value {
-        color: @blue6;
-      }
-
       .plan-hint-tag {
         background: @blue1;
-        color: @blue6;
+        color: @blue7;
+        border: @lineWidth solid @blue2;
       }
     }
   }

@@ -1,8 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
-import { Col, Form, Input, InputNumber, Row, Switch, message } from 'antd';
-import type { FormInstance } from 'antd/es/form';
+import { Form, Input, InputNumber, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import {
   apiCreateCreditPackage,
@@ -12,7 +11,6 @@ import { CreditPackageInfo, CreditPackageStatusEnum } from '../../types/credit';
 import styles from './index.less';
 
 interface CreditPackageFormModalProps {
-  form: FormInstance;
   open: boolean;
   creditPackageInfo?: CreditPackageInfo | null;
   onSuccess?: () => void;
@@ -23,13 +21,13 @@ interface CreditPackageFormModalProps {
  * 新建、编辑积分套餐表单弹窗
  */
 const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
-  form,
   open,
   creditPackageInfo,
   onSuccess,
   onCancel,
 }) => {
-  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
+  const [saving, setSaving] = useState<boolean>(false);
 
   const isEditMode = !!creditPackageInfo?.id;
 
@@ -40,7 +38,8 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
         creditAmount: creditPackageInfo?.creditAmount,
         period: creditPackageInfo?.period,
         price: creditPackageInfo?.price,
-        status: creditPackageInfo?.status === CreditPackageStatusEnum.Enabled,
+        status:
+          creditPackageInfo?.status === CreditPackageStatusEnum.Enabled || true,
         sort: creditPackageInfo?.sort,
         remark: creditPackageInfo?.remark,
       });
@@ -153,8 +152,8 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
           <InputNumber
             min={0}
             max={100000000}
-            precision={1}
-            step={0.1}
+            precision={2}
+            step={0.01}
             prefix="¥"
             className="w-full"
             placeholder={dict(
@@ -162,25 +161,15 @@ const CreditPackageFormModal: React.FC<CreditPackageFormModalProps> = ({
             )}
           />
         </Form.Item>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="sort"
-              label={dict('PC.Pages.SystemCreditPackages.fieldSort')}
-            >
-              <InputNumber min={1} precision={0} className="w-full" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="status"
-              label={dict('PC.Pages.SystemCreditPackages.fieldEnabled')}
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Col>
-        </Row>
+
+        <Form.Item
+          name="status"
+          label={dict('PC.Pages.SystemCreditPackages.fieldEnabled')}
+          valuePropName="checked"
+        >
+          <Switch />
+        </Form.Item>
+
         <Form.Item
           name="remark"
           label={dict('PC.Pages.SystemCreditPackages.fieldRemark')}
