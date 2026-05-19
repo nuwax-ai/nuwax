@@ -70,30 +70,42 @@ const EarningsSummary: React.FC = () => {
 
   const [creditChecking, setCreditChecking] = useState(false);
 
-  const handleWithdraw = async () => {
+  const handleWithdraw = () => {
     if (creditChecking || withdrawLoading) return;
-    setCreditChecking(true);
-    try {
-      const res = await apiGetCreditSummary();
-      if (res && res.success && res.data) {
-        const totalCredit = res.data.totalCredit ?? 0;
-        if (totalCredit < 0) {
-          message.error(
-            dict('PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError'),
-          );
-          return;
+
+    Modal.confirm({
+      title: dict('PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle'),
+      content: dict('PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc'),
+      okText: dict('PC.Common.Global.confirm'),
+      cancelText: dict('PC.Pages.SpaceAgentSubscriptions.confirmCancel'),
+      onOk: async () => {
+        setCreditChecking(true);
+        try {
+          const res = await apiGetCreditSummary();
+          if (res && res.success && res.data) {
+            const totalCredit = res.data.totalCredit ?? 0;
+            if (totalCredit < 0) {
+              message.error(
+                dict(
+                  'PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError',
+                ),
+              );
+              return;
+            }
+          } else {
+            message.error(
+              res?.message ||
+                dict('PC.Pages.MorePage.MyEarnings.withdrawFailed'),
+            );
+            return;
+          }
+          runWithdraw();
+        } catch (err: any) {
+        } finally {
+          setCreditChecking(false);
         }
-      } else {
-        message.error(
-          res?.message || dict('PC.Pages.MorePage.MyEarnings.withdrawFailed'),
-        );
-        return;
-      }
-      runWithdraw();
-    } catch (err: any) {
-    } finally {
-      setCreditChecking(false);
-    }
+      },
+    });
   };
 
   const stats = useMemo(() => {
