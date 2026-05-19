@@ -29,7 +29,8 @@
 
 .stat-cards-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  // 略增大最小列宽，配合数值区自适应字号，减少长数字溢出
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: @marginSm;
   margin-bottom: @marginMd;
   flex-shrink: 0;
@@ -49,6 +50,9 @@
   justify-content: center;
   gap: @paddingXs;
   overflow: hidden;
+  min-width: 0;
+  // 启用容器查询，使数值字号随卡片宽度缩放
+  container-type: inline-size;
 
   &:hover {
     box-shadow: @boxShadowSecondary;
@@ -63,16 +67,41 @@
     text-overflow: ellipsis;
   }
 
+  .stat-value-trigger {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .stat-value {
-    font-size: @fontSizeHeading3;
+    // 长数字完整展示：随卡片宽度缩小字号，超出时省略号 + Tooltip 查看全文
+    display: block;
+    width: 100%;
+    /* stylelint-disable-next-line unit-no-unknown -- 容器查询单位，随卡片宽度缩放字号 */
+    font-size: clamp(13px, 10cqi, 22px);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: @colorText;
-    line-height: @lineHeightSm;
+    line-height: 1.25;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.highlight {
       color: @colorWarning;
     }
   }
+}
+
+// 类型 Tag（模型 / 智能体 / 工具）
+.type-tag-model,
+.type-tag-agent,
+.type-tag-tool,
+.type-tag-plugin,
+.type-tag-workflow {
+  margin-inline-end: 0;
 }
 
 // 明细表格区域 - 占满剩余空间，表格体内部滚动

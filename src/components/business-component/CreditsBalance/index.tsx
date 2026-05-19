@@ -49,8 +49,8 @@ const CreditsBalance: React.FC = () => {
               : '--'}
           </span>
           <Button
-            type="primary"
             className={cx(styles['top-up-btn'])}
+            size="small"
             onClick={handleTopUp}
           >
             {dict('PC.Components.CreditsBalance.topUp')} +

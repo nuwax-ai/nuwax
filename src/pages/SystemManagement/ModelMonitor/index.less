@@ -29,7 +29,7 @@
 
 .stat-cards-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: @marginSm;
   margin-bottom: @marginMd;
   flex-shrink: 0;
@@ -49,6 +49,8 @@
   justify-content: center;
   gap: @paddingXs;
   overflow: hidden;
+  min-width: 0;
+  container-type: inline-size;
 
   &:hover {
     box-shadow: @boxShadowSecondary;
@@ -63,11 +65,26 @@
     text-overflow: ellipsis;
   }
 
+  .stat-value-trigger {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .stat-value {
-    font-size: @fontSizeHeading3;
+    display: block;
+    width: 100%;
+    /* stylelint-disable-next-line unit-no-unknown -- 容器查询单位，随卡片宽度缩放字号 */
+    font-size: clamp(13px, 10cqi, 22px);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: @colorText;
-    line-height: @lineHeightSm;
+    line-height: 1.25;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.highlight {
       color: @colorWarning;
