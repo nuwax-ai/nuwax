@@ -9,6 +9,7 @@ import {
   SubscriptionPlanPeriodEnum,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { dict } from '@/services/i18nRuntime';
 import { customizeRequiredMark } from '@/utils/form';
 import {
   Button,
@@ -45,9 +46,18 @@ interface CreatePlanModalProps {
  * 周期选项
  */
 const periodOptions = [
-  { label: '月', value: SubscriptionPlanPeriodEnum.MONTH },
-  { label: '季', value: SubscriptionPlanPeriodEnum.QUARTER },
-  { label: '年', value: SubscriptionPlanPeriodEnum.YEAR },
+  {
+    label: dict('PC.Pages.AgentEdit.CreatePlanModal.periodMonth'),
+    value: SubscriptionPlanPeriodEnum.MONTH,
+  },
+  {
+    label: dict('PC.Pages.AgentEdit.CreatePlanModal.periodQuarter'),
+    value: SubscriptionPlanPeriodEnum.QUARTER,
+  },
+  {
+    label: dict('PC.Pages.AgentEdit.CreatePlanModal.periodYear'),
+    value: SubscriptionPlanPeriodEnum.YEAR,
+  },
 ];
 
 /**
@@ -141,10 +151,12 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
       if (editPlan?.id) {
         await apiUpdateAgentSubscriptionPlan(payload);
-        message.success('更新成功');
+        message.success(
+          dict('PC.Pages.AgentEdit.CreatePlanModal.updateSuccess'),
+        );
       } else {
         await apiCreateAgentSubscriptionPlan(payload);
-        message.success('添加成功');
+        message.success(dict('PC.Pages.AgentEdit.CreatePlanModal.addSuccess'));
       }
       onCreated?.();
       onCancel();
@@ -156,7 +168,11 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title={editPlan ? '编辑套餐' : '添加套餐'}
+      title={
+        editPlan
+          ? dict('PC.Pages.AgentEdit.CreatePlanModal.editTitle')
+          : dict('PC.Pages.AgentEdit.CreatePlanModal.addTitle')
+      }
       open={open}
       width={600}
       centered
@@ -172,20 +188,34 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
       >
         <Form.Item
           name="name"
-          label="套餐名称"
-          rules={[{ required: true, message: '请输入套餐名称' }]}
+          label={dict('PC.Pages.AgentEdit.CreatePlanModal.planName')}
+          rules={[
+            {
+              required: true,
+              message: dict(
+                'PC.Pages.AgentEdit.CreatePlanModal.planNameRequired',
+              ),
+            },
+          ]}
         >
           <Input
             ref={nameInputRef}
-            placeholder="例如：专业版"
+            placeholder={dict(
+              'PC.Pages.AgentEdit.CreatePlanModal.planNamePlaceholder',
+            )}
             maxLength={30}
             showCount
           />
         </Form.Item>
 
-        <Form.Item name="description" label="套餐描述">
+        <Form.Item
+          name="description"
+          label={dict('PC.Pages.AgentEdit.CreatePlanModal.planDesc')}
+        >
           <Input.TextArea
-            placeholder="请输入套餐描述"
+            placeholder={dict(
+              'PC.Pages.AgentEdit.CreatePlanModal.planDescPlaceholder',
+            )}
             showCount
             maxLength={200}
             autoSize={{ minRows: 3, maxRows: 6 }}
@@ -193,7 +223,10 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           />
         </Form.Item>
 
-        <Form.Item label="价格" required>
+        <Form.Item
+          label={dict('PC.Pages.AgentEdit.CreatePlanModal.price')}
+          required
+        >
           <div className={styles['price-row']}>
             <Form.Item name="period" noStyle>
               <Segmented options={periodOptions} />
@@ -201,7 +234,14 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             <Form.Item
               name="price"
               noStyle
-              rules={[{ required: true, message: '请输入价格' }]}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.AgentEdit.CreatePlanModal.priceRequired',
+                  ),
+                },
+              ]}
             >
               <InputNumber
                 min={0}
@@ -209,33 +249,44 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 step={0.01}
                 precision={2}
                 className="w-full"
-                placeholder="请输入价格"
+                placeholder={dict(
+                  'PC.Pages.AgentEdit.CreatePlanModal.pricePlaceholder',
+                )}
               />
             </Form.Item>
           </div>
         </Form.Item>
 
-        <Form.Item label="可调用次数（每月）">
+        <Form.Item
+          label={dict('PC.Pages.AgentEdit.CreatePlanModal.callLimitMonthly')}
+        >
           <div className={styles['limit-switch-row']}>
             <Button
               type={limitType === 'unlimited' ? 'primary' : 'default'}
               className={styles['limit-btn']}
               onClick={() => setLimitType('unlimited')}
             >
-              不限
+              {dict('PC.Pages.AgentEdit.CreatePlanModal.unlimited')}
             </Button>
             <Button
               type={limitType === 'limited' ? 'primary' : 'default'}
               className={styles['limit-btn']}
               onClick={() => setLimitType('limited')}
             >
-              限制
+              {dict('PC.Pages.AgentEdit.CreatePlanModal.limited')}
             </Button>
           </div>
           {limitType === 'limited' && (
             <Form.Item
               name="callLimitCount"
-              rules={[{ required: true, message: '请输入可调用次数' }]}
+              rules={[
+                {
+                  required: true,
+                  message: dict(
+                    'PC.Pages.AgentEdit.CreatePlanModal.callLimitRequired',
+                  ),
+                },
+              ]}
               style={{ marginTop: 12, marginBottom: 0 }}
             >
               <InputNumber
@@ -243,7 +294,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 max={10000000000}
                 precision={0}
                 className="w-full"
-                placeholder="请输入可调用次数"
+                placeholder={dict(
+                  'PC.Pages.AgentEdit.CreatePlanModal.callLimitPlaceholder',
+                )}
               />
             </Form.Item>
           )}
@@ -254,24 +307,30 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             <Switch />
           </Form.Item>
           <div className={styles['function-only-text']}>
-            <div className={styles['function-only-title']}>仅为功能订阅</div>
+            <div className={styles['function-only-title']}>
+              {dict('PC.Pages.AgentEdit.CreatePlanModal.functionOnlyTitle')}
+            </div>
             <div className={styles['function-only-desc']}>
               {functionOnly ? (
                 <>
                   <span className={styles['function-only-highlight']}>
-                    仅为功能订阅：
+                    {dict(
+                      'PC.Pages.AgentEdit.CreatePlanModal.functionOnlyLabel',
+                    )}
                   </span>
-                  模型/工具等资源调用需
+                  {dict('PC.Pages.AgentEdit.CreatePlanModal.functionOnlyDesc')}
                   <span className={styles['function-only-highlight-pay']}>
-                    额外付费
+                    {dict(
+                      'PC.Pages.AgentEdit.CreatePlanModal.functionOnlyNeedPay',
+                    )}
                   </span>
                 </>
               ) : (
                 <>
                   <span className={styles['function-only-highlight']}>
-                    包干价订阅：
+                    {dict('PC.Pages.AgentEdit.CreatePlanModal.fixedPriceLabel')}
                   </span>
-                  资源调用费用由开发者承担
+                  {dict('PC.Pages.AgentEdit.CreatePlanModal.fixedPriceDesc')}
                 </>
               )}
             </div>

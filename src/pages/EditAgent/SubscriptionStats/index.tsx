@@ -22,16 +22,30 @@ interface SubscriptionStatsProps {
 }
 
 const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
-  [SubscriptionPlanPeriodEnum.MONTH]: '月',
-  [SubscriptionPlanPeriodEnum.QUARTER]: '季度',
-  [SubscriptionPlanPeriodEnum.YEAR]: '年',
-  [SubscriptionPlanPeriodEnum.FOREVER]: '永久',
+  [SubscriptionPlanPeriodEnum.MONTH]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.periodMonth',
+  ),
+  [SubscriptionPlanPeriodEnum.QUARTER]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.periodQuarter',
+  ),
+  [SubscriptionPlanPeriodEnum.YEAR]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.periodYear',
+  ),
+  [SubscriptionPlanPeriodEnum.FOREVER]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.periodForever',
+  ),
 };
 
 const subscriberStatusLabelMap: Record<UserSubscriberStatusEnum, string> = {
-  [UserSubscriberStatusEnum.ACTIVE]: '生效中',
-  [UserSubscriberStatusEnum.EXPIRED]: '已过期',
-  [UserSubscriberStatusEnum.CANCELLED]: '已取消',
+  [UserSubscriberStatusEnum.ACTIVE]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.statusActive',
+  ),
+  [UserSubscriberStatusEnum.EXPIRED]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.statusExpired',
+  ),
+  [UserSubscriberStatusEnum.CANCELLED]: dict(
+    'PC.Pages.AgentEdit.SubscriptionStats.statusCancelled',
+  ),
 };
 
 /**
@@ -79,36 +93,36 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
   const columns: ColumnsType<SubscriptionPlanSubscriberInfo> = useMemo(
     () => [
       {
-        title: '订阅记录ID',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colId'),
         dataIndex: 'id',
         width: 150,
       },
       {
-        title: '套餐名称',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colPlanName'),
         dataIndex: 'planName',
         ellipsis: true,
       },
       {
-        title: '订阅周期',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colPeriod'),
         dataIndex: 'period',
         width: 110,
         render: (period: SubscriptionPlanPeriodEnum) =>
           periodLabelMap[period] || '-',
       },
       {
-        title: '已用次数',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colUsedCount'),
         dataIndex: 'callUsedCount',
         width: 120,
       },
       {
-        title: '状态',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colStatus'),
         dataIndex: 'status',
         width: 110,
         render: (status: UserSubscriberStatusEnum) =>
           subscriberStatusLabelMap[status] || '-',
       },
       {
-        title: '订阅者ID',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colSubscriberId'),
         dataIndex: ['subscriber', 'id'],
         width: 100,
         render: (subscriberId?: number) =>
@@ -117,20 +131,20 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
             : '-',
       },
       {
-        title: '订阅者名称',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colSubscriberName'),
         dataIndex: ['subscriber', 'name'],
         width: 120,
         ellipsis: true,
         render: (subscriberName?: string) => subscriberName || '-',
       },
       {
-        title: '开始时间',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colStartTime'),
         dataIndex: 'startTime',
         width: 200,
         render: (startTime: string) => formatDateTimeYmdHms(startTime),
       },
       {
-        title: '结束时间',
+        title: dict('PC.Pages.AgentEdit.SubscriptionStats.colEndTime'),
         dataIndex: 'endTime',
         width: 200,
         render: (endTime: string) => formatDateTimeYmdHms(endTime),
@@ -144,17 +158,17 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
     return [
       {
         key: 'totalCount',
-        label: '总订阅数',
+        label: dict('PC.Pages.AgentEdit.SubscriptionStats.totalSubscriptions'),
         value: formatInteger(statsResult?.totalCount ?? 0),
       },
       {
         key: 'todayCount',
-        label: '今日新增',
+        label: dict('PC.Pages.AgentEdit.SubscriptionStats.todayNew'),
         value: formatInteger(statsResult?.todayCount ?? 0),
       },
       {
         key: 'monthCount',
-        label: '本月新增',
+        label: dict('PC.Pages.AgentEdit.SubscriptionStats.monthNew'),
         value: formatInteger(statsResult?.monthCount ?? 0),
       },
     ];
