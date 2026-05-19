@@ -6,7 +6,6 @@ import {
   Button,
   Col,
   Form,
-  Input,
   InputNumber,
   Row,
   Switch,
@@ -151,28 +150,6 @@ const BasicConfig: React.FC = () => {
                         10,000 积分 ≈ ¥
                         {(10000 / Number(exchangeRate || 1)).toFixed(2)}
                       </Text>
-                    </div>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div className={styles.exchangeLine}>
-                    <div className={styles.exchangeLineLabel}>
-                      {dict(
-                        'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc',
-                      )}
-                    </div>
-                    <div className={styles.exchangeDescWrap}>
-                      <Form.Item name="creditExchangeDesc" noStyle>
-                        <Input.TextArea
-                          className="dispose-textarea-count"
-                          placeholder={dict(
-                            'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder',
-                          )}
-                          maxLength={200}
-                          showCount
-                          autoSize={{ minRows: 3, maxRows: 5 }}
-                        />
-                      </Form.Item>
                     </div>
                   </div>
                 </Col>

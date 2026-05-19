@@ -281,16 +281,9 @@ const SkillDetail: React.FC = ({}) => {
           targetType="Skill"
           loading={loadingSkillPricing || loadingMySubscription}
           plans={skillSubscriptionPlans}
-          currentSubscribedPlanId={
-            mySubscriptionInfo?.currentSubscription?.planId ?? null
-          }
-          currentSubscribedPlanPrice={
-            mySubscriptionInfo?.currentSubscription?.plan?.price ?? null
-          }
-          currentSubscribedPlanPeriod={
-            mySubscriptionInfo?.currentSubscription?.plan?.period ??
-            mySubscriptionInfo?.currentSubscription?.period ??
-            null
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
           }
           onClose={() => setOpenPaymentModal(false)}
           onSubscribe={handleSubscribeSkillPlan}

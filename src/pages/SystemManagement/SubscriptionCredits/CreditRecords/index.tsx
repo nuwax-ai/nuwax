@@ -352,7 +352,7 @@ const CreditRecords: React.FC = () => {
   );
 
   return (
-    <WorkspaceLayout title={dict('PC.Routes.creditsRecordsQuery')}>
+    <WorkspaceLayout title={dict('PC.Routes.creditsRecordsQuery')} back>
       <XProTable<UserCreditFlowInfo, CreditFlowListTableParams>
         key={location.pathname + (location.search || '')}
         rowKey="id"
