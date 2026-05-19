@@ -156,6 +156,12 @@ const CreditRecords: React.FC = () => {
       valueType: 'digit',
     },
     {
+      title: dict('PC.Pages.MorePage.CreditRecords.filterCreditType'),
+      dataIndex: 'creditTypeName',
+      key: 'creditTypeName',
+      search: false,
+    },
+    {
       title: dict('PC.Pages.MorePage.CreditRecords.colNote'),
       dataIndex: 'remark',
       key: 'remark',

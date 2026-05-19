@@ -2799,7 +2799,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.renewSuccess": "Renewal Successful",
   "PC.Pages.MorePage.MySubscriptions.upgradeSuccess": "Upgrade Successful",
   "PC.Pages.MorePage.MySubscriptions.boughtOut": "Buyout",
-  "PC.Pages.MorePage.MySubscriptions.permanentUse": "Buyout · Permanent Use",
+  "PC.Pages.MorePage.MySubscriptions.permanentUse": "Permanent Use",
   "PC.Pages.MorePage.MySubscriptions.buyoutPriceLabel": "Buyout Price",
   "PC.Pages.MorePage.MySubscriptions.monthlyPayment": "Monthly",
   "PC.Pages.MorePage.MySubscriptions.quarterlyPayment": "Quarterly",

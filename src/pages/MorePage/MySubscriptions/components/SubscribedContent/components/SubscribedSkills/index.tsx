@@ -75,37 +75,40 @@ const SubscribedSkills: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {buyout && (
-                  <Tag color="cyan" className={cx(styles['buyout-tag'])}>
-                    {dict('PC.Pages.MorePage.MySubscriptions.permanentUse')}
-                  </Tag>
-                )}
               </div>
 
               <div className={cx(styles['card-body'])}>
                 {buyout ? (
-                  <div className={cx(styles['buyout-info'])}>
-                    <div className={cx(styles['buyout-price'])}>
-                      <span className={cx(styles['label'])}>
-                        {dict(
-                          'PC.Pages.MorePage.MySubscriptions.buyoutPriceLabel',
-                        )}
-                      </span>
-                      <Statistic
-                        value={item.plan?.price}
-                        valueStyle={{ fontSize: '14px' }}
-                        prefix="¥"
-                        precision={2}
-                      />
+                  <>
+                    <div className={cx(styles['sub-info-grid'])}>
+                      <div className={cx(styles['info-item'])}>
+                        <div className={cx(styles['label'])}>
+                          {dict(
+                            'PC.Pages.MorePage.MySubscriptions.buyoutPriceLabel',
+                          )}
+                        </div>
+                        <div className={cx(styles['value'])}>
+                          <Statistic
+                            className={cx(styles['price-statistic'])}
+                            value={item.plan?.price}
+                            prefix="¥"
+                            precision={2}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <Tag
-                      className={cx(styles['status-tag-inner'])}
-                      color="cyan"
-                    >
-                      {dict('PC.Pages.MorePage.MySubscriptions.boughtOut')}
-                    </Tag>
-                  </div>
+                    <div className={cx(styles['buyout-info'])}>
+                      <div className={cx(styles['pay-type'])}>
+                        {dict('PC.Pages.MorePage.MySubscriptions.permanentUse')}
+                      </div>
+                      <Tag
+                        className={cx(styles['status-tag-inner'])}
+                        color="cyan"
+                      >
+                        {dict('PC.Pages.MorePage.MySubscriptions.boughtOut')}
+                      </Tag>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div className={cx(styles['sub-info-grid'])}>

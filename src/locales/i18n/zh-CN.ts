@@ -2799,7 +2799,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.renewSuccess": "续订成功",
   "PC.Pages.MorePage.MySubscriptions.upgradeSuccess": "升级成功",
   "PC.Pages.MorePage.MySubscriptions.boughtOut": "已买断",
-  "PC.Pages.MorePage.MySubscriptions.permanentUse": "已买断 · 永久使用",
+  "PC.Pages.MorePage.MySubscriptions.permanentUse": "永久使用",
   "PC.Pages.MorePage.MySubscriptions.buyoutPriceLabel": "买断价",
   "PC.Pages.MorePage.MySubscriptions.monthlyPayment": "月付",
   "PC.Pages.MorePage.MySubscriptions.quarterlyPayment": "季付",

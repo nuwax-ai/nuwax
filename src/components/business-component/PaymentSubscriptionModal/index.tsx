@@ -18,7 +18,7 @@ import {
   MySubscriptionStatusEnum,
   type MySubscriptionItem,
 } from '@/types/interfaces/subscription';
-import { Button, Empty, Modal, Spin } from 'antd';
+import { Button, Empty, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -234,7 +234,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
-  const modalTitle = overCallLimit ? '选择订阅套餐' : '选择订阅套餐（可试用）';
+  // 技能没有试用次数，则不显示可试用
+  const modalTitle =
+    overCallLimit || targetType === 'Skill'
+      ? '选择订阅套餐'
+      : '选择订阅套餐（可试用）';
 
   return (
     <Modal
@@ -333,9 +337,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   className={cx(styles['plan-pay-card'])}
                 >
                   <div className={cx(styles['card-header'])}>
-                    <div className={cx(styles.title, 'text-ellipsis')}>
-                      {plan.name}
-                    </div>
+                    <Tooltip title={plan.name} placement="topLeft">
+                      <div className={cx(styles.title, 'text-ellipsis')}>
+                        {plan.name}
+                      </div>
+                    </Tooltip>
                   </div>
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>

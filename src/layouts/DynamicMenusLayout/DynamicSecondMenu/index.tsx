@@ -713,7 +713,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     return (
       <div className={'flex flex-col gap-4 overflow-hide'}>
         {secondMenus
-          ?.filter((menu: MenuItemDto) => menu.code !== 'ziyuandingjia')
+          ?.filter((menu: MenuItemDto) => menu.code !== 'resource_pricing')
           ?.map((menu: MenuItemDto) => renderMenuItem(menu))}
       </div>
     );
