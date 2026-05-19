@@ -5,7 +5,7 @@ import {
   SystemSubscriptionPlanGroup,
 } from '@/types/interfaces/subscription';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Col, Popover, Row } from 'antd';
+import { Button, Col, Row } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -15,6 +15,7 @@ import styles from './index.less';
 export interface PlanInfo {
   id: string;
   name: string;
+  description: string;
   price: number;
   creditAmount: number;
   period: string;
@@ -50,6 +51,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
     return data.map((item) => ({
       id: item.id.toString(),
       name: item.name,
+      description: item.description || '',
       price: item.price,
       creditAmount: item.creditAmount,
       period: item.period,
@@ -87,35 +89,17 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   };
 
   const renderPlanContent = (plan: PlanInfo) => {
-    const allItems = plan.itemGroups?.flatMap((g) => g.items || []) || [];
-    const maxVisibleItems = 5;
-    const hasOverflow = allItems.length > maxVisibleItems;
-    const visibleItems = hasOverflow
-      ? allItems.slice(0, maxVisibleItems - 1)
-      : allItems;
-    const remainingItems = hasOverflow
-      ? allItems.slice(maxVisibleItems - 1)
-      : [];
-
-    const popoverContent = (
-      <div className={cx(styles['popover-benefit-list'])}>
-        {remainingItems.map((benefit, bIdx) => (
-          <div key={bIdx} className={cx(styles['benefit-item'])}>
-            {benefit.selected ? (
-              <CheckOutlined className={cx(styles['check-icon'])} />
-            ) : (
-              <CloseOutlined className={cx(styles['close-icon'])} />
-            )}
-            <span>{benefit.description}</span>
-          </div>
-        ))}
-      </div>
-    );
+    const allItems =
+      plan.itemGroups
+        .filter((item) => {
+          return item.groupType === 'BASE';
+        })
+        ?.flatMap((g) => g.items || []) || [];
 
     return (
       <div className={cx(styles['plan-content'])}>
         <div className={cx(styles['benefit-group'])}>
-          {visibleItems.map((benefit, bIdx) => (
+          {allItems.map((benefit, bIdx) => (
             <div key={bIdx} className={cx(styles['benefit-item'])}>
               {benefit.selected ? (
                 <CheckOutlined className={cx(styles['check-icon'])} />
@@ -127,20 +111,6 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
               </span>
             </div>
           ))}
-          {hasOverflow && (
-            <Popover
-              content={popoverContent}
-              trigger="hover"
-              placement="right"
-              overlayClassName={cx(styles['benefit-popover'])}
-            >
-              <div
-                className={cx(styles['benefit-item'], styles['ellipsis-item'])}
-              >
-                <span className={cx(styles['ellipsis-text'])}>...</span>
-              </div>
-            </Popover>
-          )}
         </div>
       </div>
     );
@@ -177,6 +147,11 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
 
                 <div className={cx(styles['plan-header'])}>
                   <div className={cx(styles['plan-name'])}>{plan.name}</div>
+                  {plan.description && (
+                    <div className={cx(styles['plan-description'])}>
+                      {plan.description}
+                    </div>
+                  )}
                   <div className={cx(styles['plan-price-area'])}>
                     <span className={cx(styles['price-value'])}>
                       <span className={cx(styles['currency'])}>¥</span>

@@ -102,7 +102,9 @@ export interface MySubscriptionItem {
 }
 
 export interface MySubscriptionData {
+  // 用户订阅信息
   currentSubscription: MySubscriptionItem;
+  // 用户订阅信息列表
   subscriptions: MySubscriptionItem[];
 }
 
@@ -201,6 +203,7 @@ export interface CreditSummaryInfo {
   purchaseCredit: number;
   activityCredit: number;
   manualCredit: number;
+  dailyGiftCredit: number;
   user: any;
 }
 
@@ -553,6 +556,8 @@ export interface BillWithdrawRecordInfo {
   phone?: string;
   email?: string;
   amount: number;
+  fee?: number;
+  actualAmount?: number;
   status: BillWithdrawStatusEnum;
   rejectReason?: string;
   paymentExtra?: any;

@@ -11,11 +11,16 @@
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: #91caff;
+    border-color: @colorPrimary;
   }
 
   &.user-group-card-selected {
-    border-color: @primary-color;
+    border-color: @colorPrimary;
+  }
+
+  &.user-group-card-locked {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .user-group-card-title {

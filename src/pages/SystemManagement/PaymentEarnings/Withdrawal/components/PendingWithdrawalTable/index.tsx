@@ -67,6 +67,7 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'id',
       ellipsis: true,
       search: false,
+      width: 200,
     },
     {
       title: dict(
@@ -103,11 +104,57 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
+      width: 120,
       render: (_, record) => (
         <span style={{ fontWeight: 600, color: '#f5222d' }}>
-          ¥{(record.amount ?? 0).toLocaleString()}
+          ¥
+          {(record.amount ?? 0).toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </span>
       ),
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPlatformServiceFee',
+      ),
+      dataIndex: 'fee',
+      key: 'fee',
+      search: false,
+      width: 130,
+      render: (_, record) => {
+        const serviceFee = record.fee ?? 0;
+        return (
+          <span style={{ color: '#8c8c8c' }}>
+            ¥
+            {serviceFee.toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        );
+      },
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colActualTransferAmount',
+      ),
+      dataIndex: 'actualAmount',
+      key: 'actualAmount',
+      search: false,
+      width: 130,
+      render: (_, record) => {
+        return (
+          <span style={{ fontWeight: 600, color: '#52c41a' }}>
+            ¥
+            {(record.actualAmount ?? 0).toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        );
+      },
     },
     {
       title: dict(
@@ -115,6 +162,7 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
       key: 'payMethod',
       search: false,
+      width: 200,
       render: (_, record) => {
         const extra = record.paymentExtra || {};
         const isAlipay =
@@ -144,11 +192,13 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'created',
       search: false,
       valueType: 'dateTime',
+      width: 120,
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
+      width: 160,
       render: (_, record) => (
         <TableActions
           record={record}

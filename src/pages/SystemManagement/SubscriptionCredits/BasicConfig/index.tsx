@@ -6,7 +6,6 @@ import {
   Button,
   Col,
   Form,
-  Input,
   InputNumber,
   Row,
   Switch,
@@ -14,12 +13,13 @@ import {
   message,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 const BasicConfig: React.FC = () => {
+  const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState<boolean>(false);
   const [exchangeRate, setExchangeRate] = useState<number>(100);
@@ -56,7 +56,7 @@ const BasicConfig: React.FC = () => {
       // 租户配置信息查询接口
       runTenantConfig();
     }
-  }, [tenantConfigInfo]);
+  }, [tenantConfigInfo, location.state]);
 
   // 保存配置
   const handleSave = async () => {
@@ -151,28 +151,6 @@ const BasicConfig: React.FC = () => {
                         10,000 积分 ≈ ¥
                         {(10000 / Number(exchangeRate || 1)).toFixed(2)}
                       </Text>
-                    </div>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div className={styles.exchangeLine}>
-                    <div className={styles.exchangeLineLabel}>
-                      {dict(
-                        'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc',
-                      )}
-                    </div>
-                    <div className={styles.exchangeDescWrap}>
-                      <Form.Item name="creditExchangeDesc" noStyle>
-                        <Input.TextArea
-                          className="dispose-textarea-count"
-                          placeholder={dict(
-                            'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder',
-                          )}
-                          maxLength={200}
-                          showCount
-                          autoSize={{ minRows: 3, maxRows: 5 }}
-                        />
-                      </Form.Item>
                     </div>
                   </div>
                 </Col>

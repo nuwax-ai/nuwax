@@ -110,6 +110,7 @@ export interface SelectListType {
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
   style?: React.CSSProperties;
+  showDescription?: boolean;
 }
 
 // 默认的object

@@ -1,3 +1,4 @@
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -11,61 +12,26 @@ import type {
   ResourceStatSummaryDTO,
   StatGroup,
 } from '@/types/interfaces/systemManage';
+import {
+  formatCurrency,
+  formatInteger,
+  sumBigNumbersToNumber,
+} from '@/utils/numberFormat';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, Skeleton, message } from 'antd';
+import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'umi';
 import styles from './index.less';
+import {
+  getModelMonitorRecordInputTokens,
+  getModelMonitorRecordTotalInputTokens,
+  getModelMonitorSummaryInputTokens,
+  getModelMonitorSummaryTotalInputTokens,
+} from './resourceStatTokenMetrics';
 
 const { RangePicker } = DatePicker;
-
-const formatNumber = (num: number | undefined): string => {
-  if (num === null || num === undefined) return '0';
-  if (num >= 100000000) return `${(num / 100000000).toFixed(1)}亿`;
-  if (num >= 10000) return `${(num / 10000).toFixed(1)}万`;
-  return num.toLocaleString();
-};
-
-const formatAmount = (num: number | undefined): string => {
-  if (num === null || num === undefined) return '¥0.00';
-  return `¥${num.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
-
-const SummaryCard: React.FC<{
-  label: string;
-  value: string;
-  highlight?: boolean;
-  loading?: boolean;
-}> = ({ label, value, highlight, loading }) => {
-  if (loading) {
-    return (
-      <div className={styles['stat-item-card']}>
-        <Skeleton
-          active
-          paragraph={{ rows: 1, width: '50%' }}
-          title={{ width: '70%' }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div className={styles['stat-item-card']}>
-      <span className={styles['stat-label']}>{label}</span>
-      <span
-        className={`${styles['stat-value']} ${
-          highlight ? styles['highlight'] : ''
-        }`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-};
 
 const ModelMonitor: React.FC = () => {
   const location = useLocation();
@@ -165,7 +131,6 @@ const ModelMonitor: React.FC = () => {
         totalInputTokens: 0,
         totalCacheInputTokens: 0,
         inputTokens: 0,
-        outputTokens: 0,
         totalAmount: 0,
         totalOutputTokens: 0,
         toolCount: 0,
@@ -179,31 +144,31 @@ const ModelMonitor: React.FC = () => {
     return [
       {
         label: dict('PC.Pages.ModelMonitor.modelCallCount'),
-        value: formatNumber(g.modelCallCount),
+        value: formatInteger(g.modelCallCount),
       },
       {
         label: dict('PC.Pages.ModelMonitor.failedModelCallCount'),
-        value: formatNumber(g.failedModelCallCount),
+        value: formatInteger(g.failedModelCallCount),
       },
       {
         label: dict('PC.Pages.ModelMonitor.totalInputTokens'),
-        value: formatNumber(g.totalInputTokens),
+        value: formatInteger(getModelMonitorSummaryTotalInputTokens(g)),
       },
       {
         label: dict('PC.Pages.ModelMonitor.cacheInputTokens'),
-        value: formatNumber(g.totalCacheInputTokens),
+        value: formatInteger(g.totalCacheInputTokens),
       },
       {
         label: dict('PC.Pages.ModelMonitor.inputTokens'),
-        value: formatNumber(g.totalInputTokens ?? 0),
+        value: formatInteger(getModelMonitorSummaryInputTokens(g)),
       },
       {
         label: dict('PC.Pages.ModelMonitor.outputTokens'),
-        value: formatNumber(g.totalOutputTokens),
+        value: formatInteger(g.totalOutputTokens),
       },
       {
         label: dict('PC.Pages.ModelMonitor.totalAmount'),
-        value: formatAmount(g.totalAmount),
+        value: formatCurrency(g.totalAmount),
         highlight: true,
       },
     ];
@@ -215,6 +180,7 @@ const ModelMonitor: React.FC = () => {
     if (!c && !s) return undefined;
     const keys: (keyof StatGroup)[] = [
       'totalInputTokens',
+      'inputTokens',
       'totalOutputTokens',
       'totalCacheInputTokens',
       'toolCount',
@@ -230,7 +196,7 @@ const ModelMonitor: React.FC = () => {
     ];
     const result = {} as StatGroup;
     for (const k of keys) {
-      result[k] = (c?.[k] ?? 0) + (s?.[k] ?? 0);
+      result[k] = sumBigNumbersToNumber(c?.[k], s?.[k]);
     }
     return result;
   }, [summaryData]);
@@ -250,51 +216,50 @@ const ModelMonitor: React.FC = () => {
       dataIndex: 'callCount',
       width: 100,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.callCount),
+      render: (_, record) => formatInteger(record.callCount),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colCallFailedCount'),
       dataIndex: 'callFailedCount',
       width: 100,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.callFailedCount),
+      render: (_, record) => formatInteger(record.callFailedCount),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colTotalInputTokens'),
       dataIndex: 'inputTokens',
       width: 130,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.inputTokens),
+      render: (_, record) =>
+        formatInteger(getModelMonitorRecordTotalInputTokens(record)),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colCacheInputTokens'),
       dataIndex: 'cacheInputTokens',
       width: 140,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.cacheInputTokens),
+      render: (_, record) => formatInteger(record.cacheInputTokens),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colInputTokens'),
       width: 120,
       hideInSearch: true,
       render: (_, record) =>
-        formatNumber(
-          (record.inputTokens ?? 0) - (record.cacheInputTokens ?? 0),
-        ),
+        formatInteger(getModelMonitorRecordInputTokens(record)),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colOutputTokens'),
       dataIndex: 'outputTokens',
       width: 120,
       hideInSearch: true,
-      render: (_, record) => formatNumber(record.outputTokens),
+      render: (_, record) => formatInteger(record.outputTokens),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colFeeAmount'),
       dataIndex: 'feeAmount',
       width: 130,
       hideInSearch: true,
-      render: (_, record) => formatAmount(record.feeAmount),
+      render: (_, record) => formatCurrency(record.feeAmount),
     },
     {
       title: dict('PC.Pages.ModelMonitor.colDt'),
@@ -350,17 +315,7 @@ const ModelMonitor: React.FC = () => {
         </div>
 
         {/* 统计卡片 */}
-        <div className={styles['stat-cards-row']}>
-          {overviewMetrics.map((metric, index) => (
-            <SummaryCard
-              key={index}
-              label={metric.label}
-              value={metric.value}
-              highlight={metric.highlight}
-              loading={summaryLoading}
-            />
-          ))}
-        </div>
+        <StatMetricCardList items={overviewMetrics} loading={summaryLoading} />
 
         {/* 明细表格 */}
         <div className={styles['detail-section']}>
