@@ -63,7 +63,7 @@ const CreditsBalance: React.FC = () => {
             size="small"
             onClick={handleTopUp}
           >
-            {dict('PC.Components.CreditsBalance.topUp')} +
+            + {dict('PC.Components.CreditsBalance.topUp')}
           </Button>
         </div>
       )}
