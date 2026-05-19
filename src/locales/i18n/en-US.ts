@@ -5194,7 +5194,6 @@ export const EN_US: SystemLangMap = {
 
   // ── System Management - Subscription & Credits Summary Card ────────────────────
   // ── System Management - Basic Subscription Plans ────────────────────────────
-  // 'PC.Pages.SystemPlans.statActivePlans': 'Active Plans',
   "PC.Pages.SystemPlans.createPlan": "New Plan",
   "PC.Pages.SystemPlans.statTotalSubscriptions": "Total Subscriptions",
   "PC.Pages.SystemPlans.statDailyNew": "Daily New",

@@ -5331,7 +5331,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "開發者收益与平台服务比例，配置时請注意支付平台收取的服務費成本",
   "PC.Pages.SystemPaymentConfig.tabGateway": "支付閘道配置",
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "開發者分成比例",
-  "PC.Pages.SystemPlans.statActivePlans": "上架套餐",
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "模型",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "兌換比例",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "積分汇率（積分/元）",

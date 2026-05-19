@@ -5334,7 +5334,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.serviceRatioHint": "Ratio between developer earnings and platform services. Please consider the service fee cost of the payment platform when configuring.",
   "PC.Pages.SystemPaymentConfig.tabGateway": "Payment Gateway Configuration",
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "Developer Share Ratio",
-  "PC.Pages.SystemPlans.statActivePlans": "Active Plans",
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "Model",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "Credits Exchange Rate (Credits/CNY)",
