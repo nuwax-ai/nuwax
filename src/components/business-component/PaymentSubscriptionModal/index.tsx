@@ -337,7 +337,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   className={cx(styles['plan-pay-card'])}
                 >
                   <div className={cx(styles['card-header'])}>
-                    <Tooltip title={plan.name}>
+                    <Tooltip title={plan.name} placement="topLeft">
                       <div className={cx(styles.title, 'text-ellipsis')}>
                         {plan.name}
                       </div>
