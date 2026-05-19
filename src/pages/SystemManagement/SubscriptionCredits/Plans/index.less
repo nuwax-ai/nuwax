@@ -1,34 +1,16 @@
 .plan-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
+  width: 100%;
 
   .plan-grid-item {
     min-width: 0;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .plan-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 641px) and (max-width: 768px) {
-  .plan-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1200px) {
-  .plan-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1440px) {
-  .plan-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
