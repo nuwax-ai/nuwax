@@ -4596,7 +4596,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemPlans.colDesc": "説明",
   "PC.Pages.SystemPlans.colPrice": "価格（元）",
   "PC.Pages.SystemPlans.colPeriod": "請求サイクル",
-  "PC.Pages.SystemPlans.colFirstPrice": "定価（元）",
   "PC.Pages.SystemPlans.periodMonth": "月額",
   "PC.Pages.SystemPlans.periodQuarter": "四半期",
   "PC.Pages.SystemPlans.periodYear": "年額",

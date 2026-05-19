@@ -5132,7 +5132,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPlans.colDesc": "Description",
   "PC.Pages.SystemPlans.colPrice": "Price (CNY)",
   "PC.Pages.SystemPlans.colPeriod": "Billing cycle",
-  "PC.Pages.SystemPlans.colFirstPrice": "Original price (CNY)",
   "PC.Pages.SystemPlans.periodMonth": "Monthly",
   "PC.Pages.SystemPlans.periodQuarter": "Quarterly",
   "PC.Pages.SystemPlans.periodYear": "Yearly",
