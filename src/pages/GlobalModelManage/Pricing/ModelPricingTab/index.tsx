@@ -11,7 +11,7 @@ import { Switch, Tag, message } from 'antd';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import {
-  apiSystemDeleteModelPricing,
+  apiSystemDeleteModelPricingConfig,
   apiSystemListPricingConfig,
   apiSystemUpdateModelPricing,
 } from '../services/resource';
@@ -45,16 +45,16 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
 
   // 删除定价配置
-  const { run: removePricingConfig } = useRequest(apiSystemDeleteModelPricing, {
-    manual: true,
-    onSuccess: () => {
-      message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
-      actionRef.current?.reload();
+  const { run: removePricingConfig } = useRequest(
+    apiSystemDeleteModelPricingConfig,
+    {
+      manual: true,
+      onSuccess: () => {
+        message.success(dict('PC.Pages.SpaceResourcePricing.deleteSuccess'));
+        actionRef.current?.reload();
+      },
     },
-    onError: () => {
-      message.error(dict('PC.Common.Global.operationFailed'));
-    },
-  });
+  );
 
   // 更新定价配置（切换收费状态）
   const { run: runUpdateToolPricing } = useRequest(
@@ -64,9 +64,6 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
       onSuccess: () => {
         message.success(dict('PC.Common.Global.operationSuccess'));
         actionRef.current?.reload();
-      },
-      onError: () => {
-        message.error(dict('PC.Common.Global.operationFailed'));
       },
     },
   );
