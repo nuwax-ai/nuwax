@@ -1,6 +1,7 @@
 import {
   ModelPricingInfo,
   ResourcePricingConfigInfo,
+  ToolPricingInfo,
 } from '@/pages/SpaceResource/types/resource';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -25,6 +26,18 @@ export async function apiSystemDeleteModelPricingConfig(
 ): Promise<RequestResponse<null>> {
   return request(`/api/system/pricing/config/${id}/delete`, {
     method: 'POST',
+  });
+}
+
+/**
+ * 资源-创建或更新定价配置
+ */
+export async function apiSystemModelPricingConfigSave(
+  data: ToolPricingInfo,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/pricing/config/save', {
+    method: 'POST',
+    data,
   });
 }
 
