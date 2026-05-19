@@ -18,6 +18,17 @@ export async function apiSystemDeleteModelPricing(
 }
 
 /**
+ * 模型-删除定价配置
+ */
+export async function apiSystemDeleteModelPricingConfig(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/pricing/config/${id}/delete`, {
+    method: 'POST',
+  });
+}
+
+/**
  * 模型-修改价格档位
  */
 export async function apiSystemUpdateModelPricing(
