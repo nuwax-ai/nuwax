@@ -7,6 +7,7 @@ import {
   apiGetMyResourceStatDetail,
   apiGetMyResourceStatSummary,
 } from '@/services/systemManage';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   ResourceStatDTO,
   ResourceStatSummaryDTO,
@@ -20,6 +21,7 @@ import { useLocation } from 'umi';
 import styles from './index.less';
 import {
   ResourceStatTargetTypeTag,
+  USAGE_STAT_TOKEN_EMPTY,
   renderUsageStatTokenCell,
 } from './ResourceStatTargetTypeTag';
 import {
@@ -231,7 +233,10 @@ const UsageStats: React.FC = () => {
       dataIndex: 'creditAmount',
       width: 120,
       hideInSearch: true,
-      render: (_, record) => formatDecimal(record.creditAmount),
+      render: (_, record) =>
+        record.targetType === AgentComponentTypeEnum.Agent
+          ? USAGE_STAT_TOKEN_EMPTY
+          : formatDecimal(record.creditAmount),
     },
     {
       title: dict('PC.Pages.UsageStats.colDt'),
