@@ -62,10 +62,9 @@ export enum ModelNetworkTypeEnum {
   Intranet = 'Intranet',
 }
 
-// 函数调用支持程度，可选值：Unsupported, CallSupported, StreamCallSupported
+// 函数调用支持程度，可选值：Unsupported, StreamCallSupported
 export enum ModelFunctionCallEnum {
   Unsupported = 'Unsupported',
-  CallSupported = 'CallSupported',
   StreamCallSupported = 'StreamCallSupported',
 }
 
