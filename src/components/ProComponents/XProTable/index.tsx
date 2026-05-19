@@ -45,6 +45,8 @@ function XProTable<
     showQueryButtons?: boolean;
     /** 是否显示序号列（支持自定义），默认为 true。若 columns 中已存在 index 列，以此为准。 */
     showIndex?: boolean;
+    /** 是否隐藏 ProTable 工具栏，默认为 false */
+    hideToolbar?: boolean;
   },
 ) {
   const {
@@ -53,6 +55,7 @@ function XProTable<
     onReset,
     showQueryButtons = true,
     showIndex = false,
+    hideToolbar = false,
     ...restProps
   } = props;
   const intl = useIntl();
@@ -265,10 +268,18 @@ function XProTable<
   );
 
   return (
-    <div ref={tableRef} style={{ width: '100%' }} className="x-pro-table">
+    <div
+      ref={tableRef}
+      style={{ width: '100%' }}
+      className={`x-pro-table${hideToolbar ? ' x-pro-table-hide-toolbar' : ''}`}
+    >
       <style
         dangerouslySetInnerHTML={{
           __html: `
+          .x-pro-table.x-pro-table-hide-toolbar .ant-pro-table-list-toolbar,
+          .x-pro-table.x-pro-table-hide-toolbar .ant-pro-table-list-toolbar-container {
+            display: none !important;
+          }
           .x-pro-table .ant-table-thead > tr > th:first-child,
           .x-pro-table .ant-table-tbody > tr > td:first-child {
             padding-left: 24px !important;
@@ -299,6 +310,9 @@ function XProTable<
           .x-pro-table .ant-pro-table-list-toolbar-actions {
             display: flex;
             gap: 8px;
+          }
+          .x-pro-table .ant-pro-card{
+            background-color: transparent;
           }
         `,
         }}
