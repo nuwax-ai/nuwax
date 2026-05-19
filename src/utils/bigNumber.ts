@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 
-/** 可参与大数运算的入参类型 */
-export type NumericInput = number | string | null | undefined;
+/** 可参与大数运算的入参类型（含 BigNumber 实例，便于承接 sum/subtract 返回值） */
+export type NumericInput = BigNumber.Value | null | undefined;
 
 BigNumber.config({
   DECIMAL_PLACES: 20,
@@ -14,6 +14,9 @@ BigNumber.config({
 export const toBigNumber = (value: NumericInput): BigNumber => {
   if (value === null || value === undefined || value === '') {
     return new BigNumber(0);
+  }
+  if (BigNumber.isBigNumber(value)) {
+    return value.isNaN() ? new BigNumber(0) : value;
   }
   const bn = new BigNumber(value);
   return bn.isNaN() ? new BigNumber(0) : bn;

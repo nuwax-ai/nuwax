@@ -2770,6 +2770,11 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawApply": "Withdrawal Application",
   "PC.Pages.MorePage.MyEarnings.withdrawRecord": "Withdrawal Records",
   "PC.Pages.MorePage.MyEarnings.withdrawableBalance": "Withdrawable Balance",
+  "PC.Pages.MorePage.MyEarnings.colAmount": "Withdrawal Amount",
+  "PC.Pages.MorePage.MyEarnings.colPlatformServiceFee": "Platform Service Fee",
+  "PC.Pages.MorePage.MyEarnings.colActualAmount": "Actual Received",
+  "PC.Pages.MorePage.MyEarnings.colPaymentRemark": "Payment Remark",
+  "PC.Pages.MorePage.MyEarnings.colVoucherImages": "Voucher Images",
 
   "PC.Pages.MorePage.MyEarnings.withdrawSuccessTitle": "Withdrawal Application Submitted",
   "PC.Pages.MorePage.MyEarnings.withdrawSuccess": "Withdrawal application submitted, estimated 1-3 business days to arrive.",
