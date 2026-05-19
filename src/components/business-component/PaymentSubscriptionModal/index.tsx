@@ -20,7 +20,7 @@ import {
 } from '@/types/interfaces/subscription';
 import { Button, Empty, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -135,8 +135,13 @@ export interface PaymentSubscriptionModalProps {
    */
   currentSubscribedInfo?: MySubscriptionItem | null;
   onClose: () => void;
-  // 订阅回调
-  onSubscribe: (plan: SubscriptionPlanInfo) => void;
+  // 订阅回调（支持 async，弹窗内会 await 以控制按钮 loading）
+  onSubscribe: (plan: SubscriptionPlanInfo) => void | Promise<void>;
+}
+
+/** 套餐卡片主按钮 loading 态用的稳定 key */
+function getPlanSubscribeKey(plan: SubscriptionPlanInfo): number | string {
+  return plan.id ?? plan.name ?? '';
 }
 
 /**
@@ -152,6 +157,40 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   onClose,
   onSubscribe,
 }) => {
+  /** 正在下单的套餐 key（plan.id ?? plan.name），用于按钮 loading 与防重复点击 */
+  const [subscribingPlanKey, setSubscribingPlanKey] = useState<
+    number | string | null
+  >(null);
+
+  /** 弹窗关闭时清空 loading，避免下次打开仍显示加载态 */
+  useEffect(() => {
+    if (!open) {
+      setSubscribingPlanKey(null);
+    }
+  }, [open]);
+
+  /**
+   * 订阅按钮点击：防重复提交，等待 createSubscriptionOrder 完成后再恢复
+   * onSubscribe 可能为 async（跳转收银台），用 Promise.resolve 统一处理
+   */
+  const handleSubscribeClick = useCallback(
+    async (plan: SubscriptionPlanInfo) => {
+      // 已有套餐在下单中，忽略重复点击（与 isSubscribeInFlight 互斥）
+      if (subscribingPlanKey !== null) {
+        return;
+      }
+      const planKey = getPlanSubscribeKey(plan);
+      setSubscribingPlanKey(planKey);
+      try {
+        await Promise.resolve(onSubscribe(plan));
+      } finally {
+        // 成功或失败均结束 loading，便于用户重试
+        setSubscribingPlanKey(null);
+      }
+    },
+    [onSubscribe, subscribingPlanKey],
+  );
+
   const sortedPlans = useMemo(
     () => [...plans].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)),
     [plans],
@@ -331,6 +370,14 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                 },
               );
 
+              const planSubscribeKey = getPlanSubscribeKey(plan);
+              // isThisPlanSubscribing：仅当前点击列展示 Button loading
+              const isThisPlanSubscribing =
+                subscribingPlanKey !== null &&
+                subscribingPlanKey === planSubscribeKey;
+              // isSubscribeInFlight：任一下单中则禁用全部订阅按钮，防并发重复提交
+              const isSubscribeInFlight = subscribingPlanKey !== null;
+
               return (
                 <div
                   key={plan.id ?? plan.name}
@@ -362,33 +409,35 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                     </div>
                   </div>
 
-                  {/* 订阅按钮 */}
+                  {/* 订阅按钮：loading=isThisPlanSubscribing；disabled 含 isSubscribeInFlight，当前档另含技能永久买断锁定 */}
                   <div className={cx(styles['subscribe-btn-wrap'])}>
                     {isCurrentEffective ? (
+                      /* 当前生效套餐：技能永久买断后不可再点 */
                       <Button
-                        disabled={isSkillForeverBuyoutLocked}
+                        loading={isThisPlanSubscribing}
+                        disabled={
+                          isSkillForeverBuyoutLocked || isSubscribeInFlight
+                        }
                         className={cx(
                           styles['subscribe-btn-current'],
                           !isSkillForeverBuyoutLocked && 'cursor-pointer',
                         )}
-                        onClick={
-                          isSkillForeverBuyoutLocked
-                            ? undefined
-                            : () => onSubscribe(plan)
-                        }
+                        onClick={() => handleSubscribeClick(plan)}
                       >
                         {subscribeButtonLabel}
                       </Button>
                     ) : (
-                      // 升级 / 订阅
+                      /* 升级 / 新购：主色按钮，订阅中显示 loading */
                       <Button
                         type="primary"
+                        loading={isThisPlanSubscribing}
+                        disabled={isSubscribeInFlight}
                         className={
                           isAccentBtn
                             ? cx(styles['subscribe-btn-upgrade-accent'])
                             : cx(styles['subscribe-btn-upgrade'])
                         }
-                        onClick={() => onSubscribe(plan)}
+                        onClick={() => handleSubscribeClick(plan)}
                       >
                         {subscribeButtonLabel}
                       </Button>
