@@ -4758,18 +4758,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemSubsOrders.orderStatusPaid": "支払済",
   "PC.Pages.SystemSubsOrders.orderStatusPending": "未払い",
   "PC.Pages.SystemSubsOrders.orderStatusCancelled": "キャンセル済",
-  "PC.Pages.SystemSubsOrders.payStatus": "支払ステータス",
-  "PC.Pages.SystemSubsOrders.payStatusPending": "未払い",
-  "PC.Pages.SystemSubsOrders.payStatusProcessing": "処理中",
-  "PC.Pages.SystemSubsOrders.payStatusSuccess": "支払済",
-  "PC.Pages.SystemSubsOrders.payStatusFailed": "失効",
-  "PC.Pages.SystemSubsOrders.payStatusClosed": "終了",
   "PC.Pages.SystemSubsOrders.viewDetail": "詳細",
-
-  "PC.Pages.SystemSubsOrders.totalRevenue": "総収益",
-  "PC.Pages.SystemSubsOrders.monthRevenue": "今月の収益",
-  "PC.Pages.SystemSubsOrders.todayRevenue": "本日の収益",
-  "PC.Pages.SystemSubsOrders.pendingAmount": "精算済み金額",
 
   // ── 使用量統計 ────────────────────────────
   "PC.Pages.UsageStats.pageTitle": "使用量統計",

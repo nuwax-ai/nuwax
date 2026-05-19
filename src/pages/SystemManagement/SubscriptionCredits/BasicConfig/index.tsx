@@ -13,12 +13,13 @@ import {
   message,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 const BasicConfig: React.FC = () => {
+  const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState<boolean>(false);
   const [exchangeRate, setExchangeRate] = useState<number>(100);
@@ -55,7 +56,7 @@ const BasicConfig: React.FC = () => {
       // 租户配置信息查询接口
       runTenantConfig();
     }
-  }, [tenantConfigInfo]);
+  }, [tenantConfigInfo, location.state]);
 
   // 保存配置
   const handleSave = async () => {

@@ -4960,18 +4960,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemSubsOrders.orderStatusPaid": "已支付",
   "PC.Pages.SystemSubsOrders.orderStatusPending": "待支付",
   "PC.Pages.SystemSubsOrders.orderStatusCancelled": "已取消",
-  "PC.Pages.SystemSubsOrders.payStatus": "支付状态",
-  "PC.Pages.SystemSubsOrders.payStatusPending": "待支付",
-  "PC.Pages.SystemSubsOrders.payStatusProcessing": "处理中",
-  "PC.Pages.SystemSubsOrders.payStatusSuccess": "已支付",
-  "PC.Pages.SystemSubsOrders.payStatusFailed": "已失效",
-  "PC.Pages.SystemSubsOrders.payStatusClosed": "已关闭",
   "PC.Pages.SystemSubsOrders.viewDetail": "详情",
-
-  "PC.Pages.SystemSubsOrders.totalRevenue": "总收益",
-  "PC.Pages.SystemSubsOrders.monthRevenue": "本月收益",
-  "PC.Pages.SystemSubsOrders.todayRevenue": "今日收益",
-  "PC.Pages.SystemSubsOrders.pendingAmount": "已结算金额",
 
   // ── 系统管理 - 支付配置 ────────────────────────────────
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "开发者分成比例",
