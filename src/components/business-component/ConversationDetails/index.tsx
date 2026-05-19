@@ -43,6 +43,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -175,6 +176,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
     loadAgentSubscriptionPlans,
+    mySubscriptionInfo,
+    loadMySubscription,
+    loadingMySubscription,
     createAgentSubscriptionOrder,
   } = useAgentSubscription();
 
@@ -455,14 +459,27 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   });
 
   useEffect(() => {
-    if (openPaymentModal) {
-      // 显示付费弹窗时加载数据
-      loadAgentSubscriptionPlans({
-        agentId,
-        status: SubscriptionPlanStatusEnum.Online,
-      });
+    if (!openPaymentModal) {
+      return;
     }
-  }, [openPaymentModal, agentId]);
+
+    // 查询智能体订阅计划列表
+    loadAgentSubscriptionPlans({
+      agentId,
+      status: SubscriptionPlanStatusEnum.Online,
+    });
+
+    // 查询当前智能体维度「我的订阅」接口数据
+    loadMySubscription({
+      bizType: BizTypeEnum.Agent,
+      bizId: agentId,
+    });
+  }, [
+    openPaymentModal,
+    agentId,
+    loadAgentSubscriptionPlans,
+    loadMySubscription,
+  ]);
 
   useLayoutEffect(() => {
     setLoading(true);
@@ -828,7 +845,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 wholeDisabled ||
                 (isEnableSubscription &&
                   isNeedSubscription &&
-                  !agentDetail?.trialCount)
+                  agentDetail?.overCallLimit)
               }
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
@@ -949,7 +966,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   title={''}
                   open={openPageCopyModal}
                   isTemplate={true}
-                  onSuccess={(_: any, targetSpaceId: number) => {
+                  onSuccess={(_: null, targetSpaceId: number) => {
                     setOpenPageCopyModal(false);
                     // 跳转
                     jumpToPageDevelop(targetSpaceId);
@@ -982,12 +999,18 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          trialCount={agentDetail?.trialCount ?? 0}
-          loading={loadingAgentSubscriptionPlans}
+          overCallLimit={agentDetail?.overCallLimit ?? false}
+          loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}
-          // 是否已订阅
-          userSubscribed={!!agentDetail?.subscribed}
+          // 当前生效套餐 planId
+          currentSubscribedPlanId={
+            mySubscriptionInfo?.currentSubscription?.planId ?? null
+          }
+          // 当前生效套餐价格，用于与列表中各套餐比价（升级 / 订阅）
+          currentSubscribedPlanPrice={
+            mySubscriptionInfo?.currentSubscription?.plan?.price ?? null
+          }
           // 关闭回调
           onClose={() => setOpenPaymentModal(false)}
           // 订阅回调
