@@ -88,6 +88,7 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         key: 'id',
         ellipsis: true,
         search: false,
+        width: 200,
       },
       {
         title: dict(
@@ -124,12 +125,14 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         dataIndex: 'amount',
         key: 'amount',
         search: false,
+        width: 120,
         render: (_, record) => (
           <span style={{ fontWeight: 600 }}>
             ¥{(record.amount ?? 0).toLocaleString()}
           </span>
         ),
       },
+      // 平台服务费、实打金额
       {
         title: dict(
           'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus',
@@ -137,6 +140,7 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         dataIndex: 'status',
         key: 'status',
         search: false,
+        width: 120,
         render: (_, record) => {
           const cfg = statusConfig[record.status];
           return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
@@ -149,6 +153,8 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         dataIndex: 'rejectReason',
         key: 'rejectReason',
         search: false,
+        width: 200,
+        hideInTable: status !== BillWithdrawStatusEnum.REJECTED,
       },
       {
         title: dict(
@@ -158,14 +164,14 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         key: 'modified',
         search: false,
         valueType: 'dateTime',
+        width: 200,
       },
-    ];
-
-    if (status === BillWithdrawStatusEnum.APPROVED) {
-      cols.push({
+      {
         title: dict('PC.Common.Global.action'),
         key: 'action',
         search: false,
+        width: 120,
+        hideInTable: status !== BillWithdrawStatusEnum.APPROVED,
         render: (_, record) => (
           <TableActions
             record={record}
@@ -184,9 +190,8 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
             ]}
           />
         ),
-      });
-    }
-
+      },
+    ];
     return cols;
   }, [status, statusConfig]);
 

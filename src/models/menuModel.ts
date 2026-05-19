@@ -72,6 +72,9 @@ export default function useMenuModel() {
             return item;
           })
           .filter((item) => {
+            // 没有 path 的菜单不需要隐藏 【比如 通知】
+            if (!item.path) return true;
+
             // 如果一个菜单项本应有子菜单（即 children 被声明且过滤前长度大于 0），
             // 但经过过滤后其 children 列表变成了空数组，说明其所有子菜单均被隐藏，
             // 此时如果它自身没有独立的有效可访问路由路径（或者属于结构性导航组，如以 '#' 或空串等为 path 的节点），
@@ -182,6 +185,7 @@ export default function useMenuModel() {
    * 其他菜单列表（只包含 documents、notification、my_computer、more_page）
    */
   const otherMenus = useMemo(() => {
+    console.log('menuTree', menuTree);
     const menu = menuTree?.filter(
       (menu: MenuItemDto) =>
         menu.status === MenuEnabledEnum.Enabled &&

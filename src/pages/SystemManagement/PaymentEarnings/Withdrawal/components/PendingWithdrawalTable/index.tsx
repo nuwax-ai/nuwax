@@ -67,6 +67,7 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'id',
       ellipsis: true,
       search: false,
+      width: 200,
     },
     {
       title: dict(
@@ -103,6 +104,7 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
+      width: 120,
       render: (_, record) => (
         <span style={{ fontWeight: 600, color: '#f5222d' }}>
           ¥{(record.amount ?? 0).toLocaleString()}
@@ -115,6 +117,7 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
       key: 'payMethod',
       search: false,
+      width: 200,
       render: (_, record) => {
         const extra = record.paymentExtra || {};
         const isAlipay =
@@ -144,11 +147,13 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'created',
       search: false,
       valueType: 'dateTime',
+      width: 120,
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
+      width: 120,
       render: (_, record) => (
         <TableActions
           record={record}
