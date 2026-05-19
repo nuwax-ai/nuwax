@@ -2513,7 +2513,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.GlobalModelManage.statusEnabled": "已启用",
   "PC.Pages.ModelMonitor.pageTitle": "模型监控",
   "PC.Pages.ModelMonitor.timeRange": "时间范围",
-  "PC.Pages.ModelMonitor.search": "查询",
   "PC.Pages.ModelMonitor.refreshData": "刷新数据",
   "PC.Pages.ModelMonitor.summaryTitle": "综合统计",
   "PC.Pages.ModelMonitor.salesSummaryTitle": "销售统计",

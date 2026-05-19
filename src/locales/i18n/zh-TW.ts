@@ -2510,7 +2510,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.GlobalModelManage.statusEnabled": "已啟用",
   "PC.Pages.ModelMonitor.pageTitle": "模型監控",
   "PC.Pages.ModelMonitor.timeRange": "時間範圍",
-  "PC.Pages.ModelMonitor.search": "查詢",
   "PC.Pages.ModelMonitor.refreshData": "重新整理資料",
   "PC.Pages.ModelMonitor.summaryTitle": "綜合統計",
   "PC.Pages.ModelMonitor.salesSummaryTitle": "銷售統計",

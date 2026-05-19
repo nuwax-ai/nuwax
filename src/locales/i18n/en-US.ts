@@ -2513,7 +2513,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.GlobalModelManage.statusEnabled": "Enabled",
   "PC.Pages.ModelMonitor.pageTitle": "Model Monitor",
   "PC.Pages.ModelMonitor.timeRange": "Time Range",
-  "PC.Pages.ModelMonitor.search": "Search",
   "PC.Pages.ModelMonitor.refreshData": "Refresh",
   "PC.Pages.ModelMonitor.summaryTitle": "Overview",
   "PC.Pages.ModelMonitor.salesSummaryTitle": "Sales",

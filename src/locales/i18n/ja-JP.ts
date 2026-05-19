@@ -2530,7 +2530,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.GlobalModelManage.statusEnabled": "有効",
   "PC.Pages.ModelMonitor.pageTitle": "モデルモニター",
   "PC.Pages.ModelMonitor.timeRange": "時間範囲",
-  "PC.Pages.ModelMonitor.search": "検索",
   "PC.Pages.ModelMonitor.refreshData": "データ更新",
   "PC.Pages.ModelMonitor.summaryTitle": "概要統計",
   "PC.Pages.ModelMonitor.salesSummaryTitle": "販売統計",
