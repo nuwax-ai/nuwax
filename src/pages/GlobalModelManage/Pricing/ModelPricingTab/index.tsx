@@ -13,7 +13,7 @@ import { useRequest } from 'umi';
 import {
   apiSystemDeleteModelPricingConfig,
   apiSystemListPricingConfig,
-  apiSystemUpdateModelPricing,
+  apiSystemModelPricingConfigSave,
 } from '../services/resource';
 import styles from './index.less';
 
@@ -58,7 +58,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
 
   // 更新定价配置（切换收费状态）
   const { run: runUpdateToolPricing } = useRequest(
-    apiSystemUpdateModelPricing,
+    apiSystemModelPricingConfigSave,
     {
       manual: true,
       onSuccess: () => {
@@ -121,12 +121,17 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
     item: ResourcePricingConfigInfo,
     checked: boolean,
   ) => {
-    runUpdateToolPricing({
-      ...item,
+    const data = {
+      targetType: item.targetType,
+      targetId: item.targetId,
+      pricingType: item.pricingType,
+      price: item.price,
+      trialCount: item.trialCount,
       status: checked
         ? ResourcePricingStatus.ENABLED
         : ResourcePricingStatus.DISABLED,
-    });
+    };
+    runUpdateToolPricing(data);
   };
 
   // 模型定价列表列配置
