@@ -7,9 +7,9 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 页脚
-const SiteFooter: React.FC<SiteFooterProps> = ({ text }) => {
+const SiteFooter: React.FC<SiteFooterProps> = ({ text, className }) => {
   return (
-    <footer className={cx(styles.footer)}>
+    <footer className={cx(styles.footer, className)}>
       <div
         dangerouslySetInnerHTML={{
           __html: text || '',

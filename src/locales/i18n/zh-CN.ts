@@ -2747,6 +2747,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.CreditRecords.typeManualDeduct": "系统扣减",
 
   // ── 我的订阅 - 新增 ──
+  "PC.Pages.MorePage.MySubscriptions.currentPlanButton": "当前套餐",
+  "PC.Pages.MorePage.MySubscriptions.upgradeTo": "升级为",
+  "PC.Pages.MorePage.MySubscriptions.continuousMonthly": "连续包月",
+  "PC.Pages.MorePage.MySubscriptions.continuousQuarterly": "连续包季",
+  "PC.Pages.MorePage.MySubscriptions.continuousYearly": "连续包年",
   "PC.Pages.MorePage.MySubscriptions.currentPlan": "当前订阅",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "使用中",
   "PC.Pages.MorePage.MySubscriptions.statusHot": "热门",
