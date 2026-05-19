@@ -265,10 +265,10 @@ const UsageStats: React.FC = () => {
           />
           <div style={{ flex: 1 }} />
           <Button onClick={handleReset}>
-            {dict('PC.Pages.UsageStats.reset')}
+            {dict('PC.Common.Global.reset')}
           </Button>
           <Button type="primary" onClick={handleSearch}>
-            {dict('PC.Pages.UsageStats.search')}
+            {dict('PC.Common.Global.query')}
           </Button>
         </div>
 

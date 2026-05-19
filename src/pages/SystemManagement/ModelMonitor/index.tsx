@@ -17,7 +17,6 @@ import {
   formatInteger,
   sumBigNumbersToNumber,
 } from '@/utils/numberFormat';
-import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
@@ -305,12 +304,8 @@ const ModelMonitor: React.FC = () => {
             format="YYYYMMDD"
           />
           <div className="flex-1" />
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearch}
-          >
-            {dict('PC.Pages.ModelMonitor.search')}
+          <Button type="primary" onClick={handleSearch}>
+            {dict('PC.Common.Global.query')}
           </Button>
         </div>
 
