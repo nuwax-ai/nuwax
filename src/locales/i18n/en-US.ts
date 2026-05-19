@@ -4906,7 +4906,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.colValidityPeriod": "Validity",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "Validity (Months)",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder": "Please enter validity",
-  "PC.Pages.SystemCreditPackages.fieldSort": "Sort",
   "PC.Pages.SystemCreditPackages.fieldRemark": "Remark",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "Please enter remark",
   // ── System Management - User Credits Query ────────────────────────────

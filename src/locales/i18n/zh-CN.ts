@@ -4905,7 +4905,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.colValidityPeriod": "有效期",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "有效期（月）",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder": "请输入积分有效期",
-  "PC.Pages.SystemCreditPackages.fieldSort": "排序",
   "PC.Pages.SystemCreditPackages.fieldRemark": "备注",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "请输入备注",
   // ── 系统管理 - 用户积分查询 ────────────────────────────

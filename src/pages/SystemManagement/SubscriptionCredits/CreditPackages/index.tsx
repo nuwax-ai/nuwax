@@ -14,7 +14,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Form, message, Switch } from 'antd';
+import { Button, message, Switch } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import {
@@ -40,18 +40,14 @@ const CreditPackages: React.FC = () => {
   const [draggableData, setDraggableData] = useState<CreditPackageRow[]>([]);
   const isDraggingRef = useRef<boolean>(false);
   const originalDataRef = useRef<CreditPackageRow[] | null>(null);
-  const [form] = Form.useForm();
 
   const openCreate = () => {
     setCreditPackageInfo(null);
-    form.resetFields();
-    form.setFieldsValue({ enabled: true });
     setModalOpen(true);
   };
 
   const openEdit = (item: CreditPackageInfo) => {
     setCreditPackageInfo(item);
-    form.setFieldsValue(item);
     setModalOpen(true);
   };
 
@@ -171,7 +167,6 @@ const CreditPackages: React.FC = () => {
       dataIndex: 'creditAmount',
       key: 'creditAmount',
       search: false,
-      // render: (val) => `${val} 积分`,
     },
     {
       title: dict('PC.Pages.SystemCreditPackages.colValidityPeriod'),
@@ -300,7 +295,6 @@ const CreditPackages: React.FC = () => {
 
       {/* 新建、编辑积分套餐表单弹窗 */}
       <CreditPackageFormModal
-        form={form}
         open={modalOpen}
         creditPackageInfo={creditPackageInfo}
         onSuccess={() => {
