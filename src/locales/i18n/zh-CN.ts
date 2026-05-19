@@ -2770,6 +2770,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawApply": "提现申请",
   "PC.Pages.MorePage.MyEarnings.withdrawRecord": "提现记录",
   "PC.Pages.MorePage.MyEarnings.withdrawableBalance": "可提现余额",
+  "PC.Pages.MorePage.MyEarnings.colAmount": "提现金额",
+  "PC.Pages.MorePage.MyEarnings.colPlatformServiceFee": "平台服务费",
+  "PC.Pages.MorePage.MyEarnings.colActualAmount": "实收金额",
+  "PC.Pages.MorePage.MyEarnings.colPaymentRemark": "打款备注",
+  "PC.Pages.MorePage.MyEarnings.colVoucherImages": "凭证图片",
 
   "PC.Pages.MorePage.MyEarnings.withdrawSuccessTitle": "提现申请已提交",
   "PC.Pages.MorePage.MyEarnings.withdrawSuccess": "提现申请已提交,预计1-3个工作日到账。",
