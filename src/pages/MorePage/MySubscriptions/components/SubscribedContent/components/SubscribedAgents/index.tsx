@@ -60,16 +60,28 @@ const SubscribedAgents: React.FC = () => {
               <div className={cx(styles['card-header'])}>
                 <div
                   className={cx(styles['agent-icon'])}
-                  style={{ backgroundColor: '#1890ff' }}
+                  style={{
+                    backgroundColor: item.icon ? 'transparent' : '#1890ff',
+                  }}
                 >
-                  <AppstoreOutlined />
+                  {item.icon ? (
+                    <img
+                      src={item.icon}
+                      alt={item.bizName}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <AppstoreOutlined />
+                  )}
                 </div>
                 <div className={cx(styles['agent-info'])}>
-                  <div className={cx(styles['agent-name'])}>
-                    {item.planName}
-                  </div>
+                  <div className={cx(styles['agent-name'])}>{item.bizName}</div>
                   <div className={cx(styles['agent-provider'])}>
-                    {item.plan?.description || '-'}
+                    {item?.planName || '-'}
                   </div>
                 </div>
               </div>
@@ -127,6 +139,7 @@ const SubscribedAgents: React.FC = () => {
                 </div>
                 <Button
                   type="primary"
+                  className="btn-premium-dark"
                   loading={processingId === item.planId}
                   onClick={() => handlePay(item.planId)}
                 >

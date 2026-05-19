@@ -183,7 +183,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
                   )}
                   <Button
                     type="primary"
-                    className={cx(styles['action-button'])}
+                    className="btn-premium-dark"
                     loading={processingId?.toString() === plan.id}
                     onClick={() => handlePay(plan)}
                     disabled={plan.price <= 0}

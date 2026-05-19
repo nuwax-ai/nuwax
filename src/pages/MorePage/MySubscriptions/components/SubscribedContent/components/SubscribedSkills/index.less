@@ -7,6 +7,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
   transition: all 0.3s ease;
   overflow: hidden;
 
@@ -16,11 +17,11 @@
   }
 
   .card-header {
-    padding: @paddingLg;
+    padding: @paddingLg @paddingLg @padding;
 
     .header-top {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: @margin;
       margin-bottom: @margin;
     }
@@ -35,6 +36,7 @@
       color: @colorWhite;
       font-size: 20px;
       flex-shrink: 0;
+      overflow: hidden;
     }
 
     .skill-info {
@@ -46,11 +48,21 @@
         font-weight: 600;
         color: @colorTextBase;
         margin-bottom: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .skill-provider {
         font-size: 12px;
+        line-height: 20px;
+        height: 40px;
         color: @colorTextTertiary;
+        display: box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-all;
       }
     }
 
@@ -65,8 +77,10 @@
   }
 
   .card-body {
-    padding: 0 @paddingLg @paddingLg;
+    padding: 0 @paddingLg @padding;
     flex: 1;
+    display: flex;
+    flex-direction: column;
 
     .buyout-info {
       font-size: @fontSizeSm;
@@ -76,7 +90,7 @@
       align-items: center;
       padding-top: @padding;
       border-top: 1px dashed @colorBorderSecondary;
-      margin-top: @margin;
+      margin-top: auto;
 
       .pay-type {
         font-size: 14px;
@@ -108,20 +122,20 @@
 
       :global {
         .ant-statistic-content {
-          color: #1a6bff;
+          color: @colorTextBase;
           font-weight: 700;
-          font-size: 18px;
+          font-size: 16px;
           display: flex;
           align-items: baseline;
         }
 
         .ant-statistic-content-prefix {
-          font-size: 14px;
+          font-size: 12px;
           margin-right: 2px;
         }
 
         .ant-statistic-content-suffix {
-          font-size: 14px;
+          font-size: 12px;
           color: @colorTextTertiary;
           font-weight: 400;
           margin-left: 2px;
@@ -133,6 +147,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: @margin;
+      margin-bottom: @margin;
       // padding-top: @padding;
       // border-top: 1px dashed @colorBorderSecondary;
 
