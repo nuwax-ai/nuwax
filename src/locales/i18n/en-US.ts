@@ -2653,16 +2653,9 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.pageTitle": "My Earnings",
   "PC.Pages.MorePage.MyEarnings.date": "Date",
   "PC.Pages.MorePage.MyEarnings.monthFormat": "MMM",
-  "PC.Pages.MorePage.MyEarnings.totalEarnings": "Total Earnings",
-  "PC.Pages.MorePage.MyEarnings.monthlyEarnings": "Monthly Earnings",
-  "PC.Pages.MorePage.MyEarnings.subscriberCount": "Subscribers",
   "PC.Pages.MorePage.MyEarnings.pendingSettlement": "Pending Settlement",
-  "PC.Pages.MorePage.MyEarnings.colAgent": "Agent",
-  "PC.Pages.MorePage.MyEarnings.colUser": "User",
-  "PC.Pages.MorePage.MyEarnings.colPlan": "Plan",
   "PC.Pages.MorePage.MyEarnings.colEarnings": "Earnings",
   "PC.Pages.MorePage.MyEarnings.colSettlementStatus": "Settlement Status",
-  "PC.Pages.MorePage.MyEarnings.colCreatedAt": "Time",
   "PC.Pages.MorePage.MyEarnings.settlementPending": "Pending",
   "PC.Pages.MorePage.MyEarnings.settlementWithdrawing": "Withdrawing",
   "PC.Pages.MorePage.MyEarnings.settlementPaying": "Paying",
@@ -2786,10 +2779,10 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawStatusPaid": "Paid",
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "Minimum withdrawal: ¥{0}, platform fee: {1}%",
   "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "Your credits are negative, withdrawal is not allowed",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "Confirm Withdrawal",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "Are you sure you want to apply for withdrawal?",
 
-
-
-
+  
   // ── Credit Records ──
   "PC.Pages.MorePage.CreditRecords.colTime": "Time",
   "PC.Pages.MorePage.CreditRecords.colRemaining": "Remaining Credits",
