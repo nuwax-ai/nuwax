@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { Button, message, Switch } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import {
   apiGetSubscriptionPlanList,
   apiGetSubscriptionPlanStats,
@@ -55,6 +56,7 @@ function getPeriodLabel(period: SubscriptionPlanPeriodEnum): string {
  * 基础订阅套餐管理页面
  */
 const Plans = () => {
+  const location = useLocation();
   const actionRef = useRef<ActionType>();
   const isDraggingRef = useRef<boolean>(false);
   const originalDataRef = useRef<SubscriptionPlanInfo[] | null>(null);
@@ -109,7 +111,7 @@ const Plans = () => {
     }
   }, []);
 
-  // 顶部订阅统计卡片（独立于表格 request）
+  // 顶部订阅统计卡片 + 套餐列表（菜单切换时 location.state 变化，需重新拉取）
   useEffect(() => {
     let cancelled = false;
     const loadStats = async () => {
@@ -128,10 +130,11 @@ const Plans = () => {
       }
     };
     loadStats();
+    actionRef.current?.reload();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location.state]);
 
   // 切换套餐上架状态
   const handleToggle = async (id: number, enabled: boolean) => {
