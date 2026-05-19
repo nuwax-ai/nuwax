@@ -57,7 +57,7 @@ const CreditRecords: React.FC = () => {
             }
           }
 
-          setHasMore(newData.length === 30);
+          setHasMore(newData.length > 0);
         }
       } catch (error) {
         console.error(error);
