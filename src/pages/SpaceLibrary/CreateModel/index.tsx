@@ -39,7 +39,6 @@ import {
   PlusCircleOutlined,
 } from '@ant-design/icons';
 import {
-  AutoComplete,
   Button,
   Form,
   FormProps,
@@ -63,6 +62,7 @@ import {
   supplierResolvableProtocols,
   supplierUrlForProtocol,
 } from './supplierApiInfo';
+import SupplierModelIdAutoComplete from './SupplierModelIdAutoComplete';
 import SupplierModelNameAutoComplete from './SupplierModelNameAutoComplete';
 
 const cx = classNames.bind(styles);
@@ -101,11 +101,7 @@ const CREATE_MODEL_DEFAULT_VALUES = {
   functionCall: ModelFunctionCallEnum.StreamCallSupported,
   apiProtocol: ModelApiProtocolEnum.OpenAI,
   strategy: ModelStrategyEnum.RoundRobin,
-  types: [
-    ModelCapabilityTypeEnum.Text,
-    ModelCapabilityTypeEnum.Image,
-    ModelCapabilityTypeEnum.Video,
-  ],
+  types: [],
   maxTokens: 4096,
   maxContextTokens: 128000,
   dimension: 1536,
@@ -114,7 +110,7 @@ const CREATE_MODEL_DEFAULT_VALUES = {
 };
 
 /**
- * 创建工作流弹窗
+ * 创建模型弹窗
  */
 const CreateModel: React.FC<CreateModelProps> = ({
   mode = CreateUpdateModeEnum.Create,
@@ -269,6 +265,9 @@ const CreateModel: React.FC<CreateModelProps> = ({
     [modelProviderList, pidWatch],
   );
 
+  /** 未匹配到列表内供应商时，禁用名称 / 标识 / 介绍（须先选供应商） */
+  const supplierModelFieldsDisabled = !currentProvider;
+
   /** 可选协议：若有供应商且 apiInfo 可解析，则收窄为支持的协议列表 */
   const providerApiProtocolSelectOptions = useMemo(() => {
     const restriction = supplierResolvableProtocols(currentProvider?.apiInfo);
@@ -396,7 +395,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
   /**
    * 用供应商侧的模型元数据回填表单（模型名称 / 标识下拉选中时调用，手动输入不触发）。
-   * - modalities.input → 映射为表单 `types`（有至少一项可识别时才覆盖）
+   * - modalities.input → 映射为表单 `types`（无可识别项时置 `[]`）
    * - 供应商模型条目上的 reasoning → isReasonModel
    * - 供应商模型条目上的 toolCall → functionCall
    * 回填后同步 `modelTypes` 与表单 `types` 一致。
@@ -426,7 +425,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
         patch.maxTokens = modelItem.limit.output;
       }
 
-      // 供应商模型条目上的 modalities.input → 映射为表单 `types`（有至少一项可识别时才覆盖）
+      // 供应商模型条目上的 modalities.input → 映射为表单 `types`
       if (
         modelItem.modalities?.input !== undefined &&
         modelItem.modalities?.input !== null
@@ -436,7 +435,11 @@ const CreateModel: React.FC<CreateModelProps> = ({
         );
         if (mapped.length > 0) {
           patch.types = mapped;
+        } else {
+          patch.types = [];
         }
+      } else {
+        patch.types = [];
       }
 
       // 供应商模型条目上的 reasoning → isReasonModel
@@ -449,11 +452,11 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
       form.setFieldsValue(patch);
 
-      // 同步 `modelTypes` 与表单 `types` 一致
-      const nextTypes = (patch.types ?? form.getFieldValue('types')) as
-        | ModelCapabilityTypeEnum[]
-        | undefined;
-      setModelTypes(nextTypes?.length ? [...nextTypes] : null);
+      if (patch.types !== undefined) {
+        setModelTypes([...patch.types]);
+      } else {
+        setModelTypes([]);
+      }
     },
     [form],
   );
@@ -481,12 +484,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
   );
 
   const clearPidLinkedFields = useCallback(() => {
-    setPidOptionsFilter(''); // 清空本地搜索，避免下次展开仍带旧关键字
+    setPidOptionsFilter('');
+    setSupplierModelOptionsFilter('');
+    setSupplierNameOptionsFilter('');
+    setModelTypes([]);
     form.setFieldsValue({
       pid: undefined,
-      model: undefined,
       name: undefined,
+      model: undefined,
       description: undefined,
+      types: [],
       apiProtocol: ModelApiProtocolEnum.OpenAI,
       apiInfoList: [{ weight: 1 }],
     });
@@ -503,14 +510,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
     [applySupplierModelFields, currentProvider],
   );
 
-  /** 清空供应商模型及由其联动回填的表单（名称、描述等）；顺带重置模型下拉本地搜索关键字 */
+  /** 清空供应商模型及由其联动回填的表单（名称、描述、模型类型等）；顺带重置模型下拉本地搜索关键字 */
   const clearSupplierModelLinkedFields = useCallback(() => {
     setSupplierModelOptionsFilter('');
     setSupplierNameOptionsFilter('');
+    setModelTypes([]);
     form.setFieldsValue({
       model: undefined,
       name: undefined,
       description: undefined,
+      types: [],
     });
   }, [form]);
 
@@ -549,6 +558,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
           : dict('PC.Pages.SpaceLibrary.CreateModel.updateModel')
       }
       open={open}
+      maskClosable={false}
+      keyboard={false}
       classNames={{
         content: cx(styles.container),
         body: cx(styles.body),
@@ -630,6 +641,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           >
             <SupplierModelNameAutoComplete
               className={cx('w-full')}
+              disabled={supplierModelFieldsDisabled}
               placeholder={dict(
                 'PC.Pages.SpaceLibrary.CreateModel.inputModelName',
               )}
@@ -657,31 +669,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
               },
             ]}
           >
-            {/* 与 pid 同款：下拉 onSelect 才 applySupplierModelLinkage；手动填写不触发联动 */}
-            <AutoComplete
+            <SupplierModelIdAutoComplete
               className={cx('w-full')}
-              allowClear
-              options={supplierModelOptionsDisplayed}
-              filterOption={false}
+              disabled={supplierModelFieldsDisabled}
               placeholder={dict(
                 'PC.Pages.SpaceLibrary.CreateModel.selectSupplierModel',
               )}
-              onOpenChange={(isOpen) => {
-                if (isOpen) {
-                  // 延后清空本地搜索关键字，避免打开瞬间仍按旧词筛成单条（与 pid 一致）
-                  window.setTimeout(() => setSupplierModelOptionsFilter(''), 0);
-                }
-              }}
-              onSearch={(v) => setSupplierModelOptionsFilter(String(v ?? ''))}
-              onSelect={(value) =>
-                applySupplierModelLinkageOnDropdownPick(String(value ?? ''))
+              supplierModelOptionsDisplayed={supplierModelOptionsDisplayed}
+              setSupplierModelOptionsFilter={setSupplierModelOptionsFilter}
+              applySupplierModelLinkageOnDropdownPick={
+                applySupplierModelLinkageOnDropdownPick
               }
-              onClear={clearSupplierModelLinkedFields}
-              onBlur={() => {
-                if (!String(form.getFieldValue('model') ?? '').trim()) {
-                  clearSupplierModelLinkedFields();
-                }
-              }}
+              clearSupplierModelLinkedFields={clearSupplierModelLinkedFields}
             />
           </Form.Item>
         </div>
@@ -698,6 +697,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           ]}
         >
           <Input.TextArea
+            disabled={supplierModelFieldsDisabled}
             placeholder={dict(
               'PC.Pages.SpaceLibrary.CreateModel.inputModelDescription',
             )}
@@ -723,6 +723,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
         >
           <Select
             mode="multiple"
+            disabled={supplierModelFieldsDisabled}
             onChange={(v) => setModelTypes(v as ModelCapabilityTypeEnum[])}
             options={MODEL_TYPE_LIST}
             placeholder={dict(

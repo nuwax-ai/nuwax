@@ -927,7 +927,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Constants.Library.createSettings": "創建設置",
   "PC.Constants.Library.dataProcess": "數據處理",
   "PC.Constants.Library.execRecord": "執行記錄",
-  "PC.Constants.Library.externalApi": "外部API調用",
   "PC.Constants.Library.generalAgent": "通用智慧體",
   "PC.Constants.Library.localDoc": "本地文檔",
   "PC.Constants.Library.localDocDesc": "上傳 PDF, TXT, MD, DOC, DOCX 格式的本地文件",

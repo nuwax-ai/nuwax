@@ -1,6 +1,6 @@
 import type { ModelProviderInfo } from '@/types/interfaces/model';
 import { AutoComplete } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export type ProviderPidAutoCompleteProps = {
   value?: string;
@@ -32,6 +32,16 @@ const ProviderPidAutoComplete: React.FC<ProviderPidAutoCompleteProps> = ({
   placeholder,
 }) => {
   const [display, setDisplay] = useState('');
+  /** 点清空后跳过紧随其后的 blur，避免用旧展示名把 pid 写回表单 */
+  const skipNextBlurRef = useRef<boolean>(false);
+
+  const handleClear = useCallback(() => {
+    skipNextBlurRef.current = true;
+    setDisplay('');
+    setPidOptionsFilter('');
+    onChange?.(undefined);
+    clearPidLinkedFields();
+  }, [clearPidLinkedFields, onChange, setPidOptionsFilter]);
 
   useEffect(() => {
     const p = value
@@ -77,6 +87,10 @@ const ProviderPidAutoComplete: React.FC<ProviderPidAutoCompleteProps> = ({
       onSearch={(v) => setPidOptionsFilter(String(v ?? ''))}
       onChange={(v) => {
         const s = String(v ?? '');
+        if (!s.trim()) {
+          handleClear();
+          return;
+        }
         const byPid = modelProviderList.find((p) => p.pid === s);
         setDisplay(byPid?.name ?? s);
         setPidOptionsFilter(s);
@@ -84,11 +98,15 @@ const ProviderPidAutoComplete: React.FC<ProviderPidAutoCompleteProps> = ({
       onSelect={(optVal) => {
         applyPidLinkageOnDropdownPick(String(optVal ?? ''));
       }}
-      onClear={() => clearPidLinkedFields()}
+      onClear={handleClear}
       onBlur={() => {
+        if (skipNextBlurRef.current) {
+          skipNextBlurRef.current = false;
+          return;
+        }
         const nextStored = resolveInputToStoredPid(display);
         if (!nextStored?.trim()) {
-          clearPidLinkedFields();
+          handleClear();
           return;
         }
         if (nextStored !== value) {

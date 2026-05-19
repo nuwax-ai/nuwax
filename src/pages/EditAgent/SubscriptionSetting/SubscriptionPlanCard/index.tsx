@@ -54,8 +54,8 @@ const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
         <div className={cx(styles['plan-name'], 'flex-1', 'text-ellipsis')}>
           {plan.name}
         </div>
-        {/* 仅为功能订阅时显示包干价标签 */}
-        <ConditionRender condition={plan.functionOnly}>
+        {/* 仅为功能订阅未开启时显示包干价标签 */}
+        <ConditionRender condition={!plan.functionOnly}>
           <span className={cx(styles['package-tag'])}>
             {dict('PC.Pages.AgentEdit.SubscriptionPlanCard.fixedPrice')}
           </span>
