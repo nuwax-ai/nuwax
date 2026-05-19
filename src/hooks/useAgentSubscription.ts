@@ -3,6 +3,8 @@ import {
   apiGetAgentSubscriptionOrderCashier,
   apiGetAgentSubscriptionPlanList,
 } from '@/pages/EditAgent/services/agent-subscription-plan';
+import { apiQueryToolPricing } from '@/pages/SpaceResource/services/resource';
+import { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanStatusEnum,
@@ -21,6 +23,23 @@ const useAgentSubscription = () => {
   const [agentSubscriptionPlans, setAgentSubscriptionPlans] = useState<
     SubscriptionPlanInfo[]
   >([]);
+
+  // 套餐列表来自 apiQueryToolPricing
+  const [targetSubscriptionPlans, setTargetSubscriptionPlans] = useState<
+    SubscriptionPlanInfo[]
+  >([]);
+
+  // 查询目标对象定价配置
+  const { run: loadTargetPricing, loading: loadingTargetPricing } = useRequest(
+    apiQueryToolPricing,
+    {
+      manual: true,
+      loadingDelay: 300,
+      onSuccess: (data: ResourcePricingConfigInfo) => {
+        setTargetSubscriptionPlans(data?.plans || []);
+      },
+    },
+  );
 
   // 查询订阅计划列表
   const {
@@ -46,7 +65,7 @@ const useAgentSubscription = () => {
   /**
    * 创建智能体订阅订单
    */
-  const createAgentSubscriptionOrder = async (plan: SubscriptionPlanInfo) => {
+  const createSubscriptionOrder = async (plan: SubscriptionPlanInfo) => {
     if (!plan.id || plan.status !== SubscriptionPlanStatusEnum.Online) {
       return;
     }
@@ -103,9 +122,15 @@ const useAgentSubscription = () => {
     loadingAgentSubscriptionPlans,
     mySubscriptionInfo,
     loadingMySubscription,
+    // 查询当前智能体维度「我的订阅」接口数据
     loadMySubscription,
-    createAgentSubscriptionOrder,
+    // 创建智能体订阅订单
+    createSubscriptionOrder,
     openAgentSubscriptionModal,
+    // 查询目标对象定价配置
+    loadTargetPricing,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
   };
 };
 

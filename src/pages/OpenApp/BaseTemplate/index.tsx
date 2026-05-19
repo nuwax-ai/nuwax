@@ -115,7 +115,7 @@ const BaseTemplate: React.FC = () => {
     // 加载当前生效智能体套餐loading
     loadingMySubscription,
     // 创建智能体订阅订单
-    createAgentSubscriptionOrder,
+    createSubscriptionOrder,
   } = useAgentSubscription();
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
@@ -694,7 +694,7 @@ const BaseTemplate: React.FC = () => {
           // 关闭回调
           onClose={() => setOpenPaymentModal(false)}
           // 订阅回调
-          onSubscribe={createAgentSubscriptionOrder}
+          onSubscribe={createSubscriptionOrder}
         />
       </ConditionRender>
     </div>
