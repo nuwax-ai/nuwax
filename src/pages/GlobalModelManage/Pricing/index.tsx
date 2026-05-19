@@ -5,7 +5,6 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType } from '@ant-design/pro-components';
 import { Button, Form } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
-import styles from './index.less';
 import ModelPricingModal from './ModelPricingModal';
 import ModelPricingTab from './ModelPricingTab';
 
@@ -44,19 +43,12 @@ const GlobalModelManagePricing: React.FC = () => {
     <WorkspaceLayout
       title={dict('PC.Pages.SpaceResourcePricing.pageTitle')}
       hideScroll
+      rightSlot={
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd}>
+          {dict('PC.Pages.SpaceResourcePricing.addModel')}
+        </Button>
+      }
     >
-      <div className={styles['pricing-toolbar']}>
-        <div className={styles['pricing-toolbar-right']}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenAdd}
-          >
-            {dict('PC.Pages.SpaceResourcePricing.addModel')}
-          </Button>
-        </div>
-      </div>
-
       {/* 模型定价列表 */}
       <ModelPricingTab
         actionRef={tableActionRef}
