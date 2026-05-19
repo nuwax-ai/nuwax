@@ -6,7 +6,7 @@ import {
   BillWithdrawStatusEnum,
 } from '@/types/interfaces/subscription';
 import { useRequest } from 'ahooks';
-import { Empty, Spin, Statistic, Tag } from 'antd';
+import { Empty, Image, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import styles from './index.less';
@@ -85,7 +85,7 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
       onOpenChange={onOpenChange}
       submitter={false}
       modalProps={{
-        width: 480,
+        width: 680,
         destroyOnHidden: true,
         styles: { body: { padding: '12px 0px 24px' } },
       }}
@@ -97,21 +97,59 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
               <div key={record.id} className={styles['record-item']}>
                 <div className={styles['record-main']}>
                   <div className={styles['record-header']}>
-                    <Statistic
-                      value={record.amount || 0}
-                      precision={2}
-                      prefix="¥"
-                      valueStyle={{ fontSize: 16, fontWeight: 600 }}
-                    />
+                    <div className={styles['record-time']}>
+                      {dayjs(record.created).format('YYYY-MM-DD HH:mm:ss')}
+                    </div>
                     <Tag
                       color={statusConfig[record.status]?.color || 'default'}
                     >
                       {statusConfig[record.status]?.label || record.status}
                     </Tag>
                   </div>
-                  <div className={styles['record-time']}>
-                    {dayjs(record.created).format('YYYY-MM-DD HH:mm:ss')}
+
+                  <div className={styles['record-details']}>
+                    <div className={styles['detail-row']}>
+                      <div className={styles['detail-col']}>
+                        <span className={styles['detail-label']}>
+                          {dict('PC.Pages.MorePage.MyEarnings.colAmount')}
+                        </span>
+                        <span className={styles['detail-value']}>
+                          ¥
+                          {(record.amount ?? 0).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div className={styles['detail-col']}>
+                        <span className={styles['detail-label']}>
+                          {dict(
+                            'PC.Pages.MorePage.MyEarnings.colPlatformServiceFee',
+                          )}
+                        </span>
+                        <span className={styles['detail-value']}>
+                          ¥
+                          {(record.fee ?? 0).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div className={styles['detail-col']}>
+                        <span className={styles['detail-label']}>
+                          {dict('PC.Pages.MorePage.MyEarnings.colActualAmount')}
+                        </span>
+                        <span className={styles['detail-value']}>
+                          ¥
+                          {(record.actualAmount ?? 0).toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
+
                   {record.status === BillWithdrawStatusEnum.REJECTED &&
                     record.rejectReason && (
                       <div className={styles['record-reject-reason']}>
@@ -119,6 +157,70 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
                           'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason',
                         )}
                         ：{record.rejectReason}
+                      </div>
+                    )}
+
+                  {record.status === BillWithdrawStatusEnum.PAID &&
+                    record.paymentExtra && (
+                      <div className={styles['record-payment-extra']}>
+                        {record.paymentExtra.remark && (
+                          <div className={styles['payment-remark']}>
+                            <div
+                              className={styles['extra-label']}
+                              style={{ marginBottom: 6 }}
+                            >
+                              {dict(
+                                'PC.Pages.MorePage.MyEarnings.colPaymentRemark',
+                              )}
+                              ：
+                            </div>
+                            <Typography.Paragraph
+                              ellipsis={{
+                                rows: 3,
+                                tooltip: {
+                                  title: record.paymentExtra.remark,
+                                  placement: 'topLeft',
+                                },
+                              }}
+                              className={styles['extra-value']}
+                              style={{ margin: 0 }}
+                            >
+                              {record.paymentExtra.remark}
+                            </Typography.Paragraph>
+                          </div>
+                        )}
+                        {record.paymentExtra.images &&
+                          record.paymentExtra.images.length > 0 && (
+                            <div className={styles['payment-voucher']}>
+                              <div
+                                className={styles['extra-label']}
+                                style={{ marginBottom: 6 }}
+                              >
+                                {dict(
+                                  'PC.Pages.MorePage.MyEarnings.colVoucherImages',
+                                )}
+                                ：
+                              </div>
+                              <Image.PreviewGroup>
+                                <div className={styles['voucher-images']}>
+                                  {record.paymentExtra.images
+                                    .slice(0, 3)
+                                    .map((imgUrl: string, idx: number) => (
+                                      <Image
+                                        key={idx}
+                                        src={imgUrl}
+                                        width={60}
+                                        height={60}
+                                        style={{
+                                          objectFit: 'cover',
+                                          borderRadius: 4,
+                                        }}
+                                      />
+                                    ))}
+                                </div>
+                              </Image.PreviewGroup>
+                            </div>
+                          )}
                       </div>
                     )}
                 </div>
