@@ -61,6 +61,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
   onCreated,
 }) => {
   const [form] = Form.useForm();
+  const functionOnly = Form.useWatch('functionOnly', form);
   const nameInputRef = useRef<InputRef>(null);
   const [limitType, setLimitType] = useState<'unlimited' | 'limited'>(
     'unlimited',
@@ -162,11 +163,6 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
       loading={creating}
       onCancel={onCancel}
       onConfirm={handleSubmit}
-      okText={editPlan ? '更新' : '确认'}
-      classNames={{
-        content: styles['create-plan-modal-content'],
-        header: styles['create-plan-modal-header'],
-      }}
     >
       <Form
         form={form}
@@ -189,7 +185,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
         <Form.Item name="description" label="套餐描述">
           <Input.TextArea
-            placeholder="简短的套餐描述文案"
+            placeholder="请输入套餐描述"
             showCount
             maxLength={200}
             autoSize={{ minRows: 3, maxRows: 6 }}
@@ -209,7 +205,8 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             >
               <InputNumber
                 min={0}
-                max={1000000}
+                max={100000000}
+                step={0.01}
                 precision={2}
                 className="w-full"
                 placeholder="请输入价格"
@@ -218,7 +215,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           </div>
         </Form.Item>
 
-        <Form.Item label="可调用次数">
+        <Form.Item label="可调用次数（每月）">
           <div className={styles['limit-switch-row']}>
             <Button
               type={limitType === 'unlimited' ? 'primary' : 'default'}
@@ -243,8 +240,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             >
               <InputNumber
                 min={1}
+                max={10000000000}
                 precision={0}
-                style={{ width: '100%' }}
+                className="w-full"
                 placeholder="请输入可调用次数"
               />
             </Form.Item>
@@ -258,7 +256,24 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           <div className={styles['function-only-text']}>
             <div className={styles['function-only-title']}>仅为功能订阅</div>
             <div className={styles['function-only-desc']}>
-              开启后：模型/工具等资源调用需额外付费
+              {functionOnly ? (
+                <>
+                  <span className={styles['function-only-highlight']}>
+                    仅为功能订阅：
+                  </span>
+                  模型/工具等资源调用需
+                  <span className={styles['function-only-highlight-pay']}>
+                    额外付费
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={styles['function-only-highlight']}>
+                    包干价订阅：
+                  </span>
+                  资源调用费用由开发者承担
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -249,6 +249,12 @@ const routes = [
             component: '@/pages/GlobalModelManage',
           },
           {
+            path: 'model/pricing',
+            name: getRouteLabel('PC.Pages.SpaceResourcePricing.pageTitle'),
+            component: '@/pages/GlobalModelManage/Pricing',
+            hideInMenu: true,
+          },
+          {
             path: 'model/monitor',
             name: getRouteLabel('PC.Routes.modelMonitor'),
             component: '@/pages/SystemManagement/ModelMonitor',
@@ -376,41 +382,41 @@ const routes = [
             routes: [
               {
                 path: 'config',
-                name: '支付配置',
+                name: getRouteLabel('PC.Routes.paymentConfig'),
                 component: '@/pages/SystemManagement/PaymentEarnings/Config',
               },
               {
                 path: 'merchant-info',
-                name: '支付进件信息',
+                name: getRouteLabel('PC.Routes.paymentMerchantInfo'),
                 component:
                   '@/pages/SystemManagement/PaymentEarnings/MerchantInfo',
               },
               {
                 path: 'dev-payment',
-                name: '开发者付款信息',
+                name: getRouteLabel('PC.Routes.devPaymentInfo'),
                 component:
                   '@/pages/SystemManagement/PaymentEarnings/DevPayment',
               },
               {
                 path: 'earnings-stats',
-                name: '开发者收益统计',
+                name: getRouteLabel('PC.Routes.devEarningsStats'),
                 component:
                   '@/pages/SystemManagement/PaymentEarnings/EarningsStats',
               },
               {
                 path: 'withdrawal',
-                name: '开发者提现管理',
+                name: getRouteLabel('PC.Routes.devWithdrawal'),
                 component:
                   '@/pages/SystemManagement/PaymentEarnings/Withdrawal',
               },
               {
                 path: 'orders',
-                name: '支付订单查询',
+                name: getRouteLabel('PC.Routes.paymentOrders'),
                 component: '@/pages/SystemManagement/PaymentEarnings/Orders',
               },
               {
                 path: 'earnings-detail',
-                name: '收益明细',
+                name: getRouteLabel('PC.Routes.devEarningsDetail'),
                 component:
                   '@/pages/SystemManagement/PaymentEarnings/EarningsDetail',
               },
@@ -422,36 +428,36 @@ const routes = [
             routes: [
               {
                 path: 'basic-config',
-                name: '基础配置',
+                name: getRouteLabel('PC.Routes.subsBasicConfig'),
                 component:
                   '@/pages/SystemManagement/SubscriptionCredits/BasicConfig',
               },
               {
                 path: 'plans',
-                name: '基础订阅套餐',
+                name: getRouteLabel('PC.Routes.subsPlans'),
                 component: '@/pages/SystemManagement/SubscriptionCredits/Plans',
               },
               {
                 path: 'credit-packages',
-                name: '积分增购套餐',
+                name: getRouteLabel('PC.Routes.creditsPackages'),
                 component:
                   '@/pages/SystemManagement/SubscriptionCredits/CreditPackages',
               },
               {
                 path: 'user-credits',
-                name: '用户积分查询',
+                name: getRouteLabel('PC.Routes.userCreditsQuery'),
                 component:
                   '@/pages/SystemManagement/SubscriptionCredits/UserCredits',
               },
               {
                 path: 'credit-records',
-                name: '积分明细查询',
+                name: getRouteLabel('PC.Routes.creditsRecordsQuery'),
                 component:
                   '@/pages/SystemManagement/SubscriptionCredits/CreditRecords',
               },
               {
                 path: 'orders',
-                name: '业务订单查询',
+                name: getRouteLabel('PC.Routes.subsOrders'),
                 component:
                   '@/pages/SystemManagement/SubscriptionCredits/Orders',
               },

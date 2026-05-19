@@ -1,4 +1,5 @@
-import PaymentSubscriptionModal from '@/components/business-component/ConversationDetails/PaymentSubscriptionModal';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import ConditionRender from '@/components/ConditionRender';
 import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import useAgentSubscription from '@/hooks/useAgentSubscription';
@@ -15,12 +16,13 @@ import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
 
@@ -41,12 +43,22 @@ const SkillDetail: React.FC = ({}) => {
     SubscriptionPlanInfo[]
   >([]);
 
-  // 创建订阅订单
-  const { createAgentSubscriptionOrder } = useAgentSubscription();
+  // 创建订阅订单 + 当前技能维度「我的订阅」
+  const {
+    createAgentSubscriptionOrder,
+    mySubscriptionInfo,
+    loadMySubscription,
+    loadingMySubscription,
+  } = useAgentSubscription();
 
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
     useState<boolean>(false);
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 查询技能信息
   const {
@@ -96,21 +108,32 @@ const SkillDetail: React.FC = ({}) => {
     }
   }, [skillId]);
 
-  // 技能需付费且未订阅时自动打开订阅套餐弹窗
+  useEffect(() => {
+    if (!openPaymentModal) {
+      return;
+    }
+    if (!skillId) {
+      return;
+    }
+    // 查询技能定价配置
+    loadSkillPricing({
+      targetType: ToolPricingTargetType.SKILL,
+      targetId: String(skillId),
+    });
+    loadMySubscription({
+      bizType: BizTypeEnum.Skill,
+      bizId: skillId,
+    });
+  }, [openPaymentModal, skillId, loadSkillPricing, loadMySubscription]);
+
   useEffect(() => {
     if (!skillInfo) {
       return;
     }
     if (skillInfo.paymentRequired && !skillInfo.subscribed) {
       setOpenPaymentModal(true);
-
-      // 查询技能定价配置
-      loadSkillPricing({
-        targetType: ToolPricingTargetType.SKILL,
-        targetId: String(skillId),
-      });
     }
-  }, [skillInfo, skillId]);
+  }, [skillInfo]);
 
   // 订阅技能套餐
   const handleSubscribeSkillPlan = (plan: SubscriptionPlanInfo) => {
@@ -128,10 +151,6 @@ const SkillDetail: React.FC = ({}) => {
   /** 手动打开订阅弹窗并拉取套餐（未订阅时自动打开弹窗同样在 useEffect 中请求定价） */
   const handleOpenSubscribeModal = () => {
     setOpenPaymentModal(true);
-    loadSkillPricing({
-      targetType: ToolPricingTargetType.SKILL,
-      targetId: String(skillId),
-    });
   };
 
   // 智能体、工作流、技能模板复制
@@ -184,16 +203,14 @@ const SkillDetail: React.FC = ({}) => {
           onBack={handleBack}
           extraBeforeCollect={
             <Space>
-              {skillInfo.paymentRequired &&
-                (skillInfo.subscribed ? (
-                  <Button disabled>
-                    {dict('PC.Pages.Square.SkillDetail.subscribed')}
-                  </Button>
-                ) : (
-                  <Button type="primary" onClick={handleOpenSubscribeModal}>
-                    {dict('PC.Pages.Square.SkillDetail.subscribeAction')}
-                  </Button>
-                ))}
+              {/* 如果开启订阅功能，则显示订阅按钮 */}
+              {isEnableSubscription && skillInfo.paymentRequired && (
+                <Button type="primary" onClick={handleOpenSubscribeModal}>
+                  {skillInfo.subscribed
+                    ? dict('PC.Pages.Square.SkillDetail.subscribed')
+                    : dict('PC.Pages.Square.SkillDetail.subscribeAction')}
+                </Button>
+              )}
               {skillInfo.allowCopy === AllowCopyEnum.Yes && (
                 <>
                   <Button
@@ -257,15 +274,21 @@ const SkillDetail: React.FC = ({}) => {
         onConfirm={handlerConfirmCopyTemplate}
       />
 
-      {/* 付费订阅套餐弹窗 */}
-      <PaymentSubscriptionModal
-        open={openPaymentModal}
-        loading={loadingSkillPricing}
-        plans={skillSubscriptionPlans}
-        userSubscribed={Boolean(skillInfo?.subscribed)}
-        onClose={() => setOpenPaymentModal(false)}
-        onSubscribe={handleSubscribeSkillPlan}
-      />
+      <ConditionRender condition={isEnableSubscription}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          loading={loadingSkillPricing || loadingMySubscription}
+          plans={skillSubscriptionPlans}
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={handleSubscribeSkillPlan}
+        />
+      </ConditionRender>
     </div>
   );
 };

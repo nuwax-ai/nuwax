@@ -30,11 +30,12 @@ import {
   message,
   Modal,
   Segmented,
+  Tag,
 } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import CreateAgent from '../CreateAgent';
 import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
@@ -97,10 +98,13 @@ const Created: React.FC<CreatedProp> = ({
   tabs = defaultTabs,
   hideTop,
   modalZIndex,
+  showMoreMenus = true,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState<boolean>(false);
@@ -750,9 +754,21 @@ const Created: React.FC<CreatedProp> = ({
           }}
         />
         <div className={cx('flex-1', styles['content-font'])}>
-          <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
-            {item.name}
-          </p>
+          <div className={cx(styles['label-row'])}>
+            <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
+              {item.name}
+            </p>
+            {isEnableSubscription && item.paymentRequired && (
+              <Tag
+                color={item.subscribed ? 'success' : 'processing'}
+                className={cx(styles['payment-tag'])}
+              >
+                {item.subscribed
+                  ? t('PC.Pages.Square.SingleAgent.subscribed')
+                  : t('PC.Pages.Square.SingleAgent.paid')}
+              </Tag>
+            )}
+          </div>
           <p
             className={cx(styles['created-description-style'], 'text-ellipsis')}
           >
@@ -901,13 +917,15 @@ const Created: React.FC<CreatedProp> = ({
             </Button>
           </div>
           {/* 下方的菜单 */}
-          <Menu
-            className={cx(styles['aside-menu'])}
-            onClick={(val) => onMenuClick(val.key)}
-            selectedKeys={[selectMenu]}
-            mode="vertical"
-            items={getItems()}
-          ></Menu>
+          {showMoreMenus && (
+            <Menu
+              className={cx(styles['aside-menu'])}
+              onClick={(val) => onMenuClick(val.key)}
+              selectedKeys={[selectMenu]}
+              mode="vertical"
+              items={getItems()}
+            />
+          )}
         </div>
         {/* 右侧部分应该是变动的 */}
         <div

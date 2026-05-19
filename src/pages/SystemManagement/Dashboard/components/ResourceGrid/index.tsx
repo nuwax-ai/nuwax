@@ -11,7 +11,7 @@ const ResourceGrid: React.FC<ResourceGridProps> = ({ resources, loading }) => {
   return (
     <Card
       className={cx(styles['resource-grid'])}
-      bordered={false}
+      variant="borderless"
       title={dict('PC.Pages.SystemDashboard.resourceOverview')}
     >
       <div className={cx(styles['resource-list'])}>

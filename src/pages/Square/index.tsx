@@ -46,6 +46,9 @@ const Square: React.FC = () => {
   const { templateList } = useModel('squareModel');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
   const templateListTabs = templateList?.map((item: any) => ({
     label: item.description,
     value: item.name,
@@ -477,6 +480,7 @@ const Square: React.FC = () => {
                     return (
                       <SingleAgent
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
@@ -496,6 +500,7 @@ const Square: React.FC = () => {
                         showUserCount={false}
                         showConvCount={false}
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         collectApi={apiPublishedSkillCollect}

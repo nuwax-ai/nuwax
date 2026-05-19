@@ -5,8 +5,7 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
-import SubscriptionDrawer from '@/components/business-component/SubscriptionDrawer';
-import SubscriptionPrompt from '@/components/business-component/SubscriptionPrompt';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
@@ -18,10 +17,8 @@ import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useAgentSubscription from '@/hooks/useAgentSubscription';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import { SubscriptionPlanStatusEnum } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
-import { apiCheckSubscription } from '@/services/subscriptionService';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -63,7 +60,6 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
-import PaymentSubscriptionModal from './PaymentSubscriptionModal';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -108,6 +104,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
+    isNeedSubscription,
+    setIsNeedSubscription,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -157,6 +155,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     clearFilePanelInfo,
   } = useModel('conversationInfo');
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
   // 会话输入框已选择组件
   const {
     selectedComponentList,
@@ -168,34 +171,26 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
   // 智能体订阅
   const {
+    // 智能体订阅套餐
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
-    loadAgentSubscriptionPlans,
+    // 当前生效智能体套餐
+    mySubscriptionInfo,
+    // 加载当前生效智能体套餐loading
+    loadingMySubscription,
+    // 创建智能体订阅订单
     createAgentSubscriptionOrder,
+    openAgentSubscriptionModal,
   } = useAgentSubscription();
 
   // 缓存智能体名称，避免清空等操作导致 agentDetail 刷新时的文字闪烁
   const [cachedAgentName, setCachedAgentName] = useState<string>('');
-
-  // 订阅相关状态
-  const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
-  const [subscriptionCheckResult, setSubscriptionCheckResult] = useState<
-    import('@/types/interfaces/subscription').CheckSubscriptionResult | null
-  >(null);
 
   useEffect(() => {
     if (agentDetail?.name) {
       setCachedAgentName(agentDetail.name);
     }
   }, [agentDetail?.name]);
-
-  useEffect(() => {
-    if (agentDetail?.subscriptionEnabled && agentId) {
-      apiCheckSubscription(agentId).then((res) => {
-        if (res?.data) setSubscriptionCheckResult(res.data);
-      });
-    }
-  }, [agentDetail?.subscriptionEnabled, agentId]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -414,6 +409,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
     if (result.paymentRequired && !result.subscribed) {
       setOpenPaymentModal(true);
+      setIsNeedSubscription(true);
     }
 
     // 设置应用智能体详情
@@ -464,14 +460,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   });
 
   useEffect(() => {
-    if (openPaymentModal) {
-      // 显示付费弹窗时加载数据
-      loadAgentSubscriptionPlans({
-        agentId,
-        status: SubscriptionPlanStatusEnum.Online,
-      });
+    if (!openPaymentModal || isAppSidebarMode) {
+      return;
     }
-  }, [openPaymentModal, agentId]);
+
+    // 打开智能体订阅套餐弹窗
+    openAgentSubscriptionModal(agentId);
+  }, [openPaymentModal, isAppSidebarMode, openAgentSubscriptionModal, agentId]);
 
   useLayoutEffect(() => {
     setLoading(true);
@@ -710,6 +705,23 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
             {/* 右侧按钮区域 */}
             <div className={cx('flex', 'items-center', 'gap-4')}>
+              {/* 需付费订阅的智能体：打开订阅套餐 */}
+              {isEnableSubscription &&
+                agentDetail?.paymentRequired &&
+                !isAppSidebarMode && (
+                  <TooltipIcon
+                    title={t('PC.Components.ConversationDetails.paidSubscribe')}
+                    className={cx(styles['icon-box'])}
+                    icon={
+                      <SvgIcon
+                        name="icons-chat-collect"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={() => setOpenPaymentModal(true)}
+                  />
+                )}
+
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {!isAppSidebarMode && !isSidebarVisible && !isMobile && (
                 <TooltipIcon
@@ -752,23 +764,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     }}
                   />
                 )}
-
-              {/*订阅管理图标*/}
-              {agentDetail?.subscriptionEnabled && (
-                <TooltipIcon
-                  title={t(
-                    'PC.Components.ConversationDetails.subscriptionManage',
-                  )}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-subscription"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => setSubscriptionDrawerOpen(true)}
-                />
-              )}
             </div>
           </div>
         </header>
@@ -830,22 +825,17 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 ) : null}
               </div>
             </div>
-            {/* 订阅套餐提示（需订阅且无试用次数且无有效订阅时显示）*/}
-            {agentDetail?.subscriptionEnabled &&
-              !subscriptionCheckResult?.hasSubscription &&
-              (subscriptionCheckResult?.trialRemaining ?? 0) <= 0 &&
-              (subscriptionCheckResult?.plans?.length ?? 0) > 0 && (
-                <SubscriptionPrompt
-                  plans={subscriptionCheckResult!.plans}
-                  onViewPlans={() => setSubscriptionDrawerOpen(true)}
-                />
-              )}
             <ChatInputHome
               key={`agent-details-${agentId}`}
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               isClearInput={false}
-              wholeDisabled={wholeDisabled}
+              wholeDisabled={
+                wholeDisabled ||
+                (isEnableSubscription &&
+                  isNeedSubscription &&
+                  agentDetail?.overCallLimit)
+              }
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
@@ -965,7 +955,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   title={''}
                   open={openPageCopyModal}
                   isTemplate={true}
-                  onSuccess={(_: any, targetSpaceId: number) => {
+                  onSuccess={(_: null, targetSpaceId: number) => {
                     setOpenPageCopyModal(false);
                     // 跳转
                     jumpToPageDevelop(targetSpaceId);
@@ -990,35 +980,28 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           loading={loading}
           agentDetail={agentDetail}
           onVisibleChange={setIsSidebarVisible}
-          onSubscribe={() => setOpenPaymentModal(true)}
         />
       </ConditionRender>
 
-      {/*订阅管理抽屉*/}
-      <SubscriptionDrawer
-        agentId={agentId}
-        open={subscriptionDrawerOpen}
-        onClose={() => setSubscriptionDrawerOpen(false)}
-        onSubscribeSuccess={() => {
-          apiCheckSubscription(agentId).then((res) => {
-            if (res?.data) setSubscriptionCheckResult(res.data);
-          });
-        }}
-      />
-
-      {/* 付费订阅套餐弹窗 */}
-      <PaymentSubscriptionModal
-        open={openPaymentModal}
-        loading={loadingAgentSubscriptionPlans}
-        // 套餐列表
-        plans={agentSubscriptionPlans}
-        // 是否已订阅
-        userSubscribed={!!agentDetail?.subscribed}
-        // 关闭回调
-        onClose={() => setOpenPaymentModal(false)}
-        // 订阅回调
-        onSubscribe={createAgentSubscriptionOrder}
-      />
+      <ConditionRender condition={isEnableSubscription && !isAppSidebarMode}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Agent"
+          overCallLimit={agentDetail?.overCallLimit ?? false}
+          loading={loadingAgentSubscriptionPlans || loadingMySubscription}
+          // 套餐列表
+          plans={agentSubscriptionPlans}
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          // 关闭回调
+          onClose={() => setOpenPaymentModal(false)}
+          // 订阅回调
+          onSubscribe={createAgentSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };

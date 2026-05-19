@@ -22,10 +22,7 @@ export type AgentSidebarRef = {
 };
 
 const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
-  (
-    { className, agentId, loading, agentDetail, onVisibleChange, onSubscribe },
-    ref,
-  ) => {
+  ({ className, agentId, loading, agentDetail, onVisibleChange }, ref) => {
     const [visible, setVisible] = useState<boolean>(false);
     const [foldVisible, setFoldVisible] = useState<boolean>(false);
     const { showType } = useModel('conversationInfo');
@@ -95,10 +92,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
               <div className={cx(styles['container-content'], 'scrollbar')}>
                 <div className={cx(styles['container-body'])}>
                   {/* 智能体内容 */}
-                  <AgentContent
-                    agentDetail={agentDetail}
-                    onSubscribe={onSubscribe}
-                  />
+                  <AgentContent agentDetail={agentDetail} />
                   {/* 智能体相关会话 */}
                   <AgentConversation agentId={agentId} />
                   {/* 定时任务 */}

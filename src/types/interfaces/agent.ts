@@ -696,8 +696,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   allowPrivateSandbox?: DefaultSelectedEnum;
   // 是否开启订阅限制
   subscriptionEnabled?: boolean;
-  // 剩余免费试用次数
-  trialRemaining?: number;
+  // 超出调用限制提示
+  overCallLimit: boolean;
 }
 
 // 日志查询过滤条件

@@ -11,12 +11,21 @@ import { useModel } from 'umi';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { OTHER_MENU_CODES } from '@/constants/menus.constants';
 import { MenuEnabledEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
-import { extractAllMenuCodes, extractAllPermissions } from '@/utils/permission';
+import {
+  extractAllMenuCodes,
+  extractAllPermissions,
+  isRoutePathHidden,
+} from '@/utils/permission';
 
 /**
  * 菜单权限模型
  */
 export default function useMenuModel() {
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 缓存最原始的菜单数据，用作响应式过滤的数据源
+  const rawMenusRef = useRef<MenuItemDto[]>([]);
+
   // 菜单树数据
   const [menuTree, setMenuTree] = useState<MenuItemDto[]>([]);
   // 权限码集合（用于快速查找）
@@ -40,23 +49,72 @@ export default function useMenuModel() {
   /**
    * 处理菜单数据：设置菜单树、权限码、菜单码
    */
-  const processMenuData = useCallback((menus: MenuItemDto[]) => {
-    setMenuTree(menus);
+  const processMenuData = useCallback(
+    (menus: MenuItemDto[]) => {
+      rawMenusRef.current = menus;
 
-    // 提取所有权限码（从 Map 中提取所有值并打平）
-    const permissionsMapData: Map<string, string[]> =
-      extractAllPermissions(menus);
-    const permissions: string[] = [];
-    permissionsMapData.forEach((codes) => {
-      permissions.push(...codes);
-    });
-    setPermissionSet(new Set(permissions));
-    setPermissionsMap(permissionsMapData);
+      const isHiddenMenu = (menu: MenuItemDto): boolean => {
+        if (!menu.path) return false;
+        const normalizedPath = menu.path.split('?')[0];
+        return isRoutePathHidden(normalizedPath, tenantConfigInfo);
+      };
 
-    // 提取所有菜单码
-    const menuCodes = extractAllMenuCodes(menus);
-    setMenuCodeSet(new Set(menuCodes));
-  }, []);
+      const filterItems = (items: MenuItemDto[]): MenuItemDto[] => {
+        return items
+          .filter((item) => !isHiddenMenu(item))
+          .map((item) => {
+            if (item.children?.length) {
+              return {
+                ...item,
+                children: filterItems(item.children),
+              };
+            }
+            return item;
+          })
+          .filter((item) => {
+            // 没有 path 的菜单不需要隐藏 【比如 通知】
+            if (!item.path) return true;
+
+            // 如果一个菜单项本应有子菜单（即 children 被声明且过滤前长度大于 0），
+            // 但经过过滤后其 children 列表变成了空数组，说明其所有子菜单均被隐藏，
+            // 此时如果它自身没有独立的有效可访问路由路径（或者属于结构性导航组，如以 '#' 或空串等为 path 的节点），
+            // 则该空壳父菜单节点也应当一并予以隐藏，避免展示空白下拉。
+            if (item.children && item.children.length === 0) {
+              const hasValidPath =
+                item.path && item.path !== '#' && item.path !== '';
+              return hasValidPath;
+            }
+            return true;
+          });
+      };
+
+      const filteredMenus = filterItems(menus);
+
+      setMenuTree(filteredMenus);
+
+      // 提取所有权限码（从 Map 中提取所有值并打平）
+      const permissionsMapData: Map<string, string[]> =
+        extractAllPermissions(filteredMenus);
+      const permissions: string[] = [];
+      permissionsMapData.forEach((codes) => {
+        permissions.push(...codes);
+      });
+      setPermissionSet(new Set(permissions));
+      setPermissionsMap(permissionsMapData);
+
+      // 提取所有菜单码
+      const menuCodes = extractAllMenuCodes(filteredMenus);
+      setMenuCodeSet(new Set(menuCodes));
+    },
+    [tenantConfigInfo?.enableSubscription],
+  );
+
+  // 当租户订阅开关状态变化时，重新基于最原始的菜单树数据源进行响应式过滤与权限重算
+  useEffect(() => {
+    if (rawMenusRef.current.length > 0) {
+      processMenuData(rawMenusRef.current);
+    }
+  }, [tenantConfigInfo?.enableSubscription, processMenuData]);
 
   /**
    * 从 initialState 初始化菜单数据

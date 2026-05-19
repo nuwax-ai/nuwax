@@ -1,6 +1,6 @@
 {
   "name": "nuwax-frontend",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -80,6 +80,7 @@
     "@umijs/utils": "^4.4.11",
     "ahooks": "^3.8.4",
     "antd": "^5.4.0",
+    "bignumber.js": "^11.1.1",
     "classnames": "2.0.0",
     "copy-webpack-plugin": "11.0.0",
     "create-puzzle": "^3.0.2",

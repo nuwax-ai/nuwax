@@ -906,8 +906,10 @@ export interface SystemRevenueDetailInfo {
 
 /** 资源统计-统计分组 */
 export interface StatGroup {
-  /** 总输入Token */
+  /** 输入 Token（不含缓存）；总输入 = totalInputTokens + totalCacheInputTokens */
   totalInputTokens: number;
+  /** 可选冗余字段，展示以 totalInputTokens 为准 */
+  inputTokens?: number;
   /** 总输出Token */
   totalOutputTokens: number;
   /** 总缓存输入Token */
@@ -972,7 +974,9 @@ export interface ResourceStatDTO {
   callFailedCount: number;
   creditAmount: number;
   feeAmount: number;
+  /** 缓存输入 Token */
   cacheInputTokens: number;
+  /** 输入 Token（明细字段语义因业务接口而异，见各页 resourceStatTokenMetrics） */
   inputTokens: number;
   outputTokens: number;
   extra: string;

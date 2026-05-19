@@ -1,69 +1,43 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
 .model-monitor-container {
-  padding: 20px;
   background: transparent;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
-  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  // overflow: hidden;
+  box-sizing: border-box;
 }
 
-// 筛选栏
+// 筛选栏（固定高度，不参与伸缩）
 .filter-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: @marginSm;
+  flex-shrink: 0;
 }
 
 .filter-label {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 65%);
+  font-size: @fontSize;
+  color: @colorTextSecondary;
   white-space: nowrap;
   font-weight: 500;
 }
 
-.stat-cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.stat-item-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
-  transition: all 0.3s ease;
-  background: #fff;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 12%);
-    transform: translateY(-2px);
-  }
-
-  .stat-label {
-    font-size: 13px;
-    color: rgba(0, 0, 0, 45%);
-  }
-
-  .stat-value {
-    font-size: 24px;
-    font-weight: 600;
-    color: rgba(0, 0, 0, 85%);
-    line-height: 1.2;
-
-    &.highlight {
-      color: #faad14;
-    }
-  }
-}
-
-// 明细表格区域 - 撑满剩余空间
+// 明细表格区域 - 占满剩余空间，表格体内部滚动
 .detail-section {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  :global(.x-pro-table) {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
 }

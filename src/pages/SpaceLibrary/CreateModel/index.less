@@ -2,33 +2,16 @@
 @import '@/styles/token';
 
 .container {
-  width: 560px;
+  width: 600px;
   border-radius: 10px !important;
-  background-color: @WHITE12 !important;
-
-  :global {
-    .ant-table-wrapper .ant-table-thead > tr > th,
-    .ant-table-wrapper .ant-table-tbody > tr > td {
-      padding-left: 5px;
-      padding-right: 5px;
-    }
-  }
-
-  .header {
-    background-color: @WHITE12 !important;
-  }
 
   .body {
-    max-height: 500px;
+    max-height: 70vh;
     overflow-y: auto;
   }
 
   .gap-16 {
     gap: 16px;
-  }
-
-  .select {
-    width: 250px !important;
   }
 }
 
@@ -45,6 +28,48 @@
 
 .weight-600 {
   font-weight: @fontWeightStrong;
+}
+
+/** apiInfoList 单行：URL 加宽、操作列收窄 */
+.apiInfoRow {
+  width: 100%;
+}
+
+.apiInfoUrl {
+  flex: 3 1 300px;
+  min-width: 260px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input) {
+    width: 100%;
+  }
+}
+
+.apiInfoKey {
+  flex: 1 1 160px;
+  min-width: 120px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input) {
+    width: 100%;
+  }
+}
+
+.apiInfoWeight {
+  flex: 0 0 70px;
+  min-width: 64px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input-number) {
+    width: 100%;
+  }
+}
+
+.apiInfoActions {
+  flex: 0 0 44px;
+  min-width: 44px;
+  max-width: 48px;
+  margin-bottom: 0 !important;
 }
 
 .btn {

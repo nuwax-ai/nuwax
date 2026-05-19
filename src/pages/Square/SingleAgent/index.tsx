@@ -10,7 +10,7 @@ import {
 import { apiCollectAgent, apiUnCollectAgent } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import type { SingleAgentProps } from '@/types/interfaces/square';
-import { Button } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useRequest } from 'umi';
@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
+  isEnableSubscription = true,
   onClick,
   onStartUse,
   extra,
@@ -76,19 +77,17 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     }
   };
 
-  /** 需付费时在卡片角标展示「付费 / 已订阅」（与 SquarePublishedItemInfo 字段对齐） */
+  /** 需付费时在卡片角标展示「付费 / 已订阅」 */
   const paymentExtra =
-    paymentRequired === true ? (
-      <span
-        className={cx(
-          styles['payment-badge'],
-          subscribed && styles['payment-badge-subscribed'],
-        )}
+    isEnableSubscription && paymentRequired === true ? (
+      <Tag
+        color={subscribed ? 'success' : 'processing'}
+        className={cx(styles['payment-tag'])}
       >
         {subscribed
           ? dict('PC.Pages.Square.SingleAgent.subscribed')
           : dict('PC.Pages.Square.SingleAgent.paid')}
-      </span>
+      </Tag>
     ) : undefined;
 
   return (

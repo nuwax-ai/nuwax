@@ -22,16 +22,24 @@
     align-items: center;
     color: @colorTextBase;
     border-bottom: 1px solid @colorBorderSecondary;
+    gap: @margin;
 
     .pack-name {
       font-size: @fontSizeLg;
       font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
     }
 
     .purchase-date {
       font-size: 12px;
       color: @colorTextTertiary;
       padding: 2px 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
   }
 

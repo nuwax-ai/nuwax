@@ -1,11 +1,11 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { PATH_URL } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemSubscriptionConfigSave } from '@/services/systemManage';
 import {
   Button,
   Col,
   Form,
-  Input,
   InputNumber,
   Row,
   Switch,
@@ -13,12 +13,13 @@ import {
   message,
 } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 const BasicConfig: React.FC = () => {
+  const location = useLocation();
   const [form] = Form.useForm();
   const [saving, setSaving] = useState<boolean>(false);
   const [exchangeRate, setExchangeRate] = useState<number>(100);
@@ -32,7 +33,9 @@ const BasicConfig: React.FC = () => {
     onSuccess: () => {
       message.success(dict('PC.Common.Global.saveSuccess'));
       setSaving(false);
-      // 重新获取租户配置信息，更新Model或者缓存中的租户配置信息
+      // 清空侧栏记录的最近路径，避免订阅/租户配置变更后仍跳回旧路由（工作空间下的资源定价旧路由已不可用）
+      localStorage.removeItem(PATH_URL);
+      // 重新获取租户配置信息，更新 Model 或缓存中的租户配置信息
       runTenantConfig();
     },
     onError: () => {
@@ -53,7 +56,7 @@ const BasicConfig: React.FC = () => {
       // 租户配置信息查询接口
       runTenantConfig();
     }
-  }, [tenantConfigInfo]);
+  }, [tenantConfigInfo, location.state]);
 
   // 保存配置
   const handleSave = async () => {
@@ -148,28 +151,6 @@ const BasicConfig: React.FC = () => {
                         10,000 积分 ≈ ¥
                         {(10000 / Number(exchangeRate || 1)).toFixed(2)}
                       </Text>
-                    </div>
-                  </div>
-                </Col>
-                <Col span={24}>
-                  <div className={styles.exchangeLine}>
-                    <div className={styles.exchangeLineLabel}>
-                      {dict(
-                        'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc',
-                      )}
-                    </div>
-                    <div className={styles.exchangeDescWrap}>
-                      <Form.Item name="creditExchangeDesc" noStyle>
-                        <Input.TextArea
-                          className="dispose-textarea-count"
-                          placeholder={dict(
-                            'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder',
-                          )}
-                          maxLength={200}
-                          showCount
-                          autoSize={{ minRows: 3, maxRows: 5 }}
-                        />
-                      </Form.Item>
                     </div>
                   </div>
                 </Col>

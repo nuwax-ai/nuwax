@@ -1,3 +1,11 @@
+@import '@/styles/token.less';
+
+// 页面局部变量定义
+@topUpBtnHeight: 26px;
+@balanceContainerShadow: 0 1px 4px rgba(0, 0, 0, 5%);
+@balanceContainerHoverShadow: 0 2px 8px rgba(0, 0, 0, 8%);
+@topUpBtnShadow: 0 1px 4px rgba(26, 107, 255, 25%);
+
 .credits-balance-wrapper {
   display: flex;
   flex-direction: column;
@@ -9,57 +17,36 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 8px;
+    gap: @paddingXs;
     cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 5%);
+    padding: @paddingXs @marginSm;
+    border-radius: @borderRadiusLg;
+    background: @colorWhite;
+    box-shadow: @balanceContainerShadow;
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
-    margin-right: 20px;
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 8%);
-    }
+    margin-right: @padding;
 
     .label {
-      color: #31364a;
-      font-size: 12px;
-      font-weight: 700;
+      color: @colorText;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
     }
 
     .balance {
       flex: 1;
-      font-weight: 700;
-      font-size: 16px;
-      color: #111827;
+      font-weight: @fontWeightStrong;
+      font-size: @fontSizeLg;
+      color: @navSecondMenuTextSecondary;
       text-align: left;
-      margin-left: 2px;
-    }
-
-    .top-up-btn {
-      height: 26px;
-      padding: 0 10px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      background: #1a6bff;
-      border: none;
-      box-shadow: 0 1px 4px rgba(26, 107, 255, 25%);
-
-      &:hover {
-        background: #1559d8;
-        transform: scale(1.02);
-      }
+      margin-left: @borderRadiusXs;
     }
   }
 
   .footer {
-    margin-top: 4px;
-    font-size: 10px;
-    color: #9ca3af;
+    margin-top: @paddingXxs;
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
     font-weight: 500;
     letter-spacing: 0.1px;
     opacity: 0.7;

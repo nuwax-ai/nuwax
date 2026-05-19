@@ -1,4 +1,5 @@
 import { PATH_URL } from '@/constants/home.constants';
+import { MENU_PATH_NORMALIZATION_MAP } from '@/constants/menus.constants';
 import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { MenuItemDto } from '@/types/interfaces/menu';
 import { history } from 'umi';
@@ -52,4 +53,13 @@ export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   history.push(resolvedPath, {
     _t: Date.now(),
   });
+};
+
+/**
+ * 规范化/归一化子路由路径，以处理特定详情/编辑子路由高亮对应列表菜单的需求
+ * @param pathname 当前路径
+ * @returns 规范化后的路径
+ */
+export const normalizeMenuPathname = (pathname: string): string => {
+  return MENU_PATH_NORMALIZATION_MAP[pathname] || pathname;
 };

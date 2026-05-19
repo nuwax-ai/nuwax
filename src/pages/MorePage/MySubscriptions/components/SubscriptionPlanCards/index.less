@@ -4,28 +4,15 @@
   margin: calc(@marginLg * 2) 0;
 
   .plans-title {
-    font-size: @fontSizeHeading4;
+    font-size: @fontSizeLg;
     font-weight: 600;
     margin-bottom: @marginLg;
     color: @colorTextBase;
-    position: relative;
-    padding-left: 14px;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 18px;
-      background: @blue6;
-      border-radius: 2px;
-    }
   }
 }
 
 .plan-card {
+  height: 100%;
   background: @colorWhite;
   border: 1px solid @colorBorderSecondary;
   border-radius: @borderRadiusLg;
@@ -41,11 +28,15 @@
   }
 
   &.is-current {
-    border: 2px solid @blue6;
-    box-shadow: 0 8px 24px rgba(2, 111, 255, 15%);
+    border: 2px solid @colorPrimary;
+    box-shadow: 0 8px 24px color-mix(in srgb, @colorPrimary 15%, transparent);
 
     .current-badge {
-      background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
+      background: linear-gradient(
+        135deg,
+        @colorPrimary 0%,
+        @colorPrimaryHover 100%
+      );
     }
 
     .hot-badge {
@@ -69,7 +60,11 @@
   }
 
   .current-badge {
-    background: linear-gradient(135deg, @blue6 0%, #3b82f6 100%);
+    background: linear-gradient(
+      135deg,
+      @colorPrimary 0%,
+      @colorPrimaryHover 100%
+    );
   }
 
   .hot-badge {
@@ -78,13 +73,25 @@
 
   .plan-header {
     padding: calc(@paddingLg * 1.2) @paddingXl;
-    margin-bottom: @marginSm;
 
     .plan-name {
       font-size: @fontSizeLg;
       font-weight: 600;
-      margin-bottom: @marginSm;
+      margin-bottom: @marginXs;
       color: @colorTextBase;
+    }
+
+    .plan-description {
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+      line-height: @lineHeightSm;
+      margin-bottom: @marginSm;
+      word-break: break-all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
 
     .plan-price-area {
@@ -94,6 +101,7 @@
       margin-bottom: @marginSm;
 
       .price-value {
+        color: @colorTextBase;
         font-size: 32px;
         font-weight: 700;
         line-height: 1;
@@ -122,9 +130,20 @@
   }
 
   .plan-content {
-    padding: 0 @paddingXl @paddingLg;
-    flex: 1;
-    min-height: 140px;
+    padding: 0 @paddingXl;
+    height: 260px;
+    min-height: 260px;
+    max-height: 260px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin-bottom: @paddingLg;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 
     .benefit-group {
       margin-bottom: @marginSm;
@@ -136,28 +155,40 @@
 
     .benefit-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: flex-start;
-      gap: 12px;
+      gap: @marginSm;
       margin-bottom: @marginSm;
       font-size: @fontSize;
       color: @colorTextSecondary;
       line-height: 1.4;
+      width: 100%;
+      overflow: hidden;
 
       .check-icon {
-        margin-top: 3px;
         color: @green6;
-        font-size: 14px;
+        font-size: @fontSize;
         flex-shrink: 0;
       }
 
-      span {
+      .close-icon {
+        color: @colorTextDisabled;
+        font-size: @fontSize;
+        flex-shrink: 0;
+      }
+
+      .benefit-text {
         color: @colorTextBase;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
       }
     }
   }
 
   .plan-footer {
+    margin-top: auto;
     background: #f8fafc;
     padding: @paddingLg;
     display: flex;
@@ -175,29 +206,15 @@
       color: @colorTextTertiary;
       white-space: nowrap;
     }
-
-    .footer-placeholder {
-      display: none;
-    }
-
-    .action-button {
-      font-size: @fontSize;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
   }
 
   // Themes
   &.theme-blue {
     .plan-header {
-      .price-value {
-        color: @blue6;
-      }
-
       .plan-hint-tag {
-        background: @blue1;
-        color: @blue6;
+        background: @colorFillQuaternary;
+        color: @colorTextSecondary;
+        border: @lineWidth solid @colorBorderSecondary;
       }
     }
   }

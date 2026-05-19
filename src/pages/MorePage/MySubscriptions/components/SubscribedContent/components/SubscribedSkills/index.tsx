@@ -48,16 +48,30 @@ const SubscribedSkills: React.FC = () => {
                 <div className={cx(styles['header-top'])}>
                   <div
                     className={cx(styles['skill-icon'])}
-                    style={{ backgroundColor: themeColor }}
+                    style={{
+                      backgroundColor: item.icon ? 'transparent' : themeColor,
+                    }}
                   >
-                    <PlayCircleOutlined />
+                    {item.icon ? (
+                      <img
+                        src={item.icon}
+                        alt={item.bizName}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <PlayCircleOutlined />
+                    )}
                   </div>
                   <div className={cx(styles['skill-info'])}>
                     <div className={cx(styles['skill-name'])}>
-                      {item.planName}
+                      {item.bizName}
                     </div>
                     <div className={cx(styles['skill-provider'])}>
-                      {item.plan?.description || '-'}
+                      {item?.planName || '-'}
                     </div>
                   </div>
                 </div>

@@ -1,13 +1,15 @@
 import Loading from '@/components/custom/Loading';
+import NoPermissionPage from '@/pages/403';
 import {
   clearLoginStatusCache,
   getLoginStatusFromCache,
   setLoginStatusToCache,
   UserService,
 } from '@/services/userService';
+import { isRoutePathHidden } from '@/utils/permission';
 import { redirectToLogin } from '@/utils/router';
 import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'umi';
+import { Outlet, useLocation, useModel } from 'umi';
 
 /**
  * 带加载状态的鉴权组件
@@ -18,6 +20,12 @@ const AuthWithLoading: React.FC = () => {
   // ===== 状态定义 =====
   const [loading, setLoading] = useState(true); // 默认显示加载状态
   const location = useLocation();
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
+  // 首次渲染/刷新页面时，自动触发租户配置获取，确保即使是不包含主 Layout 的独立布局页面刷新后也能拉取到最新的租户控制状态
+  useEffect(() => {
+    runTenantConfig();
+  }, []);
 
   // ===== 常量定义 =====
   const MIN_LOADING_TIME = 500; // 最小加载时间，毫秒
@@ -150,6 +158,11 @@ const AuthWithLoading: React.FC = () => {
         <Loading />
       </div>
     );
+  }
+
+  // 校验当前访问路径是否由于租户配置限制而被隐藏
+  if (isRoutePathHidden(location.pathname, tenantConfigInfo)) {
+    return <NoPermissionPage />;
   }
 
   // 根据登录状态决定渲染内容或重定向

@@ -14,7 +14,7 @@ import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -105,6 +105,31 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
     ...actionList,
   ];
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
+
+  const tabOptions = useMemo(() => {
+    const opts = [
+      {
+        label: dict('PC.Pages.AgentEdit.arrange'),
+        value: 'arrange' as AgentHeaderTabKey,
+      },
+    ];
+    if (showSubscriptionTabs) {
+      opts.push(
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionSetting'),
+          value: 'subscriptionSetting' as AgentHeaderTabKey,
+        },
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionStats'),
+          value: 'subscriptionStats' as AgentHeaderTabKey,
+        },
+      );
+    }
+    return opts;
+  }, [showSubscriptionTabs]);
+
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
       <ConditionRender condition={!hideBack}>
@@ -144,17 +169,15 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       </div>
 
       {/* 头部导航栏 */}
-      <div className={cx('absolute', styles['header-segmented-wrap'])}>
-        <Segmented<AgentHeaderTabKey>
-          value={activeTab}
-          options={[
-            { label: '编排', value: 'arrange' },
-            { label: '订阅设置', value: 'subscriptionSetting' },
-            { label: '订阅统计', value: 'subscriptionStats' },
-          ]}
-          onChange={(value) => onTabChange?.(value)}
-        />
-      </div>
+      {showSubscriptionTabs && (
+        <div className={cx('absolute', styles['header-segmented-wrap'])}>
+          <Segmented<AgentHeaderTabKey>
+            value={activeTab}
+            options={tabOptions}
+            onChange={(value) => onTabChange?.(value)}
+          />
+        </div>
+      )}
 
       {/* 右侧操作区域 */}
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>

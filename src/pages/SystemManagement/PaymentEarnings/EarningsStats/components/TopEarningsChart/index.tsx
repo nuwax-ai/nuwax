@@ -98,7 +98,7 @@ const TopEarningsChart: React.FC<TopEarningsChartProps> = ({
     <Card
       className={styles.topEarningsChart}
       loading={loading}
-      bordered={false}
+      variant="borderless"
     >
       <div className={styles.chartHeader}>
         <h3 className={styles.chartTitle}>{title}</h3>

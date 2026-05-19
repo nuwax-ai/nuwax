@@ -1,8 +1,6 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import type {
-  AdminOrderInfo,
   AdminPaymentOrderRecord,
-  AgentSubscriptionConfig,
   AgentSubscriptionPlan,
   BillOrderInfo,
   BillOrderStatusEnum,
@@ -15,20 +13,16 @@ import type {
   CreditBatchItem,
   CreditPackageInfo,
   CreditRecordInfo,
-  CreditRecordTypeEnum,
   CreditSummaryInfo,
   CreditTypeEnum,
   DailyRevenueDetailRecord,
   DailyRevenueRecord,
-  DevPaymentAccountInfo,
   DevPaymentAccountRecord,
-  EarningRecordInfo,
-  EarningsSummaryInfo,
   MerchantOnboardingData,
   MySubscriptionData,
-  OrderInfo,
-  PricingPlanInfo,
   RevenueStatsInfo,
+  RevenueStatsParams,
+  RevenueStatsResponse,
   SubscriptionPlan,
   SystemSubscriptionPlan,
   UserSubscriptionInfo,
@@ -40,6 +34,7 @@ import { request } from 'umi';
 // 查询我的订阅（新版）
 export async function apiGetMySubscription(params: {
   bizType: BizTypeEnum;
+  bizId?: number;
 }): Promise<RequestResponse<MySubscriptionData>> {
   return request('/api/subscription/my', { method: 'GET', params });
 }
@@ -53,10 +48,12 @@ export async function apiListDailyRevenue(params: {
 
 // 查询我的收益明细
 export async function apiListDailyRevenueDetail(params: {
-  targetId: number | string;
+  dt: string;
   pageNum: number;
   pageSize: number;
-}): Promise<RequestResponse<DailyRevenueDetailRecord[]>> {
+}): Promise<
+  RequestResponse<{ records: DailyRevenueDetailRecord[]; total: number }>
+> {
   return request('/api/bill/revenue/detail', { method: 'GET', params });
 }
 
@@ -65,79 +62,6 @@ export async function apiGetWithdrawConfig(): Promise<
   RequestResponse<WithdrawConfig>
 > {
   return request('/api/system/bill/withdraw/config', { method: 'GET' });
-}
-
-// 查询工作空间定价套餐列表
-export async function apiListPricingPlans(
-  spaceId: number,
-): Promise<RequestResponse<PricingPlanInfo[]>> {
-  return request(`/api/space/${spaceId}/pricing-plans`, { method: 'GET' });
-}
-
-// 创建定价套餐
-export async function apiCreatePricingPlan(
-  data: Partial<PricingPlanInfo>,
-): Promise<RequestResponse<PricingPlanInfo>> {
-  return request('/api/pricing-plans', { method: 'POST', data });
-}
-
-// 更新定价套餐
-export async function apiUpdatePricingPlan(
-  id: number,
-  data: Partial<PricingPlanInfo>,
-): Promise<RequestResponse<PricingPlanInfo>> {
-  return request(`/api/pricing-plans/${id}`, { method: 'PUT', data });
-}
-
-// 删除定价套餐
-export async function apiDeletePricingPlan(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/pricing-plans/${id}`, { method: 'DELETE' });
-}
-
-// 切换套餐启用/停用
-export async function apiTogglePricingPlan(
-  id: number,
-  enabled: boolean,
-): Promise<RequestResponse<null>> {
-  return request(`/api/pricing-plans/${id}/toggle`, {
-    method: 'PUT',
-    data: { enabled },
-  });
-}
-
-// 查询智能体用户订阅列表
-export async function apiListUserSubscriptions(params: {
-  spaceId: number;
-  agentId?: number;
-  planId?: number;
-  status?: string;
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: UserSubscriptionInfo[]; total: number }>> {
-  return request('/api/subscriptions', { method: 'GET', params });
-}
-
-// 查询智能体订阅配置
-export async function apiGetAgentSubscriptionConfig(
-  agentId: string | number,
-): Promise<RequestResponse<AgentSubscriptionConfig>> {
-  return request(`/api/agent/${agentId}/subscription-config`, {
-    method: 'GET',
-  });
-}
-
-// 保存智能体订阅配置
-export async function apiSaveAgentSubscriptionConfig(
-  agentId: string | number,
-  data: AgentSubscriptionConfig,
-): Promise<RequestResponse<null>> {
-  return request(`/api/agent/${agentId}/subscription-config`, {
-    method: 'PUT',
-    data,
-  });
 }
 
 // 检查用户对某智能体的订阅状态
@@ -155,39 +79,6 @@ export async function apiSubscribePlan(data: {
   return request('/api/subscriptions', { method: 'POST', data });
 }
 
-// ──────────────────────────────────────────────
-// 我的订阅（用户视角）
-// ──────────────────────────────────────────────
-
-export async function apiListMySubscriptions(params: {
-  status?: string;
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: UserSubscriptionInfo[]; total: number }>> {
-  return request('/api/user/subscriptions', { method: 'GET', params });
-}
-
-export async function apiCancelSubscription(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/subscriptions/${id}`, { method: 'DELETE' });
-}
-
-// ──────────────────────────────────────────────
-// 我的订单
-// ──────────────────────────────────────────────
-
-export async function apiListMyOrders(params: {
-  orderType?: string;
-  status?: string;
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: OrderInfo[]; total: number }>> {
-  return request('/api/user/orders', { method: 'GET', params });
-}
-
 // 查询我的订单（账单中心版）
 export async function apiGetMyBillOrders(params: {
   orderStatus?: BillOrderStatusEnum | null;
@@ -198,21 +89,9 @@ export async function apiGetMyBillOrders(params: {
   return request('/api/bill/order/my', { method: 'GET', params });
 }
 
-export async function apiRefundOrder(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/orders/${id}/refund`, { method: 'POST' });
-}
-
 // ──────────────────────────────────────────────
 // 我的收益
 // ──────────────────────────────────────────────
-
-export async function apiGetEarningsSummary(): Promise<
-  RequestResponse<EarningsSummaryInfo>
-> {
-  return request('/api/user/earnings/summary', { method: 'GET' });
-}
 
 /**
  * 查询收益统计
@@ -232,13 +111,6 @@ export async function apiCreateWithdrawApply(): Promise<
   return request('/api/bill/withdraw/create', { method: 'POST' });
 }
 
-export async function apiListMyEarnings(params: {
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: EarningRecordInfo[]; total: number }>> {
-  return request('/api/user/earnings', { method: 'GET', params });
-}
-
 /**
  * 查询提现记录
  */
@@ -249,6 +121,15 @@ export async function apiListWithdrawRecords(params: {
   RequestResponse<{ records: BillWithdrawRecordInfo[]; total: number }>
 > {
   return request('/api/bill/withdraw/records', { method: 'GET', params });
+}
+
+/**
+ * 用户端查询提现配置
+ */
+export async function apiGetUserWithdrawConfig(): Promise<
+  RequestResponse<WithdrawConfig>
+> {
+  return request('/api/bill/withdraw/config', { method: 'GET' });
 }
 
 // ──────────────────────────────────────────────
@@ -298,14 +179,6 @@ export async function apiPurchaseCredits(
   });
 }
 
-export async function apiListCreditRecords(params: {
-  recordType?: CreditRecordTypeEnum;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: CreditRecordInfo[]; total: number }>> {
-  return request('/api/user/credit-records', { method: 'GET', params });
-}
-
 // 查询用户积分批次列表
 export async function apiGetCreditBatches(params: {
   creditType: CreditTypeEnum | string;
@@ -330,20 +203,6 @@ export async function apiGetCreditFlows(params: {
 // ──────────────────────────────────────────────
 // 系统管理 - 支付与收益（开发者）
 // ──────────────────────────────────────────────
-
-export async function apiGetDevEarningsSummary(): Promise<
-  RequestResponse<any>
-> {
-  return request('/api/system/dev-earnings-summary', { method: 'GET' });
-}
-
-export async function apiListDevEarnings(params: {
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: EarningRecordInfo[]; total: number }>> {
-  return request('/api/system/dev-earnings', { method: 'GET', params });
-}
 
 // ──────────────────────────────────────────────
 // 系统管理 - 商户进件 (新版)
@@ -382,18 +241,6 @@ export async function apiUpdateMerchantOnboarding(
     method: 'POST',
     data,
   });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 开发者收款账户
-// ──────────────────────────────────────────────
-
-export async function apiListDevPaymentAccounts(params: {
-  keyword?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: DevPaymentAccountInfo[]; total: number }>> {
-  return request('/api/system/dev-payment-accounts', { method: 'GET', params });
 }
 
 /**
@@ -435,19 +282,16 @@ export async function apiListWithdrawals(params: {
   return request('/api/system/bill/withdraw/list', { method: 'GET', params });
 }
 
-export async function apiApproveWithdrawal(
-  id: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/withdrawals/${id}/approve`, { method: 'POST' });
-}
-
-export async function apiRejectWithdrawal(
-  id: number,
-  reason: string,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/withdrawals/${id}/reject`, {
+export async function apiProcessWithdrawal(data: {
+  tenantId: number;
+  applicationId: number;
+  action: 'APPROVE' | 'REJECT' | 'COMPLETE_PAYMENT';
+  rejectReason?: string;
+  paymentExtra?: any;
+}): Promise<RequestResponse<boolean>> {
+  return request('/api/system/bill/withdraw/process', {
     method: 'POST',
-    data: { reason },
+    data,
   });
 }
 
@@ -464,19 +308,6 @@ export async function apiSaveWithdrawConfig(data: {
     method: 'POST',
     data,
   });
-}
-
-// ──────────────────────────────────────────────
-// 系统管理 - 支付订单查询（管理员）
-// ──────────────────────────────────────────────
-
-export async function apiListAdminPaymentOrders(params: {
-  keyword?: string;
-  status?: string;
-  pageNum?: number;
-  pageSize?: number;
-}): Promise<RequestResponse<{ list: AdminOrderInfo[]; total: number }>> {
-  return request('/api/system/payment-orders', { method: 'GET', params });
 }
 
 /**
@@ -593,42 +424,6 @@ export async function apiSubscribeAgentPlan(
     method: 'POST',
     data: { planId },
   });
-}
-
-export interface DailyRevenueItem {
-  id: number | null;
-  userId: number;
-  nickName: string | null;
-  userName: string | null;
-  phone: string | null;
-  email: string | null;
-  dt: string; // YYYYMMDD
-  amount: number;
-  status: string;
-  created: string | null;
-}
-
-export interface RevenueStatsResponse {
-  totalRevenue: number;
-  todayRevenue: number;
-  monthRevenue: number;
-  pendingAmount: number;
-  settledAmount: number;
-  dailyRevenues: DailyRevenueItem[];
-  userRankings: Array<{
-    userId: number;
-    userName: string | null;
-    amount: number;
-  }>;
-  total: number;
-}
-
-export interface RevenueStatsParams {
-  monthStart?: string; // YYYYMMDD
-  monthEnd?: string; // YYYYMMDD
-  status?: string; // PENDING,WITHDRAW_APPLYING,PAYING,SETTLED
-  pageNum?: number;
-  pageSize?: number;
 }
 
 /**

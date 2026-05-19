@@ -1,0 +1,61 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.stat-item-card {
+  // 固定高度：2 * controlHeightLg + padding，保证加载态/正常态及不同文案长度下卡片对齐
+  height: calc(2 * @controlHeightLg + @padding);
+  box-sizing: border-box;
+  border-radius: @borderRadiusLg;
+  box-shadow: @boxShadowTertiary;
+  transition: all @motionDurationMid @motionEaseInOut;
+  background: @colorBgContainer;
+  padding: @padding;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: @paddingXs;
+  overflow: hidden;
+  min-width: 0;
+  // 启用容器查询，使数值字号随卡片宽度缩放
+  container-type: inline-size;
+
+  &:hover {
+    box-shadow: @boxShadowSecondary;
+    transform: translateY(-2px);
+  }
+
+  .stat-label {
+    font-size: @fontSizeSm;
+    color: @colorTextTertiary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-value-trigger {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .stat-value {
+    // 混合策略：JS 按字符长度分档 + 容器宽度 cqi，取较小值；超出时省略号 + Tooltip
+    display: block;
+    width: 100%;
+    /* stylelint-disable-next-line unit-no-unknown -- 容器查询单位，15cqi 使 ~180px 卡片可达 28px 上限 */
+    font-size: min(var(--stat-value-font-size, 28px), clamp(15px, 15cqi, 28px));
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: @colorText;
+    line-height: 1.25;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.highlight {
+      color: var(--stat-highlight-color, @colorWarning);
+    }
+  }
+}

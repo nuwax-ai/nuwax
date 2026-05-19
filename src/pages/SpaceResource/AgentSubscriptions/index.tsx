@@ -359,7 +359,7 @@ const SpaceAgentSubscriptions: React.FC = () => {
         ]}
         width={440}
         centered
-        destroyOnClose
+        destroyOnHidden
       >
         {renderModalContent()}
       </Modal>

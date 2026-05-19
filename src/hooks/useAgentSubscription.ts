@@ -7,12 +7,14 @@ import {
   SubscriptionPlanInfo,
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { apiGetMySubscription } from '@/services/subscriptionService';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRequest } from 'umi';
 
 /**
- * 智能体订阅
+ * 智能体订阅（套餐列表、「我的订阅」当前智能体数据）
  */
 const useAgentSubscription = () => {
   // 智能体订阅计划列表
@@ -29,6 +31,16 @@ const useAgentSubscription = () => {
     loadingDelay: 500,
     onSuccess: (data: SubscriptionPlanInfo[]) =>
       setAgentSubscriptionPlans(data),
+  });
+
+  /** 当前智能体、技能套餐维度「我的订阅」 */
+  const {
+    data: mySubscriptionInfo,
+    run: loadMySubscription,
+    loading: loadingMySubscription,
+  } = useRequest(apiGetMySubscription, {
+    manual: true,
+    loadingDelay: 500,
   });
 
   /**
@@ -71,11 +83,29 @@ const useAgentSubscription = () => {
     }
   };
 
+  // 打开智能体订阅套餐弹窗
+  const openAgentSubscriptionModal = useCallback((agentId: number) => {
+    // 查询智能体订阅计划列表
+    loadAgentSubscriptionPlans({
+      agentId,
+      status: SubscriptionPlanStatusEnum.Online,
+    });
+
+    // 查询当前智能体维度「我的订阅」接口数据
+    loadMySubscription({
+      bizType: BizTypeEnum.Agent,
+      bizId: agentId,
+    });
+  }, []);
+
   return {
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
-    loadAgentSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+    loadMySubscription,
     createAgentSubscriptionOrder,
+    openAgentSubscriptionModal,
   };
 };
 

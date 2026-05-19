@@ -26,6 +26,8 @@ export interface CreatedProp {
   hideTop?: AgentComponentTypeEnum[];
   addSkillLoading?: boolean | undefined;
   disableCollect?: boolean; // 是否禁用收藏
+  // 是否显示更多菜单，默认显示
+  showMoreMenus?: boolean;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

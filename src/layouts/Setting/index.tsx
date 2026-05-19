@@ -21,6 +21,8 @@ const cx = classNames.bind(styles);
 
 const Setting: React.FC = () => {
   const { openSetting, setOpenSetting, isMobile } = useModel('layout');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
   const [action, setAction] = useState<SettingActionEnum>(
     SettingActionEnum.Account,
   );
@@ -126,7 +128,12 @@ const Setting: React.FC = () => {
           <div className={cx(styles.left)}>
             <h3>{dict('PC.Pages.Setting.profileTitle')}</h3>
             <ul>
-              {SETTING_ACTIONS.map((item) => (
+              {SETTING_ACTIONS.filter((item) => {
+                if (item.type === SettingActionEnum.Developer_Profile) {
+                  return isEnableSubscription;
+                }
+                return true;
+              }).map((item) => (
                 <li
                   key={item.type}
                   className={cx(styles.item, 'cursor-pointer', {

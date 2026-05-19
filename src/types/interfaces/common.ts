@@ -110,6 +110,7 @@ export interface SelectListType {
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
   style?: React.CSSProperties;
+  showDescription?: boolean;
 }
 
 // 默认的object
@@ -335,6 +336,8 @@ export interface CreatedNodeItem {
   config: any;
   toolName?: string;
   deployed?: string;
+  paymentRequired?: boolean;
+  subscribed?: boolean;
 }
 
 export interface MCPNodeItem {

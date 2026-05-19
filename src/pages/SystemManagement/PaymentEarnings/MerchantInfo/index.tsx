@@ -119,6 +119,7 @@ const MerchantInfo: React.FC = () => {
     MerchantOnboardingStatusEnum.DRAFT,
   );
   const [auditTimeline, setAuditTimeline] = useState<any[]>([]);
+  const [isFormDirty, setIsFormDirty] = useState(false);
 
   const [upLoadingFront, setUpLoadingFront] = useState(false);
   const [upLoadingBack, setUpLoadingBack] = useState(false);
@@ -269,11 +270,13 @@ const MerchantInfo: React.FC = () => {
           });
         }
         setAuditTimeline(timeline);
+        setIsFormDirty(false);
       } else {
         setOnboardingId(undefined);
         setStatus(MerchantOnboardingStatusEnum.DRAFT);
         form.resetFields();
         setAuditTimeline([]);
+        setIsFormDirty(false);
       }
     } catch (error) {
       console.error('Fetch onboarding error:', error);
@@ -350,6 +353,7 @@ const MerchantInfo: React.FC = () => {
 
       if (res?.code === SUCCESS_CODE) {
         message.success(dict('PC.Common.Global.saveSuccess'));
+        setIsFormDirty(false);
         fetchMerchantOnboarding();
       }
     } catch (error) {
@@ -362,7 +366,11 @@ const MerchantInfo: React.FC = () => {
   const statusInfo =
     statusMap[status] || statusMap[MerchantOnboardingStatusEnum.DRAFT];
 
-  const isFormEditable = status !== MerchantOnboardingStatusEnum.UNDER_REVIEW;
+  const isFormEditable =
+    status === MerchantOnboardingStatusEnum.DRAFT ||
+    status === MerchantOnboardingStatusEnum.PENDING_REVIEW ||
+    status === MerchantOnboardingStatusEnum.REJECTED ||
+    status === MerchantOnboardingStatusEnum.APPROVED;
 
   const renderUploadBox = (fieldName: string, imageUrl?: string) => {
     const isUploading = uploadingMap[fieldName]?.uploading;
@@ -377,6 +385,7 @@ const MerchantInfo: React.FC = () => {
             styles['upload-box'],
             isIdCard ? styles.front : styles.license,
             styles.hasImage,
+            !isFormEditable && styles.disabled,
           )}
         >
           <img
@@ -401,6 +410,7 @@ const MerchantInfo: React.FC = () => {
         className={cx(
           styles['upload-box'],
           isIdCard ? styles.front : styles.license,
+          !isFormEditable && styles.disabled,
         )}
       >
         <div className={cx(styles['icon-wrapper'])}>
@@ -460,6 +470,7 @@ const MerchantInfo: React.FC = () => {
             showUploadList={false}
             beforeUpload={beforeUpload}
             customRequest={(opt) => handleUpload(opt, fieldName)}
+            disabled={!isFormEditable}
           >
             {renderUploadBox(fieldName, watchMap[fieldName])}
           </Upload>
@@ -490,7 +501,13 @@ const MerchantInfo: React.FC = () => {
           <Button
             type="primary"
             loading={saving}
-            disabled={loading || !isFormEditable}
+            disabled={
+              loading ||
+              isFormDirty ||
+              (status !== MerchantOnboardingStatusEnum.DRAFT &&
+                status !== MerchantOnboardingStatusEnum.PENDING_REVIEW &&
+                status !== MerchantOnboardingStatusEnum.REJECTED)
+            }
             onClick={() =>
               handleSave(MerchantOnboardingStatusEnum.UNDER_REVIEW)
             }
@@ -517,7 +534,12 @@ const MerchantInfo: React.FC = () => {
 
           <Row gutter={24}>
             <Col span={16}>
-              <Form form={form} layout="vertical">
+              <Form
+                form={form}
+                layout="vertical"
+                onValuesChange={() => setIsFormDirty(true)}
+                disabled={!isFormEditable}
+              >
                 {/* 分组1: 商户信息 */}
                 <Card
                   title={dict(mk('sectionMerchant'))}

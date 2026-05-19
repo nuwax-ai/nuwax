@@ -47,7 +47,7 @@ import HomeSection from './HomeSection';
 import styles from './index.less';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
-import { handleOpenUrl } from './utils';
+import { handleOpenUrl, normalizeMenuPathname } from './utils';
 
 const cx = classNames.bind(styles);
 
@@ -107,6 +107,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
    * 递归检查菜单是否匹配当前路径
    */
   const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
+    const normalizedPathname = normalizeMenuPathname(pathname);
+
     // 检查当前菜单路径
     if (menu.path) {
       // 移除查询参数（? 及后面的部分），因为 pathname 不包含查询参数
@@ -114,12 +116,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       // 首页特殊处理 homepage 是动态菜单的编码，/home 是前端路由
       if (menuPathWithoutQuery === '/homepage' || menuPathWithoutQuery === '') {
-        if (pathname === '/home' || pathname === '') return true;
+        if (normalizedPathname === '/home' || normalizedPathname === '')
+          return true;
       }
       // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
       else if (menuPathWithoutQuery === '/space') {
-        return pathname.startsWith(menuPathWithoutQuery);
-      } else if (pathname.includes('ecosystem')) {
+        return normalizedPathname.startsWith(menuPathWithoutQuery);
+      } else if (normalizedPathname.includes('ecosystem')) {
         // 生态市场特殊处理，pathname为/ecosystem/plugin 是前端路由
         return menuPathWithoutQuery.startsWith('/ecosystem');
       } else {
@@ -129,7 +132,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         const getFirstSegment = (p: string) =>
           p.split('?')[0].split('/').filter(Boolean)[0] || '';
 
-        const pathFirstSegment = getFirstSegment(pathname);
+        const pathFirstSegment = getFirstSegment(normalizedPathname);
         const menuFirstSegment = getFirstSegment(menuPathWithoutQuery);
 
         if (menuFirstSegment && menuFirstSegment === pathFirstSegment) {
@@ -151,16 +154,18 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     (menuPath: string, pathname: string): boolean => {
       if (!menuPath) return false;
 
+      const normalizedPathname = normalizeMenuPathname(pathname);
+
       // 移除查询参数
       const menuPathWithoutQuery = menuPath.split('?')[0];
 
       // 精确匹配
-      if (pathname === menuPathWithoutQuery) {
+      if (normalizedPathname === menuPathWithoutQuery) {
         return true;
       }
 
       // 前缀匹配（例如 /system/menu 匹配 /system/menu/xxx）
-      if (pathname.startsWith(menuPathWithoutQuery + '/')) {
+      if (normalizedPathname.startsWith(menuPathWithoutQuery + '/')) {
         return true;
       }
 
@@ -169,7 +174,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         // 将动态路径转换为正则表达式
         const pattern = menuPathWithoutQuery.replace(/:(\w+)/g, '[^/]+');
         const regex = new RegExp(`^${pattern}(/.*)?$`);
-        return regex.test(pathname);
+        return regex.test(normalizedPathname);
       }
 
       return false;
@@ -296,14 +301,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
      * 这里特殊处理，如果路径是/agent/xxx，则设置为首页
      * 场景：从工作空间-空间广场，点击智能体，跳转至智能体详情页，此时路径为/agent/xxx，但是需要显示为首页，不然二级菜单点击会因为无法匹配动态路径而报错
      */
-    if (location.pathname.startsWith('/agent/') && params?.agentId) {
+    const pathname = normalizeMenuPathname(location.pathname);
+
+    if (pathname.startsWith('/agent/') && params?.agentId) {
       setActiveTab('homepage');
       return;
     }
 
     // 广场特殊处理，如果路径是/square?cate_type=Agent，则设置为广场
     if (
-      location.pathname.startsWith('/square') &&
+      pathname.startsWith('/square') &&
       location.search.includes('cate_type=')
     ) {
       setActiveTab('system_square');
@@ -311,13 +318,17 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     }
 
     // 更多页面特殊处理，如果路径是/more-page，则设置为更多页面
-    if (location.pathname.startsWith('/more-page')) {
+    if (pathname.startsWith('/more-page')) {
       setActiveTab('more_page');
       return;
     }
 
     // 多语言内容特殊处理，如果路径是/system/config/lang-content/:lang，则设置一级菜单选中系统管理
-    if (location.pathname.startsWith('/system/config/lang-content')) {
+    // 积分流水查询特殊处理，如果路径是/system/subscription-credits/credit-records，则设置一级菜单选中系统管理
+    if (
+      pathname.startsWith('/system/config/lang-content') ||
+      pathname.startsWith('/system/subscription-credits/credit-records')
+    ) {
       setActiveTab('system_manage');
       return;
     }
@@ -333,14 +344,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
     // 查找匹配当前路径的菜单
     const matchedMenu = firstLevelMenus.find((menu: MenuItemDto) =>
-      isMenuMatch(menu, location.pathname),
+      isMenuMatch(menu, pathname),
     );
 
     if (matchedMenu && matchedMenu.code !== 'new_conversation') {
       setActiveTab(matchedMenu.code);
     }
     // 根路径如果是新对话菜单,新对话菜单不显示
-    else if (location.pathname === '' || location.pathname === '/') {
+    else if (pathname === '' || pathname === '/') {
       if (firstLevelMenus[0].code !== 'new_conversation') {
         setActiveTab(firstLevelMenus[0].code);
       } else {
@@ -349,7 +360,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       }
     }
     // 首页
-    else if (location.pathname === '/home') {
+    else if (pathname === '/home') {
       // 默认选中首页
       setActiveTab('homepage');
     } else {
@@ -362,13 +373,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         firstLevelCode = findFirstLevelCodeByMenuCode(menuCode);
       } else {
         // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
-        firstLevelCode = findFirstLevelCodeByPath(
-          firstLevelMenus,
-          location.pathname,
-        );
+        firstLevelCode = findFirstLevelCodeByPath(firstLevelMenus, pathname);
       }
 
-      // 存在第一级菜单的 code 且不是新对话菜单，则设置为第一级菜单的 code
+      // 存在第一级菜单 of the code 且不是新对话菜单，则设置为第一级菜单的 code
       if (firstLevelCode && firstLevelCode !== 'new_conversation') {
         setActiveTab(firstLevelCode);
       } else if (OTHER_MENU_CODES.includes(menuCode || '')) {

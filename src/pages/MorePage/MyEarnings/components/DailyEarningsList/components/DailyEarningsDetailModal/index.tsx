@@ -1,101 +1,133 @@
 import XModalForm from '@/components/ProComponents/XModalForm';
 import XProTable from '@/components/ProComponents/XProTable';
+import { getRevenueTypeMap } from '@/pages/SystemManagement/PaymentEarnings/constants';
+import { dict } from '@/services/i18nRuntime';
 import { apiListDailyRevenueDetail } from '@/services/subscriptionService';
 import type { DailyRevenueDetailRecord } from '@/types/interfaces/subscription';
+import {
+  AppstoreOutlined,
+  BuildOutlined,
+  RobotOutlined,
+} from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
-import { useInfiniteScroll } from 'ahooks';
-import { Spin } from 'antd';
-import dayjs from 'dayjs';
-import React, { useEffect, useRef } from 'react';
+import classNames from 'classnames';
+import React from 'react';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface DailyEarningsDetailModalProps {
   visible: boolean;
   onCancel: () => void;
-  targetId?: number | string;
+  dt?: string;
 }
+
+const REVENUE_ICON_CONFIG: Record<
+  string,
+  { icon: React.ReactNode; styleKey: string }
+> = {
+  PLAN: {
+    icon: <AppstoreOutlined />,
+    styleKey: 'tag-plan',
+  },
+  MODEL_CALL: {
+    icon: <RobotOutlined />,
+    styleKey: 'tag-model',
+  },
+  TOOL_CALL: {
+    icon: <BuildOutlined />,
+    styleKey: 'tag-tool',
+  },
+};
 
 const DailyEarningsDetailModal: React.FC<DailyEarningsDetailModalProps> = ({
   visible,
   onCancel,
-  targetId,
+  dt,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const { data, loading, loadingMore, noMore, reload } = useInfiniteScroll(
-    (d) => {
-      const pageNum = d ? Math.floor(d.list.length / 20) + 1 : 1;
-      return apiListDailyRevenueDetail({
-        targetId: targetId!,
-        pageNum,
-        pageSize: 20,
-      }).then((res) => {
-        const list = Array.isArray(res.data) ? res.data : [];
-        return {
-          list,
-          // 如果返回的数据少于 20 条，说明没有更多了
-          noMore: list.length < 20,
-        };
-      });
-    },
-    {
-      target: containerRef,
-      isNoMore: (d) => d?.noMore,
-      manual: true,
-    },
-  );
-
-  useEffect(() => {
-    if (visible && targetId) {
-      reload();
-    }
-  }, [visible, targetId]);
-
   const columns: ProColumns<DailyRevenueDetailRecord>[] = [
     {
-      title: '收益金额',
+      title: dict('PC.Pages.MorePage.MyEarnings.Detail.colAmount'),
       dataIndex: 'amount',
-      width: 120,
-      render: (val) => (
+      width: 180,
+      render: (_, record) => (
         <span className={styles['amount-plus']}>
-          +¥{Number(val).toFixed(2)}
+          +¥
+          {Number(record.amount)
+            .toFixed(6)
+            .replace(/\.?0+$/, '')}
         </span>
       ),
     },
     {
-      title: '来源',
+      title: dict('PC.Pages.MorePage.MyEarnings.Detail.colSource'),
       dataIndex: 'remark',
       ellipsis: true,
     },
     {
-      title: '时间',
+      title: dict('PC.Pages.MorePage.MyEarnings.Detail.colType'),
+      dataIndex: 'type',
+      width: 140,
+      render: (_, record) => {
+        const typeMap = getRevenueTypeMap();
+        const typeInfo = typeMap[record.type as keyof typeof typeMap];
+        const iconInfo = REVENUE_ICON_CONFIG[record.type as string];
+
+        if (!typeInfo || !iconInfo) return record.type;
+
+        return (
+          <div className={cx(styles.tag, styles[iconInfo.styleKey])}>
+            <span className={styles.icon}>{iconInfo.icon}</span>
+            <span>{typeInfo.text}</span>
+          </div>
+        );
+      },
+    },
+    {
+      title: dict('PC.Pages.MorePage.MyEarnings.Detail.colTime'),
       dataIndex: 'created',
       width: 180,
-      render: (val) => dayjs(val as string).format('YYYY-MM-DD HH:mm:ss'),
+      valueType: 'dateTime',
     },
   ];
 
   return (
     <XModalForm
-      title="收益明细"
+      title={dict('PC.Pages.MorePage.MyEarnings.Detail.modalTitle')}
       open={visible}
       onOpenChange={(v) => !v && onCancel()}
       submitter={{
         render: () => null,
       }}
-      width={720}
+      width={840}
       modalProps={{
         destroyOnHidden: true,
         className: styles['detail-modal'],
         footer: null,
       }}
     >
-      <div ref={containerRef} className={styles['detail-scroll-container']}>
+      <div className={styles['detail-table-container']}>
         <XProTable<DailyRevenueDetailRecord>
           columns={columns}
-          dataSource={data?.list || []}
-          loading={loading && !loadingMore}
-          pagination={false}
+          request={async (params) => {
+            if (!dt) return { data: [], total: 0, success: true };
+            const res = await apiListDailyRevenueDetail({
+              dt,
+              pageNum: params.current || 1,
+              pageSize: params.pageSize || 10,
+            });
+            return {
+              data: res.data?.records || [],
+              total: res.data?.total || 0,
+              success: res.success,
+            };
+          }}
+          params={{ dt }}
+          scroll={{ y: 480 }}
+          pagination={{
+            pageSize: 20,
+            showSizeChanger: false,
+          }}
           search={false}
           toolBarRender={false}
           showQueryButtons={false}
@@ -103,12 +135,6 @@ const DailyEarningsDetailModal: React.FC<DailyEarningsDetailModalProps> = ({
           rowKey="id"
           size="middle"
         />
-        <div className={styles['load-more-status']}>
-          {loadingMore && <Spin size="small" tip="加载中..." />}
-          {noMore && data?.list && data.list.length > 0 && (
-            <span className={styles['no-more-text']}>没有更多了</span>
-          )}
-        </div>
       </div>
     </XModalForm>
   );

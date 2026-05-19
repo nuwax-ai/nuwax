@@ -1,54 +1,67 @@
 @import '@/styles/token.less';
 
+// 局域 Less 变量，严格规范，防止硬编码
+@creditsLinkPadding: @paddingXxs @paddingXs;
+@creditsLinkRadius: calc(@borderRadiusLg * 2);
+@creditsValueLineHeight: 1.25;
+@creditsValueFontWeight: 600;
+
 .credits-breakdown {
   margin: @marginLg 0;
-  background: @colorBgContainer;
-  border-radius: calc(@borderRadiusLg + 4px);
-  padding: @paddingLg 0;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 5%);
-  border: 1px solid @colorBorderSecondary;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: @marginLg;
+  width: 100%;
 
   .credits-item {
-    flex: 1;
+    // 固定高度与内边距设计，完全参照“用量统计”卡片
+    height: calc(2 * @controlHeightLg + @padding);
+    box-sizing: border-box;
+    border-radius: @borderRadiusLg;
+    box-shadow: @boxShadowTertiary;
+    background: @colorBgContainer;
+    padding: @padding;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: @marginXs;
-    position: relative;
+    justify-content: center;
+    align-items: flex-start; // 居左对齐，与用量统计完全一致
+    gap: @paddingXs;
+    overflow: hidden;
+    min-width: 0;
+    transition: all @motionDurationMid @motionEaseInOut;
+    // 启用容器查询，以便数值能根据卡片宽度自适应收缩
+    container-type: inline-size;
 
-    &:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 1px;
-      height: 40px;
-      background: @colorSplit;
+    &:hover {
+      box-shadow: @boxShadowSecondary;
+      transform: translateY(-2px);
     }
 
     .credits-label-area {
       display: flex;
       align-items: center;
-      gap: @marginXs;
-      margin-bottom: 4px;
+      justify-content: space-between; // 标题居左，明细/增购操作链接居右
+      width: 100%;
 
       .credits-label {
         font-size: @fontSizeSm;
-        color: @colorTextSecondary;
+        color: @colorTextTertiary; // 采用与用量统计一致的 tertiary 颜色
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: @lineHeight;
       }
 
       .credits-detail-link {
         font-size: calc(@fontSizeSm - 2px);
         color: @colorLink;
-        padding: 1px 8px;
-        border: 1px solid @colorLink;
-        border-radius: 10px;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType @colorLink;
+        border-radius: @creditsLinkRadius;
         cursor: pointer;
         background: @colorPrimaryBg;
-        transition: all 0.2s ease;
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
 
         &:hover {
           background: @colorPrimaryBgHover;
@@ -59,25 +72,77 @@
       .add-purchase-link {
         font-size: calc(@fontSizeSm - 2px);
         color: @colorSuccess;
-        padding: 1px 8px;
-        border: 1px solid @colorSuccess;
-        border-radius: 10px;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType @colorSuccess;
+        border-radius: @creditsLinkRadius;
         cursor: pointer;
         background: @colorSuccessBg;
-        transition: all 0.2s ease;
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
 
         &:hover {
           background: @colorSuccessBgHover;
           transform: scale(1.05);
         }
       }
+
+      .daily-gift-tip {
+        font-size: calc(@fontSizeSm - 2px);
+        color: @orange-7;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType fade(@gold-4, 35%);
+        border-radius: @creditsLinkRadius;
+        background: linear-gradient(
+          135deg,
+          fade(@gold-1, 70%),
+          fade(@orange-1, 50%)
+        );
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 60%;
+
+        &:hover {
+          transform: scale(1.03) translateY(-0.5px);
+          border-color: fade(@gold-5, 60%);
+          box-shadow: 0 4px 10px fade(@orange-5, 15%);
+        }
+      }
     }
 
     .credits-value {
-      font-size: @fontSizeHeading3;
-      font-weight: 700;
-      color: @colorTextBase;
-      line-height: 1;
+      display: block;
+      width: 100%;
+      min-width: 0;
+
+      :global(.ant-statistic) {
+        line-height: @creditsValueLineHeight;
+
+        :global(.ant-statistic-content) {
+          color: inherit;
+          font-family: inherit;
+
+          :global(.ant-statistic-content-value) {
+            display: block;
+            width: 100%;
+            /* stylelint-disable-next-line unit-no-unknown -- 容器查询单位，随卡片宽度缩放字号 */
+            font-size: clamp(
+              13px,
+              10cqi,
+              22px
+            ); // 随卡片宽度缩放字号，与用量统计完全一致
+            font-weight: @creditsValueFontWeight;
+            font-variant-numeric: tabular-nums;
+            color: inherit;
+            line-height: @creditsValueLineHeight;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
 
       &.blue {
         color: @blue6;

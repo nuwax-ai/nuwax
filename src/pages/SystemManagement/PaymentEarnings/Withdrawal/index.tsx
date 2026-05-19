@@ -1,5 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
+import { BillWithdrawStatusEnum } from '@/types/interfaces/subscription';
 
 import { Tabs } from 'antd';
 import React, { useEffect } from 'react';
@@ -11,7 +12,10 @@ import WithdrawConfigCard from './components/WithdrawConfigCard';
 const Withdrawal: React.FC = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'pending';
+
+  const rawTab = searchParams.get('tab') || 'pending';
+  // 保持与旧版 'processed' 的兼容重定向至 'approved'（待打款）
+  const activeTab = rawTab === 'processed' ? 'approved' : rawTab;
 
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab });
@@ -30,34 +34,49 @@ const Withdrawal: React.FC = () => {
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPending',
       ),
-      children: <PendingWithdrawalTable />,
     },
     {
-      key: 'processed',
+      key: 'approved',
       label: dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabProcessed',
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabApproved',
       ),
-      children: <ProcessedWithdrawalTable />,
+    },
+    {
+      key: 'paid',
+      label: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabPaid',
+      ),
+    },
+    {
+      key: 'rejected',
+      label: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabRejected',
+      ),
     },
     {
       key: 'config',
       label: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.tabConfig',
       ),
-      children: <WithdrawConfigCard />,
     },
   ];
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.devWithdrawal')}>
       <div key={location.key}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          destroyOnHidden={true}
-        />
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </div>
+      {activeTab === 'pending' && <PendingWithdrawalTable />}
+      {activeTab === 'approved' && (
+        <ProcessedWithdrawalTable status={BillWithdrawStatusEnum.APPROVED} />
+      )}
+      {activeTab === 'paid' && (
+        <ProcessedWithdrawalTable status={BillWithdrawStatusEnum.PAID} />
+      )}
+      {activeTab === 'rejected' && (
+        <ProcessedWithdrawalTable status={BillWithdrawStatusEnum.REJECTED} />
+      )}
+      {activeTab === 'config' && <WithdrawConfigCard />}
     </WorkspaceLayout>
   );
 };

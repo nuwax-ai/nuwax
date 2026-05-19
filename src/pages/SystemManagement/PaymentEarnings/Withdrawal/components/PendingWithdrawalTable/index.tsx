@@ -2,9 +2,8 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiApproveWithdrawal,
   apiListWithdrawals,
-  apiRejectWithdrawal,
+  apiProcessWithdrawal,
 } from '@/services/subscriptionService';
 import {
   BillWithdrawRecordInfo,
@@ -12,37 +11,51 @@ import {
 } from '@/types/interfaces/subscription';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Input, Modal, message } from 'antd';
+import { message } from 'antd';
 import React, { useRef, useState } from 'react';
-import { history } from 'umi';
+import RejectModal from './components/RejectModal';
+import RevenueDetailModal from './components/RevenueDetailModal';
 
 const PendingWithdrawalTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectId, setRejectId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [selectedRecord, setSelectedRecord] =
+    useState<BillWithdrawRecordInfo | null>(null);
+  const [revenueModalVisible, setRevenueModalVisible] = useState(false);
+  const [currentRevenues, setCurrentRevenues] = useState<any[]>([]);
 
-  const handleApprove = async (id: number) => {
-    await apiApproveWithdrawal(id);
-    message.success(
-      dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess',
-      ),
-    );
-    actionRef.current?.reload();
+  const handleApprove = async (record: BillWithdrawRecordInfo) => {
+    const res = await apiProcessWithdrawal({
+      tenantId: record.userId,
+      applicationId: record.id,
+      action: 'APPROVE',
+    });
+    if (res?.code === SUCCESS_CODE) {
+      message.success(
+        dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.approveSuccess',
+        ),
+      );
+      actionRef.current?.reload();
+    }
   };
 
-  const handleReject = async () => {
-    if (!rejectId) return;
-    await apiRejectWithdrawal(rejectId, rejectReason);
-    message.success(
-      dict(
-        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
-      ),
-    );
-    setRejectModalOpen(false);
-    setRejectReason('');
-    actionRef.current?.reload();
+  const handleReject = async (reason: string) => {
+    if (!selectedRecord) return;
+    const res = await apiProcessWithdrawal({
+      tenantId: selectedRecord.userId,
+      applicationId: selectedRecord.id,
+      action: 'REJECT',
+      rejectReason: reason,
+    });
+    if (res?.code === SUCCESS_CODE) {
+      message.success(
+        dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectSuccess',
+        ),
+      );
+      actionRef.current?.reload();
+    }
   };
 
   const columns: ProColumns<BillWithdrawRecordInfo>[] = [
@@ -54,19 +67,35 @@ const PendingWithdrawalTable: React.FC = () => {
       key: 'id',
       ellipsis: true,
       search: false,
+      width: 200,
     },
     {
       title: dict(
         'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper',
       ),
-      key: 'keyword',
+      dataIndex: 'userName',
+      key: 'userName',
+      width: 120,
       ellipsis: true,
-      render: (_, record) => {
-        const firstRev = record.revenues?.[0];
-        return firstRev
-          ? `${firstRev.userName || firstRev.nickName || '-'}`
-          : '-';
-      },
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPhone',
+      ),
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 120,
+      search: false,
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colEmail',
+      ),
+      dataIndex: 'email',
+      key: 'email',
+      width: 180,
+      ellipsis: true,
+      search: false,
     },
     {
       title: dict(
@@ -75,11 +104,57 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       search: false,
+      width: 120,
       render: (_, record) => (
         <span style={{ fontWeight: 600, color: '#f5222d' }}>
-          ¥{(record.amount ?? 0).toLocaleString()}
+          ¥
+          {(record.amount ?? 0).toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </span>
       ),
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPlatformServiceFee',
+      ),
+      dataIndex: 'fee',
+      key: 'fee',
+      search: false,
+      width: 130,
+      render: (_, record) => {
+        const serviceFee = record.fee ?? 0;
+        return (
+          <span style={{ color: '#8c8c8c' }}>
+            ¥
+            {serviceFee.toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        );
+      },
+    },
+    {
+      title: dict(
+        'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colActualTransferAmount',
+      ),
+      dataIndex: 'actualAmount',
+      key: 'actualAmount',
+      search: false,
+      width: 130,
+      render: (_, record) => {
+        return (
+          <span style={{ fontWeight: 600, color: '#52c41a' }}>
+            ¥
+            {(record.actualAmount ?? 0).toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        );
+      },
     },
     {
       title: dict(
@@ -87,6 +162,7 @@ const PendingWithdrawalTable: React.FC = () => {
       ),
       key: 'payMethod',
       search: false,
+      width: 200,
       render: (_, record) => {
         const extra = record.paymentExtra || {};
         const isAlipay =
@@ -115,12 +191,14 @@ const PendingWithdrawalTable: React.FC = () => {
       dataIndex: 'created',
       key: 'created',
       search: false,
+      valueType: 'dateTime',
+      width: 120,
     },
     {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
-      width: 200,
+      width: 160,
       render: (_, record) => (
         <TableActions
           record={record}
@@ -135,7 +213,7 @@ const PendingWithdrawalTable: React.FC = () => {
                   'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.confirmApprove',
                 ),
               },
-              onClick: (r) => handleApprove(r.id),
+              onClick: (r) => handleApprove(r),
             },
             {
               key: 'reject',
@@ -144,7 +222,7 @@ const PendingWithdrawalTable: React.FC = () => {
               ),
               danger: true,
               onClick: (r) => {
-                setRejectId(r.id);
+                setSelectedRecord(r);
                 setRejectModalOpen(true);
               },
             },
@@ -153,14 +231,10 @@ const PendingWithdrawalTable: React.FC = () => {
               label: dict(
                 'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewEarnings',
               ),
-              onClick: (r) =>
-                history.push(
-                  `/system/payment-earnings/earnings-detail?developerId=${
-                    r.userId
-                  }&developerName=${encodeURIComponent(
-                    r.revenues?.[0]?.userName || '',
-                  )}`,
-                ),
+              onClick: (r) => {
+                setCurrentRevenues(r.revenues || []);
+                setRevenueModalVisible(true);
+              },
             },
           ]}
         />
@@ -176,7 +250,7 @@ const PendingWithdrawalTable: React.FC = () => {
         columns={columns}
         request={async (params) => {
           const res = await apiListWithdrawals({
-            keyword: params.keyword,
+            keyword: params.userName,
             status: BillWithdrawStatusEnum.PENDING_REVIEW,
             pageNum: params.current,
             pageSize: params.pageSize,
@@ -191,37 +265,16 @@ const PendingWithdrawalTable: React.FC = () => {
           return { data: [], total: 0, success: false };
         }}
       />
-      <Modal
-        title={dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectModalTitle',
-        )}
+      <RejectModal
         open={rejectModalOpen}
-        onCancel={() => {
-          setRejectModalOpen(false);
-          setRejectReason('');
-        }}
-        onOk={handleReject}
-        okButtonProps={{ danger: true }}
-        okText={dict(
-          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.reject',
-        )}
-      >
-        <p style={{ marginBottom: 12 }}>
-          {dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonLabel',
-          )}
-        </p>
-        <Input.TextArea
-          rows={3}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          placeholder={dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.rejectReasonPlaceholder',
-          )}
-          maxLength={200}
-          showCount
-        />
-      </Modal>
+        onCancel={() => setRejectModalOpen(false)}
+        onConfirm={handleReject}
+      />
+      <RevenueDetailModal
+        open={revenueModalVisible}
+        onCancel={() => setRevenueModalVisible(false)}
+        data={currentRevenues}
+      />
     </>
   );
 };

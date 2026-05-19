@@ -1,36 +1,28 @@
+import { XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
 import { apiListDailyRevenue } from '@/services/subscriptionService';
-import { DailyRevenueStatusEnum } from '@/types/interfaces/subscription';
-import { RightOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Empty, Spin } from 'antd';
+import {
+  DailyRevenueStatusEnum,
+  type DailyRevenueRecord,
+} from '@/types/interfaces/subscription';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useMemo, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import DailyEarningsDetailModal from './components/DailyEarningsDetailModal';
-import DailyEarningsFilter from './components/DailyEarningsFilter';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 const DailyEarningsList: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | string>();
-  const [filterValues, setFilterValues] = useState<{
-    date?: string;
-  }>({});
-
-  const { data: revenueData, loading } = useRequest(
-    () =>
-      apiListDailyRevenue({
-        dt: filterValues.date
-          ? dayjs(filterValues.date).format('YYYYMMDD')
-          : undefined,
-      }),
-    {
-      refreshDeps: [filterValues],
-    },
-  );
+  const [selectedDt, setSelectedDt] = useState<string>();
+  const formRef = useRef<FormInstance>();
+  const actionRef = useRef<ActionType>();
 
   const statusMap: Record<
     DailyRevenueStatusEnum,
@@ -54,15 +46,10 @@ const DailyEarningsList: React.FC = () => {
     },
   };
 
-  const listData = useMemo(
-    () => (Array.isArray(revenueData?.data) ? revenueData.data : []),
-    [revenueData],
-  );
-
-  // 解析日期字符串 20260507 -> { day: '07', month: '4月' }
+  // 解析日期字符串 20260507 -> { day: '07', month: '4月', full: '2026-05-07' }
   const parseDate = (dtStr: string) => {
     const d = dayjs(dtStr, 'YYYYMMDD');
-    if (!d.isValid()) return { day: '--', month: '--' };
+    if (!d.isValid()) return { day: '--', month: '--', full: '--' };
     return {
       day: d.format('DD'),
       month: d.format(dict('PC.Pages.MorePage.MyEarnings.monthFormat')),
@@ -70,73 +57,98 @@ const DailyEarningsList: React.FC = () => {
     };
   };
 
+  const columns: ProColumns<DailyRevenueRecord>[] = [
+    {
+      title: dict('PC.Pages.MorePage.MyEarnings.date'),
+      dataIndex: 'dt',
+      key: 'dt',
+      valueType: 'date',
+      render: (_, record) => parseDate(record.dt).full,
+    },
+    {
+      title: dict('PC.Pages.MorePage.MyEarnings.colSettlementStatus'),
+      dataIndex: 'status',
+      key: 'status',
+      search: false,
+      render: (_, record) => {
+        const statusInfo = statusMap[record.status] || {
+          label: record.status,
+          className: '',
+        };
+
+        return (
+          <span className={cx(styles['status-tag'], statusInfo.className)}>
+            {statusInfo.label}
+          </span>
+        );
+      },
+    },
+    {
+      title: dict('PC.Pages.MorePage.MyEarnings.colEarnings'),
+      dataIndex: 'amount',
+      key: 'amount',
+      search: false,
+      render: (_, record) => (
+        <span className={cx(styles.amount)}>+¥{record.amount.toFixed(2)}</span>
+      ),
+    },
+    {
+      title: dict('PC.Common.Global.operation'),
+      valueType: 'option',
+      width: 100,
+      render: (_, record) => (
+        <a
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedDt(record.dt);
+            setDetailModalVisible(true);
+          }}
+        >
+          {dict('PC.Pages.MorePage.MyEarnings.Detail.modalTitle')}
+        </a>
+      ),
+    },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* 独立封装的筛选组件 */}
-      <DailyEarningsFilter
-        onSearch={(values) => setFilterValues({ date: values.date })}
-        onReset={() => setFilterValues({})}
+      <XProTable<DailyRevenueRecord>
+        rowKey="id"
+        actionRef={actionRef}
+        formRef={formRef}
+        columns={columns}
+        request={async (params) => {
+          const { dt } = params;
+          const formattedDt = dt ? dayjs(dt).format('YYYYMMDD') : undefined;
+          const res = await apiListDailyRevenue({ dt: formattedDt });
+          if (res.success) {
+            return {
+              data: Array.isArray(res.data) ? res.data : [],
+              success: true,
+            };
+          }
+          return { data: [], success: false };
+        }}
+        search={{
+          filterType: 'light',
+        }}
+        toolBarRender={false}
+        // pagination={false}
+        onRow={(record) => ({
+          onClick: () => {
+            setSelectedDt(record.dt);
+            setDetailModalVisible(true);
+          },
+          style: { cursor: 'pointer' },
+        })}
       />
-
-      <Spin spinning={loading}>
-        <div className={cx(styles['earnings-items'])}>
-          {listData.length > 0
-            ? listData.map((item) => {
-                const dateInfo = parseDate(item.dt);
-                const statusInfo = statusMap[item.status] || {
-                  label: item.status,
-                  className: '',
-                };
-
-                return (
-                  <div
-                    key={item.id}
-                    className={cx(styles['earning-item'])}
-                    onClick={() => {
-                      setSelectedId(item.id);
-                      setDetailModalVisible(true);
-                    }}
-                  >
-                    <div className={cx(styles['date-badge'])}>
-                      <span className={cx(styles.day)}>{dateInfo.day}</span>
-                      <span className={cx(styles.month)}>{dateInfo.month}</span>
-                    </div>
-                    <div className={cx(styles.info)}>
-                      <span className={cx(styles['date-str'])}>
-                        {dateInfo.full}
-                      </span>
-                      <span
-                        className={cx(
-                          styles['status-tag'],
-                          statusInfo.className,
-                        )}
-                      >
-                        {statusInfo.label}
-                      </span>
-                    </div>
-                    <div className={cx(styles['amount-section'])}>
-                      <span className={cx(styles.amount)}>
-                        +¥{item.amount.toFixed(2)}
-                      </span>
-                      <RightOutlined className={cx(styles.arrow)} />
-                    </div>
-                  </div>
-                );
-              })
-            : !loading && (
-                <div className={cx(styles['empty-state'])}>
-                  <Empty />
-                </div>
-              )}
-        </div>
-      </Spin>
 
       <DailyEarningsDetailModal
         visible={detailModalVisible}
-        targetId={selectedId}
+        dt={selectedDt}
         onCancel={() => {
           setDetailModalVisible(false);
-          setSelectedId(undefined);
+          setSelectedDt(undefined);
         }}
       />
     </div>

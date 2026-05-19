@@ -15,8 +15,6 @@ export interface AgentSidebarProps {
   agentDetail?: AgentDetailDto | null;
   // 可见性变化回调
   onVisibleChange?: (visible: boolean) => void;
-  /** 侧栏「订阅」入口，与 ConversationDetails 付费弹窗联动 */
-  onSubscribe?: () => void;
 }
 
 // 定时任务组件属性
@@ -49,7 +47,6 @@ export interface CreateTimedTaskProps {
 // 智能体内容
 export interface AgentContentProps {
   agentDetail?: AgentDetailDto | null;
-  onSubscribe?: () => void;
 }
 
 // 统计信息
