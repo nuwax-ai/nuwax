@@ -448,6 +448,7 @@ const Plans = () => {
             showIndex={false}
             fullHeight={false}
             options={false}
+            showQueryButtons={false}
             scroll={{ x: 'max-content' }}
             components={{
               body: {
