@@ -8,8 +8,9 @@ import {
   SubscriptionPlanStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { apiGetMySubscription } from '@/services/subscriptionService';
+import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRequest } from 'umi';
 
 /**
@@ -82,14 +83,29 @@ const useAgentSubscription = () => {
     }
   };
 
+  // 打开智能体订阅套餐弹窗
+  const openAgentSubscriptionModal = useCallback((agentId: number) => {
+    // 查询智能体订阅计划列表
+    loadAgentSubscriptionPlans({
+      agentId,
+      status: SubscriptionPlanStatusEnum.Online,
+    });
+
+    // 查询当前智能体维度「我的订阅」接口数据
+    loadMySubscription({
+      bizType: BizTypeEnum.Agent,
+      bizId: agentId,
+    });
+  }, []);
+
   return {
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
-    loadAgentSubscriptionPlans,
     mySubscriptionInfo,
     loadingMySubscription,
     loadMySubscription,
     createAgentSubscriptionOrder,
+    openAgentSubscriptionModal,
   };
 };
 

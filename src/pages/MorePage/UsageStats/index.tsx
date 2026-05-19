@@ -12,7 +12,6 @@ import type {
   ResourceStatSummaryDTO,
 } from '@/types/interfaces/systemManage';
 import { formatDecimal, formatInteger, sumNumbers } from '@/utils/numberFormat';
-import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
@@ -260,15 +259,11 @@ const UsageStats: React.FC = () => {
             format="YYYYMMDD"
           />
           <div style={{ flex: 1 }} />
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearch}
-          >
-            {dict('PC.Pages.UsageStats.search')}
-          </Button>
           <Button onClick={handleReset}>
             {dict('PC.Pages.UsageStats.reset')}
+          </Button>
+          <Button type="primary" onClick={handleSearch}>
+            {dict('PC.Pages.UsageStats.search')}
           </Button>
         </div>
 

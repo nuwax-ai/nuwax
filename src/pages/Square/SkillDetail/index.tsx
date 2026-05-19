@@ -1,4 +1,4 @@
-import PaymentSubscriptionModal from '@/components/business-component/ConversationDetails/PaymentSubscriptionModal';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
 import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
