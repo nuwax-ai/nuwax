@@ -102,7 +102,9 @@ export interface MySubscriptionItem {
 }
 
 export interface MySubscriptionData {
+  // 用户订阅信息
   currentSubscription: MySubscriptionItem;
+  // 用户订阅信息列表
   subscriptions: MySubscriptionItem[];
 }
 
