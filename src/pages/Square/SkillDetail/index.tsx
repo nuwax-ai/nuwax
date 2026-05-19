@@ -15,7 +15,7 @@ import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import PluginHeader from '../PluginDetail/PluginHeader';
 import styles from './index.less';
 
@@ -27,6 +27,7 @@ const cx = classNames.bind(styles);
 const SkillDetail: React.FC = ({}) => {
   const params = useParams();
   const skillId = Number(params.skillId);
+  const location = useLocation();
   // 复制弹窗
   const [openMove, setOpenMove] = useState<boolean>(false);
   // 付费订阅弹窗（对齐会话页 PaymentSubscriptionModal）
@@ -154,7 +155,13 @@ const SkillDetail: React.FC = ({}) => {
 
   /** 返回广场技能列表 */
   const handleBack = () => {
-    history.push('/square?cate_type=Skill');
+    // 如果当前页面在广场，则跳转到广场技能列表
+    if (location.pathname.includes('/square')) {
+      history.push('/square?cate_type=Skill');
+    } else {
+      // 如果当前页面在空间，则跳转到空间技能列表
+      history.back();
+    }
   };
 
   return (
