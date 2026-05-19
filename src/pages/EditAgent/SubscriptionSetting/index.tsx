@@ -27,6 +27,7 @@ import {
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button, Form, InputNumber, message, Switch } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -38,6 +39,8 @@ import {
 import CreatePlanModal from './CreatePlanModal';
 import SubscriptionPlanCard from './SubscriptionPlanCard';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 interface SubscriptionSettingProps {
   agentId: number;
@@ -321,17 +324,6 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          {dict('PC.Pages.Agent.subscriptionSetting')}
-        </h2>
-        <ConditionRender condition={plans.length > 0}>
-          <span
-            className={styles['count-text']}
-          >{`共 ${plans.length} 个套餐`}</span>
-        </ConditionRender>
-      </div>
-
       {/* 设置面板 */}
       <div className={styles['setting-panel']}>
         <div className={styles['enable-row']}>
@@ -348,30 +340,19 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
         </div>
 
         <ConditionRender condition={subscriptionEnabled}>
-          {/* 定价类型 */}
-          <Form form={form} layout="vertical">
-            <div className={styles['form-row']}>
-              <div className={styles['form-left']}>
-                <div className={styles['field-label']}>定价类型</div>
-                <Button className={styles['mode-btn']} type="default">
-                  ☆ 订阅模式
-                </Button>
-              </div>
-              <div className={styles['form-right']}>
-                <Form.Item
-                  name="trialCount"
-                  label="默认试用次数"
-                  initialValue={0}
-                  className={styles['trial-form-item']}
-                >
+          <Form form={form}>
+            <div className="w-full">
+              <div className={styles['trial-form-row']}>
+                <span className={styles['trial-label']}>默认试用次数</span>
+                <Form.Item name="trialCount" noStyle initialValue={0}>
                   <InputNumber min={0} className={styles['trial-input']} />
                 </Form.Item>
                 <Button type="primary" loading={saving} onClick={handleSave}>
                   {dict('PC.Common.Global.save')}
                 </Button>
-                <div className={styles['trial-hint']}>
-                  新用户可免费体验的次数，设为 0 则不提供试用
-                </div>
+              </div>
+              <div className={styles['trial-hint']}>
+                新用户可免费体验的次数，设为 0 则不提供试用
               </div>
             </div>
           </Form>
@@ -380,7 +361,14 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
       <ConditionRender condition={subscriptionEnabled}>
         <div className={styles['list-header']}>
-          <h3 className={styles['list-title']}>套餐列表</h3>
+          <div className={cx('flex', 'gap-4', styles['list-title-container'])}>
+            <h3 className={styles['list-title']}>套餐列表</h3>
+            <ConditionRender condition={plans.length > 0}>
+              <span
+                className={styles['count-text']}
+              >{`共 ${plans.length} 个套餐`}</span>
+            </ConditionRender>
+          </div>
           <Button
             type="primary"
             icon={<PlusOutlined />}
