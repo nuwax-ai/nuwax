@@ -185,7 +185,6 @@ export default function useMenuModel() {
    * 其他菜单列表（只包含 documents、notification、my_computer、more_page）
    */
   const otherMenus = useMemo(() => {
-    console.log('menuTree', menuTree);
     const menu = menuTree?.filter(
       (menu: MenuItemDto) =>
         menu.status === MenuEnabledEnum.Enabled &&
