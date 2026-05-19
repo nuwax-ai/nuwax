@@ -66,9 +66,7 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 网页应用开发"
   page_app_dev: 'icons-common-console',
   // 组件库（保留兼容旧 code）
-  component_lib_dev: 'icons-nav-components',
-  // 组件资源（新 code，替代组件库）
-  component_resource_dev: 'icons-nav-components',
+  component_lib_dev: 'icons-nav-cube',
   // 技能管理
   skill_dev: 'icons-nav-skill',
   // MCP管理
@@ -92,8 +90,6 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 模型管理（工作空间级别）
   space_model_manage: 'icons-nav-model',
 
-  // 资源定价
-  resource_pricing: 'icons-nav-pricing',
   // 智能体用户订阅
   agent_subscription: 'icons-nav-subscription',
 
@@ -104,19 +100,16 @@ const MENU_ICON_MAP: Record<string, string> = {
   // 更多
   api_key: 'icons-nav-api_key',
   // 更多页面 - 我的订阅
-  my_subscriptions: 'icons-nav-my-subscription',
-  wodedingyue: 'icons-nav-wodedingyue',
+  my_subscriptions: 'icons-nav-wodedingyue',
   // 更多页面 - 我的订单
-  my_orders: 'icons-nav-my-orders',
-  wodedingdan: 'icons-nav-wodedingdan',
+  my_orders: 'icons-nav-wodedingdan',
   // 更多页面 - 我的收益
-  my_earnings: 'icons-nav-my-earnings',
-  wodeshouyi: 'icons-nav-wodeshouyi',
+  my_earnings: 'icons-nav-wodeshouyi',
   // 更多页面 - 用量统计
-  yongliangtongji: 'icons-nav-yongliangtongji',
-  ziyuandingjia: 'icons-nav-ziyuandingjia',
-  dingyueyujifen: 'icons-nav-dingyueyujifen',
-  zhifuyushouyi: 'icons-nav-zhifuyushouyi',
+  usage_statistics: 'icons-nav-yongliangtongji',
+  resource_pricing: 'icons-nav-ziyuandingjia',
+  subscription_and_points: 'icons-nav-dingyueyujifen',
+  pay_and_earnings: 'icons-nav-zhifuyushouyi',
 
   // 系统管理 - 支付与收益子菜单
   payment_config: 'icons-nav-settings',
