@@ -4882,8 +4882,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "Current Exchange",
-  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "Exchange Description",
-  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder": "Please enter exchange description",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift": "New User Gift",
   "PC.Pages.SystemSubscriptionBasicConfig.registerGiftCredits": "Gift Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.registerGiftValidity": "Validity",
