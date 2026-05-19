@@ -5,6 +5,7 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
@@ -23,6 +24,7 @@ import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useSubscription from '@/hooks/useSubscription';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -136,7 +138,45 @@ const Chat: React.FC = () => {
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
+
+    openPaymentModal,
+    setOpenPaymentModal,
+    isNeedSubscription,
+    setIsNeedSubscription,
   } = useModel('useOpenApp');
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  // 智能体订阅
+  const {
+    // 智能体订阅套餐
+    agentSubscriptionPlans,
+    loadingAgentSubscriptionPlans,
+    // 当前生效智能体套餐
+    mySubscriptionInfo,
+    // 加载当前生效智能体套餐loading
+    loadingMySubscription,
+    // 创建智能体订阅订单
+    createSubscriptionOrder,
+    queryAgentSubscriptionPlans,
+  } = useSubscription();
+
+  useEffect(() => {
+    if (!openPaymentModal || isAppSidebarMode) {
+      return;
+    }
+
+    // 打开智能体订阅套餐弹窗
+    queryAgentSubscriptionPlans(agentId);
+  }, [
+    openPaymentModal,
+    isAppSidebarMode,
+    queryAgentSubscriptionPlans,
+    agentId,
+  ]);
 
   // 仅在本次会话中使用从 AgentDetails 页面带过来的 selectedComputerId；
   // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
@@ -435,6 +475,12 @@ const Chat: React.FC = () => {
     const targetAgent = defaultAgentDetail || conversationInfo?.agent;
     if (targetAgent) {
       setAgentDetail(targetAgent);
+
+      // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+      if (targetAgent.paymentRequired && !targetAgent.subscribed) {
+        setOpenPaymentModal(true);
+        setIsNeedSubscription(true);
+      }
       // 设置应用智能体详情
       handleSetAppAgentDetail(targetAgent);
       handleOpenPreview(targetAgent);
@@ -1110,6 +1156,23 @@ const Chat: React.FC = () => {
             </div>
 
             <div className={cx('flex', 'items-center', 'gap-4')}>
+              {/* 需付费订阅的智能体：打开订阅套餐 */}
+              {isEnableSubscription &&
+                agentDetail?.paymentRequired &&
+                !isAppSidebarMode && (
+                  <TooltipIcon
+                    title={t('PC.Components.ConversationDetails.paidSubscribe')}
+                    className={cx(styles['icon-box'])}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-wodedingyue"
+                        style={{ fontSize: 18 }}
+                      />
+                    }
+                    onClick={() => setOpenPaymentModal(true)}
+                  />
+                )}
+
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isAppSidebarMode && !isSidebarVisible && !isMobile && (
@@ -1321,7 +1384,12 @@ const Chat: React.FC = () => {
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               visible={showScrollBtn && isHoveringChat}
-              wholeDisabled={wholeDisabled}
+              wholeDisabled={
+                wholeDisabled ||
+                (isEnableSubscription &&
+                  isNeedSubscription &&
+                  agentDetail?.overCallLimit)
+              }
               clearLoading={clearLoading}
               onClear={handleClear}
               manualComponents={manualComponents}
@@ -1537,6 +1605,26 @@ const Chat: React.FC = () => {
       </ConditionRender>
       {/*展示台区域*/}
       <ShowArea />
+
+      <ConditionRender condition={isEnableSubscription && !isAppSidebarMode}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Agent"
+          overCallLimit={agentDetail?.overCallLimit ?? false}
+          loading={loadingAgentSubscriptionPlans || loadingMySubscription}
+          // 套餐列表
+          plans={agentSubscriptionPlans}
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          // 关闭回调
+          onClose={() => setOpenPaymentModal(false)}
+          // 订阅回调
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };
