@@ -41,21 +41,9 @@ const EarningsSummary: React.FC = () => {
     apiCreateWithdrawApply,
     {
       manual: true,
-      onSuccess: (res) => {
+      onSuccess: () => {
         Modal.success({
           title: dict('PC.Pages.MorePage.MyEarnings.withdrawSuccessTitle'),
-          content: (
-            <div>
-              <div>{dict('PC.Pages.MorePage.MyEarnings.withdrawSuccess')}</div>
-              <Statistic
-                title={dict('PC.Pages.MorePage.MyEarnings.withdrawableBalance')}
-                value={res?.data?.amount || 0}
-                precision={2}
-                prefix="¥"
-                valueStyle={{ fontSize: '18px', fontWeight: '600' }}
-              />
-            </div>
-          ),
           okText: dict('PC.Utils.AntCustom.okText'),
         });
         refreshStats();
