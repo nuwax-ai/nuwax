@@ -4749,18 +4749,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemSubsOrders.orderStatusPaid": "已支付",
   "PC.Pages.SystemSubsOrders.orderStatusPending": "待支付",
   "PC.Pages.SystemSubsOrders.orderStatusCancelled": "已取消",
-  "PC.Pages.SystemSubsOrders.payStatus": "支付狀態",
-  "PC.Pages.SystemSubsOrders.payStatusPending": "待支付",
-  "PC.Pages.SystemSubsOrders.payStatusProcessing": "處理中",
-  "PC.Pages.SystemSubsOrders.payStatusSuccess": "已支付",
-  "PC.Pages.SystemSubsOrders.payStatusFailed": "已失效",
-  "PC.Pages.SystemSubsOrders.payStatusClosed": "已關閉",
   "PC.Pages.SystemSubsOrders.viewDetail": "詳情",
-
-  "PC.Pages.SystemSubsOrders.totalRevenue": "總收益",
-  "PC.Pages.SystemSubsOrders.monthRevenue": "本月收益",
-  "PC.Pages.SystemSubsOrders.todayRevenue": "今日收益",
-  "PC.Pages.SystemSubsOrders.pendingAmount": "已結算金額",
 
   // ── 用量統計 ────────────────────────────
   "PC.Pages.UsageStats.pageTitle": "用量統計",

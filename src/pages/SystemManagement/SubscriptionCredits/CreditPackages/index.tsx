@@ -15,7 +15,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Button, Form, message, Switch } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import {
   apiDeleteCreditPackage,
   apiGetCreditPackageList,
@@ -31,6 +32,7 @@ type CreditPackageRow = CreditPackageInfo & { key: number };
  * 积分套餐管理页面
  */
 const CreditPackages: React.FC = () => {
+  const location = useLocation();
   const actionRef = useRef<ActionType>();
   const [modalOpen, setModalOpen] = useState(false);
   const [creditPackageInfo, setCreditPackageInfo] =
@@ -86,6 +88,10 @@ const CreditPackages: React.FC = () => {
     );
     actionRef.current?.reload();
   };
+
+  useEffect(() => {
+    actionRef.current?.reload();
+  }, [location.state]);
 
   // 列配置
   const onDragEnd = async ({ active, over }: DragEndEvent) => {

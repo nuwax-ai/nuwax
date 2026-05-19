@@ -6,37 +6,19 @@ import {
   BillBizTypeEnum,
   BillOrderInfo,
   BillOrderStatusEnum,
-  BillPayStatusEnum,
 } from '@/types/interfaces/subscription';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
-import type { ParamsType, ProColumns } from '@ant-design/pro-components';
-import { Card, Col, DatePicker, Row, Statistic, Tag } from 'antd';
+import type {
+  ActionType,
+  ParamsType,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { DatePicker, Tag } from 'antd';
 import dayjs from 'dayjs';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRequest } from 'umi';
-import {
-  apiGetOrderRevenueList,
-  apiGetOrderRevenueStats,
-} from '../services/order-revenue';
-import {
-  type BillOrderSearchParams,
-  BillRevenueStatsInfo,
-} from '../types/order-revenue';
-
-/** 支付状态展示文案（模块加载时 `dict` 解析一次） */
-const PAY_STATUS_LABELS: Record<BillPayStatusEnum, string> = {
-  [BillPayStatusEnum.PENDING]: dict(
-    'PC.Pages.SystemSubsOrders.payStatusPending',
-  ),
-  [BillPayStatusEnum.PROCESSING]: dict(
-    'PC.Pages.SystemSubsOrders.payStatusProcessing',
-  ),
-  [BillPayStatusEnum.SUCCESS]: dict(
-    'PC.Pages.SystemSubsOrders.payStatusSuccess',
-  ),
-  [BillPayStatusEnum.FAILED]: dict('PC.Pages.SystemSubsOrders.payStatusFailed'),
-  [BillPayStatusEnum.CLOSED]: dict('PC.Pages.SystemSubsOrders.payStatusClosed'),
-};
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'umi';
+import { apiGetOrderRevenueList } from '../services/order-revenue';
+import { type BillOrderSearchParams } from '../types/order-revenue';
 
 /** ProTable 查询参数（与 BillOrderSearchParams 对齐筛选项；userId→keyword；created 为 dateTimeRange 表单值） */
 type BillOrderRevenueTableParams = ParamsType &
@@ -82,7 +64,6 @@ const fetchOrderRevenueTableRequest = async (
       keyword,
       bizType: params.bizType,
       orderStatus: params.orderStatus,
-      payStatus: params.payStatus,
       ...(createdRange.start ? { startTime: createdRange.start } : {}),
       ...(createdRange.end ? { endTime: createdRange.end } : {}),
       pageNum: params.current,
@@ -109,23 +90,12 @@ const fetchOrderRevenueTableRequest = async (
  * 业务订单查询
  */
 const SubsOrders: React.FC = () => {
-  // 统计信息
-  const [statsInfo, setStatsInfo] = useState<BillRevenueStatsInfo>();
-
-  // 收益统计（按月过滤，按用户排行）
-  const { run: fetchStatsInfo, loading: statsLoading } = useRequest(
-    apiGetOrderRevenueStats,
-    {
-      manual: true,
-      onSuccess: (res: BillRevenueStatsInfo) => {
-        setStatsInfo(res);
-      },
-    },
-  );
+  const location = useLocation();
+  const actionRef = useRef<ActionType>();
 
   useEffect(() => {
-    fetchStatsInfo();
-  }, []);
+    actionRef.current?.reload();
+  }, [location.state]);
 
   // 订单状态配置
   const statusConfig = useMemo(
@@ -248,25 +218,6 @@ const SubsOrders: React.FC = () => {
           return <Tag color={cfg?.color}>{cfg?.label}</Tag>;
         },
       },
-      // 支付状态
-      {
-        title: dict('PC.Pages.SystemSubsOrders.payStatus'),
-        dataIndex: 'payStatus',
-        key: 'payStatus',
-        valueType: 'select',
-        valueEnum: Object.fromEntries(
-          Object.values(BillPayStatusEnum).map((status) => [
-            status,
-            { text: PAY_STATUS_LABELS[status] },
-          ]),
-        ) as Record<BillPayStatusEnum, { text: string }>,
-        fieldProps: {
-          allowClear: true,
-          placeholder: dict('PC.Common.Global.pleaseSelect'),
-        },
-        render: (_, record) =>
-          PAY_STATUS_LABELS[record.payStatus] ?? String(record.payStatus),
-      },
       // 开始时间（LightFilter 默认 dateTimeRange 会先出一层再点开 RangePicker；自定义表单项一次即可展开面板）
       {
         title: dict('PC.Pages.SystemSubsOrders.created'),
@@ -302,52 +253,12 @@ const SubsOrders: React.FC = () => {
 
   return (
     <WorkspaceLayout title={dict('PC.Routes.subsOrders')}>
-      {/* 统计卡 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16, flexShrink: 0 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.totalRevenue')}
-              value={statsLoading ? '-' : statsInfo?.totalRevenue || 0}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.monthRevenue')}
-              value={statsLoading ? '-' : statsInfo?.monthRevenue || 0}
-              valueStyle={{ color: '#1677ff' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.todayRevenue')}
-              value={statsLoading ? '-' : statsInfo?.todayRevenue || 0}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={dict('PC.Pages.SystemSubsOrders.pendingAmount')}
-              value={statsLoading ? '-' : statsInfo?.pendingAmount || 0}
-              precision={0}
-              prefix={dict('PC.Common.Global.currencySymbol')}
-            />
-          </Card>
-        </Col>
-      </Row>
-
       <XProTable<BillOrderInfo, BillOrderRevenueTableParams>
         rowKey="id"
+        actionRef={actionRef}
         columns={columns}
         request={fetchOrderRevenueTableRequest}
         scroll={{ x: 'max-content' }}
-        scrollYOffset={80}
       />
     </WorkspaceLayout>
   );

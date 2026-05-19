@@ -4962,18 +4962,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemSubsOrders.orderStatusPaid": "Paid",
   "PC.Pages.SystemSubsOrders.orderStatusPending": "Pending",
   "PC.Pages.SystemSubsOrders.orderStatusCancelled": "Cancelled",
-  "PC.Pages.SystemSubsOrders.payStatus": "Payment Status",
-  "PC.Pages.SystemSubsOrders.payStatusPending": "Pending",
-  "PC.Pages.SystemSubsOrders.payStatusProcessing": "Processing",
-  "PC.Pages.SystemSubsOrders.payStatusSuccess": "Paid",
-  "PC.Pages.SystemSubsOrders.payStatusFailed": "Failed",
-  "PC.Pages.SystemSubsOrders.payStatusClosed": "Closed",
   "PC.Pages.SystemSubsOrders.viewDetail": "Details",
-
-  "PC.Pages.SystemSubsOrders.totalRevenue": "Total Revenue",
-  "PC.Pages.SystemSubsOrders.monthRevenue": "Monthly Revenue",
-  "PC.Pages.SystemSubsOrders.todayRevenue": "Today Revenue",
-  "PC.Pages.SystemSubsOrders.pendingAmount": "Settled Amount",
 
   // ── System Management - Payment Configuration ────────────────────────────────
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "Developer Share Ratio",
