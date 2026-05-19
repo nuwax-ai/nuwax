@@ -129,6 +129,12 @@ const CreditRecords: React.FC = () => {
       },
     },
     {
+      title: dict('PC.Pages.MorePage.CreditRecords.filterCreditType'),
+      dataIndex: 'creditTypeName',
+      key: 'creditTypeName',
+      search: false,
+    },
+    {
       title: dict('PC.Pages.MorePage.CreditRecords.colAmount'),
       dataIndex: 'amount',
       key: 'amount',
@@ -154,12 +160,6 @@ const CreditRecords: React.FC = () => {
       key: 'afterAmount',
       search: false,
       valueType: 'digit',
-    },
-    {
-      title: dict('PC.Pages.MorePage.CreditRecords.filterCreditType'),
-      dataIndex: 'creditTypeName',
-      key: 'creditTypeName',
-      search: false,
     },
     {
       title: dict('PC.Pages.MorePage.CreditRecords.colNote'),
