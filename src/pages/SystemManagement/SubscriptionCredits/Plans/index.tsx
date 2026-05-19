@@ -1,8 +1,11 @@
 import { DragHandle, Row } from '@/components/base/DraggableTableRow';
+import type { StatMetricItem } from '@/components/business-component/StatMetricCard';
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
+import { formatInteger } from '@/utils/numberFormat';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -36,8 +39,6 @@ import {
   SubscriptionPlanStatusEnum,
 } from '../types/subscription';
 import CreatePlanModal from './CreatePlanModal';
-import styles from './index.less';
-import PlanStatCard from './PlanStatCard';
 
 const PERIOD_LABEL_KEY: Partial<Record<SubscriptionPlanPeriodEnum, string>> = {
   [SubscriptionPlanPeriodEnum.MONTH]: 'PC.Pages.SystemPlans.periodMonth',
@@ -64,6 +65,7 @@ const Plans = () => {
   const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
   // 统计信息
   const [stats, setStats] = useState<SubscriptionPlanStatsResult | null>(null);
+  const [statsLoading, setStatsLoading] = useState<boolean>(false);
   // 新增套餐弹窗
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
   // 当前编辑中的套餐
@@ -96,6 +98,31 @@ const Plans = () => {
     [plans],
   );
 
+  const overviewMetrics = useMemo<StatMetricItem[]>(
+    () => [
+      {
+        key: 'totalCount',
+        label: dict('PC.Pages.SystemPlans.statTotalSubscriptions'),
+        value: formatInteger(stats?.totalCount),
+      },
+      {
+        key: 'todayCount',
+        label: dict('PC.Pages.SystemPlans.statDailyNew'),
+        value: formatInteger(stats?.todayCount),
+        highlight: true,
+        highlightColor: '#52c41a',
+      },
+      {
+        key: 'monthCount',
+        label: dict('PC.Pages.SystemPlans.statMonthlyNew'),
+        value: formatInteger(stats?.monthCount),
+        highlight: true,
+        highlightColor: '#1677ff',
+      },
+    ],
+    [stats],
+  );
+
   /** XProTable 列表请求（与 CreditPackages 页相同：request + dataSource + postData） */
   const plansTableRequest = useCallback(async () => {
     try {
@@ -115,6 +142,7 @@ const Plans = () => {
   useEffect(() => {
     let cancelled = false;
     const loadStats = async () => {
+      setStatsLoading(true);
       try {
         const statsRes = await apiGetSubscriptionPlanStats({
           bizType: SubscriptionPlanBizTypeEnum.SYSTEM,
@@ -126,6 +154,10 @@ const Plans = () => {
       } catch {
         if (!cancelled) {
           message.error(dict('PC.Common.Toast.operationFailed'));
+        }
+      } finally {
+        if (!cancelled) {
+          setStatsLoading(false);
         }
       }
     };
@@ -366,6 +398,7 @@ const Plans = () => {
   return (
     <WorkspaceLayout
       title={dict('PC.Routes.subsPlans')}
+      headerPadding="15px 15px 0 24px"
       rightSlot={
         <Button
           type="primary"
@@ -377,30 +410,11 @@ const Plans = () => {
       }
     >
       {/* 统计信息 */}
-      <div className={styles['plan-grid']}>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statTotalSubscriptions')}
-            value={stats?.totalCount ?? 0}
-          />
-        </div>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statDailyNew')}
-            value={
-              <span style={{ color: '#52c41a' }}>{stats?.todayCount ?? 0}</span>
-            }
-          />
-        </div>
-        <div className={styles['plan-grid-item']}>
-          <PlanStatCard
-            title={dict('PC.Pages.SystemPlans.statMonthlyNew')}
-            value={
-              <span style={{ color: '#52c41a' }}>{stats?.monthCount ?? 0}</span>
-            }
-          />
-        </div>
-      </div>
+      <StatMetricCardList
+        items={overviewMetrics}
+        loading={statsLoading}
+        showTooltip={false}
+      />
 
       {/* 套餐列表（可拖拽排序） */}
       <DndContext
@@ -430,6 +444,7 @@ const Plans = () => {
             fullHeight={false}
             options={false}
             showQueryButtons={false}
+            hideToolbar
             scroll={{ x: 'max-content' }}
             components={{
               body: {

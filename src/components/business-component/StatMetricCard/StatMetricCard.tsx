@@ -11,8 +11,12 @@ export interface StatMetricCardProps {
   value: string;
   /** 是否高亮展示（如金额、积分等重要指标） */
   highlight?: boolean;
+  /** 自定义高亮色，需配合 highlight 使用 */
+  highlightColor?: string;
   /** 骨架屏加载态 */
   loading?: boolean;
+  /** 是否展示 hover Tooltip，默认展示 */
+  showTooltip?: boolean;
 }
 
 /**
@@ -22,7 +26,9 @@ const StatMetricCard: React.FC<StatMetricCardProps> = ({
   label,
   value,
   highlight,
+  highlightColor,
   loading,
+  showTooltip = true,
 }) => {
   const fontSize = useMemo(() => getStatValueFontSize(value), [value]);
 
@@ -30,8 +36,9 @@ const StatMetricCard: React.FC<StatMetricCardProps> = ({
     () =>
       ({
         '--stat-value-font-size': `${fontSize}px`,
+        ...(highlightColor ? { '--stat-highlight-color': highlightColor } : {}),
       } as React.CSSProperties),
-    [fontSize],
+    [fontSize, highlightColor],
   );
 
   if (loading) {
@@ -46,20 +53,22 @@ const StatMetricCard: React.FC<StatMetricCardProps> = ({
     );
   }
 
+  const valueNode = (
+    <span className={styles['stat-value-trigger']}>
+      <span
+        className={`${styles['stat-value']} ${
+          highlight ? styles.highlight : ''
+        }`}
+      >
+        {value}
+      </span>
+    </span>
+  );
+
   return (
     <div className={styles['stat-item-card']} style={valueStyle}>
       <span className={styles['stat-label']}>{label}</span>
-      <Tooltip title={value}>
-        <span className={styles['stat-value-trigger']}>
-          <span
-            className={`${styles['stat-value']} ${
-              highlight ? styles.highlight : ''
-            }`}
-          >
-            {value}
-          </span>
-        </span>
-      </Tooltip>
+      {showTooltip ? <Tooltip title={value}>{valueNode}</Tooltip> : valueNode}
     </div>
   );
 };

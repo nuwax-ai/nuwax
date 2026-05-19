@@ -2634,7 +2634,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyOrders.colDescription": "描述",
   "PC.Pages.MorePage.MyOrders.colBizType": "业务类型",
   "PC.Pages.MorePage.MyOrders.colAmount": "金额",
-  "PC.Pages.MorePage.MyOrders.colPayStatus": "支付状态",
   "PC.Pages.MorePage.MyOrders.colOrderStatus": "订单状态",
   "PC.Pages.MorePage.MyOrders.colCreated": "创建时间",
   "PC.Pages.MorePage.MyOrders.colAction": "操作",

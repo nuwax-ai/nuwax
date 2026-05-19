@@ -2634,7 +2634,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyOrders.colDescription": "Description",
   "PC.Pages.MorePage.MyOrders.colBizType": "Business Type",
   "PC.Pages.MorePage.MyOrders.colAmount": "Amount",
-  "PC.Pages.MorePage.MyOrders.colPayStatus": "Payment Status",
   "PC.Pages.MorePage.MyOrders.colOrderStatus": "Order Status",
   "PC.Pages.MorePage.MyOrders.colCreated": "Created At",
   "PC.Pages.MorePage.MyOrders.colAction": "Action",
