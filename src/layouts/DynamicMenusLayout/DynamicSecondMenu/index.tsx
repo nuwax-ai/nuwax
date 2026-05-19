@@ -98,6 +98,20 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   );
 
   /**
+   * 递归收集所有拥有子菜单的菜单 code（用于初始化时默认展开）
+   */
+  const collectParentCodes = useCallback((menus: MenuItemDto[]): string[] => {
+    const codes: string[] = [];
+    for (const menu of menus) {
+      if (menu.children && menu.children.length > 0 && menu.code) {
+        codes.push(menu.code);
+        codes.push(...collectParentCodes(menu.children));
+      }
+    }
+    return codes;
+  }, []);
+
+  /**
    * 递归收集菜单及其所有子菜单的 code
    */
   const getAllDescendantCodes = useCallback((menu: MenuItemDto): string[] => {
@@ -115,54 +129,50 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
   /**
    * 切换展开状态
-   * 同一层级的菜单只能展开一个（手风琴效果）
+   * workspace 下独立控制，其他场景保持手风琴互斥
    */
   const toggleExpand = useCallback(
     (code: string) => {
       setExpandedMenus((prev) => {
         const isExpanded = prev.includes(code);
         if (isExpanded) {
-          // 用户手动折叠，记录到 ref 中
           manuallyCollapsedRef.current.add(code);
           return prev.filter((c) => c !== code);
         } else {
-          // 用户手动展开，从 ref 中移除（允许自动展开）
           manuallyCollapsedRef.current.delete(code);
 
-          // 查找同一层级的其他菜单
+          // workspace：独立展开，不折叠其他菜单
+          if (parentCode === 'workspace') {
+            if (prev.includes(code)) return prev;
+            return [...prev, code];
+          }
+
+          // 其他场景：手风琴互斥，折叠同级菜单
           const menuInfo = findMenuSiblings(secondMenus, code);
           if (menuInfo) {
-            // 收集所有同级菜单及其子菜单的 code（不包括当前菜单）
             const codesToCollapse: string[] = [];
             menuInfo.siblings.forEach((sibling) => {
               if (sibling.code !== code) {
                 codesToCollapse.push(...getAllDescendantCodes(sibling));
               }
             });
-
-            // 从手动折叠列表中移除所有需要折叠的菜单，允许它们被自动展开
-            // 这样即使这些菜单的子菜单被选中，也能被强制折叠
             codesToCollapse.forEach((c) => {
               manuallyCollapsedRef.current.delete(c);
             });
-
-            // 强制移除所有需要折叠的菜单（包括子菜单），即使它们的子菜单被选中
             const newExpanded = prev.filter(
               (c) => !codesToCollapse.includes(c),
             );
-            // 展开当前菜单
             if (!newExpanded.includes(code)) {
               newExpanded.push(code);
             }
             return newExpanded;
           }
 
-          // 如果找不到同级菜单，直接添加
           return [...prev, code];
         }
       });
     },
-    [secondMenus, findMenuSiblings, getAllDescendantCodes],
+    [parentCode, secondMenus, findMenuSiblings, getAllDescendantCodes],
   );
 
   /**
@@ -506,6 +516,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       return;
     }
 
+    const isFirstInit = !isInitializedRef.current;
+
     // 只在路径真正变化时才执行自动展开（首次加载和菜单数据刚加载完成除外）
     if (
       isInitializedRef.current &&
@@ -515,6 +527,22 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     }
     isInitializedRef.current = true;
     lastPathnameRef.current = location.pathname;
+
+    // workspace：首次初始化时，默认展开所有有子菜单的菜单项
+    if (isFirstInit && parentCode === 'workspace') {
+      const allParentCodes = collectParentCodes(secondMenus).filter(
+        (code) => !manuallyCollapsedRef.current.has(code),
+      );
+      setExpandedMenus((prev) => {
+        const newExpanded = [...prev];
+        allParentCodes.forEach((code) => {
+          if (!newExpanded.includes(code)) {
+            newExpanded.push(code);
+          }
+        });
+        return newExpanded;
+      });
+    }
 
     // 是否是应用内打开的iframe页面
     const isIframePage = location.pathname?.includes('/open-iframe-page');
@@ -533,34 +561,34 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       setExpandedMenus((prev) => {
         const newExpanded = [...prev];
         parentCodes.forEach((code) => {
-          // 只有当菜单不在手动折叠列表中时，才自动展开
           if (
             !newExpanded.includes(code) &&
             !manuallyCollapsedRef.current.has(code)
           ) {
-            // 查找同一层级的其他菜单，先折叠它们
-            const menuInfo = findMenuSiblings(secondMenus, code);
-            if (menuInfo) {
-              // 收集所有同级菜单及其子菜单的 code
-              const siblingsCodesToCollapse: string[] = [];
-              menuInfo.siblings.forEach((sibling) => {
-                if (sibling.code !== code) {
-                  siblingsCodesToCollapse.push(
-                    ...getAllDescendantCodes(sibling),
-                  );
-                }
-              });
-
-              // 移除同一层级的其他菜单及其子菜单
-              siblingsCodesToCollapse.forEach((siblingCode) => {
-                const index = newExpanded.indexOf(siblingCode);
-                if (index > -1) {
-                  newExpanded.splice(index, 1);
-                }
-              });
+            // workspace：只追加展开，不折叠其他菜单
+            if (parentCode === 'workspace') {
+              newExpanded.push(code);
+            } else {
+              // 其他场景：手风琴互斥，折叠同级菜单
+              const menuInfo = findMenuSiblings(secondMenus, code);
+              if (menuInfo) {
+                const siblingsCodesToCollapse: string[] = [];
+                menuInfo.siblings.forEach((sibling) => {
+                  if (sibling.code !== code) {
+                    siblingsCodesToCollapse.push(
+                      ...getAllDescendantCodes(sibling),
+                    );
+                  }
+                });
+                siblingsCodesToCollapse.forEach((siblingCode) => {
+                  const index = newExpanded.indexOf(siblingCode);
+                  if (index > -1) {
+                    newExpanded.splice(index, 1);
+                  }
+                });
+              }
+              newExpanded.push(code);
             }
-            // 展开当前菜单
-            newExpanded.push(code);
           }
         });
         return newExpanded;
@@ -572,6 +600,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     findActiveMenuAndParents,
     findMenuSiblings,
     getAllDescendantCodes,
+    collectParentCodes,
   ]);
 
   /**
