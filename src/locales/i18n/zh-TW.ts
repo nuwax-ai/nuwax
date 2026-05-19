@@ -5147,7 +5147,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.fieldRemark": "備註",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "請輸入備註",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "有效期（月）",
-  "PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack": "返回收益列表",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "收益金額",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsTime": "收益時間",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsType": "收益類型",
