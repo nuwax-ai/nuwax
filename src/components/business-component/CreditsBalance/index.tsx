@@ -1,3 +1,4 @@
+import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
@@ -67,9 +68,7 @@ const CreditsBalance: React.FC = () => {
           </Button>
         </div>
       )}
-      <div className={cx(styles.footer)}>
-        {dict('PC.Components.SiteFooter.poweredBy')}
-      </div>
+      <SiteFooter className={cx(styles.footer)} />
       <PurchaseModal
         open={purchaseModalVisible}
         onCancel={() => setPurchaseModalVisible(false)}

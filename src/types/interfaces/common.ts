@@ -741,6 +741,7 @@ export interface InfiniteScrollDivProps {
 // 页脚props
 export interface SiteFooterProps {
   text?: string;
+  className?: string;
 }
 
 // 直接继承antd的UploadFile，避免重复定义
