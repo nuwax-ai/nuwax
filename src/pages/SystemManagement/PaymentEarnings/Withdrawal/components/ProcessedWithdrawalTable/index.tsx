@@ -128,11 +128,55 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         width: 120,
         render: (_, record) => (
           <span style={{ fontWeight: 600 }}>
-            ¥{(record.amount ?? 0).toLocaleString()}
+            ¥
+            {(record.amount ?? 0).toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
         ),
       },
-      // 平台服务费、实打金额
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPlatformServiceFee',
+        ),
+        dataIndex: 'fee',
+        key: 'fee',
+        search: false,
+        width: 130,
+        render: (_, record) => {
+          const serviceFee = record.fee ?? 0;
+          return (
+            <span style={{ color: '#8c8c8c' }}>
+              ¥
+              {serviceFee.toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          );
+        },
+      },
+      {
+        title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colActualTransferAmount',
+        ),
+        dataIndex: 'actualAmount',
+        key: 'actualAmount',
+        search: false,
+        width: 130,
+        render: (_, record) => {
+          return (
+            <span style={{ fontWeight: 600, color: '#52c41a' }}>
+              ¥
+              {(record.actualAmount ?? 0).toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          );
+        },
+      },
       {
         title: dict(
           'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus',

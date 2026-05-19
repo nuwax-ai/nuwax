@@ -5055,6 +5055,8 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 提现管理 ────────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colDeveloper": "开发者",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAmount": "提现金额",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPlatformServiceFee": "平台服务费",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colActualTransferAmount": "实转金额",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colAccount": "收款账户",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colCreatedAt": "申请时间",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colStatus": "状态",

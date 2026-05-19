@@ -556,6 +556,8 @@ export interface BillWithdrawRecordInfo {
   phone?: string;
   email?: string;
   amount: number;
+  fee?: number;
+  actualAmount?: number;
   status: BillWithdrawStatusEnum;
   rejectReason?: string;
   paymentExtra?: any;
