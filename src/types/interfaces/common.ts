@@ -336,6 +336,8 @@ export interface CreatedNodeItem {
   config: any;
   toolName?: string;
   deployed?: string;
+  paymentRequired?: boolean;
+  subscribed?: boolean;
 }
 
 export interface MCPNodeItem {
