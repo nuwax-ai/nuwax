@@ -5098,6 +5098,11 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadTypeError": "只支持上传 JPG/PNG/JPEG 格式的图片！",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadSizeError": "图片大小不能超过 5MB！",
   "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.payUploadFailed": "上传图片失败，请稍后重试",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPaymentRemark": "打款备注",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewBtn": "查看",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.paymentRemarkDetailTitle": "打款详情",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.voucherImagesLabel": "凭证图片",
+  "PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.noVoucherImages": "暂无凭证图片",
 
   // ── 系统管理 - 开发者收益统计 ─────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Stats.colDeveloper": "开发者",

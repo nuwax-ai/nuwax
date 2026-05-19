@@ -13,6 +13,7 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Tag, message } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import PayModal from './components/PayModal';
+import PaymentRemarkModal from './components/PaymentRemarkModal';
 
 interface ProcessedWithdrawalTableProps {
   status?: BillWithdrawStatusEnum;
@@ -25,6 +26,11 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] =
     useState<BillWithdrawRecordInfo | null>(null);
+  const [remarkModalOpen, setRemarkModalOpen] = useState(false);
+  const [currentPaymentExtra, setCurrentPaymentExtra] = useState<{
+    images: string[];
+    remark: string;
+  } | null>(null);
 
   const handleConfirmPay = async (values: {
     remark: string;
@@ -192,6 +198,31 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
       },
       {
         title: dict(
+          'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colPaymentRemark',
+        ),
+        key: 'paymentRemark',
+        search: false,
+        width: 120,
+        hideInTable: status !== BillWithdrawStatusEnum.PAID,
+        align: 'center',
+        render: (_, record) => {
+          if (!record.paymentExtra) return '-';
+          return (
+            <a
+              onClick={() => {
+                setCurrentPaymentExtra(record.paymentExtra);
+                setRemarkModalOpen(true);
+              }}
+            >
+              {dict(
+                'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.viewBtn',
+              )}
+            </a>
+          );
+        },
+      },
+      {
+        title: dict(
           'PC.Pages.SystemManagement.PaymentEarnings.Withdrawal.colRejectReason',
         ),
         dataIndex: 'rejectReason',
@@ -270,6 +301,14 @@ const ProcessedWithdrawalTable: React.FC<ProcessedWithdrawalTableProps> = ({
         }}
         onConfirm={handleConfirmPay}
         record={selectedRecord}
+      />
+      <PaymentRemarkModal
+        open={remarkModalOpen}
+        onCancel={() => {
+          setRemarkModalOpen(false);
+          setCurrentPaymentExtra(null);
+        }}
+        paymentExtra={currentPaymentExtra}
       />
     </>
   );
