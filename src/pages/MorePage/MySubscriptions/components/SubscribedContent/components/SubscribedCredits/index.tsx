@@ -113,7 +113,7 @@ const SubscribedCredits: React.FC = () => {
                       precision={2}
                       valueStyle={{
                         fontSize: 18,
-                        color: '#f59e0b',
+                        // color: '#f59e0b',
                       }}
                     />
                   </div>
