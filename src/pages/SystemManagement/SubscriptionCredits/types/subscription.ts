@@ -174,6 +174,12 @@ export interface SubscriptionPlanSubscriberInfo {
   status: UserSubscriberStatusEnum;
   // 订阅计划信息
   plan: SubscriptionPlanInfo;
+  // 订阅者信息
+  subscriber: {
+    id: number;
+    name: string;
+    avatar: string;
+  };
   // 已使用调用次数
   callUsedCount: number;
   // 下次重置时间（每月重置）

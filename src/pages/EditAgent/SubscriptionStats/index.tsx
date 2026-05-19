@@ -6,6 +6,7 @@ import {
   UserSubscriberStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
+import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -75,9 +76,9 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
   const columns: ColumnsType<SubscriptionPlanSubscriberInfo> = useMemo(
     () => [
       {
-        title: '用户ID',
-        dataIndex: 'userId',
-        width: 100,
+        title: '订阅记录ID',
+        dataIndex: 'id',
+        width: 150,
       },
       {
         title: '套餐名称',
@@ -92,6 +93,11 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
           periodLabelMap[period] || '-',
       },
       {
+        title: '已用次数',
+        dataIndex: 'callUsedCount',
+        width: 120,
+      },
+      {
         title: '状态',
         dataIndex: 'status',
         width: 110,
@@ -99,20 +105,32 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
           subscriberStatusLabelMap[status] || '-',
       },
       {
+        title: '订阅者ID',
+        dataIndex: ['subscriber', 'id'],
+        width: 100,
+        render: (subscriberId?: number) =>
+          subscriberId !== undefined && subscriberId !== null
+            ? subscriberId
+            : '-',
+      },
+      {
+        title: '订阅者名称',
+        dataIndex: ['subscriber', 'name'],
+        width: 120,
+        ellipsis: true,
+        render: (subscriberName?: string) => subscriberName || '-',
+      },
+      {
         title: '开始时间',
         dataIndex: 'startTime',
-        width: 170,
+        width: 200,
+        render: (startTime: string) => formatDateTimeYmdHms(startTime),
       },
       {
         title: '结束时间',
         dataIndex: 'endTime',
-        width: 170,
-        render: (endTime: string) => endTime || '-',
-      },
-      {
-        title: '已用次数',
-        dataIndex: 'callUsedCount',
-        width: 100,
+        width: 200,
+        render: (endTime: string) => formatDateTimeYmdHms(endTime),
       },
     ],
     [],
