@@ -906,8 +906,10 @@ export interface SystemRevenueDetailInfo {
 
 /** 资源统计-统计分组 */
 export interface StatGroup {
-  /** 总输入Token */
+  /** 总输入Token（含缓存） */
   totalInputTokens: number;
+  /** 输入Token（不含缓存） */
+  inputTokens?: number;
   /** 总输出Token */
   totalOutputTokens: number;
   /** 总缓存输入Token */

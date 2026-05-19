@@ -2,6 +2,7 @@ import { TableActions, XProTable } from '@/components/ProComponents';
 import { apiApiKeyStats } from '@/services/account';
 import { t } from '@/services/i18nRuntime';
 import type { ApiKeyInfo, ApiKeyStatsInfo } from '@/types/interfaces/account';
+import { formatInteger } from '@/utils/numberFormat';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Button, Modal, Typography } from 'antd';
 import React from 'react';
@@ -17,15 +18,6 @@ interface ApiKeyStatsModalProps {
   /** 当前选中的密钥信息 */
   record?: ApiKeyInfo;
 }
-
-/**
- * 格式化数字为千分位字符串
- */
-const formatNumber = (num: any) => {
-  const n = Number(num);
-  if (isNaN(n)) return '0';
-  return new Intl.NumberFormat('en-US').format(n);
-};
 
 /**
  * API KEY 调用统计弹窗
@@ -56,7 +48,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       align: 'center',
       render: (_, record) => (
         <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
-          {formatNumber(record.total?.totalCount)}
+          {formatInteger(record.total?.totalCount)}
         </span>
       ),
     },
@@ -66,7 +58,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       align: 'center',
       render: (_, record) => (
         <span style={{ color: '#52c41a', fontSize: '16px' }}>
-          {formatNumber(record.month?.totalCount)}
+          {formatInteger(record.month?.totalCount)}
         </span>
       ),
     },
@@ -76,7 +68,7 @@ const ApiKeyStatsModal: React.FC<ApiKeyStatsModalProps> = ({
       align: 'center',
       render: (_, record) => (
         <span style={{ color: '#1890ff', fontSize: '16px' }}>
-          {formatNumber(record.today?.totalCount)}
+          {formatInteger(record.today?.totalCount)}
         </span>
       ),
     },
