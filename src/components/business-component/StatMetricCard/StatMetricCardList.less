@@ -1,0 +1,13 @@
+@import '@/styles/token';
+
+// 统计卡片网格列表：自适应列数，配合单卡动态字号
+.stat-metric-card-list {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--stat-card-min-width, 180px), 1fr)
+  );
+  gap: @marginSm;
+  margin-bottom: @marginMd;
+  flex-shrink: 0;
+}

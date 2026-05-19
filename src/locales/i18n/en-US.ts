@@ -2704,6 +2704,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.purchaseCredits": "Additional Credits",
   "PC.Pages.MorePage.MySubscriptions.activityCredits": "Activity Credits",
   "PC.Pages.MorePage.MySubscriptions.addPurchase": "+ Purchase",
+  "PC.Pages.MorePage.MySubscriptions.dailyGiftTip": "Daily login reward: {0} credits",
   "PC.Pages.MorePage.MySubscriptions.detail": "Details",
   "PC.Pages.MorePage.MySubscriptions.planGrid": "Subscription Plans",
   "PC.Pages.MorePage.MySubscriptions.perMonth": "/mo",

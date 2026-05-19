@@ -1,3 +1,4 @@
+import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -10,19 +11,10 @@ import type {
   ResourceStatDTO,
   ResourceStatSummaryDTO,
 } from '@/types/interfaces/systemManage';
-import {
-  formatDecimal,
-  formatInteger,
-  subtractNumbers,
-  sumNumbers,
-} from '@/utils/numberFormat';
-import {
-  getStatGroupInputTokens,
-  getStatGroupTotalInputTokens,
-} from '@/utils/resourceStatMetrics';
+import { formatDecimal, formatInteger, sumNumbers } from '@/utils/numberFormat';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, Skeleton, Tooltip, message } from 'antd';
+import { Button, DatePicker, message } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
@@ -31,43 +23,14 @@ import {
   ResourceStatTargetTypeTag,
   renderUsageStatTokenCell,
 } from './ResourceStatTargetTypeTag';
+import {
+  getUsageRecordInputTokens,
+  getUsageRecordTotalInputTokens,
+  getUsageSummaryInputTokens,
+  getUsageSummaryTotalInputTokens,
+} from './resourceStatTokenMetrics';
 
 const { RangePicker } = DatePicker;
-
-const SummaryCard: React.FC<{
-  label: string;
-  value: string;
-  highlight?: boolean;
-  loading?: boolean;
-}> = ({ label, value, highlight, loading }) => {
-  if (loading) {
-    return (
-      <div className={styles['stat-item-card']}>
-        <Skeleton
-          active
-          paragraph={{ rows: 1, width: '50%' }}
-          title={{ width: '70%' }}
-        />
-      </div>
-    );
-  }
-  return (
-    <div className={styles['stat-item-card']}>
-      <span className={styles['stat-label']}>{label}</span>
-      <Tooltip title={value}>
-        <span className={styles['stat-value-trigger']}>
-          <span
-            className={`${styles['stat-value']} ${
-              highlight ? styles['highlight'] : ''
-            }`}
-          >
-            {value}
-          </span>
-        </span>
-      </Tooltip>
-    </div>
-  );
-};
 
 const UsageStats: React.FC = () => {
   const location = useLocation();
@@ -172,9 +135,7 @@ const UsageStats: React.FC = () => {
       },
       {
         label: dict('PC.Pages.UsageStats.totalInputTokens'),
-        value: formatInteger(
-          getStatGroupTotalInputTokens(c, 'totalIncludesCache'),
-        ),
+        value: formatInteger(getUsageSummaryTotalInputTokens(c)),
       },
       {
         label: dict('PC.Pages.UsageStats.cacheInputTokens'),
@@ -182,7 +143,7 @@ const UsageStats: React.FC = () => {
       },
       {
         label: dict('PC.Pages.UsageStats.inputTokens'),
-        value: formatInteger(getStatGroupInputTokens(c, 'totalIncludesCache')),
+        value: formatInteger(getUsageSummaryInputTokens(c)),
       },
       {
         label: dict('PC.Pages.UsageStats.outputTokens'),
@@ -234,7 +195,7 @@ const UsageStats: React.FC = () => {
       hideInSearch: true,
       render: (_, record) =>
         renderUsageStatTokenCell(record, () =>
-          formatInteger(record.inputTokens),
+          formatInteger(getUsageRecordTotalInputTokens(record)),
         ),
     },
     {
@@ -253,7 +214,7 @@ const UsageStats: React.FC = () => {
       hideInSearch: true,
       render: (_, record) =>
         renderUsageStatTokenCell(record, () =>
-          subtractNumbers(record.inputTokens, record.cacheInputTokens),
+          formatInteger(getUsageRecordInputTokens(record)),
         ),
     },
     {
@@ -312,17 +273,7 @@ const UsageStats: React.FC = () => {
         </div>
 
         {/* 统计卡片 */}
-        <div className={styles['stat-cards-row']}>
-          {overviewMetrics.map((metric, index) => (
-            <SummaryCard
-              key={index}
-              label={metric.label}
-              value={metric.value}
-              highlight={metric.highlight}
-              loading={summaryLoading}
-            />
-          ))}
-        </div>
+        <StatMetricCardList items={overviewMetrics} loading={summaryLoading} />
 
         {/* 明细表格 */}
         <div className={styles['detail-section']}>

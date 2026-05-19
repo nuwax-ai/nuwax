@@ -1,3 +1,4 @@
+import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { Button } from 'antd';
@@ -11,6 +12,7 @@ const cx = classNames.bind(styles);
 const CreditsBalance: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
+  const [purchaseModalVisible, setPurchaseModalVisible] = useState(false);
 
   const showCredits = tenantConfigInfo?.enableSubscription !== 0;
 
@@ -28,12 +30,12 @@ const CreditsBalance: React.FC = () => {
   }, [showCredits]);
 
   const handleClickBalance = () => {
-    history.push('/more-page/credit-records');
+    history.push('/more-page/my-subscriptions');
   };
 
   const handleTopUp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    history.push('/more-page/my-subscriptions');
+    setPurchaseModalVisible(true);
   };
 
   return (
@@ -60,6 +62,10 @@ const CreditsBalance: React.FC = () => {
       <div className={cx(styles.footer)}>
         {dict('PC.Components.SiteFooter.poweredBy')}
       </div>
+      <PurchaseModal
+        open={purchaseModalVisible}
+        onCancel={() => setPurchaseModalVisible(false)}
+      />
     </div>
   );
 };
