@@ -5,7 +5,7 @@ import { apiSystemRevenueDetail } from '@/services/systemManage';
 import type { SystemRevenueDetailInfo } from '@/types/interfaces/systemManage';
 import { formatDateTime } from '@/utils/dateUtils';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Tag } from 'antd';
+import { Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { history, useSearchParams } from 'umi';
@@ -98,11 +98,8 @@ const EarningsDetail: React.FC = () => {
         'PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle',
         developerName,
       )}
-      rightSlot={
-        <Button onClick={() => history.back()}>
-          {dict('PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack')}
-        </Button>
-      }
+      back={true}
+      onBack={() => history.back()}
     >
       <XProTable<SystemRevenueDetailInfo>
         rowKey="id"

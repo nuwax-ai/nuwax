@@ -5248,7 +5248,6 @@ export const EN_US: SystemLangMap = {
 
   // ── System Management - Earnings Details Sub-page ──────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - Earnings Details",
-  "PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack": "Back to List",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colOrderNo": "Order/Serial No.",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colItemName": "Item Name",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "Earnings Amount",

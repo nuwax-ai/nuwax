@@ -351,6 +351,14 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
       // 去掉查询参数，只保留路径部分
       const [pathWithoutQuery] = targetPath.split('?');
 
+      // 特殊处理：进入个人积分明细页面 (/more-page/credit-records) 时，让“我的订阅”菜单项保持高亮
+      if (
+        pathname === '/more-page/credit-records' &&
+        pathWithoutQuery === '/more-page/my-subscriptions'
+      ) {
+        return true;
+      }
+
       // 精确匹配或前缀匹配
       return (
         pathname === pathWithoutQuery ||
@@ -483,6 +491,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
 
         // 3) menu.path 普通路径：支持精确匹配或前缀匹配
         if (
+          (target.path === '/more-page/credit-records' &&
+            rawMenuPath === '/more-page/my-subscriptions') ||
           target.path === rawMenuPath ||
           target.path.startsWith(rawMenuPath + '/')
         ) {

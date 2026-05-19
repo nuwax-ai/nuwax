@@ -8,6 +8,7 @@ import { type CreditRecordInfo } from '@/types/interfaces/subscription';
 import type { FormInstance, ProColumns } from '@ant-design/pro-components';
 import { Statistic, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { history } from 'umi';
 import styles from './index.less';
 
 const CreditRecords: React.FC = () => {
@@ -171,7 +172,11 @@ const CreditRecords: React.FC = () => {
   ];
 
   return (
-    <WorkspaceLayout title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}>
+    <WorkspaceLayout
+      title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}
+      back={true}
+      onBack={() => history.push('/more-page/my-subscriptions')}
+    >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <XProTable<CreditRecordInfo>
           rowKey="id"

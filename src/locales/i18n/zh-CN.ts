@@ -5247,7 +5247,6 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 系统管理 - 收益明细子页面 ──────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.subtitle": "{} - 收益明细",
-  "PC.Pages.SystemManagement.PaymentEarnings.Detail.btnBack": "返回收益列表",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colOrderNo": "订单编号/流水号",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colItemName": "收益项名称",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "收益金额",
