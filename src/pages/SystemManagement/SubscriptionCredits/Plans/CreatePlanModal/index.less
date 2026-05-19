@@ -3,8 +3,8 @@
 // 用户组卡片
 .user-group-card {
   border: 1px solid #f0f0f0;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: @borderRadiusLg;
+  padding: @paddingSm;
   flex: 1 1 calc(50% - 6px);
   min-width: 280px;
   cursor: pointer;
@@ -25,12 +25,12 @@
 
   .user-group-card-title {
     max-width: 80%;
-    font-size: 16px;
-    margin-bottom: 4px;
+    font-size: @fontSizeLg;
+    margin-bottom: @marginXxs;
   }
 
   .user-group-card-desc {
-    font-size: 12px;
+    font-size: @fontSizeSm;
     color: @colorTextSecondary;
     line-height: 1.5;
     height: 18px;
@@ -54,10 +54,10 @@
   font-size: 18px;
   font-weight: 600;
   color: #1f1f1f;
-  margin-bottom: 4px;
+  margin-bottom: @marginXxs;
 }
 
 .developer-permission-desc {
   color: #8c8c8c;
-  margin-bottom: 16px;
+  margin-bottom: @margin;
 }

@@ -1,7 +1,7 @@
-@import '@/styles/token';
+@import '@/styles/token.less';
 
 .body {
-  padding: 8px 20px 24px;
+  padding: @paddingXs @paddingMd @paddingLg;
 }
 
 .loading-wrap {
@@ -21,7 +21,7 @@
   max-height: min(520px, 62vh);
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: 8px;
+  padding-bottom: @paddingXs;
   align-content: start;
   scrollbar-width: thin;
 
@@ -61,18 +61,18 @@
 }
 
 .card-header {
-  margin-bottom: 12px;
+  margin-bottom: @marginSm;
 }
 
 .title {
-  font-size: 20px;
+  font-size: @fontSizeXl;
   color: @colorTextHeading;
   line-height: 1.3;
   margin-bottom: 0;
 }
 
 .price-block {
-  margin-bottom: 12px;
+  margin-bottom: @marginSm;
 }
 
 .price-main-row {
@@ -102,7 +102,7 @@
 }
 
 .subscribe-btn-wrap {
-  margin-bottom: 16px;
+  margin-bottom: @margin;
 
   /** Ant Design Button：根节点 inline-flex；省略须落在包住文案的子 span（并设 min-width:0） */
   :global(.ant-btn) {
@@ -179,7 +179,7 @@
 
 .diamond {
   display: inline-block;
-  font-size: 12px;
+  font-size: @fontSizeSm;
   line-height: 1;
   color: @colorTextHeading;
   transform: rotate(45deg);
@@ -191,7 +191,7 @@
 }
 
 .empty {
-  padding: 48px 16px;
+  padding: 48px @padding;
   text-align: center;
   color: @colorTextTertiary;
 }

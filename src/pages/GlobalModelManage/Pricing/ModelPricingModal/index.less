@@ -1,45 +1,47 @@
+@import '@/styles/token.less';
+
 .model-pricing-modal-body {
   max-height: 70vh;
   overflow-y: auto;
 }
 
 .model-section {
-  margin-top: 16px;
+  margin-top: @margin;
   border-top: 1px solid #f0f0f0;
-  padding-top: 16px;
+  padding-top: @padding;
 }
 
 .model-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: @marginSm;
 }
 
 .model-section-title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: @fontSize;
 }
 
 .model-section-hint {
-  font-size: 12px;
+  font-size: @fontSizeSm;
   color: #999;
   font-weight: normal;
-  margin-left: 8px;
+  margin-left: @marginXs;
 }
 
 .model-card {
   border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 8px;
+  border-radius: @borderRadiusOuter;
+  padding: @paddingSm;
+  margin-bottom: @marginXs;
 }
 
 .model-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: @marginXs;
 }
 
 .model-threshold {
@@ -49,7 +51,7 @@
 }
 
 .model-threshold-prefix {
-  font-size: 14px;
+  font-size: @fontSize;
   color: #666;
 }
 
@@ -58,7 +60,7 @@
 }
 
 .model-threshold-suffix {
-  font-size: 14px;
+  font-size: @fontSize;
   color: #666;
 }
 
@@ -73,9 +75,9 @@
 
 .model-price-label {
   display: block;
-  font-size: 12px;
+  font-size: @fontSizeSm;
   color: #666;
-  margin-bottom: 4px;
+  margin-bottom: @marginXxs;
 }
 
 .model-price-input {
