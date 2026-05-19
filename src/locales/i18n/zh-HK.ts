@@ -4934,8 +4934,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Common.Global.deleteSuccess": "刪除成功",
   "PC.Common.Global.disableSuccess": "已停用",
   "PC.Common.Global.enableSuccess": "已啟用",
-  "PC.Common.Global.imageFormatError": "僅支援上傳 JPG/JPEG/PNG 格式圖片",
-  "PC.Common.Global.imageSizeError": "圖片大小不能超過 1MB",
   "PC.Common.Global.invalidUrl": "請輸入有效的 URL 地址 (以 http:// 或 https:// 开头)",
   "PC.Common.Global.items": "條",
   "PC.Common.Global.operationSuccess": "操作成功",

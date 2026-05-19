@@ -4945,8 +4945,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Common.Global.deleteSuccess": "Deleted successfully",
   "PC.Common.Global.disableSuccess": "Disabled",
   "PC.Common.Global.enableSuccess": "Enabled",
-  "PC.Common.Global.imageFormatError": "Only JPG/JPEG/PNG formats are supported",
-  "PC.Common.Global.imageSizeError": "Image size cannot exceed 1MB",
   "PC.Common.Global.invalidUrl": "Please enter a valid URL (starting with http:// or https://)",
   "PC.Common.Global.items": "records",
   "PC.Common.Global.operationSuccess": "Operation successful",
