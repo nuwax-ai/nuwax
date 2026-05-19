@@ -6,7 +6,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
-import useAgentSubscription from '@/hooks/useAgentSubscription';
+import useSubscription from '@/hooks/useSubscription';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
@@ -109,14 +109,14 @@ const BaseTemplate: React.FC = () => {
     // 智能体订阅套餐
     agentSubscriptionPlans,
     loadingAgentSubscriptionPlans,
-    openAgentSubscriptionModal,
+    queryAgentSubscriptionPlans,
     // 当前生效智能体套餐
     mySubscriptionInfo,
     // 加载当前生效智能体套餐loading
     loadingMySubscription,
     // 创建智能体订阅订单
-    createAgentSubscriptionOrder,
-  } = useAgentSubscription();
+    createSubscriptionOrder,
+  } = useSubscription();
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -183,8 +183,8 @@ const BaseTemplate: React.FC = () => {
     }
 
     // 打开智能体订阅套餐弹窗
-    openAgentSubscriptionModal(agentId);
-  }, [openPaymentModal, openAgentSubscriptionModal, agentId]);
+    queryAgentSubscriptionPlans(agentId);
+  }, [openPaymentModal, queryAgentSubscriptionPlans, agentId]);
 
   useEffect(() => {
     /**
@@ -694,7 +694,7 @@ const BaseTemplate: React.FC = () => {
           // 关闭回调
           onClose={() => setOpenPaymentModal(false)}
           // 订阅回调
-          onSubscribe={createAgentSubscriptionOrder}
+          onSubscribe={createSubscriptionOrder}
         />
       </ConditionRender>
     </div>

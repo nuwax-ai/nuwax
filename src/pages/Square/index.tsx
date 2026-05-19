@@ -1,10 +1,13 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ButtonToggle from '@/components/ButtonToggle';
+import ConditionRender from '@/components/ConditionRender';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
+import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
@@ -104,6 +107,20 @@ const Square: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
+  // ===================== 付费订阅 =====================
+  // 付费订阅弹窗（对齐会话页 PaymentSubscriptionModal）
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+
+  // 创建订阅订单 + 当前技能维度「我的订阅」
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
   const {
     squareComponentList,
     setSquareComponentList,
@@ -124,6 +141,22 @@ const Square: React.FC = () => {
         item.targetId
       }&skillName=${encodeURIComponent(item.name)}`,
     );
+  };
+
+  // 点击技能卡片
+  const handleClickSkillCard = (item: SquarePublishedItemInfo) => {
+    const { targetId, targetType, paymentRequired, subscribed } = item;
+
+    // 如果开启订阅功能，且技能需要付费，则打开付费订阅弹窗
+    if (isEnableSubscription && paymentRequired && !subscribed) {
+      // 查询技能订阅计划列表以及当前技能我的订阅信息
+      querySkillSubscriptionPlans(targetId);
+      // 打开付费订阅弹窗
+      setOpenPaymentModal(true);
+      return;
+    } else {
+      handleClick(targetId, targetType);
+    }
   };
 
   // 查询列表成功后处理数据
@@ -505,9 +538,7 @@ const Square: React.FC = () => {
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         collectApi={apiPublishedSkillCollect}
                         unCollectApi={apiPublishedSkillUnCollect}
-                        onClick={() =>
-                          handleClick(item.targetId, item.targetType)
-                        }
+                        onClick={() => handleClickSkillCard(item)}
                         onStartUse={() => handleClickSkill(item)}
                       />
                     );
@@ -587,6 +618,22 @@ const Square: React.FC = () => {
             )}
           </div>
         </InfiniteScrollDiv>
+
+        <ConditionRender condition={isEnableSubscription}>
+          {/* 付费订阅套餐弹窗 */}
+          <PaymentSubscriptionModal
+            open={openPaymentModal}
+            targetType="Skill"
+            loading={loadingTargetPricing || loadingMySubscription}
+            plans={targetSubscriptionPlans}
+            // 当前订阅信息
+            currentSubscribedInfo={
+              mySubscriptionInfo?.currentSubscription ?? null
+            }
+            onClose={() => setOpenPaymentModal(false)}
+            onSubscribe={createSubscriptionOrder}
+          />
+        </ConditionRender>
       </div>
     </div>
   );
