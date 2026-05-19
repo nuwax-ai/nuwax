@@ -15,8 +15,8 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import useAgentSubscription from '@/hooks/useAgentSubscription';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import useSubscription from '@/hooks/useSubscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -180,8 +180,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     loadingMySubscription,
     // 创建智能体订阅订单
     createSubscriptionOrder,
-    openAgentSubscriptionModal,
-  } = useAgentSubscription();
+    queryAgentSubscriptionPlans,
+  } = useSubscription();
 
   // 缓存智能体名称，避免清空等操作导致 agentDetail 刷新时的文字闪烁
   const [cachedAgentName, setCachedAgentName] = useState<string>('');
@@ -465,8 +465,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     }
 
     // 打开智能体订阅套餐弹窗
-    openAgentSubscriptionModal(agentId);
-  }, [openPaymentModal, isAppSidebarMode, openAgentSubscriptionModal, agentId]);
+    queryAgentSubscriptionPlans(agentId);
+  }, [
+    openPaymentModal,
+    isAppSidebarMode,
+    queryAgentSubscriptionPlans,
+    agentId,
+  ]);
 
   useLayoutEffect(() => {
     setLoading(true);

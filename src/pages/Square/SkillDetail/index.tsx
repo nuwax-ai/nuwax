@@ -2,9 +2,7 @@ import PaymentSubscriptionModal from '@/components/business-component/PaymentSub
 import ConditionRender from '@/components/ConditionRender';
 import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
-import useAgentSubscription from '@/hooks/useAgentSubscription';
-import { ToolPricingTargetType } from '@/pages/SpaceResource/types/resource';
-import type { SubscriptionPlanInfo } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
 import { apiPublishedSkillInfo } from '@/services/plugin';
 import { apiPublishTemplateCopy } from '@/services/publish';
@@ -12,7 +10,6 @@ import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
-import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
 import { Button, message, Space } from 'antd';
@@ -37,14 +34,16 @@ const SkillDetail: React.FC = ({}) => {
 
   // 创建订阅订单 + 当前技能维度「我的订阅」
   const {
+    // 创建订阅订单
     createSubscriptionOrder,
-    loadTargetPricing,
+    querySkillSubscriptionPlans,
+    // 目标对象定价配置
     loadingTargetPricing,
     targetSubscriptionPlans,
+    // 当前技能维度「我的订阅」信息
     mySubscriptionInfo,
-    loadMySubscription,
     loadingMySubscription,
-  } = useAgentSubscription();
+  } = useSubscription();
 
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
@@ -98,16 +97,10 @@ const SkillDetail: React.FC = ({}) => {
     if (!skillId) {
       return;
     }
-    // 查询技能定价配置
-    loadTargetPricing({
-      targetType: ToolPricingTargetType.SKILL,
-      targetId: String(skillId),
-    });
-    loadMySubscription({
-      bizType: BizTypeEnum.Skill,
-      bizId: skillId,
-    });
-  }, [openPaymentModal, skillId, loadTargetPricing, loadMySubscription]);
+
+    // 查询技能订阅计划列表以及当前技能我的订阅信息
+    querySkillSubscriptionPlans(skillId);
+  }, [openPaymentModal, skillId, querySkillSubscriptionPlans]);
 
   useEffect(() => {
     if (!skillInfo) {
@@ -117,19 +110,6 @@ const SkillDetail: React.FC = ({}) => {
       setOpenPaymentModal(true);
     }
   }, [skillInfo]);
-
-  // 订阅技能套餐
-  const handleSubscribeSkillPlan = (plan: SubscriptionPlanInfo) => {
-    if (!plan.id) {
-      message.warning(
-        dict('PC.Pages.Square.SkillDetail.subscribeNeedsPlanConfigured'),
-      );
-      return;
-    }
-
-    // 创建订阅订单
-    createSubscriptionOrder(plan);
-  };
 
   /** 手动打开订阅弹窗并拉取套餐（未订阅时自动打开弹窗同样在 useEffect 中请求定价） */
   const handleOpenSubscribeModal = () => {
@@ -269,7 +249,7 @@ const SkillDetail: React.FC = ({}) => {
             mySubscriptionInfo?.currentSubscription ?? null
           }
           onClose={() => setOpenPaymentModal(false)}
-          onSubscribe={handleSubscribeSkillPlan}
+          onSubscribe={createSubscriptionOrder}
         />
       </ConditionRender>
     </div>
