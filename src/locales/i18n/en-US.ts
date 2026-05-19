@@ -1561,6 +1561,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AntvX6ComplexNode.requestTimeoutLabel": "Request Timeout",
   "PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder": "Please enter timeout duration",
   "PC.Pages.AntvX6ComplexNode.skills": "Skills",
+  "PC.Pages.AntvX6ComplexNode.workflowTools": "Tools",
   "PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder": "System prompt can reference input variables with {{var}}, {{var.child}}, or {{var[index]}}.",
   "PC.Pages.AntvX6ComplexNode.systemPromptTitle": "System Prompt",
   "PC.Pages.AntvX6ComplexNode.systemPromptTooltip": "Provide system-level instructions for the conversation, such as role setting and response logic.",

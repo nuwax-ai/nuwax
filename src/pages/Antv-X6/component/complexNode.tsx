@@ -215,7 +215,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       {/* 技能模块 */}
       <div className="dis-sb">
         <span className="node-title-style">
-          {t('PC.Pages.AntvX6ComplexNode.skills')}
+          {t('PC.Pages.AntvX6ComplexNode.workflowTools')}
         </span>
         <Button
           icon={<PlusOutlined />}

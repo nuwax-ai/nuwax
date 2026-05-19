@@ -1550,6 +1550,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AntvX6ComplexNode.requestTimeoutLabel": "リクエストタイムアウト",
   "PC.Pages.AntvX6ComplexNode.requestTimeoutPlaceholder": "タイムアウト時間を入力してください",
   "PC.Pages.AntvX6ComplexNode.skills": "スキル",
+  "PC.Pages.AntvX6ComplexNode.workflowTools": "スキル",
   "PC.Pages.AntvX6ComplexNode.systemPromptPlaceholder": "システム プロンプトは、{{var}}、{{var.child}}、または {{var[index]}} を使用して入力変数を参照できます。",
   "PC.Pages.AntvX6ComplexNode.systemPromptTitle": "システムプロンプト",
   "PC.Pages.AntvX6ComplexNode.systemPromptTooltip": "役割設定や応答ロジックなど、会話に対するシステムレベルの指示を提供します。",
