@@ -242,6 +242,8 @@ const SkillDetail: React.FC = ({}) => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Skill"
+          // 技能没有试用次数
+          overCallLimit={true}
           loading={loadingTargetPricing || loadingMySubscription}
           plans={targetSubscriptionPlans}
           // 当前订阅信息

@@ -18,7 +18,7 @@ import {
   MySubscriptionStatusEnum,
   type MySubscriptionItem,
 } from '@/types/interfaces/subscription';
-import { Button, Empty, Modal, Spin } from 'antd';
+import { Button, Empty, Modal, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -333,9 +333,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   className={cx(styles['plan-pay-card'])}
                 >
                   <div className={cx(styles['card-header'])}>
-                    <div className={cx(styles.title, 'text-ellipsis')}>
-                      {plan.name}
-                    </div>
+                    <Tooltip title={plan.name}>
+                      <div className={cx(styles.title, 'text-ellipsis')}>
+                        {plan.name}
+                      </div>
+                    </Tooltip>
                   </div>
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>
