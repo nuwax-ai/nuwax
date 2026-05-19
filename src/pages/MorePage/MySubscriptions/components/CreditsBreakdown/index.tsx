@@ -20,7 +20,6 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
   summary,
   onAddPurchase,
 }) => {
-  console.log(summary);
   return (
     <div className={cx(styles['credits-breakdown'])}>
       <div className={cx(styles['credits-item'])}>
