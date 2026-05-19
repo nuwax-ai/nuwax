@@ -89,7 +89,13 @@ const DailyEarningsList: React.FC = () => {
       key: 'amount',
       search: false,
       render: (_, record) => (
-        <span className={cx(styles.amount)}>+¥{record.amount.toFixed(2)}</span>
+        <span className={cx(styles.amount)}>
+          +¥
+          {new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 4,
+            maximumFractionDigits: 4,
+          }).format(record.amount)}
+        </span>
       ),
     },
     {
