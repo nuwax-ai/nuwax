@@ -341,18 +341,24 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
 
         <ConditionRender condition={subscriptionEnabled}>
           <Form form={form}>
-            <div className="w-full">
-              <div className={styles['trial-form-row']}>
-                <span className={styles['trial-label']}>默认试用次数</span>
+            <div className={styles['enable-row']}>
+              <div className={styles['enable-info']}>
+                <div className={styles['enable-title']}>默认试用次数</div>
+                <div className={styles['enable-desc']}>
+                  新用户可免费体验的次数，设为 0 则不提供试用
+                </div>
+              </div>
+              <div className={styles['trial-controls']}>
                 <Form.Item name="trialCount" noStyle initialValue={0}>
-                  <InputNumber min={0} className={styles['trial-input']} />
+                  <InputNumber
+                    min={0}
+                    max={100000000}
+                    className={styles['trial-input']}
+                  />
                 </Form.Item>
                 <Button type="primary" loading={saving} onClick={handleSave}>
                   {dict('PC.Common.Global.save')}
                 </Button>
-              </div>
-              <div className={styles['trial-hint']}>
-                新用户可免费体验的次数，设为 0 则不提供试用
               </div>
             </div>
           </Form>

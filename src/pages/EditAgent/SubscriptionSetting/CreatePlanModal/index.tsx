@@ -218,7 +218,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
           </div>
         </Form.Item>
 
-        <Form.Item label="可调用次数">
+        <Form.Item label="可调用次数（每月）">
           <div className={styles['limit-switch-row']}>
             <Button
               type={limitType === 'unlimited' ? 'primary' : 'default'}
@@ -243,8 +243,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
             >
               <InputNumber
                 min={1}
+                max={10000000000}
                 precision={0}
-                style={{ width: '100%' }}
+                className="w-full"
                 placeholder="请输入可调用次数"
               />
             </Form.Item>
