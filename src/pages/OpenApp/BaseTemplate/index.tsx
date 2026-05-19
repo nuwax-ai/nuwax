@@ -1,7 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
-import PaymentSubscriptionModal from '@/components/business-component/ConversationDetails/PaymentSubscriptionModal';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';

@@ -5,6 +5,7 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
@@ -59,7 +60,6 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
-import PaymentSubscriptionModal from './PaymentSubscriptionModal';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
