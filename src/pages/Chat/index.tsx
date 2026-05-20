@@ -480,6 +480,9 @@ const Chat: React.FC = () => {
       if (targetAgent.paymentRequired && !targetAgent.subscribed) {
         setOpenPaymentModal(true);
         setIsNeedSubscription(true);
+      } else {
+        setOpenPaymentModal(false);
+        setIsNeedSubscription(false);
       }
       // 设置应用智能体详情
       handleSetAppAgentDetail(targetAgent);
@@ -671,6 +674,9 @@ const Chat: React.FC = () => {
       resetInit();
       setSelectedComponentList([]);
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
+
+      setOpenPaymentModal(false);
+      setIsNeedSubscription(false);
     };
   }, [id]);
 
