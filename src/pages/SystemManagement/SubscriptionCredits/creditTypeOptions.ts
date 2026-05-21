@@ -14,12 +14,8 @@ export const GRANT_CREDIT_TYPE_OPTIONS: CreditFlowTypeEnum[] = [
   CreditFlowTypeEnum.MANUAL,
 ];
 
-/** 扣减可选类型：在发放基础上增加 MANUAL_DEDUCT（默认 MANUAL_DEDUCT） */
+/** 扣减：（只包括系统扣减 MANUAL_DEDUCT） */
 export const DEDUCT_CREDIT_TYPE_OPTIONS: CreditFlowTypeEnum[] = [
-  CreditFlowTypeEnum.SUBSCRIPTION,
-  CreditFlowTypeEnum.PURCHASE,
-  CreditFlowTypeEnum.ACTIVITY,
-  CreditFlowTypeEnum.MANUAL,
   CreditFlowTypeEnum.MANUAL_DEDUCT,
 ];
 
