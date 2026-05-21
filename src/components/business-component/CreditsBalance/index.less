@@ -5,6 +5,9 @@
 @balanceContainerShadow: 0 1px 4px rgba(0, 0, 0, 5%);
 @balanceContainerHoverShadow: 0 2px 8px rgba(0, 0, 0, 8%);
 @topUpBtnShadow: 0 1px 4px rgba(26, 107, 255, 25%);
+@containerBgColor: rgba(255, 255, 255, 60%);
+@containerBorderColor: rgba(0, 0, 0, 6%);
+@btnBgColor: rgba(0, 0, 0, 4%);
 
 .credits-balance-wrapper {
   // margin-left: calc(-1 * @marginXs);
@@ -22,7 +25,8 @@
     cursor: pointer;
     padding: @paddingXs @marginSm;
     border-radius: @borderRadiusLg;
-    background: @colorWhite;
+    background: @containerBgColor;
+    border: @lineWidth @lineType @containerBorderColor;
     box-shadow: @balanceContainerShadow;
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
@@ -52,5 +56,5 @@
 .top-up-btn {
   font-size: @fontSizeSm;
   border: none;
-  background: #f6f6f6;
+  background: @btnBgColor;
 }
