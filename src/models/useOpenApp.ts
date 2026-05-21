@@ -26,9 +26,6 @@ const useOpenApp = () => {
   // 付费弹窗状态
   const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
 
-  // 是否需要付费订阅
-  const [isNeedSubscription, setIsNeedSubscription] = useState<boolean>(false);
-
   // 状态管理
   const { setIsMobile } = useModel('layout');
 
@@ -122,8 +119,6 @@ const useOpenApp = () => {
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
-    isNeedSubscription,
-    setIsNeedSubscription,
   };
 };
 

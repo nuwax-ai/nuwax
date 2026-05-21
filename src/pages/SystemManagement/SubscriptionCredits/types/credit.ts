@@ -133,8 +133,8 @@ export interface AddCreditParams {
   /*业务单号，用于幂等 */
   bizNo?: string;
 
-  /*过期时间，为空表示永不过期 */
-  expireTime?: string;
+  /*过期时间（毫秒时间戳），为空表示永不过期 */
+  expireTime?: number;
 
   /*备注 */
   remark?: string;

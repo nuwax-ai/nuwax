@@ -12,6 +12,7 @@ import type {
 import { Statistic, Tag } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'umi';
+import { CREDIT_FLOW_TYPE_SEARCH_KEYS } from '../creditTypeOptions';
 import { apiGetCreditFlowList } from '../services/credit';
 import {
   CreditFlowOperationTypeEnum,
@@ -38,27 +39,6 @@ function parseUserIdFromSearch(search: string): number | undefined {
   const n = Number(raw);
   return Number.isNaN(n) ? undefined : n;
 }
-
-/** 积分类型筛选下拉：枚举值 → i18n key（不含 LOAN） */
-const CREDIT_FLOW_TYPE_SEARCH_KEYS: Partial<
-  Record<CreditFlowTypeEnum, string>
-> = {
-  [CreditFlowTypeEnum.SUBSCRIPTION]:
-    'PC.Pages.SystemCreditRecords.creditTypeSubscription',
-  [CreditFlowTypeEnum.PURCHASE]:
-    'PC.Pages.SystemCreditRecords.creditTypePurchase',
-  [CreditFlowTypeEnum.ACTIVITY]:
-    'PC.Pages.SystemCreditRecords.creditTypeActivity',
-  [CreditFlowTypeEnum.MANUAL]: 'PC.Pages.SystemCreditRecords.creditTypeManual',
-  [CreditFlowTypeEnum.MODEL_CALL]:
-    'PC.Pages.SystemCreditRecords.creditTypeModelCall',
-  [CreditFlowTypeEnum.AGENT_CALL]:
-    'PC.Pages.SystemCreditRecords.creditTypeAgentCall',
-  [CreditFlowTypeEnum.TOOL_CALL]:
-    'PC.Pages.SystemCreditRecords.creditTypeToolCall',
-  [CreditFlowTypeEnum.MANUAL_DEDUCT]:
-    'PC.Pages.SystemCreditRecords.creditTypeManualDeduct',
-};
 
 /**
  * 积分明细查询
