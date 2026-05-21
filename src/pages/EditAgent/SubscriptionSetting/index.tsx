@@ -345,88 +345,85 @@ const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
           />
         </div>
 
-        <ConditionRender condition={subscriptionEnabled}>
-          <Form form={form}>
-            <div className={styles['enable-row']}>
-              <div className={styles['enable-info']}>
-                <div className={styles['enable-title']}>
-                  {dict(
-                    'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCount',
-                  )}
-                </div>
-                <div className={styles['enable-desc']}>
-                  {dict(
-                    'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCountDesc',
-                  )}
-                </div>
+        <Form form={form}>
+          <div className={styles['enable-row']}>
+            <div className={styles['enable-info']}>
+              <div className={styles['enable-title']}>
+                {dict(
+                  'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCount',
+                )}
               </div>
-              <div className={styles['trial-controls']}>
-                <Form.Item name="trialCount" noStyle initialValue={0}>
-                  <InputNumber
-                    min={0}
-                    max={100000000}
-                    className={styles['trial-input']}
-                  />
-                </Form.Item>
-                <Button type="primary" loading={saving} onClick={handleSave}>
-                  {dict('PC.Common.Global.save')}
-                </Button>
+              <div className={styles['enable-desc']}>
+                {dict(
+                  'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCountDesc',
+                )}
               </div>
             </div>
-          </Form>
-        </ConditionRender>
+            <div className={styles['trial-controls']}>
+              <Form.Item name="trialCount" noStyle initialValue={0}>
+                <InputNumber
+                  min={0}
+                  max={100000000}
+                  className={styles['trial-input']}
+                />
+              </Form.Item>
+              <Button type="primary" loading={saving} onClick={handleSave}>
+                {dict('PC.Common.Global.save')}
+              </Button>
+            </div>
+          </div>
+        </Form>
       </div>
 
-      <ConditionRender condition={subscriptionEnabled}>
-        <div className={styles['list-header']}>
-          <div className={cx('flex', 'gap-4', styles['list-title-container'])}>
-            <h3 className={styles['list-title']}>
-              {dict('PC.Pages.AgentEdit.SubscriptionSetting.planList')}
-            </h3>
-            <ConditionRender condition={plans.length > 0}>
-              <span className={styles['count-text']}>
-                {dict(
-                  'PC.Pages.AgentEdit.SubscriptionSetting.planCount',
-                ).replace('{0}', String(plans.length))}
-              </span>
-            </ConditionRender>
-          </div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleOpenCreateModal}
-          >
-            {dict('PC.Pages.AgentEdit.SubscriptionSetting.addPlan')}
-          </Button>
+      <div className={styles['list-header']}>
+        <div className={cx('flex', 'gap-4', styles['list-title-container'])}>
+          <h3 className={styles['list-title']}>
+            {dict('PC.Pages.AgentEdit.SubscriptionSetting.planList')}
+          </h3>
+          <ConditionRender condition={plans.length > 0}>
+            <span className={styles['count-text']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.planCount').replace(
+                '{0}',
+                String(plans.length),
+              )}
+            </span>
+          </ConditionRender>
         </div>
-
-        {/* 套餐列表 */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handlePlanDragEnd}
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleOpenCreateModal}
         >
-          <SortableContext items={plans.map((plan) => String(plan.id))}>
-            <div className={styles['plan-grid']}>
-              {plans.map((plan) => (
-                <div key={plan.id} className={styles['plan-grid-item']}>
-                  <SortablePlanCard id={String(plan.id)}>
-                    <SubscriptionPlanCard
-                      plan={plan}
-                      updateLoading={updatingSubscriptionPlan}
-                      onToggle={(_, checked) =>
-                        handleTogglePlanStatus(plan, checked)
-                      }
-                      onEdit={handleEditPlan}
-                      onDelete={() => handleDeletePlan(plan)}
-                    />
-                  </SortablePlanCard>
-                </div>
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </ConditionRender>
+          {dict('PC.Pages.AgentEdit.SubscriptionSetting.addPlan')}
+        </Button>
+      </div>
+
+      {/* 套餐列表 */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handlePlanDragEnd}
+      >
+        <SortableContext items={plans.map((plan) => String(plan.id))}>
+          <div className={styles['plan-grid']}>
+            {plans.map((plan) => (
+              <div key={plan.id} className={styles['plan-grid-item']}>
+                <SortablePlanCard id={String(plan.id)}>
+                  <SubscriptionPlanCard
+                    plan={plan}
+                    updateLoading={updatingSubscriptionPlan}
+                    onToggle={(_, checked) =>
+                      handleTogglePlanStatus(plan, checked)
+                    }
+                    onEdit={handleEditPlan}
+                    onDelete={() => handleDeletePlan(plan)}
+                  />
+                </SortablePlanCard>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* 创建套餐模态框 */}
       <CreatePlanModal
