@@ -89,14 +89,14 @@
       /* stylelint-disable function-no-unknown -- Less fade() 用于主题色透明度 */
       .daily-gift-tip {
         font-size: calc(@fontSizeSm - 2px);
-        color: @orange-7;
+        color: @orange7;
         padding: @creditsLinkPadding;
-        border: @lineWidth @lineType fade(@gold-4, 35%);
+        border: @lineWidth @lineType rgba(255, 229, 143, 35%);
         border-radius: @creditsLinkRadius;
         background: linear-gradient(
           135deg,
-          fade(@gold-1, 70%),
-          fade(@orange-1, 50%)
+          rgba(255, 251, 230, 70%),
+          rgba(255, 247, 230, 50%)
         );
         transition: all @motionDurationFast @motionEaseInOut;
         line-height: @lineHeight;
@@ -107,8 +107,8 @@
 
         &:hover {
           transform: scale(1.03) translateY(-0.5px);
-          border-color: fade(@gold-5, 60%);
-          box-shadow: 0 4px 10px fade(@orange-5, 15%);
+          border-color: rgba(255, 214, 102, 60%);
+          box-shadow: 0 4px 10px rgba(255, 192, 105, 15%);
         }
       }
       /* stylelint-enable function-no-unknown */
@@ -129,7 +129,7 @@
           :global(.ant-statistic-content-value) {
             display: block;
             width: 100%;
-            /* stylelint-disable unit-no-unknown -- 容器查询单位 cqi，随卡片宽度缩放字号 */
+            /* stylelint-disable unit-no-unknown */
             font-size: clamp(13px, 10cqi, 22px);
             /* stylelint-enable unit-no-unknown */
             font-weight: @creditsValueFontWeight;
