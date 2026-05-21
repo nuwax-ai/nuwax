@@ -47,6 +47,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Common.Global.submit": "送信",
   "PC.Common.Global.syncFailed": "同期に失敗しました",
   "PC.Common.Global.template": "テンプレート",
+  "PC.Common.Global.times": "回",
   "PC.Common.Global.unknownError": "不明なエラー",
   "PC.Common.Global.unpublished": "未公開",
   "PC.Common.Global.workflow": "ワークフロー",

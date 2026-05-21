@@ -53,6 +53,7 @@ export const EN_US: SystemLangMap = {
   "PC.Common.Global.submit": "Submit",
   "PC.Common.Global.syncFailed": "Sync Failed",
   "PC.Common.Global.template": "Template",
+  "PC.Common.Global.times": "use",
   "PC.Common.Global.unknownError": "Unknown error",
   "PC.Common.Global.unpublished": "Unpublished",
   "PC.Common.Global.workflow": "Workflow",

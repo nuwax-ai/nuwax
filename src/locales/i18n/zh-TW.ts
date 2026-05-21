@@ -47,6 +47,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Common.Global.submit": "提交",
   "PC.Common.Global.syncFailed": "同步失敗",
   "PC.Common.Global.template": "模板",
+  "PC.Common.Global.times": "次",
   "PC.Common.Global.unknownError": "未知錯誤",
   "PC.Common.Global.unpublished": "未釋出",
   "PC.Common.Global.workflow": "工作流",
