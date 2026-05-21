@@ -210,7 +210,22 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
               )}
 
               <div className={cx(styles['plan-header'])}>
-                <div className={cx(styles['plan-name'])}>{plan.name}</div>
+                <div className={cx(styles['plan-name-wrapper'])}>
+                  <div
+                    className={cx(styles['plan-name'], 'text-ellipsis')}
+                    title={plan.name}
+                  >
+                    {plan.name}
+                  </div>
+                  {plan.description && (
+                    <div
+                      className={cx(styles['plan-desc'], 'text-ellipsis-2')}
+                      title={plan.description}
+                    >
+                      {plan.description}
+                    </div>
+                  )}
+                </div>
 
                 <div className={cx(styles['plan-price-area'])}>
                   <span className={cx(styles['price-value'])}>
