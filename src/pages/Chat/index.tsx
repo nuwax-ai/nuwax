@@ -1612,7 +1612,6 @@ const Chat: React.FC = () => {
           isNeedSubscription={
             agentDetail?.paymentRequired && !agentDetail?.subscribed
           }
-          overCallLimit={agentDetail?.overCallLimit ?? false}
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}

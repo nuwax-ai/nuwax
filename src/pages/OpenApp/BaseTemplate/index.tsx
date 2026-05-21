@@ -688,7 +688,6 @@ const BaseTemplate: React.FC = () => {
           isNeedSubscription={
             appAgentDetail?.paymentRequired && !appAgentDetail?.subscribed
           }
-          overCallLimit={appAgentDetail?.overCallLimit ?? false}
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}
