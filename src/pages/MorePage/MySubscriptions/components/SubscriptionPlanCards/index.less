@@ -106,12 +106,25 @@
     flex-direction: column;
     gap: @marginSm;
 
-    .plan-name {
-      font-size: @fontSizeLg;
-      font-weight: 700;
-      color: @colorTextBase;
-      margin: 0;
-      line-height: @lineHeightLg;
+    .plan-name-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: @marginXxs;
+
+      .plan-name {
+        font-size: @fontSizeLg;
+        font-weight: 700;
+        color: @colorTextBase;
+        margin: 0;
+        line-height: @lineHeightLg;
+      }
+
+      .plan-desc {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        line-height: @lineHeightSm;
+        font-weight: normal;
+      }
     }
 
     .plan-price-area {
