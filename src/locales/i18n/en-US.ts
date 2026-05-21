@@ -4732,6 +4732,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UserManage.Index.disable": "Disable",
   "PC.Pages.UserManage.Index.disabled": "Disabled",
   "PC.Pages.UserManage.Index.disableSuccess": "Disabled successfully",
+  "PC.Pages.UserManage.Index.delete": "Delete",
+  "PC.Pages.UserManage.Index.deleteSuccess": "Deleted successfully",
   "PC.Pages.UserManage.Index.edit": "Edit",
   "PC.Pages.UserManage.Index.resetPassword": "Reset Password",
   "PC.Pages.UserManage.Index.email": "Email",

@@ -3,7 +3,11 @@ import { AccessControlEnum } from '@/types/enums/systemManage';
 import { TaskCronInfo } from '@/types/interfaces/agentTask';
 import { UpdateTimedTaskParams } from '@/types/interfaces/library';
 import { ModelSaveParams } from '@/types/interfaces/model';
-import type { Page, RequestResponse } from '@/types/interfaces/request';
+import type {
+  Page,
+  PageNum,
+  RequestResponse,
+} from '@/types/interfaces/request';
 import type {
   AccessStatsResult,
   AddSystemUserParams,
@@ -98,6 +102,16 @@ export async function apiDisableSystemUser(data: {
   id: number;
 }): Promise<RequestResponse<null>> {
   return request(`/api/system/user/disable/${data.id}`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除用户
+export async function apiDeleteSystemUser(data: {
+  id: number;
+}): Promise<RequestResponse<null>> {
+  return request(`/api/system/user/delete/${data.id}`, {
     method: 'POST',
     data,
   });

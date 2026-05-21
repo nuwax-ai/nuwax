@@ -7,6 +7,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiDeleteSystemUser,
   apiDisableSystemUser,
   apiEnableSystemUser,
   apiSystemUserList,
@@ -106,6 +107,14 @@ const UserManage: React.FC = () => {
     }
   }, []);
 
+  const handleDelete = useCallback(async (record: SystemUserListInfo) => {
+    const res = await apiDeleteSystemUser({ id: record.id });
+    if (res.code === SUCCESS_CODE) {
+      message.success(dict('PC.Pages.UserManage.Index.deleteSuccess'));
+      actionRef.current?.reload();
+    }
+  }, []);
+
   const handleSuccess = useCallback(() => {
     setOpenUserFormModal(false);
     actionRef.current?.reload();
@@ -149,7 +158,7 @@ const UserManage: React.FC = () => {
           label: dict('PC.Pages.UserManage.Index.resetPassword'),
           disabled: !hasPermissionByMenuCode(
             'user_manage',
-            'user_manage_modify',
+            'user_manage_reset',
           ),
           onClick: handleResetPassword,
         },
@@ -199,6 +208,17 @@ const UserManage: React.FC = () => {
           ),
           onClick: handleViewDataPermission,
         },
+        {
+          key: 'delete',
+          label: dict('PC.Pages.UserManage.Index.delete'),
+          danger: true,
+          confirm: {},
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_delete',
+          ),
+          onClick: handleDelete,
+        },
       ];
     },
     [
@@ -207,6 +227,7 @@ const UserManage: React.FC = () => {
       handleResetPassword,
       handleEnable,
       handleDisable,
+      handleDelete,
       handleAuth,
       handleViewMenu,
       handleViewDataPermission,
