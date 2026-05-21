@@ -570,6 +570,8 @@ const SpaceKnowledge: React.FC = () => {
         fileType: 'all',
         tripleStatus: 2,
       });
+      // 重新加载知识图谱列表数据
+      await handleLoadGraphList();
     } catch (error) {
       console.error('查看全部知识图谱失败:', error);
       message.error(dict('PC.Pages.SpaceKnowledge.Index.viewAllGraphsFailed'));
