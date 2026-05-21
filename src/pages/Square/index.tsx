@@ -31,7 +31,7 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
-import { Empty, Input, message, Select } from 'antd';
+import { Empty, Input, message, Select, Tag } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -430,6 +430,39 @@ const Square: React.FC = () => {
     handleQuery(1, keyword);
   };
 
+  // 获取订阅标签
+  const getSubscribedLabel = (subscribed: boolean) => {
+    return (
+      <Tag
+        color={subscribed ? 'success' : 'processing'}
+        style={{ marginRight: 0, flexShrink: 0 }}
+      >
+        {subscribed
+          ? dict('PC.Pages.Square.SingleAgent.subscribed')
+          : dict('PC.Pages.Square.SingleAgent.paid')}
+      </Tag>
+    );
+  };
+
+  // 获取付费标签
+  const getPaymentExtra = (
+    info: SquarePublishedItemInfo,
+    isPluginAndWorkflow: boolean = false,
+  ) => {
+    const { paymentRequired, subscribed, price } = info;
+    /** 需付费时在卡片角标展示「付费 / 已订阅」 */
+    const paymentExtra =
+      isEnableSubscription && paymentRequired === true ? (
+        isPluginAndWorkflow && price ? (
+          <span className={cx(styles['price-title'])}>{`¥${price}/次`}</span>
+        ) : (
+          getSubscribedLabel(subscribed)
+        )
+      ) : undefined;
+
+    return paymentExtra;
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <header
@@ -516,6 +549,17 @@ const Square: React.FC = () => {
             ) : squareComponentList?.length > 0 ? (
               <div className={cx(styles['list-section'])}>
                 {squareComponentList.map((item, index) => {
+                  /** 需付费时在卡片角标展示「付费 / 已订阅」 */
+                  let paymentExtra;
+
+                  // 智能体、技能模式下，显示订阅标签
+                  if (
+                    categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
+                    categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                  ) {
+                    paymentExtra = getPaymentExtra(item);
+                  }
+
                   // 智能体模式下，显示智能体、网页应用组件
                   if (
                     categoryTypeRef.current === SquareAgentTypeEnum.Agent ||
@@ -524,7 +568,7 @@ const Square: React.FC = () => {
                     return (
                       <SingleAgent
                         key={index}
-                        isEnableSubscription={isEnableSubscription}
+                        extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
@@ -544,7 +588,7 @@ const Square: React.FC = () => {
                         showUserCount={false}
                         showConvCount={false}
                         key={index}
-                        isEnableSubscription={isEnableSubscription}
+                        extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         collectApi={apiPublishedSkillCollect}
@@ -592,11 +636,12 @@ const Square: React.FC = () => {
                       );
                     }
                   } else {
+                    const paymentExtra = getPaymentExtra(item, true);
                     // 插件、工作流
                     return (
                       <SquareComponentInfo
                         key={index}
-                        isEnableSubscription={isEnableSubscription}
+                        extra={paymentExtra}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>

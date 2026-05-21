@@ -157,7 +157,7 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
           {typeof title === 'string' ? (
             <h3 className={cx('text-ellipsis', styles.title)}>{title}</h3>
           ) : (
-            <div style={{ width: '100%', overflow: 'hidden' }}>{title}</div>
+            <div className={cx('w-full', 'overflow-hide')}>{title}</div>
           )}
           <div
             className={cx('flex', 'items-center', styles['author-rel-info'])}
