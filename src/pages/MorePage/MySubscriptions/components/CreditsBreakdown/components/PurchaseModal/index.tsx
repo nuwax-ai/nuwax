@@ -107,6 +107,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
       modalProps={{
         destroyOnHidden: true,
         width: 640,
+        centered: true,
       }}
       submitter={{ render: () => null }} // 隐藏底部按钮区域
     >
