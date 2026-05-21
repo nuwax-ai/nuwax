@@ -139,7 +139,6 @@ const SubscribedAgents: React.FC = () => {
                 </div>
                 <Button
                   type="primary"
-                  className="btn-premium-dark"
                   loading={processingId === item.planId}
                   onClick={() => handlePay(item.planId)}
                 >
