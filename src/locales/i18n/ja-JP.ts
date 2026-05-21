@@ -5380,6 +5380,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "Developer Share Ratio",
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "Model",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "換算説明",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "Credits Exchange Rate (Credits/CNY)",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "Current Exchange",

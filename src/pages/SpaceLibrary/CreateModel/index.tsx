@@ -395,7 +395,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
 
   /**
    * 用供应商侧的模型元数据回填表单（模型名称 / 标识下拉选中时调用，手动输入不触发）。
-   * - modalities.input → 映射为表单 `types`（无可识别项时置 `[]`）
+   * - modalities.input → 映射为表单 `types`（无可识别项时置 `[]`）；reasoning 为 true 时追加 Reasoning
    * - 供应商模型条目上的 reasoning → isReasonModel
    * - 供应商模型条目上的 toolCall → functionCall
    * 回填后同步 `modelTypes` 与表单 `types` 一致。
@@ -425,22 +425,23 @@ const CreateModel: React.FC<CreateModelProps> = ({
         patch.maxTokens = modelItem.limit.output;
       }
 
-      // 供应商模型条目上的 modalities.input → 映射为表单 `types`
+      // 供应商模型条目上的 modalities.input → 映射为表单 `types`；reasoning 为 true 时追加 Reasoning
+      let types: ModelCapabilityTypeEnum[] = [];
       if (
         modelItem.modalities?.input !== undefined &&
         modelItem.modalities?.input !== null
       ) {
-        const mapped = mapModalitiesInputsToCapabilityTypes(
+        types = mapModalitiesInputsToCapabilityTypes(
           modelItem.modalities.input,
         );
-        if (mapped.length > 0) {
-          patch.types = mapped;
-        } else {
-          patch.types = [];
-        }
-      } else {
-        patch.types = [];
       }
+      if (
+        modelItem.reasoning &&
+        !types.includes(ModelCapabilityTypeEnum.Reasoning)
+      ) {
+        types = [...types, ModelCapabilityTypeEnum.Reasoning];
+      }
+      patch.types = types;
 
       // 供应商模型条目上的 reasoning → isReasonModel
       patch.isReasonModel = modelItem.reasoning ? 1 : 0;

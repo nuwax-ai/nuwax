@@ -408,10 +408,10 @@ export const MODEL_TYPE_LIST = [
   //   value: ModelCapabilityTypeEnum.MultiEmbedding,
   //   label: dict('PC.Constants.Library.capabilityMultiEmbedding'),
   // },
-  // {
-  //   value: ModelCapabilityTypeEnum.Reasoning,
-  //   label: dict('PC.Constants.Library.capabilityReasoning'),
-  // },
+  {
+    value: ModelCapabilityTypeEnum.Reasoning,
+    label: dict('PC.Constants.Library.capabilityReasoning'),
+  },
 ];
 // 函数调用支持
 export const MODEL_FUNCTION_CALL_LIST = [
