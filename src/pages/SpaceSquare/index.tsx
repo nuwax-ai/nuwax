@@ -272,7 +272,11 @@ const SpaceSection: React.FC = () => {
     const paymentExtra =
       isEnableSubscription && paymentRequired === true ? (
         isPluginAndWorkflow && price ? (
-          <span className={cx(styles['price-title'])}>{`¥${price}/次`}</span>
+          <span className={cx(styles['price-title'])}>
+            {`${dict('PC.Common.Global.currencySymbol')}${price}/${dict(
+              'PC.Common.Global.times',
+            )}`}
+          </span>
         ) : (
           getSubscribedLabel(subscribed)
         )
