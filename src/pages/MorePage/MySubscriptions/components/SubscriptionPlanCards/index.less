@@ -170,32 +170,38 @@
 
     .plan-button {
       width: 100%;
-      border-radius: @borderRadius;
       height: 40px;
-      font-weight: 600;
       font-size: @fontSize;
-      border: none;
-      box-shadow: none;
-      transition: all 0.2s ease;
+      font-weight: 600;
+      margin-top: @marginXs;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: @marginXs;
-      padding: 0 @paddingXs;
-      box-sizing: border-box;
 
-      > span {
+      &.plan-button-current {
+        background-color: #efebe6 !important;
+        border-color: #efebe6 !important;
+        color: #5c564f !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: #e5dfd7 !important;
+          border-color: #e5dfd7 !important;
+          color: #5c564f !important;
+        }
+
+        > span {
+          color: #5c564f !important;
+        }
+      }
+
+      > span:not(.ant-btn-loading-icon) {
         display: inline-block;
-        width: 100%;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        text-align: center;
-      }
-
-      &:focus,
-      &:active {
-        box-shadow: none;
       }
     }
   }
@@ -303,41 +309,10 @@
   // Themes
   &.theme-free {
     background: @colorFreeBg;
-
-    .plan-button {
-      background: @colorFreeBtnBg;
-      color: @colorFreeBtnText;
-
-      &:hover,
-      &:focus,
-      &:active,
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
-        opacity: 0.9;
-      }
-    }
   }
 
   &.theme-regular {
     background: @colorBgContainer;
-
-    .plan-button {
-      background: @colorPrimary;
-      color: @colorWhite;
-
-      &:hover,
-      &:focus,
-      &:active {
-        background: @colorPrimaryHover;
-        color: @colorWhite;
-      }
-
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
-      }
-    }
   }
 
   &.theme-vip {
@@ -351,23 +326,6 @@
     .plan-price-area {
       .price-value {
         color: @colorVipGold;
-      }
-    }
-
-    .plan-button {
-      background: @colorVipGold;
-      color: @colorWhite;
-
-      &:hover,
-      &:focus,
-      &:active {
-        background: color-mix(in srgb, @colorVipGold, #fff 15%);
-        color: @colorWhite;
-      }
-
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
       }
     }
 

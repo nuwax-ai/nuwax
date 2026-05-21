@@ -54,7 +54,18 @@ const StarIcon = ({ color = 'currentColor' }: { color?: string }) => (
 );
 
 const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
-  const { data = [], currentPlanId } = props;
+  const { data = [], currentPlanId, price } = props;
+  const currentPrice = currentPlanId ? price ?? 0 : 0;
+
+  const getActionVerb = (planPrice: number) => {
+    if (!currentPlanId) {
+      return dict('PC.Pages.MorePage.MySubscriptions.subscribeNow');
+    }
+    if (planPrice <= currentPrice) {
+      return dict('PC.Pages.MorePage.MySubscriptions.subscribeNow');
+    }
+    return dict('PC.Pages.MorePage.MySubscriptions.upgradeNow');
+  };
   const { processingId, handlePay: payPlan } = useSubscriptionPurchase();
 
   /**
@@ -109,9 +120,13 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
 
   const getButtonText = (plan: PlanInfo, isCurrent: boolean) => {
     if (isCurrent) {
-      return dict('PC.Pages.MorePage.MySubscriptions.currentPlanButton');
+      const currentPlanBtnText = dict(
+        'PC.Pages.MorePage.MySubscriptions.currentPlanButton',
+      );
+      const renewNowText = dict('PC.Pages.MorePage.MySubscriptions.renewNow');
+      return `${currentPlanBtnText}(${renewNowText})`;
     }
-    const upgradeText = dict('PC.Pages.MorePage.MySubscriptions.upgradeTo');
+    const verbText = getActionVerb(plan.price);
     let periodText = dict(
       'PC.Pages.MorePage.MySubscriptions.continuousMonthly',
     );
@@ -125,7 +140,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
       periodText = dict('PC.Pages.MorePage.MySubscriptions.continuousYearly');
     }
 
-    return `${upgradeText}${plan.name}${periodText}`;
+    return `${verbText}${plan.name}${periodText}`;
   };
 
   const renderBenefitText = (desc: string) => {
@@ -239,10 +254,12 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
 
                 <Button
                   type="primary"
-                  className={cx(styles['plan-button'])}
+                  className={cx(styles['plan-button'], {
+                    [styles['plan-button-current']]: isCurrent,
+                  })}
                   loading={processingId?.toString() === plan.id}
                   onClick={() => handlePay(plan)}
-                  disabled={isCurrent || (plan.price <= 0 && !isCurrent)}
+                  disabled={plan.price <= 0 && !isCurrent}
                 >
                   {getButtonText(plan, isCurrent)}
                 </Button>
