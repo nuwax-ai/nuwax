@@ -28,7 +28,7 @@ type CreditFlowListTableParams = ParamsType &
     pageSize?: number;
   };
 
-const DEFAULT_CURSOR_PAGE_SIZE = 15;
+const DEFAULT_PAGE_SIZE = 15;
 
 /** 从 URL 查询串解析 userId（与列表页 query 一致） */
 function parseUserIdFromSearch(search: string): number | undefined {
@@ -81,7 +81,7 @@ const CreditRecords: React.FC = () => {
    * 与通用表格对齐的每页条数；单独受控可避免 ProTable 内部默认 pageSize（如 20）
    * 与 defaultPageSize 不一致，从而导致首请求与下拉展示错位。
    */
-  const [tablePageSize, setTablePageSize] = useState(DEFAULT_CURSOR_PAGE_SIZE);
+  const [tablePageSize, setTablePageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // 游标分页映射
   const lastIdMapRef = useRef<Record<number, number | undefined>>({
@@ -297,7 +297,7 @@ const CreditRecords: React.FC = () => {
 
   const requestCreditFlowList = async (params: CreditFlowListTableParams) => {
     const current = Number(params.current ?? 1);
-    const pageSize = Number(params.pageSize ?? DEFAULT_CURSOR_PAGE_SIZE);
+    const pageSize = Number(params.pageSize ?? DEFAULT_PAGE_SIZE);
     const usernamePhoneOrEmail = params.userName?.trim() || undefined;
 
     const queryKey = JSON.stringify({
@@ -352,7 +352,7 @@ const CreditRecords: React.FC = () => {
     () => ({
       showSizeChanger: true,
       pageSizeOptions: [15, 30, 50, 100],
-      defaultPageSize: DEFAULT_CURSOR_PAGE_SIZE,
+      defaultPageSize: DEFAULT_PAGE_SIZE,
       pageSize: tablePageSize,
       onShowSizeChange: (_current: number, size: number) => {
         setTablePageSize(size);

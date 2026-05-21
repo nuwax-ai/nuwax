@@ -75,6 +75,8 @@ export interface CreditPackageSortItem {
 export interface UserCreditSummarySearchParams {
   usernamePhoneOrEmail?: string;
   userId?: number;
+  pageNum?: number;
+  pageSize?: number;
 }
 
 /**
