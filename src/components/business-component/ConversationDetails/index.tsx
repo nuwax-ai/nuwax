@@ -410,6 +410,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     if (result.paymentRequired && !result.subscribed) {
       setOpenPaymentModal(true);
       setIsNeedSubscription(true);
+    } else {
+      setOpenPaymentModal(false);
+      setIsNeedSubscription(false);
     }
 
     // 设置应用智能体详情
@@ -495,6 +498,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       setVariables([]);
       // 清除文件面板信息
       clearFilePanelInfo();
+
+      setOpenPaymentModal(false);
+      setIsNeedSubscription(false);
     };
   }, [agentId]);
 
