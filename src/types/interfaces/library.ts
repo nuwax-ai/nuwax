@@ -358,6 +358,8 @@ export interface SkillInfo {
   name: string;
   // 技能描述
   description: string;
+  // 技能分类
+  category: string;
   // 技能图标
   icon: string;
   // 适用范围

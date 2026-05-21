@@ -33,6 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: @marginSm;
 
   .gap-8 {
     gap: 8px;
@@ -102,32 +103,37 @@
   }
 }
 
-// ========================== 页面导航 ==========================
+// ========================== 导航 ==========================
 .pageNavList {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin-top: @marginSm;
+}
 
-  .pageNavItem {
-    height: 36px;
-    border-radius: @borderRadius;
-    padding: @paddingXs @paddingXxs @paddingXs 13px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: @colorText;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    font-weight: 400;
+.nav-item {
+  height: 36px;
+  border-radius: @borderRadius;
+  padding: @paddingXs @paddingXxs @paddingXs 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: @colorText;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 400;
 
-    &:hover {
-      background-color: #e6e7e8;
-    }
+  &.mt-6 {
+    margin-top: @marginXs;
+  }
 
-    &.page-nav-item-active {
-      background-color: #e6e7e8;
-    }
+  &:hover {
+    background-color: #e6e7e8;
+  }
+
+  &.page-nav-item-active {
+    background-color: #e6e7e8;
   }
 }
 
@@ -139,6 +145,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+  margin-top: @marginSm;
 
   &.exist-page-nav {
     padding-top: 0;

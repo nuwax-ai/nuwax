@@ -10,7 +10,12 @@ import type {
   ConversationStatsResult,
   ModelConfigDto,
   NotifyMessageSendParams,
+  PayConfigResult,
+  PayConnectivityResult,
   PublishedDto,
+  ResourceStatDetailParams,
+  ResourceStatDTO,
+  ResourceStatSummaryDTO,
   SandboxConfigItem,
   SandboxGlobalConfig,
   SystemAgentListParams,
@@ -23,6 +28,8 @@ import type {
   SystemMcpPage,
   SystemPluginListParams,
   SystemPluginPage,
+  SystemRevenueDetailInfo,
+  SystemRevenueDetailParams,
   SystemSkillListParams,
   SystemSkillPage,
   SystemSpaceListParams,
@@ -37,6 +44,7 @@ import type {
   SystemWorkflowListParams,
   SystemWorkflowPage,
   TenantConfigDto,
+  TenantSubscriptionConfigInfo,
   TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
@@ -170,13 +178,40 @@ export async function apiSystemUploadFile(
     data: formData,
   });
 }
-// 更新配置信息
+
+// 更新主题配置
 export async function apiSystemConfigUpdate(
   data: TenantConfigDto,
 ): Promise<RequestResponse<any>> {
   return request('/api/system/config/update-theme', {
     method: 'POST',
     data,
+  });
+}
+
+// 更新配置信息
+export async function apiSystemSubscriptionConfigSave(
+  data: TenantSubscriptionConfigInfo,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/config/save', {
+    method: 'POST',
+    data,
+  });
+}
+
+export async function apiQueryPayConfig(): Promise<
+  RequestResponse<PayConfigResult>
+> {
+  return request('/api/system/pay/config/query', {
+    method: 'POST',
+  });
+}
+
+export async function apiCheckPayConnectivity(): Promise<
+  RequestResponse<PayConnectivityResult>
+> {
+  return request('/api/system/pay/config/check-connectivity', {
+    method: 'POST',
   });
 }
 
@@ -722,5 +757,71 @@ export async function apiTestSandboxConnectivity(
 ): Promise<RequestResponse<null>> {
   return request(`/api/system/sandbox/config/test/${id}`, {
     method: 'GET',
+  });
+}
+
+/**
+ * 查询收益明细
+ */
+export async function apiSystemRevenueDetail(
+  params: SystemRevenueDetailParams,
+): Promise<RequestResponse<Page<SystemRevenueDetailInfo>>> {
+  return request('/api/system/bill/revenue/detail', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 获取资源统计汇总
+ */
+export async function apiGetResourceStatSummary(params?: {
+  userId?: number;
+  dtStart?: string;
+  dtEnd?: string;
+}): Promise<RequestResponse<ResourceStatSummaryDTO>> {
+  return request('/api/system/bill/resource-stat/summary', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 获取资源统计明细
+ */
+export async function apiGetResourceStatDetail(
+  params: ResourceStatDetailParams,
+): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
+  return request('/api/system/bill/resource-stat/detail', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 获取当前用户资源统计汇总
+ */
+export async function apiGetMyResourceStatSummary(params?: {
+  dtStart?: string;
+  dtEnd?: string;
+}): Promise<RequestResponse<ResourceStatSummaryDTO>> {
+  return request('/api/bill/resource-stat/my-summary', {
+    method: 'GET',
+    params: { ...params, type: 'CONSUMPTION' },
+  });
+}
+
+/**
+ * 获取当前用户资源统计明细
+ */
+export async function apiGetMyResourceStatDetail(params: {
+  dtStart?: string;
+  dtEnd?: string;
+  pageNum?: number;
+  pageSize?: number;
+}): Promise<RequestResponse<PageNum<ResourceStatDTO>>> {
+  return request('/api/bill/resource-stat/my', {
+    method: 'GET',
+    params: { ...params, type: 'CONSUMPTION' },
   });
 }

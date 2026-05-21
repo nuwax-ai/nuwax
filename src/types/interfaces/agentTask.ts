@@ -11,8 +11,8 @@ export interface AgentSidebarProps {
   className?: string;
   agentId: number;
   loading?: boolean;
+  // 智能体详情
   agentDetail?: AgentDetailDto | null;
-  onToggleCollectSuccess: (isCollect: boolean) => void;
   // 可见性变化回调
   onVisibleChange?: (visible: boolean) => void;
 }
@@ -47,7 +47,6 @@ export interface CreateTimedTaskProps {
 // 智能体内容
 export interface AgentContentProps {
   agentDetail?: AgentDetailDto | null;
-  onToggleCollectSuccess: (isCollect: boolean) => void;
 }
 
 // 统计信息

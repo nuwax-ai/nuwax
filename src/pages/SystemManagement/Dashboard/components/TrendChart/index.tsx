@@ -99,7 +99,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
     [data, color, tooltipName, size?.width],
   );
   return (
-    <Card className={cx(styles['trend-chart'])} bordered={false}>
+    <Card className={cx(styles['trend-chart'])} variant="borderless">
       <div className={cx(styles['trend-chart-header'])}>
         <h3 className={cx(styles['trend-chart-title'])}>{title}</h3>
         <Radio.Group

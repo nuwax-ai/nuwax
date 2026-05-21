@@ -110,6 +110,7 @@ export interface SelectListType {
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
   style?: React.CSSProperties;
+  showDescription?: boolean;
 }
 
 // 默认的object
@@ -181,6 +182,8 @@ export interface CustomFormModalProps {
   centered?: boolean;
   // Modal宽度
   width?: number | string;
+  /** 弹层层级（嵌套在其它 Modal 内时可设为更高，避免被选层挡住） */
+  zIndex?: number;
   onCancel: () => void;
   onConfirm: () => void;
   // 确定按钮是否禁用
@@ -333,6 +336,8 @@ export interface CreatedNodeItem {
   config: any;
   toolName?: string;
   deployed?: string;
+  paymentRequired?: boolean;
+  subscribed?: boolean;
 }
 
 export interface MCPNodeItem {
@@ -736,6 +741,7 @@ export interface InfiniteScrollDivProps {
 // 页脚props
 export interface SiteFooterProps {
   text?: string;
+  className?: string;
 }
 
 // 直接继承antd的UploadFile，避免重复定义

@@ -167,7 +167,7 @@ const GlobalModelManage: React.FC = () => {
               <div>
                 {dict(
                   'PC.Pages.GlobalModelManage.confirmDeleteModel',
-                  <span style={{ color: 'red' }}>{record.name}</span>,
+                  record.name,
                 )}
               </div>
             ),

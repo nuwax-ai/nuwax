@@ -1,0 +1,39 @@
+@import '@/styles/token.less';
+
+.model-tier-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.model-tier-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 2px 8px;
+  font-size: @fontSizeSm;
+  white-space: nowrap;
+  border: 1px solid #d3e4ff;
+  border-radius: @borderRadiusOuter;
+  background: #eff6ff;
+  color: #5b6472;
+}
+
+.model-tier-context {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.model-tier-separator {
+  color: #9ca3af;
+}
+
+.model-tier-price {
+  color: #475569;
+}
+
+.model-tier-cache-price {
+  color: #0f766e;
+  font-weight: 500;
+}

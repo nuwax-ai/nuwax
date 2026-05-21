@@ -1,0 +1,23 @@
+.searchBar {
+  display: flex;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  align-items: center;
+
+  .input {
+    width: 320px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .searchBar {
+    flex-direction: column;
+
+    .input {
+      width: 100%;
+    }
+  }
+}

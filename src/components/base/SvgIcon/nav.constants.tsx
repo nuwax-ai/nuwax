@@ -37,6 +37,18 @@ import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace
 
 import { ReactComponent as IconComputerStarSvgFile } from '@/assets/icons/common/icon_computer_star.svg';
 
+import { ReactComponent as CreditsSvgFile } from '@/assets/icons/nav/icons-nav-credits.svg';
+import { ReactComponent as KnowledgeSvgFile } from '@/assets/icons/nav/icons-nav-knowledge.svg';
+import { ReactComponent as MyEarningsSvgFile } from '@/assets/icons/nav/icons-nav-my-earnings.svg';
+import { ReactComponent as MyOrdersSvgFile } from '@/assets/icons/nav/icons-nav-my-orders.svg';
+import { ReactComponent as MySubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-my-subscription.svg';
+import { ReactComponent as PricingSvgFile } from '@/assets/icons/nav/icons-nav-pricing.svg';
+import { ReactComponent as SubscriptionSvgFile } from '@/assets/icons/nav/icons-nav-subscription.svg';
+
+import { ReactComponent as DingyueyujifenSvgFile } from '@/assets/icons/nav/dingyueyujifen.svg';
+import { ReactComponent as YongliangtongjiSvgFile } from '@/assets/icons/nav/yongliangtongji.svg';
+import { ReactComponent as ZhifuyushouyiSvgFile } from '@/assets/icons/nav/zhifuyushouyi.svg';
+import { ReactComponent as ZiyuandingjiaSvgFile } from '@/assets/icons/nav/ziyuandingjia.svg';
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -75,6 +87,16 @@ const SidebarSvg = wrapSvg(SidebarSvgFile);
 const ComputerSvg = wrapSvg(ComputerSvgFile);
 const ModelSvg = wrapSvg(ModelSvgFile);
 const PublishManageSvg = wrapSvg(PublishManageSvgFile);
+const SubscriptionSvg = wrapSvg(SubscriptionSvgFile);
+const PricingSvg = wrapSvg(PricingSvgFile);
+const KnowledgeSvg = wrapSvg(KnowledgeSvgFile);
+const MySubscriptionSvg = wrapSvg(MySubscriptionSvgFile);
+const MyOrdersSvg = wrapSvg(MyOrdersSvgFile);
+const MyEarningsSvg = wrapSvg(MyEarningsSvgFile);
+const CreditsSvg = wrapSvg(CreditsSvgFile);
+const YongliangtongjiSvg = wrapSvg(YongliangtongjiSvgFile, {
+  viewBox: '0 0 1024 1024',
+});
 export default {
   'icons-nav-api_key': ApiKeySvg,
   'icons-nav-home': HomeSvg,
@@ -112,4 +134,18 @@ export default {
   'icons-nav-model': ModelSvg,
   'icons-nav-publish_manage': PublishManageSvg,
   'icons-nav-computer-star': IconComputerStarSvgFile,
+  'icons-nav-subscription': SubscriptionSvg,
+  'icons-nav-pricing': PricingSvg,
+  'icons-nav-knowledge': KnowledgeSvg,
+  'icons-nav-my-subscription': MySubscriptionSvg,
+  'icons-nav-my-orders': MyOrdersSvg,
+  'icons-nav-my-earnings': MyEarningsSvg,
+  'icons-nav-credits': CreditsSvg,
+  'icons-nav-wodedingyue': DingyueyujifenSvgFile,
+  'icons-nav-wodedingdan': MyOrdersSvg,
+  'icons-nav-wodeshouyi': ZhifuyushouyiSvgFile,
+  'icons-nav-yongliangtongji': YongliangtongjiSvg,
+  'icons-nav-ziyuandingjia': ZiyuandingjiaSvgFile,
+  'icons-nav-dingyueyujifen': DingyueyujifenSvgFile,
+  'icons-nav-zhifuyushouyi': ZhifuyushouyiSvgFile,
 } as Record<string, React.FC>;

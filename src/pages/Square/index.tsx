@@ -1,10 +1,13 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ButtonToggle from '@/components/ButtonToggle';
+import ConditionRender from '@/components/ConditionRender';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
+import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiPublishedAgentList,
@@ -45,6 +48,9 @@ const cx = classNames.bind(styles);
 const Square: React.FC = () => {
   const { templateList } = useModel('squareModel');
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   const templateListTabs = templateList?.map((item: any) => ({
     label: item.description,
@@ -101,6 +107,20 @@ const Square: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
+  // ===================== 付费订阅 =====================
+  // 付费订阅弹窗（对齐会话页 PaymentSubscriptionModal）
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+
+  // 创建订阅订单 + 当前技能维度「我的订阅」
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
   const {
     squareComponentList,
     setSquareComponentList,
@@ -110,17 +130,44 @@ const Square: React.FC = () => {
   // 获取租户配置信息
 
   const handleClickSkill = (item: SquarePublishedItemInfo) => {
-    const agentId = tenantConfigInfo?.defaultTaskAgentId;
-    if (!agentId) {
-      // 站点默认通用型智能体未配置
-      message.warning(dict('PC.Pages.Square.Square.defaultAgentNotConfigured'));
-      return;
+    const { targetId, paymentRequired, subscribed } = item;
+
+    // 如果开启订阅功能，且技能需要付费，则打开付费订阅弹窗
+    if (isEnableSubscription && paymentRequired && !subscribed) {
+      // 查询技能订阅计划列表以及当前技能我的订阅信息
+      querySkillSubscriptionPlans(targetId);
+      // 打开付费订阅弹窗
+      setOpenPaymentModal(true);
+    } else {
+      const agentId = tenantConfigInfo?.defaultTaskAgentId;
+      if (!agentId) {
+        // 站点默认通用型智能体未配置
+        message.warning(
+          dict('PC.Pages.Square.Square.defaultAgentNotConfigured'),
+        );
+        return;
+      }
+      history.push(
+        `/agent/${agentId}?skillId=${
+          item.targetId
+        }&skillName=${encodeURIComponent(item.name)}`,
+      );
     }
-    history.push(
-      `/agent/${agentId}?skillId=${
-        item.targetId
-      }&skillName=${encodeURIComponent(item.name)}`,
-    );
+  };
+
+  // 点击技能卡片
+  const handleClickSkillCard = (item: SquarePublishedItemInfo) => {
+    const { targetId, targetType, paymentRequired, subscribed } = item;
+
+    // 如果开启订阅功能，且技能需要付费，则打开付费订阅弹窗
+    if (isEnableSubscription && paymentRequired && !subscribed) {
+      // 查询技能订阅计划列表以及当前技能我的订阅信息
+      querySkillSubscriptionPlans(targetId);
+      // 打开付费订阅弹窗
+      setOpenPaymentModal(true);
+    } else {
+      handleClick(targetId, targetType);
+    }
   };
 
   // 查询列表成功后处理数据
@@ -217,7 +264,7 @@ const Square: React.FC = () => {
     const data: SquarePublishedListParams & {
       category?: any;
       targetType?: any;
-      targetSubType?: any;
+      targetSubType?: 'ChatBot' | 'PageApp';
       official?: boolean;
     } = {
       page: pageIndex,
@@ -477,6 +524,7 @@ const Square: React.FC = () => {
                     return (
                       <SingleAgent
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
@@ -496,13 +544,12 @@ const Square: React.FC = () => {
                         showUserCount={false}
                         showConvCount={false}
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         collectApi={apiPublishedSkillCollect}
                         unCollectApi={apiPublishedSkillUnCollect}
-                        onClick={() =>
-                          handleClick(item.targetId, item.targetType)
-                        }
+                        onClick={() => handleClickSkillCard(item)}
                         onStartUse={() => handleClickSkill(item)}
                       />
                     );
@@ -549,6 +596,7 @@ const Square: React.FC = () => {
                     return (
                       <SquareComponentInfo
                         key={index}
+                        isEnableSubscription={isEnableSubscription}
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
@@ -582,6 +630,22 @@ const Square: React.FC = () => {
             )}
           </div>
         </InfiniteScrollDiv>
+
+        <ConditionRender condition={isEnableSubscription}>
+          {/* 付费订阅套餐弹窗 */}
+          <PaymentSubscriptionModal
+            open={openPaymentModal}
+            targetType="Skill"
+            loading={loadingTargetPricing || loadingMySubscription}
+            plans={targetSubscriptionPlans}
+            // 当前订阅信息
+            currentSubscribedInfo={
+              mySubscriptionInfo?.currentSubscription ?? null
+            }
+            onClose={() => setOpenPaymentModal(false)}
+            onSubscribe={createSubscriptionOrder}
+          />
+        </ConditionRender>
       </div>
     </div>
   );

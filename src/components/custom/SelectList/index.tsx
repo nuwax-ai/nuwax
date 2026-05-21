@@ -21,6 +21,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     onChange,
     size = 'middle',
     style,
+    showDescription = false,
   } = props;
 
   return (
@@ -67,7 +68,14 @@ const SelectList: React.FC<SelectListType> = (props) => {
                 alt=""
               />
             )}
-            <span className={styles['option-label']}>{label}</span>
+            <div className={styles['option-text']}>
+              <span className={styles['option-label']}>{label}</span>
+              {showDescription && !!option?.data?.description && (
+                <span className={styles['option-description']}>
+                  {String(option.data.description)}
+                </span>
+              )}
+            </div>
           </div>
         );
       }}

@@ -112,4 +112,6 @@ export enum KnowledgeDocTypeEnum {
   DOC = 1,
   // QA问答
   QA = 2,
+  // 知识图谱
+  GRAPH = 3,
 }

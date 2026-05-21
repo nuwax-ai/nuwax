@@ -12,7 +12,7 @@ export default () => {
   const [tenantConfigInfo, setTenantConfigInfo] = useState<TenantConfigInfo>();
 
   // 租户配置信息查询接口
-  const { run: runTenantConfig } = useRequest(apiTenantConfig, {
+  const { run: runTenantConfig, loading } = useRequest(apiTenantConfig, {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: TenantConfigInfo) => {
@@ -121,6 +121,7 @@ export default () => {
 
   return {
     loadEnd,
+    loading,
     tenantConfigInfo,
     runTenantConfig,
     setTitle,

@@ -1,12 +1,12 @@
 import agentImage from '@/assets/images/agent_image.png'; // 智能体默认图标
 import { SvgIcon } from '@/components/base';
-import ChatTitleActions from '@/components/ChatTitleActions';
 import ConditionRender from '@/components/ConditionRender';
 import { dict } from '@/services/i18nRuntime';
 import { AgentContentProps } from '@/types/interfaces/agentTask';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
+import ChatTitleActions from '../ChatTitleActions';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

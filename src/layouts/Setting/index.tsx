@@ -8,6 +8,7 @@ import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import DeveloperProfile from './DeveloperProfile';
 import styles from './index.less';
 import LanguageSwitchPanel from './LanguageSwitchPanel';
 import ResetPassword from './ResetPassword';
@@ -20,6 +21,8 @@ const cx = classNames.bind(styles);
 
 const Setting: React.FC = () => {
   const { openSetting, setOpenSetting, isMobile } = useModel('layout');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
   const [action, setAction] = useState<SettingActionEnum>(
     SettingActionEnum.Account,
   );
@@ -50,7 +53,7 @@ const Setting: React.FC = () => {
     setAction(type);
   };
 
-  const Content: React.FC = () => {
+  const renderContent = () => {
     switch (action) {
       case SettingActionEnum.Account:
         return <SettingAccount />;
@@ -78,6 +81,8 @@ const Setting: React.FC = () => {
         return <LanguageSwitchPanel />;
       case SettingActionEnum.Usage_Statistics:
         return <UsageStatistics />;
+      case SettingActionEnum.Developer_Profile:
+        return <DeveloperProfile />;
       default:
         return <SettingAccount />;
     }
@@ -101,6 +106,8 @@ const Setting: React.FC = () => {
         return dict('PC.Pages.Setting.language');
       case SettingActionEnum.Usage_Statistics:
         return dict('PC.Pages.Setting.usageStatistics');
+      case SettingActionEnum.Developer_Profile:
+        return dict('PC.Pages.Setting.DeveloperProfile.title');
       default:
         return '';
     }
@@ -121,7 +128,12 @@ const Setting: React.FC = () => {
           <div className={cx(styles.left)}>
             <h3>{dict('PC.Pages.Setting.profileTitle')}</h3>
             <ul>
-              {SETTING_ACTIONS.map((item) => (
+              {SETTING_ACTIONS.filter((item) => {
+                if (item.type === SettingActionEnum.Developer_Profile) {
+                  return isEnableSubscription;
+                }
+                return true;
+              }).map((item) => (
                 <li
                   key={item.type}
                   className={cx(styles.item, 'cursor-pointer', {
@@ -141,7 +153,7 @@ const Setting: React.FC = () => {
             onClick={() => setOpenSetting(false)}
           />
           <div className={cx('flex-1', 'overflow-hide', styles.right)}>
-            <Content />
+            {renderContent()}
           </div>
         </div>
       )}

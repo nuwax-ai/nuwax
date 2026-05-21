@@ -2,6 +2,7 @@
 import type {
   ModelConfigInfo,
   ModelListParams,
+  ModelProviderInfo,
   ModelSaveParams,
   ModelTestInfo,
 } from '@/types/interfaces/model';
@@ -40,7 +41,7 @@ export async function apiModelList(
 
 // 查询指定空间下模型列表接口
 export async function apiModelListSpace(
-  spaceId: string,
+  spaceId: number,
 ): Promise<RequestResponse<ModelConfigInfo[]>> {
   return request(`/api/model/list/space/${spaceId}`, {
     method: 'POST',
@@ -52,6 +53,15 @@ export async function apiModelInfo(
   modelId: string,
 ): Promise<RequestResponse<ModelConfigInfo>> {
   return request(`/api/model/${modelId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询指定模型配置信息
+export async function apiModelProviders(): Promise<
+  RequestResponse<ModelProviderInfo[]>
+> {
+  return request('/api/model/providers', {
     method: 'GET',
   });
 }
