@@ -141,6 +141,8 @@ const UserCredits: React.FC = () => {
       },
     ];
   }, [handleOpenGrantModal, handleOpenDeductModal]);
+
+  // 列配置
   const columns: ProColumns<UserCreditSummaryInfo>[] = [
     {
       title: dict('PC.Pages.SystemUserCredits.colUserId'),
@@ -186,6 +188,7 @@ const UserCredits: React.FC = () => {
       dataIndex: 'subscriptionCredit',
       key: 'subscriptionCredit',
       search: false,
+      width: 150,
       render: (_, record) => record.subscriptionCredit || 0,
     },
     {
@@ -222,7 +225,7 @@ const UserCredits: React.FC = () => {
       render: (_, record) => (
         <TableActions<UserCreditSummaryInfo>
           record={record}
-          actions={getActions(record)}
+          actions={getActions()}
         />
       ),
     },

@@ -63,12 +63,12 @@ const UsageStatistics: React.FC = () => {
       const usage: UserMetricUsageInfo = res.data;
 
       const rows: UsageTableItem[] = [
-        {
-          key: 'token',
-          type: dict('PC.Layouts.Setting.UsageStatistics.tokenLimit'),
-          daily: formatUsageInfo(usage.todayTokenUsage),
-          other: '--',
-        },
+        // {
+        //   key: 'token',
+        //   type: dict('PC.Layouts.Setting.UsageStatistics.tokenLimit'),
+        //   daily: formatUsageInfo(usage.todayTokenUsage),
+        //   other: '--',
+        // },
         {
           key: 'agentPrompt',
           type: dict('PC.Layouts.Setting.UsageStatistics.agentPrompt'),
