@@ -11,15 +11,20 @@ import { Button } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { history, useLocation } from 'umi';
 import { apiGetCreditSummaryList } from '../services/credit';
-import { UserCreditSummaryInfo } from '../types/credit';
+import {
+  UserCreditSummaryInfo,
+  UserCreditSummarySearchParams,
+} from '../types/credit';
 
-/** ProTable 查询参数（筛选项与表单字段：仅 userId、userName） */
-type UserCreditSummaryTableParams = ParamsType & {
-  userId?: number | string;
-  userName?: string;
-  current?: number;
-  pageSize?: number;
-};
+/** ProTable 分页与筛选项；请求接口使用 UserCreditSummarySearchParams */
+type UserCreditSummaryTableParams = ParamsType &
+  Pick<UserCreditSummarySearchParams, 'usernamePhoneOrEmail'> & {
+    userId?: number | string;
+    current?: number;
+    pageSize?: number;
+  };
+
+const DEFAULT_PAGE_SIZE = 15;
 
 /**
  * 用户积分汇总列表
@@ -32,9 +37,17 @@ async function fetchUserCreditSummaryTableRequest(
   success: boolean;
 }> {
   try {
+    const userIdRaw = params.userId;
+    const userId =
+      userIdRaw !== undefined && userIdRaw !== ''
+        ? Number(userIdRaw)
+        : undefined;
     const res = await apiGetCreditSummaryList({
-      userId: params.userId ? Number(params.userId) : undefined,
-      usernamePhoneOrEmail: params.userName?.trim() || undefined,
+      userId:
+        userId !== undefined && !Number.isNaN(userId) ? userId : undefined,
+      usernamePhoneOrEmail: params.usernamePhoneOrEmail?.trim() || undefined,
+      pageNum: params.current || 1,
+      pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
     });
     if (res?.code === SUCCESS_CODE) {
       const list = res.data.records || [];
@@ -84,8 +97,8 @@ const UserCredits: React.FC = () => {
     },
     {
       title: dict('PC.Pages.SystemUserCredits.colUserName'),
-      dataIndex: 'userName',
-      key: 'userName',
+      dataIndex: 'usernamePhoneOrEmail',
+      key: 'usernamePhoneOrEmail',
       ellipsis: true,
       fieldProps: {
         placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
@@ -169,6 +182,11 @@ const UserCredits: React.FC = () => {
         columns={columns}
         request={fetchUserCreditSummaryTableRequest}
         scroll={{ x: 'max-content' }}
+        pagination={{
+          showSizeChanger: true,
+          pageSizeOptions: [15, 30, 50, 100],
+          defaultPageSize: DEFAULT_PAGE_SIZE,
+        }}
       />
     </WorkspaceLayout>
   );
