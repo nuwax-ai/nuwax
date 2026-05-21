@@ -12,6 +12,7 @@ import {
   KnowledgeDataTypeEnum,
   KnowledgePubStatusEnum,
 } from '../enums/library';
+import { ModelCapabilityTypeEnum } from '../enums/modelConfig';
 import { PluginPublishScopeEnum } from '../enums/plugin';
 import { TaskInfo } from './library';
 
@@ -192,6 +193,8 @@ export interface ModelConfigDto {
     | 'Embeddings'
     | 'Audio'
     | 'Other';
+  /** 模型能力类型（可用值: Text, Image, Audio, Video, TextEmbedding, MultiEmbedding, Reasoning） */
+  types: ModelCapabilityTypeEnum[];
   /** 网络类型（可用值: Internet, Intranet） */
   networkType: 'Internet' | 'Intranet';
   /** 函数调用支持程度（可用值: Unsupported, CallSupported, StreamCallSupported） */
