@@ -67,6 +67,19 @@ const GlobalModelManage: React.FC = () => {
     ...MODEL_TYPE_LIST,
   ];
 
+  /** 状态筛选下拉：首项「全部」value 为空 */
+  const statusSelectOptions = [
+    { label: dict('PC.Pages.GlobalModelManage.all'), value: '' },
+    {
+      label: dict('PC.Pages.GlobalModelManage.statusEnabled'),
+      value: ModelComponentStatusEnum.Enabled,
+    },
+    {
+      label: dict('PC.Pages.GlobalModelManage.statusDisabled'),
+      value: ModelComponentStatusEnum.Disabled,
+    },
+  ];
+
   // 删除模型
   const handleConfirmDelete = async (id: number) => {
     const res = await apiSystemModelDelete({ id });
@@ -227,10 +240,11 @@ const GlobalModelManage: React.FC = () => {
       hideInSearch: true,
     },
     {
+      // 状态列：检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnStatus'),
       dataIndex: 'enabled',
       width: 100,
-      hideInSearch: true,
+      valueType: 'select',
       valueEnum: {
         [ModelComponentStatusEnum.Enabled]: {
           text: dict('PC.Pages.GlobalModelManage.statusEnabled'),
@@ -238,6 +252,9 @@ const GlobalModelManage: React.FC = () => {
         [ModelComponentStatusEnum.Disabled]: {
           text: dict('PC.Pages.GlobalModelManage.statusDisabled'),
         },
+      },
+      fieldProps: {
+        options: statusSelectOptions.filter((v) => v.value !== ''),
       },
     },
     {
@@ -295,8 +312,8 @@ const GlobalModelManage: React.FC = () => {
   ];
 
   const request = async (params: any) => {
-    // 检索表单 types；apiSystemModelList 无服务端 types 参数，类型筛选仅在前端执行
-    const { types } = params;
+    // 检索表单 types / enabled；apiSystemModelList 无对应参数，筛选仅在前端执行
+    const { types, enabled } = params;
     const res = await apiSystemModelList();
 
     if (res.code !== SUCCESS_CODE) {
@@ -310,6 +327,9 @@ const GlobalModelManage: React.FC = () => {
     if (types) {
       // 保留 record.types 包含所选能力类型的行
       data = data.filter((v) => v.types?.includes(types));
+    }
+    if (enabled !== undefined && enabled !== '') {
+      data = data.filter((v) => Number(v.enabled) === Number(enabled));
     }
     const { accessControl } = params;
     if (accessControl !== undefined) {

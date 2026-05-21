@@ -14,6 +14,7 @@ import {
 } from '../enums/library';
 import { ModelCapabilityTypeEnum } from '../enums/modelConfig';
 import { PluginPublishScopeEnum } from '../enums/plugin';
+import { ModelComponentStatusEnum } from '../enums/space';
 import { TaskInfo } from './library';
 
 /**
@@ -223,6 +224,8 @@ export interface ModelConfigDto {
   creator: CreatorDto;
   /** 管控状态 */
   accessControl?: AccessControlEnum;
+  /** 启用状态（1 启用 / 0 禁用） */
+  enabled?: ModelComponentStatusEnum;
 }
 
 /**
