@@ -58,6 +58,10 @@ export interface BillRevenueStatsInfo {
 
 // 订单查询参数
 export interface BillOrderSearchParams {
+  // 用户ID
+  userId?: number;
+  // 订单ID
+  orderId?: string;
   // 订单状态,可用值:PENDING,PAID,CANCELLED
   orderStatus?: BillOrderStatusEnum;
   // 支付状态,可用值:PENDING,PROCESSING,SUCCESS,FAILED,CLOSED
