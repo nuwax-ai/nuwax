@@ -254,7 +254,9 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
 
                 <Button
                   type="primary"
-                  className={cx(styles['plan-button'])}
+                  className={cx(styles['plan-button'], {
+                    [styles['plan-button-current']]: isCurrent,
+                  })}
                   loading={processingId?.toString() === plan.id}
                   onClick={() => handlePay(plan)}
                   disabled={plan.price <= 0 && !isCurrent}

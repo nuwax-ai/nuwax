@@ -178,6 +178,24 @@
       align-items: center;
       justify-content: center;
 
+      &.plan-button-current {
+        background-color: #efebe6 !important;
+        border-color: #efebe6 !important;
+        color: #5c564f !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: #e5dfd7 !important;
+          border-color: #e5dfd7 !important;
+          color: #5c564f !important;
+        }
+
+        > span {
+          color: #5c564f !important;
+        }
+      }
+
       > span:not(.ant-btn-loading-icon) {
         display: inline-block;
         max-width: 100%;
