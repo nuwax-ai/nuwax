@@ -13,14 +13,6 @@
     margin-right: 20px;
   }
 
-  // .segmented {
-  //   :global {
-  //     .ant-segmented-item-selected {
-  //       font-weight: @fontWeightStrong !important;
-  //     }
-  //   }
-  // }
-
   .list-section {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -28,6 +20,12 @@
 
     /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
     align-content: start;
+
+    .price-title {
+      color: @GRAY05;
+      font-size: 12px;
+      font-weight: 400;
+    }
   }
 
   @media (min-width: 1200px) {
