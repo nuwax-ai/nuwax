@@ -1,0 +1,184 @@
+@import '@/styles/token.less';
+
+.record-list-container {
+  min-height: 200px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: @colorBorderSecondary;
+    border-radius: @borderRadiusXs;
+  }
+
+  .loading-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+  }
+
+  .record-list {
+    display: flex;
+    flex-direction: column;
+
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+      transition: all @motionDurationSlow;
+      background: @colorBgContainer;
+
+      &:hover {
+        background: @colorFillAlter;
+        border-color: @colorBorder;
+      }
+
+      .record-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .record-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          :global(.ant-statistic) {
+            .ant-statistic-content {
+              font-size: 18px;
+              font-weight: 700;
+              color: @colorText;
+            }
+          }
+
+          :global(.ant-tag) {
+            margin-right: 0;
+            border: none;
+            padding: 2px 8px;
+            border-radius: @borderRadiusLg;
+            font-weight: 500;
+          }
+        }
+
+        .record-time {
+          font-size: @fontSizeSm;
+          color: @colorTextSecondary;
+          font-weight: 500;
+        }
+
+        .record-details {
+          margin-top: 4px;
+          padding: 8px 12px;
+          background: @colorFillAlter;
+          border-radius: @borderRadiusSm;
+
+          .detail-row {
+            display: flex;
+            gap: 16px;
+
+            .detail-col {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+
+              .detail-label {
+                font-size: @fontSizeSm;
+                color: @colorTextDescription;
+              }
+
+              .detail-value {
+                font-size: @fontSize;
+                color: @colorText;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+
+        .record-reject-reason {
+          margin-top: 4px;
+          padding: 8px 12px;
+          background: @colorErrorBg;
+          color: @colorErrorText;
+          border-radius: @borderRadius;
+          font-size: @fontSizeSm;
+          line-height: 1.5;
+        }
+
+        .record-payment-extra {
+          margin-top: 4px;
+          padding: 10px 12px;
+          background: @colorSuccessBg;
+          border-radius: @borderRadiusSm;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border: 1px dashed @colorSuccessBorder;
+
+          .payment-remark {
+            font-size: @fontSizeSm;
+            line-height: 1.5;
+
+            .extra-label {
+              font-weight: 500;
+              color: @colorText;
+            }
+
+            .extra-value {
+              color: @colorTextSecondary !important;
+              word-break: break-all;
+              cursor: pointer;
+            }
+          }
+
+          .payment-voucher {
+            .extra-label {
+              font-size: @fontSizeSm;
+              font-weight: 500;
+              color: @colorText;
+            }
+
+            .voucher-images {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+
+              :global(.ant-image) {
+                border: 1px solid @colorBorderSecondary;
+                border-radius: @borderRadiusXs;
+                overflow: hidden;
+                cursor: pointer;
+                transition: transform @motionDurationSlow;
+
+                &:global(.ant-image-img) {
+                  object-fit: cover;
+                }
+
+                &:hover {
+                  transform: scale(1.05);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .loading-more {
+      display: flex;
+      justify-content: center;
+      padding: @paddingSm 0;
+    }
+  }
+}

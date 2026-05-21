@@ -99,7 +99,7 @@ const SessionStats: React.FC<SessionStatsProps> = ({
           </Col>
         ))}
       </Row>
-      <Card className={cx(styles['session-chart'])} bordered={false}>
+      <Card className={cx(styles['session-chart'])} variant="borderless">
         <div className={cx(styles['chart-header'])}>
           <h3 className={cx(styles['chart-title'])}>
             {dict('PC.Pages.SystemDashboard.sevenDayTrend')}

@@ -1,0 +1,56 @@
+@import '@/styles/token.less';
+
+// 页面局部变量定义
+@topUpBtnHeight: 26px;
+@balanceContainerShadow: 0 1px 4px rgba(0, 0, 0, 5%);
+@balanceContainerHoverShadow: 0 2px 8px rgba(0, 0, 0, 8%);
+@topUpBtnShadow: 0 1px 4px rgba(26, 107, 255, 25%);
+
+.credits-balance-wrapper {
+  // margin-left: calc(-1 * @marginXs);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: @paddingXs;
+    cursor: pointer;
+    padding: @paddingXs @marginSm;
+    border-radius: @borderRadiusLg;
+    background: @colorWhite;
+    box-shadow: @balanceContainerShadow;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+
+    .label {
+      color: @colorText;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+    }
+
+    .balance {
+      flex: 1;
+      font-weight: @fontWeightStrong;
+      font-size: @fontSizeLg;
+      color: @navSecondMenuTextSecondary;
+      text-align: left;
+      margin-left: @borderRadiusXs;
+    }
+  }
+
+  .footer {
+    padding: @paddingXs 0;
+    font-size: 10px;
+  }
+}
+
+.top-up-btn {
+  font-size: @fontSizeSm;
+  border: none;
+  background: #f6f6f6;
+}

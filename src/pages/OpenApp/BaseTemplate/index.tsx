@@ -1,10 +1,12 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
+import useSubscription from '@/hooks/useSubscription';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
@@ -74,13 +76,18 @@ const BaseTemplate: React.FC = () => {
     toggleAppSidebarVisible,
     closeAppSidebar,
     appAgentDetail,
+    openPaymentModal,
     createAppNewConversation,
     handleSetAppAgentDetail,
     appAgentDetailLoading,
     setAppAgentDetailLoading,
+    setOpenPaymentModal,
   } = useModel('useOpenApp');
 
-  const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
+
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // =========================== footer 渐变 ===========================
   const historyListRef = useRef<HTMLDivElement | null>(null);
@@ -96,6 +103,20 @@ const BaseTemplate: React.FC = () => {
       closeAppSidebar();
     }
   }, [isMobile, isAppSidebarVisible, closeAppSidebar]);
+
+  // 智能体订阅
+  const {
+    // 智能体订阅套餐
+    agentSubscriptionPlans,
+    loadingAgentSubscriptionPlans,
+    queryAgentSubscriptionPlans,
+    // 当前生效智能体套餐
+    mySubscriptionInfo,
+    // 加载当前生效智能体套餐loading
+    loadingMySubscription,
+    // 创建智能体订阅订单
+    createSubscriptionOrder,
+  } = useSubscription();
 
   // 是否为 Mac 系统（用于快捷键文案和按键组合判断）
   const isMacSystem = useMemo(() => {
@@ -155,6 +176,15 @@ const BaseTemplate: React.FC = () => {
       setAppAgentDetailLoading(false);
     },
   });
+
+  useEffect(() => {
+    if (!openPaymentModal) {
+      return;
+    }
+
+    // 打开智能体订阅套餐弹窗
+    queryAgentSubscriptionPlans(agentId);
+  }, [openPaymentModal, queryAgentSubscriptionPlans, agentId]);
 
   useEffect(() => {
     /**
@@ -398,7 +428,7 @@ const BaseTemplate: React.FC = () => {
             <LoadingOutlined />
           </div>
         ) : (
-          <>
+          <div className={cx('flex', 'flex-col', 'flex-1')}>
             {/* 智能体图标 + 收起导航按钮 */}
             <header className={styles.sidebarTop}>
               {/* 智能体图标 + 名称 */}
@@ -484,13 +514,13 @@ const BaseTemplate: React.FC = () => {
                     return (
                       <div
                         key={`${item.name}-${index}`}
-                        className={cx(styles.pageNavItem, {
+                        className={cx(styles['nav-item'], {
                           [styles['page-nav-item-active']]: isActive,
                         })}
                         onClick={() => handleOpenPage(item)}
                       >
                         <SvgIcon
-                          name={item.icon}
+                          name={item.icon || agentImage}
                           style={{ fontSize: 16, borderRadius: '4px' }}
                         />
                         <span className="text-ellipsis">{item.name}</span>
@@ -498,6 +528,24 @@ const BaseTemplate: React.FC = () => {
                     );
                   },
                 )}
+              </div>
+            </ConditionRender>
+
+            {/* 订阅导航 */}
+            <ConditionRender
+              condition={
+                isEnableSubscription && appAgentDetail?.paymentRequired
+              }
+            >
+              <div
+                className={cx(styles['nav-item'], styles['mt-6'])}
+                onClick={() => setOpenPaymentModal(true)}
+              >
+                <SvgIcon
+                  name="icons-nav-wodedingyue"
+                  style={{ fontSize: 18 }}
+                />
+                <span className="text-ellipsis">订阅</span>
               </div>
             </ConditionRender>
 
@@ -515,7 +563,8 @@ const BaseTemplate: React.FC = () => {
                 <div
                   className={cx(styles['history-title'], {
                     [styles['exist-page-nav']]:
-                      appAgentDetail?.customPageMenus?.length > 0,
+                      appAgentDetail?.customPageMenus?.length > 0 ||
+                      (isEnableSubscription && appAgentDetail?.paymentRequired),
                   })}
                 >
                   <span className={cx(styles.title, 'flex-1', 'overflow-hide')}>
@@ -572,7 +621,7 @@ const BaseTemplate: React.FC = () => {
                 <div className={cx(styles['footer-top-gradient'])} />
               </ConditionRender>
             </div>
-          </>
+          </div>
         )}
 
         {/* 用户区域，固定在底部 */}
@@ -628,6 +677,26 @@ const BaseTemplate: React.FC = () => {
 
       {/* 消息弹窗 */}
       <Message className={styles.messageContainer} />
+
+      <ConditionRender condition={isEnableSubscription}>
+        {/* 付费订阅套餐弹窗 */}
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Agent"
+          overCallLimit={appAgentDetail?.overCallLimit ?? false}
+          loading={loadingAgentSubscriptionPlans || loadingMySubscription}
+          // 套餐列表
+          plans={agentSubscriptionPlans}
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          // 关闭回调
+          onClose={() => setOpenPaymentModal(false)}
+          // 订阅回调
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };

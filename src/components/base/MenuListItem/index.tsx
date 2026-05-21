@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { dict } from '@/services/i18nRuntime';
 import { EllipsisOutlined } from '@ant-design/icons';
@@ -33,12 +34,13 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
     return !!icon;
   }, [icon]);
 
-  // 用于跟踪图片是否已经重试加载过一次
-  const hasRetriedRef = useRef<boolean>(false);
+  /**
+   * 远程图标加载：0 首次；1 已用 cache bust 重试过原图；2 已切到默认图并结束
+   */
+  const imageLoadRetryRef = useRef<0 | 1 | 2>(0);
 
-  // 当 icon 变化时，重置重试状态
   useEffect(() => {
-    hasRetriedRef.current = false;
+    imageLoadRetryRef.current = 0;
   }, [icon]);
 
   return (
@@ -75,19 +77,20 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
               src={icon}
               alt={name}
               onError={(e) => {
-                // 如果已经重试过一次，直接清除错误处理，不再重试
-                if (hasRetriedRef.current) {
-                  e.currentTarget.onerror = null;
+                const img = e.currentTarget;
+
+                // 首次失败：原 URL 带时间戳再请求一次
+                if (imageLoadRetryRef.current === 0) {
+                  imageLoadRetryRef.current = 1;
+                  const separator = icon.includes('?') ? '&' : '?';
+                  img.src = `${icon}${separator}_retry=${Date.now()}`;
                   return;
                 }
-                // 标记已重试
-                hasRetriedRef.current = true;
-                // 清除错误处理，防止无限循环
-                e.currentTarget.onerror = null;
-                // 重新设置 src，触发一次重试
-                // 使用时间戳或随机参数确保浏览器会重新加载
-                const separator = icon?.includes('?') ? '&' : '?';
-                e.currentTarget.src = `${icon}${separator}_retry=${Date.now()}`;
+
+                // 第二次失败：换默认图，并摘掉 onerror（默认图失败也不再重试）
+                img.onerror = null;
+                imageLoadRetryRef.current = 2;
+                img.src = agentImage;
               }}
             />
           ) : (

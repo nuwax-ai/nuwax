@@ -38,4 +38,5 @@ pnpm-lock.yaml
 .DS_Store
 .agent
 .kilo
+.temp
 # /deploy_test.sh

@@ -1,4 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { memo, useState } from 'react';
@@ -15,10 +16,18 @@ const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // 计算子元素数量（过滤掉可能的空白节点）
-  const processCount = React.Children.toArray(children).filter((child) =>
-    React.isValidElement(child),
-  ).length;
+  // 计算子元素数量（过滤掉可能的空白节点，并排除隐藏的 Event 类型）
+  const processCount = React.Children.toArray(children).filter((child) => {
+    if (!React.isValidElement(child)) return false;
+    // 过滤掉隐藏的 Event 类型
+    if (
+      (child.props as any)?.type === AgentComponentTypeEnum.Event ||
+      (child.props as any)?.type === 'Event'
+    ) {
+      return false;
+    }
+    return true;
+  }).length;
 
   if (processCount === 0) return null;
 

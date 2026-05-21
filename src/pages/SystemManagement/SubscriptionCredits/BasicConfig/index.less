@@ -1,0 +1,90 @@
+@import '@/styles/token.less';
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  .scrollBody {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    .sectionTitle {
+      margin-bottom: @marginXs;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .sectionDesc {
+      display: block;
+      margin-bottom: @marginSm;
+    }
+
+    .sectionBlock {
+      padding-bottom: @padding;
+      margin-bottom: @margin;
+      border-bottom: 1px solid @colorBorderSecondary;
+    }
+
+    /** 区块标题与控制开关同一行（如订阅总开关） */
+    .sectionTitleRow {
+      display: flex;
+      align-items: center;
+      gap: @marginMd;
+      margin-bottom: @marginSm;
+
+      .sectionTitle {
+        margin-bottom: 0;
+      }
+    }
+
+    .exchangeNotice {
+      flex: 1;
+      padding: @paddingXs @paddingSm;
+      background: #fafafa;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+    }
+
+    .exchangeLine {
+      display: flex;
+      align-items: center;
+      gap: @marginSm;
+      margin-bottom: @marginSm;
+    }
+
+    .exchangeLineLabel {
+      flex: 0 0 80px;
+      color: @colorTextLabel;
+      line-height: 32px;
+    }
+
+    .exchangeLineContent {
+      display: inline-flex;
+      align-items: center;
+      gap: @marginSm;
+    }
+
+    .exchangeEqual {
+      color: @colorTextSecondary;
+    }
+
+    .exchangeUnit {
+      color: @colorText;
+      white-space: nowrap;
+    }
+  }
+
+  .footerBar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: @marginSm;
+    padding-top: @paddingSm;
+    margin-top: @marginXs;
+    border-top: 1px solid @colorBorderSecondary;
+  }
+}

@@ -1,0 +1,93 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.detail-modal {
+  :global {
+    .ant-modal-body {
+      padding: 0;
+    }
+    // 表格深度美化
+    .ant-table-wrapper {
+      .ant-table {
+        background: transparent;
+      }
+
+      .ant-table-thead > tr > th {
+        background: @colorFillAlter;
+        color: @colorTextSecondary;
+        font-weight: 600;
+        border-bottom: 1px solid @colorBorderSecondary;
+
+        &::before {
+          display: none; // 移除表头分割线
+        }
+      }
+
+      .ant-table-tbody > tr > td {
+        border-bottom: 1px solid @colorBorderSecondary;
+        padding: @padding 16px;
+      }
+
+      .ant-table-tbody > tr:last-child > td {
+        border-bottom: none;
+      }
+    }
+    // 分页美化
+    .ant-pagination {
+      padding: @padding @paddingLg;
+      margin: 0 !important;
+      border-top: 1px solid @colorBorderSecondary;
+    }
+  }
+}
+
+.detail-table-container {
+  min-height: 400px;
+  background: @colorBgContainer;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px; // 稍微硬朗一点的圆角，更显专业
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+}
+
+.tag-plan {
+  background-color: #f3f0ff;
+  color: #7048e8;
+  border-color: rgba(112, 72, 232, 20%);
+}
+
+.tag-model {
+  background-color: #e7f5ff;
+  color: #1c7ed6;
+  border-color: rgba(28, 126, 214, 20%);
+}
+
+.tag-tool {
+  background-color: #ebfbee;
+  color: #2b8a3e;
+  border-color: rgba(43, 138, 62, 20%);
+}
+
+.amount-plus {
+  color: @colorSuccess;
+  font-weight: 700;
+  font-size: 16px;
+  font-family: Outfit, sans-serif;
+  letter-spacing: -0.2px;
+}

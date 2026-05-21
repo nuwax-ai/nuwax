@@ -5,14 +5,16 @@ import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
-// import { jumpBack } from '@/utils/router';
+import type {
+  AgentHeaderProps,
+  AgentHeaderTabKey,
+} from '@/types/interfaces/agentConfig';
 import { FormOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tag } from 'antd';
+import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,6 +31,8 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onEditAgent,
   onPublish,
   onOtherAction,
+  activeTab = 'arrange',
+  onTabChange,
 }) => {
   const { spaceId } = useParams();
 
@@ -101,6 +105,31 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
     ...actionList,
   ];
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
+
+  const tabOptions = useMemo(() => {
+    const opts = [
+      {
+        label: dict('PC.Pages.AgentEdit.arrange'),
+        value: 'arrange' as AgentHeaderTabKey,
+      },
+    ];
+    if (showSubscriptionTabs) {
+      opts.push(
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionSetting'),
+          value: 'subscriptionSetting' as AgentHeaderTabKey,
+        },
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionStats'),
+          value: 'subscriptionStats' as AgentHeaderTabKey,
+        },
+      );
+    }
+    return opts;
+  }, [showSubscriptionTabs]);
+
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
       <ConditionRender condition={!hideBack}>
@@ -109,7 +138,6 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           className={cx(styles['icon-backward'])}
           onClick={() => {
             history.push(`/space/${spaceId}/develop`);
-            // jumpBack(`/space/${spaceId}/develop`)
           }}
         />
       </ConditionRender>
@@ -139,7 +167,19 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           />
         </div>
       </div>
-      {/* <h2 className={cx('absolute', styles['header-title'])}>编排</h2> */}
+
+      {/* 头部导航栏 */}
+      {showSubscriptionTabs && (
+        <div className={cx('absolute', styles['header-segmented-wrap'])}>
+          <Segmented<AgentHeaderTabKey>
+            value={activeTab}
+            options={tabOptions}
+            onChange={(value) => onTabChange?.(value)}
+          />
+        </div>
+      )}
+
+      {/* 右侧操作区域 */}
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         <div className={cx('flex', 'items-center', styles['save-time-box'])}>
           <span className={cx(styles['save-time'])}>

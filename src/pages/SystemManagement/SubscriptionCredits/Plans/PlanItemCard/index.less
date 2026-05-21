@@ -1,0 +1,156 @@
+@import '@/styles/token.less';
+
+.plan-item-card {
+  height: 500px;
+  background: #f2f2f4;
+  border-radius: 16px;
+  padding: 20px 22px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.plan-item-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-item-header {
+  margin-bottom: 14px;
+}
+
+.plan-item-title {
+  font-size: 22px;
+  color: #0e0e0e;
+  line-height: 1.25;
+}
+
+.plan-item-price-row {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: @marginXxs;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.plan-item-price {
+  margin-top: @marginSm;
+  font-size: 36px;
+  line-height: 1;
+  color: #262626;
+}
+
+.plan-item-period {
+  font-size: @fontSizeLg;
+  line-height: 1;
+  color: #9ca3af;
+  margin-left: @marginXxs;
+  margin-bottom: 5px;
+}
+
+.plan-item-first-price {
+  margin-left: 10px;
+  color: #9ca3af;
+  font-size: @fontSize;
+  text-decoration: line-through;
+}
+
+.plan-item-main-feature-row {
+  display: flex;
+  align-items: center;
+  margin-top: @marginMd;
+  gap: 8px;
+}
+
+.plan-item-main-feature-icon {
+  color: #171313;
+  font-size: @fontSizeLg;
+}
+
+.plan-item-main-feature-text {
+  color: #3a3838;
+  font-size: @fontSize;
+  font-weight: 500;
+}
+
+.plan-item-divider {
+  height: 1px;
+  background: transparent;
+  border-top: 1px dashed #d4d4d8;
+  margin: 14px 0;
+}
+
+.plan-item-feature-list {
+  flex: 1;
+  min-height: 0;
+  padding-top: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
+
+.plan-item-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.plan-item-feature-icon {
+  color: #595959;
+  font-size: 13px;
+  margin-top: @marginXxs;
+}
+
+.plan-item-feature-text {
+  color: #3f3f46;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.plan-item-feature-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: @fontSizeSm;
+  color: #b08968;
+  background: #ece7df;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.plan-item-footer {
+  margin-top: @marginXs;
+  padding-top: @paddingSm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.plan-item-footer-left,
+.plan-item-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-item-footer-label {
+  font-size: @fontSizeSm;
+  color: #8c8c8c;
+}
+
+.plan-item-action-btn {
+  padding: 0;
+}

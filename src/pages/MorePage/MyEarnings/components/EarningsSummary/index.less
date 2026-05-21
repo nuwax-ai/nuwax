@@ -1,0 +1,137 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.earnings-summary {
+  .stats-container {
+    display: flex;
+    align-items: center;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 4%);
+    padding: @paddingLg @padding;
+    margin-bottom: @marginLg;
+    margin-top: @margin;
+
+    .stat-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 @padding;
+
+      :global {
+        .ant-statistic-title {
+          font-size: @fontSizeSm;
+          color: @colorTextDescription;
+          margin-bottom: @marginXs;
+          text-align: center;
+        }
+
+        .ant-statistic-content {
+          text-align: center;
+        }
+      }
+
+      .stat-hint {
+        font-size: @fontSizeSm;
+        color: @colorTextDescription;
+        margin-top: @marginXs;
+      }
+    }
+
+    .divider {
+      width: 1px;
+      height: 64px;
+      background: @colorBorderSecondary;
+    }
+  }
+
+  .withdraw-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: @colorBgContainer;
+    border-radius: @borderRadiusLg;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 4%);
+    padding: @padding @paddingLg;
+    margin-bottom: @marginLg;
+
+    .balance-info {
+      :global {
+        .ant-statistic-title {
+          font-size: @fontSizeSm;
+          color: @colorTextDescription;
+          margin-bottom: @marginXs;
+        }
+
+        .ant-statistic-content {
+          font-size: @fontSizeHeading2;
+          font-weight: @fontWeightStrong;
+          color: @colorWarning;
+
+          .ant-statistic-content-prefix,
+          .ant-statistic-content-value {
+            font-size: @fontSizeHeading2;
+            font-weight: @fontWeightStrong;
+            color: @colorWarning;
+          }
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: @margin;
+
+      .withdraw-hint {
+        font-size: @fontSizeSm;
+        color: @colorTextDescription;
+        white-space: nowrap;
+      }
+
+      .withdraw-apply-btn {
+        background: @colorWarning;
+        border-color: @colorWarning;
+        height: 44px;
+        padding: 0 @paddingLg;
+        font-weight: 500;
+
+        &:hover {
+          background: @orange5;
+          border-color: @orange5;
+        }
+
+        &:disabled,
+        &.ant-btn-disabled {
+          background: @colorFillAlter;
+          border-color: @colorBorderSecondary;
+          color: @colorTextDisabled;
+          opacity: 0.7;
+        }
+
+        :global(.anticon) {
+          font-size: 18px;
+        }
+      }
+
+      .withdraw-record-btn {
+        height: 44px;
+        padding: 0 @paddingLg;
+        font-weight: 500;
+        border-color: @colorBorderSecondary;
+        color: @colorText;
+
+        &:hover {
+          color: @colorWarning;
+          border-color: @colorWarning;
+        }
+
+        :global(.anticon) {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}

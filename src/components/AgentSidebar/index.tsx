@@ -22,17 +22,7 @@ export type AgentSidebarRef = {
 };
 
 const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
-  (
-    {
-      className,
-      agentId,
-      loading,
-      agentDetail,
-      onToggleCollectSuccess,
-      onVisibleChange,
-    },
-    ref,
-  ) => {
+  ({ className, agentId, loading, agentDetail, onVisibleChange }, ref) => {
     const [visible, setVisible] = useState<boolean>(false);
     const [foldVisible, setFoldVisible] = useState<boolean>(false);
     const { showType } = useModel('conversationInfo');
@@ -76,59 +66,45 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
       onVisibleChange?.(visible);
     }, [visible]);
 
-    // useDrawerScroll(visible);
-
     return (
-      <>
-        <div
-          className={cx(styles.rightSidebar, 'flex', 'flex-col', className, {
-            [styles.hide]: !visible,
-          })}
-        >
-          {loading ? (
-            <Loading />
-          ) : (
-            <>
-              {/* 统计信息 */}
-              <StickyBox
-                offsetTop={0}
-                style={{ zIndex: 10 }}
-                className={cx(styles['statistics-content'])}
-              >
-                <StatisticsInfo
-                  statistics={agentDetail?.statistics}
-                  visible={visible}
-                  onClose={handleClose}
-                />
-              </StickyBox>
-              <div className={cx(styles['container-scroll'], styles.container)}>
-                <div className={cx(styles['container-content'], 'scrollbar')}>
-                  <div className={cx(styles['container-body'])}>
-                    {/* 智能体内容 */}
-                    <AgentContent
-                      agentDetail={agentDetail}
-                      onToggleCollectSuccess={onToggleCollectSuccess}
-                    />
-                    {/* 智能体相关会话 */}
-                    <AgentConversation agentId={agentId} />
-                    {/* 定时任务 */}
-                    {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
-                      <TimedTask agentId={agentId} />
-                    )}
-                  </div>
+      <div
+        className={cx(styles.rightSidebar, 'flex', 'flex-col', className, {
+          [styles.hide]: !visible,
+        })}
+      >
+        {loading ? (
+          <Loading />
+        ) : (
+          <>
+            {/* 统计信息 */}
+            <StickyBox
+              offsetTop={0}
+              style={{ zIndex: 10 }}
+              className={cx(styles['statistics-content'])}
+            >
+              <StatisticsInfo
+                statistics={agentDetail?.statistics}
+                visible={visible}
+                onClose={handleClose}
+              />
+            </StickyBox>
+            <div className={cx(styles['container-scroll'], styles.container)}>
+              <div className={cx(styles['container-content'], 'scrollbar')}>
+                <div className={cx(styles['container-body'])}>
+                  {/* 智能体内容 */}
+                  <AgentContent agentDetail={agentDetail} />
+                  {/* 智能体相关会话 */}
+                  <AgentConversation agentId={agentId} />
+                  {/* 定时任务 */}
+                  {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
+                    <TimedTask agentId={agentId} />
+                  )}
                 </div>
               </div>
-            </>
-          )}
-        </div>
-        {/* <img
-        className={cx(styles.fold, 'cursor-pointer', {
-          [styles.show]: !visible,
-        })}
-        src={foldImage}
-        onClick={handleClose}
-      /> */}
-      </>
+            </div>
+          </>
+        )}
+      </div>
     );
   },
 );

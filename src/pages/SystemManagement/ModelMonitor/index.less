@@ -1,0 +1,43 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.model-monitor-container {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  // overflow: hidden;
+  box-sizing: border-box;
+}
+
+// 筛选栏（固定高度，不参与伸缩）
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  flex-shrink: 0;
+}
+
+.filter-label {
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+// 明细表格区域 - 占满剩余空间，表格体内部滚动
+.detail-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  :global(.x-pro-table) {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+}

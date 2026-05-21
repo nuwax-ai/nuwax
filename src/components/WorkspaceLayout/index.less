@@ -29,6 +29,7 @@
   }
 
   .header-area {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -81,7 +82,15 @@
     overflow-y: auto;
     height: 100%;
     padding: 0 16px 16px 24px;
-    background-color: #fff;
+    background-color: transparent;
+
+    // hideScroll：内容区占满页头以下剩余高度，由页面内部自行分配滚动
+    &.scroll-container-hide {
+      flex: 1;
+      min-height: 0;
+      height: auto;
+      overflow: hidden;
+    }
   }
 
   .extra-container {

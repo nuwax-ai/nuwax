@@ -4,6 +4,7 @@ export type { ActionItem, ActionMenuProps } from './ActionMenu';
 
 export { default as AgentType } from './AgentType';
 export { default as AuthorInfo } from './AuthorInfo';
+export { default as BankAccountInput } from './BankAccountInput';
 export { default as CopyButton } from './CopyButton';
 export { default as CopyIconButton } from './CopyIconButton';
 export { default as EcoShareStatus } from './EcoShareStatus';
