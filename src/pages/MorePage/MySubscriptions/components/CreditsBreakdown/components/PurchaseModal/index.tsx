@@ -6,7 +6,7 @@ import {
   apiListCreditPackages,
 } from '@/services/subscriptionService';
 import { CreditPackageInfo } from '@/types/interfaces/subscription';
-import { message, Space, Spin, Statistic, Tag } from 'antd';
+import { message, Space, Spin, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
@@ -107,6 +107,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
       modalProps={{
         destroyOnHidden: true,
         width: 640,
+        centered: true,
       }}
       submitter={{ render: () => null }} // 隐藏底部按钮区域
     >
@@ -137,15 +138,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
                       <span className={cx(styles['package-name'])}>
                         {pkg.packageName}
                       </span>
-                      {pkg.remark && (
-                        <Tag
-                          color="orange"
-                          className={cx(styles['package-tag'])}
-                        >
-                          {pkg.remark}
-                        </Tag>
-                      )}
                     </div>
+                    {pkg.remark && (
+                      <div className={cx(styles['package-remark'])}>
+                        {pkg.remark}
+                      </div>
+                    )}
                     <div className={cx(styles['package-amount'])}>
                       <Statistic
                         value={pkg.creditAmount}

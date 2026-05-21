@@ -46,9 +46,27 @@ const SubscribedContent: React.FC = () => {
       </div>
 
       <div className={cx(styles['content-area'])}>
-        {activeTab === TAB_KEYS.agents && <SubscribedAgents />}
-        {activeTab === TAB_KEYS.skills && <SubscribedSkills />}
-        {activeTab === TAB_KEYS.credits && <SubscribedCredits />}
+        <div
+          className={cx(styles['tab-content-item'], {
+            [styles['active']]: activeTab === TAB_KEYS.agents,
+          })}
+        >
+          <SubscribedAgents />
+        </div>
+        <div
+          className={cx(styles['tab-content-item'], {
+            [styles['active']]: activeTab === TAB_KEYS.skills,
+          })}
+        >
+          <SubscribedSkills />
+        </div>
+        <div
+          className={cx(styles['tab-content-item'], {
+            [styles['active']]: activeTab === TAB_KEYS.credits,
+          })}
+        >
+          <SubscribedCredits />
+        </div>
       </div>
     </div>
   );

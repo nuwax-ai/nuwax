@@ -89,7 +89,7 @@ function TableActions<T extends object>({
       const td = container.closest('td');
       if (td) {
         const tdWidth = td.getBoundingClientRect().width;
-        setContainerWidth(tdWidth - 16);
+        setContainerWidth(tdWidth - 20);
       }
     };
 

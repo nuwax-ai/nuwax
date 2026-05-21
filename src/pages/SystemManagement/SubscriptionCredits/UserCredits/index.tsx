@@ -1,4 +1,8 @@
-import { XProTable } from '@/components/ProComponents';
+import {
+  ActionItem,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -7,19 +11,31 @@ import type {
   ParamsType,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button } from 'antd';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';
 import { apiGetCreditSummaryList } from '../services/credit';
-import { UserCreditSummaryInfo } from '../types/credit';
+import {
+  UserCreditSummaryInfo,
+  UserCreditSummarySearchParams,
+} from '../types/credit';
+import DeductCreditModal from './DeductCreditModal';
+import GrantCreditModal from './GrantCreditModal';
 
-/** ProTable 查询参数（筛选项与表单字段：仅 userId、userName） */
-type UserCreditSummaryTableParams = ParamsType & {
-  userId?: number | string;
-  userName?: string;
-  current?: number;
-  pageSize?: number;
-};
+/**
+ * 用户积分查询页
+ * - 列表：apiGetCreditSummaryList
+ * - 操作列：查看流水、发放积分、扣减积分（弹窗提交 apiSystemAddCredit / apiSystemDeductCredit）
+ */
+
+/** ProTable 分页与筛选项；请求接口使用 UserCreditSummarySearchParams */
+type UserCreditSummaryTableParams = ParamsType &
+  Pick<UserCreditSummarySearchParams, 'usernamePhoneOrEmail'> & {
+    userId?: number | string;
+    current?: number;
+    pageSize?: number;
+  };
+
+const DEFAULT_PAGE_SIZE = 15;
 
 /**
  * 用户积分汇总列表
@@ -32,9 +48,17 @@ async function fetchUserCreditSummaryTableRequest(
   success: boolean;
 }> {
   try {
+    const userIdRaw = params.userId;
+    const userId =
+      userIdRaw !== undefined && userIdRaw !== ''
+        ? Number(userIdRaw)
+        : undefined;
     const res = await apiGetCreditSummaryList({
-      userId: params.userId ? Number(params.userId) : undefined,
-      usernamePhoneOrEmail: params.userName?.trim() || undefined,
+      userId:
+        userId !== undefined && !Number.isNaN(userId) ? userId : undefined,
+      usernamePhoneOrEmail: params.usernamePhoneOrEmail?.trim() || undefined,
+      pageNum: params.current || 1,
+      pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
     });
     if (res?.code === SUCCESS_CODE) {
       const list = res.data.records || [];
@@ -66,9 +90,57 @@ function navigateToUserCreditRecords(
   );
 }
 
+/**
+ * 用户积分查询
+ */
 const UserCredits: React.FC = () => {
   const location = useLocation();
   const actionRef = useRef<ActionType>();
+  /** 发放积分弹窗开关 */
+  const [grantModalOpen, setGrantModalOpen] = useState(false);
+  /** 扣减积分弹窗开关 */
+  const [deductModalOpen, setDeductModalOpen] = useState(false);
+  /** 当前操作行用户汇总，供 Grant/Deduct 弹窗展示与提交 userId */
+  const [activeUserRecord, setActiveUserRecord] =
+    useState<UserCreditSummaryInfo | null>(null);
+
+  /** 打开发放弹窗并绑定表格行 */
+  const handleOpenGrantModal = useCallback((record: UserCreditSummaryInfo) => {
+    setActiveUserRecord(record);
+    setGrantModalOpen(true);
+  }, []);
+
+  /** 打开扣减弹窗并绑定表格行 */
+  const handleOpenDeductModal = useCallback((record: UserCreditSummaryInfo) => {
+    setActiveUserRecord(record);
+    setDeductModalOpen(true);
+  }, []);
+
+  /** 发放/扣减成功后刷新列表 */
+  const handleCreditModalSuccess = useCallback(() => {
+    actionRef.current?.reload();
+  }, []);
+
+  /** 操作列配置 */
+  const getActions = useCallback((): ActionItem<UserCreditSummaryInfo>[] => {
+    return [
+      {
+        key: 'viewCreditRecords',
+        label: dict('PC.Pages.SystemUserCredits.viewCreditRecords'),
+        onClick: (r) => navigateToUserCreditRecords(r.userId),
+      },
+      {
+        key: 'grantCredit',
+        label: dict('PC.Pages.SystemUserCredits.grantCredit'),
+        onClick: handleOpenGrantModal,
+      },
+      {
+        key: 'deductCredit',
+        label: dict('PC.Pages.SystemUserCredits.deductCredit'),
+        onClick: handleOpenDeductModal,
+      },
+    ];
+  }, [handleOpenGrantModal, handleOpenDeductModal]);
   const columns: ProColumns<UserCreditSummaryInfo>[] = [
     {
       title: dict('PC.Pages.SystemUserCredits.colUserId'),
@@ -84,8 +156,8 @@ const UserCredits: React.FC = () => {
     },
     {
       title: dict('PC.Pages.SystemUserCredits.colUserName'),
-      dataIndex: 'userName',
-      key: 'userName',
+      dataIndex: 'usernamePhoneOrEmail',
+      key: 'usernamePhoneOrEmail',
       ellipsis: true,
       fieldProps: {
         placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
@@ -131,32 +203,32 @@ const UserCredits: React.FC = () => {
       width: 150,
       render: (_, record) => record.activityCredit || 0,
     },
-    // {
-    //   title: dict('PC.Pages.SystemUserCredits.manualCredit'),
-    //   dataIndex: 'manualCredit',
-    //   key: 'manualCredit',
-    //   search: false,
-    //   width: 120,
-    //   render: (_, record) => record.manualCredit || 0,
-    // },
     {
+      title: dict('PC.Pages.SystemUserCredits.manualCredit'),
+      dataIndex: 'manualCredit',
+      key: 'manualCredit',
+      search: false,
+      width: 120,
+      render: (_, record) => record.manualCredit || 0,
+    },
+    {
+      // 操作列：积分流水、发放、扣减
       title: dict('PC.Common.Global.operation'),
       key: 'actions',
       search: false,
       fixed: 'right',
       align: 'center',
-      width: 100,
+      width: 240,
       render: (_, record) => (
-        <Button
-          type="link"
-          onClick={() => navigateToUserCreditRecords(record.userId)}
-        >
-          {dict('PC.Pages.SystemUserCredits.viewCreditRecords')}
-        </Button>
+        <TableActions<UserCreditSummaryInfo>
+          record={record}
+          actions={getActions(record)}
+        />
       ),
     },
   ];
 
+  // 路由 state 变化时刷新列表（如从菜单切回）
   useEffect(() => {
     actionRef.current?.reload();
   }, [location.state]);
@@ -169,6 +241,25 @@ const UserCredits: React.FC = () => {
         columns={columns}
         request={fetchUserCreditSummaryTableRequest}
         scroll={{ x: 'max-content' }}
+        pagination={{
+          showSizeChanger: true,
+          pageSizeOptions: [15, 30, 50, 100],
+          defaultPageSize: DEFAULT_PAGE_SIZE,
+        }}
+      />
+      {/* 发放弹窗：tenantId 取自 tenantConfigInfo model */}
+      <GrantCreditModal
+        open={grantModalOpen}
+        userRecord={activeUserRecord}
+        onClose={() => setGrantModalOpen(false)}
+        onSuccess={handleCreditModalSuccess}
+      />
+      {/* 扣减弹窗：与发放共用 activeUserRecord */}
+      <DeductCreditModal
+        open={deductModalOpen}
+        userRecord={activeUserRecord}
+        onClose={() => setDeductModalOpen(false)}
+        onSuccess={handleCreditModalSuccess}
       />
     </WorkspaceLayout>
   );
