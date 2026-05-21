@@ -25,6 +25,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import DataPermissionModal from './components/DataPermissionModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 import UserAuthModal from './components/UserAuthModal';
 import UserFormModal from './components/UserFormModal';
 import UserViewMenuModal from './components/UserViewMenuModal';
@@ -50,6 +51,7 @@ const UserManage: React.FC = () => {
   const [openViewMenuModal, setOpenViewMenuModal] = useState(false);
   const [openDataPermissionModal, setOpenDataPermissionModal] = useState(false);
   const [openUserFormModal, setOpenUserFormModal] = useState(false);
+  const [openResetPasswordModal, setOpenResetPasswordModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
 
   // 操作处理函数
@@ -63,6 +65,11 @@ const UserManage: React.FC = () => {
     setIsEdit(true);
     setCurrentUserInfo(record);
     setOpenUserFormModal(true);
+  }, []);
+
+  const handleResetPassword = useCallback((record: SystemUserListInfo) => {
+    setCurrentUserInfo(record);
+    setOpenResetPasswordModal(true);
   }, []);
 
   const handleAuth = useCallback((userInfo: SystemUserListInfo) => {
@@ -138,6 +145,15 @@ const UserManage: React.FC = () => {
           onClick: handleEditUser,
         },
         {
+          key: 'resetPassword',
+          label: dict('PC.Pages.UserManage.Index.resetPassword'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
+          onClick: handleResetPassword,
+        },
+        {
           key: 'disable',
           label: dict('PC.Pages.UserManage.Index.disable'),
           visible: record.status === UserStatusEnum.Enabled,
@@ -188,6 +204,7 @@ const UserManage: React.FC = () => {
     [
       hasPermissionByMenuCode,
       handleEditUser,
+      handleResetPassword,
       handleEnable,
       handleDisable,
       handleAuth,
@@ -373,6 +390,14 @@ const UserManage: React.FC = () => {
         userId={currentUserInfo?.id || 0}
         userName={currentUserInfo?.userName || currentUserInfo?.nickName}
         onCancel={() => setOpenDataPermissionModal(false)}
+      />
+      <ResetPasswordModal
+        open={openResetPasswordModal}
+        record={currentUserInfo}
+        onCancel={() => setOpenResetPasswordModal(false)}
+        onSuccess={() => {
+          setOpenResetPasswordModal(false);
+        }}
       />
     </WorkspaceLayout>
   );
