@@ -5,6 +5,7 @@
 import type { PageNum, RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import {
+  AddCreditParams,
   CreditPackageInfo,
   CreditPackageSortItem,
   UserCreditFlowInfo,
@@ -71,6 +72,30 @@ export async function apiGetCreditPackageList(
     params: {
       status,
     },
+  });
+}
+
+/**
+ * 积分扣减
+ */
+export async function apiSystemDeductCredit(
+  data: any,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/credit/deduct', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 积分发放
+ */
+export async function apiSystemAddCredit(
+  data: AddCreditParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/credit/add', {
+    method: 'POST',
+    data,
   });
 }
 

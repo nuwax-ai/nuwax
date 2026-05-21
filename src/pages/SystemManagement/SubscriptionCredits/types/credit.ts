@@ -89,6 +89,58 @@ export interface CreditSummaryUserInfo {
 }
 
 /**
+ * 积分扣减参数
+ */
+export interface DeductCreditParams {
+  /*租户ID */
+  tenantId: number;
+
+  /*用户ID */
+  userId: number;
+
+  /*积分类型：SUBSCRIPTION-订阅积分，PURCHASE-增购积分，ACTIVITY-活动积分，MANUAL-手动发放,可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT */
+  creditType: CreditFlowTypeEnum;
+
+  /*积分数量 */
+  amount: number;
+
+  /*业务单号，用于幂等 */
+  bizNo?: string;
+
+  /*是否允许透支，默认false */
+  allowNegative?: boolean;
+
+  /*备注 */
+  remark?: string;
+}
+
+/**
+ * 积分发放参数
+ */
+export interface AddCreditParams {
+  /*租户ID */
+  tenantId: number;
+
+  /*用户ID */
+  userId: number;
+
+  /*积分类型：SUBSCRIPTION-订阅积分，PURCHASE-增购积分，ACTIVITY-活动积分，MANUAL-手动发放,可用值:SUBSCRIPTION,PURCHASE,ACTIVITY,MANUAL,LOAN,MODEL_CALL,AGENT_CALL,TOOL_CALL,MANUAL_DEDUCT */
+  creditType: CreditFlowTypeEnum;
+
+  /*积分数量 */
+  amount: number;
+
+  /*业务单号，用于幂等 */
+  bizNo?: string;
+
+  /*过期时间，为空表示永不过期 */
+  expireTime?: string;
+
+  /*备注 */
+  remark?: string;
+}
+
+/**
  * 用户积分查询
  */
 export interface UserCreditSummaryInfo {
