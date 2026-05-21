@@ -47,34 +47,3 @@
   //   }
   // }
 }
-
-// 高级暗黑行动按钮样式 (例如：升级、续费按钮)
-.btn-premium-dark {
-  font-size: @fontSizeSm;
-  font-weight: 600;
-  border-radius: 8px;
-  background: @colorTextBase;
-  color: @colorWhite;
-  border-color: @colorTextBase;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-
-  &:not([disabled]):hover {
-    background: @colorTextSecondary;
-    border-color: @colorTextSecondary;
-    color: @colorWhite;
-  }
-
-  &[disabled],
-  &[disabled]:hover {
-    background: @colorTextBase !important;
-    color: @colorWhite !important;
-    border-color: @colorTextBase !important;
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
