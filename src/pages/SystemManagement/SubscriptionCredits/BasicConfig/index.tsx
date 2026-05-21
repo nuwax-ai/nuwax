@@ -182,7 +182,7 @@ const BasicConfig: React.FC = () => {
                         'PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc',
                       )}
                     </div>
-                    <div className={styles.exchangeDescWrap}>
+                    <div className="w-full">
                       <Form.Item name="creditExchangeDesc" noStyle>
                         <Input.TextArea
                           className="dispose-textarea-count"
