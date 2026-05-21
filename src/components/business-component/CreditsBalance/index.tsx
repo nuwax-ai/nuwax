@@ -2,7 +2,8 @@ import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
-import { Button } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -56,9 +57,15 @@ const CreditsBalance: React.FC = () => {
           </span>
           <span className={cx(styles.balance)}>
             {balance !== null && balance !== undefined
-              ? balance.toLocaleString()
+              ? Math.floor(balance).toLocaleString()
               : '--'}
+            {tenantConfigInfo?.creditExchangeDesc && (
+              <Tooltip title={tenantConfigInfo.creditExchangeDesc}>
+                <InfoCircleOutlined className={cx(styles['info-icon'])} />
+              </Tooltip>
+            )}
           </span>
+
           <Button
             className={cx(styles['top-up-btn'])}
             size="small"
