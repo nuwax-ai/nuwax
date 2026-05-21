@@ -822,7 +822,7 @@ const MerchantInfo: React.FC = () => {
                   <Form.Item
                     name="remark"
                     label={dict(mk('remark'))}
-                    rules={[{ required: true }]}
+                    rules={[]}
                   >
                     <Input.TextArea
                       rows={4}
