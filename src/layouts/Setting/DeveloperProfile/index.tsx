@@ -254,9 +254,7 @@ const DeveloperProfile: React.FC = () => {
               )}
             </div>
             <div className={cx(styles.info)}>
-              <div className={cx(styles.name)}>
-                {realName || dict('PC.Components.UserMenu.defaultUserName')}
-              </div>
+              <div className={cx(styles.name)}>{realName}</div>
             </div>
           </div>
 
