@@ -174,10 +174,31 @@
       font-size: @fontSize;
       font-weight: 600;
       margin-top: @marginXs;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      > span {
+      &.plan-button-current {
+        background-color: #efebe6 !important;
+        border-color: #efebe6 !important;
+        color: #5c564f !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: #e5dfd7 !important;
+          border-color: #e5dfd7 !important;
+          color: #5c564f !important;
+        }
+
+        > span {
+          color: #5c564f !important;
+        }
+      }
+
+      > span:not(.ant-btn-loading-icon) {
         display: inline-block;
-        width: 100%;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
