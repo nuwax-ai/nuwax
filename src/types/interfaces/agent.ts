@@ -698,6 +698,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   subscriptionEnabled?: boolean;
   // 超出调用限制提示
   overCallLimit: boolean;
+  /** 已使用试用次数 */
+  calledTrialCount?: number;
+  /** 总试用次数 */
+  trialCount?: number;
 }
 
 // 日志查询过滤条件

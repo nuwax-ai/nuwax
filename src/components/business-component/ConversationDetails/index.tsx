@@ -989,7 +989,12 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
+          calledTrialCount={agentDetail?.calledTrialCount}
+          trialCount={agentDetail?.trialCount}
           overCallLimit={agentDetail?.overCallLimit ?? false}
+          isNeedSubscription={
+            agentDetail?.paymentRequired && !agentDetail?.subscribed
+          }
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}

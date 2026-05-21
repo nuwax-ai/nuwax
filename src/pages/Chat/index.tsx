@@ -1607,6 +1607,11 @@ const Chat: React.FC = () => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
+          calledTrialCount={agentDetail?.calledTrialCount}
+          trialCount={agentDetail?.trialCount}
+          isNeedSubscription={
+            agentDetail?.paymentRequired && !agentDetail?.subscribed
+          }
           overCallLimit={agentDetail?.overCallLimit ?? false}
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表

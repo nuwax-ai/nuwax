@@ -12,6 +12,7 @@ import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { dict } from '@/services/i18nRuntime';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import {
   MyPlanPeriodEnum,
@@ -45,12 +46,27 @@ function calcModalWidthForColumns(columnCount: number): string {
   return `min(${inner}px, calc(100vw - 32px))`;
 }
 
-const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
-  [SubscriptionPlanPeriodEnum.MONTH]: '月',
-  [SubscriptionPlanPeriodEnum.QUARTER]: '季度',
-  [SubscriptionPlanPeriodEnum.YEAR]: '年',
-  [SubscriptionPlanPeriodEnum.FOREVER]: '永久',
-};
+/** 套餐计费周期展示文案（i18n） */
+function getPlanPeriodLabel(period?: SubscriptionPlanPeriodEnum): string {
+  const periodLabelMap: Record<SubscriptionPlanPeriodEnum, string> = {
+    [SubscriptionPlanPeriodEnum.MONTH]: dict(
+      'PC.Components.PaymentSubscriptionModal.periodMonth',
+    ),
+    [SubscriptionPlanPeriodEnum.QUARTER]: dict(
+      'PC.Components.PaymentSubscriptionModal.periodQuarter',
+    ),
+    [SubscriptionPlanPeriodEnum.YEAR]: dict(
+      'PC.Components.PaymentSubscriptionModal.periodYear',
+    ),
+    [SubscriptionPlanPeriodEnum.FOREVER]: dict(
+      'PC.Components.PaymentSubscriptionModal.periodForever',
+    ),
+  };
+  return (
+    (period && periodLabelMap[period]) ||
+    dict('PC.Components.PaymentSubscriptionModal.periodMonth')
+  );
+}
 
 /** 未订阅时：与历史逻辑一致的主操作按钮文案 */
 function getUnsubscribedActionLabel(
@@ -58,11 +74,11 @@ function getUnsubscribedActionLabel(
   plan: SubscriptionPlanInfo,
 ): string {
   if (targetType === 'Agent') {
-    return '订阅套餐';
+    return dict('PC.Components.PaymentSubscriptionModal.btnSubscribePlan');
   }
   return plan?.period === SubscriptionPlanPeriodEnum.MONTH
-    ? '订阅套餐'
-    : '订阅买断套餐';
+    ? dict('PC.Components.PaymentSubscriptionModal.btnSubscribePlan')
+    : dict('PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan');
 }
 
 /**
@@ -96,12 +112,12 @@ function getSubscribeButtonLabel(
 
   if (isCurrentEffective) {
     if (isSkillForeverSubscribed) {
-      return '已买断套餐';
+      return dict('PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut');
     }
     if (isCurrentSubscriptionExpired) {
-      return '套餐已过期(续订)';
+      return dict('PC.Components.PaymentSubscriptionModal.btnExpiredRenew');
     }
-    return '当前套餐(续订)';
+    return dict('PC.Components.PaymentSubscriptionModal.btnCurrentRenew');
   }
   if (!isUserSubscribed) {
     return getUnsubscribedActionLabel(targetType, plan);
@@ -113,16 +129,22 @@ function getSubscribeButtonLabel(
     return getUnsubscribedActionLabel(targetType, plan);
   }
   if (resolvedSubscribedPrice < priceMain) {
-    return '升级';
+    return dict('PC.Components.PaymentSubscriptionModal.btnUpgrade');
   }
   return getUnsubscribedActionLabel(targetType, plan);
 }
 
 export interface PaymentSubscriptionModalProps {
+  // 已使用试用次数
+  calledTrialCount?: number;
+  // 总试用用次数
+  trialCount?: number;
+  // 是否需要订阅：true:需要订阅;false:不需要订阅
+  isNeedSubscription?: boolean;
   agentDetail?: AgentDetailDto | null;
   /**
    * 是否已超出调用限制（与 AgentDetail.overCallLimit 对齐）。
-   * true：标题「选择订阅套餐」；false：标题「选择订阅套餐（可试用）」
+   * true：标题「选择订阅套餐」；Agent 且 false：标题含试用次数 used/total
    */
   overCallLimit?: boolean;
   targetType: 'Agent' | 'Skill';
@@ -148,6 +170,9 @@ function getPlanSubscribeKey(plan: SubscriptionPlanInfo): number | string {
  * 付费订阅套餐弹窗
  */
 const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
+  calledTrialCount,
+  trialCount,
+  isNeedSubscription = true,
   open,
   overCallLimit = false,
   targetType,
@@ -273,11 +298,27 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     [planColumnCount],
   );
 
-  // 技能没有试用次数，则不显示可试用
-  const modalTitle =
-    overCallLimit || targetType === 'Skill'
-      ? '选择订阅套餐'
-      : '选择订阅套餐（可试用）';
+  /** 弹窗标题：超限或技能仅展示套餐选择；Agent 未超限时展示试用次数 */
+  const modalTitle = useMemo(() => {
+    const used = calledTrialCount ?? 0;
+    const total = trialCount ?? 0;
+
+    // 超限或技能仅展示套餐选择；Agent 未超限时展示试用次数
+    if (
+      overCallLimit ||
+      targetType === 'Skill' ||
+      !isNeedSubscription ||
+      !total
+    ) {
+      return dict('PC.Components.PaymentSubscriptionModal.titleSelectPlan');
+    }
+
+    return dict(
+      'PC.Components.PaymentSubscriptionModal.titleWithTrialCount',
+      used,
+      total,
+    );
+  }, [overCallLimit, targetType, calledTrialCount, trialCount]);
 
   return (
     <Modal
@@ -311,7 +352,12 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
             <Spin size="large" />
           </div>
         ) : sortedPlans.length === 0 ? (
-          <Empty className={cx(styles.empty)} description="暂无可用套餐" />
+          <Empty
+            className={cx(styles.empty)}
+            description={dict(
+              'PC.Components.PaymentSubscriptionModal.emptyNoPlans',
+            )}
+          />
         ) : (
           <div
             className={cx(styles['cards-row'])}
@@ -320,18 +366,28 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
           >
             {sortedPlans.map((plan) => {
               // 周期
-              const period = periodLabelMap[plan?.period] || '月';
+              const period = getPlanPeriodLabel(plan?.period);
               // 价格
               const priceMain = plan.price ?? 0;
               // 原价
               const firstPrice = plan.firstPrice;
               // 是否显示原价
               const showStrikeOriginal = firstPrice !== priceMain;
-              const creditAmountText = `每月 ${plan.creditAmount} 积分`;
+              const creditAmountText = dict(
+                'PC.Components.PaymentSubscriptionModal.monthlyCredits',
+                plan.creditAmount ?? 0,
+              );
               // 可调用次数
               const callLimit = plan.callLimitCount;
               const callLimitText =
-                callLimit === -1 ? '不限制' : `${callLimit ?? 0} 次/月`;
+                callLimit === -1
+                  ? dict(
+                      'PC.Components.PaymentSubscriptionModal.callLimitUnlimited',
+                    )
+                  : dict(
+                      'PC.Components.PaymentSubscriptionModal.callLimitPerMonth',
+                      callLimit ?? 0,
+                    );
               // 是否是当前套餐（与「我的订阅」currentSubscription.planId 对齐）
               const isCurrentEffective =
                 currentSubscribedPlanId !== null &&
@@ -393,7 +449,8 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>
                       <span className={cx(styles['price-main'])}>
-                        ¥{priceMain}
+                        {dict('PC.Common.Global.currencySymbol')}
+                        {priceMain}
                       </span>
                       <span className={cx(styles['price-unit'])}>
                         / {period}
@@ -403,7 +460,12 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                     <div className={cx(styles['price-original'])}>
                       {targetType === 'Agent'
                         ? showStrikeOriginal
-                          ? `原价¥${firstPrice}/${period}`
+                          ? dict(
+                              'PC.Components.PaymentSubscriptionModal.originalPrice',
+                              dict('PC.Common.Global.currencySymbol'),
+                              firstPrice ?? 0,
+                              period,
+                            )
                           : ''
                         : ''}
                     </div>
@@ -457,7 +519,12 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   {/* 可调用次数 */}
                   <div className={cx(styles['points-row'])}>
                     <span className={cx(styles.diamond)} aria-hidden />
-                    <span>{`可调用次数：${callLimitText}`}</span>
+                    <span>
+                      {dict(
+                        'PC.Components.PaymentSubscriptionModal.callCountLabel',
+                        callLimitText,
+                      )}
+                    </span>
                   </div>
                 </div>
               );
