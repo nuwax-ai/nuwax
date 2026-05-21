@@ -5,9 +5,10 @@
 @balanceContainerShadow: 0 1px 4px rgba(0, 0, 0, 5%);
 @balanceContainerHoverShadow: 0 2px 8px rgba(0, 0, 0, 8%);
 @topUpBtnShadow: 0 1px 4px rgba(26, 107, 255, 25%);
-@containerBgColor: rgba(255, 255, 255, 60%);
+@containerBgColor: rgba(255, 255, 255, 40%);
 @containerBorderColor: rgba(0, 0, 0, 6%);
 @btnBgColor: rgba(0, 0, 0, 4%);
+@infoIconMarginLeft: 4px;
 
 .credits-balance-wrapper {
   // margin-left: calc(-1 * @marginXs);
@@ -26,30 +27,56 @@
     padding: @paddingXs @marginSm;
     border-radius: @borderRadiusLg;
     background: @containerBgColor;
-    border: @lineWidth @lineType @containerBorderColor;
+    border: @lineWidth @lineType @navDividerColor;
     box-shadow: @balanceContainerShadow;
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
 
     .label {
-      color: @colorText;
+      color: @navSecondMenuTextSecondary;
       font-size: @fontSizeSm;
       font-weight: @fontWeightStrong;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .info-icon {
+      color: @navSecondMenuTextSecondary;
+      font-size: @fontSizeSm;
+      cursor: pointer;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+
+      &:hover {
+        color: @colorPrimary;
+      }
     }
 
     .balance {
       flex: 1;
       font-weight: @fontWeightStrong;
-      font-size: @fontSizeLg;
-      color: @navSecondMenuTextSecondary;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuText;
       text-align: left;
       margin-left: @borderRadiusXs;
+      display: inline-flex;
+      align-items: center;
+      gap: @infoIconMarginLeft;
     }
   }
 
   .footer {
     padding: @paddingXs 0;
     font-size: 10px;
+
+    a {
+      color: @navSecondMenuTextSecondaryTertiary;
+
+      &:hover {
+        color: @colorPrimary;
+      }
+    }
   }
 }
 
@@ -57,4 +84,10 @@
   font-size: @fontSizeSm;
   border: none;
   background: @btnBgColor;
+  color: @navSecondMenuTextSecondary;
+
+  &:hover {
+    background: rgba(0, 0, 0, 8%);
+    color: @colorPrimary;
+  }
 }
