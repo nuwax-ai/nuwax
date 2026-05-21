@@ -8,6 +8,7 @@ import {
   AddCreditParams,
   CreditPackageInfo,
   CreditPackageSortItem,
+  DeductCreditParams,
   UserCreditFlowInfo,
   UserCreditFlowSearchParams,
   UserCreditSummaryInfo,
@@ -79,7 +80,7 @@ export async function apiGetCreditPackageList(
  * 积分扣减
  */
 export async function apiSystemDeductCredit(
-  data: any,
+  data: DeductCreditParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/credit/deduct', {
     method: 'POST',
