@@ -4,12 +4,6 @@
 .container {
   padding: 16px 24px;
 
-  /* 隐藏滚动条但保持滚动功能 */
-  //&::-webkit-scrollbar {
-  //  width: 0;
-  //  background: transparent;
-  //}
-
   .header {
     margin-bottom: 30px;
     padding: 30px 60px;
@@ -57,6 +51,12 @@
 
     /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
     align-content: start;
+
+    .price-title {
+      color: @GRAY05;
+      font-size: 12px;
+      font-weight: 400;
+    }
   }
 
   @media (min-width: 1200px) {
