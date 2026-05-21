@@ -8,8 +8,6 @@ import { CreditFlowTypeEnum } from './types/credit';
 
 /** 发放可选类型：订阅 / 增购 / 活动 / 手动发放（默认 MANUAL） */
 export const GRANT_CREDIT_TYPE_OPTIONS: CreditFlowTypeEnum[] = [
-  CreditFlowTypeEnum.SUBSCRIPTION,
-  CreditFlowTypeEnum.PURCHASE,
   CreditFlowTypeEnum.ACTIVITY,
   CreditFlowTypeEnum.MANUAL,
 ];

@@ -683,6 +683,11 @@ const BaseTemplate: React.FC = () => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
+          calledTrialCount={appAgentDetail?.calledTrialCount}
+          trialCount={appAgentDetail?.trialCount}
+          isNeedSubscription={
+            appAgentDetail?.paymentRequired && !appAgentDetail?.subscribed
+          }
           overCallLimit={appAgentDetail?.overCallLimit ?? false}
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
