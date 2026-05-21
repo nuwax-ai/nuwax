@@ -170,19 +170,10 @@
 
     .plan-button {
       width: 100%;
-      border-radius: @borderRadius;
       height: 40px;
-      font-weight: 600;
       font-size: @fontSize;
-      border: none;
-      box-shadow: none;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-weight: 600;
       margin-top: @marginXs;
-      padding: 0 @paddingXs;
-      box-sizing: border-box;
 
       > span {
         display: inline-block;
@@ -190,12 +181,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        text-align: center;
-      }
-
-      &:focus,
-      &:active {
-        box-shadow: none;
       }
     }
   }
@@ -303,41 +288,10 @@
   // Themes
   &.theme-free {
     background: @colorFreeBg;
-
-    .plan-button {
-      background: @colorFreeBtnBg;
-      color: @colorFreeBtnText;
-
-      &:hover,
-      &:focus,
-      &:active,
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
-        opacity: 0.9;
-      }
-    }
   }
 
   &.theme-regular {
     background: @colorBgContainer;
-
-    .plan-button {
-      background: @colorPrimary;
-      color: @colorWhite;
-
-      &:hover,
-      &:focus,
-      &:active {
-        background: @colorPrimaryHover;
-        color: @colorWhite;
-      }
-
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
-      }
-    }
   }
 
   &.theme-vip {
@@ -351,23 +305,6 @@
     .plan-price-area {
       .price-value {
         color: @colorVipGold;
-      }
-    }
-
-    .plan-button {
-      background: @colorVipGold;
-      color: @colorWhite;
-
-      &:hover,
-      &:focus,
-      &:active {
-        background: color-mix(in srgb, @colorVipGold, #fff 15%);
-        color: @colorWhite;
-      }
-
-      &[disabled] {
-        background: @colorFreeBtnBg !important;
-        color: @colorFreeBtnText !important;
       }
     }
 
