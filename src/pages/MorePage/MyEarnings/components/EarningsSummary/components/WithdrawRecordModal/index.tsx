@@ -165,10 +165,7 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
                       <div className={styles['record-payment-extra']}>
                         {record.paymentExtra.remark && (
                           <div className={styles['payment-remark']}>
-                            <div
-                              className={styles['extra-label']}
-                              style={{ marginBottom: 6 }}
-                            >
+                            <div className={styles['extra-label']}>
                               {dict(
                                 'PC.Pages.MorePage.MyEarnings.colPaymentRemark',
                               )}
@@ -183,7 +180,6 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
                                 },
                               }}
                               className={styles['extra-value']}
-                              style={{ margin: 0 }}
                             >
                               {record.paymentExtra.remark}
                             </Typography.Paragraph>
@@ -192,10 +188,7 @@ const WithdrawRecordModal: React.FC<WithdrawRecordModalProps> = ({
                         {record.paymentExtra.images &&
                           record.paymentExtra.images.length > 0 && (
                             <div className={styles['payment-voucher']}>
-                              <div
-                                className={styles['extra-label']}
-                                style={{ marginBottom: 6 }}
-                              >
+                              <div className={styles['extra-label']}>
                                 {dict(
                                   'PC.Pages.MorePage.MyEarnings.colVoucherImages',
                                 )}

@@ -20,9 +20,11 @@ import { useLocation } from 'umi';
 import { apiGetOrderRevenueList } from '../services/order-revenue';
 import { type BillOrderSearchParams } from '../types/order-revenue';
 
-/** ProTable 查询参数（与 BillOrderSearchParams 对齐筛选项；userId→keyword；created 为 dateTimeRange 表单值） */
+/** ProTable 查询参数（与 BillOrderSearchParams 对齐；id 列检索值映射为 orderId；created 为 dateTimeRange） */
 type BillOrderRevenueTableParams = ParamsType &
   Partial<BillOrderSearchParams> & {
+    /** 订单 ID 检索（列 dataIndex 为 id） */
+    id?: string | number;
     userId?: string | number;
     /** 创建时间筛选（表单 dateTimeRange，非行内 created 字符串） */
     created?: unknown;
@@ -55,13 +57,21 @@ const fetchOrderRevenueTableRequest = async (
   params: BillOrderRevenueTableParams,
 ): Promise<{ data: BillOrderInfo[]; total: number; success: boolean }> => {
   try {
-    const keyword =
-      params.userId !== undefined && params.userId !== ''
-        ? String(params.userId)
+    const orderId =
+      params.id !== undefined && params.id !== ''
+        ? String(params.id)
+        : undefined;
+    const userIdRaw = params.userId;
+    const userId =
+      userIdRaw !== undefined &&
+      userIdRaw !== null &&
+      String(userIdRaw).trim() !== ''
+        ? Number(userIdRaw)
         : undefined;
     const createdRange = parseDateTimeRangeToApiBounds(params.created);
     const payload: BillOrderSearchParams = {
-      keyword,
+      ...(orderId ? { orderId } : {}),
+      ...(userId !== undefined && !Number.isNaN(userId) ? { userId } : {}),
       bizType: params.bizType,
       orderStatus: params.orderStatus,
       ...(createdRange.start ? { startTime: createdRange.start } : {}),
@@ -136,9 +146,12 @@ const SubsOrders: React.FC = () => {
         dataIndex: 'id',
         key: 'id',
         ellipsis: true,
-        search: false,
         width: 150,
         fixed: 'left',
+        fieldProps: {
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseInput'),
+        },
         render: (_, record) => String(record.id ?? '-'),
       },
       {
@@ -146,7 +159,10 @@ const SubsOrders: React.FC = () => {
         dataIndex: 'userId',
         key: 'userId',
         ellipsis: true,
-        search: false,
+        fieldProps: {
+          allowClear: true,
+          placeholder: dict('PC.Common.Global.pleaseInput'),
+        },
         render: (_, record) => String(record.userId ?? '-'),
       },
       // 业务类型
@@ -155,6 +171,7 @@ const SubsOrders: React.FC = () => {
         dataIndex: 'bizType',
         key: 'bizType',
         valueType: 'select',
+        width: 150,
         valueEnum: {
           [BillBizTypeEnum.CREDIT_PURCHASE]: {
             text: bizTypeLabelMap[BillBizTypeEnum.CREDIT_PURCHASE],

@@ -7,6 +7,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiDeleteSystemUser,
   apiDisableSystemUser,
   apiEnableSystemUser,
   apiSystemUserList,
@@ -25,6 +26,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import DataPermissionModal from './components/DataPermissionModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 import UserAuthModal from './components/UserAuthModal';
 import UserFormModal from './components/UserFormModal';
 import UserViewMenuModal from './components/UserViewMenuModal';
@@ -50,6 +52,7 @@ const UserManage: React.FC = () => {
   const [openViewMenuModal, setOpenViewMenuModal] = useState(false);
   const [openDataPermissionModal, setOpenDataPermissionModal] = useState(false);
   const [openUserFormModal, setOpenUserFormModal] = useState(false);
+  const [openResetPasswordModal, setOpenResetPasswordModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
 
   // 操作处理函数
@@ -63,6 +66,11 @@ const UserManage: React.FC = () => {
     setIsEdit(true);
     setCurrentUserInfo(record);
     setOpenUserFormModal(true);
+  }, []);
+
+  const handleResetPassword = useCallback((record: SystemUserListInfo) => {
+    setCurrentUserInfo(record);
+    setOpenResetPasswordModal(true);
   }, []);
 
   const handleAuth = useCallback((userInfo: SystemUserListInfo) => {
@@ -95,6 +103,14 @@ const UserManage: React.FC = () => {
     const res = await apiDisableSystemUser({ id: record.id });
     if (res.code === SUCCESS_CODE) {
       message.success(dict('PC.Pages.UserManage.Index.disableSuccess'));
+      actionRef.current?.reload();
+    }
+  }, []);
+
+  const handleDelete = useCallback(async (record: SystemUserListInfo) => {
+    const res = await apiDeleteSystemUser({ id: record.id });
+    if (res.code === SUCCESS_CODE) {
+      message.success(dict('PC.Pages.UserManage.Index.deleteSuccess'));
       actionRef.current?.reload();
     }
   }, []);
@@ -136,6 +152,15 @@ const UserManage: React.FC = () => {
             'user_manage_modify',
           ),
           onClick: handleEditUser,
+        },
+        {
+          key: 'resetPassword',
+          label: dict('PC.Pages.UserManage.Index.resetPassword'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_reset',
+          ),
+          onClick: handleResetPassword,
         },
         {
           key: 'disable',
@@ -183,13 +208,26 @@ const UserManage: React.FC = () => {
           ),
           onClick: handleViewDataPermission,
         },
+        {
+          key: 'delete',
+          label: dict('PC.Pages.UserManage.Index.delete'),
+          danger: true,
+          confirm: {},
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_delete',
+          ),
+          onClick: handleDelete,
+        },
       ];
     },
     [
       hasPermissionByMenuCode,
       handleEditUser,
+      handleResetPassword,
       handleEnable,
       handleDisable,
+      handleDelete,
       handleAuth,
       handleViewMenu,
       handleViewDataPermission,
@@ -373,6 +411,14 @@ const UserManage: React.FC = () => {
         userId={currentUserInfo?.id || 0}
         userName={currentUserInfo?.userName || currentUserInfo?.nickName}
         onCancel={() => setOpenDataPermissionModal(false)}
+      />
+      <ResetPasswordModal
+        open={openResetPasswordModal}
+        record={currentUserInfo}
+        onCancel={() => setOpenResetPasswordModal(false)}
+        onSuccess={() => {
+          setOpenResetPasswordModal(false);
+        }}
       />
     </WorkspaceLayout>
   );

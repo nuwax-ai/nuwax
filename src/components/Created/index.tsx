@@ -787,17 +787,27 @@ const Created: React.FC<CreatedProp> = ({
             <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
               {item.name}
             </p>
-            {/* 订阅能力开启且为付费技能时展示「已订阅/付费」标签，与右侧按钮状态对应 */}
-            {isEnableSubscription && item.paymentRequired && (
-              <Tag
-                color={item.subscribed ? 'success' : 'processing'}
-                className={cx(styles['payment-tag'])}
-              >
-                {item.subscribed
-                  ? t('PC.Pages.Square.SingleAgent.subscribed')
-                  : t('PC.Pages.Square.SingleAgent.paid')}
-              </Tag>
-            )}
+            {/* 仅插件/工作流类型需要展示付费标签 */}
+            {/* 订阅能力开启且为付费时展示「已订阅/付费」标签，与右侧按钮状态对应 */}
+            {isEnableSubscription &&
+              item.paymentRequired &&
+              [
+                AgentComponentTypeEnum.Plugin,
+                AgentComponentTypeEnum.Workflow,
+              ].includes(item.targetType) && (
+                <Tag
+                  color={item.subscribed ? 'success' : 'processing'}
+                  className={cx(styles['payment-tag'])}
+                >
+                  {item.subscribed
+                    ? t('PC.Pages.Square.SingleAgent.subscribed')
+                    : item.price
+                    ? `${t('PC.Common.Global.currencySymbol')}${item.price}/${t(
+                        'PC.Common.Global.times',
+                      )}`
+                    : t('PC.Pages.Square.SingleAgent.paid')}
+                </Tag>
+              )}
           </div>
           <p
             className={cx(styles['created-description-style'], 'text-ellipsis')}
