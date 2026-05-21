@@ -142,11 +142,6 @@ export interface PaymentSubscriptionModalProps {
   // 是否需要订阅：true:需要订阅;false:不需要订阅
   isNeedSubscription?: boolean;
   agentDetail?: AgentDetailDto | null;
-  /**
-   * 是否已超出调用限制（与 AgentDetail.overCallLimit 对齐）。
-   * true：标题「选择订阅套餐」；Agent 且 false：标题含试用次数 used/total
-   */
-  overCallLimit?: boolean;
   targetType: 'Agent' | 'Skill';
   open: boolean;
   loading: boolean;
@@ -174,7 +169,6 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   trialCount,
   isNeedSubscription = true,
   open,
-  overCallLimit = false,
   targetType,
   loading,
   plans,
@@ -304,12 +298,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
     const total = trialCount ?? 0;
 
     // 超限或技能仅展示套餐选择；Agent 未超限时展示试用次数
-    if (
-      overCallLimit ||
-      targetType === 'Skill' ||
-      !isNeedSubscription ||
-      !total
-    ) {
+    if (!isNeedSubscription || targetType === 'Skill' || !total) {
       return dict('PC.Components.PaymentSubscriptionModal.titleSelectPlan');
     }
 
@@ -318,7 +307,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
       used,
       total,
     );
-  }, [overCallLimit, targetType, calledTrialCount, trialCount]);
+  }, [targetType, calledTrialCount, trialCount]);
 
   return (
     <Modal
