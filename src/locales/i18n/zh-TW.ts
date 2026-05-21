@@ -5377,6 +5377,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemPaymentConfig.tabShareRatio": "開發者分成比例",
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "模型",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "兌換比例",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "換算描述",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "積分汇率（積分/元）",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "積分",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "目前换算",

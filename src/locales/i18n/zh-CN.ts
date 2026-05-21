@@ -4976,6 +4976,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemSubscriptionBasicConfig.withdrawalFeeRate": "提现手续费率",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionExchange": "积分兑换配置",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "兑换比例",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "换算描述",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "积分",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "当前换算",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift": "新用户注册赠送",

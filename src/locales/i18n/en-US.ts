@@ -4977,6 +4977,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemSubscriptionBasicConfig.withdrawalFeeRate": "Withdrawal Fee Rate",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionExchange": "Exchange Config",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "Conversion description",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "Current Exchange",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift": "New User Gift",
