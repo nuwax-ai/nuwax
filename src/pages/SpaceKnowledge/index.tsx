@@ -463,9 +463,8 @@ const SpaceKnowledge: React.FC = () => {
   };
   // 添加问题搜索功能 点击按钮搜索
   const handleSearch = (value: string) => {
-    if (docType === KnowledgeDocTypeEnum.QA) {
-      setQuestion(value);
-    }
+    setQuestion(value);
+    handleQaList();
   };
 
   // 点击表格中的文档，进入图谱详情页
@@ -642,12 +641,13 @@ const SpaceKnowledge: React.FC = () => {
         <div className={cx(styles.inputSearch)}>
           <Input.Search
             placeholder={dict('PC.Pages.SpaceKnowledge.Index.searchQuestion')}
+            value={question}
+            onChange={(e) => handleSearch(e.target.value)}
             allowClear
             style={{
               width: 240,
             }}
             onSearch={handleSearch}
-            onPressEnter={(e) => handleSearch(e.currentTarget.value)}
           />
         </div>
         {/* 修改为表格 远程加载数据 */}

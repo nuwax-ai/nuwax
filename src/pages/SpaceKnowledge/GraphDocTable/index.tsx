@@ -283,7 +283,11 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
             'PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder',
           )}
           value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchKeyword(value);
+            onSearch?.(value);
+          }}
           onSearch={(value) => onSearch?.(value)}
           allowClear
           style={{ width: 240, marginRight: 10 }}
