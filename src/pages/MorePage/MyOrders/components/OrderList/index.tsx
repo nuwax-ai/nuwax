@@ -90,7 +90,7 @@ const OrderList: React.FC = () => {
   const handleGoPay = async (id: string | number) => {
     setPayingId(id);
     try {
-      const res = await apiGetAgentSubscriptionOrderCashier(id);
+      const res = await apiGetAgentSubscriptionOrderCashier({ orderId: id });
       const d = res?.data || res;
       if (d?.cashierUrl) {
         window.open(d.cashierUrl, '_blank');

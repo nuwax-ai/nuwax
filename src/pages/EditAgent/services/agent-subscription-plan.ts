@@ -107,16 +107,20 @@ export async function apiCreateAgentSubscriptionOrder(
   });
 }
 
+export interface GetAgentSubscriptionOrderCashierParams {
+  orderId: number | string;
+  returnUrl?: string;
+  [key: string]: any;
+}
+
 /**
  * 获取订单收银台地址
  */
 export async function apiGetAgentSubscriptionOrderCashier(
-  orderId: number | string,
+  params: GetAgentSubscriptionOrderCashierParams,
 ): Promise<RequestResponse<{ cashierUrl: string }>> {
   return request('/api/bill/order/pay/cashier', {
     method: 'GET',
-    params: {
-      orderId,
-    },
+    params,
   });
 }

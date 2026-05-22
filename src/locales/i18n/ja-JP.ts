@@ -1177,6 +1177,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Hooks.UseRestartDevServer.restartFailed": "開発サーバーの再起動に失敗しました",
   "PC.Hooks.UseSendCode.codeSent": "認証コードが送信されました",
   "PC.Hooks.UseTryRun.reconfigureParams": "入力パラメータを再構成し、サブレベルを追加してください",
+  "PC.Hooks.UseSubscription.createOrderFailed": "サブスクリプション注文の作成に失敗しました",
+  "PC.Hooks.UseSubscription.getCashierUrlFailed": "レジURLの取得に失敗しました",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "メニューを折りたたむ",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "メニューを展開する",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "実行中",

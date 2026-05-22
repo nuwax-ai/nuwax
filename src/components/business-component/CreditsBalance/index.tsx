@@ -11,7 +11,17 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const CreditsBalance: React.FC = () => {
+interface CreditsBalanceProps {
+  className?: string;
+  showFooter?: boolean;
+  onClick?: () => void;
+}
+
+const CreditsBalance: React.FC<CreditsBalanceProps> = ({
+  className,
+  showFooter = true,
+  onClick,
+}) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
   const [purchaseModalVisible, setPurchaseModalVisible] = useState(false);
@@ -40,7 +50,11 @@ const CreditsBalance: React.FC = () => {
   }, [showCredits, fetchCredits]);
 
   const handleClickBalance = () => {
-    history.push('/more-page/my-subscriptions');
+    if (onClick) {
+      onClick();
+    } else {
+      history.push('/more-page/my-subscriptions');
+    }
   };
 
   const handleTopUp = (e: React.MouseEvent) => {
@@ -49,7 +63,7 @@ const CreditsBalance: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles['credits-balance-wrapper'])}>
+    <div className={cx(styles['credits-balance-wrapper'], className)}>
       {showCredits && (
         <div className={cx(styles.container)} onClick={handleClickBalance}>
           <span className={cx(styles.label)}>
@@ -75,7 +89,7 @@ const CreditsBalance: React.FC = () => {
           </Button>
         </div>
       )}
-      <SiteFooter className={cx(styles.footer)} />
+      {showFooter && <SiteFooter className={cx(styles.footer)} />}
       <PurchaseModal
         open={purchaseModalVisible}
         onCancel={() => setPurchaseModalVisible(false)}
