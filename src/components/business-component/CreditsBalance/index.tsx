@@ -63,9 +63,12 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   };
 
   return (
-    <div className={cx(styles['credits-balance-wrapper'], className)}>
+    <div className={cx(styles['credits-balance-wrapper'])}>
       {showCredits && (
-        <div className={cx(styles.container)} onClick={handleClickBalance}>
+        <div
+          className={cx(styles.container, className)}
+          onClick={handleClickBalance}
+        >
           <span className={cx(styles.label)}>
             {dict('PC.Components.CreditsBalance.credits')}:
           </span>

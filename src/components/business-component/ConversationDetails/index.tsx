@@ -735,7 +735,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     icon={
                       <SvgIcon
                         name="icons-nav-wodedingyue"
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 16 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}
