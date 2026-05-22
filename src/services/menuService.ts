@@ -101,7 +101,7 @@ const MENU_ICON_MAP: Record<string, string> = {
   api_key: 'icons-nav-api_key',
   // 更多页面 - 我的订阅
   my_subscriptions: 'icons-nav-wodedingyue',
-  model_permissions: 'icons-nav-permission',
+  model_permissions: 'icons-nav-model',
   // 更多页面 - 我的订单
   my_orders: 'icons-nav-wodedingdan',
   // 更多页面 - 我的收益
