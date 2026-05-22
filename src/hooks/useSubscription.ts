@@ -86,16 +86,16 @@ const useSubscription = () => {
       const orderResponse = await apiCreateAgentSubscriptionOrder(plan.id);
       const orderId = orderResponse?.data?.id;
       if (!orderId) {
-        message.error('创建订阅订单失败');
+        message.error(dict('PC.Hooks.UseSubscription.createOrderFailed'));
         return;
       }
 
       // 获取收银台地址
-      const cashierResponse = await apiGetAgentSubscriptionOrderCashier(
+      const cashierResponse = await apiGetAgentSubscriptionOrderCashier({
         orderId,
-      );
+      });
       if (!cashierResponse?.data?.cashierUrl) {
-        message.error('获取收银台地址失败');
+        message.error(dict('PC.Hooks.UseSubscription.getCashierUrlFailed'));
         return;
       }
 
@@ -109,7 +109,7 @@ const useSubscription = () => {
         window.location.href = url;
       }
     } catch (error) {
-      console.error('点击套餐卡片失败:', error);
+      console.error('Failed to click subscription plan card:', error);
     }
   };
 

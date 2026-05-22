@@ -1187,6 +1187,8 @@ export const EN_US: SystemLangMap = {
   "PC.Hooks.UseRestartDevServer.restartFailed": "Failed to restart development server",
   "PC.Hooks.UseSendCode.codeSent": "Verification code sent",
   "PC.Hooks.UseTryRun.reconfigureParams": "Please reconfigure input parameters and add sub-level",
+  "PC.Hooks.UseSubscription.createOrderFailed": "Failed to create subscription order",
+  "PC.Hooks.UseSubscription.getCashierUrlFailed": "Failed to get cashier address",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "Collapse Menu",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "Expand Menu",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "Executing",

@@ -1177,6 +1177,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Hooks.UseRestartDevServer.restartFailed": "重啓開發服務器失敗",
   "PC.Hooks.UseSendCode.codeSent": "驗證碼已發送",
   "PC.Hooks.UseTryRun.reconfigureParams": "請重新配置入參,添加子級",
+  "PC.Hooks.UseSubscription.createOrderFailed": "創建訂閱訂單失敗",
+  "PC.Hooks.UseSubscription.getCashierUrlFailed": "獲取收銀台地址失敗",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "收起菜單",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "展開菜單",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "執行中",
