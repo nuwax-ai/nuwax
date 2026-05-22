@@ -17,9 +17,10 @@ const cx = classNames.bind(styles);
 
 interface MessageProps {
   className?: string;
+  children?: React.ReactNode;
 }
 
-const Message: React.FC<MessageProps> = ({ className }) => {
+const Message: React.FC<MessageProps> = ({ className, children }) => {
   const { setUnreadCount, openMessage, setOpenMessage } = useModel('layout');
   // 消息列表
   const [messageList, setMessageList] = useState<NotifyMessageInfo[]>([]);
@@ -80,7 +81,9 @@ const Message: React.FC<MessageProps> = ({ className }) => {
       trigger="click"
       open={openMessage}
       onOpenChange={setOpenMessage}
-    ></Popover>
+    >
+      {children}
+    </Popover>
   );
 };
 

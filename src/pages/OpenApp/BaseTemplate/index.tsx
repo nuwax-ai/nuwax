@@ -411,12 +411,6 @@ const BaseTemplate: React.FC = () => {
     return (url || '').replace(/\/+$/, '');
   }, []);
 
-  // 打开消息弹窗
-  const handleOpenMessage = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setOpenMessage(true);
-  };
-
   // 侧栏加载态：详情未就绪时也展示 loading，避免刷新首帧闪现按钮
   const showAppSidebarLoading = appAgentDetailLoading || !appAgentDetail;
 
@@ -682,7 +676,7 @@ const BaseTemplate: React.FC = () => {
               'gap-4',
               styles['user-area'],
             )}
-            onClick={() => setOpenAdmin(true)}
+            onClick={() => setOpenAdmin(!openAdmin)}
           >
             {/* 用户头像 */}
             <div className={cx('cursor-pointer', styles['user-avatar'])}>
@@ -696,18 +690,22 @@ const BaseTemplate: React.FC = () => {
               {userInfo?.nickName || userInfo?.userName}
             </span>
 
-            {/* 未读消息 */}
-            <Badge count={unreadCount} size="small">
-              <div
-                className={cx(styles['active-icon-container'])}
-                onClick={handleOpenMessage}
-              >
-                <SvgIcon
-                  name="icons-nav-notification"
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-            </Badge>
+            {/* 未读消息：作为 Popover trigger，点击切换显示/隐藏 */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Message className={styles.messageContainer}>
+                <Badge count={unreadCount} size="small">
+                  <div className={cx(styles['active-icon-container'])}>
+                    <SvgIcon
+                      name="icons-nav-notification"
+                      style={{ fontSize: 16 }}
+                    />
+                  </div>
+                </Badge>
+              </Message>
+            </div>
           </footer>
         </User>
       </div>
@@ -723,8 +721,7 @@ const BaseTemplate: React.FC = () => {
       {/* 设置弹窗 */}
       <Setting />
 
-      {/* 消息弹窗 */}
-      <Message className={styles.messageContainer} />
+      {/* 消息弹窗由侧栏底部 Message 组件承载 */}
 
       <ConditionRender condition={isEnableSubscription}>
         {/* 付费订阅套餐弹窗 */}

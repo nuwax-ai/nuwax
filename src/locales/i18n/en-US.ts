@@ -842,7 +842,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.XProTable.index": "Index",
   "PC.Components.XProTable.query": "Query",
   "PC.Components.XProTable.reset": "Reset",
-  "PC.Components.CreditsBalance.topUp": "Top Up",
+  "PC.Components.CreditsBalance.topUp": "Purchase",
   "PC.Components.CreditsBalance.purchaseCredits": "Purchase Credits",
   "PC.Components.CreditsBalance.buyNow": "Buy Now",
   "PC.Components.CreditsBalance.payByQRCode": "Scan QR code to pay",
