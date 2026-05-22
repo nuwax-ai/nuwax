@@ -78,7 +78,7 @@ const isEmbeddingCapabilityType = (
   types: ModelCapabilityTypeEnum[] | null,
 ): boolean => (types ?? []).some((t) => EMBEDDING_CAPABILITIES.includes(t));
 
-/** 多选能力中包含文本生成 / 图像理解 / 语音识别 / 视频理解 任一项（与推理模型开关相关） */
+/** 多选能力中包含文本生成 / 图像理解 / 语音识别 / 视频理解 任一项 */
 const hasGenerationLikeCapabilityType = (
   types: ModelCapabilityTypeEnum[] | null,
 ): boolean =>
@@ -92,6 +92,11 @@ const hasGenerationLikeCapabilityType = (
       ] as ModelCapabilityTypeEnum[]
     ).includes(t),
   );
+
+/** 多选能力中包含深度思考（Reasoning）时显示「开启推理」 */
+const hasReasoningCapabilityType = (
+  types: ModelCapabilityTypeEnum[] | null,
+): boolean => (types ?? []).includes(ModelCapabilityTypeEnum.Reasoning);
 
 /** 新建模型时写入表单的默认值（打开创建弹窗并通过 effect 应用；编辑由 runQuery 覆盖） */
 const CREATE_MODEL_DEFAULT_VALUES = {
@@ -733,8 +738,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
           />
         </Form.Item>
         <div className={cx('flex', styles['gap-16'])}>
-          {/* 推理模型 */}
-          {hasGenerationLikeCapabilityType(modelTypes) && (
+          {/* 开启推理：仅当模型类型含「深度思考」时展示 */}
+          {hasReasoningCapabilityType(modelTypes) && (
             <Form.Item
               name="isReasonModel"
               className={cx('flex-1')}
@@ -862,6 +867,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
             ]}
           />
         </Form.Item>
+
+        {/* 可用范围 */}
         {!isEmbeddingCapabilityType(modelTypes) && (
           <Form.Item
             name="usageScenarios"

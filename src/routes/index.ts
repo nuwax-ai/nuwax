@@ -211,6 +211,11 @@ const routes = [
             name: getRouteLabel('PC.Routes.usageStats'),
             component: '@/pages/MorePage/UsageStats',
           },
+          {
+            path: 'model-permissions',
+            name: getRouteLabel('PC.Routes.modelPermissions'),
+            component: '@/pages/MorePage/ModelPermissions',
+          },
         ],
       },
       // 系统管理统一管理
@@ -546,6 +551,22 @@ const routes = [
       {
         path: 'open-iframe-page/:agentId',
         component: '@/pages/OpenIframePage',
+      },
+      {
+        path: 'my-subscriptions',
+        component: '@/pages/OpenApp/MySubscriptions',
+      },
+      {
+        path: 'credit-records',
+        component: '@/pages/OpenApp/CreditRecords',
+      },
+      {
+        path: 'my-orders',
+        component: '@/pages/OpenApp/MyOrders',
+      },
+      {
+        path: 'usage-stats',
+        component: '@/pages/OpenApp/UsageStats',
       },
       {
         path: ':agentId',

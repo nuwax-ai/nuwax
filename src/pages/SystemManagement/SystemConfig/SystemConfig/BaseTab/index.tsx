@@ -76,10 +76,12 @@ const BaseTab = forwardRef(
         }
       });
 
-      // 处理删除图片保存失效的问题
-      params.siteLogo ||= '';
-      params.faviconUrl ||= '';
-      params.squareBanner ||= '';
+      // 处理删除图片保存失效的问题（仅在基础配置标签页下处理）
+      if (currentTab === 'BaseConfig') {
+        params.siteLogo ||= '';
+        params.faviconUrl ||= '';
+        params.squareBanner ||= '';
+      }
 
       await apiSystemConfigUpdate(params);
       message.success(t('PC.Pages.SystemConfig.saveSuccess'));
