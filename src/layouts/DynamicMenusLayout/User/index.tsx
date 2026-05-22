@@ -3,6 +3,11 @@ import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { redirectToLogin } from '@/utils/router';
+import {
+  CreditCardOutlined,
+  FileTextOutlined,
+  LineChartOutlined,
+} from '@ant-design/icons';
 import { Popover } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import classNames from 'classnames';
@@ -56,6 +61,36 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     },
   });
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  const showSubMenus = isAppDetails && isEnableSubscription;
+
+  const menuList = React.useMemo(() => {
+    if (!showSubMenus) return USER_AVATAR_LIST;
+    const list = [...USER_AVATAR_LIST];
+    const subMenus = [
+      {
+        type: UserAvatarEnum.My_Subscriptions,
+        icon: <CreditCardOutlined style={{ fontSize: 14 }} />,
+        text: dict('PC.Pages.MorePage.MySubscriptions.pageTitle'),
+      },
+      {
+        type: UserAvatarEnum.My_Orders,
+        icon: <FileTextOutlined style={{ fontSize: 14 }} />,
+        text: dict('PC.Pages.MorePage.MyOrders.pageTitle'),
+      },
+      {
+        type: UserAvatarEnum.Usage_Stats,
+        icon: <LineChartOutlined style={{ fontSize: 14 }} />,
+        text: dict('PC.Pages.UsageStats.pageTitle'),
+      },
+    ];
+    // 在倒数第一项（退出登录）前插入这三项
+    list.splice(list.length - 1, 0, ...subMenus);
+    return list;
+  }, [showSubMenus]);
+
   const handlerClick = (type: UserAvatarEnum) => {
     switch (type) {
       // 用户名称
@@ -65,6 +100,18 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         setOpenAdmin(false);
         setOpenSetting(true);
         break;
+      case UserAvatarEnum.My_Subscriptions:
+        setOpenAdmin(false);
+        navigate(`/app/my-subscriptions`);
+        break;
+      case UserAvatarEnum.My_Orders:
+        setOpenAdmin(false);
+        navigate(`/app/my-orders`);
+        break;
+      case UserAvatarEnum.Usage_Stats:
+        setOpenAdmin(false);
+        navigate(`/app/usage-stats`);
+        break;
       case UserAvatarEnum.Log_Out:
         setOpenAdmin(false);
         run();
@@ -72,8 +119,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     }
   };
 
-  const getMenuText = (type: UserAvatarEnum): string => {
-    switch (type) {
+  const getMenuText = (item: any): string => {
+    switch (item.type) {
       case UserAvatarEnum.User_Name:
         return (
           userInfo?.nickName ||
@@ -84,8 +131,14 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         return dict('PC.Components.UserMenu.profile');
       case UserAvatarEnum.Log_Out:
         return dict('PC.Components.UserMenu.logout');
+      case UserAvatarEnum.My_Subscriptions:
+        return dict('PC.Pages.MorePage.MySubscriptions.pageTitle');
+      case UserAvatarEnum.My_Orders:
+        return dict('PC.Pages.MorePage.MyOrders.pageTitle');
+      case UserAvatarEnum.Usage_Stats:
+        return dict('PC.Pages.UsageStats.pageTitle');
       default:
-        return '';
+        return item.text || '';
     }
   };
   return (
@@ -99,7 +152,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       }}
       content={
         <div className={cx(styles.container)}>
-          {USER_AVATAR_LIST.map((item) => {
+          {menuList.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';
             const cursorStyle =
@@ -110,7 +163,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
               <UserActionItem
                 key={item.type}
                 {...item}
-                text={getMenuText(item.type)}
+                text={getMenuText(item)}
                 onClick={handlerClick}
                 className={cx(cursorStyle, style)}
               />

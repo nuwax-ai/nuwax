@@ -11,6 +11,7 @@ const cx = classNames.bind(styles);
 interface CreditsBreakdownProps {
   summary?: CreditSummaryInfo;
   onAddPurchase: () => void;
+  app?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ interface CreditsBreakdownProps {
 const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
   summary,
   onAddPurchase,
+  app,
 }) => {
   return (
     <div className={cx(styles['credits-breakdown'])}>
@@ -29,7 +31,11 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
           <span
             className={cx(styles['credits-detail-link'])}
-            onClick={() => history.push('/more-page/credit-records')}
+            onClick={() =>
+              history.push(
+                app ? `/app/credit-records` : '/more-page/credit-records',
+              )
+            }
           >
             {dict('PC.Pages.MorePage.MySubscriptions.detail')}
           </span>
