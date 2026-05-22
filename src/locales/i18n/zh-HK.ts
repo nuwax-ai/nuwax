@@ -2699,6 +2699,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "接口權限",
   "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "系統模型",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "暫無模型定義",
+  "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission": "個人空間模型",
+  "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs": "暫無空間模型定義",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "我的訂閱",
   "PC.Pages.MorePage.MySubscriptions.colAgent": "智能體",
   "PC.Pages.MorePage.MySubscriptions.colPlan": "套餐名稱",

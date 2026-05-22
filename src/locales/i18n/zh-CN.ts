@@ -2702,6 +2702,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "接口权限",
   "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "系统模型",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "暂无模型定义",
+  "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission": "个人空间模型",
+  "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs": "暂无空间模型定义",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "我的订阅",
   "PC.Pages.MorePage.MySubscriptions.cancelRenewal": "取消续订",
   "PC.Pages.MorePage.MySubscriptions.confirmCancel": "确定取消该订阅吗？",

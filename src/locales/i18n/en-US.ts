@@ -2702,6 +2702,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "API Permissions",
   "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "System Models",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "No models defined",
+  "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission": "Personal Space Models",
+  "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs": "No space models defined",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "My Subscriptions",
   "PC.Pages.MorePage.MySubscriptions.cancelRenewal": "Cancel Renewal",
   "PC.Pages.MorePage.MySubscriptions.confirmCancel": "Are you sure you want to cancel this subscription?",

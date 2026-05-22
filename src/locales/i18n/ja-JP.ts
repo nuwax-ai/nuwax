@@ -2719,6 +2719,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "API権限",
   "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "システムモデル",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "モデルの定義がありません",
+  "PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission": "個人スペースモデル",
+  "PC.Pages.MorePage.ApiKeyPermission.noSpaceModelDefs": "スペースモデルの定義がありません",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "マイサブスクリプション",
   "PC.Pages.MorePage.MySubscriptions.colAgent": "エージェント",
   "PC.Pages.MorePage.MySubscriptions.colPlan": "プラン名",

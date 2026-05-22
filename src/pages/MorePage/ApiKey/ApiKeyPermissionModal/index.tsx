@@ -2,22 +2,14 @@ import { apiApiKeyUpdate, apiGetOpenApiDefinitions } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMyModels } from '@/services/modelConfig';
 import type { ApiKeyInfo, OpenApiDefinition } from '@/types/interfaces/account';
-import {
-  Button,
-  Checkbox,
-  Empty,
-  message,
-  Modal,
-  Space,
-  Spin,
-  Tabs,
-  Tree,
-  Typography,
-} from 'antd';
+import { message, Modal, Spin, Tabs, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
+import ApiPermissionTab from './components/ApiPermissionTab';
+import ModelPermissionTab from './components/ModelPermissionTab';
+import PermissionOperationsBar from './components/PermissionOperationsBar';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 
 interface ApiKeyPermissionModalProps {
   /** 是否打开 */
@@ -39,10 +31,13 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
   record,
   onSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<'api' | 'model'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'model' | 'spaceModel'>(
+    'api',
+  );
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<OpenApiDefinition[]>([]);
   const [myModels, setMyModels] = useState<any[]>([]);
+  const [mySpaceModels, setMySpaceModels] = useState<any[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [checkedModelKeys, setCheckedModelKeys] = useState<number[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -81,9 +76,10 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [apiRes, modelRes] = await Promise.all([
+      const [apiRes, modelRes, spaceModelRes] = await Promise.all([
         apiGetOpenApiDefinitions(),
         apiGetMyModels('System'),
+        apiGetMyModels('Space'),
       ]);
       if (apiRes.success) {
         setTreeData(apiRes.data || []);
@@ -92,6 +88,9 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
       }
       if (modelRes.success) {
         setMyModels(modelRes.data || []);
+      }
+      if (spaceModelRes.success) {
+        setMySpaceModels(spaceModelRes.data || []);
       }
     } catch (e) {
       console.error(e);
@@ -138,7 +137,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     setCheckedKeys(checked ? allKeys : []);
   };
 
-  // 处理模型项选择逻辑
+  // 处理模型项选择逻辑 (系统模型)
   const isAllModelChecked = useMemo(() => {
     return (
       myModels.length > 0 &&
@@ -152,119 +151,42 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
   }, [myModels, checkedModelKeys, isAllModelChecked]);
 
   const handleSelectAllModels = (checked: boolean) => {
-    setCheckedModelKeys(checked ? myModels.map((item) => item.id) : []);
-  };
-
-  // 统计逻辑：计算某个节点下选中的子节点数量
-  const getSubCheckedCount = (node: OpenApiDefinition) => {
-    if (!node.apiList || node.apiList.length === 0) return 0;
-    let count = 0;
-    const traverse = (list: OpenApiDefinition[]) => {
-      list.forEach((item) => {
-        if (!item.apiList || item.apiList.length === 0) {
-          if (checkedKeys.includes(item.key)) count++;
-        } else {
-          traverse(item.apiList);
-        }
-      });
-    };
-    traverse(node.apiList);
-    return count;
-  };
-
-  // 统计逻辑：获取某个节点下的总叶子节点数
-  const getSubTotalCount = (node: OpenApiDefinition) => {
-    if (!node.apiList || node.apiList.length === 0) return 0;
-    let total = 0;
-    const traverse = (list: OpenApiDefinition[]) => {
-      list.forEach((item) => {
-        if (!item.apiList || item.apiList.length === 0) {
-          total++;
-        } else {
-          traverse(item.apiList);
-        }
-      });
-    };
-    traverse(node.apiList);
-    return total;
-  };
-
-  // 自定义渲染接口节点内容
-  const titleRender = (node: any) => {
-    const isParent = node.apiList && node.apiList.length > 0;
-    const checkedCount = isParent ? getSubCheckedCount(node) : 0;
-    const totalCount = isParent ? getSubTotalCount(node) : 0;
-
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          paddingRight: 8,
-        }}
-      >
-        <Text style={{ fontSize: 14 }}>{node.name}</Text>
-        <Space size={8}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {node.path}
-          </Text>
-          {isParent && (
-            <span
-              style={{
-                backgroundColor: '#e6f7ff',
-                color: '#1890ff',
-                padding: '0 8px',
-                borderRadius: '10px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-              }}
-            >
-              {checkedCount}/{totalCount}
-            </span>
-          )}
-        </Space>
-      </div>
+    const nonSystemModelIds = checkedModelKeys.filter(
+      (id) => !myModels.some((m) => m.id === id),
     );
+    if (checked) {
+      setCheckedModelKeys([...nonSystemModelIds, ...myModels.map((m) => m.id)]);
+    } else {
+      setCheckedModelKeys(nonSystemModelIds);
+    }
   };
 
-  // 模型项自定义渲染（展示 name 与 description，各占 50% 空间，不换行，超出省略且悬浮提示）
-  const modelTitleRender = (node: any) => {
+  // 处理模型项选择逻辑 (个人空间模型)
+  const isAllSpaceModelChecked = useMemo(() => {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          paddingRight: 8,
-          gap: 16,
-        }}
-      >
-        <Text
-          ellipsis={{ tooltip: true }}
-          style={{ fontSize: 14, flex: 1, width: 0 }}
-        >
-          {node.name}
-        </Text>
-        <Text
-          type="secondary"
-          ellipsis={{ tooltip: true }}
-          style={{ fontSize: 12, flex: 1, width: 0, textAlign: 'right' }}
-        >
-          {node.description}
-        </Text>
-      </div>
+      mySpaceModels.length > 0 &&
+      mySpaceModels.every((item) => checkedModelKeys.includes(item.id))
     );
-  };
+  }, [mySpaceModels, checkedModelKeys]);
 
-  const modelTreeData = useMemo(() => {
-    return myModels.map((item) => ({
-      key: String(item.id),
-      name: item.name,
-      description: item.description || '',
-    }));
-  }, [myModels]);
+  const isSpaceModelIndeterminate = useMemo(() => {
+    if (isAllSpaceModelChecked) return false;
+    return mySpaceModels.some((item) => checkedModelKeys.includes(item.id));
+  }, [mySpaceModels, checkedModelKeys, isAllSpaceModelChecked]);
+
+  const handleSelectAllSpaceModels = (checked: boolean) => {
+    const nonSpaceModelIds = checkedModelKeys.filter(
+      (id) => !mySpaceModels.some((m) => m.id === id),
+    );
+    if (checked) {
+      setCheckedModelKeys([
+        ...nonSpaceModelIds,
+        ...mySpaceModels.map((m) => m.id),
+      ]);
+    } else {
+      setCheckedModelKeys(nonSpaceModelIds);
+    }
+  };
 
   const handleSave = async () => {
     if (!record) return;
@@ -348,47 +270,30 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
                   'PC.Pages.MorePage.ApiKeyPermission.modelPermission',
                 ),
               },
+              {
+                key: 'spaceModel',
+                label: dict(
+                  'PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission',
+                ),
+              },
             ]}
           />
 
           {/* 顶部操作区 */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              height: 48,
-              padding: '0 16px',
-              backgroundColor: '#f8fafc',
-              borderRadius: 8,
-            }}
-          >
-            <Checkbox
-              indeterminate={
-                activeTab === 'api' ? isIndeterminate : isModelIndeterminate
-              }
-              checked={activeTab === 'api' ? isAllChecked : isAllModelChecked}
-              onChange={(e) => {
-                if (activeTab === 'api') {
-                  handleSelectAll(e.target.checked);
-                } else {
-                  handleSelectAllModels(e.target.checked);
-                }
-              }}
-            >
-              {dict('PC.Pages.MorePage.ApiKeyPermission.selectAll')}
-            </Checkbox>
-            {activeTab === 'api' && (
-              <Space>
-                <Button size="small" onClick={() => setExpandedKeys(allKeys)}>
-                  {dict('PC.Pages.MorePage.ApiKeyPermission.expandAll')}
-                </Button>
-                <Button size="small" onClick={() => setExpandedKeys([])}>
-                  {dict('PC.Pages.MorePage.ApiKeyPermission.collapseAll')}
-                </Button>
-              </Space>
-            )}
-          </div>
+          <PermissionOperationsBar
+            activeTab={activeTab}
+            isIndeterminate={isIndeterminate}
+            isModelIndeterminate={isModelIndeterminate}
+            isSpaceModelIndeterminate={isSpaceModelIndeterminate}
+            isAllChecked={isAllChecked}
+            isAllModelChecked={isAllModelChecked}
+            isAllSpaceModelChecked={isAllSpaceModelChecked}
+            onSelectAll={handleSelectAll}
+            onSelectAllModels={handleSelectAllModels}
+            onSelectAllSpaceModels={handleSelectAllSpaceModels}
+            onExpandAll={() => setExpandedKeys(allKeys)}
+            onCollapseAll={() => setExpandedKeys([])}
+          />
 
           {/* 内容展示区 */}
           <div
@@ -401,59 +306,28 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
             }}
           >
             {activeTab === 'api' ? (
-              treeData.length > 0 ? (
-                <Tree
-                  checkable
-                  checkStrictly={false}
-                  expandedKeys={expandedKeys}
-                  onExpand={setExpandedKeys}
-                  checkedKeys={checkedKeys}
-                  onCheck={(keys: any) => {
-                    setCheckedKeys(keys);
-                  }}
-                  treeData={treeData as any}
-                  fieldNames={{
-                    title: 'name',
-                    key: 'key',
-                    children: 'apiList',
-                  }}
-                  titleRender={titleRender}
-                  blockNode
-                />
-              ) : (
-                !loading && (
-                  <Empty
-                    description={dict(
-                      'PC.Pages.MorePage.ApiKeyPermission.noPermissionDefs',
-                    )}
-                  />
-                )
-              )
-            ) : modelTreeData.length > 0 ? (
-              <Tree
-                checkable
-                checkStrictly={false}
-                checkedKeys={checkedModelKeys.map(String)}
-                onCheck={(keys: any) => {
-                  const actualKeys = Array.isArray(keys) ? keys : keys.checked;
-                  const ids = actualKeys
-                    .map((k: any) => Number(k))
-                    .filter((n: number) => !isNaN(n));
-                  setCheckedModelKeys(ids);
-                }}
-                treeData={modelTreeData as any}
-                fieldNames={{ title: 'name', key: 'key' }}
-                titleRender={modelTitleRender}
-                blockNode
+              <ApiPermissionTab
+                loading={loading}
+                treeData={treeData}
+                checkedKeys={checkedKeys}
+                onCheckedChange={setCheckedKeys}
+                expandedKeys={expandedKeys}
+                onExpandedChange={setExpandedKeys}
+              />
+            ) : activeTab === 'model' ? (
+              <ModelPermissionTab
+                loading={loading}
+                myModels={myModels}
+                checkedModelKeys={checkedModelKeys}
+                onCheckedModelKeysChange={setCheckedModelKeys}
               />
             ) : (
-              !loading && (
-                <Empty
-                  description={dict(
-                    'PC.Pages.MorePage.ApiKeyPermission.noModelDefs',
-                  )}
-                />
-              )
+              <ModelPermissionTab
+                loading={loading}
+                myModels={mySpaceModels}
+                checkedModelKeys={checkedModelKeys}
+                onCheckedModelKeysChange={setCheckedModelKeys}
+              />
             )}
           </div>
         </div>
