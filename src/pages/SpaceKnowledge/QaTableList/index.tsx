@@ -9,7 +9,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { Button, Empty, Popconfirm, Spin, Table, TableProps, Tag } from 'antd';
+import { Button, Empty, Popconfirm, Table, TableProps, Tag } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
@@ -201,9 +201,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
           justifyContent: data.length > 0 ? 'flex-start' : 'center',
         }}
       >
-        {loading ? (
-          <Spin spinning={loading} delay={200} />
-        ) : data.length > 0 ? (
+        {data.length > 0  ? (
           <Table
             rowKey="id"
             columns={columns}
