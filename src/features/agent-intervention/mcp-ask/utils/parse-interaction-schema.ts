@@ -16,10 +16,93 @@ export interface ParsedMcpAskField {
   enumLabels: string[];
 }
 
+const SCHEMA_META_KEYS = new Set([
+  'type',
+  'title',
+  'description',
+  'required',
+  'properties',
+  'schema',
+  'uiSchema',
+  'steps',
+]);
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object'
     ? (value as Record<string, unknown>)
     : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+function isJsonSchemaProperty(value: unknown): value is JsonSchemaProperty {
+  const record = asRecord(value);
+  if (!record) {
+    return false;
+  }
+  return (
+    typeof record.type === 'string' ||
+    Array.isArray(record.type) ||
+    typeof record.title === 'string' ||
+    typeof record.description === 'string' ||
+    Array.isArray(record.enum) ||
+    !!record.items
+  );
+}
+
+function normalizeProperties(
+  value: unknown,
+): Record<string, JsonSchemaProperty> {
+  const record = asRecord(value);
+  if (!record) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(record).filter(
+      ([key, property]) =>
+        !SCHEMA_META_KEYS.has(key) && isJsonSchemaProperty(property),
+    ),
+  ) as Record<string, JsonSchemaProperty>;
+}
+
+function findSchemaCandidates(
+  ui: InteractionUiSchema,
+): Record<string, unknown>[] {
+  const schema = asRecord(ui.schema);
+  if (!schema) {
+    return [];
+  }
+
+  return [
+    schema,
+    asRecord(schema.schema),
+    asRecord(schema.properties),
+    asRecord(asRecord(schema.properties)?.schema),
+  ].filter(Boolean) as Record<string, unknown>[];
+}
+
+function getEffectiveUiSchema(
+  ui: InteractionUiSchema,
+): Record<string, unknown> | undefined {
+  if (ui.uiSchema) {
+    return ui.uiSchema;
+  }
+
+  for (const candidate of findSchemaCandidates(ui)) {
+    const nestedUiSchema =
+      asRecord(candidate.uiSchema) ??
+      asRecord(asRecord(candidate.properties)?.uiSchema);
+    if (nestedUiSchema) {
+      return nestedUiSchema;
+    }
+  }
+
+  return undefined;
 }
 
 /** 读取字段或根 uiSchema 上的 ui:options */
@@ -40,22 +123,41 @@ function getRootSchema(ui: InteractionUiSchema): {
   properties: Record<string, JsonSchemaProperty>;
   required: string[];
 } {
-  const schema = ui.schema as {
-    properties?: Record<string, JsonSchemaProperty>;
-    required?: string[];
-  };
+  for (const candidate of findSchemaCandidates(ui)) {
+    const nestedProperties = normalizeProperties(candidate.properties);
+    const properties = Object.keys(nestedProperties).length
+      ? nestedProperties
+      : normalizeProperties(candidate);
+    const directRequired = asStringArray(candidate.required);
+    const required = directRequired.length
+      ? directRequired
+      : asStringArray(asRecord(candidate.properties)?.required);
+    if (Object.keys(properties).length) {
+      return { properties, required };
+    }
+  }
+
   return {
-    properties: schema?.properties ?? {},
-    required: schema?.required ?? [],
+    properties: {},
+    required: [],
   };
 }
 
 function resolveEnumLabels(
   enumValues: string[],
+  property: JsonSchemaProperty,
   options: InteractionUiOptions,
 ): string[] {
   if (options.enumNames?.length === enumValues.length) {
     return options.enumNames;
+  }
+  const propertyEnumNames = (
+    property as JsonSchemaProperty & {
+      enumNames?: string[];
+    }
+  ).enumNames;
+  if (propertyEnumNames?.length === enumValues.length) {
+    return propertyEnumNames;
   }
   return enumValues;
 }
@@ -114,14 +216,15 @@ export function parseInteractionFields(
   fieldNames?: string[],
 ): ParsedMcpAskField[] {
   const { properties, required } = getRootSchema(ui);
+  const uiSchema = getEffectiveUiSchema(ui);
   const names = fieldNames ?? Object.keys(properties);
 
   return names
     .filter((name) => properties[name])
     .map((name) => {
       const property = properties[name];
-      const options = getUiOptions(ui.uiSchema, name);
-      const widget = resolveFieldWidget(name, property, ui.uiSchema);
+      const options = getUiOptions(uiSchema, name);
+      const widget = resolveFieldWidget(name, property, uiSchema);
       const enumValues =
         property.enum ??
         (property.items?.enum && widget === 'checkboxes'
@@ -135,7 +238,7 @@ export function parseInteractionFields(
         required: required.includes(name),
         options,
         enumValues,
-        enumLabels: resolveEnumLabels(enumValues, options),
+        enumLabels: resolveEnumLabels(enumValues, property, options),
       };
     });
 }

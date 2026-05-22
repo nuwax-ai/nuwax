@@ -5,7 +5,10 @@
 export const MCP_ASK_SCHEMA_VERSION = 'nuwaclaw.mcp_ask.v1';
 export const INTERACTION_UI_SCHEMA_VERSION = 'nuwaclaw.interaction.v1';
 
-export type McpAskToolName = 'nuwax_ask_user' | 'nuwaclaw_ask_user';
+export type McpAskToolName =
+  | 'nuwax_ask_question'
+  | 'nuwax_ask_user'
+  | 'nuwaclaw_ask_user';
 
 /** 向导步骤定义 */
 export interface InteractionUiStep {

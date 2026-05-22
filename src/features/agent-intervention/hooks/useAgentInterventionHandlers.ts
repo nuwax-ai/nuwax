@@ -14,6 +14,7 @@ import {
   isMcpAskMockLocalRespondEnabled,
   type McpAskQuestionMockScenario,
 } from '../mcp-ask/mock';
+import { buildMcpAskResumeMessage } from '../mcp-ask/utils/resume-message';
 import { injectAllInterventionMocks } from '../mock/demo-stack';
 import type {
   AcpPermissionInteraction,
@@ -21,6 +22,7 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types';
+import { isMockMcpAskRequestId } from '../utils/mock-ids';
 
 export interface UseAgentInterventionHandlersOptions {
   setMessageList: Dispatch<SetStateAction<MessageInfo[]>>;
@@ -209,7 +211,10 @@ export function useAgentInterventionHandlers({
         return 'submitted';
       };
 
-      if (isMcpAskMockLocalRespondEnabled()) {
+      if (
+        isMcpAskMockLocalRespondEnabled() &&
+        isMockMcpAskRequestId(requestId)
+      ) {
         await new Promise((resolve) => {
           setTimeout(resolve, 400);
         });
@@ -217,41 +222,16 @@ export function useAgentInterventionHandlers({
           responseStatus: resolveStatus(),
           formData: payload.formData,
         });
-        return;
+        return null;
       }
 
-      try {
-        const response = await apiAgentInterventionRespond({
-          interventionId: payload.interventionId,
-          mcp_ask_resolve: payload,
-          user_id: String(conversationId),
-          conversation_id: conversationId || undefined,
-        });
-
-        if (response?.code && response.code !== SUCCESS_CODE) {
-          throw new Error(
-            response.message ||
-              dict('PC.Models.ConversationInfo.askResponseFailed'),
-          );
-        }
-
-        updateMcpAskInteraction(requestId, {
-          responseStatus: resolveStatus(),
-          formData: payload.formData,
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : dict('PC.Models.ConversationInfo.askResponseFailed');
-        updateMcpAskInteraction(requestId, {
-          responseStatus: 'failed',
-          errorMessage,
-        });
-        message.error(errorMessage);
-      }
+      updateMcpAskInteraction(requestId, {
+        responseStatus: resolveStatus(),
+        formData: payload.formData,
+      });
+      return buildMcpAskResumeMessage(interaction, payload);
     },
-    [updateMcpAskInteraction, conversationId],
+    [updateMcpAskInteraction],
   );
 
   return {

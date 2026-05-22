@@ -5,6 +5,7 @@ import {
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
+  hydrateMcpAskInteractionsInMessageList,
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/features/agent-intervention';
@@ -86,6 +87,7 @@ import { throttle } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
 
 export default () => {
   // 历史记录
@@ -634,7 +636,10 @@ export default () => {
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
           setMessageList((messageList: MessageInfo[]) => {
-            return [...data, ...messageList];
+            return [
+              ...hydrateMcpAskInteractionsInMessageList(data),
+              ...messageList,
+            ];
           });
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
@@ -697,7 +702,9 @@ export default () => {
       // 用户填写的变量参数
       setUserFillVariables(data?.variables || null);
       // 消息列表
-      const _messageList = data?.messageList || [];
+      const _messageList = hydrateMcpAskInteractionsInMessageList(
+        data?.messageList || [],
+      );
       const len = _messageList?.length || 0;
       if (len) {
         setMessageList(() => {
@@ -825,6 +832,12 @@ export default () => {
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
+        // 后端可能仅在 data.result.executeId 提供执行 ID；缺失时提升到顶层，
+        // 否则 getCustomBlock / processingList 去重会因 executeId 为 undefined 而失效，
+        // 导致流式处理块不展示。
+        if (!data.executeId && processingResult.executeId) {
+          data.executeId = processingResult.executeId;
+        }
         const processingList = [
           ...(currentMessage?.processingList || []),
         ] as ProcessingInfo[];
@@ -1343,27 +1356,19 @@ export default () => {
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    // 将Incomplete状态的消息改为Complete状态
-    const completeMessageList =
-      messageList?.map((item: MessageInfo) => {
-        if (item.status === MessageStatusEnum.Incomplete) {
-          item.status = MessageStatusEnum.Complete;
-        }
-        return item;
-      }) || [];
+    setMessageList((prevList) => {
+      // 使用最新 state 追加消息，避免覆盖同一事件周期内刚更新的干预响应状态。
+      const newMessageList = appendOutgoingConversationMessages(
+        prevList,
+        chatMessage,
+        currentMessage,
+      );
 
-    const newMessageList = [
-      ...completeMessageList,
-      chatMessage,
-      currentMessage,
-    ] as MessageInfo[];
-
-    setMessageList(() => {
       checkConversationActive(newMessageList);
+      // 缓存消息列表
+      messageListRef.current = newMessageList;
       return newMessageList;
     });
-    // 缓存消息列表
-    messageListRef.current = newMessageList;
 
     // 允许滚动
     allowAutoScrollRef.current = true;

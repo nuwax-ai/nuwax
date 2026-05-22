@@ -27,6 +27,10 @@ export type { AcpPermissionMessageSlotProps } from './components/AcpPermissionMe
 
 export { default as AcpPermissionCard } from './acp-permission/components/AcpPermissionCard';
 export { default as McpAskQuestionCard } from './mcp-ask/components/McpAskQuestionCard';
+export {
+  hydrateMcpAskInteractionsFromExecutedComponents,
+  hydrateMcpAskInteractionsInMessageList,
+} from './mcp-ask/utils/hydrate-message';
 
 export {
   enableAcpMockLocalRespond,

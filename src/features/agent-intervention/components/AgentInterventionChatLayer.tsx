@@ -1,6 +1,6 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AcpPermissionMockScenario } from '../acp-permission/mock';
 import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
 import { useAgentInterventionDevMock } from '../hooks/useAgentInterventionDevMock';
@@ -50,6 +50,10 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
   injectMockMcpAsk,
   injectAllInterventionMocks,
 }) => {
+  const [dismissedMcpAskRequestIds, setDismissedMcpAskRequestIds] = useState<
+    Set<string>
+  >(() => new Set());
+
   useAgentInterventionDevMock({
     conversationId,
     messageList,
@@ -58,7 +62,51 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
     injectAllInterventionMocks,
   });
 
-  const queueItems = useActiveInterventionQueue(messageList);
+  const activeQueueItems = useActiveInterventionQueue(messageList);
+  const queueItems = useMemo(
+    () =>
+      activeQueueItems.filter(
+        (item) =>
+          item.kind !== 'mcp_ask' ||
+          !dismissedMcpAskRequestIds.has(item.interaction.input.requestId),
+      ),
+    [activeQueueItems, dismissedMcpAskRequestIds],
+  );
+
+  useEffect(() => {
+    if (!dismissedMcpAskRequestIds.size) {
+      return;
+    }
+    const activeRequestIds = new Set(
+      activeQueueItems
+        .filter((item) => item.kind === 'mcp_ask')
+        .map((item) => item.interaction.input.requestId),
+    );
+    setDismissedMcpAskRequestIds((prev) => {
+      const next = new Set(
+        [...prev].filter((requestId) => activeRequestIds.has(requestId)),
+      );
+      return next.size === prev.size ? prev : next;
+    });
+  }, [activeQueueItems, dismissedMcpAskRequestIds]);
+
+  const handleRespondMcpAsk = useCallback(
+    async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
+      const requestId = interaction.input.requestId;
+      setDismissedMcpAskRequestIds((prev) => new Set(prev).add(requestId));
+      try {
+        await onRespondMcpAsk(interaction, payload);
+      } catch (error) {
+        setDismissedMcpAskRequestIds((prev) => {
+          const next = new Set(prev);
+          next.delete(requestId);
+          return next;
+        });
+        console.error('[agentIntervention] Failed to respond MCP ask', error);
+      }
+    },
+    [onRespondMcpAsk],
+  );
 
   if (!queueItems.length) {
     return null;
@@ -72,7 +120,7 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
       <InterventionDockPanel
         items={queueItems}
         onRespondAcpPermission={onRespondAcpPermission}
-        onRespondMcpAsk={onRespondMcpAsk}
+        onRespondMcpAsk={handleRespondMcpAsk}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useMemo } from 'react';
+import { hasMcpAskResumeMessage } from '../mcp-ask/utils/resume-message';
 import type { AcpPermissionInteraction, McpAskInteraction } from '../types';
 
 export type InterventionQueueKind = 'acp_permission' | 'mcp_ask';
@@ -73,6 +74,9 @@ export function useActiveInterventionQueue(
 
       message.mcpAskInteractions?.forEach((interaction) => {
         if (!isActiveMcpAskInteraction(interaction)) {
+          return;
+        }
+        if (hasMcpAskResumeMessage(messages, interaction)) {
           return;
         }
         const sortKey = interaction.triggeredAt ?? fallbackSeq++;

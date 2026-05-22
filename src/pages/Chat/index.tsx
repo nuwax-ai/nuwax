@@ -17,7 +17,11 @@ import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
-import { AgentInterventionChatLayer } from '@/features/agent-intervention';
+import {
+  AgentInterventionChatLayer,
+  type McpAskInteraction,
+  type McpAskRespondPayload,
+} from '@/features/agent-intervention';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -790,6 +794,16 @@ const Chat: React.FC = () => {
     onMessageSend(sendParams);
   };
 
+  const handleRespondMcpAsk = async (
+    interaction: McpAskInteraction,
+    payload: McpAskRespondPayload,
+  ) => {
+    const resumeMessage = await respondMcpAsk(interaction, payload);
+    if (resumeMessage) {
+      handleMessageSend(resumeMessage);
+    }
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
@@ -1394,7 +1408,7 @@ const Chat: React.FC = () => {
               conversationId={id}
               messageList={messageList}
               onRespondAcpPermission={respondAcpPermission}
-              onRespondMcpAsk={respondMcpAsk}
+              onRespondMcpAsk={handleRespondMcpAsk}
               injectMockAcpPermission={injectMockAcpPermission}
               injectMockMcpAsk={injectMockMcpAsk}
               injectAllInterventionMocks={injectAllInterventionMocks}

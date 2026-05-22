@@ -234,10 +234,11 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
         <footer className={styles.footer}>
           {isWizard && steps.length > 1 ? (
             <Text type="secondary" className={styles.stepMeta}>
-              {t('PC.Components.McpAskQuestionCard.stepOf', [
+              {t(
+                'PC.Components.McpAskQuestionCard.stepOf',
                 String(currentStep + 1),
                 String(steps.length),
-              ])}
+              )}
             </Text>
           ) : (
             <span />
