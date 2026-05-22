@@ -1,4 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import AgentInterventionChatLayer from '@/components/AgentInterventionChatLayer';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
@@ -17,11 +18,6 @@ import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
-import {
-  AgentInterventionChatLayer,
-  type McpAskInteraction,
-  type McpAskRespondPayload,
-} from '@/features/agent-intervention';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -58,6 +54,10 @@ import type {
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import type {
+  McpAskInteraction,
+  McpAskRespondPayload,
+} from '@/types/interfaces/mcpAskIntervention';
 import {
   IUpdateStaticFileParams,
   StaticFileInfo,
