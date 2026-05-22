@@ -11,7 +11,7 @@ export interface ModelPriceTierListProps {
 
 /**
  * 模型阶梯价格展示（与 ModelPricingTab 定价档位列布局、样式一致）
- * 布局：每行固定 2 个 Tag
+ * 布局：每行 2 个 Tag，单个 Tag 宽度随内容自适应
  */
 const ModelPriceTierList: React.FC<ModelPriceTierListProps> = ({ tiers }) => {
   if (!tiers?.length) {

@@ -1,6 +1,6 @@
 .model-tier-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, max-content);
   column-gap: 4px;
   row-gap: 4px;
 }
@@ -10,11 +10,10 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  max-width: 100%;
+  width: fit-content;
   padding: 2px 8px;
   font-size: 12px;
   white-space: nowrap;
-  overflow: hidden;
   border: 1px solid #d3e4ff;
   border-radius: 6px;
   background: #eff6ff;
