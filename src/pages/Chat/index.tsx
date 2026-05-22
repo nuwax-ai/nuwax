@@ -472,7 +472,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = defaultAgentDetail || conversationInfo?.agent;
+    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
     if (targetAgent) {
       setAgentDetail(targetAgent);
 
