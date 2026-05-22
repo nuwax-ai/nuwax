@@ -127,9 +127,9 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
     });
 
     // 获取QA列表数据
-    const fetchQaList = () => {
+    const fetchQaList = (params: KnowledgeQaListParams) => {
       setLoading(true);
-      apiKnowledgeQaList(tableParams)
+      apiKnowledgeQaList(params)
         .then((res) => {
           const { current, size, total = 0, records } = res.data;
           setTotal(total);
@@ -147,7 +147,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
 
     // 监听分页和筛选变化
     useEffect(() => {
-      fetchQaList();
+      fetchQaList(tableParams);
     }, [
       tableParams.current,
       tableParams.pageSize,
@@ -170,7 +170,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
 
     // 暴露刷新方法给父组件
     useImperativeHandle(ref, () => ({
-      refresh: fetchQaList,
+      refresh: () => fetchQaList(tableParams),
     }));
 
     const handleTableChange: TableProps['onChange'] = (pagination) => {
