@@ -988,6 +988,7 @@ export const EN_US: SystemLangMap = {
   "PC.Constants.Library.weightedLeastConn": "Weighted Least Connections",
   "PC.Constants.Library.weightedRoundRobin": "Weighted Round Robin",
   "PC.Constants.Library.workflow": "Workflow",
+  "PC.Constants.Library.externalApi": "External API calls",
   "PC.Constants.Mcp.deployed": "Deployed",
   "PC.Constants.Mcp.menuOverview": "Overview",
   "PC.Constants.Mcp.menuPrompt": "Prompt",

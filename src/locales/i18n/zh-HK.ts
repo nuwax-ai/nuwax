@@ -979,6 +979,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Constants.Library.weightedLeastConn": "加權最少連接",
   "PC.Constants.Library.weightedRoundRobin": "加權輪詢",
   "PC.Constants.Library.workflow": "工作流",
+  "PC.Constants.Library.externalApi": "外部API調用",
   "PC.Constants.Mcp.deployed": "已部署",
   "PC.Constants.Mcp.menuOverview": "概覽",
   "PC.Constants.Mcp.menuPrompt": "提示詞",

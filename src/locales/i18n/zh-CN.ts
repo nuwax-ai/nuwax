@@ -988,6 +988,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Constants.Library.weightedLeastConn": "加权最少连接",
   "PC.Constants.Library.weightedRoundRobin": "加权轮询",
   "PC.Constants.Library.workflow": "工作流",
+  "PC.Constants.Library.externalApi": "外部API调用",
   "PC.Constants.Mcp.deployed": "已部署",
   "PC.Constants.Mcp.menuOverview": "概览",
   "PC.Constants.Mcp.menuPrompt": "提示词",

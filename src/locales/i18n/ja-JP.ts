@@ -979,6 +979,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Constants.Library.weightedLeastConn": "重み付けされた最小接続",
   "PC.Constants.Library.weightedRoundRobin": "加重ラウンドロビン",
   "PC.Constants.Library.workflow": "ワークフロー",
+  "PC.Constants.Library.externalApi": "外部API呼び出し",
   "PC.Constants.Mcp.deployed": "導入済み",
   "PC.Constants.Mcp.menuOverview": "概要",
   "PC.Constants.Mcp.menuPrompt": "プロンプト",
