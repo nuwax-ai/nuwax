@@ -148,6 +148,10 @@ const UserManage: React.FC = () => {
         {
           key: 'resetPassword',
           label: dict('PC.Pages.UserManage.Index.resetPassword'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
           onClick: handleResetPassword,
         },
         {
@@ -175,6 +179,10 @@ const UserManage: React.FC = () => {
           label: dict('PC.Pages.UserManage.Index.delete'),
           danger: true,
           confirm: {},
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_disable',
+          ),
           onClick: handleDelete,
         },
         {
