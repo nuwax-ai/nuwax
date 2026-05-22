@@ -462,6 +462,10 @@ export const MODEL_USAGE_SCENARIO_LIST = [
     value: ModelUsageScenarioEnum.Workflow,
     label: dict('PC.Constants.Library.workflow'),
   },
+  {
+    value: ModelUsageScenarioEnum.OpenApi,
+    label: dict('PC.Constants.Library.externalApi'),
+  },
 ];
 
 // 插件
