@@ -4843,6 +4843,7 @@ export const EN_US: SystemLangMap = {
   "PC.Routes.menuPermission": "Menu Permission",
   "PC.Routes.morePage": "More Pages",
   "PC.Routes.usageStats": "Usage Stats",
+  "PC.Routes.modelPermissions": "Model Permissions",
   "PC.Routes.permissionResources": "Permission Resources",
   "PC.Routes.publicModelManagement": "Public Model Mgmt",
   "PC.Routes.modelMonitor": "Model Monitor",

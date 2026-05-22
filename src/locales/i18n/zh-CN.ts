@@ -5325,6 +5325,7 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 用量统计 ────────────────────────────
   "PC.Routes.usageStats": "用量统计",
+  "PC.Routes.modelPermissions": "模型权限",
   "PC.Pages.UsageStats.pageTitle": "用量统计",
   "PC.Pages.UsageStats.timeRange": "时间范围",
   "PC.Pages.UsageStats.refreshData": "刷新数据",
