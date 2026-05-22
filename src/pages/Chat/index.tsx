@@ -142,9 +142,7 @@ const Chat: React.FC = () => {
     openPaymentModal,
     setOpenPaymentModal,
     localCalledTrialCount,
-    syncCalledTrialCountFromAgent,
     incrementCalledTrialCount,
-    clearCalledTrialCount,
   } = useModel('useOpenApp');
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -490,15 +488,6 @@ const Chat: React.FC = () => {
     }
   }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
 
-  useEffect(() => {
-    if (
-      conversationInfo &&
-      conversationInfo?.agent?.calledTrialCount > localCalledTrialCount
-    ) {
-      syncCalledTrialCountFromAgent(conversationInfo?.agent);
-    }
-  }, [conversationInfo?.agent, localCalledTrialCount]);
-
   // 使用滚动检测 Hook
   useConversationScrollDetection(
     messageViewRef,
@@ -685,8 +674,6 @@ const Chat: React.FC = () => {
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
 
       setOpenPaymentModal(false);
-      // 清除已试用次数，避免切换会话时，已试用次数不准确
-      clearCalledTrialCount();
     };
   }, [id]);
 
