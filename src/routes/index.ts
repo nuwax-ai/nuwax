@@ -553,6 +553,22 @@ const routes = [
         component: '@/pages/OpenIframePage',
       },
       {
+        path: 'my-subscriptions',
+        component: '@/pages/OpenApp/MySubscriptions',
+      },
+      {
+        path: 'credit-records',
+        component: '@/pages/OpenApp/CreditRecords',
+      },
+      {
+        path: 'my-orders',
+        component: '@/pages/OpenApp/MyOrders',
+      },
+      {
+        path: 'usage-stats',
+        component: '@/pages/OpenApp/UsageStats',
+      },
+      {
         path: ':agentId',
         component: '@/pages/OpenApp/AppDetails',
       },

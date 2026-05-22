@@ -1,16 +1,18 @@
 import { dict } from '@/services/i18nRuntime';
 import { CreditSummaryInfo } from '@/types/interfaces/subscription';
-import { Statistic } from 'antd';
+import { Statistic, Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const { Text } = Typography;
 
 interface CreditsBreakdownProps {
   summary?: CreditSummaryInfo;
   onAddPurchase: () => void;
+  app?: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ interface CreditsBreakdownProps {
 const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
   summary,
   onAddPurchase,
+  app,
 }) => {
   return (
     <div className={cx(styles['credits-breakdown'])}>
@@ -29,7 +32,11 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
           <span
             className={cx(styles['credits-detail-link'])}
-            onClick={() => history.push('/more-page/credit-records')}
+            onClick={() =>
+              history.push(
+                app ? `/app/credit-records` : '/more-page/credit-records',
+              )
+            }
           >
             {dict('PC.Pages.MorePage.MySubscriptions.detail')}
           </span>
@@ -73,12 +80,15 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
             {dict('PC.Pages.MorePage.MySubscriptions.activityCredits')}
           </span>
           {summary?.dailyGiftCredit && summary.dailyGiftCredit > 0 ? (
-            <span className={cx(styles['daily-gift-tip'])}>
+            <Text
+              className={cx(styles['daily-gift-tip'])}
+              ellipsis={{ tooltip: true }}
+            >
               {dict(
                 'PC.Pages.MorePage.MySubscriptions.dailyGiftTip',
                 summary.dailyGiftCredit,
               )}
-            </span>
+            </Text>
           ) : null}
         </div>
         <span className={cx(styles['credits-value'], styles.orange)}>
