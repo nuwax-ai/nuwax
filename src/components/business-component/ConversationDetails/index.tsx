@@ -991,7 +991,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
           targetType="Agent"
           calledTrialCount={agentDetail?.calledTrialCount}
           trialCount={agentDetail?.trialCount}
-          overCallLimit={agentDetail?.overCallLimit ?? false}
           isNeedSubscription={
             agentDetail?.paymentRequired && !agentDetail?.subscribed
           }
