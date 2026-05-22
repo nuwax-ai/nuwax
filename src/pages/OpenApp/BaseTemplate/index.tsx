@@ -82,6 +82,8 @@ const BaseTemplate: React.FC = () => {
     appAgentDetailLoading,
     setAppAgentDetailLoading,
     setOpenPaymentModal,
+    localCalledTrialCount,
+    clearCalledTrialCount,
   } = useModel('useOpenApp');
 
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
@@ -302,6 +304,7 @@ const BaseTemplate: React.FC = () => {
     return () => {
       eventBus.off(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
       setUnreadCount(0);
+      clearCalledTrialCount();
     };
   }, []);
 
@@ -683,7 +686,7 @@ const BaseTemplate: React.FC = () => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          calledTrialCount={appAgentDetail?.calledTrialCount}
+          calledTrialCount={localCalledTrialCount}
           trialCount={appAgentDetail?.trialCount}
           isNeedSubscription={
             appAgentDetail?.paymentRequired && !appAgentDetail?.subscribed
