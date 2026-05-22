@@ -2819,6 +2819,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.OpenApp.historyConversation": "歷史會話",
   "PC.Pages.OpenApp.newConversation": "新建會話",
   "PC.Pages.OpenApp.viewAll": "檢視全部",
+  "PC.Pages.OpenApp.subscription": "訂閱",
   "PC.Pages.PreviewAndDebug.convIdNotFoundDesktop": "會話ID不存在，無法開啟智慧體電腦",
   "PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview": "會話ID不存在，無法開啟檔案預覽",
   "PC.Pages.PreviewAndDebug.fillRequiredParams": "請填寫必填引數",
