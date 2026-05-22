@@ -15,7 +15,10 @@ import PurchaseModal from './components/CreditsBreakdown/components/PurchaseModa
 import SubscribedContent from './components/SubscribedContent';
 import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 
-const MySubscriptions: React.FC<{ app?: boolean }> = ({ app = false }) => {
+const MySubscriptions: React.FC<{
+  app?: boolean;
+  onViewCreditRecords?: () => void;
+}> = ({ app = false, onViewCreditRecords }) => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const location = useLocation();
 
@@ -70,7 +73,7 @@ const MySubscriptions: React.FC<{ app?: boolean }> = ({ app = false }) => {
 
         {/* 积分明细 */}
         <CreditsBreakdown
-          app={app}
+          onViewCreditRecords={onViewCreditRecords}
           summary={creditsSummary}
           onAddPurchase={() => setPurchaseOpen(true)}
         />
