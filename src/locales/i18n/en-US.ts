@@ -3252,7 +3252,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess": "Knowledge base deleted successfully",
   "PC.Pages.SpaceLibrary.Index.modelDeleteSuccess": "Model deleted successfully",
   "PC.Pages.SpaceLibrary.Index.noResults": "No relevant results found",
-  "PC.Pages.SpaceLibrary.Index.pageTitle": "Component Library",
+  "PC.Pages.SpaceLibrary.Index.pageTitle": "Component Resources",
   "PC.Pages.SpaceLibrary.Index.pluginCopySuccess": "Plugin copied successfully",
   "PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess": "Plugin deleted successfully",
   "PC.Pages.SpaceLibrary.Index.searchComponent": "Search components",
