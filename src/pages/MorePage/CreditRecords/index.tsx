@@ -11,7 +11,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history } from 'umi';
 import styles from './index.less';
 
-const CreditRecords: React.FC<{ app?: boolean }> = ({ app }) => {
+interface CreditRecordsProps {
+  onClickBack?: () => void;
+}
+
+const CreditRecords: React.FC<CreditRecordsProps> = ({ onClickBack }) => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [dataSource, setDataSource] = useState<CreditRecordInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -175,11 +179,13 @@ const CreditRecords: React.FC<{ app?: boolean }> = ({ app }) => {
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.CreditRecords.pageTitle')}
       back={true}
-      onBack={() =>
-        history.push(
-          app ? '/app/my-subscriptions' : '/more-page/my-subscriptions',
-        )
-      }
+      onBack={() => {
+        if (onClickBack) {
+          onClickBack();
+        } else {
+          history.push('/more-page/my-subscriptions');
+        }
+      }}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <XProTable<CreditRecordInfo>

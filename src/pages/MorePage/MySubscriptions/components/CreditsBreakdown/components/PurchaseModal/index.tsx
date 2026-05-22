@@ -78,7 +78,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
           const orderId = data?.id;
           if (orderId) {
             // 继续获取支付收银台地址
-            getCashierUrl(orderId);
+            getCashierUrl({ orderId });
           } else {
             message.error(
               dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),

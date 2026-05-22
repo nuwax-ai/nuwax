@@ -26,6 +26,11 @@ const useOpenApp = () => {
   // 付费弹窗状态
   const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
 
+  /** 前端维护的已试用次数（按智能体初始化，发送消息后递增，不超过可试用总数） */
+  const [localCalledTrialCount, setLocalCalledTrialCount] = useState<number>(0);
+  /** 当前智能体可试用总次数，用于递增上限 */
+  const trialCountTotalRef = useRef<number>(0);
+
   // 状态管理
   const { setIsMobile } = useModel('layout');
 
@@ -96,11 +101,34 @@ const useOpenApp = () => {
     setIsAppSidebarVisible(false);
   }, []);
 
+  /** 智能体切换时从接口初始化已试用次数，同智能体不重复覆盖 */
+  const syncCalledTrialCountFromAgent = useCallback((agent: AgentDetailDto) => {
+    setLocalCalledTrialCount(agent.calledTrialCount ?? 0);
+    trialCountTotalRef.current = agent.trialCount ?? 0;
+  }, []);
+
+  /** 用户发送消息后已试用次数 +1，不超过可试用总次数 */
+  const incrementCalledTrialCount = useCallback(() => {
+    setLocalCalledTrialCount((prev) => {
+      const max = trialCountTotalRef.current;
+      if (max <= 0) {
+        return prev;
+      }
+      return Math.min(prev + 1, max);
+    });
+  }, []);
+
   // 设置应用智能体详情
   const handleSetAppAgentDetail = (info: AgentDetailDto) => {
     setAppAgentDetail(info);
     setAppAgentDetailLoading(false);
   };
+
+  // 清除已试用次数
+  const clearCalledTrialCount = useCallback(() => {
+    setLocalCalledTrialCount(0);
+    trialCountTotalRef.current = 0;
+  }, []);
 
   // 创建应用智能体新会话
   const createAppNewConversation = (agentId: number) => {
@@ -119,6 +147,12 @@ const useOpenApp = () => {
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
+
+    // 已试用次数
+    localCalledTrialCount,
+    incrementCalledTrialCount,
+    clearCalledTrialCount,
+    syncCalledTrialCountFromAgent,
   };
 };
 

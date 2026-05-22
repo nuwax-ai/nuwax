@@ -104,6 +104,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
+    incrementCalledTrialCount,
+    localCalledTrialCount,
+    syncCalledTrialCountFromAgent,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -352,6 +355,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 defaultAgentDetail: result,
                 messageSourceType: 'agent' as MessageSourceType,
               };
+              incrementCalledTrialCount();
               confirmSendMessage(attach, result?.conversationId);
 
               setLoading(false);
@@ -413,6 +417,14 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
 
     // 设置应用智能体详情
     handleSetAppAgentDetail(result);
+
+    // 同步已试用次数
+    if (
+      result?.calledTrialCount &&
+      result?.calledTrialCount > localCalledTrialCount
+    ) {
+      syncCalledTrialCountFromAgent(result);
+    }
     handleOpenPreview(result);
     setConversationId(result?.conversationId || null);
     // 会话问题建议
@@ -596,6 +608,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       // 模型ID
       modelId: modelId || selectedModelId || otherModelId,
     };
+
+    incrementCalledTrialCount();
 
     confirmSendMessage(attach);
   };
@@ -989,7 +1003,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          calledTrialCount={agentDetail?.calledTrialCount}
+          calledTrialCount={localCalledTrialCount}
           trialCount={agentDetail?.trialCount}
           isNeedSubscription={
             agentDetail?.paymentRequired && !agentDetail?.subscribed

@@ -12,7 +12,7 @@ const { Text } = Typography;
 interface CreditsBreakdownProps {
   summary?: CreditSummaryInfo;
   onAddPurchase: () => void;
-  app?: boolean;
+  onViewCreditRecords?: () => void;
 }
 
 /**
@@ -21,7 +21,7 @@ interface CreditsBreakdownProps {
 const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
   summary,
   onAddPurchase,
-  app,
+  onViewCreditRecords,
 }) => {
   return (
     <div className={cx(styles['credits-breakdown'])}>
@@ -32,11 +32,13 @@ const CreditsBreakdown: React.FC<CreditsBreakdownProps> = ({
           </span>
           <span
             className={cx(styles['credits-detail-link'])}
-            onClick={() =>
-              history.push(
-                app ? `/app/credit-records` : '/more-page/credit-records',
-              )
-            }
+            onClick={() => {
+              if (onViewCreditRecords) {
+                onViewCreditRecords();
+              } else {
+                history.push('/more-page/credit-records');
+              }
+            }}
           >
             {dict('PC.Pages.MorePage.MySubscriptions.detail')}
           </span>
