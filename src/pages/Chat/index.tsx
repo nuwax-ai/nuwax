@@ -744,7 +744,11 @@ const Chat: React.FC = () => {
         );
       }
     } catch (error: any) {
-      message.error(error.message || t('PC.Pages.Chat.clearAndCreateFailed'));
+      const errorMsg =
+        error?.message ||
+        (typeof error === 'string' ? error : null) ||
+        t('PC.Pages.Chat.clearAndCreateFailed');
+      message.error(errorMsg);
       setClearLoading(false);
       setIsLoadingOtherInterface(false);
     }

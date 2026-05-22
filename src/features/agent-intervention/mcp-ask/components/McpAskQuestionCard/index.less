@@ -4,9 +4,16 @@
 
 .shell {
   .interventionDockShell();
+
+  display: flex;
+  flex-direction: column;
+  height: 420px;
+  max-height: 420px;
+  overflow: visible;
 }
 
 .header {
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   gap: @paddingSm;
@@ -67,6 +74,7 @@
 }
 
 .wizardBlock {
+  flex-shrink: 0;
   padding: @paddingSm @padding 0;
 }
 
@@ -105,7 +113,12 @@
 }
 
 .formSurface {
+  flex: 1;
+  min-height: 0;
   padding: @paddingSm @padding;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .form {
@@ -129,6 +142,7 @@
 }
 
 .footer {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
