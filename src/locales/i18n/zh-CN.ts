@@ -3252,7 +3252,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess": "知识库删除成功",
   "PC.Pages.SpaceLibrary.Index.modelDeleteSuccess": "模型删除成功",
   "PC.Pages.SpaceLibrary.Index.noResults": "未能找到相关结果",
-  "PC.Pages.SpaceLibrary.Index.pageTitle": "组件库",
+  "PC.Pages.SpaceLibrary.Index.pageTitle": "组件资源",
   "PC.Pages.SpaceLibrary.Index.pluginCopySuccess": "插件复制成功",
   "PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess": "插件删除成功",
   "PC.Pages.SpaceLibrary.Index.searchComponent": "搜索组件",

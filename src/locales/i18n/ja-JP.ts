@@ -3125,7 +3125,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess": "ナレッジベースは正常に削除されました",
   "PC.Pages.SpaceLibrary.Index.modelDeleteSuccess": "モデルは正常に削除されました",
   "PC.Pages.SpaceLibrary.Index.noResults": "関連する結果が見つかりませんでした",
-  "PC.Pages.SpaceLibrary.Index.pageTitle": "コンポーネントライブラリ",
+  "PC.Pages.SpaceLibrary.Index.pageTitle": "コンポーネントリソース",
   "PC.Pages.SpaceLibrary.Index.pluginCopySuccess": "プラグインが正常にコピーされました",
   "PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess": "プラグインは正常に削除されました",
   "PC.Pages.SpaceLibrary.Index.searchComponent": "コンポーネントの検索",
