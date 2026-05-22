@@ -2700,7 +2700,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.selectAll": "Select All Permissions",
   "PC.Pages.MorePage.ApiKeyPermission.title": "Permission Config - {0}",
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "API Permissions",
-  "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "Model Permissions",
+  "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "System Models",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "No models defined",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "My Subscriptions",
   "PC.Pages.MorePage.MySubscriptions.cancelRenewal": "Cancel Renewal",

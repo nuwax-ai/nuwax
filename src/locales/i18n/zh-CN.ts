@@ -2700,7 +2700,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.ApiKeyPermission.selectAll": "全选所有权限",
   "PC.Pages.MorePage.ApiKeyPermission.title": "权限配置 - {0}",
   "PC.Pages.MorePage.ApiKeyPermission.apiPermission": "接口权限",
-  "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "模型权限",
+  "PC.Pages.MorePage.ApiKeyPermission.modelPermission": "系统模型",
   "PC.Pages.MorePage.ApiKeyPermission.noModelDefs": "暂无模型定义",
   "PC.Pages.MorePage.MySubscriptions.pageTitle": "我的订阅",
   "PC.Pages.MorePage.MySubscriptions.cancelRenewal": "取消续订",
