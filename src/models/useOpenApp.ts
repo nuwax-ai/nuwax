@@ -30,6 +30,8 @@ const useOpenApp = () => {
   const [localCalledTrialCount, setLocalCalledTrialCount] = useState<number>(0);
   /** 当前智能体可试用总次数，用于递增上限 */
   const trialCountTotalRef = useRef<number>(0);
+  /** localCalledTrialCount 所属的智能体 ID，切换智能体时丢弃旧缓存 */
+  const localCalledTrialAgentIdRef = useRef<number | null>(null);
 
   // 状态管理
   const { setIsMobile } = useModel('layout');
@@ -102,34 +104,44 @@ const useOpenApp = () => {
   }, []);
 
   /** 智能体切换时从接口初始化已试用次数，同智能体不重复覆盖 */
-  const syncCalledTrialCountFromAgent = useCallback(
-    (agent: AgentDetailDto) => {
-      /**
-       * 计算已试用次数, 取最大值(因为从智能体主页跳转过来时，已试用次数可能已经递增了，
-       * 但是后端接口返回的数据此时还没更新，因为进入页面立马就会弹窗，所以需要取最大值, 在跳转前就已经递增了)
-       */
-      const _calledTrialCount = Math.max(
-        agent.calledTrialCount ?? 0,
-        localCalledTrialCount,
+  const syncCalledTrialCountFromAgent = useCallback((agent: AgentDetailDto) => {
+    const trialCount = agent.trialCount ?? 0;
+    trialCountTotalRef.current = trialCount;
+
+    // 切换至不同智能体：丢弃本地缓存，直接使用后端数据
+    if (localCalledTrialAgentIdRef.current !== agent.agentId) {
+      setLocalCalledTrialCount(
+        Math.min(agent.calledTrialCount ?? 0, trialCount),
       );
+      localCalledTrialAgentIdRef.current = agent.agentId;
+      return;
+    }
+
+    /**
+     * 计算已试用次数, 取最大值(因为从智能体主页跳转过来时，已试用次数可能已经递增了，
+     * 但是后端接口返回的数据此时还没更新，因为进入页面立马就会弹窗，所以需要取最大值, 在跳转前就已经递增了)
+     */
+    setLocalCalledTrialCount((prev) => {
+      const _calledTrialCount = Math.max(agent.calledTrialCount ?? 0, prev);
 
       /**
        * 此处取最小值，因为智能体详情页面、聊天页面都没有做数据清空操作，当进入不同智能体时，之前的数据依旧存在
        * 可能大约此时智能体接口返回的数据，所以需要取最小值，避免已使用数据超过可试用总次数
        * 重要：之所以离开页面没有做清空操作，是因为独立会话不同页面间切换页面时，需要保持数据
        */
-      const minCalledTrialCount = Math.min(
-        _calledTrialCount,
-        agent.trialCount ?? 0,
-      );
-      setLocalCalledTrialCount(minCalledTrialCount);
-      trialCountTotalRef.current = agent.trialCount ?? 0;
-    },
-    [localCalledTrialCount],
-  );
+      return Math.min(_calledTrialCount, trialCount);
+    });
+    localCalledTrialAgentIdRef.current = agent.agentId;
+  }, []);
 
   /** 用户发送消息后已试用次数 +1，不超过可试用总次数 */
   const incrementCalledTrialCount = useCallback(() => {
+    if (
+      appAgentDetail?.agentId !== null &&
+      appAgentDetail?.agentId !== undefined
+    ) {
+      localCalledTrialAgentIdRef.current = appAgentDetail.agentId;
+    }
     setLocalCalledTrialCount((prev) => {
       const max = trialCountTotalRef.current;
       if (max <= 0) {
@@ -137,7 +149,7 @@ const useOpenApp = () => {
       }
       return Math.min(prev + 1, max);
     });
-  }, []);
+  }, [appAgentDetail?.agentId]);
 
   // 设置应用智能体详情
   const handleSetAppAgentDetail = (info: AgentDetailDto) => {
@@ -150,6 +162,7 @@ const useOpenApp = () => {
   const clearCalledTrialCount = useCallback(() => {
     setLocalCalledTrialCount(0);
     trialCountTotalRef.current = 0;
+    localCalledTrialAgentIdRef.current = null;
   }, []);
 
   // 创建应用智能体新会话

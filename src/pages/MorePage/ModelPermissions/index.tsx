@@ -9,7 +9,10 @@ import {
   apiGetMyModels,
   type MyModelPermissionsTab,
 } from '@/services/modelConfig';
-import { ModelUsageScenarioEnum } from '@/types/enums/modelConfig';
+import {
+  ModelApiProtocolEnum,
+  ModelUsageScenarioEnum,
+} from '@/types/enums/modelConfig';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type {
@@ -18,7 +21,7 @@ import type {
   ParamsType,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message, Segmented, Typography } from 'antd';
+import { Button, message, Segmented, Tooltip, Typography } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel, useSearchParams } from 'umi';
 import styles from './index.less';
@@ -71,6 +74,24 @@ const resolveModelExternalApiUrl = (
     return '';
   }
   return `${baseModelApiUrl}/${modelId}`;
+};
+
+/**
+ * 解析可复制的外部 OpenAPI 地址
+ * OpenAI 协议需在基础地址后追加 /v1，其他协议保持原样
+ */
+const resolveCopyableInterfaceUrl = (
+  record: ModelConfigDto,
+  baseModelApiUrl: string,
+): string => {
+  const url = resolveModelExternalApiUrl(record, baseModelApiUrl);
+  if (!url) {
+    return '';
+  }
+  if (record.apiProtocol === ModelApiProtocolEnum.OpenAI) {
+    return url.endsWith('/v1') ? url : `${url}/v1`;
+  }
+  return url;
 };
 
 /** 模型是否支持外部 OpenAPI 调用 */
@@ -159,7 +180,7 @@ const ModelPermissions: React.FC = () => {
   /** 复制模型外部 OpenAPI 接口地址到剪贴板 */
   const handleCopyInterfaceAddress = useCallback(
     (record: ModelConfigDto) => {
-      const url = resolveModelExternalApiUrl(
+      const url = resolveCopyableInterfaceUrl(
         record,
         tenantConfigInfo?.baseModelApiUrl,
       );
@@ -243,14 +264,23 @@ const ModelPermissions: React.FC = () => {
           if (!supportsExternalOpenApi(record)) {
             return dict('PC.Pages.ModelPermissions.notSupported');
           }
+          const interfaceUrl = resolveCopyableInterfaceUrl(
+            record,
+            tenantConfigInfo?.baseModelApiUrl ?? '',
+          );
+          if (!interfaceUrl) {
+            return '-';
+          }
           return (
-            <Button
-              type="link"
-              className={styles['interface-address-btn']}
-              onClick={() => handleCopyInterfaceAddress(record)}
-            >
-              {dict('PC.Pages.ModelPermissions.copyInterface')}
-            </Button>
+            <Tooltip title={interfaceUrl}>
+              <Button
+                type="link"
+                className={styles['interface-address-btn']}
+                onClick={() => handleCopyInterfaceAddress(record)}
+              >
+                {dict('PC.Pages.ModelPermissions.copyInterface')}
+              </Button>
+            </Tooltip>
           );
         },
       },
@@ -269,7 +299,12 @@ const ModelPermissions: React.FC = () => {
         render: (_, record) => renderPricingCell(record.pricing),
       },
     ],
-    [capabilityTypeLabelMap, handleCopyInterfaceAddress, handleCopyModelId],
+    [
+      capabilityTypeLabelMap,
+      handleCopyInterfaceAddress,
+      handleCopyModelId,
+      tenantConfigInfo?.baseModelApiUrl,
+    ],
   );
 
   /**
