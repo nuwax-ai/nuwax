@@ -119,6 +119,16 @@
     var sp = new URLSearchParams(window.location.search);
     var orderId = sp.get('orderId');
     var returnUrl = sp.get('returnUrl') || sp.get('callback');
+    
+    // 巧妙防御：若 returnUrl 存在且不包含 '#'，但当前中转页却带有 hash
+    // 说明因重定向自动解码，导致 hash 段被浏览器误解析为中转页自身的 hash 了，必须进行缝合复原
+    if (returnUrl && returnUrl.indexOf('#') === -1 && window.location.hash) {
+      var h = window.location.hash;
+      // 移除可能被误吞到 hash 段中的 &token=xxx 或 ?token=xxx 参数，保持回跳 URL 绝对洁净
+      h = h.replace(/([&?])token=[^&]*/g, '');
+      returnUrl = returnUrl + h;
+    }
+
     var passthrough = {};
     sp.forEach(function (v, k) {
       if (!RESERVED[k]) passthrough[k] = v;
@@ -146,16 +156,41 @@
   }
 
   function buildFinalUrl(returnUrl, passthrough, extra) {
-    var u = new URL(returnUrl);
-    Object.keys(passthrough || {}).forEach(function (k) {
-      u.searchParams.set(k, passthrough[k]);
-    });
-    if (extra) {
-      Object.keys(extra).forEach(function (k) {
-        u.searchParams.set(k, extra[k]);
+    var hashIndex = returnUrl.indexOf('#');
+    if (hashIndex === -1) {
+      var u = new URL(returnUrl);
+      Object.keys(passthrough || {}).forEach(function (k) {
+        u.searchParams.set(k, passthrough[k]);
       });
+      if (extra) {
+        Object.keys(extra).forEach(function (k) {
+          u.searchParams.set(k, extra[k]);
+        });
+      }
+      return u.href;
+    } else {
+      var basePart = returnUrl.substring(0, hashIndex);
+      var hashPart = returnUrl.substring(hashIndex);
+      var qIndex = hashPart.indexOf('?');
+      var hashPath = hashPart;
+      var hashQuery = '';
+      if (qIndex !== -1) {
+        hashPath = hashPart.substring(0, qIndex);
+        hashQuery = hashPart.substring(qIndex + 1);
+      }
+      var sp = new URLSearchParams(hashQuery);
+      Object.keys(passthrough || {}).forEach(function (k) {
+        sp.set(k, passthrough[k]);
+      });
+      if (extra) {
+        Object.keys(extra).forEach(function (k) {
+          sp.set(k, extra[k]);
+        });
+      }
+      var newHashQuery = sp.toString();
+      var finalHash = hashPath + (newHashQuery ? '?' + newHashQuery : '');
+      return basePart + finalHash;
     }
-    return u.href;
   }
 
   function showError(title, sub, showBtn) {
@@ -180,7 +215,15 @@
     
     var headers = { Accept: 'application/json' };
     if (isDev) {
-      var token = localStorage.getItem('ACCESS_TOKEN') || '';
+      var sp = new URLSearchParams(window.location.search);
+      var token = localStorage.getItem('ACCESS_TOKEN') || sp.get('token') || '';
+      // 容错提取：若 token 因重定向解码被浏览器误吞到了 hash 中，尝试通过正则从 hash 中安全提取
+      if (!token && window.location.hash) {
+        var match = window.location.hash.match(/[&?]token=([^&]*)/);
+        if (match) {
+          token = decodeURIComponent(match[1]);
+        }
+      }
       if (token) {
         headers['Authorization'] = 'Bearer ' + token;
       }
