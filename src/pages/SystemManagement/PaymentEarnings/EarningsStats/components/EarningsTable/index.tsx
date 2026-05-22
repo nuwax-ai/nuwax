@@ -14,6 +14,16 @@ interface EarningsTableProps {
   onStatsChange?: (data: any) => void;
 }
 
+const getDeveloperName = (record: DailyRevenueItem) => {
+  const nick = record.nickName?.trim();
+  if (nick) return nick;
+
+  const user = record.userName?.trim();
+  if (user) return user;
+
+  return `-`;
+};
+
 const EarningsTable: React.FC<EarningsTableProps> = ({
   month,
   searchTrigger,
@@ -44,9 +54,7 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
       key: 'userName',
       search: false,
       render: (_, record) => (
-        <span style={{ fontWeight: 500 }}>
-          {record.nickName || record.userName || '-'}
-        </span>
+        <span style={{ fontWeight: 500 }}>{getDeveloperName(record)}</span>
       ),
     },
     {
@@ -93,9 +101,7 @@ const EarningsTable: React.FC<EarningsTableProps> = ({
                 history.push(
                   `/system/payment-earnings/earnings-detail?developerId=${
                     r.userId
-                  }&developerName=${encodeURIComponent(
-                    r.nickName || r.userName || '',
-                  )}`,
+                  }&developerName=${encodeURIComponent(getDeveloperName(r))}`,
                 ),
             },
           ]}

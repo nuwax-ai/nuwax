@@ -4653,6 +4653,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Routes.menuPermission": "菜單權限",
   "PC.Routes.morePage": "更多頁面",
   "PC.Routes.usageStats": "用量統計",
+  "PC.Routes.modelPermissions": "模型權限",
   "PC.Routes.permissionResources": "權限資源",
   "PC.Routes.publicModelManagement": "公共模型管理",
   "PC.Routes.modelMonitor": "模型監控",

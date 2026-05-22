@@ -4661,6 +4661,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Routes.menuPermission": "メニュー権限",
   "PC.Routes.morePage": "さらに多くのページ",
   "PC.Routes.usageStats": "使用量統計",
+  "PC.Routes.modelPermissions": "モデル権限",
   "PC.Routes.permissionResources": "権限リソース",
   "PC.Routes.publicModelManagement": "パブリックモデル管理",
   "PC.Routes.modelMonitor": "モデルモニター",

@@ -76,6 +76,7 @@ export interface SystemUserListParams extends SystemPaginationParams {
   queryFilter: {
     role?: string;
     userName?: string;
+    id?: number;
   };
 }
 
