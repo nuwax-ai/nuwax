@@ -4675,6 +4675,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ModelPermissions.colPrice": "價格",
   "PC.Pages.ModelPermissions.notSupported": "不支援",
   "PC.Pages.ModelPermissions.interfaceAddress": "介面地址",
+  "PC.Pages.ModelPermissions.copyInterface": "複製接口",
   "PC.Pages.ModelPermissions.interfaceAddressCopied": "介面地址已複製",
   "PC.Pages.ModelPermissions.modelIdCopied": "模型標識已複製",
   "PC.Routes.permissionResources": "許可權資源",

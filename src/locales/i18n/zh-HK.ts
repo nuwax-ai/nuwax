@@ -4673,6 +4673,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.ModelPermissions.colPrice": "價格",
   "PC.Pages.ModelPermissions.notSupported": "不支援",
   "PC.Pages.ModelPermissions.interfaceAddress": "接口地址",
+  "PC.Pages.ModelPermissions.copyInterface": "複製接口",
   "PC.Pages.ModelPermissions.interfaceAddressCopied": "接口地址已複製",
   "PC.Pages.ModelPermissions.modelIdCopied": "模型標識已複製",
   "PC.Routes.permissionResources": "權限資源",

@@ -4866,6 +4866,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ModelPermissions.colPrice": "Price",
   "PC.Pages.ModelPermissions.notSupported": "Not supported",
   "PC.Pages.ModelPermissions.interfaceAddress": "API URL",
+  "PC.Pages.ModelPermissions.copyInterface": "Copy API",
   "PC.Pages.ModelPermissions.interfaceAddressCopied": "API URL copied",
   "PC.Pages.ModelPermissions.modelIdCopied": "Model ID copied",
   "PC.Routes.permissionResources": "Permission Resources",

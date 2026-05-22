@@ -4681,6 +4681,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ModelPermissions.colPrice": "価格",
   "PC.Pages.ModelPermissions.notSupported": "非対応",
   "PC.Pages.ModelPermissions.interfaceAddress": "API URL",
+  "PC.Pages.ModelPermissions.copyInterface": "APIをコピー",
   "PC.Pages.ModelPermissions.interfaceAddressCopied": "API URLをコピーしました",
   "PC.Pages.ModelPermissions.modelIdCopied": "モデルIDをコピーしました",
   "PC.Routes.permissionResources": "権限リソース",
