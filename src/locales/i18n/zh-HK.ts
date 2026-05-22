@@ -3119,7 +3119,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess": "知識庫刪除成功",
   "PC.Pages.SpaceLibrary.Index.modelDeleteSuccess": "模型刪除成功",
   "PC.Pages.SpaceLibrary.Index.noResults": "未能找到相關結果",
-  "PC.Pages.SpaceLibrary.Index.pageTitle": "組件庫",
+  "PC.Pages.SpaceLibrary.Index.pageTitle": "組件資源",
   "PC.Pages.SpaceLibrary.Index.pluginCopySuccess": "插件複製成功",
   "PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess": "插件刪除成功",
   "PC.Pages.SpaceLibrary.Index.searchComponent": "搜索組件",
