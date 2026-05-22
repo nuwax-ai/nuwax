@@ -106,7 +106,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setOpenPaymentModal,
     incrementCalledTrialCount,
     localCalledTrialCount,
-    syncCalledTrialCountFromAgent,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -418,13 +417,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 设置应用智能体详情
     handleSetAppAgentDetail(result);
 
-    // 同步已试用次数
-    if (
-      result?.calledTrialCount &&
-      result?.calledTrialCount > localCalledTrialCount
-    ) {
-      syncCalledTrialCountFromAgent(result);
-    }
     handleOpenPreview(result);
     setConversationId(result?.conversationId || null);
     // 会话问题建议
