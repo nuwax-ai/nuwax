@@ -1187,6 +1187,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Hooks.UseRestartDevServer.restartFailed": "重启开发服务器失败",
   "PC.Hooks.UseSendCode.codeSent": "验证码已发送",
   "PC.Hooks.UseTryRun.reconfigureParams": "请重新配置入参,添加子级",
+  "PC.Hooks.UseSubscription.createOrderFailed": "创建订阅订单失败",
+  "PC.Hooks.UseSubscription.getCashierUrlFailed": "获取收银台地址失败",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu": "收起菜单",
   "PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu": "展开菜单",
   "PC.Layouts.DynamicMenusLayout.ConversationItem.executing": "执行中",

@@ -40,7 +40,7 @@ export const useSubscriptionPurchase = () => {
         const data = res?.data || res;
         const orderId = data?.id;
         if (orderId) {
-          getCashierUrl(orderId);
+          getCashierUrl({ orderId });
         } else {
           message.error(
             dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
