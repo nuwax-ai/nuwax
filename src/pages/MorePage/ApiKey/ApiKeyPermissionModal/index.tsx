@@ -83,7 +83,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     try {
       const [apiRes, modelRes] = await Promise.all([
         apiGetOpenApiDefinitions(),
-        apiGetMyModels({ tab: 'System' }),
+        apiGetMyModels('System'),
       ]);
       if (apiRes.success) {
         setTreeData(apiRes.data || []);
