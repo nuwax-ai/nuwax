@@ -1,4 +1,4 @@
-// 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
+// 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Multi, Audio, Video, Other
 export enum ModelTypeEnum {
   Completions = 'Completions',
   Chat = 'Chat',
@@ -7,6 +7,7 @@ export enum ModelTypeEnum {
   Embeddings = 'Embeddings',
   Multi = 'Multi',
   Audio = 'Audio',
+  Video = 'Video',
   Other = 'Other',
 }
 

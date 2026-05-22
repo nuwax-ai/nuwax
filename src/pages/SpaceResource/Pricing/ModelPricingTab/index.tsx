@@ -1,9 +1,10 @@
+import ModelPriceTierList from '@/components/business-component/ModelPriceTierList';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Form, Switch, Tag, message } from 'antd';
+import { Button, Form, Switch, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {
@@ -18,7 +19,6 @@ import {
   ToolPricingTargetType,
 } from '../../types/resource';
 import ModelPricingModal from './ModelPricingModal';
-import styles from './index.less';
 
 // 定价类型标签映射
 const PRICING_TYPE_LABEL_MAP: Record<ResourcePricingType, string> = {
@@ -203,39 +203,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
       key: 'tiers',
       search: false,
       render: (_, record) => (
-        <div className={styles['model-tier-list']}>
-          {/* 模型阶梯价格配置 */}
-          {(record.modelPriceTiers || []).map((tier, index) => (
-            <Tag key={index} className={styles['model-tier-item']}>
-              {/* 上下文长度 */}
-              <span className={styles['model-tier-context']}>
-                {`≤${tier.contextLength}K`}
-              </span>
-              <span className={styles['model-tier-separator']}>|</span>
-              {/* 输入价格 */}
-              <span className={styles['model-tier-price']}>
-                {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
-                {tier.inputPrice}
-              </span>
-              <span className={styles['model-tier-separator']}>|</span>
-              {/* 输出价格 */}
-              <span className={styles['model-tier-price']}>
-                {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
-                {tier.outputPrice}
-              </span>
-              {/* 缓存价格 */}
-              {tier.cachePrice > 0 && (
-                <>
-                  <span className={styles['model-tier-separator']}>|</span>
-                  <span className={styles['model-tier-cache-price']}>
-                    {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
-                    {tier.cachePrice}
-                  </span>
-                </>
-              )}
-            </Tag>
-          ))}
-        </div>
+        <ModelPriceTierList tiers={record.modelPriceTiers} />
       ),
     },
     // 计费开关
