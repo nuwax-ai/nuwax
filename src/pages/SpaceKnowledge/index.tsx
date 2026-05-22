@@ -173,11 +173,12 @@ const SpaceKnowledge: React.FC = () => {
   };
 
   // 加载知识图谱列表
-  const handleLoadGraphList = async () => {
+  const handleLoadGraphList = async (searchName?: string) => {
     setLoadingGraph(true);
     try {
       const response = await apiKnowledgeTripleList({
         knowledgeId: knowledgeId,
+        name: searchName,
       });
       if (response.code === SUCCESS_CODE && response.data) {
         // 直接使用返回的数据
@@ -558,6 +559,11 @@ const SpaceKnowledge: React.FC = () => {
     }
   };
 
+  // 搜索知识图谱文档
+  const handleGraphSearch = (keyword: string) => {
+    handleLoadGraphList(keyword || undefined);
+  };
+
   // 查看全部知识图谱
   const handleViewAllGraphs = async () => {
     try {
@@ -570,8 +576,6 @@ const SpaceKnowledge: React.FC = () => {
         fileType: 'all',
         tripleStatus: 2,
       });
-      // 重新加载知识图谱列表数据
-      await handleLoadGraphList();
     } catch (error) {
       console.error('查看全部知识图谱失败:', error);
       message.error(dict('PC.Pages.SpaceKnowledge.Index.viewAllGraphsFailed'));
@@ -602,6 +606,7 @@ const SpaceKnowledge: React.FC = () => {
             onToggleGraph={handleToggleGraph}
             onDelete={handleGraphDelete}
             onGenerateGraph={handleGenerateGraph}
+            onSearch={handleGraphSearch}
           />
         </div>
       );
