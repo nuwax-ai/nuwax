@@ -1,63 +1,79 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
-@import '../../../components/intervention-dock-shell.less';
 
 .card {
-  margin-top: @paddingSm;
-  padding: @paddingSm @padding;
-  border: @lineWidth solid @colorBorderSecondary;
-  border-radius: @borderRadius;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 14px;
   background: @colorBgContainer;
+  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
+  transition: box-shadow 0.2s ease;
 }
 
-/* 固定在会话输入框上方：布局重置，外壳由 dockShellClassName 统一 */
+.card:hover {
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 8%),
+    0 2px 4px -2px rgba(0, 0, 0, 5%);
+}
+
+/* ─── Docked layout ─────────────────────────────────── */
 .cardDocked {
-  margin-top: 0;
-  padding: 0;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+
+  .header {
+    border-radius: 14px 14px 0 0;
+  }
 
   .actions {
-    width: 100%;
-    box-sizing: border-box;
+    border-radius: 0 0 14px 14px;
   }
 }
 
+/* ─── Header ─────────────────────────────────────────── */
 .header {
+  flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
-  gap: @paddingSm;
-  padding: @paddingSm @padding @paddingXs;
-  border-bottom: 1px solid @colorBorderSecondary;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 6%);
   background: linear-gradient(
     180deg,
-    @colorPrimaryBg 0%,
+    rgba(@colorPrimary, 0.06) 0%,
     @colorBgContainer 100%
   );
 }
 
 .card:not(.cardDocked) .header {
   align-items: center;
-  padding: 0;
+  padding: 10px 14px;
   border-bottom: none;
   background: transparent;
 }
 
 .iconWrap {
-  display: flex;
   flex-shrink: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: @borderRadiusLg;
-  background: @colorPrimaryBg;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(@colorPrimary, 0.1);
   color: @colorPrimary;
-  font-size: 18px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .icon {
   flex-shrink: 0;
   color: @colorPrimary;
-  font-size: @fontSizeLg;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .headerMain {
@@ -67,18 +83,21 @@
 
 .eyebrow {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   color: @colorPrimary;
-  font-size: @fontSizeSm;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .title {
   flex: 1;
   min-width: 0;
   color: @colorTextBase;
-  font-size: @fontSize;
+  font-size: 13px;
+  font-weight: 600;
   line-height: @lineHeight;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,71 +106,87 @@
 
 .cardDocked .title {
   white-space: normal;
+  -webkit-line-clamp: 2;
+  display: box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .kindTag,
 .statusTag {
   flex-shrink: 0;
+  align-self: flex-start;
   margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
+/* ─── Body / Actions ─────────────────────────────────── */
 .body {
-  padding: @paddingSm @padding;
-}
-
-.actions {
-  padding: @paddingXs @padding @paddingSm;
-  border-top: 1px solid @colorBorderSecondary;
-  background: @WHITE01;
+  padding: 0;
 }
 
 .card:not(.cardDocked) .body {
-  padding: 0;
+  display: none;
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 10px;
+  background: rgba(0, 0, 0, 2%);
 }
 
 .card:not(.cardDocked) .actions {
-  padding: 0;
+  padding: 8px 14px;
   border-top: none;
   background: transparent;
 }
 
-.error {
-  display: block;
-  padding: 0 @padding @paddingXs;
-  font-size: @fontSizeSm;
-}
-
-.card:not(.cardDocked) .error {
-  padding: 0;
-  margin-top: @paddingXs;
-}
-
+/* ─── Buttons ─────────────────────────────────────────── */
 .buttonLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  font-size: 12px;
 }
 
 .shortcutGroup {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .shortcut {
   display: inline-block;
-  min-width: 18px;
-  padding: 0 4px;
-  border: 1px solid @colorBorderSecondary;
-  border-radius: 4px;
-  background: @WHITE01;
+  min-width: 16px;
+  padding: 0 3px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 70%);
   color: @colorTextSecondary;
-  font-size: 11px;
+  font-size: 10px;
   font-family: inherit;
-  line-height: 16px;
+  line-height: 14px;
   text-align: center;
+  pointer-events: none;
 }
 
+/* ─── Error ─────────────────────────────────────────── */
+.error {
+  display: block;
+  padding: 0 14px 8px;
+  font-size: 12px;
+}
+
+.card:not(.cardDocked) .error {
+  padding: 0 14px 6px;
+}
+
+/* ─── Inline message slot (non-docked) ──────────────── */
 .multiCheck {
   display: inline-flex;
   align-items: center;

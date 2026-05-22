@@ -1,9 +1,10 @@
 @import '@/styles/token.less';
+@import '@/styles/color.less';
 
 .optionGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: @paddingXs;
+  gap: 6px;
   width: 100%;
 
   :global {
@@ -11,25 +12,30 @@
     .ant-checkbox-wrapper {
       align-items: center;
       margin: 0;
-      padding: @paddingXs @paddingSm;
-      border: 1px solid @colorBorderSecondary;
-      border-radius: @borderRadius;
+      padding: 5px 10px;
+      border: 1px solid rgba(0, 0, 0, 10%);
+      border-radius: 6px;
       background: @colorBgContainer;
-      transition: border-color 0.2s ease, background 0.2s ease,
-        box-shadow 0.2s ease;
+      color: @colorTextBase;
+      font-size: 12px;
+      line-height: 1.4;
+      transition: border-color 0.15s ease, background 0.15s ease,
+        box-shadow 0.15s ease, color 0.15s ease;
     }
 
     .ant-radio-wrapper:hover,
     .ant-checkbox-wrapper:hover {
-      border-color: @colorPrimaryBorder;
-      background: @colorPrimaryBg;
+      border-color: rgba(@colorPrimary, 0.4);
+      background: rgba(@colorPrimary, 0.04);
+      color: @colorTextBase;
     }
 
     .ant-radio-wrapper-checked,
     .ant-checkbox-wrapper-checked {
       border-color: @colorPrimary;
-      background: @colorPrimaryBg;
-      box-shadow: 0 0 0 1px @colorPrimaryBg;
+      background: rgba(@colorPrimary, 0.08);
+      color: @colorPrimary;
+      font-weight: 500;
     }
 
     .ant-radio-wrapper::after,
@@ -40,5 +46,20 @@
 }
 
 .textControl {
-  border-radius: @borderRadius;
+  border-radius: 6px;
+  font-size: 12px;
+
+  :global {
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker {
+      border-radius: 6px !important;
+      font-size: 12px !important;
+    }
+
+    .ant-input-textarea textarea {
+      font-size: 12px !important;
+    }
+  }
 }

@@ -10,9 +10,15 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 10%);
-  border-radius: 20px;
+  overflow: visible;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 14px;
   background: @colorBgContainer;
-  box-shadow: 0 5px 16px -4px rgba(0, 0, 0, 7%);
+  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
+}
+
+/* 与 Chat 页 intervention-dock 配合：内容区占满 dock 宽度 */
+.host {
+  box-sizing: border-box;
+  width: 100%;
 }

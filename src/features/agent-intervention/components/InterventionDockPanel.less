@@ -1,5 +1,4 @@
 @import '@/styles/token.less';
-@import '@/styles/color.less';
 
 .cardSlot {
   display: block;
@@ -9,7 +8,7 @@
   max-width: 100%;
 }
 
-/* 多干预：底边对齐、完全重叠，后方卡片向右上 5px 阶梯偏移 */
+/* ─── 多干预卡片堆叠 ─────────────────────────────── */
 .stackRoot {
   position: relative;
   width: 100%;
@@ -17,21 +16,21 @@
 
 .stackBadge {
   position: absolute;
-  top: 6px;
-  right: 12px;
+  top: 5px;
+  right: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 11px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
   background: @colorPrimary;
   color: @colorTextLightSolid;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 12%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 10%);
   pointer-events: none;
 }
 
@@ -53,13 +52,11 @@
   max-width: 100%;
 }
 
-/* 顶层：底边占位撑开高度，可交互 */
 .stackLayerFront {
   position: relative;
   flex-shrink: 0;
 }
 
-/* 后方：与顶层同宽，translate 做右上偏移，bottom 补偿保持底边对齐 */
 .stackLayerBack {
   position: absolute;
   left: 0;

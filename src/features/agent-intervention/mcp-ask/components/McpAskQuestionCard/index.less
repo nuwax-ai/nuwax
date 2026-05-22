@@ -1,42 +1,50 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
-@import '../../../components/intervention-dock-shell.less';
 
+/* ─── Shell ─────────────────────────────────────────── */
 .shell {
-  .interventionDockShell();
-
   display: flex;
   flex-direction: column;
-  height: 420px;
-  max-height: 420px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 380px;
+  max-height: 380px;
   overflow: visible;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 14px;
+  background: @colorBgContainer;
+  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
 }
 
+/* ─── Header ─────────────────────────────────────────── */
 .header {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
-  gap: @paddingSm;
-  padding: @paddingSm @padding @paddingXs;
-  border-bottom: 1px solid @colorBorderSecondary;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 6%);
   background: linear-gradient(
     180deg,
-    @colorPrimaryBg 0%,
+    rgba(@colorPrimary, 0.06) 0%,
     @colorBgContainer 100%
   );
+  border-radius: 14px 14px 0 0;
 }
 
 .iconWrap {
-  display: flex;
   flex-shrink: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: @borderRadiusLg;
-  background: @colorPrimaryBg;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(@colorPrimary, 0.1);
   color: @colorPrimary;
-  font-size: 18px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .headerMain {
@@ -46,36 +54,47 @@
 
 .eyebrow {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   color: @colorPrimary;
-  font-size: @fontSizeSm;
-  font-weight: 500;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .title {
   display: block;
   color: @colorTextBase;
-  font-size: @fontSize;
+  font-size: 13px;
+  font-weight: 600;
   line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .desc {
   display: block;
-  margin-top: 4px;
-  font-size: @fontSizeSm;
-  line-height: 1.5;
+  margin-top: 2px;
+  font-size: 12px;
+  color: @colorTextSecondary;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .statusTag {
   flex-shrink: 0;
+  align-self: flex-start;
   margin: 2px 0 0;
 }
 
+/* ─── Wizard ─────────────────────────────────────────── */
 .wizardBlock {
   flex-shrink: 0;
-  padding: @paddingSm @padding 0;
+  padding: 8px 14px 0;
 }
 
 .steps {
@@ -83,13 +102,13 @@
 
   :global {
     .ant-steps-item-title {
-      font-size: @fontSizeSm !important;
-      line-height: 1.35 !important;
+      font-size: 12px !important;
+      line-height: 1.3 !important;
     }
 
     .ant-steps-item-description {
-      max-width: 140px;
-      font-size: 12px !important;
+      max-width: 120px;
+      font-size: 11px !important;
     }
 
     .ant-steps-item-process .ant-steps-item-icon {
@@ -100,25 +119,42 @@
 }
 
 .stepCallout {
-  margin-top: @paddingSm;
-  padding: @paddingXs @paddingSm;
-  border-radius: @borderRadius;
-  background: @WHITE01;
-  border: 1px solid @colorBorderSecondary;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 3%);
+  border: 1px solid rgba(0, 0, 0, 6%);
 }
 
 .stepCalloutText {
-  font-size: @fontSizeSm;
-  line-height: 1.5;
+  font-size: 12px;
+  color: @colorTextSecondary;
+  line-height: 1.4;
 }
 
+/* ─── Form Surface (scrollable) ─────────────────────── */
 .formSurface {
   flex: 1;
   min-height: 0;
-  padding: @paddingSm @padding;
+  padding: 10px 14px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 12%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 12%);
+    border-radius: 4px;
+  }
 }
 
 .form {
@@ -126,7 +162,7 @@
 
   :global {
     .ant-form-item {
-      margin-bottom: @paddingSm;
+      margin-bottom: 10px;
     }
 
     .ant-form-item:last-child {
@@ -134,27 +170,36 @@
     }
 
     .ant-form-item-label > label {
-      color: @colorTextBase;
-      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+      font-size: 12px;
       font-weight: 500;
+      padding-bottom: 3px;
+    }
+
+    .ant-form-item-explain-error {
+      font-size: 11px;
+      margin-top: 2px;
     }
   }
 }
 
+/* ─── Footer ─────────────────────────────────────────── */
 .footer {
   flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: @paddingSm;
-  padding: @paddingXs @padding @paddingSm;
-  border-top: 1px solid @colorBorderSecondary;
-  background: @WHITE01;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background: rgba(0, 0, 0, 2%);
+  border-radius: 0 0 14px 14px;
 }
 
 .stepMeta {
-  font-size: @fontSizeSm;
+  font-size: 12px;
+  color: @colorTextSecondary;
 }
 
 .footerActions {
@@ -164,25 +209,26 @@
 .buttonLabel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .shortcut {
   display: inline-block;
-  min-width: 18px;
-  padding: 0 4px;
-  border: 1px solid @colorBorderSecondary;
-  border-radius: 4px;
-  background: @WHITE01;
+  min-width: 16px;
+  padding: 0 3px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 70%);
   color: @colorTextSecondary;
-  font-size: 11px;
+  font-size: 10px;
   font-family: inherit;
-  line-height: 16px;
+  line-height: 14px;
   text-align: center;
+  pointer-events: none;
 }
 
 .error {
   display: block;
-  padding: 0 @padding @paddingXs;
-  font-size: @fontSizeSm;
+  padding: 0 14px 6px;
+  font-size: 12px;
 }
