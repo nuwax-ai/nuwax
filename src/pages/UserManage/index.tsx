@@ -15,6 +15,7 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import { PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
@@ -145,21 +146,8 @@ const UserManage: React.FC = () => {
     (record: SystemUserListInfo): ActionItem<SystemUserListInfo>[] => {
       return [
         {
-          key: 'edit',
-          label: dict('PC.Pages.UserManage.Index.edit'),
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_modify',
-          ),
-          onClick: handleEditUser,
-        },
-        {
           key: 'resetPassword',
           label: dict('PC.Pages.UserManage.Index.resetPassword'),
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_reset',
-          ),
           onClick: handleResetPassword,
         },
         {
@@ -183,12 +171,28 @@ const UserManage: React.FC = () => {
           onClick: handleEnable,
         },
         {
+          key: 'delete',
+          label: dict('PC.Pages.UserManage.Index.delete'),
+          danger: true,
+          confirm: {},
+          onClick: handleDelete,
+        },
+        {
           key: 'auth',
           label: dict('PC.Pages.UserManage.Index.auth'),
           disabled:
             !hasPermissionByMenuCode('user_manage', 'user_manage_bind_role') &&
             !hasPermissionByMenuCode('user_manage', 'user_manage_bind_group'),
           onClick: handleAuth,
+        },
+        {
+          key: 'edit',
+          label: dict('PC.Pages.UserManage.Index.edit'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
+          onClick: handleEditUser,
         },
         {
           key: 'viewMenu',
@@ -208,17 +212,6 @@ const UserManage: React.FC = () => {
           ),
           onClick: handleViewDataPermission,
         },
-        {
-          key: 'delete',
-          label: dict('PC.Pages.UserManage.Index.delete'),
-          danger: true,
-          confirm: {},
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_delete',
-          ),
-          onClick: handleDelete,
-        },
       ];
     },
     [
@@ -235,6 +228,14 @@ const UserManage: React.FC = () => {
   );
 
   const columns: ProColumns<SystemUserListInfo>[] = [
+    {
+      title: dict('PC.Pages.UserManage.Index.userId'),
+      dataIndex: 'id',
+      width: 140,
+      fieldProps: getIntegerOnlyFieldProps(
+        dict('PC.Pages.UserManage.Index.placeholderUserId'),
+      ),
+    },
     {
       title: dict('PC.Pages.UserManage.Index.userName'),
       dataIndex: 'userName',
@@ -322,6 +323,7 @@ const UserManage: React.FC = () => {
   const request = async (params: {
     pageSize?: number;
     current?: number;
+    id?: string;
     userName?: string;
     role?: string;
   }) => {
@@ -329,6 +331,7 @@ const UserManage: React.FC = () => {
       pageNo: params.current || 1,
       pageSize: params.pageSize || 15,
       queryFilter: {
+        id: params.id ? Number(params.id) : undefined,
         role: params.role || undefined,
         userName: params.userName,
       },

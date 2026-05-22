@@ -988,6 +988,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Constants.Library.weightedLeastConn": "加权最少连接",
   "PC.Constants.Library.weightedRoundRobin": "加权轮询",
   "PC.Constants.Library.workflow": "工作流",
+  "PC.Constants.Library.externalApi": "外部API调用",
   "PC.Constants.Mcp.deployed": "已部署",
   "PC.Constants.Mcp.menuOverview": "概览",
   "PC.Constants.Mcp.menuPrompt": "提示词",
@@ -4769,6 +4770,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.UserManage.Index.userFullName": "用户姓名",
   "PC.Pages.UserManage.Index.userManage": "用户管理",
   "PC.Pages.UserManage.Index.userName": "用户名",
+  "PC.Pages.UserManage.Index.userId": "用户ID",
+  "PC.Pages.UserManage.Index.placeholderUserId": "请输入用户ID，仅支持输入整数",
   "PC.Pages.UserManage.Index.viewDataPermission": "查看数据权限",
   "PC.Pages.UserManage.Index.viewMenuResourcePermission": "查看菜单资源权限",
   "PC.Pages.UserManage.MessageSendModal.addMessageUser": "添加接受消息用户",
@@ -5325,6 +5328,7 @@ export const ZH_CN: SystemLangMap = {
 
   // ── 用量统计 ────────────────────────────
   "PC.Routes.usageStats": "用量统计",
+  "PC.Routes.modelPermissions": "模型权限",
   "PC.Pages.UsageStats.pageTitle": "用量统计",
   "PC.Pages.UsageStats.timeRange": "时间范围",
   "PC.Pages.UsageStats.refreshData": "刷新数据",
