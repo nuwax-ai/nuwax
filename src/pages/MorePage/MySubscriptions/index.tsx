@@ -15,7 +15,7 @@ import PurchaseModal from './components/CreditsBreakdown/components/PurchaseModa
 import SubscribedContent from './components/SubscribedContent';
 import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 
-const MySubscriptions: React.FC = () => {
+const MySubscriptions: React.FC<{ app?: boolean }> = ({ app = false }) => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const location = useLocation();
 
@@ -49,7 +49,9 @@ const MySubscriptions: React.FC = () => {
   const refreshAll = () => {
     fetchCreditSummary();
     fetchMySubscription();
-    fetchPackagesData();
+    if (!app) {
+      fetchPackagesData();
+    }
   };
 
   useEffect(() => {
@@ -68,17 +70,20 @@ const MySubscriptions: React.FC = () => {
 
         {/* 积分明细 */}
         <CreditsBreakdown
+          app={app}
           summary={creditsSummary}
           onAddPurchase={() => setPurchaseOpen(true)}
         />
 
         {/* 订阅套餐网格 */}
-        <SubscriptionPlanCards
-          data={packagesData}
-          currentPlanId={currentSub?.planId}
-          endTime={currentSub?.endTime}
-          price={currentSub?.plan?.price}
-        />
+        {!app && (
+          <SubscriptionPlanCards
+            data={packagesData}
+            currentPlanId={currentSub?.planId}
+            endTime={currentSub?.endTime}
+            price={currentSub?.plan?.price}
+          />
+        )}
 
         {/* 已订阅内容 */}
         <SubscribedContent />

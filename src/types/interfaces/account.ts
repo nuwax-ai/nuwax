@@ -27,6 +27,7 @@ export interface ApiKeyInfo {
       key: string;
       rpm: number;
     }[];
+    modelIds?: number[];
   };
   /** 状态 0 停用; 1 启用 */
   status: number;
@@ -67,6 +68,8 @@ export interface ApiKeyUpdateParams {
     key: string;
     rpm: number;
   }[];
+  /** 模型权限配置 */
+  modelIds?: number[];
 }
 
 /**
