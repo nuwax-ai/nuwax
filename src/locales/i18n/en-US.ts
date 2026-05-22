@@ -3225,7 +3225,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.modelType": "Model Type",
   "PC.Pages.SpaceLibrary.CreateModel.modelUpdateSuccess": "Model updated successfully",
   "PC.Pages.SpaceLibrary.CreateModel.no": "No",
-  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "Enable Reasoning",
+  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "Enable Thinking Mode",
   "PC.Pages.SpaceLibrary.CreateModel.selectApiProtocol": "Please select a model API protocol",
   "PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy": "Please select a call strategy",
   "PC.Pages.SpaceLibrary.CreateModel.selectFunctionCallSupport": "Select function call support",

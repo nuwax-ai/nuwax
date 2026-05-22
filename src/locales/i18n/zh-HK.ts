@@ -3092,7 +3092,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.modelType": "模型類型",
   "PC.Pages.SpaceLibrary.CreateModel.modelUpdateSuccess": "模型已更新成功",
   "PC.Pages.SpaceLibrary.CreateModel.no": "否",
-  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "开启推理",
+  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "開啟思考模式",
   "PC.Pages.SpaceLibrary.CreateModel.selectApiProtocol": "請選擇模型接口協議",
   "PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy": "請選擇調用策略",
   "PC.Pages.SpaceLibrary.CreateModel.selectFunctionCallSupport": "選擇函數調用支持",

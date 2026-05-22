@@ -3098,7 +3098,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceLibrary.CreateModel.modelType": "モデルタイプ",
   "PC.Pages.SpaceLibrary.CreateModel.modelUpdateSuccess": "モデルが正常に更新されました",
   "PC.Pages.SpaceLibrary.CreateModel.no": "いいえ",
-  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "推論モデル",
+  "PC.Pages.SpaceLibrary.CreateModel.reasoningModel": "思考モードを有効にする",
   "PC.Pages.SpaceLibrary.CreateModel.selectApiProtocol": "モデル API プロトコルを選択してください",
   "PC.Pages.SpaceLibrary.CreateModel.selectCallStrategy": "通話戦略を選択してください",
   "PC.Pages.SpaceLibrary.CreateModel.selectFunctionCallSupport": "関数呼び出しのサポートを選択します",
