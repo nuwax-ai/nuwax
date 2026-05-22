@@ -29,10 +29,10 @@ const CreditsBalance: React.FC = () => {
     let intervalId: NodeJS.Timeout;
     if (showCredits) {
       fetchCredits();
-      // 增加定时刷新，每 15 秒刷新一次
+      // 增加定时刷新，每 1 分钟刷新一次
       intervalId = setInterval(() => {
         fetchCredits();
-      }, 15000);
+      }, 60000);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
