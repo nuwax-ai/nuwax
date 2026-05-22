@@ -1,3 +1,4 @@
+import { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import {
   AccessControlEnum,
   MessageScopeEnum,
@@ -12,7 +13,16 @@ import {
   KnowledgeDataTypeEnum,
   KnowledgePubStatusEnum,
 } from '../enums/library';
-import { ModelCapabilityTypeEnum } from '../enums/modelConfig';
+import {
+  ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
+  ModelFunctionCallEnum,
+  ModelNetworkTypeEnum,
+  ModelScopeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
+  ModelUsageScenarioEnum,
+} from '../enums/modelConfig';
 import { PluginPublishScopeEnum } from '../enums/plugin';
 import { ModelComponentStatusEnum } from '../enums/space';
 import { TaskInfo } from './library';
@@ -178,43 +188,38 @@ export interface ModelConfigDto {
   tenantId: number;
   /** 空间ID */
   spaceId: number;
+  /** 提供商ID */
+  pid?: string;
+  /** 提供商名称 */
+  providerName?: string;
   /** 模型生效范围（可用值: Space, Tenant, Global） */
-  scope: 'Space' | 'Tenant' | 'Global';
+  scope: ModelScopeEnum;
   /** 模型名称 */
   name: string;
   /** 模型描述 */
   description: string;
   /** 模型标识 */
   model: string;
-  /** 模型类型（可用值: Completions, Chat, Edits, Images, Embeddings, Audio, Other） */
-  type:
-    | 'Completions'
-    | 'Chat'
-    | 'Edits'
-    | 'Images'
-    | 'Embeddings'
-    | 'Audio'
-    | 'Other';
+  /** 模型类型（可用值: Completions, Chat, Edits, Images, Embeddings, Multi, Audio, Video, Other） */
+  type: ModelTypeEnum;
   /** 模型能力类型（可用值: Text, Image, Audio, Video, TextEmbedding, MultiEmbedding, Reasoning） */
   types: ModelCapabilityTypeEnum[];
   /** 网络类型（可用值: Internet, Intranet） */
-  networkType: 'Internet' | 'Intranet';
+  networkType: ModelNetworkTypeEnum;
   /** 函数调用支持程度（可用值: Unsupported, CallSupported, StreamCallSupported） */
-  functionCall: 'Unsupported' | 'CallSupported' | 'StreamCallSupported';
+  functionCall: ModelFunctionCallEnum;
+  /** 是否是推理模型（0/1） */
+  isReasonModel?: number;
   /** token上限 */
   maxTokens: number;
+  /** 最大上下文长度 */
+  maxContextTokens?: number;
   /** 模型接口协议（可用值: OpenAI, Ollama, Zhipu, Anthropic） */
-  apiProtocol: 'OpenAI' | 'Ollama' | 'Zhipu' | 'Anthropic';
+  apiProtocol: ModelApiProtocolEnum;
   /** API列表 */
   apiInfoList: ApiInfo[];
   /** 接口调用策略（可用值: RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime） */
-  strategy:
-    | 'RoundRobin'
-    | 'WeightedRoundRobin'
-    | 'LeastConnections'
-    | 'WeightedLeastConnections'
-    | 'Random'
-    | 'ResponseTime';
+  strategy: ModelStrategyEnum;
   /** 向量维度 */
   dimension: number;
   /** 修改时间（ISO格式日期字符串） */
@@ -227,6 +232,10 @@ export interface ModelConfigDto {
   accessControl?: AccessControlEnum;
   /** 启用状态（1 启用 / 0 禁用） */
   enabled?: ModelComponentStatusEnum;
+  /** 可用范围 */
+  usageScenarios?: ModelUsageScenarioEnum[];
+  /** 定价信息（对象或展示文案） */
+  pricing?: ResourcePricingConfigInfo | string;
 }
 
 /**
