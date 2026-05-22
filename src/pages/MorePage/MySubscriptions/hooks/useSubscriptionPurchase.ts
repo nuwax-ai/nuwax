@@ -1,3 +1,4 @@
+import { PAYMENT_SETTLEMENT_PATH } from '@/constants/subscription.constants';
 import {
   apiCreateAgentSubscriptionOrder,
   apiGetAgentSubscriptionOrderCashier,
@@ -78,7 +79,7 @@ export const useSubscriptionPurchase = () => {
           const orderId = data?.id;
           if (orderId) {
             const settlementUrl = new URL(
-              '/static/payment-settlement.html',
+              PAYMENT_SETTLEMENT_PATH,
               window.location.origin,
             );
             settlementUrl.searchParams.set('orderId', String(orderId));
@@ -118,7 +119,7 @@ export const useSubscriptionPurchase = () => {
           const orderId = data?.id;
           if (orderId) {
             const settlementUrl = new URL(
-              '/static/payment-settlement.html',
+              PAYMENT_SETTLEMENT_PATH,
               window.location.origin,
             );
             settlementUrl.searchParams.set('orderId', String(orderId));
@@ -179,7 +180,7 @@ export const useSubscriptionPurchase = () => {
     returnUrlRef.current = dynamicReturnUrl || '';
 
     const settlementUrl = new URL(
-      '/static/payment-settlement.html',
+      PAYMENT_SETTLEMENT_PATH,
       window.location.origin,
     );
     settlementUrl.searchParams.set('orderId', String(orderId));
