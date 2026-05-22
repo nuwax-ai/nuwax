@@ -174,8 +174,23 @@
   }
 
   function fetchStatus(orderId) {
-    var url = API + '?orderId=' + encodeURIComponent(orderId);
-    return fetch(url, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } })
+    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.indexOf('192.168.') === 0;
+    var baseUrl = isDev ? 'https://testagent.xspaceagi.com' : '';
+    var url = baseUrl + API + '?orderId=' + encodeURIComponent(orderId);
+    
+    var headers = { Accept: 'application/json' };
+    if (isDev) {
+      var token = localStorage.getItem('ACCESS_TOKEN') || '';
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+    }
+    
+    return fetch(url, { 
+      method: 'GET', 
+      credentials: 'include', 
+      headers: headers 
+    })
       .then(function (r) { return r.json(); });
   }
 
