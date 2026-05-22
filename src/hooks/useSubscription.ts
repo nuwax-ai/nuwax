@@ -1,8 +1,5 @@
-import {
-  apiCreateAgentSubscriptionOrder,
-  apiGetAgentSubscriptionOrderCashier,
-  apiGetAgentSubscriptionPlanList,
-} from '@/pages/EditAgent/services/agent-subscription-plan';
+import { apiGetAgentSubscriptionPlanList } from '@/pages/EditAgent/services/agent-subscription-plan';
+import { useSubscriptionPurchase } from '@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase';
 import { apiQueryToolPricing } from '@/pages/SpaceResource/services/resource';
 import {
   ResourcePricingConfigInfo,
@@ -23,6 +20,8 @@ import { useRequest } from 'umi';
  * 智能体订阅（套餐列表、「我的订阅」当前智能体数据）
  */
 const useSubscription = () => {
+  const { handlePaySubscription } = useSubscriptionPurchase();
+
   // 智能体订阅计划列表
   const [agentSubscriptionPlans, setAgentSubscriptionPlans] = useState<
     SubscriptionPlanInfo[]
@@ -81,36 +80,8 @@ const useSubscription = () => {
       return;
     }
 
-    // 创建订阅订单
-    try {
-      const orderResponse = await apiCreateAgentSubscriptionOrder(plan.id);
-      const orderId = orderResponse?.data?.id;
-      if (!orderId) {
-        message.error('创建订阅订单失败');
-        return;
-      }
-
-      // 获取收银台地址
-      const cashierResponse = await apiGetAgentSubscriptionOrderCashier(
-        orderId,
-      );
-      if (!cashierResponse?.data?.cashierUrl) {
-        message.error('获取收银台地址失败');
-        return;
-      }
-
-      // 打开收银台
-      if (cashierResponse?.data?.cashierUrl) {
-        const returnUrl = encodeURIComponent(window.location.href);
-        const separator = cashierResponse.data.cashierUrl.includes('?')
-          ? '&'
-          : '?';
-        const url = `${cashierResponse.data.cashierUrl}${separator}returnUrl=${returnUrl}`;
-        window.location.href = url;
-      }
-    } catch (error) {
-      console.error('点击套餐卡片失败:', error);
-    }
+    // 统一走支付 Hook
+    handlePaySubscription(plan.id);
   };
 
   // 查询智能体订阅计划列表以及当前智能体我的订阅信息

@@ -142,9 +142,7 @@ const Chat: React.FC = () => {
     openPaymentModal,
     setOpenPaymentModal,
     localCalledTrialCount,
-    syncCalledTrialCountFromAgent,
     incrementCalledTrialCount,
-    clearCalledTrialCount,
   } = useModel('useOpenApp');
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -474,7 +472,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = defaultAgentDetail || conversationInfo?.agent;
+    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
     if (targetAgent) {
       setAgentDetail(targetAgent);
 
@@ -489,15 +487,6 @@ const Chat: React.FC = () => {
       handleOpenPreview(targetAgent);
     }
   }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
-
-  useEffect(() => {
-    if (
-      conversationInfo &&
-      conversationInfo?.agent?.calledTrialCount > localCalledTrialCount
-    ) {
-      syncCalledTrialCountFromAgent(conversationInfo?.agent);
-    }
-  }, [conversationInfo?.agent, localCalledTrialCount]);
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
@@ -685,8 +674,6 @@ const Chat: React.FC = () => {
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
 
       setOpenPaymentModal(false);
-      // 清除已试用次数，避免切换会话时，已试用次数不准确
-      clearCalledTrialCount();
     };
   }, [id]);
 
@@ -1183,7 +1170,7 @@ const Chat: React.FC = () => {
                     icon={
                       <SvgIcon
                         name="icons-nav-wodedingyue"
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 16 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}

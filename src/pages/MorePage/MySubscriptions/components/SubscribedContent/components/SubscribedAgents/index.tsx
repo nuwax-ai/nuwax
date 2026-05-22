@@ -22,7 +22,8 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const SubscribedAgents: React.FC = () => {
-  const { processingId, handlePay } = useSubscriptionPurchase();
+  const { processingId, handlePaySubscription: handlePay } =
+    useSubscriptionPurchase();
   const { data: subData, loading } = useRequest(() =>
     apiGetMySubscription({ bizType: BizTypeEnum.Agent }),
   );

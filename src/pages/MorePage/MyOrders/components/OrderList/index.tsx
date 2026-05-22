@@ -1,5 +1,5 @@
 import { XProTable } from '@/components/ProComponents';
-import { apiGetAgentSubscriptionOrderCashier } from '@/pages/EditAgent/services/agent-subscription-plan';
+import { useSubscriptionPurchase } from '@/pages/MorePage/MySubscriptions/hooks/useSubscriptionPurchase';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMyBillOrders } from '@/services/subscriptionService';
 import {
@@ -10,7 +10,7 @@ import {
 import type { ActionType, FormInstance } from '@ant-design/pro-components';
 import { ProColumns } from '@ant-design/pro-components';
 import { Button, Tag } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 
 const BIZ_TYPE_MAP: Record<string, string> = {
   [BillBizTypeEnum.CREDIT_PURCHASE]: dict(
@@ -85,21 +85,7 @@ const OrderList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
 
-  const [payingId, setPayingId] = useState<string | number | null>(null);
-
-  const handleGoPay = async (id: string | number) => {
-    setPayingId(id);
-    try {
-      const res = await apiGetAgentSubscriptionOrderCashier(id);
-      const d = res?.data || res;
-      if (d?.cashierUrl) {
-        window.open(d.cashierUrl, '_blank');
-      }
-    } catch (err: any) {
-    } finally {
-      setPayingId(null);
-    }
-  };
+  const { processingId, handlePayExistingOrder } = useSubscriptionPurchase();
 
   const actionColumn: ProColumns<BillOrderInfo> = {
     title: dict('PC.Pages.MorePage.MyOrders.colAction'),
@@ -114,10 +100,10 @@ const OrderList: React.FC = () => {
         <Button
           type="link"
           size="small"
-          loading={payingId === record.id}
+          loading={processingId === record.id}
           onClick={(e) => {
             e.stopPropagation();
-            handleGoPay(record.id);
+            handlePayExistingOrder(record.id);
           }}
         >
           {dict('PC.Pages.MorePage.MyOrders.goPay')}

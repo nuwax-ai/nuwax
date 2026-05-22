@@ -1,7 +1,10 @@
+@import '@/styles/token.less';
+
 .model-tier-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 4px;
+  row-gap: 4px;
 }
 
 .model-tier-item {
@@ -9,29 +12,30 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  padding: 2px 8px;
-  font-size: 12px;
+  width: fit-content;
+  padding: 2px @paddingXs;
+  font-size: @fontSizeSm;
   white-space: nowrap;
-  border: 1px solid #d3e4ff;
-  border-radius: 6px;
+  border: 1px solid @colorSplit;
+  border-radius: @borderRadiusOuter;
   background: #eff6ff;
-  color: #5b6472;
+  color: @colorTextSecondary;
 }
 
 .model-tier-context {
-  color: #2563eb;
-  font-weight: 600;
+  color: @colorPrimary;
+  font-weight: @fontWeightStrong;
 }
 
 .model-tier-separator {
-  color: #9ca3af;
+  color: @colorTextQuaternary;
 }
 
 .model-tier-price {
-  color: #475569;
+  color: @colorTextSecondary;
 }
 
 .model-tier-cache-price {
-  color: #0f766e;
-  font-weight: 500;
+  color: @green7;
+  font-weight: 400;
 }

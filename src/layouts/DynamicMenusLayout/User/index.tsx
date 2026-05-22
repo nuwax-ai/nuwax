@@ -3,11 +3,6 @@ import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { redirectToLogin } from '@/utils/router';
-import {
-  CreditCardOutlined,
-  FileTextOutlined,
-  LineChartOutlined,
-} from '@ant-design/icons';
 import { Popover } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import classNames from 'classnames';
@@ -19,9 +14,16 @@ import UserAvatar from './UserAvatar';
 
 const cx = classNames.bind(styles);
 
+type UserAvatarMenuItem = (typeof USER_AVATAR_LIST)[number];
+
+type UserAvatarSubMenuItem = UserAvatarMenuItem & {
+  onClick?: () => void;
+};
+
 interface UserProps {
   isAppDetails?: boolean;
   placement?: TooltipPlacement;
+  subMenus?: UserAvatarSubMenuItem[];
 }
 
 /**
@@ -31,6 +33,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
   children,
   placement = 'rightBottom',
   isAppDetails = false,
+  subMenus = [],
 }) => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const { userInfo } = useModel('userInfo');
@@ -66,30 +69,24 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
 
   const showSubMenus = isAppDetails && isEnableSubscription;
 
-  const menuList = React.useMemo(() => {
+  const menuList = React.useMemo((): UserAvatarSubMenuItem[] => {
     if (!showSubMenus) return USER_AVATAR_LIST;
-    const list = [...USER_AVATAR_LIST];
-    const subMenus = [
-      {
-        type: UserAvatarEnum.My_Subscriptions,
-        icon: <CreditCardOutlined style={{ fontSize: 14 }} />,
-        text: dict('PC.Pages.MorePage.MySubscriptions.pageTitle'),
-      },
-      {
-        type: UserAvatarEnum.My_Orders,
-        icon: <FileTextOutlined style={{ fontSize: 14 }} />,
-        text: dict('PC.Pages.MorePage.MyOrders.pageTitle'),
-      },
-      {
-        type: UserAvatarEnum.Usage_Stats,
-        icon: <LineChartOutlined style={{ fontSize: 14 }} />,
-        text: dict('PC.Pages.UsageStats.pageTitle'),
-      },
-    ];
+    const list: UserAvatarSubMenuItem[] = [...USER_AVATAR_LIST];
+
     // 在倒数第一项（退出登录）前插入这三项
     list.splice(list.length - 1, 0, ...subMenus);
     return list;
-  }, [showSubMenus]);
+  }, [showSubMenus, subMenus]);
+
+  const handleSubMenuClick = (type: UserAvatarEnum) => {
+    const subMenu = subMenus.find((item) => item.type === type);
+    if (subMenu?.onClick) {
+      setOpenAdmin(false);
+      subMenu.onClick();
+      return true;
+    }
+    return false;
+  };
 
   const handlerClick = (type: UserAvatarEnum) => {
     switch (type) {
@@ -101,16 +98,9 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         setOpenSetting(true);
         break;
       case UserAvatarEnum.My_Subscriptions:
-        setOpenAdmin(false);
-        navigate(`/app/my-subscriptions`);
-        break;
       case UserAvatarEnum.My_Orders:
-        setOpenAdmin(false);
-        navigate(`/app/my-orders`);
-        break;
       case UserAvatarEnum.Usage_Stats:
-        setOpenAdmin(false);
-        navigate(`/app/usage-stats`);
+        handleSubMenuClick(type);
         break;
       case UserAvatarEnum.Log_Out:
         setOpenAdmin(false);

@@ -66,7 +66,8 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
     }
     return dict('PC.Pages.MorePage.MySubscriptions.upgradeNow');
   };
-  const { processingId, handlePay: payPlan } = useSubscriptionPurchase();
+  const { processingId, handlePaySubscription: payPlan } =
+    useSubscriptionPurchase();
 
   /**
    * 点击订阅/续费处理函数
