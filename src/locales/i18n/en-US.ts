@@ -4769,6 +4769,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UserManage.Index.userFullName": "Full Name",
   "PC.Pages.UserManage.Index.userManage": "User Mgmt",
   "PC.Pages.UserManage.Index.userName": "Username",
+  "PC.Pages.UserManage.Index.userId": "User ID",
+  "PC.Pages.UserManage.Index.placeholderUserId": "Please enter User ID, integers only",
   "PC.Pages.UserManage.Index.viewDataPermission": "View Data Permissions",
   "PC.Pages.UserManage.Index.viewMenuResourcePermission": "View Menu Permissions",
   "PC.Pages.UserManage.MessageSendModal.addMessageUser": "Add Message Recipients",
