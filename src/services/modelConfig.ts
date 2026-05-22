@@ -83,3 +83,13 @@ export async function apiModelTest(): Promise<
     method: 'GET',
   });
 }
+
+// 查询我的模型权限
+export async function apiGetMyModels(params: {
+  tab: 'System' | 'Space';
+}): Promise<RequestResponse<any[]>> {
+  return request('/api/model/my', {
+    method: 'GET',
+    params,
+  });
+}
