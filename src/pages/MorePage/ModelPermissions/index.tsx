@@ -184,7 +184,6 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colModalities'),
         dataIndex: 'types',
         key: 'types',
-        width: 200,
         hideInSearch: true,
         render: (_, record) => {
           const types = record.types;
@@ -216,7 +215,7 @@ const ModelPermissions: React.FC = () => {
               className={styles['interface-address-btn']}
               onClick={() => handleCopyInterfaceAddress(record)}
             >
-              {dict('PC.Common.Global.copy')}
+              {dict('PC.Pages.ModelPermissions.copyInterface')}
             </Button>
           );
         },

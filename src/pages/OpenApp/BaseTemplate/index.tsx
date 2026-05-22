@@ -584,7 +584,7 @@ const BaseTemplate: React.FC = () => {
               >
                 <SvgIcon
                   name="icons-nav-wodedingyue"
-                  style={{ fontSize: 18 }}
+                  style={{ fontSize: 16 }}
                 />
                 <span className="text-ellipsis">订阅</span>
               </div>
@@ -666,13 +666,11 @@ const BaseTemplate: React.FC = () => {
         )}
 
         {/* 积分相关入口：放到二级导航栏底部固定展示 */}
-        <div className={cx(styles['integral-footer'])}>
-          <CreditsBalance
-            className={styles['integral-footer-balance']}
-            showFooter={false}
-            onClick={() => handleOpenCreditsBalance()}
-          />
-        </div>
+        <CreditsBalance
+          className={styles['integral-footer-balance']}
+          showFooter={false}
+          onClick={() => handleOpenCreditsBalance()}
+        />
 
         {/* 用户区域，固定在底部 */}
         <User isAppDetails={true} placement="topLeft" subMenus={subMenus}>

@@ -1183,7 +1183,7 @@ const Chat: React.FC = () => {
                     icon={
                       <SvgIcon
                         name="icons-nav-wodedingyue"
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 16 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}
