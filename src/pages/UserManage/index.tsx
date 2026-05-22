@@ -146,21 +146,8 @@ const UserManage: React.FC = () => {
     (record: SystemUserListInfo): ActionItem<SystemUserListInfo>[] => {
       return [
         {
-          key: 'edit',
-          label: dict('PC.Pages.UserManage.Index.edit'),
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_modify',
-          ),
-          onClick: handleEditUser,
-        },
-        {
           key: 'resetPassword',
           label: dict('PC.Pages.UserManage.Index.resetPassword'),
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_reset',
-          ),
           onClick: handleResetPassword,
         },
         {
@@ -184,12 +171,28 @@ const UserManage: React.FC = () => {
           onClick: handleEnable,
         },
         {
+          key: 'delete',
+          label: dict('PC.Pages.UserManage.Index.delete'),
+          danger: true,
+          confirm: {},
+          onClick: handleDelete,
+        },
+        {
           key: 'auth',
           label: dict('PC.Pages.UserManage.Index.auth'),
           disabled:
             !hasPermissionByMenuCode('user_manage', 'user_manage_bind_role') &&
             !hasPermissionByMenuCode('user_manage', 'user_manage_bind_group'),
           onClick: handleAuth,
+        },
+        {
+          key: 'edit',
+          label: dict('PC.Pages.UserManage.Index.edit'),
+          disabled: !hasPermissionByMenuCode(
+            'user_manage',
+            'user_manage_modify',
+          ),
+          onClick: handleEditUser,
         },
         {
           key: 'viewMenu',
@@ -208,17 +211,6 @@ const UserManage: React.FC = () => {
             'user_manage_query_data_permission',
           ),
           onClick: handleViewDataPermission,
-        },
-        {
-          key: 'delete',
-          label: dict('PC.Pages.UserManage.Index.delete'),
-          danger: true,
-          confirm: {},
-          disabled: !hasPermissionByMenuCode(
-            'user_manage',
-            'user_manage_delete',
-          ),
-          onClick: handleDelete,
         },
       ];
     },
