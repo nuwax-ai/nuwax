@@ -18,14 +18,18 @@ import type {
   ParamsType,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message, Segmented, Tag, Typography } from 'antd';
+import { Button, message, Segmented, Typography } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel, useSearchParams } from 'umi';
 import styles from './index.less';
+import ModalitiesTagsCell from './ModalitiesTagsCell';
 
 const { Text } = Typography;
 
-/** 模型权限 Tab：value 与 i18n key */
+/**
+ * Tab 配置：系统模型 / 个人空间模型
+ * value 与接口 apiGetMyModels 入参一致，labelKey 对应 i18n 文案
+ */
 const MODEL_PERMISSIONS_TAB_CONFIG: readonly {
   value: MyModelPermissionsTab;
   labelKey:
@@ -36,20 +40,28 @@ const MODEL_PERMISSIONS_TAB_CONFIG: readonly {
   { value: 'Space', labelKey: 'PC.Pages.ModelPermissions.tabSpace' },
 ];
 
+/** 合法的 Tab 值列表，用于 URL 参数校验 */
 const TAB_VALUES: MyModelPermissionsTab[] = MODEL_PERMISSIONS_TAB_CONFIG.map(
   (item) => item.value,
 );
 
+/** 生成 Segmented 组件所需的 Tab 选项 */
 const getModelPermissionsTabOptions = () =>
   MODEL_PERMISSIONS_TAB_CONFIG.map(({ value, labelKey }) => ({
     value,
     label: dict(labelKey),
   }));
 
+/** 判断 URL 中的 tab 参数是否为合法 Tab 值 */
 const isPermissionsTab = (v: string | null): v is MyModelPermissionsTab =>
   TAB_VALUES.includes(v as MyModelPermissionsTab);
 
-/** 解析外部调用接口地址：租户 baseModelApiUrl + / + 模型id */
+/**
+ * 解析模型外部 OpenAPI 调用地址
+ * @param record 模型配置
+ * @param baseModelApiUrl 租户配置的基础模型 API 地址
+ * @returns 完整接口地址，缺省字段时返回空字符串
+ */
 const resolveModelExternalApiUrl = (
   record: ModelConfigDto,
   baseModelApiUrl: string,
@@ -61,10 +73,14 @@ const resolveModelExternalApiUrl = (
   return `${baseModelApiUrl}/${modelId}`;
 };
 
+/** 模型是否支持外部 OpenAPI 调用 */
 const supportsExternalOpenApi = (record: ModelConfigDto): boolean =>
   !!record.usageScenarios?.includes(ModelUsageScenarioEnum.OpenApi);
 
-/** 定价列展示 */
+/**
+ * 定价列渲染：字符串直接展示，对象结构展示阶梯价格列表
+ * @param pricing 接口返回的定价字段
+ */
 const renderPricingCell = (pricing: ModelConfigDto['pricing']) => {
   if (pricing === null || pricing === undefined || pricing === '') {
     return '-';
@@ -76,18 +92,31 @@ const renderPricingCell = (pricing: ModelConfigDto['pricing']) => {
 };
 
 /**
- * 模型权限页：展示当前用户可用的系统模型与个人空间模型（只读列表）
+ * 模型权限页
+ *
+ * 功能：只读展示当前用户可用的「系统模型」与「个人空间模型」列表，
+ * 支持按模型名称搜索、复制模型标识与外部调用接口地址。
+ *
+ * 路由：/more-page/model-permissions?tab=System|Space
+ *
+ * 注意事项：
+ * - Tab 切换会同步写入 URL query，刷新后保持当前 Tab
+ * - 列表数据由前端按名称关键字过滤，无服务端分页
  */
 const ModelPermissions: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [searchParams, setSearchParams] = useSearchParams();
+
+  /** 当前 Tab，优先读取 URL ?tab=，非法值回退为 System */
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState<MyModelPermissionsTab>(
     isPermissionsTab(tabFromUrl) ? tabFromUrl : 'System',
   );
+
   const actionRef = useRef<ActionType>();
   const formRef = useRef<FormInstance>();
 
+  /** 模型能力类型 value -> 展示文案，供模态列 Tag 使用 */
   const capabilityTypeLabelMap = useMemo(
     () =>
       Object.fromEntries(
@@ -98,6 +127,7 @@ const ModelPermissions: React.FC = () => {
 
   const tabOptions = useMemo(getModelPermissionsTabOptions, []);
 
+  /** 切换 Tab：更新本地状态、URL 参数并刷新表格 */
   const handleTabChange = useCallback(
     (value: string | number) => {
       const next = String(value) as MyModelPermissionsTab;
@@ -108,12 +138,14 @@ const ModelPermissions: React.FC = () => {
     [setSearchParams],
   );
 
+  /** 重置搜索表单并重新加载列表 */
   const handleReset = useCallback(() => {
     formRef.current?.resetFields();
     actionRef.current?.reset?.();
     actionRef.current?.reload();
   }, []);
 
+  /** 复制模型标识到剪贴板 */
   const handleCopyModelId = useCallback((modelId: string) => {
     copyTextToClipboard(
       modelId,
@@ -124,6 +156,7 @@ const ModelPermissions: React.FC = () => {
     );
   }, []);
 
+  /** 复制模型外部 OpenAPI 接口地址到剪贴板 */
   const handleCopyInterfaceAddress = useCallback(
     (record: ModelConfigDto) => {
       const url = resolveModelExternalApiUrl(
@@ -146,6 +179,7 @@ const ModelPermissions: React.FC = () => {
     [tenantConfigInfo?.baseModelApiUrl],
   );
 
+  /** 表格列配置 */
   const columns: ProColumns<ModelConfigDto>[] = useMemo(
     () => [
       {
@@ -184,6 +218,7 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colModalities'),
         dataIndex: 'types',
         key: 'types',
+        width: 240,
         hideInSearch: true,
         render: (_, record) => {
           const types = record.types;
@@ -191,11 +226,10 @@ const ModelPermissions: React.FC = () => {
             return '-';
           }
           return (
-            <div className={styles['types-tags-cell']}>
-              {types.map((t) => (
-                <Tag key={t}>{capabilityTypeLabelMap[t] ?? t}</Tag>
-              ))}
-            </div>
+            <ModalitiesTagsCell
+              types={types}
+              labelMap={capabilityTypeLabelMap}
+            />
           );
         },
       },
@@ -238,6 +272,10 @@ const ModelPermissions: React.FC = () => {
     [capabilityTypeLabelMap, handleCopyInterfaceAddress, handleCopyModelId],
   );
 
+  /**
+   * ProTable 数据请求
+   * 按 activeTab 拉取对应模型列表，并在前端按 name 关键字过滤
+   */
   const request = useCallback(
     async (params: ParamsType & { name?: string }) => {
       try {

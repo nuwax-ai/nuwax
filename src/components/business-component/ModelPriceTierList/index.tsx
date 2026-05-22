@@ -11,6 +11,7 @@ export interface ModelPriceTierListProps {
 
 /**
  * 模型阶梯价格展示（与 ModelPricingTab 定价档位列布局、样式一致）
+ * 布局：每行固定 2 个 Tag
  */
 const ModelPriceTierList: React.FC<ModelPriceTierListProps> = ({ tiers }) => {
   if (!tiers?.length) {
@@ -24,25 +25,27 @@ const ModelPriceTierList: React.FC<ModelPriceTierListProps> = ({ tiers }) => {
           <span className={styles['model-tier-context']}>
             {`≤${tier.contextLength}K`}
           </span>
+
+          {/* 输入价格 */}
           <span className={styles['model-tier-separator']}>|</span>
           <span className={styles['model-tier-price']}>
             {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}¥
             {tier.inputPrice}
           </span>
+
+          {/* 输出价格 */}
           <span className={styles['model-tier-separator']}>|</span>
           <span className={styles['model-tier-price']}>
             {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}¥
             {tier.outputPrice}
           </span>
-          {tier.cachePrice > 0 && (
-            <>
-              <span className={styles['model-tier-separator']}>|</span>
-              <span className={styles['model-tier-cache-price']}>
-                {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
-                {tier.cachePrice}
-              </span>
-            </>
-          )}
+
+          {/* 缓存价格 */}
+          <span className={styles['model-tier-separator']}>|</span>
+          <span className={styles['model-tier-cache-price']}>
+            {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}¥
+            {tier.cachePrice}
+          </span>
         </Tag>
       ))}
     </div>
