@@ -174,7 +174,7 @@
   }
 
   function fetchStatus(orderId) {
-    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.indexOf('192.168.') === 0;
+    var isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     var baseUrl = isDev ? 'https://testagent.xspaceagi.com' : '';
     var url = baseUrl + API + '?orderId=' + encodeURIComponent(orderId);
     
