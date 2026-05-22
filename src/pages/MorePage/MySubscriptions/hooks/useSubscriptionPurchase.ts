@@ -1,3 +1,4 @@
+import { PAYMENT_SETTLEMENT_PATH } from '@/constants/subscription.constants';
 import {
   apiCreateAgentSubscriptionOrder,
   apiGetAgentSubscriptionOrderCashier,
@@ -78,7 +79,7 @@ export const useSubscriptionPurchase = () => {
           const orderId = data?.id;
           if (orderId) {
             const settlementUrl = new URL(
-              '/static/payment-settlement.html',
+              PAYMENT_SETTLEMENT_PATH,
               window.location.origin,
             );
             settlementUrl.searchParams.set('orderId', String(orderId));
@@ -118,7 +119,7 @@ export const useSubscriptionPurchase = () => {
           const orderId = data?.id;
           if (orderId) {
             const settlementUrl = new URL(
-              '/static/payment-settlement.html',
+              PAYMENT_SETTLEMENT_PATH,
               window.location.origin,
             );
             settlementUrl.searchParams.set('orderId', String(orderId));
@@ -169,6 +170,31 @@ export const useSubscriptionPurchase = () => {
     createCreditOrder({ packageId: Number(packageId) });
   };
 
+  // 针对已存在的订单发起支付 (支持自定义传入回跳的 Return URL)
+  const handlePayExistingOrder = (
+    orderId: number | string,
+    dynamicReturnUrl?: string,
+  ) => {
+    if (processingId) return;
+    setProcessingId(orderId);
+    returnUrlRef.current = dynamicReturnUrl || '';
+
+    const settlementUrl = new URL(
+      PAYMENT_SETTLEMENT_PATH,
+      window.location.origin,
+    );
+    settlementUrl.searchParams.set('orderId', String(orderId));
+    settlementUrl.searchParams.set(
+      'returnUrl',
+      dynamicReturnUrl || window.location.href,
+    );
+
+    getCashierUrl({
+      orderId,
+      returnUrl: settlementUrl.href,
+    });
+  };
+
   const loading = fetchingCashier || creatingCreditOrder;
 
   return {
@@ -176,5 +202,6 @@ export const useSubscriptionPurchase = () => {
     loading,
     handlePaySubscription,
     handlePayCredits,
+    handlePayExistingOrder,
   };
 };
