@@ -617,6 +617,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan": "訂閱買斷套餐",
   "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut": "已買斷套餐",
   "PC.Components.PaymentSubscriptionModal.btnExpiredRenew": "套餐已過期(續訂)",
+  "PC.Components.PaymentSubscriptionModal.btnCurrent": "當前套餐",
   "PC.Components.PaymentSubscriptionModal.btnCurrentRenew": "當前套餐(續訂)",
   "PC.Components.PaymentSubscriptionModal.btnUpgrade": "升級",
   "PC.Components.PluginCardDetail.author": "作者",

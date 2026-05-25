@@ -617,6 +617,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan": "買い切りプランを購読",
   "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut": "買い切り済み",
   "PC.Components.PaymentSubscriptionModal.btnExpiredRenew": "期限切れ（更新）",
+  "PC.Components.PaymentSubscriptionModal.btnCurrent": "現在のプラン",
   "PC.Components.PaymentSubscriptionModal.btnCurrentRenew": "現在のプラン（更新）",
   "PC.Components.PaymentSubscriptionModal.btnUpgrade": "アップグレード",
   "PC.Components.PluginCardDetail.author": "著者",

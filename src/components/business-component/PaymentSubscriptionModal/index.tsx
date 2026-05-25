@@ -117,6 +117,12 @@ function getSubscribeButtonLabel(
     if (isCurrentSubscriptionExpired) {
       return dict('PC.Components.PaymentSubscriptionModal.btnExpiredRenew');
     }
+    if (
+      priceMain === 0 &&
+      plan?.period === SubscriptionPlanPeriodEnum.FOREVER
+    ) {
+      return dict('PC.Components.PaymentSubscriptionModal.btnCurrent');
+    }
     return dict('PC.Components.PaymentSubscriptionModal.btnCurrentRenew');
   }
   if (!isUserSubscribed) {

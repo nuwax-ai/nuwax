@@ -626,6 +626,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan": "Subscribe (buyout)",
   "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut": "Purchased",
   "PC.Components.PaymentSubscriptionModal.btnExpiredRenew": "Expired (renew)",
+  "PC.Components.PaymentSubscriptionModal.btnCurrent": "Current Plan",
   "PC.Components.PaymentSubscriptionModal.btnCurrentRenew": "Current plan (renew)",
   "PC.Components.PaymentSubscriptionModal.btnUpgrade": "Upgrade",
   "PC.Components.PluginCardDetail.author": "Author",
