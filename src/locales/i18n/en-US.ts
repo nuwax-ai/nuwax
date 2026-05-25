@@ -2925,6 +2925,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.OpenApp.historyConversation": "Chat History",
   "PC.Pages.OpenApp.newConversation": "New Conversation",
   "PC.Pages.OpenApp.viewAll": "View All",
+  "PC.Pages.OpenApp.subscription": "Subscribe",
   "PC.Pages.PreviewAndDebug.convIdNotFoundDesktop": "Conversation ID not found. Cannot open agent computer.",
   "PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview": "Conversation ID not found. Cannot open file preview.",
   "PC.Pages.PreviewAndDebug.fillRequiredParams": "Please fill in the required parameters",

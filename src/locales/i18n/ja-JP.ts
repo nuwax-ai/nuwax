@@ -2825,6 +2825,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.OpenApp.historyConversation": "チャット履歴",
   "PC.Pages.OpenApp.newConversation": "新しい会話",
   "PC.Pages.OpenApp.viewAll": "すべて見る",
+  "PC.Pages.OpenApp.subscription": "購読",
   "PC.Pages.PreviewAndDebug.convIdNotFoundDesktop": "会話IDが見つかりません。エージェントコンピュータを開けません。",
   "PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview": "会話IDが見つかりません。ファイルのプレビューを開けません。",
   "PC.Pages.PreviewAndDebug.fillRequiredParams": "必要なパラメータを入力してください",
