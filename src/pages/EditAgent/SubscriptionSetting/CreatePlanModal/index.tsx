@@ -318,7 +318,11 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                       'PC.Pages.AgentEdit.CreatePlanModal.functionOnlyLabel',
                     )}
                   </span>
-                  {dict('PC.Pages.AgentEdit.CreatePlanModal.functionOnlyDesc')}
+                  {' ' +
+                    dict(
+                      'PC.Pages.AgentEdit.CreatePlanModal.functionOnlyDesc',
+                    ) +
+                    ' '}
                   <span className={styles['function-only-highlight-pay']}>
                     {dict(
                       'PC.Pages.AgentEdit.CreatePlanModal.functionOnlyNeedPay',
