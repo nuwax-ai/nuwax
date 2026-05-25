@@ -5225,6 +5225,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.fieldRemark": "Remark",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "Please enter remark",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "Validity (Months)",
+  "PC.Pages.SystemCreditPackages.periodMonthUnit": "か月",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsAmount": "Earnings Amount",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsTime": "Earnings Time",
   "PC.Pages.SystemManagement.PaymentEarnings.Detail.colEarningsType": "Earnings Type",
