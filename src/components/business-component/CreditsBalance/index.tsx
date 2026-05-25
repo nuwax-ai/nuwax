@@ -6,7 +6,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import { history, useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,6 +25,7 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
   const [purchaseModalVisible, setPurchaseModalVisible] = useState(false);
+  const location = useLocation();
 
   const showCredits = tenantConfigInfo?.enableSubscription !== 0;
 
@@ -48,6 +49,13 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
       if (intervalId) clearInterval(intervalId);
     };
   }, [showCredits, fetchCredits]);
+
+  // 当路由切换至“我的订阅”相关页面时，主动刷新积分余额
+  useEffect(() => {
+    if (showCredits && location.pathname.includes('my-subscriptions')) {
+      fetchCredits();
+    }
+  }, [location, showCredits, fetchCredits]);
 
   const handleClickBalance = () => {
     if (onClick) {
