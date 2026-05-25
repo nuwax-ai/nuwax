@@ -132,7 +132,6 @@ const PublishedManage: React.FC = () => {
       dataIndex: 'description',
       width: 200,
       hideInSearch: true,
-      ellipsis: { showTitle: false },
       render: (_, record) => <LimitedTooltip text={record.description} />,
     },
     {
