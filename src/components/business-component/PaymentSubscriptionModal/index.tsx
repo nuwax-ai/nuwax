@@ -118,10 +118,7 @@ function getSubscribeButtonLabel(
       return dict('PC.Components.PaymentSubscriptionModal.btnExpiredRenew');
     }
     // 当前为免费套餐，不显示续订，只显示当前套餐
-    if (
-      priceMain === 0 &&
-      plan?.period === SubscriptionPlanPeriodEnum.FOREVER
-    ) {
+    if (priceMain === 0) {
       return dict('PC.Components.PaymentSubscriptionModal.btnCurrent');
     }
     return dict('PC.Components.PaymentSubscriptionModal.btnCurrentRenew');
@@ -474,12 +471,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                       <Button
                         loading={isThisPlanSubscribing}
                         disabled={
-                          isSkillForeverBuyoutLocked || isSubscribeInFlight
+                          isSkillForeverBuyoutLocked ||
+                          isSubscribeInFlight ||
+                          priceMain <= 0
                         }
-                        className={cx(
-                          styles['subscribe-btn-current'],
-                          !isSkillForeverBuyoutLocked && 'cursor-pointer',
-                        )}
+                        className={cx({
+                          [styles['subscribe-btn-current']]: priceMain > 0,
+                        })}
                         onClick={() => handleSubscribeClick(plan)}
                       >
                         {subscribeButtonLabel}
