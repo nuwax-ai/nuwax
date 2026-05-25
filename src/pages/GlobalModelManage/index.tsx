@@ -24,12 +24,12 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { Button, message, Switch, Tag } from 'antd';
+import { Button, message, Switch } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
+import ModalitiesTagsCell from '../MorePage/ModelPermissions/ModalitiesTagsCell';
 import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
-import styles from './index.less';
 
 /**
  * 公共模型管理页面 (原全局模型管理)
@@ -219,11 +219,7 @@ const GlobalModelManage: React.FC = () => {
           return '-';
         }
         return (
-          <div className={styles['types-tags-cell']}>
-            {types.map((t) => (
-              <Tag key={t}>{capabilityTypeLabelMap[t] ?? t}</Tag>
-            ))}
-          </div>
+          <ModalitiesTagsCell types={types} labelMap={capabilityTypeLabelMap} />
         );
       },
     },
