@@ -100,7 +100,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
     const values = await form.validateFields();
     const { skillId, price, status, pricingType } = values;
     if (!skillId) {
-      message.warning('请选择技能');
+      message.warning(dict('PC.Pages.SpaceResourcePricing.selectSkill'));
       return;
     }
 
@@ -252,7 +252,12 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
           checkTag={AgentComponentTypeEnum.Skill}
           onAdded={handleCreatedAdded}
           addComponents={pricedSkillAddComponents}
-          tabs={[{ label: '技能', key: AgentComponentTypeEnum.Skill }]}
+          tabs={[
+            {
+              label: dict('PC.Pages.SpaceResourcePricing.skillName'),
+              key: AgentComponentTypeEnum.Skill,
+            },
+          ]}
         />
       )}
     </CustomFormModal>
