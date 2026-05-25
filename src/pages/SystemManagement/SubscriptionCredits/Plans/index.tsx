@@ -240,7 +240,9 @@ const Plans = () => {
             sort: item.sort,
           })),
       );
-      message.success('排序已更新');
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.sortUpdated'),
+      );
       originalDataRef.current = null;
     } catch {
       message.error(dict('PC.Common.Toast.operationFailed'));
