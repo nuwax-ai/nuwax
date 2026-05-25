@@ -117,6 +117,7 @@ function getSubscribeButtonLabel(
     if (isCurrentSubscriptionExpired) {
       return dict('PC.Components.PaymentSubscriptionModal.btnExpiredRenew');
     }
+    // 当前为免费套餐，不显示续订，只显示当前套餐
     if (
       priceMain === 0 &&
       plan?.period === SubscriptionPlanPeriodEnum.FOREVER
