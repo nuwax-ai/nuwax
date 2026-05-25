@@ -310,10 +310,10 @@ function groupMarkdownProcesses(text: string): string {
   const flushGroup = () => {
     if (currentGroup.length > 0) {
       if (currentGroup.length >= 2) {
-        // 合并为组标签，增加换行确保不影响后续 markdown 解析
-        result += `\n\n<markdown-custom-process-group>\n${currentGroup.join(
+        // 合并为组标签，增加换行确保不影响后续 markdown 解析，外层嵌套标准块级 div 以防解析为行内 p
+        result += `\n\n<div><markdown-custom-process-group>\n${currentGroup.join(
           '\n',
-        )}\n</markdown-custom-process-group>\n\n`;
+        )}\n</markdown-custom-process-group></div>\n\n`;
       } else {
         // 只有一个，保持原样
         result += `\n\n<div>${currentGroup[0]}</div>\n\n`;

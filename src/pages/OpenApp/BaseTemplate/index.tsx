@@ -580,7 +580,9 @@ const BaseTemplate: React.FC = () => {
                   name="icons-nav-wodedingyue"
                   style={{ fontSize: 16 }}
                 />
-                <span className="text-ellipsis">订阅</span>
+                <span className="text-ellipsis">
+                  {dict('PC.Pages.OpenApp.subscription')}
+                </span>
               </div>
             </ConditionRender>
 

@@ -173,7 +173,10 @@ const CreditPackages: React.FC = () => {
       dataIndex: 'period',
       key: 'period',
       search: false,
-      render: (_, record) => `${record.period || '-'} 个月`,
+      render: (_, record) =>
+        `${record.period || '-'} ${dict(
+          'PC.Pages.SystemCreditPackages.periodMonthUnit',
+        )}`,
     },
     {
       title: dict('PC.Pages.SystemCreditPackages.colPrice'),
@@ -191,8 +194,8 @@ const CreditPackages: React.FC = () => {
       search: true,
       valueType: 'select',
       valueEnum: {
-        [CreditPackageStatusEnum.Enabled]: '启用',
-        [CreditPackageStatusEnum.Disabled]: '禁用',
+        [CreditPackageStatusEnum.Enabled]: dict('PC.Common.Global.enable'),
+        [CreditPackageStatusEnum.Disabled]: dict('PC.Common.Global.disable'),
       },
       render: (_, record) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -207,7 +210,9 @@ const CreditPackages: React.FC = () => {
       title: dict('PC.Common.Global.action'),
       key: 'action',
       search: false,
-      width: 120,
+      width: 140,
+      align: 'center',
+      fixed: 'right',
       render: (_, record) => (
         <TableActions
           record={record}
@@ -221,7 +226,6 @@ const CreditPackages: React.FC = () => {
               key: 'delete',
               label: dict('PC.Common.Global.delete'),
               danger: true,
-              // confirm: { title: dict('PC.Common.Global.confirmDelete') },
               onClick: (r) => handleDelete(r),
             },
           ]}
