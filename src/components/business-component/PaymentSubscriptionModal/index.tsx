@@ -475,9 +475,10 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                           isSubscribeInFlight ||
                           priceMain <= 0
                         }
-                        className={cx({
-                          [styles['subscribe-btn-current']]: priceMain > 0,
-                        })}
+                        className={cx(
+                          styles['subscribe-btn-current'],
+                          !isSkillForeverBuyoutLocked && priceMain > 0,
+                        )}
                         onClick={() => handleSubscribeClick(plan)}
                       >
                         {subscribeButtonLabel}
