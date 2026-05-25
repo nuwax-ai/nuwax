@@ -626,6 +626,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan": "Subscribe (buyout)",
   "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut": "Purchased",
   "PC.Components.PaymentSubscriptionModal.btnExpiredRenew": "Expired (renew)",
+  "PC.Components.PaymentSubscriptionModal.btnCurrent": "Current Plan",
   "PC.Components.PaymentSubscriptionModal.btnCurrentRenew": "Current plan (renew)",
   "PC.Components.PaymentSubscriptionModal.btnUpgrade": "Upgrade",
   "PC.Components.PluginCardDetail.author": "Author",
@@ -5040,6 +5041,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.colValidityPeriod": "Validity",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "Validity (Months)",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder": "Please enter validity",
+  "PC.Pages.SystemCreditPackages.periodMonthUnit": "months",
   "PC.Pages.SystemCreditPackages.fieldRemark": "Remark",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "Please enter remark",
   // ── System Management - User Credits Query ────────────────────────────

@@ -626,6 +626,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.PaymentSubscriptionModal.btnSubscribeBuyoutPlan": "订阅买断套餐",
   "PC.Components.PaymentSubscriptionModal.btnForeverBoughtOut": "已买断套餐",
   "PC.Components.PaymentSubscriptionModal.btnExpiredRenew": "套餐已过期(续订)",
+  "PC.Components.PaymentSubscriptionModal.btnCurrent": "当前套餐",
   "PC.Components.PaymentSubscriptionModal.btnCurrentRenew": "当前套餐(续订)",
   "PC.Components.PaymentSubscriptionModal.btnUpgrade": "升级",
   "PC.Components.PluginCardDetail.author": "作者",
@@ -5023,6 +5024,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemCreditPackages.colValidityPeriod": "有效期",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriod": "有效期（月）",
   "PC.Pages.SystemCreditPackages.fieldValidityPeriodPlaceholder": "请输入积分有效期",
+  "PC.Pages.SystemCreditPackages.periodMonthUnit": "个月",
   "PC.Pages.SystemCreditPackages.fieldRemark": "备注",
   "PC.Pages.SystemCreditPackages.fieldRemarkPlaceholder": "请输入备注",
   // ── 系统管理 - 用户积分查询 ────────────────────────────
