@@ -3626,6 +3626,9 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
     "各档位的上下文长度不能相同",
   "PC.Pages.SpaceResourcePricing.filterAll": "全部",
+  "PC.Pages.SpaceResourcePricing.pricingTypeOneTime": "单次",
+  "PC.Pages.SpaceResourcePricing.pricingTypeMonthly": "包月",
+  "PC.Pages.SpaceResourcePricing.pricingTypeTiered": "阶梯计费",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "智能体用户订阅",
   "PC.Pages.SpaceAgentSubscriptions.statusActive": "有效",
@@ -5291,6 +5294,20 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemPlans.colSort": "排序序号",
   "PC.Pages.SystemPlans.colCreated": "创建时间",
   "PC.Pages.SystemPlans.colModified": "修改时间",
+  "PC.Pages.SystemPlans.fieldNamePlaceholderExample": "例如：基础版",
+  "PC.Pages.SystemPlans.fieldCreditAmountMonthly": "套餐包含积分（每月）",
+  "PC.Pages.SystemPlans.fieldPriceLabel": "套餐价格 (¥)",
+  "PC.Pages.SystemPlans.fieldPricePlaceholderExample": "例如：99",
+  "PC.Pages.SystemPlans.fieldValidityPeriod": "套餐有效期",
+  "PC.Pages.SystemPlans.periodOption1Month": "1个月",
+  "PC.Pages.SystemPlans.periodOption3Months": "3个月",
+  "PC.Pages.SystemPlans.periodOption12Months": "12个月",
+  "PC.Pages.SystemPlans.fieldHotLabel": "热门标签",
+  "PC.Pages.SystemPlans.fieldDescPlaceholder": "描述套餐的定位和适用场景",
+  "PC.Pages.SystemPlans.developerPermissionTitle": "开发者权限",
+  "PC.Pages.SystemPlans.developerPermissionDesc":
+    "关联用户组以控制套餐包含的权限范围，可多选",
+  "PC.Pages.SystemPlans.originalPrice": "原价¥{0}/{1}",
 
   // ── 系统管理 - 支付订单查询 ────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colAmount": "订单金额",

@@ -16,12 +16,15 @@ interface PlanItemCardProps {
   onDelete: (id: number) => void;
 }
 
-const periodLabelMap = {
-  MONTH: '月',
-  QUARTER: '季度',
-  YEAR: '年',
-  FOREVER: '永久',
+const PERIOD_LABEL_KEY = {
+  MONTH: 'PC.Pages.SystemPlans.periodMonth',
+  QUARTER: 'PC.Pages.SystemPlans.periodQuarter',
+  YEAR: 'PC.Pages.SystemPlans.periodYear',
+  FOREVER: 'PC.Pages.SystemPlans.periodForever',
 } as const;
+
+const getPeriodLabel = (period: keyof typeof PERIOD_LABEL_KEY) =>
+  dict(PERIOD_LABEL_KEY[period] || 'PC.Pages.SystemPlans.periodMonth');
 
 const PlanItemCard: React.FC<PlanItemCardProps> = ({
   planInfo,
@@ -32,7 +35,7 @@ const PlanItemCard: React.FC<PlanItemCardProps> = ({
   const planId = planInfo.id ?? 0;
   const firstPrice = planInfo.firstPrice ?? 0;
   const creditAmount = planInfo.creditAmount ?? 0;
-  const periodLabel = periodLabelMap[planInfo.period] || '月';
+  const periodLabel = getPeriodLabel(planInfo.period);
   const isOnline = planInfo.status === SubscriptionPlanStatusEnum.Online;
 
   // 权益列表
@@ -69,7 +72,9 @@ const PlanItemCard: React.FC<PlanItemCardProps> = ({
 
           <ConditionRender condition={firstPrice}>
             <span className={styles['plan-item-first-price']}>
-              原价¥{firstPrice}/{periodLabel}
+              {dict('PC.Pages.SystemPlans.originalPrice')
+                .replace('{0}', String(firstPrice))
+                .replace('{1}', periodLabel)}
             </span>
           </ConditionRender>
         </div>
@@ -77,7 +82,9 @@ const PlanItemCard: React.FC<PlanItemCardProps> = ({
         <div className={styles['plan-item-main-feature-row']}>
           <StarOutlined className={styles['plan-item-main-feature-icon']} />
           <span className={styles['plan-item-main-feature-text']}>
-            {`每月 ${creditAmount.toLocaleString()} 积分`}
+            {dict(
+              'PC.Components.PaymentSubscriptionModal.monthlyCredits',
+            ).replace('{0}', creditAmount.toLocaleString())}
           </span>
         </div>
 

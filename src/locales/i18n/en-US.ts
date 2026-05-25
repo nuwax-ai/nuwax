@@ -3626,6 +3626,9 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":
     "Context lengths must be unique for each tier.",
   "PC.Pages.SpaceResourcePricing.filterAll": "All",
+  "PC.Pages.SpaceResourcePricing.pricingTypeOneTime": "One-time",
+  "PC.Pages.SpaceResourcePricing.pricingTypeMonthly": "Monthly",
+  "PC.Pages.SpaceResourcePricing.pricingTypeTiered": "Tiered billing",
 
   "PC.Pages.SpaceAgentSubscriptions.pageTitle": "Agent Subscriptions",
   "PC.Pages.SpaceAgentSubscriptions.statusActive": "Active",
@@ -5308,6 +5311,21 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemPlans.colSort": "Sort order",
   "PC.Pages.SystemPlans.colCreated": "Created",
   "PC.Pages.SystemPlans.colModified": "Modified",
+  "PC.Pages.SystemPlans.fieldNamePlaceholderExample": "e.g. Basic",
+  "PC.Pages.SystemPlans.fieldCreditAmountMonthly": "Credits included (monthly)",
+  "PC.Pages.SystemPlans.fieldPriceLabel": "Plan price (¥)",
+  "PC.Pages.SystemPlans.fieldPricePlaceholderExample": "e.g. 99",
+  "PC.Pages.SystemPlans.fieldValidityPeriod": "Validity period",
+  "PC.Pages.SystemPlans.periodOption1Month": "1 month",
+  "PC.Pages.SystemPlans.periodOption3Months": "3 months",
+  "PC.Pages.SystemPlans.periodOption12Months": "12 months",
+  "PC.Pages.SystemPlans.fieldHotLabel": "Featured tag",
+  "PC.Pages.SystemPlans.fieldDescPlaceholder":
+    "Describe the plan positioning and target scenarios",
+  "PC.Pages.SystemPlans.developerPermissionTitle": "Developer permissions",
+  "PC.Pages.SystemPlans.developerPermissionDesc":
+    "Link user groups to control the permissions included in this plan. Multiple selections allowed.",
+  "PC.Pages.SystemPlans.originalPrice": "Original ¥{0}/{1}",
 
   // ── System Management - Payment Order Query ────────────────────────────
   "PC.Pages.SystemManagement.PaymentEarnings.Orders.colAmount": "Order Amount",
