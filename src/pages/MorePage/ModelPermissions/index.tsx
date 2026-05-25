@@ -239,7 +239,6 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colModalities'),
         dataIndex: 'types',
         key: 'types',
-        width: 240,
         hideInSearch: true,
         render: (_, record) => {
           const types = record.types;
