@@ -2,16 +2,13 @@ import { BulbOutlined, DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 // import 'highlight.js/styles/github.css';
 import { dict } from '@/services/i18nRuntime';
-import React, { memo, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './index.less';
 
 // 导入类型定义
 import type { MarkdownRendererProps } from '@/types/interfaces/markdownRender';
 
-import mermaidPlugin, {
-  mermaidConfig,
-} from '@/plugins/ds-markdown-mermaid-plugin';
 import { MessageStatusEnum } from '@/types/enums/common';
 import DsMarkdown, { ConfigProvider, MarkdownCMD } from 'ds-markdown'; // 新增：引入ds-markdown
 import 'ds-markdown/katex.css';
@@ -19,6 +16,26 @@ import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创�
 import './ds-markdown.css';
 import genCustomPlugin from './genCustomPlugin';
 import { replaceMathBracket } from './utils';
+
+// 延迟加载 mermaid 插件（mermaid 库 ~1.4MB），仅在实际需要时加载
+let _mermaidPlugin: any = null;
+let _mermaidConfig: any = null;
+let _mermaidLoadPromise: Promise<void> | null = null;
+
+const loadMermaidPlugin = async () => {
+  if (_mermaidPlugin) return;
+  if (_mermaidLoadPromise) {
+    await _mermaidLoadPromise;
+    return;
+  }
+  _mermaidLoadPromise = import('@/plugins/ds-markdown-mermaid-plugin').then(
+    (mod) => {
+      _mermaidPlugin = mod.default;
+      _mermaidConfig = mod.mermaidConfig;
+    },
+  );
+  await _mermaidLoadPromise;
+};
 
 const cx = classNames.bind(styles);
 /**
@@ -48,12 +65,34 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       (!!answer && answer.trim() !== '');
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const plugins = useMemo(
-      () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
-      [conversationId],
+    const [mermaidLoaded, setMermaidLoaded] = useState(!!_mermaidPlugin);
+
+    // 首次渲染时异步加载 mermaid 插件
+    useEffect(() => {
+      let cancelled = false;
+      if (!_mermaidPlugin) {
+        loadMermaidPlugin().then(() => {
+          if (!cancelled) setMermaidLoaded(true);
+        });
+      }
+      return () => {
+        cancelled = true;
+      };
+    }, []);
+
+    const plugins = useMemo(() => {
+      const basePlugins = [katexPlugin, genCustomPlugin(conversationId)];
+      if (_mermaidPlugin) {
+        basePlugins.unshift(_mermaidPlugin);
+      }
+      return basePlugins;
+    }, [conversationId, mermaidLoaded]);
+
+    // 使用延迟加载的 mermaidConfig
+    const mermaidProvider = useMemo(
+      () => _mermaidConfig || { theme: 'default' },
+      [mermaidLoaded],
     );
-    // 使用导入的 mermaidConfig，而不是重新创建
-    const mermaidProvider = useMemo(() => mermaidConfig, []);
 
     return (
       <div

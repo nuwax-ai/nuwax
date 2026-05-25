@@ -1,7 +1,9 @@
 import { DataTypeEnum } from '@/types/enums/common';
 import { convertValueToEditorValue } from '@/utils/graph';
 import { Form } from 'antd';
-import _ from 'lodash';
+import get from 'lodash/get';
+import isArray from 'lodash/isArray';
+import isPlainObject from 'lodash/isPlainObject';
 import { useMemo } from 'react';
 interface outputArg {
   name: string;
@@ -34,11 +36,11 @@ const _convertOutputArgsToJSON = (outputArgs: outputArg[]) => {
 };
 
 function _mergeByTemplate(template: any, source: any) {
-  if (_.isArray(template)) {
+  if (isArray(template)) {
     return template.map((item: any, index: number) =>
-      _mergeByTemplate(item, _.get(source, index)),
+      _mergeByTemplate(item, get(source, index)),
     );
-  } else if (_.isPlainObject(template)) {
+  } else if (isPlainObject(template)) {
     const result: any = {};
     for (const key in template) {
       if (template.hasOwnProperty(key)) {

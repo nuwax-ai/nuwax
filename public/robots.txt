@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /m/
+
+Sitemap: https://agent.nuwax.com/sitemap.xml

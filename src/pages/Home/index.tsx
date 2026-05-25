@@ -295,7 +295,7 @@ const Home: React.FC = () => {
                   onClick={() => handleClickItem(item)}
                 >
                   {item?.icon && (
-                    <img className={cx(styles.icon)} src={item?.icon} />
+                    <img className={cx(styles.icon)} src={item?.icon} loading="lazy" decoding="async" width={20} height={20} />
                   )}
                   {item.info}
                 </div>

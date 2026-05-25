@@ -8,6 +8,14 @@ import routes from '../src/routes';
 export default defineConfig({
   // 优先从环境变量读取（需要创建 .env 文件）
   // publicPath: process.env.UMI_PUBLIC_PATH || '/',
+  metas: [
+    {
+      name: 'description',
+      content:
+        'Nuwax Agent - 智能体平台，创建和管理AI智能体，支持工作流编排、知识库管理、插件市场',
+    },
+    { name: 'keywords', content: 'AI智能体,智能体平台,工作流,知识库,Nuwax' },
+  ],
   antd: {
     appConfig: {
       style: {
@@ -41,6 +49,8 @@ export default defineConfig({
   //   exclude: ['jspdf', 'html2canvas'],
   // },
   mfsu: false,
+  // NOTE: codeSplitting: { jsStrategy: 'granularChunks' } 在 umi 4.6.56 下与
+  // SplitChunksPlugin 有 cache group naming 冲突，升级 umi 后可重新启用。
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {

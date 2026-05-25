@@ -76,6 +76,9 @@ const AgentItem: React.FC<AgentItemProps> = ({
           alt={info?.name || dict('PC.Pages.HomeDrag.agentAvatar')}
           onError={handleImageError}
           loading="lazy"
+          decoding="async"
+          width={48}
+          height={48}
         />
       </div>
 
