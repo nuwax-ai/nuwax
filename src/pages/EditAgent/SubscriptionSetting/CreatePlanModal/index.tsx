@@ -94,7 +94,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
         description: editPlan.description,
         period: editPlan.period || SubscriptionPlanPeriodEnum.MONTH,
         price: editPlan.price,
-        functionOnly: editPlan.functionOnly ?? false,
+        functionOnly: editPlan.functionOnly ?? true,
         callLimitCount: isUnlimited ? undefined : editPlan.callLimitCount,
       });
       return;
@@ -102,7 +102,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     setLimitType('unlimited');
     form.setFieldsValue({
       period: SubscriptionPlanPeriodEnum.MONTH,
-      functionOnly: false,
+      functionOnly: true,
       callLimitCount: undefined,
     });
   }, [open, editPlan, form]);
