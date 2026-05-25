@@ -3,7 +3,6 @@ export { default as AgentInterventionChatLayer } from './components/AgentInterve
 
 // Hooks
 export { useActiveInterventionQueue } from './hooks/useActiveInterventionQueue';
-export { useActiveMcpAskInteractions } from './hooks/useActiveMcpAskInteractions';
 export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandlers';
 
 // Utils
