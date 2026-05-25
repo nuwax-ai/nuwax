@@ -104,8 +104,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     setAppAgentDetailLoading,
     openPaymentModal,
     setOpenPaymentModal,
-    isNeedSubscription,
-    setIsNeedSubscription,
+    incrementCalledTrialCount,
+    localCalledTrialCount,
   } = useModel('useOpenApp');
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -354,6 +354,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 defaultAgentDetail: result,
                 messageSourceType: 'agent' as MessageSourceType,
               };
+              incrementCalledTrialCount();
               confirmSendMessage(attach, result?.conversationId);
 
               setLoading(false);
@@ -409,14 +410,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
     if (result.paymentRequired && !result.subscribed) {
       setOpenPaymentModal(true);
-      setIsNeedSubscription(true);
     } else {
       setOpenPaymentModal(false);
-      setIsNeedSubscription(false);
     }
 
     // 设置应用智能体详情
     handleSetAppAgentDetail(result);
+
     handleOpenPreview(result);
     setConversationId(result?.conversationId || null);
     // 会话问题建议
@@ -500,7 +500,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       clearFilePanelInfo();
 
       setOpenPaymentModal(false);
-      setIsNeedSubscription(false);
     };
   }, [agentId]);
 
@@ -601,6 +600,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       // 模型ID
       modelId: modelId || selectedModelId || otherModelId,
     };
+
+    incrementCalledTrialCount();
 
     confirmSendMessage(attach);
   };
@@ -726,7 +727,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     icon={
                       <SvgIcon
                         name="icons-nav-wodedingyue"
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 16 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}
@@ -841,12 +842,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               isClearInput={false}
-              wholeDisabled={
-                wholeDisabled ||
-                (isEnableSubscription &&
-                  isNeedSubscription &&
-                  agentDetail?.overCallLimit)
-              }
+              wholeDisabled={wholeDisabled}
               manualComponents={agentDetail?.manualComponents || []}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
@@ -999,7 +995,11 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          overCallLimit={agentDetail?.overCallLimit ?? false}
+          calledTrialCount={localCalledTrialCount}
+          trialCount={agentDetail?.trialCount}
+          isNeedSubscription={
+            agentDetail?.paymentRequired && !agentDetail?.subscribed
+          }
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}

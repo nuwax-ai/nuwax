@@ -339,6 +339,7 @@ export interface CreatedNodeItem {
   deployed?: string;
   paymentRequired?: boolean;
   subscribed?: boolean;
+  price?: number;
 }
 
 export interface MCPNodeItem {

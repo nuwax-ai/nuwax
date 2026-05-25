@@ -117,36 +117,48 @@
         }
 
         .record-payment-extra {
-          margin-top: 4px;
-          padding: 10px 12px;
+          margin-top: 6px;
+          padding: 12px;
           background: @colorSuccessBg;
           border-radius: @borderRadiusSm;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 12px;
           border: 1px dashed @colorSuccessBorder;
 
           .payment-remark {
-            font-size: @fontSizeSm;
-            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
 
             .extra-label {
-              font-weight: 500;
-              color: @colorText;
+              font-size: 13px;
+              font-weight: 600;
+              line-height: 18px;
+              color: @colorTextSecondary;
             }
 
             .extra-value {
-              color: @colorTextSecondary !important;
-              word-break: break-all;
+              margin: 0;
+              color: @colorText !important;
+              font-size: 13px;
+              line-height: 21px;
+              word-break: break-word;
+              overflow-wrap: anywhere;
               cursor: pointer;
             }
           }
 
           .payment-voucher {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
             .extra-label {
               font-size: @fontSizeSm;
               font-weight: 500;
-              color: @colorText;
+              line-height: 20px;
+              color: @colorTextSecondary;
             }
 
             .voucher-images {
@@ -160,8 +172,9 @@
                 overflow: hidden;
                 cursor: pointer;
                 transition: transform @motionDurationSlow;
+                background: @colorBgContainer;
 
-                &:global(.ant-image-img) {
+                :global(.ant-image-img) {
                   object-fit: cover;
                 }
 

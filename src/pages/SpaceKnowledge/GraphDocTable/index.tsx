@@ -38,6 +38,7 @@ interface GraphDocTableProps {
   onToggleGraph?: (id: number, enable: boolean) => void;
   onDelete?: (id: number) => void;
   onGenerateGraph?: (id: number) => void;
+  onSearch?: (keyword: string) => void;
 }
 
 const getStatusTag = (status?: number) => {
@@ -80,6 +81,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
   //onBatchConfig,
   onDelete,
   onGenerateGraph,
+  onSearch,
 }) => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -281,7 +283,12 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
             'PC.Pages.SpaceKnowledge.GraphDocTable.searchPlaceholder',
           )}
           value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchKeyword(value);
+            onSearch?.(value);
+          }}
+          onSearch={(value) => onSearch?.(value)}
           allowClear
           style={{ width: 240, marginRight: 10 }}
         />

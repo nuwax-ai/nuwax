@@ -1,21 +1,15 @@
 import { apiApiKeyUpdate, apiGetOpenApiDefinitions } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
+import { apiGetMyModels } from '@/services/modelConfig';
 import type { ApiKeyInfo, OpenApiDefinition } from '@/types/interfaces/account';
-import {
-  Button,
-  Checkbox,
-  Empty,
-  message,
-  Modal,
-  Space,
-  Spin,
-  Tree,
-  Typography,
-} from 'antd';
+import { message, Modal, Spin, Tabs, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
+import ApiPermissionTab from './components/ApiPermissionTab';
+import ModelPermissionTab from './components/ModelPermissionTab';
+import PermissionOperationsBar from './components/PermissionOperationsBar';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 
 interface ApiKeyPermissionModalProps {
   /** 是否打开 */
@@ -37,9 +31,15 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
   record,
   onSuccess,
 }) => {
+  const [activeTab, setActiveTab] = useState<'api' | 'model' | 'spaceModel'>(
+    'api',
+  );
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<OpenApiDefinition[]>([]);
+  const [myModels, setMyModels] = useState<any[]>([]);
+  const [mySpaceModels, setMySpaceModels] = useState<any[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+  const [checkedModelKeys, setCheckedModelKeys] = useState<number[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [saveLoading, setSaveLoading] = useState(false);
 
@@ -72,15 +72,25 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     return keys;
   }, [treeData]);
 
-  // 加载权限数据
+  // 加载权限与模型数据
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await apiGetOpenApiDefinitions();
-      if (res.success) {
-        setTreeData(res.data || []);
+      const [apiRes, modelRes, spaceModelRes] = await Promise.all([
+        apiGetOpenApiDefinitions(),
+        apiGetMyModels('System'),
+        apiGetMyModels('Space'),
+      ]);
+      if (apiRes.success) {
+        setTreeData(apiRes.data || []);
         // 初始化展开第一层
-        setExpandedKeys(res.data?.map((i) => i.key) || []);
+        setExpandedKeys(apiRes.data?.map((i) => i.key) || []);
+      }
+      if (modelRes.success) {
+        setMyModels(modelRes.data || []);
+      }
+      if (spaceModelRes.success) {
+        setMySpaceModels(spaceModelRes.data || []);
       }
     } catch (e) {
       console.error(e);
@@ -91,6 +101,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      setActiveTab('api');
       loadData();
       // 回显逻辑：从 record.config.apiConfigs 中提取 key
       if (record?.config?.apiConfigs) {
@@ -98,6 +109,13 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
         setCheckedKeys(initialKeys);
       } else {
         setCheckedKeys([]);
+      }
+
+      // 回显逻辑：从 record.config.modelIds 中提取 id
+      if (record?.config?.modelIds) {
+        setCheckedModelKeys(record.config.modelIds);
+      } else {
+        setCheckedModelKeys([]);
       }
     }
   }, [open, record]);
@@ -119,78 +137,55 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     setCheckedKeys(checked ? allKeys : []);
   };
 
-  // 统计逻辑：计算某个节点下选中的子节点数量
-  const getSubCheckedCount = (node: OpenApiDefinition) => {
-    if (!node.apiList || node.apiList.length === 0) return 0;
-    let count = 0;
-    const traverse = (list: OpenApiDefinition[]) => {
-      list.forEach((item) => {
-        if (!item.apiList || item.apiList.length === 0) {
-          if (checkedKeys.includes(item.key)) count++;
-        } else {
-          traverse(item.apiList);
-        }
-      });
-    };
-    traverse(node.apiList);
-    return count;
-  };
-
-  // 统计逻辑：获取某个节点下的总叶子节点数
-  const getSubTotalCount = (node: OpenApiDefinition) => {
-    if (!node.apiList || node.apiList.length === 0) return 0;
-    let total = 0;
-    const traverse = (list: OpenApiDefinition[]) => {
-      list.forEach((item) => {
-        if (!item.apiList || item.apiList.length === 0) {
-          total++;
-        } else {
-          traverse(item.apiList);
-        }
-      });
-    };
-    traverse(node.apiList);
-    return total;
-  };
-
-  // 自定义渲染节点内容
-  const titleRender = (node: any) => {
-    const isParent = node.apiList && node.apiList.length > 0;
-    const checkedCount = isParent ? getSubCheckedCount(node) : 0;
-    const totalCount = isParent ? getSubTotalCount(node) : 0;
-
+  // 处理模型项选择逻辑 (系统模型)
+  const isAllModelChecked = useMemo(() => {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          paddingRight: 8,
-        }}
-      >
-        <Text style={{ fontSize: 14 }}>{node.name}</Text>
-        <Space size={8}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {node.path}
-          </Text>
-          {isParent && (
-            <span
-              style={{
-                backgroundColor: '#e6f7ff',
-                color: '#1890ff',
-                padding: '0 8px',
-                borderRadius: '10px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-              }}
-            >
-              {checkedCount}/{totalCount}
-            </span>
-          )}
-        </Space>
-      </div>
+      myModels.length > 0 &&
+      myModels.every((item) => checkedModelKeys.includes(item.id))
     );
+  }, [myModels, checkedModelKeys]);
+
+  const isModelIndeterminate = useMemo(() => {
+    if (isAllModelChecked) return false;
+    return myModels.some((item) => checkedModelKeys.includes(item.id));
+  }, [myModels, checkedModelKeys, isAllModelChecked]);
+
+  const handleSelectAllModels = (checked: boolean) => {
+    const nonSystemModelIds = checkedModelKeys.filter(
+      (id) => !myModels.some((m) => m.id === id),
+    );
+    if (checked) {
+      setCheckedModelKeys([...nonSystemModelIds, ...myModels.map((m) => m.id)]);
+    } else {
+      setCheckedModelKeys(nonSystemModelIds);
+    }
+  };
+
+  // 处理模型项选择逻辑 (个人空间模型)
+  const isAllSpaceModelChecked = useMemo(() => {
+    return (
+      mySpaceModels.length > 0 &&
+      mySpaceModels.every((item) => checkedModelKeys.includes(item.id))
+    );
+  }, [mySpaceModels, checkedModelKeys]);
+
+  const isSpaceModelIndeterminate = useMemo(() => {
+    if (isAllSpaceModelChecked) return false;
+    return mySpaceModels.some((item) => checkedModelKeys.includes(item.id));
+  }, [mySpaceModels, checkedModelKeys, isAllSpaceModelChecked]);
+
+  const handleSelectAllSpaceModels = (checked: boolean) => {
+    const nonSpaceModelIds = checkedModelKeys.filter(
+      (id) => !mySpaceModels.some((m) => m.id === id),
+    );
+    if (checked) {
+      setCheckedModelKeys([
+        ...nonSpaceModelIds,
+        ...mySpaceModels.map((m) => m.id),
+      ]);
+    } else {
+      setCheckedModelKeys(nonSpaceModelIds);
+    }
   };
 
   const handleSave = async () => {
@@ -227,6 +222,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
         name: record.name,
         expire,
         apiConfigs: newApiConfigs,
+        modelIds: checkedModelKeys,
       });
 
       if (res.success) {
@@ -237,7 +233,7 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
         onOpenChange(false);
       }
     } catch (error) {
-      console.error('Failed to save permissions:', error); // keep Chinese in console
+      console.error('Failed to save permissions:', error);
     } finally {
       setSaveLoading(false);
     }
@@ -258,35 +254,48 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
     >
       <Spin spinning={loading}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* 顶部操作区 */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 16px',
-              backgroundColor: '#f8fafc',
-              borderRadius: 8,
-            }}
-          >
-            <Checkbox
-              indeterminate={isIndeterminate}
-              checked={isAllChecked}
-              onChange={(e) => handleSelectAll(e.target.checked)}
-            >
-              {dict('PC.Pages.MorePage.ApiKeyPermission.selectAll')}
-            </Checkbox>
-            <Space>
-              <Button size="small" onClick={() => setExpandedKeys(allKeys)}>
-                {dict('PC.Pages.MorePage.ApiKeyPermission.expandAll')}
-              </Button>
-              <Button size="small" onClick={() => setExpandedKeys([])}>
-                {dict('PC.Pages.MorePage.ApiKeyPermission.collapseAll')}
-              </Button>
-            </Space>
-          </div>
+          {/* 页签切换 */}
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => setActiveTab(key as any)}
+            style={{ marginBottom: -12 }}
+            items={[
+              {
+                key: 'api',
+                label: dict('PC.Pages.MorePage.ApiKeyPermission.apiPermission'),
+              },
+              {
+                key: 'model',
+                label: dict(
+                  'PC.Pages.MorePage.ApiKeyPermission.modelPermission',
+                ),
+              },
+              {
+                key: 'spaceModel',
+                label: dict(
+                  'PC.Pages.MorePage.ApiKeyPermission.spaceModelPermission',
+                ),
+              },
+            ]}
+          />
 
-          {/* Tree 区域 */}
+          {/* 顶部操作区 */}
+          <PermissionOperationsBar
+            activeTab={activeTab}
+            isIndeterminate={isIndeterminate}
+            isModelIndeterminate={isModelIndeterminate}
+            isSpaceModelIndeterminate={isSpaceModelIndeterminate}
+            isAllChecked={isAllChecked}
+            isAllModelChecked={isAllModelChecked}
+            isAllSpaceModelChecked={isAllSpaceModelChecked}
+            onSelectAll={handleSelectAll}
+            onSelectAllModels={handleSelectAllModels}
+            onSelectAllSpaceModels={handleSelectAllSpaceModels}
+            onExpandAll={() => setExpandedKeys(allKeys)}
+            onCollapseAll={() => setExpandedKeys([])}
+          />
+
+          {/* 内容展示区 */}
           <div
             style={{
               border: '1px solid #f0f0f0',
@@ -296,30 +305,29 @@ const ApiKeyPermissionModal: React.FC<ApiKeyPermissionModalProps> = ({
               overflowY: 'auto',
             }}
           >
-            {treeData.length > 0 ? (
-              <Tree
-                checkable
-                checkStrictly={false}
-                expandedKeys={expandedKeys}
-                onExpand={setExpandedKeys}
+            {activeTab === 'api' ? (
+              <ApiPermissionTab
+                loading={loading}
+                treeData={treeData}
                 checkedKeys={checkedKeys}
-                onCheck={(keys: any) => {
-                  // checkStrictly={false} 时，keys 是一个数组
-                  setCheckedKeys(keys);
-                }}
-                treeData={treeData as any}
-                fieldNames={{ title: 'name', key: 'key', children: 'apiList' }}
-                titleRender={titleRender}
-                blockNode
+                onCheckedChange={setCheckedKeys}
+                expandedKeys={expandedKeys}
+                onExpandedChange={setExpandedKeys}
+              />
+            ) : activeTab === 'model' ? (
+              <ModelPermissionTab
+                loading={loading}
+                myModels={myModels}
+                checkedModelKeys={checkedModelKeys}
+                onCheckedModelKeysChange={setCheckedModelKeys}
               />
             ) : (
-              !loading && (
-                <Empty
-                  description={dict(
-                    'PC.Pages.MorePage.ApiKeyPermission.noPermissionDefs',
-                  )}
-                />
-              )
+              <ModelPermissionTab
+                loading={loading}
+                myModels={mySpaceModels}
+                checkedModelKeys={checkedModelKeys}
+                onCheckedModelKeysChange={setCheckedModelKeys}
+              />
             )}
           </div>
         </div>

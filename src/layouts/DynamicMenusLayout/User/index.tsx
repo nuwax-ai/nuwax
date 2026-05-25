@@ -14,9 +14,16 @@ import UserAvatar from './UserAvatar';
 
 const cx = classNames.bind(styles);
 
+type UserAvatarMenuItem = (typeof USER_AVATAR_LIST)[number];
+
+type UserAvatarSubMenuItem = UserAvatarMenuItem & {
+  onClick?: () => void;
+};
+
 interface UserProps {
   isAppDetails?: boolean;
   placement?: TooltipPlacement;
+  subMenus?: UserAvatarSubMenuItem[];
 }
 
 /**
@@ -26,6 +33,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
   children,
   placement = 'rightBottom',
   isAppDetails = false,
+  subMenus = [],
 }) => {
   const { openAdmin, setOpenAdmin, setOpenSetting } = useModel('layout');
   const { userInfo } = useModel('userInfo');
@@ -56,6 +64,30 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     },
   });
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  const showSubMenus = isAppDetails && isEnableSubscription;
+
+  const menuList = React.useMemo((): UserAvatarSubMenuItem[] => {
+    if (!showSubMenus) return USER_AVATAR_LIST;
+    const list: UserAvatarSubMenuItem[] = [...USER_AVATAR_LIST];
+
+    // 在倒数第一项（退出登录）前插入这三项
+    list.splice(list.length - 1, 0, ...subMenus);
+    return list;
+  }, [showSubMenus, subMenus]);
+
+  const handleSubMenuClick = (type: UserAvatarEnum) => {
+    const subMenu = subMenus.find((item) => item.type === type);
+    if (subMenu?.onClick) {
+      setOpenAdmin(false);
+      subMenu.onClick();
+      return true;
+    }
+    return false;
+  };
+
   const handlerClick = (type: UserAvatarEnum) => {
     switch (type) {
       // 用户名称
@@ -65,6 +97,11 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         setOpenAdmin(false);
         setOpenSetting(true);
         break;
+      case UserAvatarEnum.My_Subscriptions:
+      case UserAvatarEnum.My_Orders:
+      case UserAvatarEnum.Usage_Stats:
+        handleSubMenuClick(type);
+        break;
       case UserAvatarEnum.Log_Out:
         setOpenAdmin(false);
         run();
@@ -72,8 +109,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     }
   };
 
-  const getMenuText = (type: UserAvatarEnum): string => {
-    switch (type) {
+  const getMenuText = (item: any): string => {
+    switch (item.type) {
       case UserAvatarEnum.User_Name:
         return (
           userInfo?.nickName ||
@@ -84,8 +121,14 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         return dict('PC.Components.UserMenu.profile');
       case UserAvatarEnum.Log_Out:
         return dict('PC.Components.UserMenu.logout');
+      case UserAvatarEnum.My_Subscriptions:
+        return dict('PC.Pages.MorePage.MySubscriptions.pageTitle');
+      case UserAvatarEnum.My_Orders:
+        return dict('PC.Pages.MorePage.MyOrders.pageTitle');
+      case UserAvatarEnum.Usage_Stats:
+        return dict('PC.Pages.UsageStats.pageTitle');
       default:
-        return '';
+        return item.text || '';
     }
   };
   return (
@@ -99,7 +142,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       }}
       content={
         <div className={cx(styles.container)}>
-          {USER_AVATAR_LIST.map((item) => {
+          {menuList.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';
             const cursorStyle =
@@ -110,7 +153,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
               <UserActionItem
                 key={item.type}
                 {...item}
-                text={getMenuText(item.type)}
+                text={getMenuText(item)}
                 onClick={handlerClick}
                 className={cx(cursorStyle, style)}
               />

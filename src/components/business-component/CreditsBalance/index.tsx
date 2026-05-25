@@ -2,7 +2,8 @@ import SiteFooter from '@/components/SiteFooter';
 import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBreakdown/components/PurchaseModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
-import { Button } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -10,7 +11,17 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const CreditsBalance: React.FC = () => {
+interface CreditsBalanceProps {
+  className?: string;
+  showFooter?: boolean;
+  onClick?: () => void;
+}
+
+const CreditsBalance: React.FC<CreditsBalanceProps> = ({
+  className,
+  showFooter = true,
+  onClick,
+}) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const [balance, setBalance] = useState<number | null>(null);
   const [purchaseModalVisible, setPurchaseModalVisible] = useState(false);
@@ -28,10 +39,10 @@ const CreditsBalance: React.FC = () => {
     let intervalId: NodeJS.Timeout;
     if (showCredits) {
       fetchCredits();
-      // 增加定时刷新，每 15 秒刷新一次
+      // 增加定时刷新，每 1 分钟刷新一次
       intervalId = setInterval(() => {
         fetchCredits();
-      }, 15000);
+      }, 60000);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -39,7 +50,11 @@ const CreditsBalance: React.FC = () => {
   }, [showCredits, fetchCredits]);
 
   const handleClickBalance = () => {
-    history.push('/more-page/my-subscriptions');
+    if (onClick) {
+      onClick();
+    } else {
+      history.push('/more-page/my-subscriptions');
+    }
   };
 
   const handleTopUp = (e: React.MouseEvent) => {
@@ -50,15 +65,24 @@ const CreditsBalance: React.FC = () => {
   return (
     <div className={cx(styles['credits-balance-wrapper'])}>
       {showCredits && (
-        <div className={cx(styles.container)} onClick={handleClickBalance}>
+        <div
+          className={cx(styles.container, className)}
+          onClick={handleClickBalance}
+        >
           <span className={cx(styles.label)}>
             {dict('PC.Components.CreditsBalance.credits')}:
           </span>
           <span className={cx(styles.balance)}>
             {balance !== null && balance !== undefined
-              ? balance.toLocaleString()
+              ? Math.floor(balance).toLocaleString()
               : '--'}
+            {tenantConfigInfo?.creditExchangeDesc && (
+              <Tooltip title={tenantConfigInfo.creditExchangeDesc}>
+                <InfoCircleOutlined className={cx(styles['info-icon'])} />
+              </Tooltip>
+            )}
           </span>
+
           <Button
             className={cx(styles['top-up-btn'])}
             size="small"
@@ -68,7 +92,7 @@ const CreditsBalance: React.FC = () => {
           </Button>
         </div>
       )}
-      <SiteFooter className={cx(styles.footer)} />
+      {showFooter && <SiteFooter className={cx(styles.footer)} />}
       <PurchaseModal
         open={purchaseModalVisible}
         onCancel={() => setPurchaseModalVisible(false)}

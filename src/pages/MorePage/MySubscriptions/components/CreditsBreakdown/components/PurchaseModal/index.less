@@ -52,25 +52,31 @@
 
       .package-info {
         flex: 1;
+        min-width: 0;
+        padding-right: @padding;
 
         .package-name-row {
           display: flex;
           align-items: center;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
 
           .package-name {
             font-size: @fontSize;
             font-weight: 600;
             color: @colorTextBase;
-            margin-right: 8px;
           }
+        }
 
-          .package-tag {
-            border-radius: 4px;
-            font-size: 10px;
-            line-height: 16px;
-            padding: 0 4px;
-          }
+        .package-remark {
+          max-width: 460px;
+          margin-bottom: 10px;
+          color: @colorTextTertiary;
+          font-size: @fontSizeSm;
+          line-height: 20px;
+          display: box;
+          overflow: hidden;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
         }
 
         .package-amount {

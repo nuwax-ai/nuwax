@@ -82,6 +82,8 @@ export interface SquarePublishedItemInfo {
   paymentRequired: boolean;
   // 是否已订阅
   subscribed: boolean;
+  // 价格
+  price?: number;
 }
 
 // 广场智能体与插件分类信息
@@ -104,7 +106,8 @@ export interface SquareAgentInfo {
 
 // 单个智能体组件
 export interface SingleAgentProps {
-  isEnableSubscription?: boolean;
+  // 标题
+  title?: React.ReactNode;
   onClick: () => void;
   // 开始使用
   onStartUse?: (e: React.MouseEvent<HTMLElement>) => void;

@@ -98,3 +98,8 @@ export const getPayChannelValueEnum = () => ({
     ),
   },
 });
+
+/**
+ * 支付结算中转静态页路径
+ */
+export const PAYMENT_SETTLEMENT_PATH = '/static/payment-settlement.html';

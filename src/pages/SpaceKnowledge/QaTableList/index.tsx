@@ -9,7 +9,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { Button, Empty, Popconfirm, Spin, Table, TableProps, Tag } from 'antd';
+import { Button, Empty, Popconfirm, Table, TableProps, Tag } from 'antd';
 import cx from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
@@ -127,9 +127,9 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
     });
 
     // 获取QA列表数据
-    const fetchQaList = () => {
+    const fetchQaList = (params: KnowledgeQaListParams) => {
       setLoading(true);
-      apiKnowledgeQaList(tableParams)
+      apiKnowledgeQaList(params)
         .then((res) => {
           const { current, size, total = 0, records } = res.data;
           setTotal(total);
@@ -147,7 +147,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
 
     // 监听分页和筛选变化
     useEffect(() => {
-      fetchQaList();
+      fetchQaList(tableParams);
     }, [
       tableParams.current,
       tableParams.pageSize,
@@ -170,7 +170,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
 
     // 暴露刷新方法给父组件
     useImperativeHandle(ref, () => ({
-      refresh: fetchQaList,
+      refresh: () => fetchQaList(tableParams),
     }));
 
     const handleTableChange: TableProps['onChange'] = (pagination) => {
@@ -201,9 +201,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
           justifyContent: data.length > 0 ? 'flex-start' : 'center',
         }}
       >
-        {loading ? (
-          <Spin spinning={loading} delay={200} />
-        ) : data.length > 0 ? (
+        {data.length > 0 ? (
           <Table
             rowKey="id"
             columns={columns}

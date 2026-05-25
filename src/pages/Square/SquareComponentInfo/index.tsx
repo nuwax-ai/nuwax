@@ -15,7 +15,6 @@ import {
 } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquareComponentInfoProps } from '@/types/interfaces/square';
-import { Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -28,7 +27,7 @@ const cx = classNames.bind(styles);
  * 单个广场插件、工作量组件
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
-  isEnableSubscription = true,
+  title,
   onClick,
   publishedItemInfo,
   onToggleCollectSuccess,
@@ -44,8 +43,6 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     collect,
     statistics,
     created,
-    paymentRequired,
-    subscribed,
   } = publishedItemInfo;
 
   // 根据类型（目标对象（工作流、插件））显示不同的默认图标
@@ -138,24 +135,9 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     }
   };
 
-  /** 需付费时展示角标：技能可显示「已订阅」，插件/工作流仅显示「付费」 */
-  const isSkill = targetType === SquareAgentTypeEnum.Skill;
-  const showSubscribedLabel = isSkill && subscribed === true;
-  const paymentTag =
-    isEnableSubscription && paymentRequired === true ? (
-      <Tag
-        color={showSubscribedLabel ? 'success' : 'processing'}
-        className={cx(styles['payment-tag'])}
-      >
-        {showSubscribedLabel
-          ? dict('PC.Pages.Square.SingleAgent.subscribed')
-          : dict('PC.Pages.Square.SingleAgent.paid')}
-      </Tag>
-    ) : null;
-
   return (
     <CardWrapper
-      title={name}
+      title={title || name}
       avatar={publishUser?.avatar || ''}
       name={publishUser?.nickName || publishUser?.userName}
       content={description}
@@ -163,15 +145,12 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
       defaultIcon={defaultImage}
       onClick={onClick}
       extra={
-        <>
-          {paymentTag}
-          <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
-            {dict(
-              'PC.Pages.Square.SquareComponentInfo.publishedAt',
-              dayjs(created).format('YYYY-MM-DD'),
-            )}
-          </span>
-        </>
+        <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
+          {dict(
+            'PC.Pages.Square.SquareComponentInfo.publishedAt',
+            dayjs(created).format('YYYY-MM-DD'),
+          )}
+        </span>
       }
       footer={
         <footer className={cx('flex', 'items-center', styles.footer)}>

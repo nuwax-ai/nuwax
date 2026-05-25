@@ -334,6 +334,9 @@ export interface TenantConfigInfo {
 
   /* */
   commercialEdition?: boolean;
+
+  /** 模型 OpenAPI 调用基础地址（拼接模型标识 model 字段） */
+  baseModelApiUrl?: string;
 }
 
 // 设置用户账号信息

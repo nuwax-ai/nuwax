@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatarImage from '@/assets/images/avatar.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
@@ -13,10 +14,17 @@ import Setting from '@/layouts/Setting';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
+import { UserAvatarEnum } from '@/types/enums/menus';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  CreditCardOutlined,
+  FileTextOutlined,
+  LineChartOutlined,
+  LoadingOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import { Badge } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -82,6 +90,8 @@ const BaseTemplate: React.FC = () => {
     appAgentDetailLoading,
     setAppAgentDetailLoading,
     setOpenPaymentModal,
+    localCalledTrialCount,
+    clearCalledTrialCount,
   } = useModel('useOpenApp');
 
   const { tenantConfigInfo, runTenantConfig } = useModel('tenantConfigInfo');
@@ -191,12 +201,17 @@ const BaseTemplate: React.FC = () => {
      * 如果智能体详情不存在，则查询智能体详情
      * 扩展页面：/app/open-iframe-page/
      * 全部历史会话页面：/app/history/conversation/
+     * 订阅相关页面：/app/:agentId/my-subscriptions 等
      */
-    if (
-      !appAgentDetail &&
-      (location.pathname.includes('/app/open-iframe-page/') ||
-        location.pathname.includes('/app/history/conversation/'))
-    ) {
+    const shouldFetchAgentDetail =
+      location.pathname.includes('/app/open-iframe-page/') ||
+      location.pathname.includes('/app/history/conversation/') ||
+      location.pathname.includes(`/app/${agentId}/my-subscriptions`) ||
+      location.pathname.includes(`/app/${agentId}/my-orders`) ||
+      location.pathname.includes(`/app/${agentId}/usage-stats`) ||
+      location.pathname.includes(`/app/${agentId}/credit-records`);
+
+    if (!appAgentDetail && shouldFetchAgentDetail && agentId) {
       setAppAgentDetailLoading(true);
       runDetail(agentId);
     }
@@ -302,6 +317,7 @@ const BaseTemplate: React.FC = () => {
     return () => {
       eventBus.off(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
       setUnreadCount(0);
+      clearCalledTrialCount();
     };
   }, []);
 
@@ -395,14 +411,33 @@ const BaseTemplate: React.FC = () => {
     return (url || '').replace(/\/+$/, '');
   }, []);
 
-  // 打开消息弹窗
-  const handleOpenMessage = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setOpenMessage(true);
-  };
-
   // 侧栏加载态：详情未就绪时也展示 loading，避免刷新首帧闪现按钮
   const showAppSidebarLoading = appAgentDetailLoading || !appAgentDetail;
+
+  const handleOpenCreditsBalance = () => {
+    history.push(`/app/${agentId}/my-subscriptions`);
+  };
+
+  const subMenus = [
+    {
+      type: UserAvatarEnum.My_Subscriptions,
+      icon: <CreditCardOutlined style={{ fontSize: 14 }} />,
+      text: dict('PC.Pages.MorePage.MySubscriptions.pageTitle'),
+      onClick: () => history.push(`/app/${agentId}/my-subscriptions`),
+    },
+    {
+      type: UserAvatarEnum.My_Orders,
+      icon: <FileTextOutlined style={{ fontSize: 14 }} />,
+      text: dict('PC.Pages.MorePage.MyOrders.pageTitle'),
+      onClick: () => history.push(`/app/${agentId}/my-orders`),
+    },
+    {
+      type: UserAvatarEnum.Usage_Stats,
+      icon: <LineChartOutlined style={{ fontSize: 14 }} />,
+      text: dict('PC.Pages.UsageStats.pageTitle'),
+      onClick: () => history.push(`/app/${agentId}/usage-stats`),
+    },
+  ];
 
   return (
     <div className={cx('flex', 'h-full', styles.container)}>
@@ -543,7 +578,7 @@ const BaseTemplate: React.FC = () => {
               >
                 <SvgIcon
                   name="icons-nav-wodedingyue"
-                  style={{ fontSize: 18 }}
+                  style={{ fontSize: 16 }}
                 />
                 <span className="text-ellipsis">订阅</span>
               </div>
@@ -624,8 +659,15 @@ const BaseTemplate: React.FC = () => {
           </div>
         )}
 
+        {/* 积分相关入口：放到二级导航栏底部固定展示 */}
+        <CreditsBalance
+          className={styles['integral-footer-balance']}
+          showFooter={false}
+          onClick={() => handleOpenCreditsBalance()}
+        />
+
         {/* 用户区域，固定在底部 */}
-        <User isAppDetails={true} placement="topLeft">
+        <User isAppDetails={true} placement="topLeft" subMenus={subMenus}>
           <footer
             className={cx(
               'flex',
@@ -634,7 +676,7 @@ const BaseTemplate: React.FC = () => {
               'gap-4',
               styles['user-area'],
             )}
-            onClick={() => setOpenAdmin(true)}
+            onClick={() => setOpenAdmin(!openAdmin)}
           >
             {/* 用户头像 */}
             <div className={cx('cursor-pointer', styles['user-avatar'])}>
@@ -648,18 +690,22 @@ const BaseTemplate: React.FC = () => {
               {userInfo?.nickName || userInfo?.userName}
             </span>
 
-            {/* 未读消息 */}
-            <Badge count={unreadCount} size="small">
-              <div
-                className={cx(styles['active-icon-container'])}
-                onClick={handleOpenMessage}
-              >
-                <SvgIcon
-                  name="icons-nav-notification"
-                  style={{ fontSize: 16 }}
-                />
-              </div>
-            </Badge>
+            {/* 未读消息：作为 Popover trigger，点击切换显示/隐藏 */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Message className={styles.messageContainer}>
+                <Badge count={unreadCount} size="small">
+                  <div className={cx(styles['active-icon-container'])}>
+                    <SvgIcon
+                      name="icons-nav-notification"
+                      style={{ fontSize: 16 }}
+                    />
+                  </div>
+                </Badge>
+              </Message>
+            </div>
           </footer>
         </User>
       </div>
@@ -675,15 +721,18 @@ const BaseTemplate: React.FC = () => {
       {/* 设置弹窗 */}
       <Setting />
 
-      {/* 消息弹窗 */}
-      <Message className={styles.messageContainer} />
+      {/* 消息弹窗由侧栏底部 Message 组件承载 */}
 
       <ConditionRender condition={isEnableSubscription}>
         {/* 付费订阅套餐弹窗 */}
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          overCallLimit={appAgentDetail?.overCallLimit ?? false}
+          calledTrialCount={localCalledTrialCount}
+          trialCount={appAgentDetail?.trialCount}
+          isNeedSubscription={
+            appAgentDetail?.paymentRequired && !appAgentDetail?.subscribed
+          }
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}

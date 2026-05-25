@@ -148,8 +148,8 @@ const Chat: React.FC = () => {
 
     openPaymentModal,
     setOpenPaymentModal,
-    isNeedSubscription,
-    setIsNeedSubscription,
+    localCalledTrialCount,
+    incrementCalledTrialCount,
   } = useModel('useOpenApp');
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -484,17 +484,15 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = defaultAgentDetail || conversationInfo?.agent;
+    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
     if (targetAgent) {
       setAgentDetail(targetAgent);
 
       // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
       if (targetAgent.paymentRequired && !targetAgent.subscribed) {
         setOpenPaymentModal(true);
-        setIsNeedSubscription(true);
       } else {
         setOpenPaymentModal(false);
-        setIsNeedSubscription(false);
       }
       // 设置应用智能体详情
       handleSetAppAgentDetail(targetAgent);
@@ -689,7 +687,6 @@ const Chat: React.FC = () => {
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
 
       setOpenPaymentModal(false);
-      setIsNeedSubscription(false);
     };
   }, [id]);
 
@@ -791,6 +788,7 @@ const Chat: React.FC = () => {
       agentMode: selectedAgentMode || agentMode,
     };
 
+    incrementCalledTrialCount();
     onMessageSend(sendParams);
   };
 
@@ -1201,7 +1199,7 @@ const Chat: React.FC = () => {
                     icon={
                       <SvgIcon
                         name="icons-nav-wodedingyue"
-                        style={{ fontSize: 18 }}
+                        style={{ fontSize: 16 }}
                       />
                     }
                     onClick={() => setOpenPaymentModal(true)}
@@ -1431,12 +1429,7 @@ const Chat: React.FC = () => {
               className={cx(styles['chat-input-container'])}
               onEnter={handleMessageSend}
               visible={showScrollBtn && isHoveringChat}
-              wholeDisabled={
-                wholeDisabled ||
-                (isEnableSubscription &&
-                  isNeedSubscription &&
-                  agentDetail?.overCallLimit)
-              }
+              wholeDisabled={wholeDisabled}
               clearLoading={clearLoading}
               onClear={handleClear}
               manualComponents={manualComponents}
@@ -1661,7 +1654,11 @@ const Chat: React.FC = () => {
         <PaymentSubscriptionModal
           open={openPaymentModal}
           targetType="Agent"
-          overCallLimit={agentDetail?.overCallLimit ?? false}
+          calledTrialCount={localCalledTrialCount}
+          trialCount={agentDetail?.trialCount}
+          isNeedSubscription={
+            agentDetail?.paymentRequired && !agentDetail?.subscribed
+          }
           loading={loadingAgentSubscriptionPlans || loadingMySubscription}
           // 套餐列表
           plans={agentSubscriptionPlans}

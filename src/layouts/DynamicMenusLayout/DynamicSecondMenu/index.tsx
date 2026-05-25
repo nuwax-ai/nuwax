@@ -359,6 +359,14 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         return true;
       }
 
+      // 特殊处理：进入 API 日志页面 (/more-page/api-key-logs) 时，让“API KEY”菜单项保持高亮
+      if (
+        pathname === '/more-page/api-key-logs' &&
+        pathWithoutQuery === '/more-page/api-key'
+      ) {
+        return true;
+      }
+
       // 精确匹配或前缀匹配
       return (
         pathname === pathWithoutQuery ||
@@ -493,6 +501,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
         if (
           (target.path === '/more-page/credit-records' &&
             rawMenuPath === '/more-page/my-subscriptions') ||
+          (target.path === '/more-page/api-key-logs' &&
+            rawMenuPath === '/more-page/api-key') ||
           target.path === rawMenuPath ||
           target.path.startsWith(rawMenuPath + '/')
         ) {

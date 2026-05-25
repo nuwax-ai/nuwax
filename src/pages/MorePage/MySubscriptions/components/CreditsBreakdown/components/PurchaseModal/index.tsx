@@ -1,15 +1,12 @@
 import { XModalForm } from '@/components/ProComponents';
-import { apiGetAgentSubscriptionOrderCashier } from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
-import {
-  apiCreateCreditOrder,
-  apiListCreditPackages,
-} from '@/services/subscriptionService';
+import { apiListCreditPackages } from '@/services/subscriptionService';
 import { CreditPackageInfo } from '@/types/interfaces/subscription';
-import { message, Space, Spin, Statistic, Tag } from 'antd';
+import { Space, Spin, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo } from 'react';
 import { useRequest } from 'umi';
+import { useSubscriptionPurchase } from '../../../../hooks/useSubscriptionPurchase';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -47,47 +44,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
     return [];
   }, [packagesData]);
 
-  // 获取收银台地址并跳转支付
-  const { run: getCashierUrl, loading: fetchingCashier } = useRequest(
-    apiGetAgentSubscriptionOrderCashier,
-    {
-      manual: true,
-      onSuccess: (res: any) => {
-        // 兼容处理：有些环境下 res 是原始数据，有些则是 RequestResponse 包裹
-        const data = res?.data || res;
-        if (data && data?.cashierUrl) {
-          const returnUrl = encodeURIComponent(window.location.href);
-          const separator = data.cashierUrl.includes('?') ? '&' : '?';
-          const url = `${data.cashierUrl}${separator}returnUrl=${returnUrl}`;
-          window.location.href = url;
-        }
-      },
-    },
-  );
-
-  // 创建积分增购订单
-  const { run: createOrder, loading: creatingOrder } = useRequest(
-    apiCreateCreditOrder,
-    {
-      manual: true,
-      onSuccess: (res: any) => {
-        if (res) {
-          // 兼容处理获取返回的数据内容
-          const data = res?.data || res;
-          // 获取创建订单返回的订单ID（用于换取收银台URL）
-          const orderId = data?.id;
-          if (orderId) {
-            // 继续获取支付收银台地址
-            getCashierUrl(orderId);
-          } else {
-            message.error(
-              dict('PC.Pages.MorePage.MySubscriptions.orderIdNotFound'),
-            );
-          }
-        }
-      },
-    },
-  );
+  // 引入订阅/积分增购统一 Hook 逻辑
+  const { loading: paying, handlePayCredits } = useSubscriptionPurchase();
 
   /**
    * 点击积分套餐处理函数
@@ -95,8 +53,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
    */
   const handleItemClick = (id: number) => {
     // 防止重复请求
-    if (creatingOrder || fetchingCashier) return;
-    createOrder({ packageId: id });
+    if (paying) return;
+    handlePayCredits(id);
   };
 
   return (
@@ -138,15 +96,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ open, onCancel }) => {
                       <span className={cx(styles['package-name'])}>
                         {pkg.packageName}
                       </span>
-                      {pkg.remark && (
-                        <Tag
-                          color="orange"
-                          className={cx(styles['package-tag'])}
-                        >
-                          {pkg.remark}
-                        </Tag>
-                      )}
                     </div>
+                    {pkg.remark && (
+                      <div className={cx(styles['package-remark'])}>
+                        {pkg.remark}
+                      </div>
+                    )}
                     <div className={cx(styles['package-amount'])}>
                       <Statistic
                         value={pkg.creditAmount}
