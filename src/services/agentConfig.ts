@@ -1,4 +1,4 @@
-import type { AgentInterventionRespondRequest } from '@/types/interfaces/acpIntervention';
+import type { AgentInterventionRespondRequest } from '@/components/business-component/AgentIntervention';
 import {
   AgentAddParams,
   AgentCardInfo,

@@ -1,11 +1,16 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
-import AgentInterventionChatLayer from '@/components/AgentInterventionChatLayer';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import type {
+  AgentMode,
+  McpAskInteraction,
+  McpAskRespondPayload,
+} from '@/components/business-component/AgentIntervention';
+import { AgentInterventionChatLayer } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
@@ -42,7 +47,6 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import type { AgentMode } from '@/types/interfaces/acpIntervention';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
   MessageSourceType,
@@ -54,10 +58,6 @@ import type {
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
-import type {
-  McpAskInteraction,
-  McpAskRespondPayload,
-} from '@/types/interfaces/mcpAskIntervention';
 import {
   IUpdateStaticFileParams,
   StaticFileInfo,

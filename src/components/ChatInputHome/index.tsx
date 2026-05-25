@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
@@ -7,7 +8,6 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
-import type { AgentMode } from '@/types/interfaces/acpIntervention';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';

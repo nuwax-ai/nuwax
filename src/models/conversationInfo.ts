@@ -1,10 +1,14 @@
+import {
+  hydrateMcpAskInteractionsInMessageList,
+  processInterventionSsePatch,
+  useAgentInterventionHandlers,
+} from '@/components/business-component/AgentIntervention';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { useAgentInterventionHandlers } from '@/hooks/useAgentInterventionHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -71,12 +75,10 @@ import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
-import { hydrateMcpAskInteractionsInMessageList } from '@/utils/mcpAskHydrateMessage';
 import {
   perfTracker,
   type MessagePerfLifecycle,
 } from '@/utils/nuwaClawBridge/perfTracker';
-import { processInterventionSsePatch } from '@/utils/processInterventionSsePatch';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
