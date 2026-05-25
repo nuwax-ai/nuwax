@@ -7,6 +7,7 @@ import {
 } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { getPricingTypeLabel } from '@/utils/resourcePricing';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Switch, message } from 'antd';
 import React, { useState } from 'react';
@@ -16,14 +17,6 @@ import {
   apiSystemListPricingConfig,
   apiSystemModelPricingConfigSave,
 } from '../services/resource';
-
-// 定价类型标签映射
-const PRICING_TYPE_LABEL_MAP: Record<ResourcePricingType, string> = {
-  [ResourcePricingType.ONE_TIME]: '单次',
-  [ResourcePricingType.BUYOUT]: '买断',
-  [ResourcePricingType.MONTHLY]: '包月',
-  [ResourcePricingType.TIERED]: '阶梯计费',
-};
 
 interface ModelPricingTabProps {
   /** 表格操作 ref，供父组件在弹窗保存后刷新列表 */
@@ -161,8 +154,7 @@ const ModelPricingTab: React.FC<ModelPricingTabProps> = ({
       search: false,
       render: (_, record) =>
         record.pricingType
-          ? PRICING_TYPE_LABEL_MAP[record.pricingType as ResourcePricingType] ||
-            record.pricingType
+          ? getPricingTypeLabel(record.pricingType as ResourcePricingType)
           : '',
     },
     // 定价档位
