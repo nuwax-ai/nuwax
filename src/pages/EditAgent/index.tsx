@@ -130,6 +130,7 @@ const EditAgent: React.FC = () => {
     viewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    refreshFileListImmediately,
     openPreviewView,
     restartVncPod,
     restartAgent,
@@ -1186,7 +1187,7 @@ const EditAgent: React.FC = () => {
                             isCanDeleteSkillFile={true}
                             // 刷新文件树回调
                             onRefreshFileTree={() =>
-                              handleRefreshFileList(devConversationId)
+                              refreshFileListImmediately(devConversationId)
                             }
                             // VNC 空闲检测配置（仅通用型智能体启用）
                             idleDetection={{
