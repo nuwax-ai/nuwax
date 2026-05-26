@@ -172,6 +172,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 是否正在刷新文件树
     const [isRefreshingFileTree, setIsRefreshingFileTree] =
       useState<boolean>(false);
+    const isRefreshingFileTreeRef = useRef<boolean>(false);
 
     // 是否正在上传文件
     const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
@@ -265,14 +266,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 刷新文件树和文件内容
     const handleRefreshFileList = useCallback(async () => {
-      // 如果正在刷新，直接返回，防止重复点击
-      if (isRefreshingFileTree) {
+      // 使用 ref 防重复点击，避免闭包中 isRefreshingFileTree 过期
+      if (isRefreshingFileTreeRef.current) {
         return;
       }
 
-      try {
-        setIsRefreshingFileTree(true);
+      isRefreshingFileTreeRef.current = true;
+      setIsRefreshingFileTree(true);
 
+      try {
         // 刷新文件树
         await onRefreshFileTree?.();
 
@@ -320,21 +322,27 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               );
             } catch (error) {
               console.error('Failed to refresh file content: ', error);
+              setIsRefreshingFileTree(false);
+              isRefreshingFileTreeRef.current = false;
             }
           }
         }
       } catch (error) {
         console.error('Failed to refresh file tree: ', error);
       } finally {
+        isRefreshingFileTreeRef.current = false;
         setIsRefreshingFileTree(false);
       }
     }, [
-      isRefreshingFileTree,
       onRefreshFileTree,
       isPreviewableFile,
       selectedFileId,
       selectedFileNode,
       fetchFileContentUpdateFiles,
+      isVideo,
+      isAudio,
+      isOfficeDocument,
+      isImage,
     ]);
 
     // 文件选择（内部函数，执行实际的选择逻辑）
@@ -1814,7 +1822,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                         onClick={handleRefreshFileList}
                         className={styles.actionButton}
                         loading={isRefreshingFileTree}
-                        disabled={isRefreshingFileTree}
                       />
                     </Tooltip>
                   )}
