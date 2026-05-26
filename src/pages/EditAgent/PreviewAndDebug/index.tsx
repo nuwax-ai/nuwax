@@ -1,4 +1,9 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import {
+  AgentInterventionChatLayer,
+  type AgentMode,
+  useAgentInterventionLayer,
+} from '@/components/business-component/AgentIntervention';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -353,6 +358,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [agentId, agentConfigInfo, form]);
 
+  const agentModeRef = useRef<AgentMode>('yolo');
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -392,10 +399,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       isSync: false,
       // 技能ID列表
       skillIds,
+      agentMode: agentModeRef.current,
     };
 
     onMessageSend(sendParams);
   };
+
+  const interventionLayer = useAgentInterventionLayer({
+    conversationId: devConversationIdRef.current,
+    messageList,
+    onSendMessage: (msg) => handleMessageSend(msg),
+  });
+  agentModeRef.current = interventionLayer.agentMode;
 
   /**
    * 打开 / 切换 文件预览面板
@@ -651,6 +666,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                   className={cx(styles['conversation-status-bar'])}
                 />
               )}
+            {/* Agent Intervention: ACP 权限审批 / MCP Ask 表单 */}
+            <AgentInterventionChatLayer {...interventionLayer.chatLayerProps} />
             {/*会话输入框*/}
             <ChatInputHome
               key={`edit-agent-${agentId}`}
@@ -686,6 +703,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 hasUserSentMessage
               }
               isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+              // Agent mode 切换 (YOLO / Ask)
+              {...interventionLayer.agentModeInputProps}
               // 禁用 @ 提及功能 (编排页面不支持 @ 提及功能)
               enableMention={false}
               placeholder={dict(

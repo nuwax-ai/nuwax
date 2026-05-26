@@ -1,7 +1,7 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import { createInterventionTriggeredAt } from './interventionTrigger';
-import { parseMcpAskToolInput } from './mcpAskQuestionMock';
+import { parseMcpAskToolInput } from './parseMcpAskToolInput';
 
 function getComponentInput(component: any): unknown {
   return component?.input ?? component?.result?.input;

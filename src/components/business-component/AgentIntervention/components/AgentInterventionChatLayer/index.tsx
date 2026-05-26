@@ -2,7 +2,6 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useActiveInterventionQueue } from '../../hooks/useActiveInterventionQueue';
-import { useAgentInterventionDevMock } from '../../hooks/useAgentInterventionDevMock';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
@@ -11,8 +10,6 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../../types/mcpAskIntervention';
-import type { AcpPermissionMockScenario } from '../../utils/acpPermissionMock';
-import type { McpAskQuestionMockScenario } from '../../utils/mcpAskQuestionMock';
 import InterventionDockPanel from '../InterventionDockPanel';
 import styles from './AgentInterventionChatLayer.less';
 
@@ -28,38 +25,17 @@ export interface AgentInterventionChatLayerProps {
     interaction: McpAskInteraction,
     payload: McpAskRespondPayload,
   ) => void | Promise<void>;
-  injectMockAcpPermission: (
-    scenario?: AcpPermissionMockScenario,
-    targetMessageId?: string,
-  ) => void;
-  injectMockMcpAsk: (
-    scenario?: McpAskQuestionMockScenario,
-    targetMessageId?: string,
-  ) => void;
-  injectAllInterventionMocks?: () => void;
 }
 
 const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
-  conversationId,
   className,
   messageList,
   onRespondAcpPermission,
   onRespondMcpAsk,
-  injectMockAcpPermission,
-  injectMockMcpAsk,
-  injectAllInterventionMocks,
 }) => {
   const [dismissedMcpAskRequestIds, setDismissedMcpAskRequestIds] = useState<
     Set<string>
   >(() => new Set());
-
-  useAgentInterventionDevMock({
-    conversationId,
-    messageList,
-    injectMockAcpPermission,
-    injectMockMcpAsk,
-    injectAllInterventionMocks,
-  });
 
   const activeQueueItems = useActiveInterventionQueue(messageList);
   const queueItems = useMemo(
@@ -87,7 +63,7 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
       );
       return next.size === prev.size ? prev : next;
     });
-  }, [activeQueueItems, dismissedMcpAskRequestIds]);
+  }, [activeQueueItems]);
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {

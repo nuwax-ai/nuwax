@@ -2,8 +2,8 @@
 export { default as AgentInterventionChatLayer } from './components/AgentInterventionChatLayer';
 
 // Hooks
-export { useActiveInterventionQueue } from './hooks/useActiveInterventionQueue';
 export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandlers';
+export { useAgentInterventionLayer } from './hooks/useAgentInterventionLayer';
 
 // Utils
 export { hydrateMcpAskInteractionsInMessageList } from './utils/mcpAskHydrateMessage';

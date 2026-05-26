@@ -12,18 +12,6 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
-import {
-  injectAcpPermissionIntoMessageList,
-  isAcpMockLocalRespondEnabled,
-  type AcpPermissionMockScenario,
-} from '../utils/acpPermissionMock';
-import { injectAllInterventionMocks } from '../utils/interventionDemoStack';
-import { isMockMcpAskRequestId } from '../utils/interventionMockIds';
-import {
-  injectMcpAskIntoMessageList,
-  isMcpAskMockLocalRespondEnabled,
-  type McpAskQuestionMockScenario,
-} from '../utils/mcpAskQuestionMock';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
 
 export interface UseAgentInterventionHandlersOptions {
@@ -83,44 +71,6 @@ export function useAgentInterventionHandlers({
     [setMessageList],
   );
 
-  const injectMockAcpPermission = useCallback(
-    (
-      scenario: AcpPermissionMockScenario = 'pending',
-      targetMessageId?: string,
-    ) => {
-      setMessageList((list) =>
-        injectAcpPermissionIntoMessageList(list, scenario, targetMessageId),
-      );
-    },
-    [setMessageList],
-  );
-
-  const injectMockMcpAsk = useCallback(
-    (
-      scenario: McpAskQuestionMockScenario = 'choice',
-      targetMessageId?: string,
-    ) => {
-      setMessageList((list) => {
-        const { list: nextList, injected } = injectMcpAskIntoMessageList(
-          list,
-          scenario,
-          targetMessageId,
-        );
-        if (!injected) {
-          console.warn(
-            '[mcpAskQuestionMock] 注入失败：请确认会话中已有 Agent 回复消息',
-          );
-        }
-        return nextList;
-      });
-    },
-    [setMessageList],
-  );
-
-  const injectAllInterventionMocksHandler = useCallback(() => {
-    setMessageList((list) => injectAllInterventionMocks(list));
-  }, [setMessageList]);
-
   const respondAcpPermission = useCallback(
     async (
       interaction: AcpPermissionInteraction,
@@ -135,16 +85,6 @@ export function useAgentInterventionHandlers({
             : undefined,
         errorMessage: undefined,
       });
-
-      if (isAcpMockLocalRespondEnabled()) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 400);
-        });
-        updateAcpPermissionInteraction(intervention.id, {
-          responseStatus: 'submitted',
-        });
-        return;
-      }
 
       try {
         const isSelected = acpResponse.outcome.outcome === 'selected';
@@ -198,31 +138,11 @@ export function useAgentInterventionHandlers({
       const requestId = interaction.input.requestId;
       const { action } = payload;
 
-      updateMcpAskInteraction(requestId, {
-        responseStatus: 'submitting',
-        formData: payload.formData,
-        errorMessage: undefined,
-      });
-
       const resolveStatus = (): McpAskInteraction['responseStatus'] => {
         if (action === 'cancel') return 'cancelled';
         if (action === 'skip') return 'skipped';
         return 'submitted';
       };
-
-      if (
-        isMcpAskMockLocalRespondEnabled() &&
-        isMockMcpAskRequestId(requestId)
-      ) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 400);
-        });
-        updateMcpAskInteraction(requestId, {
-          responseStatus: resolveStatus(),
-          formData: payload.formData,
-        });
-        return null;
-      }
 
       updateMcpAskInteraction(requestId, {
         responseStatus: resolveStatus(),
@@ -236,8 +156,5 @@ export function useAgentInterventionHandlers({
   return {
     respondAcpPermission,
     respondMcpAsk,
-    injectMockAcpPermission,
-    injectMockMcpAsk,
-    injectAllInterventionMocks: injectAllInterventionMocksHandler,
   };
 }

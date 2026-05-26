@@ -9,8 +9,6 @@ describe('AgentInterventionChatLayer', () => {
         messageList={[]}
         onRespondAcpPermission={vi.fn()}
         onRespondMcpAsk={vi.fn()}
-        injectMockAcpPermission={vi.fn()}
-        injectMockMcpAsk={vi.fn()}
       />,
     );
     expect(container.innerHTML).toBe('');

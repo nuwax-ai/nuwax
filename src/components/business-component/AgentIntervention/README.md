@@ -16,58 +16,56 @@ AgentIntervention/
     AcpPermissionCard/              # ACP 权限审批卡片
     McpAskQuestionCard/             # MCP Ask 表单卡片
   hooks/
+    useAgentInterventionLayer.ts    # 页面接入 hook（推荐）
     useActiveInterventionQueue.ts   # 扫描 messageList 中活跃的干预队列
-    useAgentInterventionHandlers.ts # 响应/mock 注入处理器
-    useAgentInterventionDevMock.ts  # 开发 mock（URL 参数触发）
+    useAgentInterventionHandlers.ts # 响应处理器（底层）
     useInterventionEscapeKey.ts     # Esc 快捷键
   utils/
     processInterventionSsePatch.ts  # SSE 事件拦截入口
     applyAcpPermissionSseEvent.ts   # ACP SSE 事件解析
     applyMcpAskToolCallSseEvent.ts  # MCP Ask SSE 事件解析
+    parseMcpAskToolInput.ts         # MCP Ask 工具输入解析
     mcpAskHydrateMessage.ts         # 历史消息 MCP Ask 状态重建
     mcpAskResumeMessage.ts          # MCP Ask 回复消息构建
     parseMcpAskSchema.ts            # JSON Schema → 表单字段解析
-    acpPermissionMock.ts            # ACP mock 数据
-    mcpAskQuestionMock.ts           # MCP Ask mock 数据
-    interventionDemoStack.ts        # 组合 mock 注入
-    interventionMockIds.ts          # mock ID 常量
     interventionTrigger.ts          # triggeredAt 单调递增生成器
 ```
 
-## 接入步骤
+## 快速接入
 
-### 1. conversationInfo model（数据层）
+使用 `useAgentInterventionLayer` hook，4 行完成接入：
 
-在 `src/models/conversationInfo.ts` 中完成三处接入：
-
-**a) 初始化 handlers**
-
-```typescript
+```tsx
 import {
-  useAgentInterventionHandlers,
-  processInterventionSsePatch,
-  hydrateMcpAskInteractionsInMessageList,
+  AgentInterventionChatLayer,
+  useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
 
-// 在 model 函数体内调用
-const {
-  respondAcpPermission,
-  respondMcpAsk,
-  injectMockAcpPermission,
-  injectMockMcpAsk,
-  injectAllInterventionMocks,
-} = useAgentInterventionHandlers({
-  setMessageList,
-  conversationId: currentConversationId,
+// 在组件内：
+const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionLayer({
+  conversationId: id,
+  messageList,
+  onSendMessage: handleMessageSend,
 });
+
+// sendParams 中加 agentMode
+<AgentInterventionChatLayer {...chatLayerProps} />
+<ChatInputHome {...agentModeInputProps} ... />
 ```
 
-**b) SSE 事件拦截**
+hook 返回：
 
-在 SSE 消息处理循环中，`processInterventionSsePatch` 必须在普通消息处理之前调用：
+- `agentMode` — 当前模式（`'ask'` | `'yolo'`），用于发送消息参数
+- `chatLayerProps` — `AgentInterventionChatLayer` 所需的全部 props
+- `agentModeInputProps` — `ChatInputHome` 模式切换所需 props（含 `agentMode`, `onAgentModeChange`, `showAgentModeSelector`）
+
+## 数据层接入（conversationInfo model）
+
+`useAgentInterventionLayer` 内部依赖 model 中的 `respondAcpPermission` 和 `respondMcpAsk`。model 中需要完成两处接入：
+
+**SSE 事件拦截** — 在 SSE 消息处理循环中，`processInterventionSsePatch` 必须在普通消息处理之前调用：
 
 ```typescript
-// 在 SSE 回调中，对每条消息：
 const interventionPatch = processInterventionSsePatch(res, currentMessage);
 if (interventionPatch) {
   list.splice(index, 1, interventionPatch);
@@ -75,9 +73,7 @@ if (interventionPatch) {
 }
 ```
 
-**c) 历史消息 hydration**
-
-加载历史消息列表时，调用 `hydrateMcpAskInteractionsInMessageList` 重建 MCP Ask 交互状态：
+**历史消息 hydration** — 加载历史消息列表时：
 
 ```typescript
 const _messageList = hydrateMcpAskInteractionsInMessageList(
@@ -85,70 +81,116 @@ const _messageList = hydrateMcpAskInteractionsInMessageList(
 );
 ```
 
-### 2. Chat 页面（视图层）
+## SSE 事件数据格式
 
-在 `src/pages/Chat/index.tsx` 中渲染 `AgentInterventionChatLayer`：
+### ACP 权限审批
 
-```tsx
-import {
-  AgentInterventionChatLayer,
-  type AgentMode,
-  type McpAskInteraction,
-  type McpAskRespondPayload,
-} from '@/components/business-component/AgentIntervention';
+SSE 事件类型：`ACP_REQUEST_PERMISSION` 或 messageType `acpRequestPermission`
 
-// 在 Chat 组件 JSX 中，位于输入框上方：
-<AgentInterventionChatLayer
-  conversationId={id}
-  messageList={messageList}
-  onRespondAcpPermission={respondAcpPermission}
-  onRespondMcpAsk={handleRespondMcpAsk}
-  injectMockAcpPermission={injectMockAcpPermission}
-  injectMockMcpAsk={injectMockMcpAsk}
-  injectAllInterventionMocks={injectAllInterventionMocks}
-/>;
-```
-
-`handleRespondMcpAsk` 需要将 `respondMcpAsk` 返回的 resume message 发送给 Agent：
-
-```typescript
-const handleRespondMcpAsk = async (
-  interaction: McpAskInteraction,
-  payload: McpAskRespondPayload,
-) => {
-  const resumeMessage = await respondMcpAsk(interaction, payload);
-  if (resumeMessage) {
-    // 将 resume message 作为用户消息发送给 Agent
-    sendMessage(resumeMessage);
+```json
+{
+  "eventType": "ACP_REQUEST_PERMISSION",
+  "data": {
+    "messageType": "acpRequestPermission",
+    "subType": "AcpRequestPermission",
+    "data": {
+      "session_id": "sess_xxx",
+      "tool_call": {
+        "tool_call_id": "tc_xxx",
+        "kind": "edit",
+        "title": "Edit file.ts",
+        "raw_input": { ... },
+        "status": "pending"
+      },
+      "options": [
+        { "option_id": "opt_1", "kind": "allow_once", "name": "Allow" },
+        { "option_id": "opt_2", "kind": "allow_always", "name": "Always Allow" },
+        { "option_id": "opt_3", "kind": "reject_once", "name": "Reject" }
+      ],
+      "_intervention": {
+        "id": "itv_xxx",
+        "kind": "approval",
+        "source": "acp_permission",
+        "protocol": "acp",
+        "acp": {
+          "method": "session/request_permission",
+          "request": { ... }
+        }
+      }
+    }
   }
-};
+}
 ```
 
-### 3. 类型引用
+### MCP Ask 结构化提问
 
-所有对外暴露的类型统一从 barrel 导入：
+SSE 事件类型：messageType `tool_call`，工具名匹配 `nuwax_ask_question` / `nuwax_ask_user` / `nuwaclaw_ask_user`
 
-```typescript
-import type {
-  AgentMode, // 'ask' | 'yolo'
-  AcpPermissionInteraction, // ACP 权限交互状态
-  AcpRequestPermissionResponse, // ACP 响应结构
-  McpAskInteraction, // MCP Ask 交互状态
-  McpAskRespondPayload, // MCP Ask 响应结构
-  AgentInterventionRespondRequest, // 后端 API 请求体
-} from '@/components/business-component/AgentIntervention';
+```json
+{
+  "data": {
+    "messageType": "tool_call",
+    "subType": "tool_call",
+    "data": {
+      "tool_call_id": "tc_xxx",
+      "raw_input": {
+        "toolName": "nuwax_ask_question",
+        "schemaVersion": "mcp_ask.v1",
+        "requestId": "req_xxx",
+        "revision": 1,
+        "sessionId": "sess_xxx",
+        "title": "请选择继续方式",
+        "description": "单选",
+        "ui": {
+          "version": "interaction_ui.v1",
+          "presentation": "inline",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "choice": {
+                "type": "string",
+                "enum": ["deploy", "test", "cancel"],
+                "title": "选项"
+              }
+            },
+            "required": ["choice"]
+          },
+          "uiSchema": {
+            "choice": {
+              "ui:widget": "radio",
+              "ui:options": {
+                "enumNames": ["直接部署", "先跑测试", "取消任务"]
+              }
+            },
+            "ui:options": { "allowSkip": true, "skipLabel": "跳过" }
+          },
+          "submitLabel": "提交",
+          "cancelLabel": "取消"
+        },
+        "timeoutMs": 1800000
+      }
+    }
+  }
+}
 ```
 
-### 4. 后端 API
+### uiSchema 支持的 widget 类型
 
-ACP 权限审批通过 `src/services/agentConfig.ts` 中的 `apiAgentInterventionRespond` 发送：
+| widget              | 说明              | 渲染组件       |
+| ------------------- | ----------------- | -------------- |
+| `radio`             | 单选              | Radio.Group    |
+| `checkboxes`        | 多选              | Checkbox.Group |
+| `select`            | 下拉选择          | Select         |
+| `text`              | 单行文本          | Input          |
+| `textarea`          | 多行文本          | Input.TextArea |
+| `radio-with-custom` | 单选 + 自定义输入 | Radio + Input  |
 
-```
-POST /api/agent-interventions/{interventionId}/respond
-Body: AgentInterventionRespondRequest
-```
+### presentation 模式
 
-MCP Ask 不走单独 API，resume message 作为普通聊天消息发回 Agent。
+| 模式     | 说明                       |
+| -------- | -------------------------- |
+| `inline` | 内联表单（默认）           |
+| `wizard` | 多步向导（需配置 `steps`） |
 
 ## 数据流
 
@@ -163,12 +205,13 @@ SSE Event
               → 用户操作 → respondAcpPermission / respondMcpAsk
 ```
 
-## 开发调试
+## 后端 API
 
-URL 参数触发 mock 干预：
+ACP 权限审批通过 `src/services/agentConfig.ts` 中的 `apiAgentInterventionRespond` 发送：
 
-- `?mockAcp=1` — 注入 ACP 权限审批 mock
-- `?mockAsk=1` — 注入 MCP Ask 表单 mock
-- `?mockAll=1` — 同时注入两种 mock
+```
+POST /api/agent-interventions/{interventionId}/respond
+Body: AgentInterventionRespondRequest
+```
 
-也可通过 `injectMockAcpPermission` / `injectMockMcpAsk` 手动注入。
+MCP Ask 不走单独 API，resume message 作为普通聊天消息发回 Agent。

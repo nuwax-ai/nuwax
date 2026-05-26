@@ -5,7 +5,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createInterventionTriggeredAt } from './interventionTrigger';
-import { parseMcpAskToolInput } from './mcpAskQuestionMock';
+import { parseMcpAskToolInput } from './parseMcpAskToolInput';
 
 export function applyMcpAskToolCallSseEvent(
   res: ConversationChatResponse,

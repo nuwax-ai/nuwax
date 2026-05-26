@@ -124,13 +124,7 @@ export default () => {
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
 
-  const {
-    respondAcpPermission,
-    respondMcpAsk,
-    injectMockAcpPermission,
-    injectMockMcpAsk,
-    injectAllInterventionMocks,
-  } = useAgentInterventionHandlers({
+  const { respondAcpPermission, respondMcpAsk } = useAgentInterventionHandlers({
     setMessageList,
     conversationId: currentConversationId,
   });
@@ -1469,9 +1463,6 @@ export default () => {
     loadingStopConversation,
     respondAcpPermission,
     respondMcpAsk,
-    injectMockAcpPermission,
-    injectMockMcpAsk,
-    injectAllInterventionMocks,
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,
