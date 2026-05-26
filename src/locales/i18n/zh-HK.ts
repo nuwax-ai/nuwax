@@ -117,6 +117,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.ChatInputHome.noActiveConversation": "當前無進行中的會話",
   "PC.Components.ChatInputHome.noAgentPermission": "無智能體使用權限",
   "PC.Components.ChatInputHome.pastedImageFileName": "粘貼圖片-{0}-{1}.png",
+  "PC.Components.ChatInputHome.pastedFileName": "粘貼文件-{0}-{1}",
+  "PC.Components.ChatInputHome.dropFilesHint": "釋放以上傳文件",
   "PC.Components.ChatInputHome.stoppingConversation": "正在停止會話...",
   "PC.Components.ChatInputHome.stoppingTask": "正在停止任務...",
   "PC.Components.ChatInputHome.switchToNormalMode": "切換到普通模式",
