@@ -1,4 +1,10 @@
 import type {
+  AcpPermissionInteraction,
+  AcpRequestPermissionResponse,
+  AgentMode,
+  McpAskInteraction,
+} from '@/components/business-component/AgentIntervention';
+import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
@@ -26,12 +32,6 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
-import type {
-  AcpPermissionInteraction,
-  AcpRequestPermissionResponse,
-  AgentMode,
-} from './acpIntervention';
-import type { McpAskInteraction } from './mcpAskIntervention';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
