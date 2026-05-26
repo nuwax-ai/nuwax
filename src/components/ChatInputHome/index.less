@@ -16,6 +16,26 @@
   border: 1px solid rgba(0, 0, 0, 13%);
   box-shadow: 0 5px 16px -4px #00000012;
 
+  &.drag-over {
+    border-color: @colorPrimary;
+  }
+
+  .drag-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    border: 1px solid @colorPrimary;
+    opacity: 0.8;
+    color: @colorPrimary;
+    font-size: @fontSize;
+    font-weight: 500;
+    pointer-events: none;
+  }
+
   .input {
     font-size: @fontSize;
     caret-color: @colorPrimary;

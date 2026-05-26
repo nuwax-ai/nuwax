@@ -295,17 +295,61 @@ function replaceMathBracket(text: string): string {
 function groupMarkdownProcesses(text: string): string {
   if (!text) return '';
 
-  // 匹配模式：(可选的 div 包裹) + <markdown-custom-process ...> + (可选的闭合标签) + (可选的 div 闭合)
-  // 支持自闭合 <markdown-custom-process /> 或完整标签 <markdown-custom-process>...</markdown-custom-process>
   // 匹配 markdown-custom-process 标签及其可选的 div/p 包装器
   // 注意：[^>]*? 虽然简单，但在绝大多数情况下足够。如果以后有更复杂的属性需求（如带 > 的属性），再考虑更复杂的正则
   const blockRegex =
     /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-process\b[^>]*?>(?:<\/markdown-custom-process>)?)(?:\s*<\/(?:div|p)>\s*)?/g;
 
+  // 1. 扫描所有匹配项，提取 executeId 并记录它们的位置，以解决 SSE 流式生成 and PROCESSING 阶段追加导致的重复问题
+  const matches: {
+    index: number;
+    endIndex: number;
+    executeId: string;
+    fullMatch: string;
+    tagMatch: string;
+  }[] = [];
+  let match;
+  const lastIndexMap = new Map<string, number>(); // executeId -> last match index
+
+  while ((match = blockRegex.exec(text)) !== null) {
+    const fullMatch = match[0];
+    const tagMatch = match[1];
+
+    // 匹配 executeId 属性（支持可选反斜杠转义及不同引号）
+    const executeIdMatch = tagMatch.match(
+      /executeId=(?:\\"|"|\\')([^"\\]+)(?:\\"|"|\\')/i,
+    );
+    const executeId = executeIdMatch ? executeIdMatch[1] : null;
+
+    if (executeId) {
+      matches.push({
+        index: match.index,
+        endIndex: blockRegex.lastIndex,
+        executeId,
+        fullMatch,
+        tagMatch,
+      });
+      lastIndexMap.set(executeId, match.index);
+    }
+  }
+
+  // 2. 根据 lastIndexMap 进行过滤，只保留每个 executeId 的最后一项（最新、属性最全的那一项）
+  let dedupedText = '';
+  let lastPos = 0;
+
+  for (const m of matches) {
+    if (lastIndexMap.get(m.executeId) !== m.index) {
+      dedupedText += text.slice(lastPos, m.index);
+      lastPos = m.endIndex;
+    }
+  }
+  dedupedText += text.slice(lastPos);
+
+  // 3. 对去重后的 dedupedText 进行属性提取、自动安全 URL 编码、格式归一化及合并分组
   let result = '';
   let lastIndex = 0;
   let currentGroup: string[] = [];
-  let match;
+  let groupMatch;
 
   const flushGroup = () => {
     if (currentGroup.length > 0) {
@@ -322,11 +366,70 @@ function groupMarkdownProcesses(text: string): string {
     }
   };
 
-  while ((match = blockRegex.exec(text)) !== null) {
-    const tagMatch = match[1];
+  blockRegex.lastIndex = 0;
+  while ((groupMatch = blockRegex.exec(dedupedText)) !== null) {
+    const tagMatch = groupMatch[1];
+
+    // 自动安全提取并 URL 编码 name 属性以防止换行或引号破坏 markdown HTML 块树解析
+    let processedTag = tagMatch;
+    const nameStartIdx = tagMatch.search(/name=(?:\\"|"|\\')/);
+    if (nameStartIdx !== -1) {
+      const markerMatch = tagMatch
+        .slice(nameStartIdx)
+        .match(/name=(?:\\"|"|\\')/);
+      const marker = markerMatch ? markerMatch[0] : '';
+      const valueStart = nameStartIdx + marker.length;
+
+      const tagEndIdx = tagMatch.indexOf('></markdown-custom-process>');
+      const tagContentEnd =
+        tagEndIdx !== -1
+          ? tagEndIdx
+          : tagMatch.endsWith('/>')
+          ? tagMatch.length - 2
+          : tagMatch.length - 1;
+
+      const quoteLen = marker.includes('\\') ? 2 : 1;
+      const valueEnd = tagContentEnd - quoteLen;
+
+      const rawNameVal = tagMatch.slice(valueStart, valueEnd);
+
+      // 解码 HTML 实体
+      let decodedNameVal = rawNameVal
+        .replace(/&quot;/g, '"')
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&');
+
+      // 尝试进行 decodeURIComponent 以免重复编码
+      try {
+        decodedNameVal = decodeURIComponent(decodedNameVal);
+      } catch (e) {}
+
+      // 安全 URL 编码成单行字符
+      const encodedNameVal = encodeURIComponent(decodedNameVal);
+
+      // 重建标签名属性并统一归一化为 React / rehype-raw 容易挂载的未转义标准 HTML 属性
+      const beforeName = tagMatch.slice(0, nameStartIdx);
+      const closingTag =
+        tagEndIdx !== -1
+          ? '></markdown-custom-process>'
+          : tagMatch.endsWith('/>')
+          ? ' />'
+          : '>';
+
+      let normalizedBeforeName = beforeName
+        .replace(/executeId=\\"/g, 'executeId="')
+        .replace(/executeId=\\'/g, 'executeId="')
+        .replace(/type=\\"/g, 'type="')
+        .replace(/status=\\"/g, 'status="')
+        .replace(/\\"/g, '"')
+        .replace(/\\'/g, "'");
+
+      processedTag = `${normalizedBeforeName}name="${encodedNameVal}"${closingTag}`;
+    }
 
     // 规范化标签（确保有闭合）
-    let normalizedTag = tagMatch;
+    let normalizedTag = processedTag;
     if (
       !normalizedTag.endsWith('/>') &&
       !normalizedTag.includes('</markdown-custom-process>')
@@ -338,7 +441,7 @@ function groupMarkdownProcesses(text: string): string {
     const isPlan = /type=["']Plan["']/.test(normalizedTag);
 
     // 处理匹配项之前的文本
-    const textBefore = text.slice(lastIndex, match.index);
+    const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
     if (textBefore.trim() !== '') {
       flushGroup();
       result += textBefore;
@@ -355,7 +458,7 @@ function groupMarkdownProcesses(text: string): string {
   }
 
   flushGroup();
-  result += text.slice(lastIndex);
+  result += dedupedText.slice(lastIndex);
 
   return result;
 }

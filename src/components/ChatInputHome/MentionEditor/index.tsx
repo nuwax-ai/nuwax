@@ -1065,32 +1065,31 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     /**
      * 处理粘贴事件
-     * - 如果剪贴板中包含图片：交给外部 onPaste（用于上传图片），不处理文本
+     * - 如果剪贴板中包含文件：交给外部 onPaste（用于上传附件），不处理文本
      * - 如果只有文本/DOM：阻止默认粘贴行为，只按纯文本插入，去掉所有原始 DOM 属性/样式
      */
     const handlePasteEvent = useCallback(
       (e: React.ClipboardEvent<HTMLDivElement>) => {
         const clipboardData = e.clipboardData;
 
-        // 1. 先检查是否包含图片，如果有图片则交给外部 onPaste 处理上传
-        if (clipboardData && clipboardData.items) {
-          let hasImage = false;
+        // 1. 先检查是否包含文件，如果有文件则交给外部 onPaste 处理上传
+        if (clipboardData?.items) {
+          let hasFile = false;
           for (let i = 0; i < clipboardData.items.length; i += 1) {
-            const item = clipboardData.items[i];
-            if (item.type.indexOf('image') !== -1) {
-              hasImage = true;
+            if (clipboardData.items[i].kind === 'file') {
+              hasFile = true;
               break;
             }
           }
 
-          if (hasImage) {
+          if (hasFile) {
             onPaste(e);
             // 不要在这里 preventDefault，让外层 onPaste 自行决定是否阻止默认行为
             return;
           }
         }
 
-        // 2. 没有图片时，按纯文本方式粘贴，去掉所有样式/属性
+        // 2. 没有文件时，按纯文本方式粘贴，去掉所有样式/属性
         e.preventDefault();
 
         const text = clipboardData?.getData('text/plain') ?? '';
