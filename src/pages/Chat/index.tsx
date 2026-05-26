@@ -246,6 +246,7 @@ const Chat: React.FC = () => {
     viewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    refreshFileListImmediately,
     openPreviewView,
     openDesktopView,
     restartVncPod,
@@ -1498,7 +1499,7 @@ const Chat: React.FC = () => {
                   onFileTreePinnedChange={setIsFileTreePinned}
                   isCanDeleteSkillFile={true}
                   // 刷新文件树回调
-                  onRefreshFileTree={() => handleRefreshFileList(id)}
+                  onRefreshFileTree={() => refreshFileListImmediately(id)}
                   // VNC 空闲检测配置（仅通用型智能体启用）
                   idleDetection={{
                     enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
