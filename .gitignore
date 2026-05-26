@@ -39,4 +39,5 @@ pnpm-lock.yaml
 .agent
 .kilo
 .temp
+.hermes
 # /deploy_test.sh
