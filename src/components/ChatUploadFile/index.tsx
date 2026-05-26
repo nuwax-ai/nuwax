@@ -1,5 +1,6 @@
 import FileTypeIcon from '@/components/base/FileTypeIcon';
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatUploadFileProps } from '@/types/interfaces/agentConfig';
 import { UploadFileInfo } from '@/types/interfaces/common';
 import { formatBytes } from '@/utils/byteConverter';
@@ -27,9 +28,12 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
 
   /**
    * 渲染图片文件项
+   * 上传过程中仅展示 loading，上传完成后使用服务端 URL 渲染图片
    */
   const renderImageFile = (file: UploadFileInfo) => {
     const status = getStatus(file);
+    const isUploading =
+      file.status === UploadFileStatus.uploading || status === 'active';
 
     return (
       <div
@@ -41,7 +45,7 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
           'items-center',
         )}
       >
-        {/* 图片文件使用原来的逻辑 */}
+        {/* 图片容器 */}
         <div className={cx(styles['image-container'], 'relative')}>
           <Image
             src={file?.url}
@@ -49,18 +53,12 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             preview={false}
             className={styles['file-image']}
           />
-          {/* 状态指示器 */}
-          {/* {status === 'success' && (
-            <CheckCircleOutlined
-              className={cx(styles['status-icon'], styles['status-success'])}
-            />
-          )} */}
           {status === 'exception' && (
             <CloseOutlined
               className={cx(styles['status-icon'], styles['status-error'])}
             />
           )}
-          {status === 'active' && (
+          {isUploading && (
             <div
               className={cx(styles['status-icon'], styles['status-loading'])}
             >
@@ -84,6 +82,8 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
    */
   const renderDocumentFile = (file: UploadFileInfo) => {
     const status = getStatus(file);
+    const isUploading =
+      file.status === UploadFileStatus.uploading || status === 'active';
 
     return (
       <div
@@ -98,18 +98,12 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
             size={50}
             preview={false}
           />
-          {/* 状态指示器 */}
-          {/* {status === 'success' && (
-            <CheckCircleOutlined
-              className={cx(styles['status-icon'], styles['status-success'])}
-            />
-          )} */}
           {status === 'exception' && (
             <CloseOutlined
               className={cx(styles['status-icon'], styles['status-error'])}
             />
           )}
-          {status === 'active' && (
+          {isUploading && (
             <div
               className={cx(styles['status-icon'], styles['status-loading'])}
             >
@@ -138,9 +132,8 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
         // 根据文件类型选择不同的渲染方式
         if (file?.type?.includes('image/')) {
           return renderImageFile(file as UploadFileInfo);
-        } else {
-          return renderDocumentFile(file as UploadFileInfo);
         }
+        return renderDocumentFile(file as UploadFileInfo);
       })}
     </div>
   );

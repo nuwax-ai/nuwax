@@ -117,6 +117,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ChatInputHome.noActiveConversation": "活発な会話はありません",
   "PC.Components.ChatInputHome.noAgentPermission": "エージェントの使用許可がありません",
   "PC.Components.ChatInputHome.pastedImageFileName": "貼り付けられた画像-{0}-{1}.png",
+  "PC.Components.ChatInputHome.pastedFileName": "貼り付けられたファイル-{0}-{1}",
+  "PC.Components.ChatInputHome.dropFilesHint": "離してファイルをアップロード",
   "PC.Components.ChatInputHome.stoppingConversation": "会話を中止します...",
   "PC.Components.ChatInputHome.stoppingTask": "タスクを停止しています...",
   "PC.Components.ChatInputHome.switchToNormalMode": "通常モードに切り替える",
