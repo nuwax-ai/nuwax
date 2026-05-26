@@ -206,7 +206,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
     // 统一使用一个时间戳，适用于 html、office、json、视频、音频、图片等需要刷新的文件类型
-    const fileRefreshTimestampRef = useRef<number>(Date.now());
+    const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
+      Date.now(),
+    );
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -290,18 +292,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 return;
               }
 
-              // 更新刷新时间戳
-              fileRefreshTimestampRef.current = Date.now();
+              // 更新刷新时间戳，触发预览区重渲染
+              setFileRefreshTimestamp(Date.now());
 
-              // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
+              // 视频、音频、office、图片等通过 FilePreview 渲染，浅拷贝节点触发更新
               if (isVideo || isAudio || isOfficeDocument || isImage) {
-                // 如果是新选中的图片文件，重置选中文件节点，触发一次重渲染
-                if (isImage) {
-                  // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
-                  setSelectedFileNode((prevNode) =>
-                    prevNode ? { ...prevNode } : prevNode,
-                  );
-                }
+                setSelectedFileNode((prevNode) =>
+                  prevNode ? { ...prevNode } : prevNode,
+                );
                 return;
               }
 
@@ -407,8 +405,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 判断文件是否为图片类型
           const isImageFileType = isImageFile(fileNode?.name || '');
 
-          // 更新刷新时间戳
-          fileRefreshTimestampRef.current = Date.now();
+          // 更新刷新时间戳，触发预览区重渲染
+          setFileRefreshTimestamp(Date.now());
 
           setSelectedFileId(fileNode?.id || fileId);
 
@@ -416,22 +414,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             setViewFileType('preview');
           }
 
-          // 如果文件为图片、视频、音频、文档类型，则直接设置为选中文件节点
+          // 图片、视频、音频、office 等通过 FilePreview 渲染
           if (
             isImageFileType ||
             isVideoFileType ||
             isAudioFileType ||
             isOfficeFile
           ) {
-            setSelectedFileNode(fileNode);
-
-            // 如果是新选中的图片文件，重置选中文件节点，触发一次重渲染
-            if (isImageFileType) {
-              // ref 变化不会触发 render，这里浅拷贝触发一次重渲染
-              setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode } : prevNode,
-              );
-            }
+            setSelectedFileNode({ ...fileNode });
           }
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
@@ -1349,7 +1339,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           taskAgentSelectTrigger !== undefined
             ? `trigger-${taskAgentSelectTrigger}`
             : 'trigger-none';
-        const timestampPart = `timestamp-${fileRefreshTimestampRef.current}`;
+        const timestampPart = `timestamp-${fileRefreshTimestamp}`;
         const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
 
         // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
@@ -1357,7 +1347,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         const triggerValue =
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
-            : fileRefreshTimestampRef.current;
+            : fileRefreshTimestamp;
         const separator = fileProxyUrl.includes('?') ? '&' : '?';
         const fileUrl = triggerValue
           ? `${fileProxyUrl}${separator}t=${triggerValue}`
@@ -1365,7 +1355,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
         return { key: fileKey, url: fileUrl };
       },
-      [taskAgentSelectTrigger],
+      [taskAgentSelectTrigger, fileRefreshTimestamp],
     );
 
     /**
