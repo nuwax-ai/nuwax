@@ -526,8 +526,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       {allAttachments.map((attachment, index) => (
                         <MessageAttachment
                           key={attachment.content?.id || index}
-                          attachment={attachment.content}
-                          type={attachment.type}
+                          attachment={attachment?.content}
+                          type={attachment?.type}
                           size={60}
                           showPreview={true}
                         />
