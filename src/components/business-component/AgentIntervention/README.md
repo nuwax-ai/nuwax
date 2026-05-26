@@ -85,65 +85,101 @@ const _messageList = hydrateMcpAskInteractionsInMessageList(
 
 ### ACP 权限审批
 
-SSE 事件类型：`ACP_REQUEST_PERMISSION` 或 messageType `acpRequestPermission`
+字段格式以 NuwaClaw `docs/permission-request-handler-design.md` 为唯一来源。前端兼容后端包裹后的事件，但业务字段必须保持下面的 RCoder snake_case 格式。
 
 ```json
 {
-  "eventType": "ACP_REQUEST_PERMISSION",
+  "session_id": "sess_xxx",
+  "message_type": "acpRequestPermission",
+  "sub_type": "request_permission",
   "data": {
-    "messageType": "acpRequestPermission",
-    "subType": "AcpRequestPermission",
-    "data": {
+    "request_permission_request": {
       "session_id": "sess_xxx",
       "tool_call": {
         "tool_call_id": "tc_xxx",
-        "kind": "edit",
-        "title": "Edit file.ts",
-        "raw_input": { ... },
-        "status": "pending"
+        "kind": "execute",
+        "status": "pending",
+        "title": "bash",
+        "content": [],
+        "raw_input": {
+          "command": "touch approval-test.txt"
+        },
+        "_meta": {}
       },
       "options": [
-        { "option_id": "opt_1", "kind": "allow_once", "name": "Allow" },
-        { "option_id": "opt_2", "kind": "allow_always", "name": "Always Allow" },
-        { "option_id": "opt_3", "kind": "reject_once", "name": "Reject" }
+        {
+          "option_id": "once",
+          "kind": "allow_once",
+          "name": "Allow once",
+          "_meta": {}
+        },
+        {
+          "option_id": "always",
+          "kind": "allow_always",
+          "name": "Always allow",
+          "_meta": {}
+        },
+        {
+          "option_id": "reject",
+          "kind": "reject_once",
+          "name": "Reject",
+          "_meta": {}
+        }
       ],
-      "_intervention": {
-        "id": "itv_xxx",
-        "kind": "approval",
-        "source": "acp_permission",
-        "protocol": "acp",
-        "acp": {
-          "method": "session/request_permission",
-          "request": { ... }
+      "_meta": {}
+    },
+    "tool_call_id": "tc_xxx"
+  },
+  "timestamp": "2026-05-26T07:47:46.175Z"
+}
+```
+
+用户点击 `Reject` 时也回传对应 reject option 的 `option_id`。只有会话取消或 pending 清理时才回传 `Cancelled`。
+
+审批回执经 `apiAgentInterventionRespond` 发送到 Backend，再转发给 NuwaClaw `/computer/notify-resolved`：
+
+```json
+{
+  "permission_resolve_request": {
+    "request_permission_response": {
+      "outcome": {
+        "Selected": {
+          "option_id": "once"
         }
       }
-    }
-  }
+    },
+    "session_id": "sess_xxx",
+    "tool_call_id": "tc_xxx",
+    "save_rule": false
+  },
+  "conversation_id": 43
 }
 ```
 
 ### MCP Ask 结构化提问
 
-SSE 事件类型：messageType `tool_call`，工具名匹配 `nuwax_ask_question` / `nuwax_ask_user` / `nuwaclaw_ask_user`
+Ask/question 不走 ACP `request_permission`，也不调用 `/computer/notify-resolved`。它由 MCP 工具调用产生普通 `agentSessionUpdate/tool_call` 与 `agentSessionUpdate/tool_call_update` 事件，工具名匹配 `nuwax_ask_question` / `nuwax_ask_user` / `nuwaclaw_ask_user`。
 
 ```json
 {
   "data": {
-    "messageType": "tool_call",
+    "messageType": "agentSessionUpdate",
     "subType": "tool_call",
     "data": {
-      "tool_call_id": "tc_xxx",
-      "raw_input": {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "tc_xxx",
+      "rawInput": {
         "toolName": "nuwax_ask_question",
-        "schemaVersion": "mcp_ask.v1",
+        "schemaVersion": "nuwaclaw.mcp_ask.v1",
         "requestId": "req_xxx",
         "revision": 1,
         "sessionId": "sess_xxx",
         "title": "请选择继续方式",
         "description": "单选",
         "ui": {
-          "version": "interaction_ui.v1",
+          "version": "nuwaclaw.interaction.v1",
           "presentation": "inline",
+          "title": "请选择继续方式",
           "schema": {
             "type": "object",
             "properties": {
@@ -211,7 +247,16 @@ ACP 权限审批通过 `src/services/agentConfig.ts` 中的 `apiAgentInterventio
 
 ```
 POST /api/agent-interventions/{interventionId}/respond
-Body: AgentInterventionRespondRequest
+Body: AgentInterventionRespondRequest.permission_resolve_request
 ```
 
-MCP Ask 不走单独 API，resume message 作为普通聊天消息发回 Agent。
+MCP Ask 不走单独 API。用户提交表单后，前端用 `buildMcpAskResumeMessage` 生成普通聊天消息发回 Agent，下一轮 Agent 从用户消息中读取答案继续执行。
+
+消息内容按表单 label 输出，避免把面向用户的答案写成 JSON：
+
+```text
+我已填写「请选择继续方式」，表单内容如下：
+
+选项：先跑测试
+补充说明：先跑关键链路
+```

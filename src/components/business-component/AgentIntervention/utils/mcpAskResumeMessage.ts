@@ -3,12 +3,102 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+import { parseInteractionFields } from './parseMcpAskSchema';
 
-function formatAskFormData(formData?: Record<string, unknown>) {
+function stringifyDisplayValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') {
+    return '未填写';
+  }
+  if (typeof value === 'boolean') {
+    return value ? '是' : '否';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      return '未填写';
+    }
+    return value.map(stringifyDisplayValue).join('、');
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (!entries.length) {
+      return '未填写';
+    }
+    return entries
+      .map(([key, item]) => `${key}: ${stringifyDisplayValue(item)}`)
+      .join('，');
+  }
+  return String(value);
+}
+
+function formatFieldValue(
+  value: unknown,
+  enumValues: string[],
+  enumLabels: string[],
+): string {
+  const labelByValue = new Map(
+    enumValues.map((item, index) => [item, enumLabels[index] ?? item]),
+  );
+
+  if (Array.isArray(value)) {
+    return stringifyDisplayValue(
+      value.map((item) =>
+        typeof item === 'string' ? labelByValue.get(item) ?? item : item,
+      ),
+    );
+  }
+
+  if (typeof value === 'string') {
+    return labelByValue.get(value) ?? value;
+  }
+
+  return stringifyDisplayValue(value);
+}
+
+function formatAskFormData(
+  interaction: McpAskInteraction,
+  formData?: Record<string, unknown>,
+) {
   if (!formData || Object.keys(formData).length === 0) {
     return '（无表单内容）';
   }
-  return JSON.stringify(formData, null, 2);
+
+  const fields = parseInteractionFields(interaction.input.ui);
+  const consumedKeys = new Set<string>();
+  const lines = fields
+    .filter((field) =>
+      Object.prototype.hasOwnProperty.call(formData, field.name),
+    )
+    .map((field) => {
+      consumedKeys.add(field.name);
+      const label = field.property.title || field.name;
+      const otherValue = field.options.otherValue ?? '__custom__';
+      const otherField = field.options.otherField ?? `${field.name}Custom`;
+      if (
+        field.widget === 'radio-with-custom' &&
+        formData[field.name] === otherValue &&
+        Object.prototype.hasOwnProperty.call(formData, otherField)
+      ) {
+        consumedKeys.add(otherField);
+        return `${label}：${stringifyDisplayValue(formData[otherField])}`;
+      }
+      const value = formatFieldValue(
+        formData[field.name],
+        field.enumValues,
+        field.enumLabels,
+      );
+      return `${label}：${value}`;
+    });
+
+  Object.entries(formData).forEach(([key, value]) => {
+    if (!consumedKeys.has(key)) {
+      lines.push(`${key}：${stringifyDisplayValue(value)}`);
+    }
+  });
+
+  return lines.length ? lines.join('\n') : '（无表单内容）';
 }
 
 export function getMcpAskResumeTitle(interaction: McpAskInteraction): string {
@@ -34,9 +124,7 @@ export function buildMcpAskResumeMessage(
   return [
     `我已填写「${title}」，表单内容如下：`,
     '',
-    '```json',
-    formatAskFormData(payload.formData),
-    '```',
+    formatAskFormData(interaction, payload.formData),
   ].join('\n');
 }
 
