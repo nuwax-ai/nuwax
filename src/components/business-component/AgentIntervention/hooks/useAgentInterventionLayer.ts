@@ -24,10 +24,7 @@ export interface UseAgentInterventionLayerResult {
   agentMode: AgentMode;
   chatLayerProps: Pick<
     AgentInterventionChatLayerProps,
-    | 'conversationId'
-    | 'messageList'
-    | 'onRespondAcpPermission'
-    | 'onRespondMcpAsk'
+    'messageList' | 'onRespondAcpPermission' | 'onRespondMcpAsk'
   >;
   agentModeInputProps: AgentModeInputProps;
 }
@@ -35,7 +32,7 @@ export interface UseAgentInterventionLayerResult {
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
-  const { conversationId, messageList, onSendMessage } = options;
+  const { messageList, onSendMessage } = options;
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
 
   const { respondAcpPermission, respondMcpAsk } = useModel('conversationInfo');
@@ -53,7 +50,6 @@ export function useAgentInterventionLayer(
   return {
     agentMode,
     chatLayerProps: {
-      conversationId,
       messageList,
       onRespondAcpPermission: respondAcpPermission,
       onRespondMcpAsk: handleRespondMcpAsk,

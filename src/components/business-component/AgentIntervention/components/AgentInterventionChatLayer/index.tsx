@@ -14,7 +14,6 @@ import InterventionDockPanel from '../InterventionDockPanel';
 import styles from './AgentInterventionChatLayer.less';
 
 export interface AgentInterventionChatLayerProps {
-  conversationId?: number | string | null;
   className?: string;
   messageList: MessageInfo[];
   onRespondAcpPermission: (

@@ -81,7 +81,7 @@ export function useAcpPermissionShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, options, onSelect, onCancel]);
+  }, [enabled, options, onSelect]);
 }
 
 export function getAcpPermissionShortcutHint(kind: string): string | undefined {
