@@ -5035,6 +5035,7 @@ export const ZH_CN: SystemLangMap = {
   // ── 系统管理 - 用户积分查询 ────────────────────────────
   "PC.Pages.SystemUserCredits.colUserId": "用户ID",
   "PC.Pages.SystemUserCredits.colUserName": "用户名称",
+  "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "用户名称/手机号/邮箱",
   "PC.Pages.SystemUserCredits.colPhone": "手机号",
   "PC.Pages.SystemUserCredits.totalCredit": "总积分",
   "PC.Pages.SystemUserCredits.subscriptionCredit": "套餐积分",
