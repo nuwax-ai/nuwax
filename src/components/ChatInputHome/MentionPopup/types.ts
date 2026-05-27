@@ -85,8 +85,18 @@ export interface SkillInfoForAt {
   coverImg: string;
   // 封面图片来源,可用值:SYSTEM,USER
   coverImgSourceType: CoverImgSourceTypeEnum;
+  // 是否需要付费
+  paymentRequired: boolean;
+  // 价格
+  price: number;
+  // 是否已订阅，对智能体和技能有效
+  subscribed: boolean;
+  // 是否超出调用限制
+  overCallLimit: boolean;
   // 收藏状态
   collect: boolean;
+  /**可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 export interface MentionItem {
@@ -100,6 +110,10 @@ export interface MentionItem {
   icon?: string;
   /** 描述文本，用于搜索匹配和提示 */
   description?: string;
+  /** 是否需要付费 */
+  paymentRequired?: boolean;
+  /** 是否已订阅 */
+  subscribed?: boolean;
 }
 
 /**
@@ -139,6 +153,8 @@ export interface MentionPopupProps {
   };
   /** 选择项时的回调 */
   onSelect: (item: MentionItem) => void;
+  /** 是否开启订阅功能（租户配置） */
+  enableSubscription?: boolean;
   /** 关闭弹窗时的回调 */
   onClose: () => void;
   /** 搜索文本（受控模式） */
@@ -207,6 +223,10 @@ export interface MentionEditorProps {
   defaultMentions?: MentionItem[];
   /** 选择提及项时的回调 */
   onMentionSelect?: (item: MentionItem) => void;
+  /** 是否开启订阅功能（租户配置） */
+  enableSubscription?: boolean;
+  /** 选中未订阅的付费技能时的回调（插入 mention 后触发） */
+  onUnsubscribedSkillSelect?: (item: MentionItem) => void;
   /** 当前已选技能 ID 列表变化时的回调 */
   onSkillIdsChange?: (skillIds: Array<number>) => void;
   /** 最小行数（影响最小高度） */
