@@ -158,15 +158,22 @@ const UserCredits: React.FC = () => {
     },
     {
       title: dict('PC.Pages.SystemUserCredits.colUserName'),
+      dataIndex: 'username',
+      key: 'username',
+      ellipsis: true,
+      search: false,
+      render: (_, record) => record.user?.username || '-',
+    },
+    {
+      title: dict('PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail'),
       dataIndex: 'usernamePhoneOrEmail',
       key: 'usernamePhoneOrEmail',
-      ellipsis: true,
       fieldProps: {
         placeholder: `${dict('PC.Common.Global.pleaseInput')}${dict(
-          'PC.Pages.SystemUserCredits.colUserName',
+          'PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail',
         )}`,
       },
-      render: (_, record) => record.user?.username || '-',
+      hideInTable: true,
     },
     {
       title: dict('PC.Pages.SystemUserCredits.colPhone'),

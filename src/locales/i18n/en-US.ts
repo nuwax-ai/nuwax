@@ -5052,6 +5052,7 @@ export const EN_US: SystemLangMap = {
   // ── System Management - User Credits Query ────────────────────────────
   "PC.Pages.SystemUserCredits.colUserId": "User ID",
   "PC.Pages.SystemUserCredits.colUserName": "Username",
+  "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "Username / Phone / Email",
   "PC.Pages.SystemUserCredits.colPhone": "Phone Number",
   "PC.Pages.SystemUserCredits.totalCredit": "Total Credits",
   "PC.Pages.SystemUserCredits.subscriptionCredit": "Plan Credits",
