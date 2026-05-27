@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import type { SkillInfoForAt } from '@/components/ChatInputHome/MentionPopup/types';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
@@ -10,6 +11,7 @@ import {
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import useClickOutside from '@/hooks/useClickOutside';
+import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
@@ -177,6 +179,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   );
 
   const { pendingChanges, setIframeDesignMode } = useModel('appDevDesign');
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
@@ -366,10 +382,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         // 更新技能 ID 列表
         setSkillIds((prev) => [...prev, skill.targetId]);
       }
-      // 在输入框中插入提及文本
+      // 在输入框中插入提及文本并自动关闭下拉菜单
       insertMention(skill.name);
+
+      // 如果未订阅付费技能，且开启了订阅功能，则弹出订阅弹窗
+      if (isEnableSubscription && skill.paymentRequired && !skill.subscribed) {
+        querySkillSubscriptionPlans(skill.targetId);
+        setOpenPaymentModal(true);
+      }
     },
-    [insertMention, selectedMentions],
+    [
+      insertMention,
+      selectedMentions,
+      isEnableSubscription,
+      querySkillSubscriptionPlans,
+    ],
   );
 
   /**
@@ -1301,6 +1328,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           </div>
         </footer>
       </div>
+      <ConditionRender condition={isEnableSubscription}>
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          loading={loadingTargetPricing || loadingMySubscription}
+          plans={targetSubscriptionPlans}
+          // 当前订阅信息
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };
