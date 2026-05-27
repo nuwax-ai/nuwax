@@ -334,6 +334,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       disabled = false,
       className,
       onMentionSelect,
+      enableSubscription = false,
+      onUnsubscribedSkillSelect,
       onSkillIdsChange,
       // 是否启用 @ 提及功能，默认启用
       enableMention = true,
@@ -678,6 +680,18 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     );
 
     /**
+     * 选中未订阅的付费技能时，通知父组件打开订阅弹窗
+     */
+    const notifyUnsubscribedSkillSelect = useCallback(
+      (item: MentionItem) => {
+        if (enableSubscription && item.paymentRequired && !item.subscribed) {
+          onUnsubscribedSkillSelect?.(item);
+        }
+      },
+      [enableSubscription, onUnsubscribedSkillSelect],
+    );
+
+    /**
      * 处理从底部 @ 图标选择提及项
      * 将选中的提及追加到编辑器内容末尾，不替换已有内容
      *
@@ -708,8 +722,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         const serializedText = getSerializedEditorText(container);
         setIsEditorEmpty(serializedText.trim().length === 0);
         onChange?.(serializedText);
+        notifyUnsubscribedSkillSelect(item);
       },
-      [createMentionChip, enableMention, onChange],
+      [
+        createMentionChip,
+        enableMention,
+        onChange,
+        notifyUnsubscribedSkillSelect,
+      ],
     );
 
     // 通过 useImperativeHandle 暴露方法
@@ -867,6 +887,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         // 更新状态
         setSelectedMentions((prev) => [...prev, item]);
         onMentionSelect?.(item);
+        notifyUnsubscribedSkillSelect(item);
         closeMentionPopup();
 
         // 触发 onChange
@@ -874,7 +895,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         setIsEditorEmpty(newText.trim().length === 0);
         onChange?.(newText);
       },
-      [closeMentionPopup, onChange, onMentionSelect, createMentionChip],
+      [
+        closeMentionPopup,
+        onChange,
+        onMentionSelect,
+        createMentionChip,
+        notifyUnsubscribedSkillSelect,
+      ],
     );
 
     /**
@@ -1371,6 +1398,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             visible={showMentionPopup}
             position={mentionPosition}
             onSelect={handleMentionSelect}
+            enableSubscription={enableSubscription}
             onClose={closeMentionPopup}
             searchText={mentionSearchText}
             maxHeight={mentionPopupMaxHeight}

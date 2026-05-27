@@ -46,7 +46,7 @@ const SubscribedCredits: React.FC = () => {
   }
 
   if (!data || data.length === 0) {
-    return <Empty style={{ marginTop: 40 }} />;
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
   }
 
   return (

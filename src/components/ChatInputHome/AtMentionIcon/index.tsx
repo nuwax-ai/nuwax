@@ -22,6 +22,8 @@ export interface AtMentionIconProps {
   enableMention: boolean;
   /** @ 弹窗展示方向 */
   mentionPlacement: MentionPlacement;
+  /** 是否开启订阅功能（租户配置） */
+  enableSubscription?: boolean;
   /** 将选中的提及项插入到输入编辑器 */
   onSelectMention: (item: MentionItem) => void;
 }
@@ -36,6 +38,7 @@ export interface AtMentionIconProps {
 const AtMentionIcon: React.FC<AtMentionIconProps> = ({
   enableMention,
   mentionPlacement,
+  enableSubscription = false,
   onSelectMention,
 }) => {
   // 是否显示提及弹窗
@@ -232,6 +235,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
         visible={atIconShowMentionPopup}
         position={atIconMentionPosition}
         onSelect={handleAtIconMentionSelect}
+        enableSubscription={enableSubscription}
         onClose={closeAtIconMentionPopup}
         showSearchInput={true}
       />
