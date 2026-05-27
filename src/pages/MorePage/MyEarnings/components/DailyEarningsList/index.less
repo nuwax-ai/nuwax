@@ -1,0 +1,36 @@
+@import '@/styles/token.less';
+
+.status-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: @borderRadiusSm;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+
+  &.status-pending {
+    background: @blue-1;
+    color: @blue-6;
+  }
+
+  &.status-settled {
+    background: @green-1;
+    color: @green-6;
+  }
+
+  &.status-applying {
+    background: @orange-1;
+    color: @orange-6;
+  }
+
+  &.status-paying {
+    background: @purple-1;
+    color: @purple-6;
+  }
+}
+
+.amount {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorSuccess;
+  font-family: Outfit, sans-serif;
+}

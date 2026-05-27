@@ -22,10 +22,10 @@ import {
 } from '@/types/enums/library';
 import {
   ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
   ModelFunctionCallEnum,
   ModelNetworkTypeEnum,
   ModelStrategyEnum,
-  ModelTypeEnum,
   ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
@@ -382,47 +382,39 @@ export const MODEL_STRATEGY_LIST = [
     label: dict('PC.Constants.Library.responseTime'),
   },
 ];
-// 模型类型
+/** 模型能力类型选项（值与 ModelCapabilityTypeEnum / 服务端约定一致） */
 export const MODEL_TYPE_LIST = [
   {
-    value: ModelTypeEnum.Completions,
-    label: dict('PC.Constants.Library.textCompletion'),
+    value: ModelCapabilityTypeEnum.Text,
+    label: dict('PC.Constants.Library.capabilityText'),
   },
   {
-    value: ModelTypeEnum.Chat,
-    label: dict('PC.Constants.Library.chatText'),
+    value: ModelCapabilityTypeEnum.Image,
+    label: dict('PC.Constants.Library.capabilityImage'),
   },
   {
-    value: ModelTypeEnum.Edits,
-    label: dict('PC.Constants.Library.textEdit'),
+    value: ModelCapabilityTypeEnum.Audio,
+    label: dict('PC.Constants.Library.capabilityAudio'),
   },
   {
-    value: ModelTypeEnum.Images,
-    label: dict('PC.Constants.Library.imageProcess'),
+    value: ModelCapabilityTypeEnum.Video,
+    label: dict('PC.Constants.Library.capabilityVideo'),
   },
   {
-    value: ModelTypeEnum.Multi,
-    label: dict('PC.Constants.Library.chatMultimodal'),
+    value: ModelCapabilityTypeEnum.TextEmbedding,
+    label: dict('PC.Constants.Library.capabilityTextEmbedding'),
   },
+  // {
+  //   value: ModelCapabilityTypeEnum.MultiEmbedding,
+  //   label: dict('PC.Constants.Library.capabilityMultiEmbedding'),
+  // },
   {
-    value: ModelTypeEnum.Embeddings,
-    label: dict('PC.Constants.Library.vectorEmbedding'),
-  },
-  {
-    value: ModelTypeEnum.Audio,
-    label: dict('PC.Constants.Library.audioProcess'),
-  },
-  {
-    value: ModelTypeEnum.Other,
-    label: dict('PC.Common.Global.other'),
+    value: ModelCapabilityTypeEnum.Reasoning,
+    label: dict('PC.Constants.Library.capabilityReasoning'),
   },
 ];
 // 函数调用支持
 export const MODEL_FUNCTION_CALL_LIST = [
-  {
-    value: ModelFunctionCallEnum.CallSupported,
-    label: dict('PC.Constants.Library.supportFuncCall'),
-  },
   {
     value: ModelFunctionCallEnum.StreamCallSupported,
     label: dict('PC.Constants.Library.supportStreamFuncCall'),

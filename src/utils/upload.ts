@@ -2,6 +2,18 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import { UploadFileInfo } from '@/types/interfaces/common';
 
+/** 仅保留服务端返回的可访问 URL，忽略 blob/base64 等本地预览地址 */
+const resolveRemoteFileUrl = (data: Record<string, any>, item: any) => {
+  const candidates = [data?.url, item.url, item.thumbUrl];
+  return (
+    candidates.find(
+      (url) =>
+        typeof url === 'string' &&
+        (url.startsWith('http://') || url.startsWith('https://')),
+    ) || ''
+  );
+};
+
 export const handleUploadFileList = (fileList: any[], modifyPercent = 99) => {
   return fileList
     .filter((item) => item.status !== UploadFileStatus.removed)
@@ -21,7 +33,7 @@ export const handleUploadFileList = (fileList: any[], modifyPercent = 99) => {
         key: data?.key || '',
         name: data?.fileName || item.name || '',
         size: data?.size || item.size || 0,
-        url: data?.url || item.url || '',
+        url: resolveRemoteFileUrl(data, item),
         type: data?.mimeType || item.type || '',
         uid: item.uid,
         status: status,

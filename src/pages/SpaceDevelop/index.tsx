@@ -447,6 +447,14 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击智能体类型
   const handlerClickAgentType = (item: CustomPopoverItem) => {
+    if (item.value === AgentTypeEnum.AgentFlow) {
+      history.push(`/space/${spaceId}/agent-flow`);
+      return;
+    }
+    if (item.value === AgentTypeEnum.ConversationAgent) {
+      history.push(`/space/${spaceId}/conversation-agent`);
+      return;
+    }
     setOpenCreateAgent(true);
     setCurrentAgentType(item.value as AgentTypeEnum);
   };

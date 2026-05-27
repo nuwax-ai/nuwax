@@ -22,6 +22,7 @@ const cx = classNames.bind(styles);
  * 单个智能体组件
  */
 const SingleAgent: React.FC<SingleAgentProps> = ({
+  title,
   onClick,
   onStartUse,
   extra,
@@ -42,7 +43,6 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
     statistics,
     collect,
   } = publishedItemInfo;
-
   // 智能体收藏
   const { run: runCollectAgent } = useRequest((id: number) => collectApi(id), {
     manual: true,
@@ -73,10 +73,11 @@ const SingleAgent: React.FC<SingleAgentProps> = ({
       runCollectAgent(targetId);
     }
   };
+
   return (
     <CardWrapper
       className={cx(styles['card-wrapper'])}
-      title={name}
+      title={title || name}
       avatar={publishUser?.avatar || defaultAvatar}
       name={publishUser?.nickName || publishUser?.userName}
       content={description}

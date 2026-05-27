@@ -1,0 +1,41 @@
+@import '@/styles/token.less';
+
+.model-tier-list {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 4px;
+  row-gap: 4px;
+}
+
+.model-tier-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  width: fit-content;
+  padding: 2px @paddingXs;
+  font-size: @fontSizeSm;
+  white-space: nowrap;
+  border: 1px solid @colorSplit;
+  border-radius: @borderRadiusOuter;
+  background: #eff6ff;
+  color: @colorTextSecondary;
+}
+
+.model-tier-context {
+  color: @colorPrimary;
+  font-weight: @fontWeightStrong;
+}
+
+.model-tier-separator {
+  color: @colorTextQuaternary;
+}
+
+.model-tier-price {
+  color: @colorTextSecondary;
+}
+
+.model-tier-cache-price {
+  color: @green7;
+  font-weight: 400;
+}

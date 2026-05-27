@@ -26,7 +26,7 @@ import { message, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,6 +39,8 @@ interface PluginHeaderProps {
     | SquareAgentTypeEnum.Skill;
   /** 收藏前面的插槽 */
   extraBeforeCollect?: React.ReactNode;
+  /** 自定义返回；未传时执行浏览器后退 */
+  onBack?: () => void;
 }
 
 /**
@@ -48,8 +50,13 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
   targetInfo,
   targetType,
   extraBeforeCollect,
+  onBack,
 }) => {
   const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
     history.back();
   };
 

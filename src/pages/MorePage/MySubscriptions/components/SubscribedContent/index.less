@@ -1,0 +1,77 @@
+@import '@/styles/token.less';
+
+.subscribed-section {
+  margin-top: calc(@marginLg * 2);
+
+  .subscribed-title {
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    margin-bottom: @marginLg;
+    color: @colorTextBase;
+  }
+
+  .tabs-container {
+    margin-bottom: @margin;
+
+    :global {
+      .ant-segmented {
+        background: #f1f5f9;
+        padding: 5px;
+        border-radius: 8px;
+        transition: none; // 避免容器层级的闪烁
+
+        .ant-segmented-item {
+          border-radius: 6px;
+          transition: color 0.3s ease;
+
+          &-selected {
+            color: @colorPrimary !important;
+            font-weight: 600;
+            background: @colorWhite;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 5%);
+          }
+        }
+
+        .ant-segmented-thumb {
+          background: @colorWhite;
+          border-radius: 6px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 5%);
+        }
+
+        .ant-segmented-item-label {
+          padding: 4px 16px;
+          // min-height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: @fontSizeSm;
+        }
+      }
+    }
+  }
+
+  .content-area {
+    min-height: 400px;
+
+    .tab-content-item {
+      display: none;
+
+      &.active {
+        display: block;
+        animation: fade-in 0.3s ease-in-out;
+      }
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,5 +1,6 @@
-import { AgentComponentTypeEnum } from '../enums/agent';
+import { AgentComponentTypeEnum, AllowCopyEnum } from '../enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '../enums/common';
+import { AgentStatisticsInfo, CreatorInfo } from './agent';
 
 // 技能文件
 export interface SkillFileInfo {
@@ -57,8 +58,18 @@ export interface SkillDetailInfo {
   category: string;
   // 权限列表
   permissions: PermissionsEnum[];
-  // 适用范围
+  // 适用场景列表，如 [TaskAgent, PageApp]
   usageScenarios: string[];
+  // 发布者信息
+  publishUser: CreatorInfo;
+  // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
+  statistics: AgentStatisticsInfo;
+  // 是否允许复制, 1 允许
+  allowCopy: AllowCopyEnum;
+  // 技能付费状态
+  paymentRequired: boolean;
+  // 技能订阅状态
+  subscribed: boolean;
 }
 
 // 修改技能

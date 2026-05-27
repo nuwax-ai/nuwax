@@ -1,5 +1,6 @@
 import {
   ActionItem,
+  LimitedTooltip,
   TableActions,
   XProTable,
 } from '@/components/ProComponents';
@@ -137,6 +138,7 @@ const PublishedManage: React.FC = () => {
       dataIndex: 'description',
       width: 200,
       hideInSearch: true,
+      render: (_, record) => <LimitedTooltip text={record.description} />,
     },
     {
       title: dict('PC.Pages.PublishedManage.versionInfo'),

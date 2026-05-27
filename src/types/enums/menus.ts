@@ -26,6 +26,9 @@ export enum UserAvatarEnum {
   User_Name = 'username',
   Setting = 'setting',
   Log_Out = 'log_out',
+  My_Subscriptions = 'my_subscriptions',
+  My_Orders = 'my_orders',
+  Usage_Stats = 'usage_stats',
 }
 
 // 消息状态,可用值:All, Unread, Read
@@ -45,4 +48,6 @@ export enum SettingActionEnum {
   Usage_Statistics,
   // 语言切换
   Language_Switch,
+  // 开发者资料
+  Developer_Profile,
 }

@@ -1,9 +1,12 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
@@ -100,6 +103,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     conversationInfo,
   } = useModel('conversationInfo');
 
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 是否启用订阅
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
+  // 是否打开订阅弹窗
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
@@ -112,10 +132,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
   // 滚动按钮自身的悬停状态
-  const [isHoveringBtn, setIsHoveringBtn] = useState(false);
+  const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
   // 延迟显示的可见性状态，用于处理移出延时
-  const [delayedVisible, setDelayedVisible] = useState(false);
+  const [delayedVisible, setDelayedVisible] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // 拖拽进入计数，避免 dragenter/dragleave 嵌套元素导致遮罩闪烁
+  const dragCounterRef = useRef<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // 处理可见性延迟逻辑
   useEffect(() => {
@@ -209,6 +232,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     confirmSendMessage(messageInfo);
   };
 
+  const applyServerUploadResult = useCallback(
+    (fileInfo: UploadFileInfo, result: any): UploadFileInfo => {
+      const data = result.data || {};
+      return {
+        ...fileInfo,
+        status: UploadFileStatus.done,
+        percent: 100,
+        url: data?.url || '',
+        key: data?.key || '',
+        name: data?.fileName || fileInfo.name,
+        type: data?.mimeType || fileInfo.type,
+        response: result,
+      };
+    },
+    [],
+  );
+
   const handleChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
     setUploadFiles(handleUploadFileList(fileList));
@@ -221,122 +261,216 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   };
 
   /**
-   * 处理粘贴事件，支持粘贴图片上传
+   * 从剪贴板中提取所有文件（支持图片、文档等多种类型）
    * 支持从剪贴板粘贴图片（Ctrl+V 或 Cmd+V）
    * 支持多张图片同时粘贴
+   *  */
+  const extractClipboardFiles = useCallback(
+    (clipboardData: DataTransfer | null): File[] => {
+      if (!clipboardData?.items) {
+        return [];
+      }
+
+      const files: File[] = [];
+      for (let i = 0; i < clipboardData.items.length; i++) {
+        const item = clipboardData.items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+      return files;
+    },
+    [],
+  );
+
+  /**
+   * 为待上传文件生成默认文件名
    */
-  const handlePaste = useCallback(
-    async (e: React.ClipboardEvent<HTMLDivElement>) => {
-      const clipboardData = e.clipboardData;
-      if (!clipboardData || !clipboardData.items) {
+  const getDefaultFileName = useCallback((file: File, index: number) => {
+    if (file.type.startsWith('image/')) {
+      return t(
+        'PC.Components.ChatInputHome.pastedImageFileName',
+        Date.now(),
+        index + 1,
+      );
+    }
+    return t(
+      'PC.Components.ChatInputHome.pastedFileName',
+      Date.now(),
+      index + 1,
+    );
+  }, []);
+
+  /**
+   * 批量上传文件（粘贴、拖拽共用）
+   */
+  const uploadFilesToServer = useCallback(
+    async (filesToUpload: File[]) => {
+      if (wholeDisabled || !filesToUpload.length) {
         return;
       }
 
-      // 提取所有图片文件
-      const imageFiles: File[] = [];
-      for (let i = 0; i < clipboardData.items.length; i++) {
-        const item = clipboardData.items[i];
-        // 检查是否为图片类型
-        if (item.type.indexOf('image') !== -1) {
-          const file = item.getAsFile();
-          if (file) {
-            imageFiles.push(file);
-          }
-        }
-      }
+      const newUploadFiles: UploadFileInfo[] = filesToUpload.map(
+        (file, index) => ({
+          uid: uuidv4(),
+          name: file.name || getDefaultFileName(file, index),
+          size: file.size,
+          type: file.type,
+          url: '',
+          status: UploadFileStatus.uploading,
+          percent: 0,
+          originFileObj: file,
+        }),
+      );
 
-      // 如果有图片文件，则阻止默认粘贴行为并上传
-      if (imageFiles.length > 0) {
-        e.preventDefault();
+      setUploadFiles((prev) => [
+        ...prev,
+        ...handleUploadFileList(newUploadFiles),
+      ]);
 
-        // 为每个图片文件创建唯一的 uid
-        const newUploadFiles: any[] = imageFiles.map((file, index) => {
-          const uid = uuidv4();
-          return {
-            uid,
-            name:
-              file.name ||
-              t(
-                'PC.Components.ChatInputHome.pastedImageFileName',
-                Date.now(),
-                index + 1,
-              ),
-            size: file.size,
-            type: file.type,
-            status: UploadFileStatus.uploading,
-            percent: 0,
-            originFileObj: file,
-          };
-        });
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const uploadFile = newUploadFiles[i];
 
-        // 先更新 UI 显示上传中状态
-        setUploadFiles((prev) => [
-          ...prev,
-          ...handleUploadFileList(newUploadFiles),
-        ]);
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('type', 'tmp');
 
-        // 手动上传每个文件
-        for (let i = 0; i < imageFiles.length; i++) {
-          const file = imageFiles[i];
-          const uploadFile = newUploadFiles[i];
+          const response = await fetch(UPLOAD_FILE_ACTION, {
+            method: 'POST',
+            headers: {
+              Authorization: token ? `Bearer ${token}` : '',
+            },
+            body: formData,
+          });
 
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('type', 'tmp');
+          const result = await response.json();
 
-            const response = await fetch(UPLOAD_FILE_ACTION, {
-              method: 'POST',
-              headers: {
-                Authorization: token ? `Bearer ${token}` : '',
-              },
-              body: formData,
-            });
-
-            const result = await response.json();
-
-            // 更新上传结果
+          if (result.code === SUCCESS_CODE && result.data) {
             setUploadFiles((prev) =>
               prev.map((item) =>
                 item.uid === uploadFile.uid
-                  ? {
-                      ...item,
-                      status: UploadFileStatus.done,
-                      percent: 100,
-                      url: result.data?.url || '',
-                      key: result.data?.key || '',
-                      name: result.data?.fileName || item.name,
-                      response: result,
-                    }
+                  ? applyServerUploadResult(item, result)
                   : item,
               ),
             );
-          } catch (error) {
-            console.error('Image upload failed:', error);
-            message.error(
-              t(
-                'PC.Components.ChatInputHome.uploadFailedWithName',
-                uploadFile.name,
-              ),
-            );
-
-            // 更新为失败状态
-            setUploadFiles((prev) =>
-              prev.map((item) =>
-                item.uid === uploadFile.uid
-                  ? {
-                      ...item,
-                      status: UploadFileStatus.error,
-                      percent: 0,
-                    }
-                  : item,
-              ),
-            );
+          } else {
+            throw new Error(result.message || 'Upload failed');
           }
+        } catch (error) {
+          console.error('File upload failed:', error);
+          message.error(
+            t(
+              'PC.Components.ChatInputHome.uploadFailedWithName',
+              uploadFile.name,
+            ),
+          );
+
+          setUploadFiles((prev) =>
+            prev.map((item) =>
+              item.uid === uploadFile.uid
+                ? {
+                    ...item,
+                    status: UploadFileStatus.error,
+                    percent: 0,
+                  }
+                : item,
+            ),
+          );
         }
       }
     },
-    [wholeDisabled, token],
+    [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
+  );
+
+  /**
+   * 处理粘贴事件，支持粘贴多种文件上传
+   */
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (wholeDisabled) {
+        return;
+      }
+
+      const pastedFiles = extractClipboardFiles(e.clipboardData);
+      if (!pastedFiles.length) {
+        return;
+      }
+
+      e.preventDefault();
+      await uploadFilesToServer(pastedFiles);
+    },
+    [extractClipboardFiles, uploadFilesToServer, wholeDisabled],
+  );
+
+  /**
+   * 处理拖拽进入，显示上传提示遮罩
+   */
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (wholeDisabled || !e.dataTransfer.types.includes('Files')) {
+        return;
+      }
+      dragCounterRef.current += 1;
+      setIsDragging(true);
+    },
+    [wholeDisabled],
+  );
+
+  /**
+   * 处理拖拽离开，隐藏上传提示遮罩
+   */
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+    }
+  }, []);
+
+  /**
+   * 处理拖拽悬停，允许放置文件
+   */
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (wholeDisabled) {
+        return;
+      }
+      e.dataTransfer.dropEffect = 'copy';
+    },
+    [wholeDisabled],
+  );
+
+  /**
+   * 处理文件拖放上传
+   */
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+
+      if (wholeDisabled) {
+        return;
+      }
+
+      const droppedFiles = Array.from(e.dataTransfer.files || []);
+      if (droppedFiles.length) {
+        await uploadFilesToServer(droppedFiles);
+      }
+    },
+    [uploadFilesToServer, wholeDisabled],
   );
 
   const handleClear = () => {
@@ -437,9 +571,36 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [mentionEditorRef],
   );
 
+  /**
+   * 选中未订阅的付费技能时，打开订阅弹窗并拉取套餐列表
+   */
+  const handleUnsubscribedSkillSelect = useCallback(
+    (item: MentionItem) => {
+      if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
+        return;
+      }
+      querySkillSubscriptionPlans(item.targetId);
+      setOpenPaymentModal(true);
+    },
+    [isEnableSubscription, querySkillSubscriptionPlans],
+  );
+
   return (
     <div className={cx('w-full', 'relative', className)}>
-      <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
+      <div
+        className={cx(styles['chat-container'], 'flex', 'flex-col', {
+          [styles['drag-over']]: isDragging,
+        })}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <ConditionRender condition={isDragging}>
+          <div className={cx(styles['drag-overlay'])}>
+            {t('PC.Components.ChatInputHome.dropFilesHint')}
+          </div>
+        </ConditionRender>
         <PermissionMask
           visible={!hasPermission || isSandboxUnavailable}
           text={
@@ -472,6 +633,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           // 默认提及项列表
           defaultMentions={defaultMentions}
+          enableSubscription={isEnableSubscription}
+          onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
           {/* 清空会话记录 */}
@@ -512,6 +675,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           <AtMentionIcon
             enableMention={enableMention}
             mentionPlacement={mentionPlacement}
+            enableSubscription={isEnableSubscription}
             onSelectMention={handleInsertAtMention}
           />
 
@@ -577,6 +741,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             </Tooltip>
           )}
 
+          {/* 手动选择组件 */}
           <ManualComponentItem
             manualComponents={manualComponents}
             selectedComponentList={selectedComponentList}
@@ -636,12 +801,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     styles['stop-box'],
                     // 当会话进行中且按钮可点击时，使用高亮样式
                     {
-                      [styles['stop-box-active']]:
-                        // !disabledStop &&
-                        // !wholeDisabled &&
-                        !isStoppingConversation,
+                      [styles['stop-box-active']]: !isStoppingConversation,
                     },
-                    // { [styles.disabled]: disabledStop || wholeDisabled },
                   )}
                 >
                   {isStoppingConversation ? (
@@ -708,6 +869,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           <ArrowDownOutlined />
         </div>
       </div>
+
+      {/* 技能订阅弹窗 */}
+      <ConditionRender condition={isEnableSubscription}>
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          loading={loadingTargetPricing || loadingMySubscription}
+          plans={targetSubscriptionPlans}
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };

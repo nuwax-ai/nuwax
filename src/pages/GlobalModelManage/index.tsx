@@ -5,6 +5,7 @@ import {
 } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { MODEL_TYPE_LIST } from '@/constants/library.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
   apiSystemModelAccessControl,
@@ -13,7 +14,7 @@ import {
   apiSystemModelSave,
 } from '@/services/systemManage';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import { ModelCapabilityTypeEnum } from '@/types/enums/modelConfig';
 import { ModelComponentStatusEnum } from '@/types/enums/space';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
@@ -26,6 +27,7 @@ import type {
 import { Button, message, Switch } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
+import ModalitiesTagsCell from '../MorePage/ModelPermissions/ModalitiesTagsCell';
 import CreateModel from '../SpaceLibrary/CreateModel';
 import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthModal';
 
@@ -49,19 +51,32 @@ const GlobalModelManage: React.FC = () => {
     Record<number, boolean>
   >({});
 
-  const selectOptions = [
+  /** 能力类型 value → 展示文案，供列 render Tag 使用 */
+  const capabilityTypeLabelMap = Object.fromEntries(
+    MODEL_TYPE_LIST.map((item) => [item.value, item.label]),
+  ) as Record<ModelCapabilityTypeEnum, string>;
+
+  /** ProTable valueEnum：类型列检索表单项与筛选展示 */
+  const capabilityTypeValueEnum = Object.fromEntries(
+    MODEL_TYPE_LIST.map((item) => [item.value, { text: item.label }]),
+  ) as Record<ModelCapabilityTypeEnum, { text: string }>;
+
+  /** 类型筛选下拉：首项「全部」value 为空；fieldProps 会排除空值项 */
+  const typesSelectOptions = [
+    { label: dict('PC.Pages.GlobalModelManage.all'), value: '' },
+    ...MODEL_TYPE_LIST,
+  ];
+
+  /** 状态筛选下拉：首项「全部」value 为空 */
+  const statusSelectOptions = [
     { label: dict('PC.Pages.GlobalModelManage.all'), value: '' },
     {
-      label: dict('PC.Pages.GlobalModelManage.chatText'),
-      value: ModelTypeEnum.Chat,
+      label: dict('PC.Pages.GlobalModelManage.statusEnabled'),
+      value: ModelComponentStatusEnum.Enabled,
     },
     {
-      label: dict('PC.Pages.GlobalModelManage.embeddings'),
-      value: ModelTypeEnum.Embeddings,
-    },
-    {
-      label: dict('PC.Pages.GlobalModelManage.chatMultiModal'),
-      value: ModelTypeEnum.Multi,
+      label: dict('PC.Pages.GlobalModelManage.statusDisabled'),
+      value: ModelComponentStatusEnum.Disabled,
     },
   ];
 
@@ -167,7 +182,7 @@ const GlobalModelManage: React.FC = () => {
               <div>
                 {dict(
                   'PC.Pages.GlobalModelManage.confirmDeleteModel',
-                  <span style={{ color: 'red' }}>{record.name}</span>,
+                  record.name,
                 )}
               </div>
             ),
@@ -189,23 +204,23 @@ const GlobalModelManage: React.FC = () => {
       hideInSearch: true,
     },
     {
+      // 能力类型列：表格以 Tag 展示；检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnType'),
-      dataIndex: 'type',
-      width: 160,
+      dataIndex: 'types',
       valueType: 'select',
-      valueEnum: {
-        [ModelTypeEnum.Chat]: {
-          text: dict('PC.Pages.GlobalModelManage.chatText'),
-        },
-        [ModelTypeEnum.Embeddings]: {
-          text: dict('PC.Pages.GlobalModelManage.embeddings'),
-        },
-        [ModelTypeEnum.Multi]: {
-          text: dict('PC.Pages.GlobalModelManage.chatMultiModal'),
-        },
-      },
+      valueEnum: capabilityTypeValueEnum,
       fieldProps: {
-        options: selectOptions.filter((v) => v.value !== ''),
+        options: typesSelectOptions.filter((v) => v.value !== ''),
+      },
+      ellipsis: false,
+      render: (_, record) => {
+        const types = record.types;
+        if (!types?.length) {
+          return '-';
+        }
+        return (
+          <ModalitiesTagsCell types={types} labelMap={capabilityTypeLabelMap} />
+        );
       },
     },
     {
@@ -221,10 +236,11 @@ const GlobalModelManage: React.FC = () => {
       hideInSearch: true,
     },
     {
+      // 状态列：检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnStatus'),
       dataIndex: 'enabled',
       width: 100,
-      hideInSearch: true,
+      valueType: 'select',
       valueEnum: {
         [ModelComponentStatusEnum.Enabled]: {
           text: dict('PC.Pages.GlobalModelManage.statusEnabled'),
@@ -232,6 +248,9 @@ const GlobalModelManage: React.FC = () => {
         [ModelComponentStatusEnum.Disabled]: {
           text: dict('PC.Pages.GlobalModelManage.statusDisabled'),
         },
+      },
+      fieldProps: {
+        options: statusSelectOptions.filter((v) => v.value !== ''),
       },
     },
     {
@@ -243,7 +262,7 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnUpdateTime'),
       dataIndex: 'created',
-      width: 200,
+      width: 160,
       hideInSearch: true,
       valueType: 'dateTime',
     },
@@ -289,7 +308,8 @@ const GlobalModelManage: React.FC = () => {
   ];
 
   const request = async (params: any) => {
-    const { type } = params;
+    // 检索表单 types / enabled；apiSystemModelList 无对应参数，筛选仅在前端执行
+    const { types, enabled } = params;
     const res = await apiSystemModelList();
 
     if (res.code !== SUCCESS_CODE) {
@@ -300,8 +320,12 @@ const GlobalModelManage: React.FC = () => {
     }
 
     let data = res.data || [];
-    if (type) {
-      data = data.filter((v) => v.type === type);
+    if (types) {
+      // 保留 record.types 包含所选能力类型的行
+      data = data.filter((v) => v.types?.includes(types));
+    }
+    if (enabled !== undefined && enabled !== '') {
+      data = data.filter((v) => Number(v.enabled) === Number(enabled));
     }
     const { accessControl } = params;
     if (accessControl !== undefined) {
@@ -343,7 +367,10 @@ const GlobalModelManage: React.FC = () => {
         request={request}
         onReset={handleReset}
         showQueryButtons={hasPermission('model_manage_query_list')}
+        scroll={{ x: 'max-content' }}
       />
+
+      {/* 添加模型 */}
       {visible && (
         <CreateModel
           action={apiSystemModelSave}

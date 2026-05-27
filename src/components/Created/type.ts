@@ -13,6 +13,8 @@ export interface CreatedProp {
   isSpaceOnly?: boolean;
   // 打开当前的弹窗
   open: boolean;
+  /** 盖住其它 Modal 时请显式调高（例如在表单 Modal 之上选工具列表） */
+  modalZIndex?: number;
   onCancel: () => void;
   // 选中的头部的tag
   checkTag: AgentComponentTypeEnum;
@@ -24,6 +26,8 @@ export interface CreatedProp {
   hideTop?: AgentComponentTypeEnum[];
   addSkillLoading?: boolean | undefined;
   disableCollect?: boolean; // 是否禁用收藏
+  // 是否显示更多菜单，默认显示
+  showMoreMenus?: boolean;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

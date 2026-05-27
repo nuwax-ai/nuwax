@@ -36,6 +36,11 @@ import { CardBindConfig } from './cardInfo';
 import { ModelConfigInfo } from './model';
 import { PageArgConfig } from './pageDev';
 
+export type AgentHeaderTabKey =
+  | 'arrange'
+  | 'subscriptionSetting'
+  | 'subscriptionStats';
+
 // 智能体header组件
 export interface AgentHeaderProps {
   // 是否隐藏返回箭头
@@ -47,6 +52,8 @@ export interface AgentHeaderProps {
   onEditAgent: () => void;
   onPublish: () => void;
   onOtherAction: (key: ApplicationMoreActionEnum) => void;
+  activeTab?: AgentHeaderTabKey;
+  onTabChange?: (tab: AgentHeaderTabKey) => void;
 }
 
 // 编配title组件

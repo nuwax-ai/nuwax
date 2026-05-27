@@ -27,6 +27,7 @@ const cx = classNames.bind(styles);
  * 单个广场插件、工作量组件
  */
 const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
+  title,
   onClick,
   publishedItemInfo,
   onToggleCollectSuccess,
@@ -136,7 +137,7 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
 
   return (
     <CardWrapper
-      title={name}
+      title={title || name}
       avatar={publishUser?.avatar || ''}
       name={publishUser?.nickName || publishUser?.userName}
       content={description}

@@ -72,6 +72,18 @@ export interface SquarePublishedItemInfo {
   // 可用值:HTTP,CODE
   pluginType: PluginTypeEnum;
   collect: boolean;
+  // 扩展字段
+  ext: Record<string, any>;
+  // 适用场景列表，如 [TaskAgent, PageApp]
+  usageScenarios: string[];
+  // 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  accessControl?: number;
+  // 是否需要付费
+  paymentRequired: boolean;
+  // 是否已订阅
+  subscribed: boolean;
+  // 价格
+  price?: number;
 }
 
 // 广场智能体与插件分类信息
@@ -94,6 +106,8 @@ export interface SquareAgentInfo {
 
 // 单个智能体组件
 export interface SingleAgentProps {
+  // 标题
+  title?: React.ReactNode;
   onClick: () => void;
   // 开始使用
   onStartUse?: (e: React.MouseEvent<HTMLElement>) => void;

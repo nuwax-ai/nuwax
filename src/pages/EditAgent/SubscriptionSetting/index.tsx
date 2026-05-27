@@ -1,0 +1,443 @@
+import ConditionRender from '@/components/ConditionRender';
+import {
+  apiQueryToolPricing,
+  apiUpdateToolPricing,
+} from '@/pages/SpaceResource/services/resource';
+import {
+  ResourcePricingConfigInfo,
+  ResourcePricingStatus,
+  ResourcePricingType,
+  ToolPricingTargetType,
+} from '@/pages/SpaceResource/types/resource';
+import {
+  SubscriptionPlanInfo,
+  SubscriptionPlanStatusEnum,
+} from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
+import { dict } from '@/services/i18nRuntime';
+import { modalConfirm } from '@/utils/ant-custom';
+import { PlusOutlined } from '@ant-design/icons';
+import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Button, Form, InputNumber, message, Switch } from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
+import {
+  apiDeleteAgentSubscriptionPlan,
+  apiGetAgentSubscriptionPlanList,
+  apiUpdateAgentSubscriptionPlan,
+  apiUpdateAgentSubscriptionPlanSort,
+} from '../services/agent-subscription-plan';
+import CreatePlanModal from './CreatePlanModal';
+import SubscriptionPlanCard from './SubscriptionPlanCard';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+interface SubscriptionSettingProps {
+  agentId: number;
+  spaceId: number;
+  visible: boolean;
+}
+
+/**
+ * 可拖拽排序的套餐卡片
+ */
+const SortablePlanCard: React.FC<{
+  id: UniqueIdentifier;
+  children: React.ReactNode;
+}> = ({ id, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={styles['plan-sortable-item']}
+      data-dragging={isDragging}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </div>
+  );
+};
+
+/**
+ * 订阅设置
+ */
+const SubscriptionSetting: React.FC<SubscriptionSettingProps> = ({
+  agentId,
+  spaceId,
+  visible,
+}) => {
+  const [form] = Form.useForm();
+  // 套餐列表
+  const [plans, setPlans] = useState<SubscriptionPlanInfo[]>([]);
+  // 保存中
+  const [saving, setSaving] = useState<boolean>(false);
+  // 订阅模式是否开启
+  const [subscriptionEnabled, setSubscriptionEnabled] =
+    useState<boolean>(false);
+  // 创建套餐模态框是否打开
+  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
+  // 当前编辑套餐
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlanInfo | null>(
+    null,
+  );
+
+  // 拖拽传感器
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+
+  // 查询订阅计划列表
+  const { run: loadAgentSubscriptionPlans } = useRequest(
+    apiGetAgentSubscriptionPlanList,
+    {
+      manual: true,
+      onSuccess: (data: SubscriptionPlanInfo[]) => setPlans(data),
+    },
+  );
+
+  /**
+   * 加载智能体套餐列表
+   */
+  const loadAgentPlans = () => {
+    loadAgentSubscriptionPlans({
+      agentId,
+    });
+  };
+
+  // 修改订阅计划（上线/下线）
+  const {
+    run: runUpdateAgentSubscriptionPlan,
+    loading: updatingSubscriptionPlan,
+  } = useRequest(apiUpdateAgentSubscriptionPlan, {
+    manual: true,
+    loadingDelay: 300,
+    onSuccess: () => {
+      loadAgentPlans();
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.planStatusUpdated'),
+      );
+    },
+  });
+
+  // 删除订阅计划
+  const { run: runDeletePlan } = useRequest(apiDeleteAgentSubscriptionPlan, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Common.Global.deleteSuccess'));
+      loadAgentPlans();
+    },
+  });
+
+  // 更新智能体套餐排序
+  const { run: runUpdatePlanSort } = useRequest(
+    apiUpdateAgentSubscriptionPlanSort,
+    {
+      manual: true,
+    },
+  );
+
+  // 查询当前智能体定价状态（用于回填开关）
+  const { run: loadPricingStatus } = useRequest(apiQueryToolPricing, {
+    manual: true,
+    onSuccess: (data: ResourcePricingConfigInfo) => {
+      const enabled = data?.status === ResourcePricingStatus.ENABLED;
+      setSubscriptionEnabled(enabled);
+      form.setFieldsValue({
+        trialCount: data?.trialCount || 0,
+      });
+    },
+  });
+
+  // 更新定价配置
+  const { run: runUpdatePricingConfig } = useRequest(apiUpdateToolPricing, {
+    manual: true,
+    onSuccess: () => {
+      message.success(dict('PC.Common.Global.operationSuccess'));
+    },
+  });
+
+  useEffect(() => {
+    if (visible) {
+      loadAgentPlans();
+      loadPricingStatus({
+        targetType: ToolPricingTargetType.AGENT,
+        targetId: String(agentId),
+      });
+    }
+  }, [visible, agentId]);
+
+  // 保存定价配置（可试用次数）
+  const handleSave = async () => {
+    await form.validateFields();
+    const values = form.getFieldsValue();
+    setSaving(true);
+    try {
+      await runUpdatePricingConfig({
+        targetType: ToolPricingTargetType.AGENT,
+        targetId: String(agentId),
+        spaceId,
+        pricingType: ResourcePricingType.MONTHLY,
+        trialCount: Number(values.trialCount || 0),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 打开创建套餐模态框
+  const handleOpenCreateModal = () => {
+    setEditingPlan(null);
+    setCreateModalOpen(true);
+  };
+
+  /**
+   * 打开编辑套餐弹窗
+   */
+  const handleEditPlan = (plan: SubscriptionPlanInfo) => {
+    setEditingPlan(plan);
+    setCreateModalOpen(true);
+  };
+
+  /**
+   * 切换套餐状态（上线/下线）
+   */
+  const handleTogglePlanStatus = (
+    plan: SubscriptionPlanInfo,
+    checked: boolean,
+  ) => {
+    if (!plan.id) {
+      return;
+    }
+    runUpdateAgentSubscriptionPlan({
+      ...plan,
+      status: checked
+        ? SubscriptionPlanStatusEnum.Online
+        : SubscriptionPlanStatusEnum.Offline,
+    });
+  };
+
+  /**
+   * 删除套餐（二次确认）
+   */
+  const handleDeletePlan = (plan: SubscriptionPlanInfo) => {
+    if (!plan.id) {
+      return;
+    }
+    modalConfirm(dict('PC.Common.Global.confirmDelete'), plan.name || '', () =>
+      runDeletePlan(plan.id as number),
+    );
+  };
+
+  /**
+   * 套餐拖拽排序
+   */
+  const handlePlanDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = plans.findIndex(
+      (item) => String(item.id) === String(active.id),
+    );
+    const newIndex = plans.findIndex(
+      (item) => String(item.id) === String(over.id),
+    );
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const reorderedPlans = arrayMove(plans, oldIndex, newIndex).map(
+      (item, index) => ({
+        ...item,
+        sort: index + 1,
+      }),
+    );
+    setPlans(reorderedPlans);
+
+    try {
+      await runUpdatePlanSort(
+        reorderedPlans
+          .filter((item) => typeof item.id === 'number')
+          .map((item) => ({
+            id: item.id as number,
+            sort: item.sort,
+          })),
+      );
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.sortUpdated'),
+      );
+    } catch (error) {
+      message.error(dict('PC.Common.Global.operationFailed'));
+      loadAgentPlans();
+    }
+  };
+
+  // 切换订阅模式
+  const handleToggleSubscriptionMode = (checked: boolean) => {
+    const previous = subscriptionEnabled;
+    setSubscriptionEnabled(checked);
+
+    try {
+      runUpdatePricingConfig({
+        targetType: ToolPricingTargetType.AGENT,
+        targetId: String(agentId),
+        spaceId,
+        pricingType: ResourcePricingType.MONTHLY,
+        status: checked
+          ? ResourcePricingStatus.ENABLED
+          : ResourcePricingStatus.DISABLED,
+      });
+    } catch (error) {
+      setSubscriptionEnabled(previous);
+    }
+  };
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div className={styles.container}>
+      {/* 设置面板 */}
+      <div className={styles['setting-panel']}>
+        <div className={styles['enable-row']}>
+          <div className={styles['enable-info']}>
+            <div className={styles['enable-title']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.enablePayment')}
+            </div>
+            <div className={styles['enable-desc']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.enablePaymentDesc')}
+            </div>
+          </div>
+          <Switch
+            checked={subscriptionEnabled}
+            onChange={handleToggleSubscriptionMode}
+          />
+        </div>
+
+        <Form form={form}>
+          <div className={styles['enable-row']}>
+            <div className={styles['enable-info']}>
+              <div className={styles['enable-title']}>
+                {dict(
+                  'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCount',
+                )}
+              </div>
+              <div className={styles['enable-desc']}>
+                {dict(
+                  'PC.Pages.AgentEdit.SubscriptionSetting.defaultTrialCountDesc',
+                )}
+              </div>
+            </div>
+            <div className={styles['trial-controls']}>
+              <Form.Item name="trialCount" noStyle initialValue={0}>
+                <InputNumber
+                  min={0}
+                  max={100000000}
+                  className={styles['trial-input']}
+                />
+              </Form.Item>
+              <Button type="primary" loading={saving} onClick={handleSave}>
+                {dict('PC.Common.Global.save')}
+              </Button>
+            </div>
+          </div>
+        </Form>
+      </div>
+
+      <div className={styles['list-header']}>
+        <div className={cx('flex', 'gap-4', styles['list-title-container'])}>
+          <h3 className={styles['list-title']}>
+            {dict('PC.Pages.AgentEdit.SubscriptionSetting.planList')}
+          </h3>
+          <ConditionRender condition={plans.length > 0}>
+            <span className={styles['count-text']}>
+              {dict('PC.Pages.AgentEdit.SubscriptionSetting.planCount').replace(
+                '{0}',
+                String(plans.length),
+              )}
+            </span>
+          </ConditionRender>
+        </div>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleOpenCreateModal}
+        >
+          {dict('PC.Pages.AgentEdit.SubscriptionSetting.addPlan')}
+        </Button>
+      </div>
+
+      {/* 套餐列表 */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handlePlanDragEnd}
+      >
+        <SortableContext items={plans.map((plan) => String(plan.id))}>
+          <div className={styles['plan-grid']}>
+            {plans.map((plan) => (
+              <div key={plan.id} className={styles['plan-grid-item']}>
+                <SortablePlanCard id={String(plan.id)}>
+                  <SubscriptionPlanCard
+                    plan={plan}
+                    updateLoading={updatingSubscriptionPlan}
+                    onToggle={(_, checked) =>
+                      handleTogglePlanStatus(plan, checked)
+                    }
+                    onEdit={handleEditPlan}
+                    onDelete={() => handleDeletePlan(plan)}
+                  />
+                </SortablePlanCard>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {/* 创建套餐模态框 */}
+      <CreatePlanModal
+        agentId={agentId}
+        open={createModalOpen}
+        editPlan={editingPlan}
+        onCancel={() => {
+          setCreateModalOpen(false);
+          setEditingPlan(null);
+        }}
+        onCreated={loadAgentPlans}
+      />
+    </div>
+  );
+};
+
+export default SubscriptionSetting;

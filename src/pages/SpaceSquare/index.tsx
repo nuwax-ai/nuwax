@@ -15,7 +15,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, Empty, Modal, Segmented, Space } from 'antd';
+import { Button, Empty, Modal, Segmented, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest, useSearchParams } from 'umi';
@@ -72,6 +72,8 @@ const SpaceSection: React.FC = () => {
   } = useSpaceSquare();
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   // 空间广场-分类（根据enabledSandbox动态获取）
   const spaceSquareSegmentedList =
@@ -246,13 +248,57 @@ const SpaceSection: React.FC = () => {
     );
   };
 
+  // 获取订阅标签
+  const getSubscribedLabel = (subscribed: boolean) => {
+    return (
+      <Tag
+        color={subscribed ? 'success' : 'processing'}
+        style={{ marginRight: 0, flexShrink: 0 }}
+      >
+        {subscribed
+          ? dict('PC.Pages.Square.SingleAgent.subscribed')
+          : dict('PC.Pages.Square.SingleAgent.paid')}
+      </Tag>
+    );
+  };
+
+  // 获取标题
+  const getTitle = (
+    info: SquarePublishedItemInfo,
+    isPluginAndWorkflow: boolean = false,
+  ) => {
+    const { name, paymentRequired, subscribed, price } = info;
+    /** 需付费时在卡片角标展示「付费 / 已订阅」 */
+    const paymentExtra =
+      isEnableSubscription && paymentRequired === true ? (
+        isPluginAndWorkflow && price ? (
+          <span className={cx(styles['price-title'])}>
+            {`${dict('PC.Common.Global.currencySymbol')}${price}/${dict(
+              'PC.Common.Global.times',
+            )}`}
+          </span>
+        ) : (
+          getSubscribedLabel(subscribed)
+        )
+      ) : undefined;
+
+    return (
+      <div className={cx('text-ellipsis', 'flex-1', 'flex', 'content-between')}>
+        <span className={cx('text-ellipsis', 'flex-1')}>{name}</span>
+        {paymentExtra}
+      </div>
+    );
+  };
+
   // 获取子组件
   const getChildren = (type: SquareAgentTypeEnum) => {
     return squareComponentList.map((item, index) => {
       if (type === SquareAgentTypeEnum.Agent) {
+        const title = getTitle(item);
         return (
           <SingleAgent
             key={index}
+            title={title}
             publishedItemInfo={item}
             extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
@@ -279,12 +325,15 @@ const SpaceSection: React.FC = () => {
       } else {
         // 枚举组件类型名称
         let componentTypeName = '';
+        let isPluginAndWorkflow = false;
         switch (type) {
           case SquareAgentTypeEnum.Plugin:
             componentTypeName = dict('PC.Pages.SpaceSquare.plugin');
+            isPluginAndWorkflow = true;
             break;
           case SquareAgentTypeEnum.Workflow:
             componentTypeName = dict('PC.Pages.SpaceSquare.workflow');
+            isPluginAndWorkflow = true;
             break;
           case SquareAgentTypeEnum.Skill:
             componentTypeName = dict('PC.Pages.SpaceSquare.skill');
@@ -293,9 +342,11 @@ const SpaceSection: React.FC = () => {
             componentTypeName = '';
             break;
         }
+        const title = getTitle(item, isPluginAndWorkflow);
         return (
           <SquareComponentInfo
             key={index}
+            title={title}
             publishedItemInfo={item}
             extra={getExtra(componentTypeName, item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}

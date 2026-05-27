@@ -1,5 +1,8 @@
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import ConditionRender from '@/components/ConditionRender';
 import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
+import useSubscription from '@/hooks/useSubscription';
 import service, { IGetList } from '@/services/created';
 import { apiTableAdd } from '@/services/dataTable';
 import { t } from '@/services/i18nRuntime';
@@ -30,11 +33,12 @@ import {
   message,
   Modal,
   Segmented,
+  Tag,
 } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import CreateAgent from '../CreateAgent';
 import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
@@ -96,10 +100,25 @@ const Created: React.FC<CreatedProp> = ({
   addSkillLoading = undefined,
   tabs = defaultTabs,
   hideTop,
+  modalZIndex,
+  showMoreMenus = true,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  // 付费技能订阅弹窗
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
 
   // 打开、关闭创建弹窗
   const [showCreate, setShowCreate] = useState<boolean>(false);
@@ -730,9 +749,25 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  /**
+   * 技能 Tab 下点击「订阅」：拉取该技能的套餐列表并打开 PaymentSubscriptionModal。
+   * 下单由弹窗内 onSubscribe（createSubscriptionOrder）完成，与「添加」流程分离。
+   */
+  const handleSubscribeSkill = (skillId: number) => {
+    querySkillSubscriptionPlans(skillId);
+    setOpenPaymentModal(true);
+  };
+
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
+    // 是否已添加
     const isAddedState = isAdded(item);
+    // 仅「技能 Tab + 租户开启订阅 + 付费技能 + 未订阅」时展示订阅按钮，否则走添加/已添加
+    const isPaidUnsubscribedSkill =
+      selected.key === AgentComponentTypeEnum.Skill &&
+      isEnableSubscription &&
+      !!item.paymentRequired &&
+      item.subscribed === false;
     return (
       <div
         className={cx('dis-sb', styles['list-item-style'])}
@@ -749,9 +784,32 @@ const Created: React.FC<CreatedProp> = ({
           }}
         />
         <div className={cx('flex-1', styles['content-font'])}>
-          <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
-            {item.name}
-          </p>
+          <div className={cx(styles['label-row'])}>
+            <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
+              {item.name}
+            </p>
+            {/* 仅插件/工作流类型需要展示付费标签 */}
+            {/* 订阅能力开启且为付费时展示「已订阅/付费」标签，与右侧按钮状态对应 */}
+            {isEnableSubscription &&
+              item.paymentRequired &&
+              [
+                AgentComponentTypeEnum.Plugin,
+                AgentComponentTypeEnum.Workflow,
+              ].includes(item.targetType) && (
+                <Tag
+                  color={item.subscribed ? 'success' : 'processing'}
+                  className={cx(styles['payment-tag'])}
+                >
+                  {item.subscribed
+                    ? t('PC.Pages.Square.SingleAgent.subscribed')
+                    : item.price
+                    ? `${t('PC.Common.Global.currencySymbol')}${item.price}/${t(
+                        'PC.Common.Global.times',
+                      )}`
+                    : t('PC.Pages.Square.SingleAgent.paid')}
+                </Tag>
+              )}
+          </div>
           <p
             className={cx(styles['created-description-style'], 'text-ellipsis')}
           >
@@ -801,21 +859,33 @@ const Created: React.FC<CreatedProp> = ({
             </div>
           </div>
         </div>
-        <Button
-          color="default"
-          variant="filled"
-          onClick={() => onAddNode(item)}
-          loading={isCurrentLoading}
-          className={cx(
-            styles['add-button'],
-            isAddedState && styles['add-button-added'],
-          )}
-          disabled={isCurrentLoading ? false : isAddedState}
-        >
-          {isAddedState
-            ? t('PC.Components.Created.added')
-            : t('PC.Components.Created.add')}
-        </Button>
+        {/* 未订阅付费技能必须先订阅，不能直接添加；其余类型或未付费/已订阅仍用添加按钮 */}
+        {isPaidUnsubscribedSkill && !isAddedState ? (
+          <Button
+            color="primary"
+            variant="filled"
+            onClick={() => handleSubscribeSkill(item.targetId)}
+            className={cx(styles['add-button'])}
+          >
+            {t('PC.Pages.Square.SkillDetail.subscribeAction')}
+          </Button>
+        ) : (
+          <Button
+            color="default"
+            variant="filled"
+            onClick={() => onAddNode(item)}
+            loading={isCurrentLoading}
+            className={cx(
+              styles['add-button'],
+              isAddedState && styles['add-button-added'],
+            )}
+            disabled={isCurrentLoading ? false : isAddedState}
+          >
+            {isAddedState
+              ? t('PC.Components.Created.added')
+              : t('PC.Components.Created.add')}
+          </Button>
+        )}
       </div>
     );
   };
@@ -850,6 +920,7 @@ const Created: React.FC<CreatedProp> = ({
       onCancel={onCancel}
       className={cx(styles['created-modal-style'])}
       width={1096}
+      zIndex={modalZIndex}
     >
       <div className={cx(styles['created-container'], 'dis-sb-start')}>
         {/* 左侧部分 */}
@@ -899,13 +970,15 @@ const Created: React.FC<CreatedProp> = ({
             </Button>
           </div>
           {/* 下方的菜单 */}
-          <Menu
-            className={cx(styles['aside-menu'])}
-            onClick={(val) => onMenuClick(val.key)}
-            selectedKeys={[selectMenu]}
-            mode="vertical"
-            items={getItems()}
-          ></Menu>
+          {showMoreMenus && (
+            <Menu
+              className={cx(styles['aside-menu'])}
+              onClick={(val) => onMenuClick(val.key)}
+              selectedKeys={[selectMenu]}
+              mode="vertical"
+              items={getItems()}
+            />
+          )}
         </div>
         {/* 右侧部分应该是变动的 */}
         <div
@@ -976,6 +1049,20 @@ const Created: React.FC<CreatedProp> = ({
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === AgentComponentTypeEnum.Table}
       />
+      {/* 租户开启订阅时挂载；openPaymentModal 由 handleSubscribeSkill 打开，套餐与下单来自 useSubscription */}
+      <ConditionRender condition={isEnableSubscription}>
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          loading={loadingTargetPricing || loadingMySubscription}
+          plans={targetSubscriptionPlans}
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </Modal>
   );
 };

@@ -2,11 +2,16 @@
 import type {
   ModelConfigInfo,
   ModelListParams,
+  ModelProviderInfo,
   ModelSaveParams,
   ModelTestInfo,
 } from '@/types/interfaces/model';
 import type { RequestResponse } from '@/types/interfaces/request';
+import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { request } from 'umi';
+
+/** 我的模型权限列表 Tab */
+export type MyModelPermissionsTab = 'System' | 'Space';
 
 // 在空间中添加或更新模型配置接口
 export async function apiModelSave(
@@ -40,7 +45,7 @@ export async function apiModelList(
 
 // 查询指定空间下模型列表接口
 export async function apiModelListSpace(
-  spaceId: string,
+  spaceId: number,
 ): Promise<RequestResponse<ModelConfigInfo[]>> {
   return request(`/api/model/list/space/${spaceId}`, {
     method: 'POST',
@@ -52,6 +57,15 @@ export async function apiModelInfo(
   modelId: string,
 ): Promise<RequestResponse<ModelConfigInfo>> {
   return request(`/api/model/${modelId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询指定模型配置信息
+export async function apiModelProviders(): Promise<
+  RequestResponse<ModelProviderInfo[]>
+> {
+  return request('/api/model/providers', {
     method: 'GET',
   });
 }
@@ -71,5 +85,15 @@ export async function apiModelTest(): Promise<
 > {
   return request('/api/model/test', {
     method: 'GET',
+  });
+}
+
+/** 查询当前用户有权限的模型列表（系统模型 / 个人空间模型） */
+export async function apiGetMyModels(
+  tab: MyModelPermissionsTab,
+): Promise<RequestResponse<ModelConfigDto[]>> {
+  return request('/api/model/my', {
+    method: 'GET',
+    params: { tab },
   });
 }

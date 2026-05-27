@@ -1,4 +1,5 @@
 import { ResourceTreeNode } from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
+import routes from '@/routes';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 
 /**
@@ -73,4 +74,110 @@ export const extractAllMenuCodes = (menus: MenuItemDto[]): string[] => {
   };
   traverse(menus);
   return codes;
+};
+
+/**
+ * 路由过滤控制配置
+ * key: 路由节点路径名（可以是相对路径或包含该路径名的完整段，如 'subscription-credits'）
+ * shouldHide: 自定义判定函数，接收租户配置并返回布尔值。为真时则隐藏该路由分组。这提供了极大的灵活性，支持任意字段、任意类型与复杂的匹配逻辑。
+ * excludePaths: 需要排除过滤的子路由路径名，即便在该分组下也始终不被隐藏
+ */
+export const ROUTE_CONTROL_CONFIG: Record<
+  string,
+  {
+    shouldHide: (tenantConfig: any) => boolean;
+    excludePaths?: string[];
+  }
+> = {
+  // 系统更多页面菜单分组
+  'more-page': {
+    // 租户未开启订阅时隐藏该多级菜单组
+    shouldHide: (config) => config?.enableSubscription === 0,
+    // 始终保留并允许用户正常访问“API Key/密钥设置”子页面
+    excludePaths: ['api-key'],
+  },
+};
+
+/**
+ * 根据租户配置和路由控制规则，动态解析出当前需要被隐藏的所有路由完整绝对路径
+ * @param tenantConfig 租户配置对象
+ * @returns 隐藏的路由完整绝对路径数组
+ */
+export const getFilteredHiddenRoutePaths = (tenantConfig: any): string[] => {
+  const hiddenPaths: string[] = [];
+  if (!tenantConfig) return hiddenPaths;
+
+  // 1. 识别并提取所有当前由于配置关闭而需要隐藏的规则定义
+  const activeControlGroups = Object.entries(ROUTE_CONTROL_CONFIG).filter(
+    ([, rule]) => rule.shouldHide(tenantConfig),
+  );
+
+  if (activeControlGroups.length === 0) return hiddenPaths;
+
+  // 2. 递归遍历 Umi 路由树，根据激活的过滤规则匹配子路由
+  const traverse = (routeList: any[], parentPath: string = '') => {
+    for (const route of routeList) {
+      let currentPath = route.path || '';
+      if (currentPath && !currentPath.startsWith('/')) {
+        currentPath = parentPath
+          ? `${parentPath}/${currentPath}`
+          : `/${currentPath}`;
+      } else if (!currentPath) {
+        currentPath = parentPath;
+      }
+
+      // 检查当前路由是否匹配任何一个激活的控制节点
+      for (const [controlNode, rule] of activeControlGroups) {
+        const isMatchNode =
+          route.path === controlNode || currentPath.endsWith(`/${controlNode}`);
+        if (isMatchNode && route.routes) {
+          // 如果排除的路由为空，说明整个父级菜单也需要隐藏，直接将父路径加入隐藏列表
+          if (!rule.excludePaths || rule.excludePaths.length === 0) {
+            hiddenPaths.push(currentPath);
+          }
+
+          for (const subRoute of route.routes) {
+            const isExcluded = rule.excludePaths?.includes(subRoute.path || '');
+            if (subRoute.path && !isExcluded) {
+              let subPath = subRoute.path;
+              if (!subPath.startsWith('/')) {
+                subPath = `${currentPath}/${subPath}`;
+              }
+              hiddenPaths.push(subPath);
+            }
+          }
+        }
+      }
+
+      if (route.routes) {
+        traverse(route.routes, currentPath);
+      }
+    }
+  };
+
+  traverse(routes);
+  return hiddenPaths;
+};
+
+/**
+ * 校验指定路径是否由于租户配置限制而被隐藏/禁用访问
+ * @param pathname 当前访问的路由路径
+ * @param tenantConfig 租户配置对象
+ * @returns 是否需要隐藏/禁用该路径
+ */
+export const isRoutePathHidden = (
+  pathname: string,
+  tenantConfig: any,
+): boolean => {
+  if (!pathname || !tenantConfig) return false;
+  const hiddenPaths = getFilteredHiddenRoutePaths(tenantConfig);
+  if (hiddenPaths.length === 0) return false;
+
+  const normalizedPath = pathname.replace(/\/$/, '');
+  return hiddenPaths.some((hiddenPath) => {
+    return (
+      normalizedPath === hiddenPath ||
+      normalizedPath.startsWith(hiddenPath + '/')
+    );
+  });
 };

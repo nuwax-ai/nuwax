@@ -1,0 +1,136 @@
+@import '@/styles/token.less';
+
+.agent-card {
+  background: @colorWhite;
+  border-radius: @borderRadiusLg;
+  border: 1px solid @colorBorderSecondary;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 5%);
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    padding: @paddingLg;
+    display: flex;
+    align-items: flex-start;
+    gap: @margin;
+
+    .agent-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @colorWhite;
+      font-size: 24px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 10%);
+      overflow: hidden;
+    }
+
+    .agent-info {
+      flex: 1;
+      min-width: 0;
+
+      .agent-name {
+        font-size: @fontSizeLg;
+        font-weight: 600;
+        color: @colorTextBase;
+        margin-bottom: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .agent-provider {
+        font-size: @fontSizeSm;
+        line-height: 20px;
+        height: 40px;
+        color: @colorTextTertiary;
+        display: box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-all;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 0 @paddingLg @paddingLg;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: @margin;
+
+    .info-item {
+      .info-label {
+        font-size: 12px;
+        color: @colorTextTertiary;
+        margin-bottom: 4px;
+      }
+
+      .info-value {
+        font-size: @fontSize;
+        font-weight: 500;
+        color: @colorTextBase;
+
+        .price {
+          color: @colorTextBase;
+          font-weight: 700;
+          font-size: calc(@fontSizeSm + 2px);
+        }
+
+        .unit {
+          font-size: 12px;
+          color: @colorTextTertiary;
+          margin-left: 2px;
+        }
+      }
+    }
+  }
+
+  .card-footer {
+    padding: @padding @paddingLg;
+    background: #f8fafc;
+    border-top: 1px solid @colorBorderSecondary;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+
+    .status-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: @fontSizeSm;
+      font-weight: 500;
+
+      &.status-active {
+        color: @colorSuccess;
+      }
+
+      &.status-expired {
+        color: @colorError;
+      }
+
+      span {
+        margin-top: 1px;
+      }
+    }
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}

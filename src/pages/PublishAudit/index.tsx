@@ -1,5 +1,6 @@
 import {
   ActionItem,
+  LimitedTooltip,
   TableActions,
   XProTable,
 } from '@/components/ProComponents';
@@ -109,14 +110,14 @@ const PublishAudit: React.FC = () => {
         {
           key: 'pass',
           label: dict('PC.Pages.PublishAudit.actionPass'),
-          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          visible: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_pass'),
           onClick: handlePassAudit,
         },
         {
           key: 'reject',
           label: dict('PC.Pages.PublishAudit.actionReject'),
-          isShow: record.publishStatus === PublishStatusEnum.Applying,
+          visible: record.publishStatus === PublishStatusEnum.Applying,
           disabled: !hasPermission('publish_audit_reject'),
           onClick: (r) => handleRejectAudit(r.id),
         },
@@ -167,7 +168,7 @@ const PublishAudit: React.FC = () => {
       dataIndex: 'description',
       width: 200,
       hideInSearch: true,
-      ellipsis: true,
+      render: (_, record) => <LimitedTooltip text={record.description} />,
     },
     {
       title: dict('PC.Pages.PublishAudit.colVersionInfo'),

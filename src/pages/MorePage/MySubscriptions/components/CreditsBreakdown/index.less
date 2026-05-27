@@ -1,0 +1,158 @@
+@import '@/styles/token.less';
+
+// 局域 Less 变量，严格规范，防止硬编码
+@creditsLinkPadding: @paddingXxs @paddingXs;
+@creditsLinkRadius: calc(@borderRadiusLg * 2);
+@creditsValueLineHeight: 1.25;
+@creditsValueFontWeight: 600;
+
+.credits-breakdown {
+  margin: @marginLg 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: @marginLg;
+  width: 100%;
+
+  .credits-item {
+    // 固定高度与内边距设计，完全参照“用量统计”卡片
+    height: calc(2 * @controlHeightLg + @padding);
+    box-sizing: border-box;
+    border-radius: @borderRadiusLg;
+    box-shadow: @boxShadowTertiary;
+    background: @colorBgContainer;
+    padding: @padding;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start; // 居左对齐，与用量统计完全一致
+    gap: @paddingXs;
+    overflow: hidden;
+    min-width: 0;
+    transition: all @motionDurationMid @motionEaseInOut;
+    // 启用容器查询，以便数值能根据卡片宽度自适应收缩
+    container-type: inline-size;
+
+    &:hover {
+      box-shadow: @boxShadowSecondary;
+      transform: translateY(-2px);
+    }
+
+    .credits-label-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between; // 标题居左，明细/增购操作链接居右
+      width: 100%;
+
+      .credits-label {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary; // 采用与用量统计一致的 tertiary 颜色
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: @lineHeight;
+      }
+
+      .credits-detail-link {
+        font-size: calc(@fontSizeSm - 2px);
+        color: @colorLink;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType @colorLink;
+        border-radius: @creditsLinkRadius;
+        cursor: pointer;
+        background: @colorPrimaryBg;
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
+
+        &:hover {
+          background: @colorPrimaryBgHover;
+          transform: scale(1.05);
+        }
+      }
+
+      .add-purchase-link {
+        white-space: nowrap;
+        font-size: calc(@fontSizeSm - 2px);
+        color: @colorSuccess;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType @colorSuccess;
+        border-radius: @creditsLinkRadius;
+        cursor: pointer;
+        background: @colorSuccessBg;
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
+
+        &:hover {
+          background: @colorSuccessBgHover;
+          transform: scale(1.05);
+        }
+      }
+
+      .daily-gift-tip {
+        font-size: calc(@fontSizeSm - 2px);
+        color: @orange7;
+        padding: @creditsLinkPadding;
+        border: @lineWidth @lineType rgba(255, 229, 143, 35%);
+        border-radius: @creditsLinkRadius;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 251, 230, 70%),
+          rgba(255, 247, 230, 50%)
+        );
+        transition: all @motionDurationFast @motionEaseInOut;
+        line-height: @lineHeight;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 60%;
+
+        &:hover {
+          transform: scale(1.03) translateY(-0.5px);
+          border-color: rgba(255, 214, 102, 60%);
+          box-shadow: 0 4px 10px rgba(255, 192, 105, 15%);
+        }
+      }
+    }
+
+    .credits-value {
+      display: block;
+      width: 100%;
+      min-width: 0;
+
+      :global(.ant-statistic) {
+        line-height: @creditsValueLineHeight;
+
+        :global(.ant-statistic-content) {
+          color: inherit;
+          font-family: inherit;
+
+          :global(.ant-statistic-content-value) {
+            display: block;
+            width: 100%;
+            /* stylelint-disable unit-no-unknown */
+            font-size: clamp(13px, 10cqi, 22px);
+            /* stylelint-enable unit-no-unknown */
+            font-weight: @creditsValueFontWeight;
+            font-variant-numeric: tabular-nums;
+            color: inherit;
+            line-height: @creditsValueLineHeight;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+
+      &.blue {
+        color: @blue6;
+      }
+
+      &.green {
+        color: @green6;
+      }
+
+      &.orange {
+        color: @orange6;
+      }
+    }
+  }
+}

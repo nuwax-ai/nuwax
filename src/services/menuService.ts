@@ -53,14 +53,20 @@ const MENU_ICON_MAP: Record<string, string> = {
   system_log_query: 'icons-nav-log',
   // 内容管理
   content_manage: 'icons-nav-cube',
+  // 支付与收益（开发者）
+  dev_payment_earnings: 'icons-nav-my-earnings',
+  // 订阅与积分（管理员）
+  admin_subscription_credits: 'icons-nav-subscription',
+  // 模型监控
+  model_monitor: 'icons-common-console',
 
   // 二级菜单 - 工作空间
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"
   page_app_dev: 'icons-common-console',
-  // 组件库
-  component_lib_dev: 'icons-nav-components',
+  // 组件库（保留兼容旧 code）
+  component_lib_dev: 'icons-nav-cube',
   // 技能管理
   skill_dev: 'icons-nav-skill',
   // MCP管理
@@ -76,12 +82,51 @@ const MENU_ICON_MAP: Record<string, string> = {
   // IM 机器人
   im_channel: 'icons-nav-robot',
 
+  // 组件资源子菜单
+  // 插件与工作流
+  plugin_workflow_dev: 'icons-nav-cube',
+  // 知识与数据存储
+  knowledge_storage_dev: 'icons-nav-knowledge',
+  // 模型管理（工作空间级别）
+  space_model_manage: 'icons-nav-model',
+
+  // 智能体用户订阅
+  agent_subscription: 'icons-nav-subscription',
+
   // Adding leftovers from logs or standard mapping
   component_dev: 'icons-nav-cube',
   log_manage: 'icons-nav-log', // Captured: log_manage
 
   // 更多
   api_key: 'icons-nav-api_key',
+  // 更多页面 - 我的订阅
+  my_subscriptions: 'icons-nav-wodedingyue',
+  model_permissions: 'icons-nav-model',
+  // 更多页面 - 我的订单
+  my_orders: 'icons-nav-wodedingdan',
+  // 更多页面 - 我的收益
+  my_earnings: 'icons-nav-wodeshouyi',
+  // 更多页面 - 用量统计
+  usage_statistics: 'icons-nav-yongliangtongji',
+  resource_pricing: 'icons-nav-ziyuandingjia',
+  subscription_and_points: 'icons-nav-dingyueyujifen',
+  pay_and_earnings: 'icons-nav-zhifuyushouyi',
+
+  // 系统管理 - 支付与收益子菜单
+  payment_config: 'icons-nav-settings',
+  payment_merchant_info: 'icons-nav-info',
+  dev_payment_info: 'icons-nav-earnings',
+  dev_earnings_stats: 'icons-nav-chart',
+  dev_withdrawal: 'icons-nav-withdraw',
+  payment_orders: 'icons-nav-orders',
+
+  // 系统管理 - 订阅与积分子菜单
+  subs_basic_config: 'icons-nav-settings',
+  subs_plans: 'icons-nav-subscription',
+  credits_packages: 'icons-nav-credits',
+  user_credits_query: 'icons-nav-user',
+  credits_records_query: 'icons-nav-history',
+  subs_orders: 'icons-nav-orders',
 };
 
 /**

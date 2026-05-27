@@ -13,7 +13,7 @@ import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -29,8 +29,12 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   onQaPopover,
   docType = KnowledgeDocTypeEnum.DOC,
   onChangeDocType,
+  onViewAllGraphs,
 }) => {
   const { spaceId } = useParams();
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  let isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -94,6 +98,11 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         <Radio value={KnowledgeDocTypeEnum.QA}>
           {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.qa')}
         </Radio>
+        {isShowGRAPH && (
+          <Radio value={KnowledgeDocTypeEnum.GRAPH}>
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Radio>
+        )}
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -115,7 +124,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addContent')}
             </Button>
           </CustomPopover>
-        ) : (
+        ) : docType === KnowledgeDocTypeEnum.QA ? (
           <CustomPopover list={KNOWLEDGE_QA_IMPORT_TYPE} onClick={onQaPopover}>
             <Button
               type="primary"
@@ -125,7 +134,11 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
               {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.addQa')}
             </Button>
           </CustomPopover>
-        )}
+        ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
+          <Button type="primary" onClick={onViewAllGraphs}>
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Button>
+        ) : null}
       </div>
     </header>
   );

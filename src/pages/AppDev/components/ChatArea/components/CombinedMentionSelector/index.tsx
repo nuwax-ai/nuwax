@@ -14,7 +14,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Empty, Input, Spin } from 'antd';
+import { Empty, Input, Spin, Tag } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -24,6 +24,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useModel } from 'umi';
 import type {
   MentionSelectorHandle,
   MentionSelectorProps,
@@ -63,6 +64,9 @@ const CombinedMentionSelector = React.forwardRef<
     },
     ref,
   ) => {
+    const { tenantConfigInfo } = useModel('tenantConfigInfo');
+    const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
     // 视图状态：recent-最近使用, files-文件/文件夹, datasources-数据资源, skills-技能, favorite-我的收藏
     const [activeTab, setActiveTab] = useState<ViewType>('recent');
     // 内部搜索输入框的值
@@ -187,6 +191,8 @@ const CombinedMentionSelector = React.forwardRef<
             name: item.name,
             icon: item.icon,
             description: item.description,
+            paymentRequired: item.paymentRequired,
+            subscribed: item.subscribed,
           },
           timestamp: item.timestamp,
         });
@@ -556,6 +562,22 @@ const CombinedMentionSelector = React.forwardRef<
                       </div>
                     )}
                   </div>
+                  {item.type === 'skill' &&
+                    isEnableSubscription &&
+                    item.data.paymentRequired === true && (
+                      <Tag
+                        className={styles['mention-item-tag']}
+                        color={
+                          item.data.subscribed === true
+                            ? 'success'
+                            : 'processing'
+                        }
+                      >
+                        {item.data.subscribed === true
+                          ? t('PC.Pages.Square.SingleAgent.subscribed')
+                          : t('PC.Pages.Square.SingleAgent.paid')}
+                      </Tag>
+                    )}
                 </div>
               ))}
             </div>

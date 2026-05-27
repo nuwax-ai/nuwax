@@ -2,7 +2,7 @@
  * AgentFlow 页面入口
  *
  * 复用 Workflow v3 编辑器（`pages/Antv-X6/v3/indexV3`），通过 `FlowKindProvider`
- * 注入 `FlowKindEnum.AgentFlow`，让 Stencil / 节点行为等按 AgentFlow 形态渲染。
+ * 注入 `FlowKindEnum.AgentFlow`，使 Stencil / 节点行为等按 AgentFlow 形态渲染。
  *
  * 路由：`/space/:spaceId/agent-flow/:workflowId`
  *

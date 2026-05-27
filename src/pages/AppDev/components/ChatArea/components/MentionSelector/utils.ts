@@ -189,6 +189,8 @@ interface RecentSkillItem {
   description: string;
   timestamp: number;
   projectId?: string;
+  paymentRequired?: boolean;
+  subscribed?: boolean;
 }
 
 /**
@@ -332,6 +334,8 @@ export const saveRecentSkill = (
       name: skill.name,
       icon: skill.icon,
       description: skill.description || '',
+      paymentRequired: skill.paymentRequired,
+      subscribed: skill.subscribed,
       timestamp: Date.now(),
     };
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);

@@ -1,3 +1,4 @@
+import { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import {
   AccessControlEnum,
   MessageScopeEnum,
@@ -12,7 +13,18 @@ import {
   KnowledgeDataTypeEnum,
   KnowledgePubStatusEnum,
 } from '../enums/library';
+import {
+  ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
+  ModelFunctionCallEnum,
+  ModelNetworkTypeEnum,
+  ModelScopeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
+  ModelUsageScenarioEnum,
+} from '../enums/modelConfig';
 import { PluginPublishScopeEnum } from '../enums/plugin';
+import { ModelComponentStatusEnum } from '../enums/space';
 import { TaskInfo } from './library';
 
 /**
@@ -76,6 +88,7 @@ export interface SystemUserListParams extends SystemPaginationParams {
   queryFilter: {
     role?: string;
     userName?: string;
+    id?: number;
   };
 }
 
@@ -177,41 +190,38 @@ export interface ModelConfigDto {
   tenantId: number;
   /** 空间ID */
   spaceId: number;
+  /** 提供商ID */
+  pid?: string;
+  /** 提供商名称 */
+  providerName?: string;
   /** 模型生效范围（可用值: Space, Tenant, Global） */
-  scope: 'Space' | 'Tenant' | 'Global';
+  scope: ModelScopeEnum;
   /** 模型名称 */
   name: string;
   /** 模型描述 */
   description: string;
   /** 模型标识 */
   model: string;
-  /** 模型类型（可用值: Completions, Chat, Edits, Images, Embeddings, Audio, Other） */
-  type:
-    | 'Completions'
-    | 'Chat'
-    | 'Edits'
-    | 'Images'
-    | 'Embeddings'
-    | 'Audio'
-    | 'Other';
+  /** 模型类型（可用值: Completions, Chat, Edits, Images, Embeddings, Multi, Audio, Video, Other） */
+  type: ModelTypeEnum;
+  /** 模型能力类型（可用值: Text, Image, Audio, Video, TextEmbedding, MultiEmbedding, Reasoning） */
+  types: ModelCapabilityTypeEnum[];
   /** 网络类型（可用值: Internet, Intranet） */
-  networkType: 'Internet' | 'Intranet';
+  networkType: ModelNetworkTypeEnum;
   /** 函数调用支持程度（可用值: Unsupported, CallSupported, StreamCallSupported） */
-  functionCall: 'Unsupported' | 'CallSupported' | 'StreamCallSupported';
+  functionCall: ModelFunctionCallEnum;
+  /** 是否是推理模型（0/1） */
+  isReasonModel?: number;
   /** token上限 */
   maxTokens: number;
+  /** 最大上下文长度 */
+  maxContextTokens?: number;
   /** 模型接口协议（可用值: OpenAI, Ollama, Zhipu, Anthropic） */
-  apiProtocol: 'OpenAI' | 'Ollama' | 'Zhipu' | 'Anthropic';
+  apiProtocol: ModelApiProtocolEnum;
   /** API列表 */
   apiInfoList: ApiInfo[];
   /** 接口调用策略（可用值: RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime） */
-  strategy:
-    | 'RoundRobin'
-    | 'WeightedRoundRobin'
-    | 'LeastConnections'
-    | 'WeightedLeastConnections'
-    | 'Random'
-    | 'ResponseTime';
+  strategy: ModelStrategyEnum;
   /** 向量维度 */
   dimension: number;
   /** 修改时间（ISO格式日期字符串） */
@@ -222,6 +232,12 @@ export interface ModelConfigDto {
   creator: CreatorDto;
   /** 管控状态 */
   accessControl?: AccessControlEnum;
+  /** 启用状态（1 启用 / 0 禁用） */
+  enabled?: ModelComponentStatusEnum;
+  /** 可用范围 */
+  usageScenarios?: ModelUsageScenarioEnum[];
+  /** 定价信息（对象或展示文案） */
+  pricing?: ResourcePricingConfigInfo | string;
 }
 
 /**
@@ -371,6 +387,58 @@ export interface TenantConfigDto {
   domainNames?: string[];
   /** 主题模板配置（JSON字符串） */
   templateConfig?: string;
+}
+
+// 租户订阅基础配置信息，用于订阅基础配置的保存
+export interface TenantSubscriptionConfigInfo {
+  /*收入分成比例 */
+  revenueRatio?: Record<string, unknown>;
+
+  /*支付网关地址 */
+  paymentGateway?: string;
+
+  /*是否开启订阅模式 */
+  enableSubscription?: number;
+
+  /*积分兑换比例，比如 1000标识1块钱可以兑换1000积分 */
+  creditExchangeRate?: number;
+
+  /*积分兑换说明 */
+  creditExchangeDesc?: string;
+
+  /*是否开启注册积分赠送 */
+  enableGiftCredit?: number;
+
+  /*注册赠送积分数 */
+  giftCreditAmount?: number;
+
+  /*注册赠送积分有效期（天） */
+  giftCreditExpire?: number;
+
+  /*是否开启每日登录赠送积分 */
+  enableDailyGiftCredit?: number;
+
+  /*每日登录赠送积分数 */
+  dailyGiftCreditAmount?: number;
+}
+
+/**
+ * 支付配置查询结果
+ */
+export interface PayConfigResult {
+  /** 支付分成比例 */
+  payRate: number;
+}
+
+/**
+ * 支付网关连通性检测结果
+ */
+export interface PayConnectivityResult {
+  reachable: boolean;
+  message: string;
+  gatewayBaseUrl: string;
+  gatewayServerTimeMillis: number;
+  latencyMillis: number;
 }
 
 /**
@@ -807,4 +875,128 @@ export interface UserSandBoxSelectDto {
   sandboxes: SandboxSelectDto[];
   /** 已选择的沙盒，key为agentId，value为sandboxId */
   agentSelected: Record<string, string>;
+}
+/**
+ * 查询收益明细参数
+ */
+export interface SystemRevenueDetailParams {
+  /** 用户ID */
+  userId: number;
+  /** 日期 (YYYYMMDD) */
+  dt?: number;
+  /** 页码 */
+  pageNum: number;
+  /** 每页条数 */
+  pageSize: number;
+}
+
+/**
+ * 收益明细信息
+ */
+export interface SystemRevenueDetailInfo {
+  /** 明细ID */
+  id: number;
+  /** 用户ID */
+  userId: number;
+  /** 日期 */
+  dt: string;
+  /** 金额 */
+  amount: number;
+  /** 类型 (PLAN, MODEL_CALL, TOOL_CALL 等) */
+  type: string;
+  /** 类型关联ID */
+  typeId: number;
+  /** 关联订单ID */
+  orderId: number;
+  /** 目标类型 (AGENT, SKILL, MODEL, PLUGIN, MCP, WORKFLOW) */
+  targetType: string;
+  /** 目标ID */
+  targetId: number;
+  /** 业务单号 */
+  bizNo: string;
+  /** 备注/收益项名称 */
+  remark: string;
+  /** 扩展字段 */
+  extra: Record<string, any>;
+  /** 创建时间 */
+  created: string;
+}
+
+/** 资源统计-统计分组 */
+export interface StatGroup {
+  /** 输入 Token（不含缓存）；总输入 = totalInputTokens + totalCacheInputTokens */
+  totalInputTokens: number;
+  /** 可选冗余字段，展示以 totalInputTokens 为准 */
+  inputTokens?: number;
+  /** 总输出Token */
+  totalOutputTokens: number;
+  /** 总缓存输入Token */
+  totalCacheInputTokens: number;
+  /** 工具总个数 */
+  toolCount: number;
+  /** 工具调用总次数 */
+  toolCallCount: number;
+  /** 智能体个数 */
+  agentCount: number;
+  /** 智能体调用总次数 */
+  agentCallCount: number;
+  /** 模型调用总次数 */
+  modelCallCount: number;
+  /** 模型调用失败次数 */
+  failedModelCallCount: number;
+  /** 工具调用失败次数 */
+  failedToolCallCount: number;
+  /** 智能体调用失败次数 */
+  failedAgentCallCount: number;
+  /** 总积分 */
+  totalCreditAmount: number;
+  /** 总金额 */
+  totalAmount: number;
+}
+
+/** 资源统计汇总 */
+export interface ResourceStatSummaryDTO {
+  /** 消费统计 */
+  consumption: StatGroup;
+  /** 销售统计 */
+  sales: StatGroup;
+}
+
+/** 资源统计明细查询参数 */
+export interface ResourceStatDetailParams {
+  userId?: number;
+  type?: 'CONSUMPTION' | 'SALES';
+  targetType?: string;
+  targetId?: number;
+  dtStart?: string;
+  dtEnd?: string;
+  pageNum?: number;
+  pageSize?: number;
+}
+
+/** 资源统计明细记录 */
+export interface ResourceStatDTO {
+  id: number;
+  tenantId: number;
+  userId: number;
+  userName: string;
+  nickName: string;
+  phone: string;
+  email: string;
+  type: string;
+  targetType: string;
+  targetId: number;
+  targetName: string;
+  dt: string;
+  callCount: number;
+  callFailedCount: number;
+  creditAmount: number;
+  feeAmount: number;
+  /** 缓存输入 Token */
+  cacheInputTokens: number;
+  /** 输入 Token（明细字段语义因业务接口而异，见各页 resourceStatTokenMetrics） */
+  inputTokens: number;
+  outputTokens: number;
+  extra: string;
+  created: string;
 }

@@ -1,4 +1,4 @@
-// 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Audio, Other
+// 模型类型，可选值：Completions, Chat, Edits, Images, Embeddings, Multi, Audio, Video, Other
 export enum ModelTypeEnum {
   Completions = 'Completions',
   Chat = 'Chat',
@@ -7,7 +7,23 @@ export enum ModelTypeEnum {
   Embeddings = 'Embeddings',
   Multi = 'Multi',
   Audio = 'Audio',
+  Video = 'Video',
   Other = 'Other',
+}
+
+/**
+ * 模型能力类型（与后台/协议约定字符串一致）
+ * Text-文本生成、Image-图像理解、Audio-语音识别、Video-视频理解、
+ * TextEmbedding-文本向量、MultiEmbedding-多模态向量、Reasoning-深度思考
+ */
+export enum ModelCapabilityTypeEnum {
+  Text = 'Text',
+  Image = 'Image',
+  Audio = 'Audio',
+  Video = 'Video',
+  TextEmbedding = 'TextEmbedding',
+  MultiEmbedding = 'MultiEmbedding',
+  Reasoning = 'Reasoning',
 }
 
 // 模型接口协议，可选值：OpenAI, Ollama, Zhipu, Anthropic 可用值:OpenAI,Ollama,Zhipu,Anthropic
@@ -47,10 +63,9 @@ export enum ModelNetworkTypeEnum {
   Intranet = 'Intranet',
 }
 
-// 函数调用支持程度，可选值：Unsupported, CallSupported, StreamCallSupported
+// 函数调用支持程度，可选值：Unsupported, StreamCallSupported
 export enum ModelFunctionCallEnum {
   Unsupported = 'Unsupported',
-  CallSupported = 'CallSupported',
   StreamCallSupported = 'StreamCallSupported',
 }
 

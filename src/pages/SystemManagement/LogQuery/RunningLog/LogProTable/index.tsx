@@ -12,6 +12,7 @@ import type {
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
+import { getTruncatedLogContent } from '@/utils/logContentUtils';
 import type {
   ActionType,
   FormInstance,
@@ -81,6 +82,9 @@ const LogProTable: React.FC = () => {
             text: t('PC.Pages.SystemRunningLogTable.targetTypeWorkflow'),
           },
           [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
+          [AgentComponentTypeEnum.Model]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeModel'),
+          },
         },
         hideInTable: false,
         initialValue: targetTypeFromUrl,
@@ -159,7 +163,9 @@ const LogProTable: React.FC = () => {
         // 关闭默认 title 提示（无法限制高度），改用自定义 Tooltip
         ellipsis: { showTitle: false },
         render: (_: any, record: SpaceLogInfo) => (
-          <LimitedTooltip formatJson>{record?.input}</LimitedTooltip>
+          <LimitedTooltip formatJson>
+            {getTruncatedLogContent(record?.input)}
+          </LimitedTooltip>
         ),
         fieldProps: {
           placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
@@ -173,7 +179,9 @@ const LogProTable: React.FC = () => {
         // 关闭默认 title 提示（无法限制高度），改用自定义 Tooltip
         ellipsis: { showTitle: false },
         render: (_: any, record: SpaceLogInfo) => (
-          <LimitedTooltip formatJson>{record?.output}</LimitedTooltip>
+          <LimitedTooltip formatJson>
+            {getTruncatedLogContent(record?.output)}
+          </LimitedTooltip>
         ),
         fieldProps: {
           placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
