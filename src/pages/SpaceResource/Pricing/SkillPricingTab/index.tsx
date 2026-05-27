@@ -38,7 +38,7 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
   spaceId,
   registerToolbarRight,
 }) => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [editItem, setEditItem] = useState<ResourcePricingConfigInfo | null>(
     null,
@@ -84,12 +84,13 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
         type="primary"
         icon={<PlusOutlined />}
         onClick={() => openAddRef.current()}
+        disabled={loading}
       >
         {dict('PC.Pages.SpaceResourcePricing.addSkill')}
       </Button>,
     );
     return () => registerToolbarRight(null);
-  }, [registerToolbarRight]);
+  }, [registerToolbarRight, loading]);
 
   // 编辑技能
   const openEdit = (item: ResourcePricingConfigInfo) => {
