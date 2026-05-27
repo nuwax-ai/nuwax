@@ -60,7 +60,12 @@ export const useSubscriptionPurchase = () => {
         const data = res?.data || res;
         if (data && data?.cashierUrl) {
           window.location.href = data.cashierUrl;
+        } else {
+          setProcessingId(null);
         }
+      },
+      onError: () => {
+        setProcessingId(null);
       },
       onFinally: () => {
         setProcessingId(null);
