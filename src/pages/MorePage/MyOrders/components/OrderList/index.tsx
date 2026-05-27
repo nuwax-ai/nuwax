@@ -77,6 +77,7 @@ const columns: ProColumns<BillOrderInfo>[] = [
     title: dict('PC.Pages.MorePage.MyOrders.colCreated'),
     dataIndex: 'created',
     search: false,
+    width: 170,
     valueType: 'dateTime',
   },
 ];
@@ -91,6 +92,8 @@ const OrderList: React.FC = () => {
     title: dict('PC.Pages.MorePage.MyOrders.colAction'),
     valueType: 'option',
     fixed: 'right',
+    width: 120,
+    align: 'center',
     render: (_, record) => {
       const isPendingPay =
         record.payStatus === BillPayStatusEnum.PENDING ||
