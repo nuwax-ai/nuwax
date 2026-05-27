@@ -71,13 +71,8 @@ const AGENT_TYPE_LIST_ALL = [
   },
   {
     value: AgentTypeEnum.AgentFlow,
-    label: 'AgentFlow',
-    tooltip: 'AgentFlow',
-  },
-  {
-    value: AgentTypeEnum.ConversationAgent,
-    label: 'ConversationAgent',
-    tooltip: 'ConversationAgent',
+    label: dict('PC.Constants.Space.agentFlowType'),
+    tooltip: dict('PC.Constants.Space.agentFlowTypeTooltip'),
   },
 ];
 
@@ -197,7 +192,7 @@ export const FILTER_STATUS_DEV = [
   },
 ];
 
-// 智能体开发 - 智能体类型（全部/问答型/通用型）
+// 智能体开发 - 智能体类型（全部/问答型/通用型/AgentFlow）
 export const AGENT_TYPE_LIST_DEV = [
   { value: AgentTypeEnum.All, label: dict('PC.Common.Global.all') },
   {
@@ -207,6 +202,10 @@ export const AGENT_TYPE_LIST_DEV = [
   {
     value: AgentTypeEnum.TaskAgent,
     label: dict('PC.Constants.Space.taskAgentType'),
+  },
+  {
+    value: AgentTypeEnum.AgentFlow,
+    label: dict('PC.Constants.Space.agentFlowType'),
   },
 ];
 

@@ -10,6 +10,8 @@ import { ReactComponent as ICON_WORKFLOW } from './images/icon_workflow.svg';
 export {
   // 智能体类型图标
   ICON_AGENT,
+  // AgentFlow 复用工作流图标（后续可替换为专用图标）
+  ICON_WORKFLOW as ICON_AGENT_FLOW,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PAGE_APP,
