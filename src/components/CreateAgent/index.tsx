@@ -10,6 +10,7 @@ import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentAddParams,
+  AgentAddResult,
   AgentConfigUpdateParams,
 } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
@@ -46,7 +47,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run: runAdd } = useRequest(apiAgentAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number) => {
+    onSuccess: (result: AgentAddResult) => {
       setImageUrl('');
       onConfirmCreate?.(result);
       message.success(dict('PC.Components.CreateAgent.createSuccess'));
@@ -120,17 +121,27 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const getTitle = useCallback(() => {
     if (type) {
       const typeMap: Record<
-        AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
+        | AgentTypeEnum.ChatBot
+        | AgentTypeEnum.TaskAgent
+        | AgentTypeEnum.AgentFlow,
         string
       > = {
         [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
         [AgentTypeEnum.TaskAgent]: dict(
           'PC.Components.CreateAgent.typeTaskAgent',
         ),
+        [AgentTypeEnum.AgentFlow]: dict(
+          'PC.Components.CreateAgent.typeAgentFlow',
+        ),
       };
 
       const typeName =
-        typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
+        typeMap[
+          type as
+            | AgentTypeEnum.ChatBot
+            | AgentTypeEnum.TaskAgent
+            | AgentTypeEnum.AgentFlow
+        ];
       return mode === CreateUpdateModeEnum.Create
         ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
         : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);

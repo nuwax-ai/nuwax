@@ -17,6 +17,7 @@ import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
+  AgentAddResult,
   AgentBaseInfo,
   AgentConfigInfo,
   AgentManualComponentInfo,
@@ -372,7 +373,7 @@ export interface CreateAgentProps {
   agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirmCreate?: (agentId: number) => void;
+  onConfirmCreate?: (result: AgentAddResult) => void;
   onConfirmUpdate?: (info: AgentBaseInfo) => void;
 }
 

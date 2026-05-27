@@ -59,14 +59,23 @@ export interface AgentInfo extends AgentBaseInfo {
   // 最后一次会话ID
   lastConversationId?: number;
   spaceId: number;
-  // ChatBot、PageApp
-  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
+  // ChatBot、PageApp、TaskAgent、AgentFlow
+  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
 }
 
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
+  type: AgentTypeEnum;
 }
+
+export interface AgentCreateResult {
+  id?: number;
+  agentId?: number;
+  workflowId?: number;
+}
+
+export type AgentAddResult = number | AgentCreateResult;
 
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {

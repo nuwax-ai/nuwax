@@ -4,6 +4,7 @@ import type {
 } from '@/types/interfaces/acpPermission';
 import {
   AgentAddParams,
+  AgentAddResult,
   AgentCardInfo,
   AgentComponentAddParams,
   AgentComponentEventUpdateParams,
@@ -212,7 +213,7 @@ export async function apiAgentComponentAdd(
 // 新增智能体接口
 export async function apiAgentAdd(
   data: AgentAddParams,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<AgentAddResult>> {
   return request('/api/agent/add', {
     method: 'POST',
     data,
