@@ -4851,6 +4851,7 @@ export const JA_JP: SystemLangMap = {
   // ── 系统管理 - 用户积分查询 ────────────────────────────
   "PC.Pages.SystemUserCredits.colUserId": "ユーザーID",
   "PC.Pages.SystemUserCredits.colUserName": "ユーザー名",
+  "PC.Pages.SystemUserCredits.colUserNamePhoneOrEmail": "ユーザー名/携帯番号/メール",
   "PC.Pages.SystemUserCredits.colPhone": "携帯番号",
   "PC.Pages.SystemUserCredits.totalCredit": "総クレジット",
   "PC.Pages.SystemUserCredits.subscriptionCredit": "プランクレジット",
