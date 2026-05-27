@@ -27,7 +27,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { AgentAddResult, AgentConfigInfo } from '@/types/interfaces/agent';
 import {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
@@ -310,7 +310,12 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击跳转到智能体
   const handleClick = (agentId: number) => {
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+    const agent = agentList?.find((a: AgentConfigInfo) => a.id === agentId);
+    if (agent?.type === AgentTypeEnum.AgentFlow) {
+      history.push(`/space/${spaceId}/agent-flow/${agentId}`);
+    } else {
+      history.push(`/space/${spaceId}/agent/${agentId}`);
+    }
   };
 
   // 设置统计信息
@@ -425,9 +430,25 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 确认创建智能体
-  const handlerConfirmCreateAgent = (agentId: number) => {
+  const handlerConfirmCreateAgent = (result: AgentAddResult) => {
     setOpenCreateAgent(false);
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+    const createdId =
+      typeof result === 'number'
+        ? result
+        : currentAgentType === AgentTypeEnum.AgentFlow
+        ? result?.workflowId || result?.agentId || result?.id
+        : result?.agentId || result?.id || result?.workflowId;
+
+    if (!createdId) {
+      message.error(dict('PC.Common.Global.operationFailed'));
+      return;
+    }
+
+    if (currentAgentType === AgentTypeEnum.AgentFlow) {
+      history.push(`/space/${spaceId}/agent-flow/${createdId}`);
+    } else {
+      history.push(`/space/${spaceId}/agent/${createdId}`);
+    }
   };
 
   // 导入配置成功后，刷新智能体列表
@@ -447,10 +468,6 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击智能体类型
   const handlerClickAgentType = (item: CustomPopoverItem) => {
-    if (item.value === AgentTypeEnum.AgentFlow) {
-      history.push(`/space/${spaceId}/agent-flow`);
-      return;
-    }
     if (item.value === AgentTypeEnum.ConversationAgent) {
       history.push(`/space/${spaceId}/conversation-agent`);
       return;
