@@ -1,10 +1,12 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
@@ -100,6 +102,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     isLoadingOtherInterface,
     conversationInfo,
   } = useModel('conversationInfo');
+
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 是否启用订阅
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  const {
+    createSubscriptionOrder,
+    querySkillSubscriptionPlans,
+    loadingTargetPricing,
+    targetSubscriptionPlans,
+    mySubscriptionInfo,
+    loadingMySubscription,
+  } = useSubscription();
+
+  // 是否打开订阅弹窗
+  const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
 
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -552,6 +571,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [mentionEditorRef],
   );
 
+  /**
+   * 选中未订阅的付费技能时，打开订阅弹窗并拉取套餐列表
+   */
+  const handleUnsubscribedSkillSelect = useCallback(
+    (item: MentionItem) => {
+      if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
+        return;
+      }
+      querySkillSubscriptionPlans(item.targetId);
+      setOpenPaymentModal(true);
+    },
+    [isEnableSubscription, querySkillSubscriptionPlans],
+  );
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div
@@ -600,6 +633,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           // 默认提及项列表
           defaultMentions={defaultMentions}
+          enableSubscription={isEnableSubscription}
+          onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
           {/* 清空会话记录 */}
@@ -640,6 +675,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           <AtMentionIcon
             enableMention={enableMention}
             mentionPlacement={mentionPlacement}
+            enableSubscription={isEnableSubscription}
             onSelectMention={handleInsertAtMention}
           />
 
@@ -705,6 +741,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             </Tooltip>
           )}
 
+          {/* 手动选择组件 */}
           <ManualComponentItem
             manualComponents={manualComponents}
             selectedComponentList={selectedComponentList}
@@ -764,12 +801,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     styles['stop-box'],
                     // 当会话进行中且按钮可点击时，使用高亮样式
                     {
-                      [styles['stop-box-active']]:
-                        // !disabledStop &&
-                        // !wholeDisabled &&
-                        !isStoppingConversation,
+                      [styles['stop-box-active']]: !isStoppingConversation,
                     },
-                    // { [styles.disabled]: disabledStop || wholeDisabled },
                   )}
                 >
                   {isStoppingConversation ? (
@@ -836,6 +869,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           <ArrowDownOutlined />
         </div>
       </div>
+
+      {/* 技能订阅弹窗 */}
+      <ConditionRender condition={isEnableSubscription}>
+        <PaymentSubscriptionModal
+          open={openPaymentModal}
+          targetType="Skill"
+          loading={loadingTargetPricing || loadingMySubscription}
+          plans={targetSubscriptionPlans}
+          currentSubscribedInfo={
+            mySubscriptionInfo?.currentSubscription ?? null
+          }
+          onClose={() => setOpenPaymentModal(false)}
+          onSubscribe={createSubscriptionOrder}
+        />
+      </ConditionRender>
     </div>
   );
 };
