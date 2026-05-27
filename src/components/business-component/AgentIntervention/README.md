@@ -134,7 +134,7 @@ const _messageList = hydrateMcpAskInteractionsInMessageList(
 }
 ```
 
-用户点击 `Reject` 时也回传对应 reject option 的 `option_id`。只有会话取消或 pending 清理时才回传 `Cancelled`。
+用户点击 `Reject` 时也回传对应 reject option 的 `option_id`。权限卡片不提供单独的 `Cancelled` 操作，也不使用 Esc 生成 `Cancelled`；只有会话取消或 pending 清理时才回传 `Cancelled`。
 
 审批回执经 `apiAgentInterventionRespond` 发送到 Backend，再转发给 NuwaClaw `/computer/notify-resolved`：
 
@@ -250,7 +250,7 @@ POST /api/agent-interventions/{interventionId}/respond
 Body: AgentInterventionRespondRequest.permission_resolve_request
 ```
 
-MCP Ask 不走单独 API。用户提交表单后，前端用 `buildMcpAskResumeMessage` 生成普通聊天消息发回 Agent，下一轮 Agent 从用户消息中读取答案继续执行。
+MCP Ask 不走单独 API。用户提交、取消、跳过或超时后，前端用 `buildMcpAskResumeMessage` 生成普通聊天消息发回 Agent，下一轮 Agent 从用户消息中读取答案继续执行。
 
 消息内容按表单 label 输出，避免把面向用户的答案写成 JSON：
 
@@ -259,4 +259,24 @@ MCP Ask 不走单独 API。用户提交表单后，前端用 `buildMcpAskResumeM
 
 选项：先跑测试
 补充说明：先跑关键链路
+检查项：代码检查、单元测试
+```
+
+格式规则：
+
+- 标题优先使用 MCP input `title`，其次使用 `ui.title`。
+- 字段 label 使用 JSON Schema `properties[field].title`，缺失时使用字段 key。
+- 枚举值优先显示 `uiSchema[field]["ui:options"].enumNames`。
+- 数组值使用 `、` 连接。
+- 布尔值显示为 `是` / `否`。
+- 空值显示为 `未填写`。
+- 未在 schema 中声明的字段仍保留为可读的 `key：value` 行。
+- 不发送 JSON 代码块，除非用户自己明确填写了 JSON。
+
+取消、跳过、超时也都是普通聊天消息：
+
+```text
+我取消了「请选择继续方式」。
+我跳过了「请选择继续方式」。
+「请选择继续方式」已超时，没有收到表单答案。
 ```

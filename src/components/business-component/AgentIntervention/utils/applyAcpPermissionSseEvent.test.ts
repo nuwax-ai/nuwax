@@ -3,6 +3,56 @@ import { describe, expect, it } from 'vitest';
 import { applyAcpPermissionSseEvent } from './applyAcpPermissionSseEvent';
 
 describe('applyAcpPermissionSseEvent', () => {
+  it('accepts documented snake_case ACP request_permission events', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        session_id: 'session-snake',
+        message_type: 'acpRequestPermission',
+        sub_type: 'request_permission',
+        data: {
+          request_permission_request: {
+            session_id: 'session-snake',
+            tool_call: {
+              tool_call_id: 'tool-call-snake',
+              title: 'Write file',
+              kind: 'edit',
+              status: 'pending',
+              raw_input: {
+                command: 'touch approval-test.txt',
+              },
+            },
+            options: [
+              {
+                option_id: 'allow-once',
+                kind: 'allow_once',
+                name: 'Allow once',
+              },
+              {
+                option_id: 'reject-once',
+                kind: 'reject_once',
+                name: 'Reject',
+              },
+            ],
+          },
+          tool_call_id: 'tool-call-snake',
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    const request =
+      patched?.acpPermissionInteractions?.[0]?.intervention.acp.request;
+    expect(request?.sessionId).toBe('session-snake');
+    expect(request?.toolCall.toolCallId).toBe('tool-call-snake');
+    expect(request?.toolCall.rawInput).toEqual({
+      command: 'touch approval-test.txt',
+    });
+    expect(request?.options.map((option) => option.optionId)).toEqual([
+      'allow-once',
+      'reject-once',
+    ]);
+  });
+
   it('accepts raw ACP request_permission progress events', () => {
     const patched = applyAcpPermissionSseEvent(
       {

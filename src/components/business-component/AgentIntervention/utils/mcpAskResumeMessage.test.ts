@@ -149,4 +149,32 @@ describe('buildMcpAskResumeMessage', () => {
     expect(message).not.toContain('__custom__');
     expect(message).not.toContain('choiceOther');
   });
+
+  it('formats cancel, skip, and timeout as normal chat messages', () => {
+    const commonPayload = {
+      interventionId: 'ask-1',
+      revision: 1,
+      source: 'mcp_ask' as const,
+      protocol: 'mcp' as const,
+    };
+
+    expect(
+      buildMcpAskResumeMessage(baseInteraction, {
+        ...commonPayload,
+        action: 'cancel',
+      }),
+    ).toBe('我取消了「请选择继续方式」。');
+    expect(
+      buildMcpAskResumeMessage(baseInteraction, {
+        ...commonPayload,
+        action: 'skip',
+      }),
+    ).toBe('我跳过了「请选择继续方式」。');
+    expect(
+      buildMcpAskResumeMessage(baseInteraction, {
+        ...commonPayload,
+        action: 'timeout',
+      }),
+    ).toBe('「请选择继续方式」已超时，没有收到表单答案。');
+  });
 });
