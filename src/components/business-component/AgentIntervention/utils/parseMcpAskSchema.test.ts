@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { InteractionUiSchema } from '../types/mcpAskIntervention';
-import { parseInteractionFields } from './parseMcpAskSchema';
+import { parseInteractionFields, resolveFieldWidget } from './parseMcpAskSchema';
 
 describe('parseInteractionFields', () => {
   it('parses fields from a normal JSON schema', () => {
@@ -90,5 +90,47 @@ describe('parseInteractionFields', () => {
         required: true,
       },
     ]);
+  });
+});
+
+describe('resolveFieldWidget', () => {
+  it('resolves file widget from ui:widget', () => {
+    const widget = resolveFieldWidget(
+      'screenshot',
+      { type: 'string', format: 'data-url', title: '截图' },
+      { screenshot: { 'ui:widget': 'file' } },
+    );
+    expect(widget).toBe('file');
+  });
+
+  it('resolves list widget from ui:widget', () => {
+    const widget = resolveFieldWidget(
+      'framework',
+      { type: 'string', enum: ['react', 'vue', 'angular'], title: '框架' },
+      { framework: { 'ui:widget': 'list' } },
+    );
+    expect(widget).toBe('list');
+  });
+
+  it('auto-detects checkboxes for array with enum items', () => {
+    const widget = resolveFieldWidget(
+      'features',
+      {
+        type: 'array',
+        items: { type: 'string', enum: ['a', 'b', 'c'] },
+        title: '功能',
+      },
+      undefined,
+    );
+    expect(widget).toBe('checkboxes');
+  });
+
+  it('auto-detects radio for enum', () => {
+    const widget = resolveFieldWidget(
+      'choice',
+      { type: 'string', enum: ['a', 'b'], title: '选择' },
+      undefined,
+    );
+    expect(widget).toBe('radio');
   });
 });

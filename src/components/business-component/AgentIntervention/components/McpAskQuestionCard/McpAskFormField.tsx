@@ -1,8 +1,12 @@
 import { t } from '@/services/i18nRuntime';
-import { Checkbox, Form, Input, Radio, Select } from 'antd';
+import { Checkbox, Form, Input, Radio, Select, Upload } from 'antd';
+import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import type { ParsedMcpAskField } from '../../utils/parseMcpAskSchema';
+import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { handleUploadFileList } from '@/utils/upload';
 import styles from './McpAskFormField.less';
 
 interface McpAskFormFieldProps {
@@ -147,6 +151,56 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           maxLength={property.maxLength}
           showCount={!!property.maxLength}
         />
+      </Form.Item>
+    );
+  }
+
+  if (widget === 'list' && enumValues.length) {
+    return (
+      <Form.Item name={name} label={label} rules={rules}>
+        <Radio.Group disabled={disabled} className={styles.optionGroup}>
+          {enumValues.map((value, index) => (
+            <Radio key={value} value={value} className={styles.listRadio}>
+              {enumLabels[index] ?? value}
+            </Radio>
+          ))}
+        </Radio.Group>
+      </Form.Item>
+    );
+  }
+
+  if (widget === 'file') {
+    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+    const accept = (options as any)?.accept;
+    const multiple = (options as any)?.multiple;
+
+    return (
+      <Form.Item
+        name={name}
+        label={label}
+        rules={rules}
+        valuePropName="fileList"
+        getValueFromEvent={(e) => {
+          if (Array.isArray(e)) return e;
+          return handleUploadFileList(e?.fileList ?? []);
+        }}
+      >
+        <Upload.Dragger
+          action={UPLOAD_FILE_ACTION}
+          headers={{ Authorization: token ? `Bearer ${token}` : '' }}
+          data={{ type: 'tmp' }}
+          disabled={disabled}
+          multiple={multiple}
+          accept={accept}
+          listType="picture"
+        >
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">
+            {t('PC.Components.McpAskQuestionCard.uploadDragText') || '点击或拖拽文件到此区域上传'}
+          </p>
+        </Upload.Dragger>
       </Form.Item>
     );
   }

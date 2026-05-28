@@ -19,9 +19,23 @@ function stringifyDisplayValue(value: unknown): string {
     if (!value.length) {
       return '未填写';
     }
+    // 检查是否为文件上传数组 (UploadFileInfo[])
+    if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+      const first = value[0] as any;
+      if ('name' in first || 'url' in first || 'fileName' in first) {
+        return value
+          .map((f: any) => f.name || f.fileName || f.url || '未知文件')
+          .join('、');
+      }
+    }
     return value.map(stringifyDisplayValue).join('、');
   }
   if (typeof value === 'object') {
+    // 检查是否为单个文件对象
+    const obj = value as any;
+    if (obj.name || obj.fileName || obj.url) {
+      return `📎 ${obj.name || obj.fileName || '文件'}`;
+    }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {
       return '未填写';

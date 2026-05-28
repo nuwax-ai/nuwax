@@ -175,7 +175,9 @@ export function resolveFieldWidget(
       widget === 'select' ||
       widget === 'text' ||
       widget === 'textarea' ||
-      widget === 'radio-with-custom'
+      widget === 'radio-with-custom' ||
+      widget === 'list' ||
+      widget === 'file'
     ) {
       return widget;
     }

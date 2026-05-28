@@ -103,4 +103,6 @@ export type McpAskFieldWidget =
   | 'select'
   | 'text'
   | 'textarea'
-  | 'radio-with-custom';
+  | 'radio-with-custom'
+  | 'list'
+  | 'file';
