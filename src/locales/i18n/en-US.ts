@@ -2887,7 +2887,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "Minimum withdrawal: ¥{0}, platform fee: {1}%",
   "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "Your credits are negative, withdrawal is not allowed",
   "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "Confirm Withdrawal",
-  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "Are you sure you want to apply for withdrawal?",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "The withdrawal amount is {0} Yuan, the platform service fee is {1} Yuan, and the actual amount received is {2} Yuan.",
 
   
   // ── Credit Records ──
