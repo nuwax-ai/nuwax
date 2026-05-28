@@ -127,11 +127,6 @@ const AgentModelSetting: React.FC<
             img: (item as ModelConfigInfo & { icon?: string }).icon,
           })) || [];
         setModelConfigList(_list);
-
-        // 数据联动：如果当前选中的模型不在新的列表里，清空选中
-        if (targetId && !list?.some((item) => item.id === targetId)) {
-          setTargetId(null);
-        }
       } else {
         // 过滤出支持问答类型的模型
         const list = originalModelConfigList?.filter((item) =>
@@ -150,34 +145,36 @@ const AgentModelSetting: React.FC<
         setModelConfigList(_list);
       }
     }
-  }, [originalModelConfigList, agentConfigInfo, getFilteredModels, targetId]);
+  }, [originalModelConfigList, agentConfigInfo, getFilteredModels]);
 
   useEffect(() => {
     if (open && modelComponentConfig) {
       componentIdRef.current = modelComponentConfig.id;
       setComponentBindConfig({
         ...(modelComponentConfig.bindConfig as ComponentModelBindConfig),
-        // agentEngine:
-        //   (modelComponentConfig.bindConfig as ComponentModelBindConfig)
-        //     ?.agentEngine || AgentEngineEnum.Default,
       });
 
-      // 通用型智能体，需要根据通用型智能体配置的模型类型，查询可使用模型列表接口
-      if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-        const targetId = modelComponentConfig.targetId;
-        const targetModelInfo = modelConfigList?.find(
-          (item) => item.value === targetId,
-        );
-        if (targetModelInfo) {
-          setTargetId(modelComponentConfig.targetId);
-        } else {
-          setTargetId(null);
-        }
+      const bindTargetId = modelComponentConfig.targetId;
+      const targetModelInfo = modelConfigList?.find(
+        (item) => item.value === bindTargetId,
+      );
+      if (targetModelInfo) {
+        setTargetId(bindTargetId);
       } else {
-        setTargetId(modelComponentConfig.targetId);
+        setTargetId(null);
       }
     }
-  }, [open, modelComponentConfig]);
+  }, [open, modelComponentConfig, modelConfigList]);
+
+  // 数据联动：当选中的模型（targetId）存在但不在当前可选的模型列表（modelConfigList）中时，自动重置为 null 避免展示失效模型
+  useEffect(() => {
+    if (targetId && modelConfigList.length > 0) {
+      const exists = modelConfigList.some((item) => item.value === targetId);
+      if (!exists) {
+        setTargetId(null);
+      }
+    }
+  }, [targetId, modelConfigList]);
 
   // useEffect(() => {
   //   // 查询可使用模型列表接口
