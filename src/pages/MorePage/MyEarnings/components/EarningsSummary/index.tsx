@@ -36,6 +36,8 @@ const EarningsSummary: React.FC = () => {
     refresh: refreshStats,
   } = useRequest(apiGetRevenueStats);
 
+  const pendingAmount = revenueData?.data?.pendingAmount || 0;
+
   // 提现申请
   const { loading: withdrawLoading, run: runWithdraw } = useRequest(
     apiCreateWithdrawApply,
@@ -61,9 +63,22 @@ const EarningsSummary: React.FC = () => {
   const handleWithdraw = () => {
     if (creditChecking || withdrawLoading) return;
 
+    const x = pendingAmount.toFixed(2);
+    const ratio =
+      typeof tenantConfigInfo?.revenueRatio === 'number'
+        ? tenantConfigInfo.revenueRatio
+        : 0.1;
+    const y = (pendingAmount * ratio).toFixed(2);
+    const z = (pendingAmount - Number(y)).toFixed(2);
+
     Modal.confirm({
       title: dict('PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle'),
-      content: dict('PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc'),
+      content: dict(
+        'PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc',
+        x,
+        y,
+        z,
+      ),
       okText: dict('PC.Common.Global.confirm'),
       cancelText: dict('PC.Pages.SpaceAgentSubscriptions.confirmCancel'),
       onOk: async () => {
@@ -123,8 +138,6 @@ const EarningsSummary: React.FC = () => {
       },
     ];
   }, [revenueData]);
-
-  const pendingAmount = revenueData?.data?.pendingAmount || 0;
 
   return (
     <>

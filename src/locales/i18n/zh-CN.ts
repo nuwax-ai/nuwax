@@ -2887,7 +2887,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.withdrawHint": "金额需满{0}元可提现，平台收取{1}%服务费",
   "PC.Pages.MorePage.MyEarnings.negativeCreditWithdrawError": "您的积分为负，无法提现",
   "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "确认提现",
-  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "确认要申请提现吗？",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "本次提现金额为 {0} 元，平台服务费 {1} 元，实际到账 {2} 元。",
 
 
   // ── 积分明细 - 新增 ──
