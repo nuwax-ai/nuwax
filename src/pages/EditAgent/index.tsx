@@ -135,6 +135,7 @@ const EditAgent: React.FC = () => {
     restartVncPod,
     restartAgent,
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
@@ -1145,6 +1146,9 @@ const EditAgent: React.FC = () => {
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
                           <FileTreeView
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
+                            clearTaskAgentSelectedFileId={() =>
+                              setTaskAgentSelectedFileId('')
+                            }
                             taskAgentSelectTrigger={taskAgentSelectTrigger}
                             originalFiles={fileTreeData}
                             fileTreeDataLoading={fileTreeDataLoading}
