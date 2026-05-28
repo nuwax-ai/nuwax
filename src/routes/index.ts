@@ -29,6 +29,10 @@ const routes = [
     layout: false,
   },
   {
+    path: '/intervention-demo',
+    component: '@/pages/InterventionDemo',
+  },
+  {
     path: '/',
     component: '@/layouts',
     wrappers: ['@/wrappers/authWithLoading'],
