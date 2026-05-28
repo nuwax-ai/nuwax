@@ -540,23 +540,11 @@ const Chat: React.FC = () => {
 
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        // const { data } = await runAsync(id);
         let data = null;
         try {
           setLoadingAsync(true);
-          const result = await runAsync(id);
-          // 检查请求是否成功（处理会话不存在等情况）
-          if (result.success && result.code === SUCCESS_CODE) {
-            data = result.data;
-          } else {
-            // 会话不存在或其他错误，跳转到智能体首页（接口层统一拦截提示）
-            history.replace(`/agent/${agentId}`);
-            return;
-          }
-        } catch (error) {
-          // 网络错误或其他异常
-          history.replace(`/agent/${agentId}`);
-          return;
+          const { data: _data } = await runAsync(id);
+          data = _data;
         } finally {
           setLoadingAsync(false);
         }
@@ -1519,10 +1507,7 @@ const Chat: React.FC = () => {
     );
   };
 
-  return clearLoading ||
-    loadingConversation ||
-    loadingAsync ||
-    !conversationInfo ? (
+  return clearLoading || loadingConversation || loadingAsync ? (
     <div
       className={cx(
         'flex',
