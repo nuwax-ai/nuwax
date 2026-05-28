@@ -207,7 +207,6 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colModelName'),
         dataIndex: 'name',
         key: 'name',
-        width: 180,
         fixed: 'left',
         ellipsis: true,
         fieldProps: {
@@ -218,7 +217,6 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colModelId'),
         dataIndex: 'model',
         key: 'model',
-        width: 220,
         hideInSearch: true,
         tooltip: dict('PC.Pages.ModelPermissions.colModelIdTip'),
         render: (_, record) => (
@@ -256,7 +254,6 @@ const ModelPermissions: React.FC = () => {
       {
         title: dict('PC.Pages.ModelPermissions.colExternalCall'),
         key: 'externalCall',
-        width: 160,
         hideInSearch: true,
         tooltip: dict('PC.Pages.ModelPermissions.colExternalCallTip'),
         render: (_, record) => {
@@ -287,7 +284,6 @@ const ModelPermissions: React.FC = () => {
         title: dict('PC.Pages.ModelPermissions.colApiProtocol'),
         dataIndex: 'apiProtocol',
         key: 'apiProtocol',
-        width: 120,
         hideInSearch: true,
       },
       {

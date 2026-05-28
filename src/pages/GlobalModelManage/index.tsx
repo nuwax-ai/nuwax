@@ -199,7 +199,6 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnModelName'),
       dataIndex: 'name',
-      width: 200,
       fixed: 'left',
       hideInSearch: true,
     },
@@ -226,20 +225,18 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnModelId'),
       dataIndex: 'model',
-      width: 200,
       hideInSearch: true,
     },
     {
       title: dict('PC.Pages.GlobalModelManage.columnDescription'),
       dataIndex: 'description',
-      width: 260,
       hideInSearch: true,
     },
     {
       // 状态列：检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnStatus'),
       dataIndex: 'enabled',
-      width: 100,
+      width: 150,
       valueType: 'select',
       valueEnum: {
         [ModelComponentStatusEnum.Enabled]: {
@@ -256,13 +253,12 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnCreator'),
       dataIndex: ['creator', 'nickName'],
-      width: 160,
       hideInSearch: true,
     },
     {
       title: dict('PC.Pages.GlobalModelManage.columnUpdateTime'),
       dataIndex: 'created',
-      width: 160,
+      width: 200,
       hideInSearch: true,
       valueType: 'dateTime',
     },
@@ -271,7 +267,7 @@ const GlobalModelManage: React.FC = () => {
       tooltip: dict('PC.Pages.GlobalModelManage.accessControlTooltip'),
       dataIndex: 'accessControl',
       align: 'center',
-      width: 100,
+      width: 120,
       fixed: 'right',
       valueEnum: {
         [AccessControlEnum.NoFilter]: {
