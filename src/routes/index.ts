@@ -31,6 +31,7 @@ const routes = [
   {
     path: '/intervention-demo',
     component: '@/pages/InterventionDemo',
+    layout: false,
   },
   {
     path: '/',

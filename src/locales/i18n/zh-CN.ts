@@ -552,6 +552,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.skipped": "已跳过",
   "PC.Components.McpAskQuestionCard.stepOf": "步骤 {0} / {1}",
   "PC.Components.McpAskQuestionCard.submitted": "已提交回答",
+  "PC.Components.McpAskQuestionCard.uploadDragText": "点击或拖拽文件到此区域上传",
   "PC.Components.McpCollapseComponentList.agentDesc": "智能体负责接收用户任务请求，进行智能分析和决策，协调各个模块的协同工作，并最终给出响应结果。",
   "PC.Components.McpCollapseComponentList.delete": "删除",
   "PC.Components.McpCollapseComponentList.knowledgeDesc": "将文档、URL、三方数据源上传为文本知识库后，用户发送消息时，智能体能够引用文本知识中的内容回答用户问题。",

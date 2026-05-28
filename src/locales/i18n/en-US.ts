@@ -545,6 +545,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.skipped": "Skipped",
   "PC.Components.McpAskQuestionCard.stepOf": "Step {0} / {1}",
   "PC.Components.McpAskQuestionCard.submitted": "Answer submitted",
+  "PC.Components.McpAskQuestionCard.uploadDragText": "Click or drag files here to upload",
   "PC.Components.McpCollapseComponentList.agentDesc": "The agent is responsible for receiving user task requests, performing intelligent analysis and decision-making, coordinating the collaborative work of various modules, and ultimately providing response results.",
   "PC.Components.McpCollapseComponentList.delete": "Delete",
   "PC.Components.McpCollapseComponentList.knowledgeDesc": "After uploading documents, URLs, and third-party data sources as text knowledge bases, when users send messages, the agent can reference the content in the text knowledge to answer user questions.",
