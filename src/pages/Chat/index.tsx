@@ -1507,10 +1507,7 @@ const Chat: React.FC = () => {
     );
   };
 
-  return clearLoading ||
-    loadingConversation ||
-    loadingAsync ||
-    !conversationInfo ? (
+  return clearLoading || loadingConversation || loadingAsync ? (
     <div
       className={cx(
         'flex',
