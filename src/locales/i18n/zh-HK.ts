@@ -5063,7 +5063,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.colPaymentRemark": "打款備註",
   "PC.Pages.MorePage.MyEarnings.colPlatformServiceFee": "平台服務費",
   "PC.Pages.MorePage.MyEarnings.colVoucherImages": "憑證圖片",
-  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "确认要申請提現吗？",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "本次提現金額為 {0} 元，平台服務費 {1} 元，實際到賬 {2} 元。",
   "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "确认提現",
   "PC.Pages.MorePage.MyEarnings.date": "日期",
   "PC.Pages.MorePage.MyEarnings.monthFormat": "M月",
