@@ -57,6 +57,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       className,
       headerClassName,
       taskAgentSelectedFileId,
+      clearTaskAgentSelectedFileId,
       taskAgentSelectTrigger,
       isImportProjectTrigger,
       originalFiles,
@@ -484,6 +485,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       async (fileId: string) => {
         // 记录用户主动选择的文件ID
         userSelectedFileRef.current = fileId;
+        /**
+         * 清除通用型智能体会话中点击选中的文件ID, 手动切换文件时使用
+         * 因为会话结束或者手动在聊天回话中选择了task_result中的文件后，会定位到此文件，如果此时选择其他文件，
+         * 继续下次会话时，上次的taskAgentSelectedFileId仍然存在，此时刷新文件树时，会继续定位到此文件，但是已经切换到其他文件了
+         */
+        clearTaskAgentSelectedFileId?.();
         // 调用内部选择函数
         await handleFileSelectInternal(fileId);
       },
