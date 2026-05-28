@@ -11,7 +11,7 @@ import type {
 import { Button, Card, Divider, message, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 // ============================================================
 // Mock Data Factories
@@ -158,7 +158,16 @@ const InterventionDemoPage: React.FC = () => {
         framework: {
           type: 'string',
           title: '前端框架',
-          enum: ['react', 'vue', 'angular', 'svelte', 'solid', 'preact', 'qwik', 'astro'],
+          enum: [
+            'react',
+            'vue',
+            'angular',
+            'svelte',
+            'solid',
+            'preact',
+            'qwik',
+            'astro',
+          ],
         },
         language: {
           type: 'string',
@@ -170,13 +179,29 @@ const InterventionDemoPage: React.FC = () => {
         framework: {
           'ui:widget': 'list',
           'ui:options': {
-            enumNames: ['React', 'Vue', 'Angular', 'Svelte', 'SolidJS', 'Preact', 'Qwik', 'Astro'],
+            enumNames: [
+              'React',
+              'Vue',
+              'Angular',
+              'Svelte',
+              'SolidJS',
+              'Preact',
+              'Qwik',
+              'Astro',
+            ],
           },
         },
         language: {
           'ui:widget': 'list',
           'ui:options': {
-            enumNames: ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust', 'Java'],
+            enumNames: [
+              'TypeScript',
+              'JavaScript',
+              'Python',
+              'Go',
+              'Rust',
+              'Java',
+            ],
           },
         },
       },
@@ -196,7 +221,10 @@ const InterventionDemoPage: React.FC = () => {
       },
       {
         description: { 'ui:widget': 'textarea' },
-        screenshot: { 'ui:widget': 'file', 'ui:options': { accept: 'image/*' } },
+        screenshot: {
+          'ui:widget': 'file',
+          'ui:options': { accept: 'image/*' },
+        },
         attachments: { 'ui:widget': 'file', 'ui:options': { multiple: true } },
       },
       '请上传问题的截图或相关文件，帮助 Agent 更好地理解问题。',
@@ -228,6 +256,109 @@ const InterventionDemoPage: React.FC = () => {
       },
       '请选择部署目标环境和区域。',
     ),
+    // Wizard 分步表单
+    {
+      toolCallId: `tc-ask-wizard-${Date.now()}`,
+      responseStatus: 'pending',
+      input: {
+        toolName: 'nuwax_ask_question',
+        schemaVersion: 'nuwaclaw.mcp_ask.v1',
+        requestId: `ask-wizard-${Date.now()}`,
+        revision: 1,
+        sessionId: 'sess-demo',
+        title: '项目初始化向导',
+        description: '请按步骤填写项目配置信息。',
+        ui: {
+          version: 'nuwaclaw.interaction.v1',
+          presentation: 'wizard',
+          title: '项目初始化向导',
+          description: '请按步骤填写项目配置信息。',
+          schema: {
+            type: 'object',
+            properties: {
+              projectName: { type: 'string', title: '项目名称' },
+              description: {
+                type: 'string',
+                title: '项目描述',
+                maxLength: 500,
+              },
+              framework: {
+                type: 'string',
+                title: '前端框架',
+                enum: ['react', 'vue', 'angular', 'svelte'],
+              },
+              features: {
+                type: 'array',
+                title: '功能模块',
+                items: {
+                  type: 'string',
+                  enum: ['auth', 'api', 'database', 'testing', 'ci'],
+                },
+              },
+              deployTarget: {
+                type: 'string',
+                title: '部署目标',
+                enum: ['vercel', 'netlify', 'docker', 'aws', 'gcp'],
+              },
+              notes: { type: 'string', title: '备注' },
+            },
+            required: ['projectName', 'framework', 'deployTarget'],
+          },
+          uiSchema: {
+            description: { 'ui:widget': 'textarea' },
+            framework: {
+              'ui:widget': 'list',
+              'ui:options': {
+                enumNames: ['React', 'Vue', 'Angular', 'Svelte'],
+              },
+            },
+            features: {
+              'ui:widget': 'checkboxes',
+              'ui:options': {
+                enumNames: [
+                  '用户认证',
+                  'API 接口',
+                  '数据库',
+                  '自动化测试',
+                  'CI/CD',
+                ],
+              },
+            },
+            deployTarget: {
+              'ui:widget': 'list',
+              'ui:options': {
+                enumNames: ['Vercel', 'Netlify', 'Docker', 'AWS', 'GCP'],
+              },
+            },
+            notes: { 'ui:widget': 'textarea' },
+          },
+          steps: [
+            {
+              id: 'basic',
+              title: '基本信息',
+              description: '填写项目名称和描述',
+              fields: ['projectName', 'description'],
+            },
+            {
+              id: 'tech',
+              title: '技术选型',
+              description: '选择框架和功能模块',
+              fields: ['framework', 'features'],
+            },
+            {
+              id: 'deploy',
+              title: '部署配置',
+              description: '选择部署目标和备注',
+              fields: ['deployTarget', 'notes'],
+            },
+          ],
+          submitLabel: '完成配置',
+          cancelLabel: '取消',
+          nextStepLabel: '下一步',
+          prevStepLabel: '上一步',
+        },
+      },
+    },
   ]);
 
   const handleAcpRespond = (
@@ -256,7 +387,9 @@ const InterventionDemoPage: React.FC = () => {
         ),
       );
       const kind = response.outcome.outcome === 'selected' ? '批准' : '取消';
-      message.success(`已${kind}: ${interaction.intervention.acp.request.toolCall.title}`);
+      message.success(
+        `已${kind}: ${interaction.intervention.acp.request.toolCall.title}`,
+      );
     }, 1000);
   };
 
@@ -304,7 +437,13 @@ const InterventionDemoPage: React.FC = () => {
         },
       }),
     ]);
-    setMcpList((prev) => prev.map((item) => ({ ...item, responseStatus: 'pending', formData: undefined })));
+    setMcpList((prev) =>
+      prev.map((item) => ({
+        ...item,
+        responseStatus: 'pending',
+        formData: undefined,
+      })),
+    );
     message.success('已重置所有状态');
   };
 
@@ -312,7 +451,8 @@ const InterventionDemoPage: React.FC = () => {
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px' }}>
       <Title level={2}>干预交互卡片 Demo</Title>
       <Paragraph type="secondary">
-        此页面用于展示 ACP Permission 权限审批和 MCP Ask 结构化提问卡片的渲染效果。
+        此页面用于展示 ACP Permission 权限审批和 MCP Ask
+        结构化提问卡片的渲染效果。
       </Paragraph>
 
       <Space style={{ marginBottom: 24 }}>
@@ -331,6 +471,7 @@ const InterventionDemoPage: React.FC = () => {
           <Card key={acp.intervention.id} size="small">
             <AcpPermissionCard
               interaction={acp}
+              docked={true}
               keyboardShortcutsEnabled={false}
               onRespond={(response) => handleAcpRespond(acp, response)}
             />

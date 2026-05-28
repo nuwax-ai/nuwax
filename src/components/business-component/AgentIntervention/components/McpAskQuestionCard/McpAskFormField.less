@@ -60,6 +60,15 @@
 }
 
 .listRadio {
-  display: block !important;
+  display: flex !important;
+  align-items: center;
   width: 100%;
+  min-height: 32px;
+
+  :global {
+    .ant-radio {
+      display: flex;
+      align-items: center;
+    }
+  }
 }
