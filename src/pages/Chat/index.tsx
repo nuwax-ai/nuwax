@@ -253,6 +253,7 @@ const Chat: React.FC = () => {
     restartAgent,
     // 通用型智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
@@ -1453,6 +1454,9 @@ const Chat: React.FC = () => {
                 <FileTreeView
                   className={cx(styles['file-tree-container'])}
                   taskAgentSelectedFileId={taskAgentSelectedFileId}
+                  clearTaskAgentSelectedFileId={() =>
+                    setTaskAgentSelectedFileId('')
+                  }
                   taskAgentSelectTrigger={taskAgentSelectTrigger}
                   originalFiles={fileTreeData}
                   fileTreeDataLoading={fileTreeDataLoading}
