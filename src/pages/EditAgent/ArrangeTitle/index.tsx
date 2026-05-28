@@ -105,6 +105,17 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
     }
   };
 
+  // 检查 originalModelConfigList 中是否存在匹配 targetId 的模型
+  const hasMatchedModel = useMemo(() => {
+    if (!originalModelConfigList?.length) return false;
+    const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
+    if (targetId === undefined || targetId === null) return false;
+    return originalModelConfigList.some((item) => item.id === targetId);
+  }, [
+    originalModelConfigList,
+    agentConfigInfo?.modelComponentConfig?.targetId,
+  ]);
+
   const triggerContent = (
     <div
       className={cx(
@@ -119,7 +130,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
         <img src={icon} alt="" />
       </ConditionRender>
       <span>
-        {showModelName
+        {showModelName && hasMatchedModel
           ? modelName
           : dict('PC.Pages.EditAgent.ArrangeTitle.selectChatModel')}
       </span>
