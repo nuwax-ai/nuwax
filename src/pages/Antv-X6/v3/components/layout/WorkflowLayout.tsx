@@ -124,6 +124,13 @@ export interface WorkflowLayoutProps {
   // Version History
   showVersionHistory: boolean;
   onBack?: () => void;
+
+  // AgentFlow Header extensions
+  onAutoArrange?: () => void;
+  handleTestRun?: () => void;
+  testRunLoading?: boolean;
+  flowControlModel?: string;
+  onFlowControlModelChange?: (model: string) => void;
 }
 
 const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
@@ -190,6 +197,12 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   showCreateWorkflow,
   showVersionHistory,
   onBack,
+  // AgentFlow Header extensions
+  onAutoArrange,
+  handleTestRun: handleTestRunProp,
+  testRunLoading: testRunLoadingProp,
+  flowControlModel,
+  onFlowControlModelChange,
 }) => {
   return (
     <div id="container">
@@ -206,6 +219,11 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         onRedo={onRedo}
         onManualSave={onManualSave}
         onBack={onBack}
+        onAutoArrange={onAutoArrange}
+        handleTestRun={handleTestRunProp}
+        testRunLoading={testRunLoadingProp}
+        flowControlModel={flowControlModel}
+        onFlowControlModelChange={onFlowControlModelChange}
       />
 
       <div className="workflow-body">

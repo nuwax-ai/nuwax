@@ -27,13 +27,12 @@ import type { ChildNode } from '@/types/interfaces/graph';
 
 const LOCAL_FLAG = 'agentFlow:mock';
 const MOCK_START_NODE_ID = 101;
-const MOCK_LOOP_NODE_ID = 102;
-const MOCK_LOOP_START_ID = 1120;
-const MOCK_LOOP_END_ID = 1121;
+const MOCK_ROUTE_NODE_ID = 108;
 const MOCK_AGENT_NODE_ID = 103;
 const MOCK_EVAL_NODE_ID = 104;
-const MOCK_HITL_NODE_ID = 105;
-const MOCK_LLM_NODE_ID = 106;
+const MOCK_HITL_APPROVE_NODE_ID = 105;
+const MOCK_HITL_ASK_NODE_ID = 109;
+const MOCK_CONNECTOR_NODE_ID = 110;
 const MOCK_END_NODE_ID = 107;
 
 const now = () => new Date().toISOString();
@@ -80,9 +79,9 @@ export function buildMockAgentFlowDetails({
     id: MOCK_START_NODE_ID,
     name: '开始',
     type: NodeTypeEnum.Start,
-    nextNodeIds: [MOCK_LOOP_NODE_ID],
+    nextNodeIds: [MOCK_ROUTE_NODE_ID],
     nodeConfig: {
-      extension: { x: 80, y: 160 },
+      extension: { x: 80, y: 200 },
       outputArgs: [
         {
           key: 'userQuestion',
@@ -97,14 +96,28 @@ export function buildMockAgentFlowDetails({
     },
   });
 
-  const loopStartNode = createMockNode(workflowId, {
-    id: MOCK_LOOP_START_ID,
-    name: '循环开始',
-    type: NodeTypeEnum.LoopStart,
-    loopNodeId: MOCK_LOOP_NODE_ID,
-    nextNodeIds: [MOCK_AGENT_NODE_ID],
+  const routeNode = createMockNode(workflowId, {
+    id: MOCK_ROUTE_NODE_ID,
+    name: '路由决策',
+    type: NodeTypeEnum.RouteDecision,
+    nextNodeIds: [MOCK_AGENT_NODE_ID, MOCK_CONNECTOR_NODE_ID],
     nodeConfig: {
-      extension: { x: 120, y: 258 },
+      extension: { x: 300, y: 200 },
+      extraPrompt: '根据用户意图，选择智能体处理或外部平台处理。',
+      routes: [
+        {
+          uuid: 'route_1',
+          routeName: '智能体处理',
+          description: '需要AI智能体处理的请求',
+          nextNodeIds: [MOCK_AGENT_NODE_ID],
+        },
+        {
+          uuid: 'route_2',
+          routeName: '外部平台',
+          description: '需要调用外部Dify流程',
+          nextNodeIds: [MOCK_CONNECTOR_NODE_ID],
+        },
+      ],
     },
   });
 
@@ -112,13 +125,12 @@ export function buildMockAgentFlowDetails({
     id: MOCK_AGENT_NODE_ID,
     name: '智能体',
     type: NodeTypeEnum.Agent,
-    loopNodeId: MOCK_LOOP_NODE_ID,
     nextNodeIds: [MOCK_EVAL_NODE_ID],
     nodeConfig: {
-      extension: { x: 320, y: 258 },
+      extension: { x: 540, y: 120 },
       agentMode: AgentNodeModeEnum.Platform,
       agentId: 1,
-      agentInputs: { question: 'context.userQuestion' },
+      agentInputs: [{ key: 'question', value: 'context.userQuestion' }],
       contextReads: ['context.userQuestion'],
       contextWrites: ['context.agentAnswer'],
       autoWirePrevOutput: true,
@@ -129,10 +141,10 @@ export function buildMockAgentFlowDetails({
     id: MOCK_EVAL_NODE_ID,
     name: '评估验证',
     type: NodeTypeEnum.EvalGate,
-    loopNodeId: MOCK_LOOP_NODE_ID,
+    nextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
     nodeConfig: {
-      extension: { x: 560, y: 258 },
-      passNextNodeIds: [MOCK_LOOP_END_ID],
+      extension: { x: 760, y: 120 },
+      passNextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
       evalValidators: [
         {
           uuid: 'validator_1',
@@ -151,42 +163,15 @@ export function buildMockAgentFlowDetails({
     },
   });
 
-  const loopEndNode = createMockNode(workflowId, {
-    id: MOCK_LOOP_END_ID,
-    name: '循环结束',
-    type: NodeTypeEnum.LoopEnd,
-    loopNodeId: MOCK_LOOP_NODE_ID,
-    nodeConfig: {
-      extension: { x: 760, y: 258 },
-    },
-  });
-
-  const loopNode = createMockNode(workflowId, {
-    id: MOCK_LOOP_NODE_ID,
-    name: '重试循环',
-    type: NodeTypeEnum.Loop,
-    shape: NodeShapeEnum.Loop,
-    nextNodeIds: [MOCK_HITL_NODE_ID],
-    innerStartNodeId: MOCK_LOOP_START_ID,
-    innerEndNodeId: MOCK_LOOP_END_ID,
-    innerNodes: [loopStartNode, agentNode, evalNode, loopEndNode],
-    nodeConfig: {
-      extension: { x: 80, y: 200 },
-      loopType: 'SPECIFY_TIMES_LOOP',
-      inputArgs: [],
-      outputArgs: [],
-      variableArgs: [],
-    },
-  });
-
-  const hitlNode = createMockNode(workflowId, {
-    id: MOCK_HITL_NODE_ID,
+  const hitlApproveNode = createMockNode(workflowId, {
+    id: MOCK_HITL_APPROVE_NODE_ID,
     name: '人类审批',
     type: NodeTypeEnum.HumanInteraction,
+    nextNodeIds: [MOCK_HITL_ASK_NODE_ID],
     nodeConfig: {
-      extension: { x: 1000, y: 200 },
+      extension: { x: 1000, y: 120 },
       hitlMode: HitlModeEnum.Approve,
-      approveNextNodeIds: [MOCK_LLM_NODE_ID],
+      approveNextNodeIds: [MOCK_HITL_ASK_NODE_ID],
       rejectNextNodeIds: [MOCK_AGENT_NODE_ID],
       approveConfig: {
         actions: [
@@ -201,20 +186,44 @@ export function buildMockAgentFlowDetails({
     },
   });
 
-  const llmNode = createMockNode(workflowId, {
-    id: MOCK_LLM_NODE_ID,
-    name: '大模型润色',
-    type: NodeTypeEnum.LLM,
+  const hitlAskNode = createMockNode(workflowId, {
+    id: MOCK_HITL_ASK_NODE_ID,
+    name: '询问用户',
+    type: NodeTypeEnum.HumanInteraction,
     nextNodeIds: [MOCK_END_NODE_ID],
     nodeConfig: {
-      extension: { x: 1260, y: 200 },
-      modelId: 1,
-      systemPrompt: '你是专业客服助手。',
-      userPrompt: '请润色 context.agentAnswer 并输出最终回复。',
-      temperature: 0.7,
-      maxTokens: 1024,
-      contextReads: ['context.agentAnswer'],
-      contextWrites: ['context.finalAnswer'],
+      extension: { x: 1240, y: 200 },
+      hitlMode: HitlModeEnum.Ask,
+      askConfig: {
+        question: '您是否需要额外的帮助？',
+        answerType: AnswerTypeEnum.SELECT,
+        options: [
+          { label: '是', value: 'yes' },
+          { label: '否', value: 'no' },
+        ],
+        answerKey: 'needMoreHelp',
+        required: true,
+      },
+    },
+  });
+
+  const connectorNode = createMockNode(workflowId, {
+    id: MOCK_CONNECTOR_NODE_ID,
+    name: 'Dify流程',
+    type: NodeTypeEnum.ExternalConnector,
+    nextNodeIds: [MOCK_END_NODE_ID],
+    nodeConfig: {
+      extension: { x: 540, y: 280 },
+      connectorProvider: 'dify',
+      connectorConfig: {
+        endpoint: 'https://api.dify.ai/v1/workflows/run',
+        authRef: '{{secrets.difyApiKey}}',
+        payloadTemplate:
+          '{"inputs": {"query": "{{context.userQuestion}}"}, "user": "{{runId}}"}',
+        responseMapping: {
+          'context.connectorOutput': 'data.outputs.text',
+        },
+      },
       autoWirePrevOutput: true,
     },
   });
@@ -224,7 +233,7 @@ export function buildMockAgentFlowDetails({
     name: '结束',
     type: NodeTypeEnum.End,
     nodeConfig: {
-      extension: { x: 1520, y: 200 },
+      extension: { x: 1480, y: 200 },
       returnType: 'TEXT',
       text: '{{context.finalAnswer}}',
     },
@@ -238,19 +247,28 @@ export function buildMockAgentFlowDetails({
       avatar: '',
     },
     created: nowAt,
-    description: 'AgentFlow 本地调试流程（含循环节点）',
+    description: 'AgentFlow 本地调试流程',
     endNode,
     icon: '',
     id: workflowId,
     inputArgs: startNode.nodeConfig.outputArgs || [],
     modified: nowAt,
     name: `AgentFlow Mock #${workflowId}`,
-    nodes: [startNode, loopNode, hitlNode, llmNode, endNode],
+    nodes: [
+      startNode,
+      routeNode,
+      agentNode,
+      evalNode,
+      hitlApproveNode,
+      hitlAskNode,
+      connectorNode,
+      endNode,
+    ],
     outputArgs: [],
     publishStatus: '',
     spaceId,
     startNode,
-    extension: { size: 6 },
+    extension: { size: 8 },
     scope: null,
     workflowType: FlowKindEnum.AgentFlow,
     systemVariables: [],

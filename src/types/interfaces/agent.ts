@@ -69,9 +69,23 @@ export interface AgentAddParams extends AgentBaseInfo {
   type: AgentTypeEnum;
 }
 
+/**
+ * 新增智能体接口的返回结果（对象形式）。
+ *
+ * 不同 AgentTypeEnum 下，后端返回的字段存在差异：
+ * - ChatBot / TaskAgent：通常返回 `agentId`（已存在的智能体 ID）
+ * - AgentFlow：通常返回 `workflowId`（工作流 ID），部分场景下也可能返回 `agentId`
+ * - `id` 为兜底字段，在前两者均缺失时使用
+ *
+ * 调用方应通过 `agentId ?? workflowId ?? id` 的优先级顺序解析，
+ * 不应依赖调用时的 UI 状态（如 currentAgentType）来决定取值。
+ */
 export interface AgentCreateResult {
+  /** 通用主键 ID，作为兜底字段 */
   id?: number;
+  /** 智能体 ID，ChatBot / TaskAgent 场景下的首选字段 */
   agentId?: number;
+  /** 工作流 ID，AgentFlow 场景下的首选字段 */
   workflowId?: number;
 }
 

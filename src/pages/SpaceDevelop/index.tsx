@@ -309,9 +309,8 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 点击跳转到智能体
-  const handleClick = (agentId: number) => {
-    const agent = agentList?.find((a: AgentConfigInfo) => a.id === agentId);
-    if (agent?.type === AgentTypeEnum.AgentFlow) {
+  const handleClick = (agentId: number, type: AgentTypeEnum) => {
+    if (type === AgentTypeEnum.AgentFlow) {
       history.push(`/space/${spaceId}/agent-flow/${agentId}`);
     } else {
       history.push(`/space/${spaceId}/agent/${agentId}`);
@@ -431,19 +430,19 @@ const SpaceDevelop: React.FC = () => {
 
   // 确认创建智能体
   const handlerConfirmCreateAgent = (result: AgentAddResult) => {
-    setOpenCreateAgent(false);
+    // 确定性 ID 解析：统一优先级 agentId > workflowId > id，避免依赖 UI 状态
     const createdId =
       typeof result === 'number'
         ? result
-        : currentAgentType === AgentTypeEnum.AgentFlow
-        ? result?.workflowId || result?.agentId || result?.id
-        : result?.agentId || result?.id || result?.workflowId;
+        : result?.agentId ?? result?.workflowId ?? result?.id;
 
     if (!createdId) {
+      // ID 缺失时保持弹窗打开，让用户感知失败并可重试
       message.error(dict('PC.Common.Global.operationFailed'));
       return;
     }
 
+    setOpenCreateAgent(false);
     if (currentAgentType === AgentTypeEnum.AgentFlow) {
       history.push(`/space/${spaceId}/agent-flow/${createdId}`);
     } else {

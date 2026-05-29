@@ -65,6 +65,7 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.EvalGate]: 'Eval Gate',
   [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
   [NodeTypeEnum.ExternalConnector]: 'External Connector',
+  [NodeTypeEnum.RouteDecision]: 'Route Decision',
 };
 
 /**
@@ -475,6 +476,15 @@ export function createDefaultNodeConfig(
           payloadTemplate: '',
           responseMapping: {},
         },
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.RouteDecision:
+      return {
+        ...baseConfig,
+        routes: [],
+        extraPrompt: '',
         inputArgs: [],
         outputArgs: [],
       };

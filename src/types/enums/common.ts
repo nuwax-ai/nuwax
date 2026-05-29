@@ -95,6 +95,8 @@ export enum NodeTypeEnum {
   HumanInteraction = 'HumanInteraction',
   // 三方平台连接器（AgentFlow 专用，dify / n8n / coze / ragflow）
   ExternalConnector = 'ExternalConnector',
+  // 路由决策：AI 决策走哪条分支（AgentFlow 专用）
+  RouteDecision = 'RouteDecision',
 }
 
 // 流类型：Workflow（严格连线）/ AgentFlow（AI 驱动 + RunContext）

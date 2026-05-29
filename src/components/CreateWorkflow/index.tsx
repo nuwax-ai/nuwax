@@ -4,7 +4,7 @@ import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { dict } from '@/services/i18nRuntime';
 import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum, FlowKindEnum } from '@/types/enums/common';
 import type {
   CreateWorkflowProps,
   UpdateWorkflowParams,
@@ -13,7 +13,7 @@ import type {
 import { customizeRequiredMark } from '@/utils/form';
 import { buildWorkflowRoute } from '@/utils/router';
 import type { FormProps } from 'antd';
-import { Form, Input, message } from 'antd';
+import { Button, Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -39,6 +39,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
+
+  const isAgentFlow = workflowType === FlowKindEnum.AgentFlow;
+
+  // AgentFlow 预设图标列表
+  const AGENT_FLOW_ICONS = ['🤖', '🧠', '💡', '📊', '🔄', '🎯', '💬', '✏️'];
 
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
@@ -118,6 +123,117 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     form.submit();
   };
 
+  // AgentFlow: 跳过按钮处理
+  const handleSkip = () => {
+    onCancel();
+    // 跳过后直接用默认值创建
+    run({
+      spaceId,
+      name: '',
+      description: '',
+      icon: '',
+      ...(workflowType && { workflowType }),
+    });
+  };
+
+  // ── AgentFlow 创建 Modal（icon grid + 跳过按钮） ──
+  if (isAgentFlow && type === CreateUpdateModeEnum.Create) {
+    return (
+      <CustomFormModal
+        form={form}
+        title={dict('PC.Components.CreateWorkflow.createAgentFlow')}
+        classNames={{
+          content: cx(styles.container),
+          header: cx(styles.header),
+        }}
+        open={open}
+        onCancel={onCancel}
+        onConfirm={handlerSubmit}
+      >
+        <Form
+          form={form}
+          requiredMark={customizeRequiredMark}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="name"
+            label={dict('PC.Components.CreateWorkflow.name')}
+            rules={[
+              {
+                required: false, // 跳过模式下非必填
+                message: dict(
+                  'PC.Components.CreateWorkflow.pleaseInputWorkflowName',
+                ),
+              },
+            ]}
+          >
+            <Input
+              placeholder={dict(
+                'PC.Components.CreateWorkflow.placeholderAgentFlowName',
+              )}
+              showCount
+              maxLength={30}
+            />
+          </Form.Item>
+          <OverrideTextArea
+            name="description"
+            label={dict('PC.Components.CreateWorkflow.description')}
+            initialValue={description}
+            placeholder={dict(
+              'PC.Components.CreateWorkflow.placeholderAgentFlowDesc',
+            )}
+            maxLength={10000}
+          />
+          <Form.Item label={dict('PC.Components.CreateWorkflow.icon')}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 8,
+              }}
+            >
+              {AGENT_FLOW_ICONS.map((emoji, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setImageUrl(emoji)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                    cursor: 'pointer',
+                    border:
+                      imageUrl === emoji
+                        ? '2px solid #1677ff'
+                        : '2px solid #d9d9d9',
+                    background: imageUrl === emoji ? '#e6f4ff' : '#f5f5f5',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {emoji}
+                </div>
+              ))}
+            </div>
+          </Form.Item>
+        </Form>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <Button type="default" onClick={handleSkip}>
+            {dict('PC.Components.CreateWorkflow.skip')}
+          </Button>
+          <Button type="primary" onClick={handlerSubmit}>
+            {dict('PC.Components.CreateWorkflow.startEditing')}
+          </Button>
+        </div>
+      </CustomFormModal>
+    );
+  }
+
+  // ── 标准 Workflow 创建 Modal ──
   return (
     <CustomFormModal
       form={form}

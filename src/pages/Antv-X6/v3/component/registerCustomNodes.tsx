@@ -391,7 +391,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {data.type === NodeTypeEnum.EvalGate && (
           <div className="agent-flow-node-preview">
             <span className="agent-flow-node-badge eval-badge">
-              {(data.nodeConfig?.validators?.length || 0) + ' validators'}
+              {(data.nodeConfig?.evalValidators?.length || 0) + ' validators'}
             </span>
           </div>
         )}
@@ -407,7 +407,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {data.type === NodeTypeEnum.ExternalConnector && (
           <div className="agent-flow-node-preview">
             <span className="agent-flow-node-badge connector-badge">
-              {data.nodeConfig?.provider?.toUpperCase() || 'External'}
+              {data.nodeConfig?.connectorProvider?.toUpperCase() || 'External'}
             </span>
           </div>
         )}

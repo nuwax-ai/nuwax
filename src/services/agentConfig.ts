@@ -1,3 +1,4 @@
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   RcoderNotifyResolvedRequest,
   RcoderPermissionProgressData,
@@ -40,6 +41,61 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
+
+// ============ Mock 区域 START（联调完成后删除）============
+const AGENT_ADD_MOCK_FLAG = 'agentAdd:mock';
+
+/**
+ * 判断是否启用 apiAgentAdd 的本地 mock。
+ * 开启方式（任选其一）：
+ *   1. URL 加 `?mock=agent-add` 或 `?mockAgentAdd=true`
+ *   2. URL 加 `?mockAgentAdd=empty` 可模拟后端返回空对象，用于验证错误处理
+ *   3. 浏览器控制台执行 `localStorage.setItem('agentAdd:mock', '1')`（`'empty'` 模拟空返回）
+ */
+function getAgentAddMockMode(): 'enabled' | 'empty' | false {
+  if (typeof window === 'undefined') return false;
+  const search = new URLSearchParams(window.location.search);
+  if (
+    search.get('mock') === 'agent-add' ||
+    search.get('mockAgentAdd') === 'true'
+  )
+    return 'enabled';
+  if (search.get('mockAgentAdd') === 'empty') return 'empty';
+  try {
+    const flag = window.localStorage.getItem(AGENT_ADD_MOCK_FLAG);
+    if (flag === '1') return 'enabled';
+    if (flag === 'empty') return 'empty';
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+async function mockApiAgentAdd(
+  data: AgentAddParams,
+  mode: 'enabled' | 'empty',
+): Promise<RequestResponse<AgentAddResult>> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 500);
+  });
+  const mockId = Date.now() % 1_000_000;
+  const result: AgentAddResult =
+    mode === 'empty'
+      ? {}
+      : data.type === AgentTypeEnum.AgentFlow
+      ? { workflowId: mockId }
+      : { agentId: mockId };
+  return {
+    code: '0',
+    displayCode: '0',
+    message: 'mock success',
+    data: result,
+    debugInfo: {},
+    success: true,
+    tid: `mock_${mockId}`,
+  };
+}
+// ============ Mock 区域 END ============
 
 // 智能体迁移接口
 export function apiAgentTransfer(
@@ -214,6 +270,12 @@ export async function apiAgentComponentAdd(
 export async function apiAgentAdd(
   data: AgentAddParams,
 ): Promise<RequestResponse<AgentAddResult>> {
+  // Mock 拦截（联调完成后删除）
+  const mockMode = getAgentAddMockMode();
+  if (mockMode) {
+    return mockApiAgentAdd(data, mockMode);
+  }
+
   return request('/api/agent/add', {
     method: 'POST',
     data,

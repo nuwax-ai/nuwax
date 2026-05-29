@@ -108,6 +108,57 @@ const AgentNode: React.FC<NodeDisposeProps> = ({ form }) => {
           />
         </Form.Item>
       )}
+
+      <Form.List name="agentInputs">
+        {(fields, { add, remove }) => (
+          <>
+            <div className="node-title-style" style={{ marginTop: 12 }}>
+              {t('PC.Pages.AgentFlowNode.agentInputsTitle')}
+            </div>
+            {fields.map(({ key, name }) => (
+              <Space
+                key={key}
+                style={{ display: 'flex', marginBottom: 4 }}
+                align="baseline"
+              >
+                <Form.Item
+                  name={[name, 'key']}
+                  rules={[{ required: true, max: 32 }]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <Input placeholder="question" style={{ width: 120 }} />
+                </Form.Item>
+                <span>←</span>
+                <Form.Item
+                  name={[name, 'value']}
+                  rules={[{ required: true }]}
+                  style={{ marginBottom: 0 }}
+                >
+                  <Input
+                    placeholder="context.userQuestion"
+                    style={{ width: 200 }}
+                  />
+                </Form.Item>
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => remove(name)}
+                />
+              </Space>
+            ))}
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              block
+              onClick={() => add({ key: '', value: '' })}
+            >
+              {t('PC.Pages.AgentFlowNode.agentInputsAdd')}
+            </Button>
+          </>
+        )}
+      </Form.List>
     </div>
   );
 };
@@ -213,6 +264,16 @@ const HumanInteractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
           >
             <Input placeholder="userAnswer" />
           </Form.Item>
+          <Form.Item
+            name={['askConfig', 'required']}
+            label={t('PC.Pages.AgentFlowNode.askRequiredLabel')}
+            tooltip={t('PC.Pages.AgentFlowNode.askRequiredTooltip')}
+            valuePropName="checked"
+            initialValue={false}
+            style={fieldStyle}
+          >
+            <Switch />
+          </Form.Item>
         </>
       ) : (
         <>
@@ -245,6 +306,14 @@ const HumanInteractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
             style={fieldStyle}
           >
             <Input placeholder="{{node.<prevId>.output}}" />
+          </Form.Item>
+          <Form.Item
+            name={['approveConfig', 'onReject', 'targetNodeId']}
+            label={t('PC.Pages.AgentFlowNode.approveOnRejectTargetLabel')}
+            tooltip={t('PC.Pages.AgentFlowNode.approveOnRejectTargetTooltip')}
+            style={fieldStyle}
+          >
+            <Input placeholder="agent_1" />
           </Form.Item>
         </>
       )}
@@ -690,9 +759,124 @@ const ExternalConnectorNode: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 };
 
+/* -------------------------------------------------------------------------- */
+/* RouteDecision 节点（路由决策）                                             */
+/* -------------------------------------------------------------------------- */
+
+const RouteDecisionNode: React.FC<NodeDisposeProps> = () => {
+  return (
+    <div className="model-node-style">
+      {/* Extra prompt — 给 AI 的路由决策指令 */}
+      <Form.Item
+        name="extraPrompt"
+        label={t('PC.Pages.AgentFlowNode.routeDecisionExtraPromptLabel')}
+        tooltip={t('PC.Pages.AgentFlowNode.routeDecisionExtraPromptTooltip')}
+        style={fieldStyle}
+      >
+        <TextArea
+          rows={4}
+          placeholder={t(
+            'PC.Pages.AgentFlowNode.routeDecisionExtraPromptPlaceholder',
+          )}
+        />
+      </Form.Item>
+
+      {/* 路由规则列表 */}
+      <div className="node-title-style" style={{ marginTop: 12 }}>
+        {t('PC.Pages.AgentFlowNode.routeDecisionRoutesTitle')}
+      </div>
+      <Form.List name="routes">
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name }) => (
+              <div
+                key={key}
+                style={{
+                  border: '1px solid #eee',
+                  borderRadius: 6,
+                  padding: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <Space
+                  style={{
+                    width: '100%',
+                    justifyContent: 'space-between',
+                    marginBottom: 4,
+                  }}
+                >
+                  <span>
+                    {t(
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteIndex',
+                    ).replace('{index}', String(name + 1))}
+                  </span>
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => remove(name)}
+                  />
+                </Space>
+                <Form.Item
+                  name={[name, 'routeName']}
+                  label={t(
+                    'PC.Pages.AgentFlowNode.routeDecisionRouteNameLabel',
+                  )}
+                  rules={[{ required: true, max: 32 }]}
+                  style={fieldStyle}
+                >
+                  <Input
+                    placeholder={t(
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteNamePlaceholder',
+                    )}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name={[name, 'description']}
+                  label={t(
+                    'PC.Pages.AgentFlowNode.routeDecisionRouteDescriptionLabel',
+                  )}
+                  style={fieldStyle}
+                >
+                  <TextArea
+                    rows={2}
+                    placeholder={t(
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteDescriptionPlaceholder',
+                    )}
+                  />
+                </Form.Item>
+              </div>
+            ))}
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              block
+              onClick={() => {
+                const uuid = `${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`;
+                add({
+                  uuid,
+                  routeName: '',
+                  description: '',
+                  nextNodeIds: [],
+                });
+              }}
+            >
+              {t('PC.Pages.AgentFlowNode.routeDecisionRouteAdd')}
+            </Button>
+          </>
+        )}
+      </Form.List>
+    </div>
+  );
+};
+
 export default {
   AgentNode,
   HumanInteractionNode,
   EvalGateNode,
   ExternalConnectorNode,
+  RouteDecisionNode,
 };

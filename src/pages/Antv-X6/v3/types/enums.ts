@@ -49,4 +49,6 @@ export enum SpecialPortType {
   EvalGateFail = 'eval_gate_fail', // 评估验证失败端口
   HitlApprove = 'hitl_approve', // 人类介入审批通过端口
   HitlReject = 'hitl_reject', // 人类介入审批拒绝端口
+  RouteDecisionDefault = 'route_decision_default', // 路由决策默认端口
+  RouteDecisionRoute = 'route_decision_route', // 路由决策路由端口
 }

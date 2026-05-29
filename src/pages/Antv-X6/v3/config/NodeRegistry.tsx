@@ -24,8 +24,13 @@ const {
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode } = Library;
-const { AgentNode, HumanInteractionNode, EvalGateNode, ExternalConnectorNode } =
-  AgentFlowNodes;
+const {
+  AgentNode,
+  HumanInteractionNode,
+  EvalGateNode,
+  ExternalConnectorNode,
+  RouteDecisionNode,
+} = AgentFlowNodes;
 
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
@@ -98,6 +103,7 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     [NodeTypeEnum.ExternalConnector]: (
       <ExternalConnectorNode {...commonProps} />
     ),
+    [NodeTypeEnum.RouteDecision]: <RouteDecisionNode {...commonProps} />,
   };
 
   return nodeMap[nodeType] || <></>;

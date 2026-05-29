@@ -93,11 +93,11 @@ const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
               <div className="stencil-group-title">{item.name}</div>
             )}
             <div className="stencil-group-content">
-              {item.children.map((child) => (
+              {item.children.map((child, childIndex) => (
                 <div
                   className="stencil-node-item"
                   draggable="true"
-                  key={child.type}
+                  key={`${child.type}-${childIndex}`}
                   onDragEnd={(e) => handleDragStart(child, e)}
                   onClick={() => handleDragStart(child)}
                 >

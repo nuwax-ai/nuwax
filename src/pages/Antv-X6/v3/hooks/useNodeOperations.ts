@@ -26,6 +26,7 @@ import {
   GraphRect,
   StencilChildNode,
 } from '@/types/interfaces/graph';
+import { isAgentFlowMockEnabled } from '@/utils/agentFlowMock';
 
 import {
   LOOP_NODE_DEFAULT_HEIGHT,
@@ -697,54 +698,64 @@ export const useNodeOperations = ({
       let nodeId: number;
       let apiNodeData: AddNodeResponse | null = null;
 
-      try {
-        const nodeConfigDto =
-          _params.nodeConfigDto || _params.nodeConfig
-            ? {
-                ..._params.nodeConfigDto,
-                ...(_params.nodeConfig?.toolName
-                  ? { toolName: _params.nodeConfig.toolName }
-                  : {}),
-                ...(_params.nodeConfig?.mcpId
-                  ? { mcpId: _params.nodeConfig.mcpId }
-                  : {}),
-                ...(_params.nodeConfig?.knowledgeBaseConfigs
-                  ? {
-                      knowledgeBaseConfigs:
-                        _params.nodeConfig.knowledgeBaseConfigs,
-                    }
-                  : {}),
-              }
-            : undefined;
+      // Mock 模式：跳过后端 API，直接生成本地节点 ID
+      if (isAgentFlowMockEnabled()) {
+        nodeId = Date.now() + Math.floor(Math.random() * 1000);
+        console.log(
+          '[V3 Mock] Skipping addNode API, using local nodeId:',
+          nodeId,
+        );
+      } else {
+        try {
+          const nodeConfigDto =
+            _params.nodeConfigDto || _params.nodeConfig
+              ? {
+                  ..._params.nodeConfigDto,
+                  ...(_params.nodeConfig?.toolName
+                    ? { toolName: _params.nodeConfig.toolName }
+                    : {}),
+                  ...(_params.nodeConfig?.mcpId
+                    ? { mcpId: _params.nodeConfig.mcpId }
+                    : {}),
+                  ...(_params.nodeConfig?.knowledgeBaseConfigs
+                    ? {
+                        knowledgeBaseConfigs:
+                          _params.nodeConfig.knowledgeBaseConfigs,
+                      }
+                    : {}),
+                }
+              : undefined;
 
-        const apiRes = await service.apiAddNodeV3({
-          workflowId: workflowId,
-          type: _params.type,
-          typeId: _params.typeId,
-          name: _params.name,
-          shape: _params.shape,
-          description: _params.description,
-          loopNodeId: _params.loopNodeId,
-          extension: _params.extension,
-          nodeConfigDto: nodeConfigDto,
-        });
+          const apiRes = await service.apiAddNodeV3({
+            workflowId: workflowId,
+            type: _params.type,
+            typeId: _params.typeId,
+            name: _params.name,
+            shape: _params.shape,
+            description: _params.description,
+            loopNodeId: _params.loopNodeId,
+            extension: _params.extension,
+            nodeConfigDto: nodeConfigDto,
+          });
 
-        if (apiRes.code === Constant.success && apiRes.data) {
-          nodeId = apiRes.data.id;
-          apiNodeData = apiRes.data;
-        } else {
-          // API 失败：显示错误消息并阻止添加节点
-          message.error(
-            apiRes.message || t('PC.Pages.AntvX6NodeOperations.addNodeFailed'),
-          );
-          console.error('[V3] Add node API failed:', apiRes.message);
+          if (apiRes.code === Constant.success && apiRes.data) {
+            nodeId = apiRes.data.id;
+            apiNodeData = apiRes.data;
+          } else {
+            // API 失败：显示错误消息并阻止添加节点
+            message.error(
+              apiRes.message ||
+                t('PC.Pages.AntvX6NodeOperations.addNodeFailed'),
+            );
+            console.error('[V3] Add node API failed:', apiRes.message);
+            return;
+          }
+        } catch (error) {
+          // 网络异常：显示错误消息并阻止添加节点
+          message.error(t('PC.Pages.AntvX6NodeOperations.addNodeNetworkError'));
+          console.error('[V3] Add node API exception:', error);
           return;
         }
-      } catch (error) {
-        // 网络异常：显示错误消息并阻止添加节点
-        message.error(t('PC.Pages.AntvX6NodeOperations.addNodeNetworkError'));
-        console.error('[V3] Add node API exception:', error);
-        return;
       }
 
       _params.id = nodeId;

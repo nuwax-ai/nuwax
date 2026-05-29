@@ -87,7 +87,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       content={agentConfigInfo.description}
       icon={agentConfigInfo.icon}
       defaultIcon={agentImage}
-      onClick={() => onClick(agentConfigInfo.id)}
+      onClick={() => onClick(agentConfigInfo.id, agentConfigInfo.type)}
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1')}>

@@ -64,7 +64,9 @@ import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
 // V3 data proxy layer.
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
+import { FlowKindEnum } from '@/types/enums/common';
 import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
 import { workflowSaveService } from './services/WorkflowSaveService';
@@ -81,6 +83,10 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
 );
 
 const Workflow: React.FC = () => {
+  const flowKind = useFlowKind();
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  const [flowControlModel, setFlowControlModel] = useState<string>('qwen-plus');
+
   const {
     getWorkflow,
     storeWorkflow,
@@ -1108,6 +1114,69 @@ const Workflow: React.FC = () => {
         showCreateWorkflow={showCreateWorkflow}
         showVersionHistory={showVersionHistory}
         onBack={handleBack}
+        // AgentFlow Header extensions
+        onAutoArrange={
+          isAgentFlow
+            ? () => {
+                const graph = graphRef.current?.getGraph?.();
+                if (graph) {
+                  // Simple auto-arrange: sort nodes by x position with equal spacing
+                  const nodes = graph.getNodes();
+                  if (nodes.length === 0) return;
+                  const startNodes = nodes.filter(
+                    (n) => n.getData()?.type === NodeTypeEnum.Start,
+                  );
+                  // BFS-based layout
+                  const visited = new Set<string>();
+                  const queue: string[] = [];
+                  startNodes.forEach((n) => {
+                    queue.push(n.id);
+                    visited.add(n.id);
+                  });
+                  let x = 80;
+                  let y = 100;
+                  const xStep = 280;
+                  const yStep = 120;
+                  while (queue.length > 0) {
+                    const nodeId = queue.shift()!;
+                    const node = graph.getCellById(nodeId);
+                    if (node && node.isNode()) {
+                      node.setPosition(x, y);
+                      y += yStep;
+                    }
+                    const outgoingEdges = graph.getOutgoingEdges(nodeId) || [];
+                    for (const edge of outgoingEdges) {
+                      const target = edge.getTargetCellId();
+                      if (target && !visited.has(target as string)) {
+                        visited.add(target as string);
+                        queue.push(target as string);
+                      }
+                    }
+                    // If no outgoing edges, check next branch
+                    if (queue.length === 0 && visited.size < nodes.length) {
+                      // Find unvisited nodes
+                      for (const n of nodes) {
+                        if (!visited.has(n.id)) {
+                          visited.add(n.id);
+                          queue.push(n.id);
+                          x += xStep;
+                          y = 100;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            : undefined
+        }
+        handleTestRun={isAgentFlow ? testRunHook.testRunAll : undefined}
+        flowControlModel={isAgentFlow ? flowControlModel : undefined}
+        onFlowControlModelChange={
+          isAgentFlow
+            ? (model: string) => setFlowControlModel(model)
+            : undefined
+        }
       />
     </WorkflowVersionProvider>
   );

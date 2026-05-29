@@ -120,31 +120,26 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 获取标题
   const getTitle = useCallback(() => {
     if (type) {
-      const typeMap: Record<
-        | AgentTypeEnum.ChatBot
-        | AgentTypeEnum.TaskAgent
-        | AgentTypeEnum.AgentFlow,
-        string
-      > = {
-        [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
-        [AgentTypeEnum.TaskAgent]: dict(
-          'PC.Components.CreateAgent.typeTaskAgent',
-        ),
-        [AgentTypeEnum.AgentFlow]: dict(
-          'PC.Components.CreateAgent.typeAgentFlow',
-        ),
-      };
+      let typeName: string | undefined;
+      switch (type) {
+        case AgentTypeEnum.ChatBot:
+          typeName = dict('PC.Components.CreateAgent.typeChatBot');
+          break;
+        case AgentTypeEnum.TaskAgent:
+          typeName = dict('PC.Components.CreateAgent.typeTaskAgent');
+          break;
+        case AgentTypeEnum.AgentFlow:
+          typeName = dict('PC.Components.CreateAgent.typeAgentFlow');
+          break;
+        default:
+          typeName = undefined;
+      }
 
-      const typeName =
-        typeMap[
-          type as
-            | AgentTypeEnum.ChatBot
-            | AgentTypeEnum.TaskAgent
-            | AgentTypeEnum.AgentFlow
-        ];
-      return mode === CreateUpdateModeEnum.Create
-        ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
-        : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      if (typeName) {
+        return mode === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
+          : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      }
     }
     return mode === CreateUpdateModeEnum.Create
       ? dict('PC.Components.CreateAgent.createTitle')

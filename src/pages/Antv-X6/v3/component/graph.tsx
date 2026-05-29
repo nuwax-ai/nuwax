@@ -14,19 +14,14 @@ import {
 } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
-import {
-  Cell,
-  Clipboard,
-  Edge,
-  Graph,
-  History,
-  Keyboard,
-  MiniMap,
-  Node,
-  Selection,
-  Shape,
-  Snapline,
-} from '@antv/x6';
+import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
+import { Clipboard } from '@antv/x6-plugin-clipboard';
+import { History } from '@antv/x6-plugin-history';
+import { Keyboard } from '@antv/x6-plugin-keyboard';
+// TODO: 待安装 @antv/x6-plugin-minimap 后恢复
+// import { MiniMap } from '@antv/x6-plugin-minimap';
+import { Selection } from '@antv/x6-plugin-selection';
+import { Snapline } from '@antv/x6-plugin-snapline';
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
 import {
@@ -311,8 +306,8 @@ const initGraph = ({
         const targetNode = targetCell.getData();
         const sourceNode = sourceCell.getData();
         if (
-          sourceNode.type === NodeTypeEnum.LoopBreak &&
-          targetNode.type !== NodeTypeEnum.LoopEnd
+          sourceNode?.type === NodeTypeEnum.LoopBreak &&
+          targetNode?.type !== NodeTypeEnum.LoopEnd
         ) {
           return false;
         }
@@ -360,7 +355,7 @@ const initGraph = ({
     interacting: {
       nodeMovable(view) {
         const node = view.cell;
-        const { enableMove } = node.getData();
+        const { enableMove } = node.getData() || {};
         return enableMove;
       },
     },
@@ -393,7 +388,7 @@ const initGraph = ({
     // loop5
     const loopData = nodes.filter((item) => {
       const data = item.getData();
-      return data.type === 'Loop';
+      return data?.type === 'Loop';
     });
     // loop8
     loopData.forEach((child) => {
@@ -405,7 +400,7 @@ const initGraph = ({
     });
     if (node) {
       const data = node.getData();
-      if (data.type === 'Loop') {
+      if (data?.type === 'Loop') {
         const children = node.getChildren();
         children?.forEach((child) => {
           //  X6
@@ -473,15 +468,16 @@ const initGraph = ({
         showEdgeSelectionBox: false,
         pointerEvents: 'none',
       }),
-    )
-    .use(
-      new MiniMap({
-        container: document.getElementById('minimap-container') || undefined,
-        width: 200,
-        height: 140,
-        padding: 10,
-      }),
     );
+  // TODO: 待安装 @antv/x6-plugin-minimap 后恢复
+  // .use(
+  //   new MiniMap({
+  //     container: document.getElementById('minimap-container') || undefined,
+  //     width: 200,
+  //     height: 140,
+  //     padding: 10,
+  //   }),
+  // );
 
   /**
    *
@@ -674,6 +670,7 @@ const initGraph = ({
     e.stopPropagation(); //
     const { x, y } = node.getPosition();
     const data = node.getData();
+    if (!data) return;
 
     // extension
     //  updateData ， History
@@ -728,7 +725,7 @@ const initGraph = ({
       return;
     }
 
-    if (updatedData.type === NodeTypeEnum.Loop) {
+    if (updatedData?.type === NodeTypeEnum.Loop) {
       const children = node.getChildren();
       const innerNodes = updatedData.innerNodes || [];
 
@@ -809,7 +806,7 @@ const initGraph = ({
 
     changeZIndex(node);
     const data = node.getData();
-    if (data.isFocus) {
+    if (data?.isFocus) {
       return;
     }
     const newData = {
@@ -823,7 +820,7 @@ const initGraph = ({
   // ， changeDrawer
   graph.on('node:mousedown', ({ node }) => {
     const data = node.getData();
-    if (data.isFocus) {
+    if (data?.isFocus) {
       // runResult  focus
       node.updateData({
         isFocus: false,
@@ -1022,7 +1019,7 @@ const initGraph = ({
   });
 
   graph.on('node:change:position', ({ node }) => {
-    if (node.getData().type !== 'Loop') {
+    if (node.getData()?.type !== 'Loop') {
       node.toFront();
     }
     // 1：API

@@ -1,6 +1,9 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
-import type { ApplicationMoreActionEnum } from '@/types/enums/space';
+import type {
+  AgentTypeEnum,
+  ApplicationMoreActionEnum,
+} from '@/types/enums/space';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
@@ -10,7 +13,7 @@ import React from 'react';
 // 单个应用项
 export interface ApplicationItemProps {
   agentConfigInfo: AgentConfigInfo;
-  onClick: (agentId: number) => void;
+  onClick: (agentId: number, type: AgentTypeEnum) => void;
   // onCollect: (isCollect: boolean) => void;
   onClickMore: (type: ApplicationMoreActionEnum) => void;
 }
