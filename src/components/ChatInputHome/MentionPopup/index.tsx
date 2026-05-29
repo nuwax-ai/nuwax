@@ -31,7 +31,7 @@ import { AgentTypeEnum } from '@/types/enums/space';
 import type { Page } from '@/types/interfaces/request';
 import { SearchOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Input, type InputRef } from 'antd';
+import { Input, type InputRef, Tag } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -136,6 +136,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       visible,
       position,
       onSelect,
+      enableSubscription = false,
       onClose,
       searchText,
       maxHeight,
@@ -784,39 +785,59 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
             </div>
           ) : (
             // 列表项渲染，直接使用接口返回的 SkillInfoForAt 结构
-            currentItems.map((item: MentionItem, index) => (
-              <div
-                key={item.id}
-                className={`${styles['mention-item']} overflow-hide ${
-                  index === selectedIndex ? styles.selected : ''
-                }`}
-                onClick={() => onSelect(item)}
-                onMouseMove={() => handleItemMouseMove(index)}
-              >
-                {/* 左侧图标 */}
-                <span className={styles['mention-item-icon']}>
-                  <img src={item.icon} alt={item.name} />
-                </span>
-                {/* 右侧名称 + 描述 */}
-                <div className={styles['mention-item-content']}>
-                  <div
-                    className={cx(styles['mention-item-name'], 'text-ellipsis')}
-                  >
-                    {item.name}
-                  </div>
-                  {item.description && (
+            currentItems.map((item: MentionItem, index) => {
+              const showPaymentInfo =
+                enableSubscription && item.paymentRequired === true;
+              const isSubscribed = item.subscribed === true;
+
+              return (
+                <div
+                  key={item.id ?? item.targetId}
+                  className={`${styles['mention-item']} overflow-hide ${
+                    index === selectedIndex ? styles.selected : ''
+                  }`}
+                  onClick={() => onSelect(item)}
+                  onMouseMove={() => handleItemMouseMove(index)}
+                >
+                  {/* 左侧图标 */}
+                  <span className={styles['mention-item-icon']}>
+                    <img src={item.icon} alt={item.name} />
+                  </span>
+                  {/* 中间名称 + 描述 */}
+                  <div className={styles['mention-item-content']}>
                     <div
                       className={cx(
-                        styles['mention-item-desc'],
+                        styles['mention-item-name'],
                         'text-ellipsis',
                       )}
                     >
-                      {item.description}
+                      {item.name}
                     </div>
+                    {item.description && (
+                      <div
+                        className={cx(
+                          styles['mention-item-desc'],
+                          'text-ellipsis',
+                        )}
+                      >
+                        {item.description}
+                      </div>
+                    )}
+                  </div>
+                  {/* 右侧付费/已订阅标签 */}
+                  {showPaymentInfo && (
+                    <Tag
+                      className={styles['mention-item-tag']}
+                      color={isSubscribed ? 'success' : 'processing'}
+                    >
+                      {isSubscribed
+                        ? t('PC.Pages.Square.SingleAgent.subscribed')
+                        : t('PC.Pages.Square.SingleAgent.paid')}
+                    </Tag>
                   )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           {activeTabData.loading &&
             activeTabData.page > 1 &&

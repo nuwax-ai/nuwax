@@ -130,10 +130,12 @@ const EditAgent: React.FC = () => {
     viewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    refreshFileListImmediately,
     openPreviewView,
     restartVncPod,
     restartAgent,
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
@@ -1144,6 +1146,9 @@ const EditAgent: React.FC = () => {
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
                           <FileTreeView
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
+                            clearTaskAgentSelectedFileId={() =>
+                              setTaskAgentSelectedFileId('')
+                            }
                             taskAgentSelectTrigger={taskAgentSelectTrigger}
                             originalFiles={fileTreeData}
                             fileTreeDataLoading={fileTreeDataLoading}
@@ -1186,7 +1191,7 @@ const EditAgent: React.FC = () => {
                             isCanDeleteSkillFile={true}
                             // 刷新文件树回调
                             onRefreshFileTree={() =>
-                              handleRefreshFileList(devConversationId)
+                              refreshFileListImmediately(devConversationId)
                             }
                             // VNC 空闲检测配置（仅通用型智能体启用）
                             idleDetection={{

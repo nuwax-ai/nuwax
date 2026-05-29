@@ -8,6 +8,7 @@
  * - 窄屏：less 中 ≤900px 可将三列降为两列，≤560px 单列；width 仍受 min(..., 100vw - 32px) 限制。
  */
 import ConditionRender from '@/components/ConditionRender';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import {
   SubscriptionPlanInfo,
   SubscriptionPlanPeriodEnum,
@@ -19,7 +20,7 @@ import {
   MySubscriptionStatusEnum,
   type MySubscriptionItem,
 } from '@/types/interfaces/subscription';
-import { Button, Empty, Modal, Spin, Tooltip } from 'antd';
+import { Button, Empty, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -116,6 +117,10 @@ function getSubscribeButtonLabel(
     }
     if (isCurrentSubscriptionExpired) {
       return dict('PC.Components.PaymentSubscriptionModal.btnExpiredRenew');
+    }
+    // 当前为免费套餐，不显示续订，只显示当前套餐
+    if (priceMain === 0) {
+      return dict('PC.Components.PaymentSubscriptionModal.btnCurrent');
     }
     return dict('PC.Components.PaymentSubscriptionModal.btnCurrentRenew');
   }
@@ -429,11 +434,11 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                   className={cx(styles['plan-pay-card'])}
                 >
                   <div className={cx(styles['card-header'])}>
-                    <Tooltip title={plan.name} placement="topLeft">
-                      <div className={cx(styles.title, 'text-ellipsis')}>
-                        {plan.name}
-                      </div>
-                    </Tooltip>
+                    <EllipsisTooltip
+                      text={plan.name}
+                      placement="topLeft"
+                      className={cx(styles.title)}
+                    />
                   </div>
                   <div className={cx(styles['price-block'])}>
                     <div className={cx(styles['price-main-row'])}>
@@ -467,11 +472,13 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
                       <Button
                         loading={isThisPlanSubscribing}
                         disabled={
-                          isSkillForeverBuyoutLocked || isSubscribeInFlight
+                          isSkillForeverBuyoutLocked ||
+                          isSubscribeInFlight ||
+                          priceMain <= 0
                         }
                         className={cx(
                           styles['subscribe-btn-current'],
-                          !isSkillForeverBuyoutLocked && 'cursor-pointer',
+                          !isSkillForeverBuyoutLocked && priceMain > 0,
                         )}
                         onClick={() => handleSubscribeClick(plan)}
                       >

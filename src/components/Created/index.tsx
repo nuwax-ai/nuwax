@@ -760,6 +760,7 @@ const Created: React.FC<CreatedProp> = ({
 
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
+    // 是否已添加
     const isAddedState = isAdded(item);
     // 仅「技能 Tab + 租户开启订阅 + 付费技能 + 未订阅」时展示订阅按钮，否则走添加/已添加
     const isPaidUnsubscribedSkill =
@@ -859,7 +860,7 @@ const Created: React.FC<CreatedProp> = ({
           </div>
         </div>
         {/* 未订阅付费技能必须先订阅，不能直接添加；其余类型或未付费/已订阅仍用添加按钮 */}
-        {isPaidUnsubscribedSkill ? (
+        {isPaidUnsubscribedSkill && !isAddedState ? (
           <Button
             color="primary"
             variant="filled"

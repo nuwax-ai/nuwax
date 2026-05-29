@@ -3,7 +3,7 @@
 .price-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: @paddingSm;
 }
 
 .limit-switch-row {
@@ -18,14 +18,13 @@
 }
 
 .function-only-row {
-  height: 70px;
-  margin-top: 4px;
-  border: 1px solid #e5ebf6;
-  border-radius: 12px;
-  padding: 12px;
+  margin-top: @marginXxs;
+  border: @lineWidth @lineType @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  padding: @paddingSm;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: @paddingSm;
   box-sizing: border-box;
 
   .function-only-text {
@@ -33,9 +32,9 @@
     min-width: 0;
 
     .function-only-desc {
-      color: #64748b;
+      color: @colorTextDescription;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: @lineHeightLg;
 
       .function-only-highlight {
         color: @colorPrimary;
@@ -43,7 +42,7 @@
       }
 
       .function-only-highlight-pay {
-        color: #ff1818;
+        color: @colorError;
         font-weight: 600;
       }
     }

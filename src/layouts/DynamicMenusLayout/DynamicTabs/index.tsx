@@ -2,6 +2,7 @@
  * 动态一级菜单组件
  * @description 直接复用现有 TabItem 组件，保持样式一致
  */
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -36,7 +37,7 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 
   /**
    * 判断是否是Safari浏览器
-   * 因为Safari浏览器不支持scrollbar-gutter: stable，所以需要特殊处理
+   * Safari 不支持稳定的 scrollbar-gutter，经典滚动条会挤占布局宽度
    */
   const isSafariBrowser = useMemo(() => {
     if (typeof navigator === 'undefined') {
@@ -64,35 +65,71 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
     }));
   }, [menus, activeTab]);
 
+  /** 一级栏固定宽度：Style1 60px，Style2 80px（与父级 first-menus 一致） */
+  const railWidthPx = isStyleOne
+    ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1
+    : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2;
+
+  /** Safari：列表收窄 8px 并左移 4px 保持整栏居中，滚动条贴栏右缘 */
+  const safariListStyle = useMemo(() => {
+    if (!isSafariBrowser) return undefined;
+    const scrollbarSize = 8;
+    return {
+      width: railWidthPx - scrollbarSize,
+      minWidth: railWidthPx - scrollbarSize,
+      marginLeft: scrollbarSize / 2,
+    };
+  }, [isSafariBrowser, railWidthPx]);
+
+  /**
+   * 滚动与横向对齐：
+   * - 非 Safari：内层 `scroll-container` + flex-end，Style1 再补 2px。
+   * - Safari：浮动滚动条 hover 显示；列表预留 8px 空间。
+   */
+  const chromeTabsPaddingClass =
+    !isSafariBrowser && isStyleOne
+      ? styles['tabs-padding-chrome-compact']
+      : null;
+
   return (
-    <div
-      className={cx(
-        isStyleOne ? styles['dynamic-tabs-container'] : styles['style-two'],
-        'flex',
-        'flex-col',
-        'flex-1',
-        'overflow-y',
-        'w-full',
-        'py-8',
-        !isSafariBrowser && 'scroll-container',
-      )}
-    >
-      {tabItems.map((item) => (
-        <TabItem
-          key={item.type}
-          icon={item.icon || ''}
-          text={item.text}
-          active={item.active}
-          onClick={() => onClick(item.menu)}
-          onMouseEnter={() => {
-            if (item.menu?.code !== 'new_conversation') {
-              handleShowHoverMenu(item.menu?.code || '');
-            }
-          }}
-          onMouseLeave={handleHideHoverMenu}
-          isSecondMenuCollapsed={isSecondMenuCollapsed}
-        />
-      ))}
+    <div className={cx(styles['tabs-rail'], 'py-8')}>
+      <div
+        className={cx(
+          styles['tabs-scroll'],
+          isSafariBrowser
+            ? styles['tabs-scroll-safari']
+            : cx('scroll-container', styles['tabs-scroll-chrome']),
+          chromeTabsPaddingClass,
+        )}
+      >
+        <div
+          className={cx(
+            styles['tabs-list'],
+            'flex',
+            'flex-col',
+            isSafariBrowser && styles['tabs-list-safari'],
+            isSafariBrowser ? styles['flex-center'] : styles['flex-end'],
+          )}
+          style={safariListStyle}
+        >
+          {tabItems.map((item) => (
+            <TabItem
+              key={item.type}
+              icon={item.icon || ''}
+              text={item.text}
+              active={item.active}
+              onClick={() => onClick(item.menu)}
+              onMouseEnter={() => {
+                if (item.menu?.code !== 'new_conversation') {
+                  handleShowHoverMenu(item.menu?.code || '');
+                }
+              }}
+              onMouseLeave={handleHideHoverMenu}
+              isSecondMenuCollapsed={isSecondMenuCollapsed}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

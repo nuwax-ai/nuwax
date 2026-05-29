@@ -124,6 +124,9 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
       const currentPlanBtnText = dict(
         'PC.Pages.MorePage.MySubscriptions.currentPlanButton',
       );
+      if (plan.price === 0) {
+        return currentPlanBtnText;
+      }
       const renewNowText = dict('PC.Pages.MorePage.MySubscriptions.renewNow');
       return `${currentPlanBtnText}(${renewNowText})`;
     }
@@ -256,11 +259,12 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
                 <Button
                   type="primary"
                   className={cx(styles['plan-button'], {
-                    [styles['plan-button-current']]: isCurrent,
+                    [styles['plan-button-current']]:
+                      isCurrent && plan.price > 0,
                   })}
                   loading={processingId?.toString() === plan.id}
                   onClick={() => handlePay(plan)}
-                  disabled={plan.price <= 0 && !isCurrent}
+                  disabled={plan.price <= 0}
                 >
                   {getButtonText(plan, isCurrent)}
                 </Button>

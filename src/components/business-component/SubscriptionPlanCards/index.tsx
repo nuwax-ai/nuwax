@@ -39,14 +39,15 @@ interface SubscriptionPlanCardsProps {
   getCycleLabel?: (cycle: string) => string;
 }
 
-const DEFAULT_CYCLE_LABEL: Record<string, string> = {
-  monthly: '月',
-  quarterly: '季',
-  yearly: '年',
+const getDefaultCycleLabel = (cycle: string) => {
+  const cycleLabelMap: Record<string, string> = {
+    monthly: dict('PC.Pages.SpaceSubscriptionSettings.fieldCycleMonthly'),
+    quarterly: dict('PC.Pages.SpaceSubscriptionSettings.fieldCycleQuarterly'),
+    yearly: dict('PC.Pages.SpaceSubscriptionSettings.fieldCycleYearly'),
+    月: dict('PC.Pages.SpaceSubscriptionSettings.fieldCycleMonthly'),
+  };
+  return cycleLabelMap[cycle] || cycle;
 };
-
-const defaultGetCycleLabel = (cycle: string) =>
-  DEFAULT_CYCLE_LABEL[cycle] || cycle;
 
 const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   plans,
@@ -60,7 +61,7 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = ({
   mode = 'simple',
   loading = false,
   sectionHeader,
-  getCycleLabel = defaultGetCycleLabel,
+  getCycleLabel = getDefaultCycleLabel,
 }) => {
   const currentIndex = plans.findIndex((p) => p.id === currentPlanId);
   const currentPlan = plans.find((p) => p.id === currentPlanId);
