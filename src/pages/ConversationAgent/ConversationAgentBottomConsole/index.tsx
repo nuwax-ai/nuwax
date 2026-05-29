@@ -52,6 +52,14 @@ const ConversationAgentBottomConsole: React.FC<
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : 'collapsed'));
   };
 
+  /** 切换标签；折叠状态下点击任意标签则展开控制台 */
+  const handleTabClick = (tab: 'terminal' | 'logs') => {
+    setActiveTab(tab);
+    if (layoutMode === 'collapsed') {
+      setLayoutMode('default');
+    }
+  };
+
   if (!visible) {
     return null;
   }
@@ -120,7 +128,7 @@ const ConversationAgentBottomConsole: React.FC<
             className={cx(styles['console-tab'], {
               [styles.active]: activeTab === 'terminal',
             })}
-            onClick={() => setActiveTab('terminal')}
+            onClick={() => handleTabClick('terminal')}
           >
             终端
           </span>
@@ -128,7 +136,7 @@ const ConversationAgentBottomConsole: React.FC<
             className={cx(styles['console-tab'], {
               [styles.active]: activeTab === 'logs',
             })}
-            onClick={() => setActiveTab('logs')}
+            onClick={() => handleTabClick('logs')}
           >
             日志
           </span>
