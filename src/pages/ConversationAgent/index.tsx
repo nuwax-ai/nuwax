@@ -813,6 +813,12 @@ const ConversationAgent: React.FC = () => {
       staticFileBasePath: devConversationId
         ? `/api/computer/static/${devConversationId}`
         : undefined,
+      /** 文件树选中文件时，切换右侧面板为文件预览 */
+      onFileSelectOpenPreview: () => {
+        if (devConversationId) {
+          openPreviewView(devConversationId);
+        }
+      },
     };
   }, [
     taskAgentSelectedFileId,
@@ -853,54 +859,43 @@ const ConversationAgent: React.FC = () => {
    * - 工具选择（插件/工作流/MCP/技能/子智能体）
    * - 模型切换
    */
-  const renderArrangePanel = () =>
-    agentId && agentConfigInfo ? (
-      <AgentArrangePanel
-        agentId={agentId}
-        agentConfigInfo={agentConfigInfo}
-        originalModelConfigList={originalModelConfigList}
-        systemUserTipsWordRef={systemUserTipsWordRef}
-        promptVariables={promptVariables}
-        promptTools={promptTools}
-        onChangeAgent={handleChangeAgent}
-        onInsertSystemPrompt={handleInsertSystemPrompt}
-        onVariablesChange={handleVariablesChange}
-        onToolsChange={handleToolsChange}
-        onOpenAgentModel={() => setOpenAgentModel(true)}
-        onModelChange={async (modelId, name) => {
-          // 内联模型切换：直接调用 API 更新模型组件绑定，然后同步本地状态
-          const componentId = agentConfigInfo?.modelComponentConfig?.id;
-          if (!componentId) return;
-          const bindConfig = agentConfigInfo?.modelComponentConfig
-            ?.bindConfig as ComponentModelBindConfig;
-          await apiAgentComponentModelUpdate({
-            id: componentId,
-            targetId: modelId,
-            bindConfig,
-          });
-          const _agentConfigInfo = cloneDeep(
-            agentConfigInfo,
-          ) as AgentConfigInfo;
-          _agentConfigInfo.modelComponentConfig.targetId = modelId;
-          _agentConfigInfo.modelComponentConfig.name = name;
-          setAgentConfigInfo(_agentConfigInfo);
-        }}
-      />
-    ) : (
-      <div className={cx(styles['empty-state'])}>
-        <span>配置区域</span>
-        <span style={{ fontSize: 13, color: '#999' }}>
-          加载智能体后可在此配置规划、工具、技能等
-        </span>
-      </div>
-    );
-
+  const renderArrangePanel = () => (
+    <AgentArrangePanel
+      agentId={agentId}
+      agentConfigInfo={agentConfigInfo}
+      originalModelConfigList={originalModelConfigList}
+      systemUserTipsWordRef={systemUserTipsWordRef}
+      promptVariables={promptVariables}
+      promptTools={promptTools}
+      onChangeAgent={handleChangeAgent}
+      onInsertSystemPrompt={handleInsertSystemPrompt}
+      onVariablesChange={handleVariablesChange}
+      onToolsChange={handleToolsChange}
+      onOpenAgentModel={() => setOpenAgentModel(true)}
+      onModelChange={async (modelId, name) => {
+        // 内联模型切换：直接调用 API 更新模型组件绑定，然后同步本地状态
+        const componentId = agentConfigInfo?.modelComponentConfig?.id;
+        if (!componentId) return;
+        const bindConfig = agentConfigInfo?.modelComponentConfig
+          ?.bindConfig as ComponentModelBindConfig;
+        await apiAgentComponentModelUpdate({
+          id: componentId,
+          targetId: modelId,
+          bindConfig,
+        });
+        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
+        _agentConfigInfo.modelComponentConfig.targetId = modelId;
+        _agentConfigInfo.modelComponentConfig.name = name;
+        setAgentConfigInfo(_agentConfigInfo);
+      }}
+    />
+  );
   /**
    * 渲染右侧面板
    * 布局：上方为编排面板或文件预览（互斥切换），下方为终端控制台（始终显示）
    *
    * 显示逻辑：
-   * - 当文件预览激活（showFilePreviewContent && devConversationId）→ 显示文件预览
+   * - 当 isFileTreeVisible（选中文件或主动打开预览）→ 显示文件预览
    * - 否则 → 显示编排面板
    */
   const renderRightPanel = () => (

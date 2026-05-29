@@ -91,11 +91,8 @@ export function useConversationAgentFileView(
     hideDesktop = HideDesktopEnum.No,
     // 静态资源文件基础路径
     staticFileBasePath,
-    /**
-     * 是否为项目技能模式（主要适用于技能预览和编辑）：
-     * 在 SkillDetails 页面设置 isProjectSkill={true}，是为了确保当技能的文件列表数据发生任何变动时，
-     * 当前正在查看/编辑的文件内容能够立即、自动地同步更新，避免出现“数据已变但界面显示的还是旧代码”的情况。
-     */
+    /** 选中文件后打开右侧预览面板 */
+    onFileSelectOpenPreview,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -364,6 +361,7 @@ export function useConversationAgentFileView(
          * 如果文件节点是链接文件，则不支持预览
          */
         if (!fileProxyUrl || fileNode?.isLink) {
+          onFileSelectOpenPreview?.();
           setSelectedFileId(fileNode?.id || fileId);
           if (!initViewFileType) {
             setViewFileType('preview');
@@ -388,6 +386,9 @@ export function useConversationAgentFileView(
           );
           return;
         }
+
+        // 选中文件后打开右侧预览面板（隐藏编排区域）
+        onFileSelectOpenPreview?.();
 
         // 判断文件是否为文档类型
         const result = isDocumentFile(fileNode?.name || '');
@@ -463,7 +464,14 @@ export function useConversationAgentFileView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, selectedFileId, changeFiles, initViewFileType],
+    [
+      files,
+      isRenamingFile,
+      selectedFileId,
+      changeFiles,
+      initViewFileType,
+      onFileSelectOpenPreview,
+    ],
   );
 
   // 文件选择（对外接口，用于用户主动选择）

@@ -64,6 +64,8 @@ export interface ConversationAgentFileViewProps {
   hideDesktop?: HideDesktopEnum;
   /** 静态资源文件基础路径 */
   staticFileBasePath?: string;
+  /** 选中文件后打开右侧预览面板（隐藏编排区域） */
+  onFileSelectOpenPreview?: () => void;
 }
 
 /** ConversationAgent 预览头部 props（不含更多操作相关回调） */
