@@ -637,6 +637,11 @@ const routes = [
     component: '@/examples/MenuPermissionDemo',
     layout: false,
   },
+  {
+    path: '/examples/chat-preview',
+    component: '@/examples/ChatPreview',
+    layout: false,
+  },
 ];
 
 export default routes;

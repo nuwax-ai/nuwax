@@ -165,6 +165,29 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/menu-permission-demo',
       featured: true,
     },
+    {
+      id: 'chat-preview',
+      title: isChineseLanguage
+        ? 'Markdown 渲染预览'
+        : 'Markdown Rendering Preview',
+      description: isChineseLanguage
+        ? '对比展示 17 种 Markdown 渲染类型，包括基础 Markdown、代码块、数学公式、Mermaid 图表、Thinking 推理、工具执行等，用于与 Workbench 预览页面进行视觉对比。'
+        : 'Showcase 17 Markdown rendering types including basic markdown, code blocks, math formulas, Mermaid diagrams, thinking traces, tool execution, for visual comparison with the Workbench preview page.',
+      tags: [
+        { text: isChineseLanguage ? 'Markdown' : 'Markdown', color: 'blue' },
+        {
+          text: isChineseLanguage ? '渲染对比' : 'Render Compare',
+          color: 'purple',
+        },
+        {
+          text: isChineseLanguage ? 'Workbench' : 'Workbench',
+          color: 'green',
+        },
+      ],
+      icon: <EyeOutlined />,
+      path: '/examples/chat-preview',
+      featured: true,
+    },
   ];
 
   // 跳转到示例页面
