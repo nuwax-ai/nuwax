@@ -1,0 +1,112 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  padding: @paddingSm @padding @paddingSm 0;
+  height: 56px;
+  overflow-x: auto;
+  flex-shrink: 0;
+
+  .icon-backward {
+    padding: @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
+    color: @navFirstMenuTextSecondary;
+    cursor: pointer;
+  }
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+
+    &.hide-back {
+      margin-left: @marginSm;
+    }
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+    gap: @marginSm;
+
+    .h-title {
+      max-width: 360px;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      color: @navFirstMenuTextSecondary;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      color: @navFirstMenuTextSecondary;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+    gap: @marginSm;
+  }
+
+  .dev-server-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: @colorSuccessText;
+    white-space: nowrap;
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: @colorSuccess;
+    }
+  }
+
+  .save-time-box {
+    gap: @paddingXs;
+    color: @navFirstMenuTextSecondary;
+
+    .save-time {
+      font-size: 12px;
+      font-weight: @fontWeightStrong;
+      line-height: 19px;
+      white-space: nowrap;
+    }
+
+    .volcano {
+      color: @colorWarningText;
+      background: @colorWarningBg;
+      padding: 4px 8px;
+    }
+
+    :global {
+      .ant-tag {
+        margin-inline-end: 0;
+      }
+    }
+  }
+
+  .panel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: @navFirstMenuTextSecondary;
+    cursor: pointer;
+    border-radius: @borderRadius;
+
+    &:hover,
+    &.active {
+      color: @colorPrimary;
+      background-color: rgba(91, 69, 255, 8%);
+    }
+  }
+
+  .publish-btn {
+    margin-left: @marginXs;
+  }
+}

@@ -1,0 +1,67 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.console {
+  display: flex;
+  flex-direction: column;
+  border-top: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+  flex-shrink: 0;
+
+  .console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: @lineWidth solid @colorSplit;
+  }
+
+  .console-tabs {
+    display: flex;
+    gap: 16px;
+  }
+
+  .console-tab {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    padding: 2px 0;
+
+    &.active {
+      color: @colorPrimary;
+      font-weight: 600;
+    }
+  }
+
+  .console-body {
+    height: 180px;
+    overflow: auto;
+    padding: 12px;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    font-family: Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .console-empty {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    text-align: center;
+    padding: 24px 0;
+  }
+
+  .xterm-container {
+    height: 240px;
+    background-color: #1e1e1e;
+    overflow: hidden;
+
+    // 覆盖 XtermTerminal 组件自身的边框/圆角，使其融入底部面板
+    > div {
+      border: none;
+      border-radius: 0;
+    }
+  }
+}
