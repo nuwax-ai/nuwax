@@ -78,18 +78,6 @@ const EarningsDetail: React.FC = () => {
       render: (_, record) =>
         record.created ? formatDateTime(record.created) : '-',
     },
-    {
-      title: dict('PC.Pages.SystemManagement.PaymentEarnings.Detail.colStatus'),
-      dataIndex: 'status',
-      search: false,
-      render: () => (
-        <Tag color="success">
-          {dict(
-            'PC.Pages.SystemManagement.PaymentEarnings.Detail.statusSettled',
-          )}
-        </Tag>
-      ),
-    },
   ];
 
   return (
