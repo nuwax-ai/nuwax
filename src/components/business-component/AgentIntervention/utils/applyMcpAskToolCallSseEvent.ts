@@ -11,6 +11,16 @@ import {
   parseSseEventEnvelope,
 } from './parseSseEventEnvelope';
 
+function readRawInput(eventData: Record<string, unknown>) {
+  const ext =
+    eventData.ext && typeof eventData.ext === 'object'
+      ? (eventData.ext as Record<string, unknown>)
+      : {};
+  return (
+    eventData.raw_input ?? eventData.rawInput ?? ext.raw_input ?? ext.rawInput
+  );
+}
+
 export function applyMcpAskToolCallSseEvent(
   res: ConversationChatResponse,
   currentMessage: MessageInfo,
@@ -29,7 +39,9 @@ export function applyMcpAskToolCallSseEvent(
       eventData.tool_call_id ||
       eventData.toolCallId ||
       eventData.raw_input ||
-      eventData.rawInput
+      eventData.rawInput ||
+      ((eventData.ext as Record<string, unknown> | undefined)?.raw_input ??
+        (eventData.ext as Record<string, unknown> | undefined)?.rawInput)
     );
   const isProcessingToolCallEvent =
     res.eventType === ConversationEventTypeEnum.PROCESSING &&
@@ -49,7 +61,7 @@ export function applyMcpAskToolCallSseEvent(
     (eventData.toolCallId as string) ||
     (eventData.executeId as string) ||
     (result?.executeId as string);
-  const rawInput = eventData.raw_input ?? eventData.rawInput ?? result?.input;
+  const rawInput = readRawInput(eventData) ?? result?.input;
   const mcpAskInput = parseMcpAskToolInput(rawInput);
 
   if (!mcpAskInput || !toolCallId) {

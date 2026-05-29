@@ -1,5 +1,7 @@
 export const MCP_ASK_SCHEMA_VERSION = 'nuwaclaw.mcp_ask.v1';
+export const MCP_ASK_SCHEMA_VERSION_ALIASES = ['nuwax.mcp_ask.v1'];
 export const INTERACTION_UI_SCHEMA_VERSION = 'nuwaclaw.interaction.v1';
+export const INTERACTION_UI_SCHEMA_VERSION_ALIASES = ['nuwax.interaction.v1'];
 
 export type McpAskToolName =
   | 'nuwax_ask_question'
@@ -24,7 +26,7 @@ export interface InteractionUiOptions {
 }
 
 export interface InteractionUiSchema {
-  version: typeof INTERACTION_UI_SCHEMA_VERSION;
+  version: typeof INTERACTION_UI_SCHEMA_VERSION | 'nuwax.interaction.v1';
   presentation: 'modal' | 'inline' | 'wizard' | 'table';
   title: string;
   description?: string;
@@ -39,7 +41,7 @@ export interface InteractionUiSchema {
 
 export interface McpAskUserToolInput {
   toolName: McpAskToolName;
-  schemaVersion: typeof MCP_ASK_SCHEMA_VERSION;
+  schemaVersion: typeof MCP_ASK_SCHEMA_VERSION | 'nuwax.mcp_ask.v1';
   requestId: string;
   revision: number;
   sessionId: string;

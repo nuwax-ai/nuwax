@@ -171,4 +171,53 @@ describe('applyMcpAskToolCallSseEvent', () => {
     expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe('tool-call-6');
     expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-6');
   });
+
+  it('accepts rawInput nested under data.ext', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        messageType: 'agentSessionUpdate',
+        subType: 'tool_call',
+        data: {
+          toolCallId: 'tool-call-7',
+          ext: {
+            rawInput: {
+              ...baseAskInput,
+              requestId: 'ask-7',
+              toolName: 'nuwax_ask_question',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe('tool-call-7');
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-7');
+  });
+
+  it('accepts nuwax namespace schema aliases during migration', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        messageType: 'agentSessionUpdate',
+        subType: 'tool_call',
+        data: {
+          toolCallId: 'tool-call-8',
+          rawInput: {
+            ...baseAskInput,
+            schemaVersion: 'nuwax.mcp_ask.v1',
+            requestId: 'ask-8',
+            toolName: 'nuwax_ask_question',
+            ui: {
+              ...baseAskInput.ui,
+              version: 'nuwax.interaction.v1',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe('tool-call-8');
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-8');
+  });
 });
