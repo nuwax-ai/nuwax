@@ -1,0 +1,469 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
+import { USER_INFO } from '@/constants/home.constants';
+import { dict } from '@/services/i18nRuntime';
+import { FileNode } from '@/types/interfaces/appDev';
+import { formatFileSize } from '@/utils/appDevUtils';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { isMarkdownFile } from '@/utils/common';
+import {
+  CloseOutlined,
+  FilePdfOutlined,
+  FullscreenExitOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+} from '@ant-design/icons';
+import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
+import classNames from 'classnames';
+import React, { useMemo, useState } from 'react';
+import styles from './index.less';
+import MoreActionsMenu from './MoreActionsMenu/index';
+import ShareDesktopModal from './ShareDesktopModal';
+import type { FilePathHeaderProps } from './type';
+
+/** ConversationAgent 文件路径头部 Props */
+export type { FilePathHeaderProps };
+
+const cx = classNames.bind(styles);
+
+/**
+ * ConversationAgent 文件路径头部组件（自 FileTreeView/FilePathHeader 复制，可独立演进）
+ * 显示文件信息、视图模式切换按钮和操作按钮
+ */
+const FilePathHeader: React.FC<FilePathHeaderProps> = ({
+  className,
+  conversationId,
+  targetNode,
+  viewMode = 'preview',
+  // 用户选择的智能体电脑名称
+  agentSandboxName,
+  /** 重启容器回调 */
+  onRestartServer,
+  /** 重启智能体回调 */
+  onRestartAgent,
+  onImportProject,
+  onExportProject,
+  onFullscreen,
+  isFullscreen = false,
+  showFullscreenIcon = true,
+  onSaveFiles,
+  onCancelSaveFiles,
+  hasModifiedFiles = false,
+  isSavingFiles = false,
+  isDownloadingFile = false,
+  showMoreActions = true,
+  viewFileType = 'preview',
+  onViewFileTypeChange,
+  onDownloadFileByUrl,
+  isShowShare = true,
+  // 是否显示下载按钮, 默认显示
+  isShowDownloadButton = true,
+  // 是否显示导出 PDF 按钮, 默认显示
+  isShowExportPdfButton = true,
+  onExportPdf,
+  isExportingPdf = false,
+  onClose,
+  vncConnectStatus,
+  isFileTreeVisible = false,
+  isFileTreePinned = false,
+  onFileTreeToggle,
+  isCloudComputer = true,
+}) => {
+  // 文件名
+  const fileName = targetNode?.name;
+  // 文件大小
+  const fileSize = targetNode?.size;
+  // 格式化的文件大小
+  const formattedSize = useMemo(() => {
+    if (!fileSize) return '';
+    return formatFileSize(fileSize);
+  }, [fileSize]);
+
+  // 获取用户信息
+  const _userInfo = localStorage.getItem(USER_INFO);
+  const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
+  // 远程桌面分享弹窗显示状态
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState<boolean>(false);
+
+  // 分享类型
+  const [shareType, setShareType] = useState<'CONVERSATION' | 'DESKTOP'>(
+    'CONVERSATION',
+  );
+
+  // 分享
+  const onShareAction = (mode: 'preview' | 'desktop') => {
+    if (!conversationId) {
+      return;
+    }
+
+    // 分享文件
+    if (mode === 'preview') {
+      setShareType('CONVERSATION');
+    }
+
+    // 分享桌面
+    if (mode === 'desktop') {
+      setShareType('DESKTOP');
+    }
+    setShareDesktopModalVisible(true);
+  };
+
+  // 获取 VNC 连接状态颜色
+  const getVncConnectStatusColor = (status: ConnectionStatus) => {
+    switch (status) {
+      case 'connected':
+        return '#3BB346';
+      case 'connecting':
+        return '#1890ff';
+      case 'disconnected':
+        return '#f50';
+      case 'error':
+        return '#ff4d4f';
+      default:
+        return 'transparent';
+    }
+  };
+
+  // 是否有左侧文件信息内容需要显示
+  const hasFileInfoContent = useMemo(() => {
+    if (viewMode === 'preview') {
+      // preview 模式：检查是否有 fileDetails 或 Segmented
+      const hasFileDetails = !isFileTreeVisible && fileName;
+      const hasSegmented =
+        (targetNode?.fileProxyUrl ||
+          (targetNode?.content !== undefined &&
+            targetNode?.content !== null)) &&
+        fileName &&
+        (fileName?.includes('.htm') || isMarkdownFile(fileName));
+      return hasFileDetails || hasSegmented;
+    }
+    // desktop 模式：pc-box 总是显示，所以总是有内容
+    return true;
+  }, [viewMode, isFileTreeVisible, fileName, targetNode?.fileProxyUrl]);
+
+  // 是否需要展示右侧整体 actionButtons（分享 / 全屏 / 更多 / 关闭）
+  const showRightActionButtons = useMemo(() => {
+    const canShare =
+      isShowShare &&
+      (viewMode === 'desktop' ||
+        (targetNode?.fileProxyUrl && viewMode === 'preview'));
+
+    const canFullscreen = showFullscreenIcon || isFullscreen;
+    const canMoreActions = showMoreActions;
+    const canClose = !!onClose && !isFullscreen;
+
+    return canShare || canFullscreen || canMoreActions || canClose;
+  }, [
+    isShowShare,
+    viewMode,
+    targetNode?.fileProxyUrl,
+    showFullscreenIcon,
+    isFullscreen,
+    showMoreActions,
+    onClose,
+  ]);
+
+  return (
+    <div className={cx(styles.filePathHeader, className)}>
+      {/* 文件树展开/折叠图标 */}
+      {viewMode !== 'desktop' && (
+        <div className={cx('flex', 'items-center', 'gap-4')}>
+          <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
+          <Tooltip
+            title={
+              isFileTreeVisible
+                ? dict('PC.Components.FilePathHeader.collapseFileTree')
+                : dict('PC.Components.FilePathHeader.expandFileTree')
+            }
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={
+                isFileTreeVisible ? (
+                  <MenuFoldOutlined style={{ fontSize: 16 }} />
+                ) : (
+                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+                )
+              }
+              onClick={onFileTreeToggle}
+              className={cx(styles.fileTreeToggleButton, {
+                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+              })}
+            />
+          </Tooltip>
+        </div>
+      )}
+      {/* 左侧：文件信息 */}
+      {hasFileInfoContent && (
+        <div className={styles.fileInfo}>
+          {viewMode === 'preview' ? (
+            <>
+              {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+              {!isFileTreeVisible && (
+                <div className={styles.fileDetails}>
+                  <div className={styles.fileName}>{fileName}</div>
+                  {formattedSize && (
+                    <span className={styles.fileMeta}>({formattedSize})</span>
+                  )}
+                </div>
+              )}
+              {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
+              {(targetNode?.fileProxyUrl ||
+                (targetNode?.content !== undefined &&
+                  targetNode?.content !== null)) &&
+                fileName &&
+                (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
+                  <ConfigProvider
+                    theme={{
+                      components: {
+                        Segmented: {
+                          itemSelectedBg: '#fff',
+                          itemSelectedColor: '#5147FF',
+                          itemColor: 'rgba(0, 0, 0, 0.45)',
+                          itemHoverColor: 'rgba(0, 0, 0, 0.65)',
+                          trackBg: 'rgba(12, 20, 102, 0.04)',
+                          trackPadding: 2,
+                        },
+                      },
+                    }}
+                  >
+                    <Segmented
+                      value={viewFileType}
+                      onChange={onViewFileTypeChange}
+                      options={[
+                        {
+                          label: dict('PC.Components.FilePathHeader.preview'),
+                          value: 'preview',
+                        },
+                        {
+                          label: dict('PC.Components.FilePathHeader.code'),
+                          value: 'code',
+                        },
+                      ]}
+                    />
+                  </ConfigProvider>
+                )}
+            </>
+          ) : (
+            <div className={styles['pc-box']}>
+              {vncConnectStatus && (
+                <div
+                  className={styles.vncConnectStatus}
+                  style={{
+                    backgroundColor: getVncConnectStatusColor(vncConnectStatus),
+                  }}
+                />
+              )}
+              <div className={styles.fileName}>
+                {agentSandboxName ||
+                  `${
+                    userInfo?.nickName ||
+                    userInfo?.userName ||
+                    dict('PC.Components.FilePathHeader.remote')
+                  }${dict('PC.Components.FilePathHeader.agentComputerSuffix')}`}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 底部：保存和取消按钮 */}
+      {hasModifiedFiles && (
+        <div className="flex items-center content-end gap-4">
+          <Button
+            size="small"
+            type="primary"
+            onClick={onSaveFiles}
+            loading={isSavingFiles}
+          >
+            {dict('PC.Common.Global.save')}
+          </Button>
+          <Button size="small" type="default" onClick={onCancelSaveFiles}>
+            {dict('PC.Common.Global.cancel')}
+          </Button>
+        </div>
+      )}
+
+      <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
+        {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
+        <div className={styles.actionButtons}>
+          {/* Markdown 文件显示导出 PDF 按钮 */}
+          {targetNode &&
+            fileName &&
+            // 是否显示导出 PDF 按钮, 默认显示
+            isShowExportPdfButton &&
+            (isMarkdownFile(fileName) ||
+              fileName.endsWith('.html') ||
+              fileName.endsWith('.htm')) &&
+            viewMode === 'preview' && (
+              <Tooltip
+                title={
+                  isExportingPdf
+                    ? dict('PC.Components.FilePathHeader.exporting')
+                    : dict('PC.Components.FilePathHeader.exportPdf')
+                }
+              >
+                {' '}
+                <Button
+                  type="text"
+                  size="small"
+                  // icon={<SvgIcon name="icons-common-transform_pdf_file" style={{ fontSize: 20 }} />}
+                  icon={<FilePdfOutlined />}
+                  onClick={() => onExportPdf?.(targetNode as FileNode)}
+                  className={styles.actionButton}
+                  loading={isExportingPdf}
+                  disabled={isExportingPdf}
+                />
+              </Tooltip>
+            )}
+
+          {/* 只有存在 fileProxyUrl 且 isShowDownloadButton 为 true 时，才显示下载文件按钮 */}
+          {targetNode?.fileProxyUrl &&
+            isShowDownloadButton &&
+            viewMode === 'preview' && (
+              <Tooltip
+                placement="bottom"
+                title={
+                  isDownloadingFile
+                    ? dict('PC.Components.FilePathHeader.downloading')
+                    : dict('PC.Components.FilePathHeader.download')
+                }
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon
+                      name="icons-common-download"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+                  className={styles.actionButton}
+                  loading={isDownloadingFile}
+                  disabled={isDownloadingFile}
+                />
+              </Tooltip>
+            )}
+
+          {/* 复制内容 */}
+          {!!targetNode?.content && viewMode === 'preview' && (
+            <Tooltip title={dict('PC.Components.FilePathHeader.copy')}>
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                }
+                onClick={() => {
+                  copyTextToClipboard(targetNode?.content || '', () => {
+                    message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+                  });
+                }}
+                className={styles.actionButton}
+              />
+            </Tooltip>
+          )}
+        </div>
+
+        {/* 右侧：操作按钮（分享 / 全屏 / 更多 / 关闭） */}
+        {showRightActionButtons && (
+          <div className={cx(styles.actionButtons)}>
+            {/* 分享 */}
+            {isShowShare &&
+              (viewMode === 'desktop' ||
+                (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+                <Tooltip
+                  title={dict('PC.Components.FilePathHeader.share')}
+                  placement="bottom"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={
+                      <SvgIcon
+                        name="icons-chat-share"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={() => onShareAction(viewMode)}
+                    className={styles.actionButton}
+                  />
+                </Tooltip>
+              )}
+
+            {/* 是否显示全屏图标 */}
+            {(showFullscreenIcon || isFullscreen) && (
+              <Tooltip
+                title={
+                  isFullscreen
+                    ? dict('PC.Components.FilePathHeader.exitFullscreen')
+                    : dict('PC.Components.FilePathHeader.fullscreen')
+                }
+                placement="bottom"
+                key={isFullscreen ? 'exit' : 'enter'}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    isFullscreen ? (
+                      <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                    ) : (
+                      <SvgIcon
+                        name="icons-common-fullscreen"
+                        style={{ fontSize: 16 }}
+                      />
+                    )
+                  }
+                  onClick={onFullscreen}
+                  className={styles.actionButton}
+                />
+              </Tooltip>
+            )}
+
+            {/* 更多操作菜单 */}
+            {showMoreActions && (
+              <MoreActionsMenu
+                onImportProject={onImportProject}
+                onRestartServer={onRestartServer}
+                onRestartAgent={onRestartAgent}
+                onExportProject={onExportProject}
+                isCloudComputer={isCloudComputer}
+              />
+            )}
+
+            {onClose && !isFullscreen && (
+              <>
+                <div className={styles.divider} />
+                {/* 关闭 */}
+                <Tooltip title={dict('PC.Components.FilePathHeader.close')}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={onClose}
+                    className={styles.actionButton}
+                  />
+                </Tooltip>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 远程桌面分享弹窗 */}
+      <ShareDesktopModal
+        fileProxyUrl={targetNode?.fileProxyUrl || null}
+        shareType={shareType}
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId || ''}
+      />
+    </div>
+  );
+};
+
+export default FilePathHeader;

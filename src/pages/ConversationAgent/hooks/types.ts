@@ -1,4 +1,3 @@
-import type { FilePathHeaderProps } from '@/components/FileTreeView/FilePathHeader/type';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import type {
   IdleDetectionConfig,
@@ -7,6 +6,7 @@ import type {
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
+import type { FilePathHeaderProps } from '../ConversationAgentFilePreview/FilePathHeader/type';
 
 export type { ChangeFileInfo };
 

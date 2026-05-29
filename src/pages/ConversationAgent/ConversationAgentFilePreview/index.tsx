@@ -1,8 +1,8 @@
-import FilePathHeader from '@/components/FileTreeView/FilePathHeader';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import classNames from 'classnames';
 import React from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
+import FilePathHeader from './FilePathHeader';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
