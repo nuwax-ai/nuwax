@@ -40,3 +40,7 @@ pnpm-lock.yaml
 .kilo
 .temp
 # /deploy_test.sh
+
+# 微信公众/小程序域名校验文件：仅在生产 Nginx/网关/Volume 部署，勿放入 public/
+public/MP_verify_*.txt
+public/Nd28jPGzj4.txt
