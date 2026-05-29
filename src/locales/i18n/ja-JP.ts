@@ -5075,7 +5075,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.MorePage.MyEarnings.colPaymentRemark": "Payment Remark",
   "PC.Pages.MorePage.MyEarnings.colPlatformServiceFee": "Platform Service Fee",
   "PC.Pages.MorePage.MyEarnings.colVoucherImages": "Voucher Images",
-  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "Are you sure you want to apply for withdrawal?",
+  "PC.Pages.MorePage.MyEarnings.confirmWithdrawDesc": "今回の出金申請金額は {0} 元、プラットフォームサービス料は {1} 元、実際の受取金額は {2} 元となります。",
   "PC.Pages.MorePage.MyEarnings.confirmWithdrawTitle": "Confirm Withdrawal",
   "PC.Pages.MorePage.MyEarnings.date": "Date",
   "PC.Pages.MorePage.MyEarnings.monthFormat": "MMM",
