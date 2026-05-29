@@ -1,6 +1,8 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
+@console-content-height: 240px;
+
 .console {
   display: flex;
   flex-direction: column;
@@ -14,11 +16,17 @@
     justify-content: space-between;
     padding: 8px 12px;
     border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    background-color: @colorBgContainer;
   }
 
   .console-tabs {
     display: flex;
     gap: 16px;
+    flex: 1;
+    min-width: 0;
   }
 
   .console-tab {
@@ -33,11 +41,63 @@
     }
   }
 
+  .console-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: @marginSm;
+  }
+
+  .console-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: @colorTextSecondary;
+    border-radius: @borderRadius;
+
+    &:hover {
+      color: @colorPrimary;
+      background-color: rgba(91, 69, 255, 8%);
+    }
+  }
+
+  /** 放大：占满父级右侧面板 */
+  &.console-expanded {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    flex-shrink: 0;
+    min-height: 0;
+
+    .console-content {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+    }
+  }
+
+  /** 折叠：仅保留底部标签栏 */
+  &.console-collapsed {
+    .console-content {
+      display: none;
+    }
+  }
+
+  /** 终端 / 日志内容区：固定高度，切换 tab 时不抖动 */
+  .console-content {
+    height: @console-content-height;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: #1e1e1e;
+  }
+
   .console-body {
-    height: 180px;
+    height: 100%;
     overflow: auto;
     padding: 12px;
-    background-color: #1e1e1e;
     color: #d4d4d4;
     font-family: Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
@@ -54,12 +114,12 @@
   }
 
   .xterm-container {
-    height: 240px;
-    background-color: #1e1e1e;
+    height: 100%;
     overflow: hidden;
 
     // 覆盖 XtermTerminal 组件自身的边框/圆角，使其融入底部面板
     > div {
+      height: 100%;
       border: none;
       border-radius: 0;
     }

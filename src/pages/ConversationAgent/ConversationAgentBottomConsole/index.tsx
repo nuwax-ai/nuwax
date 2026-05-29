@@ -1,10 +1,21 @@
+import { SvgIcon } from '@/components/base';
 import { XtermTerminal } from '@/components/business-component';
 import type { XtermTerminalRef } from '@/components/business-component/Terminal/type';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
+import {
+  DownOutlined,
+  FullscreenExitOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 底部控制台布局模式 */
+type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
 
 interface ConversationAgentBottomConsoleProps {
   /** 是否显示控制台 */
@@ -28,7 +39,18 @@ const ConversationAgentBottomConsole: React.FC<
   ConversationAgentBottomConsoleProps
 > = ({ visible = true, terminalLogs = '', runtimeLogs = '', wsUrl }) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>('terminal');
+  const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
   const terminalRef = useRef<XtermTerminalRef>(null);
+
+  /** 放大：占满父级右侧面板高度；再次点击恢复默认高度 */
+  const handleToggleExpand = () => {
+    setLayoutMode((prev) => (prev === 'expanded' ? 'default' : 'expanded'));
+  };
+
+  /** 折叠：仅保留底部标签栏；再次点击恢复默认高度 */
+  const handleToggleCollapse = () => {
+    setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : 'collapsed'));
+  };
 
   if (!visible) {
     return null;
@@ -86,7 +108,12 @@ const ConversationAgentBottomConsole: React.FC<
   );
 
   return (
-    <div className={cx(styles.console)}>
+    <div
+      className={cx(styles.console, {
+        [styles['console-expanded']]: layoutMode === 'expanded',
+        [styles['console-collapsed']]: layoutMode === 'collapsed',
+      })}
+    >
       <div className={cx(styles['console-header'])}>
         <div className={cx(styles['console-tabs'])}>
           <span
@@ -106,8 +133,49 @@ const ConversationAgentBottomConsole: React.FC<
             日志
           </span>
         </div>
+        <div className={cx(styles['console-actions'])}>
+          <TooltipIcon
+            title={
+              layoutMode === 'expanded'
+                ? dict('PC.Pages.ConversationAgentBottomConsole.restoreHeight')
+                : dict('PC.Pages.ConversationAgentBottomConsole.expandHeight')
+            }
+            placement="top"
+            className={cx(styles['console-action-btn'])}
+            icon={
+              layoutMode === 'expanded' ? (
+                <FullscreenExitOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <SvgIcon
+                  name="icons-common-fullscreen"
+                  style={{ fontSize: 16 }}
+                />
+              )
+            }
+            onClick={handleToggleExpand}
+          />
+          <TooltipIcon
+            title={
+              layoutMode === 'collapsed'
+                ? dict('PC.Pages.ConversationAgentBottomConsole.restoreHeight')
+                : dict('PC.Pages.ConversationAgentBottomConsole.collapsePanel')
+            }
+            placement="top"
+            className={cx(styles['console-action-btn'])}
+            icon={
+              layoutMode === 'collapsed' ? (
+                <UpOutlined style={{ fontSize: 12 }} />
+              ) : (
+                <DownOutlined style={{ fontSize: 12 }} />
+              )
+            }
+            onClick={handleToggleCollapse}
+          />
+        </div>
       </div>
-      {activeTab === 'terminal' ? renderTerminalTab() : renderLogsTab()}
+      <div className={cx(styles['console-content'])}>
+        {activeTab === 'terminal' ? renderTerminalTab() : renderLogsTab()}
+      </div>
     </div>
   );
 };

@@ -953,7 +953,7 @@ const ConversationAgent: React.FC = () => {
           `xagi-nav-${navigationStyle}`,
         )}
       >
-        <div className={cx(styles['main-row'])}>
+        <div className={cx(styles['main-row'], 'w-full')}>
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
