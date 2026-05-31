@@ -1214,6 +1214,7 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.viewAll": "View All",
   "PC.Layouts.DynamicMenusLayout.more": "More",
   "PC.Layouts.DynamicMenusLayout.newConversation": "New Conversation",
+  "PC.Layouts.DynamicMenusLayout.newProject": "New Project",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "Personal Space",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "Recently Edited",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "Agent",

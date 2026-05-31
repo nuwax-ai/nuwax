@@ -1,0 +1,164 @@
+@import '@/styles/token.less';
+
+.prompt-box-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto @marginXxl auto;
+  background: @colorBgContainer;
+  border: @lineWidth @lineType @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 4%);
+  backdrop-filter: blur(8px);
+  padding: @padding;
+  animation: slideUp 0.6s @motionEaseOut;
+  transition: all @motionDurationMid @motionEaseOut;
+
+  &:hover {
+    border-color: @colorPrimaryBorder;
+    box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 6%);
+  }
+
+  .tabs-list {
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    padding-bottom: @paddingSm;
+    border-bottom: @lineWidth @lineType @colorBorderSecondary;
+    margin-bottom: @marginSm;
+
+    .tab-item {
+      padding: @paddingXs @paddingMd;
+      font-size: @fontSize;
+      color: @colorTextSecondary;
+      cursor: pointer;
+      border-radius: @borderRadiusSm;
+      transition: all @motionDurationMid @motionEaseOut;
+      user-select: none;
+
+      &:hover {
+        color: @colorPrimary;
+        background: rgba(var(--xagi-blue-rgb, 24), 144, 255, 4%);
+      }
+
+      &.tab-active {
+        color: @colorPrimary;
+        background: rgba(var(--xagi-blue-rgb, 24), 144, 255, 8%);
+        font-weight: @fontWeightStrong;
+      }
+    }
+  }
+
+  .input-area {
+    display: flex;
+    flex-direction: column;
+    gap: @marginSm;
+
+    .prompt-textarea {
+      font-size: @fontSize;
+      color: @colorText;
+      line-height: @lineHeight;
+      padding: @paddingXs @paddingXs 0 @paddingXs;
+      resize: none;
+
+      &::placeholder {
+        color: @colorTextPlaceholder;
+      }
+    }
+
+    .toolbar-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 @paddingXs;
+
+      .left-tools {
+        display: flex;
+        align-items: center;
+        gap: @marginXs;
+
+        .tool-btn {
+          color: @colorTextDescription;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 @paddingXs;
+          height: 32px;
+          width: 32px;
+          border-radius: 50%;
+          transition: all @motionDurationMid @motionEaseOut;
+
+          &:hover {
+            color: @colorPrimary;
+            background: @colorBgTextHover;
+          }
+        }
+      }
+
+      .right-tools {
+        display: flex;
+        align-items: center;
+        gap: @marginSm;
+
+        .dropdown-trigger {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: @colorTextSecondary;
+          font-size: @fontSizeSm;
+          height: 32px;
+          padding: 0 @paddingSm;
+          border-radius: @borderRadiusSm;
+          transition: all @motionDurationMid @motionEaseOut;
+
+          &:hover {
+            color: @colorPrimary;
+            background: @colorBgTextHover;
+          }
+
+          span {
+            font-size: @fontSizeSm;
+          }
+
+          .caret {
+            font-size: 10px;
+            color: @colorTextDescription;
+          }
+        }
+
+        .divider {
+          width: @lineWidth;
+          height: 16px;
+          background: @colorBorderSecondary;
+        }
+
+        .send-btn {
+          background: @colorFillContent;
+          border-color: transparent;
+          color: @colorTextDescription;
+          transition: all @motionDurationMid @motionEaseOut;
+          box-shadow: none;
+
+          &:hover {
+            background: @colorBgTextHover;
+            color: @colorPrimary;
+          }
+
+          &.send-btn-active {
+            background: @colorPrimary;
+            border-color: @colorPrimary;
+            color: @colorBgContainer;
+            box-shadow: 0 4px 12px rgba(var(--xagi-blue-rgb, 24), 144, 255, 20%);
+
+            &:hover {
+              background: @colorPrimaryHover;
+              border-color: @colorPrimaryHover;
+              box-shadow: 0 6px 16px
+                rgba(var(--xagi-blue-rgb, 24), 144, 255, 35%);
+            }
+          }
+        }
+      }
+    }
+  }
+}

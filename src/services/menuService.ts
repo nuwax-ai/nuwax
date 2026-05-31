@@ -61,6 +61,8 @@ const MENU_ICON_MAP: Record<string, string> = {
   model_monitor: 'icons-common-console',
 
   // 二级菜单 - 工作空间
+  // 新建项目
+  new_project: 'icons-common-plus',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"

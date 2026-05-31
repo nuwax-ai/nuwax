@@ -1214,6 +1214,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.viewAll": "查看全部",
   "PC.Layouts.DynamicMenusLayout.more": "更多",
   "PC.Layouts.DynamicMenusLayout.newConversation": "新对话",
+  "PC.Layouts.DynamicMenusLayout.newProject": "新建项目",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "个人空间",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近编辑",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "智能体",

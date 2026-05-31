@@ -50,6 +50,11 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 新建项目
+      {
+        path: '/space/:spaceId/new-project',
+        component: '@/pages/SpaceNewProject',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',

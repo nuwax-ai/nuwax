@@ -1204,6 +1204,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.viewAll": "檢視全部",
   "PC.Layouts.DynamicMenusLayout.more": "更多",
   "PC.Layouts.DynamicMenusLayout.newConversation": "新對話",
+  "PC.Layouts.DynamicMenusLayout.newProject": "新建專案",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "個人空間",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近編輯",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "智慧體",
