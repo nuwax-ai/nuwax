@@ -25,14 +25,6 @@ export interface FilePathHeaderProps {
   isFullscreen?: boolean;
   /** 是否显示全屏图标 */
   showFullscreenIcon?: boolean;
-  /** 保存回调 */
-  onSaveFiles?: () => void;
-  /** 取消保存回调 */
-  onCancelSaveFiles?: () => void;
-  /** 是否存在修改过的文件 */
-  hasModifiedFiles?: boolean;
-  /** 是否正在保存文件 */
-  isSavingFiles?: boolean;
   /** 是否正在导出项目 */
   isExportingProjecting?: boolean;
   /** 是否正在下载文件 */

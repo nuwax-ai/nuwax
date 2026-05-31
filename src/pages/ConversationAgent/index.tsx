@@ -15,7 +15,13 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
-import { apiUpdateStaticFile, apiUploadFiles } from '@/services/vncDesktop';
+import {
+  apiGitCommitPush,
+  apiGitStash,
+  apiGitStashPop,
+  apiUpdateStaticFile,
+  apiUploadFiles,
+} from '@/services/vncDesktop';
 import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
@@ -48,6 +54,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { useRequest } from 'ahooks';
+import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
@@ -63,7 +70,7 @@ import AgentArrangePanel from './AgentArrangePanel';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
-import ConversationAgentFileTree from './ConversationAgentFileTree';
+import ConversationAgentMiddlePanel from './ConversationAgentMiddlePanel';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
 import styles from './index.less';
@@ -129,6 +136,16 @@ const ConversationAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
+  /** 是否正在 Git 提交推送 */
+  const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
+  /** 源代码管理中选中查看 diff 的文件 ID */
+  const [selectedDiffFileId, setSelectedDiffFileId] = useState<string | null>(
+    null,
+  );
+  /** 源代码管理中已暂存（git stash）的文件 ID 集合 */
+  const [stagedFileIds, setStagedFileIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
@@ -150,7 +167,7 @@ const ConversationAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
   /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
+  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -715,6 +732,79 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
+   * Git 提交并推送到远程仓库
+   * 先保存文件到沙箱，再执行 git commit + push
+   * @param commitMessage 提交信息
+   * @param changeFilesList 当前修改的文件列表
+   */
+  const handleGitCommitPush = useCallback(
+    async (
+      commitMessage: string,
+      changeFilesList: Array<{
+        fileId: string;
+        fileContent: string;
+        originalFileContent: string;
+      }>,
+    ) => {
+      if (!devConversationId) {
+        message.error(
+          dict('PC.Pages.ConversationAgent.gitPush.noConversation'),
+        );
+        return false;
+      }
+
+      setIsGitPushing(true);
+      try {
+        // 1. 先保存文件到沙箱
+        if (changeFilesList.length > 0) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            changeFilesList,
+            'modify',
+          );
+          const saveResult = await apiUpdateStaticFile({
+            cId: devConversationId,
+            files: updatedFilesList as VncDesktopUpdateFileInfo[],
+          });
+          if (saveResult.code !== SUCCESS_CODE) {
+            message.error(
+              dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
+            );
+            return false;
+          }
+        }
+
+        // 2. 执行 git commit + push
+        const { code } = await apiGitCommitPush({
+          cId: devConversationId,
+          message:
+            commitMessage ||
+            dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
+          files: changeFilesList.map((f) => ({
+            path: f.fileId,
+            content: f.fileContent,
+          })),
+        });
+
+        if (code === SUCCESS_CODE) {
+          message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
+          return true;
+        } else {
+          message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
+          return false;
+        }
+      } catch (error) {
+        console.error('Git commit push failed:', error);
+        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
+        return false;
+      } finally {
+        setIsGitPushing(false);
+      }
+    },
+    [devConversationId, fileTreeData],
+  );
+
+  /**
    * 批量上传文件
    * 先校验文件大小是否超限，通过后调用上传接口并刷新文件树
    */
@@ -760,6 +850,7 @@ const ConversationAgent: React.FC = () => {
   const handleClosePreviewPanel = useCallback(() => {
     closePreviewView();
     setIsFileTreePinned(false);
+    setSelectedDiffFileId(null);
   }, [closePreviewView, setIsFileTreePinned]);
 
   // ==================== 文件视图 & 编排面板 ====================
@@ -815,6 +906,7 @@ const ConversationAgent: React.FC = () => {
         : undefined,
       /** 文件树选中文件时，切换右侧面板为文件预览 */
       onFileSelectOpenPreview: () => {
+        setSelectedDiffFileId(null);
         if (devConversationId) {
           openPreviewView(devConversationId);
         }
@@ -845,6 +937,204 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useConversationAgentFileView(fileViewProviderProps);
+
+  /** 当前选中查看 diff 的文件数据 */
+  const selectedDiffFile = useMemo(
+    () =>
+      fileView.changeFiles.find((item) => item.fileId === selectedDiffFileId),
+    [fileView.changeFiles, selectedDiffFileId],
+  );
+
+  /** 更改列表变化时，清理已不存在的暂存标记 */
+  useEffect(() => {
+    setStagedFileIds((prev) => {
+      const changeIds = new Set(fileView.changeFiles.map((f) => f.fileId));
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (changeIds.has(id)) {
+          next.add(id);
+        }
+      });
+      return next.size === prev.size ? prev : next;
+    });
+  }, [fileView.changeFiles]);
+
+  /** 打开更改文件（选中文件并预览，非 diff） */
+  const handleOpenChangeFile = useCallback(
+    async (fileId: string) => {
+      setSelectedDiffFileId(null);
+      await fileView.tree.handleFileSelect(fileId);
+      if (devConversationId) {
+        openPreviewView(devConversationId);
+      }
+    },
+    [fileView.tree, devConversationId, openPreviewView],
+  );
+
+  /** 放弃单个文件的更改 */
+  const handleDiscardChange = useCallback(
+    (fileId: string) => {
+      fileView.preview.discardChangeFile(fileId);
+      setStagedFileIds((prev) => {
+        const next = new Set(prev);
+        next.delete(fileId);
+        return next;
+      });
+      if (selectedDiffFileId === fileId) {
+        setSelectedDiffFileId(null);
+      }
+    },
+    [fileView.preview, selectedDiffFileId],
+  );
+
+  /** 暂存更改（git stash） */
+  const handleStageChange = useCallback(
+    async (fileId: string) => {
+      if (!devConversationId) {
+        return;
+      }
+      try {
+        const { code } = await apiGitStash({
+          cId: devConversationId,
+          files: [fileId],
+        });
+        if (code !== SUCCESS_CODE) {
+          message.warning(
+            dict('PC.Pages.ConversationAgentSourceControl.stageFailed'),
+          );
+        }
+      } catch (error) {
+        console.error('Git stash failed:', error);
+        message.warning(
+          dict('PC.Pages.ConversationAgentSourceControl.stageFailed'),
+        );
+      }
+      setStagedFileIds((prev) => new Set(prev).add(fileId));
+    },
+    [devConversationId],
+  );
+
+  /** 取消暂存（git stash pop） */
+  const handleUnstageChange = useCallback(
+    async (fileId: string) => {
+      if (!devConversationId) {
+        return;
+      }
+      try {
+        const { code } = await apiGitStashPop({
+          cId: devConversationId,
+          files: [fileId],
+        });
+        if (code !== SUCCESS_CODE) {
+          message.warning(
+            dict('PC.Pages.ConversationAgentSourceControl.unstageFailed'),
+          );
+        }
+      } catch (error) {
+        console.error('Git stash pop failed:', error);
+        message.warning(
+          dict('PC.Pages.ConversationAgentSourceControl.unstageFailed'),
+        );
+      }
+      setStagedFileIds((prev) => {
+        const next = new Set(prev);
+        next.delete(fileId);
+        return next;
+      });
+    },
+    [devConversationId],
+  );
+
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!devConversationId) {
+        return;
+      }
+
+      const gitignoreId = '.gitignore';
+      const existing = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      );
+      const currentContent = existing?.contents ?? '';
+      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+
+      if (
+        currentContent
+          .split('\n')
+          .some(
+            (line: string) => line.trim() === entry || line.trim() === fileId,
+          )
+      ) {
+        message.info(
+          dict('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
+        );
+        return;
+      }
+
+      const newContent = currentContent
+        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
+        : entry;
+
+      try {
+        if (existing) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            [
+              {
+                fileId: gitignoreId,
+                fileContent: newContent,
+                originalFileContent: currentContent,
+              },
+            ],
+            'modify',
+          );
+          const { code } = await apiUpdateStaticFile({
+            cId: devConversationId,
+            files: updatedFilesList as VncDesktopUpdateFileInfo[],
+          });
+          if (code !== SUCCESS_CODE) {
+            message.error(
+              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+            );
+            return;
+          }
+        } else {
+          const { code } = await apiUpdateStaticFile({
+            cId: devConversationId,
+            files: [
+              {
+                name: gitignoreId,
+                contents: `${newContent}\n`,
+                operation: 'create',
+                binary: false,
+                sizeExceeded: false,
+                renameFrom: '',
+                isDir: false,
+              },
+            ],
+          });
+          if (code !== SUCCESS_CODE) {
+            message.error(
+              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+            );
+            return;
+          }
+        }
+
+        message.success(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
+        );
+        await handleRefreshFileList(devConversationId);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
+        message.error(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+      }
+    },
+    [devConversationId, fileTreeData, handleRefreshFileList],
+  );
 
   // ==================== 渲染函数 ====================
 
@@ -904,6 +1194,7 @@ const ConversationAgent: React.FC = () => {
         {isFileTreeVisible ? (
           <ConversationAgentFilePreview
             preview={fileView.preview}
+            diffFile={selectedDiffFile}
             providerClassName={fileView.className}
             className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
           />
@@ -970,9 +1261,34 @@ const ConversationAgent: React.FC = () => {
               [styles['middle-panel-hidden']]: !canShowFileView,
             })}
           >
-            <ConversationAgentFileTree
-              tree={fileView.tree}
+            <ConversationAgentMiddlePanel
+              fileView={fileView}
               className={cx(styles['file-tree-sidebar'], 'w-full')}
+              selectedDiffFileId={selectedDiffFileId}
+              stagedFileIds={stagedFileIds}
+              onDiffFileSelect={(fileId) => {
+                setSelectedDiffFileId(fileId);
+                if (devConversationId) {
+                  openPreviewView(devConversationId);
+                }
+              }}
+              onOpenChangeFile={handleOpenChangeFile}
+              onDiscardChange={handleDiscardChange}
+              onStageChange={handleStageChange}
+              onUnstageChange={handleUnstageChange}
+              onAddToGitignore={handleAddToGitignore}
+              isCommitting={isGitPushing || fileView.preview.isSavingFiles}
+              onCommit={async (message: string) => {
+                const isSuccess = await handleGitCommitPush(
+                  message,
+                  fileView.changeFiles,
+                );
+                if (isSuccess) {
+                  await fileView.preview.saveFiles();
+                  setSelectedDiffFileId(null);
+                  setStagedFileIds(new Set());
+                }
+              }}
             />
           </div>
           {/* 右侧面板：编排配置 / 文件预览 + 终端 */}

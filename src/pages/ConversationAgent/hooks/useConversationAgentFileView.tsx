@@ -380,12 +380,12 @@ export function useConversationAgentFileView(
          * 因为通过文件代理URL获取文件内容时，会重新加载文件内容，
          * 当重新切换回来这个页面时，会导致已修改的文件内容丢失，所以需要清空修改的文件列表和重置正在保存文件的状态
          */
-        if (changeFiles?.length > 0) {
-          message.warning(
-            dict('PC.Components.FileTreeView.unsavedChangesSwitchFile'),
-          );
-          return;
-        }
+        // if (changeFiles?.length > 0) {
+        //   message.warning(
+        //     dict('PC.Components.FileTreeView.unsavedChangesSwitchFile'),
+        //   );
+        //   return;
+        // }
 
         // 选中文件后打开右侧预览面板（隐藏编排区域）
         onFileSelectOpenPreview?.();
@@ -1098,6 +1098,38 @@ export function useConversationAgentFileView(
     }
   };
 
+  /**
+   * 放弃单个文件的修改，还原为原始内容
+   * @param fileId 文件 ID
+   */
+  const discardChangeFile = useCallback(
+    (fileId: string) => {
+      const changeFile = changeFiles.find((item) => item.fileId === fileId);
+      if (!changeFile) {
+        return;
+      }
+
+      setFiles((prevFiles) =>
+        updateFileTreeContent(
+          fileId,
+          changeFile.originalFileContent,
+          prevFiles,
+        ),
+      );
+
+      if (selectedFileId === fileId) {
+        setSelectedFileNode((prevNode) =>
+          prevNode
+            ? { ...prevNode, content: changeFile.originalFileContent }
+            : prevNode,
+        );
+      }
+
+      setChangeFiles((prev) => prev.filter((item) => item.fileId !== fileId));
+    },
+    [changeFiles, selectedFileId],
+  );
+
   // 取消保存文件
   const cancelSaveFiles = () => {
     // 还原所有已修改文件的内容
@@ -1562,10 +1594,6 @@ export function useConversationAgentFileView(
       onFullscreen: handleFullscreen,
       isFullscreen,
       showFullscreenIcon,
-      onSaveFiles: saveFiles,
-      onCancelSaveFiles: cancelSaveFiles,
-      hasModifiedFiles: changeFiles.length > 0,
-      isSavingFiles,
       showMoreActions,
       viewFileType,
       onViewFileTypeChange: handleViewFileTypeChange,
@@ -1594,10 +1622,6 @@ export function useConversationAgentFileView(
       handleFullscreen,
       isFullscreen,
       showFullscreenIcon,
-      saveFiles,
-      cancelSaveFiles,
-      changeFiles.length,
-      isSavingFiles,
       showMoreActions,
       viewFileType,
       handleViewFileTypeChange,
@@ -1658,7 +1682,6 @@ export function useConversationAgentFileView(
       fileTreeContainerRef,
       fileTreeDataLoading,
       taskAgentSelectedFileId,
-      readOnly,
       isCanDeleteSkillFile,
       isRefreshingFileTree,
       isUploadingFiles,
@@ -1699,6 +1722,8 @@ export function useConversationAgentFileView(
       handleFileTreeToggle,
       saveFiles,
       cancelSaveFiles,
+      discardChangeFile,
+      isSavingFiles,
     },
   };
 }

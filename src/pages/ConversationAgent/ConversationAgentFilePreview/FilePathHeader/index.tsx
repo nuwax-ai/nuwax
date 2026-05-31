@@ -46,10 +46,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onFullscreen,
   isFullscreen = false,
   showFullscreenIcon = true,
-  onSaveFiles,
-  onCancelSaveFiles,
-  hasModifiedFiles = false,
-  isSavingFiles = false,
   isDownloadingFile = false,
   showMoreActions = true,
   viewFileType = 'preview',
@@ -266,23 +262,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* 底部：保存和取消按钮 */}
-      {hasModifiedFiles && (
-        <div className="flex items-center content-end gap-4">
-          <Button
-            size="small"
-            type="primary"
-            onClick={onSaveFiles}
-            loading={isSavingFiles}
-          >
-            {dict('PC.Common.Global.save')}
-          </Button>
-          <Button size="small" type="default" onClick={onCancelSaveFiles}>
-            {dict('PC.Common.Global.cancel')}
-          </Button>
         </div>
       )}
 

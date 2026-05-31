@@ -136,6 +136,10 @@ export interface ConversationAgentFileViewPreview {
   handleFileTreeToggle: () => void;
   saveFiles: () => Promise<void>;
   cancelSaveFiles: () => void;
+  /** 放弃单个文件的修改 */
+  discardChangeFile: (fileId: string) => void;
+  /** 是否正在保存文件 */
+  isSavingFiles: boolean;
 }
 
 /** useConversationAgentFileView 返回值 */
