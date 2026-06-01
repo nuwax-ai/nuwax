@@ -2,8 +2,12 @@
 @import '@/styles/token';
 
 .header {
-  padding: @paddingSm @padding @paddingSm 0;
-  height: 56px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 @padding 0 0;
   overflow-x: auto;
   flex-shrink: 0;
 
@@ -32,15 +36,14 @@
       max-width: 360px;
       font-size: 16px;
       font-weight: @fontWeightStrong;
-      line-height: 24px;
+      line-height: 20px;
       color: @navFirstMenuTextSecondary;
       white-space: nowrap;
     }
 
     .edit-ico {
-      color: @navFirstMenuTextSecondary;
-      font-size: 16px;
-      cursor: pointer;
+      color: @colorTextSecondary;
+      font-size: 14px;
     }
   }
 

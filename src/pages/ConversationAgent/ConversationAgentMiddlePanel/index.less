@@ -13,17 +13,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 4px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
   flex-shrink: 0;
   border-bottom: @lineWidth solid @colorSplit;
+  box-sizing: border-box;
 }
 
 .icon-bar-item {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
 
   > :global(*) {
     display: flex;
+    align-items: center;
     width: 100%;
   }
 }

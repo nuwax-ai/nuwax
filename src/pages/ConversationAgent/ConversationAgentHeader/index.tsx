@@ -5,6 +5,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { FormOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useParams } from 'umi';
@@ -82,7 +83,9 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           {displayName}
         </h3>
         <ConditionRender condition={!!agentConfigInfo}>
-          <FormOutlined
+          <Button
+            type="text"
+            icon={<FormOutlined />}
             className={cx(styles['edit-ico'])}
             onClick={onEditAgent}
           />
@@ -100,7 +103,12 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
             className={cx(styles['panel-btn'], {
               [styles.active]: isFileTreeSidebarVisible,
             })}
-            icon={<SvgIcon name="icons-common-file_preview" />}
+            icon={
+              <SvgIcon
+                name="icons-common-file_preview"
+                style={{ fontSize: 16 }}
+              />
+            }
             onClick={handleToggleFileTree}
           />
         </ConditionRender>
