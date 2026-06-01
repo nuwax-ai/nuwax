@@ -10,7 +10,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const SpaceNewProject: React.FC = () => {
+const SpaceCreateProject: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
 
@@ -63,7 +63,7 @@ const SpaceNewProject: React.FC = () => {
 
   return (
     <WorkspaceLayout>
-      <div className={cx(styles['new-project-wrapper'])}>
+      <div className={cx(styles['create-project-wrapper'])}>
         {/* Dynamic User Greetings */}
         <GreetingHeader />
 
@@ -77,4 +77,4 @@ const SpaceNewProject: React.FC = () => {
   );
 };
 
-export default SpaceNewProject;
+export default SpaceCreateProject;

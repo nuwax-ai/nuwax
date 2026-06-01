@@ -62,7 +62,7 @@ const MENU_ICON_MAP: Record<string, string> = {
 
   // 二级菜单 - 工作空间
   // 新建项目
-  new_project: 'icons-common-plus',
+  create_project: 'icons-common-plus',
   // 智能体开发
   agent_dev: 'icons-nav-stars',
   // 网页应用开发"

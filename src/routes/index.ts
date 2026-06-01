@@ -52,8 +52,8 @@ const routes = [
       },
       // 新建项目
       {
-        path: '/space/:spaceId/new-project',
-        component: '@/pages/SpaceNewProject',
+        path: '/space/:spaceId/create-project',
+        component: '@/pages/SpaceCreateProject',
       },
       // 技能管理
       {
