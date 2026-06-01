@@ -6,11 +6,9 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const GreetingHeader: React.FC = () => {
-  const { initialState } = useModel('@@initialState');
-  const nickname =
-    initialState?.currentUser?.nickname ||
-    initialState?.currentUser?.username ||
-    '冯飞';
+  const { userInfo } = useModel('userInfo');
+
+  const nickname = userInfo?.nickname || userInfo?.userName || '--';
 
   return (
     <div className={cx(styles['greeting-header-container'])}>

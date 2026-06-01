@@ -28,11 +28,8 @@ interface RecentProjectsProps {
 }
 
 const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
-  const { initialState } = useModel('@@initialState');
-  const nickname =
-    initialState?.currentUser?.nickname ||
-    initialState?.currentUser?.username ||
-    '冯飞';
+  const { userInfo } = useModel('userInfo');
+  const nickname = userInfo?.nickname || userInfo?.userName || '--';
 
   const projects: ProjectItem[] = [
     {
