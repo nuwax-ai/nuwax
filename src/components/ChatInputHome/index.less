@@ -20,6 +20,22 @@
     border-color: @colorPrimary;
   }
 
+  &.has-tabs {
+    padding: 0;
+    gap: 0;
+
+    .tabs-wrapper {
+      width: 100%;
+    }
+
+    .input-wrapper {
+      padding: @padding @padding @paddingXxs;
+      display: flex;
+      flex-direction: column;
+      gap: @marginXxs;
+    }
+  }
+
   .drag-overlay {
     position: absolute;
     inset: 0;

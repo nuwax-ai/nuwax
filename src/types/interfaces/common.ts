@@ -583,6 +583,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions?: MentionItem[];
+  /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
+  tabsSlot?: React.ReactNode;
 }
 
 // 聊天框底部更多操作组件
