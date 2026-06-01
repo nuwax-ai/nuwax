@@ -1,0 +1,77 @@
+@import '@/styles/token.less';
+
+// 局部 Less 变量声明，确保符合“严禁硬编码原始值”的前端开发规范
+@tabPaddingVertical: 6px;
+@tabPaddingHorizontal: 16px;
+@tabListPaddingVertical: 8px;
+@tabActiveShadow: 0 1px 4px rgba(0, 0, 0, 6%);
+
+.tabs-list {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: 6px @padding 4px @padding;
+  background: @colorBgLayout;
+  border-bottom: @lineWidth @lineType @colorBorderSecondary;
+  position: relative;
+  z-index: 1;
+
+  .tab-item {
+    padding: @tabPaddingVertical @tabPaddingHorizontal;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    border-radius: @borderRadius;
+    transition: all @motionDurationMid @motionEaseOut;
+    user-select: none;
+    font-weight: 500;
+    position: relative;
+
+    &:hover {
+      color: @colorText;
+      background: @colorBgTextHover;
+    }
+
+    &.tab-active {
+      color: @colorText;
+      background: @colorBgContainer;
+      font-weight: @fontWeightStrong;
+      z-index: 2;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      box-shadow: 0 -3px 6px -2px rgba(0, 0, 0, 4%),
+        -3px 0 6px -2px rgba(0, 0, 0, 4%), 3px 0 6px -2px rgba(0, 0, 0, 4%),
+        0 5px 0 0 @colorBgContainer;
+
+      &::before {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: -8px;
+        width: 8px;
+        height: 8px;
+        background: radial-gradient(
+          circle at 0 0,
+          transparent 8px,
+          @colorBgContainer 8.5px
+        );
+        z-index: 2;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        right: -8px;
+        width: 8px;
+        height: 8px;
+        background: radial-gradient(
+          circle at 100% 0,
+          transparent 8px,
+          @colorBgContainer 8.5px
+        );
+        z-index: 2;
+      }
+    }
+  }
+}

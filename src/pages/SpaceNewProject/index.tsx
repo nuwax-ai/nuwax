@@ -1,6 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { CompassOutlined } from '@ant-design/icons';
-import { Button, message } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useParams } from 'umi';
@@ -63,19 +62,7 @@ const SpaceNewProject: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout
-      title="新建项目"
-      hideScroll={false}
-      rightSlot={
-        <Button
-          type="default"
-          icon={<CompassOutlined />}
-          onClick={() => history.push(`/space/${spaceId}/page-develop`)}
-        >
-          返回列表
-        </Button>
-      }
-    >
+    <WorkspaceLayout>
       <div className={cx(styles['new-project-wrapper'])}>
         {/* Dynamic User Greetings */}
         <GreetingHeader />

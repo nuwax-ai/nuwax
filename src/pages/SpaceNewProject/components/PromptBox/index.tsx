@@ -1,14 +1,8 @@
-import {
-  ArrowRightOutlined,
-  CompassOutlined,
-  DesktopOutlined,
-  DownOutlined,
-  PlusOutlined,
-  RobotOutlined,
-} from '@ant-design/icons';
-import { Button, Dropdown, Input, Menu, message } from 'antd';
+import ChatInputHome from '@/components/ChatInputHome';
+import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import TabsList from './components/TabsList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -52,128 +46,33 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   ];
 
   const [activeTab, setActiveTab] = useState<string>('agent');
-  const [promptText, setPromptText] = useState<string>('');
-  const [env, setEnv] = useState<string>('云端电脑');
-  const [model, setModel] = useState<string>('Qwen3.6-Plus');
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   const currentTab = tabs.find((t) => t.key === activeTab) || tabs[0];
 
-  const handleSend = () => {
-    if (!promptText.trim()) {
-      message.warning('请输入您的任务描述！');
-      return;
-    }
-    onSubmit(activeTab, promptText);
-  };
-
-  const envMenu = (
-    <Menu
-      onClick={({ key }) => setEnv(key)}
-      items={[
-        { key: '云端电脑', label: '云端电脑 (推荐)' },
-        { key: '本地开发', label: '本地开发环境' },
-      ]}
-    />
-  );
-
-  const modelMenu = (
-    <Menu
-      onClick={({ key }) => setModel(key)}
-      items={[
-        { key: 'Qwen3.6-Plus', label: 'Qwen3.6-Plus (默认)' },
-        { key: 'DeepSeek-V3', label: 'DeepSeek-V3 (高性能)' },
-        { key: 'GPT-4o', label: 'GPT-4o' },
-      ]}
-    />
+  const handleSend = useCallback(
+    (msg: string) => {
+      if (!msg?.trim()) {
+        message.warning('请输入您的任务描述！');
+        return;
+      }
+      onSubmit(activeTabRef.current, msg);
+    },
+    [onSubmit],
   );
 
   return (
     <div className={cx(styles['prompt-box-card'])}>
-      {/* Tabs list */}
-      <div className={cx(styles['tabs-list'])}>
-        {tabs.map((tab) => (
-          <div
-            key={tab.key}
-            className={cx(styles['tab-item'], {
-              [styles['tab-active']]: activeTab === tab.key,
-            })}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setPromptText('');
-            }}
-          >
-            {tab.label}
-          </div>
-        ))}
-      </div>
-
-      {/* Input container */}
-      <div className={cx(styles['input-area'])}>
-        <Input.TextArea
-          className={cx(styles['prompt-textarea'])}
-          placeholder={currentTab.placeholder}
-          value={promptText}
-          onChange={(e) => setPromptText(e.target.value)}
-          autoSize={{ minRows: 2, maxRows: 4 }}
-          bordered={false}
-          onPressEnter={(e) => {
-            if (!e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
-
-        {/* Toolbar */}
-        <div className={cx(styles['toolbar-container'])}>
-          {/* Left tools */}
-          <div className={cx(styles['left-tools'])}>
-            <Button
-              className={cx(styles['tool-btn'])}
-              type="text"
-              icon={<CompassOutlined />}
-              title="提示词模板库"
-            />
-            <Button
-              className={cx(styles['tool-btn'])}
-              type="text"
-              icon={<PlusOutlined />}
-              title="添加上下文/附件"
-            />
-          </div>
-
-          {/* Right settings & send */}
-          <div className={cx(styles['right-tools'])}>
-            <Dropdown overlay={envMenu} trigger={['click']}>
-              <Button className={cx(styles['dropdown-trigger'])} type="text">
-                <DesktopOutlined />
-                <span>{env}</span>
-                <DownOutlined className={cx(styles['caret'])} />
-              </Button>
-            </Dropdown>
-
-            <div className={cx(styles['divider'])} />
-
-            <Dropdown overlay={modelMenu} trigger={['click']}>
-              <Button className={cx(styles['dropdown-trigger'])} type="text">
-                <RobotOutlined />
-                <span>{model}</span>
-                <DownOutlined className={cx(styles['caret'])} />
-              </Button>
-            </Dropdown>
-
-            <Button
-              className={cx(styles['send-btn'], {
-                [styles['send-btn-active']]: promptText.trim().length > 0,
-              })}
-              type="primary"
-              shape="circle"
-              icon={<ArrowRightOutlined />}
-              onClick={handleSend}
-            />
-          </div>
-        </div>
-      </div>
+      <ChatInputHome
+        key={currentTab.key}
+        onEnter={handleSend}
+        isClearInput={true}
+        placeholder={currentTab.placeholder}
+        tabsSlot={
+          <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+        }
+      />
     </div>
   );
 };
