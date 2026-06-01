@@ -2,7 +2,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
-import type { CollapseProps } from 'antd';
+import type { CollapseProps, TooltipProps } from 'antd';
 import { TooltipPlacement } from 'antd/es/tooltip';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
@@ -59,7 +59,11 @@ export interface TooltipIconProps {
   title?: React.ReactNode;
   ariaLabel?: string;
   icon?: React.ReactNode;
+  /** 自定义触发元素，传入时替代默认 icon 容器 */
+  children?: React.ReactNode;
   placement?: TooltipPlacement;
+  /** Tooltip 内容区样式，如 maxWidth / maxHeight */
+  tooltipStyles?: TooltipProps['styles'];
   onClick?: MouseEventHandler<HTMLSpanElement>;
 }
 
