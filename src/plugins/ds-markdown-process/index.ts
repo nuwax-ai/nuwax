@@ -32,7 +32,7 @@ const getCustomBlock = (
     executeId,
     type,
     status,
-    name: name || '',
+    name: name ? encodeURIComponent(name) : '',
   });
 
   // 检查是否已经存在该执行 ID 的块
