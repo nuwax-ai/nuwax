@@ -13,6 +13,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+const defaultAgentIcon = agentImage as string;
+
+// 图片错误处理
+const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = defaultAgentIcon;
+};
+
 export interface ConversationAgentHeaderProps {
   /** 是否隐藏返回箭头 */
   hideBack?: boolean;
@@ -74,8 +82,9 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
 
       <img
         className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
-        src={agentConfigInfo?.icon || (agentImage as string)}
+        src={agentConfigInfo?.icon || defaultAgentIcon}
         alt=""
+        onError={handleError}
       />
 
       <div className={cx('flex', 'items-center', styles['header-info'])}>
