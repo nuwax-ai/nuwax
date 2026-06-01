@@ -1,0 +1,66 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+
+  .loading {
+    color: @BLUE08;
+  }
+
+  .main-content {
+    padding: 20px;
+    min-height: 0;
+
+    .opening-chat-msg {
+      line-height: 26px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .chat-wrapper {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      padding-bottom: 30px;
+
+      .load-more-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: @padding 0;
+        margin-bottom: @paddingSm;
+        color: #999;
+      }
+
+      .task-executing-container {
+        height: 32px;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        gap: @paddingSm;
+      }
+    }
+
+    .conversation-status-bar {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto !important;
+      animation: slide-in-up 0.3s ease-out;
+    }
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

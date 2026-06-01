@@ -110,3 +110,48 @@ export interface RestartPodResponse {
   was_existing: boolean;
   message: string;
 }
+
+// ==================== Git 相关类型 ====================
+
+/** Git 提交并推送参数 */
+export interface IGitCommitPushParams {
+  /** 会话ID */
+  cId: number;
+  /** 提交信息 */
+  message: string;
+  /** 修改的文件列表（可选，不传则提交所有已修改文件） */
+  files?: Array<{
+    /** 文件路径 */
+    path: string;
+    /** 文件内容 */
+    content: string;
+  }>;
+}
+
+/** Git 提交并推送响应 */
+export interface GitCommitPushResponse {
+  /** 提交的 commit hash */
+  commitHash?: string;
+  /** 提交信息 */
+  message: string;
+  /** 是否成功推送到远程 */
+  pushed: boolean;
+  /** 变更的文件数量 */
+  filesChanged: number;
+}
+
+/** Git 暂存（stash）参数 */
+export interface IGitStashParams {
+  /** 会话ID */
+  cId: number;
+  /** 暂存的文件路径列表（可选，不传则暂存全部更改） */
+  files?: string[];
+}
+
+/** Git 取消暂存（stash pop）参数 */
+export interface IGitStashPopParams {
+  /** 会话ID */
+  cId: number;
+  /** 取消暂存的文件路径列表（可选） */
+  files?: string[];
+}

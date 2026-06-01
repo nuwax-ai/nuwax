@@ -1,0 +1,84 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.middle-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background-color: @colorBgContainer;
+}
+
+.icon-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  border-bottom: @lineWidth solid @colorSplit;
+  box-sizing: border-box;
+}
+
+.icon-bar-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+
+  > :global(*) {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+}
+
+.icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: @borderRadius;
+  background: transparent;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+    background-color: rgba(0, 0, 0, 4%);
+  }
+
+  &.active {
+    color: @colorText;
+    background-color: rgba(0, 0, 0, 6%);
+  }
+}
+
+.icon-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background-color: @colorPrimary;
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.panel-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

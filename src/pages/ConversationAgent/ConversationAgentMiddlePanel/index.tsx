@@ -1,0 +1,140 @@
+import { dict } from '@/services/i18nRuntime';
+import { BranchesOutlined, FolderOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useState } from 'react';
+import ConversationAgentFileTree from '../ConversationAgentFileTree';
+import ConversationAgentSourceControl from '../ConversationAgentSourceControl';
+import type { ConversationAgentFileViewValue } from '../hooks/types';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+/** 中间面板视图类型 */
+type MiddlePanelView = 'files' | 'sourceControl';
+
+export interface ConversationAgentMiddlePanelProps {
+  /** 文件视图数据 */
+  fileView: ConversationAgentFileViewValue;
+  className?: string;
+  /** 当前选中查看 diff 的文件 ID */
+  selectedDiffFileId?: string | null;
+  /** 已暂存的文件 ID 集合 */
+  stagedFileIds?: Set<string>;
+  /** 选中修改文件，在右侧预览区展示 diff */
+  onDiffFileSelect?: (fileId: string) => void;
+  /** 打开文件（选中并预览，非 diff） */
+  onOpenChangeFile?: (fileId: string) => void;
+  /** 放弃单个文件的更改 */
+  onDiscardChange?: (fileId: string) => void;
+  /** 暂存更改 */
+  onStageChange?: (fileId: string) => void;
+  /** 取消暂存 */
+  onUnstageChange?: (fileId: string) => void;
+  /** 添加到 .gitignore */
+  onAddToGitignore?: (fileId: string) => void;
+  /** 提交修改（保存并推送） */
+  onCommit?: (message: string) => Promise<void>;
+  /** 是否正在提交 */
+  isCommitting?: boolean;
+}
+
+/**
+ * ConversationAgent 中间面板
+ * 顶部切换文件树 / 源代码管理，下方展示对应内容
+ */
+const ConversationAgentMiddlePanel: React.FC<
+  ConversationAgentMiddlePanelProps
+> = ({
+  fileView,
+  className,
+  selectedDiffFileId = null,
+  stagedFileIds = new Set<string>(),
+  onDiffFileSelect,
+  onOpenChangeFile,
+  onDiscardChange,
+  onStageChange,
+  onUnstageChange,
+  onAddToGitignore,
+  onCommit,
+  isCommitting = false,
+}) => {
+  const [activeView, setActiveView] = useState<MiddlePanelView>('files');
+  const { tree, changeFiles } = fileView;
+  const modifiedCount = changeFiles.length;
+
+  /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
+  const handleModifiedFileClick = useCallback(
+    (fileId: string) => {
+      onDiffFileSelect?.(fileId);
+    },
+    [onDiffFileSelect],
+  );
+
+  return (
+    <div className={cx(styles['middle-panel'], className)}>
+      <div className={cx(styles['icon-bar'])}>
+        <div className={cx(styles['icon-bar-item'])}>
+          <Tooltip title={dict('PC.Pages.ConversationAgentMiddlePanel.files')}>
+            <button
+              type="button"
+              className={cx(styles['icon-btn'], {
+                [styles.active]: activeView === 'files',
+              })}
+              onClick={() => setActiveView('files')}
+              aria-label={dict('PC.Pages.ConversationAgentMiddlePanel.files')}
+            >
+              <FolderOutlined style={{ fontSize: 16 }} />
+            </button>
+          </Tooltip>
+        </div>
+        <div className={cx(styles['icon-bar-item'])}>
+          <Tooltip
+            title={dict('PC.Pages.ConversationAgentMiddlePanel.sourceControl')}
+          >
+            <button
+              type="button"
+              className={cx(styles['icon-btn'], {
+                [styles.active]: activeView === 'sourceControl',
+              })}
+              onClick={() => setActiveView('sourceControl')}
+              aria-label={dict(
+                'PC.Pages.ConversationAgentMiddlePanel.sourceControl',
+              )}
+            >
+              <BranchesOutlined style={{ fontSize: 16 }} />
+              {modifiedCount > 0 && (
+                <span className={cx(styles['icon-badge'])}>
+                  {modifiedCount > 99 ? '99+' : modifiedCount}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      <div className={cx(styles['panel-content'])}>
+        {activeView === 'files' ? (
+          <ConversationAgentFileTree tree={tree} className="w-full h-full" />
+        ) : (
+          <ConversationAgentSourceControl
+            changeFiles={changeFiles}
+            stagedFileIds={stagedFileIds}
+            isCommitting={isCommitting}
+            selectedDiffFileId={selectedDiffFileId}
+            onCommit={onCommit}
+            onFileClick={handleModifiedFileClick}
+            onOpenChanges={onDiffFileSelect}
+            onOpenFile={onOpenChangeFile}
+            onDiscardChange={onDiscardChange}
+            onStageChange={onStageChange}
+            onUnstageChange={onUnstageChange}
+            onAddToGitignore={onAddToGitignore}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ConversationAgentMiddlePanel;

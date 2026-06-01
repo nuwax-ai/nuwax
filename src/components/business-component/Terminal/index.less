@@ -1,0 +1,211 @@
+@import '@/styles/token.less';
+
+.terminalWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-border-secondary, #303030);
+  border-radius: @borderRadius;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  position: relative;
+
+  // 全屏模式样式
+  &:fullscreen {
+    border: none;
+    border-radius: 0;
+  }
+
+  // ─── 工具栏 ────────────────────────────────────────────────
+  .controlsBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    background-color: var(--color-bg-container, #252526);
+    border-bottom: 1px solid var(--color-border-secondary, #303030);
+    flex-shrink: 0;
+    min-height: 40px;
+    user-select: none;
+
+    .statusArea {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      min-width: 0;
+
+      .terminalIcon {
+        font-size: 16px;
+        color: var(--color-text-secondary, #8b949e);
+        flex-shrink: 0;
+      }
+
+      .title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--color-text, #d4d4d4);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .actionsArea {
+      flex-shrink: 0;
+    }
+  }
+
+  // ─── 搜索面板 ──────────────────────────────────────────────
+  .searchPanel {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background-color: var(--color-bg-container, #252526);
+    border-bottom: 1px solid var(--color-border-secondary, #303030);
+    flex-shrink: 0;
+
+    .searchInput {
+      width: 240px;
+      flex-shrink: 0;
+    }
+
+    .searchOptionActive {
+      background-color: var(--color-primary, #1890ff) !important;
+      color: #fff !important;
+      border-color: var(--color-primary, #1890ff) !important;
+    }
+  }
+
+  // ─── 终端视口 ──────────────────────────────────────────────
+  .terminalViewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+
+    // xterm.js 内部样式覆盖
+    :global {
+      .xterm {
+        height: 100%;
+        padding: 4px 0 0 4px;
+      }
+
+      .xterm-viewport {
+        overflow-y: auto !important;
+      }
+
+      .xterm-helper-textarea {
+        // 确保辅助输入框不干扰布局
+      }
+    }
+  }
+
+  // ─── 遮罩层 ────────────────────────────────────────────────
+  .placeholderOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 85%);
+    color: #d4d4d4;
+    z-index: 10;
+    gap: 8px;
+
+    .placeholderIcon {
+      font-size: 48px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .placeholderText {
+      font-size: 14px;
+      opacity: 0.7;
+      margin: 0;
+    }
+  }
+
+  .errorOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 85%);
+    z-index: 10;
+  }
+
+  .loadingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 70%);
+    color: #d4d4d4;
+    z-index: 10;
+    gap: 12px;
+
+    .loadingText {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+  }
+
+  // ─── 浅色主题变体 ──────────────────────────────────────────
+  &.lightTheme {
+    background-color: #fff;
+    border-color: #e8e8e8;
+
+    .controlsBar {
+      background-color: #fafafa;
+      border-bottom-color: #e8e8e8;
+
+      .terminalIcon {
+        color: #595959;
+      }
+
+      .title {
+        color: #262626;
+      }
+    }
+
+    .searchPanel {
+      background-color: #fafafa;
+      border-bottom-color: #e8e8e8;
+    }
+
+    .placeholderOverlay {
+      background-color: rgba(255, 255, 255, 90%);
+      color: #262626;
+
+      .placeholderIcon {
+        color: #bfbfbf;
+      }
+    }
+
+    .errorOverlay {
+      background-color: rgba(255, 255, 255, 95%);
+    }
+
+    .loadingOverlay {
+      background-color: rgba(255, 255, 255, 80%);
+      color: #262626;
+    }
+  }
+}
