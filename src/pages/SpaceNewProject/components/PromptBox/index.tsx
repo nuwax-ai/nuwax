@@ -44,12 +44,6 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         '描述你想要的自定义技能，例如：帮我写一个根据经纬度查询当前天气状况的API接口',
     },
     {
-      key: 'workflow',
-      label: '工作流',
-      placeholder:
-        '描述你想要的工作流，例如：每日8点自动收集最新的AI前沿新闻并发送至我的微信群',
-    },
-    {
       key: 'plugin',
       label: '插件',
       placeholder:

@@ -24,8 +24,6 @@ const SpaceNewProject: React.FC = () => {
           ? '网页应用'
           : type === 'skill'
           ? '技能'
-          : type === 'workflow'
-          ? '工作流'
           : '插件'
       } 模版...`,
       key: 'create_project_loading',
@@ -46,7 +44,7 @@ const SpaceNewProject: React.FC = () => {
     }, 1500);
   };
 
-  const handleRecentCardClick = (type: string, name: string) => {
+  const handleRecentCardClick = (_type: string, name: string) => {
     message.loading({
       content: `正在打开最近项目: ${name}...`,
       key: 'open_recent_loading',

@@ -1,9 +1,7 @@
 import {
   BarChartOutlined,
   CompassOutlined,
-  FileTextOutlined,
   RobotOutlined,
-  ShareAltOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -18,7 +16,7 @@ interface ProjectItem {
   title: string;
   desc: string;
   tag: string;
-  tagType: 'workflow' | 'agent' | 'web';
+  tagType: 'agent' | 'web';
   icon: React.ReactNode;
   iconBgClass: string;
 }
@@ -32,15 +30,6 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
   const nickname = userInfo?.nickname || userInfo?.userName || '--';
 
   const projects: ProjectItem[] = [
-    {
-      id: '1',
-      title: 'AI新闻自动收集8点工作流',
-      desc: '每日8点自动收集AI新闻的工作流，提升信息获取效率',
-      tag: '工作流',
-      tagType: 'workflow',
-      icon: <FileTextOutlined />,
-      iconBgClass: 'icon-workflow',
-    },
     {
       id: '2',
       title: '爆款小红书Agent',
@@ -77,15 +66,6 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
       icon: <BarChartOutlined />,
       iconBgClass: 'icon-web-chart',
     },
-    {
-      id: '6',
-      title: '社交媒体内容生成器',
-      desc: '一键生成多平台营销文案，适配微博、抖音、小红书风格',
-      tag: '工作流',
-      tagType: 'workflow',
-      icon: <ShareAltOutlined />,
-      iconBgClass: 'icon-workflow-share',
-    },
   ];
 
   return (
@@ -110,7 +90,6 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
                 <p className={cx(styles['project-desc'])}>{project.desc}</p>
                 <div
                   className={cx(styles['tag-badge'], {
-                    [styles['tag-workflow']]: project.tagType === 'workflow',
                     [styles['tag-agent']]: project.tagType === 'agent',
                     [styles['tag-web']]: project.tagType === 'web',
                   })}
