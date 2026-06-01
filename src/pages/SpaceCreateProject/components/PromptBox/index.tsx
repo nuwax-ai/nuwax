@@ -69,6 +69,8 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onEnter={handleSend}
         isClearInput={true}
         placeholder={currentTab.placeholder}
+        isTaskAgentActive={true}
+        allowOtherModel={1}
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }
