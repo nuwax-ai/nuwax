@@ -82,6 +82,8 @@ export function useConversationAgentFileView(
     staticFileBasePath,
     /** 选中文件后打开右侧预览面板 */
     onFileSelectOpenPreview,
+    /** 文件重命名成功后回调 */
+    onFileRenamed,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -753,22 +755,24 @@ export function useConversationAgentFileView(
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
         setIsRenamingFile(false);
         if (isChangeSuccess) {
+          const trimmedName = newName.trim();
+          const newNodeId = fileNode.parentPath
+            ? `${fileNode.parentPath}/${trimmedName}`
+            : trimmedName;
+
+          onFileRenamed?.(fileNode.id, newNodeId);
+
           // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
           if (
             selectedFileNode &&
             (selectedFileNode.id === fileNode.id ||
               selectedFileNode.name === fileNode.name)
           ) {
-            // 计算新的文件ID: 如果存在父路径，则使用父路径 + 新文件名；否则使用新文件名,
-            const newNodeId = fileNode.parentPath
-              ? `${fileNode.parentPath}/${newName}`
-              : newName;
-
             // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
             const newFileProxyUrl = fileNode?.fileProxyUrl
               ? updateFileProxyUrl(
                   fileNode.fileProxyUrl,
-                  newName,
+                  trimmedName,
                   fileNode.parentPath || undefined,
                 )
               : fileNode?.fileProxyUrl;
@@ -777,7 +781,7 @@ export function useConversationAgentFileView(
               prevNode
                 ? {
                     ...prevNode,
-                    name: newName,
+                    name: trimmedName,
                     id: newNodeId,
                     path: newNodeId,
                     fullPath: newNodeId,

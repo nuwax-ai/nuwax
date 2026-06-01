@@ -2361,6 +2361,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.openChanges": "Open Changes",
   "PC.Pages.ConversationAgentSourceControl.openFile": "Open File",
   "PC.Pages.ConversationAgentSourceControl.discardChanges": "Discard Changes",
+  "PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle": "Discard changes?",
   "PC.Pages.ConversationAgentSourceControl.stageChanges": "Stage Changes",
   "PC.Pages.ConversationAgentSourceControl.unstageChanges": "Unstage Changes",
   "PC.Pages.ConversationAgentSourceControl.addToGitignore": "Add to .gitignore",

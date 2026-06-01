@@ -915,6 +915,13 @@ const ConversationAgent: React.FC = () => {
           openPreviewView(devConversationId);
         }
       },
+      /** 文件重命名后同步更新预览区标签页标题与 fileId */
+      onFileRenamed: (oldFileId, newFileId) => {
+        previewTabsRef.current?.renameFileTab(oldFileId, newFileId);
+        setSelectedDiffFileId((current) =>
+          current === oldFileId ? newFileId : current,
+        );
+      },
     };
   }, [
     taskAgentSelectedFileId,

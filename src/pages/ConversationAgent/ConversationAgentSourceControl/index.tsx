@@ -1,5 +1,6 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
+import { modalConfirm } from '@/utils/ant-custom';
 import { getFileIcon } from '@/utils/fileTree';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
@@ -113,6 +114,23 @@ const ConversationAgentSourceControl: React.FC<
     [],
   );
 
+  /** 放弃更改（二次确认） */
+  const handleDiscardChangeWithConfirm = useCallback(() => {
+    if (!contextMenuTarget) {
+      return;
+    }
+
+    const { fileId, fileName } = contextMenuTarget;
+    closeContextMenu();
+    modalConfirm(
+      dict(
+        'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+      ),
+      fileName,
+      () => onDiscardChange?.(fileId),
+    );
+  }, [closeContextMenu, contextMenuTarget, onDiscardChange]);
+
   /** 提交修改 */
   const handleCommit = async () => {
     if (!changeFiles.length || isCommitting) {
@@ -211,6 +229,7 @@ const ConversationAgentSourceControl: React.FC<
         )}
       </div>
 
+      {/* 源代码管理 */}
       <ChangeFileContextMenu
         visible={contextMenuVisible}
         position={contextMenuPosition}
@@ -222,9 +241,7 @@ const ConversationAgentSourceControl: React.FC<
         onOpenFile={() =>
           contextMenuTarget && onOpenFile?.(contextMenuTarget.fileId)
         }
-        onDiscardChange={() =>
-          contextMenuTarget && onDiscardChange?.(contextMenuTarget.fileId)
-        }
+        onDiscardChange={handleDiscardChangeWithConfirm}
         onStageChange={() =>
           contextMenuTarget && onStageChange?.(contextMenuTarget.fileId)
         }

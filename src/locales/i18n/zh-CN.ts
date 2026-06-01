@@ -2361,6 +2361,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.openChanges": "打开更改",
   "PC.Pages.ConversationAgentSourceControl.openFile": "打开文件",
   "PC.Pages.ConversationAgentSourceControl.discardChanges": "放弃更改",
+  "PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle": "确定要放弃更改吗？",
   "PC.Pages.ConversationAgentSourceControl.stageChanges": "暂存更改",
   "PC.Pages.ConversationAgentSourceControl.unstageChanges": "取消暂存",
   "PC.Pages.ConversationAgentSourceControl.addToGitignore": "添加到 .gitignore",
