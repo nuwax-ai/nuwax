@@ -174,7 +174,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
     }, [onInput]);
 
     // 重连配置解构
-    const reconnectConfig: ReconnectConfig = useMemo(
+    const reconnectConfig: Required<ReconnectConfig> = useMemo(
       () => ({
         enabled: reconnect?.enabled ?? true,
         maxRetries: reconnect?.maxRetries ?? 5,
