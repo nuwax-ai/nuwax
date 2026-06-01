@@ -1,0 +1,25 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.context-menu {
+  background: @colorBgElevated;
+  border: @lineWidth solid @colorBorder;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 1000;
+}
+
+.context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: @colorPrimaryBg;
+    color: @colorPrimary;
+  }
+}

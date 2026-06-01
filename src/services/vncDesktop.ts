@@ -2,6 +2,10 @@ import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
+  GitCommitPushResponse,
+  IGitCommitPushParams,
+  IGitStashParams,
+  IGitStashPopParams,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
   IUploadFilesParams,
@@ -176,5 +180,47 @@ export async function apiCheckVncStatus(
     params: {
       cId,
     },
+  });
+}
+
+// ==================== Git 相关接口 ====================
+
+/**
+ * Git 提交并推送
+ * 将沙箱中的文件修改提交到远程 Git 仓库
+ * @param data 包含会话ID、提交信息和修改文件列表
+ */
+export async function apiGitCommitPush(
+  data: IGitCommitPushParams,
+): Promise<RequestResponse<GitCommitPushResponse>> {
+  return request('/api/computer/static/git-commit-push', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * Git 暂存更改（git stash）
+ * @param data 包含会话 ID 与可选的文件路径列表
+ */
+export async function apiGitStash(
+  data: IGitStashParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/static/git-stash', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * Git 取消暂存（git stash pop）
+ * @param data 包含会话 ID 与可选的文件路径列表
+ */
+export async function apiGitStashPop(
+  data: IGitStashPopParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/static/git-stash-pop', {
+    method: 'POST',
+    data,
   });
 }
