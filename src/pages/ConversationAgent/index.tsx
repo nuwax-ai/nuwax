@@ -70,6 +70,11 @@ import AgentArrangePanel from './AgentArrangePanel';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
+import {
+  getFileTabId,
+  usePreviewTabs,
+  type PreviewToolId,
+} from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import ConversationAgentMiddlePanel from './ConversationAgentMiddlePanel';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
@@ -146,6 +151,10 @@ const ConversationAgent: React.FC = () => {
   const [stagedFileIds, setStagedFileIds] = useState<Set<string>>(
     () => new Set(),
   );
+  /** 标签选择面板是否展开 */
+  const [tabPickerOpen, setTabPickerOpen] = useState(false);
+  /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
+  const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
@@ -851,6 +860,8 @@ const ConversationAgent: React.FC = () => {
     closePreviewView();
     setIsFileTreePinned(false);
     setSelectedDiffFileId(null);
+    previewTabsRef.current?.clearTabs();
+    setTabPickerOpen(false);
   }, [closePreviewView, setIsFileTreePinned]);
 
   // ==================== 文件视图 & 编排面板 ====================
@@ -867,7 +878,6 @@ const ConversationAgent: React.FC = () => {
       originalFiles: fileTreeData, // 原始文件树数据
       fileTreeDataLoading, // 文件树加载状态
       targetId: devConversationId?.toString() || '', // 关联的会话 ID
-      viewMode, // 视图模式（preview / desktop）
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
         await handleUploadMultipleFiles(files, filePaths);
@@ -888,25 +898,19 @@ const ConversationAgent: React.FC = () => {
           await refreshFileListImmediately(devConversationId);
         }
       },
-      /** 空闲检测配置：TaskAgent 类型在空闲超时后自动打开预览 */
-      idleDetection: {
-        enabled:
-          !!devConversationId &&
-          agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-        onIdleTimeout: () => {
-          if (devConversationId) {
-            openPreviewView(devConversationId);
-          }
-        },
-      },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: devConversationId
         ? `/api/computer/static/${devConversationId}`
         : undefined,
-      /** 文件树选中文件时，切换右侧面板为文件预览 */
-      onFileSelectOpenPreview: () => {
+      /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
+      onFileSelectOpenPreview: (fileId?: string) => {
         setSelectedDiffFileId(null);
+        if (fileId) {
+          previewTabsRef.current?.openFileTab(fileId, false, {
+            skipActivate: true,
+          });
+        }
         if (devConversationId) {
           openPreviewView(devConversationId);
         }
@@ -918,7 +922,6 @@ const ConversationAgent: React.FC = () => {
     fileTreeData,
     fileTreeDataLoading,
     devConversationId,
-    viewMode,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,
@@ -937,6 +940,35 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useConversationAgentFileView(fileViewProviderProps);
+
+  /** 预览区标签页管理 */
+  const previewTabs = usePreviewTabs({
+    onFileTabActivate: async (fileId, isDiff) => {
+      if (isDiff) {
+        setSelectedDiffFileId(fileId);
+      } else {
+        setSelectedDiffFileId(null);
+        if (fileView.preview.selectedFileId !== fileId) {
+          await fileView.tree.handleFileSelect(fileId);
+        }
+      }
+      if (devConversationId) {
+        openPreviewView(devConversationId);
+      }
+    },
+    onToolTabActivate: (toolId: PreviewToolId) => {
+      if (toolId === 'version-control') {
+        setTabPickerOpen(false);
+      }
+    },
+    onAllTabsClosed: () => {
+      setSelectedDiffFileId(null);
+      closePreviewView();
+      setTabPickerOpen(false);
+    },
+  });
+
+  previewTabsRef.current = previewTabs;
 
   /** 当前选中查看 diff 的文件数据 */
   const selectedDiffFile = useMemo(
@@ -962,13 +994,9 @@ const ConversationAgent: React.FC = () => {
   /** 打开更改文件（选中文件并预览，非 diff） */
   const handleOpenChangeFile = useCallback(
     async (fileId: string) => {
-      setSelectedDiffFileId(null);
-      await fileView.tree.handleFileSelect(fileId);
-      if (devConversationId) {
-        openPreviewView(devConversationId);
-      }
+      previewTabs.openFileTab(fileId, false);
     },
-    [fileView.tree, devConversationId, openPreviewView],
+    [previewTabs],
   );
 
   /** 放弃单个文件的更改 */
@@ -980,11 +1008,13 @@ const ConversationAgent: React.FC = () => {
         next.delete(fileId);
         return next;
       });
+      previewTabs.closeTab(getFileTabId(fileId, true));
+      previewTabs.closeTab(getFileTabId(fileId, false));
       if (selectedDiffFileId === fileId) {
         setSelectedDiffFileId(null);
       }
     },
-    [fileView.preview, selectedDiffFileId],
+    [fileView.preview, previewTabs, selectedDiffFileId],
   );
 
   /** 暂存更改（git stash） */
@@ -1195,6 +1225,14 @@ const ConversationAgent: React.FC = () => {
           <ConversationAgentFilePreview
             preview={fileView.preview}
             diffFile={selectedDiffFile}
+            tabs={previewTabs.tabs}
+            activeTabId={previewTabs.activeTabId}
+            activeTab={previewTabs.activeTab}
+            tabPickerOpen={tabPickerOpen}
+            onTabSelect={previewTabs.selectTab}
+            onTabClose={previewTabs.closeTab}
+            onTabPickerOpenChange={setTabPickerOpen}
+            onSelectTool={previewTabs.openToolTab}
             providerClassName={fileView.className}
             className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
           />
@@ -1267,10 +1305,7 @@ const ConversationAgent: React.FC = () => {
               selectedDiffFileId={selectedDiffFileId}
               stagedFileIds={stagedFileIds}
               onDiffFileSelect={(fileId) => {
-                setSelectedDiffFileId(fileId);
-                if (devConversationId) {
-                  openPreviewView(devConversationId);
-                }
+                previewTabs.openFileTab(fileId, true);
               }}
               onOpenChangeFile={handleOpenChangeFile}
               onDiscardChange={handleDiscardChange}
@@ -1287,6 +1322,7 @@ const ConversationAgent: React.FC = () => {
                   await fileView.preview.saveFiles();
                   setSelectedDiffFileId(null);
                   setStagedFileIds(new Set());
+                  previewTabs.clearTabs();
                 }
               }}
             />

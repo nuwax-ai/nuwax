@@ -2,10 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FilePreview, {
   FileType,
 } from '@/components/business-component/FilePreview';
-import VncPreview from '@/components/business-component/VncPreview';
-import type { VncPreviewRef } from '@/components/business-component/VncPreview/type';
 import CodeViewer from '@/components/CodeViewer';
-import styles from '@/components/FileTreeView/index.less';
 import { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
@@ -23,7 +20,6 @@ import {
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
-import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
   updateFileProxyUrl,
@@ -31,7 +27,6 @@ import {
   updateFileTreeName,
 } from '@/utils/fileTree';
 import { message } from 'antd';
-import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,
@@ -44,8 +39,6 @@ import type {
   ConversationAgentFileViewProps,
   ConversationAgentFileViewValue,
 } from './types';
-
-const cx = classNames.bind(styles);
 
 /**
  * ConversationAgent 文件视图 Hook
@@ -62,7 +55,6 @@ export function useConversationAgentFileView(
     fileTreeDataLoading,
     readOnly = false,
     targetId,
-    viewMode,
     onUploadFiles,
     onRenameFile,
     // 创建文件回调
@@ -85,9 +77,6 @@ export function useConversationAgentFileView(
     isCanDeleteSkillFile = false,
     // 刷新文件树回调
     onRefreshFileTree,
-    // 是否显示刷新按钮
-    // VNC 空闲检测配置
-    idleDetection,
     hideDesktop = HideDesktopEnum.No,
     // 静态资源文件基础路径
     staticFileBasePath,
@@ -171,8 +160,6 @@ export function useConversationAgentFileView(
     ? isFileTreeSidebarVisible
     : internalFileTreeVisible;
 
-  // VNC 预览组件 ref
-  const vncPreviewRef = useRef<VncPreviewRef>(null);
   // 文件树容器 ref
   const fileTreeContainerRef = useRef<HTMLDivElement>(null);
 
@@ -245,8 +232,6 @@ export function useConversationAgentFileView(
   // 判断文件是否为office文档类型
   const isOfficeDocument = result?.isDoc || false;
   const documentFileType = result?.fileType;
-  // 判断文件是否支持预览（白名单方案）
-  const isPreviewable = isPreviewableFile(selectedFileNode?.name || '', true);
 
   // 刷新文件树和文件内容
   const handleRefreshFileList = useCallback(async () => {
@@ -361,7 +346,7 @@ export function useConversationAgentFileView(
          * 如果文件节点是链接文件，则不支持预览
          */
         if (!fileProxyUrl || fileNode?.isLink) {
-          onFileSelectOpenPreview?.();
+          onFileSelectOpenPreview?.(fileNode?.id || fileId);
           setSelectedFileId(fileNode?.id || fileId);
           if (!initViewFileType) {
             setViewFileType('preview');
@@ -388,7 +373,7 @@ export function useConversationAgentFileView(
         // }
 
         // 选中文件后打开右侧预览面板（隐藏编排区域）
-        onFileSelectOpenPreview?.();
+        onFileSelectOpenPreview?.(fileNode?.id || fileId);
 
         // 判断文件是否为文档类型
         const result = isDocumentFile(fileNode?.name || '');
@@ -430,17 +415,6 @@ export function useConversationAgentFileView(
             return;
           }
 
-          const fileNameLower = (fileNode?.name || '').toLowerCase();
-          const _isMarkdownFile = isMarkdownFile(fileNameLower);
-          // md 不在这里预取，统一交给 FilePreview 通过 src 拉取, 避免发起两次http请求
-          if (_isMarkdownFile && !initViewFileType) {
-            setSelectedFileNode({
-              ...fileNode,
-              content: '',
-            });
-            return;
-          }
-
           // 先切到当前文件并清空内容，避免异步返回前继续显示上一个文件内容
           setSelectedFileNode({
             ...fileNode,
@@ -464,14 +438,7 @@ export function useConversationAgentFileView(
         setSelectedFileId('');
       }
     },
-    [
-      files,
-      isRenamingFile,
-      selectedFileId,
-      changeFiles,
-      initViewFileType,
-      onFileSelectOpenPreview,
-    ],
+    [files, isRenamingFile, initViewFileType, onFileSelectOpenPreview],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -835,10 +802,10 @@ export function useConversationAgentFileView(
    * 处理上传操作（从右键菜单触发）
    */
   const handleUploadFromMenu = async (node: FileNode | null) => {
-    if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-      message.warning(dict('PC.Components.FileTreeView.unsavedChangesUpload'));
-      return;
-    }
+    // if (!node?.fileProxyUrl && changeFiles?.length > 0) {
+    //   message.warning(dict('PC.Components.FileTreeView.unsavedChangesUpload'));
+    //   return;
+    // }
 
     // 两种情况 第一个是文件夹，第二个是文件
     let relativePath = '';
@@ -992,12 +959,12 @@ export function useConversationAgentFileView(
    * 处理新建文件操作
    */
   const handleCreateFile = (parentNode: FileNode | null) => {
-    if (changeFiles?.length > 0) {
-      message.warning(
-        dict('PC.Components.FileTreeView.unsavedChangesCreateFile'),
-      );
-      return;
-    }
+    // if (changeFiles?.length > 0) {
+    //   message.warning(
+    //     dict('PC.Components.FileTreeView.unsavedChangesCreateFile'),
+    //   );
+    //   return;
+    // }
     createTempNodeAndStartRename(parentNode, 'file');
   };
 
@@ -1005,12 +972,12 @@ export function useConversationAgentFileView(
    * 处理新建文件夹操作
    */
   const handleCreateFolder = (parentNode: FileNode | null) => {
-    if (changeFiles?.length > 0) {
-      message.warning(
-        dict('PC.Components.FileTreeView.unsavedChangesCreateFolder'),
-      );
-      return;
-    }
+    // if (changeFiles?.length > 0) {
+    //   message.warning(
+    //     dict('PC.Components.FileTreeView.unsavedChangesCreateFolder'),
+    //   );
+    //   return;
+    // }
     createTempNodeAndStartRename(parentNode, 'folder');
   };
 
@@ -1160,14 +1127,6 @@ export function useConversationAgentFileView(
     setChangeFiles([]);
   };
 
-  // 渲染 VNC 预览状态
-  const renderVncPreviewStatus = () => {
-    if (vncPreviewRef.current) {
-      return vncPreviewRef.current.getStatus();
-    }
-    return null;
-  };
-
   // 处理文件内容刷新
   const handleRefreshFileContent = async () => {
     const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
@@ -1218,45 +1177,6 @@ export function useConversationAgentFileView(
       }
     }
   };
-
-  /**
-   * 处理视图模式切换
-   * - 切换到 desktop：连接 VNC
-   * - 切换到 preview：
-   *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
-   *     1）存在 fileProxyUrl
-   *     2）不是 office 文档、视频、音频、图片、软连接文件
-   *     3）文件类型支持预览（白名单）
-   */
-  const handleChangeViewMode = useCallback(
-    async (mode: 'preview' | 'desktop') => {
-      // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
-      if (mode === 'desktop') {
-        // 连接 VNC 预览
-        vncPreviewRef.current?.connect();
-      }
-      // 切换到 preview 模式时，如果当前已选中文件，则刷新当前选中的文件内容
-      else if (selectedFileNode) {
-        // 刷新当前选中的文件内容
-        handleRefreshFileContent();
-      }
-
-      // onViewModeChange?.(mode);
-    },
-    [
-      selectedFileNode,
-      // viewFileType,
-      // onViewModeChange,
-      handleRefreshFileContent,
-    ],
-  );
-
-  useEffect(() => {
-    if (viewMode) {
-      // 切换到智能体电脑 tab
-      handleChangeViewMode(viewMode);
-    }
-  }, [viewMode]);
 
   /**
    * 处理视图文件类型切换
@@ -1360,43 +1280,9 @@ export function useConversationAgentFileView(
 
   /**
    * 渲染内容区域
-   * 根据视图模式和文件类型渲染不同的预览组件
+   * 根据文件类型渲染不同的预览组件
    */
   const renderContent = () => {
-    // 桌面模式：显示 VNC 预览
-    if (viewMode === 'desktop') {
-      // 包装 idleDetection 配置，在超时回调前先退出全屏
-      const wrappedIdleDetection = idleDetection
-        ? {
-            ...idleDetection,
-            onIdleTimeout: () => {
-              // 如果当前处于全屏状态，先退出全屏
-              if (isFullscreen) {
-                setIsFullscreen(false);
-                onFullscreenPreview?.(false);
-                document.body.classList.remove(
-                  'file-tree-view-fullscreen-active',
-                );
-              }
-              // 调用原始的超时回调
-              idleDetection.onIdleTimeout?.();
-            },
-          }
-        : undefined;
-
-      return (
-        <VncPreview
-          ref={vncPreviewRef}
-          serviceUrl={process.env.BASE_URL || ''}
-          cId={targetId?.toString() || ''}
-          readOnly={readOnly}
-          autoConnect={true}
-          className={cx(styles['vnc-preview'])}
-          idleDetection={wrappedIdleDetection}
-        />
-      );
-    }
-
     // 如果文件列表为空，则显示空状态
     if (!files?.length) {
       return (
@@ -1480,17 +1366,6 @@ export function useConversationAgentFileView(
       );
     }
 
-    // 文档文件：使用FilePreview组件
-    if (selectedFileNode?.name?.includes('.json') && fileProxyUrl) {
-      const { key: jsonKey, url: jsonUrl } = buildFilePreviewProps(
-        'json',
-        fileProxyUrl,
-        selectedFileId,
-      );
-
-      return <FilePreview key={jsonKey} src={jsonUrl} fileType="text" />;
-    }
-
     // 图片文件：使用图片查看器
     if (isImage) {
       // 如果文件代理URL存在，使用FilePreview组件
@@ -1512,15 +1387,8 @@ export function useConversationAgentFileView(
       );
     }
 
-    /**
-     * 文件类型不支持预览
-     * @js-preview/docx插件不支持.doc文件预览
-     */
-    if (
-      !isPreviewable ||
-      selectedFileNode?.isLink ||
-      selectedFileNode?.name?.endsWith('.doc')
-    ) {
+    // 软链接文件不支持编辑预览
+    if (selectedFileNode?.isLink) {
       const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (
         <AppDevEmptyState
@@ -1535,42 +1403,10 @@ export function useConversationAgentFileView(
       );
     }
 
-    // 获取文件名
+    // 其余文件类型（含 html、md、json、代码文件等）统一使用 CodeViewer 展示并支持编辑
     const fileName = selectedFileId?.split('/')?.pop() || '';
-
-    // 如果是html、md文件，并且处于预览模式
-    const fileNameLower = fileName?.toLowerCase() || '';
-    // 兼容 .html 和 .htm 后缀，并处理可能存在的查询参数
-    const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
-    if (
-      (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
-      viewFileType === 'preview' &&
-      (fileProxyUrl || selectedFileNode?.content)
-    ) {
-      // html 文件或无 content 的 markdown：使用 fileProxyUrl
-      // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-      const isHtml = isHtmlInCondition;
-
-      // 获取文件预览的 key 和 url
-      const fileTypeForPreview = isHtml ? 'html' : 'markdown';
-      const { key: filePreviewKey, url: filePreviewUrl } =
-        buildFilePreviewProps(fileTypeForPreview, fileProxyUrl, selectedFileId);
-
-      return (
-        <FilePreview
-          key={filePreviewKey}
-          src={filePreviewUrl}
-          content={selectedFileNode?.content}
-          fileType={fileTypeForPreview}
-          staticFileBasePath={staticFileBasePath}
-        />
-      );
-    }
-
-    // 获取文件内容（统一转为字符串，避免 number/object 导致编辑器不显示）
     const fileContent = String(selectedFileNode?.content ?? '');
 
-    // 代码文件：使用代码查看器
     return (
       <CodeViewer
         key={`code-viewer-${selectedFileId}`}
@@ -1590,7 +1426,6 @@ export function useConversationAgentFileView(
       conversationId: targetId?.toString() || '',
       className: headerClassName,
       targetNode: selectedFileNode,
-      viewMode,
       onFullscreen: handleFullscreen,
       isFullscreen,
       showFullscreenIcon,
@@ -1609,7 +1444,6 @@ export function useConversationAgentFileView(
       onExportPdf: handleExportPdf,
       isExportingPdf,
       onClose,
-      vncConnectStatus: renderVncPreviewStatus(),
       isFileTreeVisible,
       isFileTreePinned,
       onFileTreeToggle: handleFileTreeToggle,
@@ -1618,7 +1452,6 @@ export function useConversationAgentFileView(
       targetId,
       headerClassName,
       selectedFileNode,
-      viewMode,
       handleFullscreen,
       isFullscreen,
       showFullscreenIcon,
@@ -1644,8 +1477,6 @@ export function useConversationAgentFileView(
   const renderPreviewContent = useCallback(
     () => renderContent(),
     [
-      viewMode,
-      idleDetection,
       isFullscreen,
       targetId,
       readOnly,
@@ -1658,10 +1489,7 @@ export function useConversationAgentFileView(
       isOfficeDocument,
       documentFileType,
       isImage,
-      isPreviewable,
       buildFilePreviewProps,
-      viewFileType,
-      staticFileBasePath,
       isDynamicTheme,
       onFullscreenPreview,
       handleContentChange,
@@ -1686,7 +1514,6 @@ export function useConversationAgentFileView(
       isRefreshingFileTree,
       isUploadingFiles,
       isDownloadingFile,
-      viewMode,
       hideFileTree,
       showRefreshButton,
       handleFileSelect,
@@ -1706,12 +1533,9 @@ export function useConversationAgentFileView(
       selectedFileNode,
       selectedFileId,
       viewFileType,
-      viewMode,
-      vncPreviewRef,
       isFullscreen,
       hideDesktop,
       changeFiles,
-      idleDetection,
       staticFileBasePath,
       targetId,
       readOnly,

@@ -1,8 +1,4 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import type {
-  IdleDetectionConfig,
-  VncPreviewRef,
-} from '@/components/business-component/VncPreview/type';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
@@ -26,8 +22,6 @@ export interface ConversationAgentFileViewProps {
   fileTreeDataLoading?: boolean;
   /** 目标ID（会话ID） */
   targetId?: string;
-  /** 当前视图模式 */
-  viewMode?: 'preview' | 'desktop';
   /** 是否只读 */
   readOnly?: boolean;
   /** 上传多个文件回调 */
@@ -58,14 +52,12 @@ export interface ConversationAgentFileViewProps {
   isCanDeleteSkillFile?: boolean;
   /** 刷新文件树回调 */
   onRefreshFileTree?: () => Promise<void>;
-  /** VNC 空闲检测配置 */
-  idleDetection?: IdleDetectionConfig;
   /** 是否隐藏远程桌面 */
   hideDesktop?: HideDesktopEnum;
   /** 静态资源文件基础路径 */
   staticFileBasePath?: string;
   /** 选中文件后打开右侧预览面板（隐藏编排区域） */
-  onFileSelectOpenPreview?: () => void;
+  onFileSelectOpenPreview?: (fileId?: string) => void;
 }
 
 /** ConversationAgent 预览头部 props（不含更多操作相关回调） */
@@ -90,7 +82,6 @@ export interface ConversationAgentFileViewTree {
   isRefreshingFileTree: boolean;
   isUploadingFiles: boolean;
   isDownloadingFile: boolean;
-  viewMode?: 'preview' | 'desktop';
   hideFileTree: boolean;
   showRefreshButton: boolean;
   handleFileSelect: (fileId: string) => Promise<void>;
@@ -118,12 +109,9 @@ export interface ConversationAgentFileViewPreview {
   selectedFileNode: FileNode | null;
   selectedFileId: string;
   viewFileType: 'preview' | 'code';
-  viewMode?: 'preview' | 'desktop';
-  vncPreviewRef: React.RefObject<VncPreviewRef>;
   isFullscreen: boolean;
   hideDesktop: HideDesktopEnum;
   changeFiles: ChangeFileInfo[];
-  idleDetection?: IdleDetectionConfig;
   staticFileBasePath?: string;
   targetId?: string;
   readOnly: boolean;

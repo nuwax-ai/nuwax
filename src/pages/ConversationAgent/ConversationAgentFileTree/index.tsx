@@ -45,7 +45,6 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
     isRefreshingFileTree,
     isUploadingFiles,
     isDownloadingFile,
-    viewMode,
     hideFileTree,
     showRefreshButton,
     handleFileSelect,
@@ -121,7 +120,7 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
         )}
       >
         <span>{dict('PC.Components.FileTreeView.files')}</span>
-        {viewMode === 'preview' && showRefreshButton && (
+        {showRefreshButton && (
           <Tooltip
             title={
               isRefreshingFileTree

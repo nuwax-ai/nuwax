@@ -1,12 +1,13 @@
 import MonacoDiffEditor from '@/components/CodeViewer/MonacoDiffEditor';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import { FileNode } from '@/types/interfaces/appDev';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
-import FilePathHeader from './FilePathHeader';
+import type { PreviewTab, PreviewToolId } from './hooks/usePreviewTabs';
 import styles from './index.less';
+import PreviewTabBar from './PreviewTabBar';
+import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
 const fileTreeCx = classNames.bind(fileTreeViewStyles);
@@ -16,6 +17,22 @@ export interface ConversationAgentFilePreviewProps {
   preview: ConversationAgentFileViewPreview;
   /** 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo;
+  /** 已打开的标签页列表 */
+  tabs: PreviewTab[];
+  /** 当前激活的标签 ID */
+  activeTabId: string | null;
+  /** 当前激活的标签 */
+  activeTab: PreviewTab | null;
+  /** 标签选择面板是否展开 */
+  tabPickerOpen: boolean;
+  /** 切换标签 */
+  onTabSelect: (tabId: string) => void;
+  /** 关闭标签 */
+  onTabClose: (tabId: string) => void;
+  /** 标签选择面板显隐 */
+  onTabPickerOpenChange: (open: boolean) => void;
+  /** 从选择面板添加工具标签 */
+  onSelectTool: (toolId: PreviewToolId) => void;
   /** 外层容器类名（来自 useConversationAgentFileView） */
   providerClassName?: string;
   className?: string;
@@ -23,11 +40,24 @@ export interface ConversationAgentFilePreviewProps {
 
 /**
  * ConversationAgent 文件预览组件
- * 负责文件路径头部、多种文件预览、代码编辑器与 diff 对比展示
+ * 顶部标签栏 + 多种文件预览、代码编辑器与 diff 对比展示
  */
 const ConversationAgentFilePreview: React.FC<
   ConversationAgentFilePreviewProps
-> = ({ preview, diffFile, providerClassName, className }) => {
+> = ({
+  preview,
+  diffFile,
+  tabs,
+  activeTabId,
+  activeTab,
+  tabPickerOpen,
+  onTabSelect,
+  onTabClose,
+  onTabPickerOpenChange,
+  onSelectTool,
+  providerClassName,
+  className,
+}) => {
   const { renderPreviewContent, filePathHeaderProps, isFullscreen } = preview;
 
   const diffFileName = useMemo(() => {
@@ -38,25 +68,14 @@ const ConversationAgentFilePreview: React.FC<
     return segments[segments.length - 1] || diffFile.fileId;
   }, [diffFile]);
 
-  /** diff 模式下同步头部展示的文件名 */
-  const headerProps = useMemo(() => {
-    if (!diffFile) {
-      return filePathHeaderProps;
-    }
+  const showDiff =
+    activeTab?.type === 'file' &&
+    activeTab.isDiff &&
+    !!diffFile &&
+    diffFile.fileId === activeTab.fileId;
 
-    const diffTargetNode: FileNode = {
-      ...(filePathHeaderProps.targetNode || {}),
-      id: diffFile.fileId,
-      name: diffFileName,
-      type: 'file',
-      path: diffFile.fileId,
-    };
-
-    return {
-      ...filePathHeaderProps,
-      targetNode: diffTargetNode,
-    };
-  }, [diffFile, diffFileName, filePathHeaderProps]);
+  const showFilePreview = activeTab?.type === 'file' && !showDiff;
+  const showToolContent = activeTab?.type === 'tool' && !!activeTab.toolId;
 
   return (
     <div
@@ -74,11 +93,20 @@ const ConversationAgentFilePreview: React.FC<
         className,
       )}
     >
-      <FilePathHeader {...headerProps} />
+      <PreviewTabBar
+        tabs={tabs}
+        activeTabId={activeTabId}
+        tabPickerOpen={tabPickerOpen}
+        onTabSelect={onTabSelect}
+        onTabClose={onTabClose}
+        onTabPickerOpenChange={onTabPickerOpenChange}
+        onSelectTool={onSelectTool}
+        headerActions={filePathHeaderProps}
+      />
 
       <div className={fileTreeCx('content-container', 'flex', 'flex-1')}>
         <div className={cx('flex-1', 'overflow-hide', styles['preview-body'])}>
-          {diffFile ? (
+          {showDiff && diffFile ? (
             <MonacoDiffEditor
               fileId={diffFile.fileId}
               fileName={diffFileName}
@@ -86,8 +114,12 @@ const ConversationAgentFilePreview: React.FC<
               modifiedContent={diffFile.fileContent}
               className={styles['diff-editor']}
             />
-          ) : (
+          ) : showFilePreview ? (
             renderPreviewContent()
+          ) : showToolContent && activeTab.toolId ? (
+            <ToolTabContent toolId={activeTab.toolId} />
+          ) : (
+            <div className={cx(styles['empty-preview'])} />
           )}
         </div>
       </div>
