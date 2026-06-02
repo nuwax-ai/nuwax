@@ -1072,6 +1072,7 @@ export const EN_US: SystemLangMap = {
   "PC.Constants.Space.everyone": "Everyone",
   "PC.Constants.Space.exceptionHandling": "Exception Handling",
   "PC.Constants.Space.exportConfig": "Export Config",
+  "PC.Constants.Space.group": "Group",
   "PC.Constants.Space.importSkill": "Import Skill",
   "PC.Constants.Space.independentSession": "Independent Session",
   "PC.Constants.Space.logQuery": "Log Query",

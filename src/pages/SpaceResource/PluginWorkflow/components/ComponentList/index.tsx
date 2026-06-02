@@ -180,7 +180,9 @@ const ComponentList: React.FC<ComponentListProps> = ({
   return (
     <>
       {loading ? (
-        <Loading />
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Loading />
+        </div>
       ) : componentList.length > 0 ? (
         <div
           className={cx(

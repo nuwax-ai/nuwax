@@ -1072,6 +1072,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Constants.Space.everyone": "所有人",
   "PC.Constants.Space.exceptionHandling": "异常处理",
   "PC.Constants.Space.exportConfig": "导出配置",
+  "PC.Constants.Space.group": "分组",
   "PC.Constants.Space.importSkill": "导入技能",
   "PC.Constants.Space.independentSession": "独立会话",
   "PC.Constants.Space.logQuery": "日志查询",

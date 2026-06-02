@@ -15,12 +15,13 @@
     overflow: hidden;
 
     .sidebar {
-      width: 240px;
+      width: 300px;
       margin-right: @margin-lg;
       flex-shrink: 0;
       height: calc(
         100% - 10px
       ); // 精确计算高度：扣除 10px 顶部外边距带来的偏移，防止高度溢出挤爆底边框！
+
       margin-top: 10px; // 对齐 ComponentList 内部 main-container 的 margin-top: 10px 属性，实现物理高度完全顶对齐！
     }
 

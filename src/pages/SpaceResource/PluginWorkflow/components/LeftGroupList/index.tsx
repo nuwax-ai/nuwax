@@ -6,6 +6,8 @@ import type {
   ComponentInfo,
   ResourceGroupInfo,
 } from '@/types/interfaces/library';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -86,10 +88,28 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
     return [allOption, ...groupOptions];
   }, [groupList, componentList, groupCounts]);
 
+  const titleNode = useMemo(() => {
+    return (
+      <div className={cx(styles['selection-header-wrap'])}>
+        <span>{dict('PC.Constants.Space.group')}</span>
+        <Button
+          type="link"
+          icon={<PlusOutlined />}
+          onClick={(e) => {
+            e.stopPropagation();
+            // 在此处触发新增分组逻辑
+          }}
+        >
+          {dict('PC.Pages.IMChannel.Index.add')}
+        </Button>
+      </div>
+    );
+  }, []);
+
   return (
     <div className={cx(styles['sidebar-container'], className)}>
       <SelectionList
-        title={dict('PC.Constants.Space.componentLibrary')}
+        title={titleNode}
         list={listOptions}
         value={value}
         onChange={onChange}
