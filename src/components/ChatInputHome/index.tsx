@@ -16,10 +16,11 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
+  CheckOutlined,
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { message, Segmented, Tooltip, Upload, UploadProps } from 'antd';
+import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -39,6 +40,11 @@ import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 
 const cx = classNames.bind(styles);
+
+const AGENT_MODE_LABEL: Record<AgentMode, string> = {
+  yolo: 'YOLO',
+  ask: 'Ask',
+};
 
 /**
  * 聊天输入组件
@@ -666,7 +672,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   ) : (
                     <SvgIcon
                       name="icons-chat-clear"
-                      style={{ fontSize: '14px' }}
                       className={cx(styles['svg-icon'])}
                     />
                   )}
@@ -718,6 +723,52 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           </Upload>
+          {showAgentModeSelector && (
+            <Dropdown
+              menu={{
+                selectedKeys: [agentMode],
+                items: (['yolo', 'ask'] as AgentMode[]).map((mode) => ({
+                  key: mode,
+                  label: (
+                    <div className={cx(styles['agent-mode-dropdown-item'])}>
+                      <span className={cx(styles['item-name'])}>
+                        {AGENT_MODE_LABEL[mode]}
+                      </span>
+                      {agentMode === mode && (
+                        <CheckOutlined
+                          className={cx(styles['agent-mode-check'])}
+                        />
+                      )}
+                    </div>
+                  ),
+                  onClick: () => onAgentModeChange?.(mode),
+                })),
+              }}
+              trigger={['click']}
+              placement="topLeft"
+              disabled={wholeDisabled || isConversationActive}
+              overlayClassName="agent-mode-dropdown-overlay"
+              // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
+            >
+              <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
+                <span className={cx(styles['agent-mode-select'])}>
+                  <span
+                    className={cx(
+                      styles['agent-mode-trigger'],
+                      styles[`agent-mode-option-${agentMode}`],
+                    )}
+                  >
+                    <span>{AGENT_MODE_LABEL[agentMode]}</span>
+                    <SvgIcon
+                      name="icons-common-caret_down"
+                      style={{ fontSize: '14px' }}
+                      className={cx(styles['agent-mode-arrow'])}
+                    />
+                  </span>
+                </span>
+              </Tooltip>
+            </Dropdown>
+          )}
           {/*通用型智能体切换按钮*/}
           {showTaskAgentToggle && (
             <Tooltip
@@ -779,20 +830,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 readonly={readonly}
               />
             )}
-            {showAgentModeSelector && (
-              <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
-                <Segmented
-                  size="small"
-                  value={agentMode}
-                  disabled={wholeDisabled || isConversationActive}
-                  options={[
-                    { label: 'YOLO', value: 'yolo' },
-                    { label: 'Ask', value: 'ask' },
-                  ]}
-                  onChange={(value) => onAgentModeChange?.(value as AgentMode)}
-                />
-              </Tooltip>
-            )}
+
             {/* 智能体模型选择器 */}
             {allowOtherModel === DefaultSelectedEnum.Yes && (
               <ModelSelector
@@ -854,10 +892,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       },
                     )}
                   >
-                    <SvgIcon
-                      name="icons-chat-send"
-                      style={{ fontSize: '14px' }}
-                    />
+                    <SvgIcon name="icons-chat-send" />
                   </span>
                 </Tooltip>
               </>

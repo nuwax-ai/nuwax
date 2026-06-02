@@ -56,6 +56,7 @@
   .footer {
     gap: 6px;
     width: 100%;
+    align-items: center;
 
     .svg-icon {
       color: @colorTextDescription;
@@ -117,7 +118,6 @@
         height: 24px;
         display: flex;
         align-items: center;
-        justify-content: center;
       }
 
       &.send-box {
@@ -155,7 +155,97 @@
         }
       }
     }
+
+    .agent-mode-select {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+
+      .agent-mode-trigger {
+        padding: @paddingXxs @paddingXs;
+        border-radius: @borderRadius;
+        box-sizing: border-box;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        transition: background-color ease-in-out 0.3s;
+        word-wrap: normal;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background: @colorFillTertiary;
+        }
+
+        .agent-mode-arrow {
+          transition: transform @motionDurationFast ease;
+        }
+      }
+    }
+
+    .right-actions {
+      gap: 4px;
+      margin-left: auto;
+      align-items: center;
+      min-width: 0;
+    }
   }
+}
+
+// 下拉菜单容器
+:global {
+  .agent-mode-dropdown-overlay {
+    z-index: 9999;
+
+    .ant-dropdown-menu {
+      min-width: 100px;
+      max-height: 240px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .ant-dropdown-menu-item {
+      background: transparent !important;
+
+      &:hover {
+        background: @colorFillTertiary !important;
+      }
+
+      &.ant-dropdown-menu-item-selected {
+        background: transparent !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+      }
+    }
+  }
+}
+
+.agent-mode-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100px;
+
+  .item-name {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+    line-height: 28px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.agent-mode-check {
+  margin-left: @marginSm;
+  color: @colorPrimary;
+  font-size: @fontSizeSm;
 }
 
 // 加载图标样式
