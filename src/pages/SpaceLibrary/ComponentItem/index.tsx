@@ -52,28 +52,45 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
     // 根据组件类型，过滤更多操作
     const list: CustomPopoverItem[] = COMPONENT_MORE_ACTION.filter((item) => {
       const { type, action } = item;
+
+      // 移出分组：仅当组件本身已经归属于某具体分组时才展示此操作，增进界面的直观体验
+      if (action === ApplicationMoreActionEnum.Remove_From_Group) {
+        return (
+          type === componentInfo.type &&
+          componentInfo.groupId !== undefined &&
+          componentInfo.groupId !== null &&
+          Number(componentInfo.groupId) !== 0 &&
+          hasPermission(action as ApplicationMoreActionEnum)
+        );
+      }
+
+      // 移入分组：移入与移出分组支持同时存在，允许已加入分组的资源移动至其它分组
+      if (action === ApplicationMoreActionEnum.Add_To_Group) {
+        return (
+          type === componentInfo.type &&
+          hasPermission(action as ApplicationMoreActionEnum)
+        );
+      }
+
       return (
         type === componentInfo.type &&
         hasPermission(action as ApplicationMoreActionEnum)
       );
+    }).map((item) => {
+      if (
+        item.action === ApplicationMoreActionEnum.Add_To_Group &&
+        componentInfo.groupId !== undefined &&
+        componentInfo.groupId !== null &&
+        Number(componentInfo.groupId) !== 0
+      ) {
+        return {
+          ...item,
+          label: dict('PC.Pages.SpaceResource.LeftGroupList.moveToOtherGroup'),
+        };
+      }
+      return item;
     });
 
-    // // 根据菜单权限，过滤更多操作
-    // const menuList = list.map((item) => {
-    //   switch (item.action) {
-    //     // 导出配置
-    //     case ApplicationMoreActionEnum.Export_Config: {
-    //       const isHasPermission = hasPermissionMenu('component_lib_export');
-    //       return {
-    //         ...item,
-    //         disabled: !isHasPermission,
-    //         tooltip: isHasPermission ? '' : '无此资源权限',
-    //       };
-    //     }
-    //     default:
-    //       return item;
-    //   }
-    // });
     setActionList(list);
   }, [componentInfo]);
 

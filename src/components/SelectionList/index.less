@@ -10,12 +10,14 @@
 @selectionHeaderColor: #1d2129;
 @selectionHeaderBorderBottom: 1px solid #f2f3f5;
 
-@selectionItemPadding: @paddingSm @padding;
+@selectionItemPadding: @paddingSm @paddingSm;
 @selectionItemBorderRadius: @borderRadius;
 @selectionItemHoverBg: #f7f8fa;
 @selectionItemActiveBg: #f0f5ff;
 @selectionItemActiveBorderColor: #3370ff;
 @selectionItemActiveBoxShadow: 0 4px 12px rgba(51, 112, 255, 0.12);
+
+@actionsGap: @marginXxs;
 
 @selectionIconSize: 44px;
 @selectionIconMarginRight: 14px;
@@ -60,7 +62,6 @@
     flex-direction: column;
     gap: @selectionContainerGap;
     overflow: hidden;
-    scrollbar-gutter: stable;
 
     &:hover {
       overflow-y: auto;
@@ -75,13 +76,17 @@
   border-radius: @selectionItemBorderRadius;
   cursor: pointer;
   transition: @selectionItemTransition;
-  border: @lineWidth solid transparent;
-  background-color: transparent;
+  border: @lineWidth solid @colorBorderSecondary;
+  background-color: @colorFillAlter;
   position: relative;
   z-index: 1;
 
   &:hover {
     background-color: @selectionItemHoverBg;
+
+    .actions {
+      display: flex;
+    }
   }
 
   &.active {
@@ -130,20 +135,79 @@
   .info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 
-    .name {
-      font-size: @selectionNameFontSize;
-      font-weight: 500;
-      color: @selectionNameColor;
-      line-height: @lineHeightLg;
+    .name-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
       margin-bottom: 2px;
-      transition: color 0.2s;
+      gap: @marginXs;
+
+      .name {
+        font-size: @selectionNameFontSize;
+        font-weight: 500;
+        color: @selectionNameColor;
+        line-height: @lineHeightLg;
+        transition: color 0.2s;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .extra {
+        font-size: @selectionDescFontSize;
+        color: @selectionDescColor;
+        flex-shrink: 0;
+      }
     }
 
     .description {
       font-size: @selectionDescFontSize;
       color: @selectionDescColor;
       line-height: @lineHeight;
+      word-break: break-all;
     }
   }
+
+  .actions {
+    display: none;
+    align-items: center;
+    position: absolute;
+    right: @paddingSm;
+    gap: @actionsGap;
+    background-color: @colorBgContainer;
+    border-radius: @borderRadiusSm;
+    padding: @paddingXxs;
+    box-shadow: @boxShadowSecondary;
+    z-index: 2;
+
+    .action-btn {
+      color: @colorTextSecondary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        color: @colorPrimaryHover;
+        background-color: @colorBgTextHover;
+      }
+
+      &.ant-btn-dangerous:hover {
+        color: @colorErrorHover;
+        background-color: @colorErrorBgHover;
+      }
+    }
+  }
+}
+
+.empty-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: @padding;
 }

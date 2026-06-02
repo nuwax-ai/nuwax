@@ -413,5 +413,5 @@ export interface ResourceGroupInfo {
 
 export interface ResourceGroupListParams {
   spaceId: number | string;
-  type: string;
+  types: string[];
 }

@@ -35,6 +35,11 @@ const SpacePluginWorkflow: React.FC = () => {
   const [openWorkflow, setOpenWorkflow] = useState(false);
   const [openPlugin, setOpenPlugin] = useState(false);
 
+  // 顶部筛选类型状态，默认为全部类型
+  const [type, setType] = useState<ComponentTypeEnum>(
+    ComponentTypeEnum.All_Type,
+  );
+
   // 资源分组状态，0 表示全部
   const [groupId, setGroupId] = useState<number>(0);
 
@@ -51,15 +56,23 @@ const SpacePluginWorkflow: React.FC = () => {
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
-    filterGroupId = groupId,
+    filterGroupId?: number,
     list = componentAllRef.current,
   ) => {
+    setType(filterType);
+
+    // 只要是非左侧分组点击触发的操作（即来自顶层 HeaderArea 的任何切换、查询搜索等动作），无条件重置当前选中的 groupId 为 0，取消选中状态
+    let currentGId = filterGroupId !== undefined ? filterGroupId : 0;
+    if (filterGroupId === undefined) {
+      setGroupId(0);
+    }
+
     filterParamsRef.current = {
       type: filterType,
       status: filterStatus,
       create: filterCreate,
       keyword: filterKeyword,
-      groupId: filterGroupId,
+      groupId: currentGId,
     };
 
     let _list = list.filter((item) =>
@@ -79,16 +92,23 @@ const SpacePluginWorkflow: React.FC = () => {
     if (filterKeyword) {
       _list = _list.filter((item) => item.name.includes(filterKeyword));
     }
-    if (filterGroupId && filterGroupId !== 0) {
-      _list = _list.filter((item) => item.groupId === filterGroupId);
+    if (currentGId && Number(currentGId) !== 0) {
+      _list = _list.filter(
+        (item) => Number(item.groupId) === Number(currentGId),
+      );
     }
     setComponentList(_list);
   };
 
   const handleGroupChange = (id: number) => {
     setGroupId(id);
-    const { type, status, create, keyword } = filterParamsRef.current;
-    handleFilterList(type, status, create, keyword, id);
+    const {
+      type: currentType,
+      status,
+      create,
+      keyword,
+    } = filterParamsRef.current;
+    handleFilterList(currentType, status, create, keyword, id);
   };
 
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -97,13 +117,20 @@ const SpacePluginWorkflow: React.FC = () => {
     onSuccess: (result: ComponentInfo[]) => {
       componentAllRef.current = result;
       const {
-        type,
+        type: currentType,
         status,
         create,
         keyword,
         groupId: currentGId,
       } = filterParamsRef.current;
-      handleFilterList(type, status, create, keyword, currentGId, result);
+      handleFilterList(
+        currentType,
+        status,
+        create,
+        keyword,
+        currentGId,
+        result,
+      );
       setLoading(false);
     },
     onError: () => setLoading(false),
@@ -121,6 +148,19 @@ const SpacePluginWorkflow: React.FC = () => {
       runComponent(spaceId);
     }
   }, [location.state]);
+
+  // 用户点击侧边栏页面菜单路由发生切换时，无条件将选中的分组状态重置为 0，取消高亮选中
+  useEffect(() => {
+    setGroupId(0);
+    filterParamsRef.current.groupId = 0;
+    const {
+      type: currentType,
+      status,
+      create,
+      keyword,
+    } = filterParamsRef.current;
+    handleFilterList(currentType, status, create, keyword, 0);
+  }, [location.key]);
 
   const handleDel = (id: number) => {
     setComponentList((prev) => prev.filter((item) => item.id !== id));
@@ -145,6 +185,7 @@ const SpacePluginWorkflow: React.FC = () => {
           value={groupId}
           onChange={handleGroupChange}
           componentList={componentAllRef.current}
+          filterType={type}
         />
         <div className={cx(styles['list-area'], 'scroll-container-hide')}>
           <ComponentList
@@ -152,6 +193,7 @@ const SpacePluginWorkflow: React.FC = () => {
             componentList={componentList}
             spaceId={spaceId}
             onDelete={handleDel}
+            onRefresh={() => runComponent(spaceId)}
           />
         </div>
       </div>
