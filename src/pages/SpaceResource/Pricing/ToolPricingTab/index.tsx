@@ -278,15 +278,12 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
       width: 220,
       search: false,
       render: (_, record) => {
-        const unitSuffix = ` / ${getToolPricingPeriodLabel(
-          record.pricingType,
-        )}`;
+        const unitSuffix = `/${getToolPricingPeriodLabel(record.pricingType)}`;
 
         return (
           <div className={styles['tool-price-cell']}>
-            <span className={styles['tool-price-currency']}>¥</span>
             <span className={styles['tool-price-amount']}>
-              {record.price || 0}
+              ¥{record.price || 0}
             </span>
             <span className={styles['tool-price-unit']}>{unitSuffix}</span>
           </div>
