@@ -2347,6 +2347,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgentBottomConsole.collapsePanel": "折叠到底部",
   "PC.Pages.ConversationAgentBottomConsole.expandHeight": "放大至全屏",
   "PC.Pages.ConversationAgentBottomConsole.restoreHeight": "恢复默认高度",
+  "PC.Pages.ConversationAgentBottomConsole.terminalThemeDark": "切换为深色终端",
+  "PC.Pages.ConversationAgentBottomConsole.terminalThemeLight": "切换为浅色终端",
   "PC.Pages.ConversationAgentMiddlePanel.files": "文件",
   "PC.Pages.ConversationAgentMiddlePanel.sourceControl": "源代码管理",
   "PC.Pages.ConversationAgentSourceControl.changes": "更改",

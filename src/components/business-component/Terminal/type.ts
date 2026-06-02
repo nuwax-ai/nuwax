@@ -23,6 +23,30 @@ export interface SearchOptions {
   incremental?: boolean;
 }
 
+/** 组件内搜索选项 state（三项均为必填布尔值） */
+export type TerminalSearchOptionsState = Required<
+  Pick<SearchOptions, 'caseSensitive' | 'wholeWord' | 'regex'>
+>;
+
+/** 搜索选项默认值 */
+export const DEFAULT_TERMINAL_SEARCH_OPTIONS: TerminalSearchOptionsState = {
+  caseSensitive: false,
+  wholeWord: false,
+  regex: false,
+};
+
+/** 动态加载的 xterm addon 最小能力描述 */
+export interface TerminalAddonInstance {
+  fit?: () => void;
+  dispose?: () => void;
+  findNext?: (term: string, options?: SearchOptions) => boolean;
+  findPrevious?: (term: string, options?: SearchOptions) => boolean;
+  clearDecorations?: () => void;
+  serialize?: () => string;
+}
+
+export type TerminalAddonsMap = Map<string, TerminalAddonInstance>;
+
 // ─── WebSocket 线缆协议 ──────────────────────────────────────────
 /** plain：纯文本输入 + JSON resize；ttyd：0x30 输入帧 + '1' resize */
 export type TerminalWireProtocol = 'plain' | 'ttyd';
@@ -77,6 +101,11 @@ export interface XtermTerminalProps {
   /** 启用图片支持 (sixel/iTerm2) @default false */
   enableImages?: boolean;
 
+  /**
+   * 嵌入式布局（如底部面板）
+   * 去掉边框、降低 min-height，并在连接后自动 fit 尺寸
+   */
+  embedded?: boolean;
   /** 自定义 CSS 类名 */
   className?: string;
   /** 自定义内联样式 */
@@ -94,6 +123,15 @@ export interface XtermTerminalProps {
   /** 用户键盘输入时触发 */
   onInput?: (data: string) => void;
 }
+
+/** 回调 ref 类型（与 Props 保持一致） */
+export type TerminalOnConnect = NonNullable<XtermTerminalProps['onConnect']>;
+export type TerminalOnDisconnect = NonNullable<
+  XtermTerminalProps['onDisconnect']
+>;
+export type TerminalOnError = NonNullable<XtermTerminalProps['onError']>;
+export type TerminalOnData = NonNullable<XtermTerminalProps['onData']>;
+export type TerminalOnInput = NonNullable<XtermTerminalProps['onInput']>;
 
 // ─── Ref 命令式 API ──────────────────────────────────────────────
 export interface XtermTerminalRef {
@@ -116,12 +154,29 @@ export interface XtermTerminalRef {
 
   /** 打开搜索栏 */
   search: () => void;
-  /** 查找下一个匹配项 */
-  findNext: (term: string, options?: SearchOptions) => boolean;
-  /** 查找上一个匹配项 */
-  findPrevious: (term: string, options?: SearchOptions) => boolean;
-  /** 关闭搜索栏 */
+  /** 切换搜索栏显示/隐藏 */
+  toggleSearch: () => void;
+  /** 关闭搜索栏并清除高亮 */
   closeSearch: () => void;
+  /** 搜索栏是否可见 */
+  isSearchVisible: () => boolean;
+  /** 设置搜索关键词 */
+  setSearchTerm: (term: string) => void;
+  /** 获取当前搜索关键词 */
+  getSearchTerm: () => string;
+  /** 更新搜索选项 */
+  setSearchOptions: (options: Partial<SearchOptions>) => void;
+  /** 查找下一个匹配项（不传 term 则使用当前搜索词） */
+  findNext: (term?: string, options?: SearchOptions) => boolean;
+  /** 查找上一个匹配项（不传 term 则使用当前搜索词） */
+  findPrevious: (term?: string, options?: SearchOptions) => boolean;
+  /** 清除搜索高亮 */
+  clearSearchDecorations: () => void;
+
+  /** 切换全屏 */
+  toggleFullscreen: () => Promise<void>;
+  /** 是否处于全屏 */
+  isFullscreen: () => boolean;
 
   /** 获取原始 xterm.js Terminal 实例 */
   getTerminal: () => Terminal | null;

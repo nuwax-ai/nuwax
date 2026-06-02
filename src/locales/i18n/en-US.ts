@@ -2347,6 +2347,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentBottomConsole.collapsePanel": "Collapse to bottom",
   "PC.Pages.ConversationAgentBottomConsole.expandHeight": "Expand to full height",
   "PC.Pages.ConversationAgentBottomConsole.restoreHeight": "Restore default height",
+  "PC.Pages.ConversationAgentBottomConsole.terminalThemeDark": "Switch to dark terminal",
+  "PC.Pages.ConversationAgentBottomConsole.terminalThemeLight": "Switch to light terminal",
   "PC.Pages.ConversationAgentMiddlePanel.files": "Files",
   "PC.Pages.ConversationAgentMiddlePanel.sourceControl": "Source Control",
   "PC.Pages.ConversationAgentSourceControl.changes": "Changes",

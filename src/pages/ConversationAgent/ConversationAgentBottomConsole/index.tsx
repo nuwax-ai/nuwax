@@ -9,11 +9,21 @@ import { dict } from '@/services/i18nRuntime';
 import {
   DownOutlined,
   FullscreenExitOutlined,
+  MoonOutlined,
+  SunOutlined,
   UpOutlined,
 } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
+import {
+  CONSOLE_TERMINAL_FONT_FAMILY,
+  DEFAULT_TERMINAL_APPEARANCE,
+  getConsoleTerminalTheme,
+  type TerminalAppearanceMode,
+} from './terminalTheme';
+
+export type { TerminalAppearanceMode } from './terminalTheme';
 
 const cx = classNames.bind(styles);
 
@@ -33,6 +43,17 @@ interface ConversationAgentBottomConsoleProps {
   wsSubprotocols?: string | string[];
   /** 与后端约定的消息格式 */
   wireProtocol?: TerminalWireProtocol;
+  /**
+   * 终端外观（受控）
+   * 与 onTerminalAppearanceChange 配合由父组件管理；不传则走非受控逻辑
+   */
+  terminalAppearance?: TerminalAppearanceMode;
+  /** 非受控时的默认外观 @default 'light' */
+  defaultTerminalAppearance?: TerminalAppearanceMode;
+  /** 外观切换回调 */
+  onTerminalAppearanceChange?: (mode: TerminalAppearanceMode) => void;
+  /** 是否显示深浅色切换按钮 @default true */
+  showTerminalAppearanceToggle?: boolean;
 }
 
 /**
@@ -51,10 +72,47 @@ const ConversationAgentBottomConsole: React.FC<
   wsUrl,
   wsSubprotocols,
   wireProtocol,
+  terminalAppearance: terminalAppearanceProp,
+  defaultTerminalAppearance = DEFAULT_TERMINAL_APPEARANCE,
+  onTerminalAppearanceChange,
+  showTerminalAppearanceToggle = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>('terminal');
   const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
+  const [internalAppearance, setInternalAppearance] =
+    useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   const terminalRef = useRef<XtermTerminalRef>(null);
+
+  const isControlled = terminalAppearanceProp !== undefined;
+  const terminalAppearance = isControlled
+    ? terminalAppearanceProp
+    : internalAppearance;
+  const isLightTerminal = terminalAppearance === 'light';
+
+  /** 切换终端深色 / 浅色外观 */
+  const handleToggleTerminalAppearance = useCallback(() => {
+    const next: TerminalAppearanceMode =
+      terminalAppearance === 'dark' ? 'light' : 'dark';
+    if (!isControlled) {
+      setInternalAppearance(next);
+    }
+    onTerminalAppearanceChange?.(next);
+  }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
+
+  /** 切换回终端 tab 或布局变化后，触发 xterm 重新 fit */
+  useEffect(() => {
+    if (activeTab !== 'terminal' || !wsUrl) return;
+    const timer = window.setTimeout(() => {
+      const term = terminalRef.current?.getTerminal();
+      if (!term) return;
+      try {
+        term.refresh(0, Math.max(term.rows - 1, 0));
+      } catch {
+        /* ignore */
+      }
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, layoutMode, wsUrl, terminalAppearance]);
 
   /** 放大：占满父级右侧面板高度；再次点击恢复默认高度 */
   const handleToggleExpand = () => {
@@ -85,12 +143,19 @@ const ConversationAgentBottomConsole: React.FC<
         <div className={cx(styles['xterm-container'])}>
           <XtermTerminal
             ref={terminalRef}
+            embedded
+            className={cx(styles['terminal-embedded'], {
+              [styles['terminal-embedded-light']]: isLightTerminal,
+              [styles['terminal-embedded-dark']]: !isLightTerminal,
+            })}
             wsUrl={wsUrl}
             wsSubprotocols={wsSubprotocols}
             wireProtocol={wireProtocol}
             autoConnect
-            theme="dark"
-            fontSize={12}
+            theme={getConsoleTerminalTheme(terminalAppearance)}
+            fontSize={13}
+            fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
+            lineHeight={1.35}
             cursorBlink
             enableWebgl={false}
             reconnect={{ enabled: true, maxRetries: 5, retryDelay: 2000 }}
@@ -136,6 +201,8 @@ const ConversationAgentBottomConsole: React.FC<
       className={cx(styles.console, {
         [styles['console-expanded']]: layoutMode === 'expanded',
         [styles['console-collapsed']]: layoutMode === 'collapsed',
+        [styles['console-terminal-light']]: isLightTerminal,
+        [styles['console-terminal-dark']]: !isLightTerminal,
       })}
     >
       <div className={cx(styles['console-header'])}>
@@ -158,6 +225,29 @@ const ConversationAgentBottomConsole: React.FC<
           </span>
         </div>
         <div className={cx(styles['console-actions'])}>
+          {showTerminalAppearanceToggle && (
+            <TooltipIcon
+              title={
+                isLightTerminal
+                  ? dict(
+                      'PC.Pages.ConversationAgentBottomConsole.terminalThemeDark',
+                    )
+                  : dict(
+                      'PC.Pages.ConversationAgentBottomConsole.terminalThemeLight',
+                    )
+              }
+              placement="top"
+              className={cx(styles['console-action-btn'])}
+              icon={
+                isLightTerminal ? (
+                  <MoonOutlined style={{ fontSize: 14 }} />
+                ) : (
+                  <SunOutlined style={{ fontSize: 14 }} />
+                )
+              }
+              onClick={handleToggleTerminalAppearance}
+            />
+          )}
           <TooltipIcon
             title={
               layoutMode === 'expanded'
@@ -198,7 +288,23 @@ const ConversationAgentBottomConsole: React.FC<
         </div>
       </div>
       <div className={cx(styles['console-content'])}>
-        {activeTab === 'terminal' ? renderTerminalTab() : renderLogsTab()}
+        {/* 两栏同时挂载，避免切换 tab 时卸载 xterm 导致内容与连接丢失 */}
+        <div
+          className={cx(styles['tab-pane'], {
+            [styles['tab-pane-active']]: activeTab === 'terminal',
+          })}
+          aria-hidden={activeTab !== 'terminal'}
+        >
+          {renderTerminalTab()}
+        </div>
+        <div
+          className={cx(styles['tab-pane'], {
+            [styles['tab-pane-active']]: activeTab === 'logs',
+          })}
+          aria-hidden={activeTab !== 'logs'}
+        >
+          {renderLogsTab()}
+        </div>
       </div>
     </div>
   );
