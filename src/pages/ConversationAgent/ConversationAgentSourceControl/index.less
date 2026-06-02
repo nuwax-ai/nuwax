@@ -155,9 +155,32 @@
 
   .status-badge {
     flex-shrink: 0;
+    min-width: 14px;
     font-size: @source-control-status-font-size;
     font-weight: @fontWeightStrong;
-    color: @gold7;
+    text-align: center;
+    line-height: 1.2;
+
+    // 未暂存：修改（VS Code 黄）
+    &--modified {
+      color: @gold7;
+    }
+
+    // 新增 / 未跟踪（VS Code 绿）
+    &--added,
+    &--untracked {
+      color: @green7;
+    }
+
+    // 删除（VS Code 红）
+    &--deleted {
+      color: @red5;
+    }
+
+    // 已暂存：修改态在 VS Code 中为绿色 M
+    &--staged&--modified {
+      color: @green7;
+    }
   }
 }
 

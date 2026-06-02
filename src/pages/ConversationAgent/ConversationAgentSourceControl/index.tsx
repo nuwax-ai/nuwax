@@ -7,6 +7,7 @@ import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
+import { resolveChangeFileStatus } from './changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -77,14 +78,17 @@ const ConversationAgentSourceControl: React.FC<
         const fileName = segments[segments.length - 1] || item.fileId;
         const parentPath =
           segments.length > 1 ? segments.slice(0, -1).join('/') : '';
+        const isStaged = stagedFileIds.has(item.fileId);
+        const statusMeta = resolveChangeFileStatus(item, isStaged);
 
         return {
           ...item,
           fileName,
           parentPath,
+          statusMeta,
         };
       }),
-    [changeFiles],
+    [changeFiles, stagedFileIds],
   );
 
   const contextMenuTarget = useMemo(
@@ -220,7 +224,18 @@ const ConversationAgentSourceControl: React.FC<
                       </span>
                     )}
                   </div>
-                  <span className={cx(styles['status-badge'])}>M</span>
+                  <span
+                    className={cx(
+                      styles['status-badge'],
+                      styles[`status-badge--${item.statusMeta.kind}`],
+                      {
+                        [styles['status-badge--staged']]:
+                          item.statusMeta.isStaged,
+                      },
+                    )}
+                  >
+                    {item.statusMeta.label}
+                  </span>
                 </div>
               ))
             ) : (
