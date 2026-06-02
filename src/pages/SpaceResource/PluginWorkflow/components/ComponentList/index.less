@@ -1,0 +1,18 @@
+@import '@/styles/token.less';
+
+@mainContainerGap: @padding;
+@mainContainerMarginTop: 10px;
+
+.main-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: @mainContainerGap;
+  align-content: start;
+  margin-top: @mainContainerMarginTop;
+}
+
+@media (min-width: 1440px) {
+  .main-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

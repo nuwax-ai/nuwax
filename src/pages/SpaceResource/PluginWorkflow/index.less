@@ -1,53 +1,5 @@
-@import '@/styles/color';
-@import '@/styles/token';
+@import '@/styles/token.less';
 
 .container {
-  padding: 16px 16px 16px 24px;
-
-  .title {
-    line-height: 32px;
-    font-size: @fontSizeLg;
-    font-weight: 600;
-    color: @BLANK04;
-    margin-right: 20px;
-  }
-
-  .header-area {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 5px;
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-  }
-
-  .main-container {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    align-content: start;
-    margin-top: 10px;
-  }
-
-  @media (min-width: 1440px) {
-    .main-container {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
+  padding: @padding @padding @padding @paddingLg;
 }
