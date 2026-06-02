@@ -1062,6 +1062,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Constants.Space.everyone": "所有人",
   "PC.Constants.Space.exceptionHandling": "異常處理",
   "PC.Constants.Space.exportConfig": "匯出設定",
+  "PC.Constants.Space.group": "分組",
   "PC.Constants.Space.importSkill": "匯入技能",
   "PC.Constants.Space.independentSession": "獨立會話",
   "PC.Constants.Space.logQuery": "日誌查詢",
@@ -3553,6 +3554,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名稱...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
+  "PC.Pages.SpaceResourcePricing.periodSecond": "秒",
+  "PC.Pages.SpaceResourcePricing.periodMillionToken": "百萬Token",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 次",
   "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
     "每個檔位的上下文長度不能為空且須大於 0",

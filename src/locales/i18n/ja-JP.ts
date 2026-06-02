@@ -3493,6 +3493,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "説明",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "ツール名を検索...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "回",
+  "PC.Pages.SpaceResourcePricing.periodSecond": "秒",
+  "PC.Pages.SpaceResourcePricing.periodMillionToken": "百万Token",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "試用 {0} 回",
   "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
     "各ティアのコンテキスト長は必須で、0 より大きい値にしてください",

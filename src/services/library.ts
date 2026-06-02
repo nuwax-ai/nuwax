@@ -4,6 +4,8 @@ import type {
   AddWorkflowParams,
   ComponentInfo,
   CopyTableParams,
+  ResourceGroupInfo,
+  ResourceGroupListParams,
   SkillCopyToSpaceParams,
   SkillInfo,
   SkillQueryFilter,
@@ -184,5 +186,15 @@ export function apiCopyTable(
   return request('/api/compose/db/table/copyTableDefinition', {
     method: 'POST',
     params: data,
+  });
+}
+
+// 查询资源分组列表
+export async function apiResourceGroupList(
+  params: ResourceGroupListParams,
+): Promise<RequestResponse<ResourceGroupInfo[]>> {
+  return request('/api/resource/group/list', {
+    method: 'GET',
+    params,
   });
 }

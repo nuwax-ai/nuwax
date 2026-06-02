@@ -217,11 +217,11 @@ const SkillPricingTab: React.FC<SkillPricingTabProps> = ({
       search: false,
       render: (_, record) => (
         <span>
-          <span className={styles['skill-pricing-bold-value']}>
+          <span className={styles['tool-price-amount']}>
             ¥{record.price || 0}
           </span>
           {record.pricingType === ResourcePricingType.MONTHLY && (
-            <span className={styles['skill-pricing-muted']}>
+            <span className={styles['tool-price-unit']}>
               /{dict('PC.Pages.SpaceAgentSubscriptions.cycleMonthly')}
             </span>
           )}
