@@ -255,6 +255,8 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+  // 分组 ID
+  groupId?: number;
 }
 
 // 任务创建者信息
@@ -395,4 +397,21 @@ export interface BoxInfoProps {
 // 复制参数
 export interface CopyTableParams {
   tableId: number;
+}
+
+export interface ResourceGroupInfo {
+  id: number;
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+  toolCount: number;
+  type: string;
+  created: string;
+  modified: string;
+}
+
+export interface ResourceGroupListParams {
+  spaceId: number | string;
+  types: string[];
 }

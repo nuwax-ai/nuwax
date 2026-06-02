@@ -39,6 +39,8 @@ export enum ResourcePricingType {
   MONTHLY = 'MONTHLY',
   // SUBSCRIPTION_PLAN = 'SUBSCRIPTION_PLAN',
   TIERED = 'TIERED',
+  SECOND = 'SECOND',
+  MILLION_TOKEN = 'MILLION_TOKEN',
 }
 
 // 状态：0-禁用（关闭付费），1-启用（开启收费）

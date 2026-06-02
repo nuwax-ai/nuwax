@@ -1,3 +1,4 @@
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
 import { AgentAddComponentStatusEnum } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
@@ -68,6 +69,8 @@ const MCPTools: React.FC<MCPToolsProps> = ({
           ...item,
           toolName: tool.name,
         });
+        const descriptionText =
+          tool.description || t('PC.Components.CreatedMcpTools.noDescription');
         return (
           <div
             key={`${item.targetId}-${index}-tools-${tool.name}`}
@@ -76,13 +79,14 @@ const MCPTools: React.FC<MCPToolsProps> = ({
             <div
               className={cx('dis-sb', styles['mcp-tools-item-content-style'])}
             >
-              <div className={cx(styles['mcp-tools-item-name-style'])}>
-                {tool.name}
-              </div>
-              <div className={cx(styles['mcp-tools-item-description-style'])}>
-                {tool.description ||
-                  t('PC.Components.CreatedMcpTools.noDescription')}
-              </div>
+              <EllipsisTooltip
+                className={cx(styles['mcp-tools-item-name-style'])}
+                text={tool.name}
+              />
+              <EllipsisTooltip
+                className={cx(styles['mcp-tools-item-description-style'])}
+                text={descriptionText}
+              />
             </div>
             <div
               className={cx(styles['mcp-tools-item-button-style'], 'dis-sb')}
