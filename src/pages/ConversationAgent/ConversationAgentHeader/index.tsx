@@ -36,9 +36,7 @@ export interface ConversationAgentHeaderProps {
   onToggleFileTreeSidebar?: () => void;
   /** 当前是否已打开文件预览（全局状态） */
   isFileTreeVisible?: boolean;
-  /** 当前文件视图模式 */
-  viewMode?: 'preview' | 'desktop';
-  /** 展开或收起文件树 */
+  /** 展开或收起文件预览面板 */
   onOpenPreviewPanel?: () => void;
 }
 

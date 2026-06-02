@@ -110,7 +110,6 @@ export interface ConversationAgentFileViewTree {
 export interface ConversationAgentFileViewPreview {
   selectedFileNode: FileNode | null;
   selectedFileId: string;
-  viewFileType: 'preview' | 'code';
   isFullscreen: boolean;
   hideDesktop: HideDesktopEnum;
   changeFiles: ChangeFileInfo[];
@@ -122,7 +121,6 @@ export interface ConversationAgentFileViewPreview {
   /** FilePathHeader 组件所需的 props（不含更多操作） */
   filePathHeaderProps: ConversationAgentFilePathHeaderProps;
   handleFullscreen: () => void;
-  handleViewFileTypeChange: (type: 'preview' | 'code') => void;
   handleFileTreeToggle: () => void;
   saveFiles: () => Promise<void>;
   cancelSaveFiles: () => void;

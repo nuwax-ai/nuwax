@@ -201,7 +201,6 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
     fileTreeData,
     fileTreeDataLoading,
-    viewMode,
     handleRefreshFileList,
     refreshFileListImmediately,
     openPreviewView,
@@ -469,11 +468,7 @@ const ConversationAgent: React.FC = () => {
       if (attr === 'expandPageArea') {
         runUpdateAgent(agentId);
       }
-      if (
-        attr === 'hideDesktop' &&
-        value === HideDesktopEnum.Yes &&
-        viewMode === 'desktop'
-      ) {
+      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
         closePreviewView();
       }
 
@@ -533,7 +528,7 @@ const ConversationAgent: React.FC = () => {
         }
       }
     },
-    [agentConfigInfo, agentId, messageList?.length, viewMode],
+    [agentConfigInfo, agentId, messageList?.length, closePreviewView],
   );
 
   /**
@@ -841,7 +836,7 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（仅由 header 图标控制，不受 viewMode / 预览状态影响）
+   * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
     setCanShowFileView((prev) => {

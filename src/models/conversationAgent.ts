@@ -178,10 +178,7 @@ export default () => {
   // 文件树数据加载状态
   const [fileTreeDataLoading, setFileTreeDataLoading] =
     useState<boolean>(false);
-  // 文件树视图模式
-  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
-  // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
-  const viewModeRef = useRef<'preview' | 'desktop'>('preview');
+  // 使用 ref 跟踪文件树可见状态，用于避免不必要的刷新
   const isFileTreeVisibleRef = useRef<boolean>(false);
 
   // 打开定时任务弹窗
@@ -241,12 +238,9 @@ export default () => {
     [refreshFileListImmediately],
   );
 
-  // 打开预览视图或远程桌面视图时修改状态值
-  const openPreviewChangeState = useCallback((mode: 'preview' | 'desktop') => {
-    setViewMode(mode);
+  /** 打开文件预览面板 */
+  const openFilePreviewPanel = useCallback(() => {
     setIsFileTreeVisible(true);
-    // 更新 ref 值
-    viewModeRef.current = mode;
     isFileTreeVisibleRef.current = true;
   }, []);
 
@@ -263,28 +257,21 @@ export default () => {
     closePreviewView();
     // 清空文件树数据
     setFileTreeData([]);
-    // 设置视图模式为预览
-    setViewMode('preview');
-    // 更新 ref 值
-    viewModeRef.current = 'preview';
   }, [closePreviewView]);
 
   // 打开预览视图
   const openPreviewView = useCallback(
     async (cId: number) => {
-      // 检查是否需要刷新文件列表
-      // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
-      const needRefresh =
-        viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+      // 首次打开文件预览面板时刷新文件列表
+      const needRefresh = !isFileTreeVisibleRef.current;
 
-      // 打开预览视图或远程桌面视图时修改状态值
-      openPreviewChangeState('preview');
+      openFilePreviewPanel();
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
         handleRefreshFileList(cId);
       }
     },
-    [handleRefreshFileList],
+    [handleRefreshFileList, openFilePreviewPanel],
   );
 
   // 滚动到底部
@@ -763,7 +750,6 @@ export default () => {
         if (
           data.type === AgentComponentTypeEnum.ToolCall &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
-          viewModeRef.current === 'preview' && // 文件预览
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
           params.conversationId
         ) {
@@ -1293,9 +1279,6 @@ export default () => {
     fileTreeData,
     fileTreeDataLoading,
     setFileTreeData,
-    // 文件树视图模式
-    viewMode,
-    setViewMode,
     // 处理文件列表刷新事件（节流，供 SSE / 自动触发）
     handleRefreshFileList,
     // 立即刷新文件列表（供手动点击刷新按钮）

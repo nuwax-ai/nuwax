@@ -1,6 +1,4 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
-import { USER_INFO } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
@@ -13,7 +11,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
+import { Button, message, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
@@ -28,15 +26,12 @@ const cx = classNames.bind(styles);
 
 /**
  * ConversationAgent 文件路径头部组件（自 FileTreeView/FilePathHeader 复制，可独立演进）
- * 显示文件信息、视图模式切换按钮和操作按钮
+ * 显示文件信息与操作按钮
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
   conversationId,
   targetNode,
-  viewMode = 'preview',
-  // 用户选择的智能体电脑名称
-  agentSandboxName,
   /** 重启容器回调 */
   onRestartServer,
   /** 重启智能体回调 */
@@ -48,8 +43,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   showFullscreenIcon = true,
   isDownloadingFile = false,
   showMoreActions = true,
-  viewFileType = 'preview',
-  onViewFileTypeChange,
   onDownloadFileByUrl,
   isShowShare = true,
   // 是否显示下载按钮, 默认显示
@@ -59,7 +52,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onExportPdf,
   isExportingPdf = false,
   onClose,
-  vncConnectStatus,
   isFileTreeVisible = false,
   isFileTreePinned = false,
   onFileTreeToggle,
@@ -75,10 +67,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return formatFileSize(fileSize);
   }, [fileSize]);
 
-  // 获取用户信息
-  const _userInfo = localStorage.getItem(USER_INFO);
-  const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
-  // 远程桌面分享弹窗显示状态
+  // 文件分享弹窗显示状态
   const [shareDesktopModalVisible, setShareDesktopModalVisible] =
     useState<boolean>(false);
 
@@ -87,64 +76,24 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     'CONVERSATION',
   );
 
-  // 分享
-  const onShareAction = (mode: 'preview' | 'desktop') => {
+  /** 分享当前会话文件预览 */
+  const onShareAction = () => {
     if (!conversationId) {
       return;
     }
-
-    // 分享文件
-    if (mode === 'preview') {
-      setShareType('CONVERSATION');
-    }
-
-    // 分享桌面
-    if (mode === 'desktop') {
-      setShareType('DESKTOP');
-    }
+    setShareType('CONVERSATION');
     setShareDesktopModalVisible(true);
   };
 
-  // 获取 VNC 连接状态颜色
-  const getVncConnectStatusColor = (status: ConnectionStatus) => {
-    switch (status) {
-      case 'connected':
-        return '#3BB346';
-      case 'connecting':
-        return '#1890ff';
-      case 'disconnected':
-        return '#f50';
-      case 'error':
-        return '#ff4d4f';
-      default:
-        return 'transparent';
-    }
-  };
-
   // 是否有左侧文件信息内容需要显示
-  const hasFileInfoContent = useMemo(() => {
-    if (viewMode === 'preview') {
-      // preview 模式：检查是否有 fileDetails 或 Segmented
-      const hasFileDetails = !isFileTreeVisible && fileName;
-      const hasSegmented =
-        (targetNode?.fileProxyUrl ||
-          (targetNode?.content !== undefined &&
-            targetNode?.content !== null)) &&
-        fileName &&
-        (fileName?.includes('.htm') || isMarkdownFile(fileName));
-      return hasFileDetails || hasSegmented;
-    }
-    // desktop 模式：pc-box 总是显示，所以总是有内容
-    return true;
-  }, [viewMode, isFileTreeVisible, fileName, targetNode?.fileProxyUrl]);
+  const hasFileInfoContent = useMemo(
+    () => !isFileTreeVisible && !!fileName,
+    [isFileTreeVisible, fileName],
+  );
 
   // 是否需要展示右侧整体 actionButtons（分享 / 全屏 / 更多 / 关闭）
   const showRightActionButtons = useMemo(() => {
-    const canShare =
-      isShowShare &&
-      (viewMode === 'desktop' ||
-        (targetNode?.fileProxyUrl && viewMode === 'preview'));
-
+    const canShare = isShowShare && !!targetNode?.fileProxyUrl;
     const canFullscreen = showFullscreenIcon || isFullscreen;
     const canMoreActions = showMoreActions;
     const canClose = !!onClose && !isFullscreen;
@@ -152,7 +101,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return canShare || canFullscreen || canMoreActions || canClose;
   }, [
     isShowShare,
-    viewMode,
     targetNode?.fileProxyUrl,
     showFullscreenIcon,
     isFullscreen,
@@ -163,110 +111,49 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 文件树展开/折叠图标 */}
-      {viewMode !== 'desktop' && (
-        <div className={cx('flex', 'items-center', 'gap-4')}>
-          <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
-          <Tooltip
-            title={
-              isFileTreeVisible
-                ? dict('PC.Components.FilePathHeader.collapseFileTree')
-                : dict('PC.Components.FilePathHeader.expandFileTree')
+      <div className={cx('flex', 'items-center', 'gap-4')}>
+        <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
+        <Tooltip
+          title={
+            isFileTreeVisible
+              ? dict('PC.Components.FilePathHeader.collapseFileTree')
+              : dict('PC.Components.FilePathHeader.expandFileTree')
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={
+              isFileTreeVisible ? (
+                <MenuFoldOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+              )
             }
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={
-                isFileTreeVisible ? (
-                  <MenuFoldOutlined style={{ fontSize: 16 }} />
-                ) : (
-                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
-                )
-              }
-              onClick={onFileTreeToggle}
-              className={cx(styles.fileTreeToggleButton, {
-                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
-              })}
-            />
-          </Tooltip>
-        </div>
-      )}
+            onClick={onFileTreeToggle}
+            className={cx(styles.fileTreeToggleButton, {
+              [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+            })}
+          />
+        </Tooltip>
+      </div>
       {/* 左侧：文件信息 */}
       {hasFileInfoContent && (
         <div className={styles.fileInfo}>
-          {viewMode === 'preview' ? (
-            <>
-              {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
-              {!isFileTreeVisible && (
-                <div className={styles.fileDetails}>
-                  <div className={styles.fileName}>{fileName}</div>
-                  {formattedSize && (
-                    <span className={styles.fileMeta}>({formattedSize})</span>
-                  )}
-                </div>
+          {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+          {!isFileTreeVisible && (
+            <div className={styles.fileDetails}>
+              <div className={styles.fileName}>{fileName}</div>
+              {formattedSize && (
+                <span className={styles.fileMeta}>({formattedSize})</span>
               )}
-              {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
-              {(targetNode?.fileProxyUrl ||
-                (targetNode?.content !== undefined &&
-                  targetNode?.content !== null)) &&
-                fileName &&
-                (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Segmented: {
-                          itemSelectedBg: '#fff',
-                          itemSelectedColor: '#5147FF',
-                          itemColor: 'rgba(0, 0, 0, 0.45)',
-                          itemHoverColor: 'rgba(0, 0, 0, 0.65)',
-                          trackBg: 'rgba(12, 20, 102, 0.04)',
-                          trackPadding: 2,
-                        },
-                      },
-                    }}
-                  >
-                    <Segmented
-                      value={viewFileType}
-                      onChange={onViewFileTypeChange}
-                      options={[
-                        {
-                          label: dict('PC.Components.FilePathHeader.preview'),
-                          value: 'preview',
-                        },
-                        {
-                          label: dict('PC.Components.FilePathHeader.code'),
-                          value: 'code',
-                        },
-                      ]}
-                    />
-                  </ConfigProvider>
-                )}
-            </>
-          ) : (
-            <div className={styles['pc-box']}>
-              {vncConnectStatus && (
-                <div
-                  className={styles.vncConnectStatus}
-                  style={{
-                    backgroundColor: getVncConnectStatusColor(vncConnectStatus),
-                  }}
-                />
-              )}
-              <div className={styles.fileName}>
-                {agentSandboxName ||
-                  `${
-                    userInfo?.nickName ||
-                    userInfo?.userName ||
-                    dict('PC.Components.FilePathHeader.remote')
-                  }${dict('PC.Components.FilePathHeader.agentComputerSuffix')}`}
-              </div>
             </div>
           )}
         </div>
       )}
 
       <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
-        {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
+        {/* 动态图标区域，根据文件类型动态显示图标 */}
         <div className={styles.actionButtons}>
           {/* Markdown 文件显示导出 PDF 按钮 */}
           {targetNode &&
@@ -275,8 +162,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             isShowExportPdfButton &&
             (isMarkdownFile(fileName) ||
               fileName.endsWith('.html') ||
-              fileName.endsWith('.htm')) &&
-            viewMode === 'preview' && (
+              fileName.endsWith('.htm')) && (
               <Tooltip
                 title={
                   isExportingPdf
@@ -299,36 +185,34 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             )}
 
           {/* 只有存在 fileProxyUrl 且 isShowDownloadButton 为 true 时，才显示下载文件按钮 */}
-          {targetNode?.fileProxyUrl &&
-            isShowDownloadButton &&
-            viewMode === 'preview' && (
-              <Tooltip
-                placement="bottom"
-                title={
-                  isDownloadingFile
-                    ? dict('PC.Components.FilePathHeader.downloading')
-                    : dict('PC.Components.FilePathHeader.download')
+          {targetNode?.fileProxyUrl && isShowDownloadButton && (
+            <Tooltip
+              placement="bottom"
+              title={
+                isDownloadingFile
+                  ? dict('PC.Components.FilePathHeader.downloading')
+                  : dict('PC.Components.FilePathHeader.download')
+              }
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  <SvgIcon
+                    name="icons-common-download"
+                    style={{ fontSize: 16 }}
+                  />
                 }
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={
-                    <SvgIcon
-                      name="icons-common-download"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-                  className={styles.actionButton}
-                  loading={isDownloadingFile}
-                  disabled={isDownloadingFile}
-                />
-              </Tooltip>
-            )}
+                onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+                className={styles.actionButton}
+                loading={isDownloadingFile}
+                disabled={isDownloadingFile}
+              />
+            </Tooltip>
+          )}
 
           {/* 复制内容 */}
-          {!!targetNode?.content && viewMode === 'preview' && (
+          {!!targetNode?.content && (
             <Tooltip title={dict('PC.Components.FilePathHeader.copy')}>
               <Button
                 type="text"
@@ -351,27 +235,22 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {showRightActionButtons && (
           <div className={cx(styles.actionButtons)}>
             {/* 分享 */}
-            {isShowShare &&
-              (viewMode === 'desktop' ||
-                (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-                <Tooltip
-                  title={dict('PC.Components.FilePathHeader.share')}
-                  placement="bottom"
-                >
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={
-                      <SvgIcon
-                        name="icons-chat-share"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={() => onShareAction(viewMode)}
-                    className={styles.actionButton}
-                  />
-                </Tooltip>
-              )}
+            {isShowShare && targetNode?.fileProxyUrl && (
+              <Tooltip
+                title={dict('PC.Components.FilePathHeader.share')}
+                placement="bottom"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={
+                    <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                  }
+                  onClick={onShareAction}
+                  className={styles.actionButton}
+                />
+              </Tooltip>
+            )}
 
             {/* 是否显示全屏图标 */}
             {(showFullscreenIcon || isFullscreen) && (

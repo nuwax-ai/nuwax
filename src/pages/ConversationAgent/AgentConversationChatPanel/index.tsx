@@ -130,7 +130,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
    * 消息相关：messageList、setMessageList、chatSuggestList、onMessageSend
    * 会话相关：conversationInfo、runQueryConversation、loadingConversation
    * 滚动控制：messageViewRef、messageViewScrollToBottom、allowAutoScrollRef、scrollTimeoutRef、showScrollBtn
-   * 文件预览：viewMode、openPreviewView、closePreviewView、isFileTreeVisible
+   * 文件预览：openPreviewView、closePreviewView、isFileTreeVisible
    * 分页加载：isMoreMessage、loadingMore、handleLoadMoreMessage
    */
   const {
@@ -158,7 +158,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     setFinalResult,
     setIsLoadingOtherInterface,
     clearFilePanelInfo,
-    viewMode,
     openPreviewView,
     closePreviewView,
     isFileTreeVisible,
@@ -479,11 +478,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       return;
     }
 
-    if (viewMode === 'preview') {
-      closePreviewView();
-    } else {
-      openPreviewView(convId);
-    }
+    closePreviewView();
   };
 
   /**
@@ -550,7 +545,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         isFileTreeSidebarVisible={isFileTreeSidebarVisible}
         onToggleFileTreeSidebar={onToggleFileTreeSidebar}
         isFileTreeVisible={isFileTreeVisible}
-        viewMode={viewMode}
         onOpenPreviewPanel={handleOpenPreviewPanel}
       />
 
