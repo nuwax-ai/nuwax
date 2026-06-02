@@ -251,12 +251,14 @@ const Chat: React.FC = () => {
     viewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    refreshFileListImmediately,
     openPreviewView,
     openDesktopView,
     restartVncPod,
     restartAgent,
     // 通用型智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
@@ -544,7 +546,6 @@ const Chat: React.FC = () => {
 
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        // const { data } = await runAsync(id);
         let data = null;
         try {
           setLoadingAsync(true);
@@ -1480,6 +1481,9 @@ const Chat: React.FC = () => {
                 <FileTreeView
                   className={cx(styles['file-tree-container'])}
                   taskAgentSelectedFileId={taskAgentSelectedFileId}
+                  clearTaskAgentSelectedFileId={() =>
+                    setTaskAgentSelectedFileId('')
+                  }
                   taskAgentSelectTrigger={taskAgentSelectTrigger}
                   originalFiles={fileTreeData}
                   fileTreeDataLoading={fileTreeDataLoading}
@@ -1514,7 +1518,7 @@ const Chat: React.FC = () => {
                   onFileTreePinnedChange={setIsFileTreePinned}
                   isCanDeleteSkillFile={true}
                   // 刷新文件树回调
-                  onRefreshFileTree={() => handleRefreshFileList(id)}
+                  onRefreshFileTree={() => refreshFileListImmediately(id)}
                   // VNC 空闲检测配置（仅通用型智能体启用）
                   idleDetection={{
                     enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
@@ -1534,10 +1538,7 @@ const Chat: React.FC = () => {
     );
   };
 
-  return clearLoading ||
-    loadingConversation ||
-    loadingAsync ||
-    !conversationInfo ? (
+  return clearLoading || loadingConversation || loadingAsync ? (
     <div
       className={cx(
         'flex',

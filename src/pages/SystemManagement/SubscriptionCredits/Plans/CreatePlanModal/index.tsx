@@ -163,7 +163,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
-        message.success('创建成功');
+        message.success(dict('PC.Common.Global.createSuccess'));
         onSuccess?.();
         onCancel();
       },
@@ -181,7 +181,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
-        message.success('更新成功');
+        message.success(
+          dict('PC.Pages.AgentEdit.CreatePlanModal.updateSuccess'),
+        );
         onSuccess?.();
         onCancel();
       },
@@ -282,7 +284,9 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
     <CustomFormModal
       form={form}
       title={
-        planInfo?.id ? '编辑套餐' : dict('PC.Pages.SystemPlans.createPlan')
+        planInfo?.id
+          ? dict('PC.Pages.SpaceSubscriptionSettings.editTitle')
+          : dict('PC.Pages.SystemPlans.createPlan')
       }
       open={open}
       classNames={{ body: styles['create-plan-modal-body'] }}
@@ -311,11 +315,19 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 },
               ]}
             >
-              <Input ref={nameInputRef} placeholder="例如：基础版" />
+              <Input
+                ref={nameInputRef}
+                placeholder={dict(
+                  'PC.Pages.SystemPlans.fieldNamePlaceholderExample',
+                )}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item label="套餐包含积分（每月）" name="creditAmount">
+            <Form.Item
+              label={dict('PC.Pages.SystemPlans.fieldCreditAmountMonthly')}
+              name="creditAmount"
+            >
               <InputNumber
                 min={0}
                 max={100000000}
@@ -327,7 +339,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
 
           <Col span={12}>
             <Form.Item
-              label="套餐价格 (¥)"
+              label={dict('PC.Pages.SystemPlans.fieldPriceLabel')}
               name="price"
               rules={[{ required: true }]}
             >
@@ -337,49 +349,77 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
                 step={0.01}
                 precision={2}
                 className="w-full"
-                placeholder="例如：99"
+                placeholder={dict(
+                  'PC.Pages.SystemPlans.fieldPricePlaceholderExample',
+                )}
               />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
-              label="套餐有效期"
+              label={dict('PC.Pages.SystemPlans.fieldValidityPeriod')}
               name="period"
               rules={[{ required: true }]}
             >
               <Select
                 options={[
-                  { label: '1个月', value: 'MONTH' },
-                  { label: '3个月', value: 'QUARTER' },
-                  { label: '12个月', value: 'YEAR' },
-                  { label: '永久', value: 'FOREVER' },
+                  {
+                    label: dict('PC.Pages.SystemPlans.periodOption1Month'),
+                    value: 'MONTH',
+                  },
+                  {
+                    label: dict('PC.Pages.SystemPlans.periodOption3Months'),
+                    value: 'QUARTER',
+                  },
+                  {
+                    label: dict('PC.Pages.SystemPlans.periodOption12Months'),
+                    value: 'YEAR',
+                  },
+                  {
+                    label: dict('PC.Pages.SystemPlans.periodForever'),
+                    value: 'FOREVER',
+                  },
                 ]}
               />
             </Form.Item>
           </Col>
 
           <Col span={12}>
-            <Form.Item label="热门标签" name="isHot" valuePropName="checked">
-              <Switch checkedChildren="是" unCheckedChildren="否" />
+            <Form.Item
+              label={dict('PC.Pages.SystemPlans.fieldHotLabel')}
+              name="isHot"
+              valuePropName="checked"
+            >
+              <Switch
+                checkedChildren={dict('PC.Common.Global.yes')}
+                unCheckedChildren={dict('PC.Common.Global.no')}
+              />
             </Form.Item>
           </Col>
 
           <Col span={12}>
             {/* // 状态：0-下线，1-上线 */}
-            <Form.Item label="上架状态" name="status" valuePropName="checked">
-              <Switch checkedChildren="是" unCheckedChildren="否" />
+            <Form.Item
+              label={dict('PC.Pages.SystemPlans.status')}
+              name="status"
+              valuePropName="checked"
+            >
+              <Switch
+                checkedChildren={dict('PC.Common.Global.yes')}
+                unCheckedChildren={dict('PC.Common.Global.no')}
+              />
             </Form.Item>
           </Col>
 
           <Col span={24}>
             <Form.Item
-              label="套餐描述"
+              label={dict('PC.Pages.SpaceSubscriptionSettings.fieldDesc')}
               name="description"
               rules={[{ required: true }]}
             >
               <Input.TextArea
                 rows={3}
-                placeholder="描述套餐的定位和适用场景"
+                placeholder={dict('PC.Pages.SystemPlans.fieldDescPlaceholder')}
                 showCount
                 maxLength={500}
                 autoSize={{ minRows: 3, maxRows: 6 }}
@@ -392,9 +432,11 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({
         {/* 开发者权限(可多选) */}
         {userGroupList.length > 0 && (
           <>
-            <h3 className={styles['developer-permission-title']}>开发者权限</h3>
+            <h3 className={styles['developer-permission-title']}>
+              {dict('PC.Pages.SystemPlans.developerPermissionTitle')}
+            </h3>
             <div className={styles['developer-permission-desc']}>
-              关联用户组以控制套餐包含的权限范围，可多选
+              {dict('PC.Pages.SystemPlans.developerPermissionDesc')}
             </div>
 
             <div className={cx('flex', styles['user-group-card-container'])}>

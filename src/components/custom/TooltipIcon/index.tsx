@@ -19,6 +19,8 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
   ariaLabel,
   placement,
   onClick,
+  children,
+  tooltipStyles,
 }) => {
   const bg =
     type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
@@ -26,29 +28,38 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
   const accessibleLabel =
     ariaLabel || (typeof title === 'string' ? title : undefined);
 
+  const trigger = children ?? (
+    <span
+      className={cx(
+        'hover-box',
+        'flex',
+        'content-center',
+        'items-center',
+        'cursor-pointer',
+        styles.box,
+        className,
+      )}
+      onClick={onClick}
+      aria-label={accessibleLabel}
+    >
+      {/*默认加号（+）*/}
+      {icon || (
+        <SvgIcon
+          name="icons-common-plus"
+          style={{ color: token.colorTextTertiary, fontSize: '15px' }}
+        />
+      )}
+    </span>
+  );
+
   return (
-    <Tooltip title={title} classNames={{ root: bg }} placement={placement}>
-      <span
-        className={cx(
-          'hover-box',
-          'flex',
-          'content-center',
-          'items-center',
-          'cursor-pointer',
-          styles.box,
-          className,
-        )}
-        onClick={onClick}
-        aria-label={accessibleLabel}
-      >
-        {/*默认加号（+）*/}
-        {icon || (
-          <SvgIcon
-            name="icons-common-plus"
-            style={{ color: token.colorTextTertiary, fontSize: '15px' }}
-          />
-        )}
-      </span>
+    <Tooltip
+      title={title}
+      classNames={{ root: bg }}
+      placement={placement}
+      styles={tooltipStyles}
+    >
+      {trigger}
     </Tooltip>
   );
 };

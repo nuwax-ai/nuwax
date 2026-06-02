@@ -240,7 +240,9 @@ const Plans = () => {
             sort: item.sort,
           })),
       );
-      message.success('排序已更新');
+      message.success(
+        dict('PC.Pages.AgentEdit.SubscriptionSetting.sortUpdated'),
+      );
       originalDataRef.current = null;
     } catch {
       message.error(dict('PC.Common.Toast.operationFailed'));
@@ -309,30 +311,6 @@ const Plans = () => {
       render: (_, r) =>
         r.creditAmount !== undefined && r.creditAmount !== null
           ? r.creditAmount.toLocaleString()
-          : 0,
-    },
-    {
-      title: dict('PC.Pages.SystemPlans.colCallLimit'),
-      dataIndex: 'callLimitCount',
-      width: 120,
-      search: false,
-      render: (_, r) => {
-        const n = r.callLimitCount;
-        if (n === -1) {
-          return dict('PC.Pages.SystemPlans.colCallLimitUnlimited');
-        }
-        return n;
-      },
-    },
-    {
-      title: dict('PC.Pages.SystemPlans.colDailyGiftCredit'),
-      dataIndex: 'dailyGiftCreditAmount',
-      width: 140,
-      search: false,
-      render: (_, r) =>
-        r.dailyGiftCreditAmount !== undefined &&
-        r.dailyGiftCreditAmount !== null
-          ? r.dailyGiftCreditAmount.toLocaleString()
           : 0,
     },
     {

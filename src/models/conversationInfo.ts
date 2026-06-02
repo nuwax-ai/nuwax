@@ -84,7 +84,7 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
 import { throttle } from 'lodash';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
@@ -263,22 +263,26 @@ export default () => {
     },
   );
 
-  // 处理文件列表刷新事件（在 useCallback 中直接节流， 3秒内只执行一次）
-  const handleRefreshFileList = useCallback(
-    throttle(
-      async (cId?: number) => {
-        if (!cId) {
-          return;
-        }
-        // 设置文件树数据加载状态
-        setFileTreeDataLoading(true);
-        // 查询文件列表
-        await runGetStaticFileList(cId);
-      },
-      5000,
-      { leading: true, trailing: true },
-    ),
+  // 立即刷新文件列表（供用户手动点击刷新按钮使用，不做节流）
+  const refreshFileListImmediately = useCallback(
+    async (cId?: number) => {
+      if (!cId) {
+        return;
+      }
+      setFileTreeDataLoading(true);
+      await runGetStaticFileList(cId);
+    },
     [runGetStaticFileList],
+  );
+
+  // 处理文件列表刷新事件（节流，供 SSE / 自动触发场景防刷）
+  const handleRefreshFileList = useMemo(
+    () =>
+      throttle(refreshFileListImmediately, 2000, {
+        leading: true,
+        trailing: true,
+      }),
+    [refreshFileListImmediately],
   );
 
   // 打开预览视图或远程桌面视图时修改状态值
@@ -1488,8 +1492,10 @@ export default () => {
     // 文件树视图模式
     viewMode,
     setViewMode,
-    // 处理文件列表刷新事件
+    // 处理文件列表刷新事件（节流，供 SSE / 自动触发）
     handleRefreshFileList,
+    // 立即刷新文件列表（供手动点击刷新按钮）
+    refreshFileListImmediately,
     openDesktopView,
     openPreviewView,
     // 重启智能体电脑

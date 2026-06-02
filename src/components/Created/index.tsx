@@ -1,5 +1,6 @@
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import useSubscription from '@/hooks/useSubscription';
@@ -760,6 +761,7 @@ const Created: React.FC<CreatedProp> = ({
 
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
+    // 是否已添加
     const isAddedState = isAdded(item);
     // 仅「技能 Tab + 租户开启订阅 + 付费技能 + 未订阅」时展示订阅按钮，否则走添加/已添加
     const isPaidUnsubscribedSkill =
@@ -784,9 +786,11 @@ const Created: React.FC<CreatedProp> = ({
         />
         <div className={cx('flex-1', styles['content-font'])}>
           <div className={cx(styles['label-row'])}>
-            <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
-              {item.name}
-            </p>
+            <EllipsisTooltip
+              className={cx(styles['label-font-style'])}
+              text={item.name}
+              maxLines={2}
+            />
             {/* 仅插件/工作流类型需要展示付费标签 */}
             {/* 订阅能力开启且为付费时展示「已订阅/付费」标签，与右侧按钮状态对应 */}
             {isEnableSubscription &&
@@ -809,11 +813,10 @@ const Created: React.FC<CreatedProp> = ({
                 </Tag>
               )}
           </div>
-          <p
-            className={cx(styles['created-description-style'], 'text-ellipsis')}
-          >
-            {item.description}
-          </p>
+          <EllipsisTooltip
+            className={cx(styles['created-description-style'])}
+            text={item.description}
+          />
           <div className={cx('dis-sb', styles['count-div-style'])}>
             <div className={'dis-left'}>
               <img
@@ -859,7 +862,7 @@ const Created: React.FC<CreatedProp> = ({
           </div>
         </div>
         {/* 未订阅付费技能必须先订阅，不能直接添加；其余类型或未付费/已订阅仍用添加按钮 */}
-        {isPaidUnsubscribedSkill ? (
+        {isPaidUnsubscribedSkill && !isAddedState ? (
           <Button
             color="primary"
             variant="filled"

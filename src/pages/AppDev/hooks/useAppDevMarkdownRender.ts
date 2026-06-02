@@ -89,12 +89,18 @@ export default function useAppDevMarkdownRender({
         const processedContent = groupAppDevProcesses(content);
 
         // 判断是否是增量更新
-        // 核心修正：判断 processedContent 是否是以之前的 lastProcessedContent 开头
-        // 如果不是（例如分组结构发生了变化，从 <div> 变成了 <appdev-process-group>），
-        // 则必须清空渲染器并重新全量推送，否则会导致 slicing 出来的字符串是破碎的。
+        // 核心修正：
+        // 1. 判断 processedContent 是否是以之前的 lastProcessedContent 开头
+        //    如果不是（例如分组结构发生了变化，从 <div> 变成了 <appdev-process-group>），
+        //    则必须清空渲染器并重新全量推送，否则会导致 slicing 出来的字符串是破碎的。
+        // 2. 如果文本中包含特殊的 '<appdev-' 自定义标签，为防止增量分片解析导致 HTML 结构不完整被 Rehype 降级固化为普通文本，
+        //    我们必须在流式传输期间强制对其进行全量清空重新推送渲染，以保证每次都能以最新闭合的 HTML 正确渲染为自定义卡片组件。
+        const hasAppDevTags = processedContent.includes('<appdev-');
+
         if (
-          lastProcessedContent.current &&
-          !processedContent.startsWith(lastProcessedContent.current)
+          hasAppDevTags ||
+          (lastProcessedContent.current &&
+            !processedContent.startsWith(lastProcessedContent.current))
         ) {
           markdownRef.current.clear();
           lastTextPos.current = 0;

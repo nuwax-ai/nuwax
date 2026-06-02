@@ -13,6 +13,7 @@ import React from 'react';
  */
 export interface LimitedTooltipProps {
   children?: React.ReactNode;
+  text?: React.ReactNode;
   maxWidth?: number;
   maxHeight?: number;
   emptyText?: string;
@@ -41,6 +42,7 @@ const formatText = (val: any): string => {
 
 const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
   children,
+  text,
   maxWidth = 520,
   maxHeight = 280,
   emptyText = '-',
@@ -52,18 +54,18 @@ const LimitedTooltip: React.FC<LimitedTooltipProps> = ({
   const [isOverflow, setIsOverflow] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  if (!children) {
+  const content = children ?? text;
+
+  if (!content) {
     return <span>{emptyText}</span>;
   }
 
   // 如果需要格式化 JSON 或内容不是字符串，先处理内容
   const displayText =
     formatJson ||
-    (typeof children !== 'string' &&
-      children !== null &&
-      children !== undefined)
-      ? formatText(children)
-      : children;
+    (typeof content !== 'string' && content !== null && content !== undefined)
+      ? formatText(content)
+      : content;
 
   const handleMouseEnter = () => {
     const el = containerRef.current;

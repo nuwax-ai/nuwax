@@ -146,6 +146,7 @@
 
         .mention-item-name {
           flex: 1;
+          min-width: 0;
           font-size: @fontSize;
           color: @colorText;
         }
@@ -154,6 +155,11 @@
           font-size: @fontSizeSm;
           color: @colorTextSecondary;
         }
+      }
+
+      .mention-item-tag {
+        flex-shrink: 0;
+        margin-right: 0;
       }
     }
 
