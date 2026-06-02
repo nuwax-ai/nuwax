@@ -3620,6 +3620,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名称...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
+  "PC.Pages.SpaceResourcePricing.periodSecond": "秒",
+  "PC.Pages.SpaceResourcePricing.periodMillionToken": "百万Token",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "试用 {0} 次",
   "PC.Pages.SpaceResourcePricing.tierHint": "（多档位 · ¥/百万 TOKENS）",
   "PC.Pages.SpaceResourcePricing.removeTier": "删除此档位",

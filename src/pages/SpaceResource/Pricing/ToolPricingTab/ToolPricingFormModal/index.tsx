@@ -5,6 +5,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { TOOL_PRICING_TYPE_OPTIONS } from '@/utils/resourcePricing';
 import { Form, Input, InputNumber, Select, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { TARGET_TYPE_LABEL_MAP } from '..';
@@ -222,6 +223,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
               <InputNumber
                 min={0}
                 precision={2}
+                step={0.01}
                 max={100000000}
                 className="w-full"
               />
@@ -229,15 +231,13 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
             <Form.Item
               name="pricingType"
               label={dict('PC.Pages.SpaceResourcePricing.period')}
+              rules={[{ required: true }]}
             >
               <Select
-                disabled
-                options={[
-                  {
-                    label: dict('PC.Pages.SpaceResourcePricing.periodOnce'),
-                    value: ResourcePricingType.ONE_TIME,
-                  },
-                ]}
+                options={TOOL_PRICING_TYPE_OPTIONS.map((item) => ({
+                  label: dict(item.labelKey),
+                  value: item.value,
+                }))}
               />
             </Form.Item>
           </div>

@@ -3620,6 +3620,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "Description",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "Search tool name...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "per call",
+  "PC.Pages.SpaceResourcePricing.periodSecond": "second",
+  "PC.Pages.SpaceResourcePricing.periodMillionToken": "million tokens",
   "PC.Pages.SpaceResourcePricing.priceTrialBadge": "Trial {0} calls",
   "PC.Pages.SpaceResourcePricing.tierHint": "(Multiple Tiers · ¥/Million TOKENS)",
   "PC.Pages.SpaceResourcePricing.removeTier": "Remove this tier",
