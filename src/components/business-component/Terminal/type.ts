@@ -23,6 +23,10 @@ export interface SearchOptions {
   incremental?: boolean;
 }
 
+// ─── WebSocket 线缆协议 ──────────────────────────────────────────
+/** plain：纯文本输入 + JSON resize；ttyd：0x30 输入帧 + '1' resize */
+export type TerminalWireProtocol = 'plain' | 'ttyd';
+
 // ─── 重连配置 ────────────────────────────────────────────────────
 export interface ReconnectConfig {
   /** 是否启用自动重连 @default true */
@@ -37,6 +41,10 @@ export interface ReconnectConfig {
 export interface XtermTerminalProps {
   /** WebSocket 连接地址 (如 "wss://example.com/terminal") */
   wsUrl?: string;
+  /** WebSocket 子协议（ttyd 需传 ['tty']） */
+  wsSubprotocols?: string | string[];
+  /** 与后端约定的消息格式 @default 'plain' */
+  wireProtocol?: TerminalWireProtocol;
   /** 挂载时是否自动连接（需要 wsUrl） @default false */
   autoConnect?: boolean;
   /** 重连配置 */

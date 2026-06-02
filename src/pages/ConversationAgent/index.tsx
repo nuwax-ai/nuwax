@@ -233,16 +233,20 @@ const ConversationAgent: React.FC = () => {
   }, [currentSelectedComputerId, conversationInfo]);
 
   /**
-   * 终端 WebSocket 连接地址
-   * 根据沙箱 ID 自动构造 ws/wss 协议地址，用于底部终端组件实时通信
+   * 终端 WebSocket 连接地址（本地 ttyd 联调）
+   * http://localhost:7681/ → ws://localhost:7681/ws
    */
   const terminalWsUrl = useMemo(() => {
-    if (!finalSelectedComputerId) return '';
-    const baseUrl = process.env.BASE_URL || window.location.origin;
-    const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws';
-    const host = baseUrl.replace(/^https?:\/\//, '');
-    return `${wsProtocol}://${host}/api/computer/terminal/${finalSelectedComputerId}/ws`;
-  }, [finalSelectedComputerId]);
+    const httpBase = 'http://localhost:7681/';
+    try {
+      const u = new URL(httpBase);
+      const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
+      const path = u.pathname === '/' || u.pathname === '' ? '/ws' : u.pathname;
+      return `${wsScheme}//${u.host}${path}`;
+    } catch {
+      return 'ws://localhost:7681/ws';
+    }
+  }, []);
 
   // ==================== 数据请求 ====================
   /** 加载空间下可用的聊天模型列表 */
@@ -1250,6 +1254,8 @@ const ConversationAgent: React.FC = () => {
       <ConversationAgentBottomConsole
         visible={showDevConsole}
         wsUrl={terminalWsUrl}
+        wireProtocol="ttyd"
+        wsSubprotocols={['tty']}
       />
     </div>
   );

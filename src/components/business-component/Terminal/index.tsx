@@ -97,11 +97,45 @@ const resolveTheme = (theme: TerminalTheme = 'dark') => {
 
 const isLightTheme = (theme: TerminalTheme = 'dark') => theme === 'light';
 
+const TTYD_CMD_INPUT = 0x30;
+const TTYD_CMD_OUTPUT = 0x30;
+
+/** ttyd 首包：以 '{' 开头的 JSON，触发 fork shell */
+const encodeTtydInit = (cols: number, rows: number): string =>
+  JSON.stringify({ columns: cols, rows });
+
+/** ttyd：'0' + 原始输入字节 */
+const encodeTtydInput = (data: string): Uint8Array => {
+  const bytes = new TextEncoder().encode(data);
+  const out = new Uint8Array(bytes.length + 1);
+  out[0] = TTYD_CMD_INPUT;
+  out.set(bytes, 1);
+  return out;
+};
+
+/** ttyd：'1' + { columns, rows } */
+const encodeTtydResize = (cols: number, rows: number): string =>
+  '1' + JSON.stringify({ columns: cols, rows });
+
+/** 解析 ttyd 二进制下行帧，仅提取 OUTPUT(0x30) 写入 xterm */
+const decodeTtydMessage = (raw: ArrayBuffer | string): string => {
+  const buf =
+    typeof raw === 'string'
+      ? new TextEncoder().encode(raw)
+      : new Uint8Array(raw);
+  if (buf.length === 0 || buf[0] !== TTYD_CMD_OUTPUT) {
+    return '';
+  }
+  return new TextDecoder().decode(buf.subarray(1));
+};
+
 // ─── 组件实现 ────────────────────────────────────────────────────
 const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
   (
     {
       wsUrl,
+      wsSubprotocols,
+      wireProtocol = 'plain',
       autoConnect = false,
       reconnect,
       title,
@@ -372,7 +406,11 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         // 监听用户输入 → 发送到 WebSocket + 触发回调
         term.onData((data: string) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(data);
+            if (wireProtocol === 'ttyd') {
+              wsRef.current.send(encodeTtydInput(data));
+            } else {
+              wsRef.current.send(data);
+            }
           }
           onInputRef.current?.(data);
         });
@@ -380,7 +418,13 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         // 终端 resize → 通知后端
         term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+            if (wireProtocol === 'ttyd') {
+              wsRef.current.send(encodeTtydResize(cols, rows));
+            } else {
+              wsRef.current.send(
+                JSON.stringify({ type: 'resize', cols, rows }),
+              );
+            }
           }
         });
 
@@ -543,7 +587,9 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         isManualDisconnectRef.current = false;
 
         try {
-          const ws = new WebSocket(targetUrl);
+          const ws = wsSubprotocols
+            ? new WebSocket(targetUrl, wsSubprotocols)
+            : new WebSocket(targetUrl);
           ws.binaryType = 'arraybuffer';
           wsRef.current = ws;
 
@@ -555,19 +601,21 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
 
             // 连接后立即发送终端尺寸
             if (terminalRef.current) {
-              ws.send(
-                JSON.stringify({
-                  type: 'resize',
-                  cols: terminalRef.current.cols,
-                  rows: terminalRef.current.rows,
-                }),
-              );
+              const { cols, rows } = terminalRef.current;
+              if (wireProtocol === 'ttyd') {
+                // 首条必须为 JSON_DATA（'{' 开头），ttyd 才会 spawn shell
+                ws.send(encodeTtydInit(cols, rows));
+              } else {
+                ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+              }
             }
           };
 
           ws.onmessage = (event: MessageEvent) => {
             const data =
-              typeof event.data === 'string'
+              wireProtocol === 'ttyd'
+                ? decodeTtydMessage(event.data)
+                : typeof event.data === 'string'
                 ? event.data
                 : new TextDecoder().decode(event.data);
             terminalRef.current?.write(data);
@@ -621,7 +669,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           );
         }
       },
-      [wsUrl, reconnectConfig],
+      [wsUrl, wsSubprotocols, wireProtocol, reconnectConfig],
     );
 
     const disconnect = useCallback(() => {

@@ -1,6 +1,9 @@
 import { SvgIcon } from '@/components/base';
 import { XtermTerminal } from '@/components/business-component';
-import type { XtermTerminalRef } from '@/components/business-component/Terminal/type';
+import type {
+  TerminalWireProtocol,
+  XtermTerminalRef,
+} from '@/components/business-component/Terminal/type';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -26,6 +29,10 @@ interface ConversationAgentBottomConsoleProps {
   runtimeLogs?: string;
   /** 终端 WebSocket 连接地址，传入后启用交互式终端 */
   wsUrl?: string;
+  /** WebSocket 子协议（连接 ttyd 时需 ['tty']） */
+  wsSubprotocols?: string | string[];
+  /** 与后端约定的消息格式 */
+  wireProtocol?: TerminalWireProtocol;
 }
 
 /**
@@ -37,7 +44,14 @@ interface ConversationAgentBottomConsoleProps {
  */
 const ConversationAgentBottomConsole: React.FC<
   ConversationAgentBottomConsoleProps
-> = ({ visible = true, terminalLogs = '', runtimeLogs = '', wsUrl }) => {
+> = ({
+  visible = true,
+  terminalLogs = '',
+  runtimeLogs = '',
+  wsUrl,
+  wsSubprotocols,
+  wireProtocol,
+}) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>('terminal');
   const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
   const terminalRef = useRef<XtermTerminalRef>(null);
@@ -72,6 +86,8 @@ const ConversationAgentBottomConsole: React.FC<
           <XtermTerminal
             ref={terminalRef}
             wsUrl={wsUrl}
+            wsSubprotocols={wsSubprotocols}
+            wireProtocol={wireProtocol}
             autoConnect
             theme="dark"
             fontSize={12}
