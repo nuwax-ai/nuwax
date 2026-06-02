@@ -672,6 +672,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   ) : (
                     <SvgIcon
                       name="icons-chat-clear"
+                      style={{ fontSize: '14px' }}
                       className={cx(styles['svg-icon'])}
                     />
                   )}
