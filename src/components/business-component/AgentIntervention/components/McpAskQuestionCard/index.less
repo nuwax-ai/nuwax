@@ -8,9 +8,9 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  height: 380px;
-  max-height: 380px;
-  overflow: visible;
+  height: auto;
+  max-height: min(420px, 45vh);
+  overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 8%);
   border-radius: 14px;
   background: @colorBgContainer;
@@ -22,6 +22,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 10px;
   padding: 10px 14px 8px;
   border-bottom: 1px solid rgba(0, 0, 0, 6%);
@@ -65,6 +66,8 @@
 
 .title {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   color: @colorTextBase;
   font-size: 13px;
   font-weight: 600;
@@ -76,6 +79,8 @@
 
 .desc {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 2px;
   font-size: 12px;
   color: @colorTextSecondary;
@@ -159,8 +164,17 @@
 
 .form {
   margin: 0;
+  min-width: 0;
 
   :global {
+    .ant-form-item,
+    .ant-form-item-control,
+    .ant-form-item-control-input,
+    .ant-form-item-control-input-content {
+      min-width: 0;
+      max-width: 100%;
+    }
+
     .ant-form-item {
       margin-bottom: 10px;
     }
@@ -204,11 +218,20 @@
 
 .footerActions {
   margin-left: auto;
+  max-width: 100%;
+  justify-content: flex-end;
+
+  :global {
+    .ant-space-item {
+      min-width: 0;
+    }
+  }
 }
 
 .buttonLabel {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   gap: 5px;
 }
 
@@ -231,4 +254,35 @@
   display: block;
   padding: 0 14px 6px;
   font-size: 12px;
+}
+
+@media screen and (max-width: 520px) {
+  .shell {
+    max-height: min(460px, 55vh);
+  }
+
+  .header {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px 8px;
+  }
+
+  .wizardBlock,
+  .formSurface {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .footer {
+    justify-content: flex-end;
+    padding: 8px 12px 10px;
+  }
+
+  .stepMeta {
+    width: 100%;
+  }
+
+  .footerActions {
+    margin-left: 0;
+  }
 }

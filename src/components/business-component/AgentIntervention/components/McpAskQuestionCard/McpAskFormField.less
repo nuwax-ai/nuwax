@@ -6,18 +6,29 @@
   flex-wrap: wrap;
   gap: 6px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 
   :global {
     .ant-radio-wrapper,
     .ant-checkbox-wrapper {
       align-items: center;
+      max-width: 100%;
       margin: 0;
       padding: 5px 10px;
       background: @colorBgContainer;
       color: @colorTextBase;
       font-size: 12px;
       line-height: 1.4;
+      white-space: normal;
       transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .ant-radio-wrapper span:last-child,
+    .ant-checkbox-wrapper span:last-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .ant-radio-wrapper:hover,
@@ -41,6 +52,9 @@
 }
 
 .textControl {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 6px;
   font-size: 12px;
 
@@ -55,6 +69,27 @@
 
     .ant-input-textarea textarea {
       font-size: 12px !important;
+    }
+  }
+}
+
+.uploadControl {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+
+  :global {
+    .ant-upload,
+    .ant-upload-list,
+    .ant-upload-list-item,
+    .ant-upload-drag {
+      max-width: 100%;
+    }
+
+    .ant-upload-text,
+    .ant-upload-list-item-name {
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
   }
 }

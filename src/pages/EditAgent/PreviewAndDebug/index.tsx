@@ -667,7 +667,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 />
               )}
             {/* Agent Intervention: ACP 权限审批 / MCP Ask 表单 */}
-            <AgentInterventionChatLayer {...interventionLayer.chatLayerProps} />
+            <AgentInterventionChatLayer
+              {...interventionLayer.chatLayerProps}
+              className={styles['intervention-dock']}
+            />
             {/*会话输入框*/}
             <ChatInputHome
               key={`edit-agent-${agentId}`}

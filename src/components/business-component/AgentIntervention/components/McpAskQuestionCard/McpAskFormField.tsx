@@ -1,12 +1,12 @@
+import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
+import { handleUploadFileList } from '@/utils/upload';
+import { InboxOutlined } from '@ant-design/icons';
 import { Checkbox, Form, Input, Radio, Select, Upload } from 'antd';
-import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import type { ParsedMcpAskField } from '../../utils/parseMcpAskSchema';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { handleUploadFileList } from '@/utils/upload';
 import styles from './McpAskFormField.less';
 
 interface McpAskFormFieldProps {
@@ -193,12 +193,14 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           multiple={multiple}
           accept={accept}
           listType="picture"
+          className={styles.uploadControl}
         >
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
           <p className="ant-upload-text">
-            {t('PC.Components.McpAskQuestionCard.uploadDragText') || '点击或拖拽文件到此区域上传'}
+            {t('PC.Components.McpAskQuestionCard.uploadDragText') ||
+              '点击或拖拽文件到此区域上传'}
           </p>
         </Upload.Dragger>
       </Form.Item>
